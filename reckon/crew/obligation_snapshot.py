@@ -18,12 +18,13 @@ A snapshot is ``fresh`` when all three hold: a process with the recorded pid is
 alive and carries the recorded start time (so a reused pid does not pass), its
 code stamp equals the stamp computed for the source a restarted producer would
 run, and ``computed_at`` is within :data:`FRESHNESS_WINDOW_SECONDS`. Otherwise
-it reads as one of four fixed words: ``no-producer`` when no snapshot was
+it reads as one of five fixed words: ``no-producer`` when no snapshot was
 published or its producer is not running, ``no-follower`` when this session has
 no snapshot at all while the project's seat names a live producer on another
 host, ``producer-stale-code`` when the producer runs source other than what a
-restarted one would run, and ``stale-snapshot`` when the snapshot is older than
-the window.
+restarted one would run, ``follower-released`` when a session whose own follower
+has stopped keeps an aged snapshot stamped with older code, and
+``stale-snapshot`` when the snapshot is older than the window.
 
 A not-fresh snapshot whose producer is plausibly mid-reload is a fourth
 reading, outside :func:`freshness`'s fixed words: :func:`reload_in_progress`
@@ -59,6 +60,7 @@ NO_PRODUCER = "no-producer"
 NO_FOLLOWER = "no-follower"
 STALE_CODE = "producer-stale-code"
 STALE_SNAPSHOT = "stale-snapshot"
+FOLLOWER_RELEASED = "follower-released"
 
 STAT_IDENTITY_INTERVAL_SECONDS = 10.0
 
@@ -744,10 +746,32 @@ def source_code_stamp(package_dir: Path | None = None) -> str:
     return checkout_trust.source_code_identity(package)
 
 
+def _follower_delivering(project: str | None, session: str | None) -> bool:
+    """Whether this session's follower registration still delivers.
+
+    The judgement of what counts as a live follower is the publisher's own: it
+    republishes only sessions whose registration reads live, so a reader that
+    tested a missing lease or the file's age instead would disagree with the
+    publisher about one session. A caller naming no session cannot ask the
+    question and is answered yes, which keeps every reading it had.
+
+    The import is deferred to this call for the reason the seat read defers its
+    own: the prompt hook loads this module by file path on a turn's opening,
+    and the crew package a module-scope import would drag in is paid only by a
+    read whose snapshot is already past the window.
+    """
+    if not project or not session:
+        return True
+    from reckon.crew.follower_registration import _follower_liveness, follower_lock_path
+
+    return bool(_follower_liveness(follower_lock_path(project, session)).get("live"))
+
+
 def freshness_reading(
     document: Mapping[str, Any] | None,
     *,
     project: str | None = None,
+    session: str | None = None,
     current_stamp: str | None = None,
     now: datetime | None = None,
 ) -> tuple[str, str]:
@@ -761,12 +785,17 @@ def freshness_reading(
     name a live producer elsewhere. The seat's code stamp identifies the
     producer now holding it, even when its predecessor wrote the snapshot.
 
-    The four not-fresh reasons are ``no-producer`` for an absent producer with
+    The five not-fresh reasons are ``no-producer`` for an absent producer with
     no live seat behind it, ``no-follower`` for no snapshot at all while a live
     producer stands on another host -- the reading a session earns when it has
     no follower of its own with a fresh lease -- ``producer-stale-code`` for a
-    producer running source other than the checkout, and ``stale-snapshot`` for
-    an aged publication.
+    producer running source other than the checkout, ``follower-released`` for
+    an aged snapshot on older code whose session has no delivering follower of
+    its own, and ``stale-snapshot`` for an aged publication on current code.
+
+    ``session`` names whose follower registration is asked about for the
+    ``follower-released`` reading. A caller naming none cannot answer that
+    question for anyone and gets the code-stamp reading it always had.
     """
     if not isinstance(document, Mapping) or not document:
         host = live_foreign_seat_host(project)
@@ -786,13 +815,25 @@ def freshness_reading(
     stamp = source_code_stamp() if current_stamp is None else current_stamp
     # Older seat records may carry no stamp; retain their snapshot's reading.
     producer_stamp = seat_stamp or str(producer.get("code_stamp") or "")
-    if producer_stamp != stamp:
-        return STALE_CODE, host
     computed = _parse_instant(document.get("computed_at"))
+    instant = _utc_now() if now is None else now
+    aged = (
+        computed is not None
+        and (instant - computed).total_seconds() > FRESHNESS_WINDOW_SECONDS
+    )
+    if producer_stamp != stamp:
+        # A session whose follower has stopped keeps the snapshot that
+        # follower's producer last wrote, so it both stays on the older stamp
+        # and ages. This population reads the stale-code word today, and the
+        # stale-code remedy names the producer when what the session has to do
+        # is arm its own follower. Both conditions are therefore required: an
+        # aged snapshot on current code keeps its own reading.
+        if aged and not _follower_delivering(project, session):
+            return FOLLOWER_RELEASED, host
+        return STALE_CODE, host
     if computed is None:
         return STALE_SNAPSHOT, host
-    instant = _utc_now() if now is None else now
-    if (instant - computed).total_seconds() > FRESHNESS_WINDOW_SECONDS:
+    if aged:
         return STALE_SNAPSHOT, host
     return FRESH, host
 
@@ -801,12 +842,13 @@ def freshness(
     document: Mapping[str, Any] | None,
     *,
     project: str | None = None,
+    session: str | None = None,
     current_stamp: str | None = None,
     now: datetime | None = None,
 ) -> str:
     """Return the snapshot's freshness state for callers needing no host."""
     return freshness_reading(
-        document, project=project, current_stamp=current_stamp, now=now
+        document, project=project, session=session, current_stamp=current_stamp, now=now
     )[0]
 
 
@@ -1041,10 +1083,11 @@ def _with_unreadable_records(rows: Any, findings: Any) -> list[dict[str, Any]]:
 #
 # Every other kind is left alone, whatever its run's pointer state. A
 # ``worktree-held`` row is raised from the project's retained ledger records,
-# and a review the derivation finds missing, a hold, a refusal or a blocked row
-# names state the run's record still carries after its pointer is gone. A
-# missing pointer says nothing about any of them, and hiding one on a ``stat``
-# would be a silent omission rather than a settlement.
+# and a hold, a refusal or a blocked row names state the run's record still
+# carries after its pointer is gone. A missing pointer says nothing about any
+# of them, and hiding one on a ``stat`` would be a silent omission rather than
+# a settlement. The review duties are the exception, and each is settled on
+# more than the ``stat``: see :data:`REVIEW_DUTY_KINDS`.
 LIVE_POINTER_DUTY_KINDS = frozenset(
     {"landing-refused", "review-ready", "promotable-stale"}
 )
@@ -1064,17 +1107,36 @@ QUEUED_POINTER_DUTY_KINDS = frozenset(
     {"run-queued", "queued-awaiting-session", "queued-contract-refused"}
 )
 
+# The duties of a run whose current head is owed a review, and the two facts
+# that settle them at the answer's own read time. A station can hold an answer
+# for minutes, and both facts move inside them: the run releases its live
+# pointer when it lands or ends, leaving no tree to review, and its pointer
+# records a dispatch when a review of that head is started, leaving nothing
+# missing. A ``review-queued`` row is the same duty in its wait -- the lane
+# refused one attempt as paused, or accepted a review run it has not launched --
+# so it is settled by the same two facts, as is a queued row whose review the
+# reflex has since dispatched.
+REVIEW_MISSING_DUTY_KIND = "review-missing"
+REVIEW_QUEUED_DUTY_KIND = "review-queued"
+REVIEW_DUTY_KINDS = frozenset({REVIEW_MISSING_DUTY_KIND, REVIEW_QUEUED_DUTY_KIND})
+
+# The pointer fields that record a review dispatch, one per rubric: a figure
+# review is recorded beside the text review rather than in its place. Spelled
+# here rather than imported from the dispatch module for the reason above --
+# this file is loaded by path, so it may reach no derivation.
+REVIEW_DISPATCH_FIELDS = ("review_dispatch", "figure_review_dispatch")
+
 # A pointer file present but unreadable is not evidence that its run left the
 # phase, so the duty it raised stands.
 _UNREADABLE_POINTER = object()
 
 
-def _live_pointer_phase(run_id: str) -> Any:
-    """The phase a run's live pointer reads now, or a sentinel.
+def _live_pointer_document(run_id: str) -> Any:
+    """A run's live pointer as stored now, ``None``, or a sentinel.
 
-    ``None`` means no live pointer remains, which for a queued duty is the
-    request leaving the queue by any route; :data:`_UNREADABLE_POINTER` means
-    one is there and cannot be parsed, so nothing here may conclude it moved.
+    ``None`` means no live pointer remains; :data:`_UNREADABLE_POINTER` means
+    one is there and cannot be read as a JSON object, so nothing here may
+    conclude anything about the run from it.
     """
     try:
         text = live_pointer_path(run_id).read_text(encoding="utf-8")
@@ -1088,7 +1150,81 @@ def _live_pointer_phase(run_id: str) -> Any:
         return _UNREADABLE_POINTER
     if not isinstance(document, Mapping):
         return _UNREADABLE_POINTER
+    return document
+
+
+def _live_pointer_phase(run_id: str) -> Any:
+    """The phase a run's live pointer reads now, or a sentinel.
+
+    ``None`` means no live pointer remains, which for a queued duty is the
+    request leaving the queue by any route; :data:`_UNREADABLE_POINTER` means
+    one is there and cannot be parsed, so nothing here may conclude it moved.
+    """
+    document = _live_pointer_document(run_id)
+    if document is None or document is _UNREADABLE_POINTER:
+        return document
     return str(document.get("phase") or "")
+
+
+def _same_revision(left: Any, right: Any) -> bool:
+    """Whether two spellings name the same commit, abbreviated or full.
+
+    The shared spelling is one rule and lives in the review-subject module,
+    which this file may not import while the hook loads it by path.
+    """
+    left = str(left or "").strip().lower()
+    right = str(right or "").strip().lower()
+    if not left or not right:
+        return False
+    return left == right or left.startswith(right) or right.startswith(left)
+
+
+def _review_dispatch_for_head(document: Mapping[str, Any], head: Any) -> bool:
+    """Whether the run's pointer records a standing review dispatch for ``head``.
+
+    A dispatch entry is written for every attempt, so only the status
+    ``dispatched`` stands for a review that was started: a refusal, a skip or a
+    withdrawal leaves the review still owed, and those are the entries a duty
+    must keep naming. The entry must also name the head the duty names: an
+    entry recording no head cannot be shown to cover this duty's head, and
+    neither can one whose head the duty does not carry, so both keep the duty.
+    Reading a headless entry as covering every head would settle a duty on a
+    dispatch that may have read a different revision entire.
+    """
+    for field in REVIEW_DISPATCH_FIELDS:
+        entry = document.get(field)
+        if not isinstance(entry, Mapping):
+            continue
+        if str(entry.get("status") or "") != "dispatched":
+            continue
+        if not str(entry.get("run_id") or ""):
+            continue
+        dispatched_head = entry.get("head")
+        if not head or not dispatched_head:
+            continue
+        if not _same_revision(head, dispatched_head):
+            continue
+        return True
+    return False
+
+
+def _review_duty_survives_read(row: Mapping[str, Any]) -> bool:
+    """Whether a review duty still holds at this read.
+
+    False when the run has no live pointer, or when that pointer records a
+    review dispatched for the head the duty names. An unreadable pointer keeps
+    the duty, as it does everywhere else here: a file that cannot be read is
+    not evidence the condition moved.
+    """
+    run_id = str(row.get("run_id") or "")
+    if not run_id:
+        return True
+    document = _live_pointer_document(run_id)
+    if document is None:
+        return False
+    if document is _UNREADABLE_POINTER:
+        return True
+    return not _review_dispatch_for_head(document, row.get("head"))
 
 
 def without_departed_run_duties(payload: Mapping[str, Any]) -> dict[str, Any]:
@@ -1108,9 +1244,17 @@ def without_departed_run_duties(payload: Mapping[str, Any]) -> dict[str, Any]:
     stalled out has left that phase even though its pointer is alive, so the
     row is dropped on the phase rather than on the pointer's existence.
 
+    A review duty -- ``review-missing`` or ``review-queued`` -- is settled on
+    either of two facts read now: the run has released its live pointer, so no
+    tree is left to review; or that pointer records a review dispatched for the
+    head the duty names, so the review is neither missing nor still waiting. A
+    review owed is owed against a tree that still exists and that no dispatch
+    has yet read.
+
     A duty of any other kind is kept, whatever its pointer state: its evidence
-    is a ledger record, a review the derivation found missing or nothing at
-    all, so a missing pointer says nothing about it. That includes a duty that
+    is a ledger record or nothing at all -- a hold, a refusal, a blocked run or
+    a tree still held -- so a missing pointer says nothing about it. That
+    includes a duty that
     names no run. The summary is recomputed so the header counts the rows
     actually shown.
     """
@@ -1131,6 +1275,9 @@ def without_departed_run_duties(payload: Mapping[str, Any]) -> dict[str, Any]:
             and kind in LIVE_POINTER_DUTY_KINDS
             and not live_pointer_path(run_id).exists()
         ):
+            dropped = True
+            continue
+        if run_id and kind in REVIEW_DUTY_KINDS and not _review_duty_survives_read(row):
             dropped = True
             continue
         if run_id and kind in QUEUED_POINTER_DUTY_KINDS:
@@ -1298,6 +1445,18 @@ def _ledger_module():
     return module
 
 
+def _process_signal_module():
+    """The process table's reader, imported where it is used and not before.
+
+    The module carries the region that pins one walk of the table for the
+    length of a derivation, reached here rather than through the derivation
+    module so the region is opened by the sweep's own entry point.
+    """
+    from reckon.crew import process_signal as module
+
+    return module
+
+
 def _review_head_module():
     """The reviewed-head resolution's own module, imported where it is used.
 
@@ -1337,17 +1496,38 @@ class FleetState:
 
 
 def fleet_state(project: str, *, now: datetime | None = None) -> FleetState:
+    """Derive a sweep inside one shared open-run population."""
+    from reckon.crew.open_run_index import read_scope
+
+    with read_scope():
+        return _derive_fleet_state(project, now=now)
+
+
+def _derive_fleet_state(project: str, *, now: datetime | None = None) -> FleetState:
     """Derive everything a sweep's per-session payloads are sliced from.
 
-    The derivation opens the two regions its readers share: one run index built
-    once for every ledger read inside it, and one resolution of each live run's
-    reviewed head and tree that the classifier, the derivation and its slices
-    all read. A derivation nested in a sweep joins the regions already open, so
-    the slices the sweep builds afterwards read what the derivation resolved.
+    The derivation opens the three regions its readers share: one run index
+    built once for every ledger read inside it, one resolution of each live
+    run's reviewed head and tree that the classifier, the derivation and its
+    slices all read, and one walk of the process table that every liveness read
+    inside the derivation answers from. A derivation nested in a sweep joins the
+    regions already open, so the slices the sweep builds afterwards read what
+    the derivation resolved.
+
+    The process-table region is what keeps a refresh of a loaded node
+    proportional to the fleet rather than to the fleet multiplied by its pass
+    time: every live pointer is classified here, and the environment reach a
+    dead-looking pointer costs would otherwise list ``/proc`` once per pointer
+    once the pass outlasts a beat.
     """
     ledger_module = _ledger_module()
     head_module = _review_head_module()
-    with ledger_module.index_reuse(), head_module.review_heads_resolve_once():
+    processes_module = _process_signal_module()
+    with (
+        processes_module.process_table_walk_once(),
+        ledger_module.index_reuse(),
+        head_module.review_heads_resolve_once(),
+    ):
         return _derive_fleet_state(project, now=now)
 
 

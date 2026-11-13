@@ -1,0 +1,175 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-13T09:22:40.433Z",
+  "dispatched_at": "2026-11-13T09:14:09Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-plan-state-lock-holds-on-every-node.html:95",
+      "id": "done_when-1",
+      "reason": "the census population must be the 43 acquisitions or 43 acquire/release pairs, otherwise the node writes 31 meaningless rows and the fragment's own count gate binds the wrong number.",
+      "text": "\u00a74's gate is \"row count equals the number of `fcntl.flock(` matches under `reckon/`\", but that grep counts 74 call sites of which 31 pass `LOCK_UN` and only 43 acquire a lock (`reckon/project_state.py:315`, `reckon/_store.py:412`, `reckon/compliance.py:155`, \u2026); a release site holds no lock, so its row can answer neither \"what the lock guards\" nor \"whether a holder on another node can touch it\", and the count the node must match is inflated by the releases",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-plan-state-lock-holds-on-every-node.html:99",
+      "id": "single_goal-1",
+      "reason": "splitting the census (fragment only, no source writes) from a followup that migrates the rows it names gives each node one closeable verdict and a write scope the dispatch can declare.",
+      "text": "\u00a74 delivers two things on one verdict, a read-only census fragment and the migration of \"the modules of the rows the node moves to the \u00a72 lock\", and that second write scope is decided by the census rather than at dispatch, so the coordinator cannot fence the worker's paths when it enumerates \"every row\"",
+      "type": "single_goal",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-plan-state-lock-holds-on-every-node.html:58",
+      "id": "reasoning-1",
+      "reason": "",
+      "text": "\u2014 \u00a72's done-when prescribes the probe's launch as \"`srun --partition=all_debug \u2014 from a shell where `SLURM_JOB_ID` is unset\", a step sequence the harness contradicts: a worker on the fleet node runs inside a held allocation, where an `srun` executes as a step of that job whatever partition it names and only `sbatch` submits a job of its own, so the prescribed command does not reliably reach a second host. The plan's own \"the two hostnames must differ\" clause catches the failure, but only after a wasted round; WOULD_CHANGE_THE_PLAN: yes \u2014 REASON: stating the endpoint (a second invocation on a different node, hostnames printed and different) and leaving the launch to the node brief removes a method that the dispatch environment forbids.",
+      "type": "reasoning",
+      "would_change": null
+    },
+    {
+      "anchor": "docs/plans/a-plan-state-lock-holds-on-every-node.html:58",
+      "id": "reasoning-2",
+      "reason": "",
+      "text": "\u2014 the cross-node probe bullet says the script \"holds a plan-state resource lock through the production lock code\" on a docs tree, and unlike the sibling test bullet (\u00a72 bullet 4, \"using a temporary docs tree\") it never requires a temporary tree, so a worker following it will hold the production `flock(LOCK_EX)` on a live project's sprint resource \u2014 the blocking acquisition at `reckon/project_state.py:311` \u2014 for the probe's duration, stalling real plan writes on that resource while the base arm runs; WOULD_CHANGE_THE_PLAN: yes \u2014 REASON: one clause requiring a temporary docs tree, as the sibling bullet already has, removes a probe that can stall live sessions during its own negative control.",
+      "type": "reasoning",
+      "would_change": null
+    },
+    {
+      "anchor": "docs/plans/a-plan-state-lock-holds-on-every-node.html:68",
+      "id": "wiring-1",
+      "reason": "either declare `s3` depends-on `s2` (the followup's \"\u00a72 and \u00a73 can run together\" then becomes wrong too) or scope \u00a73's claim to the injected faults, and the choice changes both the dependency graph and the dispatch order.",
+      "text": "\u00a73's deliverable ends \"An item never ends up in both sprints, or in neither\", which is the production symptom \u00a71 attributes to cross-node recovery and \u00a72 exists to remove; \u00a73's own done-when injects faults in-process only, and `plan-section-depends-on` declares no relation from s3 to s2, so a \u00a73 node alone would close on an invariant that is still violated whenever a reader on another node recovers mid-move",
+      "type": "wiring",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "da237e3b9521ede8c70f901c9c88df92217be8ac",
+  "plan_fingerprint": "3a6340bcbb7244e910055ef9c7398f7894f7133aefc3b9c183cbbf428d336bd4",
+  "plan_slug": "a-plan-state-lock-holds-on-every-node",
+  "plan_version": 0,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "da237e3b9521ede8c70f901c9c88df92217be8ac",
+      "commit_basis": "edit",
+      "finding": "done_when-1",
+      "note": "\u00a74's population is the flock calls that acquire a lock (LOCK_EX or LOCK_SH); release-only calls are excluded from the rows and the count",
+      "reason": "",
+      "when": "2026-11-13T09:38:18.829094+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "da237e3b9521ede8c70f901c9c88df92217be8ac",
+      "commit_basis": "edit",
+      "finding": "single_goal-1",
+      "note": "\u00a74 is now the census alone, writing only its fragment; the coordinator files each row needing migration as a followup or a new section",
+      "reason": "",
+      "when": "2026-11-13T09:38:33.189041+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "da237e3b9521ede8c70f901c9c88df92217be8ac",
+      "commit_basis": "edit",
+      "finding": "reasoning-1",
+      "note": "dropped the launch command; the endpoint is a second invocation on a different node with both hostnames logged and different. The premise is contradicted by measurement: on 2026-11-13 srun --partition=all_debug with SLURM_JOB_ID unset from the fleet node ran on clu-3141, a different node",
+      "reason": "",
+      "when": "2026-11-13T09:38:47.360319+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "da237e3b9521ede8c70f901c9c88df92217be8ac",
+      "commit_basis": "edit",
+      "finding": "reasoning-2",
+      "note": "the probe now holds the lock on a temporary docs tree, never a live project's",
+      "reason": "",
+      "when": "2026-11-13T09:39:00.371806+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "da237e3b9521ede8c70f901c9c88df92217be8ac",
+      "commit_basis": "edit",
+      "finding": "wiring-1",
+      "note": "\u00a73's claim is scoped to a failure of the move itself within one node's locking; the cross-node half stays \u00a72's, so \u00a72 and \u00a73 still run together",
+      "reason": "",
+      "when": "2026-11-13T09:39:11.074804+00:00"
+    }
+  ],
+  "responses": {
+    "done_when-1": {
+      "action": "acted",
+      "by": "",
+      "commit": "da237e3b9521ede8c70f901c9c88df92217be8ac",
+      "commit_basis": "edit",
+      "note": "\u00a74's population is the flock calls that acquire a lock (LOCK_EX or LOCK_SH); release-only calls are excluded from the rows and the count",
+      "reason": "",
+      "when": "2026-11-13T09:38:18.829094+00:00"
+    },
+    "reasoning-1": {
+      "action": "acted",
+      "by": "",
+      "commit": "da237e3b9521ede8c70f901c9c88df92217be8ac",
+      "commit_basis": "edit",
+      "note": "dropped the launch command; the endpoint is a second invocation on a different node with both hostnames logged and different. The premise is contradicted by measurement: on 2026-11-13 srun --partition=all_debug with SLURM_JOB_ID unset from the fleet node ran on clu-3141, a different node",
+      "reason": "",
+      "when": "2026-11-13T09:38:47.360319+00:00"
+    },
+    "reasoning-2": {
+      "action": "acted",
+      "by": "",
+      "commit": "da237e3b9521ede8c70f901c9c88df92217be8ac",
+      "commit_basis": "edit",
+      "note": "the probe now holds the lock on a temporary docs tree, never a live project's",
+      "reason": "",
+      "when": "2026-11-13T09:39:00.371806+00:00"
+    },
+    "single_goal-1": {
+      "action": "acted",
+      "by": "",
+      "commit": "da237e3b9521ede8c70f901c9c88df92217be8ac",
+      "commit_basis": "edit",
+      "note": "\u00a74 is now the census alone, writing only its fragment; the coordinator files each row needing migration as a followup or a new section",
+      "reason": "",
+      "when": "2026-11-13T09:38:33.189041+00:00"
+    },
+    "wiring-1": {
+      "action": "acted",
+      "by": "",
+      "commit": "da237e3b9521ede8c70f901c9c88df92217be8ac",
+      "commit_basis": "edit",
+      "note": "\u00a73's claim is scoped to a failure of the move itself within one node's locking; the cross-node half stays \u00a72's, so \u00a72 and \u00a73 still run together",
+      "reason": "",
+      "when": "2026-11-13T09:39:11.074804+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/Code/reckon/docs/state/reckon/reviews/plan/a-plan-state-lock-holds-on-every-node/r-20261113T091117699961-plan-review-of-a-plan-state-lock-holds-on-every-node.json",
+  "review_run_id": "r-20261113T091117699961-plan-review-of-a-plan-state-lock-holds-on-every-node",
+  "reviewed_blob_sha": "da4ea9459140c28ee0dd3e1696d7f6c7367bb40d",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `/reckon/a-seat-held-elsewhere-is-not-restarted.html#s8` resolves to a real \u00a78 on the follower lease, `move_sprint_item` is defined at `reckon/project_state.py:2185`, and the journal-directory claim resolves to commit `44c39ccdfa` dated 2026-07-29.",
+    "done_when": "a finding \u2014 \u00a74's count gate is `fcntl.flock(` call sites, 31 of which are `LOCK_UN` releases that guard nothing, so the census cannot state what they guard.",
+    "evidence_paths": "pass \u2014 \u00a72 and \u00a73 log under the run directory (the house convention for gate logs) and \u00a74's fragment sits at `docs/evidence/fragments/a-plan-state-lock-holds-on-every-node/every-flock-is-accounted-for.html`, matching the 134 existing fragments.",
+    "naming": "pass \u2014 the test filenames and the fragment path are descriptive sentences, matching the repo's `tests/test_a_*.py` and `docs/evidence/fragments/<slug>/` conventions; no stage label or ticket number reaches a symbol.",
+    "reasoning": "a finding \u2014 \u00a71's root cause, \u00a71's two recovery orderings and the 74-sites/23-modules count all verify against the code, but \u00a72 prescribes an `srun` step this workstation's allocation rules contradict, and its probe holds an exclusive lock on a live docs tree.",
+    "single_goal": "a finding \u2014 \u00a74 carries both a census and the migration of an unbounded subset of rows, and its write paths are decided by the census.",
+    "wiring": "a finding \u2014 `plan-section-depends-on` declares only `s4: [s2]`, but \u00a73's deliverable restates the cross-node invariant \u00a72 creates, so a \u00a73-only node can close on a guarantee it cannot enforce."
+  },
+  "section_digests": {
+    "_document": "0dec7477ee5a04bfe94aedccdfcbb1a1fa4b6c5d40ca04b8e47aeeaa04ea1a1c",
+    "s1": "cbecb1ff2b2187f2f95c30fdbfdf77b99831337f862a57f65926804182945505",
+    "s2": "a1384878a2009bb1ccf7c6e93eb024c96d7d0053b4e432d3aaf02fdd1fa9cf8f",
+    "s3": "4f1eb10aad593840c02c0a385e2137089d5c8f0c1e8b999407642eed99c5dace",
+    "s4": "0e7dcd75144992df90527431ad2aab8c2568326e31199445aacea29725df6a67"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-13T09:33:10.235893+00:00",
+  "total": null
+}

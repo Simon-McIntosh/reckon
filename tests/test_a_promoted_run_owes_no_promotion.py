@@ -305,14 +305,16 @@ def test_a_discarded_runs_promotion_duty_is_gone_without_a_ledger_row(
     assert DISCARDED_RUN_ID not in checklist, checklist
 
 
-def test_a_missing_review_survives_its_runs_missing_pointer(
+def test_a_missing_review_goes_with_its_runs_pointer(
     repository: Path, runtime_root: Path, follower: None
 ) -> None:
-    """A review nobody took is not settled by a pointer's removal.
+    """A review duty is shown only while the run it names still holds a pointer.
 
-    Its evidence is the stored record rather than the pointer, so the duty is
-    kept: closing this kind as well would hide the one duty a departed run
-    still owes.
+    The stored answer is a snapshot of a run that was there when it was
+    written. Once the run's pointer has gone there is no tree the duty can act
+    on, so both surfaces drop it rather than carrying an outstanding row no
+    action can clear. A duty that names no run is unaffected, because it is
+    not a run's departure that settles it.
     """
     _publish_answer(
         runtime_root,
@@ -327,8 +329,7 @@ def test_a_missing_review_survives_its_runs_missing_pointer(
     assert not obligation_snapshot.live_pointer_path(UNREVIEWED_RUN_ID).exists()
 
     rows = _view_rows()
-    assert [row["run_id"] for row in rows] == [UNREVIEWED_RUN_ID], rows
-    assert rows[0]["kind"] == "review-missing", rows
+    assert rows == [], rows
 
     checklist = _drive(repository, runtime=runtime_root)
-    assert f"- [review-missing] {UNREVIEWED_RUN_ID}" in checklist, checklist
+    assert UNREVIEWED_RUN_ID not in checklist, checklist

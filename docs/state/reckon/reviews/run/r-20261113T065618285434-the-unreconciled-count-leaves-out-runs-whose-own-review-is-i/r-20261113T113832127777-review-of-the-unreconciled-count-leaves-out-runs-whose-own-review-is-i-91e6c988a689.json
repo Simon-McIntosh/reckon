@@ -1,0 +1,70 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew/promotion_release.py:1043",
+    "reckon/crew/obligations.py:3813",
+    "reckon/crew/obligation_snapshot.py:1563",
+    "reckon/crew/promotion.py:2886"
+  ],
+  "completed_at": "2026-11-13T12:03:37.636Z",
+  "dispatched_at": "2026-11-13T11:44:59Z",
+  "findings": [
+    {
+      "file": "reckon/crew/runs.py",
+      "line": "2855",
+      "severity": "non-blocking",
+      "text": "non-blocking: _round_has_delivered re-implements a capability the repository already owns at reckon/sprint_liveness.py:115 (_manifest_status reads the status line off a record's manifest_path with the bounded regex ^status:\\s*(\\S+), and reckon/crew/admission/readiness.py:434 owns the parse_manifest route that reads a JSON body), so this is a third copy of one read; it duplicates the read the owner performs and only shares the vocabulary through manifest_status_is_terminal, and a manifest whose body is JSON reads as not delivered, which is the vanished-duty shape 2b9aef2217 set out to repair. Sampled 60 recent manifests under ~/.config/reckon/crew/runs/*/manifest.md: 0 are JSON bodies, so the practical exposure today is small."
+    },
+    {
+      "file": "tests/test_the_unreconciled_count_leaves_out_runs_whose_own_review_is_i.py",
+      "line": "92",
+      "severity": "non-blocking",
+      "text": "non-blocking: the delivered-round rule added in 2b9aef2217 has no test. _write_working_review (line 92) and _write_working_repair (line 126) write no manifest_path on their round pointers, so _round_has_delivered returns False in every recorded case and the branch that counts a round whose manifest reached a terminal status has no assertion that would redden if it were removed or inverted; the fragment's claim that a delivered round stays counted rests on the caller-file arm observed once, not on a test."
+    },
+    {
+      "file": "reckon/crew/runs.py",
+      "line": "2559",
+      "severity": "non-blocking",
+      "text": "non-blocking: the per-row snapshot fallback makes a caller outside _closure_rows pay the whole exclusion once per row. promotion_release.py:1043 counts pointer by pointer through _drain_row, so a fleet reading over N live pointers lists the pointer directory N times and re-reads every review or repair round's manifest N times, where drain and drain_unreconciled_by_session now read once; 2b9aef2217 published the snapshot only through _closure_rows, so only the drain path received the fix."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "verified 4 production call sites",
+    "diff": "read commit by commit from 01f870fb7f to 91e6c988a6: ac5790768f moves the exclusion into _drain_row behind two context variables, 2b9aef2217 adds the one-snapshot publish and _round_has_delivered, 91e6c988a6 updates the fragment and cites the arm figures; 166 insertions across three declared files.",
+    "done_when": "\u00a753 asks that three subject runs read a count of 1 naming the delivered run with no review; tests/test_the_unreconciled_count_leaves_out_runs_whose_own_review_is_i.py:101-106 asserts the count, the run-id list and the session summary, and gate4-head.log records 55 passed EXIT=0 for it.",
+    "goal": "the source node's goal is that the unreconciled count leaves out runs whose own review or repair is in flight; the gained commits keep that and move the decision into reckon/crew/runs.py:2557-2560 so the drain, the session drain (runs.py:3013), the published snapshot and promotion_release.py:1043 count through one composition.",
+    "manifest": "read; it reports status complete, records the declared arms (55 passed head, 51 passed base), the two caller-file arms with identical failing-id sets, two negative controls, and baseline_suite/after_suite JSON both completed with zero failures.",
+    "write_paths": "the reviewed manifest declares reckon/crew/runs.py, tests/test_the_unreconciled_count_leaves_out_runs_whose_own_review_is_i.py and the evidence fragment; git diff --stat over 01f870fb..91e6c988 names those three files and nothing else."
+  },
+  "justifications": {
+    "durability": "tests/test_the_unreconciled_count_leaves_out_runs_whose_own_review_is_i.py:216-217 is backed by a recorded control that reddens it when runs.py is reverted to 01f870fb, and the queued case at :172-177 would redden if the queued filter at runs.py:2896 were dropped, but _round_has_delivered has no assertion because the round fixtures at :92 and :126 carry no manifest_path.",
+    "evidence": "gate4-head.log reads 55 passed EXIT=0 at 2b9aef2217, gate3-base.log 51 passed EXIT=0 at af288e1, and the two caller-file arms read 68 failed / 737 passed and 68 failed / 741 passed with byte-identical FAILED id sets; the fragment's head job id 1313699 is not written by any log on disk (gate4-job.log carries only GATE4_DONE) though it does appear in the run's harness transcript, and no arm measures the delivered-round branch.",
+    "fit": "the added helpers follow the module's local-import, Mapping-typed idiom beside the ContextVar already at reckon/crew/runs.py:1160, and their docstrings state the mechanism with no plan, ticket or stage label.",
+    "goal_fidelity": "reckon/crew/runs.py:2557-2560 excuses the in-flight subject and its working round for every caller of _drain_row, which both drain entry points (runs.py:2971, runs.py:3013) and promotion_release.py:1043 reach, so the count no longer diverges between readings.",
+    "reuse": "reckon/crew/runs.py:2855 duplicates the manifest-status read the repository owns at reckon/sprint_liveness.py:115 rather than extending it, while the exclusion itself now correctly extends the single row composition at reckon/crew/runs.py:2521.",
+    "scope_discipline": "every path in git diff --stat 01f870fb..91e6c988 is one of the three declared write paths, and the fragment's edit carries only the figures and the composition account."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the source node's goal is that the unreconciled count leaves out runs whose own review or repair is in flight; the gained commits keep that and move the decision into reckon/crew/runs.py:2557-2560 so the drain, the session drain (runs.py:3013), the published snapshot and promotion_release.py:1043 count through one composition.\nVERDICT done_when: \u00a753 asks that three subject runs read a count of 1 naming the delivered run with no review; tests/test_the_unreconciled_count_leaves_out_runs_whose_own_review_is_i.py:101-106 asserts the count, the run-id list and the session summary, and gate4-head.log records 55 passed EXIT=0 for it.\nVERDICT write_paths: the reviewed manifest declares reckon/crew/runs.py, tests/test_the_unreconciled_count_leaves_out_runs_whose_own_review_is_i.py and the evidence fragment; git diff --stat over 01f870fb..91e6c988 names those three files and nothing else.\nVERDICT manifest: read; it reports status complete, records the declared arms (55 passed head, 51 passed base), the two caller-file arms with identical failing-id sets, two negative controls, and baseline_suite/after_suite JSON both completed with zero failures.\nVERDICT diff: read commit by commit from 01f870fb7f to 91e6c988a6: ac5790768f moves the exclusion into _drain_row behind two context variables, 2b9aef2217 adds the one-snapshot publish and _round_has_delivered, 91e6c988a6 updates the fragment and cites the arm figures; 166 insertions across three declared files.\nCALL_SITES: reckon/crew/promotion_release.py:1043, reckon/crew/obligations.py:3813, reckon/crew/obligation_snapshot.py:1563, reckon/crew/promotion.py:2886\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/runs.py:2557-2560 excuses the in-flight subject and its working round for every caller of _drain_row, which both drain entry points (runs.py:2971, runs.py:3013) and promotion_release.py:1043 reach, so the count no longer diverges between readings.\nSCORE evidence: 17\nJUSTIFICATION evidence: gate4-head.log reads 55 passed EXIT=0 at 2b9aef2217, gate3-base.log 51 passed EXIT=0 at af288e1, and the two caller-file arms read 68 failed / 737 passed and 68 failed / 741 passed with identical FAILED id sets; the fragment's head job id 1313699 is written by no log on disk though it appears in the run's harness transcript, and no arm measures the delivered-round branch.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every path in the diff over 01f870fb..91e6c988 is one of the three declared write paths, and the fragment's edit carries only the figures and the composition account.\nSCORE durability: 13\nJUSTIFICATION durability: tests/test_the_unreconciled_count_leaves_out_runs_whose_own_review_is_i.py:216-217 is backed by a recorded control that reddens it when runs.py is reverted to 01f870fb, but _round_has_delivered has no assertion because the round fixtures at :92 and :126 carry no manifest_path.\nSCORE fit: 17\nJUSTIFICATION fit: the added helpers follow the module's local-import, Mapping-typed idiom beside the ContextVar already at reckon/crew/runs.py:1160, and their docstrings state the mechanism with no plan, ticket or stage label.\nSCORE reuse: 5\nJUSTIFICATION reuse: reckon/crew/runs.py:2855 duplicates the manifest-status read the repository owns at reckon/sprint_liveness.py:115 rather than extending it, while the exclusion itself now correctly extends the single row composition at reckon/crew/runs.py:2521.\nFINDING reckon/crew/runs.py:2855 non-blocking: _round_has_delivered re-implements the manifest-status read the repository owns at reckon/sprint_liveness.py:115 and via parse_manifest at reckon/crew/admission/readiness.py:434, so a JSON-body manifest reads as not delivered and the round stays excused, the vanished-duty shape the commit set out to repair; 60 sampled live manifests are all line-keyed, so today's exposure is small.\nFINDING tests/test_the_unreconciled_count_leaves_out_runs_whose_own_review_is_i.py:92 non-blocking: the delivered-round rule added in 2b9aef2217 has no test, because _write_working_review at :92 and _write_working_repair at :126 write no manifest_path, so _round_has_delivered returns False in every recorded case and the branch has no assertion that would redden if removed.\nFINDING reckon/crew/runs.py:2559 non-blocking: the per-row snapshot fallback makes promotion_release.py:1043's fleet reading list the pointer directory and re-read every round's manifest once per row, so the N-pointer promotion reading pays N listings and N-times-rounds manifest reads where the drain now pays one.\n",
+  "review_run_id": "r-20261113T113832127777-review-of-the-unreconciled-count-leaves-out-runs-whose-own-review-is-i-91e6c988a689",
+  "reviewed_base_sha": "01f870fb7f1d8230ace583a0c619073fcac511cc",
+  "reviewed_head_sha": "91e6c988a689ffc4b342f0f2476783320054fa64",
+  "reviewed_run_id": "r-20261113T065618285434-the-unreconciled-count-leaves-out-runs-whose-own-review-is-i",
+  "scope_note": "covers only the three commits gained since the prior review at 01f870fb7f (ac5790768f, 2b9aef2217, 91e6c988a6); the earlier commits since the run's own base were reviewed in r-20261113T072926825723",
+  "scores": {
+    "durability": 13,
+    "evidence": 17,
+    "fit": 17,
+    "goal_fidelity": 18,
+    "reuse": 5,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-13T12:53:36.375571+00:00",
+  "total": 79
+}

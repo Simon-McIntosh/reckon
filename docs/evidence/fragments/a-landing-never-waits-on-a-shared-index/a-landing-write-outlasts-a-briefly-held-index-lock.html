@@ -1,0 +1,64 @@
+<section id="a-landing-write-outlasts-a-briefly-held-index-lock-landing">
+  <h2>A landing write outlasts a briefly held index lock</h2>
+
+  <p><strong>What changed.</strong> A landing's staging <code>git add</code>, its
+  <code>git commit</code> and the rollback <code>git restore</code> all run
+  through <code>reckon.crew.merge._run_waiting_out_a_held_index_lock</code>, and
+  the bound they passed was <code>reckon/crew/promotion_scope.py</code>'s own
+  12 attempts 0.5 s apart &mdash; about six seconds. A peer session's commit
+  keeps the shared checkout's <code>.git/index.lock</code> for seconds at a time,
+  so the retry ran out first and a promotion discarded minutes of reads over a
+  lock that was about to free. The bound is now 130 attempts 0.5 s apart: a
+  spacing span of 64.5 s, sized to outlast a lock held for a minute, and reached
+  by every step that writes the shared index.</p>
+
+  <p><strong>A refusal says why it gave up.</strong> When the staging or commit
+  step uses up its bound while the lock is read as still held, the refusal now
+  names how long the lock had existed and the bound it outlasted, in the form
+  <em>Another writer has held the checkout's index lock for &lt;age&gt;s, past
+  this landing's 64.5s retry bound (130 attempts 0.50s apart)</em>. The age is read at
+  the moment the step gives up, before the rollback runs, because the rollback
+  spends a bound of its own and can see the lock released by the time the
+  refusal is raised. A staging or commit failure that left no lock behind keeps
+  git's own message with no clause added.</p>
+
+  <h3 id="a-landing-write-outlasts-a-briefly-held-index-lock-measured">Measured</h3>
+
+  <p>Both cases hold the lock from a second process, so the lock and its release
+  are not artefacts of the landing's own git calls. The first holds it for 20 s
+  while the promotion reaches its staging step; the landing commits, its record
+  lists the retries in order, and the commit is recorded as committed. The
+  second holds it well past the bound; the landing refuses, the refusal names the
+  lock's age and the 64.5 s bound, and the rollback that follows leaves nothing
+  staged and the plan file at its HEAD content.</p>
+
+  <table id="a-landing-write-outlasts-a-briefly-held-index-lock-arms">
+    <caption>Every arm is a log whose first lines name its revision, tree and
+    command and whose last line reads <code>EXIT=&lt;code&gt;</code>; each ran
+    on the <code>all_debug</code> partition, one arm at a time.</caption>
+    <thead><tr><th>arm</th><th>revision and tree</th><th>result</th></tr></thead>
+    <tbody>
+      <tr><td>base arm (node's test set, resolved over the base tree)</td>
+        <td><code>cb25b41dfd</code>, extraction in a node-local scratch tree</td>
+        <td>51 passed, <code>EXIT=0</code>; the new test file does not exist
+        there, so the arm runs the census test the gate also names</td></tr>
+      <tr><td>after arm (node's test set, resolved over the head tree)</td>
+        <td><code>e5db32500e</code>, the run's head tree</td>
+        <td><strong>53 passed</strong> in 128 s, <code>EXIT=0</code></td></tr>
+      <tr><td>negative control: the new test against the base revision</td>
+        <td><code>cb25b41dfd</code> extraction, the head's test file copied in;
+        module read from <code>/tmp/reckon-negative-control-&hellip;/reckon/crew/promotion_scope.py</code></td>
+        <td><strong>2 failed</strong>, <code>EXIT=1</code>; the first is the
+        20 s hold, refused with
+        <code>index.lock': File exists</code> and the staging rolled back</td></tr>
+    </tbody>
+  </table>
+
+  <p>The negative control fails both of its cases at the base revision. The
+  20 s hold is the case the section names: there the staging gives up after its
+  six-second bound and the promotion refuses, with the plan file restored. The
+  second case fails on the base's absent bound helper, which is the same change
+  seen from the other side. At the head both pass in 128 s, and the two waits
+  the refusal case spends are the 64.5 s staging bound and the rollback's wait
+  for the lock it was released into.</p>
+</section>

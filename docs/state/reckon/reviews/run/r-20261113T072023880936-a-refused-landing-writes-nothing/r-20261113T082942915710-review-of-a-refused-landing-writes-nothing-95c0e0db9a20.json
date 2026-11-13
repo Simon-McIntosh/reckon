@@ -1,0 +1,65 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/crew/queue_landing.py:1883 land_once -> pending_landing.finish_pending_landings",
+    "reckon/crew/queue_landing.py:1885 land_once -> _land_deliveries",
+    "reckon/crew_run_commands.py:3570 crew_complete -> finish_pending_landings(only_run)",
+    "reckon/crew_run_commands.py:3601 crew_complete -> pending_landing.write_pending"
+  ],
+  "completed_at": "2026-11-13T08:57:26.345Z",
+  "dispatched_at": "2026-11-13T08:35:49Z",
+  "findings": [
+    {
+      "file": "tests/test_an_interrupted_landing_finishes_at_its_cited_head.py",
+      "line": 18,
+      "severity": "non-blocking",
+      "text": "The new test file adds one I001 import-block finding under the repository's own ruff configuration: the three staged source files carry 24 findings at base and the four staged paths carry 25 at head, so the manifest's claim that ruff check is clean on the staged paths is false as stated; it is autofixable and holds nothing back."
+    },
+    {
+      "file": "reckon/crew/queue_landing.py",
+      "line": 33,
+      "severity": "non-blocking",
+      "text": "_promoted_row_head duplicates the ledger-row read already performed by _landed_elsewhere in the same module (lines 55-72): identical ledger root resolution, identical JSON read and run-id guard, differing only in the value returned, so the two copies can drift; the owning file is reckon/crew/queue_landing.py and the addition duplicates rather than extends or wraps it."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261113T072023880936-a-refused-landing-writes-nothing/manifest.md",
+      "line": 26,
+      "severity": "non-blocking",
+      "text": "The artifacts line cites head-arm-importers.log for 9 failed and 62 passed, but that log records 10 failed and 270 passed at 6892c102b2; the 9-failure figure belongs to after-arm-lander.log, whose revision header reads 6892c102b2 plus working tree, so neither log names the committed head the figure is claimed for."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "Read both commits against the base; the pending record gains a cited head, the finishing pass prefers it, the settling path handles a checkout with no remote, and the lander's early skip is narrowed in the second commit to the landings this pass finished at a cited head, repairing a discarded-run regression the first commit introduced.",
+    "done_when": "The done_when asks for the section's test with its negative control, no added importer failure against base, and clean ruff; negative-control-base85bbe4e.log fails all three cases at 85bbe4ec02 with EXIT=1 and after-arm-final.log passes them at head, the importer delta is recorded only for a working-tree revision, and the ruff clause is refuted by one added I001 finding.",
+    "goal": "The node goal is that a refused landing writes nothing; reckon/crew/pending_landing.py:457-458 now reads the revision the landing cited from the record before either the ledger row or the live pointer, so the finishing pass merges that head and never a later one.",
+    "manifest": "Read manifest.md; it records both commits, a 23-passed base arm and a 26-passed head arm, the negative control at base, and nine pre-existing importer failures under outside_scope, but its artifacts line attributes the 9-failure figure to head-arm-importers.log, which records 10 failed and 270 passed at 6892c102b2.",
+    "write_paths": "The manifest declares six paths; git diff --stat 85bbe4ec02..95c0e0db9a changes five, all of them inside that fence, and no path outside it."
+  },
+  "justifications": {
+    "durability": "tests/test_an_interrupted_landing_finishes_at_its_cited_head.py:190 asserts the later head is not an ancestor of main, which reddens if the pass reads the head back from the ledger row, and tests/test_a_discarded_run_stays_discarded.py:187 failed at 6892c102b2 and passes after the second commit.",
+    "evidence": "negative-control-base85bbe4e.log records 3 failed with EXIT=1 at 85bbe4ec02 while after-arm-final.log records 3 passed with EXIT=0 at the head, but no importer arm names the committed head (after-arm-lander.log heads 6892c102b2 plus working tree) and a ruff check at head adds one finding.",
+    "fit": "The added helpers and their comments follow the idiom of reckon/crew/pending_landing.py:191-212, and no plan, sprint or ticket label appears in any added name or comment.",
+    "goal_fidelity": "reckon/crew/pending_landing.py:457-458 and 540 set the head from the record's own citation before the promoted row is consulted, so the pass merges the cited revision.",
+    "reuse": "reckon/crew/queue_landing.py:33-52 repeats the ledger-row read that _landed_elsewhere performs at the same module's lines 55-72, differing only in returning the promoted revision instead of a boolean.",
+    "scope_discipline": "git diff --stat 85bbe4ec02 95c0e0db9a lists only the five declared paths, and the fragment is the only documentation artefact written."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is that a refused landing writes nothing, and reckon/crew/pending_landing.py:457-458 reads the revision the landing cited from the record before the ledger row or the live pointer, so the pass merges that head and never a later one.\nVERDICT done_when: the done_when asks for the section's test with its negative control, no added importer failure against base and clean ruff; negative-control-base85bbe4e.log fails all three cases at 85bbe4ec02 with EXIT=1 and after-arm-final.log passes 3 at head, the importer delta is recorded only for a working-tree revision, and the ruff clause is refuted by one added I001 finding.\nVERDICT write_paths: the manifest declares six paths and git diff --stat 85bbe4ec02..95c0e0db9a changes five, every one inside that fence.\nVERDICT manifest: read; it records both commits, a 23-passed base arm, a 26-passed head arm, the negative control at base and nine pre-existing importer failures under outside_scope, but its artifacts line attributes the 9-failure figure to head-arm-importers.log, which records 10 failed and 270 passed.\nVERDICT diff: read both commits against base 85bbe4ec02; the pending record gains a cited head, the finishing pass prefers it, the settling path gains a no-remote fallback, and the second commit narrows the lander's early skip to the landings this pass finished at a cited head, repairing a discarded-run regression the first introduced.\nCALL_SITES: reckon/crew/queue_landing.py:1883 land_once -> finish_pending_landings, reckon/crew/queue_landing.py:1885 land_once -> _land_deliveries, reckon/crew_run_commands.py:3570 crew_complete -> finish_pending_landings(only_run), reckon/crew_run_commands.py:3601 crew_complete -> write_pending\nSCORE goal_fidelity: 16\nJUSTIFICATION goal_fidelity: reckon/crew/pending_landing.py:457-458 and :540 set the head from the record's own citation before the promoted row is consulted.\nSCORE evidence: 13\nJUSTIFICATION evidence: negative-control-base85bbe4e.log records 3 failed with EXIT=1 at base and after-arm-final.log records 3 passed with EXIT=0 at head, but after-arm-lander.log heads 6892c102b2 plus working tree and head-arm-importers.log records 10 failed at that revision, so no importer arm names the committed head, and a ruff check at head adds one finding.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat 85bbe4ec02 95c0e0db9a lists only the five declared paths and the fragment is the only documentation artefact written.\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_an_interrupted_landing_finishes_at_its_cited_head.py:190 asserts the later head is not an ancestor of main and reddens if the pass reads the head back from the ledger row, and tests/test_a_discarded_run_stays_discarded.py:187 failed at 6892c102b2 and passes after the second commit.\nSCORE fit: 17\nJUSTIFICATION fit: the added helpers and comments follow the idiom of reckon/crew/pending_landing.py:191-212 and carry no plan, sprint or ticket label.\nSCORE reuse: 5\nJUSTIFICATION reuse: reckon/crew/queue_landing.py:33-52 repeats the ledger-row read that _landed_elsewhere performs at lines 55-72 of the same module, differing only in the value returned.\nFINDING tests/test_an_interrupted_landing_finishes_at_its_cited_head.py:18 non-blocking: the new test file adds one I001 import-block finding under the repository's own ruff configuration, measured as 24 findings across the three staged source files at base against 25 across the four staged paths at head, so the manifest's clean-ruff claim is false as stated.\nFINDING reckon/crew/queue_landing.py:33 non-blocking: _promoted_row_head duplicates the ledger-row read already performed by _landed_elsewhere in the same module (lines 55-72) rather than extending or wrapping it, so the two copies can drift.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261113T072023880936-a-refused-landing-writes-nothing/manifest.md:26 non-blocking: the artifacts line cites head-arm-importers.log for 9 failed and 62 passed, which that log does not contain (it records 10 failed and 270 passed at 6892c102b2); the 9-failure figure belongs to after-arm-lander.log, whose header reads 6892c102b2 plus working tree and so names no committed head either.\n",
+  "review_run_id": "r-20261113T082942915710-review-of-a-refused-landing-writes-nothing-95c0e0db9a20",
+  "reviewed_base_sha": "85bbe4ec020b87a4a2e5398a00dd9831725b51f5",
+  "reviewed_head_sha": "95c0e0db9a20ffb81161a398e1e7e1669e6780a4",
+  "reviewed_run_id": "r-20261113T072023880936-a-refused-landing-writes-nothing",
+  "scores": {
+    "durability": 17,
+    "evidence": 13,
+    "fit": 17,
+    "goal_fidelity": 16,
+    "reuse": 5,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-13T09:27:21.063191+00:00",
+  "total": 88
+}

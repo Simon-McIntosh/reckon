@@ -56,7 +56,15 @@ from reckon.sprint_liveness import sprint_liveness
 MARKER_RELATIVE = Path(".reckon/project-state-migration.json")
 RESOURCE_SCRIPT_ID = "reckon-resource-state"
 RESOURCE_TYPES = frozenset(
-    {"sprint", "milestone", "blocker", "timeline", "project", "review"}
+    {
+        "sprint",
+        "milestone",
+        "blocker",
+        "timeline",
+        "project",
+        "review",
+        "persisted_items",
+    }
 )
 LIFECYCLE_ITEM_FIELDS = frozenset({"status", "impl"})
 NORTH_STAR_ADVISORY_CAP = 5
@@ -279,6 +287,10 @@ def resource_path(
         if resource_id != "review":
             raise ValueError("review resource id must be 'review'")
         return docs_dir / "state" / project / "review.html"
+    if resource_type == "persisted_items":
+        if resource_id != "persisted-items":
+            raise ValueError("persisted_items resource id must be 'persisted-items'")
+        return docs_dir / "state" / project / "persisted-items.html"
     if resource_type == "project":
         if resource_id != "project":
             raise ValueError("project resource id must be 'project'")
@@ -400,6 +412,19 @@ def _render_resource(
             )
             rows.append(
                 f'<li data-id="{finding_id}" data-finding="{payload}">{code}</li>'
+            )
+        rows.append("</ol>")
+    elif resource_type == "persisted_items":
+        rows.append('<ol data-reckon="persisted-items">')
+        for record in state.get("records", []):
+            source = html.escape(str(record.get("source", "")))
+            persisted = html.escape(str(record.get("persisted", "")), quote=True)
+            payload = html.escape(
+                json.dumps(record, ensure_ascii=False, sort_keys=True), quote=True
+            )
+            rows.append(
+                f'<li data-persisted="{persisted}" data-record="{payload}">'
+                f"{source}</li>"
             )
         rows.append("</ol>")
     else:
@@ -714,6 +739,95 @@ def _validate_review(data: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+PERSISTED_ITEM_KINDS = frozenset({"figure", "data"})
+PERSISTED_ITEM_FIELDS = frozenset(
+    {
+        "source",
+        "persisted",
+        "kind",
+        "figure",
+        "plan",
+        "section",
+        "persisted_by",
+        "persisted_at",
+        "bytes",
+        "sha256",
+    }
+)
+
+
+def _validate_persisted_items(data: dict[str, Any]) -> dict[str, Any]:
+    """Validate the records a persist appended, one per persisted copy.
+
+    A record is what a later reader uses to find the copy again and to tell
+    whether it is still the copy that was taken, so a record missing its hash
+    or naming an unknown kind is refused here rather than written and trusted.
+    """
+    records = data.get("records", [])
+    if not isinstance(records, list):
+        raise ValueError("persisted items records must be a list")
+    validated: list[dict[str, Any]] = []
+    for raw in records:
+        if not isinstance(raw, dict):
+            raise ValueError("a persisted item record must be a dictionary")
+        unknown = set(raw) - PERSISTED_ITEM_FIELDS
+        if unknown:
+            raise ValueError(
+                "persisted item record has unsupported keys: "
+                + ", ".join(sorted(str(key) for key in unknown))
+            )
+        for field in ("source", "persisted", "persisted_by", "persisted_at"):
+            value = raw.get(field)
+            if not isinstance(value, str) or not value.strip():
+                raise ValueError(
+                    f"persisted item record {field} must be non-empty text"
+                )
+        if raw.get("kind") not in PERSISTED_ITEM_KINDS:
+            raise ValueError(
+                "persisted item record kind must be one of "
+                + ", ".join(sorted(PERSISTED_ITEM_KINDS))
+            )
+        figure = raw.get("figure")
+        if figure is not None and (not isinstance(figure, str) or not figure.strip()):
+            raise ValueError("persisted item record figure must be a path or null")
+        if raw.get("kind") == "data" and not figure:
+            raise ValueError("a persisted data record must name its figure")
+        for field in ("plan", "section"):
+            value = raw.get(field)
+            if value is not None and (
+                not isinstance(value, str) or not value.strip()
+            ):
+                raise ValueError(f"persisted item record {field} must be text or null")
+        size = raw.get("bytes")
+        if isinstance(size, bool) or not isinstance(size, int) or size < 0:
+            raise ValueError("persisted item record bytes must be a whole count")
+        digest = raw.get("sha256")
+        if not isinstance(digest, str) or re.fullmatch(r"[0-9a-f]{64}", digest) is None:
+            raise ValueError("persisted item record sha256 must be a hex digest")
+        if parse_utc(str(raw.get("persisted_at"))) is None:
+            raise ValueError("persisted item record persisted_at must be a timestamp")
+        validated.append(
+            {
+                "source": raw["source"].strip(),
+                "persisted": raw["persisted"].strip(),
+                "kind": raw["kind"],
+                "figure": figure,
+                "plan": raw.get("plan"),
+                "section": raw.get("section"),
+                "persisted_by": raw["persisted_by"].strip(),
+                "persisted_at": raw["persisted_at"].strip(),
+                "bytes": size,
+                "sha256": digest,
+            }
+        )
+    return {
+        "id": "persisted-items",
+        "type": "persisted_items",
+        "records": validated,
+        "version": int(data.get("version", 0) or 0),
+    }
+
+
 def _validate_resource(resource_type: str, data: dict[str, Any]) -> dict[str, Any]:
     cleaned = deepcopy(data)
     if resource_type == "sprint":
@@ -807,6 +921,8 @@ def _validate_resource(resource_type: str, data: dict[str, Any]) -> dict[str, An
         }
     elif resource_type == "review":
         cleaned = _validate_review(cleaned)
+    elif resource_type == "persisted_items":
+        cleaned = _validate_persisted_items(cleaned)
     elif resource_type == "project":
         bad = PROJECT_DERIVED_FIELDS & set(cleaned) - {"type", "id", "version"}
         if bad:

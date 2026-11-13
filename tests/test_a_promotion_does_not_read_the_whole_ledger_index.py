@@ -168,6 +168,7 @@ class _DecodeCounter:
         self.before_append: dict[tuple, int] = {}
         self.after_append: dict[tuple, int] = {}
         self.appended = False
+        self.control_decodes = 0
 
     def key(self, connection, options: dict) -> tuple:
         database = connection.execute("PRAGMA database_list").fetchone()[2]
@@ -223,6 +224,11 @@ def _drive_one_promotion(repository: Path, tmp_path: Path) -> _DecodeCounter:
         mock.patch.object(ledger, "_index_payload", counting_payload),
         mock.patch.object(ledger, "append_run", tracking_append),
     ):
+        observed, _version = ledger.load(PROJECT, root=repository)
+        assert len(observed["runs"]) == ROW_COUNT
+        counter.control_decodes = sum(counter.before_append.values())
+        assert counter.control_decodes > 0
+        counter.before_append.clear()
         result = CliRunner().invoke(
             cli_module.main,
             [
@@ -258,10 +264,9 @@ def test_a_promotion_decodes_each_index_key_once_before_its_append(
 
     counter = _drive_one_promotion(repository, tmp_path)
 
-    # The counter is shown to see decodes before an absence is reported: a
-    # promotion that made no read key at all would pass every check below.
-    assert counter.before_append, "no index decode was recorded before the append"
-    assert sum(counter.before_append.values()) >= 1
+    # A known history read proves the instrument sees decodes even when the
+    # operational projection makes the promotion's history decode count zero.
+    assert counter.control_decodes > 0
     repeated = {key: count for key, count in counter.before_append.items() if count > 1}
     assert repeated == {}, (
         "a read key was decoded more than once before the append: "

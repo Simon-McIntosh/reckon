@@ -33,6 +33,7 @@ from pathlib import Path
 from typing import Any
 
 from reckon import file_memo
+from reckon.crew import open_run_index
 
 # Each producer tick freezes the store's names and per-file identities once.
 # Parsed bytes use the shared bounded memo; the next tick revalidates every
@@ -59,6 +60,15 @@ def review_store_tick() -> Iterator[None]:
 
 def _tick_store(directory: Path) -> dict[Path, os.stat_result] | None:
     stores = _TICK_REVIEW_STORES.get()
+    selected = open_run_index.review_paths(directory)
+    if selected is not None:
+        files = {}
+        for path in selected:
+            try:
+                files[path] = path.stat()
+            except OSError:
+                continue
+        return files
     if stores is None:
         return None
     if directory not in stores:
@@ -1625,6 +1635,18 @@ def _store_indexes(
     that write having moved the directory away from it, and the next reader
     lists the store rather than adopting an index short of the record.
     """
+    if open_run_index.review_paths(directory) is not None:
+        return _build_store_indexes(directory)
+    from reckon import ledger
+
+    stamp = ledger._file_identity(directory)
+    result = _full_store_indexes(directory)
+    open_run_index.review_rebuilt(directory, _index_files(*result), stamp)
+    return result
+
+
+def _full_store_indexes(directory: Path):
+    """The established cached reader for history and projection recovery."""
     tick_indexes = _TICK_REVIEW_INDEXES.get()
     if tick_indexes is not None:
         if directory not in tick_indexes:
@@ -1830,7 +1852,11 @@ def record_for_review_run(
     directory = _review.review_store_root(base_dir) / project
     if not directory.is_dir():
         return None
-    entries = _review_run_index(directory).get(name)
+    if open_run_index.pointers() is None:
+        entries = _review_run_index(directory).get(name)
+    else:
+        with open_run_index.read_scope(record={"run_id": name, "project": project}):
+            entries = _review_run_index(directory).get(name)
     if not entries:
         return None
     for entry in sorted(entries, key=lambda item: item["mtime_ns"], reverse=True):

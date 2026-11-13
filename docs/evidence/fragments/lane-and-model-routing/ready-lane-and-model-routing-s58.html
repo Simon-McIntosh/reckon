@@ -1,0 +1,53 @@
+<article class="landed-report" data-run-id="r-20261113T013546126553-ready-lane-and-model-routing-s58" data-node="ready-lane-and-model-routing-s58">
+  <h3 id="ready-lane-and-model-routing-s58-summary">ready-lane-and-model-routing-s58 — a queued request's router-chosen route is picked again when it launches</h3>
+  <p id="ready-lane-and-model-routing-s58-change">
+    A queued request kept the route it was given at dispatch, so a request that
+    waited hours for its upstream launched on a lane chosen from a picture that
+    no longer held: on 3 November eighteen reckon requests had been routed while
+    codex was reserved, and none reached codex after it was lifted.
+    <code>reckon/crew/admission/launching.py</code> now decides between three
+    outcomes before launching a queued request, through
+    <code>launch_route_decision</code> in
+    <code>reckon/crew/dispatch_picker.py</code>. A route the dispatcher named —
+    <code>--local</code>, <code>--backend</code>, a model — or one set later
+    through <code>crew queue edit</code> is the coordinator's and is kept
+    exactly as given. A route the router chose is evidence only about the
+    instant it was chosen, so past
+    <code>queue.repick_after_seconds</code> the request is picked again against
+    the lanes as they are at launch, and the launch keeps both routes and why
+    they differ. A request released inside the bound replays its stored route,
+    so a brief wait costs no second pick.
+  </p>
+  <p id="ready-lane-and-model-routing-s58-picked-at">
+    <strong>The pick age travels with the route.</strong> A routed answer now
+    carries <code>picked_at</code>, stamped where the route is chosen, and the
+    queued pointer stores that selection as its route, so the instant reaches
+    the launch with no second store. A route carrying no recorded pick time
+    cannot be shown to be fresh and is picked again rather than trusted.
+  </p>
+  <p id="ready-lane-and-model-routing-s58-flight-key">
+    <strong>The bound is a declared flight key.</strong>
+    <code>queue.repick_after_seconds</code> (60 s by default) is declared in
+    <code>reckon/schema/flight.yaml</code> and generated into both the pydantic
+    model reckon imports and the committed JSON schema, so an operator retunes
+    it without a code change and the key is not one the schema does not know.
+    Zero is legitimate — every request is picked again at launch — so only a
+    negative or non-integer value falls back to the default.
+  </p>
+  <p id="ready-lane-and-model-routing-s58-evidence">
+    <strong>Evidence.</strong>
+    <code>tests/test_a_stale_route_is_picked_again_at_launch.py</code> drives
+    <code>queue_admission._launch_queued</code> with a stub picker that records
+    every call, and shows four things: a request routed to the local lane while
+    codex was reserved, released after a lift opens codex, is picked again and
+    launches where the second pick places it, with both routes recorded; a
+    request whose dispatcher named <code>--local</code> launches on local with
+    no second pick; a request released within the bound of its
+    <code>picked_at</code> launches on its stored route with no second pick; and
+    a second pick that answers <code>hold</code> leaves the request queued with
+    its position and the hold's reason. Four cases pass. The negative control
+    makes the decision replay the stored route unconditionally, and the first
+    and fourth cases fail. The base revision's arm of the suite named for this
+    change is 51 passed, the head arm 55 passed.
+  </p>
+</article>

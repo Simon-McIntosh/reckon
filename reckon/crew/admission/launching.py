@@ -291,14 +291,23 @@ def _launch_queued(
         config_for(pointer) if config_for is not None else _resolve_lane_config(pointer)
     )
     destination = str(backend_override).strip()
+    from .. import dispatch_picker
+
     selection = runs.dispatch_field(pointer, "picker_selection")
-    replay_pick = (
-        isinstance(selection, Mapping)
-        and selection.get("action") == "route"
-        and not destination
-        and not pointer.get("named_route")
-        and not pointer.get("route_fallback")
+    # A queued request waits on its upstream, and the lanes move while it
+    # waits. A route the coordinator named is that coordinator's, and a route
+    # whose pick is still fresh is evidence of what the router would answer
+    # now; anything else is chosen again against the lanes as they are at
+    # launch, and the launch keeps both routes to say why they differ.
+    route_decision = dispatch_picker.launch_route_decision(
+        pointer, stored=selection, config=config, destination=destination
     )
+    if route_decision["decision"] == "repick":
+        # No stored answer is handed on, so dispatch asks the router itself
+        # with the context it has already resolved rather than a second
+        # hand-built ask standing in for it.
+        selection = None
+    replay_pick = route_decision["decision"] in {"replay", "repick"}
     # The launch continues the request it was admitted from, so it keeps that
     # request's run id: the id a dispatch printed is the one a coordinator
     # records and later acts on, and a fresh id here would leave the printed one
@@ -329,8 +338,7 @@ def _launch_queued(
             # The queue exists so that work runs when a lane frees, whether or
             # not its coordinator is awake: an admission launch is the request
             # continuing, so it never re-applies its session's terminal backlog
-            # at launch. Dispatch records the waiver on the run, naming the runs
-            # it covers and the admission launch as its source.
+            # at launch. Dispatch skips computing and recording that backlog.
             unreconciled_override=True,
             unreviewed_plan_override=bool(options.get("allow_unreviewed_plan")),
             watch_required=True,
@@ -366,6 +374,10 @@ def _launch_queued(
     else:
         with contextlib.suppress(OSError):
             _join_admitted_plan_review(pointer, str(launched["run_id"]))
+        with contextlib.suppress(OSError):
+            dispatch_picker.record_route_repick(
+                str(launched["run_id"]), route_decision
+            )
         _carry_section_rederivation(pointer, str(launched["run_id"]))
         _announce_submission(pointer, launched, steering=steering, options=options)
     return launched

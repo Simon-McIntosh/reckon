@@ -1,0 +1,150 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_audit": [
+    {
+      "fails_if": "The crash fixture reaches _finish with an error or a phase other than PROMOTED; fixture synchronization rather than recovery proof.",
+      "lines": "526-527"
+    },
+    {
+      "fails_if": "The injected BaseException does not escape the first service attempt, so the restart simulation did not occur.",
+      "lines": "533-534"
+    },
+    {
+      "fails_if": "The callback failed to remove its live pointer, a service receipt was published before the injected interruption, or the unfinished request was not retained as RUNNING.",
+      "lines": "536-538"
+    },
+    {
+      "fails_if": "The fake callback did not persist exactly its supplied row; a setup/propagation check whose expected row is the same object provided to the writer.",
+      "lines": "540"
+    },
+    {
+      "fails_if": "The fresh service does not adopt the interrupted request exactly once on its first pass.",
+      "lines": "544"
+    },
+    {
+      "fails_if": "Restoring the unconditional runs.read_pointer call makes both parameterized cases report promotion-refused; the recorded reversed-commit control demonstrates this failure.",
+      "lines": "547"
+    },
+    {
+      "fails_if": "Recovery drops or changes the callback-supplied commit; propagation only, because the expected fixture SHA also seeds the ledger row.",
+      "lines": "548"
+    },
+    {
+      "fails_if": "Recovery does not identify an already completed promotion, repeats the review callback, or rewrites the persisted ledger bytes.",
+      "lines": "549-551"
+    },
+    {
+      "fails_if": "Successful recovery retains its request, leaves a false session failure obligation, or lets a new service adopt the completed request again.",
+      "lines": "552-554"
+    },
+    {
+      "fails_if": "The known-present neighbor row is unreadable/altered, or the absent-row fixture already contains a subject row; these validate test inputs.",
+      "lines": "573,577"
+    },
+    {
+      "fails_if": "Accepting an absent or mismatched ledger row yields success instead of refusal, loses the corresponding diagnostic, or fails to project the refusal to this session.",
+      "lines": "584-587"
+    }
+  ],
+  "call_sites": [
+    "reckon/crew/promotion_requests.py:PromotionService._run",
+    "reckon/crew/recovery_review_acceptance.py:dispatch_awaiting_reviews",
+    "reckon/crew/admission/service.py:admit_until_stopped"
+  ],
+  "completed_at": "2026-11-13T06:50:32Z",
+  "dispatched_at": "2026-11-13T06:43:11Z",
+  "evidence_caveats": [
+    "Review scope is only commits since the preceding reviewed head; previous findings are not re-reviewed wholesale.",
+    "New recovery tests use real ledger IO and pointer deletion with injected review callbacks; they do not rerun full acceptance policy.",
+    "No suite rerun; read the source run receipts, including red controls and all four explicit refusals.",
+    "Importer delta receipt reports the same 40 baseline and head failures with zero added IDs; required added_failure_count derives specifically from baseline_suite and after_suite.",
+    "MCP plan read reported storage-slow; the live plan was read directly from its canonical HTML."
+  ],
+  "findings": [
+    {
+      "file": "tests/test_no_caller_waits_on_a_promotion.py",
+      "line": "548",
+      "severity": "non-blocking",
+      "text": "non-blocking: The recovered commit is compared with repository.sha, which the fake callback itself writes into the ledger at lines 507-518; together with the planted-row checks at lines 540 and 573 this proves propagation and fixture setup, not independent identity of a real promoted commit, so preserve the earlier real-receipt evidence and do not count this as new commit-identity coverage."
+    }
+  ],
+  "gate_evidence": {
+    "after_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_no_caller_waits_on_a_promotion.py tests/test_staged_write_inventory.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261113T011043749121-no-caller-waits-on-a-promotion/repair-after-suite.log",
+      "observed_failure_ids": [],
+      "observed_summary": "70 passed in 133.67s (0:02:13)",
+      "revision": "37ca2c25c5ac53fce51da9feaf0a1611f01b367e"
+    },
+    "baseline_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_no_caller_waits_on_a_promotion.py tests/test_staged_write_inventory.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261113T011043749121-no-caller-waits-on-a-promotion/repair-baseline-suite-final.log",
+      "observed_failure_ids": [],
+      "observed_summary": "64 passed in 130.39s (0:02:10)",
+      "revision": "d513212c96665c026454b1e469b81849daa0ba36"
+    }
+  },
+  "item_verdicts": {
+    "call_sites": "Verified production service execution and its review/admission callers at the target revision.",
+    "diff": "Read commits 4739bf4c0f3b32f63edca8949b3bff05cef8469d, 14f5694030b77790bcb1b835a27fc571aa377374 and 37ca2c25c5ac53fce51da9feaf0a1611f01b367e individually against d513212c96665c026454b1e469b81849daa0ba36; they add two crash cases, ledger recovery with four refusal controls, and the evidence update.",
+    "done_when": "Read source prompt.txt done_when and live section s32; repair-baseline-suite-final.log records 64 passed, repair-after-suite.log records 70 passed, and repair-negative-control.log records both new restart cases failing when the answering commit is reversed.",
+    "goal": "Read source prompt.txt:38-40 and live docs/plans/work-flows-to-the-lane.html:188-190; the increment repairs the earlier pointer-removal crash window for both review promotion kinds in reckon/crew/promotion_requests.py:186-210.",
+    "manifest": "Read the source manifest.md and its repair gate, reproduction, refusal-control, negative-control and lint receipts; baseline_suite and after_suite both complete with exit zero and no failing IDs.",
+    "write_paths": "Read source prompt.txt:80-85 and manifest orientation_write_paths; the incremental three-path diff contains only the declared promotion module, test file and evidence fragment."
+  },
+  "justifications": {
+    "durability": "tests/test_no_caller_waits_on_a_promotion.py:547 fails when unconditional pointer reading is restored and :584-587 fail if absent or wrong-run rows become successful receipts, but :548 is fixture-commit propagation coverage.",
+    "evidence": "repair-after-suite.log measures 70 passes at 37ca2c25c5ac53fce51da9feaf0a1611f01b367e and repair-negative-control.log fails tests/test_no_caller_waits_on_a_promotion.py:547 for both request kinds, while repair-focused.log prints all four required refusals.",
+    "fit": "reckon/crew/promotion_requests.py:186-210 extends its existing executor, reuses CrewError, _read and established result fields, and names the missing-pointer mechanism without banned source labels.",
+    "goal_fidelity": "reckon/crew/promotion_requests.py:186-210 recovers a missing-pointer review outcome from the matching per-run ledger row without invoking either completed review operation again.",
+    "reuse": "reckon/crew/promotion_requests.py:195 extends the durable request owner using ledger.py:914 run_path and merge.py:115 project_repository; capability searches and promotion.py:1372-1393 confirm existing promotion recovery owns full completion side effects, while this branch only reconstructs the service receipt.",
+    "scope_discipline": "The three incremental commits touch only reckon/crew/promotion_requests.py, tests/test_no_caller_waits_on_a_promotion.py and docs/evidence/fragments/work-flows-to-the-lane/no-caller-waits-on-a-promotion.html, each explicitly granted in source prompt.txt:80-85."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: Read source prompt.txt:38-40 and live docs/plans/work-flows-to-the-lane.html:188-190; the increment repairs the earlier pointer-removal crash window for both review promotion kinds in reckon/crew/promotion_requests.py:186-210.\nVERDICT done_when: Read source prompt.txt done_when and live section s32; repair-baseline-suite-final.log records 64 passed, repair-after-suite.log records 70 passed, and repair-negative-control.log records both new restart cases failing when the answering commit is reversed.\nVERDICT write_paths: Read source prompt.txt:80-85 and manifest orientation_write_paths; the incremental three-path diff contains only the declared promotion module, test file and evidence fragment.\nVERDICT manifest: Read the source manifest.md and its repair gate, reproduction, refusal-control, negative-control and lint receipts; baseline_suite and after_suite both complete with exit zero and no failing IDs.\nVERDICT diff: Read commits 4739bf4c0f3b32f63edca8949b3bff05cef8469d, 14f5694030b77790bcb1b835a27fc571aa377374 and 37ca2c25c5ac53fce51da9feaf0a1611f01b367e individually against d513212c96665c026454b1e469b81849daa0ba36; they add two crash cases, ledger recovery with four refusal controls, and the evidence update.\nCALL_SITES: reckon/crew/promotion_requests.py:PromotionService._run, reckon/crew/recovery_review_acceptance.py:dispatch_awaiting_reviews, reckon/crew/admission/service.py:admit_until_stopped\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/promotion_requests.py:186-210 recovers a missing-pointer review outcome from the matching per-run ledger row without invoking either completed review operation again.\nSCORE evidence: 19\nJUSTIFICATION evidence: repair-after-suite.log measures 70 passes at 37ca2c25c5ac53fce51da9feaf0a1611f01b367e and repair-negative-control.log fails tests/test_no_caller_waits_on_a_promotion.py:547 for both request kinds, while repair-focused.log prints all four required refusals.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: The three incremental commits touch only reckon/crew/promotion_requests.py, tests/test_no_caller_waits_on_a_promotion.py and docs/evidence/fragments/work-flows-to-the-lane/no-caller-waits-on-a-promotion.html, each explicitly granted in source prompt.txt:80-85.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_no_caller_waits_on_a_promotion.py:547 fails when unconditional pointer reading is restored and :584-587 fail if absent or wrong-run rows become successful receipts, but :548 is fixture-commit propagation coverage.\nSCORE fit: 20\nJUSTIFICATION fit: reckon/crew/promotion_requests.py:186-210 extends its existing executor, reuses CrewError, _read and established result fields, and names the missing-pointer mechanism without banned source labels.\nSCORE reuse: 20\nJUSTIFICATION reuse: reckon/crew/promotion_requests.py:195 extends the durable request owner using ledger.py:914 run_path and merge.py:115 project_repository; capability searches and promotion.py:1372-1393 confirm existing promotion recovery owns full completion side effects, while this branch only reconstructs the service receipt.\nFINDING tests/test_no_caller_waits_on_a_promotion.py:548 non-blocking: The recovered commit is compared with repository.sha, which the fake callback itself writes into the ledger at lines 507-518; together with the planted-row checks at lines 540 and 573 this proves propagation and fixture setup, not independent identity of a real promoted commit, so preserve the earlier real-receipt evidence and do not count this as new commit-identity coverage.\n",
+  "reuse_search": {
+    "assessment": "Production increment adds no new definition; it extends the existing request executor. New tests extend the existing request-recovery test owner, with local callback and crash exception fixtures.",
+    "capabilities": [
+      "already-promoted receipt recovery",
+      "per-run ledger lookup",
+      "project repository resolution",
+      "interrupted request regression tests"
+    ],
+    "owners_read": [
+      "reckon/crew/promotion.py:1372-1393",
+      "reckon/ledger.py:914",
+      "reckon/crew/merge.py:115",
+      "tests/test_no_caller_waits_on_a_promotion.py:288-359"
+    ]
+  },
+  "review_run_id": "r-20261113T063824564955-review-of-no-caller-waits-on-a-promotion-37ca2c25c5ac",
+  "reviewed_base_sha": "d513212c96665c026454b1e469b81849daa0ba36",
+  "reviewed_head_sha": "37ca2c25c5ac53fce51da9feaf0a1611f01b367e",
+  "reviewed_run_id": "r-20261113T011043749121-no-caller-waits-on-a-promotion",
+  "scores": {
+    "durability": 18,
+    "evidence": 19,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "source_commits": [
+    "4739bf4c0f3b32f63edca8949b3bff05cef8469d",
+    "14f5694030b77790bcb1b835a27fc571aa377374",
+    "37ca2c25c5ac53fce51da9feaf0a1611f01b367e"
+  ],
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-13T08:22:48.405834+00:00",
+  "total": 117
+}

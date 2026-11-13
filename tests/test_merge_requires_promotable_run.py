@@ -268,3 +268,92 @@ def test_merge_lands_promotable_head(tmp_path, monkeypatch):
     assert git(origin, "rev-parse", "refs/heads/main") == git(
         repository, "rev-parse", "HEAD"
     )
+
+
+def test_merge_refusal_names_the_check_for_a_named_run(tmp_path, monkeypatch):
+    """A merge told which run it lands consults that run's promotion verdict.
+
+    The run is named rather than inferred from the heads, so the guard reads the
+    pointer the coordinator named and reports the check that refused it.
+    """
+    home = tmp_path / "home"
+    home.mkdir()
+    monkeypatch.setenv("RECKON_HOME", str(home))
+    origin, repository = _write_origin_and_checkout(tmp_path)
+    (home / "mounts.json").write_text(json.dumps({"proj": str(repository / "docs")}))
+    worktree = tmp_path / "worktree"
+    git(repository, "worktree", "add", "--detach", str(worktree), "HEAD")
+    (worktree / "change.txt").write_text("introduced by run\n")
+    git(worktree, "add", "change.txt")
+    git(
+        worktree,
+        "commit",
+        "-q",
+        "-m",
+        "fix: record a change",
+        "-m",
+        "Give the merge a visible marker.",
+    )
+    head = git(worktree, "rev-parse", "HEAD")
+    run_id = "r-20261113T050000000000-merge-named-run"
+    gate_log = tmp_path / "gate.log"
+    gate_log.write_text("EXIT=1\n")
+    manifest = tmp_path / "manifest.md"
+    manifest.write_text(
+        "node: merge-named-run\nstatus: complete\ncommits: "
+        + head
+        + "\ntests: true\nexit=1\ntest_logs: "
+        + str(gate_log)
+        + "\n"
+    )
+    _write_json(
+        pointer_path(run_id),
+        {
+            "run_id": run_id,
+            "project": "proj",
+            "repo": str(repository),
+            "worktree": str(worktree),
+            "base_sha": git(repository, "rev-parse", "HEAD"),
+            "launch": "in-harness",
+            "role": "implement",
+            "created_at": "2026-11-13T05:00:00Z",
+            "manifest_path": str(manifest),
+            "node": {
+                "id": "merge-named-run",
+                "plan": "plan-a",
+                "section": "merge-guard",
+                "write_paths": ["change.txt"],
+            },
+        },
+    )
+    before_main = git(repository, "rev-parse", "HEAD")
+    merge = CliRunner().invoke(
+        main,
+        [
+            "crew",
+            "merge",
+            "--project",
+            "proj",
+            "--head",
+            head,
+            "--run",
+            run_id,
+            "--commit",
+            head,
+            "--gate-command",
+            "true",
+            "--gate-exit-status",
+            "1",
+            "--gate-log-path",
+            str(gate_log),
+            "--message",
+            "fix: land the change",
+            "--body",
+            "Carry the reviewed change onto main.",
+        ],
+    )
+    assert merge.exit_code != 0, merge.output
+    assert "promotion dry run refused run " + run_id in merge.output, merge.output
+    assert "exit status 1" in merge.output, merge.output
+    assert git(repository, "rev-parse", "HEAD") == before_main
+    assert git(origin, "rev-parse", "refs/heads/main") == before_main

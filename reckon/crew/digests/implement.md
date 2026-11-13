@@ -1,7 +1,7 @@
 # Worker role digest: implement
 #
-# Generated from ~/.agents/AGENTS.md (sha256 29ceab9845b8a16b691e5e1e3edb4c593c8d4a3d013e9a38d331bd04537bf9e1,
-# 118749 bytes, ~29688 — the same policy holds for every
+# Generated from ~/.agents/AGENTS.md (sha256 76755ebd73da4ee287412fb9a29914b1bcd5745d88c609d4c39e44c9fe3a5a46,
+# 119445 bytes, ~29862 — the same policy holds for every
 # role; this digest retains the sections below and withholds the
 # coordinator-only delivery text.
 # Regenerate with: python -m reckon.crew.worker_digest
@@ -552,8 +552,22 @@ session's git and reckon commands queued behind them for minutes.
   that never returned, because `pytest-timeout` was not installed. A repository
   whose suite takes more than a minute declares `pytest-timeout` and a default
   `timeout` in its pytest config.
-- **GitHub SSH on port 22 is refused from compute nodes.** Push with
-  `GIT_SSH_COMMAND="ssh -o Hostname=ssh.github.com -o Port=443"`.
+- **On the fleet node, every git command that reaches GitHub uses port 443
+  (binding, lead directive 2026-11-13).** Port 22 is refused from compute
+  nodes, the fleet node included, and it fails slowly: the connection hangs
+  until it times out. Prefix every `git fetch`, `pull`, `push`, `clone` and
+  `ls-remote` with the 443 route from the first attempt. Never try port 22
+  first and fall back:
+
+  ```bash
+  GIT_SSH_COMMAND="ssh -o Hostname=ssh.github.com -o Port=443" git push origin <branch>
+  ```
+
+  You are on the fleet node when `hostname` matches the `node` field of
+  `~/.local/state/fleet/record.json`. Measured 2026-11-13 on 98dci4-clu-2023:
+  a plain `git pull` then `git push` sat for three minutes on
+  `ssh: connect to host github.com port 22: Connection timed out`, and the same
+  pair over 443 returned at once.
 
 Heavy work that cannot run in place is discharged as a separate partition job, submitted with sbatch (sbatch --wait when the caller needs the result before it continues) (for example on all_debug or betelgeuse). An srun from inside the allocation runs as a step of the held job, with or without the opt-in and whatever partition it names; only sbatch submits a job of its own. A nested launch that is meant to be nested is enabled by setting RECKON_ALLOW_NESTED_LAUNCH=1.
 

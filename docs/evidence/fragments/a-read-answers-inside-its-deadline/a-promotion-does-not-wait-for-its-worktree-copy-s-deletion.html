@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-read-answers-inside-its-deadline">
+
+  <meta name="plan-evidence-for" content="reckon:a-read-answers-inside-its-deadline">
+  <meta name="plan-verifies" content="reckon:a-read-answers-inside-its-deadline#s74">
+  <title>A promotion does not wait for its worktree copy's deletion | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" id="a-promotion-does-not-wait-for-its-worktree-copy-s-deletion-landing" data-node="a-promotion-does-not-wait-for-its-worktree-copy-s-deletion" data-reckon="landed" data-when="2026-11-12">
+  <h2>A promotion hands its worktree copy's deletion to the trash sweep</h2>
+  <p>A release still vacates a tree's registered path in one rename and deregisters it, but a promotion no longer deletes the moved-aside copy inside its own run lock: <code>reckon/crew/routing.py</code> gains <code>deferring_worktree_copy_deletion</code>, a context that <code>_release_worktree_whole</code> reads before its deletion step, and <code>reckon/crew/promotion.py</code> enters it around both calls to <code>_release_after_promotion</code>. Every other caller &mdash; discard, <code>crew gc</code> and the release tests &mdash; keeps the inline deletion unchanged, so no second policy was written. The copy is left in the worktree trash root, which the hourly retention pass now sweeps alongside its run-directory and scratch work &mdash; <code>retention_sweep</code> sweeps each project's trash roots as its own <code>trash</code> phase, naming them without a git call, and names every directory it removes &mdash; with no age wait, so no copy survives a pass of the hourly <code>reckon-crew-retention</code> timer, whether or not any session runs <code>crew gc</code>. <code>crew gc --apply</code> sweeps the same root.</p>
+  <p><strong>Measure.</strong> Both tests drive real <code>crew complete --gate not-run</code> promotions over a temporary crew home and checkout, with the copy deletion replaced by an injected 30&nbsp;s sleep. At head the slowed promotion returns within 5&nbsp;s of the same promotion undelayed, and a second promotion of the same run reaches its lock inside the same 5&nbsp;s budget; the file runs both in 12.0&nbsp;s. At the base revision the same file fails both: the delayed promotion takes at least 30&nbsp;s longer, and the second promotion waits 31.1&nbsp;s for the first's deletion (the assertion's own figure). After the head promotion, a <code>garbage_collect(apply=True)</code> pass removes the backdated moved-aside copy and prints its path. A separate check drives one applied <code>retention_sweep</code> over a project whose trash holds a copy two hours old: at head it prints <code>removed worktree trash &lt;path&gt;</code> and reports <code>worktree_trash_removed: 1</code>; at the base revision the same check exits 1 with the copy still in place.</p>
+  <p><strong>Negative control.</strong> The base revision, run from an extraction of <code>d2e5fb667e</code>: <code>2 failed</code>, with the lock case reading <code>AssertionError: the second promotion waited 31.1s for the first's deletion</code>. Logs: <code>negative-control-base.log</code>, <code>gate-head.log</code>, <code>baseline-suite.log</code>, <code>after-suite.log</code> under the run directory.</p>
+</article>
+</body>
+</html>

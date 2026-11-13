@@ -1,0 +1,134 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-13T06:42:32.126Z",
+  "dispatched_at": "2026-11-13T06:36:39Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-review-dies-where-nobody-is-looking.html:510",
+      "id": "reasoning-1",
+      "reason": "with the wrong actor named, the deliverable \"not resumed by any path other than a coordinator's crew resume\" would forbid the tree's designed repair resume, so a node would build a gate that blocks the repair loop instead of the supersession window it is aimed at.",
+      "text": "\u00a717's Why says the 05:07Z resume carried \"no coordinator advice\" and that \"Nobody can say from the record which path issued the resume\", but the cited run directory holds `resume-1-advice.txt`, whose text begins \"Repair round: r-20261113T012546102955\u2026@ecba127a2883\u2026\" and quotes the review's reuse finding; that text is composed only by the repair dispatch (`_repair_resume_advice`, reckon/crew/recovery_repair_dispatch.py:873), which resumes the reviewed run itself (`resumption._resume(run_id, fresh, config=None, advice=advice)`, :117; see also the comment at :1355 that the round's findings \"ride a resume of the reviewed run itself\") \u2014 so the record does name the path, and the mechanism the section must gate is the repair-round resume, not an unnamed automatic resume",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-review-dies-where-nobody-is-looking.html:510",
+      "id": "done_when-1",
+      "reason": "a gate whose first clause contradicts its own premise cannot be shown to have passed, and a control aimed at a path the record does not name may go green without exercising the resume that caused the defect.",
+      "text": "the first clause requires the node to \"state in its manifest which path issued the 05:07Z resume\" while the Why asserts the record cannot say it, so the clause has no stated evidence by which it can pass or fail; the negative control then names \"the automatic path\", a path the recorded advice does not identify, leaving the control unanchored to the event the section is about",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-review-dies-where-nobody-is-looking.html:510",
+      "id": "single_goal-1",
+      "reason": "one verdict cannot close three mechanisms that can land separately, and the done-when's three arms prove none \u2014 recording provenance in particular can ship while the gate is absent, and the single verdict would read as covering both.",
+      "text": "\u00a717 bundles three independently closable deliverables: gating resumes while a review is queued or running, recording the issuing path on every attempt, and re-queueing a review of the new head after a superseding resume",
+      "type": "single_goal",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "31076cd9244c9cb7f54387b15024c9b19928713e",
+  "plan_fingerprint": "36f1e47f65c4ab3704f117fece7302666ea9fd98321f7d88446e475322091a03",
+  "plan_slug": "a-review-dies-where-nobody-is-looking",
+  "plan_version": 123,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "dfc6a0419399dd8a31352e81d7f0d46f5be577cf",
+      "commit_basis": "edit",
+      "finding": "reasoning-1",
+      "note": "\u00a717 is descoped: the resume was the repair round's, composed by _repair_resume_advice, and gating it would block the designed repair loop",
+      "reason": "",
+      "when": "2026-11-13T07:16:29.169383+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "dfc6a0419399dd8a31352e81d7f0d46f5be577cf",
+      "commit_basis": "edit",
+      "finding": "done_when-1",
+      "note": "\u00a717 is descoped, so its done-when is withdrawn; the missing review of the repair delivery is \u00a714's",
+      "reason": "",
+      "when": "2026-11-13T07:16:48.685510+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "dfc6a0419399dd8a31352e81d7f0d46f5be577cf",
+      "commit_basis": "edit",
+      "finding": "single_goal-1",
+      "note": "\u00a717 is descoped as a whole",
+      "reason": "",
+      "when": "2026-11-13T07:17:11.207485+00:00"
+    }
+  ],
+  "responses": {
+    "done_when-1": {
+      "action": "acted",
+      "by": "",
+      "commit": "dfc6a0419399dd8a31352e81d7f0d46f5be577cf",
+      "commit_basis": "edit",
+      "note": "\u00a717 is descoped, so its done-when is withdrawn; the missing review of the repair delivery is \u00a714's",
+      "reason": "",
+      "when": "2026-11-13T07:16:48.685510+00:00"
+    },
+    "reasoning-1": {
+      "action": "acted",
+      "by": "",
+      "commit": "dfc6a0419399dd8a31352e81d7f0d46f5be577cf",
+      "commit_basis": "edit",
+      "note": "\u00a717 is descoped: the resume was the repair round's, composed by _repair_resume_advice, and gating it would block the designed repair loop",
+      "reason": "",
+      "when": "2026-11-13T07:16:29.169383+00:00"
+    },
+    "single_goal-1": {
+      "action": "acted",
+      "by": "",
+      "commit": "dfc6a0419399dd8a31352e81d7f0d46f5be577cf",
+      "commit_basis": "edit",
+      "note": "\u00a717 is descoped as a whole",
+      "reason": "",
+      "when": "2026-11-13T07:17:11.207485+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/Code/reckon/docs/state/reckon/reviews/plan/a-review-dies-where-nobody-is-looking/r-20261113T063349995384-plan-review-of-a-review-dies-where-nobody-is-looking.json",
+  "review_run_id": "r-20261113T063349995384-plan-review-of-a-review-dies-where-nobody-is-looking",
+  "reviewed_blob_sha": "434117efaa62e57c85463bb43dfbce7f64b18c20",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `_withdraw_review_superseded_by_resume` resolves at reckon/crew/resumption.py:1783 and is called at :1995; r-20261113T012546102955 resolves to its run directory, r-20261113T035109580580 to a single review run, and commits 23c73bb6b8 and ecba127a28 both resolve in git.",
+    "done_when": "a finding \u2014 \u00a717's first clause asks the node to \"state in its manifest which path issued the 05:07Z resume\", while \u00a717's own Why says nobody can say from the record which path issued it, so the gate rests on a premise its own text denies.",
+    "evidence_paths": "pass \u2014 every log is required under the run directory, a durable path.",
+    "naming": "pass \u2014 \u00a717 names only existing symbols (`_withdraw_review_superseded_by_resume`) and existing paths; no plan label, ticket number or version tag reaches code.",
+    "reasoning": "a finding \u2014 \u00a717's stated unknown (\"Nobody can say from the record which path issued the resume\") is refuted by the run directory it tells the node to read, which carries the resume's own advice as a repair-round text, and the deliverable's blanket ban on non-coordinator resumes would forbid that designed repair path.",
+    "single_goal": "a finding \u2014 \u00a717 carries three separable deliverables (gate automatic resumes, record the issuing path on every attempt, re-queue the review of the new head) under one verdict.",
+    "wiring": "pass \u2014 \u00a717 is declared implementable in the section declarations, f-ardwnil-009 carries the matching `/reckon-build \u2026 \u00a717` prompt, and the section introduces no depends-on/informs/gates edge that points anywhere."
+  },
+  "section_digests": {
+    "_document": "7b8dc97731d24e48091494ae57109670d01d9bdc4afbd7afbf00610974b9a4d2",
+    "s1": "b13bacdd3dd40a8e3cb226066b6660b6aebf8a50b7f0d135972dce72a067ff10",
+    "s10": "a5c034b4157c2223c785f33e695ea65b6b5a8d2715cc7920e0089851b40ee94d",
+    "s11": "ee506b104842ed50a3cea08abe395e6e43918cff0f3239ce091415fe2e98fe39",
+    "s12": "f34aff9875ad00ad0d781d7805d52889b986efe74f16afeb8b465b4b29ef6615",
+    "s13": "0d8216edfe080ceb87b3d564a43e360fb4b061ce5301280c96ee1588cf3ebe34",
+    "s14": "f7cbf09908798bffbe78ff528c6dca6d71a8d9a29dcb31f415b287e6b169486b",
+    "s15": "00e76cf5044cf8a22fe2c34cd12af55dc9df115075c2d599dc91d8174cf33ec5",
+    "s16": "12f05c4cfb57c8842040fcbe5271c4fc65d31a6dd7fe9dd6a7b84dbf4b848e0a",
+    "s17": "09f911cebc299089cb40cea34591518317663ee972c79e82ae73027ca6de9d82",
+    "s2": "06b36b451d3e1f9cc4f3c7c8c54bc8f4a1c93efe0eab5a9d7dccde893ace0c54",
+    "s3": "017097c61e4fa1d5d2dc8f168b9f71610c2ae361ff0f2c1d5cffb2b68c7df410",
+    "s4": "dfa3413c15b5496e8adbcf0232faeb0066257492e10fbd4fa9aefccc0fb09e77",
+    "s5": "2a352f8bf478dcdf4e8b5b0125205012974807a199c4b04c43b93d0b94534685",
+    "s6": "a9509e66f17fcf2ce1a5c6f73f1bf69c9b8e9f0a5fc2c8828b680e6e533c8a89",
+    "s7": "7132004ffea77391601b22ef619715e5e1b92d1f216e8fa177ee601bd9d6b7dd",
+    "s8": "8b258458e56f488bec3ad12a01ff14bb102096e78b20d9099bb99ca2911f2964",
+    "s9": "059f92c7b3786222a361ca3a5049648fd0cccb17f00ec762e7bdfba6ee02e958"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-13T07:06:44.022580+00:00",
+  "total": null
+}

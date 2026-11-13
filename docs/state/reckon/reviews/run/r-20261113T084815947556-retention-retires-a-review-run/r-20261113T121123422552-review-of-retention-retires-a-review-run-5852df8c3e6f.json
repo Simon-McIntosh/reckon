@@ -1,0 +1,117 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_analysis": [
+    {
+      "assertions": "removed equals an independently empty list for six unusable result variants",
+      "fails_if": "Reinstating the prior role-only exemption deletes r-reviewer and yields a nonempty removal list; the recorded reversal demonstrates all six failures.",
+      "path": "tests/test_retention_retires_a_review_run.py:185"
+    },
+    {
+      "assertions": "reviewer directory remains on disk",
+      "fails_if": "Removing the reviewer despite a withheld report makes is_dir false; restoring the prior guard-free behavior also deletes it.",
+      "path": "tests/test_retention_retires_a_review_run.py:186"
+    },
+    {
+      "assertions": "withheld category equals literal missing-review-result",
+      "fails_if": "Restoring the old review-of-self guard returns review-owed rather than the result-specific category; bypassing both guards leaves no withheld row.",
+      "path": "tests/test_retention_retires_a_review_run.py:188"
+    },
+    {
+      "assertions": "reason contains independent reviewer-result explanation",
+      "fails_if": "Returning the prior review-owed reason or a generic reason without the reviewer-result explanation makes substring membership false.",
+      "path": "tests/test_retention_retires_a_review_run.py:189"
+    },
+    {
+      "assertions": "removed identifies the planted old reviewer for staging and plan locations",
+      "fails_if": "Removing staging lookup or restricting committed lookup to run subjects retains the reviewer and returns an empty removal list; directory.name is independently observed filesystem identity rather than a returned-value echo.",
+      "path": "tests/test_retention_retires_a_review_run.py:213"
+    },
+    {
+      "assertions": "retired reviewer directory is absent",
+      "fails_if": "Reporting prune without performing removal leaves the directory present.",
+      "path": "tests/test_retention_retires_a_review_run.py:214"
+    },
+    {
+      "assertions": "stored review outside the retired directory survives",
+      "fails_if": "Expanding deletion to the surviving staging or plan result removes target and makes is_file false.",
+      "path": "tests/test_retention_retires_a_review_run.py:215"
+    }
+  ],
+  "call_sites": [
+    "reckon/crew/gc.py:garbage_collect:1088",
+    "reckon/crew/gc.py:retention_sweep:2024",
+    "reckon/crew/gc.py:_run_directory_retention_report:412",
+    "reckon/crew/gc.py:main:2304",
+    "reckon/crew_run_commands.py:crew_retention_sweep:2154"
+  ],
+  "completed_at": "2026-11-13T12:23:09Z",
+  "dispatched_at": "2026-11-13T12:16:14Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "folded",
+      "node": "retention-retires-a-review-run",
+      "recorded_at": "2026-11-13T13:19:35.293023+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "reckon/crew/gc.py",
+      "line": "362",
+      "severity": "blocking",
+      "text": "blocking: The committed index is keyed by path.stem and queried with the bare reviewer run ID at line 366, while review.py:2732-2743 files figure reviews as figure.<review-run-id>.at-<head>.json; when the staging record is absent, a valid committed figure review is therefore reported as missing-review-result and its old reviewer directory can never retire, so resolve reviewer identity using the store owner and cover this committed-only case."
+    }
+  ],
+  "gate_evidence": {
+    "after_suite": {
+      "exit_status": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261113T084815947556-retention-retires-a-review-run/repair-after.log",
+      "revision": "c3bf3de61fed9e3dcef12c2b5b37f0cf5922c7e4",
+      "summary": "65 passed in 12.52s"
+    },
+    "baseline_suite": {
+      "exit_status": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261113T084815947556-retention-retires-a-review-run/repair-original-baseline.log",
+      "revision": "4c4cf234390f5326b995cee7ad6bda55fe01b5c0",
+      "summary": "51 passed in 9.85s"
+    }
+  },
+  "item_verdicts": {
+    "call_sites": "Verified the five production sites listed in call_sites against the reviewed head.",
+    "diff": "Read c3bf3de61fed9e3dcef12c2b5b37f0cf5922c7e4 and 5852df8c3e6fe54e820ecdf7c949aac782f5621f commit by commit against prior reviewed head b5361735bbb50a4ae8afce0986e23b986543b1f1; the first adds the stored-result guard and eight cases, and the second only appends evidence.",
+    "done_when": "Read source prompt.txt:156-157 and live s41; repair-after.log records 65 passed, repair-negative.log records six refusal cases failing on reversal, repair-live.log records 169 offers versus zero and no removal, and importer receipts have zero added failures.",
+    "goal": "Read source prompt.txt:38 and live work-flows-to-the-lane s41 version 174; gc.py:412 now protects a reviewer until its own result is stored, but gc.py:362 cannot find committed figure-review records under their canonical decorated names.",
+    "manifest": "Read source manifest.md and the actual baseline_suite/after_suite logs; their completed summaries are 51 passed and 65 passed with EXIT=0, with the supplemental repair baseline recording 57 passed and the prior blocking defect explicitly reproduced.",
+    "write_paths": "Read source prompt.txt:80-84; all incremental changes are confined to reckon/crew/gc.py, tests/test_retention_retires_a_review_run.py and the declared evidence fragment."
+  },
+  "justifications": {
+    "durability": "tests/test_retention_retires_a_review_run.py:185-189 fails when the result guard is removed, and lines 213-215 fail when staging or plan results are ignored, but no added assertion exercises canonical committed figure-review filenames.",
+    "evidence": "repair-reproduction.log records six failures before repair, repair-negative.log records 6 failed and 59 passed after reversal, repair-after.log records 65 passed, and repair-live.log records 169 offers against zero with zero removals.",
+    "fit": "reckon/crew/gc.py:336-343 follows the shared review validity predicates and mechanism-based naming, but line 362 assumes a filename identity narrower than the owning review_path function in review.py:2732-2743.",
+    "goal_fidelity": "reckon/crew/gc.py:412 retains missing or unusable own results and preserves implementation review gating, but its committed index at line 362 misses the figure-review naming form produced by review.py:2732-2743.",
+    "reuse": "Capability searches of review.py, review_records.py and recovery_review_delivery.py found staging lookup owned by review_records.py:1812, subject/material/status and path construction owned by review.py, and strict dispatch delivery owned by recovery_review_delivery.py:386; gc.py reuses those validity and staging owners while adding a retention-specific cross-subject committed index for which no existing owner was found.",
+    "scope_discipline": "The two-commit diff changes only reckon/crew/gc.py, tests/test_retention_retires_a_review_run.py and docs/evidence/fragments/work-flows-to-the-lane/retention-retires-a-review-run.html, all expressly granted in source prompt.txt:80-84."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: Read source prompt.txt:38 and live work-flows-to-the-lane s41 version 174; gc.py:412 now protects a reviewer until its own result is stored, but gc.py:362 cannot find committed figure-review records under their canonical decorated names.\nVERDICT done_when: Read source prompt.txt:156-157 and live s41; repair-after.log records 65 passed, repair-negative.log records six refusal cases failing on reversal, repair-live.log records 169 offers versus zero and no removal, and importer receipts have zero added failures.\nVERDICT write_paths: Read source prompt.txt:80-84; all incremental changes are confined to reckon/crew/gc.py, tests/test_retention_retires_a_review_run.py and the declared evidence fragment.\nVERDICT manifest: Read source manifest.md and the actual baseline_suite/after_suite logs; their completed summaries are 51 passed and 65 passed with EXIT=0, with the supplemental repair baseline recording 57 passed and the prior blocking defect explicitly reproduced.\nVERDICT diff: Read c3bf3de61fed9e3dcef12c2b5b37f0cf5922c7e4 and 5852df8c3e6fe54e820ecdf7c949aac782f5621f commit by commit against prior reviewed head b5361735bbb50a4ae8afce0986e23b986543b1f1; the first adds the stored-result guard and eight cases, and the second only appends evidence.\nCALL_SITES: reckon/crew/gc.py:garbage_collect:1088, reckon/crew/gc.py:retention_sweep:2024, reckon/crew/gc.py:_run_directory_retention_report:412, reckon/crew/gc.py:main:2304, reckon/crew_run_commands.py:crew_retention_sweep:2154\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: reckon/crew/gc.py:412 retains missing or unusable own results and preserves implementation review gating, but its committed index at line 362 misses the figure-review naming form produced by review.py:2732-2743.\nSCORE evidence: 20\nJUSTIFICATION evidence: repair-reproduction.log records six failures before repair, repair-negative.log records 6 failed and 59 passed after reversal, repair-after.log records 65 passed, and repair-live.log records 169 offers against zero with zero removals.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: The two-commit diff changes only reckon/crew/gc.py, tests/test_retention_retires_a_review_run.py and docs/evidence/fragments/work-flows-to-the-lane/retention-retires-a-review-run.html, all expressly granted in source prompt.txt:80-84.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_retention_retires_a_review_run.py:185-189 fails when the result guard is removed, and lines 213-215 fail when staging or plan results are ignored, but no added assertion exercises canonical committed figure-review filenames.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/crew/gc.py:336-343 follows the shared review validity predicates and mechanism-based naming, but line 362 assumes a filename identity narrower than the owning review_path function in review.py:2732-2743.\nSCORE reuse: 20\nJUSTIFICATION reuse: Capability searches of review.py, review_records.py and recovery_review_delivery.py found staging lookup owned by review_records.py:1812, subject/material/status and path construction owned by review.py, and strict dispatch delivery owned by recovery_review_delivery.py:386; gc.py reuses those validity and staging owners while adding a retention-specific cross-subject committed index for which no existing owner was found.\nFINDING reckon/crew/gc.py:362 blocking: The committed index is keyed by path.stem and queried with the bare reviewer run ID at line 366, while review.py:2732-2743 files figure reviews as figure.<review-run-id>.at-<head>.json; when the staging record is absent, a valid committed figure review is therefore reported as missing-review-result and its old reviewer directory can never retire, so resolve reviewer identity using the store owner and cover this committed-only case.\n",
+  "reproduction_quote": "repair-reproduction.log:42: E       assert ['r-reviewer'] == []; 6 failed, 8 passed in 1.89s; EXIT=1",
+  "review_run_id": "r-20261113T121123422552-review-of-retention-retires-a-review-run-5852df8c3e6f",
+  "reviewed_base_sha": "b5361735bbb50a4ae8afce0986e23b986543b1f1",
+  "reviewed_head_sha": "5852df8c3e6fe54e820ecdf7c949aac782f5621f",
+  "reviewed_run_id": "r-20261113T084815947556-retention-retires-a-review-run",
+  "scope_note": "Incremental review only; prior timer forwarding assertion finding predates this diff and is not rescored here. No source changes or test reruns performed. Assigned worktree HEAD is d788950ae4bb450757b59c56b4d5cb6524edcc2f; reviewed source and call sites were read from git show at the named reviewed head.",
+  "scores": {
+    "durability": 18,
+    "evidence": 20,
+    "fit": 18,
+    "goal_fidelity": 17,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-13T12:26:36.282284+00:00",
+  "total": 113
+}

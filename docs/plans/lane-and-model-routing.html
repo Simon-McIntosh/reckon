@@ -25,7 +25,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-north-star" content="unattended-execution">
-<meta name="plan-version" content="373">
+<meta name="plan-version" content="377">
 <meta name="plan-modified" content="2026-11-13">
 <meta name="plan-commits" content="8d517e2a8775813f593e7168f5237bd4bb338fcf,d6bf49adc2ab44b3640182a1d3e8db0074909d62,5a93a1477648d72ea9e15571ed84101dfee33edc,26dc670d410b6f6779dc88c57f3865462f054c37">
 </head>
@@ -1618,11 +1618,23 @@ The test asserts the real crew home is untouched.</li>
 <div class="r-comment" data-section="s57" data-id="c-run-r-20261113T013346728643-ready-lane-and-model-routing-s57" data-who="reckon-build" data-when="2026-11-13T03:28:45.752Z">
     <div class="r-comment-body"><p>The picker offers a reserved lane, a competence verdict and a pacing ceiling below the account limit as evidence the router weighs, keeping only an inability to run the node as an exclusion; the deterministic fallback keeps an unlifted reservation and prefers local while it has room. Measure: tests/test_the_router_decides_on_preferences.py passes 8 cases including both negative controls, and over every test file importing the picker the head adds no failure against the base revision (base 17 failed / 690 passed, head 15 failed / 700 passed, zero head-only).</p></div>
 </div>
+<div class="r-comment" data-section="s58" data-id="c-run-r-20261113T063836100220-review-of-ready-lane-and-model-routing-s58-df6607a83565" data-who="reckon-build" data-when="2026-11-13T09:46:56.177Z">
+    <div class="r-comment-body"><p>the review of r-20261113T013546126553-ready-lane-and-model-routing-s58 scores all six dimensions (goal_fidelity 18, evidence 10, scope_discipline 19, durability 17, fit 18, reuse 19) against base 68ebb1ff1fce0febf3f6bb1b57bec608136cd92b and head df6607a835657105acb53eda7cd9aaa4ab0f923a, records added_failure_count 0, and carries three non-blocking findings</p></div>
+</div>
+<div class="r-comment" data-section="s58" data-id="c-run-r-20261113T013546126553-ready-lane-and-model-routing-s58" data-who="reckon-build" data-when="2026-11-13T06:26:13Z">
+    <div class="r-comment-body"><p>a queued request's router-chosen route is picked again at launch when its recorded picked_at is older than queue.repick_after_seconds, a named route and a fresh pick are replayed as before, and both routes are recorded on the run</p></div>
+</div>
 <div class="r-comment" data-section="s6" data-id="c-run-r-20261007T181402257741-review-of-codex-lane-fold" data-who="reckon-build" data-when="2026-10-07T18:22:07.537Z">
     <div class="r-comment-body"><p>Independent review of r-20261007T175656538381-codex-lane-fold stored, scoring all six dimensions (total 87) over base 4a7274f85a87b45c76f61300b93617caa35352de -&gt; head fe7bde6f99a7d4897d9ade6c175e6783ccd3c985, with 0 added failures, and one blocking finding that the catalogue commit regresses codex-astra/codex-luna resolution until the host flight lands.</p></div>
 </div>
 <div class="r-comment" data-section="s6" data-id="c-run-r-20261007T175656538381-codex-lane-fold" data-who="reckon-build" data-when="2026-10-07T18:26:32Z">
     <div class="r-comment-body"><p>Catalogue lane fold is paired with dotfiles host commit 6d1f7428bd222bda757743c472f740b05c2a3003; live Astra and Luna model/effort/alias pass 16/16 scopes, reverted-host control fails 16/16, and committed base/head gates each pass 109 tests.</p></div>
+</div>
+<div class="r-comment" data-section="s60" data-id="c-run-r-20261113T065455828604-review-of-ready-lane-and-model-routing-s60-3c440f440bcf" data-who="reckon-build" data-when="2026-11-13T09:39:23.534Z">
+    <div class="r-comment-body"><p>review — r-20261113T013852269914-ready-lane-and-model-routing-s60 reviewed at 7d8105fe..3c440f44; landmark: main_checkout() in reckon/crew/picker/client.py:34 anchors the .env default at the main checkout through the worktree .git pointer and commondir; goal_fidelity 19, evidence 17, scope_discipline 16, durability 19, fit 18, reuse 5; two non-blocking findings (main_checkout duplicates repository_identity; the new test lies outside the node's dispatched write_paths).</p></div>
+</div>
+<div class="r-comment" data-section="s60" data-id="c-run-r-20261113T013852269914-ready-lane-and-model-routing-s60" data-who="reckon-build" data-when="2026-11-13T06:15:25.762Z">
+    <div class="r-comment-body"><p>s60 — credential_path() now resolves the main checkout&#x27;s .env through the worktree&#x27;s .git pointer and the git directory&#x27;s commondir instead of stopping at parents[3]; tests/test_every_dispatcher_finds_the_router_key.py passes 3 tests at head (subprocess lookup started as the follower starts finds the key from a linked worktree; with no file and no variable LiveJevDisabledError still names the environment and the path), and restoring parents[3] in a scratch tree reddens the first case (2 failed, 1 passed, EXIT=1)</p></div>
 </div>
 <div class="r-comment" data-section="s7" data-id="c-run-r-20261007T183001939638-review-of-old-names-resolve" data-who="reckon-build" data-when="2026-10-07T18:38:48.723Z">
     <div class="r-comment-body"><p>the independent review of r-20261007T171657215064-old-names-resolve (plan §7) is stored as a parsed six-dimension record (goal_fidelity 20, evidence 20, scope_discipline 17, durability 19, fit 20, reuse 20; total 116) at both granted paths, recording reviewed_base_sha bdfb159260bf28417d160653d14bf2defeaf1940 and reviewed_head_sha 5dc28f07f94ba013accc7a22bbe9964b3e2ba6dc, with added_failure_count 0 and added_failure_ids [] derived from the reviewed run's baseline_suite (base.log) and after_suite (head.log), one follow-on finding on reckon/crew/query.py scope, and no blocker.</p></div>

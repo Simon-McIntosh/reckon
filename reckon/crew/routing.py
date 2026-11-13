@@ -12,7 +12,8 @@ import sys
 import tarfile
 import tempfile
 import time
-from collections.abc import Callable
+from collections.abc import Callable, Iterator
+from contextlib import contextmanager
 from contextvars import ContextVar
 from datetime import UTC, datetime, timedelta, timezone
 from pathlib import Path
@@ -471,7 +472,6 @@ def _budget_verdict(
     block. A group no lift covers is handed the configuration unchanged.
     """
     from reckon import budget as budget_module
-
     from reckon.crew import budget_group as budget_group_module
 
     wallet = group or budget_group_module.declared_group_for(config, backend_name)
@@ -963,9 +963,14 @@ def _inspect_workspace(
 
 
 def _ledgered_records(repo: Path, project: str | None) -> list[dict[str, Any]]:
+    from reckon.crew import open_run_index
+
     result: list[dict[str, Any]] = []
     for name in _gc_projects(repo, project):
-        result.extend(ledger.runs(str(name), root=repo))
+        reader = (
+            ledger.open_runs if open_run_index.pointers() is not None else ledger.runs
+        )
+        result.extend(reader(str(name), root=repo))
     return result
 
 
@@ -1485,6 +1490,33 @@ def _delete_worktree_copy(trash: Path) -> None:
     shutil.rmtree(trash, ignore_errors=True)
 
 
+#: Whether a release leaves its moved-aside copy for the trash sweep.
+#:
+#: A promotion holds its run's lock from its first write to its last, so a copy
+#: deleted there keeps a serial review sweep waiting on the filesystem. Inside
+#: :func:`deferring_worktree_copy_deletion` the rename still vacates the
+#: registered path and deregisters the tree in one step, and only the copy's
+#: deletion is handed to the pass that reclaims trash.
+_DEFER_COPY_DELETION: ContextVar[bool] = ContextVar(
+    "reckon_defer_worktree_copy_deletion", default=False
+)
+
+
+@contextmanager
+def deferring_worktree_copy_deletion() -> Iterator[None]:
+    """Leave released trees' moved-aside copies in the trash root.
+
+    The pass that reclaims trash prints every directory it removes, and it
+    decides by the tree's own registration rather than by age, so a deferred
+    copy is reclaimed on the next sweep rather than growing without bound.
+    """
+    token = _DEFER_COPY_DELETION.set(True)
+    try:
+        yield
+    finally:
+        _DEFER_COPY_DELETION.reset(token)
+
+
 def _release_worktree_whole(
     repo: Path,
     path: str | Path,
@@ -1528,6 +1560,10 @@ def _release_worktree_whole(
         "trash": str(trash),
         "trash_removed": False,
     }
+    if _DEFER_COPY_DELETION.get():
+        # The registered path is empty and the tree is deregistered, so the
+        # release is whole; the copy's deletion is the trash sweep's work.
+        return result
     try:
         _delete_worktree_copy(trash)
     except Exception as exc:  # noqa: BLE001 - any failure leaves trash, not a husk

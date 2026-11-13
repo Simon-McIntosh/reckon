@@ -67,8 +67,16 @@ def write_pending(
     *,
     now: float | None = None,
     pointer: Mapping[str, Any] | None = None,
+    head: str = "",
 ) -> None:
-    """Record that ``run_id`` is about to be promoted and landed. Best-effort."""
+    """Record that ``run_id`` is about to be promoted and landed. Best-effort.
+
+    ``head`` is the revision the landing cites, read before the promotion runs.
+    The record keeps it because the ledger row and the live pointer are both
+    written again by later attempts, and the pass that finishes this landing
+    must merge the revision a review read rather than whichever head the run
+    happened to reach before the record was read.
+    """
     path = _record_path(run_id)
     try:
         path.parent.mkdir(parents=True, exist_ok=True)
@@ -80,12 +88,22 @@ def write_pending(
                     "written_at": time.time() if now is None else now,
                     "attempts": 0,
                     **({"pointer": dict(pointer)} if pointer else {}),
+                    **({"head": head} if head else {}),
                 }
             ),
             encoding="utf-8",
         )
     except OSError:
         return
+
+
+def _cited_head(record: Mapping[str, Any]) -> str:
+    """The revision the landing cited when it wrote this record, or "".
+
+    A record written before the cited head was kept carries none, and falls back
+    to the head the promoted row names.
+    """
+    return str(record.get("head") or "").strip()
 
 
 def clear_pending(run_id: str) -> None:
@@ -103,7 +121,10 @@ def _settled_landing(
 
     Local ancestry alone leaves a push outstanding, so only the remote primary
     can establish that no landing remains. An unreadable remote keeps the
-    pending record; a recorded discard still prevents resuming its worker.
+    pending record; a recorded discard still prevents resuming its worker. A
+    checkout that configures no remote has no push outstanding, and its own
+    branch is the primary the landing would have moved, so there the branch's
+    ancestry is the whole question.
     """
     from reckon.crew import merge, promotion
 
@@ -113,9 +134,14 @@ def _settled_landing(
     try:
         repository = repository or merge.project_repository(project)
         remote = merge.head_on_remote_branch(repository, head)
+        on_branch = remote["on_branch"]
+        if on_branch is None and remote["cause"] == merge.REMOTE_UNCONFIGURED:
+            on_branch = merge._is_ancestor(
+                repository, head, merge._current_branch(repository)
+            )
     except (merge.MergeError, OSError):
         return disposition
-    if remote["on_branch"] is True:
+    if on_branch is True:
         try:
             pointer = runs.read_pointer(run_id)
         except runs.CrewError:
@@ -127,7 +153,7 @@ def _settled_landing(
         ):
             merge.release_landed_worktrees(
                 repository,
-                str(remote["remote_head"]),
+                str(remote["remote_head"] or head),
                 head=head,
                 projects=[project or str(pointer.get("project") or "")],
             )
@@ -440,7 +466,8 @@ def finish_pending_landings(
             results.append({"run_id": run_id, "status": "promotion-requested"})
             continue
         row = _promoted_row(project, run_id)
-        head = _reviewed_head(row) if row else ""
+        cited = _cited_head(record)
+        head = cited or (_reviewed_head(row) if row else "")
         settled = _settled_landing(run_id, head, project=project)
         if settled:
             results.append({"run_id": run_id, "status": settled, "head": head})
@@ -522,7 +549,7 @@ def finish_pending_landings(
             and not record.get("pointer")
         ):
             continue
-        head = _reviewed_head(row)
+        head = cited or _reviewed_head(row)
         if not head:
             continue
         repository = merge.project_repository(project)

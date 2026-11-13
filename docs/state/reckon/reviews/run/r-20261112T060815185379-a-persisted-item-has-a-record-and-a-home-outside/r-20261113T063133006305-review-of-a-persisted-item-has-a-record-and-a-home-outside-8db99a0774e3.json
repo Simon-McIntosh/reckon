@@ -1,0 +1,64 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-11-13T07:18:24.550Z",
+  "dimension_dispositions": {},
+  "dispatched_at": "2026-11-13T07:06:42Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/a-report-is-kept-only-when-persisted/a-persisted-item-has-a-record-and-a-home-outside.html",
+      "line": 29,
+      "severity": "non-blocking",
+      "text": "the changes list still states the reports block carries staging_root for a retention pass, and line 31 still says the test file holds seven cases, while this round removed staging_root (reckon/flight.py:106 REPORTS_PATH_KEYS = (PERSIST_ROOT_KEY,)) and added an eighth case; the evidence fragment now contradicts the code it describes, in the same file the round edits."
+    },
+    {
+      "file": "reckon/crew/persist.py",
+      "line": 28,
+      "severity": "non-blocking",
+      "text": "_sha256_path is imported from reckon.project_state by its private name, so the one digest definition is now reachable only through an underscore symbol with no public contract; the reuse goal is met but the owner should expose it under a public name rather than have a second module bind to the private one."
+    },
+    {
+      "file": "tests/test_a_persisted_item_has_a_record.py",
+      "line": 110,
+      "severity": "non-blocking",
+      "text": "real_docs_state_now returns [] when the operator's real state root is absent, so the done-when's 'docs state untouched' assertion is vacuously true on a host with no ~/.config/reckon/state (CI); the crew-home half of the same assertion is unconditional, this half is not."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "examined 3 production call site(s)",
+    "diff": "read commit by commit over 7623bbe1fc..8db99a0774; three commits, four files (persist.py, flight.py, the new test, the landing fragment), 63 insertions and 26 deletions, all repairs to the six findings the prior review raised.",
+    "done_when": "read; it names tests/test_a_persisted_item_has_a_record.py with eight behaviours, and I re-ran that file at the reviewed head: 8 passed, EXIT=0.",
+    "goal": "read; a persisted item is copied into the project's declared persist root outside the crew home and recorded in the project's persisted-items resource, and the repair round tightens exactly that guard.",
+    "manifest": "read; it records both suite arms with revision, tree and command header lines and a bare EXIT line, and names the three control logs, though the suite arm it ran is tests/test_staged_write_inventory.py rather than the done-when file.",
+    "write_paths": "read the source node's fence (reckon/crew, the landing fragment, a figures directory) and the plan's own write paths; the round's four changed paths are inside the plan section's list, and reckon/flight.py plus the new test remain outside the literal fence list as previously disclosed."
+  },
+  "justifications": {
+    "durability": "the added assertions compare against the fixture (tests/test_a_persisted_item_has_a_record.py:169,171) rather than against the code's own output, and both repaired behaviours have red controls: logs/control-crew-home-guard.log fails with 'DID NOT RAISE PersistError' when the guard is disabled, and logs/control-figure-source.log fails its assertion when a data record names its own copy.",
+    "evidence": "logs/baseline-suite.log records '49 passed, 2 errors EXIT=1' at revision 1f190e0b and logs/after-suite.log records '51 passed EXIT=0' at 8db99a0774, while the worker's own suite arm measures tests/test_staged_write_inventory.py and no worker log of the done-when file at head exists; I re-ran that file at 8db99a0774 and got 8 passed, and ruff reports no findings on the three staged source paths.",
+    "fit": "reckon/crew/persist.py:43 keeps PersistError(RuntimeError) beside the surrounding crew modules' refusal style and reads its setting through reckon/flight.py:810 reports_setting, matching the neighbouring declarations.",
+    "goal_fidelity": "reckon/crew/persist.py:79 refuses a persist root that resolves inside the crew home and reckons/crew/persist.py:63-84 resolves only the declared reports.persist_root, which is the goal's 'home outside the crew home'.",
+    "reuse": "the forked digest is gone: reckon/crew/persist.py imports reckon/project_state.py:361 _sha256_path and logs/control-reuse-digest.log shows persist._sha256_path is project_state._sha256_path (same_object True) with local_definitions=0.",
+    "scope_discipline": "the four paths in the diff (reckon/crew/persist.py, reckon/flight.py, tests/test_a_persisted_item_has_a_record.py, the landing fragment) are all named by the plan's section-2 write paths, though the literal fence list named only reckon/crew, the fragment and a figures directory."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that a persisted item has a record and a home outside the crew home; reckon/crew/persist.py:63-84 resolves only the declared reports.persist_root and refuses one inside the crew home at :79, and the repair round tightens exactly that guard.\nVERDICT done_when: the done_when names tests/test_a_persisted_item_has_a_record.py with eight behaviours; I re-ran that file at reviewed head 8db99a0774 and read '8 passed in 8.25s' / EXIT=0, and the round's added case drives the crew-home refusal.\nVERDICT write_paths: the source fence named reckon/crew, the landing fragment and a figures directory; the plan section's write paths also name reckon/project_state.py, the flight schema and the new test, so the round's four changed paths are inside the plan's list while reckon/flight.py and the test remain outside the literal fence as previously disclosed.\nVERDICT manifest: read; it records baseline_suite and after_suite with revision, tree and command headers and bare EXIT lines, names the three control logs by path, and discloses the fence shortfall under outside_scope.\nVERDICT diff: read commit by commit over 7623bbe1fc..8db99a0774; three commits (06fd47a77f, 9a61f2b419, 8db99a0774), four files, 63 insertions and 26 deletions: the digest import, the narrowed reports block, the three test repairs and the fragment's repair section.\nCALL_SITES: reckon/crew/directory.py:84 (validate_layer -> reckon/flight.py:1539 _validate_reports), reckon/flight.py:2280 (validate_layer), reckon/project_state.py:read_resource, reckon/project_state.py:write_resource\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/persist.py:79 refuses a persist root resolving inside the crew home and :63-84 resolves only the declared reports.persist_root, which is the goal's home outside the crew home.\nSCORE evidence: 15\nJUSTIFICATION evidence: both suite arms carry revision/tree/command headers and a bare EXIT line (baseline 49 passed 2 errors EXIT=1, after 51 passed EXIT=0), but the worker's suite arm measures tests/test_staged_write_inventory.py, not the done-when file; I re-ran tests/test_a_persisted_item_has_a_record.py at head myself for 8 passed EXIT=0.\nSCORE scope_discipline: 17\nJUSTIFICATION scope_discipline: every path in the diff is named by the plan's section-2 write paths, though reckon/flight.py and the new test sit outside the literal fence list the brief carried, as the manifest itself discloses.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_a_persisted_item_has_a_record.py:169,171 now compare the fixture's figure path rather than the code's own field, and logs/control-crew-home-guard.log and logs/control-figure-source.log show each repaired guard going red under its mutation.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/crew/persist.py:43 keeps PersistError(RuntimeError) in the surrounding crew style and reads its setting through reckon/flight.py:810 reports_setting; the one wrinkle is the private-name import at :28.\nSCORE reuse: 20\nJUSTIFICATION reuse: reckon/crew/persist.py:28 imports the chunked digest owner reckon/project_state.py:361 and logs/control-reuse-digest.log proves object identity with zero local definitions.\nFINDING docs/evidence/fragments/a-report-is-kept-only-when-persisted/a-persisted-item-has-a-record-and-a-home-outside.html:29 non-blocking: the changes list still says the reports block carries staging_root and line 31 still says seven cases, while this round removed staging_root at reckon/flight.py:106 and added an eighth case, so the evidence document contradicts the code it describes.\nFINDING reckon/crew/persist.py:28 non-blocking: _sha256_path is imported by its private name across modules, binding a second module to an underscore symbol with no public contract; the owner should expose it publicly.\nFINDING tests/test_a_persisted_item_has_a_record.py:110 non-blocking: real_docs_state_now returns [] when the real state root is absent, so the done-when's docs-state-untouched assertion is vacuously true on a host without ~/.config/reckon/state.\n",
+  "review_run_id": "r-20261113T063133006305-review-of-a-persisted-item-has-a-record-and-a-home-outside-8db99a0774e3",
+  "reviewed_base": "7623bbe1fc344988192eeb63e4d99e0a2b31b9d4",
+  "reviewed_base_sha": "7623bbe1fc344988192eeb63e4d99e0a2b31b9d4",
+  "reviewed_head": "8db99a0774e39dd2dbba884613bf0bd1532ae858",
+  "reviewed_head_sha": "8db99a0774e39dd2dbba884613bf0bd1532ae858",
+  "reviewed_run_id": "r-20261112T060815185379-a-persisted-item-has-a-record-and-a-home-outside",
+  "reviewer": "independent review (review-of-a-persisted-item-has-a-record-and-a-home-outside-8db99a0774e3)",
+  "scores": {
+    "durability": 19,
+    "evidence": 15,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 17
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-13T08:26:20.798278+00:00",
+  "total": 108
+}

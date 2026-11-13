@@ -643,3 +643,70 @@ def test_releasing_a_delivery_hold_invalidates_the_acceptance_refusal(
     assert rows[0]["commits"] == [delivered_head]
     assert rows[0]["promoted_by"] == "review-acceptance"
     print(f"released acceptance: promoted {delivered_head}")
+
+
+def test_the_admission_loop_drains_promotions_inside_its_pass_boundary(
+    repository, tmp_path, monkeypatch
+):
+    import fcntl
+    import os
+
+    from reckon.crew import dispatch_launch, fleet_supervisor
+    from reckon.crew.admission import service as admission
+
+    run_id = "r-admission-boundary"
+    repository.plant(run_id)
+    requests.request_promotion(run_id)
+    boundary = tmp_path / "admission.pass"
+    monkeypatch.setenv(fleet_supervisor.SERVICE_PASS_PATH_ENV, str(boundary))
+    service = requests.PromotionService(
+        execute=lambda request: {"record": {"commits": [repository.sha]}}
+    )
+    tick = service.tick
+    launched = []
+
+    def drain_under_boundary():
+        assert json.loads(boundary.read_text())["pid"] == os.getpid()
+        with (
+            boundary.with_suffix(".pass.lock").open("a+b") as handle,
+            pytest.raises(BlockingIOError),
+        ):
+            fcntl.flock(handle, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        print("promotion tick: a second pass-lock owner is refused")
+        result = tick()
+        launched.extend(result)
+        return result
+
+    def pause(_seconds):
+        with boundary.with_suffix(".pass.lock").open("a+b") as handle:
+            fcntl.flock(handle, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        print("between passes: pass-lock acquisition succeeds")
+        raise KeyboardInterrupt
+
+    monkeypatch.setattr(service, "tick", drain_under_boundary)
+    monkeypatch.setattr(requests, "PromotionService", lambda **kwargs: service)
+    monkeypatch.setattr(
+        dispatch_launch, "_adopt_launched_workers_from_reexec", lambda: None
+    )
+    monkeypatch.setattr(admission, "_admit_code_stamp", lambda: "unchanged")
+    monkeypatch.setattr(admission._release, "_release_tick", dict)
+    worker = SimpleNamespace(tick=lambda: None, stop=lambda: None, last={})
+    monkeypatch.setattr(admission._landing, "_LandingWorker", lambda *_: worker)
+    monkeypatch.setattr(admission._selection, "admit_once", lambda **kwargs: {})
+    monkeypatch.setattr(
+        admission._verdicts,
+        "_record_pass_verdicts",
+        lambda result, **kwargs: result,
+    )
+    monkeypatch.setattr(admission._verdicts, "_publish_pass_verdicts", lambda _: None)
+    monkeypatch.setattr(admission, "_pause", pause)
+    try:
+        assert admission.admit_until_stopped(lander=dict) == {"passes": 1}
+    finally:
+        service.settle(timeout=10)
+
+    assert launched == [run_id]
+    receipt = requests.read_promotion(run_id)
+    assert receipt["phase"] == requests.PROMOTED, receipt
+    assert receipt["commits"] == [repository.sha]
+    print(f"continuous admission promoted {run_id} with {repository.sha}")

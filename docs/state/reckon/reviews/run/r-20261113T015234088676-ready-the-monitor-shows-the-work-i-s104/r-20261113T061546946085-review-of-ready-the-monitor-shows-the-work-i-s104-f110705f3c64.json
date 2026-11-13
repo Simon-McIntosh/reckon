@@ -1,0 +1,70 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-11-13T07:58:17.372Z",
+  "dispatched_at": "2026-11-13T07:50:17Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "exempted",
+      "reason": "the path was granted by crew widen at 05:58Z, before this review was dispatched at 06:15Z; the review read the as-delivered manifest",
+      "recorded_at": "2026-11-13T08:11:53.976936+00:00"
+    },
+    "1": {
+      "kind": "exempted",
+      "reason": "the fragment's case naming is an evidence wording slip; the log it cites is the authority and records the negative control red",
+      "recorded_at": "2026-11-13T08:12:04.298402+00:00"
+    },
+    "2": {
+      "kind": "exempted",
+      "reason": "constrained duplication of the revision-prefix comparison; carried to the plan's next health review",
+      "recorded_at": "2026-11-13T08:12:13.775076+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "tests/test_a_held_duty_is_settled_against_the_pointer.py",
+      "line": 1,
+      "severity": "blocking",
+      "summary": "The new test file is outside the dispatch's granted FENCE - SCOPE (reckon/crew/obligation_snapshot.py, reckon/hooks/coordinator_obligations.py, the evidence fragment and the figures directory), so the manifest check refuses the run as a changed path outside its write scope and the node cannot land until a coordinator widens the scope; the node's own done-when grants 'the new test', so this is a dispatch defect rather than worker overreach, and the worker disclosed it under outside_scope."
+    },
+    {
+      "file": "docs/evidence/fragments/the-monitor-shows-the-work-it-watches/ready-the-monitor-shows-the-work-i-s104.html",
+      "line": 60,
+      "severity": "non-blocking",
+      "summary": "The fragment states the negative control 'fails exactly the first and third cases (3 failed, 4 passed)', but the log it cites records three failures, the third being test_a_review_missing_row_is_answered_by_a_resume_too; the record therefore contradicts its own evidence, though the gate's requirement is still met because the first and third cases do fail."
+    },
+    {
+      "file": "reckon/crew/obligation_snapshot.py",
+      "line": 1170,
+      "severity": "non-blocking",
+      "summary": "_revision_spellings_match duplicates the revision-prefix comparison the repository already owns at reckon/crew/review_records.py:1938 _indexed_head_matches, which compares two spellings the same way without the length floor; the duplication is constrained (obligation_snapshot deliberately imports no reckon module, guarded by test_the_prompt_path_loads_no_derivation_module) and correct, but the grammar now has a fourth spelling in the tree."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "reckon/hooks/coordinator_obligations.py:recheck_worktree_held_rows and reckon/mcp_views.py:4618 both call without_departed_run_duties on a held station answer; no other production caller exists.",
+    "diff": "Four commits from d7cf20c73d to f110705f3c: the settlement and its helpers in obligation_snapshot.py, the hook docstring naming the three new readings, 349 lines of test, and the evidence fragment; the two follow-up commits repair the phase-less-pointer and delivered-reviewer seams rather than extending scope.",
+    "done_when": "The done-when requires a new test measuring four facts through without_departed_run_duties on a snapshot written before the pointer moved; tests/test_a_held_duty_is_settled_against_the_pointer.py:185-337 carries seven cases in that shape, and the gate log records 7 passed, which I re-ran at the reviewed head (7 passed in 5.12s, EXIT=0).",
+    "goal": "The goal is that a held duty is settled against the run's current pointer; reckon/crew/obligation_snapshot.py:1273 without_departed_run_duties now drops review-missing, promotion and resume-answered rows from the pointer's own state, and reckon/hooks/coordinator_obligations.py:1535 routes the hook's held answer through it.",
+    "manifest": "The manifest records the gate (7 passed, EXIT=0), the negative control (3 failed, 4 passed, EXIT=1), both suite arms (base 25 failure ids, head 23, added 0 with the two removed being scaffolding errors) and the scope exception; every figure reconciles with its cited log.",
+    "write_paths": "The dispatch granted two source files, the evidence fragment and the figures directory; the diff touches those plus tests/test_a_held_duty_is_settled_against_the_pointer.py, which the done-when names as a write path but the dispatch's FENCE does not."
+  },
+  "notes": "Reviewed head f110705f3c is not an ancestor of this reviewer's worktree HEAD (5954278873); the diff and the source worktree were read at the reviewed head, and the gate test was re-run inside /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/829e5a4a-6870-4aec-876d-ba2efb1b5ecf/ready-the-monitor-shows-the-work-i-s104, which is clean at that head.",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that a held duty is settled against the run's current pointer; reckon/crew/obligation_snapshot.py:1273 without_departed_run_duties drops review-missing, promotion and resume-answered rows from the pointer's own state, and reckon/hooks/coordinator_obligations.py:1535 routes the hook through it.\nVERDICT done_when: the done-when requires a new test measuring four facts through without_departed_run_duties on a snapshot written before the pointer moved; tests/test_a_held_duty_is_settled_against_the_pointer.py:185-337 carries seven cases in that shape and the gate log records 7 passed, which I re-ran at the reviewed head (7 passed in 5.12s, EXIT=0).\nVERDICT write_paths: the dispatch granted two source files, the evidence fragment and the figures directory; the diff touches those plus tests/test_a_held_duty_is_settled_against_the_pointer.py, which the done-when names but the dispatch's FENCE does not.\nVERDICT manifest: the manifest records the gate (7 passed, EXIT=0), the negative control (3 failed, 4 passed, EXIT=1), both suite arms (added 0, removed 2 scaffolding errors) and the scope exception; the arm logs reconcile with its figures.\nVERDICT diff: four commits from d7cf20c73d to f110705f3c -- the settlement in obligation_snapshot.py, the hook docstring, 349 lines of test, and the evidence fragment; the two follow-up commits repair the phase-less-pointer and delivered-reviewer seams.\nCALL_SITES: reckon/hooks/coordinator_obligations.py:recheck_worktree_held_rows, reckon/mcp_views.py:4618\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/obligation_snapshot.py:1345-1370 settles three duty kinds from the live pointer, which is what the goal names.\nSCORE evidence: 16\nJUSTIFICATION evidence: the gate log at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261113T015234088676-ready-the-monitor-shows-the-work-i-s104/logs/gate.log records 7 passed, EXIT=0, and I reproduced that at the reviewed head, but the evidence fragment at line 60 misstates its own negative control.\nSCORE scope_discipline: 16\nJUSTIFICATION scope_discipline: every path in the diff is inside the four granted paths except tests/test_a_held_duty_is_settled_against_the_pointer.py, which the done-when grants and the dispatch fence omits, and the worker disclosed it.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_a_held_duty_is_settled_against_the_pointer.py:185 reddens when _launched_review_stands_for returns False (shown by the negative-control log) and :311 reddens if the phase guard drops its 'and phase' clause; no assertion compares a value against the same input the test supplied.\nSCORE fit: 18\nJUSTIFICATION fit: the helpers follow the module's existing idiom (module-level frozensets, private helpers, the _UNREADABLE_POINTER sentinel) at reckon/crew/obligation_snapshot.py:1064-1112.\nSCORE reuse: 5\nJUSTIFICATION reuse: reckon/crew/obligation_snapshot.py:1170 _revision_spellings_match re-implements the revision-prefix comparison owned by reckon/crew/review_records.py:1938 _indexed_head_matches rather than extending it.\nFINDING tests/test_a_held_duty_is_settled_against_the_pointer.py:1 blocking: the new test is outside the dispatch's granted fence, so the manifest check refuses the run until a coordinator widens the scope.\nFINDING docs/evidence/fragments/the-monitor-shows-the-work-it-watches/ready-the-monitor-shows-the-work-i-s104.html:60 non-blocking: the fragment claims the negative control fails exactly the first and third cases while its cited log records three failures.\nFINDING reckon/crew/obligation_snapshot.py:1170 non-blocking: _revision_spellings_match duplicates reckon/crew/review_records.py:1938 _indexed_head_matches.\n",
+  "review_run_id": "r-20261113T061546946085-review-of-ready-the-monitor-shows-the-work-i-s104-f110705f3c64",
+  "reviewed_base_sha": "d7cf20c73d950878567f55bba66f0821a14d2165",
+  "reviewed_head_sha": "f110705f3c643f976c7043a0407c815f43874cdc",
+  "reviewed_run_id": "r-20261113T015234088676-ready-the-monitor-shows-the-work-i-s104",
+  "scores": {
+    "durability": 18,
+    "evidence": 16,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 5,
+    "scope_discipline": 16
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-13T08:09:43.296308+00:00",
+  "total": 92
+}

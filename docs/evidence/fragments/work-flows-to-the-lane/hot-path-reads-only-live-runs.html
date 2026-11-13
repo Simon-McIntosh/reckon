@@ -1,0 +1,145 @@
+<section id="hot-path-reads-only-live-runs-record" aria-labelledby="hot-path-reads-only-live-runs-title">
+  <h2 id="hot-path-reads-only-live-runs-title">Open-run projection passes the population gate</h2>
+  <p>Station tick, promotion, landing and obligations share a snapshot of live
+    pointers and consult writer-maintained SQLite indexes for ledger identities,
+    retained worktree duties and stored reviews. Missing, stale, incomplete or unavailable
+    indexes use the established readers. Explicit history readers, standalone
+    snapshot hooks, held-worktree freshness and caching, and profile rebuilds
+    preserve their existing contracts.</p>
+  <table id="hot-path-reads-only-live-runs-populations">
+    <caption>Five live runs; every live and ended run has a ledger row, directory and stored review</caption>
+    <thead><tr><th>Operation</th><th>Ended-file opens with 20 ended</th><th>Ended-file opens with 2,000 ended</th><th>Live results</th></tr></thead>
+    <tbody>
+      <tr><td>Station tick</td><td>0</td><td>0</td><td>Equal</td></tr>
+      <tr><td>Promotion</td><td>0</td><td>0</td><td>Equal</td></tr>
+      <tr><td>Landing pass</td><td>0</td><td>0</td><td>Equal; all five live candidates classified</td></tr>
+      <tr><td>Obligations read</td><td>0</td><td>0</td><td>Equal</td></tr>
+    </tbody>
+  </table>
+  <p>The instrument patches builtin, IO and OS opens and first opens a known
+    ended worker file to prove that it sees the forbidden population. Whole-ledger
+    reads are refused during the operational calls. Because all five live runs
+    already have ledger rows, promotion exercises its actual idempotent completion
+    body; pointer removal is verified and reversed between comparisons. Landing
+    calls its actual pass and verifies that every live candidate was examined.
+    Separate checks verify retirement in the ending operation, retained cleanup,
+    in-place freshness and the unchanged history view containing all 2,005 rows.</p>
+  <p>The two recorded station/obligations failures reproduced before repair as
+    <code>Failed: operational read requested the complete ledger</code>.
+    An empty default-root lookup now publishes an empty projection without
+    bootstrapping unrelated history. Forced cache refusal and unknown-generation
+    probes also failed before their repairs and now exercise the existing full
+    reader. A generation that cannot be read is never accepted as a fresh index.</p>
+  <p>The declared station mutation enumerates
+    <code>runs/*/worker.json</code> and reads every file. Against the passing
+    station case it produces <code>1 failed, 13 deselected in 24.12s</code> and
+    EXIT=1, identifying ended worker files at repaired source. Its log is
+    <code>review-round-negative-control-suite.log</code>; the mutation source and
+    overlay tar are retained. The earlier landing positive control records
+    <code>1 passed, 12 deselected</code>.</p>
+  <table id="hot-path-reads-only-live-runs-gates">
+    <caption>Complete all_debug receipts; sequential baseline/head importer comparison</caption>
+    <thead><tr><th>Arm</th><th>Revision</th><th>Result</th></tr></thead>
+    <tbody>
+      <tr><td>Baseline node gate</td><td><code>f6b67f0a31c3540f6292a43ac37a41834da0ca6b</code></td><td>51 passed in 7.05 s</td></tr>
+      <tr><td>Reviewed repair-base gate</td><td><code>d9b2e925b830ae133c7e8e8a608ea8074e7550f2</code></td><td>64 passed in 81.49 s</td></tr>
+      <tr><td>Repaired-source node gate</td><td><code>c1ccd0e40c36aee1d892bd21ccccf4230dda6d97</code></td><td>65 passed in 89.98 s</td></tr>
+      <tr><td>Latest baseline importer gate</td><td><code>f6b67f0a31c3540f6292a43ac37a41834da0ca6b</code></td><td>145 failed, 3971 passed, 4 skipped, 11 warnings, 3 errors in 559.29s (0:09:19)</td></tr>
+      <tr><td>Latest head importer gate</td><td><code>c1ccd0e40c36aee1d892bd21ccccf4230dda6d97</code></td><td>144 failed, 3986 passed, 4 skipped, 11 warnings, 3 errors in 623.00s (0:10:23); 0 added failing ids</td></tr>
+    </tbody>
+  </table>
+  <p>The repaired-source complete-arm comparison adds zero failing ids against
+    the original base before any baseline classification. Both arms run
+    sequentially on all_debug with four pytest workers and whole-file scheduling.
+    The baseline remains red. Full failure ids and the one removed id are
+    preserved in <code>repair-head-reviewround-delta.json</code>. The reviewed
+    repair base also has its own same-command observation: the two-file gate
+    records 64 passing tests at the reviewed head, then 65 at repaired source.</p>
+  <h3 id="hot-path-reads-only-live-runs-review-completeness">Recover an incomplete review lookup before using it</h3>
+  <p>Finding <code>fde8b3ac5de</code> is answered by
+    <code>c1ccd0e40c36aee1d892bd21ccccf4230dda6d97</code>.
+    A store with two existing reviews and no lookup index receives one review
+    through the shared writer. Its first index correctly holds one entry and
+    <code>complete=0</code>, with the current directory stamp. The reader now
+    requires both a matching stamp and <code>complete=1</code>. An incomplete
+    index therefore uses the established full-store reader for that lookup;
+    recovery publishes all three entries with <code>complete=1</code>.</p>
+  <p>The added regression first reproduced the defect as
+    <code>AssertionError: assert None ==</code> for the older producer lookup,
+    which must return the stored path and record. With the guard it finds that record, counts exactly one
+    full-store recovery, verifies all three indexed entries and finds the second
+    older producer through the completed index. The regression is committed
+    separately at <code>414baa9fce090aee091fcfd1fb52e9b090b74ddd</code>.</p>
+  <p>The answering-commit control archives repaired source, applies
+    <code>git revert --no-commit c1ccd0e40c36aee1d892bd21ccccf4230dda6d97</code>
+    in its scratch tree, and retains the regression. The older lookup returns
+    <code>None</code> again: <code>1 failed in 0.62s</code>, EXIT=1, in
+    <code>probe-review-index-revert-probe.log</code>. The same case passes in the
+    unmodified 65-test source arm. The original station-walk mutation is also
+    rerun against repaired source and records <code>1 failed, 13 deselected in
+    24.12s</code>, detecting ended worker-file opens.</p>
+  <table id="hot-path-reads-only-live-runs-repeated-readers">
+    <caption>Earlier compatibility repetitions: five independent pytest processes per reader and revision on all_debug</caption>
+    <thead><tr><th>Reader contract</th><th>Base failures / runs</th><th>Head failures / runs</th><th>Observation</th></tr></thead>
+    <tbody>
+      <tr><td>Promoted pace row replay</td><td>2 / 5</td><td>5 / 5</td><td>The same unreadable-clock refusal occurs at the base</td></tr>
+      <tr><td>Station transitions across restart</td><td>0 / 5</td><td>0 / 5</td><td>All existing replay and consumed-offset assertions pass</td></tr>
+    </tbody>
+  </table>
+  <p>The repeated arms use base
+    <code>f6b67f0a31c3540f6292a43ac37a41834da0ca6b</code> and head
+    <code>2576bf2aa2c27d43ca17c5792e2656911a85f7a5</code>.
+    Pace replay fails at the base with
+    <q>the 'alpha' lane's five-hour clock reports state 'unknown'</q>.
+    This is recorded as pre-existing, with its higher observed failure count at
+    head retained. The committed row continues through the full
+    <code>ledger.runs</code> reader. Station restart passes all ten runs; its
+    assertions and reader remain intact. Neither existing test file was edited.
+    The four <code>repeated-{base,head}-{pace,restart}.log</code> receipts and
+    <code>repeated-readers.json</code> preserve every result. These observations
+    precede the completeness repair; both cases also pass in its current full
+    importer arm.</p>
+  <p>Three existing test files now prove their decode counters with an explicit
+    history read, permit promotion to decode zero historical rows, or observe the
+    indexed named-row lookup in their positive control. Their per-key decode
+    bounds and early-refusal zero-read assertions remain. They are
+    <code>test_a_promotion_decodes_the_ledger_index_at_most_once.py</code>,
+    <code>test_a_promotion_does_not_read_the_whole_ledger_index.py</code> and
+    <code>test_an_open_operation_refuses_a_promotion_first.py</code>.</p>
+  <table id="hot-path-reads-only-live-runs-live-timings">
+    <caption>Read-only live-fleet wall times on all_debug; prepared local caches excluded</caption>
+    <thead><tr><th>Read</th><th>Base [s]</th><th>Repaired source [s]</th></tr></thead>
+    <tbody>
+      <tr><td>Obligations</td><td>101.190621</td><td>60.775297</td></tr>
+      <tr><td>Successful review-promotion dry run</td><td>6.092324</td><td>0.679870</td></tr>
+    </tbody>
+  </table>
+  <p>The refreshed head probe uses repaired source
+    <code>c1ccd0e40c36aee1d892bd21ccccf4230dda6d97</code>. Both base and repaired
+    review probes select the same review, return would-promote=true with zero
+    refusals and perform zero shared writes. Cache preparation takes 46.94 s at
+    base and 54.35 s at repaired source and is excluded from the table. The
+    repaired probe sees 2,694 reviewed subjects, six obligations and six
+    unreconciled runs; the base obligation count was eight. Its write audit
+    refuses shared cache-lock attempts, providing a positive control for the
+    zero-write result. These are single observations over a changing fleet,
+    rather than a controlled speedup estimate. Metadata freshness checks and
+    Git work remain; zero ended-file opens does not imply constant total
+    filesystem work.</p>
+  <p>Ruff comparison on the changed Python paths records 14 baseline findings and
+    13 head findings, with no added finding. The same two existing files remain
+    unformatted in both arms. No unrelated formatting sweep is included.</p>
+  <p>All complete logs, comparison failure ids, reproduction probes and the
+    manifest are retained under
+    <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261113T022704207140-hot-path-reads-only-live-runs</code>.
+    Principal receipts are <code>repair-base-reviewround-suite.log</code>,
+    <code>review-repair-baseline-suite.log</code>,
+    <code>review-round-final-suite.log</code>,
+    <code>repair-head-reviewround-delta.json</code> and its full arm logs,
+    <code>probe-review-index-revert-probe.log</code>,
+    <code>review-round-negative-control-suite.log</code>,
+    <code>repair-base-live.log</code> and <code>review-round-head-live.log</code>.
+    The final-head gate follows the evidence
+    commit and its full revision is recorded in the manifest. This fragment
+    does not close the plan section.</p>
+</section>

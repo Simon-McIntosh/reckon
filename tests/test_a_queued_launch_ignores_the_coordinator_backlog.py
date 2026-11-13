@@ -2,9 +2,9 @@
 
 Queued work exists so that it runs when its lane frees, whether or not its
 coordinator is awake to reconcile delivered runs. Neither route is held back by
-a session's terminal backlog: each records on the run it writes the overdue
-runs the work was chosen over, and the admission launch names itself as the
-source of that record.
+a session's terminal backlog. A coordinator's direct dispatch records the
+overdue runs the work was chosen over; admission continues a queued request
+without computing or recording that backlog.
 """
 
 from __future__ import annotations
@@ -205,9 +205,7 @@ def test_an_admission_launch_waives_its_coordinator_backlog(
     assert result["launched"] == ["r-queued"], json.dumps(result, default=str)
     pointer = runs.read_pointer("r-queued")
     waiver = runs.dispatch_field(pointer, "unreconciled_override")
-    assert waiver["requested"] is True
-    assert waiver["source"] == "admission-launch"
-    assert [row["run_id"] for row in waiver["waived_runs"]] == ["r-delivered"]
+    assert waiver is None
 
 
 def test_a_direct_dispatch_records_the_backlog_it_runs_over(
@@ -254,8 +252,8 @@ def test_the_stored_override_does_not_govern_the_admission_launch(
     """The value recorded when the request was queued does not decide its launch.
 
     A request can wait days for a lane, so the waiver its dispatch stored then
-    describes that moment. The backlog that matters at launch is the one the
-    lane frees into, and the admission launch is what answers for it.
+    describes that moment. Admission continues the request without computing
+    or recording its session's backlog at launch.
     """
     home = Path(os.environ["RECKON_HOME"])
     _write_overdue_run(home, "r-delivered")
@@ -268,5 +266,4 @@ def test_the_stored_override_does_not_govern_the_admission_launch(
 
     assert result["launched"] == ["r-stored"], json.dumps(result, default=str)
     waiver = runs.dispatch_field(runs.read_pointer("r-stored"), "unreconciled_override")
-    assert waiver["source"] == "admission-launch"
-    assert [row["run_id"] for row in waiver["waived_runs"]] == ["r-delivered"]
+    assert waiver is None

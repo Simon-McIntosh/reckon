@@ -233,10 +233,10 @@ def test_a_wait_over_a_gone_producer_is_a_duty_and_not_working() -> None:
     assert row["process_alive"] is False
     assert row["liveness_proven"] is True
     assert row["external_wait"]["producer_gone"]["still_seconds"] >= BOUND
-    assert "producer is gone" in row["detail"]
+    assert "the run's own process is gone" in row["detail"]
     assert "reckon crew resume" in row["next_action"]
     assert "reckon crew discard" in row["next_action"]
-    # Not working, and not waiting either: the row names a stopped producer.
+    # Not working, and not waiting either: the row names a stopped process.
     assert run["phase"] == "waiting"
     assert row["classification"] not in {"running", "waiting"}
 

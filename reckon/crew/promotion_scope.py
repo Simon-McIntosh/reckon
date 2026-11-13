@@ -8,6 +8,7 @@ import os
 import re
 import subprocess
 import sys
+import time
 from collections.abc import Callable, Iterable, Mapping, Sequence
 from contextlib import contextmanager
 from datetime import UTC
@@ -793,6 +794,20 @@ def _repository_tree_boundary_violations(
             if isinstance(tree, Mapping) and str(tree.get("path") or "")
         ]
     declared = (record.get("node") or {}).get("write_paths") or ()
+    if own_tree is not None:
+        from reckon.crew.promotion_evidence import _merge_repair_scope
+
+        head = _resolve_commit(own_tree, "HEAD", strict=True)
+        repaired_scope = (
+            _merge_repair_scope(record, tree=own_tree, head=head) if head else None
+        )
+        if repaired_scope is not None:
+            outside = _outside_declared_scope(
+                repaired_scope.paths, declared, record=record, tree=own_tree
+            )
+            declared = tuple(
+                path for path in repaired_scope.paths if path not in outside
+            )
     declared_roots = _repository_scope_paths(
         declared,
         worktree=own_tree if own_tree is not None else repository,
@@ -1995,12 +2010,60 @@ def _path_has_a_staged_change(checkout: Path, path: Path) -> bool:
 
 LANDING_RECORD_NAME = "landing.json"
 _LANDING_SUBJECT_PREFIXES = ("promote(", "release(")
-# A staging ``git add`` that fails while another process holds the index lock is
-# retried this many times, at this spacing, before the landing refuses. Both are
-# bounded so a lock that is never released ends in the same refusal as a staging
-# failure that left no lock, a few seconds later.
-_INDEX_LOCK_RETRY_ATTEMPTS = 12
+# A landing ``git add``, ``git commit`` or rollback ``git restore`` that fails
+# while another process holds the index lock is retried this many times, at this
+# spacing, before the landing refuses. A peer session's commit keeps the shared
+# checkout's lock for seconds at a time, so the bound is sized to outlast a lock
+# held for a minute: about a minute and a quarter in all. Both are bounded so a
+# lock that is never released ends in a refusal naming its age, rather than a
+# wait that never ends.
+_INDEX_LOCK_RETRY_ATTEMPTS = 130
 _INDEX_LOCK_RETRY_INTERVAL_SECONDS = 0.5
+
+
+def _index_lock_retry_bound_seconds(attempts: int, retry_seconds: float) -> float:
+    """The longest a landing waits for a held index lock, in seconds."""
+    return max(0, attempts - 1) * retry_seconds
+
+
+def _index_lock_age_seconds(checkout: Path) -> float | None:
+    """How long the checkout's ``index.lock`` has existed, or None without one.
+
+    A writer creates the lock as it starts an index write and removes it when
+    it finishes, so the file's age is how long the lock has been held.
+    """
+    try:
+        lock = _git_dir(checkout) / "index.lock"
+        return max(0.0, time.time() - lock.stat().st_mtime)
+    except OSError:
+        return None
+
+
+def _index_lock_outlasted_bound_note(
+    checkout: Path, *, attempts: int, retry_seconds: float
+) -> str:
+    """Name a held lock's age and the bound when a lock is what refused a step.
+
+    Read the moment the step gives up, before the rollback runs: the rollback
+    spends a bound of its own and can see the lock released, and the refusal
+    must still say why the step gave up. Empty when the failure left no lock
+    behind, so a staging or commit failure for any other reason keeps its own
+    message.
+    """
+    if not _index_lock_held(checkout):
+        return ""
+    bound = _index_lock_retry_bound_seconds(attempts, retry_seconds)
+    spacing = f"{attempts} attempts {retry_seconds:.2f}s apart"
+    age = _index_lock_age_seconds(checkout)
+    if age is None:
+        return (
+            f" The checkout's index lock outlasted this landing's {bound:.1f}s "
+            f"retry bound ({spacing})."
+        )
+    return (
+        f" Another writer has held the checkout's index lock for {age:.1f}s, "
+        f"past this landing's {bound:.1f}s retry bound ({spacing})."
+    )
 
 
 def _landing_record_path(run_id: str) -> Path:
@@ -2501,6 +2564,11 @@ def _commit_landing_writes(
     reversals = _staged_reversals(checkout)
     staged = _stage_landing_writes(run_id, checkout, targets)
     if staged.returncode != 0:
+        lock_note = _index_lock_outlasted_bound_note(
+            checkout,
+            attempts=_INDEX_LOCK_RETRY_ATTEMPTS,
+            retry_seconds=_INDEX_LOCK_RETRY_INTERVAL_SECONDS,
+        )
         head = _head_revision(checkout)
         rollback = _restore_landing_writes(checkout, targets)
         if store_row_written:
@@ -2516,6 +2584,7 @@ def _commit_landing_writes(
         raise _landing_refusal(
             f"could not stage the landing writes for run {run_id!r} in "
             f"{checkout}: {staged.stderr.strip() or staged.stdout.strip()}"
+            f"{lock_note}"
             f"{_unrestored_landing_writes(rollback)}",
             rollback,
         )
@@ -2576,6 +2645,11 @@ def _commit_landing_writes(
         on_retry=record_commit_retry,
     )
     if committed.returncode != 0:
+        lock_note = _index_lock_outlasted_bound_note(
+            checkout,
+            attempts=_INDEX_LOCK_RETRY_ATTEMPTS,
+            retry_seconds=_INDEX_LOCK_RETRY_INTERVAL_SECONDS,
+        )
         head = _head_revision(checkout)
         rollback = _restore_landing_writes(checkout, targets)
         if store_row_written:
@@ -2591,6 +2665,7 @@ def _commit_landing_writes(
         raise _landing_refusal(
             f"could not commit the landing writes for run {run_id!r} in "
             f"{checkout}: {committed.stderr.strip() or committed.stdout.strip()}"
+            f"{lock_note}"
             f"{_unrestored_landing_writes(rollback)}",
             rollback,
         )
@@ -2652,6 +2727,8 @@ def _revision_is_ancestor(checkout: Path, revision: str, target: str) -> bool:
 
 
 from reckon.crew.merge import (
+    _git_dir,
+    _index_lock_held,
     _run_waiting_out_a_held_index_lock,
     clear_stale_landed_copies,
     landed_paths,

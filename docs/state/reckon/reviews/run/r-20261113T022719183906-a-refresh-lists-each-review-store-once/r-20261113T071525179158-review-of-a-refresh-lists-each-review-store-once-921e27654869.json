@@ -1,0 +1,95 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "6f14466d52c68ae32e8ff592aaec6134dd8fd8d1",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/station.py:773 station tick -> station_obligations.publish",
+    "reckon/crew/station_obligations.py:469 publish -> refresh",
+    "reckon/crew/recovery_memo.py:510 _classification_input_tick -> review_store_tick"
+  ],
+  "completed_at": "2026-11-13T07:56:30.460Z",
+  "dispatched_at": "2026-11-13T07:44:08Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "folded",
+      "node": "repair-of-a-refresh-lists-each-review-store-once-921e27654869",
+      "recorded_at": "2026-11-13T10:07:18.240359+00:00"
+    },
+    "1": {
+      "kind": "folded",
+      "node": "repair-of-a-refresh-lists-each-review-store-once-921e27654869",
+      "recorded_at": "2026-11-13T08:05:54.345933+00:00"
+    },
+    "2": {
+      "kind": "folded",
+      "node": "repair-of-a-refresh-lists-each-review-store-once-921e27654869",
+      "recorded_at": "2026-11-13T08:06:02.627322+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261113T022719183906-a-refresh-lists-each-review-store-once/logs/run-arms.sh",
+      "line": "34",
+      "severity": "blocking",
+      "text": "blocking: the arm logs print '# command:' as their seventh line, past the five-line head reckon/crew/reports.py:1536 scans, so the run's own logs/crew-check.log records ok:false on base, after, head and base-case logs and the manifest still reads status complete; promotion re-runs that audit and will refuse the record, and the fix is to put the command line inside the first five lines of each log and add 'messages_received: none'."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261113T022719183906-a-refresh-lists-each-review-store-once/manifest.md",
+      "line": "5",
+      "severity": "non-blocking",
+      "text": "non-blocking: the source brief armed the suite fence, but the manifest carries no baseline_suite or after_suite JSON block, so the base (49 passed, 2 errors at 6f14466d52) and after (50 passed, 2 errors at 921e276548) arms exist only as logs and a promotion receipt cannot be filled from the record's own fields."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261113T022719183906-a-refresh-lists-each-review-store-once/manifest.md",
+      "line": "5",
+      "severity": "non-blocking",
+      "text": "non-blocking: the done_when's ruff clause has no recorded run or log in the manifest; I re-ran ruff check and ruff format --check on the two changed Python paths in the head tree and both are clean, so the substance holds but the record does not show it."
+    }
+  ],
+  "head_log_revision": "921e27654869f50f14c0660954e5a64ef9431098",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified the production chain: reckon/crew/station.py:773 station tick -> reckon/crew/station_obligations.py:469 publish -> refresh; and reckon/crew/recovery_memo.py:510 already installs the same review_store_tick, so nesting is the only new interaction and it restores the outer token on exit.",
+    "diff": "read both commits against 6f14466d52: 50befec096 wraps refresh's derivation in review_records.review_store_tick() and re-indents the body unchanged, 921e276548 adds the 32-line evidence fragment; no other file moves.",
+    "done_when": "the done_when names a case running one refresh over at least 20 duty items counting every glob and scandir of the store directory and asserting at most one listing, a base control at least the duty count, matched all_debug arms and clean ruff; the manifest records base 194 listings (logs/base-case.log) against head 1, and the arms ran as all_debug jobs 1313243/1313244/1313246 named run-arms.sh in sacct.",
+    "goal": "the node's goal is to install the per-tick review store before the refresh derives duties; reckon/crew/station_obligations.py:257 does so around the fleet-state read, every session payload and the absent-session rewrites, and the store's own _store_paths at reckon/crew/review_records.py:83 then filters one os.scandir per directory.",
+    "manifest": "read; status complete, commits 50befec096 and 921e276548, changed_paths matching the diff exactly, the gate command and five logs recorded with a red negative control; the structured baseline_suite/after_suite fields the armed fence asks for are absent, and its own crew check log records ok:false.",
+    "write_paths": "the fence was station_obligations.py, review_records.py, the case and the fragment; the diff touches station_obligations.py, the new case and the fragment, and review_records.py needed no edit because the tick already existed there."
+  },
+  "justifications": {
+    "durability": "the declared mutation at logs/mutated.log replaces the tick with a bare block and reddens test_a_refresh_lists_the_review_store_once at 194 listings, so the assertion fails if the tick is removed rather than merely passing today.",
+    "evidence": "logs/base-case.log reads '194 listings' against the 24-duty fixture at 6f14466d52 and the head arm passes at 1, each log naming its revision, command and EXIT=; but the run's own logs/crew-check.log records ok:false on four of those logs (see finding).",
+    "fit": "the added comment at reckon/crew/station_obligations.py:250-255 states the mechanism and cost with no plan, sprint or ticket identifier, and the case names (_pointer, _classified_row, _record_listings) describe what they build.",
+    "goal_fidelity": "reckon/crew/station_obligations.py:257 wraps the refresh's whole derivation in review_records.review_store_tick(), which is exactly the goal's 'install the per-tick review store before the refresh derives duties'.",
+    "reuse": "the change installs reckon/crew/review_records.py:49 review_store_tick, the repository's existing per-tick store owner, rather than adding a second enumeration cache.",
+    "scope_discipline": "git diff --stat 6f14466d52..921e276548 lists only reckon/crew/station_obligations.py, tests/test_a_refresh_lists_each_review_store_once.py and the evidence fragment, every one inside the node's declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to install the per-tick review store before the refresh derives duties; reckon/crew/station_obligations.py:257 wraps the whole derivation \u2014 fleet state, every session payload and the absent-session rewrites \u2014 in review_records.review_store_tick(), which is that remedy and nothing more.\nVERDICT done_when: the done_when names tests/test_a_refresh_lists_each_review_store_once.py driving one refresh over at least 20 duty items and counting every glob and scandir of the store directory; the manifest records 194 listings at 6f14466d52 (logs/base-case.log) against 1 at the head, the matched arms ran as all_debug jobs 1313243/1313244/1313246 named run-arms.sh in sacct, and I re-ran the single case at the head tree and it passes.\nVERDICT write_paths: the declared fence was reckon/crew/station_obligations.py, reckon/crew/review_records.py, tests/test_a_refresh_lists_each_review_store_once.py and the fragment; git diff --stat 6f14466d52..921e276548 lists exactly the first, third and fourth, and review_records.py needed no edit because it already carries review_store_tick.\nVERDICT manifest: read; status complete, commits 50befec096 and 921e276548, changed_paths matching the diff, the gate command plus five logs, negative_control_log logs/mutated.log red at 194 listings \u2014 but its own logs/crew-check.log records ok:false, which is the blocking finding below.\nVERDICT diff: read both commits against 6f14466d52 \u2014 50befec096 wraps refresh's derivation in review_records.review_store_tick() and re-indents the body unchanged, 921e276548 adds the 32-line evidence fragment, and no other file moves.\nCALL_SITES: reckon/crew/station.py:773 station tick -> station_obligations.publish, reckon/crew/station_obligations.py:469 publish -> refresh, reckon/crew/recovery_memo.py:510 _classification_input_tick -> review_store_tick\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/station_obligations.py:257 installs review_records.review_store_tick() around exactly the derivation the goal names.\nSCORE evidence: 17\nJUSTIFICATION evidence: logs/base-case.log reproduces 194 listings at the base revision and the head arm passes at 1, but the run's logs/crew-check.log records ok:false against four of the logs it cites.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: git diff --stat 6f14466d52..921e276548 names only station_obligations.py, the new case and the fragment, all inside the declared write paths.\nSCORE durability: 18\nJUSTIFICATION durability: logs/mutated.log removes the tick at station_obligations.py:257 and test_a_refresh_lists_the_review_store_once reddens at 194 listings, so the assertion fails on the regression it was added for.\nSCORE fit: 18\nJUSTIFICATION fit: the added comment at reckon/crew/station_obligations.py:250-255 states the mechanism and the per-duty cost with no plan, ticket or attribution in it.\nSCORE reuse: 20\nJUSTIFICATION reuse: the change installs reckon/crew/review_records.py:49 review_store_tick, the existing owner of the per-tick store, rather than adding a second enumeration cache.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261113T022719183906-a-refresh-lists-each-review-store-once/logs/run-arms.sh:34 blocking: the arm logs print '# command:' as their seventh line, past the five-line head reckon/crew/reports.py:1536 scans, so logs/crew-check.log records ok:false on base, after, head and base-case logs while the manifest reads complete; promotion re-runs that audit and will refuse the record.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261113T022719183906-a-refresh-lists-each-review-store-once/manifest.md:5 non-blocking: the armed suite fence asks for baseline_suite and after_suite JSON, and the manifest carries neither, so the matched arms exist only as logs.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261113T022719183906-a-refresh-lists-each-review-store-once/manifest.md:5 non-blocking: the done_when's ruff clause has no recorded run; I re-ran ruff check and ruff format --check over the two changed Python paths in the head tree and both are clean.",
+  "review_run_id": "r-20261113T071525179158-review-of-a-refresh-lists-each-review-store-once-921e27654869",
+  "reviewed_base_sha": "6f14466d52c68ae32e8ff592aaec6134dd8fd8d1",
+  "reviewed_head_sha": "921e27654869f50f14c0660954e5a64ef9431098",
+  "reviewed_run_id": "r-20261113T022719183906-a-refresh-lists-each-review-store-once",
+  "reviewer": {
+    "backend": "clive",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash",
+    "reviewer_run_id": "r-20261113T071525179158-review-of-a-refresh-lists-each-review-store-once-921e27654869"
+  },
+  "reviewer_run_id": "r-20261113T071525179158-review-of-a-refresh-lists-each-review-store-once-921e27654869",
+  "scores": {
+    "durability": 18,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-13T08:02:46.027920+00:00",
+  "total": 111
+}

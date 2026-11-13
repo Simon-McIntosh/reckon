@@ -3643,11 +3643,18 @@ def crew_complete(
     if land:
         # Written before the promotion pushes anything, so a process killed
         # between the promotion and its merge leaves a record the landing pass
-        # finds and finishes, instead of a run that reads as landed.
-        from reckon.crew import pending_landing
+        # finds and finishes, instead of a run that reads as landed. The head
+        # the landing cites is read here, from the run's own tree, because the
+        # ledger row and the live pointer both move afterwards: a resume or a
+        # repair round can take the run to a head no review read, and the pass
+        # must finish this landing at the revision this call meant to merge.
+        from reckon.crew import pending_landing, promotion_release
 
         pending_landing.write_pending(
-            run_id, str(pointer.get("project") or project or ""), pointer=pointer
+            run_id,
+            str(pointer.get("project") or project or ""),
+            pointer=pointer,
+            head=promotion_release._run_promoted_revision(pointer, list(commits or ())),
         )
     try:
         result = crew_module.complete(

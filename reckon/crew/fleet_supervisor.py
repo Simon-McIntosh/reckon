@@ -70,7 +70,7 @@ import termios
 import threading
 import time
 from collections.abc import Callable, Iterator, Mapping, MutableMapping, Sequence
-from contextlib import suppress
+from contextlib import contextmanager, suppress
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
@@ -1302,6 +1302,57 @@ def run_file_limit_bytes(repo_root: Path, project: str | None) -> int:
     return flight.run_file_max_mb(config) * 1024 * 1024
 
 
+SERVICE_PASS_PATH_ENV = "RECKON_SERVICE_PASS_PATH"  # noqa: S105 - environment key
+SERVICE_PASS_BOUND_SECONDS = 1800.0
+
+
+@contextmanager
+def service_pass(*, bound: float = SERVICE_PASS_BOUND_SECONDS) -> Iterator[None]:
+    """Hold a declared service's pass boundary until its work completes.
+
+    A reload request prevents another pass from entering. The supervisor can
+    then replace the process while the pass lock is free, including when the
+    checkout needs a committed image rather than an in-place re-execution.
+    Manual commands have no supervisor boundary and proceed normally.
+    """
+    location = os.environ.get(SERVICE_PASS_PATH_ENV)
+    if not location:
+        yield
+        return
+    if bound <= 0:
+        raise ValueError("a service pass bound must be positive")
+    path = Path(location)
+    with (
+        path.with_suffix(".pass.registration").open("a+b") as registration,
+        path.with_suffix(".pass.lock").open("a+b") as handle,
+    ):
+        while True:
+            fcntl.flock(registration, fcntl.LOCK_EX)
+            try:
+                if not path.with_suffix(".pass.reload").exists():
+                    try:
+                        fcntl.flock(handle, fcntl.LOCK_EX | fcntl.LOCK_NB)
+                    except BlockingIOError:
+                        pass
+                    else:
+                        write_json_atomically(
+                            path,
+                            {
+                                "pid": os.getpid(),
+                                "started": time.monotonic(),
+                                "bound": bound,
+                            },
+                        )
+                        break
+            finally:
+                fcntl.flock(registration, fcntl.LOCK_UN)
+            time.sleep(SERVICE_POLL_SECONDS)
+        try:
+            yield
+        finally:
+            fcntl.flock(handle, fcntl.LOCK_UN)
+
+
 def service_wrapper_argv(name: str, argv: Sequence[str]) -> list[str]:
     """The command that starts one service copy, taking its lock first.
 
@@ -1350,6 +1401,7 @@ class _ServiceState:
     # The published image a replacement is started from, set by the decision
     # that chose one and consumed by the start that follows it.
     start_image: Path | None = None
+    code_stamp: str | None = None
 
 
 def _checkout_trust_verdict() -> Any:
@@ -1476,10 +1528,9 @@ class DeclaredServices:
         A copy whose record names the committed head's code is adopted, whatever
         the working tree holds: uncommitted edits are not code this supervisor
         delivers, so they never make a running copy stale. A copy on other code
-        is replaced, because a service that only reloads itself between passes
-        never reaches the supervisor's own restart, and a pass that never ends
-        never reaches that boundary at all. A copy recording no stamp is
-        replaced once, so its code is known from then on.
+        is replaced at its pass boundary, with a bounded wait for active work.
+        A copy recording no stamp is replaced once, so its code is known from
+        then on. Copies without the pass protocol are replaced immediately.
 
         A replacement is refused when the committed head cannot be loaded for a
         reason other than the working tree's edits -- a probe that could not
@@ -1500,7 +1551,13 @@ class DeclaredServices:
             return "uncompared"
         state.uncompared_reported = False
         recorded = recorded_service_stamp(self._runtime, name)
+        if recorded:
+            state.code_stamp = recorded
+        else:
+            recorded = state.code_stamp
         if not recorded or recorded == _unknown_code_stamp():
+            if not self._pass_allows_restart(name, pid):
+                return "adopt"
             log(
                 f"declared service {name} (pid {pid}) records no code stamp; "
                 f"restarting it so the code it runs is known "
@@ -1508,9 +1565,12 @@ class DeclaredServices:
             )
             return "restart"
         if recorded == current:
+            (self._runtime / f"{name}.pass.reload").unlink(missing_ok=True)
             return "adopt"
         trust = self._checkout_trust()
         if trust.trusted:
+            if not self._pass_allows_restart(name, pid):
+                return "adopt"
             log(
                 f"declared service {name} (pid {pid}) runs code stamp {recorded} "
                 f"while the checkout reads {current}; restarting it on the "
@@ -1518,6 +1578,7 @@ class DeclaredServices:
             )
             return "restart"
         if not getattr(trust, "dirty", False):
+            (self._runtime / f"{name}.pass.reload").unlink(missing_ok=True)
             if state.stamp_leave_reported != (recorded, current):
                 state.stamp_leave_reported = (recorded, current)
                 log(
@@ -1529,6 +1590,7 @@ class DeclaredServices:
             return "adopt"
         image = self._committed_image(current)
         if image is None:
+            (self._runtime / f"{name}.pass.reload").unlink(missing_ok=True)
             if state.stamp_leave_reported != (recorded, current):
                 state.stamp_leave_reported = (recorded, current)
                 log(
@@ -1540,6 +1602,10 @@ class DeclaredServices:
             return "adopt"
         state.image_pin = image[1]
         state.start_image = image[0]
+        if not self._pass_allows_restart(name, pid):
+            self._release_image_pin(state)
+            state.start_image = None
+            return "adopt"
         log(
             f"declared service {name} (pid {pid}) runs code stamp {recorded} "
             f"while the checkout reads {current}; the working tree holds "
@@ -1547,6 +1613,50 @@ class DeclaredServices:
             "restarted from the committed tree"
         )
         return "restart"
+
+    def _pass_allows_restart(self, name: str, pid: int) -> bool:
+        """Request a boundary and refuse a restart while bounded work owns it."""
+        path = self._runtime / f"{name}.pass"
+        # A registration must either see this request before entering or hold
+        # the pass lock until its work completes, even before its first record.
+        path.with_suffix(".pass.reload").touch()
+        with (
+            path.with_suffix(".pass.registration").open("a+b") as registration,
+            path.with_suffix(".pass.lock").open("a+b") as handle,
+        ):
+            try:
+                fcntl.flock(registration, fcntl.LOCK_EX | fcntl.LOCK_NB)
+            except BlockingIOError:
+                return False
+            try:
+                fcntl.flock(handle, fcntl.LOCK_EX | fcntl.LOCK_NB)
+            except BlockingIOError:
+                try:
+                    record = json.loads(path.read_text(encoding="utf-8"))
+                    if record["pid"] != pid:
+                        return False
+                    started = float(record["started"])
+                    bound = float(record["bound"])
+                except (OSError, ValueError, KeyError, TypeError):
+                    # Publication happens under the held pass lock. No record
+                    # is not evidence that the registration owner is idle.
+                    return False
+                if time.monotonic() - started < bound:
+                    return False
+                log(
+                    f"declared service {name} (pid {pid}) pass exceeded "
+                    f"its {bound:g}s bound; restarting for new code"
+                )
+        return True
+
+    def _restart_locked(self, name: str, state: _ServiceState) -> None:
+        """Stop the stale copy before starting its replacement on selected code."""
+        argv, image = list(state.argv), state.start_image
+        self._stop_locked(name)
+        replacement = self._states.setdefault(name, _ServiceState(argv=argv))
+        replacement.start_image = image
+        replacement.image_pin = _pin_image(image)
+        self._start_or_backoff_locked(name, argv)
 
     def _start_or_backoff_locked(self, name: str, argv: Sequence[str]) -> None:
         """Start a replacement, or schedule the retry a failed start needs.
@@ -1615,23 +1725,7 @@ class DeclaredServices:
                 ):
                     decision = self._code_decision(name, pid, state)
                     if decision == "restart":
-                        # The stop runs before the start so the copy's lock and
-                        # lease are free: a replacement started beside them is
-                        # refused, and a lease-holding service would wait out
-                        # the stale window for nothing.
-                        replacement_argv = list(state.argv)
-                        start_image = state.start_image
-                        self._stop_locked(name)
-                        replacement = self._states.setdefault(
-                            name, _ServiceState(argv=replacement_argv)
-                        )
-                        # The stop gave up the image's lease along with the
-                        # state, so the replacement takes a fresh one: without
-                        # it a prune on this node would rank the image old and
-                        # remove the code the new copy is about to import.
-                        replacement.start_image = start_image
-                        replacement.image_pin = _pin_image(start_image)
-                        self._start_or_backoff_locked(name, replacement_argv)
+                        self._restart_locked(name, state)
                         continue
                     state.pid = pid
                     state.owned = False
@@ -1692,11 +1786,17 @@ class DeclaredServices:
         log_path.parent.mkdir(parents=True, exist_ok=True)
         state = self._states.get(name)
         image = state.start_image if state is not None else None
+        pass_path = self._runtime / f"{name}.pass"
+        if not lock_held(name, self._runtime):
+            pass_path.unlink(missing_ok=True)
+            pass_path.with_suffix(".pass.reload").unlink(missing_ok=True)
+        child_environ = self._child_environ(image)
+        child_environ[SERVICE_PASS_PATH_ENV] = str(pass_path)
         try:
             with open(log_path, "ab") as sink:
                 process = subprocess.Popen(
                     service_wrapper_argv(name, list(argv)),
-                    env=self._child_environ(image),
+                    env=child_environ,
                     stdin=subprocess.DEVNULL,
                     stdout=sink,
                     stderr=sink,
@@ -1730,6 +1830,7 @@ class DeclaredServices:
         state.started_at = self._clock()
         state.last_renewed = self._clock()
         state.next_attempt = None
+        state.code_stamp = recorded_service_stamp(self._runtime, name)
         return process.pid
 
     def stop(self, name: str) -> None:
@@ -1826,11 +1927,8 @@ class DeclaredServices:
     def supervise_once(self, now: float | None = None) -> None:
         """Re-check every service once: restart what exited, trim its log.
 
-        A service is restarted only once its lock is free, which the kernel
-        arranges when the service ends. Nothing here times a service out: a
-        long tick is the service working, so a service's silence is never a
-        reason to restart it, and only a backoff that has come due starts a
-        new copy.
+        An exited copy follows its backoff. A stale copy moves to new code at
+        its pass boundary, or when that pass's declared bound expires.
         """
         now = self._clock() if now is None else now
         with self._guard:
@@ -1854,6 +1952,10 @@ class DeclaredServices:
                     state.last_renewed = now
                 log_path = service_log_directory(self._environ) / f"{name}.log"
                 trim_service_log(log_path, limit=self._log_limit, keep=self._log_keep)
+                if state.pid is not None and self._alive(name, state):
+                    if self._code_decision(name, state.pid, state) == "restart":
+                        self._restart_locked(name, state)
+                    continue
                 if state.pid is not None and not self._alive(name, state):
                     ran = (
                         now - state.started_at if state.started_at is not None else 0.0

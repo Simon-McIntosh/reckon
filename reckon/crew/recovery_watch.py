@@ -1894,7 +1894,18 @@ class _LedgerRunWordReader:
 
     def for_runs(self, departures: Iterable[str] | None = None) -> Mapping[str, str]:
         from reckon import ledger as ledger_module
+        from reckon.crew.open_run_index import row_for_run
 
+        if departures is not None:
+            words = {}
+            for run_id in departures:
+                try:
+                    row = row_for_run(self.project, run_id)
+                except (OSError, ValueError, ledger_module.LedgerError):
+                    continue
+                if row is not None:
+                    words[run_id] = "promoted" if row.get("commits") else "recorded"
+            return words
         try:
             recorded = ledger_module.run_ids(self.project)
         except (OSError, ValueError, ledger_module.LedgerError):

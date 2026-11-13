@@ -1,0 +1,66 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "read from the reviewed run's own manifest baseline_suite/after_suite and the logs they name: base arm at 7d8105febe26ad51bfac7c2a82f799e9a50f2c01: 7 failed / 127 passed, EXIT=1 (logs/base-arm.log); after arm at 3c440f440bcfaf433aac88d6b7b5af14e03ca087: 7 failed / 130 passed, EXIT=1 (logs/after-arm.log). The same seven tests/test_review_carries_forward.py ids fail in both arms and no head failure id is new, so added_failure_count is 0.",
+  "call_sites": [
+    "reckon/crew/picker/__init__.py:569",
+    "reckon/crew/review_need.py:287"
+  ],
+  "completed_at": "2026-11-13T09:39:23.534Z",
+  "dispatched_at": "2026-11-13T09:29:32Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "exempted",
+      "reason": "non-blocking; carried to the plan's next health review",
+      "recorded_at": "2026-11-13T10:40:42.590309+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "reckon/crew/picker/client.py",
+      "line": 34,
+      "severity": "non-blocking",
+      "text": "main_checkout() duplicates a capability the repository already owns: reckon/crew/node.py:1595 repository_identity resolves a linked worktree to its main checkout by collapsing them onto the shared git common directory (reckon/crew/node.py:1631-1639), and reckon/cli_entry.py:117 _main_checkout is already written to delegate to it; the addition re-implements the .git/commondir walk by hand instead of extending that owner, so two definitions of one resolution can now drift (the owner handles a bare layout, this one does not)."
+    },
+    {
+      "file": "tests/test_every_dispatcher_finds_the_router_key.py",
+      "line": 1,
+      "severity": "non-blocking",
+      "text": "the file is inside the plan's declared write paths but outside the node's dispatched write_paths, so crew check reports a changed path outside the write scope and promotion is at risk of refusing a sound deliverable; the repair is to widen the node's declared write paths to include the test the done_when names, not to remove the test."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "two production call sites pass the resolved path into ask(): reckon/crew/picker/__init__.py:569 and reckon/crew/review_need.py:287; both reach the changed default through client.credential_path().",
+    "diff": "read commit by commit against 7d8105fe: 5b2f56bda0 adds checkout_root(), main_checkout() and the credential_path() anchor plus the 134-line test; 3c440f440b corrects one worktree count in the fragment, 29 lines added, 2 removed, three files.",
+    "done_when": "the done_when names tests/test_every_dispatcher_finds_the_router_key.py with two cases, the named cause, the negative control, no added failure and clean ruff; tests/test_every_dispatcher_finds_the_router_key.py:88-134 carries the two cases plus a plain-checkout case, the gate log reads 3 passed EXIT=0, the base/after arms show no added failure, logs/negative-control.log reads 2 failed / 1 passed EXIT=1, and ruff on the two staged paths reports no findings (I re-ran it).",
+    "goal": "the node goal is to establish which cause stopped the follower reading OPENROUTER_API_KEY_RECKON and to anchor credential_path()'s default at the main checkout through the worktree .git pointer and commondir while keeping RECKON_PICKER_CREDENTIAL winning; reckon/crew/picker/client.py:29-74 implements it: main_checkout() follows the .git pointer and reads that git directory's commondir, and the fragment records the import-location cause with its measurements.",
+    "manifest": "read; it records both shas, the cause with its measurements, the gate and both arms with the pre-existing seven review_carries_forward ids in each, the negative-control log path ending EXIT=1, and its own note that the test file sits outside the declared write scope.",
+    "write_paths": "the plan's declared write paths are reckon/crew/picker/client.py and the new test; the diff touches those two files plus the landing fragment and the figure directory declared in the dispatch, and nothing else \u2014 but the arranged declaration omitted the test file, which crew check reports as a changed path outside the write scope."
+  },
+  "justifications": {
+    "durability": "tests/test_every_dispatcher_finds_the_router_key.py:88-134 asserts against an independent expected path built from the fixture (main/.env), and restoring the base parents[3] lookup reddens the first two cases as logs/negative-control.log shows (2 failed, 1 passed, EXIT=1); every added assertion names a code change that would fail it.",
+    "evidence": "the gate log names and result are recorded and the base/after arms show no added failure, but the done_when also asks that ruff add no findings on the staged paths and the manifest records no ruff command or log for it; I re-ran ruff on reckon/crew/picker/client.py and the new test and it is clean.",
+    "fit": "the new helpers follow the surrounding module's style (plain functions over pathlib with a docstring stating the mechanism) at reckon/crew/picker/client.py:29-63, and no name in the diff carries a plan, phase or ticket label.",
+    "goal_fidelity": "reckon/crew/picker/client.py:65-74 resolves the default through main_checkout(checkout_root()), which at client.py:34-63 follows the worktree's .git pointer and the git directory's commondir, while the CREDENTIAL_ENV override still returns first.",
+    "reuse": "the added main_checkout() re-implements the worktree-to-main-checkout resolution already owned by reckon/crew/node.py:1595 repository_identity (via git rev-parse --git-common-dir), which reckon/cli_entry.py:117 _main_checkout delegates to, rather than extending that owner.",
+    "scope_discipline": "the diff 7d8105fe..3c440f44 touches only reckon/crew/picker/client.py, the landing fragment and tests/test_every_dispatcher_finds_the_router_key.py, and the test is inside the plan's declared write paths but outside the node's dispatched write_paths, which is the declaration defect the manifest itself reports."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to establish which cause stopped the follower reading OPENROUTER_API_KEY_RECKON and to anchor credential_path()'s default at the main checkout through the worktree .git pointer and commondir while keeping RECKON_PICKER_CREDENTIAL winning; reckon/crew/picker/client.py:29-74 implements it.\nVERDICT done_when: the done_when names tests/test_every_dispatcher_finds_the_router_key.py and the gate log at logs/gate.log reads 3 passed EXIT=0, the base/after arms show no added failure, logs/negative-control.log reads 2 failed / 1 passed EXIT=1, and ruff is clean on the two staged paths.\nVERDICT write_paths: the plan declares client.py and the new test; the diff touches those two plus the landing fragment, but the node's dispatched write_paths omitted the test file, which crew check reports.\nVERDICT manifest: read; it records both shas, the cause with its measurements, both suite arms, the negative control and its own note that the test sits outside the declared scope.\nVERDICT diff: read commit by commit against 7d8105fe; 5b2f56bda0 adds the anchor and the test, 3c440f440b corrects one count in the fragment; three files.\nCALL_SITES: reckon/crew/picker/__init__.py:569, reckon/crew/review_need.py:287\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/picker/client.py:65-74 resolves the default through main_checkout(checkout_root()) and keeps the CREDENTIAL_ENV override first.\nSCORE evidence: 17\nJUSTIFICATION evidence: the gate and both arms are logged with a revision and literal command per log, but no log records the ruff check the done_when asks for, which I re-ran clean myself.\nSCORE scope_discipline: 16\nJUSTIFICATION scope_discipline: the diff touches only client.py, the fragment and the new test, and the test is inside the plan's write paths but outside the node's dispatched set.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_every_dispatcher_finds_the_router_key.py:88-134 asserts against an independent expected path and reddens when the base parents[3] lookup is restored, as logs/negative-control.log shows.\nSCORE fit: 18\nJUSTIFICATION fit: the new helpers at reckon/crew/picker/client.py:29-63 follow the module's plain pathlib style and carry no plan or ticket label.\nSCORE reuse: 5\nJUSTIFICATION reuse: main_checkout() re-implements reckon/crew/node.py:1595 repository_identity rather than extending it.\nFINDING reckon/crew/picker/client.py:34 non-blocking: main_checkout() duplicates reckon/crew/node.py:1595 repository_identity rather than extending that owner.\nFINDING tests/test_every_dispatcher_finds_the_router_key.py:1 non-blocking: the test lies outside the node's dispatched write_paths, so crew check reports a scope violation and promotion may refuse; widen the declared write paths.",
+  "review_run_id": "r-20261113T065455828604-review-of-ready-lane-and-model-routing-s60-3c440f440bcf",
+  "reviewed_base_sha": "7d8105febe26ad51bfac7c2a82f799e9a50f2c01",
+  "reviewed_head_sha": "3c440f440bcfaf433aac88d6b7b5af14e03ca087",
+  "reviewed_run_id": "r-20261113T013852269914-ready-lane-and-model-routing-s60",
+  "scores": {
+    "durability": 19,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 5,
+    "scope_discipline": 16
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-13T10:40:06.571408+00:00",
+  "total": 94
+}

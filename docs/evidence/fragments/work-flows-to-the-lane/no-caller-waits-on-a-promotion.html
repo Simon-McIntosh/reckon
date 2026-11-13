@@ -201,4 +201,30 @@
     <code>hold-reproduction.log</code>, <code>hold-focused.log</code> and
     <code>hold-baseline-suite.log</code>.</p>
   </section>
+
+  <section id="no-caller-waits-on-a-promotion-service-boundary-merge">
+    <h3>Promotion draining stays inside the supervised admission pass</h3>
+    <p>The delivery at <code>98f558e30d9b821b7953e3b03cadc519fac821ec</code>
+    merges primary <code>b39f7760e27c2f7b1b4ba67ac2b6b5ccfe6605f3</code>.
+    Primary wraps continuous admission work in <code>service_pass()</code> so
+    a service reload respects the active pass boundary. The delivery starts a
+    bounded promotion service and ticks it in manual and continuous admission.
+    The resolution retains both: the continuous promotion tick runs inside the
+    supervised pass, while manual admission keeps its existing promotion tick.</p>
+
+    <p>A focused continuous-loop regression uses a real pass lock and a durable
+    promotion request. It observes the kernel refusing a second lock owner
+    during the promotion tick, verifies the lock is free between iterations,
+    and reads the queued run's promoted receipt and commit. The focused run is
+    <code>1 passed, 21 deselected in 1.02 s; EXIT=0</code>, with all three
+    observations printed in <code>service-merge-focused.log</code>. The fresh
+    original-base inventory arm is <code>51 passed in 9.26 s; EXIT=0</code>.</p>
+
+    <p>The final own gate and primary pass-boundary cases run at the committed
+    merge head. Separate controls remove the continuous promotion tick or
+    bypass the supervised boundary and require the new regression to fail.
+    Their actual receipts and the merge's full SHA are recorded in the
+    manifest after this evidence is committed. No promotion of this already
+    promoted run is requested; its pending landing remains a merge-only act.</p>
+  </section>
 </section>

@@ -56,6 +56,7 @@ from reckon.crew.node import (
     PlanReviewMissingError,
     parse_duration,
 )
+from reckon.crew.open_run_index import operational_read
 from reckon.crew.query import project_run_rows, run_section_index
 from reckon.crew.recovery_classification import PRODUCER_GONE_STATUS
 from reckon.crew.recovery_review_dispatch import supersedes_head
@@ -834,7 +835,9 @@ def _review_dispatch_refusal(
         ]
     except (OSError, ValueError):
         return None
-    closed = run_id in ledger.run_ids(project)
+    from reckon.crew.open_run_index import has_row
+
+    closed = has_row(project, run_id)
     for record in stored:
         if (
             review_lifecycle.lifecycle(
@@ -1065,8 +1068,16 @@ def _reflex_review_command(
     )
 
 
+def review_hand_dispatch_command(project: str, run_id: str) -> str:
+    """The command that starts one run's review without waiting for a sweep."""
+    return (
+        "dispatch the review by hand: `reckon crew dispatch --project "
+        f"{project} --role review` for run {run_id}"
+    )
+
+
 def _reflex_open_refusal(
-    project: str, pointer: Mapping[str, Any], *, age: int
+    project: str, pointer: Mapping[str, Any], *, age: int, dispatch: str = ""
 ) -> dict[str, str] | None:
     """The refusal the reflex's own dispatch rule would return, once overdue.
 
@@ -1079,22 +1090,43 @@ def _reflex_open_refusal(
 
     The question is asked of :func:`review_dispatch_refusal`, the read-only form
     of the predicate the dispatch applies, so the duty and the dispatch cannot
-    name different reasons for one held review.
+    name different reasons for one held review. A dispatch that reached the
+    launch and was refused there leaves its reason on the run, and that record
+    answers when the read-only predicate would not: the state that caused it may
+    be a lane that refused once rather than a guard that still holds.
     """
     if age <= _reflex_review_window_seconds():
         return None
-    report = recovery_review_dispatch.review_dispatch_refusal(pointer)
-    if not isinstance(report, Mapping) or not report.get("refused"):
-        return None
-    reason = str(report.get("reason") or "")
-    indices = [
-        index
-        for index in report.get("undisposed_findings") or ()
-        if isinstance(index, int)
-    ]
     run_id = str(pointer.get("run_id") or "")
+    report = recovery_review_dispatch.review_dispatch_refusal(pointer)
+    reason = ""
+    indices: list[int] = []
+    if isinstance(report, Mapping) and report.get("refused"):
+        reason = str(report.get("reason") or "")
+        indices = [
+            index
+            for index in report.get("undisposed_findings") or ()
+            if isinstance(index, int)
+        ]
+    if not reason and run_id:
+        recorded = pointer.get("review_dispatch")
+        if (
+            isinstance(recorded, Mapping)
+            and str(recorded.get("status") or "") == "refused"
+        ):
+            reason = str(recorded.get("reason") or "")
+    if not reason:
+        return None
     if not indices or not run_id or not reason:
-        return {"reason": reason, "next_command": reason}
+        # A refusal that names no finding is a state the reflex must wait out:
+        # a resume still launching, a recorded process not yet gone, a deferred
+        # obligation. The duty names the refusal and the command that starts
+        # the review by hand, so its reader acts instead of waiting on a sweep
+        # that will keep refusing for the same reason.
+        return {
+            "reason": reason or "the reflex refused this review's dispatch",
+            "next_command": dispatch or review_hand_dispatch_command(project, run_id),
+        }
     fold, exempt = recovery_review_dispatch._finding_dispose_commands(
         project,
         run_id,
@@ -1543,9 +1575,9 @@ def _producer_gone_item(row: Mapping[str, Any], *, now: datetime) -> dict[str, A
     Every field is the classifier's own evidence rather than a second
     derivation: the probe vector, the value it last reported, the terminal
     states it was waiting for and how long that value has stood still. The
-    action names the two remedies left — carry the wait past its gone producer,
-    or discard the run — because no sweep will lift it and the session is the
-    only thing that can decide.
+    action names the two remedies left — carry the wait past the end of the
+    run's own process, or discard the run — because no sweep will lift it and
+    the session is the only thing that can decide.
     """
     item = _live_item(row, kind=PRODUCER_GONE_DUTY_KIND, now=now)
     item["reason"] = str(row.get("detail") or "")
@@ -2134,10 +2166,12 @@ def _review_duty_item(
     is gone keeps the classifier's reading too, there being no tree left to
     ask, and a review the store cannot answer for reads missing rather than
     ready, because the safe direction is to ask for evidence. That reading is
-    what a snapshot keeps for a run that has already departed: a ready or stale
-    promotion duty it still names is settled at read time, on a ``stat`` of the
-    run's pointer, by
-    :func:`reckon.crew.obligation_snapshot.without_departed_run_duties`.
+    what a snapshot keeps for a run that has already departed, so a promotion
+    or review duty it still names is settled at read time by
+    :func:`reckon.crew.obligation_snapshot.without_departed_run_duties`: a
+    ready or stale row on a ``stat`` of the run's pointer, and a missing or
+    queued review row on that pointer's absence or on a review it records
+    dispatched for the head the duty names.
 
     A missing review whose most recent attempt the lane refused as paused reads
     review-queued while the refusal is inside its bound, naming when the lane
@@ -2383,7 +2417,12 @@ def _review_duty_item(
             # A reflex already refused is not a wait, so once its window has
             # passed the duty carries the refusal's own reason and the dispose
             # command that lifts it instead of a follower to inspect.
-            held = _reflex_open_refusal(project, pointer, age=age)
+            held = _reflex_open_refusal(
+                project,
+                pointer,
+                age=age,
+                dispatch=str(item.get("next_command") or ""),
+            )
             if held is not None:
                 item["reason"] = held["reason"]
                 item["next_command"] = held["next_command"]
@@ -2484,7 +2523,19 @@ def _run_namings(
 
     namings: dict[str, tuple[str, Path | None]] = {}
     try:
-        rows = ledger.runs(project, root=_ledger_read_root(project, repository))
+        from reckon.crew import open_run_index
+
+        root = _ledger_read_root(project, repository)
+        signature = _HELD_SOURCE_SIGNATURE.get()
+        if (
+            open_run_index.pointers() is not None
+            and signature is not None
+            and open_run_index.matches_sources(project, root, signature)
+        ):
+            rows = ledger.open_runs(project, root)
+            rows.extend(open_run_index.rows_naming_trees(project, signature[4], root))
+        else:
+            rows = ledger.runs(project, root=root)
     except Exception:  # noqa: BLE001 — a screen must never fail the derivation
         return None
     for row in rows:
@@ -3131,7 +3182,13 @@ def _sub_floor_items_by_session(
     """
     if not floors:
         return {}
-    closed = recovery._promoted_run_ids(project)
+    from reckon.crew.open_run_index import has_row
+
+    closed = {
+        str(pointer.get("run_id") or "")
+        for pointer in _live_pointers(project)
+        if pointer.get("run_id") and has_row(project, str(pointer["run_id"]))
+    }
     by_session: dict[str, list[dict[str, Any]]] = {}
     for pointer in _live_pointers(project):
         session = str(pointer.get("session") or "")
@@ -3388,6 +3445,7 @@ def _index_lag_notice(project: str, *, now: datetime) -> dict[str, Any] | None:
     return dict(notice)
 
 
+@operational_read
 def obligations(
     project: str, session: str, *, fields: Iterable[str] | None = None
 ) -> dict[str, Any]:
@@ -3777,7 +3835,7 @@ def _obligations_view(
             str(item["kind"]),
         )
     )
-    closure = runs.drain(project, session=session)
+    unreconciled = runs.drain_unreconciled_by_session(project).get(session, 0)
     items = [_with_action_form(item) for item in items]
     acknowledged = [_with_action_form(item) for item in acknowledged]
     sections = run_section_index([pointers.values()])
@@ -3786,7 +3844,7 @@ def _obligations_view(
         "oldest_age_seconds": max(
             (int(item["age_seconds"]) for item in items), default=0
         ),
-        "unreconciled_runs": int(closure["unreconciled_runs"]),
+        "unreconciled_runs": int(unreconciled),
     }
     view = {
         "project": project,

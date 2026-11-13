@@ -149,6 +149,11 @@ def _parsed_once() -> Iterator[None]:
     for its duration, so every reader inside it — the batch's derivation and
     the queue-time contract alike — buys each parse once, however many sections
     of that plan are chosen.
+
+    The authored section headings are memoised on the same boundary and on the
+    document text itself, so the roadmap's heading walk and every wait edge
+    that names a section of the same plan share one parse rather than paying
+    for two independent ones.
     """
     from reckon import _plan_html
 
@@ -161,11 +166,21 @@ def _parsed_once() -> Iterator[None]:
             cache[key] = list(original(document, **kwargs))
         return iter(cache[key])
 
+    original_headings = _plan_html.authored_section_headings
+    headings: dict[str, list[Any]] = {}
+
+    def counted_headings(html_text: str):
+        if html_text not in headings:
+            headings[html_text] = original_headings(html_text)
+        return headings[html_text]
+
     _plan_html.section_prose = cached
+    _plan_html.authored_section_headings = counted_headings
     try:
         yield
     finally:
         _plan_html.section_prose = original
+        _plan_html.authored_section_headings = original_headings
 
 
 @contextlib.contextmanager
@@ -625,11 +640,14 @@ def queue_batch(
 ) -> dict[str, Any]:
     """Queue each entry on its own — see :func:`_queue_batch`.
 
-    Inside one batch each named plan is parsed once and each named project's
-    roadmap is derived once, so the work of queuing does not grow with the
-    number of sections chosen.
+    Inside one batch each named plan is parsed once, each named project's
+    roadmap is derived once, and each plan's state, text and section headings
+    are read once, so the work of queuing does not grow with the number of
+    sections chosen.
     """
-    with _parsed_once(), _built_once():
+    from reckon.crew.queue_admission import plan_read_scopes
+
+    with _parsed_once(), _built_once(), plan_read_scopes():
         return _queue_batch(
             entries,
             session=session,

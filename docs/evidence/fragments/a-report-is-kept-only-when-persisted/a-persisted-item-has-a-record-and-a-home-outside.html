@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-report-is-kept-only-when-persisted">
+  <meta name="plan-section" content="s2">
+  <title>Persisted-item record and persist root | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+</head>
+<body>
+<main class="evidence-doc">
+  <h1 id="a-persisted-item-has-a-record-and-a-home-outside-title">Persisted-item record and persist root</h1>
+  <p id="a-persisted-item-has-a-record-and-a-home-outside-summary">Persisting copies a figure, and any named data files, into the project's own
+  root outside the crew home; every copy is checked against its source's byte count and content hash
+  before one record per copy is appended to the project's persisted-items resource.</p>
+
+  <h2 id="a-persisted-item-has-a-record-and-a-home-outside-what-landed">What landed</h2>
+  <ul id="a-persisted-item-has-a-record-and-a-home-outside-changes">
+    <li><code>reckon/crew/persist.py</code> — <code>persist_item</code>: resolve the mounted project and
+      <code>reports.persist_root</code>, copy each source, verify size and sha256, then append records.
+      A verified copy that does not match its source is refused and leaves no record; a repeat persist of
+      unchanged bytes returns the record already held and writes nothing.</li>
+    <li><code>reckon/project_state.py</code> — new <code>persisted_items</code> resource type at
+      <code>docs/state/&lt;project&gt;/persisted-items.html</code>, validated and written through the same
+      lock, version check and atomic write as every other distributed resource.</li>
+    <li><code>reckon/flight.py</code> — the <code>reports</code> block carries <code>persist_root</code>
+      (and <code>staging_root</code> for the retention pass that reads it next). Absolute paths only, no
+      shipped default, so a project that declares none is refused by name.</li>
+    <li><code>tests/test_a_persisted_item_has_a_record.py</code> — seven cases over a synthetic crew home
+      and a temporary persist root.</li>
+  </ul>
+
+  <h2 id="a-persisted-item-has-a-record-and-a-home-outside-measure">Measure</h2>
+  <table id="a-persisted-item-has-a-record-and-a-home-outside-table">
+    <thead><tr><th>Case</th><th>Reading</th></tr></thead>
+    <tbody>
+      <tr><td>Figure persisted</td><td>one copy, one record, copy hash equals source hash</td></tr>
+      <tr><td>Figure with two data files</td><td>three copies, three records, both data records name the figure</td></tr>
+      <tr><td>No persist root configured</td><td>refused naming <code>reports.persist_root</code>; no resource, no file</td></tr>
+      <tr><td>Unmounted project</td><td>refused; nothing written</td></tr>
+      <tr><td>Repeat persist, unchanged bytes</td><td>resource bytes unchanged, one record</td></tr>
+      <tr><td>Copy altered before the check</td><td>refused on the hash; no record, no file left</td></tr>
+      <tr><td>Read filters</td><td>by plan returns only that plan's records; by kind returns only figures or only data</td></tr>
+      <tr><td>Gate</td><td>7 passed at the run's head; base arm fails at import, because the module the test exercises does not exist there</td></tr>
+    </tbody>
+  </table>
+
+  <h2 id="a-persisted-item-has-a-record-and-a-home-outside-control">Negative control</h2>
+  <p id="a-persisted-item-has-a-record-and-a-home-outside-control-text">With the content-hash comparison skipped
+  (<code>copied_hash</code> set to <code>source_hash</code>), the altered-copy case accepts a corrupt copy and
+  fails: expected <code>PersistError</code>, none raised. The size check is still in place in that mutation, and
+  the case alters bytes without changing the length, so only the hash can catch it.</p>
+
+  <h2 id="a-persisted-item-has-a-record-and-a-home-outside-repair">Repair round</h2>
+  <ul id="a-persisted-item-has-a-record-and-a-home-outside-repair-list">
+    <li>The persist module no longer carries its own file digest: it reads the chunked reader the project-state module owns, so the content hash has one definition. Checked by object identity, not by wording.</li>
+    <li>The reports block declares only the persist root. The staging root belongs to the retention pass that reads it, and this node writes no such pass.</li>
+    <li>The untouched check now watches the operator docs state as well as the crew home, the data records are compared with the fixture path rather than with a script- produced field, and a case drives the refusal for a persist root inside the crew home.</li>
+  </ul>
+  <p id="a-persisted-item-has-a-record-and-a-home-outside-repair-control">Each fix has a red control: disabling the crew-home guard fails its case, and a data record naming its own copy rather than the figure source fails the two-data-file case.</p>
+</main>
+</body>
+</html>

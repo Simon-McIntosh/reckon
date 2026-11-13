@@ -5,6 +5,9 @@ import signal
 import subprocess
 import sys
 import time
+from collections.abc import Iterator
+from contextlib import contextmanager
+from contextvars import ContextVar
 
 from reckon._store import _config_home
 from reckon.crew.routing import (
@@ -284,6 +287,62 @@ BEAT_SECONDS = 1.0
 # The beat most recently walked, held as one element so the map is replaced
 # without rebinding a module name.
 _MARKED_PROCESSES_BEAT: list[tuple[float, dict[tuple[str, str], list[int]]]] = []
+# The walk a region pinned, held for one execution context. A region exists
+# because a beat bounds a poller's pass and not a sweep's: one refresh
+# classifies every live run in the project, and on a loaded node that pass
+# outlasts a one-second beat many times over, so a beat-keyed cache would walk
+# the table again for nearly every run.
+#
+# The pin is context-local rather than a module global because one process runs
+# more than one refresh at once — the station's sweep thread and its tick
+# thread each derive fleet state — and a shared pin would let one thread answer
+# from the other's table and drop the other's pin when its own block exits. The
+# value is a one-element list while a region is open, so the walk can be taken
+# on the region's first read rather than when it was entered, and ``None``
+# outside any region.
+_PINNED_PROCESSES: ContextVar[list[dict[tuple[str, str], list[int]] | None] | None] = (
+    ContextVar("reckon_pinned_processes", default=None)
+)
+
+
+@contextmanager
+def process_table_walk_once() -> Iterator[None]:
+    """One walk of the process table serves every read inside the block.
+
+    A sweep reaches the table once per live run it classifies, and its pass can
+    run for minutes on a busy host, so the beat's one-second sharing window
+    expires between runs and each run pays a full listing of ``/proc``. A region
+    replaces that bound for the length of the block: the first read walks and
+    the rest — of any run, at any moment inside the block — are answered from
+    the same table, so a sweep costs one listing however many runs it covers.
+
+    The walk is taken when the region's first read asks for it, not when the
+    block is entered, so a block whose reads never reach the process table —
+    a refresh whose pointers are all answered by their own live pids — costs no
+    listing at all.
+
+    The table a region holds is the table at its first read, so it is the same
+    answer every run would have received had the pass completed within one
+    beat, and no read inside the region can see a process started after that
+    read. A caller that must see the live table — the stop path, which selects
+    processes to signal — never reads the region and walks afresh.
+
+    The pin belongs to the calling thread's context, so two refreshes running
+    at once hold their own tables and neither sees the other's or drops its
+    pin. A nested region joins the one already open rather than opening a
+    second, so an inner scope cannot widen the outer one's staleness. Nothing
+    is left pinned once the outermost block exits, including on an exception.
+    """
+    enclosing = _PINNED_PROCESSES.get()
+    if enclosing is not None:
+        yield None
+        return
+    pin: list[dict[tuple[str, str], list[int]] | None] = [None]
+    token = _PINNED_PROCESSES.set(pin)
+    try:
+        yield None
+    finally:
+        _PINNED_PROCESSES.reset(token)
 
 
 def _beat_clock() -> float:
@@ -340,7 +399,18 @@ def _beat_marked_processes() -> dict[tuple[str, str], list[int]]:
     needs the same table. The first reach of a beat walks it and the rest are
     answered from that map, which is what makes a beat cost one listing of
     ``/proc`` rather than one per run. A reach in a later beat walks again.
+
+    Inside a :func:`process_table_walk_once` region the beat is not consulted at
+    all: the region's table answers every read until the block exits, so a pass
+    that outlives many beats still costs one walk. The region's walk is taken
+    here, on its first read, so a region whose reads never reach the table
+    costs nothing.
     """
+    pinned = _PINNED_PROCESSES.get()
+    if pinned is not None:
+        if pinned[0] is None:
+            pinned[0] = _walk_marked_processes()
+        return pinned[0]
     moment = _beat_clock()
     if _MARKED_PROCESSES_BEAT and moment - _MARKED_PROCESSES_BEAT[0][0] < BEAT_SECONDS:
         return _MARKED_PROCESSES_BEAT[0][1]

@@ -285,6 +285,41 @@ def _arrange_dispatch_follower(
     return dispatch_watch, session_delivery, watch_override
 
 
+def _named_brief(record: Mapping[str, Any]) -> str:
+    """The stored brief a request carries, as the coordinator wrote its path."""
+    node = record.get("node") or {}
+    if not isinstance(node, Mapping):
+        return ""
+    return str(node.get("brief") or node.get("brief_path") or "").strip()
+
+
+def _existing_run_reason(
+    existing: Mapping[str, Any], record: Mapping[str, Any], phase: str
+) -> str:
+    """Why a node's dispatch answers with the run it already has.
+
+    A request that names a brief is a coordinator's own focus for work the
+    reflex had already put in hand, and that focus cannot reach a run past the
+    queue: the brief is fixed when the run is launched, so a re-dispatch of the
+    node writes no second pointer and the coordinator's brief is silently
+    unused. Naming it, and the commands that apply it, is the difference
+    between a request the answer met and one it dropped. A queued copy is not
+    the silent case, because a queued copy's brief is replaced in place.
+    """
+    run_id = str(existing.get("run_id") or "")
+    reason = f"run {run_id} is already {phase or 'live'} for this node"
+    brief = _named_brief(record)
+    if not brief:
+        return reason
+    return (
+        f"{reason}, so the brief {brief!r} was not used: that run is past the "
+        "queue, which is where its brief was fixed, and the request wrote no "
+        f"second pointer; apply the focus by stopping that run "
+        f"(`reckon crew stop --run {run_id}`) and dispatching this node again "
+        "with the brief"
+    )
+
+
 def _answer_existing_node_run(
     existing: Mapping[str, Any],
     *,
@@ -316,7 +351,7 @@ def _answer_existing_node_run(
             "reason": queued.get("reason"),
         }
         return held
-    reason = f"run {existing.get('run_id')} is already {phase or 'live'} for this node"
+    reason = _existing_run_reason(existing, record, phase)
     # LaneHeld renders its own message from the gate's ``detail`` (falling back to
     # its state and path), so the reason is passed there: an existing-run answer
     # has no lane gate, and a gate-shaped message would read "the lane gate is
@@ -326,7 +361,7 @@ def _answer_existing_node_run(
         "run_id": str(existing.get("run_id") or ""),
         "position": None,
         "phase": phase,
-        "reason": f"already {phase or 'live'}",
+        "reason": reason,
     }
     return held
 

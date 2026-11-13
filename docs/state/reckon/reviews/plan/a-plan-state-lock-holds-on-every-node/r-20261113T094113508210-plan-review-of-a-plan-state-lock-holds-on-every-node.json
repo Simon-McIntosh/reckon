@@ -1,0 +1,109 @@
+{
+  "absent_items": [],
+  "accepted_edits": [
+    {
+      "by": "047d83aa-8229-48ed-a0fa-7234bda964cb",
+      "digests": {
+        "s2": "9aced61b9d55bebbd61bdab627c6261c44c22d5776e8964f8f571531dc39fc9d",
+        "s4": "0ad01f71488524526c21f5eb864c2de23a5c8b993f459e0e5ca1f16133a0908b"
+      },
+      "reason": "the s2 and s4 edits are the two clauses the scoped re-review's done_when-1 and done_when-2 asked for, and nothing else",
+      "units": [
+        "s2",
+        "s4"
+      ],
+      "when": "2026-11-13T10:36:25.477893+00:00"
+    }
+  ],
+  "completed_at": "2026-11-13T09:52:53.577Z",
+  "dispatched_at": "2026-11-13T09:43:58Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-plan-state-lock-holds-on-every-node.html:96",
+      "id": "done_when-1",
+      "reason": "replacing the count with set equality of (file,line) against the enumeration, which the fragment already states per row, makes the check fail for a missing site whatever else the fragment contains.",
+      "text": "\u00a74's endpoint is a row *count* equal to the lock-taking call count (43 of the 74 `fcntl.flock(` lines at 4d5c4389), and a count equality is invariant under one omitted site paired with one duplicated row, so the census can pass while a flock call is unaccounted for \u2014 the very claim the section exists to establish; the negative control removes a row and therefore exercises only the undercount direction",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-plan-state-lock-holds-on-every-node.html:60",
+      "id": "done_when-2",
+      "reason": "one clause fixing the tree on shared storage converts the head arm from a report that a path is absent \u2014 the base arm alone reveals the mistake, after a wasted round \u2014 into the lock evidence the section measures.",
+      "text": "\u00a72's two-node arm requires the second invocation to reach \"the same temporary tree\" but does not say the tree must be on storage both nodes can open, while a worker's own brief directs temporary trees to node-local `$TMPDIR`; on a node-local tree the second node's \"could not take the lock\" is an ENOENT on the lock path, indistinguishable in the log from exclusion",
+      "type": "done_when",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "4d5c4389b7cffd9462a79412ccd472e3bce0589a",
+  "plan_fingerprint": "f071dd34f640ba7de9ed4d7f86b179dcd8f49574319481af52b11d80f24ee6a5",
+  "plan_slug": "a-plan-state-lock-holds-on-every-node",
+  "plan_version": 1,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "4d5c4389b7cffd9462a79412ccd472e3bce0589a",
+      "commit_basis": "edit",
+      "finding": "done_when-1",
+      "note": "\u00a74's endpoint is now set equality: one row per lock-taking call by file and line, no call missing and none listed twice; the negative controls cover an omitted row and a duplicated row",
+      "reason": "",
+      "when": "2026-11-13T10:33:41.687417+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "4d5c4389b7cffd9462a79412ccd472e3bce0589a",
+      "commit_basis": "edit",
+      "finding": "done_when-2",
+      "note": "\u00a72's temporary tree must be on storage both nodes open (the shared home, never node-local /tmp), and the refusal must be a lock refusal with the lock file present, not a missing path",
+      "reason": "",
+      "when": "2026-11-13T10:34:09.047346+00:00"
+    }
+  ],
+  "responses": {
+    "done_when-1": {
+      "action": "acted",
+      "by": "",
+      "commit": "4d5c4389b7cffd9462a79412ccd472e3bce0589a",
+      "commit_basis": "edit",
+      "note": "\u00a74's endpoint is now set equality: one row per lock-taking call by file and line, no call missing and none listed twice; the negative controls cover an omitted row and a duplicated row",
+      "reason": "",
+      "when": "2026-11-13T10:33:41.687417+00:00"
+    },
+    "done_when-2": {
+      "action": "acted",
+      "by": "",
+      "commit": "4d5c4389b7cffd9462a79412ccd472e3bce0589a",
+      "commit_basis": "edit",
+      "note": "\u00a72's temporary tree must be on storage both nodes open (the shared home, never node-local /tmp), and the refusal must be a lock refusal with the lock file present, not a missing path",
+      "reason": "",
+      "when": "2026-11-13T10:34:09.047346+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/Code/reckon/docs/state/reckon/reviews/plan/a-plan-state-lock-holds-on-every-node/r-20261113T094113508210-plan-review-of-a-plan-state-lock-holds-on-every-node.json",
+  "review_run_id": "r-20261113T094113508210-plan-review-of-a-plan-state-lock-holds-on-every-node",
+  "reviewed_blob_sha": "28c5b43c8a1cedaf6f38135a270fee4fd2b77dc1",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 the extensionless `a-seat-held-elsewhere-is-not-restarted#s8` href resolves to `docs/plans/a-seat-held-elsewhere-is-not-restarted.html` with `id=\"s8\"` at line 5 of the body (file line 133), `scripts/` exists, and `reckon/project_state.py` resolves.",
+    "done_when": "a finding \u2014 \u00a74's endpoint is a row count (line 96) and \u00a72's two-node arm leaves the probe tree's storage unstated (line 60).",
+    "evidence_paths": "pass \u2014 \u00a74 writes under docs/evidence/fragments/<slug>/, and \u00a72/\u00a73 logs go to the crew run directory; neither is a scratchpad or a node-local path.",
+    "naming": "pass \u2014 no plan labels, stage names or ticket numbers reach the \u00a72/\u00a74 text; the new test filename states the property it tests, which matches the repository's existing behaviour-shaped test names.",
+    "reasoning": "pass \u2014 \u00a71's measured table (flock acquired on clu-3141, POSIX lockf blocked) supports \u00a72's mechanism, recovery already takes the resource locks so the isolation endpoint is reachable, and neither unit prescribes a code path, step sequence or formula.",
+    "single_goal": "pass \u2014 \u00a72 delivers cross-node exclusion with the within-process no-weaker constraint as a bound rather than a second deliverable; \u00a74 is the census alone and writes no source, which was its earlier defect.",
+    "wiring": "pass \u2014 s4's only declared edge (s4 depends-on s2) is the right direction: the census reads a tree \u00a72 has already changed and offers \"needs the \u00a72 lock\" as a verdict; \u00a72 and \u00a73 sharing a write path is governed by the merge rule and needs no edge."
+  },
+  "section_digests": {
+    "_document": "0dec7477ee5a04bfe94aedccdfcbb1a1fa4b6c5d40ca04b8e47aeeaa04ea1a1c",
+    "s1": "cbecb1ff2b2187f2f95c30fdbfdf77b99831337f862a57f65926804182945505",
+    "s2": "eee17f50532ba77d00508153b3a90c1947e1648239065e4e9f4004ca17965b07",
+    "s3": "4322fa6bb06decf99e4d932412a0b6634d3f5d45bb085fc18a50da9c6f5f7f51",
+    "s4": "27081c9146fc712c75e307ea67e394e8f206331d896a530e6cef6de23d82cbb5"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-13T10:25:32.692664+00:00",
+  "total": null
+}

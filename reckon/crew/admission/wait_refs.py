@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 from . import readiness as _readiness
-from . import release as _release
 from .shared import (
     _MOUNT_UNSET,
     GATE_REF_PREFIX,
@@ -238,7 +237,9 @@ def derive_wait_refs(node: TaskNode, *, repo_root: str | Path) -> list[str]:
     explicit = [f"{REQUEST_REF_PREFIX}{run_id}" for run_id in node.after]
     if node.waits_only_after:
         return list(dict.fromkeys(explicit))
-    refs = section_wait_refs(_release._plan_html(repo_root, node.plan), node.section)
+    refs = section_wait_refs(
+        _readiness.plan_document_text(repo_root, node.plan), node.section
+    )
     if node.plan:
         state = _readiness._plan_state_and_text(
             Path(str(repo_root)) / "docs", node.plan
@@ -372,7 +373,7 @@ def _validated_batch_waits(
         )
         if docs is None:
             raise CrewError(f"wait names missing project {target_project!r}: {ref}")
-        html = _release._plan_html(docs.parent, parsed.slug)
+        html = _readiness.plan_document_text(docs.parent, parsed.slug)
         if not html:
             raise CrewError(f"wait names missing plan {target_project}:{parsed.slug}")
         row = _readiness._plan_state_and_text(docs, parsed.slug, target_project)[0]
@@ -407,7 +408,7 @@ def _validated_batch_waits(
         )
         if docs is None:
             return
-        html = _release._plan_html(docs.parent, parsed.slug)
+        html = _readiness.plan_document_text(docs.parent, parsed.slug)
         for ref in section_wait_refs(html, parsed.stage):
             child, _ = target(ref, parsed.project or project)
             edges[key].add(child)

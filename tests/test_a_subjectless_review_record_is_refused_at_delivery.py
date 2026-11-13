@@ -35,6 +35,7 @@ BASE_SHA = "0" * 40
 REVIEW_MANIFEST = """\
 node: review-of-{run}
 status: complete
+messages_received: none
 commits: none
 changed_paths:
 {paths}
@@ -71,6 +72,15 @@ def _check() -> tuple[int, list[str]]:
         cli_main, ["crew", "check", "--manifest", "--run", REVIEW_RUN_ID]
     )
     return result.exit_code, json.loads(result.output)["findings"]
+
+
+def _deliver() -> tuple[int, str]:
+    """Run the delivery gate itself, which is where a record is filed or refused."""
+    result = CliRunner().invoke(
+        cli_main,
+        ["crew", "complete", "--run", REVIEW_RUN_ID, "--gate", "not-run", "--dry-run"],
+    )
+    return result.exit_code, result.output
 
 
 @pytest.fixture()
@@ -164,3 +174,38 @@ def test_the_refusal_names_the_record_and_the_missing_subject(
         finding.startswith(f"review record {str(record)!r} ") for finding in findings
     )
     assert any("has no subject" in finding for finding in findings), findings
+
+
+def test_the_delivery_gate_itself_refuses_a_subjectless_record(
+    review_run: dict[str, Path],
+) -> None:
+    """The gate that files the record, not only the pre-flight check, refuses it."""
+    record = review_run["record"]
+    record.write_text(json.dumps(_record({})), encoding="utf-8")
+    review_run["manifest"].write_text(_manifest_body([str(record)]), encoding="utf-8")
+
+    exit_code, output = _deliver()
+
+    assert exit_code != 0, output
+    assert "review_filed" in output, output
+    assert "no subject" in output, output
+
+
+def test_the_delivery_gate_passes_a_record_carrying_its_subject(
+    review_run: dict[str, Path],
+) -> None:
+    """The same record naming its reviewed run clears the review-filing gate."""
+    record = review_run["record"]
+    record.write_text(
+        json.dumps(_record({"reviewed_run_id": REVIEWED_RUN_ID})), encoding="utf-8"
+    )
+    review_run["manifest"].write_text(_manifest_body([str(record)]), encoding="utf-8")
+
+    _exit_code, output = _deliver()
+
+    # The gate ran to its promotion report, so the case proves the record cleared
+    # the review-filing step rather than failing earlier on an unrelated guard.
+    report = json.loads(output)
+    assert "ok" in report, output
+    assert "review_filed" not in report, output
+    assert "no subject" not in output, output

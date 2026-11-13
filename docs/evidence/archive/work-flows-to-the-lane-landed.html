@@ -154,6 +154,56 @@
     <p>§29 landed at <code>69ffd69fb9</code> (reviewed head <code>d8769b9a6e</code>, run <code>r-20261112T230644567766-finished-pending-landing-retires-its-run</code>). By the time it ran, the defect no longer reproduced at main: the pending-landing pass's attempt-aware release, landed beside the-monitor-reads-each-fact-once §39, already retired the finished attempt's pointer and worktree. The section therefore lands as a regression test, <code>tests/test_a_finished_pending_landing_retires_its_run.py</code>. It covers retirement after a pushed merge, a refused push that keeps everything, an already-discarded pointer, and a newer attempt's pointer that is kept. Two negative controls fail by name. Both reviews scored 20 on every dimension. A related order defect remains with the-monitor-reads-each-fact-once §41: the unfinished-promotion path clears the pending record before it retires the attempt.</p>
   </section>
 
+  <section id="s33-only-unmergeable-paths-are-claimed" data-evidence-origin="append">
+    <h2>§33 — only a path git cannot merge is ever claimed</h2>
+    <p>§33 landed at <code>71fac2fe84</code> (run <code>r-20261113T020053676895-only-unmergeable-paths-are-claimed</code>). Dispatch, admission, widening, resume and promotion no longer hold, refuse or fence a node because another live run declares the same source or test path, or a directory containing it. Claims remain only on plans, generated state, cumulative evidence records, figure topic directories and dependency lockfiles, and a worker's brief names other runs' paths only as information. Until it landed, the old peer fence stopped §22, §32, §34 and §35 on one another's <code>reckon/crew</code> claims, and each was resumed under the lead's ruling that concurrent edits meet at the merge. The review scored 20 on every dimension, with no finding and no added failure.</p>
+  </section>
+
+  <section id="s36-admission-pass-reads-ledger-once" data-evidence-origin="append">
+    <h2>§36 — an admission pass reads the ledger at most once</h2>
+    <p>§36 landed at <code>ae49564353</code> (run <code>r-20261113T032923501296-admission-pass-reads-ledger-once</code>). An admission pass now answers every waiting request's section waits from one indexed ledger read, where it had read and deep-copied all of about 8,360 run documents once per wait; that stage had kept the admit service from completing a pass from 01:25Z. The review scored 20 on every dimension with no findings. The first landing was refused because the manifest's gate command named a temporary interpreter that no longer existed, and the worker corrected the record. Once the service ran it, its passes reached the launch stage, where §39's regression was then found.</p>
+  </section>
+
+  <section id="s34-run-leaves-nothing-behind" data-evidence-origin="append">
+    <h2>§34 — a run leaves nothing behind when it ends</h2>
+    <p>§34 landed at <code>b31dd85d52</code> (run <code>r-20261113T023226263467-run-leaves-nothing-behind</code>). Landing, discarding, or promoting a run with nothing to merge now removes its worktree and scratch and archives its run directory out of the walked tree, as part of the operation that ends it; the sweep is a crash backstop. Its review raised no finding and found no added failure, scoring 19 on durability and 20 elsewhere. The live-fleet measurement of worktree and run-directory counts is recorded in the run's evidence fragment.</p>
+  </section>
+
+  <section id="s38-stopped-run-resumes-with-advice" data-evidence-origin="append">
+    <h2>§38 — a stopped run can be resumed with advice</h2>
+    <p>§38 landed at <code>e0e44c0ca6</code> (run <code>r-20261113T044627048212-stopped-run-resumes-with-advice</code>). <code>crew stop</code> now records the attempt's exit when it ends the run's processes, so a stopped run whose processes are gone resumes with advice; a run stopped before the change, with a dead recorded pid, resumes too. This restores stop-then-resume as the way to steer a worker, which nova had found dead-ended on 13 November. The review raised one non-blocking note on a duplicated test helper, exempted.</p>
+  </section>
+
+  <section id="s31-coordinator-holds-a-delivered-run" data-evidence-origin="append">
+    <h2>§31 — a coordinator can hold a delivered run, and a resume never vanishes</h2>
+    <p>§31 landed at <code>ab0ad1589f</code> (run <code>r-20261113T011510453024-coordinator-holds-a-delivered-run</code>). A coordinator can hold a delivered run from automatic promotion and landing and release it, the lander and acceptance sweep skip a held run, a resume of a promoted or promoting run refuses with the promotion named, and a resume of a delivered run takes a hold first. Two repair rounds closed the review's blocking findings: a promotion in flight is now refused before the resume holds, and a hold now matches an abbreviated commit spelling. The final re-review raised one non-blocking note on a test guard.</p>
+  </section>
+
+  <section id="s30-scheduler-wait-is-not-abandoned" data-evidence-origin="append">
+    <h2>§30 — a wait on scheduler jobs is never read as abandoned while a job is alive</h2>
+    <p>§30 landed at <code>60662c0436</code> (run <code>r-20261113T003754418594-scheduler-wait-is-not-abandoned</code>). A wait whose probe passes scheduler job ids, under a job flag or as a comma-separated list, is read as a wait on those jobs, and the run is not read as abandoned while the scheduler lists any of them alive. Whether a numeric list names jobs or ports is decided by the command, so <code>nc -z host 80,443</code> names no job, and a <code>--jobs=a,b</code> list is read whole. A row says no job is alive only when the scheduler was asked and listed none; it says the scheduler was not consulted, or could not be asked, otherwise, and it names the run's own process rather than “the producer”. This is the misread that had nova restarting a healthy watch producer all day. Two repair rounds closed the review's findings. The landing was refused twice on records that omitted two pre-existing scaffolding errors before the arms were corrected.</p>
+  </section>
+
+  <section id="s37-service-reloads-between-passes" data-evidence-origin="append">
+    <h2>§37 — a service reloads onto new code only between passes</h2>
+    <p>§37 landed at <code>3085087130</code> (run <code>r-20261113T033507849520-service-reloads-between-passes</code>). A declared service that must move to new code finishes its pass and moves at the boundary; a pass that overruns its bound is still restarted, with the bound named in the log. A worker no longer inherits its parent service's pass-boundary variable. On 13 November the supervisor had restarted the admit service on every landing, killing each pass before it ended. The review's one blocking finding, a race on the first pass record, was closed in a repair round, and the re-review scored 19 to 20 with no findings.</p>
+  </section>
+
+  <section id="s39-queued-launch-never-classifies-the-fleet" data-evidence-origin="append">
+    <h2>§39 — a queued launch never classifies the fleet</h2>
+    <p>§39 landed at <code>5cdffb591f</code> (run <code>r-20261113T060010212800-queued-launch-never-classifies-the-fleet</code>). A launch made by the admission service now records no session backlog and classifies no run but its own, while a coordinator's direct dispatch still records the backlog as §3 requires. Measured in its test: zero classifier calls for a queued launch, and ten backlog runs recorded on a direct dispatch. This removes the regression §3 had introduced on the admission path, where every queued launch classified every live run on loaded GPFS and the local lane stood at 0 to 2 running. The first review's blocking finding, two assertions still expecting a backlog on queued launches, was closed in a repair round, and the re-review scored 20 on every dimension.</p>
+  </section>
+
+  <section id="s35-hot-path-reads-only-live-runs" data-evidence-origin="append">
+    <h2>§35 — a hot path reads only live runs</h2>
+    <p>§35 landed at <code>8ce22b9d88</code> (run <code>r-20261113T022704207140-hot-path-reads-only-live-runs</code>). The station's tick, promotion, landing and the obligations view now consult an index of open runs, kept current as runs start and end, and finished history is read only by the verbs that ask for it. The first attempt broke 82 existing tests by replacing the full readers. It was re-scoped to add the index as a fast path beside the existing readers, keeping every reader's contract, and reached zero added importer failures. Its review then found that a lookup index first created by a single write was served as complete, so older reviews would disappear. A repair round fixed that, and the re-review scored 20 on every dimension. The-monitor-reads-each-fact-once §45's writer-maintained review index will replace this section's review lookup index when it lands, by the rule recorded on that section.</p>
+  </section>
+
+  <section id="s40-merge-repaired-run-judged-on-own-changes" data-evidence-origin="append">
+    <h2>§40 — a landing after a merge repair judges only the run&#x27;s own changes</h2>
+    <p>§40 landed at <code>72ab4c1057</code> (run <code>r-20261113T074659623033-merge-repaired-run-judged-on-own-changes</code>). A landing now judges a run's scope, its declared paths and the cleanliness of those paths in the main checkout on the run's own changes since its merge base with the primary branch. Whatever a merge-repair merge brought in from main is not counted. §32 had been refused on 154 such files, then on other sessions' uncommitted review records among them; it can now land on its own 25. The review scored 20 on every dimension with no findings. The first landing was refused because the manifest's gate command named a temporary interpreter that no longer existed, and the worker corrected the record.</p>
+  </section>
+
 </main>
 </body>
 </html>

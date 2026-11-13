@@ -22,7 +22,7 @@ from reckon import (
     ledger,
 )
 from reckon._timestamps import parse_utc
-from reckon.flight import reserved_lane_policies
+from reckon.flight import queue_repick_after_seconds, reserved_lane_policies
 from reckon.crew.node import (
     CrewError,
     PlanVisibilityError,
@@ -44,6 +44,11 @@ from reckon.crew.runs import (
 
 
 PICKER_DISPATCH_TIMEOUT_SECONDS = 5.0
+
+#: When a routed answer was chosen, recorded on the answer itself. A queued
+#: request stores this selection as its route, so the instant travels with the
+#: route and a launch can tell a fresh pick from a stale one.
+ROUTE_PICKED_AT_KEY = "picked_at"
 
 #: The record of a pick that reached a lane a flight policy reserves. One JSON
 #: line per such pick, appended under the crew home: the lane, the backend and
@@ -649,7 +654,7 @@ def dispatch_picker_selection(
             urgency=urgency,
             allow=_allow_reask,
         )
-        return _record_lifted_choice(selection)
+        return _stamp_route_pick(_record_lifted_choice(selection))
     error = result.get("error") or "picker returned no selection"
     reason = error
     if error == "timeout":
@@ -1355,6 +1360,124 @@ def _reask_onto_a_lifted_lane(
         "preferred_lifted_lane": preference.get("lane"),
         "reissued": True,
     }
+
+
+def _stamp_route_pick(selection: Mapping[str, Any]) -> dict[str, Any]:
+    """Mark a routed answer with the instant its route was chosen.
+
+    The selection is what a queued request stores as its route, and a queued
+    request is launched later, from lanes that may have moved since. Recording
+    the instant lets a launch tell a route chosen seconds ago from one that
+    waited hours, so a brief wait costs no second pick.
+    """
+    if str(selection.get("action") or "") != "route":
+        return dict(selection)
+    return {**selection, ROUTE_PICKED_AT_KEY: datetime.now(UTC).isoformat()}
+
+
+def _route_selection_summary(selection: Mapping[str, Any] | None) -> dict[str, Any]:
+    """The route a stored answer names, as far as a later reader needs it."""
+    if not isinstance(selection, Mapping):
+        return {}
+    return {
+        key: selection.get(key)
+        for key in ("backend", "family", "model")
+        if selection.get(key) is not None
+    }
+
+
+def launch_route_decision(
+    pointer: Mapping[str, Any],
+    *,
+    stored: Mapping[str, Any] | None,
+    config: Mapping[str, Any] | None,
+    destination: str = "",
+    now: datetime | None = None,
+) -> dict[str, Any]:
+    """Whether a launching request replays, re-picks or keeps its stored route.
+
+    A route the dispatcher named — ``--local``, ``--backend``, a model — or one
+    set later through a queue edit belongs to the coordinator and is kept
+    exactly as given. A route the router chose is evidence only about the
+    instant it was chosen: a request that waited longer than the flight's
+    ``queue.repick_after_seconds`` is picked again against the lanes as they
+    are now, because a lane reserved when it was queued may be open by the time
+    it launches. A stored route with no recorded pick time cannot be shown to
+    be fresh, so it is picked again rather than trusted.
+
+    ``keep`` also covers a request carrying no router answer at all, which
+    launches the backend it was queued for as it always has.
+    """
+    if not isinstance(stored, Mapping) or stored.get("action") != "route":
+        return {
+            "decision": "keep",
+            "reason": "the request carries no route the router chose",
+            "previous_route": _route_selection_summary(stored),
+        }
+    if destination or pointer.get("local") or pointer.get("named_route"):
+        return {
+            "decision": "keep",
+            "reason": "the route was named rather than chosen by the router",
+            "previous_route": _route_selection_summary(stored),
+        }
+    if pointer.get("route_fallback"):
+        return {
+            "decision": "keep",
+            "reason": "the request is already on a recorded fallback route",
+            "previous_route": _route_selection_summary(stored),
+        }
+    picked_at = str(stored.get(ROUTE_PICKED_AT_KEY) or "").strip()
+    bound = queue_repick_after_seconds(config)
+    summary = _route_selection_summary(stored)
+    if not picked_at:
+        return {
+            "decision": "repick",
+            "reason": "the stored route records no pick time",
+            "previous_route": summary,
+            "picked_at": None,
+            "age_seconds": None,
+            "repick_after_seconds": bound,
+        }
+    chosen_at = parse_utc(picked_at)
+    at = now or datetime.now(UTC)
+    age = (at - chosen_at).total_seconds()
+    if age <= bound:
+        return {
+            "decision": "replay",
+            "reason": f"the route was chosen {age:.0f}s ago, within the {bound}s bound",
+            "previous_route": summary,
+            "picked_at": picked_at,
+            "age_seconds": age,
+            "repick_after_seconds": bound,
+        }
+    return {
+        "decision": "repick",
+        "reason": f"the route was chosen {age:.0f}s ago, past the {bound}s bound",
+        "previous_route": summary,
+        "picked_at": picked_at,
+        "age_seconds": age,
+        "repick_after_seconds": bound,
+    }
+
+
+def record_route_repick(run_id: str, decision: Mapping[str, Any]) -> None:
+    """Keep the route a re-pick replaced beside the one it launched on.
+
+    The launched record is built from the node the launch composed, so the
+    stored route is not part of it. Writing it on the run's own pointer is what
+    lets a reader see both routes and why they differ, and the run id is the
+    request's own, so the record names the launch the coordinator printed.
+    """
+    if decision.get("decision") != "repick" or not decision.get("previous_route"):
+        return
+    with _pointer_lock(run_id):
+        if not pointer_path(run_id).exists():
+            return
+        pointer = read_pointer(run_id)
+        pointer["route_previous"] = dict(decision.get("previous_route") or {})
+        pointer["route_repicked_because"] = str(decision.get("reason") or "")
+        pointer["route_picked_at"] = decision.get("picked_at")
+        _write_existing_pointer(run_id, pointer)
 
 
 def _record_lifted_choice(selection: Mapping[str, Any]) -> dict[str, Any]:

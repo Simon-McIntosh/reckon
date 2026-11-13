@@ -1,0 +1,65 @@
+<article class="r-evidence" id="ready-the-monitor-shows-the-work-i-s121">
+  <h2 id="ready-the-monitor-shows-the-work-i-s121-title">A session whose follower is gone is told to re-arm it</h2>
+
+  <p id="ready-the-monitor-shows-the-work-i-s121-what">A session's obligations snapshot is
+  republished only while that session has a delivering follower, so a session whose follower stopped
+  keeps the snapshot its producer last wrote: it stays on the older code stamp and it ages. That
+  combination had no reading of its own, so it fell through to <code>producer-stale-code</code>, and
+  the line it earned named the producer's watch service. The producer is healthy in that state and
+  publishes for every session that still has a follower, so the remedy sent the coordinator to a
+  command that could not help. <code>freshness_reading</code> now answers
+  <code>follower-released</code> for exactly that population: an aged snapshot, a code stamp other
+  than the checkout's, and a registration that no longer delivers. Both conditions are required, so a
+  released session whose snapshot is still inside the freshness window keeps the stale-code reading
+  it had.</p>
+
+  <p id="ready-the-monitor-shows-the-work-i-s121-liveness">&ldquo;Released&rdquo; is asked of the
+  publisher's own reader, <code>follower_registration._follower_liveness</code>, rather than
+  re-derived from a lease or from the registration file's age, so the producer and the hook cannot
+  disagree about one session. That import sits inside the call, as the seat read's own does, so the
+  prompt hook's module-level surface still loads the snapshot reader alone; it is paid only by a read
+  whose snapshot is already past the window. In the hook, <code>not_fresh_line</code> says the
+  follower has stopped and how old the last publication is, then ends with the follower-arming
+  command the hook already carries for a session with no follower. It reuses neither
+  <code>NO_FOLLOWER</code>, whose reason names a foreign seat and claims no snapshot exists, nor the
+  producer's <code>crew watch --ensure</code> remedy.</p>
+
+  <table id="ready-the-monitor-shows-the-work-i-s121-arms">
+    <thead><tr><th>arm</th><th>command</th><th>result</th></tr></thead>
+    <tbody>
+      <tr><td>base 9814cf5d2f</td><td><code>PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q</code> over the 63 test files importing either module, run against a <code>git archive</code> of that revision</td><td>20 failed, 392 passed, EXIT=1</td></tr>
+      <tr><td>head 6e87c540eb</td><td>the same template over the 64 files the head tree carries, run from the worktree</td><td>20 failed, 395 passed, EXIT=1</td></tr>
+      <tr><td>negative control</td><td>the branch removed, then <code>pytest -q tests/test_a_released_follower_is_told_to_rearm.py</code></td><td>1 failed, 2 passed, EXIT=1</td></tr>
+      <tr><td>base 9814cf5d2f, named files</td><td><code>PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_quiet_foreign_producer_reads_live.py tests/test_a_stale_code_producer_is_not_reloading_forever.py tests/test_staged_write_inventory.py</code>, against a <code>git archive</code> of that revision</td><td>57 passed, 2 errors, EXIT=1</td></tr>
+      <tr><td>after a099be63b5, named files</td><td>the same command plus <code>tests/test_a_released_follower_is_told_to_rearm.py</code>, run from the worktree</td><td>62 passed, EXIT=0</td></tr>
+    </tbody>
+  </table>
+
+  <p id="ready-the-monitor-shows-the-work-i-s121-cases"><code>tests/test_a_released_follower_is_told_to_rearm.py</code>
+  measures three readings against a temporary crew home. A released registration, an aged snapshot
+  and a stamp other than the checkout's reads <code>follower-released</code>, and its line carries
+  &ldquo;this session's follower has stopped&rdquo;, the snapshot's age and the
+  <code>reckon crew follow</code> arming command, with neither &ldquo;reloading&rdquo; nor &ldquo;the
+  seat is held on&rdquo; in it. The same snapshot beside a delivering registration keeps
+  <code>producer-stale-code</code> and the producer's own remedy. A released registration whose
+  snapshot is inside the freshness window keeps that same stale-code reading, so the new one speaks
+  only for an aged snapshot. Each case asserts the registration's liveness through
+  <code>runs.follower_state</code> first, so a reading that came from a registration the test never
+  released cannot pass for one that did.</p>
+
+  <p id="ready-the-monitor-shows-the-work-i-s121-legacy">Two earlier tests write exactly this
+  population and asserted the text this reading replaces:
+  <code>test_a_stale_code_producer_is_not_reloading_forever.py::test_hook_names_old_code_rather_than_a_reload_for_an_aged_stale_snapshot</code>
+  and <code>test_a_quiet_foreign_producer_reads_live.py::test_snapshot_from_predecessor_uses_seated_producers_stamp[False]</code>
+  each arm a registration, release it, and write a twenty-hour-old snapshot on an older stamp. Each now
+  asserts the follower-stopped sentence and the <code>reckon crew follow</code> arming command in its
+  place. Their shared helper calls <code>freshness</code> with no session, which cannot answer the
+  registration question for anyone, so its own reading is unchanged and still pins
+  <code>producer-stale-code</code> for the document.</p>
+
+  <p id="ready-the-monitor-shows-the-work-i-s121-control">One negative control, logged at
+  <code>logs/negative-control.txt</code>: removing the new branch turns the first case red against the
+  very tree it passes on, with <code>producer-stale-code</code> reported in place of
+  <code>follower-released</code> and only that case failing. The other two cases pass mutated, which
+  is what shows the branch is the whole of the change rather than a second path to the same answer.</p>
+</article>

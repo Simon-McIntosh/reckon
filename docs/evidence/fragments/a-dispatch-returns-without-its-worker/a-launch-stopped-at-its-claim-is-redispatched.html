@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-dispatch-returns-without-its-worker">
+  <meta name="plan-evidence-for" content="a-dispatch-returns-without-its-worker">
+  <title>A launch stopped at its claim is redispatched | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <header>
+      <p class="eyebrow">Execution evidence &middot; fragment</p>
+      <h1>A launch stopped at its claim is redispatched</h1>
+      <p class="lead">A dispatch publishes its claim before it composes anything
+      else, and a launch cut off at that step leaves a pointer holding a pre-spawn
+      phase, no pid, and no attempt clock. Reading the age fell back to the claim
+      or creation instant only for a <code>cli</code> launch, so a station launch
+      had no clock at all: it never reached the stranded-launch bound, nothing
+      freed its claim, and it read as a young launch for as long as its pointer
+      lived. The claim is a clock every launch kind holds, and it now dates them
+      all. The release is paired with a fence at the point a launch would write
+      its reservation, so a launch merely slowed by storage abandons instead of
+      running a second worker beside its own redispatch.</p>
+    </header>
+
+    <section id="a-launch-stopped-at-its-claim-is-redispatched-measure">
+      <h2>Measure</h2>
+      <p><code>tests/test_a_launch_stopped_at_its_claim_is_redispatched.py</code>
+      builds a station launch (<code>launch: "in-harness"</code>, no attempt
+      clock) stopped at <code>claim-published</code> on a temporary crew home, in
+      four cases. A dead holder, and a live holder whose claim is older than
+      <code>STRANDED_LAUNCH_BOUND_SECONDS</code>, both read as an unreached launch
+      and are released by the admission pass. A live holder inside the bound still
+      reads <code>starting</code> and is not released. A launch that reaches its
+      reservation after the release is refused and writes no reservation and no
+      worker record.</p>
+      <p>The negative control restores the base classification &mdash; the claim
+      fallback gated on <code>launch == "cli"</code> again &mdash; and runs red on
+      both unreached-launch cases and on the fence case: <code>3 failed, 1
+      passed</code>. The base arm and the head arm are matched: the head arm runs
+      <code>55 passed</code>; the base arm resolves the same command over its own
+      tree, where this node's new test file does not exist and is dropped. All
+      three logs are under the run directory.</p>
+    </section>
+
+    <section id="a-launch-stopped-at-its-claim-is-redispatched-paths">
+      <h2>Where the change lives</h2>
+      <ul>
+        <li><code>reckon/crew/recovery_liveness.py</code> &mdash;
+        <code>_stranded_launch_age_seconds</code> dates a launch with no attempt
+        clock from its dispatch claim, or its creation instant, whatever its
+        launch kind. The evidence gates in <code>_stranded_launch</code> &mdash;
+        no pid, no worker record, no stream, no launch log &mdash; are what still
+        separate a young launch from an abandoned one.</li>
+        <li><code>reckon/crew/dispatch_launch.py</code> &mdash;
+        <code>reserve_launch_attempt</code> re-reads the run's release before it
+        writes the attempt reservation, so a launch that resumes after its release
+        takes nothing and starts nothing.</li>
+        <li><code>tests/test_a_launch_stopped_at_its_claim_is_redispatched.py</code>
+        &mdash; the four cases, on a temporary crew home.</li>
+      </ul>
+    </section>
+  </main>
+</body>
+</html>

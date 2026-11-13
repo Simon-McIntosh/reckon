@@ -113,9 +113,9 @@ def _measured_rollout_receipt(session_id: str, run_id: str | None) -> Any | None
         candidate = rollout.read_rollout_receipt(session_id, run_id=run_id or None)
     except (OSError, ValueError):
         return None
-    if isinstance(
-        getattr(candidate, "generation_seconds", None), float
-    ) and isinstance(getattr(candidate, "machine_seconds", None), float):
+    if isinstance(getattr(candidate, "generation_seconds", None), float) and isinstance(
+        getattr(candidate, "machine_seconds", None), float
+    ):
         return candidate
     return None
 
@@ -200,10 +200,7 @@ def _terminal_stream_data(
             if span_receipt is not None:
                 session_spans.setdefault(
                     stream_session,
-                    int(
-                        span_receipt.generation_seconds
-                        + span_receipt.machine_seconds
-                    ),
+                    int(span_receipt.generation_seconds + span_receipt.machine_seconds),
                 )
         try:
             written = candidate.stat().st_mtime
@@ -2463,7 +2460,14 @@ def _landing_scope_products(
     if not commits:
         return {"shadow_patch": "", "changed_lines": None, "scope_acceptances": []}
     tree = _tree_for_measurement(record, run_id)
-    cumulative = _committed_scope(cwd=tree, commits=commits, run_id=run_id)
+    from reckon.crew.promotion_evidence import _merge_repair_scope
+    from reckon.crew.promotion_scope import _descendant_commit
+
+    cumulative = _merge_repair_scope(
+        record, tree=tree, head=_descendant_commit(tree, commits)
+    )
+    if cumulative is None:
+        cumulative = _committed_scope(cwd=tree, commits=commits, run_id=run_id)
     acceptances: list[dict[str, str]] = []
     if cumulative.changed_lines.get("available", True):
         if (
@@ -2545,14 +2549,9 @@ def _landing_preconditions(
     project = str(record.get("project") or "")
     node = record.get("node") or {}
     shadow = _is_shadow(record)
-    existing = next(
-        (
-            item
-            for item in ledger.load(project, root=ledger_root)[0]["runs"]
-            if str(item.get("run_id") or "") == run_id
-        ),
-        None,
-    )
+    from reckon.crew.open_run_index import row_for_run
+
+    existing = row_for_run(project, run_id, ledger_root)
     if existing is not None:
         return {"already_landed": True}
 

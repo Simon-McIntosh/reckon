@@ -944,7 +944,10 @@ def write_run_file(
         mode=mode,
         fsync=fsync,
     )
+    from reckon.crew import open_run_index
+
     _bump_generation(project)
+    open_run_index.record_written(project, row, root)
     _index_record_written_document(project, root, row, target)
     return target
 
@@ -2749,8 +2752,14 @@ def _write_state(
             # disagreement the order above exists to avoid.
             _restore_run_files(snapshots, project, root)
             raise
-        rewritten = [path, *(target for target, _prior in snapshots)]
+        from reckon.crew import open_run_index
+
         _bump_generation(project)
+        open_run_index.aggregate_written(
+            project, payload["runs"], root, version=version
+        )
+        open_run_index.bootstrap_complete(project, root)
+        rewritten = [path, *(target for target, _prior in snapshots)]
         if commit and obstruction is None:
             _commit_state_write(
                 project,
@@ -3400,7 +3409,10 @@ def append_run(
             stream.write(encoded)
     except FileExistsError as exc:
         raise LedgerError(refusal) from exc
+    from reckon.crew import open_run_index
+
     _bump_generation(project)
+    open_run_index.record_written(project, stored_record, ledger_root)
     _index_record_written_document(project, root, stored_record, target)
     store_outcome = _index_append(project, stored_record)
     return {
@@ -4450,3 +4462,27 @@ from reckon.run_record import (  # noqa: E402, F401
     underivable_duration,
     unmeasured_clone_report,
 )
+
+
+def open_runs(project: str, root: str | Path | None = None) -> list[dict[str, Any]]:
+    """Operational rows selected by the live and retained-run indexes."""
+    from reckon.crew import open_run_index
+
+    with open_run_index.read_scope():
+        return open_run_index.read_rows(project, root)
+
+
+def open_run_ids(project: str, root: str | Path | None = None) -> set[str]:
+    """Promoted identities still named by open work, without reading history."""
+    return {str(row["run_id"]) for row in open_runs(project, root)}
+
+
+def load_open(
+    project: str, root: str | Path | None = None
+) -> tuple[dict[str, Any], int]:
+    """The operational ledger projection, independent of finished history."""
+    from reckon.crew import open_run_index
+
+    return {"runs": open_runs(project, root)}, open_run_index.ledger_version(
+        project, root
+    )

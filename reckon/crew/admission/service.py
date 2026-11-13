@@ -224,6 +224,7 @@ def admit_until_stopped(
     # collect them; nothing in this image refers to them otherwise.
     from reckon import flight
     from reckon.crew.dispatch_launch import _adopt_launched_workers_from_reexec
+    from reckon.crew.fleet_supervisor import service_pass
     from reckon.crew.promotion_requests import PromotionService
     from reckon.crew.resumption import _promotion_settings
 
@@ -270,36 +271,37 @@ def admit_until_stopped(
     worker = _landing._LandingWorker(lander)
     try:
         while True:
-            if _admit_code_stamp() != code_stamp and _checkout_code_is_trusted():
-                _reexec_into_current_code()
-            started_at = _utc_now()
-            started = time.monotonic()
-            # The landing runs in its own thread under its own lock, so this
-            # pass proceeds whether or not one is in flight, and the landing
-            # holds only the next landing.
-            worker.tick()
-            promotions.tick()
-            release = _release._release_tick()
-            released = time.monotonic()
-            admitted = _selection.admit_once(**admission_options)
-            ended = time.monotonic()
-            landing = worker.last
-            admitted["release"] = release
-            admitted["landing"] = landing
-            _record_stage_timings(
-                admitted,
-                started_at=started_at,
-                started=started,
-                released=released,
-                ended=ended,
-                landing=landing,
-            )
-            _verdicts._publish_pass_verdicts(
-                _verdicts._record_pass_verdicts(
-                    admitted, lane=lane, code_stamp=code_stamp
+            with service_pass():
+                if _admit_code_stamp() != code_stamp and _checkout_code_is_trusted():
+                    _reexec_into_current_code()
+                started_at = _utc_now()
+                started = time.monotonic()
+                # The landing runs in its own thread under its own lock, so this
+                # pass proceeds whether or not one is in flight, and the landing
+                # holds only the next landing.
+                worker.tick()
+                promotions.tick()
+                release = _release._release_tick()
+                released = time.monotonic()
+                admitted = _selection.admit_once(**admission_options)
+                ended = time.monotonic()
+                landing = worker.last
+                admitted["release"] = release
+                admitted["landing"] = landing
+                _record_stage_timings(
+                    admitted,
+                    started_at=started_at,
+                    started=started,
+                    released=released,
+                    ended=ended,
+                    landing=landing,
                 )
-            )
-            passes += 1
+                _verdicts._publish_pass_verdicts(
+                    _verdicts._record_pass_verdicts(
+                        admitted, lane=lane, code_stamp=code_stamp
+                    )
+                )
+                passes += 1
             _pause(interval)
     except KeyboardInterrupt:
         return {"passes": passes}
