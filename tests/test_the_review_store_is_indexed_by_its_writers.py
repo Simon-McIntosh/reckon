@@ -20,7 +20,7 @@ from pathlib import Path
 
 import pytest
 
-from reckon.crew import review, review_records
+from reckon.crew import recovery_memo, review, review_records
 from reckon.crew.run_paths import crew_home
 
 PROJECT = "fixture"
@@ -154,11 +154,11 @@ def stored(tmp_path, monkeypatch):
     home = crew_home()
     directory = _store_directory()
     run_ids = _populate(directory)
-    review_records._STORE_DOCUMENTS.clear()
+    review_records._DOCUMENT_MAPS.clear()
     review_records._STORE_INDEXES.clear()
     review_records._RESOLVED_DIRECTORIES.clear()
     yield directory, run_ids, home
-    review_records._STORE_DOCUMENTS.clear()
+    review_records._DOCUMENT_MAPS.clear()
     review_records._STORE_INDEXES.clear()
     review_records._RESOLVED_DIRECTORIES.clear()
 
@@ -178,7 +178,10 @@ def test_a_stored_record_is_returned_by_its_run_id_without_listing(stored) -> No
         "the index did not return the record the writer stored: "
         f"{names[:4]} for {path.name}"
     )
-    assert counted == [], (
+    # One directory stat is the whole freshness cost of a writer-maintained
+    # index: the probe that says the store has not moved since the document was
+    # written. Nothing is listed and no record is stat'ed.
+    assert counted in ([], ["stat:directory"]), (
         "looking a stored run up in the index listed or stat'ed the store: "
         f"{counted[:8]}"
     )
@@ -201,7 +204,7 @@ def test_reading_every_run_after_a_store_lists_and_stats_nothing(stored) -> None
     finally:
         restore()
 
-    assert counted == [], (
+    assert counted in ([], ["stat:directory"]), (
         "reading every run's records after a store listed or stat'ed the store: "
         f"{[item for item in counted if item.startswith(('scandir', 'glob'))][:4]} "
         f"listings, {sum(1 for i in counted if i.startswith('stat:' + 'r-'))} record "
@@ -269,7 +272,7 @@ def test_a_missing_index_is_rebuilt_from_one_listing(stored) -> None:
     review_records.store_index_document(directory)
     document = review_records._index_document_path(directory)
     document.unlink()
-    review_records._STORE_DOCUMENTS.clear()
+    review_records._DOCUMENT_MAPS.clear()
 
     counted, restore = _count_store_reads(directory)
     try:
@@ -314,3 +317,43 @@ def test_a_second_process_write_is_seen_by_the_first(stored) -> None:
     )
     names = review.review_records_index_names(directory, run_ids[7], reload=True)
     assert names, f"the second process's record is not in the index: {names}"
+
+
+def test_the_stations_misfiled_and_stored_record_reads_cost_no_store_scan(
+    stored,
+) -> None:
+    """The two reads the station makes per duty item list and stat no records."""
+    directory, run_ids, _home = stored
+    review_records.store_index_document(directory)
+    review.store_review(_payload(run_ids[11], 99))
+    record = {"project": PROJECT, "run_id": run_ids[11]}
+
+    counted, restore = _count_store_reads(directory)
+    try:
+        with review_records.review_store_tick():
+            # The tick's one view of the store, taken before the pass measured
+            # here: that is the fixed cost a refresh pays, whatever the store
+            # holds.
+            review_records._tick_store(directory)
+            counted.clear()
+            candidates = recovery_memo._misfiled_review_candidates(record)
+            path, found = review_records.stored_record(PROJECT, run_ids[11])
+    finally:
+        restore()
+
+    assert candidates, "the misfiled search named no candidate for a stored run"
+    assert found is not None and path is not None, "no record was selected"
+    listings = [item for item in counted if item.startswith(("scandir", "glob"))]
+    assert listings == [], f"the read pass listed the store: {listings}"
+    # The read stats the records it opens -- the selected run's own copies -- and
+    # nothing else. What the store's size must not change is the number of
+    # records examined: the other forty-nine runs are never touched.
+    other_runs = [
+        item
+        for item in counted
+        if item.startswith("stat:r-") and run_ids[11] not in item
+    ]
+    assert other_runs == [], (
+        "the read pass stat'ed records outside the run it selected: "
+        f"{len(other_runs)} stats, first {other_runs[:4]}"
+    )

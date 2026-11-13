@@ -44,6 +44,9 @@ _TICK_REVIEW_STORES: ContextVar[dict[Path, dict[Path, os.stat_result]] | None] =
 _TICK_REVIEW_INDEXES: ContextVar[dict[Path, Any] | None] = ContextVar(
     "tick_review_indexes", default=None
 )
+_TICK_INDEX_DOCUMENTS: ContextVar[dict[Path, Any] | None] = ContextVar(
+    "tick_index_documents", default=None
+)
 
 
 @contextmanager
@@ -51,9 +54,11 @@ def review_store_tick() -> Iterator[None]:
     """Share one enumeration per store among all review readers in a tick."""
     stores_token = _TICK_REVIEW_STORES.set({})
     indexes_token = _TICK_REVIEW_INDEXES.set({})
+    documents_token = _TICK_INDEX_DOCUMENTS.set({})
     try:
         yield
     finally:
+        _TICK_INDEX_DOCUMENTS.reset(documents_token)
         _TICK_REVIEW_INDEXES.reset(indexes_token)
         _TICK_REVIEW_STORES.reset(stores_token)
 
@@ -66,12 +71,12 @@ def _tick_store(directory: Path) -> dict[Path, os.stat_result] | None:
     stores = _TICK_REVIEW_STORES.get()
     if stores is not None and directory in stores:
         return stores[directory]
-    # Inside a tick the store's own index answers, so no record is stat'ed and
-    # the directory is not listed; outside one the established per-file
-    # revalidation stays, because that is the pass which sees a record rewritten
-    # in place by a writer that bypassed this module.
-    document = store_index_document(directory) if stores is not None else None
-    if document is not None and stores is not None:
+    # A staging store answers from its own index, so no record is stat'ed and
+    # the directory is not listed. The index is probed once per store per tick,
+    # and once per call outside one, which is the single directory stat the
+    # freshness of a writer-maintained index costs.
+    document = store_index_document(directory)
+    if document is not None:
         return _document_stat_view(directory, document, stores)
     selected = open_run_index.review_paths(directory)
     if selected is not None:
@@ -110,13 +115,9 @@ def _document_stat_view(
     document: Mapping[str, Any],
     stores: dict[Path, dict[Path, os.stat_result]] | None,
 ) -> dict[Path, os.stat_result]:
-    """One tick's view of a store, read from its index rather than its files."""
+    """One reader's view of a store, read from its index rather than its files."""
     files: dict[Path, os.stat_result] = {}
-    selected = open_run_index.review_paths(directory)
-    keep = None if selected is None else {path.name for path in selected}
     for name, raw in (document.get("entries") or {}).items():
-        if keep is not None and str(name) not in keep:
-            continue
         entry = raw if isinstance(raw, Mapping) else {}
         files[directory / str(name)] = _indexed_record_stat(entry)
     if stores is not None:
@@ -150,8 +151,12 @@ def _record_exists(path: Path) -> bool:
 
 
 def _record_identity(path: Path) -> str:
+    # This is the one place a reader stats a record, and it stats only the files
+    # it names: a record rewritten in place at a path the index already holds
+    # does not move the directory the index is probed against, so the file's own
+    # identity is what carries that rewrite into a memo key.
     try:
-        return ":".join(map(str, file_memo.signature_from_stat(_record_stat(path))))
+        return ":".join(map(str, file_memo.signature_from_stat(path.stat())))
     except OSError:
         return "absent"
 
@@ -162,7 +167,7 @@ def _record_file(path: Path) -> Any:
 
     if _TICK_REVIEW_STORES.get() is None:
         return read()
-    identity = file_memo.signature_from_stat(_record_stat(path))
+    identity = _record_identity(path)
     return file_memo.memoized_key("tick_review_record", (str(path), identity), read)
 
 
@@ -211,7 +216,14 @@ def _staging_copies_of_record(
     copies: list[Mapping[str, Any]] = []
     for entry in sorted(
         _review_run_index(directory).get(review_run_id) or [],
-        key=lambda item: item["mtime_ns"],
+        # Copies merge oldest first. The store index knows a record's write
+        # order, which is the age that matters here; a store answered from the
+        # per-file cache instead carries the file's own modification time.
+        key=lambda item: (
+            int(item.get("entry_version") or 0),
+            int(item.get("mtime_ns") or 0),
+            str(item.get("name") or ""),
+        ),
     ):
         path = entry["path"]
         try:
@@ -939,7 +951,7 @@ def stored_records_for_run(
     seen: set[str] = set()
     entries = sorted(
         _store_index(directory).get(reviewed_run_id) or [],
-        key=lambda item: item["mtime_ns"],
+        key=_recency,
     )
     for entry in entries:
         path = entry["path"]
@@ -1146,7 +1158,7 @@ def _filed_match(
     from reckon.crew import promotion
 
     matches: list[tuple[Path, dict[str, Any]]] = []
-    for entry in sorted(candidates, key=lambda item: item["mtime_ns"], reverse=True):
+    for entry in sorted(candidates, key=_recency, reverse=True):
         if not _indexed_head_matches(entry, named):
             continue
         path = entry["path"]
@@ -1209,9 +1221,18 @@ _STORE_INDEXES: dict[
     ],
 ] = {}
 
-# The writer-maintained document each store directory's index was last read as,
-# held per process so a caller can ask what a writer left without re-reading it.
-_STORE_DOCUMENTS: dict[Path, dict[str, Any]] = {}
+# The run maps one store document's entries were last turned into, held per
+# process against the document's version: a version moves on every indexed write
+# and on every reconciled foreign write, so an entry keyed by it is current
+# exactly while no write has been made.
+_DOCUMENT_MAPS: dict[
+    Path,
+    tuple[
+        int,
+        dict[str, list[dict[str, Any]]],
+        dict[str, list[dict[str, Any]]],
+    ],
+] = {}
 
 
 def node_local_cache_dir(project: str) -> Path:
@@ -1424,6 +1445,16 @@ def _index_entry(path: Path, info: os.stat_result) -> dict[str, Any] | None:
         "head_carried": bool(carried_head),
         "head_sha": head_sha,
     }
+
+
+def _recency(entry: Mapping[str, Any]) -> tuple[int, int]:
+    """An entry's age, newest largest.
+
+    An entry the store's index holds knows the order its record was written in,
+    which is the age a reader selecting "the newest" wants; an entry read from
+    a file's stat carries that file's modification time instead.
+    """
+    return (int(entry.get("entry_version") or 0), int(entry.get("mtime_ns") or 0))
 
 
 def _index_maps(
@@ -1673,44 +1704,22 @@ def _load_persisted_entries(
 def _store_indexes(
     directory: Path,
 ) -> tuple[dict[str, list[dict[str, Any]]], dict[str, list[dict[str, Any]]]]:
-    """Return the store's two indexes, updated only when the directory moves.
+    """Return the store's two indexes, keyed by reviewed run and by reviewer.
 
-    The index is held per store directory and per process and reused while the
-    directory's stat identity is unchanged, which is exactly when its set of
-    entries cannot have moved. When the identity does move the index is updated
-    from one listing rather than rebuilt: the entries this process holds say
-    which files changed, and a process holding none starts from the index
-    another process persisted for this store directory. Every unchanged file
-    keeps the facts already read for it, so a store of thousands of records
-    costs one listing and one parse per changed file rather than a pass over
-    all of them. The updated index is persisted for the next process on the
-    node.
+    A staging store answers from the index document its writers maintain beside
+    the records: every entry already carries the run it reviews, the review run
+    that produced it and the head it holds, so the maps are built from the
+    document alone -- no record is stat'ed, and the store is not listed.
 
-    A process holding none that loads a persisted index adopts it as it stands
-    when the directory's identity is the one that document recorded: no record
-    has been added, removed or atomically replaced since its entries were read,
-    which is every write the store's own writers make. Only a document whose
-    store has moved is listed again, so a one-shot promotion pays one read of
-    the index rather than a stat per stored record. That adoption is also why
-    the adopted entries are held as already revalidated: the whole-store pass
-    below stays for an index this process built or updated itself, where a
-    record rewritten in place is exactly the change it exists to see.
-
-    The identity read here precedes every listing this call makes, and it is
-    the one persisted with the entries those listings produced. A record filed
-    between a listing and the write is absent from those entries, so the
-    recorded identity must not cover it: recording the earlier identity leaves
-    that write having moved the directory away from it, and the next reader
-    lists the store rather than adopting an index short of the record.
+    A directory that keeps no document -- the committed reviews tree, which is
+    tracked by the project's checkout, or a store the writer index does not own
+    -- answers through the per-process cache below, which is keyed on the
+    directory's stat identity.
     """
-    if open_run_index.review_paths(directory) is not None:
-        return _build_store_indexes(directory)
-    from reckon import ledger
-
-    stamp = ledger._file_identity(directory)
-    result = _full_store_indexes(directory)
-    open_run_index.review_rebuilt(directory, _index_files(*result), stamp)
-    return result
+    document = store_index_document(directory)
+    if document is not None:
+        return _document_index_maps(directory, document)
+    return _full_store_indexes(directory)
 
 
 def _full_store_indexes(directory: Path):
@@ -1773,6 +1782,12 @@ def _revalidated_entries(entries: Iterable[dict[str, Any]]) -> list[dict[str, An
     """
     refreshed: list[dict[str, Any]] = []
     for entry in entries:
+        if entry.get("indexed"):
+            # An entry the store's own index holds is already current: a write
+            # by a known writer advanced the version, and a write by any other
+            # moved the directory mtime the document is probed against.
+            refreshed.append(entry)
+            continue
         path = entry["path"]
         try:
             info = _record_stat(path)
@@ -1858,14 +1873,32 @@ def _store_index(directory: Path) -> dict[str, list[dict[str, Any]]]:
 # the records the index already holds -- and a missing or foreign-stamped
 # document is rebuilt from one listing and one hash of each record.
 
-_INDEX_NAME = ".review-index.json"
-_INDEX_LOCK_NAME = ".review-index.lock"
+_INDEX_DIRNAME = ".review-index"
+_INDEX_NAME = "index.json"
+_INDEX_LOCK_NAME = "lock"
 _INDEX_LOG_LIMIT = 4096
 
 
 def _index_document_path(directory: Path) -> Path:
-    """The index document that lives inside one store directory."""
-    return directory / _INDEX_NAME
+    """The index document that belongs to one store directory.
+
+    It lives in a subdirectory of the store rather than beside the records for
+    one reason: the document is rewritten on every indexed write, and a write
+    beside the records would move the store directory's own mtime after the
+    writer had already recorded it, so every read would find the store moved
+    and none could settle.
+    """
+    return directory / _INDEX_DIRNAME / _INDEX_NAME
+
+
+def _index_holding(directory: Path) -> Path | None:
+    """The store's index subdirectory, created when the store can hold one."""
+    holding = directory / _INDEX_DIRNAME
+    try:
+        holding.mkdir(exist_ok=True)
+    except OSError:
+        return None
+    return holding
 
 
 @contextmanager
@@ -1879,8 +1912,12 @@ def _index_lock(directory: Path) -> Iterator[bool]:
     """
     import fcntl
 
+    holding = _index_holding(directory)
+    if holding is None:
+        yield False
+        return
     try:
-        handle = (directory / _INDEX_LOCK_NAME).open("a")
+        handle = (holding / _INDEX_LOCK_NAME).open("a")
     except OSError:
         yield False
         return
@@ -1943,7 +1980,7 @@ def _read_index_document(directory: Path) -> dict[str, Any] | None:
 
 
 def _persist_index_document(directory: Path, doc: Mapping[str, Any]) -> None:
-    """Write the store's index document atomically beside the records."""
+    """Write the store's index document atomically in the store's index dir."""
     try:
         from reckon._store import write_json_atomically
 
@@ -1954,7 +1991,7 @@ def _persist_index_document(directory: Path, doc: Mapping[str, Any]) -> None:
             sort_keys=True,
             mode=None,
             fsync=False,
-            create_parents=False,
+            create_parents=True,
         )
     except OSError:
         return
@@ -2017,6 +2054,8 @@ def _rebuild_index_document(directory: Path) -> dict[str, Any]:
     """Rebuild the whole document from one listing of the store."""
     entries = _entries_from_listing(directory)
     runs = {run: _run_digest(entries, run) for run in _runs_of(entries)}
+    for index, name in enumerate(sorted(entries), start=1):
+        entries[name]["entry_version"] = index
     return {
         "code_stamp": _index_code_stamp(),
         "store": _resolved(directory),
@@ -2063,7 +2102,6 @@ def _index_stored_record(path: Path, record: Mapping[str, Any]) -> None:
         del log[:-_INDEX_LOG_LIMIT]
         doc["dir_mtime_ns"] = _directory_mtime_ns(directory)
         _persist_index_document(directory, doc)
-    _STORE_DOCUMENTS[directory] = doc
 
 
 def record_written(path: Path, record: Mapping[str, Any]) -> None:
@@ -2156,30 +2194,99 @@ def reconcile_foreign_write(directory: Path) -> int:
         del log[:-_INDEX_LOG_LIMIT]
         doc["dir_mtime_ns"] = mtime
         _persist_index_document(directory, doc)
-    _STORE_DOCUMENTS[directory] = doc
     return changed
 
 
 def store_index_document(directory: Path) -> dict[str, Any] | None:
-    """The store's index document, rebuilt from one listing if it is unusable."""
+    """The store's index document, as current as its writers have left it.
+
+    The document is probed against the store directory's mtime, which is the one
+    stat a writer-maintained index costs: a known writer records the mtime its
+    own write left, so its write settles the probe and no listing follows. Only
+    a write the index did not make moves the mtime away from the recorded one,
+    and that is answered by :func:`reconcile_foreign_write`, which lists names.
+    A missing or unusable document is rebuilt from one listing.
+    """
     if not _indexable(directory):
         return None
-    doc = _read_index_document(directory)
-    if doc is not None:
-        _STORE_DOCUMENTS[directory] = doc
-        return doc
+    tick = _TICK_INDEX_DOCUMENTS.get()
+    if tick is not None and directory in tick:
+        return tick[directory]
+    document = _settled_index_document(directory)
+    if tick is not None:
+        tick[directory] = document
+    return document
+
+
+def _settled_index_document(directory: Path) -> dict[str, Any] | None:
+    """Read the document and bring it up to date with the store it describes."""
+    document = _read_index_document(directory)
+    if document is not None:
+        mtime = _directory_mtime_ns(directory)
+        if mtime is not None and mtime == document.get("dir_mtime_ns"):
+            return document
+        if reconcile_foreign_write(directory):
+            refreshed = _read_index_document(directory)
+            if refreshed is not None:
+                return refreshed
+        document["dir_mtime_ns"] = mtime
+        return document
     try:
         if not directory.is_dir():
             return None
     except OSError:
         return None
     with _index_lock(directory):
-        doc = _read_index_document(directory)
-        if doc is None:
-            doc = _rebuild_index_document(directory)
-            _persist_index_document(directory, doc)
-    _STORE_DOCUMENTS[directory] = doc
-    return doc
+        document = _read_index_document(directory)
+        if document is None:
+            document = _rebuild_index_document(directory)
+            _persist_index_document(directory, document)
+    return document
+
+
+def _document_entries(
+    directory: Path, document: Mapping[str, Any]
+) -> list[dict[str, Any]]:
+    """The per-file entries the run maps are built from, as the index holds them."""
+    entries: list[dict[str, Any]] = []
+    for name, raw in (document.get("entries") or {}).items():
+        if not isinstance(raw, Mapping):
+            continue
+        entries.append(
+            {
+                "name": str(name),
+                "path": directory / str(name),
+                "reviewed_run_id": str(raw.get("reviewed_run_id") or ""),
+                "review_run_id": str(raw.get("review_run_id") or "").strip(),
+                "head_carried": bool(raw.get("head_carried")),
+                "head_sha": raw.get("head_sha"),
+                "entry_version": int(raw.get("entry_version") or 0),
+                "indexed": True,
+            }
+        )
+    return entries
+
+
+def _document_index_maps(
+    directory: Path, document: Mapping[str, Any]
+) -> tuple[dict[str, list[dict[str, Any]]], dict[str, list[dict[str, Any]]]]:
+    """Build the two run maps from the document, reusing them until it moves."""
+    version = int(document.get("version") or 0)
+    tick_indexes = _TICK_REVIEW_INDEXES.get()
+    if tick_indexes is not None:
+        held = tick_indexes.get(directory)
+        if isinstance(held, tuple) and len(held) == 3 and held[0] == version:
+            return held[1], held[2]
+    else:
+        held = _DOCUMENT_MAPS.get(directory)
+        if held is not None and held[0] == version:
+            return held[1], held[2]
+    reviewed, review_runs = _index_maps(_document_entries(directory, document))
+    if tick_indexes is not None:
+        tick_indexes[directory] = (version, reviewed, review_runs)
+    else:
+        _DOCUMENT_MAPS[directory] = (version, reviewed, review_runs)
+    return reviewed, review_runs
 
 
 def _indexable(directory: Path) -> bool:
@@ -2223,7 +2330,10 @@ def review_records_index_names(
 ) -> list[str]:
     """The record names the index holds for one reviewed run, without a listing."""
     if reload:
-        _STORE_DOCUMENTS.pop(directory, None)
+        _DOCUMENT_MAPS.pop(directory, None)
+        tick = _TICK_INDEX_DOCUMENTS.get()
+        if tick is not None:
+            tick.pop(directory, None)
     document = store_index_document(directory) or {}
     return sorted(
         str(name)
@@ -2241,27 +2351,30 @@ def store_index_run_digest(directory: Path, run_id: str) -> str | None:
     return runs.get(run_id)
 
 
-def _indexed_record_stat(entry: Mapping[str, Any]) -> os.stat_result:
-    """A stat-shaped view of one indexed record.
+class _IndexedStat:
+    """The attributes a reader asks of a record's stat, answered from the index.
 
-    The index records a record's size rather than its inode, so a reader that
-    only asks whether a record is a regular file and how large it is answers
-    from the index without touching the file at all.
+    A constructed :class:`os.stat_result` carries no ``st_mtime_ns``, and the
+    store's own selection orders records by that reading, so this answers it
+    from the write order the index records. Every field here is O(1) to obtain:
+    the store's size and age are known without touching the file at all.
     """
-    return os.stat_result(
-        (
-            stat.S_IFREG | 0o644,
-            0,
-            0,
-            1,
-            0,
-            0,
-            int(entry.get("size") or 0),
-            0.0,
-            0.0,
-            0.0,
-        )
-    )
+
+    __slots__ = ("st_ctime_ns", "st_dev", "st_ino", "st_mode", "st_mtime_ns", "st_size")
+
+    def __init__(self, entry: Mapping[str, Any]) -> None:
+        self.st_mode = stat.S_IFREG | 0o644
+        self.st_dev = 0
+        self.st_ino = 0
+        self.st_size = int(entry.get("size") or 0)
+        # Write order, in the field the store's selection orders by.
+        self.st_mtime_ns = int(entry.get("entry_version") or 0)
+        self.st_ctime_ns = self.st_mtime_ns
+
+
+def _indexed_record_stat(entry: Mapping[str, Any]) -> _IndexedStat:
+    """A stat-shaped view of one indexed record, read from the index alone."""
+    return _IndexedStat(entry)
 
 
 def review_entries_signature(project: str, reviewed_run_id: str) -> tuple[Any, ...]:
@@ -2388,7 +2501,7 @@ def record_for_review_run(
             entries = _review_run_index(directory).get(name)
     if not entries:
         return None
-    for entry in sorted(entries, key=lambda item: item["mtime_ns"], reverse=True):
+    for entry in sorted(entries, key=_recency, reverse=True):
         path = entry["path"]
         try:
             record = _record_file(path)
