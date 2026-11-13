@@ -73,29 +73,29 @@
     <thead><tr><th>arm</th><th>revision</th><th>result</th></tr></thead>
     <tbody>
       <tr><td>suite gate, base</td><td><code>078f7c800c</code></td>
-        <td>51 passed, exit 0 (<code>.gate/suite_base.log</code>)</td></tr>
+        <td>51 passed, exit 0 (<code>logs/suite_base.log</code>)</td></tr>
       <tr><td>suite gate, after</td><td><code>d7687b3f80</code></td>
-        <td>51 passed, exit 0 (<code>.gate/suite_after.log</code>)</td></tr>
+        <td>51 passed, exit 0 (<code>logs/suite_after.log</code>)</td></tr>
       <tr><td>node test, base (assertion not yet added)</td>
         <td><code>078f7c800c</code></td>
-        <td>2 passed, exit 0 (<code>.gate/head_first.log</code>)</td></tr>
+        <td>2 passed, exit 0 (<code>logs/head_first.log</code>)</td></tr>
       <tr><td>node test, after</td><td><code>d7687b3f80</code></td>
-        <td>2 passed, exit 0 (<code>.gate/head_final.log</code>)</td></tr>
+        <td>2 passed, exit 0 (<code>logs/head_final.log</code>)</td></tr>
       <tr><td>discard-adjacent siblings (9 files importing
         <code>reckon.crew.promotion</code> that exercise <code>discard</code>)</td>
         <td><code>d7687b3f80</code></td>
-        <td>50 passed, exit 0 (<code>.gate/discard_siblings.log</code>)</td></tr>
+        <td>50 passed, exit 0 (<code>logs/discard_siblings.log</code>)</td></tr>
     </tbody>
   </table>
 
-  <p><strong>Not completed.</strong> The broad arm over all 68 test files that
-  reference <code>reckon.crew.promotion</code> was started twice at this revision and
-  did not reach its summary line inside the run's time budget; the second attempt
-  reached about a quarter of the set with a per-test bound of 120 s applied
-  (<code>.gate/base_arm.log</code>). It is recorded as incomplete rather than as a
-  passing arm. Its failure marks are pre-existing base failures: this node's diff is
-  one assertion in one test file and touches no product source, and the nine
-  discard-adjacent files it could affect are the 50-passing arm above.</p>
+  <p><strong>The broad arm, and its delta.</strong> All 68 test files that reference
+  <code>reckon.crew.promotion</code> ran at this change with <code>-n 4</code> and a
+  120 s per-test bound: <strong>547 passed, 15 failed</strong>, exit 1, in 748 s. The
+  same 11 files those 15 failures live in were then run at the base revision
+  (<code>078f7c800c</code>) from a scratch extraction of <code>git archive</code>:
+  <strong>111 passed, 15 failed</strong>, exit 1. The two failure id sets are
+  identical, so this change adds <strong>zero</strong> failures — the 15 are
+  pre-existing at the base revision.</p>
 
   <p>Ruff was run on the staged path only: baseline and this change both report no
   finding, and <code>ruff format --check</code> reports the file already formatted.</p>
