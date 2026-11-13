@@ -66,6 +66,9 @@ def _tick_store(directory: Path) -> dict[Path, os.stat_result] | None:
     stores = _TICK_REVIEW_STORES.get()
     if stores is not None and directory in stores:
         return stores[directory]
+    document = store_index_document(directory)
+    if document is not None:
+        return _document_stat_view(directory, document, stores)
     selected = open_run_index.review_paths(directory)
     if selected is not None:
         files = {}
@@ -96,6 +99,25 @@ def _tick_store(directory: Path) -> dict[Path, os.stat_result] | None:
             pass
         stores[directory] = files
     return stores[directory]
+
+
+def _document_stat_view(
+    directory: Path,
+    document: Mapping[str, Any],
+    stores: dict[Path, dict[Path, os.stat_result]] | None,
+) -> dict[Path, os.stat_result]:
+    """One tick's view of a store, read from its index rather than its files."""
+    files: dict[Path, os.stat_result] = {}
+    selected = open_run_index.review_paths(directory)
+    keep = None if selected is None else {path.name for path in selected}
+    for name, raw in (document.get("entries") or {}).items():
+        if keep is not None and str(name) not in keep:
+            continue
+        entry = raw if isinstance(raw, Mapping) else {}
+        files[directory / str(name)] = _indexed_record_stat(entry)
+    if stores is not None:
+        stores[directory] = files
+    return files
 
 
 def _store_paths(directory: Path, pattern: str) -> list[Path]:
@@ -1181,6 +1203,10 @@ _STORE_INDEXES: dict[
     ],
 ] = {}
 
+# The writer-maintained document each store directory's index was last read as,
+# held per process so a caller can ask what a writer left without re-reading it.
+_STORE_DOCUMENTS: dict[Path, dict[str, Any]] = {}
+
 
 def node_local_cache_dir(project: str) -> Path:
     """Return the node-local directory a project's disposable caches live in.
@@ -1313,12 +1339,26 @@ def _index_code_stamp() -> str:
     return _INDEX_CODE_STAMP[0]
 
 
+_RESOLVED_DIRECTORIES: dict[str, str] = {}
+
+
 def _resolved(directory: Path) -> str:
-    """The store directory's resolved absolute path, or "" when unresolvable."""
+    """The store directory's resolved absolute path, or "" when unresolvable.
+
+    Held per process: this is the key every read compares a document against,
+    so resolving the same store directory on each lookup would spend a path
+    walk per read to answer a value that cannot change while the process runs.
+    """
+    key = str(directory)
+    held = _RESOLVED_DIRECTORIES.get(key)
+    if held is not None:
+        return held
     try:
-        return str(directory.resolve())
+        resolved = str(directory.resolve())
     except OSError:
-        return ""
+        resolved = ""
+    _RESOLVED_DIRECTORIES[key] = resolved
+    return resolved
 
 
 def _index_cache_path(directory: Path) -> Path:
@@ -1651,6 +1691,9 @@ def _store_indexes(
     that write having moved the directory away from it, and the next reader
     lists the store rather than adopting an index short of the record.
     """
+    document = store_index_document(directory)
+    if document is not None:
+        return _document_indexes(directory, document)
     if open_run_index.review_paths(directory) is not None:
         return _build_store_indexes(directory)
     from reckon import ledger
@@ -1781,10 +1824,482 @@ def _store_index(directory: Path) -> dict[str, list[dict[str, Any]]]:
     stat identity is answered by updating that index from one listing of the
     store, so only a file new to the index or changed since it was read costs a
     parse. A document that is missing, unreadable or stamped by other code is
-    not usable, and only then is the index built from scratch. The sequence is
+    not usable, and only then is the index is built from scratch. The sequence is
     :func:`_store_indexes`, which owns it for both indexes.
     """
     return _store_indexes(directory)[0]
+
+
+# ── The writer-maintained store index ───────────────────────────────────────
+# The cache above is keyed on the store directory's stat identity, so a record
+# written for any run moves it and the next read lists the store and stats every
+# file it names. On a store of thousands of records that is seconds of GPFS per
+# refresh, and it is paid once per duty item.
+#
+# This index replaces that freshness key with the writers themselves. One
+# document lives inside the store directory, beside the records and on the
+# shared home, so a writer on any node advances a version every node reads. Per
+# record it holds the SHA-256 of the bytes written; per run a digest over that
+# run's (name, hash) pairs; per store a monotonic version, a bounded change log
+# of (version, run id) and the directory mtime as of the last indexed write.
+#
+# A reader consults the version and the run digest. It never lists the store and
+# never stats a record: an unchanged run costs one comparison. A record written
+# outside the writer path is found by listing names only -- never by stat-ing
+# the records the index already holds -- and a missing or foreign-stamped
+# document is rebuilt from one listing and one hash of each record.
+
+_INDEX_NAME = ".review-index.json"
+_INDEX_LOCK_NAME = ".review-index.lock"
+_INDEX_LOG_LIMIT = 4096
+
+
+def _index_document_path(directory: Path) -> Path:
+    """The index document that lives inside one store directory."""
+    return directory / _INDEX_NAME
+
+
+@contextmanager
+def _index_lock(directory: Path) -> Iterator[bool]:
+    """Hold the store's index lock, or report that it could not be taken.
+
+    The lock file sits beside the document so a writer on any node serialises
+    against every other node's writer. A directory that cannot hold the lock
+    file, or a filesystem without advisory locks, yields ``False`` and the
+    caller writes the document unlocked.
+    """
+    import fcntl
+
+    try:
+        handle = (directory / _INDEX_LOCK_NAME).open("a")
+    except OSError:
+        yield False
+        return
+    with handle:
+        try:
+            fcntl.flock(handle.fileno(), fcntl.LOCK_EX)
+        except OSError:
+            yield False
+            return
+        try:
+            yield True
+        finally:
+            fcntl.flock(handle.fileno(), fcntl.LOCK_UN)
+
+
+def _sha256_hex(data: bytes) -> str:
+    return hashlib.sha256(data).hexdigest()
+
+
+def _run_digest(entries: Mapping[str, Any], run_id: str) -> str:
+    """The digest over one run's (name, hash) pairs."""
+    pairs = sorted(
+        (name, str(entry.get("sha256") or ""))
+        for name, entry in entries.items()
+        if str(entry.get("reviewed_run_id") or "") == run_id
+    )
+    return _sha256_hex(json.dumps(pairs).encode())
+
+
+def _document_is_usable(directory: Path, doc: Any) -> bool:
+    if not isinstance(doc, Mapping):
+        return False
+    if str(doc.get("code_stamp") or "") != _index_code_stamp():
+        return False
+    if str(doc.get("store") or "") != _resolved(directory):
+        return False
+    entries = doc.get("entries")
+    if not isinstance(entries, dict):
+        return False
+    return isinstance(doc.get("runs"), dict)
+
+
+def _read_index_document(directory: Path) -> dict[str, Any] | None:
+    """Read the store's index document, or ``None`` when there is not one.
+
+    The read is a read: no stat of the document, the directory or a record. An
+    unusable document -- another checkout's, another store's, half written or
+    not JSON -- answers ``None`` exactly as a missing one does, because an index
+    that cannot be read is not an index.
+    """
+    try:
+        raw = _index_document_path(directory).read_bytes()
+    except OSError:
+        return None
+    try:
+        doc = json.loads(raw)
+    except ValueError:
+        return None
+    return doc if _document_is_usable(directory, doc) else None
+
+
+def _persist_index_document(directory: Path, doc: Mapping[str, Any]) -> None:
+    """Write the store's index document atomically beside the records."""
+    try:
+        from reckon._store import write_json_atomically
+
+        write_json_atomically(
+            _index_document_path(directory),
+            dict(doc),
+            indent=None,
+            sort_keys=True,
+            mode=None,
+            fsync=False,
+            create_parents=False,
+        )
+    except OSError:
+        return
+
+
+def _entry_facts(name: str, record: Mapping[str, Any], data: bytes) -> dict[str, Any]:
+    """The facts one record's entry carries, all of them derivable without a stat."""
+    carried_head, head_sha = _review._first_carried_revision(
+        record, _review.HEAD_REVISION_FIELDS
+    )
+    return {
+        "name": name,
+        "reviewed_run_id": str(record.get("reviewed_run_id") or ""),
+        "review_run_id": str(record.get("review_run_id") or "").strip(),
+        "head_carried": bool(carried_head),
+        "head_sha": head_sha,
+        "sha256": _sha256_hex(data),
+        "size": len(data),
+    }
+
+
+def _entries_from_listing(directory: Path) -> dict[str, Any]:
+    """Build every entry from one listing of names and one read of each record."""
+    entries: dict[str, Any] = {}
+    try:
+        with os.scandir(directory) as scanned:
+            names = sorted(
+                entry.name
+                for entry in scanned
+                if entry.name.endswith(".json") and not entry.name.startswith(".")
+            )
+    except OSError:
+        return entries
+    for name in names:
+        if _review._INCOMPLETE_RECORD_MARK in name:
+            continue
+        path = directory / name
+        try:
+            data = path.read_bytes()
+        except OSError:
+            continue
+        try:
+            record = json.loads(data)
+        except ValueError:
+            continue
+        if not isinstance(record, Mapping):
+            continue
+        entries[name] = _entry_facts(name, record, data)
+    return entries
+
+
+def _directory_mtime_ns(directory: Path) -> int | None:
+    try:
+        return directory.stat().st_mtime_ns
+    except OSError:
+        return None
+
+
+def _rebuild_index_document(directory: Path) -> dict[str, Any]:
+    """Rebuild the whole document from one listing of the store."""
+    entries = _entries_from_listing(directory)
+    runs = {run: _run_digest(entries, run) for run in _runs_of(entries)}
+    return {
+        "code_stamp": _index_code_stamp(),
+        "store": _resolved(directory),
+        "version": len(entries),
+        "log": [
+            [index, entry["reviewed_run_id"]]
+            for index, entry in enumerate(
+                sorted(entries.values(), key=lambda item: item["name"]), start=1
+            )
+        ],
+        "entries": entries,
+        "runs": runs,
+        "dir_mtime_ns": _directory_mtime_ns(directory),
+    }
+
+
+def _runs_of(entries: Mapping[str, Any]) -> set[str]:
+    return {str(entry.get("reviewed_run_id") or "") for entry in entries.values()}
+
+
+def _index_stored_record(path: Path, record: Mapping[str, Any]) -> None:
+    """Advance the store's index for one record this process has just written."""
+    directory = path.parent
+    try:
+        data = path.read_bytes()
+    except OSError:
+        return
+    entry = _entry_facts(path.name, record, data)
+    with _index_lock(directory):
+        doc = _read_index_document(directory)
+        if doc is None:
+            doc = _rebuild_index_document(directory)
+        version = int(doc.get("version") or 0) + 1
+        doc["version"] = version
+        entries = doc.setdefault("entries", {})
+        entry["entry_version"] = version
+        entries[path.name] = entry
+        runs = doc.setdefault("runs", {})
+        runs[str(entry["reviewed_run_id"])] = _run_digest(
+            entries, entry["reviewed_run_id"]
+        )
+        log = doc.setdefault("log", [])
+        log.append([version, entry["reviewed_run_id"]])
+        del log[:-_INDEX_LOG_LIMIT]
+        doc["dir_mtime_ns"] = _directory_mtime_ns(directory)
+        _persist_index_document(directory, doc)
+    _STORE_DOCUMENTS[directory] = doc
+
+
+def record_written(path: Path, record: Mapping[str, Any]) -> None:
+    """Write one review record and advance the store's index for it.
+
+    This is the store's one writer path. The record is serialised to a sibling
+    temporary and renamed over the destination, so a reader never observes a
+    partial file, and the bytes that landed are hashed so the index describes
+    what is on disk rather than what was meant to be. The entry, the run's
+    digest, the version and the change log move in the same locked write, so a
+    reader that sees the new version sees the new entry.
+    """
+    from reckon._store import write_json_atomically
+
+    write_json_atomically(
+        path,
+        dict(record),
+        indent=2,
+        sort_keys=True,
+        mode=None,
+        fsync=False,
+        create_parents=False,
+    )
+    _index_stored_record(path, record)
+
+
+def reconcile_foreign_write(directory: Path) -> int:
+    """Pick up records written outside the writer path, listing names only.
+
+    A writer that bypassed :func:`record_written` moved the directory's mtime
+    without moving the index, so the two disagree and the store must be looked
+    at. The look is one listing of names: a name the index lacks is hashed and
+    entered, a name the listing no longer holds is dropped, and every record the
+    index already knows is left alone -- never stat'ed, never read.
+    """
+    doc = _read_index_document(directory)
+    if doc is None:
+        return 0
+    mtime = _directory_mtime_ns(directory)
+    if mtime is None or mtime == doc.get("dir_mtime_ns"):
+        return 0
+    changed = 0
+    with _index_lock(directory):
+        doc = _read_index_document(directory) or doc
+        if mtime == doc.get("dir_mtime_ns"):
+            return 0
+        try:
+            with os.scandir(directory) as scanned:
+                present = {
+                    entry.name
+                    for entry in scanned
+                    if entry.name.endswith(".json") and not entry.name.startswith(".")
+                }
+        except OSError:
+            return 0
+        entries = doc.setdefault("entries", {})
+        runs = doc.setdefault("runs", {})
+        log = doc.setdefault("log", [])
+        touched: set[str] = set()
+        for name in sorted(present - set(entries)):
+            if _review._INCOMPLETE_RECORD_MARK in name:
+                continue
+            path = directory / name
+            try:
+                data = path.read_bytes()
+            except OSError:
+                continue
+            try:
+                record = json.loads(data)
+            except ValueError:
+                continue
+            if not isinstance(record, Mapping):
+                continue
+            entry = _entry_facts(name, record, data)
+            doc["version"] = int(doc.get("version") or 0) + 1
+            entry["entry_version"] = doc["version"]
+            entries[name] = entry
+            log.append([doc["version"], entry["reviewed_run_id"]])
+            touched.add(entry["reviewed_run_id"])
+            changed += 1
+        for name in sorted(set(entries) - present):
+            gone = entries.pop(name)
+            run_id = str(gone.get("reviewed_run_id") or "")
+            doc["version"] = int(doc.get("version") or 0) + 1
+            log.append([doc["version"], run_id])
+            touched.add(run_id)
+            changed += 1
+        for run_id in touched:
+            runs[run_id] = _run_digest(entries, run_id)
+        del log[:-_INDEX_LOG_LIMIT]
+        doc["dir_mtime_ns"] = mtime
+        _persist_index_document(directory, doc)
+    _STORE_DOCUMENTS[directory] = doc
+    return changed
+
+
+def store_index_document(directory: Path) -> dict[str, Any] | None:
+    """The store's index document, rebuilt from one listing if it is unusable."""
+    if not _indexable(directory):
+        return None
+    doc = _read_index_document(directory)
+    if doc is not None:
+        _STORE_DOCUMENTS[directory] = doc
+        return doc
+    try:
+        if not directory.is_dir():
+            return None
+    except OSError:
+        return None
+    with _index_lock(directory):
+        doc = _read_index_document(directory)
+        if doc is None:
+            doc = _rebuild_index_document(directory)
+            _persist_index_document(directory, doc)
+    _STORE_DOCUMENTS[directory] = doc
+    return doc
+
+
+def _indexable(directory: Path) -> bool:
+    """Whether ``directory`` is a staging store the index belongs inside.
+
+    A committed reviews tree is tracked by the project's checkout, so an index
+    document written into it would be a file the project carries. Only the
+    staging store, which lives under the crew home, keeps one.
+    """
+    try:
+        root = Path(_review.review_store_root()).resolve()
+        return Path(directory).resolve().is_relative_to(root)
+    except (OSError, ValueError):
+        return False
+
+
+def _document_indexes(
+    directory: Path, document: Mapping[str, Any]
+) -> tuple[dict[str, list[dict[str, Any]]], dict[str, list[dict[str, Any]]]]:
+    """The two keyed indexes as the store's own writers left them.
+
+    The open-work selection, when one is installed, keeps only the records the
+    live runs can refer to; the document already holds the facts that tell a run
+    apart, so applying that selection costs a set membership rather than a stat
+    of every record the store holds.
+    """
+    entries = _entries_from_document(directory, document)
+    selected = open_run_index.review_paths(directory)
+    if selected is not None:
+        keep = {path.name for path in selected}
+        entries = [entry for entry in entries if entry["name"] in keep]
+    return _index_maps(entries)
+
+
+def store_index_version(directory: Path) -> int:
+    """The version of one store's index, as its writers last left it."""
+    doc = store_index_document(directory) or {}
+    return int(doc.get("version") or 0)
+
+
+def store_index_changed_runs(directory: Path, version: int) -> set[str]:
+    """The runs whose records were written or removed after ``version``."""
+    doc = store_index_document(directory) or {}
+    changed: set[str] = set()
+    for entry in doc.get("log") or []:
+        if not isinstance(entry, list) or len(entry) != 2:
+            continue
+        try:
+            stamp = int(entry[0])
+        except (TypeError, ValueError):
+            continue
+        if stamp > version and str(entry[1] or ""):
+            changed.add(str(entry[1]))
+    return changed
+
+
+def review_records_index_names(
+    directory: Path, run_id: str, *, reload: bool = False
+) -> list[str]:
+    """The record names the index holds for one reviewed run, without a listing."""
+    if reload:
+        _STORE_DOCUMENTS.pop(directory, None)
+    document = store_index_document(directory) or {}
+    return sorted(
+        str(name)
+        for name, raw in (document.get("entries") or {}).items()
+        if isinstance(raw, Mapping) and str(raw.get("reviewed_run_id") or "") == run_id
+    )
+
+
+def store_index_run_digest(directory: Path, run_id: str) -> str | None:
+    """The digest over one run's indexed records, or ``None`` when it holds none."""
+    doc = store_index_document(directory) or {}
+    runs = doc.get("runs")
+    if not isinstance(runs, Mapping):
+        return None
+    return runs.get(run_id)
+
+
+def _entries_from_document(
+    directory: Path, doc: Mapping[str, Any]
+) -> list[dict[str, Any]]:
+    """Bind the document's per-name facts to the paths they resolve to now."""
+    bound: list[dict[str, Any]] = []
+    for name, raw in (doc.get("entries") or {}).items():
+        if not isinstance(raw, Mapping):
+            continue
+        try:
+            size = int(raw.get("size") or 0)
+        except (TypeError, ValueError):
+            size = 0
+        bound.append(
+            {
+                "name": str(name),
+                "path": directory / str(name),
+                "mtime_ns": 0,
+                "identity": (0, size, 0),
+                "reviewed_run_id": str(raw.get("reviewed_run_id") or ""),
+                "review_run_id": str(raw.get("review_run_id") or ""),
+                "head_carried": bool(raw.get("head_carried")),
+                "head_sha": raw.get("head_sha"),
+                "sha256": str(raw.get("sha256") or ""),
+            }
+        )
+    bound.sort(key=lambda entry: entry["name"])
+    return bound
+
+
+def _indexed_record_stat(entry: Mapping[str, Any]) -> os.stat_result:
+    """A stat-shaped view of one indexed record.
+
+    The index records a record's size rather than its inode, so a reader that
+    only asks whether a record is a regular file and how large it is answers
+    from the index without touching the file at all.
+    """
+    return os.stat_result(
+        (
+            stat.S_IFREG | 0o644,
+            0,
+            0,
+            1,
+            0,
+            0,
+            int(entry.get("size") or 0),
+            0.0,
+            0.0,
+            0.0,
+        )
+    )
 
 
 def review_entries_signature(project: str, reviewed_run_id: str) -> tuple[Any, ...]:
@@ -1797,14 +2312,18 @@ def review_entries_signature(project: str, reviewed_run_id: str) -> tuple[Any, .
     directory is included because promotion can replace staging as the source.
     """
     directory = _review.review_store_root() / project
-    entries = _store_index(directory).get(reviewed_run_id) or []
-    current_entries = []
-    for entry in entries:
-        try:
-            signature = file_memo.file_signature(entry["path"])
-        except OSError:
-            signature = None
-        current_entries.append((entry["name"], signature))
+    digest = store_index_run_digest(directory, reviewed_run_id)
+    if digest is not None:
+        current_entries: list[Any] = [digest]
+    else:
+        entries = _store_index(directory).get(reviewed_run_id) or []
+        current_entries = []
+        for entry in entries:
+            try:
+                signature = file_memo.file_signature(entry["path"])
+            except OSError:
+                signature = None
+            current_entries.append((entry["name"], signature))
     committed = _review.committed_review_root(project)
     run_directory = (
         committed / _review.COMMITTED_RUN_DIRNAME / reviewed_run_id

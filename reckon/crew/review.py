@@ -72,7 +72,7 @@ from pathlib import Path
 from typing import Any, NamedTuple
 
 from reckon import _store
-from reckon._store import write_atomically, write_json_atomically
+from reckon._store import write_atomically
 
 # ── The schema: six dimensions, one maximum ────────────────────────────────
 # A dimension added later is added in exactly one place. The mirror lives in
@@ -4003,15 +4003,9 @@ def _write_record(path: Path, record: Mapping[str, Any]) -> None:
     from reckon import ledger
 
     previous = ledger._file_identity(path.parent)
-    write_json_atomically(
-        path,
-        dict(record),
-        indent=2,
-        sort_keys=True,
-        mode=None,
-        fsync=False,
-        create_parents=False,
-    )
+    from reckon.crew import review_records
+
+    review_records.record_written(path, record)
     from reckon.crew import open_run_index
 
     open_run_index.review_written(path, record, previous=previous)
@@ -4031,9 +4025,16 @@ from reckon.crew.review_records import (  # noqa: E402, F401
     _store_index,
     collect_read_failures,
     commit_record_write,
+    reconcile_foreign_write,
     record_for_review_run,
+    record_written,
+    review_records_index_names,
     reviewed_run_ids,
     store_committed_review,
+    store_index_changed_runs,
+    store_index_document,
+    store_index_run_digest,
+    store_index_version,
     stored_record,
     stored_records_for_run,
 )
