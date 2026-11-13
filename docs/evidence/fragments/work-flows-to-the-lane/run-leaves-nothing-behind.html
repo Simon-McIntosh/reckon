@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="run-leaves-nothing-behind">
+  <meta name="plan-title" content="A run leaves nothing behind when it ends">
+  <meta name="plan-summary" content="Terminal cleanup archives released deliveries, preserves recoverable work, and has bounded crash recovery; a live backstop archived 34 gc-prunable run directories.">
+  <meta name="plan-evidence-for" content="reckon:work-flows-to-the-lane">
+  <meta name="plan-verifies" content="reckon:work-flows-to-the-lane#s34">
+  <meta name="plan-commits" content="f301bde50286f3736c76fc4ed7f99d0100fdd334,a3b19408d40a842150624aff31d1c08975f46542,3c523e95f103a95969e3f36266c8b410ac6a69bc,7148cd0949d469f9d86a57a7e21bc36750e740c1,216e328628a2cb1db9403d470e55f1c2403e7d27,a6792d1de1323895bd0439b5b17b972a9adf22d9,8646b869bf8ed924f9485eb4e240516811516fd7,6ea2e0fb758da980da364b8fac24b7961299de69">
+  <meta name="plan-recorded-at" content="2026-11-13">
+  <meta name="plan-verdict" content="recorded">
+  <title>A run leaves nothing behind when it ends | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article id="run-leaves-nothing-behind-record" data-node="run-leaves-nothing-behind" data-reckon="landed">
+  <h2 id="run-leaves-nothing-behind-outcome">Terminal cleanup and bounded crash recovery</h2>
+  <p>The dedicated reproduction against the assigned base fails after a successful merge and push:
+  <code>AssertionError: ended directory remains in walked runs</code>. The existing release already
+  removes the clean integrated worktree and its scratch. The missing step is retiring the delivery
+  directory from <code>crew/runs</code>.</p>
+  <p><code>terminal_cleanup.queue_cleanup</code> now writes a recovery intent before promotion or
+  discard retires the pointer. The existing workspace-release audit still decides which worktrees
+  may go. Once that release finishes, <code>archive_ended_run</code> moves the delivery intact to
+  <code>crew/archive/runs/&lt;run-id&gt;</code> and writes <code>end.json</code> binding the run, original
+  workspace and manifest, and release receipt. A bounded sweep retries crash intents under each
+  run's lock and rotates its cursor so a withheld intent cannot starve later work. Its output names
+  every directory moved, scratch/worktree removed, and cleanup receipt retired. Both gc entry points
+  invoke this backstop only after their arguments have been validated.</p>
+  <p>A blocked or waiting run retains its workspace, delivery and scratch. Explicit terminal decisions
+  for unrecoverable or deliberately discarded sessions keep their existing meaning; the recovery
+  intent carries the gate and retention decision. A request that never launched gains no run home.
+  A sparse record without repository ownership is retained conservatively. Archived manifests and
+  gate-log citations resolve through <code>runs.run_dir</code> and <code>runs.resolve_run_path</code>.</p>
+  <h3 id="run-leaves-nothing-behind-measurements">Checks that detect the defect</h3>
+  <table>
+    <thead><tr><th>Measurement</th><th>Observed result</th></tr></thead>
+    <tbody>
+      <tr><td>Armed base at <code>1a251aab7ee9b65cca12cc62f7b9b8aeda9d9280</code>; new test absent</td><td>51 passed in 11.41s; EXIT=0</td></tr>
+      <tr><td>Dedicated cases before strengthening the population with ledger records</td><td>11 passed in 29.77s; EXIT=0</td></tr>
+      <tr><td>174 gc/landing/discard importer files at base</td><td>48 failed, 1232 passed, 7 warnings in 188.41s (0:03:08); EXIT=1</td></tr>
+      <tr><td>The same importer files at product head <code>7148cd0949d469f9d86a57a7e21bc36750e740c1</code></td><td>48 failed, 1232 passed, 7 warnings in 217.14s (0:03:37); EXIT=1; zero added failure IDs</td></tr>
+      <tr><td>Declared control: disable post-merge workspace release</td><td>1 failed in 2.99s; EXIT=1; landed worktree remains on disk</td></tr>
+    </tbody>
+  </table>
+  <p>The isolated fixtures use temporary repositories and crew homes. Landing, discard and promotion
+  with nothing left to merge each prove the worktree is absent from Git's registry and disk, scratch
+  is absent, the walked run directory is absent, and the archive receipt and manifest are readable.
+  Recovery cases exercise both a passing delivery and an explicit terminal decision. The population
+  case places 200 ledger-backed ended runs with terminal receipts in the archive and five live runs in the walked tree, observes exactly
+  those five live directories, and observes zero archived path stats. It then stats a known archive
+  through the same observer to prove the empty historical reading is meaningful.</p>
+  <p>The declared mutation runs in an extracted copy at
+  <code>3c523e95f103a95969e3f36266c8b410ac6a69bc</code>. The test proves the head reached the remote,
+  then fails at <code>assert not run["worktree"].exists()</code>. It therefore detects physical residue
+  after an actual landing. The live timing probe also reproduced an unnecessary historical patch
+  comparison for a live worktree. The new guard test first demonstrates that its comparison observer
+  sees a positive control, then proves gc does not invoke it for a live claim. Such histories remain
+  explicitly unmeasured; unclaimed worktrees retain their comparison.</p>
+  <h3 id="run-leaves-nothing-behind-live-fleet">Live fleet backstop</h3>
+  <p>A complete snapshot pass read 8,565 run directories across 18 mounted projects,
+  in 250-directory slices, and archived 34 existing gc <code>action=prune</code>
+  candidates in 121.744 s. Every source and archive path is printed in
+  <code>full-cycle.log</code>. A second read opened all 34 <code>end.json</code> files, matched their
+  run identities to their source paths, and proved the source directories were absent:
+  <code>archive receipts read and matched: 34</code>, <code>EXIT=0</code>.</p>
+  <table>
+    <thead><tr><th>Population</th><th>Before</th><th>After</th></tr></thead>
+    <tbody>
+      <tr><td>Registered worker worktrees across mounted repositories</td><td>388</td><td>386</td></tr>
+      <tr><td>Registered worker worktrees in reckon</td><td>87</td><td>87</td></tr>
+      <tr><td>Walked run directories</td><td>8,565</td><td>8,532</td></tr>
+      <tr><td>Live pointers</td><td>78</td><td>77</td></tr>
+    </tbody>
+  </table>
+  <p>Peers were active during the two censuses, so the total-population differences are not attributed
+  wholly to this sweep. Its own archival count is 34. A six-candidate held-worktree slice classified
+  all six as unintegrated and retained them. The directory sweep retained 3,756 review-owed directories,
+  2,065 missing derived figures, 757 explicit resume retentions, 1,640 unledgered directories, six
+  ledgered runs with live pointers and 307 other protected/recent directories. It changed no removal
+  policy and does not claim the historical backlog is gone.</p>
+  <p id="run-leaves-nothing-behind-gc-time">The full reckon repository gc dry run completed after the backstop in <strong>1001.291 s</strong>, with <code>dryrun EXIT=0</code>. Earlier probes exceeded a 600 s bound or were stopped after their stacks exposed the unnecessary live-worktree history comparisons. The final trace also records the remaining cost of inspecting unclaimed worktrees and protected historical directories; this result is a completed timing, not a claim that the whole legacy pass is fast.</p>
+  <h3 id="run-leaves-nothing-behind-remaining">Verification receipts and durable records</h3>
+  <p>The first final arm at <code>55457e5862a4c94d254a2ba117f8f8abf5cbc53b</code> reported
+  <code>2 failed, 60 passed in 17.52s</code>. One failure exposed a missing ledger parent directory
+  in the strengthened population fixture, before gc ran. The fixture now creates that directory
+  through the ledger's path resolver. The other failure was the missing census entry below.
+  <code>after-final.log</code> preserves both failures; the final manifest records the subsequent arm.</p>
+  <p id="run-leaves-nothing-behind-census">The required staged-write census correctly reports the new directory-relocation owner <code>("reckon/crew/terminal_cleanup.py", "archive_ended_run")</code>. The resumed scope grant permits its five-line owner entry in <code>tests/test_staged_write_inventory.py</code>, applied from the checked patch and committed at <code>6ea2e0fb758da980da364b8fac24b7961299de69</code>. The entry explains why moving an intact directory belongs to this operation rather than the single-file writer. Ruff check and format check pass on the changed test. The census retains its explicit inventory assertion.</p>
+  <p>The armed after command is
+  <code>PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_run_leaves_nothing_behind.py tests/test_staged_write_inventory.py</code>.
+  It runs after this evidence commit. The manifest records the actual final full SHA, resolved command,
+  module path, working directory, summary and exit receipt. A fresh importer comparison at the same
+  final head follows the armed gate, against the preserved base receipt. Both run on
+  <code>all_debug</code> with at most four pytest workers, one arm at a time; their definitive results
+  are in <code>scope-granted-after.log</code>, <code>scope-granted-importers.log</code> and
+  <code>scope-granted-importer-delta.json</code>, written after this evidence commit.</p>
+  <p>Logs and measurement records live under
+  <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261113T023226263467-run-leaves-nothing-behind/</code>:
+  <code>baseline-fixed.log</code>, <code>baseline-fixed-importers.log</code>,
+  <code>guard-importers.log</code>, <code>importer-delta.json</code>,
+  <code>negative-control-refined.log</code>, <code>full-backstop.json</code>,
+  <code>full-cycle-before.json</code>, <code>full-cycle-after.json</code>,
+  <code>full-cycle.log</code>, and <code>archive-receipts-and-cleanup.log</code>.
+  Initial helper and prototype failures remain in their logs and the manifest; no failing evidence
+  was hidden or relabeled as a passing arm. This run's temporary fixture and extraction trees were
+  removed with their exact paths printed.</p>
+</article>
+</body>
+</html>

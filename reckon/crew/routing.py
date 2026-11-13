@@ -661,12 +661,24 @@ def _extraction_report(path: Path) -> dict[str, Any]:
     }
 
 
-def _tree_state(path: Path) -> dict[str, Any]:
+def _tree_state(
+    path: Path, *, untracked_roots: Iterable[Path] | None = None
+) -> dict[str, Any]:
     """Return the commit and working-tree state needed for a boundary check.
 
     Harness scratch is left out of both the entries and the digest, so the
     bookkeeping the harness writes into every worktree never reads as a run's
     uncommitted work.
+
+    ``untracked_roots`` narrows the status read to the repository-relative
+    roots a caller can charge a change to. ``--untracked-files=all`` lists every
+    file under every untracked directory, and a shared checkout carries
+    worktree, cache and tool trees that no run declares, so the unrestricted
+    read spends one directory walk per untracked file on the filesystem. Naming
+    the roots as literal pathspecs keeps the entries inside them — including a
+    file at a declared path under an untracked directory — while a directory
+    outside every root is never opened. ``None`` keeps the unrestricted read,
+    which is what a caller that reports a whole tree needs.
     """
     if not path.is_dir():
         return {
@@ -681,19 +693,35 @@ def _tree_state(path: Path) -> dict[str, Any]:
         capture_output=True,
         check=False,
     )
-    status = subprocess.run(
-        [
+    pathspecs = (
+        None
+        if untracked_roots is None
+        else [f":(literal){Path(root).as_posix()}" for root in untracked_roots]
+    )
+    if pathspecs == []:
+        # A run that declares no root can have no change charged to it, so the
+        # walk would answer nothing. Reading it anyway is what costs the walk,
+        # so the empty root set answers the empty state.
+        status = subprocess.CompletedProcess(
+            args=[], returncode=0, stdout=b"", stderr=b""
+        )
+    else:
+        command = [
             "git",
             "status",
             "--porcelain=v1",
             "-z",
             "--untracked-files=all",
             "--no-renames",
-        ],
-        cwd=path,
-        capture_output=True,
-        check=False,
-    )
+        ]
+        if pathspecs is not None:
+            command += ["--", *pathspecs]
+        status = subprocess.run(
+            command,
+            cwd=path,
+            capture_output=True,
+            check=False,
+        )
     if head.returncode or status.returncode:
         detail = (
             os.fsdecode(head.stderr or b"").strip()
@@ -739,13 +767,21 @@ def _boundary_tree_roots(repository: str | Path, worktree: str | Path) -> list[P
 
 
 def _repository_tree_snapshot(
-    repo: Path, *, roots: Iterable[str | Path] | None = None
+    repo: Path,
+    *,
+    roots: Iterable[str | Path] | None = None,
+    untracked_roots: Iterable[Path] | None = None,
 ) -> dict[str, Any]:
     """Capture one deterministic snapshot of the repository's selected trees.
 
     With no explicit roots, the worktree registry is enumerated exactly once.
     Promotion supplies the persisted root set, so worktrees registered after
     dispatch cannot be charged to an earlier run.
+
+    ``untracked_roots`` is passed to every tree and bounds the untracked read to
+    the repository-relative roots a caller charges a change to; see
+    :func:`_tree_state`. Every selected tree is still read, so the number of
+    status calls is unchanged.
     """
     selected = (
         _registered_worktrees(repo) if roots is None else [Path(p) for p in roots]
@@ -754,7 +790,9 @@ def _repository_tree_snapshot(
     return {
         "version": 1,
         "status_digest": "sha256",
-        "trees": [_tree_state(path) for path in resolved],
+        "trees": [
+            _tree_state(path, untracked_roots=untracked_roots) for path in resolved
+        ],
     }
 
 
@@ -857,13 +895,18 @@ def _inspect_workspace(
     )
     claims = sorted(claimed_by)
     commits: list[dict[str, str]] | None = None
-    if release_residue and not reachable:
+    if release_residue and not reachable and not claims:
         commits = _commits_beyond_merge_base(repo, path, integrated_into)
     if commits is None:
         if not release_residue:
             unmeasured_reason = (
                 "release_residue is false: this caller did not ask for the "
                 "commits beyond the integration head to be measured"
+            )
+        elif claims:
+            unmeasured_reason = (
+                "a live pointer retains this worktree; "
+                "its history cannot change the refusal"
             )
         elif reachable:
             unmeasured_reason = (

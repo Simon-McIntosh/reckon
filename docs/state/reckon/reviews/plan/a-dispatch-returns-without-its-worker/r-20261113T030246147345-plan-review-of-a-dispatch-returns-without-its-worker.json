@@ -1,0 +1,179 @@
+{
+  "absent_items": [],
+  "accepted_edits": [
+    {
+      "by": "1fb615a0-2801-4418-bbb4-c2914719e520",
+      "digests": {
+        "_document": "90edf4e7b5155b9728f24eccd079fdfd40994620af1e7c30bc7dfc05fdf48f35",
+        "s32": "b2023f87d9b106511071b1982ca59e394dcbeb5589b4be69e356827bfce140dc"
+      },
+      "reason": "the edit makes exactly the two acted answers' changes to section 32",
+      "units": [
+        "_document",
+        "s32"
+      ],
+      "when": "2026-11-13T05:39:24.648382+00:00"
+    }
+  ],
+  "completed_at": "2026-11-13T04:02:16.055Z",
+  "dispatched_at": "2026-11-13T03:57:18Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-dispatch-returns-without-its-worker.html:1076",
+      "id": "reasoning-1",
+      "reason": "a node fenced to recovery_wait.py, resumption.py and recovery_liveness.py cannot change the predicate that refuses the resume, so it would either stop at a scope blocker or \"fix\" the symptom somewhere that does not decide it.",
+      "text": "\u00a731's deliverable requires that \"an idle supervisor does not refuse a resume as an attempt in flight\", but both the refusal text and the hold rule live in `reckon/crew/dispatch_launch.py`, which \u00a731's write paths do not list: `resumption.py:1811` calls `reserve_launch_attempt` (`dispatch_launch.py:2612`), which raises through `held_launch_reservation` (`dispatch_launch.py:2543`) and `_reservation_refusal` (`dispatch_launch.py:2582`, the only producer of the \"already has attempt N in flight\" wording the Why quotes)",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-dispatch-returns-without-its-worker.html:1076",
+      "id": "wiring-1",
+      "reason": "the declared wait is what orders the queue, so without it \u00a731 can be launched against landed \u00a728 semantics it means to reverse, and the two nodes can be built in either order with a different outcome.",
+      "text": "\u00a731 has no entry in `plan-section-depends-on`, yet its second clause contradicts a rule \u00a728 records as landed (\"A reservation whose supervisor is recorded keeps its current reading\", s28 in the same file) and both sections edit the same reservation code in `dispatch_launch.py`",
+      "type": "wiring",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-dispatch-returns-without-its-worker.html:1080",
+      "id": "reasoning-2",
+      "reason": "the measure passes on the weaker branch, so the section's own evidence (an empty pane across about 20 dispatches and many resumes) can be left unfixed by a node that meets its gate.",
+      "text": "\u00a732's endpoint is an either/or: the mismatch either hands the follower to the caller's own host or merely prints a line and sets a JSON field, and the done-when accepts whichever the node chose, so the node can close having fixed only the silence while the reported symptom \u2014 the lead's monitor pane showing nothing for the session \u2014 remains",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-dispatch-returns-without-its-worker.html:1080",
+      "id": "done_when-1",
+      "reason": "an unnamed record cannot be asserted by a test written from the plan, and a reviewer cannot check the dispatch document carries the fact at all.",
+      "text": "the deliverable requires \"the dispatch JSON carries the same fact in a field\" and the done-when asserts \"the JSON field\", but no field name or shape is given, so the test must either assert on a key it invents or assert nothing fixed",
+      "type": "done_when",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "67bf6a044589afcb007f1a4225894a53e8a271f6",
+  "plan_fingerprint": "a6a03b1ad3c37f4c3c75f0b18e65461212cb7bd0d6ee793fd3e074d2f6820e28",
+  "plan_slug": "a-dispatch-returns-without-its-worker",
+  "plan_version": 240,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "declined",
+      "by": "",
+      "finding": "reasoning-1",
+      "reason": "\u00a731 was filed by reckon-c0, not this session; forwarded to reckon-c0 to widen \u00a731's write paths to reckon/crew/dispatch_launch.py, where reserve_launch_attempt, held_launch_reservation and _reservation_refusal live.",
+      "when": "2026-11-13T05:34:55.429372+00:00"
+    },
+    {
+      "action": "declined",
+      "by": "",
+      "finding": "wiring-1",
+      "reason": "\u00a731 was filed by reckon-c0; forwarded to reckon-c0 to declare \u00a731's wait on \u00a728 in plan-section-depends-on and to reconcile its idle-supervisor clause with \u00a728's recorded-supervisor rule.",
+      "when": "2026-11-13T05:35:33.242279+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "30cf5e0c5b3ab8a06214430103d17a0d9a625936",
+      "commit_basis": "edit",
+      "finding": "reasoning-2",
+      "note": "\u00a732's endpoint is no longer either/or: a mismatched --session must hand the run's follower to the calling session's own waiting host, so the caller's pane shows the run; the naming line is required as well, never instead.",
+      "reason": "",
+      "when": "2026-11-13T05:36:14.065128+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "30cf5e0c5b3ab8a06214430103d17a0d9a625936",
+      "commit_basis": "edit",
+      "finding": "done_when-1",
+      "note": "\u00a732 names the field: the dispatch JSON carries host_handoff = {requested_session, calling_session, handed_to_host: bool}, and the done-when asserts each key.",
+      "reason": "",
+      "when": "2026-11-13T05:36:56.185101+00:00"
+    }
+  ],
+  "responses": {
+    "done_when-1": {
+      "action": "acted",
+      "by": "",
+      "commit": "30cf5e0c5b3ab8a06214430103d17a0d9a625936",
+      "commit_basis": "edit",
+      "note": "\u00a732 names the field: the dispatch JSON carries host_handoff = {requested_session, calling_session, handed_to_host: bool}, and the done-when asserts each key.",
+      "reason": "",
+      "when": "2026-11-13T05:36:56.185101+00:00"
+    },
+    "reasoning-1": {
+      "action": "declined",
+      "by": "",
+      "reason": "\u00a731 was filed by reckon-c0, not this session; forwarded to reckon-c0 to widen \u00a731's write paths to reckon/crew/dispatch_launch.py, where reserve_launch_attempt, held_launch_reservation and _reservation_refusal live.",
+      "when": "2026-11-13T05:34:55.429372+00:00"
+    },
+    "reasoning-2": {
+      "action": "acted",
+      "by": "",
+      "commit": "30cf5e0c5b3ab8a06214430103d17a0d9a625936",
+      "commit_basis": "edit",
+      "note": "\u00a732's endpoint is no longer either/or: a mismatched --session must hand the run's follower to the calling session's own waiting host, so the caller's pane shows the run; the naming line is required as well, never instead.",
+      "reason": "",
+      "when": "2026-11-13T05:36:14.065128+00:00"
+    },
+    "wiring-1": {
+      "action": "declined",
+      "by": "",
+      "reason": "\u00a731 was filed by reckon-c0; forwarded to reckon-c0 to declare \u00a731's wait on \u00a728 in plan-section-depends-on and to reconcile its idle-supervisor clause with \u00a728's recorded-supervisor rule.",
+      "when": "2026-11-13T05:35:33.242279+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/plan-a-dispatch-returns-without-its-worker.v240.json",
+  "review_run_id": "r-20261113T030246147345-plan-review-of-a-dispatch-returns-without-its-worker",
+  "reviewed_blob_sha": "644bdd3495ff17233535318c05324b25ca76337f",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `reckon/crew/recovery_wait.py:531` holds the terminal comparison \u00a731 cites and `reckon/crew/dispatch_watch.py:888` holds the `session != _calling_session()` return \u00a732 cites; no extensionless plan href is cited.",
+    "done_when": "a finding \u2014 \u00a732's done-when asserts \"the JSON field\" without naming the field, so the test has no fixed key to assert and a reviewer no fixed thing to check.",
+    "evidence_paths": "pass \u2014 both sections put every arm's log under the crew run directory, which survives the run; neither names a scratchpad or a node-local temporary path.",
+    "naming": "pass \u2014 neither section carries a plan label, stage name, ticket number or version tag, and neither writes changelog prose.",
+    "reasoning": "a finding \u2014 \u00a731's write paths cannot reach the code that raises the refusal it must remove, and \u00a732's either/or endpoint admits a branch that leaves the reported symptom in place.",
+    "single_goal": "pass \u2014 \u00a731's two clauses are one outcome (a parked worker is woken), the second being the precondition that makes the first observable; \u00a732 carries one deliverable.",
+    "wiring": "a finding \u2014 \u00a731 declares no depends-on even though its second clause reverses the hold rule \u00a728 landed in `reckon/crew/dispatch_launch.py`."
+  },
+  "section_digests": {
+    "_document": "370b3b002308916433b051459b7031863f17b8e506f1895a034ac0c6fc982ae3",
+    "s1": "e28838b990406106b728a03b1ce4d69905073033be3fbe16e2adec3322ccb41c",
+    "s10": "e0dad3fb234ab0708520137693f2171fd162f14f568d4b2869b4c71edc0efac0",
+    "s11": "c6b91fa66c01d6a9c4559aab10c088c049ede69554509210d53e1320ff55e7fd",
+    "s12": "06d045128a1a1f7a3d660e692c5d22b6d99cc3f1d9900b353c62ac8bfd3d60d7",
+    "s13": "ef8cd63a45cd947493184ee0e6449ec77593c6d63b58e49bc53238a950b5eaee",
+    "s14": "defc27c7ad0a511d1d46f705963f70f7e81c3191dd1c6d99c5a17c443abf908a",
+    "s15": "69ab8a4cf40c7cd5f8d8bc43e78f0e061d4659cd2a47f435f049183d9514fee6",
+    "s16": "1336f961b97041db0650d8602be3a96c2c59934a8d4873beb798369d9c5f927f",
+    "s17": "88d9571bb685887322a3326dcc28b4564790835781000548808ff28a2f4a41c4",
+    "s18": "74bce0c984fecfcbfa0463cb56ac1208fa8643d81d778787e2426ea1659e6c59",
+    "s19": "795e59e9c05c23a6a1ac9bb6442c5f6bcf5053cab2e3c3751412c914d3bc3971",
+    "s2": "4a27b5dea20b1d3354fb4c55104e868cf43416f93c5e221d90a6f07f7dd74114",
+    "s20": "49fa75b158c7050846bac6d83dd9130a6d2e79c5994e1d1a1cd53fe02871a56a",
+    "s21": "13c716b3c1bbbc8942518f34eb913c0cfdd8f50eddd2c354cd750826cd589d41",
+    "s22": "11e4ea82910dbc44c680b335b3492b480dede92aefca198a5f77d5afa94f580d",
+    "s23": "c91ce6a0b316e854ceafb7addbfc7bc53cbde49e623fd1f2f794b2f612e60332",
+    "s24": "2bf6e7c384b7a13336594083c1dbadbffefb7c5d52142917063db4e951331526",
+    "s25": "cc23505f11a53b6805235d1291e66a2c125b10d71645b70b50b7c29a9e2de0ee",
+    "s26": "ca859de70832b19bd595ec082b963a83ad8cda76b0f083eeb7178ddb47771957",
+    "s27": "eac4a3e04958e98f59e51c91d4bc2a9b689284ffd6b314309af2e6ec6b206808",
+    "s28": "d8ae29323972b12bcdfe13dc0c83467f079a5c2ac64bfb3a8d684bbce498e7df",
+    "s29": "9e5f8cbbe7799f02f10a6a4857dff226a334655f7b9a2e40e31a6629deaf33f1",
+    "s3": "825a19937c51e9c0642eb9f634ccf4d61bdbd31335debd0a28807c04739fc31a",
+    "s30": "96abac85c2a075d88d30c38a2f817dda8f9e5fd2c0d8985a75f4012f74768c99",
+    "s31": "cc4d104e107825db65ef142c874f0024de4685eb4f49c1c7835ce97f73aec6f1",
+    "s32": "7ed173ff94d108fd0b883ea8cd3815ccba14c164b6a198ecc64c399df27ac183",
+    "s4": "3c9553df00b4b52978a7b856a781f44cfbc9040b5369476acbfbd26c1401d109",
+    "s5": "902423914229fd3034527b5d329e757e05b7e2e5368f41a9832f90bee29f1e43",
+    "s6": "bf0a39b8c4fdfbb05246451d1868e014a84296c86dfe7d6090e7343db3dbd70b",
+    "s7": "3016609b879a9d7722cbebc8bff660b9e141e11eb02b98d195da3851f2340144",
+    "s8": "c93baadf650a2e67225cfb81b756692522c1ada3166037ba4f460feec98bc021",
+    "s9": "466c5aea5f624160543c791b665d76df99dcc43842ea4d5ea64071eed7aa0e00"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-13T05:34:13.099403+00:00",
+  "total": null
+}

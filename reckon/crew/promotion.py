@@ -320,6 +320,30 @@ def _promotion_lease_held(run_id: str, holder: Any) -> str:
     )
 
 
+def promotion_in_flight(run_id: str) -> str:
+    """Who holds this run's promotion claim, or empty when nobody does.
+
+    The claim is the cross-host lease promotion takes before its first write and
+    releases after its landing, so a fresh holder is a promotion in flight on
+    this host or another. A door that must not act under a promotion reads it
+    here rather than inferring it from a pointer, because the pointer is the
+    promotion's to rewrite and its removal is the last thing the promotion does:
+    a reader watching only the pointer sees a run that looks untouched for the
+    whole of a promotion.
+
+    A lease past its stale window reads as unheld, so a holder that stopped
+    renewing never refuses work forever.
+    """
+    if not run_id:
+        return ""
+    host, pid, job = _promotion_lease_identity()
+    lease = HostLease(crew_home(), _promotion_lease_name(run_id), host, pid, job)
+    holder = lease.holder()
+    if holder is None:
+        return ""
+    return f"host {holder.host} pid {holder.pid}"
+
+
 class _PromotionLeaseRenewer:
     """Keep a held lease fresh while the promotion runs, then stop."""
 
@@ -1412,8 +1436,19 @@ def _complete_locked(
                 )
                 capture = capture_run_session(record)
                 path = pointer_path(run_id)
-                _remove_promoted_pointer_or_defer(run_id, record)
+                from reckon.crew.terminal_cleanup import queue_cleanup
+
                 retention = existing.get("worktree_retention")
+                queue_cleanup(
+                    {**record, "worktree_retention": retention},
+                    kind="promoted",
+                    gate=str(gate),
+                )
+                _remove_promoted_pointer_or_defer(run_id, record)
+                # The release runs inside this run's promotion lock, so the
+                # moved-aside copy is left to the trash sweep rather than
+                # deleted here: a copy deleted inline keeps a serial review
+                # sweep waiting on the filesystem.
                 with deferring_worktree_copy_deletion():
                     release = _release_after_promotion(
                         run_id,
@@ -2091,6 +2126,13 @@ def _complete_locked(
         # ownership has already been copied onto the committed ledger row.
         _stop_at_stage_boundary("the release")
         capture = capture_run_session(record)
+        from reckon.crew.terminal_cleanup import queue_cleanup
+
+        queue_cleanup(
+            {**record, "worktree_retention": worktree_retention},
+            kind="promoted",
+            gate=str(gate),
+        )
         _remove_promoted_pointer_or_defer(run_id, record)
         # The release runs inside this run's promotion lock, so the moved-aside
         # copy is left to the trash sweep rather than deleted here: a copy
@@ -2141,6 +2183,14 @@ def _complete_locked(
             # leaving it in a bucket no roadmap reads.
             "outside_scope": outside_scope_entries,
         }
+        # A review dimension below its declared floor is work the reflex would
+        # otherwise repair, and no floor repair round starts for a run once its
+        # promotion has begun. Naming the dimension the promotion lands over is
+        # what keeps that work visible instead of leaving it to reappear as a
+        # worktree of commits no landing path reads.
+        owed_repair = owed_floor_repair(run_id, record, reviewed)
+        if owed_repair:
+            receipt["owed_floor_repair"] = owed_repair
         # A plan review's receipt names what the plan-review store did with the
         # review it delivered. A run that is not a plan review carries no such
         # field, so the field's absence itself states the run had no review to
@@ -2290,7 +2340,15 @@ def discard(run_id: str, *, allowed_phases: Sequence[str] = ()) -> dict[str, Any
         # record behind it, and a record written afterwards leaves a window in
         # which the departure is indistinguishable from a vanished pointer.
         written = _write_discard_record(run_id, record)
+        from reckon.crew.terminal_cleanup import queue_cleanup
+
+        queue_cleanup(record, kind="discarded")
         path.unlink()
+        release = _remove_discarded_worktree(record)
+        if written:
+            from reckon.crew.runs import resolve_run_path
+
+            written = str(resolve_run_path(written))
         return {
             "run_id": run_id,
             "pointer_path": str(path),
@@ -2308,7 +2366,7 @@ def discard(run_id: str, *, allowed_phases: Sequence[str] = ()) -> dict[str, Any
             # later dispatch for as long as its holder lives. The run this
             # discard removed is the claim's own, so the claim goes with it.
             "dispatch_claim_released": _release_discarded_dispatch_claim(run_id),
-            **_remove_discarded_worktree(record),
+            **release,
         }
 
 
@@ -2398,6 +2456,8 @@ def _remove_discarded_worktree(record: Mapping[str, Any]) -> dict[str, Any]:
             "arms_kept",
             "arms_logs_copied",
             "arms_withheld",
+            "run_archived",
+            "run_archive_withheld",
         )
         if key in release
     }
@@ -2694,6 +2754,7 @@ from reckon.crew.promotion_checks import (
     _unreviewed_refusal,
     _wait_out_stream_tail,
     _zone_aware_stream_timestamp,
+    owed_floor_repair,
     plan_impl_at,
 )
 from reckon.crew.promotion_evidence import (

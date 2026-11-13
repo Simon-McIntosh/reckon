@@ -1,0 +1,175 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_audit": [
+    {
+      "fails_if": "Inline execution exceeds five seconds, the request or pointer phase is absent, work runs before handoff, service skips execution, or the receipt drops the supplied commit; restoring inline _execute is observed to fail line 121 at 30.004 s.",
+      "lines": "120-133"
+    },
+    {
+      "fails_if": "The default sweep executes promotion inline, omits its handoff report/request, or the service does not run the queued review promotion.",
+      "lines": "160-168"
+    },
+    {
+      "fails_if": "Landing executes inline, prematurely reports landed, fails to persist a request, or service draining fails to finish its injected promotion.",
+      "lines": "209-220"
+    },
+    {
+      "fails_if": "Width-two scheduling omits either run, serializes two thirty-second delays beyond fifty seconds, or loses a supplied commit.",
+      "lines": "231-240"
+    },
+    {
+      "fails_if": "RuntimeError is swallowed, receipt error/phase is lost, either obligations projection omits or duplicates the failure, or failures leak across sessions.",
+      "lines": "257-285"
+    },
+    {
+      "fails_if": "RUNNING requests are ignored, successful request retirement fails, or a second service re-executes a finished request; the planted request has no actual promotion side effects and its live pointer remains, so the reported crash window stays green.",
+      "lines": "302-308"
+    },
+    {
+      "fails_if": "A second pending request replaces original options/id, another service starts work while an owner holds it, work never starts, or the same run executes twice; event assertions also bound fixture synchronization.",
+      "lines": "316-338"
+    },
+    {
+      "fails_if": "A matching promoted terminal receipt is ignored and execute is called, pending retirement fails, or reading the planted commit is lost; this tests a crash after service receipt, not before that receipt.",
+      "lines": "357-359"
+    },
+    {
+      "fails_if": "The existing admission loop no longer ticks the promotion service or service execution does not publish success.",
+      "lines": "380-381"
+    },
+    {
+      "fails_if": "Explicit refusal is recorded as success, its reason is discarded, automatic retries occur, terminal duplicate suppression fails, or explicit retry is rejected.",
+      "lines": "397-401"
+    },
+    {
+      "fails_if": "Extraction from nested landing receipts or a ledger receipt path stops preserving the supplied commits; both values originate in this test, so this is propagation coverage.",
+      "lines": "431"
+    },
+    {
+      "fails_if": "Pending landing processing inspects the promoted row while an asynchronous request owns the run or stops reporting its pending status.",
+      "lines": "450-455"
+    },
+    {
+      "fails_if": "--wait queues instead of executing synchronously, fails to invoke the existing promotion callback once, omits the fake receipt, or leaves a request file.",
+      "lines": "482-485"
+    }
+  ],
+  "call_site_count": 8,
+  "call_sites": [
+    "reckon/crew_run_commands.py:crew_complete",
+    "reckon/crew/resumption.py:sweep",
+    "reckon/crew/recovery_review_acceptance.py:dispatch_awaiting_reviews",
+    "reckon/crew/queue_landing.py:_land",
+    "reckon/crew/admission/service.py:admit_until_stopped",
+    "reckon/crew/pending_landing.py:finish_pending_landings",
+    "reckon/crew/obligations.py:_obligations_view",
+    "reckon/crew/obligation_snapshot.py:payload_for"
+  ],
+  "completed_at": "2026-11-13T03:32:22Z",
+  "dispatched_at": "2026-11-13T03:22:47Z",
+  "evidence_caveats": [
+    "No suite rerun: recorded gate logs were read, as required by the bounded review brief.",
+    "The live head helper exited 1 after its required assertions; live-head-validation.log independently matches the saved output against the durable receipt and exits 0.",
+    "The negative control ran at the implementation-equivalent parent 1ff2fb47fe2cbf8df85f15329d2f300c461043e0; only evidence HTML changed afterward.",
+    "The importer comparison retains 40 baseline failures and reports no added or removed IDs; the required added_failure_count above derives from the armed baseline_suite/after_suite logs."
+  ],
+  "finding_dispositions": {
+    "0": {
+      "kind": "folded",
+      "node": "repair-of-no-caller-waits-on-a-promotion-d513212c9666",
+      "recorded_at": "2026-11-13T06:08:00.230382+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "reckon/crew/promotion_requests.py",
+      "line": "186",
+      "severity": "blocking",
+      "text": "blocking: A restart after accept_clean_review or promote_review_run_itself has completed promotion and removed its live pointer, but before _run writes promotion.json, reloads the still-RUNNING request and unconditionally calls runs.read_pointer; that raises CrewError and _run stores promotion-refused even though the ledger already records success, so the required crash recovery loses the successful outcome; reconcile the durable promoted row or reconstruct the promotion before requiring a live pointer, and cover this exact crash window for both request kinds."
+    },
+    {
+      "file": "tests/test_no_caller_waits_on_a_promotion.py",
+      "line": "132",
+      "severity": "non-blocking",
+      "text": "non-blocking: The commit assertions at lines 132,219,238,359,431 and 484 compare against repository.sha also supplied to the fake promotion result or planted receipt; they test propagation but cannot independently establish that the service reports the actual promoted commit, so count them only as propagation coverage and retain the separate real live-receipt validation for commit identity."
+    }
+  ],
+  "gate_evidence": {
+    "after_suite": {
+      "command": "PYTHONPATH=/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/8e41a6d3-d0e0-4927-afd1-771942ebfe6a/no-caller-waits-on-a-promotion /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/8e41a6d3-d0e0-4927-afd1-771942ebfe6a/no-caller-waits-on-a-promotion/tests/test_no_caller_waits_on_a_promotion.py /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/8e41a6d3-d0e0-4927-afd1-771942ebfe6a/no-caller-waits-on-a-promotion/tests/test_staged_write_inventory.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261113T011043749121-no-caller-waits-on-a-promotion/after-suite-final.log",
+      "observed_summary": "64 passed in 134.36s (0:02:14)",
+      "revision": "d513212c96665c026454b1e469b81849daa0ba36"
+    },
+    "baseline_suite": {
+      "command": "PYTHONPATH=/tmp/reckon-promotion-base-1312851-Hff6 /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q /tmp/reckon-promotion-base-1312851-Hff6/tests/test_staged_write_inventory.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261113T011043749121-no-caller-waits-on-a-promotion/baseline-suite.log",
+      "observed_summary": "51 passed in 9.14s",
+      "revision": "6d4266db9bf865d1c9f735940c7b798b58834c5f"
+    }
+  },
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 8 production call site(s)",
+    "diff": "Read b4840067adb0d8717e49dedb48658ae3d0501796, 13356457877a3dcd0a0fef0b4473abce6890cb58, 1ff2fb47fe2cbf8df85f15329d2f300c461043e0 and d513212c96665c026454b1e469b81849daa0ba36 against 6d4266db9bf865d1c9f735940c7b798b58834c5f; the two implementation commits add the service and explicit synchronous compatibility, and the other two carry evidence only.",
+    "done_when": "Read prompt.txt:123 and the amended live section; after-suite-final.log records 64 passed and the delayed caller/control assertions measure the latency requirement, while tests/test_no_caller_waits_on_a_promotion.py:288 does not exercise a crash after real promotion side effects.",
+    "goal": "Read prompt.txt:38 and live docs/plans/work-flows-to-the-lane.html:188-190; the callers durably request service work, but promotion_requests.py:186 cannot recover an acceptance promotion after its live pointer has been retired.",
+    "manifest": "Read the source run manifest.md, baseline-suite.log, after-suite-final.log, negative-control-final.log and live-head-validation.log; the revision-bound receipts support zero added armed failures and disclose the live helper's post-measurement error.",
+    "write_paths": "Read prompt.txt:80-85 plus resume-1-advice.txt and resume-2-advice.txt granting crew_run_commands.py and tests/; all 25 changed paths lie within that amended scope."
+  },
+  "justifications": {
+    "durability": "tests/test_no_caller_waits_on_a_promotion.py:121,160,209,235 protect delayed caller and concurrency behavior, but line 288 omits the pointer-retirement crash window and line 132 compares a commit supplied by its own fake producer.",
+    "evidence": "tests/test_no_caller_waits_on_a_promotion.py:121 is demonstrably red at 30.004 seconds in negative-control-final.log and the final-head gate is 64 passed, but its restart simulation at line 288 retains the live pointer throughout.",
+    "fit": "reckon/crew/promotion_requests.py:240 uses the existing HostLease and line 308 uses the promotion lease renewer, while crew_run_commands.py:3478 exposes explicit --wait compatibility in the existing Click command.",
+    "goal_fidelity": "reckon/crew/promotion_requests.py:99 and admission/service.py:252 implement the requested durable handoff, but promotion_requests.py:186 converts an already-successful acceptance into a refusal after a crash before the service receipt.",
+    "reuse": "Capability searches found resumption.py:2115 PromotionWorkers, admission/landing.py:17 _LandingWorker, host_lease.py:41 HostLease and promotion.py:336 complete; the new durable request owner wraps the existing promotion/lease owners and adds persisted cross-process work that those thread-only workers do not own.",
+    "scope_discipline": "The 25-path diff, including reckon/crew_run_commands.py and the compatibility test edits, fits the explicit extensions in resume-1-advice.txt and resume-2-advice.txt."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: Read prompt.txt:38 and live docs/plans/work-flows-to-the-lane.html:188-190; the callers durably request service work, but promotion_requests.py:186 cannot recover an acceptance promotion after its live pointer has been retired.\nVERDICT done_when: Read prompt.txt:123 and the amended live section; after-suite-final.log records 64 passed and the delayed caller/control assertions measure the latency requirement, while tests/test_no_caller_waits_on_a_promotion.py:288 does not exercise a crash after real promotion side effects.\nVERDICT write_paths: Read prompt.txt:80-85 plus resume-1-advice.txt and resume-2-advice.txt granting crew_run_commands.py and tests/; all 25 changed paths lie within that amended scope.\nVERDICT manifest: Read the source run manifest.md, baseline-suite.log, after-suite-final.log, negative-control-final.log and live-head-validation.log; the revision-bound receipts support zero added armed failures and disclose the live helper's post-measurement error.\nVERDICT diff: Read b4840067adb0d8717e49dedb48658ae3d0501796, 13356457877a3dcd0a0fef0b4473abce6890cb58, 1ff2fb47fe2cbf8df85f15329d2f300c461043e0 and d513212c96665c026454b1e469b81849daa0ba36 against 6d4266db9bf865d1c9f735940c7b798b58834c5f; the two implementation commits add the service and explicit synchronous compatibility, and the other two carry evidence only.\nCALL_SITES: reckon/crew_run_commands.py:crew_complete, reckon/crew/resumption.py:sweep, reckon/crew/recovery_review_acceptance.py:dispatch_awaiting_reviews, reckon/crew/queue_landing.py:_land, reckon/crew/admission/service.py:admit_until_stopped, reckon/crew/pending_landing.py:finish_pending_landings, reckon/crew/obligations.py:_obligations_view, reckon/crew/obligation_snapshot.py:payload_for\nSCORE goal_fidelity: 16\nJUSTIFICATION goal_fidelity: reckon/crew/promotion_requests.py:99 and admission/service.py:252 implement the requested durable handoff, but promotion_requests.py:186 converts an already-successful acceptance into a refusal after a crash before the service receipt.\nSCORE evidence: 18\nJUSTIFICATION evidence: tests/test_no_caller_waits_on_a_promotion.py:121 is demonstrably red at 30.004 seconds in negative-control-final.log and the final-head gate is 64 passed, but its restart simulation at line 288 retains the live pointer throughout.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: The 25-path diff, including reckon/crew_run_commands.py and the compatibility test edits, fits the explicit extensions in resume-1-advice.txt and resume-2-advice.txt.\nSCORE durability: 15\nJUSTIFICATION durability: tests/test_no_caller_waits_on_a_promotion.py:121,160,209,235 protect delayed caller and concurrency behavior, but line 288 omits the pointer-retirement crash window and line 132 compares a commit supplied by its own fake producer.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/crew/promotion_requests.py:240 uses the existing HostLease and line 308 uses the promotion lease renewer, while crew_run_commands.py:3478 exposes explicit --wait compatibility in the existing Click command.\nSCORE reuse: 20\nJUSTIFICATION reuse: Capability searches found resumption.py:2115 PromotionWorkers, admission/landing.py:17 _LandingWorker, host_lease.py:41 HostLease and promotion.py:336 complete; the new durable request owner wraps the existing promotion/lease owners and adds persisted cross-process work that those thread-only workers do not own.\nFINDING reckon/crew/promotion_requests.py:186 blocking: A restart after accept_clean_review or promote_review_run_itself has completed promotion and removed its live pointer, but before _run writes promotion.json, reloads the still-RUNNING request and unconditionally calls runs.read_pointer; that raises CrewError and _run stores promotion-refused even though the ledger already records success, so the required crash recovery loses the successful outcome; reconcile the durable promoted row or reconstruct the promotion before requiring a live pointer, and cover this exact crash window for both request kinds.\nFINDING tests/test_no_caller_waits_on_a_promotion.py:132 non-blocking: The commit assertions at lines 132,219,238,359,431 and 484 compare against repository.sha also supplied to the fake promotion result or planted receipt; they test propagation but cannot independently establish that the service reports the actual promoted commit, so count them only as propagation coverage and retain the separate real live-receipt validation for commit identity.\n",
+  "reuse_search": {
+    "assessment": "PromotionService adds durable ownership around existing synchronous promotion and reusable lease/IO owners; PromotionRequests adapts existing acceptance handoff, command emission wrappers delegate ordinary emission and use the existing result classifier; no other durable promotion-request owner was found.",
+    "capabilities": "durable requests, restartable bounded promotion workers, request/receipt IO, cross-host ownership, outcome projection, command emission",
+    "owners_read": [
+      "reckon/crew/promotion.py:336",
+      "reckon/crew/resumption.py:2115",
+      "reckon/crew/host_lease.py:41",
+      "reckon/crew/admission/landing.py:17",
+      "reckon/crew/runs.py:1066",
+      "reckon/crew_dispatch_commands.py:_emit_crew_result"
+    ]
+  },
+  "review_run_id": "r-20261113T031841613150-review-of-no-caller-waits-on-a-promotion-d513212c9666",
+  "reviewed_base_sha": "6d4266db9bf865d1c9f735940c7b798b58834c5f",
+  "reviewed_head_sha": "d513212c96665c026454b1e469b81849daa0ba36",
+  "reviewed_run_id": "r-20261113T011043749121-no-caller-waits-on-a-promotion",
+  "scores": {
+    "durability": 15,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 16,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "source_commits": [
+    "b4840067adb0d8717e49dedb48658ae3d0501796",
+    "13356457877a3dcd0a0fef0b4473abce6890cb58",
+    "1ff2fb47fe2cbf8df85f15329d2f300c461043e0",
+    "d513212c96665c026454b1e469b81849daa0ba36"
+  ],
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-13T04:57:34.821155+00:00",
+  "total": 107
+}

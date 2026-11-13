@@ -1,0 +1,54 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": "reckon/crew/obligations.py:2415 (_review_duty_item -> _reflex_open_refusal), reckon/crew/obligations.py:3706 (obligations view), reckon/crew/obligation_snapshot.py:1517, reckon/crew/station_subscriber.py:155, reckon/crew/recovery_review_dispatch.py:185 (_resumed_attempt_delivered -> _attempt_ended_after)",
+  "completed_at": "2026-11-13T05:15:17.626Z",
+  "dispatched_at": "2026-11-13T04:59:24Z",
+  "findings": [
+    {
+      "file": "tests/test_every_delivery_the_reflex_owns_gets_its_review.py",
+      "line": 317,
+      "severity": "non-blocking",
+      "text": "`assert hand in duty[\"next_command\"]` compares `review_hand_dispatch_command(PROJECT, \"r-refused\")` against a `duty[\"next_command\"]` that `_reflex_open_refusal` produced by calling the same builder (reckon/crew/obligations.py:1126). Both sides move together, so a regression in the builder's content \u2014 an empty string made it true vacuously, a wrong `--project` still matched \u2014 survives the assertion; it only reddens when the branch is replaced wholesale. Assert against an independent fragment such as `--role review` and the run id instead."
+    },
+    {
+      "file": "reckon/crew/obligations.py",
+      "line": 1109,
+      "severity": "non-blocking",
+      "text": "The fallback reads `pointer.get(\"review_dispatch\")` as a literal where this module's established idiom is the owned constant `recovery.REVIEW_DISPATCH_FIELD` (obligations.py:630, :741, :803). A rename of the field would leave this reader silently stale \u2014 the recorded-refusal fallback would never fire \u2014 and only the one scenario in the test would notice. Use the constant."
+    }
+  ],
+  "justifications": {
+    "durability": "tests/test_every_delivery_the_reflex_owns_gets_its_review.py:299-317 drives a real sweep with a refusing launcher and asserts the injected refusal reaches both the pointer (line 303) and the duty (line 315), which gate-base-negative-control.log shows failing at the base revision; the lone weak link is the builder-self assertion at line 317.",
+    "evidence": "gate-node-test-head.log records the three node cases 3 passed at revision 3c8873c61e and gate-base-negative-control.log records 2 failed, 1 passed at base 287b29e1, so the guard is shown to fire; ruff check and ruff format --check pass on all three changed files, but the done-when's 'importing files add no failure' arm is not recorded (both suite arms run only tests/test_staged_write_inventory.py) and no log names the all_debug partition.",
+    "fit": "reckon/crew/recovery_review_dispatch.py:2924 follows the surrounding lazy-import idiom and calls the owned reader; the naming and docstrings describe the mechanism, but obligations.py:1109 uses a field-name literal where the module's own constant exists.",
+    "goal_fidelity": "reckon/crew/obligations.py:1106-1115 falls back to the refusal the run recorded at launch when the read-only predicate answers nothing, so an overdue duty for a launch-refused delivery now names that refusal and the hand-dispatch command instead of promising another sweep.",
+    "reuse": "reckon/crew/recovery_review_dispatch.py:2924 now calls the owned `_run_exit_record` (reckon/crew/recovery_liveness.py:1411) rather than re-parsing attempt-N-exit.json, resolving the duplication the prior review recorded; a repository-wide search for an existing hand-dispatch builder found only the new `review_hand_dispatch_command`, so it is the first owner.",
+    "scope_discipline": "Every path in the delta (`reckon/crew/obligations.py`, `reckon/crew/recovery_review_dispatch.py`, `tests/test_every_delivery_the_reflex_owns_gets_its_review.py`, the evidence fragment) is inside the source node's declared write paths listed in its manifest."
+  },
+  "project": "reckon",
+  "review_run_id": "r-20261113T042201470145-review-of-every-delivery-the-reflex-owns-gets-its-review-3c8873c61edd",
+  "reviewed_base_sha": "753ef7fbacecbe69985ab852ddc36889927ddf94",
+  "reviewed_head_sha": "3c8873c61edda9ce3277ea02253232972f1c0174",
+  "reviewed_run_id": "r-20261112T213701785343-every-delivery-the-reflex-owns-gets-its-review",
+  "rubric": "six-dimension landed-change review of the commits gained since the prior review",
+  "scores": {
+    "durability": 16,
+    "evidence": 15,
+    "fit": 16,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-13T05:15:00+00:00",
+  "total": 105,
+  "verdicts": {
+    "diff": "Read commit by commit against 753ef7fbac across 5c8ea1ac8f and 3c8873c61e; four files, +65/-50, adding the recorded-refusal fallback and the shared hand-dispatch builder in obligations.py, switching `_attempt_ended_after` to the owned `_run_exit_record`, rewriting the third test to drive a real sweep, and updating the landing fragment.",
+    "done_when": "The done_when's three cases are tests/test_every_delivery_the_reflex_owns_gets_its_review.py; gate-node-test-head.log records 3 passed at 3c8873c61e and gate-base-negative-control.log records 2 failed, 1 passed at 287b29e1, so the refused-dispatch and repair-delivery guards are shown failing at the base; the importing-files arm and the all_debug/`-n 4` requirement are unrecorded.",
+    "goal": "The node goal is that every delivery the reflex owns gets its review; `_reflex_open_refusal` (reckon/crew/obligations.py:1076) now answers from `pointer[\"review_dispatch\"]` when the read-only predicate would not, and `review_hand_dispatch_command` (:1068) names what to run, so a launch-refused delivery is no longer silently held.",
+    "manifest": "Read; it records commits 753ef7fbac, 5c8ea1ac8f, 3c8873c61e, the two node-test logs (3 passed head, 2 failed base), the 51-passed fence arms, and the negative-control log with a coherent note.",
+    "write_paths": "The source node's declared write paths cover `tests/`, reckon/crew/recovery_review_dispatch.py, reckon/crew/obligations.py and docs/evidence/fragments/...; every path in the delta falls inside them, with the concurrent peers' paths untouched."
+  }
+}

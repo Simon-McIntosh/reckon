@@ -1,0 +1,65 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/crew/promotion_scope.py:_require_repository_tree_boundary",
+    "reckon/crew/promotion_checks.py:2521",
+    "reckon/crew/promotion_records.py:1348",
+    "reckon/crew/dispatch_launch.py:3930",
+    "reckon/crew/dispatching/launch.py:987"
+  ],
+  "completed_at": "2026-11-13T02:40:34.521Z",
+  "dispatched_at": "2026-11-13T02:26:46Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "exempted",
+      "reason": "non-blocking; accepted for this landing",
+      "recorded_at": "2026-11-13T02:53:40.073591+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "reckon/crew/promotion_scope.py",
+      "line": "872",
+      "severity": "non-blocking",
+      "text": "non-blocking: the after-snapshot is now bounded while the recorded baseline is unrestricted, so status_digest compares digests over different entry universes and will differ whenever any undeclared untracked directory exists, defeating the `if not status_changed: continue` short-circuit the digest exists to provide; the verdict stays correct because the charge filter is unchanged, but every tree now pays the set difference the short-circuit previously skipped."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "verified 5 production call site(s)",
+    "diff": "read commit by commit from 930eccbb3a \u2014 8020d97a93 changes reckon/crew/routing.py (+58/-16) and reckon/crew/promotion_scope.py (+18/-? reordering) and adds tests/test_boundary_check_reads_only_declared_roots.py, and bc7e0af26e adds only the landing fragment; nothing is added that the goal does not imply.",
+    "done_when": "the done_when has three clauses; the section's test passes with its negative control (gate/logs/negative-control.log fails on `assert 2.7001322358846664 <= (2 * 0.024330511689186096)` at 930eccbb3a and passes at bc7e0af26e, gate/logs/focused-head-arm.log 58 passed EXIT=0) and the ruff delta is recorded, but the importer-population clause is met only for the six boundary-exercising files and not for the 118-file population the done_when names, and the focused arms ran in place rather than on the all_debug partition the done_when names.",
+    "goal": "the node's goal is that a promotion's boundary check does not walk untracked trees; reckon/crew/promotion_scope.py:810 now passes the run's declared roots as untracked_roots, and reckon/crew/routing.py:663 narrows the `git status --untracked-files=all` read to those literal pathspecs while every dispatch-time caller (promotion_records.py:1348, dispatch_launch.py:3930, dispatching/launch.py:987) keeps the unrestricted default it records the baseline with.",
+    "manifest": "read; it records the head arm (58 passed, EXIT=0, revision bc7e0af26e, module resolved in the tree), the base arm (3 failed / 55 passed, EXIT=1, all three failures in the new test file), the negative control, and states the wider importer arm under blockers as unmeasured rather than claiming it.",
+    "write_paths": "read the fence in the source prompt (reckon/crew/routing.py, reckon/crew/promotion_scope.py, tests/, the landing fragment); every path in the two reviewed commits is inside it and the manifest's changed_paths lists exactly those four."
+  },
+  "justifications": {
+    "durability": "tests/test_boundary_check_reads_only_declared_roots.py:176 reddens at 930eccbb3a by 111x when the bound is absent, and the absence assertion at :199 carries its positive control at :202, showing the unrestricted read in the same process sees what the bounded one omits.",
+    "evidence": "gate/logs/negative-control.log and gate/logs/focused-head-arm.log record both arms and the negative control, but the 118-file importer population the done_when names is unmeasured (manifest blockers) and the focused arms ran in place rather than on all_debug.",
+    "fit": "reckon/crew/routing.py:713 follows the subprocess and list-argument form the module already uses, though the fabricated subprocess.CompletedProcess at :704 is a less idiomatic way to answer the empty-root case than returning the tree state directly.",
+    "goal_fidelity": "reckon/crew/promotion_scope.py:810 bounds the read with the same declared_roots tuple the charge filter at :889 already uses, so the read and the refusal cannot disagree.",
+    "reuse": "the bounded read extends the existing owner (_tree_state and _repository_tree_snapshot) rather than forking it; a capability search over reckon/ for `untracked-files` found only unrestricted readers in ledger.py:2891, checkout_trust.py:740, dispatch_sessions.py:1542 and gc.py:844, none of which owns a bounded variant.",
+    "scope_discipline": "the only paths in 930eccbb3a..bc7e0af26e are reckon/crew/routing.py, reckon/crew/promotion_scope.py, tests/test_boundary_check_reads_only_declared_roots.py and the granted landing fragment."
+  },
+  "project": "reckon",
+  "raw_text": "REVIEWED_BASE: 930eccbb3aace268086c7647aa12293a5430ff51\nREVIEWED_HEAD: bc7e0af26ee8ed80762c92e8cc0f51daf88c374a\n\nVERDICT goal: the node's goal is that a promotion's boundary check does not walk untracked trees; reckon/crew/promotion_scope.py:810 now passes the run's declared roots as untracked_roots, and reckon/crew/routing.py:663 narrows the `git status --untracked-files=all` read to those literal pathspecs while every dispatch-time caller (promotion_records.py:1348, dispatch_launch.py:3930, dispatching/launch.py:987) keeps the unrestricted default it records the baseline with.\nVERDICT done_when: the done_when has three clauses; the section's test passes with its negative control (gate/logs/negative-control.log fails on `assert 2.7001322358846664 <= (2 * 0.024330511689186096)` at 930eccbb3a and passes at bc7e0af26e, gate/logs/focused-head-arm.log 58 passed EXIT=0) and the ruff delta is recorded, but the importer-population clause is met only for the six boundary-exercising files and not for the 118-file population the done_when names, and the focused arms ran in place rather than on the all_debug partition the done_when names.\nVERDICT write_paths: read the fence in the source prompt (reckon/crew/routing.py, reckon/crew/promotion_scope.py, tests/, the landing fragment); every path in the two reviewed commits is inside it and the manifest's changed_paths lists exactly those four.\nVERDICT manifest: read; it records the head arm (58 passed, EXIT=0, revision bc7e0af26e, module resolved in the tree), the base arm (3 failed / 55 passed, EXIT=1, all three failures in the new test file), the negative control, and states the wider importer arm under blockers as unmeasured rather than claiming it.\nVERDICT diff: read commit by commit from 930eccbb3a \u2014 8020d97a93 changes reckon/crew/routing.py (+58/-16) and reckon/crew/promotion_scope.py (+18/-? reordering) and adds tests/test_boundary_check_reads_only_declared_roots.py, and bc7e0af26e adds only the landing fragment; nothing is added that the goal does not imply.\nCALL_SITES: reckon/crew/promotion_scope.py:_require_repository_tree_boundary, reckon/crew/promotion_checks.py:2521, reckon/crew/promotion_records.py:1348, reckon/crew/dispatch_launch.py:3930, reckon/crew/dispatching/launch.py:987\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/promotion_scope.py:810 bounds the read with the same declared_roots tuple the charge filter at :889 already uses, so the read and the refusal cannot disagree.\nSCORE evidence: 13\nJUSTIFICATION evidence: gate/logs/negative-control.log and gate/logs/focused-head-arm.log record both arms and the negative control, but the 118-file importer population the done_when names is unmeasured (manifest blockers) and the focused arms ran in place rather than on all_debug.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: the only paths in 930eccbb3a..bc7e0af26e are reckon/crew/routing.py, reckon/crew/promotion_scope.py, tests/test_boundary_check_reads_only_declared_roots.py and the granted landing fragment.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_boundary_check_reads_only_declared_roots.py:176 reddens at 930eccbb3a by 111x when the bound is absent, and the absence assertion at :199 carries its positive control at :202, showing the unrestricted read in the same process sees what the bounded one omits.\nSCORE fit: 17\nJUSTIFICATION fit: reckon/crew/routing.py:713 follows the subprocess and list-argument form the module already uses, though the fabricated subprocess.CompletedProcess at :704 is a less idiomatic way to answer the empty-root case than returning the tree state directly.\nSCORE reuse: 20\nJUSTIFICATION reuse: the bounded read extends the existing owner (_tree_state and _repository_tree_snapshot) rather than forking it; a capability search over reckon/ for `untracked-files` found only unrestricted readers in ledger.py:2891, checkout_trust.py:740, dispatch_sessions.py:1542 and gc.py:844, none of which owns a bounded variant.\nFINDING reckon/crew/promotion_scope.py:872 non-blocking: the after-snapshot is now bounded while the recorded baseline is unrestricted, so status_digest compares digests over different entry universes and will differ whenever any undeclared untracked directory exists, defeating the `if not status_changed: continue` short-circuit the digest exists to provide; the verdict stays correct because the charge filter is unchanged, but every tree now pays the set difference the short-circuit previously skipped.",
+  "review_run_id": "r-20261113T022338073741-review-of-a-promotion-s-boundary-check-does-not-walk-untracked-trees-bc7e0af26ee8",
+  "reviewed_base_sha": "930eccbb3aace268086c7647aa12293a5430ff51",
+  "reviewed_head_sha": "bc7e0af26ee8ed80762c92e8cc0f51daf88c374a",
+  "reviewed_run_id": "r-20261113T012014321697-a-promotion-s-boundary-check-does-not-walk-untracked-trees",
+  "scores": {
+    "durability": 18,
+    "evidence": 13,
+    "fit": 17,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-13T02:50:30.112960+00:00",
+  "total": 106
+}

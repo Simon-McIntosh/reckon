@@ -1,25 +1,10 @@
-"""A dispatch built on a stopped holder's chain tip may write its paths.
+"""Stacking records inherited work while source edits remain independently admissible.
 
-A run that stopped with unlanded commits still fences its declared paths: a
-second writer on those paths would bury the first run's commits, which survive
-only as long as its worktree does. That refusal is right for a dispatch cut
-from the integration branch — but not for one deliberately cut from the
-holder's own chain tip, which exists precisely to make the holder promotable.
-The newcomer's worktree already carries every one of the holder's commits, so
-refusing it strands the repair the holder cannot make for itself.
-
-The case here is that shape: a held run with a stopped worker and a commit past
-its base, and a second dispatch whose base is that run's head. The stacked
-dispatch is admitted and both pointers record the stacking; the same dispatch
-cut from the integration branch is refused with ``ScopeConflict``, which is the
-claim's own rule and must not be weakened. Promoting the holder while its
-descendant is live succeeds, because the descendant's worktree now carries the
-holder's commits, and the result names that descendant.
-
-The real pointer directory under the user's config home is asserted untouched
-to the extent the fixture can see it: every fixture pointer is written to a
-temporary crew home, so a case that reached the operator's own home would show
-up here rather than in a live fleet.
+A dispatch cut from a stopped holder's head carries its unlanded commits and
+records that relationship on both pointers. A source editor cut from primary
+also proceeds, and git reconciles the edits at landing. Exclusive artifacts
+retain the refusal when the new base does not carry the holder's work.
+Temporary repositories and crew homes isolate every pointer and promotion.
 """
 
 from __future__ import annotations
@@ -40,7 +25,8 @@ dispatch_module = importlib.import_module("reckon.crew.dispatch")
 
 PROJECT = "stacked-claim-fixture"
 NODE_ID = "repair-on-the-holders-tip"
-CLAIMED_PATH = "nova/equilibrium/contour_tree.py"
+SOURCE_PATH = "nova/equilibrium/contour_tree.py"
+CLAIMED_PATH = SOURCE_PATH
 HOLDER_RUN = "r-20261021T005136987306-read-correction-path"
 HOLDER_NODE = "read-correction-path"
 DESCENDANT_NODE = "contour-chain-added-failures"
@@ -64,6 +50,18 @@ CONFIG: dict[str, Any] = {
     "roles": {"implement": {}},
     "fences": {"time_budget": "25m", "needs_help_after_failures": 2},
 }
+
+
+@pytest.fixture(params=[False, True], autouse=True)
+def exclusive_claim(
+    request: pytest.FixtureRequest, monkeypatch: pytest.MonkeyPatch
+) -> bool:
+    """Exercise the same stacking checks with mergeable source and a receipt."""
+    exclusive = bool(request.param)
+    monkeypatch.setitem(
+        globals(), "CLAIMED_PATH", "generated.receipt" if exclusive else SOURCE_PATH
+    )
+    return exclusive
 
 
 def _git(repo: Path, *arguments: str) -> str:
@@ -99,7 +97,7 @@ def _held_repository(
     monkeypatch.setenv("RECKON_HOME", str(config_home))
 
     repo = tmp_path / "repo"
-    (repo / "nova" / "equilibrium").mkdir(parents=True)
+    (repo / Path(CLAIMED_PATH).parent).mkdir(parents=True, exist_ok=True)
     (repo / "docs" / "plans").mkdir(parents=True)
     (repo / "docs" / "state" / PROJECT).mkdir(parents=True)
     (repo / "docs" / "state" / PROJECT / "shared-write-paths.json").write_text(
@@ -108,9 +106,7 @@ def _held_repository(
     (repo / "docs" / "plans" / "fixture.html").write_text(
         _plan_document(), encoding="utf-8"
     )
-    (repo / "nova" / "equilibrium" / "contour_tree.py").write_text(
-        "seed\n", encoding="utf-8"
-    )
+    (repo / CLAIMED_PATH).write_text("seed\n", encoding="utf-8")
     _git(repo, "init", "-q", "-b", "main")
     _git(repo, "config", "user.email", "worker@example.invalid")
     _git(repo, "config", "user.name", "Worker")
@@ -165,14 +161,7 @@ def _publish_stopped_holder(repo: Path, tmp_path: Path) -> tuple[str, str, str]:
 
 
 def _record_stacking_directly(repo: Path, tmp_path: Path) -> tuple[str, str, str]:
-    """Publish a holder and a live stacked descendant, and record the stacking.
-
-    The dispatch that admits a stacked run is what the done-when is about, and
-    its arms are the two that need the dispatch's base handed to the check. The
-    recording, registry and promotion arms below are reachable without it, so
-    they are asserted here as well rather than left unproven behind the wiring:
-    what this helper skips is one argument, not the mechanism.
-    """
+    """Publish both pointers and preserve the descendant's inherited work."""
     from reckon.crew.runs import record_stacked_dispatch
 
     holder, _base, head = _publish_stopped_holder(repo, tmp_path)
@@ -232,6 +221,7 @@ def _dispatch_on(
     monkeypatch: pytest.MonkeyPatch,
     *,
     base: str,
+    node_id: str = "",
 ) -> dict[str, Any]:
     """Dispatch the descendant at one base, with a worktree cut from that base."""
     created: dict[str, dict[str, str]] = {}
@@ -250,8 +240,12 @@ def _dispatch_on(
         return created["worktree"]
 
     monkeypatch.setattr(dispatch_module, "_create_worktree", prepare_worktree)
+    node = _descendant_node(tmp_path)
+    if node_id:
+        node.id = node_id
+        node.manifest_path = str(tmp_path / "manifests" / f"{node_id}.md")
     return crew.dispatch(
-        node=_descendant_node(tmp_path),
+        node=node,
         project=PROJECT,
         repo=repo,
         config=CONFIG,
@@ -265,7 +259,7 @@ def _dispatch_on(
 def test_a_dispatch_on_the_holders_chain_tip_is_admitted(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """The done-when's admit arm: the stacked dispatch writes the claimed path."""
+    """The stacked dispatch carries the holder's commits and records both ends."""
     _config_home, repo = _held_repository(tmp_path, monkeypatch)
     _run_id, _base, head = _publish_stopped_holder(repo, tmp_path)
 
@@ -275,26 +269,29 @@ def test_a_dispatch_on_the_holders_chain_tip_is_admitted(
     assert run_id.startswith("r-")
     live = {str(row["run_id"]) for row in crew.list_live(project=PROJECT)}
     assert run_id in live
-    # The holder stays live: its claim is what fences its paths against every
-    # other dispatch, and it keeps fencing until it is promoted or discarded.
+    # The holder remains recorded while the descendant carries its commits.
     assert HOLDER_RUN in live
     assert read_pointer(HOLDER_RUN).get("stacked_runs") == [run_id]
     assert read_pointer(run_id).get("stacked_on") == HOLDER_RUN
 
 
-def test_a_dispatch_on_the_integration_branch_is_still_refused(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+def test_a_dispatch_from_primary_follows_claim_exclusivity(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, exclusive_claim: bool
 ) -> None:
-    """The control: the claim keeps refusing a dispatch that carries none of it."""
+    """Primary-based source edits proceed; a competing receipt still refuses."""
     _config_home, repo = _held_repository(tmp_path, monkeypatch)
     _run_id, base, _head = _publish_stopped_holder(repo, tmp_path)
 
-    with pytest.raises(crew.ScopeConflict) as refusal:
-        _dispatch_on(repo, tmp_path, monkeypatch, base=base)
-
-    assert CLAIMED_PATH in str(refusal.value)
-    assert HOLDER_RUN in str(refusal.value)
-    assert not (tmp_path / "worktrees").exists()
+    if exclusive_claim:
+        with pytest.raises(crew.ScopeConflict) as refusal:
+            _dispatch_on(repo, tmp_path, monkeypatch, base=base)
+        assert CLAIMED_PATH in str(refusal.value)
+        assert HOLDER_RUN in str(refusal.value)
+        assert not (tmp_path / "worktrees").exists()
+    else:
+        record = _dispatch_on(repo, tmp_path, monkeypatch, base=base)
+        assert read_pointer(record["run_id"])["phase"] == "starting"
+        assert not record.get("stacked_on")
 
 
 def test_the_registry_names_the_stacked_run_and_still_binds(
@@ -316,7 +313,7 @@ def test_the_registry_names_the_stacked_run_and_still_binds(
 
 
 def test_promoting_the_holder_names_its_live_descendant(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, exclusive_claim: bool
 ) -> None:
     """The holder leaves while its descendant is live, and the result says which."""
     _config_home, repo = _held_repository(tmp_path, monkeypatch)
@@ -327,7 +324,9 @@ def test_promoting_the_holder_names_its_live_descendant(
         gate="passed",
         commits=[head],
         root=repo,
-        review_waiver="the holder's review is out of this fixture's subject",
+        review_waiver=""
+        if exclusive_claim
+        else "the holder's review is out of this fixture's subject",
     )
 
     assert result["stacked_descendants"] == [descendant]
@@ -335,17 +334,10 @@ def test_promoting_the_holder_names_its_live_descendant(
     assert pointer_path(descendant).exists()
 
 
-def test_the_check_admits_the_tip_and_refuses_the_branch(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+def test_the_check_records_stacking_and_shares_source(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, exclusive_claim: bool
 ) -> None:
-    """The exception itself, exercised with the base the dispatcher would pass.
-
-    The two dispatch arms above cannot reach this state until the dispatch
-    hands its base down, so the check is called here with the same claim list
-    ``_repository_scope_claims`` builds for a real dispatch and the base the
-    dispatcher resolves. The tip is admitted and named; the integration branch
-    is refused, which is the control that keeps the claim's own rule intact.
-    """
+    """Inherited work is recorded; only an exclusive artifact fences primary."""
     from reckon.crew.dispatch import (
         _raise_repository_scope_conflict,
         _repository_scope_claims,
@@ -370,7 +362,18 @@ def test_the_check_admits_the_tip_and_refuses_the_branch(
     )
     assert [row["run_id"] for row in stacked] == [holder]
 
-    with pytest.raises(crew.ScopeConflict):
+    if exclusive_claim:
+        with pytest.raises(crew.ScopeConflict):
+            _raise_repository_scope_conflict(
+                node,
+                project=PROJECT,
+                repo=repo,
+                authority=authority,
+                claims=claims,
+                base_revision=base,
+            )
+    else:
+        independent: list[dict[str, Any]] = []
         _raise_repository_scope_conflict(
             node,
             project=PROJECT,
@@ -378,20 +381,15 @@ def test_the_check_admits_the_tip_and_refuses_the_branch(
             authority=authority,
             claims=claims,
             base_revision=base,
+            stacked=independent,
         )
+        assert independent == []
 
 
 def test_the_dry_run_and_the_real_dispatch_agree_on_a_stacked_dispatch(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, exclusive_claim: bool
 ) -> None:
-    """The dry run reaches the verdict the launch reaches.
-
-    A caller reads the dry run's verdict to decide whether to dispatch, so a
-    dry run that refuses where the launch admits sends them away from a dispatch
-    that would have been accepted. Both are asked the same question here, on the
-    same holder and the same base: on the holder's chain tip both admit, and on
-    the integration branch both refuse.
-    """
+    """Preview and launch agree for both inherited and independent edits."""
     from reckon.crew.dispatch_plan import plan_dispatch
 
     _config_home, repo = _held_repository(tmp_path, monkeypatch)
@@ -412,8 +410,13 @@ def test_the_dry_run_and_the_real_dispatch_agree_on_a_stacked_dispatch(
     record = _dispatch_on(repo, tmp_path, monkeypatch, base=head)
     assert str(record["run_id"]).startswith("r-")
 
-    refused = plan_dispatch(
-        node=_descendant_node(tmp_path),
+    independent_node = _descendant_node(tmp_path)
+    independent_node.id = "independent-editor"
+    independent_node.manifest_path = str(
+        tmp_path / "manifests" / "independent-editor.md"
+    )
+    independent = plan_dispatch(
+        node=independent_node,
         config=CONFIG,
         project=PROJECT,
         repo=repo,
@@ -422,24 +425,25 @@ def test_the_dry_run_and_the_real_dispatch_agree_on_a_stacked_dispatch(
         report_live_conflicts=True,
         route="deterministic",
     )
-    assert refused.admission["state"] == "refused"
-    assert refused.admission["error"] == "scope-conflict"
-
-    with pytest.raises(crew.ScopeConflict):
-        _dispatch_on(repo, tmp_path, monkeypatch, base=base)
+    if exclusive_claim:
+        assert independent.admission["state"] == "refused"
+        assert independent.admission["error"] == "scope-conflict"
+        with pytest.raises(crew.ScopeConflict):
+            _dispatch_on(
+                repo, tmp_path, monkeypatch, base=base, node_id="independent-editor"
+            )
+    else:
+        assert independent.admission["state"] == "admitted"
+        launched = _dispatch_on(
+            repo, tmp_path, monkeypatch, base=base, node_id="independent-editor"
+        )
+        assert read_pointer(launched["run_id"])["phase"] == "starting"
 
 
 def test_a_stacked_run_widening_onto_the_holders_paths_is_admitted(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, exclusive_claim: bool
 ) -> None:
-    """A widening dispatch is judged with the base it was itself cut from.
-
-    A run stacked on a stopped holder has that holder's chain tip as its base,
-    so widening onto the holder's other claimed paths adds no writer the holder
-    does not already carry. Judged without its own base the same widening is
-    refused, which is the state this case pins: the stacked run is admitted and
-    a run based on the integration branch is still refused.
-    """
+    """Source widening proceeds from either base; inherited artifacts also pass."""
     from reckon.crew.dispatch_claims import refuse_widen_scope_conflicts
 
     _config_home, repo = _held_repository(tmp_path, monkeypatch)
@@ -456,7 +460,7 @@ def test_a_stacked_run_widening_onto_the_holders_paths_is_admitted(
     # The descendant widens onto a path its own base already carries: admitted.
     refuse_widen_scope_conflicts(read_pointer(descendant), [CLAIMED_PATH])
 
-    # A run cut from the integration branch carries none of it: still refused.
+    # An independent source writer needs no inherited base to share the path.
     based_on_main = "r-20261022T101900000000-based-on-main"
     crew._write_json(
         pointer_path(based_on_main),
@@ -478,5 +482,8 @@ def test_a_stacked_run_widening_onto_the_holders_paths_is_admitted(
             },
         },
     )
-    with pytest.raises(crew.ScopeConflict):
+    if exclusive_claim:
+        with pytest.raises(crew.ScopeConflict):
+            refuse_widen_scope_conflicts(read_pointer(based_on_main), [CLAIMED_PATH])
+    else:
         refuse_widen_scope_conflicts(read_pointer(based_on_main), [CLAIMED_PATH])

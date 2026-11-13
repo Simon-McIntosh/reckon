@@ -1,0 +1,74 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failure_note": "Derived from the reviewed run's own arms: baseline_suite 51 passed EXIT=0 at d2e5fb667e (logs/armed-baseline_suite.log) and after_suite 53 passed EXIT=0 at 57f07fa272 (after-suite.log; 51 passed EXIT=0 at 00e7d47e06 in logs/armed-after_suite.log), so neither arm records a failing test id and no added failure is derivable from the pair.",
+  "base_log_revision": "d2e5fb667e77843edeaa73344ffd810d6afd100d",
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew/promotion.py:2098 _complete_locked landing release inside deferring_worktree_copy_deletion",
+    "reckon/crew/promotion.py:1417 _complete_locked shadow-evidence release inside deferring_worktree_copy_deletion",
+    "reckon/crew/promotion_release.py:543 _release_after_promotion",
+    "reckon/crew/routing.py:1516 _release_worktree_whole reads _DEFER_COPY_DELETION before _delete_worktree_copy"
+  ],
+  "completed_at": "2026-11-13T03:24:00.370Z",
+  "dispatched_at": "2026-11-13T03:09:30Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "exempted",
+      "reason": "non-blocking; accepted for this landing",
+      "recorded_at": "2026-11-13T03:35:57.950462+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "reckon/crew/promotion.py",
+      "line": "1417",
+      "severity": "non-blocking",
+      "text": "non-blocking: the merge wraps the shadow-evidence release at promotion.py:1417 in deferring_worktree_copy_deletion, but no test drives that path - tests/test_a_promotion_does_not_wait_for_its_worktree_copy_deletion.py promotes only through the CLI landing path (promotion.py:2098) - so dropping the wrapper at :1417 would leave every gate green while that promotion path again waits on the copy's deletion."
+    }
+  ],
+  "head_log_revision": "57f07fa2729c944018c7421fc703c9c73948b119",
+  "item_aggregate": 5,
+  "item_verdicts": {
+    "call_sites": "Verified reckon/crew/promotion.py:2098 and :1417 (the two _release_after_promotion call sites in _complete_locked), reckon/crew/promotion_release.py:543 (the release implementation) and reckon/crew/routing.py:1516 (the flag read at _release_worktree_whole); the other release callers promotion_records.py:195 and crew_run_commands.py:3975 are deliberately outside the deferring scope.",
+    "diff": "Read 00e7d47e06..57f07fa272 commit by commit: the only gained commit is the merge 57f07fa272, whose reckon/crew/promotion.py delta against its main parent 086ad787f8 is exactly the deferring_worktree_copy_deletion import at :131 and the two with-blocks at :1417 and :2098, leaving the incoming stop-boundary calls at :2069, :2092 and :2106 in emission order.",
+    "done_when": "The plan's measure is a promotion slowed by an injected 30 s deletion returning within 5 s of the undelayed one and a second promotion acquiring the lock within 5 s; gate-head.log records tests/test_a_promotion_does_not_wait_for_its_worktree_copy_deletion.py '2 passed in 15.08s' EXIT=0 at revision 57f07fa272, whose two tests assert exactly those two figures.",
+    "goal": "The source node's goal is that a promotion does not wait for its worktree copy's deletion; the gained merge 57f07fa272 keeps 'with deferring_worktree_copy_deletion():' around both _release_after_promotion calls at reckon/crew/promotion.py:1417 and :2098, with the flag read at reckon/crew/routing.py:1516 before _delete_worktree_copy.",
+    "manifest": "Read the reviewed run's manifest; it records status complete, merge head 57f07fa2729c944018c7421fc703c9c73948b119, the single conflicted path reckon/crew/promotion.py, a resolution that keeps both the deferring scope and the stage boundary, and gate-head.log '2 passed in 15.08s' EXIT=0 beside after-suite.log '53 passed in 35.19s' EXIT=0 at that revision.",
+    "write_paths": "The reviewed node was fenced to reckon/crew/routing.py, reckon/crew/promotion.py and the plan's new test file (widened to reckon/crew/gc.py in its repair round); the gained commit's product delta is confined to reckon/crew/promotion.py, inside that scope."
+  },
+  "justifications": {
+    "durability": "removing the wrapper at reckon/crew/promotion.py:2098 reddens tests/test_a_promotion_does_not_wait_for_its_worktree_copy_deletion.py:test_a_promotion_returns_before_its_copy_is_deleted (shown red at base with a 31.1 s wait), but nothing reddens if the wrapper at promotion.py:1417 is dropped because no test drives that path.",
+    "evidence": "gate-head.log names revision 57f07fa272 with its literal command and records '2 passed in 15.08s' EXIT=0, and after-suite.log records '53 passed in 35.19s' EXIT=0 at that revision, though the gate exercises only the landing call site at promotion.py:2098.",
+    "fit": "reckon/crew/promotion.py:131 places the new import in the existing routing import block and the two with-blocks sit at the release call sites the surrounding code already structures, with no plan or ticket identifier introduced.",
+    "goal_fidelity": "reckon/crew/promotion.py:2098 and :1417 each run _release_after_promotion inside deferring_worktree_copy_deletion, and reckon/crew/routing.py:1516 returns before _delete_worktree_copy while the flag is set.",
+    "reuse": "the merge adds no definition; it composes the existing owner of the capability, deferring_worktree_copy_deletion at reckon/crew/routing.py:1459, into the two promotion release sites, and a search of reckon/crew for any other worktree-copy deferral found none.",
+    "scope_discipline": "the gained commit's product delta is confined to reckon/crew/promotion.py, inside the node's declared write paths; the other files in the base..head range arrived from primary main through the landing merge, not from this node."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The source node's goal is that a promotion does not wait for its worktree copy's deletion; the gained merge 57f07fa272 keeps 'with deferring_worktree_copy_deletion():' around both _release_after_promotion calls at reckon/crew/promotion.py:1417 and :2098, with the flag read at reckon/crew/routing.py:1516 before _delete_worktree_copy.\nVERDICT done_when: The plan's measure is a promotion whose copy deletion is slowed by 30 s returning within 5 s of the undelayed one and a second promotion acquiring the lock within 5 s; gate-head.log records tests/test_a_promotion_does_not_wait_for_its_worktree_copy_deletion.py '2 passed in 15.08s' EXIT=0 at revision 57f07fa272, whose two tests assert exactly those two figures.\nVERDICT write_paths: The reviewed node was fenced to reckon/crew/routing.py, reckon/crew/promotion.py and the plan's new test file, widened to reckon/crew/gc.py in its repair round; the gained commit's product delta is confined to reckon/crew/promotion.py, inside that scope.\nVERDICT manifest: Read the reviewed run's manifest; it records status complete, merge head 57f07fa2729c944018c7421fc703c9c73948b119, the single conflicted path reckon/crew/promotion.py, a resolution keeping both the deferring scope and the stage boundary, and gate-head.log '2 passed in 15.08s' EXIT=0 beside after-suite.log '53 passed in 35.19s' EXIT=0 at that revision.\nVERDICT diff: Read 00e7d47e06..57f07fa272 commit by commit: the only gained commit is the merge 57f07fa272, whose reckon/crew/promotion.py delta against its main parent 086ad787f8 is exactly the deferring_worktree_copy_deletion import at :131 and the two with-blocks at :1417 and :2098, leaving the incoming stop-boundary calls at :2069, :2092 and :2106 in emission order.\nCALL_SITES: reckon/crew/promotion.py:2098, reckon/crew/promotion.py:1417, reckon/crew/promotion_release.py:543, reckon/crew/routing.py:1516\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/promotion.py:2098 and :1417 each run _release_after_promotion inside deferring_worktree_copy_deletion, and reckon/crew/routing.py:1516 returns before _delete_worktree_copy while the flag is set.\nSCORE evidence: 16\nJUSTIFICATION evidence: gate-head.log names revision 57f07fa272 with its literal command and records '2 passed in 15.08s' EXIT=0, and after-suite.log records '53 passed in 35.19s' EXIT=0 at that revision, though the gate exercises only the landing call site at promotion.py:2098.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: the gained commit's product delta is confined to reckon/crew/promotion.py, inside the node's declared write paths; the other files in the base..head range arrived from primary main through the landing merge.\nSCORE durability: 14\nJUSTIFICATION durability: removing the wrapper at reckon/crew/promotion.py:2098 reddens tests/test_a_promotion_does_not_wait_for_its_worktree_copy_deletion.py:test_a_promotion_returns_before_its_copy_is_deleted, but nothing reddens if the wrapper at promotion.py:1417 is dropped because no test drives that path.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/crew/promotion.py:131 places the new import in the existing routing import block and the two with-blocks sit at the release call sites the surrounding code already structures, introducing no plan or ticket identifier.\nSCORE reuse: 20\nJUSTIFICATION reuse: the merge adds no definition; it composes the existing owner, deferring_worktree_copy_deletion at reckon/crew/routing.py:1459, into the two promotion release sites, and a search of reckon/crew for any other worktree-copy deferral found none.\nFINDING reckon/crew/promotion.py:1417 non-blocking: the merge wraps the shadow-evidence release in deferring_worktree_copy_deletion, but no test drives that path - the node's tests promote only through the CLI landing path (promotion.py:2098) - so dropping the wrapper at :1417 would leave every gate green while that promotion path again waits on the copy's deletion.\n",
+  "review_run_id": "r-20261113T025446441093-review-of-a-promotion-does-not-wait-for-its-worktree-copy-s-deletion-57f07fa2729c",
+  "reviewed_base_sha": "00e7d47e063cfb8bb62bcef6bc9831fdfc4e4df6",
+  "reviewed_head_sha": "57f07fa2729c944018c7421fc703c9c73948b119",
+  "reviewed_run_id": "r-20261112T191137457543-a-promotion-does-not-wait-for-its-worktree-copy-s-deletion",
+  "reviewer": {
+    "backend": "clive",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash",
+    "reviewer_run_id": "r-20261113T025446441093-review-of-a-promotion-does-not-wait-for-its-worktree-copy-s-deletion-57f07fa2729c"
+  },
+  "scores": {
+    "durability": 14,
+    "evidence": 16,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-13T03:26:00+00:00",
+  "total": 106
+}

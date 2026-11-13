@@ -1,0 +1,61 @@
+<section id="a-pipe-rearm-draws-each-run-once-landing">
+  <h2 id="a-pipe-rearm-draws-each-run-once-title">A pipe re-arm draws each run once</h2>
+  <p id="a-pipe-rearm-draws-each-run-once-what">
+    The resume branch of <code>reckon/crew_follow_commands.py</code> compared a
+    session's live rows against the <em>file</em> delivered record. On a node
+    running a station the live rows never reach that file: the follower hands
+    each row to the subscriber's checkpoint and returns before
+    <code>write_delivered</code>. The record therefore stops advancing the day
+    the station takes delivery, and every live run of the session looks undrawn
+    at every arming — the repeated <code>waiting</code> rows the lead reported
+    from the nova pane. The rows the branch drew were not recorded either, so
+    even the file-record path redrew them on the next arming.
+  </p>
+  <p id="a-pipe-rearm-draws-each-run-once-fix">
+    The re-arm now reads and records the one delivered-state store the live rows
+    use: the station subscriber's checkpoint while one is attached, the file
+    record otherwise. A word the re-arm draws is written back to that same store
+    — through the subscriber's path, reseeded so the row policy carries it too,
+    and through <code>write_delivered</code> for the file record. No second
+    store of delivered state is added.
+  </p>
+  <p id="a-pipe-rearm-draws-each-run-once-measure">
+    Measure: <code>tests/test_a_pipe_rearm_draws_each_run_once.py</code> drives
+    the wired <code>crew follow</code> command against a temporary crew home and
+    re-arms twice in each of three cases — a station-attached pipe, a run that
+    moves between armings, and a node with no station, whose file record is
+    seeded at the earlier word. All 3 pass at the head revision; all 3 fail at
+    the base revision, each with the second re-arm drawing the row again
+    (<code>  r-rearm-one  waiting  r-rearm-one</code>). The declared negative
+    control — the re-arm reads the file delivered record while a station
+    subscriber is attached — fails the first case with the same row
+    (<code>EXIT=1</code>, <code>1 failed</code>).
+  </p>
+  <p id="a-pipe-rearm-draws-each-run-once-gate">
+    The 66 test files importing <code>reckon.crew_follow_commands</code> ran on
+    the <code>all_debug</code> partition, one arm at a time, <code>-n 4</code>:
+    base arm 506 passed and 9 failed, head arm 509 passed and 9 failed, with the
+    two failure-id sets identical — 3 additional passes and no failure added
+    against the base. The 9 shared failures are the same tests on a base the
+    change does not touch.
+  </p>
+  <ul id="a-pipe-rearm-draws-each-run-once-evidence">
+    <li id="a-pipe-rearm-draws-each-run-once-evidence-store">
+      The active store is proved by the fixture, not assumed: the file record
+      and the subscriber's checkpoint are both seeded at
+      <code>working</code> while the live run stands at <code>waiting</code>,
+      and each case asserts the derived word first, so a fixture that failed to
+      produce the word under test reddens rather than passing vacuously.
+    </li>
+    <li id="a-pipe-rearm-draws-each-run-once-evidence-move">
+      The instrument sees movement: a second case moves the run to
+      <code>queued</code> after the first re-arm and requires it drawn exactly
+      once at the new word, so a re-arm that drew nothing at all cannot pass.
+    </li>
+    <li id="a-pipe-rearm-draws-each-run-once-evidence-third-case">
+      The no-subscriber case covers the half of the defect the station masks: at
+      the base revision the file-record path also redrew the row, because the
+      resume branch recorded nothing it drew.
+    </li>
+  </ul>
+</section>

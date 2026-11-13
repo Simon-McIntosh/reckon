@@ -648,6 +648,11 @@ def accept_clean_review(
             "deferred_findings": len(deferred),
         },
         **({"deferral_refusal": deferral_refusal} if deferral_refusal else {}),
+        **(
+            {"owed_floor_repair": result["owed_floor_repair"]}
+            if result.get("owed_floor_repair")
+            else {}
+        ),
         "gate_report": report,
         "ledger": {
             "path": str(result.get("ledger_path") or ""),
@@ -830,6 +835,10 @@ def dispatch_awaiting_reviews(
     of running each promotion at the point the run is read, which is what a
     caller that wants one run's outcome in the returned report asks for.
     """
+    # Deferred: promotion imports the checks this module's own callers load, so
+    # the module is bound where the sweep runs rather than at import time.
+    from reckon.crew import promotion as promotion_module
+
     reports: list[dict[str, Any]] = []
     failed: list[dict[str, Any]] = []
     vanished: list[dict[str, Any]] = []
@@ -841,6 +850,7 @@ def dispatch_awaiting_reviews(
     awaiting_lane: list[str] = []
     lane_paused: list[str] = []
     repaired: list[str] = []
+    repair_held: list[dict[str, Any]] = []
     in_flight: list[dict[str, Any]] = []
     handed: list[tuple[str, str, Callable[[], dict[str, Any] | None]]] = []
 
@@ -1026,12 +1036,35 @@ def dispatch_awaiting_reviews(
             # liveness, record-only findings, and a pointer re-read at launch —
             # leave every run they do not apply to untouched, so sweeping the rest
             # of the fleet is unaffected.
-            repair_report = dispatch_repair_for_run(
-                pointer, config=config, launcher=launcher
+            # A repair round starts only for a run that is not being promoted.
+            # The two outcomes are exclusive by construction: promotion settles
+            # a run's record and takes its pointer, and a round opened under a
+            # promotion either writes that settled record or commits in a
+            # worktree no landing path will read. The pointer cannot answer this
+            # on its own, because a promotion from its first write to its
+            # landing leaves the pointer looking untouched; the promotion's own
+            # claim is what the door reads.
+            holder = promotion_module.promotion_in_flight(
+                str(pointer.get("run_id") or "")
             )
-            if repair_report.get("dispatched"):
-                reports.append(repair_report)
-                repaired.append(str(repair_report.get("repair_run_id") or ""))
+            if holder:
+                repair_held.append(
+                    {
+                        "run_id": str(pointer.get("run_id") or ""),
+                        "reason": (
+                            "a promotion of this run has begun (" + holder + "), so "
+                            "no floor repair round is opened for it: the run's "
+                            "promotion names the work it lands over"
+                        ),
+                    }
+                )
+            else:
+                repair_report = dispatch_repair_for_run(
+                    pointer, config=config, launcher=launcher
+                )
+                if repair_report.get("dispatched"):
+                    reports.append(repair_report)
+                    repaired.append(str(repair_report.get("repair_run_id") or ""))
         except Exception as exc:  # noqa: BLE001 - isolate each run's whole turn
             run_id = str(pointer.get("run_id") or "")
             entry = {"run_id": run_id, "error": f"{type(exc).__name__}: {exc}"}
@@ -1102,6 +1135,7 @@ def dispatch_awaiting_reviews(
         "awaiting_lane": awaiting_lane,
         "lane_paused": lane_paused,
         "repaired": repaired,
+        "repair_held": repair_held,
     }
 
 

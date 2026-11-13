@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="artifact-kind" content="evidence">
+  <meta name="plan-evidence-for" content="reckon:the-monitor-reads-each-fact-once">
+  <meta name="plan-verifies" content="reckon:the-monitor-reads-each-fact-once#s41">
+  <meta name="evidence-verdict" content="pass">
+  <meta name="evidence-date" content="2026-11-13">
+  <meta name="evidence-commit" content="3509867a32">
+  <title>An interrupted promotion keeps its record | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<main class="plan-doc">
+<section id="an-interrupted-promotion-keeps-its-record">
+  <h2>An interrupted promotion keeps its record until its attempt is retired</h2>
+  <p><strong>The order the unfinished-promotion branch ran in.</strong>
+  <code>finish_pending_landings</code> reads a pending-landing record whose run
+  is live, whose ledger has no promoted row, whose promotion holds no lease and
+  whose pointer carries an unanswered <code>attempting</code> land attempt as a
+  promotion that ended between its record and its ledger row. Until this change
+  it called <code>clear_pending</code> first and
+  <code>_retire_interrupted_landing</code> second. The record is the only
+  evidence that the promotion stopped short, and the landing pass refuses a run
+  whose attempt produced no receipt, so a pass that ended between the two left a
+  live pointer with an <code>attempting</code> attempt, no record and no later
+  sweep able to tell the promotion had stopped: an unliftable hold.</p>
+  <p><strong>Change (commits <code>f12479c498</code>, <code>ce205d6b58</code>,
+  <code>3509867a32</code>).</strong>
+  The branch now retires the attempt and its pointer first and clears the record
+  second, so a pass that dies between the branch's own steps leaves the record
+  for the next sweep. The record is cleared only when the retirement succeeded:
+  when the pointer write fails, the retirement returns false, the run is
+  reported as <code>attempt-not-retired</code>, and the record stays as the next
+  sweep's evidence rather than being removed. A sweep that reads a record whose
+  attempt an earlier partial pass already retired settles it the same way, so
+  the record cannot outlive the attempt it names. Both steps take the run's own
+  pointer and crew home, so no shared state outside the run's records is
+  written.</p>
+  <p><strong>Reproduction before the repair.</strong> The new case was run
+  against the unmodified branch: <code>assert 'attempting' == 'interrupted'</code>
+  failed at the record's removal, with no <code>interrupted</code> status
+  reaching disk. The defect reproduced.</p>
+  <p><strong>Gate.</strong> <code>tests/test_a_finished_pending_landing_retires_its_run.py</code>
+  gains a case that delivers a run on a temporary crew home and repository,
+  marks its pointer's land attempt <code>attempting</code>, writes a
+  pending-landing record older than the promotion's lease window, and makes
+  <code>clear_pending</code> raise. It asserts that the attempt was already
+  retired to <code>interrupted</code> when the pass ended and that the record is
+  still on disk, then restores <code>clear_pending</code> and asserts a second
+  sweep answers <code>retried-unfinished</code> and removes the record, releasing
+  the run for promotion. A second case makes the retirement itself fail and
+  asserts the sweep reports <code>attempt-not-retired</code> with the record and
+  the <code>attempting</code> pointer both intact, then that a sweep with the
+  retirement restored retires the attempt and clears the record.
+  <code>tests/test_staged_write_inventory.py</code> also
+  imports the changed module. Matched arms on an <code>all_debug</code> partition
+  job: base arm (<code>f24adf8ea4f7</code>) 55 passed,
+  <code>EXIT=0</code>; head arm (the run's head) 57 passed, <code>EXIT=0</code>;
+  the eight test files importing <code>reckon.crew.pending_landing</code> took
+  44 passed at base and 46 passed at head, both <code>EXIT=0</code>, so the
+  change adds no failure. ruff
+  <code>check</code> and <code>format --check</code> report no finding on the
+  staged paths.</p>
+  <p><strong>Declared mutation.</strong> Clearing the record even when the
+  retirement failed is caught by the second case: <code>EXIT=1</code>, <code>1
+  failed, 5 passed</code>,
+  <code>test_a_record_survives_when_the_attempt_cannot_be_retired</code> fails
+  because the sweep reports <code>retried-unfinished</code> and the record is
+  gone with its attempt unanswered. The head arm does not fail that id. The
+  previous order — clearing before retiring — is caught the same way by the
+  first case, which was run against the unmodified branch before the repair and
+  failed on <code>assert 'attempting' == 'interrupted'</code>.</p>
+  <p>This gate measures this node's own change; verifying the merged result
+  belongs to a separately dispatched test node.</p>
+</section>
+</main>
+</body>
+</html>
