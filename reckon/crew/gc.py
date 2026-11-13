@@ -343,6 +343,7 @@ def _run_directory_retention_report(
     :func:`garbage_collect` classify a directory identically.
     """
     from reckon.crew.dispatch_launch import tree_size_bytes
+    from reckon.crew.recovery_review_delivery import _is_review_run
 
     run_id = directory.name
     # A review in flight is a run of its own that names this run as its subject;
@@ -350,12 +351,13 @@ def _run_directory_retention_report(
     # cannot see it.
     if run_id in live_review_targets:
         return None
-    # A review is owed while the run's tier says one is required and no complete
-    # review of it is committed yet. The directory holds the stream and diff such
-    # a review reads, so it is kept until the review lands.
+    # Ledgered reviewers have delivered their review record and owe no review
+    # of themselves. Other runs keep their stream and diff while their tier
+    # requires a review whose committed record is still missing.
     tier = str(record.get("review_tier") or "").strip().lower()
     if (
-        tier
+        not _is_review_run(record)
+        and tier
         and tier != review_tiers.NONE
         and not _committed_review_exists(project, run_id, repo_root)
     ):
@@ -2089,7 +2091,7 @@ def render_retention_service_unit(
     """Render the oneshot service that runs the retention pass once.
 
     ``ExecStart`` is the interpreter that ran the install with
-    ``-m reckon.crew.gc --apply``, so the timer runs this checkout's own code
+    ``-m reckon.crew.gc --apply --limit N``, so the timer runs a bounded pass
     under the environment the install ran from. ``WorkingDirectory`` is the
     checkout root, which puts that tree on the module search path even where the
     package is not installed into the interpreter's environment.
@@ -2098,7 +2100,14 @@ def render_retention_service_unit(
 
     interpreter = str(executable or sys.executable)
     working_directory = str(root or Path(__file__).resolve().parents[2])
-    argv = [interpreter, "-m", "reckon.crew.gc", "--apply"]
+    argv = [
+        interpreter,
+        "-m",
+        "reckon.crew.gc",
+        "--apply",
+        "--limit",
+        str(RETENTION_SWEEP_LIMIT),
+    ]
     forwarded = dict(environment or {})
     home = os.environ.get("RECKON_HOME")
     if home:
