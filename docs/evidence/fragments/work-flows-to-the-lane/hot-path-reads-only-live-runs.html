@@ -1,0 +1,75 @@
+<section id="hot-path-reads-only-live-runs-record" aria-labelledby="hot-path-reads-only-live-runs-title">
+  <h2 id="hot-path-reads-only-live-runs-title">Open-run reads: implementation held at a failing gate</h2>
+  <p>The operational entry points now share a snapshot of live pointers. A SQLite
+    projection locates retained worktree duties, run identities and review files;
+    the ledger and review writers update those projections. Explicit history
+    readers retain the complete ledger. This is a partial implementation:
+    station tick and obligations still request a complete ledger through a
+    default-root membership lookup, so the required measure is not met.</p>
+  <table id="hot-path-reads-only-live-runs-gates">
+    <caption>Separate all_debug jobs, with at most four pytest workers</caption>
+    <thead><tr><th>Arm</th><th>Revision</th><th>Recorded result</th></tr></thead>
+    <tbody>
+      <tr><td>Baseline node gate</td><td><code>f6b67f0a31c3540f6292a43ac37a41834da0ca6b</code></td><td>51 passed in 7.42 s; EXIT=0</td></tr>
+      <tr><td>First candidate node gate</td><td><code>60570547b1f2829ae00d06e4262912194f00a3a3</code></td><td>59 passed in 69.82 s; EXIT=0</td></tr>
+      <tr><td>Corrected source node gate</td><td><code>467f9dff57ad5c313bdbda82a562967860aa1232</code></td><td>2 failed, 60 passed in 48.21 s; EXIT=1</td></tr>
+      <tr><td>Baseline importer gate</td><td><code>f6b67f0a31c3540f6292a43ac37a41834da0ca6b</code></td><td>146 failed, 3970 passed, 4 skipped, 3 errors</td></tr>
+      <tr><td>First candidate importer gate</td><td><code>60570547b1f2829ae00d06e4262912194f00a3a3</code></td><td>227 failed, 3897 passed, 4 skipped, 3 errors; 82 added failing ids and one removed</td></tr>
+    </tbody>
+  </table>
+  <p>The new test creates five live runs and grows ended history from 20 to 2,000.
+    Every run has a ledger row, a run directory and a stored review. It patches
+    builtin, IO and OS opens, first reads a known ended worker file as the
+    instrument's positive control, and then refuses whole-ledger reads. Promotion
+    exercises the actual idempotent completion body for a live run that already
+    has a ledger row, removes its pointer and restores it between population
+    comparisons. Landing executes its pass. Those two population cases pass at
+    the corrected source, including the complete ledger count of 2,005.
+    Station and obligations fail before completing the comparison.</p>
+  <blockquote id="hot-path-reads-only-live-runs-refusal"><p><code>Failed: operational read requested the complete ledger</code></p></blockquote>
+  <p>The failing stack is <code>has_row → _ensure → ledger.load</code> for
+    <code>(recompute-fixture, None)</code>. The fixture's rows were written under
+    its explicit repository root. The projection therefore does not yet prevent
+    a default-root lookup from entering the cold migration path. An earlier
+    failure used an unsupported cache-kind name; the corrected gate is the
+    second counted failure after a different fix, so the declared retry limit
+    stopped further implementation.</p>
+  <p>The recorded defect reproduced at the base: the station population test
+    opened ended-run review files. The declared mutation then made station tick
+    enumerate <code>runs/*/worker.json</code> and read each file. Its captured run
+    failed <code>test_history_does_not_change_the_open_population[station]</code>
+    with one failure and EXIT=1, detecting ended worker files. This is a refusal
+    by the instrument, not an inference from a passing suite.</p>
+  <table id="hot-path-reads-only-live-runs-live-timings">
+    <caption>Read-only live-fleet wall times; local caches prepared before timing</caption>
+    <thead><tr><th>Read</th><th>Base [s]</th><th>Candidate at 307b514c998a366ac4ee5dfbfbc55b4db13d8bd0 [s]</th></tr></thead>
+    <tbody>
+      <tr><td>Obligations</td><td>182.265304</td><td>44.837489</td></tr>
+      <tr><td>Review-promotion dry run</td><td>27.683700</td><td>21.192381</td></tr>
+    </tbody>
+  </table>
+  <p>Both promotion dry runs returned one refusal and would not promote. These
+    numbers measure preflight, not a successful promotion. Both obligations
+    reads returned seven items and eight unreconciled runs; ages advanced with
+    the fleet. Python write auditing and read-only SQLite access guarded the
+    shared crew home and primary checkout, and both probes recorded zero shared
+    writes. Cache preparation took 85.35 s at base and 102.51 s at the candidate
+    and is excluded from the displayed timings. These are single observations
+    over a changing fleet, not a controlled speedup estimate.</p>
+  <p>Lint comparison on the changed Python paths records 14 existing findings at
+    base and 13 at head. The same two existing files fail format checking in both
+    arms; no new finding or unformatted file was added. The corrected broad
+    importer arm was cancelled after the node gate failed. Its zero-regression
+    requirement is unproven, and the initial importer delta remains recovery
+    evidence. Existing tests were not edited to accommodate the implementation.</p>
+  <p>The manifest and complete logs are under
+    <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261113T022704207140-hot-path-reads-only-live-runs</code>.
+    Receipts include <code>base-receipt-suite.log</code>,
+    <code>head-suite.log</code>, <code>base-importers.log</code>,
+    <code>candidate-importers.log</code>, <code>candidate-delta.json</code>,
+    <code>reproduction-suite.log</code>, <code>negative-control-suite.log</code>,
+    <code>base-live.log</code> and <code>head-live.log</code>.
+    A fresh authorized repair must resolve the default-root bootstrap and the
+    importer delta, then record a final-head gate after its evidence commit.
+    The node remains blocked; this fragment does not close the plan section.</p>
+</section>
