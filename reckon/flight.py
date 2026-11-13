@@ -97,6 +97,16 @@ DEFAULT_SPRINT_RECENT_DAYS = 14
 # whether the project's own ``.mcp.json`` servers start at all.
 WORKER_MCP_SERVERS_KEY = "worker_mcp_servers"
 
+# The per-project report stores. A project persists a report item into a root
+# it names itself, and moves settled report folders off the crew home onto a
+# staging root it names the same way. Reckon ships no default for either: a
+# project that has not declared one persists nothing and moves nothing, which
+# is the refusal its own caller reports rather than a path reckon invents.
+REPORTS_KEY = "reports"
+PERSIST_ROOT_KEY = "persist_root"
+STAGING_ROOT_KEY = "staging_root"
+REPORTS_PATH_KEYS = (PERSIST_ROOT_KEY, STAGING_ROOT_KEY)
+
 # The lanes a pick may reach only on the terms a policy states, keyed by lane
 # name and read from the host layer and the project layer like any other key. A
 # reserved lane is offered for a non-review node at the declared difficulty
@@ -436,6 +446,7 @@ def _schema_view(data: Mapping[str, Any]) -> dict[str, Any]:
     cleaned.pop(SPRINT_RECENT_DAYS_KEY, None)
     cleaned.pop(WORKER_MCP_SERVERS_KEY, None)
     cleaned.pop(PICKER_RESERVED_LANES_KEY, None)
+    cleaned.pop(REPORTS_KEY, None)
     cleaned.pop("landing", None)
     review = cleaned.get(REVIEW_KEY)
     if isinstance(review, Mapping):
@@ -763,6 +774,57 @@ def _ignore_removed_backend_keys(
             "the crew roster is the concurrency authority"
         )
     return migrated, warnings
+
+
+def _validate_reports(data: Mapping[str, Any], source: str | Path) -> None:
+    """Check the per-project report-store roots, which the schema omits.
+
+    Each declared root is an absolute path: a relative one would resolve
+    against whichever working directory happened to run the persist, so the
+    same project would copy into two places. An unknown key is refused by name
+    rather than silently ignored, and absence is legal — it is the refusal the
+    caller raises when it needs the root.
+    """
+    if REPORTS_KEY not in data:
+        return
+    reports = data[REPORTS_KEY]
+    if not isinstance(reports, Mapping):
+        raise FlightConfigError(source, REPORTS_KEY, "must be a mapping")
+    for key, value in reports.items():
+        if key not in REPORTS_PATH_KEYS:
+            raise FlightConfigError(
+                source, f"{REPORTS_KEY}.{key}", UNKNOWN_KEY_CONSTRAINT
+            )
+        if not isinstance(value, str) or not value.strip():
+            raise FlightConfigError(
+                source,
+                f"{REPORTS_KEY}.{key}",
+                "must name a directory with a non-empty string path",
+            )
+        if not Path(value).expanduser().is_absolute():
+            raise FlightConfigError(
+                source,
+                f"{REPORTS_KEY}.{key}",
+                "must be an absolute path",
+            )
+
+
+def reports_setting(config: Mapping[str, Any] | None, key: str) -> str | None:
+    """Return one declared report-store path, or None when the project has none.
+
+    The caller that needs the path says so in its own refusal, naming the
+    setting; a project that deliberately declares neither root is not
+    misconfigured, it just does not use that store.
+    """
+    if key not in REPORTS_PATH_KEYS:
+        raise ValueError(f"unknown reports setting {key!r}")
+    reports = (config or {}).get(REPORTS_KEY)
+    if not isinstance(reports, Mapping):
+        return None
+    value = reports.get(key)
+    if not isinstance(value, str) or not value.strip():
+        return None
+    return value
 
 
 def _validate_plan_review_gate(data: Mapping[str, Any], source: str | Path) -> None:
@@ -1476,6 +1538,7 @@ def validate_layer(
     _validate_project_weights(data, source)
     _validate_harness_home_files(data, source)
     _validate_plan_review_gate(data, source)
+    _validate_reports(data, source)
     review = data.get(REVIEW_KEY)
     if isinstance(review, Mapping):
         for key, shape in REVIEW_OWNED_KEYS.items():
