@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-queued-request-is-checked-when-queued">
+  <meta name="plan-evidence-for" content="a-queued-request-is-checked-when-queued">
+  <title>A second launch of a run never releases the tree its first launch holds | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <header>
+      <p class="eyebrow">Execution evidence &middot; fragment</p>
+      <h1>A second launch of a run never releases the tree its first launch holds</h1>
+      <p class="lead">A worktree path is named for its session and node, not for its run, so a duplicate launch of one run reaches the tree the launch already running is using. Re-verified at base <code>078f7c800cf487e36209d42418e0e77863abb17d</code>: the launch-side claim view is present, its four cases hold, a pointer on a host this one cannot probe stays a claim, and the declared mutation turns two cases red with the tree released into <code>_trash</code>. The guard landed at <code>b1cfbd7d30</code>, an ancestor of this base, so this node needed no product change; it carries the verification rather than a second implementation of a working guard.</p>
+    </header>
+
+    <section id="ready-a-queued-request-is-checked-s5-guard-as-found">
+      <h2>The guard as found</h2>
+      <p>Two readers decide a launch's fate, and both read the launch-side view rather than the wide one:</p>
+      <ul>
+        <li><code>_own_pointer_yields_its_tree</code> (<code>reckon/crew/routing.py</code>, line 1149) yields a same-run pointer's tree only when its phase is in <code>WAITING_REQUEST_PHASES</code> (<code>queued</code>, <code>awaiting-upstream</code>, <code>blocked-upstream</code>, <code>held</code>) or when <code>local_liveness</code> proves the worker gone on this host. A verdict this host cannot prove — a run launched on another node over the shared crew home — is no evidence either way and stays a claim.</li>
+        <li><code>_launch_pointer_worktrees</code> (line 1167) reads every live pointer exactly as the wide view <code>_live_pointer_worktrees</code> does, except that the launching run's own pointer is kept unless that predicate yields it.</li>
+        <li>The claims fed to <code>_inspect_workspace</code> by <code>_launch_tree_verdict</code> (line 2330) and the guard in <code>_remove_worktree</code> (line 2522) read that view. <code>gc</code>, <code>_save_and_release_worktree</code> and promotion release keep the wide view unchanged, and no path naming changed, so <code>_launch_worktree_path</code> (line 2303) and <code>gc.py</code>'s confinement are untouched.</li>
+      </ul>
+    </section>
+
+    <section id="ready-a-queued-request-is-checked-s5-gate">
+      <h2>The gate</h2>
+      <table>
+        <thead><tr><th>Arm</th><th>Result</th><th>Log</th></tr></thead>
+        <tbody>
+          <tr><td>Node gate at base — <code>tests/test_a_second_launch_keeps_a_live_worktree.py</code></td><td>4 passed, <code>EXIT=0</code> (22.23 s)</td><td><code>logs/base-gate.log</code></td></tr>
+          <tr><td>Declared negative control — <code>_own_pointer_yields_its_tree</code> returns <code>True</code> for every same-run pointer</td><td>2 failed, 2 passed, <code>EXIT=1</code> (29.18 s)</td><td><code>logs/negative-control.log</code></td></tr>
+          <tr><td>Negative-control probe with deferred copy deletion — the mutated retry's effect on the running worker's tree</td><td><code>payload_ok=True</code>, inode changed, trash entry <code>sample-20261113T114420871767Z</code></td><td><code>logs/negative-control-probe.log</code></td></tr>
+          <tr><td>Foreign-host probe — a <code>working</code> pointer whose <code>launcher_host</code> is another node</td><td>refused naming run <code>r-live-launch</code>, inode kept, no trash (10.38 s)</td><td><code>logs/foreign-host-probe.log</code></td></tr>
+        </tbody>
+      </table>
+      <p>Logs live under <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261113T032941649617-ready-a-queued-request-is-checked-s5/logs/</code>. Each names the revision it ran at, the tree and the literal command, and ends in a bare <code>EXIT=</code> line. This node's diff touches only <code>docs/</code>, so the head arm runs the same source as the base arm.</p>
+    </section>
+
+    <section id="ready-a-queued-request-is-checked-s5-negative-control">
+      <h2>Declared negative control</h2>
+      <p>Mutation: the section's declared control, <em>making the new predicate treat a same-run pointer as not live</em>. Applied by replacing the body of <code>_own_pointer_yields_its_tree</code> with <code>return True</code>, so the launch-side view drops even a live same-run claim. The node gate then reports 2 failed, 2 passed with <code>EXIT=1</code>: <code>test_a_working_pointer_s_second_launch_keeps_the_tree</code> and <code>test_a_starting_pointer_s_second_launch_keeps_the_tree</code> both fail with <code>Failed: DID NOT RAISE CrewError</code>, because the duplicate launch released the running worker's tree and created a replacement instead of refusing. The head arm fails neither id.</p>
+      <p>The probe shows the destruction the section was reopened for rather than inferring it from the missing raise. Under the same mutation, with copy deletion deferred so the moved tree survives the call, a second launch of the live run returns <code>ok</code>, the tree at the launch path has a new inode, and <code>_trash</code> holds <code>sample-20261113T114420871767Z</code> and then deletes nothing because deletion was deferred — the tree's own name is the trash label, exactly the signature recorded when the live worktree was trashed.</p>
+    </section>
+
+    <section id="ready-a-queued-request-is-checked-s5-commits">
+      <h2>What this node changed</h2>
+      <p>Only this fragment. No product source, no test, and no plan state: <code>reckon/crew/routing.py</code> is byte-identical to the base revision, and the four-case test already exists there. Ruff reports the file's pre-existing 8 findings and its pre-existing format diff at base (this node's region is unchanged, and the file is not staged); the fragment adds no Python and has no ruff surface.</p>
+    </section>
+  </main>
+</body>
+</html>
