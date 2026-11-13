@@ -1,0 +1,48 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-11-13T10:12:46.577Z",
+  "dispatched_at": "2026-11-13T09:52:51Z",
+  "findings": [
+    {
+      "file": "reckon/crew/dispatch_watch.py",
+      "id": "f7b51fde7e7",
+      "line": 934,
+      "severity": "non-blocking",
+      "text": "hand_off_mismatched_session has no production call site, so the silent skip at reckon/crew/dispatch_watch.py:888 still governs every dispatch and the goal is unmet at runtime; the plan's write paths exclude the wiring in reckon/crew/dispatching/requests.py and launch.py, and the node records that under outside_scope, so the coordinator must dispatch the wiring."
+    },
+    {
+      "file": "tests/test_a_session_mismatch_never_skips_the_host_silently.py",
+      "id": "f2c846f4fd2",
+      "line": 3,
+      "severity": "non-blocking",
+      "text": "the module docstring and reckon/crew/dispatch_watch.py:940 describe what the code \"used to\" do rather than the mechanism it enforces, which the repository's comment rule bans because it rots once the old behaviour is forgotten."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "none \u2014 no production module reaches hand_off_mismatched_session; the only callers of the refactored helper are reckon/crew/dispatch_watch.py:_ask_session_host and _hand_off_to_waiting_host.",
+    "diff": "pass \u2014 read commit by commit: 020a3ae95f refactors the FIFO request write into _request_line/_deliver_request and adds hand_off_mismatched_session with four tests, and 64415afa60 adds the evidence fragment; nothing outside the declared scope appears.",
+    "done_when": "pass \u2014 tests/test_a_session_mismatch_never_skips_the_host_silently.py runs four cases on a temporary crew home with a stub FIFO reader, and the recorded head arm shows 53 passed against the base arm's 49 passed with the same two scaffolding errors.",
+    "goal": "fail \u2014 the goal is that a mismatched dispatch never skips the host silently; reckon/crew/dispatch_watch.py:934 adds hand_off_mismatched_session, but reckon/crew/dispatch_watch.py:888 still returns False silently for session != _calling_session() and no production module calls the new function, so the runtime defect the node names still reproduces.",
+    "manifest": "pass \u2014 it records both suite arms, both importer arms, the negative control at negative-control.log, the ruff claim and the unwired dispatch JSON under outside_scope.",
+    "write_paths": "pass \u2014 the declared paths are reckon/crew/dispatch_watch.py, tests/test_a_session_mismatch_never_skips_the_host_silently.py, the fragment and the figures directory; the diff changes exactly the first three and nothing else."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: fail \u2014 the goal is that a mismatched dispatch never skips the host silently; reckon/crew/dispatch_watch.py:934 adds hand_off_mismatched_session, but reckon/crew/dispatch_watch.py:888 still returns False silently for session != _calling_session() and no production module calls the new function, so the runtime defect the node names still reproduces.\nVERDICT done_when: pass \u2014 tests/test_a_session_mismatch_never_skips_the_host_silently.py runs four cases on a temporary crew home with a stub FIFO reader, and the recorded head arm shows 53 passed against the base arm's 49 passed with the same two scaffolding errors.\nVERDICT write_paths: pass \u2014 the declared paths are reckon/crew/dispatch_watch.py, tests/test_a_session_mismatch_never_skips_the_host_silently.py, the fragment and the figures directory; the diff changes exactly the first three and nothing else.\nVERDICT manifest: pass \u2014 it records both suite arms, both importer arms, the negative control at negative-control.log, the ruff claim and the unwired dispatch JSON under outside_scope.\nVERDICT diff: pass \u2014 read commit by commit: 020a3ae95f refactors the FIFO request write into _request_line/_deliver_request and adds hand_off_mismatched_session with four tests, and 64415afa60 adds the evidence fragment; nothing outside the declared scope appears.\nCALL_SITES: reckon/crew/dispatch_watch.py:_ask_session_host (line 812), reckon/crew/dispatch_watch.py:_hand_off_to_waiting_host (line 1012)\nSCORE goal_fidelity: 11\nJUSTIFICATION goal_fidelity: reckon/crew/dispatch_watch.py:934 adds the hand-off, but no production caller exists and reckon/crew/dispatch_watch.py:888 keeps the silent return, so no live dispatch behaves differently.\nSCORE evidence: 16\nJUSTIFICATION evidence: base-suite.log and head-suite.log record 49/2 and 53/2 with the same two scaffolding errors, and negative-control.log shows all four new cases red at EXIT=1 with the mutation named on its header.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: the diff touches only reckon/crew/dispatch_watch.py, tests/test_a_session_mismatch_never_skips_the_host_silently.py and the declared fragment, and reports the missing wiring as outside_scope rather than writing it.\nSCORE durability: 14\nJUSTIFICATION durability: the negative control proves tests/test_a_session_mismatch_never_skips_the_host_silently.py:137 reddens when the base guard is restored, but no assertion reaches the live dispatch path, so a regression there would leave the suite green.\nSCORE fit: 15\nJUSTIFICATION fit: reckon/crew/dispatch_watch.py:934 follows the module's entry-point idiom, but its docstring and tests/test_a_session_mismatch_never_skips_the_host_silently.py:3 narrate the superseded behaviour (\"used to be refused\"), which the repository's comment rule forbids.\nSCORE reuse: 18\nJUSTIFICATION reuse: the request line and FIFO write were factored into reckon/crew/dispatch_watch.py:_request_line and _deliver_request and are shared with _request_host_follower rather than respelled; _host_handoff_line in reckon/crew_follow_commands.py:640 carries a different message for a different hand-off.\nFINDING reckon/crew/dispatch_watch.py:934 non-blocking: hand_off_mismatched_session has no production call site, so the silent skip at reckon/crew/dispatch_watch.py:888 still governs every dispatch and the goal is unmet at runtime; the plan's write paths exclude the wiring in reckon/crew/dispatching/requests.py and launch.py, and the node records that under outside_scope, so the coordinator must dispatch the wiring.\nFINDING tests/test_a_session_mismatch_never_skips_the_host_silently.py:3 non-blocking: the module docstring and reckon/crew/dispatch_watch.py:940 describe what the code \"used to\" do rather than the mechanism it enforces, which the repository's comment rule bans because it rots once the old behaviour is forgotten.\n",
+  "review_run_id": "r-20261113T090928750714-review-of-a-session-mismatch-never-skips-the-host-64415afa6023",
+  "reviewed_base_sha": "d74a74fb4c0c8e4305660c01e803d867d0f7dc7a",
+  "reviewed_head_sha": "64415afa6023d655e36846ada374681e4e125e50",
+  "reviewed_run_id": "r-20261113T033912382390-a-session-mismatch-never-skips-the-host",
+  "scores": {
+    "durability": 14,
+    "evidence": 16,
+    "fit": 15,
+    "goal_fidelity": 11,
+    "reuse": 18,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-13T12:57:11.592554+00:00",
+  "total": 93
+}
