@@ -481,12 +481,18 @@ def dispatch(
     # in a later moment. The flag still parses and still says whether the
     # coordinator asked for an exception; it changes no gate, because there is
     # no gate left to change.
-    backlog = _recorded_backlog(
-        project=project,
-        session=session,
-        config=config,
-        requested=unreconciled_override,
-        source="admission-launch" if admission_launch else "coordinator",
+    # Admission continues work already chosen by the coordinator; computing
+    # that session's backlog here would classify the fleet for every launch.
+    backlog = (
+        None
+        if admission_launch
+        else _recorded_backlog(
+            project=project,
+            session=session,
+            config=config,
+            requested=unreconciled_override,
+            source="coordinator",
+        )
     )
     # A waived plan review is narrower than the recorded backlog: it excuses
     # only the missing review of the plan this node builds, and is recorded with
