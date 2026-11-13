@@ -1,0 +1,58 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-13T11:43:10.224Z",
+  "dispatched_at": "2026-11-13T11:35:45Z",
+  "findings": [
+    {
+      "anchor": "reckon/crew/host_lease.py:41",
+      "id": "reuse_search-1",
+      "reason": "\u00a72's deliverable is \"waits or is refused\", which a lease can only half of, so the reuse decision changes the endpoint's stated semantics, not just its implementation.",
+      "text": "`HostLease` already implements cross-host single-owner exclusion in the fleet's shared state directory (atomic `os.link`, renewable, 30 s stale window) and is the mechanism `reckon/crew/promotion.py:340` uses to exclude a promotion on another host; the plan cites only the \u00a78 lease precedent in prose and never establishes that this owner cannot serve \u00a72, so a node briefed from the plan can build a second cross-node exclusion primitive beside the one the fleet already runs. Note for the brief: `HostLease.claim` reattaches when holder identity (host, pid, job, pid-namespace) matches, so two threads of one process both succeed \u2014 it cannot satisfy \u00a72's \"exclusion between two holders inside one process (two threads\u2026) is no weaker than today's\", and its non-blocking claim plus 30 s stale window mean it can refuse but cannot wait, while \u00a72 asks for \"waits or is refused\". The review's reading is that \u00a72 needs a POSIX record lock (`lockf`, which \u00a71 measured as cross-node on GPFS and which appears nowhere in `reckon/` today) for the wait path, and that its relation to `HostLease` \u2014 extends, sits beside, or is scoped to plan state only \u2014 is the decision the brief must settle.",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/project_state.py:302",
+      "id": "duplicate_owner-1",
+      "reason": "making the module mandatory (instead of optional) changes what the node builds and what \u00a74's followups point at, and the 74-vs-42 mismatch would let a census pass at the wrong row count.",
+      "text": "the lock wrapper the plan proposes to change in place is one of about twenty copies of the same shape; each opens a path, takes `fcntl.flock(LOCK_EX)`, yields, and unlocks in `finally`, and each resolves its own lock directory: `reckon/project_state.py:302` (`docs/.reckon/locks`), `reckon/_store.py:395` (`_serialized_path_lock`, config-home `locks/<namespace>`), `reckon/ledger.py:2500`, `reckon/compliance.py:145`, `reckon/crew/runs.py:480` (`_pointer_lock`, with the blocking flag \u00a72 will need), `reckon/crew/placement.py:176`, `reckon/crew/dispatch_peer.py:222`, `reckon/crew/admission/service.py:46`, `reckon/crew/budget_reset.py:101`, `reckon/crew/resumption.py:546` and `:2386`, `reckon/crew/recovery_watch.py:226`, `reckon/crew/watch_unit.py:582`, `reckon/crew/model_catalogue.py:292`, `reckon/crew/picker/outcomes.py:280`, `reckon/crew/obligations.py:3320`, `reckon/crew/dispatch_watch.py:501`, `reckon/crew/session_host.py:555`, `reckon/crew/paid_lanes.py:654` and `:822`, `reckon/crew/queue_landing.py:1880`, `reckon/crew/recovery_review_dispatch.py:2453`, `reckon/crew/follower_registration.py:392`. \u00a72 says \"one new module under `reckon/` *if* the lock is factored out\" \u2014 the conditional leaves every one of these keeping `flock`, so \u00a74's census will then file them as \"needs the \u00a72 lock\" one row at a time in followups rather than against one owner. A second counting defect in the same census: \u00a71 says the primitive \"appears 74 times in 23 modules\", which is every `fcntl.flock` reference \u2014 measured here as 42 call sites that take a lock, 31 that only release, and one `flags =` assignment at `reckon/crew/runs.py:490`. \u00a74 correctly defines a row as a *taking* call (release-only is excluded), so the row population is 42, not the 74 a worker reading \u00a71 would target.",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/project_state.py:302",
+      "id": "interface_budget-1",
+      "reason": "the section must say, in its own text, that the new module absorbs the existing lock wrappers or why it cannot, and that is a sentence the plan does not currently contain.",
+      "text": "\u00a72's write paths add \"one new module under `reckon/` if the lock is factored out\" plus a probe script under `scripts/`, and the section names neither a definition it retires nor a merge, nor states why nothing can be; the trees already carry the surface the module would replace (the twenty wrappers above, each a private helper, and the `public_definitions` count of 2606 is the family this would add to).",
+      "type": "interface_budget",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "979557b0fc4e2005592d743ac21d13547590c6fe",
+  "plan_fingerprint": "3178367cfeca887445d960fb684f9017d81c50f5bcde79398bf4e274b52d6466",
+  "plan_slug": "a-plan-state-lock-holds-on-every-node",
+  "plan_version": 2,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261113T113149468339-plan-review-of-a-plan-state-lock-holds-on-every-node",
+  "reviewed_blob_sha": "75761970654c2c1107fd87d1a6131f0c2aaad84c",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 the endpoint hides cross-node exclusion, lock placement and the wait-or-refuse policy behind the one `_resource_lock` context manager (`reckon/project_state.py:302`), an interface smaller than what it hides.",
+    "duplicate_owner": "a finding \u2014 the flock wrapper over `open`/`flock(LOCK_EX)`/`yield`/`unlock` exists in 20 modules under `reckon/`, and the plan's \u00a72 makes a shared owner optional rather than naming one.",
+    "interface_budget": "a finding \u2014 public_definitions 2606, cli_options 484, mcp_views 15, refusal_families 25; \u00a72 adds \"one new module under `reckon/`\" and its public definitions without naming what it retires or merges, or why nothing can be.",
+    "reuse_search": "a finding \u2014 the plan's \u00a72 proposes cross-node exclusion without naming `reckon/crew/host_lease.py:41`, the existing cross-host claim the fleet already uses in `reckon/crew/promotion.py:340`, although \u00a71 of the plan cites the lease precedent in prose.",
+    "thin_wrapper": "pass \u2014 the change extends the existing per-resource lock context manager in place, rather than layering a parallel lock beside it; the probe script is specified to go \"through the production lock code\" rather than re-deriving the lock path."
+  },
+  "section_digests": {
+    "_document": "0dec7477ee5a04bfe94aedccdfcbb1a1fa4b6c5d40ca04b8e47aeeaa04ea1a1c",
+    "s1": "cbecb1ff2b2187f2f95c30fdbfdf77b99831337f862a57f65926804182945505",
+    "s2": "9aced61b9d55bebbd61bdab627c6261c44c22d5776e8964f8f571531dc39fc9d",
+    "s3": "4322fa6bb06decf99e4d932412a0b6634d3f5d45bb085fc18a50da9c6f5f7f51",
+    "s4": "0ad01f71488524526c21f5eb864c2de23a5c8b993f459e0e5ca1f16133a0908b"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-13T11:50:36.436685+00:00",
+  "total": null
+}
