@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
 from collections.abc import Iterator
 from pathlib import Path
 
@@ -93,13 +94,33 @@ def real_store_traces_now() -> list[str]:
     return hits
 
 
+def real_docs_state_now() -> list[str]:
+    """Entries of the operator's own docs state this node could have written."""
+    from reckon import _store
+
+    override = os.environ.pop("RECKON_STATE_ROOT", None)
+    config_home = os.environ.pop("RECKON_HOME", None)
+    try:
+        root = _store._state_root()
+    finally:
+        if override is not None:
+            os.environ["RECKON_STATE_ROOT"] = override
+        if config_home is not None:
+            os.environ["RECKON_HOME"] = config_home
+    if not root.is_dir():
+        return []
+    return sorted(str(path) for path in root.glob(f"*{NEEDLE}*"))
+
+
 @pytest.fixture(autouse=True)
-def real_crew_home_untouched(home: Path) -> Iterator[None]:
-    """The operator's own crew home holds no trace of this node, before or after."""
+def real_store_untouched(home: Path) -> Iterator[None]:
+    """Neither the operator's crew home nor their docs state gains a trace."""
     real_store_is_not_a_fixture_target(home)
-    before = real_store_traces_now()
+    crew_before = real_store_traces_now()
+    docs_before = real_docs_state_now()
     yield
-    assert real_store_traces_now() == before == []
+    assert real_store_traces_now() == crew_before == []
+    assert real_docs_state_now() == docs_before == []
 
 
 def _resource(store: dict) -> Path:
@@ -145,9 +166,9 @@ def test_a_figure_with_two_data_files_records_all_three(store):
 
     assert len(records) == 3
     assert [record["kind"] for record in records] == ["figure", "data", "data"]
-    figure_record = records[0]
+    assert records[0]["source"] == str(store["figure"].resolve())
     for data_record, source in zip(records[1:], store["data"], strict=True):
-        assert data_record["figure"] == figure_record["source"]
+        assert data_record["figure"] == str(store["figure"].resolve())
         assert Path(data_record["persisted"]).is_file()
         assert data_record["sha256"] == _sha256(source)
     assert len(read_persisted(PROJECT)) == 3
@@ -155,7 +176,7 @@ def test_a_figure_with_two_data_files_records_all_three(store):
 
 def test_a_project_with_no_persist_root_cannot_persist(store):
     flight_yaml = store["docs"] / "state" / PROJECT / "flight.yaml"
-    flight_yaml.write_text("reports:\n  staging_root: /work/staging\n")
+    flight_yaml.write_text("reports: {}\n")
 
     with pytest.raises(PersistError) as refused:
         persist_item(store["figure"], project=PROJECT)
@@ -163,6 +184,20 @@ def test_a_project_with_no_persist_root_cannot_persist(store):
     assert "reports.persist_root" in str(refused.value)
     assert not _resource(store).exists()
     assert not store["persist_root"].exists()
+
+
+def test_a_persist_root_inside_the_crew_home_is_refused(store):
+    inside = store["home"] / "crew" / "reports" / PROJECT / "kept"
+    flight_yaml = store["docs"] / "state" / PROJECT / "flight.yaml"
+    flight_yaml.write_text(f"reports:\n  persist_root: {inside}\n")
+
+    with pytest.raises(PersistError) as refused:
+        persist_item(store["figure"], project=PROJECT, persisted_by=PERSISTED_BY)
+
+    assert "reports.persist_root" in str(refused.value)
+    assert "crew home" in str(refused.value)
+    assert not _resource(store).exists()
+    assert not inside.exists()
 
 
 def test_an_unmounted_project_cannot_persist(store):
