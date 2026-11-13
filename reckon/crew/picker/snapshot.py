@@ -801,13 +801,13 @@ def _fit(
     if (
         not competence["allowed"]
         and competence.get("reason") != "context-window-exceeded"
+        and preference_out is not None
     ):
         # A competence verdict is a judgment about whether the lane's measured
         # horizon covers a node this size, which is the router's to weigh. The
         # one that restates a context overflow is already carried as
         # ``context-fit`` above, so it is not stated twice.
-        if preference_out is not None:
-            preference_out.append("competence: " + competence["reason"])
+        preference_out.append("competence: " + competence["reason"])
     # The verdict measured this backend's window once; hand the measurement to
     # the caller rather than measuring it a second time for the candidate's
     # context block.
