@@ -44,6 +44,7 @@ from reckon.crew.routing import (
     _shadow_worktree_records,
 )
 from reckon.crew.runs import (
+    _claim_paths_share,
     _exclusive_write_pattern,
     _live_worktree_claims,
     _manifest_freshness,
@@ -630,15 +631,9 @@ def _accepted_scope_exceptions(
                     or candidate.is_relative_to(claim)
                     or claim.is_relative_to(candidate)
                 ):
-                    # A file the project declares shareable admits a second
-                    # claimant editing a different region: worktrees isolate the
-                    # in-flight work and merging is the orchestrator's job, so a
-                    # whole-file refusal here serialises nodes that do not
-                    # actually collide. Only the exact named file is shareable;
-                    # a directory claim that merely contains it is a different
-                    # path, and paths under such a claim stay refused. Dispatch
-                    # resolves the same list through this same helper.
-                    if candidate == claim and path in shared_files:
+                    # Scope grants on source paths do not reserve them against
+                    # peers; isolated edits are reconciled by the merge.
+                    if _claim_paths_share(shared_files, path, claim.as_posix()):
                         continue
                     if str(pointer.get("phase") or "") in WAITING_REQUEST_PHASES:
                         # A queued, upstream-waiting or held request has no
@@ -883,7 +878,7 @@ def _repository_tree_boundary_violations(
         changed_paths = {
             changed
             for _, changed in _snapshot_entries(after) - _snapshot_entries(before)
-            if changed not in shared_files
+            if not _claim_paths_share(shared_files, changed, changed)
             and any(
                 Path(changed) == root or Path(changed).is_relative_to(root)
                 for root in declared_roots

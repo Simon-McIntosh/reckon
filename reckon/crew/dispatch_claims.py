@@ -1263,21 +1263,12 @@ def _shared_landing_paths(
     project: str,
     authority: Mapping[str, Any],
 ) -> set[Path]:
-    """Return the plan file, evidence record and figure topic shared by every node.
+    """Return the plan-wide landing paths for explicit-declaration warnings.
 
-    These three repository paths are landing files every node on a plan would
-    otherwise hold: the plan file, the plan's cumulative evidence record, and the
-    plan-wide figure topic. They are no longer granted by default, because a
-    grant every node holds is exactly the merge conflict the per-node fragment
-    default removes. The set is still computed so a coordinator that declares one
-    of them explicitly keeps it as a non-exclusive claim and is warned, and so
-    the peer-disclosure and conflict machinery keep treating it as shared. Files
-    within the figure topic remain exclusive claims, so two nodes cannot replace
-    the same rendered artifact.
-    Resolved absolutely so the exclusive-claim machinery recognises them in
-    whichever repository carries the plan. The grant is advisory: a plan that
-    cannot be resolved contributes no plan-file path, and the evidence record
-    path is deterministic and survives regardless.
+    Each node receives its own fragment by default. A coordinator can still
+    declare the plan, cumulative evidence record or plan-wide figure topic,
+    but those paths retain their exclusive claim checks when declared.
+    Paths resolve absolutely against the repository carrying the plan.
     """
     plan = authority.get("plan")
     if not isinstance(plan, Mapping) or not node.plan:
@@ -1510,13 +1501,10 @@ def _granted_landing_paths(
     repo: Path,
     authority: Mapping[str, Any],
 ) -> set[Path]:
-    """The plan's landing files this node's own resolved scope holds.
+    """The plan-wide landing files explicitly granted to this node.
 
-    A plan file, its cumulative evidence record or its figures topic declared in
-    a node's write paths is granted as written, so the node does hold a claim on
-    it. The refusal exempts these paths because every node on the plan may hold
-    them so their appends can merge, but a live holder of one is still a run the
-    new dispatch shares a file with, and the report names it.
+    These declarations retain their exclusive checks and are included in scope
+    reports so an operator can see the artifact overlap.
     """
     shared = _shared_landing_paths(node, project=project, authority=authority)
     if not shared:
@@ -1539,19 +1527,11 @@ def _candidate_scope_entries(
     repo: Path,
     authority: Mapping[str, Any],
 ) -> list[tuple[Path | None, str, Path, str, str | None]]:
-    entries = _resolved_node_scope_entries(
+    # Explicit landing declarations keep the same exclusive checks as any
+    # other plan, evidence record or figure topic.
+    return _resolved_node_scope_entries(
         node, project=project, repo=repo, authority=authority
     )
-    shared = _shared_landing_paths(node, project=project, authority=authority)
-    if not shared:
-        return entries
-    # The plan file, cumulative evidence record and plan-owned figure topic are
-    # write claims every node on the plan holds, so they cannot be exclusive to
-    # one of them: exclusivity would admit only the first of two concurrent nodes
-    # and the merge that reconciles their appends would never be reached. Files
-    # inside the figure topic stay exclusive. The shared paths are exempted from
-    # the exclusive-claim machinery, never from the declared write scope.
-    return [entry for entry in entries if entry[2].resolve() not in shared]
 
 
 def _peer_scopes_without_shared_landing_paths(
@@ -1562,39 +1542,10 @@ def _peer_scopes_without_shared_landing_paths(
     repo: Path,
     authority: Mapping[str, Any],
 ) -> dict[str, list[str]]:
-    """Keep peer disclosure limited to paths that are exclusive claims."""
-    shared = _shared_landing_paths(node, project=project, authority=authority)
-    if not shared:
-        return {
-            name: sorted(str(path) for path in paths)
-            for name, paths in peer_scopes.items()
-        }
-    repositories = tuple(
-        repository_identity(root) or Path(str(root)).expanduser().resolve()
-        for root in authority.get("repositories") or (repo,)
-    )
-    write = authority.get("write")
-    write = write if isinstance(write, Mapping) else {}
-    filtered: dict[str, list[str]] = {}
-    for name, paths in peer_scopes.items():
-        kept = []
-        for path in paths:
-            declared = str(path)
-            entries = _resolved_scope_entries(
-                [declared],
-                base_repository=repository_identity(repo) or Path(repo).resolve(),
-                repositories=repositories,
-                project=project,
-                preferred_projects=tuple(
-                    str(item) for item in write.get("projects") or ()
-                ),
-            )
-            if any(absolute.resolve() in shared for _, _, absolute, _, _ in entries):
-                continue
-            kept.append(declared)
-        if kept:
-            filtered[name] = sorted(kept)
-    return filtered
+    """Disclose every peer declaration as information for isolated workers."""
+    return {
+        name: sorted(str(path) for path in paths) for name, paths in peer_scopes.items()
+    }
 
 
 def _live_conflict_rows(
@@ -1616,12 +1567,6 @@ def _live_conflict_rows(
             node, project=project, repo=repo, authority=authority
         )
     )
-    shared = _shared_landing_paths(node, project=project, authority=authority)
-    landing = (
-        _granted_landing_paths(node, project=project, repo=repo, authority=authority)
-        if include_granted_landing
-        else set()
-    )
     shared_files = _shared_write_paths(project, repo)
     candidates, claims = _fragment_comparison_scopes(candidates, claims, node.id)
     conflicts: list[dict[str, Any]] = []
@@ -1630,13 +1575,6 @@ def _live_conflict_rows(
             # Its disposition was never judged because no path it declares can
             # meet this node's, so there is no collision to report and no
             # verdict to read.
-            continue
-        claim_absolute = claim.absolute_path.resolve()
-        if claim_absolute in shared and claim_absolute not in landing:
-            # A live claim on a landing file this node does not itself hold is
-            # not a conflict: the node writing its own fragment is the whole
-            # point of the fragment default. One the node does hold is a
-            # collision like any other, and is reported below.
             continue
         overlapping = [
             (path, absolute)
@@ -2251,7 +2189,6 @@ def _raise_repository_scope_conflict(
     candidates = _candidate_scope_entries(
         node, project=project, repo=repo, authority=authority
     )
-    shared = _shared_landing_paths(node, project=project, authority=authority)
     shared_files = _shared_write_paths(project, repo)
     landing_fragments = _landing_fragment_paths(node, authority=authority)
     candidates, claims = _fragment_comparison_scopes(candidates, claims, node.id)
@@ -2272,11 +2209,21 @@ def _raise_repository_scope_conflict(
                 # never judged and carries no verdict for the arbitration to
                 # read.
                 continue
-            if claim.absolute_path.resolve() in shared:
-                continue
             if _repository != claim.repository or not _scopes_overlap(
                 absolute.as_posix(), claim.absolute_path.as_posix()
             ):
+                continue
+            if _claim_holds_the_dispatch_base(claim, base_revision=base_revision):
+                # A stopped holder whose chain tip this dispatch is built on
+                # holds nothing the newcomer does not carry: the worktree the
+                # newcomer works in was cut at or above that tip, so the
+                # holder's commits are in it already. The admission is written
+                # down rather than passed over quietly, because the stacking is
+                # what later names the holder's live descendants.
+                if stacked is not None and claim.run_id not in {
+                    str(row.get("run_id") or "") for row in stacked
+                }:
+                    stacked.append({"run_id": claim.run_id, "node_id": claim.node_id})
                 continue
             # Worktrees isolate concurrent edits to one shared file, and a
             # directory claim under a shared root shares as the files beneath
@@ -2292,18 +2239,6 @@ def _raise_repository_scope_conflict(
                     and claim.disposition_reason not in disregarded
                 ):
                     disregarded.append(claim.disposition_reason)
-                continue
-            if _claim_holds_the_dispatch_base(claim, base_revision=base_revision):
-                # A stopped holder whose chain tip this dispatch is built on
-                # holds nothing the newcomer does not carry: the worktree the
-                # newcomer works in was cut at or above that tip, so the
-                # holder's commits are in it already. The admission is written
-                # down rather than passed over quietly, because the stacking is
-                # what later names the holder's live descendants.
-                if stacked is not None and claim.run_id not in {
-                    str(row.get("run_id") or "") for row in stacked
-                }:
-                    stacked.append({"run_id": claim.run_id, "node_id": claim.node_id})
                 continue
             if _peer_claim_is_a_later_racing_arrival(
                 claim,

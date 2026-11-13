@@ -1617,11 +1617,8 @@ def _project_derivations(project: str, repo: Path) -> dict[str, list[str]]:
 SHARED_WRITE_PATHS_FILENAME = "shared-write-paths.json"
 
 # The paths a textual merge cannot reconcile, listed once. The undeclared
-# default and every declared project read this one list, so a class named here
-# is exclusive wherever a declaration is silent about the path. A declaration
-# overrides it per path: its own ``exclusive_patterns`` refuse one whatever else
-# names it, and a path listed under ``paths`` is admitted and nothing but a
-# declared pattern can refuse it.
+# default and every declared project read this one list. Sharing declarations
+# cannot turn these artifacts into concurrent textual edits.
 DEFAULT_EXCLUSIVE_PATHS = (
     "docs/plans/*.html",  # a plan document
     "docs/evidence/archive/",  # a cumulative evidence record
@@ -1717,19 +1714,14 @@ class _SharedWritePaths(frozenset[str]):
     def exclusive_pattern(self, path: str) -> str:
         """The class or declared pattern that keeps this repository-relative path exclusive.
 
-        A declaration's own ``exclusive_patterns`` refuse a path whatever else
-        names it. The default classes apply where the declaration is silent, so
-        a project that explicitly lists a file under ``paths`` admits a claim on
-        it even when the file is a class the default keeps exclusive — listing
-        it by name is the declaration's answer for that one path.
+        Declared exclusive patterns and the default artifact classes apply even
+        when a sharing declaration names the same path.
         """
         if os.path.isabs(path):
             path = _repository_relative_scope(path, self.repo) or path
         declared = self._declared_pattern(path)
         if declared:
             return declared
-        if super().__contains__(path):
-            return ""
         return self._default_class(path) or self.unreadable_declaration
 
     def __contains__(self, path: object) -> bool:
@@ -1767,9 +1759,13 @@ class _SharedWritePaths(frozenset[str]):
         normalized = _repository_relative_scope(path, self.repo)
         if normalized is None:
             return False
-        patterns = self.exclusive_patterns
-        if self.default_share:
-            patterns = (*patterns, *DEFAULT_EXCLUSIVE_PATHS)
+        absolute = self.repo / normalized
+        if absolute.is_file() or (
+            not absolute.exists()
+            and any(character.isalpha() for character in absolute.suffix)
+        ):
+            return not self._default_class(normalized)
+        patterns = DEFAULT_EXCLUSIVE_PATHS
         return not any(
             _scopes_overlap(normalized, _pattern_root(pattern)) for pattern in patterns
         )
@@ -1788,23 +1784,23 @@ def _pattern_root(pattern: str) -> str:
 
 
 def _claim_paths_share(shared: frozenset[str], path: str, claim: str) -> bool:
-    """Whether two overlapping claim paths are both shareable under the policy.
+    """Share an overlap unless the region where the paths meet is exclusive.
 
-    The narrower of the two names the path the claims meet on, the broader names
-    the region holding it, and both must share: the path under a declared root
-    and outside an exclusive pattern, and the region not exclusive either. A
-    directory claim under a shared root therefore shares exactly as the files
-    beneath it do, while one that is or contains an exclusive pattern fences.
+    Declarations grant writes; a missing shared root or a directory spelling
+    cannot serialize source edits in isolated worktrees. The narrower path is
+    the region both runs can write, so an exclusive sibling under the broader
+    directory does not fence an unrelated source file.
     """
     if not isinstance(shared, _SharedWritePaths):
         return False
-    if _scope_contains(path, claim):
-        narrower, broader = claim, path
-    else:
-        narrower, broader = path, claim
+    path = _repository_relative_scope(path, shared.repo)
+    claim = _repository_relative_scope(claim, shared.repo)
+    if path is None or claim is None:
+        return False
+    narrower, broader = (claim, path) if _scope_contains(path, claim) else (path, claim)
     if not _scope_contains(broader, narrower):
         return False
-    return narrower in shared and shared.shares_region(broader)
+    return not shared._default_class(narrower) and shared.shares_region(narrower)
 
 
 def _exclusive_write_pattern(shared: frozenset[str], path: str) -> str:
@@ -1815,18 +1811,13 @@ def _exclusive_write_pattern(shared: frozenset[str], path: str) -> str:
 
 
 def _shared_write_paths(project: str | None, repo: Path) -> frozenset[str]:
-    """Read the project's one file-sharing policy for every claim comparison.
+    """Read the repository's exclusive artifact policy for claim comparisons.
 
-    ``paths`` retains explicit file sharing. ``shared_roots`` makes files below
-    repository-relative roots shareable, and a directory under such a root
-    shares as the files beneath it do, because the worktree isolates the edits
-    and the merge reconciles them. A project that names no ``shared_roots`` key,
-    or has no declaration at all, shares its source files by default: any file
-    is a candidate concurrent edit except the classes listed once in
-    ``DEFAULT_EXCLUSIVE_PATHS`` and the binary files a textual merge cannot
-    reconcile. ``exclusive_patterns`` takes precedence over both declarations,
-    so a claim that is, contains, or sits under one still fences. A declaration
-    that cannot be read shares nothing, and a refusal it causes names it.
+    Exact paths and shared roots remain available to callers inspecting a
+    declaration. Claim comparisons share all other repository paths, including
+    absent directories, without requiring an entry in that declaration.
+    The built-in artifact classes and binary content determine exclusivity;
+    a sharing declaration cannot introduce a source-path hold.
     """
     resolved = repo.resolve()
     if not project:
