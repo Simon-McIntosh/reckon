@@ -1950,7 +1950,11 @@ def _land_deliveries() -> dict[str, Any]:
         # the pass makes and can retract, while a hold is the coordinator's
         # decision and ends only when it is released or the run delivers a new
         # head, which a hold a resume took stops covering.
-        hold_reason = delivery_hold_reason(pointer, delivered)
+        # The revision handed over is the head the pass resolved, not the
+        # manifest's own spelling of it: a manifest may name its commit
+        # abbreviated, and a hold taken against the full head must cover that
+        # delivery rather than be read as naming a different one.
+        hold_reason = delivery_hold_reason(pointer, head)
         if hold_reason:
             skipped.append({"run_id": run_id, "status": "held", "reason": hold_reason})
             continue

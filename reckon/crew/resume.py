@@ -74,11 +74,18 @@ def covers_delivery(hold: Mapping[str, Any], revision: str) -> bool:
     names no revision and covers every delivery until it is released, because a
     coordinator who asked for the run to wait did not ask for one revision to
     wait.
+
+    The two spellings are compared as revisions rather than as strings, because
+    a delivery is named by whichever spelling its caller happened to hold: a
+    manifest may write its commit abbreviated, and reading that as a different
+    commit would end the hold and land the run it was taken to defer.
     """
+    from reckon.crew import recovery
+
     named = str(hold.get("head") or "").strip()
     if not named:
         return True
-    return named == str(revision or "").strip()
+    return recovery.same_revision(named, str(revision or "").strip())
 
 
 def hold_reason(pointer: Mapping[str, Any], revision: str | None = None) -> str:

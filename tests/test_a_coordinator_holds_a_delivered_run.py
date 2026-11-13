@@ -435,6 +435,34 @@ def test_a_resume_hold_stops_covering_the_next_delivery(delivery) -> None:
     assert resume.hold_reason(pointer), "the run is not reported as held at all"
 
 
+def test_a_hold_covers_a_manifest_that_abbreviates_its_commit(delivery) -> None:
+    """A manifest may spell a commit short; the hold still covers that delivery.
+
+    A worker writes its commits however its manifest reads to it, and this
+    run's own manifest names them abbreviated. A hold taken against the full
+    head must defer that delivery anyway: comparing the two spellings as
+    strings would let the lander promote a held run whose manifest happens to
+    be short, which is the deferral silently not happening.
+    """
+    head = str(delivery["head"])
+    manifest = runs.run_dir(RUN) / runs.DEFAULT_MANIFEST_NAME
+    text = manifest.read_text(encoding="utf-8")
+    manifest.write_text(
+        text.replace(f"commits: [{head}]", f"commits: [{head[:10]}]"), encoding="utf-8"
+    )
+    assert head[:10] in manifest.read_text(encoding="utf-8"), (
+        "the fixture did not shorten"
+    )
+    resume.hold_delivery(RUN, "the coordinator is steering this delivery", head=head)
+
+    pass_result = queue_landing.land_once()
+
+    assert pass_result["landed"] == [], pass_result
+    assert delivery["landed"] == [], "a held run whose manifest is abbreviated landed"
+    held_rows = [row for row in pass_result["skipped"] if row["run_id"] == RUN]
+    assert held_rows and held_rows[0]["status"] == "held", pass_result
+
+
 # ── negative control ───────────────────────────────────────────────────────
 
 
