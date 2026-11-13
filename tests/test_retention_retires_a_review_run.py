@@ -24,10 +24,11 @@ def review_home(tmp_path, monkeypatch):
     (home / "mounts.json").write_text(
         json.dumps({"mounts": {"sample": str(root / "docs")}})
     )
-    (home / "flight.yaml").write_text("gc:\n  directory_grace: 7d\n")
+    (home / "flight.yaml").write_text("gc:\n  directory_grace: 168h\n")
     monkeypatch.setenv("RECKON_HOME", str(home))
     monkeypatch.setenv("RECKON_STATE_ROOT", str(root / "docs" / "state"))
     monkeypatch.setenv("RECKON_RUN_STORE", str(home / "crew" / "run_store.db"))
+    assert gc._run_directory_grace_seconds("sample", root) == 7 * 24 * 3600
     return home, root, datetime(2026, 11, 1, tzinfo=UTC)
 
 
@@ -96,9 +97,10 @@ def test_a_stored_review_inside_its_window_is_kept(review_home):
     assert directory.is_dir() and stored.is_file()
 
 
-def test_an_implementation_owing_its_review_is_kept(review_home):
+@pytest.mark.parametrize("role", ["implement", ""])
+def test_an_implementation_owing_its_review_is_kept(review_home, role):
     directory, _ = plant_run(
-        review_home, age=timedelta(days=8), role="implement", node="implementation"
+        review_home, age=timedelta(days=8), role=role, node="implementation"
     )
 
     report = gc.retention_sweep(apply=True, now=review_home[2], limit=5)

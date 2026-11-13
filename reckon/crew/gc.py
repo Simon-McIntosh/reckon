@@ -355,9 +355,12 @@ def _run_directory_retention_report(
     # of themselves. Other runs keep their stream and diff while their tier
     # requires a review whose committed record is still missing.
     tier = str(record.get("review_tier") or "").strip().lower()
+    # A ledger stores the node id where a dispatch pointer stores a node object.
+    node = record.get("node")
+    identity = {**record, "node": node if isinstance(node, Mapping) else {"id": node}}
     if (
-        not _is_review_run(record)
-        and tier
+        tier
+        and not _is_review_run(identity)
         and tier != review_tiers.NONE
         and not _committed_review_exists(project, run_id, repo_root)
     ):
