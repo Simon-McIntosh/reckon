@@ -24,7 +24,7 @@
   <title>A Landing Never Waits On A Shared Index | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="33">
+<meta name="plan-version" content="34">
 <meta name="plan-modified" content="2026-11-13">
 </head>
 <body>
@@ -164,7 +164,10 @@
     <div class="r-comment-body"><p>A promoted landing whose pointer moved again is finished by the next landing pass: the pass now takes the pending record's pointer snapshot as the promotion's claim that it owed a merge, so a resumed attempt that rewrote the pointer and dropped the mark no longer leaves the reviewed head off the branch with the pointer held. Gate 8 passed at head; base arm 1 failed 2 passed with the dropped-mark case returning an empty pass.</p></div>
 </div>
 <div class="r-comment" data-section="s7" data-id="c-run-r-20261112T232247871249-review-of-a-promotion-that-moved-under-itself-still-lands-fad32654e562" data-who="reckon-build" data-when="2026-11-12T23:35:22.075Z">
-    <div class="r-comment-body"><p>Reviewed r-20261112T221638996828 at base c3ab4d3c8021..head fad32654e562: a parsed review scoring all six dimensions (goal_fidelity 19, evidence 14, scope_discipline 19, durability 19, fit 17, reuse 20), added_failure_count 0 against the run&#x27;s own arms, three non-blocking findings (gate figure in the fragment not reconciling with its log; three of the five test files importing the changed module absent from both arms; one ungrammatical fragment cell).</p></div>
+    <div class="r-comment-body"><p>Reviewed r-20261112T221638996828 at base c3ab4d3c8021..head fad32654e562: a parsed review scoring all six dimensions (goal_fidelity 19, evidence 14, scope_discipline 19, durability 19, fit 17, reuse 20), added_failure_count 0 against the run's own arms, three non-blocking findings (gate figure in the fragment not reconciling with its log; three of the five test files importing the changed module absent from both arms; one ungrammatical fragment cell).</p></div>
+</div>
+<div class="r-comment" data-section="s8" data-id="c-run-r-20261112T222328496505-a-killed-promotion-writes-nothing-after-it-dies" data-who="reckon-build" data-when="2026-11-12T23:06:56.145Z">
+    <div class="r-comment-body"><p>§8: a promotion now records SIGTERM and stops at its next stage boundary, releasing the run-time claim it held, so a killed promotion no longer blocks its own retry; measured base 6 failed/3 passed, head 9 passed on tests/test_a_killed_promotion_writes_nothing_after_it_dies.py.</p></div>
 </div>
 </section>
 </main>
