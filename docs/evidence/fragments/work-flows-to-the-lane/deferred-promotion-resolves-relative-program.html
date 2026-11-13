@@ -1,0 +1,39 @@
+<section id="deferred-promotion-resolves-relative-program-gate"
+         data-node="deferred-promotion-resolves-relative-program">
+  <h2>A deferred promotion resolves a relative gate program against the run&rsquo;s checkout</h2>
+
+  <p><strong>What was wrong.</strong> A worker records the gate command it ran,
+  and the repository&rsquo;s recipe writes the program as a path relative to the
+  tree: <code>PYTHONPATH=. .venv/bin/python -m pytest -q tests/x.py</code>. The
+  check that refuses a command
+  naming no program resolved such a path with <code>Path(program).is_file()</code>,
+  which reads the promoting process&rsquo;s working directory. When
+  <code>crew complete</code> promoted in the caller&rsquo;s shell that directory
+  was the checkout and the check passed; a promotion deferred to the admission
+  service runs from the crew home, where the same reviewed command was refused
+  as naming no executable.</p>
+
+  <p><strong>What changed.</strong> <code>reckon/crew/promotion_gate.py</code>
+  now resolves a relative program against the run&rsquo;s recorded checkout and
+  then its repository, and never against the promoting process&rsquo;s working
+  directory. A command that resolves in neither is still refused, and the
+  refusal names the directories it was resolved against. An absolute program is
+  unchanged, and a bare name is still looked up on <code>PATH</code>.</p>
+
+  <p><strong>Evidence.</strong> The defect reproduces before the change: with the
+  process working directory moved to an unrelated temporary directory, the
+  relative program present in the run&rsquo;s checkout was refused with
+  &ldquo;names no executable&rdquo;. After the change the same call passes, and
+  the case whose checkout lacks the file is refused with a message naming the
+  checkout path. The declared negative control &mdash; resolving the relative
+  program against the promoting process&rsquo;s working directory again makes the
+  relative-program case refuse &mdash; was applied and fails the case, confirming
+  the test measures the change it claims to.</p>
+
+  <p><strong>Suite delta.</strong> The test files importing
+  <code>promotion_gate.py</code> were run one arm at a time on the
+  <code>all_debug</code> partition with <code>-n 4</code>. Both arms fail
+  <code>tests/test_a_queued_write_path_edit_reaches_the_landing_fence.py::test_a_queued_write_path_edit_is_the_launched_runs_fence</code>,
+  a pre-existing failure carried by the base revision; the head arm adds no
+  failure id to that base.</p>
+</section>
