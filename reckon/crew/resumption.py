@@ -261,6 +261,15 @@ def hold_against_promotion(run_id: str):
     if run_id in held:
         yield
         return
+    # The local lock below sees only a promotion on this host. A promotion on
+    # another host holds the same run through its cross-host lease, so the lease
+    # is read too: a repair round that rides a resume must not start for a run
+    # whose promotion has begun anywhere, because the promotion is about to
+    # settle the record the resumed worker would commit under.
+    from reckon.crew.promotion import promotion_in_flight
+
+    if promotion_in_flight(run_id):
+        raise PromotionInProgressError(run_id)
     try:
         with _pointer_lock(promotion_lock_name(run_id), blocking=False):
             token = _PROMOTION_HELD.set(held | {run_id})

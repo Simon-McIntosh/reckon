@@ -319,6 +319,30 @@ def _promotion_lease_held(run_id: str, holder: Any) -> str:
     )
 
 
+def promotion_in_flight(run_id: str) -> str:
+    """Who holds this run's promotion claim, or empty when nobody does.
+
+    The claim is the cross-host lease promotion takes before its first write and
+    releases after its landing, so a fresh holder is a promotion in flight on
+    this host or another. A door that must not act under a promotion reads it
+    here rather than inferring it from a pointer, because the pointer is the
+    promotion's to rewrite and its removal is the last thing the promotion does:
+    a reader watching only the pointer sees a run that looks untouched for the
+    whole of a promotion.
+
+    A lease past its stale window reads as unheld, so a holder that stopped
+    renewing never refuses work forever.
+    """
+    if not run_id:
+        return ""
+    host, pid, job = _promotion_lease_identity()
+    lease = HostLease(crew_home(), _promotion_lease_name(run_id), host, pid, job)
+    holder = lease.holder()
+    if holder is None:
+        return ""
+    return f"host {holder.host} pid {holder.pid}"
+
+
 class _PromotionLeaseRenewer:
     """Keep a held lease fresh while the promotion runs, then stop."""
 
@@ -2135,6 +2159,14 @@ def _complete_locked(
             # leaving it in a bucket no roadmap reads.
             "outside_scope": outside_scope_entries,
         }
+        # A review dimension below its declared floor is work the reflex would
+        # otherwise repair, and no floor repair round starts for a run once its
+        # promotion has begun. Naming the dimension the promotion lands over is
+        # what keeps that work visible instead of leaving it to reappear as a
+        # worktree of commits no landing path reads.
+        owed_repair = owed_floor_repair(run_id, record, reviewed)
+        if owed_repair:
+            receipt["owed_floor_repair"] = owed_repair
         # A plan review's receipt names what the plan-review store did with the
         # review it delivered. A run that is not a plan review carries no such
         # field, so the field's absence itself states the run had no review to
@@ -2688,6 +2720,7 @@ from reckon.crew.promotion_checks import (
     _unreviewed_refusal,
     _wait_out_stream_tail,
     _zone_aware_stream_timestamp,
+    owed_floor_repair,
     plan_impl_at,
 )
 from reckon.crew.promotion_evidence import (
