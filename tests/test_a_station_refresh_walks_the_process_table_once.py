@@ -33,6 +33,7 @@ import os
 import socket
 import subprocess
 import sys
+import threading
 import time
 from datetime import UTC, datetime
 from pathlib import Path
@@ -178,6 +179,23 @@ def _pointer(run_id: str, dead_pid: int, manifest: Path, repo: Path) -> dict[str
 @pytest.fixture()
 def fleet(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> dict[str, Any]:
     """A synthesised crew home holding 30 live pointers that reach the scan."""
+    return _build_fleet(tmp_path, monkeypatch, live=())
+
+
+def _build_fleet(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    *,
+    live: tuple[subprocess.Popen, ...] = (),
+    count: int = POINTERS,
+) -> dict[str, Any]:
+    """A crew home of live pointers, ``live`` of them still held by a process.
+
+    A pointer whose own pid this host still holds reads alive from the pid
+    alone, so it never reaches the environment scan; a pointer whose pids have
+    gone reaches it. ``live`` names the children standing in for the first
+    pointers, so one fixture serves both populations.
+    """
     config_home = tmp_path / "config"
     config_home.mkdir()
     monkeypatch.setenv("RECKON_HOME", str(config_home))
@@ -198,9 +216,11 @@ def fleet(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> dict[str, Any]:
     )
     head = _git(root, "rev-parse", "HEAD")
     pointers: list[dict[str, Any]] = []
-    for index in range(POINTERS):
+    for index in range(count):
         run_id = _unique_run_id(index)
-        dead_pid = _dead_pid(2_000_000 + index * 10)
+        dead_pid = (
+            live[index].pid if index < len(live) else _dead_pid(2_000_000 + index * 10)
+        )
         manifest = config_home / "manifests" / f"{run_id}.md"
         manifest.parent.mkdir(parents=True, exist_ok=True)
         manifest.write_text(
@@ -228,8 +248,8 @@ def _clear_process_table_state() -> None:
     """
     ps._MARKED_PROCESSES_BEAT.clear()
     pinned = getattr(ps, "_PINNED_PROCESSES", None)
-    if pinned is not None:
-        pinned[:] = [None]
+    if pinned is not None and hasattr(pinned, "set"):
+        pinned.set(None)
     ps._ENVIRON_INDEX.clear()
 
 
@@ -376,3 +396,134 @@ def test_every_pointer_reads_as_it_does_pointer_by_pointer(
     finally:
         _reap(exited_child)
         _reap(live_child)
+
+
+def test_a_refresh_that_never_reaches_the_scan_walks_nothing(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A refresh whose pointers are all answered by their own pids pays no walk.
+
+    The walk is taken on the region's first read, so a pass that never needs
+    the table costs nothing rather than one listing for opening the region.
+    """
+    live = tuple(
+        _start_marked_child(_unique_run_id(index), tmp_path) for index in range(3)
+    )
+    try:
+        fleet = _build_fleet(tmp_path, monkeypatch, live=live, count=len(live))
+        walks: list[int] = []
+
+        def fake_walk() -> dict[tuple[str, str], list[int]]:
+            walks.append(1)
+            return {}
+
+        monkeypatch.setattr(ps, "_walk_marked_processes", fake_walk)
+        state = obligation_snapshot.fleet_state(PROJECT, now=OBSERVED_AT)
+        alive = [
+            row.get("process_alive")
+            for row in state.rows
+            if str(row.get("run_id") or "") in {p["run_id"] for p in fleet["pointers"]}
+        ]
+        # The check sees something: every pointer was classified and read alive
+        # from its own pid, so the refresh ran and simply never reached the table.
+        assert alive == [True] * len(live), (
+            f"the pointers read {alive}, so the refresh did not answer them from"
+            " their live pids and a zero walk would not mean what it claims"
+        )
+        assert walks == [], (
+            f"a refresh whose pointers never reach the environment scan walked the"
+            f" process table {len(walks)} times"
+        )
+    finally:
+        for child in live:
+            _reap(child)
+
+
+def test_two_refreshes_at_once_hold_their_own_table(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A region belongs to the execution context that opened it.
+
+    The station runs its sweep and its tick in separate threads, so two
+    refreshes can hold a region at the same instant. A pin shared between them
+    would answer one refresh from the other's table, and the first block to
+    exit would drop the other's pin mid-pass. Each thread here opens a region,
+    waits until both are open, and then asks for its own run: each must read
+    the table it walked, and neither may read the other's.
+    """
+    crew_home = str(tmp_path / "crew")
+    run_a = _unique_run_id(0)
+    run_b = _unique_run_id(1)
+    tables = {
+        "first": {(run_a, crew_home): [111]},
+        "second": {(run_b, crew_home): [222]},
+    }
+    walks = {"first": 0, "second": 0}
+
+    def fake_walk() -> dict[tuple[str, str], list[int]]:
+        name = threading.current_thread().name
+        walks[name] += 1
+        return tables[name]
+
+    monkeypatch.setattr(ps, "_walk_marked_processes", fake_walk)
+    entered = {name: threading.Event() for name in tables}
+    read = {name: threading.Event() for name in tables}
+    asked: dict[tuple[str, str], list[int]] = {}
+    failures: list[BaseException] = []
+
+    def refresh(name: str, mine: str, theirs: str, other: str) -> None:
+        try:
+            with ps.process_table_walk_once():
+                entered[name].set()
+                assert entered[other].wait(20), "the sibling region never opened"
+                asked[(name, "mine")] = ps._processes_owning_run(
+                    mine, crew_home, from_beat_map=True
+                )
+                asked[(name, "theirs")] = ps._processes_owning_run(
+                    theirs, crew_home, from_beat_map=True
+                )
+                # Neither region may close before both have read, or a shared
+                # pin could be dropped between the two reads and hide the
+                # defect this case exists to catch.
+                read[name].set()
+                assert read[other].wait(20), "the sibling never finished reading"
+        except BaseException as exc:  # noqa: BLE001 - reported in the main thread
+            failures.append(exc)
+
+    threads = [
+        threading.Thread(
+            target=refresh,
+            args=("first", run_a, run_b, "second"),
+            name="first",
+        ),
+        threading.Thread(
+            target=refresh,
+            args=("second", run_b, run_a, "first"),
+            name="second",
+        ),
+    ]
+    for thread in threads:
+        thread.start()
+    for thread in threads:
+        thread.join(timeout=30)
+    if failures:
+        raise failures[0]
+    assert not any(thread.is_alive() for thread in threads), "a refresh never ended"
+    assert asked[("first", "mine")] == [111], (
+        f"the first refresh read {asked[('first', 'mine')]} for its own run"
+    )
+    assert asked[("second", "mine")] == [222], (
+        f"the second refresh read {asked[('second', 'mine')]} for its own run"
+    )
+    # Each refresh must also see that the other's run is not in its table: a
+    # shared pin would hand one thread the other's answer as its own.
+    assert asked[("first", "theirs")] == [], (
+        f"the first refresh read the second's run as {asked[('first', 'theirs')]}"
+    )
+    assert asked[("second", "theirs")] == [], (
+        f"the second refresh read the first's run as {asked[('second', 'theirs')]}"
+    )
+    assert walks == {"first": 1, "second": 1}, (
+        f"the two refreshes walked the table {walks}, so one answered from a"
+        " pin it did not take"
+    )
