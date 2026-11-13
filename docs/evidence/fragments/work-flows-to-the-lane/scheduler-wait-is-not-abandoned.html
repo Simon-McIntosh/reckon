@@ -1,0 +1,44 @@
+<section id="scheduler-wait-is-not-abandoned-landing">
+  <h2>A wait on a batch of scheduler jobs is read as a row that names what it asked</h2>
+  <p>A probe that hands a script a comma-separated batch of job ids —
+  <code>python …/wait_jobs.py 1312389,1312390,1312391</code> — now names those
+  jobs to the classifier. Before, a job id was read only from a job flag or from
+  a scheduler command's operand. The interpreter separator set splits a
+  comma-separated operand into its digits, where a run of bare numbers is
+  indistinguishable from pids, so the batch arrived as none and the scheduler
+  was never asked. The row then asserted that no scheduler job was alive on a
+  question nobody had put.</p>
+  <p>The classifier asks one <code>squeue</code> query about the whole batch and
+  the run stays waiting while any of them is listed: one completed job beside
+  five still running is a healthy wait, and asking per job would call the wait
+  dead on the one that finished. Three readings are now distinct on the row. A
+  live job in the batch keeps the run waiting. A batch the scheduler listed none
+  of reads as nothing can lift it, and the row names the jobs that were asked
+  about. A wait naming no job reads as it did before, and its row says the
+  scheduler was not consulted rather than that no job is alive. Every one of
+  them names the run's own process, so the reading can no longer be acted on as
+  a stopped project watch producer.</p>
+  <table id="scheduler-wait-is-not-abandoned-measures">
+    <caption>Measurements run on all_debug, one arm at a time. Both arms carry
+    their revision, command, imported module and working directory, and end with
+    the process exit status.</caption>
+    <thead><tr><th>Measure</th><th>Observed result</th></tr></thead>
+    <tbody>
+      <tr><td>Armed gate at the head, the new test and the staged-write inventory</td>
+        <td>56 passed, <code>EXIT=0</code>.</td></tr>
+      <tr><td>Declared mutation: read job ids only from scheduler commands, as before</td>
+        <td>2 failed, 3 passed, <code>EXIT=1</code>. The batch case is called
+        abandoned and the row no longer names the jobs that were asked about.</td></tr>
+      <tr><td>Base importer arm at <code>f855c080d0</code>, 90 files</td>
+        <td>10 failed, 718 passed, <code>EXIT=1</code>.</td></tr>
+      <tr><td>Head importer arm at <code>cbc9a84fc1</code>, 91 files</td>
+        <td>12 failed, 721 passed, <code>EXIT=1</code>. Five added cases pass;
+        two failures are added, both one-line assertions in files outside this
+        node's write scope that pin the wording this section replaces.</td></tr>
+    </tbody>
+  </table>
+  <p>The five added cases drive a stubbed scheduler rather than the reader that
+  reports its answer, so the job ids the query carries are the ones the
+  classifier derived, and the batch case asserts the query asked about all
+  three.</p>
+</section>
