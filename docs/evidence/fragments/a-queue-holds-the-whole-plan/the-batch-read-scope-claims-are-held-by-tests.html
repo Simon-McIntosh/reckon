@@ -1,0 +1,44 @@
+<section id="the-batch-read-scope-claims-are-held-by-tests-landing">
+  <h3 id="the-batch-read-scope-claims-are-held-by-tests-result">The batch read scope's claims are held by a count</h3>
+
+  <p><strong>What changed.</strong> The batch read scope's plan-document
+  saving was claimed but never counted, so reverting
+  <code>readiness.plan_document_text</code> to a plain read left the gate green.
+  A second batch in <code>tests/test_a_batch_dispatch_reads_each_plan_once.py</code>
+  now queues six entries over two plans with three sections each and counts
+  reads of the plan document itself: the count is <code>2</code>, one per plan,
+  never per entry or per wait edge. The same batch also counts authored-heading
+  parses and requires <code>2</code>.</p>
+
+  <p><strong>The claim that was not true.</strong> The parse-once boundary in
+  <code>reckon/crew/dispatch_batch.py</code> said its memoised headings parse
+  was shared with the roadmap's heading walk.
+  <code>reckon/roadmap.py</code> binds <code>authored_section_headings</code> by
+  name at import, so its calls never reach the wrapper. The docstring now names
+  only the readers the boundary serves, each of which resolves the reader
+  through its module and is therefore intercepted: queue ordering's heading
+  walk (<code>reckon/crew/queue_order.py</code>), the wait-edge heading
+  resolution (<code>reckon/crew/admission/wait_refs.py</code>) and the
+  section-todo derivation, and it states plainly that a caller binding the
+  reader by name at import parses for itself. No roadmap test is owed, because
+  the docstring no longer names the roadmap; the saving it does claim is the
+  one the six-entry batch holds.</p>
+
+  <p><strong>The measure.</strong> Head arm over
+  <code>tests/test_a_batch_dispatch_reads_each_plan_once.py</code> and
+  <code>tests/test_staged_write_inventory.py</code>: <code>53 passed in 12.96s</code>,
+  <code>EXIT=0</code>. Base arm at
+  <code>55d2cd5728</code> over the same file set, resolved over that tree
+  (the new test absent from it): <code>52 passed in 13.79s</code>,
+  <code>EXIT=0</code>. Zero added failures; the extra passing test is this
+  node's.</p>
+
+  <p><strong>The negative control.</strong> Reverting
+  <code>plan_document_text</code> to a plain read makes the new count fail with
+  the entries: <code>66 reads</code> for two plans,
+  <code>assert 66 == 2</code>, <code>1 failed, 52 passed</code>,
+  <code>EXIT=1</code>. Receipts, under
+  <code>~/.config/reckon/crew/runs/r-20261113T131123025005-the-batch-read-scope-claims-are-held-by-tests/logs/</code>:
+  <code>base-arm.log</code>, <code>after-arm.log</code>,
+  <code>negative-control.log</code>.</p>
+</section>
