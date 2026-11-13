@@ -1347,6 +1347,10 @@ def _fleet_replay(
             row, shown
         ):
             continue
+        # The row is marked before it is fed: the row path may hold it for its
+        # settle window and release it later, and a mark added to the returned
+        # rows would be absent from a row that was not returned at all.
+        row["replay"] = True
         printed.extend(path.feed(row, now=clock()))
         # The pane's memory is what a later replay is judged against, so it
         # follows every row this replay delivers rather than only the ones drawn
@@ -1409,6 +1413,13 @@ def _replayed_row_repeats_the_pane(
 _FOLLOW_REATTACH_FRAME = (
     "── re-attached · {live} live runs · {changed} changed since {when} ──"
 )
+
+# The mark a row carries when the follower drew it from what was already on
+# disk at attach rather than from a transition written since. A pipe has no
+# scrollback, so a reader cannot tell a replayed row from news by where it
+# lands on screen; the prefix is the only thing that can, and ``crew follow
+# --help`` states it so a line filter can exclude it.
+REPLAY_PREFIX = "[replay] "
 
 
 def _follow_reattach_line(live: int, changed: int, recorded_at: str) -> str:
@@ -2180,13 +2191,27 @@ def _follow_watch_lines(
                         "session": session or "",
                         "reported": {},
                     }
+            # Everything the first poll delivers was already on the station
+            # when this arming attached: the rows after its stored cursor are
+            # a backlog, not transitions written since. The pass callback runs
+            # after that first poll and its flush, so the mark is dropped as
+            # soon as the backlog has been handed over.
+            backlog = [True]
+
+            def _first_pass_then_mark(pending=backlog) -> bool:
+                pending[0] = False
+                return _subscriber_pass()
+
             for event in subscriber.wake(
                 stop=_ArmingStop(_stopped),
                 interval=poll_interval,
                 sleeper=sleeper,
-                each_pass=_subscriber_pass,
+                each_pass=_first_pass_then_mark,
             ):
-                yield event
+                if backlog[0] and event.get("run_id"):
+                    yield dict(event, replay=True)
+                else:
+                    yield event
             break
         if not runs.producer_live(project):
             identity = runs.watch_producer_identity(project)
@@ -2446,6 +2471,7 @@ def _follow_watch_lines(
                 # boundary and the rows above are the only rows for the runs
                 # they name.
                 for row in gap_rows:
+                    row["replay"] = True
                     for printed in path.feed(row, now=clock()):
                         yield printed
             else:
@@ -3075,7 +3101,15 @@ def _follower_reloader_for(
 
 
 @crew.command(name="follow")
-@click.option("--project", required=True, help="Project whose watch stream to follow.")
+@click.option(
+    "--project",
+    required=True,
+    help=(
+        "Project whose watch stream to follow. A row the follower replays when "
+        "it attaches begins with [replay] and a space, so a line filter can "
+        "exclude it and read only the transitions written since the attach."
+    ),
+)
 @click.option(
     "--session",
     default=None,
@@ -3422,6 +3456,13 @@ def crew_follow(
             # stored history carries, so recording it again would replay the
             # same run twice on the next burst.
             reannounced = bool(event.pop("reannounced", False))
+            # A row derived from what was already on disk when this arming
+            # carries the same shape as a transition written since, so a pipe
+            # reader is told which it is by the prefix and nothing else. The
+            # mark is taken off here, before the JSON consumer and the stored
+            # history see the row: it is a fact about the drawn line, not part
+            # of the transition.
+            replay_row = bool(event.pop("replay", False))
             if event.get("event") in (FOLLOWER_END_EVENT, FOLLOWER_SETTLE_EVENT):
                 # This one line is about the follower, not the fleet, so it is
                 # printed as it was written rather than rendered as a fleet row.
@@ -3568,7 +3609,11 @@ def crew_follow(
                     ticker=grid,
                     session=session,
                 )
-                _echo_follow_line(rendered)
+                _echo_follow_line(
+                    REPLAY_PREFIX + rendered
+                    if replay_row and not _follow_replay_visible()
+                    else rendered
+                )
                 note_delivered(event)
                 if history_caps is not None and not reannounced:
                     # The row's bytes as drawn, and the stamp it carried, so a
