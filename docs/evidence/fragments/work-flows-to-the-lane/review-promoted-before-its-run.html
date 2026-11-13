@@ -1,0 +1,65 @@
+<section id="review-promoted-before-its-run-landing">
+  <h2>A run's queued review is promoted before the run, and the run waits rather than being refused</h2>
+
+  <p>On 13 November the reviews of two runs were requested at 15:02 and 15:04Z and
+  the implementations of the same runs at 15:04Z. The promotion service took up
+  the implementations first and refused both as terminal for having no complete
+  independent review stored, while the reviews that would have licensed them sat
+  in the same queue. A refused request stays refused, so a coordinator had to
+  notice and re-request work that was about to become promotable.</p>
+
+  <p>The drain now reads a review run's subject from its own node id
+  (<code>review-of-&lt;run&gt;</code>) and starts that review ahead of the run it
+  reviews whenever both are waiting. Every other request keeps the plain name
+  order the queue has always drained in.</p>
+
+  <p>A run refused <em>only</em> because the review it needs is still queued has
+  its request written back as waiting instead of terminal, so the pass after the
+  review promotes it with no second request. A run refused for anything else, or
+  whose review is neither queued nor stored, is refused exactly as before. The
+  refusal text is owned by constants the predicate reads, so the waiting case is
+  recognised from the message the refusal actually writes, and a refusal carrying
+  several reasons of which the absent review is only the first is not mistaken
+  for a request that should stay queued.</p>
+
+  <p>Implementation commit: <code>bcdf396599306872bf8a5223f0591fc2e84fd46c</code>.
+  Paths: <code>reckon/crew/promotion_requests.py</code>,
+  <code>reckon/crew/promotion_checks.py</code>,
+  <code>tests/test_review_promoted_before_its_run.py</code>.</p>
+
+  <table id="review-promoted-before-its-run-measures">
+    <caption>Measurements retained in the assigned run directory. Every gate log
+    names its revision, tree, literal command, the module actually imported and
+    its working directory, and ends in a bare <code>EXIT=</code> line.</caption>
+    <thead><tr><th>Measurement</th><th>Recorded result</th></tr></thead>
+    <tbody>
+      <tr><td>Gate, head arm, on <code>all_debug</code> (job 1314426)</td>
+        <td>54 passed in 10.94 s; EXIT=0.
+        <code>tests/test_review_promoted_before_its_run.py</code> and
+        <code>tests/test_staged_write_inventory.py</code></td></tr>
+      <tr><td>Gate, base arm at <code>5057bfacc4</code>, on
+        <code>all_debug</code></td>
+        <td>51 passed in 11.29 s; EXIT=0. The node's test file does not exist at
+        that revision and is dropped from this arm, so the delta between the arms
+        is exactly the three cases the node adds, with no failure added against
+        the base.</td></tr>
+      <tr><td>Declared mutation: processing queued requests in plain name order
+        refuses the run queued before its review</td>
+        <td>2 failed, 1 passed in 0.46 s; EXIT=1. The failing ids are
+        <code>test_a_review_is_promoted_before_the_run_it_reviews</code> and
+        <code>test_a_run_refused_only_for_its_queued_review_stays_queued</code>;
+        the third case, a run with no review anywhere, still passes because it
+        does not depend on the guard.</td></tr>
+      <tr><td>Adjacent service regression,
+        <code>tests/test_no_caller_waits_on_a_promotion.py</code></td>
+        <td>22 passed in 150.93 s; EXIT=0, against the same working tree.</td></tr>
+    </tbody>
+  </table>
+
+  <p>The two cases read the drain itself: the first queues the run's request
+  before its review's and reads the review taken up first and both promoted, the
+  review first; the second starts the review and the run in the same width-two
+  pass, holds the review until the run has been refused once, and reads the run
+  requeued and then promoted behind it. The third queues a run with no review
+  queued or stored and reads the missing review refused.</p>
+</section>
