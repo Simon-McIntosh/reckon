@@ -1,0 +1,60 @@
+{
+  "absent": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew/promotion.py:_complete_locked (line 1452)",
+    "reckon/crew/promotion.py:_complete_locked (line 2122)"
+  ],
+  "completed_at": "2026-11-13T02:29:59.158Z",
+  "dispatched_at": "2026-11-13T02:17:24Z",
+  "findings": [
+    {
+      "file": "tests/test_a_promotions_fleet_reading_classifies_no_other_run.py",
+      "line": "267",
+      "severity": "non-blocking",
+      "text": "non-blocking: the field-equality assertion compares against `_expected_fields()`, which the reading reproduces whether or not the store serves, so this test passes unchanged when `_served_fleet_classifications` returns {} and does not itself guard the store path; the count test at :227 is the assertion that does."
+    },
+    {
+      "file": "tests/test_a_promotions_fleet_reading_classifies_no_other_run.py",
+      "line": "230",
+      "severity": "non-blocking",
+      "text": "non-blocking: the plan named the base revision as the negative control, but the base arm log (18 tests) predates the added test and shows no growth; the growth is instead shown in-suite by monkeypatching `_served_fleet_classifications` to {}, which is a valid instrument control but is not the base revision the plan named."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "reckon/crew/promotion.py:_complete_locked lines 1452 and 2129 reach `_fleet_state_reading` at runtime.",
+    "diff": "one commit 6f6b7ed changes 4 files; it adds `_served_fleet_classifications`, a keyword `classification` on `runs._drain_row` (runs.py:2516), the store-served loop and a 310-line test file.",
+    "done_when": "tests/test_a_promotions_fleet_reading_classifies_no_other_run.py:227 asserts `counts[100] <= counts[10] + 10`; the manifest records both arms (18 and 23 passed, EXIT=0) and I re-ran the single added test file (5 passed).",
+    "goal": "reckon/crew/promotion_release.py:1022 `_fleet_state_reading` now takes each run's word from `_served_fleet_classifications` (promotion_release.py:1069) in one station-store read instead of calling `classify_pointer` per pointer.",
+    "manifest": "read; it records the two gate logs with base 8efa969 and head 6f6b7ed, 0 failures on both arms, the field-equality result and the in-suite positive control.",
+    "write_paths": "the diff touches promotion_release.py, runs.py, one new tests/ file and the evidence fragment, all inside the declared paths."
+  },
+  "justifications": {
+    "durability": "tests/test_a_promotions_fleet_reading_classifies_no_other_run.py:227 reddens if the reading reverts to per-pointer classification, since the count then grows with the fleet.",
+    "evidence": "tests/test_a_promotions_fleet_reading_classifies_no_other_run.py:227 measures the count at 10 and 100 and gate-after.log records 23 passed EXIT=0, though the plan's stated base-revision negative control is replaced by an in-suite monkeypatched control.",
+    "fit": "the new helper and docstrings follow the module's existing `noqa: BLE001` and long-docstring idiom in reckon/crew/promotion_release.py:1116.",
+    "goal_fidelity": "reckon/crew/promotion_release.py:1069 `_served_fleet_classifications` reads every stored verdict in one store read, so the reading no longer classifies other runs on the promotion path.",
+    "reuse": "`_served_fleet_classifications` extends the existing `station_store.StationStore.classifications()` (reckon/crew/station_store.py:730) and `_drain_row` gained a keyword rather than a second closure composition.",
+    "scope_discipline": "every path in the diff (reckon/crew/promotion_release.py, reckon/crew/runs.py, tests/test_a_promotions_fleet_reading_classifies_no_other_run.py, docs/evidence/fragments/...) is inside the declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is that a promotion's fleet reading costs the same at any number of live runs; reckon/crew/promotion_release.py:1022 `_fleet_state_reading` now takes each run's word from `_served_fleet_classifications` (promotion_release.py:1069) in one station-store read instead of calling `classify_pointer` per pointer.\nVERDICT done_when: the done-when asks a test seeding 10 then 100 live runs to bound the files opened under other runs' directories, and tests/test_a_promotions_fleet_reading_classifies_no_other_run.py:227 asserts `counts[100] <= counts[10] + 10`; the manifest records that gate and both arm === logs (gate-base.log 18 passed EXIT=0, gate-after.log 23 passed EXIT=0) and I re-ran the single added test file (5 passed).\nVERDICT write_paths: the declared paths are reckon/crew/promotion.py, promotion_release.py, runs.py, tests/ and the evidence fragment; the diff touches promotion_release.py, runs.py, one new tests/ file and the fragment, all inside them.\nVERDICT manifest: read; it records the two gate logs with base 8efa969 and head 6f6b7ed, 0 failures on both arms, the field-equality result and the in-suite positive control.\nVERDICT diff: read commit by commit against 8efa969; one commit 6f6b7ed changes 4 files, adding `_served_fleet_classifications`, a keyword `classification` on `runs._drain_row` (runs.py:2516), the store-served loop in `_fleet_state_reading`, a 310-line test file and the evidence fragment.\nCALL_SITES: reckon/crew/promotion.py:_complete_locked (line 1452), reckon/crew/promotion.py:_complete_locked (line 2122)\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/promotion_release.py:1069 `_served_fleet_classifications` reads every stored verdict in one store read, so the reading no longer classifies other runs on the promotion path.\nSCORE evidence: 17\nJUSTIFICATION evidence: tests/test_a_promotions_fleet_reading_classifies_no_other_run.py:227 measures the count at 10 and 100 and gate-after.log records 23 passed EXIT=0, though the plan's stated base-revision negative control is replaced by an in-suite monkeypatched control.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in the diff (reckon/crew/promotion_release.py, reckon/crew/runs.py, tests/test_a_promotions_fleet_reading_classifies_no_other_run.py, docs/evidence/fragments/...) is inside the declared write paths.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_a_promotions_fleet_reading_classifies_no_other_run.py:227 reddens if the reading reverts to per-pointer classification, since the count then grows with the fleet.\nSCORE fit: 16\nJUSTIFICATION fit: the new helper and docstrings follow the module's existing `noqa: BLE001` and long-docstring idiom in reckon/crew/promotion_release.py:1116 (documentation style, not naming).\nSCORE reuse: 19\nJUSTIFICATION reuse: `_served_fleet_classifications` extends the existing `station_store.StationStore.classifications()` (reckon/crew/station_store.py:730) and `_drain_row` gained a keyword rather than a second closure composition.\nFINDING tests/test_a_promotions_fleet_reading_classifies_no_other_run.py:267 non-blocking: the field-equality assertion compares against `_expected_fields()`, which the reading reproduces whether or not the store serves, so this test passes unchanged when `_served_fleet_classifications` returns {} and does not itself guard the store path; the count test at :227 is the assertion that does.\nFINDING tests/test_a_promotions_fleet_reading_classifies_no_other_run.py:230 non-blocking: the plan named the base revision as the negative control, but the base arm log (18 tests) predates the added test and shows no growth; the growth is instead shown in-suite by monkeypatching `_served_fleet_classifications` to {}, which is a valid instrument control but is not the base revision the plan named.\n",
+  "review_run_id": "r-20261113T021433293422-review-of-a-promotion-s-fleet-reading-costs-the-same-at-any-number-of-6f6b7ed60843",
+  "reviewed_base_sha": "8efa969fe4a3755c3a38dbcf333b8ae843b33e83",
+  "reviewed_head_sha": "6f6b7ed60843d5d23158dcaf0bfdf1ce4c443527",
+  "reviewed_run_id": "r-20261113T012702825786-a-promotion-s-fleet-reading-costs-the-same-at-any-number-of",
+  "scores": {
+    "durability": 18,
+    "evidence": 17,
+    "fit": 16,
+    "goal_fidelity": 19,
+    "reuse": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-13T02:57:51.579541+00:00",
+  "total": 109
+}
