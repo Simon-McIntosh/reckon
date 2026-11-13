@@ -1,0 +1,99 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/crew_run_commands.py:4985",
+    "reckon/crew/admission/service.py:255",
+    "reckon/crew/admission/service.py:286",
+    "reckon/mcp_views.py:4829",
+    "reckon/crew_follow_commands.py:2733"
+  ],
+  "completed_at": "2026-11-13T14:34:54.987Z",
+  "dispatched_at": "2026-11-13T14:15:00Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "exempted",
+      "reason": "non-blocking; carried to the plan next health review",
+      "recorded_at": "2026-11-13T15:02:19.509353+00:00"
+    },
+    "1": {
+      "kind": "exempted",
+      "reason": "non-blocking; carried to the plan next health review",
+      "recorded_at": "2026-11-13T15:02:22.911161+00:00"
+    },
+    "2": {
+      "kind": "exempted",
+      "reason": "non-blocking; carried to the plan next health review",
+      "recorded_at": "2026-11-13T15:02:26.016309+00:00"
+    },
+    "3": {
+      "kind": "exempted",
+      "reason": "non-blocking; carried to the plan next health review",
+      "recorded_at": "2026-11-13T15:02:28.958399+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "reckon/crew/query.py",
+      "id": "feb02bd2996",
+      "line": 464,
+      "severity": "non-blocking",
+      "text": "A queued live row now carries two placements at once, position/rank derived live from queued_placements at ordering.py:192 and queue_position/rank_key copied from the pointer, while this function's own docstring at query.py:425-427 states the place is derived once so surfaces cannot disagree; no field marks which pair is authoritative when a re-rank moves one and not the other."
+    },
+    {
+      "file": "reckon/crew/admission/selection.py",
+      "id": "f5a4c5857e3",
+      "line": 781,
+      "severity": "non-blocking",
+      "text": "The delivered change lives in admission/selection.py and query.py, neither of which is in the section's declared write paths, and the manifest records them under a scope_extension key the manifest contract does not define, so the coordinator has no accept-path record for two out-of-scope files."
+    },
+    {
+      "file": "tests/test_a_coordinator_launches_one_request.py",
+      "id": "f1f8442dea4",
+      "line": 180,
+      "severity": "non-blocking",
+      "text": "The assertion compares the printed verdict detail against the gate state the test itself injected, so it can only fail if the code stops copying its own input; the load-bearing claims in that case are the held list and the unchanged pointers on the surrounding lines."
+    },
+    {
+      "file": "docs/evidence/fragments/work-is-never-stuck-behind-the-admission-loop/ready-work-is-never-stuck-behind-t-s21.html",
+      "id": "f6f4eb8ff89",
+      "line": 1,
+      "severity": "non-blocking",
+      "text": "The fragment names only 13ab3de2 and 8cd68eaf as source commits, while the '64 tests' figure quoted in the same paragraph is produced at dde1c492, the query.py projection commit, so a reader following its provenance stops one commit short of the head it describes."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "Verified the CLI path at reckon/crew_run_commands.py:4985 and the projection path from reckon/crew/query.py:456 through reckon/mcp_views.py:4829 and reckon/crew_follow_commands.py:2733.",
+    "diff": "Read commit by commit from 4c4cf23 to dde1c492: five commits and 510 insertions against 37 deletions across the evidence fragment, selection.py, query.py, crew_run_commands.py and one new test file.",
+    "done_when": "The done_when names tests/test_a_coordinator_launches_one_request.py with four cases and three controls; the manifest records that gate at '64 passed' and the same run reproduced at the reviewed head.",
+    "goal": "The node goal is that a coordinator can launch one queued request and read its place; reckon/crew_run_commands.py:4985 adds the named launch and reckon/crew/admission/selection.py:781 persists the place.",
+    "manifest": "Read in full; it states the delivered-head gate as 64 passed with 13 owned cases, the three failing controls, and zero added importer and help failures, all of which its receipts bear out.",
+    "write_paths": "The manifest declares three source files; the diff changes none of the two it names as queue_admission.py or runs.py and instead changes reckon/crew/admission/selection.py and reckon/crew/query.py, which it records under a scope_extension field."
+  },
+  "justifications": {
+    "durability": "negative-whole-pass.log at dde1c492 shows the whole-pass mutation launching both requests, so the first case reddens when the named-only behaviour is put back.",
+    "evidence": "The recorded head log projection-head-suite.log ends with a bare EXIT=0 and '64 passed', and re-running those same two test files at dde1c492 in the worker's clean worktree again produced '64 passed'.",
+    "fit": "reckon/crew/query.py:91 adds LIVE_ADMISSION_FIELDS with no '#:' comment while every sibling field group at query.py:80-90 carries one.",
+    "goal_fidelity": "reckon/crew_run_commands.py:4985 routes a named 'crew admit --run' to admit_once(run_id=...) and reckon/crew/query.py:461-466 projects the three stored fields, so both delivered parts exist and are reachable.",
+    "reuse": "The change consumes the owner's ordering, reckon/crew/admission/ordering.py:fair_share_admission_order, rather than re-derive it, but publishes a second place beside queued_placements at query.py:464.",
+    "scope_discipline": "reckon/crew/admission/selection.py:781 and reckon/crew/query.py:91 are outside the section's declared write paths, and neither declared file reckon/crew/queue_admission.py nor reckon/crew/runs.py is touched."
+  },
+  "project": "reckon",
+  "review_run_id": "r-20261113T140636190920-review-of-ready-work-is-never-stuck-behind-t-s21-dde1c4921cd4",
+  "review_text": "VERDICT goal: the node goal is 'a coordinator can launch one queued request and read its place'; reckon/crew_run_commands.py:4985 adds the named launch and reckon/crew/admission/selection.py:781 persists the place.\nVERDICT done_when: tests/test_a_coordinator_launches_one_request.py carries the four named cases and three controls, and the recorded head log shows 64 passed with all three controls red.\nVERDICT write_paths: reckon/crew/admission/selection.py and reckon/crew/query.py fall outside the declared paths, and the two declared source files queue_admission.py and runs.py are untouched by the diff.\nVERDICT manifest: read; it reports 64 passed with 13 owned cases, three falsifying controls and zero added failures, and its receipts confirm each of those figures.\nVERDICT diff: read commit by commit from 4c4cf23 to dde1c492; 510 insertions and 37 deletions across the evidence fragment, selection.py, query.py, crew_run_commands.py and a new test file.\nCALL_SITES: reckon/crew_run_commands.py:4985, reckon/crew/admission/service.py:255, reckon/crew/admission/service.py:286, reckon/mcp_views.py:4829, reckon/crew_follow_commands.py:2733\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew_run_commands.py:4985 and reckon/crew/query.py:461 deliver both halves, launch and readable place.\nSCORE evidence: 18\nJUSTIFICATION evidence: projection-head-suite.log ends EXIT=0 with 64 passed, and re-running those files at dde1c492 reproduced it.\nSCORE scope_discipline: 12\nJUSTIFICATION scope_discipline: reckon/crew/admission/selection.py:781 and reckon/crew/query.py:91 are outside the section's declared write paths.\nSCORE durability: 17\nJUSTIFICATION durability: negative-whole-pass.log shows the whole-pass mutation launching both requests, so the first case reddens on the regression it guards.\nSCORE fit: 15\nJUSTIFICATION fit: reckon/crew/query.py:91 adds LIVE_ADMISSION_FIELDS with no '#:' comment where every sibling group at query.py:80-90 has one.\nSCORE reuse: 14\nJUSTIFICATION reuse: it extends ordering.py's fair_share_admission_order but publishes a second place beside queued_placements at query.py:464.\n",
+  "reviewed_base_sha": "4c4cf234390f5326b995cee7ad6bda55fe01b5c0",
+  "reviewed_head_sha": "dde1c4921cd4c47bafe0999e5bcb415a96985013",
+  "reviewed_run_id": "r-20261113T025817814954-ready-work-is-never-stuck-behind-t-s21",
+  "scores": {
+    "durability": 17,
+    "evidence": 18,
+    "fit": 15,
+    "goal_fidelity": 18,
+    "reuse": 14,
+    "scope_discipline": 12
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-13T14:35:30.053703+00:00",
+  "total": 94
+}
