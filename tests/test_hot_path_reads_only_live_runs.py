@@ -251,3 +251,39 @@ def test_a_cold_profile_is_reported_without_reading_history(tmp_path, monkeypatc
     )
     assert result["status"] == "unavailable"
     assert "explicit history refresh" in result["reason"]
+
+
+def test_operational_metadata_preserves_predecessor_ambiguity_and_session_meter(
+    population,
+):
+    from reckon.crew.open_run_index import latest_session_row
+
+    root = population["repo"]
+    pointer = runs.read_pointer("run-00")
+    base = pointer["base_sha"]
+    row = {
+        "run_id": "prior-node",
+        "node": "another-node",
+        "commits": [base],
+        "session_id": "meter-session",
+        "completed_at": "2026-01-02T00:00:00Z",
+    }
+    ledger.write_run_file(PROJECT, row, root)
+    rows = ledger.open_runs(PROJECT, root)
+    assert (
+        ledger.predecessor_run_id(
+            supplied="", base_sha=base, runs=rows, exclude_run_id="run-00"
+        )
+        == "prior-node"
+    )
+    assert latest_session_row(PROJECT, "meter-session", root)["run_id"] == "prior-node"
+    ledger.write_run_file(PROJECT, {**row, "run_id": "ambiguous-node"}, root)
+    assert (
+        ledger.predecessor_run_id(
+            supplied="",
+            base_sha=base,
+            runs=ledger.open_runs(PROJECT, root),
+            exclude_run_id="run-00",
+        )
+        is None
+    )

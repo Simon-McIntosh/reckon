@@ -1547,14 +1547,9 @@ def _complete_locked(
             session_id=session_id,
             observed_at=finished,
         )
-        previous = next(
-            (
-                item
-                for item in reversed(ledger_data["runs"])
-                if session_id and item.get("session_id") == session_id
-            ),
-            None,
-        )
+        from reckon.crew.open_run_index import latest_session_row
+
+        previous = latest_session_row(project, session_id, ledger_root)
         measured_budget = ledger.per_run_budget(stream.budget, previous)
         # The overrun the worker was messaged about rides the committed row, so the
         # live pointer's verdict is not the only place a run's overrun exists. The

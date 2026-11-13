@@ -79,6 +79,10 @@ def _connect(path: Path) -> sqlite3.Connection:
     connection.execute(
         "CREATE TABLE IF NOT EXISTS metadata (key TEXT PRIMARY KEY, value TEXT)"
     )
+    connection.execute(
+        "CREATE TABLE IF NOT EXISTS tips (run_id TEXT PRIMARY KEY, tip TEXT)"
+    )
+    connection.execute("CREATE INDEX IF NOT EXISTS by_tip ON tips(tip)")
     return connection
 
 
@@ -108,6 +112,12 @@ def record_written(project: str, row: Mapping[str, Any], root=None) -> None:
         connection.execute(
             "INSERT OR REPLACE INTO records VALUES (?, ?, ?, ?, ?, ?)", _values(row)
         )
+        from reckon import ledger
+
+        connection.execute(
+            "INSERT OR REPLACE INTO tips VALUES (?, ?)",
+            (str(row["run_id"]), ledger._run_tip(row)),
+        )
 
 
 def aggregate_written(
@@ -121,6 +131,16 @@ def aggregate_written(
         connection.executemany(
             "INSERT OR REPLACE INTO records VALUES (?, ?, ?, ?, ?, ?)",
             [_values(row) for row in rows if row.get("run_id")],
+        )
+        from reckon import ledger
+
+        connection.executemany(
+            "INSERT OR REPLACE INTO tips VALUES (?, ?)",
+            [
+                (str(row["run_id"]), ledger._run_tip(row))
+                for row in rows
+                if row.get("run_id")
+            ],
         )
         connection.execute(
             "INSERT OR REPLACE INTO metadata VALUES ('version', ?)", (str(version),)
@@ -153,6 +173,14 @@ def _ensure(project: str, root=None) -> Path:
                 connection.executemany(
                     "INSERT OR REPLACE INTO records VALUES (?, ?, ?, ?, ?, ?)",
                     [_values(row) for row in data["runs"] if row.get("run_id")],
+                )
+                connection.executemany(
+                    "INSERT OR REPLACE INTO tips VALUES (?, ?)",
+                    [
+                        (str(row["run_id"]), ledger._run_tip(row))
+                        for row in data["runs"]
+                        if row.get("run_id")
+                    ],
                 )
                 connection.execute(
                     "INSERT OR REPLACE INTO metadata VALUES ('version', ?)",
@@ -195,6 +223,19 @@ def read_rows(
                 if pointer.get("project") != project:
                     continue
                 ids = [str(pointer.get("run_id") or "")]
+                lineage = pointer.get("lineage") or {}
+                if isinstance(lineage, Mapping):
+                    ids.append(str(lineage.get("primary_run_id") or ""))
+                ids.append(str(pointer.get("predecessor_run_id") or ""))
+                base = str(pointer.get("base_sha") or pointer.get("base") or "")
+                if base:
+                    candidates = connection.execute(
+                        "SELECT r.payload FROM records r JOIN tips t ON r.run_id=t.run_id WHERE t.tip=? AND r.run_id!=? LIMIT 2",
+                        (base, ids[0]),
+                    )
+                    for (payload,) in candidates:
+                        parsed = json.loads(payload)
+                        found[parsed["run_id"]] = parsed
                 node = pointer.get("node") or {}
                 if isinstance(node, Mapping):
                     ids.extend(
@@ -348,3 +389,15 @@ def rows_naming_trees(
                 parsed = json.loads(row[0])
                 result[parsed["run_id"]] = parsed
     return list(result.values())
+
+
+def latest_session_row(project: str, session: str, root=None) -> dict[str, Any] | None:
+    """The prior cumulative-meter reading for one resolved worker session."""
+    if not session:
+        return None
+    with contextlib.closing(sqlite3.connect(_ensure(project, root))) as connection:
+        row = connection.execute(
+            "SELECT payload FROM records WHERE session=? ORDER BY completed DESC, run_id DESC LIMIT 1",
+            (session,),
+        ).fetchone()
+        return json.loads(row[0]) if row else None
