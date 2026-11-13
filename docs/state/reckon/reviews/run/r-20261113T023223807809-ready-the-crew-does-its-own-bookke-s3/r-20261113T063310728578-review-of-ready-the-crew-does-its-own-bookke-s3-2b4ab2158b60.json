@@ -1,0 +1,56 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew/dispatching/preparation.py:892 (_answer_existing_node_run call in the dispatch path)",
+    "reckon/crew_dispatch_commands.py:_emit_held_result (renders the hold's reason into the CLI payload)"
+  ],
+  "completed_at": "2026-11-13T09:29:44.475Z",
+  "dispatched_at": "2026-11-13T09:19:14Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/the-crew-does-its-own-bookkeeping/ready-the-crew-does-its-own-bookke-s3.html",
+      "line": "5",
+      "severity": "non-blocking",
+      "text": "non-blocking: the fragment says the new test was \"2 failed at the base\", but the negative-control log shows \"1 failed, 1 passed\" there (the queued case passes at base by design, as the manifest itself records); the plan page therefore overstates the negative control."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read commit by commit against base 082607a9e8c0; one commit changes three files \u2014 two hunks in reckon/crew/dispatching/requests.py adding _named_brief and _existing_run_reason and routing the non-queued hold's detail and reason through them, a 170-line new test, and a 6-line evidence fragment.",
+    "done_when": "the done_when asks for a test of the queued case, a refusal naming the unused brief in the working case, both negative controls, a zero-delta base arm and clean ruff; the manifest records each, and I read the gate, base-arm, after-arm and both negative-control logs and re-ran ruff check and ruff format --check on the two changed files.",
+    "goal": "the node goal is that a coordinator's review brief is used; reckon/crew/dispatching/requests.py:354 has _existing_run_reason name the unused brief and the command that applies it, and the queued branch at requests.py:345 replaces the queued request's brief in place, so both halves of the goal land.",
+    "manifest": "read at the run directory; it records status complete, commit 2b4ab2158b, the gate at 2 passed, the base arm at 3 failed / 12 passed against the head arm's 3 failed / 14 passed with identical failure ids, and both negative controls red.",
+    "write_paths": "the node declared reckon/crew/recovery_review_dispatch.py and reckon/crew/recovery_review_subject.py, and its done_when extends that to \"the module the manifest names if the cause lies elsewhere, and the new test\"; the diff touches reckon/crew/dispatching/requests.py (named in the manifest), one new test file, and the evidence fragment."
+  },
+  "justifications": {
+    "durability": "tests/test_a_coordinator_review_brief_is_used.py:165 reddens at the base revision, where the negative-control log records \"1 failed, 1 passed\" because the reverted answer reads only \"already working\", so the working-case assertions guard the change rather than merely observing it.",
+    "evidence": "the gate log at /tmp/reckon-crew-scratch/r-20261113T023223807809-ready-the-crew-does-its-own-bookke-s3/logs/gate.log carries its revision, tree, module, literal command and EXIT=0 with 2 passed, and the base and after arms show the same three failure ids (zero added).",
+    "fit": "requests.py:288-316 follows the module's helper-plus-docstring idiom and adds no name the naming rules forbid.",
+    "goal_fidelity": "reckon/crew/dispatching/requests.py:354 composes the refusal naming the brief and `reckon crew stop --run <id>`, and requests.py:345 keeps the queued replacement, which tests/test_a_coordinator_review_brief_is_used.py:143 pins.",
+    "reuse": "no named owner for reading a brief off a node mapping exists \u2014 I searched reckon/ for brief/brief_path readers \u2014 but the same read is spelled inline at reckon/crew/recovery_review_dispatch.py:3051 and reckon/crew/promotion.py:1671, which _named_brief duplicates rather than being adopted by.",
+    "scope_discipline": "the source change sits at reckon/crew/dispatching/requests.py:288-368 (the module the manifest names), the test and the fragment are allowed by the done_when, and no unrelated code was touched."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is that a coordinator's review brief is used; reckon/crew/dispatching/requests.py:354 has _existing_run_reason name the unused brief and the command that applies it, and the queued branch at requests.py:345 replaces the queued request's brief in place, so both halves of the goal land.\nVERDICT done_when: the done_when asks for a test of the queued case, a refusal naming the unused brief in the working case, both negative controls, a zero-delta base arm and clean ruff; the manifest records each, and I read the gate, base-arm, after-arm and both negative-control logs and re-ran ruff check and ruff format --check on the two changed files.\nVERDICT write_paths: the node declared reckon/crew/recovery_review_dispatch.py and reckon/crew/recovery_review_subject.py, and its done_when extends that to \"the module the manifest names if the cause lies elsewhere, and the new test\"; the diff touches reckon/crew/dispatching/requests.py (named in the manifest), one new test file, and the evidence fragment.\nVERDICT manifest: read at the run directory; it records status complete, commit 2b4ab2158b, the gate at 2 passed, the base arm at 3 failed / 12 passed against the head arm's 3 failed / 14 passed with identical failure ids, and both negative controls red.\nVERDICT diff: read commit by commit against base 082607a9e8c0; one commit changes three files \u2014 two hunks in reckon/crew/dispatching/requests.py adding _named_brief and _existing_run_reason and routing the non-queued hold's detail and reason through them, a 170-line new test, and a 6-line evidence fragment.\nCALL_SITES: reckon/crew/dispatching/preparation.py:892 (_answer_existing_node_run call in the dispatch path), reckon/crew_dispatch_commands.py:_emit_held_result (renders the hold's reason into the CLI payload)\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/dispatching/requests.py:354 composes the refusal naming the brief and `reckon crew stop --run <id>`, and requests.py:345 keeps the queued replacement, which tests/test_a_coordinator_review_brief_is_used.py:143 pins.\nSCORE evidence: 17\nJUSTIFICATION evidence: the gate log at /tmp/reckon-crew-scratch/r-20261113T023223807809-ready-the-crew-does-its-own-bookke-s3/logs/gate.log carries its revision, tree, module, literal command and EXIT=0 with 2 passed, and the base and after arms show the same three failure ids (zero added).\nSCORE scope_discipline: 17\nJUSTIFICATION scope_discipline: the source change sits at reckon/crew/dispatching/requests.py:288-368 (the module the manifest names), the test and the fragment are allowed by the done_when, and no unrelated code was touched.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_a_coordinator_review_brief_is_used.py:165 reddens at the base revision, where the negative-control log records \"1 failed, 1 passed\" because the reverted answer reads only \"already working\", so the working-case assertions guard the change rather than merely observing it.\nSCORE fit: 18\nJUSTIFICATION fit: requests.py:288-316 follows the module's helper-plus-docstring idiom and adds no name the naming rules forbid.\nSCORE reuse: 16\nJUSTIFICATION reuse: no named owner for reading a brief off a node mapping exists \u2014 I searched reckon/ for brief/brief_path readers \u2014 but the same read is spelled inline at reckon/crew/recovery_review_dispatch.py:3051 and reckon/crew/promotion.py:1671, which _named_brief duplicates rather than being adopted by.\nFINDING docs/evidence/fragments/the-crew-does-its-own-bookkeeping/ready-the-crew-does-its-own-bookke-s3.html:5 non-blocking: the fragment says the new test was \"2 failed at the base\", but the negative-control log shows \"1 failed, 1 passed\" there (the queued case passes at base by design, as the manifest itself records); the plan page therefore overstates the negative control.",
+  "review_run_id": "r-20261113T063310728578-review-of-ready-the-crew-does-its-own-bookke-s3-2b4ab2158b60",
+  "reviewed_base_sha": "082607a9e8c051af5a596b5d0462fc9b93033c18",
+  "reviewed_head_sha": "2b4ab2158b60148555557c2d01ed90c6d743999d",
+  "reviewed_run_id": "r-20261113T023223807809-ready-the-crew-does-its-own-bookke-s3",
+  "scores": {
+    "durability": 18,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 16,
+    "scope_discipline": 17
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-13T10:57:24.870843+00:00",
+  "total": 105
+}
