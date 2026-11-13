@@ -1117,9 +1117,11 @@ def test_a_lapsed_deferral_blocks_the_stop_again(
         )
 
     assert lapsed.returncode == 0
-    assert json.loads(lapsed.stdout)["decision"] == "block", (
-        "the duty returning after its deferral lapsed must be refused again"
+    assert lapsed.stdout, (
+        "the duty returning after its deferral lapsed must be refused again; "
+        "the stop stayed silent"
     )
+    assert json.loads(lapsed.stdout)["decision"] == "block"
 
 
 def test_a_duty_that_empties_and_returns_is_injected_again(
