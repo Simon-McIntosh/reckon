@@ -31,6 +31,32 @@ class _LandedElsewhereError(Exception):
     """The selected run no longer needs a landing attempt here."""
 
 
+def _ledger_row(pointer: Mapping[str, Any], run_id: str) -> Mapping[str, Any] | None:
+    """The run's ledger row, or None when no row was written for it.
+
+    A row exists for a run that was promoted, discarded or refused, so the row
+    alone does not say the run has been promoted; ``promoted_revision`` does.
+    """
+    project = str(pointer.get("project") or "")
+    repo = str(pointer.get("repo") or "")
+    row_path = ledger.run_path(project, run_id, ledger._run_ledger_root(project, repo))
+    if not row_path.is_file():
+        return None
+    try:
+        row = json.loads(row_path.read_text(encoding="utf-8"))
+    except (OSError, ValueError) as exc:
+        raise CrewError(f"ledger row unreadable for {run_id!r}: {exc}") from exc
+    if not isinstance(row, Mapping) or row.get("run_id") != run_id:
+        raise CrewError(f"ledger row names a different run: {row_path}")
+    return row
+
+
+def _promoted_row_head(pointer: Mapping[str, Any], run_id: str) -> str:
+    """The revision the run's ledger row records it was promoted at, or ""."""
+    row = _ledger_row(pointer, run_id) or {}
+    return str(row.get("promoted_revision") or "").strip()
+
+
 def _landed_elsewhere(pointer: Mapping[str, Any], run_id: str) -> bool:
     """Read current ownership, not the live-set snapshot used for selection."""
     try:
@@ -39,18 +65,7 @@ def _landed_elsewhere(pointer: Mapping[str, Any], run_id: str) -> bool:
         if not runs.pointer_path(run_id).is_file():
             return True
         raise
-    project = str(pointer.get("project") or "")
-    repo = str(pointer.get("repo") or "")
-    row_path = ledger.run_path(project, run_id, ledger._run_ledger_root(project, repo))
-    if not row_path.is_file():
-        return False
-    try:
-        row = json.loads(row_path.read_text(encoding="utf-8"))
-    except (OSError, ValueError) as exc:
-        raise CrewError(f"ledger row unreadable for {run_id!r}: {exc}") from exc
-    if not isinstance(row, Mapping) or row.get("run_id") != run_id:
-        raise CrewError(f"ledger row names a different run: {row_path}")
-    return True
+    return _ledger_row(pointer, run_id) is not None
 
 
 # A revision as a manifest entry may spell it: hexadecimal, at least the
@@ -1884,13 +1899,20 @@ def land_once() -> dict[str, Any]:
             return {"landed": [], "obligations": [], "deferred": [], "busy": True}
         finished = pending_landing.finish_pending_landings()
         with plan_read_scopes():
-            result = _land_deliveries()
+            result = _land_deliveries(
+                settled_landings={
+                    str(row.get("run_id") or "")
+                    for row in finished
+                    if row.get("status") in ("finished", "already-landed")
+                }
+            )
     if finished:
         result["interrupted_landings"] = finished
     return result
 
 
-def _land_deliveries() -> dict[str, Any]:
+def _land_deliveries(settled_landings: set[str] | None = None) -> dict[str, Any]:
+    settled_landings = settled_landings or set()
     landed: list[str] = []
     skipped: list[dict[str, str]] = []
     obligations: list[dict[str, str]] = []
@@ -1920,6 +1942,14 @@ def _land_deliveries() -> dict[str, Any]:
             continue
         head, tree = recovery._review_head_and_tree(pointer)
         if not head:
+            continue
+        # This pass just finished this run's landing at the head that landing
+        # cited, so nothing here lands it again. Reading this pointer's reviews
+        # would hold the run awaiting-review at whatever head a resume moved it
+        # to — a revision no review read, and an obligation no later pass can
+        # answer, because the run is already promoted.
+        if run_id in settled_landings and _promoted_row_head(pointer, run_id):
+            skipped.append({"run_id": run_id, "status": "landed-elsewhere"})
             continue
         entries = classified.get("manifest_commits") or ()
         delivered = _delivered_revision(entries)
