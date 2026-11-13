@@ -276,10 +276,11 @@ def _ensure(project: str, root=None) -> Path:
                 actual = json.dumps(file_memo.file_signature(aggregate))
             except FileNotFoundError:
                 actual = None
+            generation = ledger.ledger_generation(project)
             return (
                 metadata.get("ready") == "1"
-                and metadata.get("generation")
-                == json.dumps(ledger.ledger_generation(project))
+                and generation is not None
+                and metadata.get("generation") == json.dumps(generation)
                 and (recorded[0] if recorded else None) == actual
             )
 

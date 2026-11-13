@@ -354,3 +354,17 @@ def test_a_refused_projection_keeps_the_existing_ledger_reader(tmp_path, monkeyp
         ]
         == row["run_id"]
     )
+
+
+def test_an_unknown_generation_keeps_document_freshness(tmp_path, monkeypatch):
+    row = {"run_id": "changed-history", "node": "known-node"}
+    ledger.write(PROJECT, {"runs": [], "members": [], "holds": []}, 0, tmp_path)
+    ledger.run_path(PROJECT, row["run_id"], tmp_path).parent.mkdir(parents=True)
+    ledger.write_run_file(PROJECT, row, tmp_path)
+    monkeypatch.setattr(ledger, "ledger_generation", lambda *args: None)
+    assert not ledger.open_runs(PROJECT, tmp_path)
+    changed = {**row, "worktree_retention": {"worktree": str(tmp_path / "held")}}
+    ledger.run_path(PROJECT, row["run_id"], tmp_path).write_text(json.dumps(changed))
+    assert row["run_id"] in {
+        item["run_id"] for item in ledger.open_runs(PROJECT, tmp_path)
+    }
