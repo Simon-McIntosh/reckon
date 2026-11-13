@@ -1655,6 +1655,208 @@ def claim_repository(
     return None
 
 
+# A stopped pointer's two git answers are asked on every read that judges its
+# claim, and a roadmap read asks more than once per read. A stopped run has no
+# worker, so its worktree almost never moves between two reads, and without a
+# memo the second read repeats the first's subprocesses. The commit answer
+# depends only on object ids and is stored under the crew home, so a fresh
+# process is answered without git; the uncommitted-change answer reads the
+# working tree and is reused within a process only while the files it read are
+# unchanged.
+_CLAIM_ANSWER_CACHE_LIMIT = 256
+_CLAIM_COMMIT_ANSWERS: dict[tuple[str, str, str, str], str] = {}
+_CLAIM_STATUS_ANSWERS: dict[tuple[str, tuple[str, ...]], tuple[tuple, str]] = {}
+
+# The identities ``_worktree_head_identity`` returns when the tree, its git
+# directory or its head could not be read. None of them names a revision, so an
+# answer keyed on one would be served for a state that has not been observed.
+_UNREADABLE_HEAD_IDENTITIES = frozenset({"no-tree", "no-git", "no-head"})
+
+# A ref expression this reader can resolve from git's files is an ordinary
+# branch name. Anything carrying revision syntax is left to git.
+_PLAIN_REF = re.compile(r"[A-Za-z0-9._/-]+")
+
+
+def _claim_commit_answer(
+    worktree: Path, integration_ref: str, base_sha: str
+) -> str | None:
+    """Which commits in ``worktree`` neither ``integration_ref`` nor ``base`` reach.
+
+    This is ``git rev-list HEAD ^<integration ref> ^<base>``, and every input it
+    reads is an object id: the worktree's HEAD, the commit the integration ref
+    currently names, and the recorded base. So the answer is a function of three
+    ids and cannot go stale while they hold, which is what lets the crew home's
+    git-answer store answer it for a fresh process without spawning git.
+
+    The HEAD identity and the ref's commit are read from git's files rather than
+    by a subprocess, so an unchanged worktree costs no process at all. When
+    either cannot be read that way — a packed ref, a detached oddity — git is
+    asked and nothing is stored, because an answer whose key was not observed
+    would be served for a state nobody measured.
+    """
+    from reckon.crew.recovery_memo import _worktree_head_identity
+    from reckon.crew.recovery_watch import (
+        _remember_unreachable_answer,
+        _stored_unreachable_answer,
+    )
+
+    head = _worktree_head_identity(worktree)
+    merged = _integration_ref_revision(worktree, integration_ref)
+    cacheable = head not in _UNREADABLE_HEAD_IDENTITIES and bool(merged)
+    key = (str(worktree), head, merged, base_sha)
+    if cacheable:
+        cached = _CLAIM_COMMIT_ANSWERS.get(key)
+        if cached is not None:
+            return cached
+        stored = _stored_unreachable_answer(worktree, head, merged, base_sha)
+        if stored is not None:
+            _remember_claim_commit_answer(key, stored)
+            return stored
+    answer = _git_answer(
+        worktree, "rev-list", "HEAD", f"^{integration_ref}", f"^{base_sha}"
+    )
+    if cacheable and answer is not None:
+        _remember_claim_commit_answer(key, answer)
+        _remember_unreachable_answer(worktree, head, merged, base_sha, answer)
+    return answer
+
+
+def _remember_claim_commit_answer(key: tuple[str, str, str, str], answer: str) -> None:
+    """Keep one reachability answer, bounded by the fleet it describes."""
+    cache = _CLAIM_COMMIT_ANSWERS
+    if len(cache) >= _CLAIM_ANSWER_CACHE_LIMIT and key not in cache:
+        for stale in [item for item in cache if not Path(item[0]).is_dir()]:
+            cache.pop(stale, None)
+        while len(cache) >= _CLAIM_ANSWER_CACHE_LIMIT:
+            cache.pop(next(iter(cache)), None)
+    cache[key] = answer
+
+
+def _integration_ref_revision(worktree: Path, integration_ref: str) -> str:
+    """The commit an integration branch's name currently resolves to, by file.
+
+    A branch name moves, so it cannot be stored as part of an immutable key;
+    the commit it names is what the reachability answer is a function of. It is
+    read from the loose ref, then from ``packed-refs``, so the ordinary case
+    costs two file reads. Empty when the name is not a plain branch name or no
+    file holds it, which leaves the caller asking git.
+    """
+    from reckon.crew.recovery_memo import _git_directory, _is_full_revision, _ref_roots
+
+    if not _PLAIN_REF.fullmatch(integration_ref):
+        return ""
+    if _is_full_revision(integration_ref):
+        return integration_ref
+    git_dir = _git_directory(worktree)
+    if git_dir is None:
+        return ""
+    git_roots = _ref_roots(git_dir)
+    for root in git_roots:
+        try:
+            named = (root / "refs" / "heads" / integration_ref).read_text(
+                encoding="utf-8"
+            )
+        except OSError:
+            continue
+        if _is_full_revision(named.strip()):
+            return named.strip()
+    return _packed_ref_revision(
+        git_roots[-1] / "packed-refs", f"refs/heads/{integration_ref}"
+    )
+
+
+def _packed_ref_revision(packed: Path, ref: str) -> str:
+    """The commit ``packed-refs`` records for ``ref``, or empty."""
+    try:
+        lines = packed.read_text(encoding="utf-8").splitlines()
+    except OSError:
+        return ""
+    for line in lines:
+        if not line or line[0] in "#^":
+            continue
+        written, _, named = line.partition(" ")
+        if named.strip() == ref and len(written) >= 40:
+            return written
+    return ""
+
+
+def _claim_status_answer(worktree: Path, relative: list[str]) -> str | None:
+    """Uncommitted changes at a claim's declared paths, reused while they hold.
+
+    ``git status --porcelain -- <declared paths>`` reads the working tree, so
+    its answer may be reused only while the declared paths are unchanged; a
+    moved signature asks git again.
+
+    A declared path that is a tracked file under a declared DIRECTORY is the
+    case this cannot cover, so a pointer declaring any directory asks git every
+    time: editing a tracked file beneath a directory moves neither the
+    directory's stat nor the index's, while git reports the edit. Reusing the
+    clean answer there would release a stopped claim whose worktree still holds
+    unrecovered work, which is the one error a claim must never make.
+    """
+    signature = _claim_paths_signature(worktree, relative)
+    key = (str(worktree), tuple(relative))
+    if signature is not None:
+        cached = _CLAIM_STATUS_ANSWERS.get(key)
+        if cached is not None and cached[0] == signature:
+            return cached[1]
+    answer = _git_answer(worktree, "status", "--porcelain", "--", *relative)
+    if signature is not None and answer is not None:
+        after = _claim_paths_signature(worktree, relative)
+        # The declared paths must be unchanged across the call, or the answer
+        # describes a state that has already gone and a later reuse would serve
+        # it for the state that replaced it. The index is allowed to move,
+        # because git refreshes its stat cache as part of answering; the answer
+        # is then keyed on the index git left behind, which is the state every
+        # later comparison is made against.
+        if after is not None and after[1:] == signature[1:]:
+            _remember_claim_status_answer(key, after, answer)
+    return answer or None
+
+
+def _remember_claim_status_answer(
+    key: tuple[str, tuple[str, ...]], signature: tuple, answer: str
+) -> None:
+    """Keep one uncommitted-change answer, bounded per process."""
+    cache = _CLAIM_STATUS_ANSWERS
+    if len(cache) >= _CLAIM_ANSWER_CACHE_LIMIT and key not in cache:
+        for stale in [item for item in cache if not Path(item[0]).is_dir()]:
+            cache.pop(stale, None)
+        while len(cache) >= _CLAIM_ANSWER_CACHE_LIMIT:
+            cache.pop(next(iter(cache)), None)
+    cache[key] = (signature, answer)
+
+
+def _claim_paths_signature(worktree: Path, relative: list[str]) -> tuple | None:
+    """The stat identity of everything the uncommitted-change answer depends on.
+
+    The index is what git compares the working tree against. Every declared
+    path must be an ordinary file: a directory's own stat does not move when a
+    tracked file under it is edited, so an answer read while it stood still
+    would be reused across a change git would have reported. ``None`` means the
+    answer cannot be reused for this pointer at all.
+    """
+    from reckon import file_memo
+    from reckon.crew.recovery_memo import _git_directory
+
+    git_dir = _git_directory(worktree)
+    if git_dir is None:
+        return None
+    try:
+        signature = [file_memo.file_signature(git_dir / "index")]
+    except OSError:
+        return None
+    for path in relative:
+        candidate = worktree / path
+        try:
+            if not candidate.is_file():
+                return None
+            signature.append(file_memo.file_signature(candidate))
+        except OSError:
+            return None
+    return tuple(signature)
+
+
 def unintegrated_claim_work(
     pointer: Mapping[str, Any],
     *,
@@ -1687,7 +1889,7 @@ def unintegrated_claim_work(
         if not Path(path).expanduser().is_absolute()
     ]
     if relative:
-        dirty = _git_output(worktree, "status", "--porcelain", "--", *relative)
+        dirty = _claim_status_answer(worktree, relative)
         if dirty:
             findings.append(
                 f"{len(dirty.splitlines())} uncommitted change(s) at declared paths"
@@ -1695,9 +1897,7 @@ def unintegrated_claim_work(
 
     base_sha = str(pointer.get("base_sha") or "")
     if base_sha:
-        unreachable = _git_answer(
-            worktree, "rev-list", "HEAD", f"^{integration_ref}", f"^{base_sha}"
-        )
+        unreachable = _claim_commit_answer(worktree, integration_ref, base_sha)
         if unreachable is None:
             # The comparison could not run — most often because this repository
             # integrates on a differently named branch. Reporting that as an
