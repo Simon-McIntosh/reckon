@@ -63,16 +63,42 @@ def delivery_hold(pointer: Mapping[str, Any]) -> dict[str, Any] | None:
     return dict(hold)
 
 
-def hold_reason(pointer: Mapping[str, Any]) -> str:
-    """The reason a held run names, in the form a refusal quotes it."""
+def covers_delivery(hold: Mapping[str, Any], revision: str) -> bool:
+    """Whether a hold defers this delivery.
+
+    A hold taken by a resume names the revision that was delivered when the
+    resume was issued, because that is the delivery the lander must not take
+    out from under it. When the resumed attempt delivers again it delivers a
+    new head, and there is nothing left to defer: the hold stops covering the
+    run and the lander judges the repair. A hold its coordinator took by hand
+    names no revision and covers every delivery until it is released, because a
+    coordinator who asked for the run to wait did not ask for one revision to
+    wait.
+    """
+    named = str(hold.get("head") or "").strip()
+    if not named:
+        return True
+    return named == str(revision or "").strip()
+
+
+def hold_reason(pointer: Mapping[str, Any], revision: str | None = None) -> str:
+    """The reason a held run names for ``revision``, or "" when it covers none.
+
+    ``revision`` omitted asks whether the run carries any hold at all, which is
+    the question a resume and a release ask. A revision asks the narrower
+    question a landing pass asks: is this delivery the one the hold was taken
+    against.
+    """
     hold = delivery_hold(pointer)
     if hold is None:
+        return ""
+    if revision is not None and not covers_delivery(hold, revision):
         return ""
     return f"held by {hold.get('by') or DEFAULT_HOLDER}: {hold.get('reason') or ''}"
 
 
 def hold_delivery(
-    run_id: str, reason: str, *, by: str = DEFAULT_HOLDER
+    run_id: str, reason: str, *, by: str = DEFAULT_HOLDER, head: str = ""
 ) -> dict[str, Any]:
     """Record a coordinator's hold over a delivered run.
 
@@ -97,6 +123,7 @@ def hold_delivery(
             "reason": reason,
             "by": str(by or DEFAULT_HOLDER),
             "at": _now(),
+            **({"head": str(head).strip()} if str(head).strip() else {}),
         }
         return record
 
@@ -209,20 +236,27 @@ def prepare_resume(
       between this call and the launch finds it held;
     * anything else is left alone — a run still working needs no hold, and a
       run already held keeps the reason its coordinator gave.
+
+    The promotion's lease is read before the pointer is, because a promotion
+    claims the lease before it does any work and removes the pointer only at the
+    very end. Reading the pointer first would find it present through almost the
+    whole promotion window, take a hold and launch a worker beside the promotion
+    — the race this guard exists to close.
     """
+    if promotion_in_flight(run_id):
+        raise CrewError(
+            f"run {run_id!r} is being promoted right now: a promotion of it "
+            "holds its lease until that promotion returns, so a resume would "
+            "launch a worker beside a promotion that is already rewriting and "
+            "about to remove the run's pointer. Read the run's ledger row for "
+            "the promotion's outcome, then resume if none was written."
+        )
     if record is None:
         try:
             record = runs.read_pointer(run_id)
         except CrewError:
             record = None
     if record is None:
-        if promotion_in_flight(run_id):
-            raise CrewError(
-                f"run {run_id!r} is being promoted right now: its pointer is "
-                "the promotion's to rewrite and remove until that promotion "
-                "returns, so a resume cannot take it. Read the run's ledger row "
-                "for the promotion's outcome, then resume if none was written."
-            )
         row = promotion_of(run_id)
         if row is not None:
             raise _promoted_refusal(run_id, row)
@@ -236,11 +270,15 @@ def prepare_resume(
         }
     if not _delivered(record):
         return {"run_id": run_id, "held": False, "reason": ""}
+    from reckon.crew import recovery
+
+    head, _tree = recovery._review_head_and_tree(record)
     held = hold_delivery(
         run_id,
         "a coordinator is resuming this delivered run to steer its result: "
         "the landing waits until that resume's attempt is judged",
         by=by,
+        head=head,
     )
     return {"run_id": run_id, "held": True, **held, "already_held": False}
 

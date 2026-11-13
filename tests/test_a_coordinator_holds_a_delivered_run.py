@@ -26,6 +26,7 @@ in the pass.
 from __future__ import annotations
 
 import json
+import os
 import subprocess
 from datetime import UTC, datetime
 from pathlib import Path
@@ -339,6 +340,49 @@ def test_a_resume_of_a_promoted_run_exits_non_zero_naming_its_commit(
     assert "already been promoted" in result.output, result.output
 
 
+def test_a_promotion_in_flight_refuses_the_resume_before_it_holds(
+    delivery, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A promotion owns the run while it holds its lease, pointer or not.
+
+    A promotion claims its lease before it does any work and removes the run's
+    pointer only at the very end, so most of the promotion window runs with the
+    pointer still present. A resume reading the pointer first would take a hold
+    and launch a worker beside the promotion the section exists to stay out of.
+    """
+    from reckon.crew import promotion as promotion_module
+    from reckon.crew.host_lease import HostLease, local_host
+
+    lease = HostLease(
+        runs.crew_home(),
+        promotion_module._promotion_lease_name(RUN),
+        local_host(),
+        os.getpid(),
+        "",
+    )
+    assert lease.claim(), "the fixture could not take the promotion lease"
+    try:
+        assert runs.pointer_path(RUN).is_file(), "the pointer must still exist"
+        monkeypatch.setattr(
+            "reckon.crew.resumption._resume",
+            lambda *a, **k: pytest.fail("a promotion in flight was resumed"),
+        )
+
+        from reckon.crew_dispatch_commands import crew
+
+        result = CliRunner().invoke(
+            crew, ["resume", "--run", RUN, "--advice", "the result needs repair"]
+        )
+
+        assert result.exit_code != 0, result.output
+        assert "is being promoted right now" in result.output, result.output
+        assert resume.delivery_hold(runs.read_pointer(RUN)) is None, (
+            "the refused resume took a hold anyway"
+        )
+    finally:
+        lease.release()
+
+
 def test_a_resume_holds_before_it_relaunches(
     delivery, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -372,6 +416,25 @@ def test_a_resume_holds_before_it_relaunches(
     assert delivery["landed"] == [], delivery["landed"]
 
 
+def test_a_resume_hold_stops_covering_the_next_delivery(delivery) -> None:
+    """A hold a resume took defers the head it named, not the repair after it.
+
+    The resumed attempt delivers a new head, so the deferral has nothing left
+    to protect: the lander must judge the repair rather than skip the run until
+    somebody remembers to release the hold.
+    """
+    before = str(delivery["head"])
+    after = "0" * 40
+    resume.hold_delivery(
+        RUN, "a coordinator is resuming this delivered run", head=before
+    )
+    pointer = runs.read_pointer(RUN)
+
+    assert resume.hold_reason(pointer, before), "the named head is not deferred"
+    assert resume.hold_reason(pointer, after) == "", "a later head is deferred"
+    assert resume.hold_reason(pointer), "the run is not reported as held at all"
+
+
 # ── negative control ───────────────────────────────────────────────────────
 
 
@@ -379,7 +442,7 @@ def test_the_lander_lands_a_held_run_without_the_hold_guard(
     delivery, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """Ignoring the hold in the lander makes the first case land."""
-    monkeypatch.setattr(queue_landing, "delivery_hold_reason", lambda pointer: "")
+    monkeypatch.setattr(queue_landing, "delivery_hold_reason", lambda pointer, revision=None: "")
     resume.hold_delivery(RUN, "the lead rejected this result; the coordinator decides")
 
     result = queue_landing.land_once()

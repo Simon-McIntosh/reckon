@@ -504,7 +504,7 @@ def accept_clean_review(
     # A coordinator's hold defers the promotion however clean the review reads:
     # the acceptance sweep is the automatic door, and the coordinator holding
     # the run is exactly the reader it must not overtake.
-    hold_reason = delivery_hold_reason(pointer)
+    hold_reason = delivery_hold_reason(pointer, head)
     if hold_reason:
         return refuse(
             {
