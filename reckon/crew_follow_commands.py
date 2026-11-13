@@ -2757,6 +2757,8 @@ def _follow_resume_output(
     read_history: Callable[[], list[dict]],
     history_caps: tuple[int, ...] | None,
     dim: Callable[[str], str],
+    delivered: Callable[[], Mapping[str, str]] | None = None,
+    remember: Callable[[Mapping[str, Any]], None] | None = None,
 ) -> str:
     """What a re-arm writes into its pane: the history on a terminal, state on a pipe.
 
@@ -2766,6 +2768,14 @@ def _follow_resume_output(
     names the word each run was last drawn at, so a run still at that word is
     not repeated and a run the pane has never drawn — or one that moved while
     it was away — is drawn from the state it stands in now.
+
+    ``delivered`` and ``remember`` name the one store whose rows the live path
+    would write: the station subscriber's checkpoint while one is attached, the
+    session's file record otherwise. A re-arm that read a store the live rows do
+    not advance would draw every live run of the session again on every arming,
+    so the caller supplies both halves of the same store and this derivation
+    keeps no state of its own. Without them it reads, and records to, the file
+    record — the whole of what a bare derivation has.
     """
     if _follow_replay_visible():
         from reckon.crew import follow_checkpoint as history_module
@@ -2780,26 +2790,48 @@ def _follow_resume_output(
     from reckon.crew import runs as runs_module
     from reckon.crew import ticker as ticker_module
 
-    record = runs_module.read_delivered(project, session)
-    if not record.get("states"):
+    if delivered is not None:
+        states = {str(run_id): str(state) for run_id, state in delivered().items()}
+    else:
+        states = {
+            str(run_id): str(state)
+            for run_id, state in (
+                runs_module.read_delivered(project, session).get("states") or {}
+            ).items()
+        }
+    if not states:
         # A pane with no memory of its own rows has nothing to be shown the
         # difference against, and its replay draws the fleet as it stands.
         return ""
     # The record can hold the state the producer wrote rather than the word the
     # pane draws for it, so both halves are read on the pane's own word before
     # they are compared; a word that is already one of the pane's maps to itself.
-    record = dict(record)
-    record["states"] = {
-        str(run_id): ticker_module._display_state(state) or str(state)
-        for run_id, state in dict(record.get("states") or {}).items()
+    states = {
+        run_id: ticker_module._display_state(state) or state
+        for run_id, state in states.items()
     }
     rows = _follow_gap_rows(
         _follow_live_state_rows(project, session),
-        record,
+        {"states": states},
         session=session,
         observed=(),
         run_ids=(),
     )
+    if rows:
+        # A drawn word is one the pane now holds, so the next arming must not
+        # draw it again. Recorded through the same store the row was compared
+        # against, which is the store the live path writes.
+        if remember is not None:
+            for row in rows:
+                remember(row)
+        else:
+            states.update(
+                {
+                    str(row.get("run_id") or ""): str(row.get("to_state") or "")
+                    for row in rows
+                }
+            )
+            runs_module.write_delivered(project, session, states)
     return "\n".join(_follow_live_state_line(row) for row in rows)
 
 
@@ -3339,6 +3371,28 @@ def crew_follow(
                 return
             runs_module.write_delivered(project, session, delivered_states)
 
+        def note_resumed(row) -> None:
+            """Record a word a re-arm has just drawn, advancing the pane's memory.
+
+            The word is the one the pane was handed now, so a later arming must
+            compare against it. The subscriber's path keeps a remembered word by
+            design — a checkpoint's word outranks a later derivation of the same
+            run — so the drawn word replaces it here rather than through
+            ``remember``, and the path is reseeded whole so the row policy holds
+            it too. The file record is a plain map and advances in place.
+            """
+            run_id = str(row.get("run_id") or "")
+            state = str(row.get("to_state") or "")
+            if not run_id or not state:
+                return
+            delivered_states[run_id] = state
+            if subscriber is None:
+                runs_module.write_delivered(project, session, delivered_states)
+                return
+            path = subscriber.path
+            path.reseed({**path.reported, run_id: state}, lift_groups=path.lift_groups)
+            subscriber.save_checkpoint()
+
         # Whether the last event was the settle row. The follower ends its
         # generator after that row, so this is read once the loop has drained,
         # and the process leaves with the settle status its host keys on.
@@ -3439,6 +3493,8 @@ def crew_follow(
                         read_history=read_history,
                         history_caps=history_caps,
                         dim=replay_dim,
+                        delivered=lambda: dict(delivered_states),
+                        remember=note_resumed,
                     )
                     if text:
                         _echo_follow_line(text)
