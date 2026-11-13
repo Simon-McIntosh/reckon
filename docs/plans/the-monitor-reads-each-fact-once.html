@@ -25,7 +25,7 @@
   <title>The Monitor Reads Each Fact Once | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="236">
+<meta name="plan-version" content="237">
 <meta name="plan-modified" content="2026-11-13">
 </head>
 <body>
@@ -643,7 +643,9 @@ staged paths.</p>
 
     <h2 id="s43">§43 — A refresh lists each review store once</h2>
 <section data-reckon="section" data-id="s43" data-effort-hours="0.75" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
-<p><strong>Why.</strong> §42's evidence also shows the refresh globbing a whole review store per duty item. <code>review_records._store_paths</code> uses the per-tick store when one is installed, through <code>review_records.review_store_tick</code>. The station's refresh does not install it, so every duty item falls back to <code>directory.glob</code>.</p><p><strong>Deliverable.</strong> The station's refresh installs the per-tick review store before deriving duties, so a refresh lists each review store at most once. Write paths: <code>reckon/crew/station_obligations.py</code>, <code>reckon/crew/review_records.py</code>, <code>tests/test_a_refresh_lists_each_review_store_once.py</code> and the node's fragment.</p><p><strong>Done when</strong> <code>tests/test_a_refresh_lists_each_review_store_once.py</code> runs one refresh over at least 20 duty items on a temporary crew home, counting <code>directory.glob</code> calls on the review store with a recording stand-in. It asserts at most one listing per store per tick. Negative control: at the base revision the count equals the number of duty items. The test files importing the changed modules add no failure against base in matched arms run as an <code>all_debug</code> partition job, submitted with <code>env -u SLURM_JOB_ID -u SLURM_JOBID sbatch</code> and never on the fleet node. Each arm's log sits under the run directory, opens with its revision and literal command, and ends in <code>EXIT=</code>. ruff check and ruff format --check add no finding on the staged paths.</p>
+<p><strong>Why.</strong> §42's evidence also shows the refresh globbing a whole review store per duty item. <code>review_records._store_paths</code> uses the per-tick store when one is installed, through <code>review_records.review_store_tick</code>. The station's refresh does not install it, so every duty item falls back to <code>directory.glob</code>.</p>
+<p><strong>Deliverable.</strong> The station's refresh installs the per-tick review store before deriving duties, so a refresh lists each review store at most once. Write paths: <code>reckon/crew/station_obligations.py</code>, <code>reckon/crew/review_records.py</code>, <code>tests/test_a_refresh_lists_each_review_store_once.py</code> and the node's fragment.</p>
+<p><strong>Done when</strong> <code>tests/test_a_refresh_lists_each_review_store_once.py</code> runs one refresh over at least 20 duty items on a temporary crew home, counting every listing of the review store, through a recording stand-in for both <code>directory.glob</code> and <code>os.scandir</code> on that directory. It asserts at most one listing per store per tick. Negative control: at the base revision the count is at least the number of duty items. A cold index lists the store once more to build it, so the control is a lower bound, not an equality. The test files importing the changed modules add no failure against base in matched arms run as an <code>all_debug</code> partition job, submitted with <code>env -u SLURM_JOB_ID -u SLURM_JOBID sbatch</code> and never on the fleet node. Each arm's log sits under the run directory, opens with its revision and literal command, and ends in <code>EXIT=</code>. ruff check and ruff format --check add no finding on the staged paths.</p>
 
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
@@ -1062,6 +1064,9 @@ staged paths.</p>
 <div class="r-comment" data-section="s41" data-id="c-run-r-20261112T234811256868-an-interrupted-promotion-keeps-its-record" data-who="reckon-build" data-when="2026-11-13T01:57:55Z">
     <div class="r-comment-body"><p>The unfinished-promotion branch of the landing pass retires the run's unanswered land attempt before it clears the pending-landing record and clears it only when that retirement succeeded, so a pass that ends between the steps or whose pointer write fails leaves the record for the next sweep while reporting the run as attempt-not-retired; a sweep that finds the attempt already retired settles the record too; base arm 55 passed EXIT=0, after arm 57 passed EXIT=0, pending_landing-import arms 44 passed at base and 46 at head, declared mutation 1 failed EXIT=1 on the failed-retirement case.</p></div>
 </div>
+<div class="r-comment" data-section="s42" data-id="c-run-r-20261113T042153921533-review-of-a-phase-transition-is-published-first-6994822a20b9" data-who="reckon-build" data-when="2026-11-13T05:54:15.156Z">
+    <div class="r-comment-body"><p>review record stored at review-records/r-20261113T014538677019-a-phase-transition-is-published-first.json (and its .at-6994822a20b9 form); status parsed, six dimensions scored 18/16/18/18/15/20, added_failure_count 0, no blocking finding.</p></div>
+</div>
 <div class="r-comment" data-section="s5" data-id="c-run-r-20261023T170707287094-the-station-store-is-node-local" data-who="reckon-build" data-when="2026-10-23T18:59:58Z">
     <div class="r-comment-body"><p>station_store adds the node-local SQLite store at the node-local runtime root: pointer and stream identity is file_memo.file_signature's, day files hold the events and an out-of-window day file is unlinked with its rows, and a root reached only through TMPDIR or on a shared mount is refused; tests/test_the_station_store_is_node_local.py is 15 passed EXIT=0, and both declared mutations turn their case red (1 failed and 8 failed).</p></div>
 </div>
@@ -1139,9 +1144,6 @@ staged paths.</p>
 </div>
 <div class="r-comment" data-section="s9" data-id="c-run-r-20261027T042852990093-obligations-read-the-station" data-who="reckon-build" data-when="2026-10-27T13:28:42Z">
     <div class="r-comment-body"><p>The station computes each live session's obligations once per change into its node-local store and exports one change-only snapshot per project at most every 10 s, with the carried station heartbeat republished once it has moved and the file is 90 s old so a quiet station never reads as stopped; the prompt hook and the crew obligations view both answer from it, in that order ahead of the derivation, and a station heartbeat past the 120 s window is reported stale with its age.</p></div>
-</div>
-<div class="r-comment" data-section="s42" data-id="c-run-r-20261113T042153921533-review-of-a-phase-transition-is-published-first-6994822a20b9" data-who="reckon-build" data-when="2026-11-13T05:54:15.156Z">
-    <div class="r-comment-body"><p>review record stored at review-records/r-20261113T014538677019-a-phase-transition-is-published-first.json (and its .at-6994822a20b9 form); status parsed, six dimensions scored 18/16/18/18/15/20, added_failure_count 0, no blocking finding.</p></div>
 </div>
 </section>
 </main>
