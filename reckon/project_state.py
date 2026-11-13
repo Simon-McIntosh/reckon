@@ -17,7 +17,6 @@ missing or malformed resources are errors.  There are no dual writes.
 from __future__ import annotations
 
 import base64
-import fcntl
 import hashlib
 import html
 import json
@@ -51,6 +50,7 @@ from reckon._store import (
 )
 from reckon._timestamps import parse_utc
 from reckon.lifecycle import COMPLETED_STATUSES, TERMINAL_STATUSES
+from reckon.node_exclusive_lock import exclusive_lock
 from reckon.sprint_liveness import sprint_liveness
 
 MARKER_RELATIVE = Path(".reckon/project-state-migration.json")
@@ -299,20 +299,27 @@ def resource_path(
 
 
 @contextmanager
-def _resource_lock(docs_dir: Path, project: str, resource_type: str, resource_id: str):
-    """Serialise one resource's version check and atomic replacement."""
+def _resource_lock(
+    docs_dir: Path,
+    project: str,
+    resource_type: str,
+    resource_id: str,
+    *,
+    blocking: bool = True,
+):
+    """Serialise one resource's version check and atomic replacement.
+
+    The lock is POSIX record based, so it excludes a holder on another node.
+    ``blocking=False`` reports a held lock as
+    :class:`~reckon.node_exclusive_lock.LockHeld`.
+    """
     _safe_segment(project, "lock project")
     _safe_segment(resource_type, "lock resource type")
     _safe_segment(resource_id, "lock resource id")
     lock_name = f"{project}-{resource_type}-{resource_id}.lock"
     lock_path = docs_dir / ".reckon" / "locks" / lock_name
-    lock_path.parent.mkdir(parents=True, exist_ok=True)
-    with lock_path.open("a+b") as handle:
-        fcntl.flock(handle.fileno(), fcntl.LOCK_EX)
-        try:
-            yield
-        finally:
-            fcntl.flock(handle.fileno(), fcntl.LOCK_UN)
+    with exclusive_lock(lock_path, blocking=blocking):
+        yield
 
 
 @contextmanager
