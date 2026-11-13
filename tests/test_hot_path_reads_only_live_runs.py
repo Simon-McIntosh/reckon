@@ -135,8 +135,22 @@ def _read(operation, fleet, tmp_path, monkeypatch, promotion_record=None):
         payload = obligations_module.obligations(PROJECT, SESSION)
         return sorted((row["run_id"], row["kind"]) for row in payload["obligations"])
     if operation == "landing":
+        examined = set()
+        classify = queue_landing.recovery.classify_pointer
+
+        def observed(pointer):
+            examined.add(pointer["run_id"])
+            return classify(pointer)
+
+        monkeypatch.setattr(queue_landing.recovery, "classify_pointer", observed)
         result = queue_landing.land_once()
-        return {key: result.get(key) for key in ("landed", "deferred")}
+        assert examined == {
+            pointer["run_id"] for pointer in runs.list_live(project=PROJECT)
+        }
+        return {
+            **{key: result.get(key) for key in ("landed", "deferred")},
+            "examined": sorted(examined),
+        }
     # Keep publishing and physical cleanup outside this read-population test.
     # Pointer retirement and the promotion's ledger/review readers remain real.
     pointer = promotion_record or runs.read_pointer("run-00")
