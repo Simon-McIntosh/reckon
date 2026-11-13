@@ -483,3 +483,72 @@ def test_wait_returns_the_synchronous_outcome(repository, monkeypatch):
     assert called == [run_id]
     assert json.loads(result.output)["record"]["commits"] == [repository.sha]
     assert not requests._request_path(run_id).exists()
+
+
+@pytest.mark.parametrize(
+    ("kind", "operation_name", "promoted_by"),
+    [
+        ("acceptance", "accept_clean_review", "review-acceptance"),
+        ("review-self", "promote_review_run_itself", "review-self"),
+    ],
+)
+def test_a_review_promotion_survives_pointer_removal_before_its_receipt(
+    repository, isolated_reckon_home, monkeypatch, kind, operation_name, promoted_by
+):
+    from reckon import ledger
+
+    run_id = f"r-interrupted-{kind}"
+    repository.plant(run_id)
+    (isolated_reckon_home / "mounts.json").write_text(
+        json.dumps({PROJECT: str(repository.root / "docs")})
+    )
+    request = requests.request_promotion(run_id, kind=kind)
+    calls = []
+    row = {
+        "run_id": run_id,
+        "commits": [repository.sha],
+        "promoted_by": promoted_by,
+    }
+
+    def promote(pointer, **kwargs):
+        calls.append(pointer["run_id"])
+        ledger.run_path(PROJECT, run_id, repository.root).parent.mkdir(
+            parents=True, exist_ok=True
+        )
+        path = ledger.write_run_file(PROJECT, row, root=repository.root)
+        runs.pointer_path(run_id).unlink()
+        return {"promoted": True, "ledger": {"path": str(path)}}
+
+    class ServiceInterrupted(BaseException):
+        pass
+
+    def interrupt_receipt(*args, **kwargs):
+        assert not kwargs.get("error"), kwargs
+        assert args[1] == requests.PROMOTED
+        raise ServiceInterrupted
+
+    monkeypatch.setattr(acceptance, operation_name, promote)
+    with monkeypatch.context() as crash:
+        crash.setattr(requests, "_finish", interrupt_receipt)
+        with pytest.raises(ServiceInterrupted):
+            requests.PromotionService()._run(request)
+
+    assert not runs.pointer_path(run_id).exists()
+    assert not requests._receipt_path(run_id).exists()
+    assert requests.read_promotion(run_id)["phase"] == requests.RUNNING
+    row_path = ledger.run_path(PROJECT, run_id, repository.root)
+    assert json.loads(row_path.read_text()) == row
+    row_bytes = row_path.read_bytes()
+
+    service = requests.PromotionService()
+    assert service.tick() == [run_id]
+    service.settle(timeout=10)
+    receipt = requests.read_promotion(run_id)
+    assert receipt["phase"] == requests.PROMOTED, receipt
+    assert receipt["commits"] == [repository.sha]
+    assert receipt["result"]["already_promoted"] is True
+    assert calls == [run_id]
+    assert row_path.read_bytes() == row_bytes
+    assert not requests._request_path(run_id).exists()
+    assert not requests.failure_obligations(PROJECT, SESSION)
+    assert requests.PromotionService().tick() == []
