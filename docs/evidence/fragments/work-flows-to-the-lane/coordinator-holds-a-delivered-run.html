@@ -1,0 +1,41 @@
+<section id="coordinator-holds-a-delivered-run-landing">
+  <h2>A coordinator can hold a delivered run from landing</h2>
+  <p>The automatic lander promoted a delivered run the moment its evidence read
+  clean, and a promotion deletes the run's live pointer. A coordinator that had
+  planned to steer that delivery found its resume printing nothing and raising
+  nothing, because the run it named had already been promoted and merged; the
+  repair had to be carried as a new plan section.</p>
+  <p>A hold now lives on the run record as a single field naming who deferred
+  the landing, why, and when. The landing pass skips a held run rather than
+  refusing it — a refusal is a judgement the pass makes and can retract, while a
+  hold ends only when its coordinator releases it — and the review-acceptance
+  sweep returns an unheld-run refusal naming the hold's reason. Releasing the
+  hold records the reason the deferral ended beside the reason it began, so the
+  run's own record explains the delay it carried.</p>
+  <p>The single-run resume takes the hold before it launches, so a landing pass
+  running between the two finds the run held instead of free to promote. A
+  resume of a run a promotion already owns is refused with a non-zero exit that
+  names the promotion and the revision it asserted, rather than launching
+  nothing in silence. The guard is installed on the resume command from the
+  CLI's import hub, so the resume door's own composition is untouched.</p>
+  <table id="coordinator-holds-a-delivered-run-measures">
+    <caption>Measurements: the node gate ran in place, one arm at a time; the
+    importer arms ran on <code>all_debug</code>, one arm at a time, four
+    workers. Logs carry the revision, tree, command and imported module, and
+    end with a bare exit-status line.</caption>
+    <thead><tr><th>Measure</th><th>Observed result</th></tr></thead>
+    <tbody>
+      <tr><td>Base arm at <code>55d49260706d</code>, node tests</td>
+        <td>49 passed, 2 errors, <code>EXIT</code> 1: the two errors are the
+        staged-write inventory reader's <code>git ls-tree</code> against a
+        scratch extraction that is not a git checkout, and the same file passes
+        51 of 51 in a checkout.</td></tr>
+      <tr><td>Head arm at the run's head, node tests</td>
+        <td>56 passed, <code>EXIT=0</code>: 51 staged-write checks and five new
+        cases.</td></tr>
+      <tr><td>Declared mutation applied: ignore the hold in the lander</td>
+        <td>2 failed, 3 passed, <code>EXIT=1</code>. The held run is promoted by
+        the landing pass, and the first case fails printing the run it landed.</td></tr>
+    </tbody>
+  </table>
+</section>
