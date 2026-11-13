@@ -2134,10 +2134,12 @@ def _review_duty_item(
     is gone keeps the classifier's reading too, there being no tree left to
     ask, and a review the store cannot answer for reads missing rather than
     ready, because the safe direction is to ask for evidence. That reading is
-    what a snapshot keeps for a run that has already departed: a ready or stale
-    promotion duty it still names is settled at read time, on a ``stat`` of the
-    run's pointer, by
-    :func:`reckon.crew.obligation_snapshot.without_departed_run_duties`.
+    what a snapshot keeps for a run that has already departed, so a promotion
+    or review duty it still names is settled at read time by
+    :func:`reckon.crew.obligation_snapshot.without_departed_run_duties`: a
+    ready or stale row on a ``stat`` of the run's pointer, and a missing or
+    queued review row on that pointer's absence or on a review it records
+    dispatched for the head the duty names.
 
     A missing review whose most recent attempt the lane refused as paused reads
     review-queued while the refusal is inside its bound, naming when the lane
