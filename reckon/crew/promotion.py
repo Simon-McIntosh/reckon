@@ -2325,8 +2325,12 @@ def discard(run_id: str, *, allowed_phases: Sequence[str] = ()) -> dict[str, Any
         from reckon.crew.terminal_cleanup import queue_cleanup
 
         queue_cleanup(record, kind="discarded")
-        preserve_discard_record(run_id)
         path.unlink()
+        release = _remove_discarded_worktree(record)
+        if written:
+            from reckon.crew.runs import resolve_run_path
+
+            written = str(resolve_run_path(written))
         return {
             "run_id": run_id,
             "pointer_path": str(path),
@@ -2344,7 +2348,7 @@ def discard(run_id: str, *, allowed_phases: Sequence[str] = ()) -> dict[str, Any
             # later dispatch for as long as its holder lives. The run this
             # discard removed is the claim's own, so the claim goes with it.
             "dispatch_claim_released": _release_discarded_dispatch_claim(run_id),
-            **_remove_discarded_worktree(record),
+            **release,
         }
 
 
@@ -2434,6 +2438,8 @@ def _remove_discarded_worktree(record: Mapping[str, Any]) -> dict[str, Any]:
             "arms_kept",
             "arms_logs_copied",
             "arms_withheld",
+            "run_archived",
+            "run_archive_withheld",
         )
         if key in release
     }

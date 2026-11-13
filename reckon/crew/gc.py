@@ -665,13 +665,12 @@ def garbage_collect(
     if retention_days < 0:
         raise CrewError("retention days cannot be negative")
     repo_root = Path(repo).resolve()
-    from reckon.crew.terminal_cleanup import sweep_ended_runs
-
-    ended_cleanup = sweep_ended_runs(repo=repo_root) if apply and run_id is None else []
     from reckon.crew.recovery import _resolve_commit
+    from reckon.crew.terminal_cleanup import sweep_ended_runs
 
     if not _resolve_commit(repo_root, integrated_into):
         raise CrewError(f"integration revision {integrated_into!r} is not a commit")
+    ended_cleanup = sweep_ended_runs(repo=repo_root) if apply and run_id is None else []
     confined_to: Path | None = None
     already_removed_run = ""
     already_removed_worktree = ""
@@ -1856,13 +1855,12 @@ def retention_sweep(
     from reckon import flight
     from reckon.crew.terminal_cleanup import sweep_ended_runs
 
-    ended_cleanup = sweep_ended_runs(limit=limit) if apply else []
-
     moment = now or datetime.now(tz=timezone.utc)
     if limit < 1:
         raise CrewError("retention sweep limit must be at least one directory")
     if store_limit < 1 or store_vacuum_pages < 1:
         raise CrewError("store row and compaction page limits must be positive")
+    ended_cleanup = sweep_ended_runs(limit=limit) if apply else []
     phase_seconds: dict[str, float] = {}
 
     started = time.perf_counter()

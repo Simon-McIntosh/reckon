@@ -60,6 +60,8 @@ def test_discard_retires_the_entire_run(tmp_path, monkeypatch):
     result = promotion.discard(run["run_id"])
     assert result["pointer_removed"]
     assert promotion.discard_recorded(run["run_id"])
+    assert Path(result["discard_record"]).is_file()
+    assert result["run_archived"] == str(terminal_cleanup.archive_dir(run["run_id"]))
     _assert_retired(run)
 
 
@@ -94,6 +96,7 @@ def test_recoverable_run_keeps_its_workspace(tmp_path, monkeypatch, status):
     assert run["worktree"].is_dir()
     assert run["directory"].is_dir()
     assert run["scratch"].is_dir()
+    assert result["scratch_withheld"] == "run retained for recovery"
 
 
 def test_sweep_recovers_a_crash_after_the_end_was_recorded(
@@ -145,3 +148,14 @@ def test_archived_population_is_outside_the_gc_walk(tmp_path, monkeypatch):
     gc.garbage_collect(repo=run["repository"], project="fixture")
     assert {path.name for path in visited} == names
     assert len(visited) == 5
+
+
+def test_discard_of_an_unlaunched_request_creates_no_run_home(tmp_path, monkeypatch):
+    monkeypatch.setenv("RECKON_HOME", str(tmp_path / "config"))
+    record = {"run_id": "unlaunched", "repo": str(tmp_path), "phase": "queued"}
+    runs._write_json(runs.pointer_path(record["run_id"]), record)
+    result = promotion.discard(record["run_id"])
+    assert result["pointer_removed"]
+    assert Path(result["discard_record"]).is_file()
+    assert not runs.run_dir(record["run_id"]).exists()
+    assert not terminal_cleanup.cleanup_path(record["run_id"]).exists()

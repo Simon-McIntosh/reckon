@@ -25,8 +25,10 @@ def queue_cleanup(record: Mapping[str, Any], *, kind: str, gate: str = "") -> No
     if gate and gate.strip().lower() != "passed":
         return
     run_id = str(record.get("run_id") or "")
-    if not run_id or Path(run_id).name != run_id:
+    if not run_id or run_id in {".", ".."} or Path(run_id).name != run_id:
         raise runs.CrewError("cleanup requires a single run directory name")
+    if not record.get("repo"):
+        return
     runs._write_json(
         cleanup_path(run_id),
         {"run_id": run_id, "kind": kind, "record": dict(record)},
@@ -46,8 +48,12 @@ def archive_ended_run(
     and every crash; it is retired only after the archive is readable.
     """
     run_id = str(record.get("run_id") or "")
-    if not run_id or runs.pointer_path(run_id).exists():
+    if not run_id or run_id in {".", ".."} or Path(run_id).name != run_id:
+        raise runs.CrewError("cleanup requires a single run directory name")
+    if runs.pointer_path(run_id).exists():
         return {}
+    if not record.get("repo"):
+        return {"run_archive_withheld": "repository ownership is unavailable"}
     tree = str(record.get("worktree") or "")
     if tree and Path(tree).exists():
         return {}
@@ -58,6 +64,9 @@ def archive_ended_run(
     if source.is_symlink() or destination.is_symlink():
         raise runs.CrewError("cleanup refuses a symlinked run directory")
     pending = cleanup_path(run_id)
+    if not source.is_dir() and not destination.is_dir():
+        pending.unlink(missing_ok=True)
+        return {}
     try:
         intent = json.loads(pending.read_text())
     except FileNotFoundError:

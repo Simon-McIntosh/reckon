@@ -392,9 +392,9 @@ def _release_run_workspace(
 ) -> dict[str, Any]:
     """Release a promoted run's own worktree, process, and scratch directory.
 
-    Scratch is removed unconditionally, because it is node-local and ephemeral
-    and must not outlive the run that owns it; a worktree, by contrast, is only
-    released when it is safe to remove. Reuses the classification `crew gc`
+    A recoverable run keeps its workspace and scratch. An ended run's scratch
+    is ephemeral and leaves with it; a worktree is released only when it is
+    safe to remove. Reuses the classification `crew gc`
     already applies rather than writing a
     second policy: a worktree is released only when it is clean and its HEAD
     is an ancestor of the repository's integration branch, or when it is a
@@ -413,10 +413,11 @@ def _release_run_workspace(
     repo_value = str(record.get("repo") or "")
     worktree = Path(worktree_value) if worktree_value else None
     repo = Path(repo_value) if repo_value else None
-    if gate and str(_declared_manifest(record).get("status") or "").lower() in {
+    recoverable = str(_declared_manifest(record).get("status") or "").lower() in {
         "blocked",
         "waiting",
-    }:
+    }
+    if gate.strip().lower() == "passed" and recoverable:
         release_worktree = False
         keep_process = True
     if not release_worktree:
@@ -524,7 +525,7 @@ def _release_run_workspace(
         else record
     )
     result["worktree_audit"] = _worktree_audit(audit_record, retention)
-    if not release_worktree or retention is not None or keep_process:
+    if recoverable and (not release_worktree or retention is not None):
         result["scratch_withheld"] = "run retained for recovery"
         return result
     # The scratch directory a run owned dies with it. Both promotion and
