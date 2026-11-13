@@ -1559,6 +1559,7 @@ class DeclaredServices:
             )
             return "restart"
         if not getattr(trust, "dirty", False):
+            (self._runtime / f"{name}.pass.reload").unlink(missing_ok=True)
             if state.stamp_leave_reported != (recorded, current):
                 state.stamp_leave_reported = (recorded, current)
                 log(
@@ -1570,6 +1571,7 @@ class DeclaredServices:
             return "adopt"
         image = self._committed_image(current)
         if image is None:
+            (self._runtime / f"{name}.pass.reload").unlink(missing_ok=True)
             if state.stamp_leave_reported != (recorded, current):
                 state.stamp_leave_reported = (recorded, current)
                 log(

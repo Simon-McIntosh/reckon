@@ -165,6 +165,22 @@ def test_a_withdrawn_code_change_releases_the_requested_boundary(controlled):
     assert fleet.recorded_service_pid(home.runtime, "demo") == pid
 
 
+def test_a_refused_checkout_releases_the_requested_boundary(controlled):
+    home = controlled
+    manager, pid = home.start()
+    (home.root / "stamp").write_text("after")
+    manager.supervise_once()
+    assert (home.runtime / "demo.pass.reload").exists()
+    manager._checkout_trust = lambda: SimpleNamespace(
+        trusted=False, detail="unloadable"
+    )
+    manager.supervise_once()
+    assert not (home.runtime / "demo.pass.reload").exists()
+    (home.root / "release-0").touch()
+    _wait((home.root / f"begin-{pid}-1").exists)
+    assert fleet.recorded_service_pid(home.runtime, "demo") == pid
+
+
 def test_admission_holds_the_boundary_through_verdict_publication(
     tmp_path, monkeypatch
 ):
