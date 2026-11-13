@@ -1,0 +1,286 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_analysis": [
+    {
+      "fails_if": "A synthetic run pointer exists in the real pointer directory before or after a case, including a fixture isolation regression.",
+      "lines": [
+        81,
+        83
+      ]
+    },
+    {
+      "fails_if": "The code omits, duplicates, reorders or changes an ID sent to squeue; this captures the actual subprocess vector rather than echoing a supplied observation.",
+      "lines": [
+        278
+      ]
+    },
+    {
+      "fails_if": "The real classifier declares the live-batch fixture abandoned or sets producer_gone evidence despite the scheduler returning its middle job.",
+      "lines": [
+        279,
+        280,
+        281
+      ]
+    },
+    {
+      "fails_if": "The classifier keeps the all-absent batch waiting instead of returning its existing producer-gone classification.",
+      "lines": [
+        298,
+        299
+      ]
+    },
+    {
+      "fails_if": "The emitted stillness evidence is below the required bound; restoring batch omission alone does not make this supporting assertion fail.",
+      "lines": [
+        302
+      ]
+    },
+    {
+      "fails_if": "The row drops or changes the independently supplied batch IDs, as the recorded extraction mutation does.",
+      "lines": [
+        303
+      ]
+    },
+    {
+      "fails_if": "The all-absent row omits the measured scheduler absence or incorrectly claims the scheduler was not consulted.",
+      "lines": [
+        304,
+        305
+      ]
+    },
+    {
+      "fails_if": "The no-job fixture triggers a scheduler query or emits scheduler job evidence.",
+      "lines": [
+        323,
+        325
+      ]
+    },
+    {
+      "fails_if": "The no-job fixture ceases to use the existing abandonment classification after its stillness bound.",
+      "lines": [
+        324
+      ]
+    },
+    {
+      "fails_if": "The no-job row omits nonconsultation or restores the unsupported no-live-job wording.",
+      "lines": [
+        326,
+        327
+      ]
+    },
+    {
+      "fails_if": "A single bare script number starts being recognized or queried as a scheduler job.",
+      "lines": [
+        345,
+        346,
+        348
+      ]
+    },
+    {
+      "fails_if": "The single-number fixture stays waiting or loses the nonconsultation explanation.",
+      "lines": [
+        347,
+        349
+      ]
+    },
+    {
+      "fails_if": "The 80,443 port list becomes job IDs, reaches squeue or appears in scheduler evidence; five-digit port lists are not tested.",
+      "lines": [
+        369,
+        370,
+        371,
+        373
+      ]
+    },
+    {
+      "fails_if": "The short-port fixture stays waiting or loses its nonconsultation explanation.",
+      "lines": [
+        372,
+        374
+      ]
+    },
+    {
+      "fails_if": "The absent-command or failed-command path does not attempt exactly the three derived job IDs.",
+      "lines": [
+        393
+      ]
+    },
+    {
+      "fails_if": "An unaskable query is treated as proof of abandonment.",
+      "lines": [
+        394,
+        395
+      ]
+    },
+    {
+      "fails_if": "The unaskable row omits its scheduler uncertainty and three-job context, falsely asserts no live job, or calls the run process producer.",
+      "lines": [
+        397,
+        398,
+        399,
+        400
+      ]
+    },
+    {
+      "fails_if": "Any of the four exercised detail variants again contains the word producer.",
+      "lines": [
+        421
+      ]
+    },
+    {
+      "fails_if": "The classifier binds a different reader or defines one locally; these are structural reuse assertions, not proof it invokes that reader correctly.",
+      "lines": [
+        431,
+        435
+      ]
+    },
+    {
+      "fails_if": "The sacct-job absence path loses the run-own-process wording.",
+      "file": "tests/test_a_run_parked_on_a_live_job_keeps_waiting.py",
+      "lines": [
+        245
+      ]
+    },
+    {
+      "fails_if": "The no-job abandoned-wait row loses the run-own-process wording.",
+      "file": "tests/test_a_wait_whose_producer_is_gone_is_an_obligation.py",
+      "lines": [
+        236
+      ]
+    }
+  ],
+  "assertion_independence": "No tautological comparison found: BATCH_JOBS is an input fixture, but the opposite sides are the subprocess vector captured from real parsing or the actual classifier output; removing extraction demonstrably changes them. Identity/source assertions are counted only as structural checks.",
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew/recovery_classification.py:classify_pointer",
+    "reckon/crew/recovery_classification.py:_producer_gone_verdict",
+    "reckon/crew/recovery_classification.py:_scheduler_job_alive",
+    "reckon/crew/obligations.py:_classified_rows"
+  ],
+  "completed_at": "2026-11-13T04:04:45Z",
+  "dispatched_at": "2026-11-13T03:53:16Z",
+  "findings": [
+    {
+      "file": "reckon/crew/recovery_wait.py",
+      "line": "885",
+      "severity": "blocking",
+      "text": "blocking: The five-digit cutoff is not a valid distinction between jobs and ports: the same module defines ports through 65535 at :691, so nc -z host 50000,50001 is misread as two jobs, while a script given 1234,5678 names no jobs despite the plan's two-or-more rule; the latter can still become producer-gone while one job is alive, and the former can retain a dead wait on unrelated scheduler work."
+    },
+    {
+      "file": "reckon/crew/recovery_wait.py",
+      "line": "939",
+      "severity": "blocking",
+      "text": "blocking: For an interpreter vector such as [\"python\", \"/path/wait_jobs.py\", \"--jobs=1312389,1312390\"], the raw-list pass rejects the prefixed token and _wait_probe_program_words splits it at the comma, leaving only 1312389 attached to --jobs; 1312390 is never queried, so when only that second job is alive the wait can still become producer-gone; glued -j1312389,1312390 has the same truncation."
+    },
+    {
+      "file": "tests/test_a_wait_on_scheduler_jobs_is_not_abandoned.py",
+      "line": "86",
+      "severity": "non-blocking",
+      "text": "non-blocking: _absent_pid, _stamp and _history duplicate tests/test_a_run_parked_on_a_live_job_keeps_waiting.py:79-93, and _waiting_run duplicates its :96 parked-run constructor with script additions; these additions duplicate the existing fixture capability rather than extending or wrapping its owner, so shared fixture changes can drift between the two modules."
+    },
+    {
+      "file": "docs/evidence/fragments/work-flows-to-the-lane/scheduler-wait-is-not-abandoned.html",
+      "line": "43",
+      "severity": "non-blocking",
+      "text": "non-blocking: The committed receipt still states 70 head passes, six added cases, a 2-failed/3-passed mutation and 724 importer head passes; the final revision's logs instead record 73 passes with two setup errors, nine added cases, 4 failed/69 passed/two setup errors for the mutation and 727 importer head passes, so the versioned evidence does not describe the reviewed revision accurately."
+    }
+  ],
+  "gate_evidence": {
+    "after_failure_ids": [
+      "tests/test_staged_write_inventory.py::test_claim_move_aside_is_not_a_staged_write",
+      "tests/test_staged_write_inventory.py::test_every_staged_write_reaches_the_owner"
+    ],
+    "after_suite_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261113T003754418594-scheduler-wait-is-not-abandoned/logs/armed-head.log",
+    "after_summary": "73 passed, 2 errors in 3.06s; EXIT=1",
+    "baseline_failure_ids": [
+      "tests/test_staged_write_inventory.py::test_claim_move_aside_is_not_a_staged_write",
+      "tests/test_staged_write_inventory.py::test_every_staged_write_reaches_the_owner"
+    ],
+    "baseline_suite_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261113T003754418594-scheduler-wait-is-not-abandoned/logs/armed-base.log",
+    "baseline_summary": "64 passed, 2 errors in 1.91s; EXIT=1",
+    "positive_control": "The same failure reader found both inventory setup errors in each armed log; this is a measured empty difference, not an empty input."
+  },
+  "importer_evidence": {
+    "added": [
+      0,
+      []
+    ],
+    "baseline_failure_ids": [
+      "tests/test_a_queued_request_waits_on_its_dependencies.py::test_a_json_manifest_upstream_releases_the_wait",
+      "tests/test_a_queued_request_waits_on_its_dependencies.py::test_a_wait_on_another_request_reads_that_requests_own_record",
+      "tests/test_a_queued_request_waits_on_its_dependencies.py::test_an_abandoned_upstream_blocks_the_tail_and_never_launches",
+      "tests/test_a_queued_request_waits_on_its_dependencies.py::test_the_chain_queues_awaiting_upstream_and_launches_in_order",
+      "tests/test_a_resumed_worker_is_not_ended_as_delivered.py::test_a_blocked_manifest_keeps_its_word",
+      "tests/test_a_resumed_worker_is_not_ended_as_delivered.py::test_a_completed_run_resumed_through_crew_resume_is_not_ended",
+      "tests/test_a_resumed_worker_is_not_ended_as_delivered.py::test_a_resumed_stub_that_writes_complete_is_still_ended",
+      "tests/test_a_resumed_worker_is_not_ended_as_delivered.py::test_the_live_view_classifies_the_working_stub_as_running",
+      "tests/test_crew_obligations.py::test_obligations_reads_scoring_without_observing_or_dispatching",
+      "tests/test_queue_hold_release.py::test_hold_skips_the_head_and_release_launches_it_next"
+    ],
+    "baseline_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261113T003754418594-scheduler-wait-is-not-abandoned/logs/base-arm.log",
+    "baseline_summary": "10 failed, 718 passed in 226.95s (0:03:46); EXIT=1",
+    "head_failure_ids": [
+      "tests/test_a_queued_request_waits_on_its_dependencies.py::test_a_json_manifest_upstream_releases_the_wait",
+      "tests/test_a_queued_request_waits_on_its_dependencies.py::test_a_wait_on_another_request_reads_that_requests_own_record",
+      "tests/test_a_queued_request_waits_on_its_dependencies.py::test_an_abandoned_upstream_blocks_the_tail_and_never_launches",
+      "tests/test_a_queued_request_waits_on_its_dependencies.py::test_the_chain_queues_awaiting_upstream_and_launches_in_order",
+      "tests/test_a_resumed_worker_is_not_ended_as_delivered.py::test_a_blocked_manifest_keeps_its_word",
+      "tests/test_a_resumed_worker_is_not_ended_as_delivered.py::test_a_completed_run_resumed_through_crew_resume_is_not_ended",
+      "tests/test_a_resumed_worker_is_not_ended_as_delivered.py::test_a_resumed_stub_that_writes_complete_is_still_ended",
+      "tests/test_a_resumed_worker_is_not_ended_as_delivered.py::test_the_live_view_classifies_the_working_stub_as_running",
+      "tests/test_crew_obligations.py::test_obligations_reads_scoring_without_observing_or_dispatching",
+      "tests/test_queue_hold_release.py::test_hold_skips_the_head_and_release_launches_it_next"
+    ],
+    "head_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261113T003754418594-scheduler-wait-is-not-abandoned/logs/after-arm.log",
+    "head_summary": "10 failed, 727 passed in 238.99s (0:03:58); EXIT=1"
+  },
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "Read the seven commits from cbc9a84fc14a62d897517227ac921081f13b3295 through d20dde38d630b4c00c73a6c26d328cbd393a9d6a against f855c080d0d4d7170a990ef26f8dc72bd3228f07; the shared reader and classifier implement batch queries and clearer prose but contain two parsing gaps and copied test scaffolding.",
+    "done_when": "Read node.done_when and live docs/plans/work-flows-to-the-lane.html#s30; logs/armed-base.log and logs/armed-head.log finish with identical two setup errors and zero added failures, and logs/negative-control.log records four failures, while the new tests omit inline batch flags and five-digit ports.",
+    "goal": "The live source pointer's node.goal asks that named live scheduler jobs prevent abandonment; reckon/crew/recovery_classification.py:564 queries the batch, but recovery_wait.py:885 and :939 leave supported numeric and flag forms misread.",
+    "manifest": "The source manifest.md names seven commits and the final head and provides readable baseline_suite and after_suite logs, whose identical error IDs support its zero added-failure claim; its evidence fragment retains earlier counts.",
+    "write_paths": "The live source pointer's node.write_paths includes the three extended paths, and all seven files changed between the recorded base and head are within that grant."
+  },
+  "justifications": {
+    "durability": "tests/test_a_wait_on_scheduler_jobs_is_not_abandoned.py:278 would fail if batch extraction were removed, :279 would fail if live jobs stopped preventing abandonment, and :397 would fail if unaskable queries lost their explanation, but :369 tests only short ports and no assertion guards an inline batch flag.",
+    "evidence": "The source logs/armed-base.log and logs/armed-head.log independently show 64 versus 73 passes with the same two setup errors, and logs/negative-control.log shows four new failures, although docs/evidence/fragments/work-flows-to-the-lane/scheduler-wait-is-not-abandoned.html:43 records stale counts.",
+    "fit": "reckon/crew/recovery_wait.py:911 extends the existing probe-reader owner and recovery_classification.py:1736 reuses one query, but recovery_wait.py:878 contradicts its own :691 port range and the new test repeats historical incident prose instead of describing only the mechanism.",
+    "goal_fidelity": "reckon/crew/recovery_wait.py:933 recognizes the dispatched seven-digit bare batch, but :885 drops shorter batches and :939 loses trailing inline-flag IDs, so some live-job waits can still be declared abandoned.",
+    "reuse": "Production parsing and scheduler observation extend recovery_wait.py and recovery_classification.py, but tests/test_a_wait_on_scheduler_jobs_is_not_abandoned.py:86 duplicates the PID, timestamp, history and parked-run capabilities already owned by tests/test_a_run_parked_on_a_live_job_keeps_waiting.py:79 rather than extending a shared fixture.",
+    "scope_discipline": "All seven paths in the base-to-head diff match the live node.write_paths, including reckon/crew/obligations.py and the two existing test files added to the original scope."
+  },
+  "negative_control_evidence": {
+    "interpretation": "Removal of bare-batch extraction is detected; the absence control also loses the scheduler_jobs evidence and both unaskable-query cases fail. No mutation or suite was rerun by this review.",
+    "log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261113T003754418594-scheduler-wait-is-not-abandoned/logs/negative-control.log",
+    "observed_refusal": "test_a_batch_wait_with_one_job_running_is_not_abandoned failed at assert _asked_jobs(asked) == list(BATCH_JOBS): actual [] versus the three expected IDs.",
+    "summary": "4 failed, 69 passed, 2 errors in 3.31s; EXIT=1"
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The live source pointer's node.goal asks that named live scheduler jobs prevent abandonment; reckon/crew/recovery_classification.py:564 queries the batch, but recovery_wait.py:885 and :939 leave supported numeric and flag forms misread.\nVERDICT done_when: Read node.done_when and live docs/plans/work-flows-to-the-lane.html#s30; logs/armed-base.log and logs/armed-head.log finish with identical two setup errors and zero added failures, and logs/negative-control.log records four failures, while the new tests omit inline batch flags and five-digit ports.\nVERDICT write_paths: The live source pointer's node.write_paths includes the three extended paths, and all seven files changed between the recorded base and head are within that grant.\nVERDICT manifest: The source manifest.md names seven commits and the final head and provides readable baseline_suite and after_suite logs, whose identical error IDs support its zero added-failure claim; its evidence fragment retains earlier counts.\nVERDICT diff: Read the seven commits from cbc9a84fc14a62d897517227ac921081f13b3295 through d20dde38d630b4c00c73a6c26d328cbd393a9d6a against f855c080d0d4d7170a990ef26f8dc72bd3228f07; the shared reader and classifier implement batch queries and clearer prose but contain two parsing gaps and copied test scaffolding.\nCALL_SITES: reckon/crew/recovery_classification.py:classify_pointer, reckon/crew/recovery_classification.py:_producer_gone_verdict, reckon/crew/recovery_classification.py:_scheduler_job_alive, reckon/crew/obligations.py:_classified_rows\nSCORE goal_fidelity: 14\nJUSTIFICATION goal_fidelity: reckon/crew/recovery_wait.py:933 recognizes the dispatched seven-digit bare batch, but :885 drops shorter batches and :939 loses trailing inline-flag IDs, so some live-job waits can still be declared abandoned.\nSCORE evidence: 17\nJUSTIFICATION evidence: The source logs/armed-base.log and logs/armed-head.log independently show 64 versus 73 passes with the same two setup errors, and logs/negative-control.log shows four new failures, although docs/evidence/fragments/work-flows-to-the-lane/scheduler-wait-is-not-abandoned.html:43 records stale counts.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: All seven paths in the base-to-head diff match the live node.write_paths, including reckon/crew/obligations.py and the two existing test files added to the original scope.\nSCORE durability: 15\nJUSTIFICATION durability: tests/test_a_wait_on_scheduler_jobs_is_not_abandoned.py:278 would fail if batch extraction were removed, :279 would fail if live jobs stopped preventing abandonment, and :397 would fail if unaskable queries lost their explanation, but :369 tests only short ports and no assertion guards an inline batch flag.\nSCORE fit: 17\nJUSTIFICATION fit: reckon/crew/recovery_wait.py:911 extends the existing probe-reader owner and recovery_classification.py:1736 reuses one query, but recovery_wait.py:878 contradicts its own :691 port range and the new test repeats historical incident prose instead of describing only the mechanism.\nSCORE reuse: 5\nJUSTIFICATION reuse: Production parsing and scheduler observation extend recovery_wait.py and recovery_classification.py, but tests/test_a_wait_on_scheduler_jobs_is_not_abandoned.py:86 duplicates the PID, timestamp, history and parked-run capabilities already owned by tests/test_a_run_parked_on_a_live_job_keeps_waiting.py:79 rather than extending a shared fixture.\nFINDING reckon/crew/recovery_wait.py:885 blocking: The five-digit cutoff is not a valid distinction between jobs and ports: the same module defines ports through 65535 at :691, so nc -z host 50000,50001 is misread as two jobs, while a script given 1234,5678 names no jobs despite the plan's two-or-more rule; the latter can still become producer-gone while one job is alive, and the former can retain a dead wait on unrelated scheduler work.\nFINDING reckon/crew/recovery_wait.py:939 blocking: For an interpreter vector such as [\"python\", \"/path/wait_jobs.py\", \"--jobs=1312389,1312390\"], the raw-list pass rejects the prefixed token and _wait_probe_program_words splits it at the comma, leaving only 1312389 attached to --jobs; 1312390 is never queried, so when only that second job is alive the wait can still become producer-gone; glued -j1312389,1312390 has the same truncation.\nFINDING tests/test_a_wait_on_scheduler_jobs_is_not_abandoned.py:86 non-blocking: _absent_pid, _stamp and _history duplicate tests/test_a_run_parked_on_a_live_job_keeps_waiting.py:79-93, and _waiting_run duplicates its :96 parked-run constructor with script additions; these additions duplicate the existing fixture capability rather than extending or wrapping its owner, so shared fixture changes can drift between the two modules.\nFINDING docs/evidence/fragments/work-flows-to-the-lane/scheduler-wait-is-not-abandoned.html:43 non-blocking: The committed receipt still states 70 head passes, six added cases, a 2-failed/3-passed mutation and 724 importer head passes; the final revision's logs instead record 73 passes with two setup errors, nine added cases, 4 failed/69 passed/two setup errors for the mutation and 727 importer head passes, so the versioned evidence does not describe the reviewed revision accurately.\n",
+  "reuse_search": {
+    "production": "Searched job IDs, numeric probe operands and scheduler observation capabilities in reckon/crew at the reviewed head; opened recovery_wait.py's existing count/program-word readers and landing_measure.py:measurement_job_state. The new production definitions extend the existing probe and classification owners; measurement_job_state owns landing-job accounting and is not a wait-probe parser.",
+    "tests": "Searched parked-run, PID, history and scheduler-stub fixture capabilities; opened tests/test_a_run_parked_on_a_live_job_keeps_waiting.py:68-200. The added helpers duplicate those capabilities, including identical PID, stamp and history implementations; the batch stub adapts the existing single-job stub."
+  },
+  "review_method": "Read-only review at explicit git object revisions; the assigned review worktree is older and was not treated as the reviewed head. Canonical live plan HTML read after read_plan returned storage-slow. No suite rerun, code mutation, branch change, merge or push.",
+  "review_run_id": "r-20261113T034935011916-review-of-scheduler-wait-is-not-abandoned-d20dde38d630",
+  "reviewed_base_sha": "f855c080d0d4d7170a990ef26f8dc72bd3228f07",
+  "reviewed_head_sha": "d20dde38d630b4c00c73a6c26d328cbd393a9d6a",
+  "reviewed_run_id": "r-20261113T003754418594-scheduler-wait-is-not-abandoned",
+  "scores": {
+    "durability": 15,
+    "evidence": 17,
+    "fit": 17,
+    "goal_fidelity": 14,
+    "reuse": 5,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-13T05:00:28.038065+00:00",
+  "total": 88
+}
