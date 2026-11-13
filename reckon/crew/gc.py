@@ -353,16 +353,11 @@ def _stored_reviewer_result_exists(
     if root is None:
         return False
     # Cache only locations for this pass; re-read selected bytes before removal.
-    # Committed records are filed by reviewer under a run or plan subject.
     paths = committed_paths if committed_paths is not None else {}
     if root not in paths:
-        indexed: dict[str, list[Path]] = {}
-        try:
-            for path in root.glob("*/*/*.json"):
-                indexed.setdefault(path.stem, []).append(path)
-        except OSError:
-            return False
-        paths[root] = indexed
+        paths[root] = review_records.committed_record_paths_by_review_run(
+            project, root=repo
+        )
     for path in paths[root].get(run_id, ()):
         try:
             body = json.loads(path.read_text(encoding="utf-8"))

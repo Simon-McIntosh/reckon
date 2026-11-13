@@ -213,3 +213,41 @@ def test_a_review_result_can_be_stored_outside_the_run_review_tree(
     assert report["removed"] == [directory.name], report
     assert not directory.exists()
     assert target.is_file()
+
+
+@pytest.mark.parametrize("result_present", [True, False])
+def test_a_committed_only_figure_result_controls_reviewer_retention(
+    review_home, result_present
+):
+    from reckon.crew import review, review_records
+
+    directory, bare = plant_run(review_home, age=timedelta(days=8))
+    _home, root, now = review_home
+    payload = json.loads(bare.read_text())
+    payload.update(project="sample", rubric=review.FIGURE_REVIEW_RUBRIC)
+    stored = review_records.store_committed_review(payload, root=root)
+    assert stored != bare
+    assert stored == review.review_path(
+        "sample",
+        "subject",
+        committed_root=review.committed_review_root("sample", root=root),
+        review_run_id=directory.name,
+        reviewed_head_sha=payload["reviewed_head_sha"],
+        rubric=review.FIGURE_REVIEW_RUBRIC,
+    )
+    bare.unlink()
+    if not result_present:
+        stored.unlink()
+    (stored.parent / "unreadable.json").write_bytes(bytes([255]))
+    assert review_records.record_for_review_run("sample", directory.name) is None
+
+    report = gc.retention_sweep(apply=True, now=now, limit=5)
+
+    if result_present:
+        assert report["removed"] == [directory.name], (stored, report)
+        assert not directory.exists()
+        assert stored.is_file()
+    else:
+        assert report["removed"] == []
+        assert directory.is_dir()
+        assert report["withheld"][0]["withheld"] == "missing-review-result"

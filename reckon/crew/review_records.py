@@ -1343,7 +1343,7 @@ def _index_entry(path: Path, info: os.stat_result) -> dict[str, Any] | None:
         return None
     try:
         record = _record_file(path)
-    except (OSError, json.JSONDecodeError):
+    except (OSError, ValueError):
         return None
     if not isinstance(record, Mapping):
         return None
@@ -1807,6 +1807,38 @@ def reviewed_run_ids(project: str, *, base_dir: str | Path | None = None) -> lis
     if not directory.is_dir():
         return []
     return sorted(run_id for run_id in _store_index(directory) if run_id)
+
+
+def committed_record_paths_by_review_run(
+    project: str, *, root: str | Path | None = None
+) -> dict[str, list[Path]]:
+    """Resolve every committed filing through the store's reviewer identity index.
+
+    Run, plan and figure records share a content identity even when the path
+    carries a rubric or a reviewed head. Index each subject directory through
+    the same owner as staging lookups instead of inferring identity from a name.
+    Callers retaining this map must re-read selected records before acting.
+    """
+    committed = _review.committed_review_root(project, root=root)
+    if committed is None:
+        return {}
+    paths: dict[str, list[Path]] = {}
+    try:
+        directories = list(committed.glob("*/*"))
+    except OSError:
+        return paths
+    for directory in directories:
+        try:
+            if not directory.is_dir():
+                continue
+            index = _review_run_index(directory)
+        except (OSError, ValueError):
+            continue
+        for review_run_id, entries in index.items():
+            paths.setdefault(review_run_id, []).extend(
+                entry["path"] for entry in entries
+            )
+    return paths
 
 
 def record_for_review_run(
