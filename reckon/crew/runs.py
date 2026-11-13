@@ -2816,6 +2816,68 @@ def _drain_week_view(project: str, pointers: list[dict[str, Any]]) -> dict[str, 
     return {"project": project_view, "plans": plans}
 
 
+def _in_flight_round_ids(pointers: Iterable[Mapping[str, Any]]) -> set[str]:
+    """Run ids the closure count leaves out because a review or repair is working.
+
+    A delivered run whose own review or repair is under way owes its coordinator
+    nothing until that work ends: the reflex owns the next step, so counting the
+    run reports a duty no coordinator can act on. The working review or repair
+    run is left out for the same reason — it is the work, not a verdict awaiting
+    reconciliation. A request the lane has only queued is not working yet, so it
+    is not excused and keeps the count a parked request always has.
+    """
+    from reckon.crew import recovery
+    from reckon.crew import repair as repair_module
+
+    live = list(pointers)
+    launched = [
+        pointer for pointer in live if str(pointer.get("phase") or "") != "queued"
+    ]
+    excused: set[str] = set()
+    repair_sources: set[str] = set()
+    for pointer in launched:
+        run_id = str(pointer.get("run_id") or "")
+        if recovery._is_review_run(pointer):
+            excused.add(run_id)
+            continue
+        if recovery._is_repair_node(pointer):
+            excused.add(run_id)
+            node_id = str((pointer.get("node") or {}).get("id") or "")
+            source = repair_module.round_node_source(
+                node_id, repair_module.REPAIR_NODE_PREFIX
+            )
+            if source:
+                repair_sources.add(source)
+    for pointer in live:
+        run_id = str(pointer.get("run_id") or "")
+        if not run_id or run_id in excused:
+            continue
+        node_id = str((pointer.get("node") or {}).get("id") or "")
+        repairing = run_id in repair_sources or bool(
+            node_id and node_id in repair_sources
+        )
+        if repairing or recovery._review_in_flight(pointer, pointers=launched):
+            excused.add(run_id)
+    return excused
+
+
+def _closure_rows(pointers: Iterable[Mapping[str, Any]]) -> list[dict[str, Any]]:
+    """The drain rows for one snapshot, with in-flight rounds not counted.
+
+    The rows of a subject run are left in place — a reader can still see the run
+    and why it is not counted — so the count and the list cannot disagree about
+    how many runs the counted set holds.
+    """
+    points = list(pointers)
+    excused = _in_flight_round_ids(points)
+    rows = [_drain_row(pointer) for pointer in points]
+    for row in rows:
+        if str(row.get("run_id") or "") in excused:
+            row["unreconciled"] = False
+            row["in_flight"] = True
+    return rows
+
+
 def drain(project: str, *, session: str | None = None) -> dict[str, Any]:
     """Return the closure drain derived from one project's live pointers.
 
@@ -2843,7 +2905,7 @@ def drain(project: str, *, session: str | None = None) -> dict[str, Any]:
     # closure fence turns on whether the worker lives now rather than on
     # what a pointer's writer recorded at launch.
     pointers = list_live(project=project)
-    rows = [_drain_row(pointer) for pointer in pointers]
+    rows = _closure_rows(pointers)
 
     counted, peers = _partition_session_rows(rows, session)
     unreconciled = sum(1 for row in counted if row["unreconciled"])
@@ -2885,7 +2947,7 @@ def drain_unreconciled_by_session(project: str) -> dict[str, int]:
     """
     from reckon.crew.recovery import _partition_session_rows
 
-    rows = [_drain_row(pointer) for pointer in list_live(project=project)]
+    rows = _closure_rows(list_live(project=project))
     counts: dict[str, int] = {}
     for session in {str(row.get("session") or "") for row in rows} | {""}:
         counted, _peers = _partition_session_rows(rows, session)
