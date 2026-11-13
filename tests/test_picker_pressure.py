@@ -202,7 +202,9 @@ def test_a_pacing_ceiling_is_stated_beside_the_lane(
     assert all(
         any(p.startswith("budget-pace:") for p in c.preferences) for c in options
     )
-    assert all(not any(r.startswith("budget-ceiling:") for r in c.reasons) for c in options)
+    assert all(
+        not any(r.startswith("budget-ceiling:") for r in c.reasons) for c in options
+    )
 
 
 @pytest.mark.parametrize("status", ["refused", "unavailable", "logged-out"])

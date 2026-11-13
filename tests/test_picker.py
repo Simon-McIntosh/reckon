@@ -352,7 +352,9 @@ def test_fallback_never_selects_a_refused_default(
     assert selection.backend != "codex-spark"
 
     # With no usable lane left the fallback refuses, naming the default.
-    monkeypatch.setattr(snapshot, "_dispatch_lane_gate", lambda backend: {"state": "paused"})
+    monkeypatch.setattr(
+        snapshot, "_dispatch_lane_gate", lambda backend: {"state": "paused"}
+    )
     refused = run_pick(request_node, config, tmp_path, lambda *a, **k: {})
     assert refused.backend is None
     assert refused.action == "refuse"
