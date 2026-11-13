@@ -264,6 +264,76 @@ def _gc_partial_report(
 LEDGER_INDEX_UNRECORDED_MAX_AGE_DAYS = 7
 
 
+# A persisted memo is a cache of an expensive computation, re-derivable from the
+# source it was computed from, so an entry no reader has rewritten for this long
+# is offered for removal. Seven days matches the ledger index window: long past
+# any live reader's reuse cadence, far short of the unbounded growth a reviewed
+# plan edit adds with every new snapshot digest. A read never refreshes an
+# entry, so an entry still in use is simply rewritten on its next miss.
+PERSISTED_MEMO_MAX_AGE_DAYS = 7
+
+# The kinds `metadata_index.persisted_memo` stores, each in its own directory
+# under the config home's cache. The directory is named for the kind and the
+# files it holds are `<digest>-v<version>.json`, written by
+# `_persisted_cache_path`, so a sweep can find them without reading a file to
+# learn what it is.
+PERSISTED_MEMO_KINDS = (
+    "metadata-index",
+    "plan-review-coverage",
+    "plan-review-snapshot-evidence",
+)
+
+
+def _persisted_memo_roots() -> list[Path]:
+    """Return the cache directories the persisted-memo store writes into."""
+
+    from reckon._store import _config_home
+
+    cache = _config_home() / "cache"
+    return [cache / kind for kind in PERSISTED_MEMO_KINDS]
+
+
+def _expired_persisted_memos(*, apply: bool, now: datetime) -> list[dict[str, Any]]:
+    """Offer persisted memos no reader has rewritten within the age window.
+
+    The store holds one file per memo identity and nothing else removes them,
+    so every plan edit whose review persists a new snapshot adds one. An entry
+    is cache after all: its producers' source digests guard it, and a miss
+    recomputes and rewrites it, so age is the only fact a sweep needs. A file a
+    process currently holds is left alone, and so is one whose stat moved
+    between the decision and the unlink.
+    """
+
+    cutoff = (
+        now.timestamp() - timedelta(days=PERSISTED_MEMO_MAX_AGE_DAYS).total_seconds()
+    )
+    entries: list[dict[str, Any]] = []
+    for root in _persisted_memo_roots():
+        if not root.is_dir():
+            continue
+        holders = _scratch_process_holders(root)
+        for path in sorted(root.glob("*-v*.json")):
+            try:
+                stat = path.stat()
+                if not path.is_file() or stat.st_mtime >= cutoff:
+                    continue
+                entry = {"path": str(path), "size": stat.st_size, "removed": False}
+                if apply and not holders.get(path.name) and path.stat() == stat:
+                    # stdout carries the pass's JSON report; every cache sweep
+                    # announces on stderr so that report stays parseable.
+                    sys.stderr.write(
+                        f"removing persisted memo {path} ({stat.st_size} bytes)\n"
+                    )
+                    sys.stderr.flush()
+                    path.unlink()
+                    entry["removed"] = True
+                entries.append(entry)
+            except FileNotFoundError:
+                # Another sweep or an atomic publisher may move the file.
+                continue
+    return entries
+
+
 # A run directory's size is measured while it still exists, because the size is
 # reported at the moment it dies and there is no second chance to measure it.
 # The walk is bounded so a pass on shared storage cannot be made to traverse a
@@ -1154,6 +1224,11 @@ def garbage_collect(
         ledger_index_reports = (
             _orphan_ledger_indexes(apply=apply, now=now) if run_id is None else []
         )
+        persisted_memo_reports = (
+            _expired_persisted_memos(apply=apply, now=now or datetime.now(tz=UTC))
+            if run_id is None
+            else []
+        )
     except PROGRAMMING_ERRORS:
         # Re-raised untouched: the traceback names the defective line, where a
         # refusal would have named only the tree the defect happened to hit.
@@ -1275,6 +1350,10 @@ def garbage_collect(
         "ledger_indexes": ledger_index_reports,
         "ledger_indexes_removed": sum(
             1 for item in ledger_index_reports if item.get("removed")
+        ),
+        "persisted_memos": persisted_memo_reports,
+        "persisted_memos_removed": sum(
+            1 for item in persisted_memo_reports if item.get("removed")
         ),
         "scratch": (
             garbage_collect_orphan_scratch(apply=apply) if run_id is None else None
@@ -2083,7 +2162,10 @@ def retention_sweep(
     started = time.perf_counter()
     indexes = _orphan_ledger_indexes(apply=apply, now=moment, report_removals=True)
     picker_views = _expired_picker_views(apply=apply, now=moment)
-    caches_removed = [row for row in [*indexes, *picker_views] if row["removed"]]
+    persisted_memos = _expired_persisted_memos(apply=apply, now=moment)
+    caches_removed = [
+        row for row in [*indexes, *picker_views, *persisted_memos] if row["removed"]
+    ]
     _emit_phase("cache", started, phase_seconds)
 
     started = time.perf_counter()
@@ -2143,6 +2225,7 @@ def retention_sweep(
         "worktree_trash_removed": len(trash_removed),
         "ledger_indexes": indexes,
         "picker_views": picker_views,
+        "persisted_memos": persisted_memos,
         "cache_removed_count": len(caches_removed),
         "run_store": store_retention,
         "log": written,
