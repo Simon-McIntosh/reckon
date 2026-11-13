@@ -40,21 +40,26 @@
   <table id="service-reloads-between-passes-measurements">
     <thead><tr><th>Measurement on all_debug</th><th>Base</th><th>Head</th></tr></thead>
     <tbody>
-      <tr><td>Armed node gate and staged-write inventory</td><td>51 passed</td><td>63 passed</td></tr>
-      <tr><td>Importer population, up to four workers</td><td>155 failed, 1232 passed</td><td>155 failed, 1244 passed</td></tr>
-      <tr><td>Importer delta including setup errors</td><td colspan="2">Zero added or removed failure IDs; zero setup errors in either arm.</td></tr>
+      <tr><td>Armed node gate and staged-write inventory</td><td>51 passed</td><td>64 passed</td></tr>
+      <tr><td>Full importer comparison before registration repair, up to four workers</td><td>155 failed, 1232 passed</td><td>155 failed, 1244 passed</td></tr>
+      <tr><td>Registration repair gate at review base and repaired head</td><td>63 passed</td><td>64 passed</td></tr>
+      <tr><td>Focused legacy service compatibility</td><td>10 passed</td><td>10 passed</td></tr>
+      <tr><td>Importer delta before registration repair, including setup errors</td><td colspan="2">Zero added or removed failure IDs; zero setup errors in either arm.</td></tr>
     </tbody>
   </table>
-  <p id="service-reloads-between-passes-tests">The twelve new cases exercise an active
+  <p id="service-reloads-between-passes-tests">The thirteen new cases exercise an active
   pass completing before replacement, replacement before its next pass, a fresh
   supervisor adopting active work, replacement between passes in one cycle, an
   overlong pass's logged bound, cancellation of a pending request, a vanished runtime
   record, admission's lock through verdict publication, and an unsupervised manual
   pass. Four parameterized cases launch children through the worker environment
   boundary for both launch dialects, with inherited and overlaid service paths.
+  A controlled first-registration case pauses publication while the pass lock is held.
   Controlled subprocess markers identify the running copy and the code stamp
-  read by each pass. All twelve cases pass.</p>
-  <p id="service-reloads-between-passes-control">Declared mutation: restart on the stamp
+  read by each pass. All thirteen cases pass.</p>
+  <p id="service-reloads-between-passes-control">The following two controls were recorded
+  at source <code>4d2b5dc6598f1e850f86645fca54d4ca463888c5</code>, before the registration
+  repair. Declared mutation: restart on the stamp
   change regardless of the pass. Replacing the boundary decision with an unconditional
   restart produces <strong>5 failed, 58 passed</strong>, <code>EXIT=1</code>. The active-pass
   test fails because its original PID is stopped and replaced during the pass; that
@@ -70,6 +75,23 @@
   earlier <code>FileExistsError</code> is not reproduced and is not classified as
   pre-existing. The fresh importer comparison, expanded to include direct worker
   launch importers, has identical failing IDs and no setup errors.</p>
+  <p id="service-reloads-between-passes-registration-repair">A controlled pause after
+  acquiring the pass lock and before publishing its first record reproduces a restart
+  of the registering copy: <strong>1 failed, 63 passed</strong>. The repaired service
+  publishes its record while holding a short registration lock; the supervisor
+  publishes the reload request before attempting that same lock and the pass lock.
+  Registration therefore completes before a restart verdict can inspect its record.
+  The registration lock is released before the pass body runs, so the supervisor
+  can still enforce a known pass bound.</p>
+  <p id="service-reloads-between-passes-registration-control">The answering commit is
+  <code>93248e049948b6fd25491879590c0a72b2b67b29</code>. Its full product patch was reversed
+  in an isolated tree while retaining the separately committed regression test.
+  The runner verifies the module bytes match the answering commit's parent, then
+  reports <strong>1 failed, 63 passed</strong>, <code>EXIT=1</code>, naming the controlled
+  first-registration case. That case passes at the repaired head. The exact two-file
+  gate passes <strong>63 tests at review base</strong> and <strong>64 at repaired head</strong>;
+  the original node baseline remains <strong>51 passed</strong>. Both repaired Python
+  files pass Ruff check and format check.</p>
   <p id="service-reloads-between-passes-provenance">Accepted measurements use isolated Git
   metadata naming their exact revisions and print the imported module path and
   resolved working directory. Base, head and mutation arms run sequentially on
@@ -79,7 +101,7 @@
   changed Python files: the two worker-launch findings already exist at base.
   All four files pass format check.</p>
   <p id="service-reloads-between-passes-handoff">Product source is committed through
-  <code>4d2b5dc6598f1e850f86645fca54d4ca463888c5</code>. Commands, summaries, failure IDs,
+  <code>93248e049948b6fd25491879590c0a72b2b67b29</code>. Commands, summaries, failure IDs,
   the red mutation logs and the stability observations are held in the run manifest
   and receipts under <code>r-20261113T033507849520-service-reloads-between-passes</code>.
   The coordinator owns independent review, integration,
