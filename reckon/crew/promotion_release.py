@@ -42,6 +42,7 @@ from reckon.crew.runs import (
     list_live,
     process_alive,
     record_process_alive,
+    row_scope,
 )
 
 _CITED_ABSOLUTE_PATH = re.compile(r"/(?:[^\s\"'`()\[\]{}<>,;]+)")
@@ -1026,9 +1027,12 @@ def _unreconciled_live_runs(
     Each pointer is classified by the closure drain's own per-pointer step,
     :func:`reckon.crew.runs._drain_row`, so this agrees with the drain's
     involvement: the drain builds its rows with the same function, and a change
-    to the composition reaches both. Nothing is recomputed here, and the drain's
-    plan inventory is not read — a promotion stamps a reading on its row and
-    never consumes the drain's closure count or plan remainder.
+    to the composition reaches both. The whole reading enters
+    :func:`reckon.crew.runs.row_scope`, so the pointer directory and each
+    round's manifest are read once for the count rather than once per pointer.
+    Nothing is recomputed here, and the drain's plan inventory is not read — a
+    promotion stamps a reading on its row and never consumes the drain's closure
+    count or plan remainder.
 
     ``served`` maps a run id to the classification word that run already
     holds, so a run whose verdict was read from the station's store is not read
@@ -1037,15 +1041,16 @@ def _unreconciled_live_runs(
     """
     words = served or {}
     counted = 0
-    for pointer in pointers:
-        run_id = str(pointer.get("run_id") or "")
-        row = (
-            _drain_row(pointer, classification=words[run_id])
-            if run_id in words
-            else _drain_row(pointer)
-        )
-        if row["unreconciled"]:
-            counted += 1
+    with row_scope(pointers) as points:
+        for pointer in points:
+            run_id = str(pointer.get("run_id") or "")
+            row = (
+                _drain_row(pointer, classification=words[run_id])
+                if run_id in words
+                else _drain_row(pointer)
+            )
+            if row["unreconciled"]:
+                counted += 1
     return counted
 
 
