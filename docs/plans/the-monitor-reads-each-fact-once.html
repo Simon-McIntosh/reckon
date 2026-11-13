@@ -25,7 +25,7 @@
   <title>The Monitor Reads Each Fact Once | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="227">
+<meta name="plan-version" content="228">
 <meta name="plan-modified" content="2026-11-13">
 </head>
 <body>
@@ -1103,6 +1103,9 @@ staged paths.</p>
 </div>
 <div class="r-comment" data-section="s9" data-id="c-run-r-20261027T042852990093-obligations-read-the-station" data-who="reckon-build" data-when="2026-10-27T13:28:42Z">
     <div class="r-comment-body"><p>The station computes each live session's obligations once per change into its node-local store and exports one change-only snapshot per project at most every 10 s, with the carried station heartbeat republished once it has moved and the file is 90 s old so a quiet station never reads as stopped; the prompt hook and the crew obligations view both answer from it, in that order ahead of the derivation, and a station heartbeat past the 120 s window is reported stale with its age.</p></div>
+</div>
+<div class="r-comment" data-section="s40" data-id="c-run-r-20261112T235643795164-review-of-a-landed-reading-follows-the-primary-branch-111949d634d9" data-who="reckon-build" data-when="2026-11-13T00:11:37.040Z">
+    <div class="r-comment-body"><p>Review of r-20261112T231336380925-a-landed-reading-follows-the-primary-branch at head 111949d634 over base 3886d8d45c: scores goal_fidelity 18, evidence 8, scope_discipline 19, durability 19, fit 17, reuse 5; one blocking finding — the matched base arm was extracted from the node&#x27;s own commit, so arms.sh:12 makes base-arm.log a head-vs-head comparison and the done_when&#x27;s zero-added-failures clause is unmeasured (added_failure_count is 0 only against the narrower gate pair).</p></div>
 </div>
 </section>
 </main>

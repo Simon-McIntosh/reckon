@@ -1,0 +1,71 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": "reckon/crew/recovery_classification.py:classify_pointer, reckon/crew/recovery_watch.py:_watch_snapshot, reckon/crew/recovery_watch.py:3593, reckon/crew/station_subscriber.py:136, reckon/crew/ticker.py (state-to-word mapping), reckon/crew/obligations.py (settled funnel), reckon/crew/query.py:446, reckon/crew/query.py:589, reckon/crew/query.py:1067, reckon/crew/directory.py:342, reckon/crew/runs.py:2525, reckon/crew/queue_landing.py:1674, reckon/crew/queue_landing.py:1915, reckon/crew/promotion.py:498, reckon/crew/promotion_release.py:1045, reckon/crew/forgotten_runs.py:94, reckon/crew/resumption.py:2537, reckon/crew/recovery_review_acceptance.py:946, reckon/crew/recovery_review_dispatch.py:2483, reckon/crew/recovery_review_dispatch.py:2607, reckon/serve.py:901",
+  "completed_at": "2026-11-13T00:11:37.040Z",
+  "dispatched_at": "2026-11-12T23:58:55Z",
+  "findings": [
+    {
+      "file": "arms.sh",
+      "id": "b4b32a9c7e1",
+      "line": 12,
+      "severity": "blocking",
+      "text": "The matched base arm is not the base revision. arms.sh:12 extracts `git archive HEAD` from the node worktree and :13 records that same HEAD as the arm's revision, but the arms ran at 00:32:31 (sacct job 1312755) after the node committed 111949d634 at 00:31:36, so base-arm.log:1 names 111949d634 as its revision and base-arm.log:2 runs tests/test_a_landed_reading_follows_the_primary_branch.py, a file that does not exist at 3886d8d4. Both arms therefore ran the same tree carrying the change, and the manifest's claim that the 88 importing test files were run at both revisions with zero added failures is not measured by these logs. The done_when's matched-arms clause needs a base arm extracted from 3886d8d4."
+    },
+    {
+      "file": "reckon/crew/recovery_classification.py",
+      "id": "9a1c4f2d0b8",
+      "line": 898,
+      "severity": "non-blocking",
+      "text": "_head_on_primary_branch runs its own `git merge-base --is-ancestor` rather than calling the capability the repository already owns: reckon/crew/promotion_scope.py:2630 _revision_is_ancestor (already instrument-fault aware) and reckon/crew/plan_review.py:1023 _commit_is_ancestor, which returns bool-or-None for exactly this purpose and whose docstring states the probe is taken from an existing reader 'rather than a second copy of the git call'. The addition neither extends nor wraps either owner, so a correction to the shared probe will not reach this reading."
+    },
+    {
+      "file": "reckon/crew/recovery_classification.py",
+      "id": "5e7b6d9c143",
+      "line": 930,
+      "severity": "non-blocking",
+      "text": "The run's ledger row is located with ledger.run_path(project, run_id, record['repo']) without the ledger's own owner resolution, ledger._run_ledger_root at reckon/ledger.py:867, which promotion itself calls at :3344 before writing the row. For a run that implements one project's plan in a different repository the two differ, the row reads as missing at :933, the head comes back empty, and the reading falls back to the record alone \u2014 reviving the section's defect for exactly that class of run."
+    },
+    {
+      "file": "reckon/crew/recovery_classification.py",
+      "id": "c81f0a4e6d2",
+      "line": 892,
+      "severity": "non-blocking",
+      "text": "An unanswerable ancestry answers landed. When the primary revision is empty, the head is empty, or git exits outside {0,1}, :892-893 and :904-905 return None and :994-1001 lets the record's status stand, so a promoted run whose checkout was reaped or whose head is unreadable still reads landed. That is the fail-open the section exists to close, confined to the probe-failure path; the docstring at :881 argues for it, but no test covers it and no reader is told the reading was unverified."
+    }
+  ],
+  "justifications": {
+    "durability": "tests/test_a_landed_reading_follows_the_primary_branch.py:125 asserts the row does not read promoted for an unmerged head using an independent git probe at :66, and negative-control.log shows that assertion reddening when the record-only reading is restored.",
+    "evidence": "The gate log and the negative control are real and recorded, but the matched-arm clause of the done_when is not measured: arms.sh:12 extracts git archive HEAD after the node's commit, so base-arm.log:2 lists tests/test_a_landed_reading_follows_the_primary_branch.py, a file that does not exist at 3886d8d4, and both arms ran the same tree.",
+    "fit": "reckon/crew/recovery_classification.py:845 follows the module's surrounding style of module-level memos and private git probes, and introduces no forbidden name, though :891 resolves the primary branch from whatever branch the checkout has checked out rather than the integration ref the crew code names elsewhere.",
+    "goal_fidelity": "reckon/crew/recovery_classification.py:980 returns empty (landed) only when _head_on_primary_branch answers True and otherwise names the merge still owed, which is the section's deliverable, though :891 leaves the ledger's word standing when the ancestry cannot be asked.",
+    "reuse": "reckon/crew/recovery_classification.py:898 re-implements the merge-base ancestry probe the repository already owns at reckon/crew/promotion_scope.py:2630 _revision_is_ancestor and reckon/crew/plan_review.py:1023 _commit_is_ancestor, the latter of which returns the same bool-or-None shape and documents that a second copy of the git call is not wanted.",
+    "scope_discipline": "Every path in the diff (reckon/crew/recovery_classification.py, tests/test_a_landed_reading_follows_the_primary_branch.py, docs/evidence/fragments/the-monitor-reads-each-fact-once/a-landed-reading-follows-the-primary-branch.html) is inside the manifest's declared write paths."
+  },
+  "project": "reckon",
+  "review_run_id": "r-20261112T235643795164-review-of-a-landed-reading-follows-the-primary-branch-111949d634d9",
+  "reviewed_base_sha": "3886d8d45c827b58f638ee2a94cca71d601231b3",
+  "reviewed_head_sha": "111949d634d97527c6bd6efb5c8bdf5acf331769",
+  "reviewed_run_id": "r-20261112T231336380925-a-landed-reading-follows-the-primary-branch",
+  "rubric": "six-dimension landed-change review",
+  "scores": {
+    "durability": 19,
+    "evidence": 8,
+    "fit": 17,
+    "goal_fidelity": 18,
+    "reuse": 5,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-13T00:38:00+00:00",
+  "total": 86,
+  "verdicts": {
+    "call_sites": "The landed function reaches runtime through classify_pointer, which twenty production call sites listed above reach; the reading it changes is the fleet_verdict.state every pane row and obligation funnel draws.",
+    "diff": "Read commit 111949d6 against base 3886d8d4: three files and +380/-24, namely the 197-line reading change in reckon/crew/recovery_classification.py, the 194-line test file and a 13-line evidence fragment, with no plan edit and nothing outside the declared scope.",
+    "done_when": "The done_when names three promoted-run cases plus a negative control in tests/test_a_landed_reading_follows_the_primary_branch.py and matched arms at base; the three cases exist at :125, :140 and :156 and the negative control is recorded (negative-control.log, 2 failed, EXIT=1), but the matched base arm was extracted from the node's own commit, so that clause of the done_when is unmeasured (see findings).",
+    "goal": "The node goal is that a promoted run reads landed only when its delivered head is an ancestor of the primary branch, whether or not a pending-landing record exists; reckon/crew/recovery_classification.py:943 _promoted_awaiting_merge asks the branch first and returns empty (landed) only when _head_on_primary_branch at :878 answers True.",
+    "manifest": "Read at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261112T231336380925-a-landed-reading-follows-the-primary-branch/manifest.md; it records status complete, commit 111949d6, gate-after.log 55 passed EXIT=0, gate-base.log 49 passed plus 2 scaffolding errors, negative-control.log 2 failed EXIT=1, and matched arms claiming zero added failures, which the base arm's own header contradicts.",
+    "write_paths": "The manifest declares reckon/crew/recovery_classification.py, reckon/crew/obligations.py, tests/test_a_landed_reading_follows_the_primary_branch.py and the node's fragment; the single commit touches exactly the first, third and fourth and leaves obligations.py unchanged, every path inside the declaration."
+  }
+}
