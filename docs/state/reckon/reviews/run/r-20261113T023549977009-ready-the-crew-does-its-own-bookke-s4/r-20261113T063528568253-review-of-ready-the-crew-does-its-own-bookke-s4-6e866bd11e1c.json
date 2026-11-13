@@ -1,0 +1,54 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-11-13T09:31:43.264Z",
+  "dispatched_at": "2026-11-13T09:21:49Z",
+  "findings": [
+    {
+      "file": "tests/test_merge_requires_promotable_run.py",
+      "line": 272,
+      "severity": "non-blocking",
+      "text": "The added test cannot fail if the guard's named-run branch regresses: it writes the run's live pointer into the same directory `_list_live_records(project=...)` enumerates, so a guard that ignored `run_id` and fell back to inference would produce the identical refusal `promotion dry run refused run <run_id>` and the test would stay green. To pin the branch, assert the refusal only the named-run path can emit, e.g. `crew merge --run <run-id-not-at-head>` answering `run ... is not at head ...; nothing was moved or pushed`."
+    },
+    {
+      "file": "tests/test_merge_requires_promotable_run.py",
+      "line": 1,
+      "severity": "non-blocking",
+      "text": "tests/test_merge_requires_promotable_run.py is outside the run's fenced write paths (the prompt's FENCE \u2014 SCOPE lists the three source modules, the evidence fragment and the figures directory, and no test path); the done_when authorises 'the new test', which does not cover editing an existing test file."
+    }
+  ],
+  "justifications": {
+    "durability": "tests/test_merge_requires_promotable_run.py:272 asserts a refusal that reckon/crew/merge.py:151's inference branch emits identically, so removing the `[runs.read_pointer(run_id)]` branch at reckon/crew/merge.py:150 would leave the test green.",
+    "evidence": "The gate logs each open with their revision, tree, literal command and imported module and close on a bare EXIT= line, but the negative control's mutation is applied only inside test_merge_refuses_unpromotable_head, so tests/test_merge_requires_promotable_run.py:272 is never falsified by it.",
+    "fit": "The new test follows the module's existing fixture pattern (tmp_path checkout, _write_json pointer, CliRunner invoke) and introduces no plan, sprint or version label.",
+    "goal_fidelity": "reckon/crew/merge.py:186 refuses the merge for a head whose promotion dry run would not promote, and the pre-existing tests at tests/test_merge_requires_promotable_run.py:17 and :164 exercise that on the inference and named-run paths.",
+    "reuse": "No production definition is added; the test reuses pointer_path, _write_json, git and _write_origin_and_checkout and exercises the existing guard rather than forking it.",
+    "scope_discipline": "Every changed path is a test or evidence file, but tests/test_merge_requires_promotable_run.py is not among the reviewed run's FENCE \u2014 SCOPE paths printed in its prompt.txt."
+  },
+  "plan_slug": "the-crew-does-its-own-bookkeeping",
+  "project": "reckon",
+  "review_run_id": "r-20261113T063528568253-review-of-ready-the-crew-does-its-own-bookke-s4-6e866bd11e1c",
+  "reviewed_base_sha": "d1915fbbaeffc0c9354173e7a425fd904ff6a0e4",
+  "reviewed_head_sha": "6e866bd11e1cc7818462e36c8b19700da5c97445",
+  "reviewed_run_id": "r-20261113T023549977009-ready-the-crew-does-its-own-bookke-s4",
+  "scores": {
+    "durability": 11,
+    "evidence": 16,
+    "fit": 18,
+    "goal_fidelity": 17,
+    "reuse": 20,
+    "scope_discipline": 13
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-13T11:01:18.080748+00:00",
+  "total": 95,
+  "verdicts": {
+    "call_sites": "reckon/crew_run_commands.py:390 (verify_promotion passes require_promotable_head to merge.land_merge) is the only production caller; reckon/crew/merge.py:132 defines it.",
+    "diff": "Read both commits against base d1915fbbae; the change is one new 89-line test (test_merge_refusal_names_the_check_for_a_named_run) plus a 9-line evidence fragment, with no product-source edit.",
+    "done_when": "The done_when names crew complete --dry-run refusing a red-base head without writing, crew merge refusing and naming the check, a promotable head landing, a negative control that removes the check, and a base arm; tests/test_merge_requires_promotable_run.py carries the first three, and base-arm.log (d1915fbbae, 2 passed), head-arm.log (6e866bd11e, 3 passed) and negative-control.log (1 failed, 2 passed) record them.",
+    "goal": "The node goal is that a merge refuses a run whose promotion would be refused; reckon/crew/merge.py:132 define require_promotable_head and reckon/crew_run_commands.py:390 passes it as the merge's verify seam, so the landed tree does refuse such a head, and the node adds a test of the `--run` CLI path rather than product code.",
+    "manifest": "The manifest records status complete, commits 035839c77a and 6e866bd11e, the literal pytest command, four arm/suite logs and the negative-control log; its baseline_suite and after_suite both report exit_status 0 with no failure ids, matching base-arm.log and head-arm.log, and its own suite pair reads 49 passed / 2 setup errors at both arms.",
+    "write_paths": "The manifest's declared write paths are reckon/crew/promotion.py, reckon/crew/merge.py, reckon/crew_run_commands.py, the evidence fragment and the figures directory; the diff touches the evidence fragment (inside) and tests/test_merge_requires_promotable_run.py (outside, and absent from the reviewed prompt's FENCE \u2014 SCOPE list)."
+  }
+}
