@@ -28,8 +28,17 @@
   beside a missing review is read as terminal. Only a refusal whose every part
   is an absent review is written back as waiting.</p>
 
+  <p>The primary branch then added a third behaviour to the same drain: a
+  <code>review-self</code> request whose reviewer is still writing its record is
+  parked as <code>promotion-waiting</code> and takes no slot, so the requests
+  behind it run. The two changes meet in one loop and both are kept — the drain
+  iterates the ordered pending requests, and each one is judged for that wait
+  before a slot is claimed, so the review-first order holds and a waiting review
+  parks while the loop carries on.</p>
+
   <p>Implementation commit: <code>bcdf396599306872bf8a5223f0591fc2e84fd46c</code>,
-  repaired at <code>f5568d40c5953ad47555278b0a56b0fc97685815</code>.
+  repaired at <code>f5568d40c5953ad47555278b0a56b0fc97685815</code>, merged with
+  primary main at <code>9b88b8b44f8b5c7bdc1a6ff15d3647f320ef201f</code>.
   Paths: <code>reckon/crew/promotion_requests.py</code>,
   <code>reckon/crew/promotion_checks.py</code>,
   <code>tests/test_review_promoted_before_its_run.py</code>.</p>
@@ -46,11 +55,24 @@
         <code>tests/test_review_promoted_before_its_run.py</code> and
         <code>tests/test_staged_write_inventory.py</code></td></tr>
       <tr><td>Gate, base arm at <code>5057bfacc4</code>, on
-        <code>all_debug</code> (job 1314543)</td>
-        <td>51 passed in 9.15 s; EXIT=0. The node's test file does not exist at
-        that revision and is dropped from this arm, so the delta between the arms
-        is exactly the four cases the node adds, with no failure added against
-        the base.</td></tr>
+        <code>all_debug</code> (job 1314543, re-run at the merged head in job
+        1314639)</td>
+        <td>51 passed in 9.15 s; EXIT=0 (9.29 s in the re-run). The node's test
+        file does not exist at that revision and is dropped from this arm, so the
+        delta between the arms is exactly the four cases the node adds, with no
+        failure added against the base.</td></tr>
+      <tr><td>Gate, after arm at the merged head
+        <code>9b88b8b44f</code>, on <code>all_debug</code> (job 1314639)</td>
+        <td>55 passed in 12.06 s; EXIT=0, the same two test files, with the
+        primary branch's review-self wait resolved into the same loop.</td></tr>
+      <tr><td>Both nodes' tests over the resolved merge, on
+        <code>all_debug</code> (job 1314637)</td>
+        <td>62 passed in 13.35 s; EXIT=0 —
+        <code>test_review_promoted_before_its_run.py</code>,
+        <code>test_staged_write_inventory.py</code>,
+        <code>test_review_promotion_waits_for_its_record.py</code> and
+        <code>test_deferred_promotion_resolves_relative_program.py</code>, so the
+        two behaviours compose rather than merely pass apart.</td></tr>
       <tr><td>Gate re-run at the head carrying this record
         (<code>d61c0ba</code>, job 1314554), on <code>all_debug</code></td>
         <td>55 passed in 13.88 s; EXIT=0, the same two test files.</td></tr>
@@ -61,7 +83,8 @@
       <tr><td>Declared mutation: processing queued requests in plain name order
         refuses the run queued before its review</td>
         <td>2 failed, 2 passed in 2.39 s; EXIT=1, applied to an extraction of the
-        final head. The failing ids are
+        final head and re-applied at the merged head (2.42 s, job 1314639). The
+        failing ids are
         <code>test_a_review_is_promoted_before_the_run_it_reviews</code> and
         <code>test_a_run_refused_only_for_its_queued_review_stays_queued</code>;
         the remaining two cases, a run whose refusal carries a second reason and
