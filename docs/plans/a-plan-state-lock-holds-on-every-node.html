@@ -24,6 +24,8 @@
   <title>A plan-state lock holds on every node | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
+<meta name="plan-version" content="1">
+<meta name="plan-modified" content="2026-11-13">
 </head>
 <body>
   <main class="plan-doc">
@@ -55,7 +57,7 @@
 <p>Deliverable: while a process on one node holds a plan-state resource lock, another process on any node that asks for the same lock waits or is refused. This covers sprint moves, pushes, closes and every other <code>project_state</code> write, and the transaction recovery that reads beside them. Exclusion between two holders inside one process (two threads, or two opens of the lock file) is no weaker than today's.</p>
 <p>Done when:</p>
 <ul>
-  <li>A probe script under <code>scripts/</code> holds a plan-state resource lock through the production lock code on the node it runs on. A second invocation, run on a different compute node with <code>srun --partition=all_debug</code> from a shell where <code>SLURM_JOB_ID</code> is unset, reports that it could not take the same lock.</li>
+  <li>A probe script under <code>scripts/</code> holds a plan-state resource lock through the production lock code, on a temporary docs tree and never a live project's, on the node it runs on. A second invocation on a different compute node, against the same temporary tree, reports that it could not take the same lock.</li>
   <li>The negative control is the same pair run against the base revision: there the second node reports that it took the lock.</li>
   <li>Both runs are logged under the run directory with each hostname printed. The two hostnames must differ, or the run is not evidence.</li>
   <li>A test, using a temporary docs tree, shows two threads of one process exclude each other on one resource lock. It also shows that a recovery started while a move holds its locks either waits for the move to finish or finds no journal; it never restores either sprint's "before" bytes.</li>
@@ -65,7 +67,7 @@
 
     <h2 id="s3">§3 — A sprint move replies with what landed</h2>
 <section data-reckon="section" data-id="s3" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
-<p>Deliverable: a sprint move, push or close that touches two sprint resources ends in one of two states, both applied or neither applied. Its reply through <code>edit_plan</code> names which one, with both versions as they now stand on disk. A failure after both writes have landed does not report <code>ok=false</code> as if nothing changed. An item never ends up in both sprints, or in neither.</p>
+<p>Deliverable: a sprint move, push or close that touches two sprint resources ends in one of two states, both applied or neither applied. Its reply through <code>edit_plan</code> names which one, with both versions as they now stand on disk. A failure after both writes have landed does not report <code>ok=false</code> as if nothing changed. A failure of the move itself never leaves an item in both sprints or in neither. A reader on another node recovering mid-move is §2's case, not this section's.</p>
 <p>Done when a test with a temporary docs tree injects a fault at each step of a move:</p>
 <ul>
   <li>after the journal is written;</li>
@@ -77,7 +79,7 @@
 
     <h2 id="s4">§4 — Every flock on shared state is accounted for</h2>
 <section data-reckon="section" data-id="s4" data-effort-hours="1.75" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
-<p>Deliverable: a census of every <code>fcntl.flock</code> call under <code>reckon/</code>, as an evidence fragment at <code>docs/evidence/fragments/a-plan-state-lock-holds-on-every-node/every-flock-is-accounted-for.html</code>, with one row per call site giving:</p>
+<p>Deliverable: a census of every <code>fcntl.flock</code> call under <code>reckon/</code> that takes a lock (exclusive or shared; a call that only releases one is not a row), as an evidence fragment at <code>docs/evidence/fragments/a-plan-state-lock-holds-on-every-node/every-flock-is-accounted-for.html</code>, with one row per call site giving:</p>
 <ul>
   <li>the file and line at the commit the census read;</li>
   <li>what the lock guards;</li>
@@ -87,20 +89,16 @@
 <ul>
   <li><strong>node-local by design</strong>, with the reason, such as a FIFO or socket that exists only on one host;</li>
   <li><strong>already judged cross-node</strong> by another mechanism, citing it, such as §8's follower lease;</li>
-  <li><strong>moved to the §2 lock in this node</strong>;</li>
-  <li><strong>needs its own section</strong>, filed by the coordinator as a followup on this plan.</li>
+  <li><strong>needs the §2 lock</strong>, which the coordinator files as a followup or a new section on this plan, naming the module.</li>
 </ul>
 <p>Done when:</p>
 <ul>
-  <li>the fragment's row count equals the number of <code>fcntl.flock(</code> matches under <code>reckon/</code> at the commit it names, both stated in the fragment;</li>
-  <li>every row moved to the §2 lock has the §2 two-node probe pattern run against it, with the second node refused, in the run directory;</li>
+  <li>the fragment's row count equals the number of lock-taking <code>fcntl.flock</code> calls under <code>reckon/</code> at the commit it names, both stated in the fragment;</li>
   <li>a row claimed node-local by design names the host-local object it guards.</li>
 </ul>
-<p>The negative control is one row deliberately removed from a copy of the fragment, which the count check must fail. Write paths: the fragment, and the modules of the rows the node moves to the §2 lock.</p>
+<p>The negative control is one row deliberately removed from a copy of the fragment, which the count check must fail. Write paths: the fragment only; this section changes no source.</p>
 
-    <section data-reckon="decisions" id="decisions" class="r-decisions">
-<h2><span class="sec">§</span> Decisions</h2>
-    </section>
+    
 
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
@@ -108,12 +106,10 @@
     <h4 class="r-fu-title">Cross-node plan-state lock</h4>
     <div class="r-fu-body"><p>§2 and §3 can run together; §4 reuses §2's lock. A content review is owed before dispatch.</p></div>
     <pre class="r-fu-prompt">/reckon-build a-plan-state-lock-holds-on-every-node §2</pre>
-</article>
-    </section>
+    </article>
+</section>
 
-    <section data-reckon="comments" id="comments" class="r-comments">
-<h2><span class="sec">§</span> Comments</h2>
-    </section>
+    
   </main>
 </body>
 </html>
