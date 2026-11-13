@@ -26,6 +26,7 @@ case fails on the seat's holder still being the stale pid.
 
 from __future__ import annotations
 
+import select
 import socket
 import subprocess
 import sys
@@ -58,16 +59,21 @@ time.sleep(300)
 class Holder:
     """A stub process holding (or merely opening) one lock file."""
 
-    def __init__(self, path: Path, mode: str) -> None:
+    def __init__(self, path: Path, mode: str, *, wait: float = 15.0) -> None:
         self.process = subprocess.Popen(
             [sys.executable, "-c", _HOLDER, str(path), mode],
             stdout=subprocess.PIPE,
             text=True,
         )
-        line = (self.process.stdout.readline() or "").strip()
+        # Bounded rather than a bare read: a stub asked to take a seat another
+        # process still holds blocks on its flock, and a test that waited for
+        # that would report nothing at all instead of the failure.
+        ready, _, _ = select.select([self.process.stdout], [], [], wait)
+        line = (self.process.stdout.readline() or "").strip() if ready else ""
         if line != "ready":
             self.process.kill()
-            raise AssertionError(f"stub holder did not start: {line!r}")
+            self.process.wait(timeout=10)
+            raise AssertionError(f"stub holder never took its {mode} seat: {line!r}")
 
     @property
     def pid(self) -> int:
