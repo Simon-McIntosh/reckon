@@ -552,3 +552,37 @@ def test_a_review_promotion_survives_pointer_removal_before_its_receipt(
     assert not requests._request_path(run_id).exists()
     assert not requests.failure_obligations(PROJECT, SESSION)
     assert requests.PromotionService().tick() == []
+
+
+@pytest.mark.parametrize("kind", ["acceptance", "review-self"])
+@pytest.mark.parametrize("row_state", ["absent", "different-run"])
+def test_a_missing_review_pointer_needs_its_own_promoted_row(
+    repository, isolated_reckon_home, kind, row_state
+):
+    from reckon import ledger
+
+    run_id = f"r-unproven-{kind}"
+    repository.plant(run_id)
+    (isolated_reckon_home / "mounts.json").write_text(
+        json.dumps({PROJECT: str(repository.root / "docs")})
+    )
+    requests.request_promotion(run_id, kind=kind)
+    path = ledger.run_path(PROJECT, run_id, repository.root)
+    neighbor = ledger.run_path(PROJECT, "r-neighbor", repository.root)
+    runs._write_json(neighbor, {"run_id": "r-neighbor", "commits": [repository.sha]})
+    assert json.loads(neighbor.read_text())["commits"] == [repository.sha]
+    if row_state == "different-run":
+        runs._write_json(path, json.loads(neighbor.read_text()))
+    else:
+        assert not path.exists()
+    runs.pointer_path(run_id).unlink()
+
+    service = requests.PromotionService()
+    service.tick()
+    service.settle(timeout=10)
+    receipt = requests.read_promotion(run_id)
+    assert receipt["phase"] == requests.REFUSED, receipt
+    expected = "no live run" if row_state == "absent" else "names a different run"
+    assert expected in receipt["error"], receipt
+    assert requests.failure_obligations(PROJECT, SESSION)[0]["run_id"] == run_id
+    print(f"{kind} / {row_state}: {receipt['phase']}: {receipt['error']}")

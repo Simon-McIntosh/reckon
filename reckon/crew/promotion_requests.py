@@ -183,7 +183,31 @@ def _execute(request: Mapping[str, Any]) -> dict[str, Any] | None:
         return promotion.complete(run_id, **options)
     from reckon.crew import recovery_review_acceptance as acceptance
 
-    pointer = runs.read_pointer(run_id)
+    try:
+        pointer = runs.read_pointer(run_id)
+    except CrewError:
+        if runs.pointer_path(run_id).exists():
+            raise
+        from reckon import ledger
+        from reckon.crew import merge
+
+        project = str(request["project"])
+        path = ledger.run_path(project, run_id, merge.project_repository(project))
+        row = _read(path)
+        if not row:
+            raise
+        if row.get("run_id") != run_id:
+            raise CrewError(f"ledger row names a different run: {path}") from None
+        # Promotion removes its pointer after persisting this row. A service
+        # receipt can be interrupted afterwards, so recover from that row
+        # without repeating the completed review operation.
+        return {
+            "run_id": run_id,
+            "promoted": True,
+            "already_promoted": True,
+            "record": row,
+            "ledger": {"path": str(path)},
+        }
     operation = (
         acceptance.accept_clean_review
         if request["kind"] == "acceptance"
