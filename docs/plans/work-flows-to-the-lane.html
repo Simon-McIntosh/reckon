@@ -24,7 +24,7 @@
   <title>Work Flows To The Lane | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="200">
+<meta name="plan-version" content="201">
 <meta name="plan-modified" content="2026-11-13">
 </head>
 <body>
@@ -769,6 +769,9 @@
 </div>
 <div class="r-comment" data-section="s47" data-id="c-run-r-20261113T181455587947-review-of-compose-not-answered-with-older-review-707e6684b2d8" data-who="reckon-build" data-when="2026-11-13T18:37:56.432Z">
     <div class="r-comment-body"><p>Reviewed r-20261113T164852121047-compose-not-answered-with-older-review at head 707e6684b2: parsed record scoring goal_fidelity 18, evidence 19, scope_discipline 20, durability 15, fit 18, reuse 15, three non-blocking findings, no blocking finding.</p></div>
+</div>
+<div class="r-comment" data-section="s47" data-id="c-run-r-20261113T164852121047-compose-not-answered-with-older-review" data-who="reckon-build" data-when="2026-11-13T17:11:58.221Z">
+    <div class="r-comment-body"><p>A plan review&#x27;s standing in `_standing_plan_review` is now judged by its worker and its scope: a review whose worker has ended never counts as in flight, and a working review stands only while it reads the plan&#x27;s current version or every unit changed past its composed sidecar&#x27;s version. Gate on all_debug: base 51 passed EXIT=0, after 56 passed EXIT=0, negative control 1 failed EXIT=1 (the base reader returns the older run id).</p></div>
 </div>
 <div class="r-comment" data-section="s48" data-id="c-run-r-20261113T164940028035-review-promotion-waits-for-its-record" data-who="reckon-build" data-when="2026-11-13T17:24:02.607Z">
     <div class="r-comment-body"><p>A review's own promotion now waits for the record its reviewer still owes: the sweep requests nothing while the reviewer runs, a request that exists anyway is parked at promotion-waiting without a slot or the queue head while the pointer keeps its working phase, a reviewer that ends without a record leaves a refusal naming it, and the gate read 54 passed at the head arm against 51 at the base arm with the declared mutation failing the first case.</p></div>
