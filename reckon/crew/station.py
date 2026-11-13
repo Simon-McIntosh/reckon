@@ -702,6 +702,13 @@ class Station:
         # it is the stage the night's slow ticks spent their time in: a reader
         # that names it says the station is walking a project, not that it died.
         self._enter(stages[3])
+        # Phase transitions are committed for every project before any session's
+        # review duties are derived. A derivation can run for tens of minutes
+        # inside one project, and a run's transition is what wakes the session
+        # that owns it, so committing a project's transitions only after every
+        # earlier project's derivation had finished held the later projects'
+        # wakes behind work that has nothing to do with them.
+        derivations: list[tuple[str, list[Mapping[str, Any]], bool]] = []
         for project in sorted(project_names - {""}):
             current = {
                 run_id: verdict
@@ -758,14 +765,16 @@ class Station:
                 unowned=unowned,
                 sessions=live_sessions,
             )
-            # Each session's duties are derived from the same fleet reading
-            # this tick just committed, so a change the station published is a
-            # change the coordinator's obligations reflect on the same pass.
+            derivations.append((project, project_pointers, bool(events)))
+        # Each session's duties are derived from the same fleet reading this
+        # tick committed, so a change the station published is a change the
+        # coordinator's obligations reflect on the same pass.
+        for project, project_pointers, changed in derivations:
             station_obligations.publish(
                 self.store,
                 project=project,
                 home=self.home,
-                changed=bool(events),
+                changed=changed,
                 now=moment,
             )
             # The sweep's two passes run for every session this host owns, on
@@ -777,7 +786,7 @@ class Station:
                     project,
                     session,
                     moment=moment,
-                    changed=bool(events),
+                    changed=changed,
                 )
         self._enter(stages[4])
         self.store.sweep_retention(now=moment)

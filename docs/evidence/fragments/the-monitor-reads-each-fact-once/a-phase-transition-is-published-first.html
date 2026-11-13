@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="the-monitor-reads-each-fact-once">
+  <meta name="plan-evidence-for" content="reckon:the-monitor-reads-each-fact-once">
+  <title>A phase transition is published before review duties are derived</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+
+<article class="r-note" id="a-phase-transition-is-published-first-landing" data-node="a-phase-transition-is-published-first" data-reckon="landing" data-when="2026-11-13">
+  <h2>Every project's transitions are committed before any session's duties are derived</h2>
+
+  <p id="a-phase-transition-is-published-first-defect"><strong>The defect.</strong> A station's tick walked the projects in one loop and, per project, folded that project's fleet, committed its transitions, and then derived its sessions' review duties before touching the next project. The derivation reads the review store once per run and, on 12-13 November, ran for 44 to 58 minutes inside a single tick. A run's phase transition is what wakes the session that owns it, so a run whose state changed in a later project was committed only after every earlier project's derivation had finished. Sessions were told nothing for 29 to 75 minutes, and the fleet looked quiet, not stuck: the tick was alive and its heartbeat fresh throughout.</p>
+
+  <p id="a-phase-transition-is-published-first-change"><strong>What landed.</strong> <code>reckon/crew/station.py</code> splits the tick's per-project work into two passes. The first folds and commits every project's transitions through <code>store.record_tick</code>, unchanged; only then does the second pass derive each project's duties with <code>station_obligations.publish</code> and request its sweeps. Both passes run inside the same <code>per-project-refresh</code> stage, so a reader that names the stage still learns where a slow tick spends its time. No thread, no second publisher and no new seam were added: the change moves when the existing derivation runs relative to the existing commit, and each derivation still reads the fleet image this same tick committed, because every commit has already happened by the time the first derivation starts.</p>
+
+  <p id="a-phase-transition-is-published-first-gate"><strong>Gate.</strong> <code>tests/test_a_phase_transition_is_published_before_review_duties.py</code> mounts two projects on one temporary repository and drives one real <code>Station.tick</code> over a temporary crew home. It records both runs as inventory on a first tick, then moves both projects' runs and holds the first project's review-duty derivation open on an event the case controls, through the derivation's own <code>_review_duty_item</code>. While that derivation is held, a second <code>StationStore</code> on the same root reads the committed rows and asserts the later project's transition is already there. The case ends by releasing the derivation and asserting the tick completes with no failure and the transition is still present afterwards.</p>
+
+  <p id="a-phase-transition-is-published-first-negative"><strong>Negative control.</strong> The declared mutation restores the base publish order — the derivation moved back inside the per-project loop, ahead of the next project's fold and commit. The case then reads only the first project's transition while the derivation is held: <strong>1 failed, EXIT=1</strong>, <code>the later project's transition waited for the earlier project's derivation: ['r-alpha']</code> (<code>logs/negative-control.log</code>). That is the defect stated as an assertion. The mutation is reverted in the delivered revision.</p>
+
+  <p id="a-phase-transition-is-published-first-suite"><strong>The armed suite, both arms.</strong> Both arms ran on the <code>all_debug</code> partition. The base arm ran over a tree carrying <code>reckon/</code>, <code>tests/</code>, <code>pyproject.toml</code> and the census source at <code>720736d7f8</code>, committed as that tree's head so the inventory case can read the tree through git: <strong>51 passed, EXIT=0</strong> (<code>logs/baseline.log</code>); this node's file does not exist there. The head arm ran in this worktree at <code>9004a30e8d</code> over the same file plus this node's: <strong>52 passed, EXIT=0</strong> (<code>logs/after.log</code>).</p>
+
+  <p id="a-phase-transition-is-published-first-importers"><strong>The importer arm.</strong> The nine test files that import <code>reckon/crew/station.py</code> ran on the same partition. At the base revision they were <strong>64 passed, EXIT=0</strong> (<code>logs/importers-base.log</code>). At the delivered head, the first run reported <strong>1 failed, 63 passed, EXIT=1</strong> (<code>logs/importers-after.log</code>) with <code>test_a_blocked_tick_keeps_a_fresh_beat_and_reads_slow</code> reading a tick age of 3 s against a floor of 3.6 s. That case measures a timing floor, and it cleared on both repeats: the file alone passed three runs in a row locally (3 passed each), and the arm re-run at the same head gave <strong>64 passed, EXIT=0</strong> (<code>logs/importers-after-rerun.log</code>), matching the base arm exactly. The added-failure set against the base arm is empty; the one bounded failure is kept in the record rather than dropped, because a timing floor failing under partition load is a fact about the gate and not one to hide.</p>
+</article>
+</body>
+</html>
