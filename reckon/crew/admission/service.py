@@ -218,6 +218,12 @@ def admit_until_stopped(
     work held before re-exec. A stamp on a checkout the trusted test refuses
     leaves the service on its current code, so a tree mid-merge never replaces a
     running service.
+
+    A replacement ends every thread this process started, so a stamp that has
+    moved no longer re-executes at once: the loop starts no further promotion or
+    landing, waits for those in flight to finish on their own threads, and then
+    replaces the image. Waiting inside the pass is what bounds the reload, since
+    the supervisor's pass bound is measured from the pass's own start.
     """
     # A service that replaced its own image in place still owns the children
     # the old image left. Registering them here, once, lets the shared reaper
@@ -273,6 +279,13 @@ def admit_until_stopped(
         while True:
             with service_pass():
                 if _admit_code_stamp() != code_stamp and _checkout_code_is_trusted():
+                    # Replacing this image ends every thread it started, and the
+                    # promotions and landings run on those threads. So no new
+                    # one starts once the stamp has moved: the loop drains the
+                    # work in flight, and only then replaces the process.
+                    promotions.begin_drain()
+                    promotions.wait_for_in_flight()
+                    worker.settle()
                     _reexec_into_current_code()
                 started_at = _utc_now()
                 started = time.monotonic()
