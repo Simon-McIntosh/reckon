@@ -1,0 +1,61 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/crew/admission/selection.py:admit_once",
+    "reckon/crew/admission/launching.py:_release_stranded_launches",
+    "reckon/crew/recovery_classification.py:classify_pointer",
+    "reckon/crew/dispatch_launch.py:reserve_launch_attempt",
+    "reckon/crew/recovery_review_dispatch.py:2518"
+  ],
+  "completed_at": "2026-11-13T10:55:45.457Z",
+  "dispatched_at": "2026-11-13T10:45:47Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261113T034416591560-a-launch-stopped-at-its-claim-is-redispatched/manifest.md",
+      "line": 18,
+      "severity": "non-blocking",
+      "text": "the done_when asks the test files importing the changed modules to add no failure in matched arms, but the arms ran tests/test_staged_write_inventory.py alone beside the new file, so 96 of the 97 test files that import recovery_liveness or dispatch_launch were unmeasured; the two that assert stranded-launch classification directly both set attempt_started_at, so the fallback is unreached and they read as unaffected."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261113T034416591560-a-launch-stopped-at-its-claim-is-redispatched/manifest.md",
+      "line": 32,
+      "severity": "non-blocking",
+      "text": "the done_when's ruff clause is unrecorded, so a reader cannot verify it from the run; re-running ruff check and ruff format --check on the three staged paths now gives 2 pre-existing findings in dispatch_launch.py (S108 line 1281, PYI034 line 3585) that are identical at the base revision, and both files formatted."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "read commit by commit from 14da04d2c2 to 56b48078e6; 57d91db2ce changes the claim fallback and adds the pre-reservation release fence, 135697b45b tightens the fence case to name the refusal, 56b48078e6 adds the evidence fragment, 240 insertions and 6 deletions across four paths.",
+    "done_when": "the done_when names tests/test_a_launch_stopped_at_its_claim_is_redispatched.py and four cases; the manifest records that run at 55 passed, and re-running that one file at the head gave 4 passed, so the measure it states is asserted.",
+    "goal": "the node's goal is to redispatch a launch stopped at its dispatch claim; reckon/crew/recovery_liveness.py:700 now dates every launch holding no attempt clock from its claim, so a station launch at claim-published reaches the stranded bound and reckon/crew/admission/launching.py:537 releases its claim.",
+    "manifest": "read; it reports head 55 passed, base 51 passed, negative control 3 failed 1 passed, and names base.log, head.log, negative-control.log and arms-submit.log under the run directory.",
+    "write_paths": "read the declared paths reckon/crew/{recovery_liveness,dispatch_claims,dispatch_launch,recovery_classification}.py, the named test file and the named evidence fragment; all four files in the diff are inside that set, and the two untouched declared paths carry no change."
+  },
+  "justifications": {
+    "durability": "gate-logs/negative-control.log restores the launch-kind gate and 3 of the 4 cases redden, and by reading, deleting reckon/crew/dispatch_launch.py:2631 fails the pytest.raises at tests/test_a_launch_stopped_at_its_claim_is_redispatched.py:142.",
+    "evidence": "gate-logs/head.log:1 names the new test at the head and 55 passed, but the matched arms ran one regression file where 97 test files import the changed modules.",
+    "fit": "the deferred import and its cycle comment at reckon/crew/dispatch_launch.py:2629 match the neighbouring idiom, and no added name carries a plan or ticket label.",
+    "goal_fidelity": "reckon/crew/recovery_liveness.py:700 drops the launch-kind gate so the claim or creation instant dates every launch, and the four cases at tests/test_a_launch_stopped_at_its_claim_is_redispatched.py:99-150 hold it.",
+    "reuse": "the change extends the owner reckon/crew/recovery_liveness.py:700 and reuses _claim_or_creation_seconds and dispatch_refusals.refuse_a_released_launch; a search over reckon/crew for another launch-clock or release-refusal mechanism found none.",
+    "scope_discipline": "every hunk in the diff sits in reckon/crew/recovery_liveness.py, reckon/crew/dispatch_launch.py, the named test file or the named evidence fragment, and nothing else was touched."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to redispatch a launch stopped at its dispatch claim; reckon/crew/recovery_liveness.py:700 now dates every launch holding no attempt clock from its claim, so a station launch at claim-published reaches the stranded bound and reckon/crew/admission/launching.py:537 releases its claim.\nVERDICT done_when: the done_when names tests/test_a_launch_stopped_at_its_claim_is_redispatched.py and four cases; the manifest records that run at 55 passed, and re-running that one file at the head gave 4 passed, so the measure it states is asserted.\nVERDICT write_paths: read the declared paths reckon/crew/{recovery_liveness,dispatch_claims,dispatch_launch,recovery_classification}.py, the named test file and the named evidence fragment; all four files in the diff are inside that set, and the two untouched declared paths carry no change.\nVERDICT manifest: read; it reports head 55 passed, base 51 passed, negative control 3 failed 1 passed, and names base.log, head.log, negative-control.log and arms-submit.log under the run directory.\nVERDICT diff: read commit by commit from 14da04d2c2 to 56b48078e6; 57d91db2ce changes the claim fallback and adds the pre-reservation release fence, 135697b45b tightens the fence case to name the refusal, 56b48078e6 adds the evidence fragment, 240 insertions and 6 deletions across four paths.\nCALL_SITES: reckon/crew/admission/selection.py:admit_once, reckon/crew/admission/launching.py:_release_stranded_launches, reckon/crew/recovery_classification.py:classify_pointer, reckon/crew/dispatch_launch.py:reserve_launch_attempt, reckon/crew/recovery_review_dispatch.py:2518\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/recovery_liveness.py:700 drops the launch-kind gate so the claim or creation instant dates every launch, and the four cases at tests/test_a_launch_stopped_at_its_claim_is_redispatched.py:99-150 hold it.\nSCORE evidence: 14\nJUSTIFICATION evidence: gate-logs/head.log:1 names the new test at the head and 55 passed, but the matched arms ran one regression file where 97 test files import the changed modules.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every hunk in the diff sits in reckon/crew/recovery_liveness.py, reckon/crew/dispatch_launch.py, the named test file or the named evidence fragment, and nothing else was touched.\nSCORE durability: 18\nJUSTIFICATION durability: gate-logs/negative-control.log restores the launch-kind gate and 3 of the 4 cases redden, and by reading, deleting reckon/crew/dispatch_launch.py:2631 fails the pytest.raises at tests/test_a_launch_stopped_at_its_claim_is_redispatched.py:142.\nSCORE fit: 18\nJUSTIFICATION fit: the deferred import and its cycle comment at reckon/crew/dispatch_launch.py:2629 match the neighbouring idiom, and no added name carries a plan or ticket label.\nSCORE reuse: 20\nJUSTIFICATION reuse: the change extends the owner reckon/crew/recovery_liveness.py:700 and reuses _claim_or_creation_seconds and dispatch_refusals.refuse_a_released_launch; a search over reckon/crew for another launch-clock or release-refusal mechanism found none.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261113T034416591560-a-launch-stopped-at-its-claim-is-redispatched/manifest.md:18 non-blocking: the done_when asks the test files importing the changed modules to add no failure in matched arms, but the arms ran tests/test_staged_write_inventory.py alone beside the new file, so 96 of the 97 test files that import recovery_liveness or dispatch_launch were unmeasured; the two that assert stranded-launch classification directly both set attempt_started_at, so the fallback is unreached and they read as unaffected.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261113T034416591560-a-launch-stopped-at-its-claim-is-redispatched/manifest.md:32 non-blocking: the done_when's ruff clause is unrecorded, so a reader cannot verify it from the run; re-running ruff check and ruff format --check on the three staged paths now gives 2 pre-existing findings in dispatch_launch.py (S108 line 1281, PYI034 line 3585) that are identical at the base revision, and both files formatted.",
+  "review_run_id": "r-20261113T103845259608-review-of-a-launch-stopped-at-its-claim-is-redispatched-56b48078e69f",
+  "reviewed_base_sha": "14da04d2c2e9391fbc7c65a6f13ad3731c59352c",
+  "reviewed_head_sha": "56b48078e69f1b3a0483c56038e53690af66f6b6",
+  "reviewed_run_id": "r-20261113T034416591560-a-launch-stopped-at-its-claim-is-redispatched",
+  "scores": {
+    "durability": 18,
+    "evidence": 14,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-13T10:54:01.360954+00:00",
+  "total": 107
+}
