@@ -1,0 +1,54 @@
+<section id="compose-not-answered-with-older-review-landing">
+  <h2>A plan review's standing is judged by its worker and its scope</h2>
+
+  <p><code>_standing_plan_review</code> in
+  <code>reckon/crew/recovery_review_dispatch.py</code> answered every live plan
+  review without a stored record as in flight. A plan review's record is written
+  only by its promotion, so a reviewer that had delivered and was waiting to be
+  promoted held the plan's compose gate. When the plan moved to a newer version,
+  every compose request returned the older review's run id, and a section only
+  the new version carried kept its dispatch refused with
+  <code>plan-review-missing</code>.</p>
+
+  <p>The reader now checks two facts on a live review whose record is not
+  stored. A review whose worker has ended stands for nothing, read from a
+  terminal pointer phase or a terminal manifest status — never from the store,
+  which by construction has no record yet. A review still working stands only
+  while it reads the plan's current version, read from the
+  <code>plan-version</code> of the sidecar its compose wrote, or while every
+  unit whose digest moved past that sidecar is inside the scope it traces; a
+  whole-plan review, which records no scope, reads every unit. A sidecar, plan
+  file or scope that cannot be read answers that the review still stands, so an
+  unaccountable review is never joined by a second one.</p>
+
+  <table id="compose-not-answered-with-older-review-measures">
+    <caption>Gate run on <code>all_debug</code> (job 1314507); logs are in the
+    run directory, each starting with its revision, tree and command and ending
+    with its <code>EXIT=</code> line.</caption>
+    <thead><tr><th>Arm</th><th>Command and result</th></tr></thead>
+    <tbody>
+      <tr><td>Base at <code>ca3eecced3</code></td>
+        <td><code>PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q
+        tests/test_staged_write_inventory.py</code> — 51 passed in 10.95 s;
+        <code>EXIT=0</code></td></tr>
+      <tr><td>After at <code>2e5707a407</code></td>
+        <td><code>PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q
+        tests/test_compose_not_answered_with_older_review.py
+        tests/test_staged_write_inventory.py</code> — 56 passed in 12.04 s;
+        <code>EXIT=0</code> (five new cases)</td></tr>
+      <tr><td>Negative control: the base reader, first case</td>
+        <td>1 failed in 0.39 s; <code>EXIT=1</code>, returning
+        <code>{'review_run_id': 'r-plan-review-older-version', 'reason': 'a plan
+        review is already in flight as a live run'}</code> where the new reader
+        composes a review of the newer version</td></tr>
+    </tbody>
+  </table>
+
+  <p>The five cases are: a finished, unpromoted review of version N composing a
+  new review that reads N+1; a working review of the current version answering
+  with its own run id; a working review of version N whose traced scope holds
+  every changed unit answering the same way; the same review scoped away from
+  the changed unit composing anew, which is the discriminator between the two;
+  and a review whose composed scope cannot be read keeping the gate. Ruff check
+  and <code>ruff format --check</code> add no findings on both changed files.</p>
+</section>
