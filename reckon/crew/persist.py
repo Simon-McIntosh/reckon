@@ -17,7 +17,6 @@ same ones every other typed resource uses.
 from __future__ import annotations
 
 import getpass
-import hashlib
 import shutil
 from datetime import UTC, datetime
 from pathlib import Path
@@ -25,7 +24,12 @@ from typing import Any
 
 from reckon import flight
 from reckon._store import _config_home
-from reckon.project_state import read_resource, resource_path, write_resource
+from reckon.project_state import (
+    _sha256_path,
+    read_resource,
+    resource_path,
+    write_resource,
+)
 
 RESOURCE_TYPE = "persisted_items"
 RESOURCE_ID = "persisted-items"
@@ -104,14 +108,6 @@ def read_persisted(
     if kind is not None:
         records = [record for record in records if record.get("kind") == kind]
     return records
-
-
-def _sha256_path(path: Path) -> str:
-    digest = hashlib.sha256()
-    with open(path, "rb") as handle:
-        for chunk in iter(lambda: handle.read(1024 * 1024), b""):
-            digest.update(chunk)
-    return digest.hexdigest()
 
 
 def _copy_bytes(source: Path, destination: Path) -> None:

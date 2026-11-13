@@ -97,15 +97,13 @@ DEFAULT_SPRINT_RECENT_DAYS = 14
 # whether the project's own ``.mcp.json`` servers start at all.
 WORKER_MCP_SERVERS_KEY = "worker_mcp_servers"
 
-# The per-project report stores. A project persists a report item into a root
-# it names itself, and moves settled report folders off the crew home onto a
-# staging root it names the same way. Reckon ships no default for either: a
-# project that has not declared one persists nothing and moves nothing, which
-# is the refusal its own caller reports rather than a path reckon invents.
+# The per-project report store. A project persists a report item into a root it
+# names itself. Reckon ships no default: a project that has not declared one
+# persists nothing, which is the refusal its own caller reports rather than a
+# path reckon invents.
 REPORTS_KEY = "reports"
 PERSIST_ROOT_KEY = "persist_root"
-STAGING_ROOT_KEY = "staging_root"
-REPORTS_PATH_KEYS = (PERSIST_ROOT_KEY, STAGING_ROOT_KEY)
+REPORTS_PATH_KEYS = (PERSIST_ROOT_KEY,)
 
 # The lanes a pick may reach only on the terms a policy states, keyed by lane
 # name and read from the host layer and the project layer like any other key. A
@@ -813,8 +811,8 @@ def reports_setting(config: Mapping[str, Any] | None, key: str) -> str | None:
     """Return one declared report-store path, or None when the project has none.
 
     The caller that needs the path says so in its own refusal, naming the
-    setting; a project that deliberately declares neither root is not
-    misconfigured, it just does not use that store.
+    setting; a project that declares no root is not misconfigured, it just does
+    not persist anything.
     """
     if key not in REPORTS_PATH_KEYS:
         raise ValueError(f"unknown reports setting {key!r}")
