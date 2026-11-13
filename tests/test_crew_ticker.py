@@ -187,7 +187,7 @@ def test_ticker_emits_only_changes_and_ends_after_the_last_promotion(home) -> No
         transitions[2], ticker=ticker_module.Ticker(width=208, color=False)
     )
     assert "dependency unavailable" not in rendered
-    assert "new → halted" in rendered
+    assert "new → needs you" in rendered
     assert sleeps == 7
 
 
@@ -199,9 +199,9 @@ def test_ticker_line_is_compact_and_carries_no_free_text() -> None:
     # The stamp is stored UTC and rendered in the reader's own zone, because
     # the pane sits beside a harness that timestamps locally.
     assert line.startswith(ticker_module.local_clock(_event()["observed_at"]))
-    assert line.index("ticker-node") < line.index("halted")
+    assert line.index("ticker-node") < line.index("needs you")
     # The row carries one transition, centred on its fixed arrow.
-    assert "new → halted" in line
+    assert "new → needs you" in line
     assert ticker_module.BASELINE_MARKER not in line
     # The counts are a fixed grid whose digits share a column, each number
     # followed by its state's single letter, one space between the cells.
@@ -268,7 +268,7 @@ def test_counter_cells_stay_apart_at_every_digit_width() -> None:
         assert len(match.group(0).split()) == 4, row
         for left, right, letter in (
             (working, blocked, "w"),
-            (blocked, unpromoted, "h"),
+            (blocked, unpromoted, "n"),
             (unpromoted, queued, "d"),
         ):
             assert f"{left}{letter}{right}" not in row, row
@@ -347,7 +347,7 @@ def test_cli_follow_prints_compact_transition_lines_by_default(
     # follower stopped is written to stderr and must not be counted as a row.
     assert result.stdout.count("\n") == 1
     assert "ticker-node" in result.stdout
-    assert "new → halted" in result.stdout
+    assert "new → needs you" in result.stdout
     assert not result.stdout.startswith("{")
 
 
@@ -551,7 +551,7 @@ def test_cli_watch_follows_without_being_asked(home, monkeypatch) -> None:
 
     assert result.exit_code == 0
     assert "ticker-node" in result.output
-    assert "new → halted" in result.output
+    assert "new → needs you" in result.output
 
 
 def test_cli_watch_returns_after_one_event_only_when_asked(home, monkeypatch) -> None:
@@ -796,7 +796,7 @@ def test_a_follower_delivers_only_lines_with_a_node_and_a_state_pair(monkeypatch
     assert len(plain_lines) == 2
     for line, node in zip(plain_lines, ("ticker-node", "second-node"), strict=True):
         assert node in line, line
-        assert "new → halted" in line, line
+        assert "new → needs you" in line, line
 
     json_lines = CliRunner().invoke(
         cli_module.main, ["crew", "follow", "--project", "proj", "--json"]
@@ -866,7 +866,7 @@ def test_the_retired_baseline_marker_never_renders(
     # the only label a row prints.
     assert not re.search(r"\bnow\b", "\n".join(rows))
     assert ticker_module.BASELINE_MARKER not in "\n".join(rows)
-    assert "working" in baseline and "working → halted" in transition
+    assert "working" in baseline and "working → needs you" in transition
     # The first row names its arrival; later rows name the state they left.
     assert "dispatched" not in baseline
     assert "dispatched" not in transition
@@ -905,11 +905,11 @@ def test_a_baseline_row_keeps_the_state_column_of_a_transition(
     # The word is on no row, and the state is not printed twice on one.
     assert not re.search(r"\bnow\b", "\n".join(rows))
     assert baseline.count("working") == 1
-    assert transition.count("halted") == 1
+    assert transition.count("needs you") == 1
 
     # The state cell begins at the same screen column on both rows.
     assert _state_cell_start(baseline, "working") == _state_cell_start(
-        transition, "halted"
+        transition, "needs you"
     )
 
 
@@ -994,7 +994,9 @@ def test_every_field_holds_one_column_across_every_row_kind(monkeypatch) -> None
             {
                 _state_cell_start(row, state)
                 for row, state in zip(
-                    rows, ("working", "halted", "halted", "halted"), strict=True
+                    rows,
+                    ("working", "needs you", "needs you", "needs you"),
+                    strict=True,
                 )
             }
         )

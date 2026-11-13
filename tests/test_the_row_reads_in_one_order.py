@@ -185,7 +185,7 @@ def test_the_counters_are_labelled_w_h_d_q(grid):
     """
     assert ticker_module.STAT_LETTER == {
         "working": "w",
-        "halted": "h",
+        "needs you": "n",
         "delivered": "d",
         "waiting": "q",
     }

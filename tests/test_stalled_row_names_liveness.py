@@ -228,7 +228,7 @@ def test_a_stalled_row_names_a_live_process(tmp_path: Path) -> None:
     # The row keeps the fixed frame every stalled row shares: the state word
     # alone, with the fleet counters after it. The liveness reading is a fact
     # of the classifier's verdict, not free text on the row.
-    assert "→ halted" in line, line
+    assert "→ needs you" in line, line
     assert _counters(line) == (0, 1, 0, 0), line
     assert row["fleet_verdict"]["detail"].startswith("alive, quiet "), row["detail"]
 
@@ -248,7 +248,7 @@ def test_a_stalled_row_names_a_gone_process(tmp_path: Path) -> None:
     assert row["process_alive"] is False
     assert snapshot["process_alive"] is False
     assert row["liveness_proven"] is True
-    assert "→ halted" in line, line
+    assert "→ needs you" in line, line
     assert _counters(line) == (0, 1, 0, 0), line
     assert row["fleet_verdict"]["detail"].startswith("process gone, quiet "), row[
         "detail"
@@ -275,7 +275,7 @@ def test_a_stalled_row_names_a_recorded_exit(tmp_path: Path) -> None:
     assert snapshot["process_alive"] is False
     assert row["liveness_proven"] is False
     assert row["exit_record"] is not None, row["exit_record"]
-    assert "→ halted" in line, line
+    assert "→ needs you" in line, line
     assert _counters(line) == (0, 1, 0, 0), line
     assert row["fleet_verdict"]["detail"].startswith("process gone, quiet "), row[
         "detail"
@@ -298,7 +298,7 @@ def test_a_stalled_row_admits_an_unrecorded_process(tmp_path: Path) -> None:
     assert row["process_alive"] is None
     assert snapshot["process_alive"] is None
     assert row["liveness_proven"] is False
-    assert "→ halted" in line, line
+    assert "→ needs you" in line, line
     assert _counters(line) == (0, 1, 0, 0), line
     assert row["fleet_verdict"]["detail"].startswith("liveness unknown, quiet "), row[
         "detail"
@@ -327,5 +327,5 @@ def test_a_stalled_row_admits_a_process_it_cannot_check(tmp_path: Path) -> None:
     assert row["process_alive"] is False
     assert snapshot["process_alive"] is False
     assert row["liveness_proven"] is False
-    assert "→ halted" in line, line
+    assert "→ needs you" in line, line
     assert _counters(line) == (0, 1, 0, 0), line

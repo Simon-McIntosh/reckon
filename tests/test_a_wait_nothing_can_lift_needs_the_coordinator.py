@@ -213,7 +213,7 @@ def test_an_unanswering_probe_over_an_ended_worker_needs_the_coordinator() -> No
     assert row["external_wait"]["valid"] is True
     assert row["wait_condition_state"] == "unknown"
     assert row["exit_record"] is not None
-    assert _pane_word(row) == "halted", row["recovery_classification"]
+    assert _pane_word(row) == "needs you", row["recovery_classification"]
     assert "reckon crew resume" in row["next_action"]
     assert "the recovery sweep will resume" not in row["next_action"]
     assert "did not answer" in row["detail"]
@@ -293,7 +293,7 @@ def test_the_probe_flag_decides_not_the_reworded_detail_text() -> None:
             "detail": "the scheduler page did not render this cycle",
         },
     )
-    assert _pane_word(failed_row) == "halted", failed_row["recovery_classification"]
+    assert _pane_word(failed_row) == "needs you", failed_row["recovery_classification"]
     assert "reckon crew resume" in failed_row["next_action"]
 
     answered_run = _waiting_run(
@@ -369,7 +369,7 @@ def test_a_probe_that_raises_over_an_ended_worker_needs_the_coordinator() -> Non
 
     assert row["wait_condition_state"] == "unknown"
     assert row["exit_record"] is not None
-    assert _pane_word(row) == "halted", row["recovery_classification"]
+    assert _pane_word(row) == "needs you", row["recovery_classification"]
     assert "reckon crew resume" in row["next_action"]
     assert "the recovery sweep will resume" not in row["next_action"]
     assert "did not answer" in row["detail"]

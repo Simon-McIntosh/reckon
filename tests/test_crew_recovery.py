@@ -388,7 +388,12 @@ def test_cli_follow_streams_each_event_as_one_json_document(home, monkeypatch) -
         {"project": "proj", "event": "terminal", "run_id": run_id}
         for run_id in ("r-one", "r-two")
     )
-    (monkeypatch.setattr(recovery_watch, "watch_follow", lambda *_args, **_kwargs: events), monkeypatch.setattr(recovery, "watch_follow", lambda *_args, **_kwargs: events))
+    (
+        monkeypatch.setattr(
+            recovery_watch, "watch_follow", lambda *_args, **_kwargs: events
+        ),
+        monkeypatch.setattr(recovery, "watch_follow", lambda *_args, **_kwargs: events),
+    )
 
     result = CliRunner().invoke(
         cli_module.main,
@@ -897,7 +902,7 @@ def test_observe_and_watch_render_failure_only_after_the_process_stops(
         recovery.format_watch_transition(event, ticker=wide) for event in events
     ]
     assert "working" in rendered[0]
-    assert "halted" in rendered[1]
+    assert "needs you" in rendered[1]
     # The row carries no free text: the reason a run stopped is read from the
     # run, never cut to fit a line.
     assert "implementation and required evidence" not in rendered[1]
@@ -1826,7 +1831,7 @@ def test_a_complete_needs_help_report_becomes_the_reason_with_a_question_marker(
     line = recovery.format_watch_transition(
         transition, ticker=ticker_module.Ticker(width=208, color=False)
     )
-    assert "halted" in line
+    assert "needs you" in line
     assert "the schema rejects an enum value" not in line
 
 
@@ -2858,19 +2863,29 @@ def test_watchdog_still_stops_a_live_over_grace_worker_with_a_token_budget(
         "log_path": str(Path("/nonexistent/stream.jsonl")),
     }
     signalled: list[tuple[int, str]] = []
-    (monkeypatch.setattr(
-        recovery_review_delivery,
-        "_signal_process_group",
-        lambda pid, started_at, *, reason="", **kwargs: signalled.append((pid, reason)),
-    ), monkeypatch.setattr(
-        recovery_stream,
-        "_signal_process_group",
-        lambda pid, started_at, *, reason="", **kwargs: signalled.append((pid, reason)),
-    ), monkeypatch.setattr(
-        recovery_watch,
-        "_signal_process_group",
-        lambda pid, started_at, *, reason="", **kwargs: signalled.append((pid, reason)),
-    ))
+    (
+        monkeypatch.setattr(
+            recovery_review_delivery,
+            "_signal_process_group",
+            lambda pid, started_at, *, reason="", **kwargs: signalled.append(
+                (pid, reason)
+            ),
+        ),
+        monkeypatch.setattr(
+            recovery_stream,
+            "_signal_process_group",
+            lambda pid, started_at, *, reason="", **kwargs: signalled.append(
+                (pid, reason)
+            ),
+        ),
+        monkeypatch.setattr(
+            recovery_watch,
+            "_signal_process_group",
+            lambda pid, started_at, *, reason="", **kwargs: signalled.append(
+                (pid, reason)
+            ),
+        ),
+    )
     config = {"fences": {"enforce_budget_watchdog": True, "budget_grace_multiple": 2.0}}
 
     recovery._apply_budget_watchdog(record, config)

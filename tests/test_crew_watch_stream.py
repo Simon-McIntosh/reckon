@@ -141,8 +141,8 @@ def test_transition_appends_once_and_reader_restart_from_end_is_quiet(home) -> N
     lines = [recovery.format_watch_transition(event, ticker=wide) for event in events]
     assert len(lines) == 2
     # The baseline names inventory; the transition names both sides once.
-    assert sum("halted" in line for line in lines) == 1
-    assert "working → halted" in lines[-1]
+    assert sum("needs you" in line for line in lines) == 1
+    assert "working → needs you" in lines[-1]
     assert ticker_module.BASELINE_MARKER not in lines[0]
     assert "working" in lines[0]
     assert "new → working" in lines[0]

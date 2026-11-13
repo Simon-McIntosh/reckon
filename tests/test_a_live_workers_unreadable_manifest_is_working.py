@@ -214,4 +214,4 @@ def test_a_gone_worker_with_an_unreadable_manifest_still_reads_halted(
     assert row["recovery_classification"] in {"unreadable", "unwritten"}, row[
         "recovery_classification"
     ]
-    assert _pane_word(row) == "halted", row["recovery_classification"]
+    assert _pane_word(row) == "needs you", row["recovery_classification"]

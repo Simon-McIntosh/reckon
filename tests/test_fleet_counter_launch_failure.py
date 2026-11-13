@@ -111,4 +111,4 @@ def test_the_counter_block_keeps_four_cells_and_its_width() -> None:
 
 def test_the_launch_failure_is_still_counted_under_the_halted_bucket() -> None:
     """A launch failure contributes to the pane's halted count."""
-    assert ticker_module._bucket_of("launch-failed", "launch-failed") == "halted"
+    assert ticker_module._bucket_of("launch-failed", "launch-failed") == "needs you"

@@ -123,12 +123,12 @@ def _write_pointer(
 # each is written here rather than derived, so the cases judge the resume
 # branch against production's vocabulary instead of against itself. 'queued'
 # and 'abandoned' are the pairs that matter: their counter buckets are
-# 'waiting' and 'halted', so a comparison that buckets the delivered word
+# 'waiting' and 'needs you', so a comparison that buckets the delivered word
 # before reading it cannot match these rows.
 DRAWN_WORDS = {
     RUN_WORKING: "working",
     RUN_QUEUED: "queued",
-    RUN_STALLED: "halted",
+    RUN_STALLED: "needs you",
 }
 
 
@@ -206,7 +206,7 @@ def test_a_run_that_moved_is_drawn_again(
     runs.write_delivered(
         PROJECT,
         SESSION,
-        {RUN_WORKING: "working", RUN_QUEUED: "working", RUN_STALLED: "halted"},
+        {RUN_WORKING: "working", RUN_QUEUED: "working", RUN_STALLED: "needs you"},
     )
 
     output = _snapshot(monkeypatch)

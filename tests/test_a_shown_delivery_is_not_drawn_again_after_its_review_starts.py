@@ -141,7 +141,7 @@ def test_a_new_attempt_after_the_review_prints_its_launch_and_its_delivery() -> 
         "delivered",
         "in review",
         "delivered",
-        "halted",
+        "needs you",
         "working",
         "delivered",
     ], _words(printed)
