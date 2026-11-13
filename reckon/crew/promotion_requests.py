@@ -284,7 +284,9 @@ def _pending_requests() -> list[dict[str, Any]]:
     )
 
 
-def _defer_to_a_queued_review(request: Mapping[str, Any], reason: str) -> bool:
+def _defer_to_a_queued_review(
+    request: Mapping[str, Any], refusal: BaseException | str
+) -> bool:
     """Requeue a run refused only for a review that is itself still queued.
 
     The refusal is true when it is written and wrong a minute later: the review
@@ -293,10 +295,15 @@ def _defer_to_a_queued_review(request: Mapping[str, Any], reason: str) -> bool:
     keeps it in the drain, where the pass after the review promotes it without
     anyone re-requesting it. A run refused for anything else, or one
     whose review is neither queued nor stored, is refused exactly as before.
+
+    The refusal itself is passed rather than its text: an aggregated refusal
+    carries the parts it was composed from, and a run refused for a failing
+    suite beside a missing review must be refused, not requeued. Flattening the
+    message first would hide the second reason inside one string.
     """
     from reckon.crew.promotion_checks import refusal_awaits_a_review
 
-    if not refusal_awaits_a_review(reason):
+    if not refusal_awaits_a_review(refusal):
         return False
     run_id = str(request["run_id"])
     if not any(
@@ -313,7 +320,7 @@ def _defer_to_a_queued_review(request: Mapping[str, Any], reason: str) -> bool:
             **current,
             "phase": REQUESTED,
             "deferred_at": _now(),
-            "deferred_reason": reason,
+            "deferred_reason": str(refusal),
         }
         requeued.pop("started_at", None)
         runs._write_json(_request_path(run_id), requeued)
@@ -473,9 +480,7 @@ class PromotionService:
             _finish(request, PROMOTED, result=result, commits=commits)
         except Exception as exc:  # noqa: BLE001 - retain every run's own failure
             phase = REFUSED if isinstance(exc, CrewError) else FAILED
-            if isinstance(exc, CrewError) and _defer_to_a_queued_review(
-                request, str(exc)
-            ):
+            if isinstance(exc, CrewError) and _defer_to_a_queued_review(request, exc):
                 return
             _finish(request, phase, ok=False, error=f"{type(exc).__name__}: {exc}")
         finally:

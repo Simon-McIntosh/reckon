@@ -17,6 +17,7 @@ import threading
 from reckon.crew import promotion_requests as requests
 from reckon.crew import runs
 from reckon.crew.node import CrewError
+from reckon.crew.promotion_checks import _PromotionRefusalError
 
 PROJECT = "review-order-fixture"
 SESSION = "review-order-session"
@@ -59,6 +60,38 @@ class _StubPromotions:
         if run_id not in self.promoted:
             self.promoted.append(run_id)
         return {"ok": True, "run_id": run_id, "record": {"commits": []}}
+
+
+class _MixedReasons(_StubPromotions):
+    """Refuse the run for its absent review *and* a failing declared suite.
+
+    The aggregated refusal is the shape the promotion raises when independent
+    preconditions fail together, so the drain must read the parts rather than
+    the joined message: only a run whose sole reason is the absent review is
+    waiting on the queue. The review's promotion is held open so the run is
+    refused while that review is still queued — the state the drain is tempted
+    to read as "waiting".
+    """
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.release_review = threading.Event()
+
+    def __call__(self, request):
+        run_id = str(request["run_id"])
+        if run_id == REVIEW_ID:
+            assert self.release_review.wait(10), "the review was never released"
+        elif run_id == RUN_ID:
+            self.attempts.append(run_id)
+            raise _PromotionRefusalError(
+                [
+                    CrewError(MISSING_REVIEW.format(run_id=run_id)),
+                    CrewError(
+                        "the project's declared suite failed: 3 failed, 4 passed"
+                    ),
+                ]
+            )
+        return super().__call__(request)
 
 
 class _RacingPromotions(_StubPromotions):
@@ -124,6 +157,28 @@ def test_a_run_refused_only_for_its_queued_review_stays_queued():
     receipt = requests.read_promotion(RUN_ID)
     assert receipt["phase"] == requests.PROMOTED, receipt
     assert str(receipt.get("deferred_reason", "")).startswith("run ")
+
+
+def test_a_run_refused_for_its_review_and_another_reason_is_refused():
+    _queue(RUN_ID, "delivery")
+    _queue(REVIEW_ID, f"review-of-{RUN_ID}")
+    promotions = _MixedReasons()
+    service = requests.PromotionService(width=2, execute=promotions)
+    try:
+        service.tick()
+        service.settle(timeout=2)
+
+        assert requests.read_promotion(REVIEW_ID)["phase"] == requests.RUNNING, (
+            "the review must still be queued when the run is refused"
+        )
+        receipt = requests.read_promotion(RUN_ID)
+        assert receipt["phase"] == requests.REFUSED, receipt
+        assert "deferred_reason" not in receipt
+        assert "no complete independent review is stored" in receipt["error"]
+        assert "declared suite failed" in receipt["error"]
+    finally:
+        promotions.release_review.set()
+        service.settle(timeout=20)
 
 
 def test_a_run_with_no_review_anywhere_is_refused():
