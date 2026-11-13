@@ -1,0 +1,397 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_analysis": [
+    {
+      "assertion": "not run['worktree'].exists()",
+      "failure_condition": "Skipping workspace release leaves the actual worktree on disk.",
+      "file": "tests/test_a_run_leaves_nothing_behind.py",
+      "line": 42
+    },
+    {
+      "assertion": "str(run['worktree']) not in subprocess.check_output(['git', '-C', str(run['repository']), 'worktree', 'list', '--porcelain'], text=True)",
+      "failure_condition": "Forgetting Git worktree deregistration leaves the path in git worktree list.",
+      "file": "tests/test_a_run_leaves_nothing_behind.py",
+      "line": 43
+    },
+    {
+      "assertion": "not run['scratch'].exists()",
+      "failure_condition": "Skipping scratch removal leaves the actual scratch directory.",
+      "file": "tests/test_a_run_leaves_nothing_behind.py",
+      "line": 47
+    },
+    {
+      "assertion": "not run['directory'].exists()",
+      "failure_condition": "Skipping archive relocation leaves the delivery in the walked runs tree.",
+      "file": "tests/test_a_run_leaves_nothing_behind.py",
+      "line": 48
+    },
+    {
+      "assertion": "(archive / 'end.json').is_file()",
+      "failure_condition": "Omitting the durable end receipt leaves end.json absent.",
+      "file": "tests/test_a_run_leaves_nothing_behind.py",
+      "line": 50
+    },
+    {
+      "assertion": "receipt['run_id'] == run['run_id']",
+      "failure_condition": "Writing a receipt for another run changes its serialized run identity.",
+      "file": "tests/test_a_run_leaves_nothing_behind.py",
+      "line": 52
+    },
+    {
+      "assertion": "receipt['record']['worktree'] == str(run['worktree'])",
+      "failure_condition": "Writing a receipt for another workspace changes the serialized workspace path.",
+      "file": "tests/test_a_run_leaves_nothing_behind.py",
+      "line": 53
+    },
+    {
+      "assertion": "receipt['record']['manifest_path'] == str(run['directory'] / 'manifest.md')",
+      "failure_condition": "Binding the receipt to another manifest changes its serialized manifest path.",
+      "file": "tests/test_a_run_leaves_nothing_behind.py",
+      "line": 54
+    },
+    {
+      "assertion": "receipt['release']['worktree_released'] is True",
+      "failure_condition": "Recording an unsuccessful workspace release fails the explicit success receipt check.",
+      "file": "tests/test_a_run_leaves_nothing_behind.py",
+      "line": 55
+    },
+    {
+      "assertion": "(archive / 'manifest.md').read_text().startswith('node:')",
+      "failure_condition": "Dropping or truncating the archived manifest loses its node field.",
+      "file": "tests/test_a_run_leaves_nothing_behind.py",
+      "line": 56
+    },
+    {
+      "assertion": "runs.run_dir(run['run_id']) == archive",
+      "failure_condition": "Reverting run_dir to live-only lookup returns the missing live directory instead of the independently constructed archive.",
+      "file": "tests/test_a_run_leaves_nothing_behind.py",
+      "line": 57
+    },
+    {
+      "assertion": "runs.resolve_run_path(run['directory'] / 'manifest.md').is_file()",
+      "failure_condition": "Reverting citation resolution returns a nonexistent original manifest path.",
+      "file": "tests/test_a_run_leaves_nothing_behind.py",
+      "line": 58
+    },
+    {
+      "assertion": "report['steps']['land']['pushed'] is True",
+      "failure_condition": "Not pushing the landed head makes the land step report pushed false.",
+      "file": "tests/test_a_run_leaves_nothing_behind.py",
+      "line": 67
+    },
+    {
+      "assertion": "result.exit_code == 0",
+      "failure_condition": "A failed terminal landing makes the CLI exit nonzero.",
+      "file": "tests/test_a_run_leaves_nothing_behind.py",
+      "line": 69
+    },
+    {
+      "assertion": "promotion_evidence._manifest_text(archived_record).startswith('node:')",
+      "failure_condition": "Reverting archived manifest resolution returns empty text for the old citation.",
+      "file": "tests/test_a_run_leaves_nothing_behind.py",
+      "line": 71
+    },
+    {
+      "assertion": "gate is not None and 'EXIT=0' in gate",
+      "failure_condition": "Reverting archived gate-log resolution returns None for the old citation.",
+      "file": "tests/test_a_run_leaves_nothing_behind.py",
+      "line": 75
+    },
+    {
+      "assertion": "result['pointer_removed']",
+      "failure_condition": "Not retiring the discard pointer makes the reported removal false.",
+      "file": "tests/test_a_run_leaves_nothing_behind.py",
+      "line": 82
+    },
+    {
+      "assertion": "promotion.discard_recorded(run['run_id'])",
+      "failure_condition": "Losing the discard record prevents the discard-record owner from finding it.",
+      "file": "tests/test_a_run_leaves_nothing_behind.py",
+      "line": 83
+    },
+    {
+      "assertion": "Path(result['discard_record']).is_file()",
+      "failure_condition": "Returning the obsolete live discard receipt path points at a missing file.",
+      "file": "tests/test_a_run_leaves_nothing_behind.py",
+      "line": 84
+    },
+    {
+      "assertion": "result['run_archived'] == str(terminal_cleanup.archive_dir(run['run_id']))",
+      "failure_condition": "Not returning the archived run destination omits or changes the archive result.",
+      "file": "tests/test_a_run_leaves_nothing_behind.py",
+      "line": 85
+    },
+    {
+      "assertion": "result['pointer_removed']",
+      "failure_condition": "Not retiring the completed promotion pointer makes its removal false.",
+      "file": "tests/test_a_run_leaves_nothing_behind.py",
+      "line": 104
+    },
+    {
+      "assertion": "not result['worktree_released']",
+      "failure_condition": "Reverting the recoverable-manifest guard allows release instead of the recorded refusal.",
+      "file": "tests/test_a_run_leaves_nothing_behind.py",
+      "line": 116
+    },
+    {
+      "assertion": "run['worktree'].is_dir()",
+      "failure_condition": "Releasing a blocked or waiting worktree removes the actual recoverable directory.",
+      "file": "tests/test_a_run_leaves_nothing_behind.py",
+      "line": 117
+    },
+    {
+      "assertion": "run['directory'].is_dir()",
+      "failure_condition": "Archiving a blocked or waiting delivery removes its original directory.",
+      "file": "tests/test_a_run_leaves_nothing_behind.py",
+      "line": 118
+    },
+    {
+      "assertion": "run['scratch'].is_dir()",
+      "failure_condition": "Reverting recoverable scratch preservation removes the actual scratch directory.",
+      "file": "tests/test_a_run_leaves_nothing_behind.py",
+      "line": 119
+    },
+    {
+      "assertion": "result['scratch_withheld'] == 'run retained for recovery'",
+      "failure_condition": "Dropping the explicit recoverable scratch refusal removes or changes the stated reason.",
+      "file": "tests/test_a_run_leaves_nothing_behind.py",
+      "line": 120
+    },
+    {
+      "assertion": "rows[0]['worktree_released']",
+      "failure_condition": "Not replaying the saved terminal cleanup intent prevents workspace release after pointer retirement.",
+      "file": "tests/test_a_run_leaves_nothing_behind.py",
+      "line": 135
+    },
+    {
+      "assertion": "str(path) in output",
+      "failure_condition": "Not reporting any removed workspace, delivery or scratch path loses that actual path from captured output.",
+      "file": "tests/test_a_run_leaves_nothing_behind.py",
+      "line": 139
+    },
+    {
+      "assertion": "str(terminal_cleanup.cleanup_path(run['run_id'])) in output",
+      "failure_condition": "Not reporting cleanup-intent removal loses the receipt path from captured output.",
+      "file": "tests/test_a_run_leaves_nothing_behind.py",
+      "line": 140
+    },
+    {
+      "assertion": "terminal_cleanup.sweep_ended_runs(limit=1)[0]['withheld'] == 'live pointer'",
+      "failure_condition": "Ignoring a live pointer releases or misclassifies the held first cleanup intent.",
+      "file": "tests/test_a_run_leaves_nothing_behind.py",
+      "line": 152
+    },
+    {
+      "assertion": "runs.pointer_path(live['run_id']).is_file()",
+      "failure_condition": "Removing the held pointer destroys the actual live pointer file.",
+      "file": "tests/test_a_run_leaves_nothing_behind.py",
+      "line": 153
+    },
+    {
+      "assertion": "run['worktree'].is_dir()",
+      "failure_condition": "Releasing the other pending operation before its slice removes its worktree too early.",
+      "file": "tests/test_a_run_leaves_nothing_behind.py",
+      "line": 154
+    },
+    {
+      "assertion": "terminal_cleanup.sweep_ended_runs(limit=1)[0]['worktree_released']",
+      "failure_condition": "Not advancing the cursor repeats the first held intent instead of releasing the next run.",
+      "file": "tests/test_a_run_leaves_nothing_behind.py",
+      "line": 155
+    },
+    {
+      "assertion": "{path.name for path in visited} == names",
+      "failure_condition": "Walking historical run directories or omitting a live directory changes the independently seeded visited-name set.",
+      "file": "tests/test_a_run_leaves_nothing_behind.py",
+      "line": 212
+    },
+    {
+      "assertion": "len(visited) == 5",
+      "failure_condition": "Repeated visits or missing live visits change the expected five observations.",
+      "file": "tests/test_a_run_leaves_nothing_behind.py",
+      "line": 213
+    },
+    {
+      "assertion": "archive_reads == []",
+      "failure_condition": "Any archive stat during gc populates the observer list.",
+      "file": "tests/test_a_run_leaves_nothing_behind.py",
+      "line": 214
+    },
+    {
+      "assertion": "archive_reads == [archive_root / 'ended-0']",
+      "failure_condition": "An observer incapable of detecting a real archived stat fails the positive control.",
+      "file": "tests/test_a_run_leaves_nothing_behind.py",
+      "line": 218
+    },
+    {
+      "assertion": "result['pointer_removed']",
+      "failure_condition": "Not removing the unlaunched request pointer makes its removal false.",
+      "file": "tests/test_a_run_leaves_nothing_behind.py",
+      "line": 226
+    },
+    {
+      "assertion": "Path(result['discard_record']).is_file()",
+      "failure_condition": "Losing the unlaunched discard receipt leaves its returned file unreadable.",
+      "file": "tests/test_a_run_leaves_nothing_behind.py",
+      "line": 227
+    },
+    {
+      "assertion": "not runs.run_dir(record['run_id']).exists()",
+      "failure_condition": "Creating a phantom run home for an unlaunched request leaves a directory behind.",
+      "file": "tests/test_a_run_leaves_nothing_behind.py",
+      "line": 228
+    },
+    {
+      "assertion": "not terminal_cleanup.cleanup_path(record['run_id']).exists()",
+      "failure_condition": "Retaining a phantom cleanup receipt for a run with no home leaves a pending intent.",
+      "file": "tests/test_a_run_leaves_nothing_behind.py",
+      "line": 229
+    },
+    {
+      "assertion": "len(calls) == 1",
+      "failure_condition": "An observer that was not invoked by its positive control records a count other than one.",
+      "file": "tests/test_a_run_leaves_nothing_behind.py",
+      "line": 243
+    },
+    {
+      "assertion": "result['classification'] == 'live-referenced'",
+      "failure_condition": "Ignoring the live worktree claim changes its classification away from live-referenced.",
+      "file": "tests/test_a_run_leaves_nothing_behind.py",
+      "line": 252
+    },
+    {
+      "assertion": "result['non_equivalent_commits'] is None",
+      "failure_condition": "Comparing a live worktree history produces measured commits or triggers the raising observer.",
+      "file": "tests/test_a_run_leaves_nothing_behind.py",
+      "line": 253
+    },
+    {
+      "assertion": "'live pointer' in result['commits_unmeasured_reason']",
+      "failure_condition": "Omitting the explicit unmeasured-live-claim reason changes the explanatory field.",
+      "file": "tests/test_a_run_leaves_nothing_behind.py",
+      "line": 254
+    },
+    {
+      "assertion": "calls == []",
+      "failure_condition": "Reverting the new claims condition reaches the raising observer and populates its call list.",
+      "file": "tests/test_a_run_leaves_nothing_behind.py",
+      "line": 255
+    },
+    {
+      "assertion": "run['worktree'].is_dir()",
+      "failure_condition": "Releasing the live-referenced worktree removes the actual directory.",
+      "file": "tests/test_a_run_leaves_nothing_behind.py",
+      "line": 256
+    }
+  ],
+  "assertion_independence": "Receipt identity comparisons read a separately serialized end.json against fixture-owned identities; both sides do not move together under the cleanup regression. Direct observer calls are positive controls, not claimed production guards. No tautological added assertion was found.",
+  "base_log_revision": "1a251aab7ee9b65cca12cc62f7b9b8aeda9d9280",
+  "call_site_count": 7,
+  "call_sites": [
+    "reckon/crew/promotion.py:_complete_locked",
+    "reckon/crew/promotion.py:discard",
+    "reckon/crew/promotion_release.py:_release_run_workspace",
+    "reckon/crew/gc.py:garbage_collect",
+    "reckon/crew/gc.py:retention_sweep",
+    "reckon/crew/promotion_evidence.py:_manifest_text",
+    "reckon/crew/review.py:_read_gate_log"
+  ],
+  "completed_at": "2026-11-13T05:53:16Z",
+  "dispatched_at": "2026-11-13T05:43:33Z",
+  "evidence": {
+    "after_suite_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261113T023226263467-run-leaves-nothing-behind/scope-granted-after.log",
+    "after_summary": "62 passed in 20.12s",
+    "baseline_suite_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261113T023226263467-run-leaves-nothing-behind/baseline-fixed.log",
+    "baseline_summary": "51 passed in 11.41s",
+    "gc_dry_run_seconds": 1001.2914363518357,
+    "importer_base_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261113T023226263467-run-leaves-nothing-behind/scope-granted-stability-base-importers.log",
+    "importer_head_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261113T023226263467-run-leaves-nothing-behind/scope-granted-stability-head-importers.log",
+    "importer_summary": "48 failed, 1232 passed in each matched arm; identical failure IDs",
+    "live_measurement_limit": "Peers were active, so census differences are not wholly attributable to this sweep; protected historical residue remains.",
+    "live_population": {
+      "live_after": 77,
+      "live_before": 78,
+      "own_archived": 34,
+      "runs_after": 8532,
+      "runs_before": 8565,
+      "worktrees_after": 386,
+      "worktrees_before": 388
+    },
+    "negative_control_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261113T023226263467-run-leaves-nothing-behind/negative-control-refined.log",
+    "negative_control_quote": "AssertionError: ended worktree is still on disk",
+    "original_reproduction_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261113T023226263467-run-leaves-nothing-behind/reproduction.log",
+    "original_reproduction_quote": "AssertionError: ended directory remains in walked runs"
+  },
+  "findings": [],
+  "head_log_revision": "d7e829c317c63d12b571cb0a84e76f5ace9376d6",
+  "importer_added_failure_count": 0,
+  "importer_added_failure_ids": [],
+  "inventory_assertion_analysis": "tests/test_staged_write_inventory.py adds an owner inventory entry, not a new assertion; its existing census fails if the archive directory rename has no explicit owner.",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 7 production call site(s)",
+    "diff": "Read all ten commits individually from 1a251aab7ee9b65cca12cc62f7b9b8aeda9d9280 through d7e829c317c63d12b571cb0a84e76f5ace9376d6; the final eleven-file diff contains terminal cleanup, archived evidence resolution, live-history avoidance, focused tests and scoped evidence.",
+    "done_when": "Read prompt.txt:142; tests/test_a_run_leaves_nothing_behind.py:61-256 cover the terminal, recovery and population measures, and the recorded operational logs supply the live census and completed gc timing.",
+    "goal": "Read prompt.txt:38 and live section s34; promotion.py:1438,2125,2335 and promotion_release.py:553 attach run archival to the terminal operation while preserving recoverable workspaces.",
+    "manifest": "Read manifest.md and its actual baseline-fixed.log, scope-granted-after.log and negative-control-refined.log receipts; the armed results are 51 passed at base and 62 passed at the requested head, with the control failing on physical residue.",
+    "write_paths": "Read prompt.txt:80 and resume-2-advice.txt:1; all eleven changed paths are inside the original grants or the explicit additional grant for tests/test_staged_write_inventory.py."
+  },
+  "justifications": {
+    "durability": "tests/test_a_run_leaves_nothing_behind.py:42-58,112-140,152-155,212-218,252-256 fail on concrete residue, lost recovery state, starvation, archive traversal or live-history regressions, although replay of the persisted retention mapping at terminal_cleanup.py:158-161 has no dedicated assertion.",
+    "evidence": "scope-granted-after.log records the exact requested revision and 62 passed with EXIT=0, negative-control-refined.log records the intended physical-residue failure, and full-cycle.log plus fleet-before.json and fleet-after.json record the live sweep and 1001.291-second dry run without claiming the backlog disappeared.",
+    "fit": "reckon/crew/terminal_cleanup.py:32,151,159 uses the existing JSON writer, run lock and workspace release owner, and the ten changed Python paths have zero added lint or format findings in scope-granted-lint-delta.json.",
+    "goal_fidelity": "reckon/crew/promotion.py:1438,2125,2335 persists terminal cleanup before pointer retirement and reckon/crew/promotion_release.py:528,553 retains recoverable scratch or archives a released delivery in that operation.",
+    "reuse": "Capability searches across reckon/crew found workspace release owned by promotion_release.py:378 and conservative classification by routing.py:_inspect_workspace, which the new orchestration reuses; gc.py:1767 retires database rows and admission/launching.py:851 archives pointer history, so neither duplicates intact delivery-directory archival or its crash-intent reader.",
+    "scope_discipline": "The eleven paths in the base-to-head diff match prompt.txt:80 and the explicit tests/test_staged_write_inventory.py scope extension in resume-2-advice.txt:1."
+  },
+  "limitations": [
+    "No experiment or suite rerun performed by this reviewer; judgments use exact revision objects and readable recorded receipts.",
+    "The retained worktree_retention mapping is persisted and read in the diff, but lacks a dedicated replay regression test; this does not block the named done-when."
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: Read prompt.txt:38 and live section s34; promotion.py:1438,2125,2335 and promotion_release.py:553 attach run archival to the terminal operation while preserving recoverable workspaces.\nVERDICT done_when: Read prompt.txt:142; tests/test_a_run_leaves_nothing_behind.py:61-256 cover the terminal, recovery and population measures, and the recorded operational logs supply the live census and completed gc timing.\nVERDICT write_paths: Read prompt.txt:80 and resume-2-advice.txt:1; all eleven changed paths are inside the original grants or the explicit additional grant for tests/test_staged_write_inventory.py.\nVERDICT manifest: Read manifest.md and its actual baseline-fixed.log, scope-granted-after.log and negative-control-refined.log receipts; the armed results are 51 passed at base and 62 passed at the requested head, with the control failing on physical residue.\nVERDICT diff: Read all ten commits individually from 1a251aab7ee9b65cca12cc62f7b9b8aeda9d9280 through d7e829c317c63d12b571cb0a84e76f5ace9376d6; the final eleven-file diff contains terminal cleanup, archived evidence resolution, live-history avoidance, focused tests and scoped evidence.\nCALL_SITES: reckon/crew/promotion.py:_complete_locked, reckon/crew/promotion.py:discard, reckon/crew/promotion_release.py:_release_run_workspace, reckon/crew/gc.py:garbage_collect, reckon/crew/gc.py:retention_sweep, reckon/crew/promotion_evidence.py:_manifest_text, reckon/crew/review.py:_read_gate_log\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/promotion.py:1438,2125,2335 persists terminal cleanup before pointer retirement and reckon/crew/promotion_release.py:528,553 retains recoverable scratch or archives a released delivery in that operation.\nSCORE evidence: 20\nJUSTIFICATION evidence: scope-granted-after.log records the exact requested revision and 62 passed with EXIT=0, negative-control-refined.log records the intended physical-residue failure, and full-cycle.log plus fleet-before.json and fleet-after.json record the live sweep and 1001.291-second dry run without claiming the backlog disappeared.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: The eleven paths in the base-to-head diff match prompt.txt:80 and the explicit tests/test_staged_write_inventory.py scope extension in resume-2-advice.txt:1.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_a_run_leaves_nothing_behind.py:42-58,112-140,152-155,212-218,252-256 fail on concrete residue, lost recovery state, starvation, archive traversal or live-history regressions, although replay of the persisted retention mapping at terminal_cleanup.py:158-161 has no dedicated assertion.\nSCORE fit: 20\nJUSTIFICATION fit: reckon/crew/terminal_cleanup.py:32,151,159 uses the existing JSON writer, run lock and workspace release owner, and the ten changed Python paths have zero added lint or format findings in scope-granted-lint-delta.json.\nSCORE reuse: 20\nJUSTIFICATION reuse: Capability searches across reckon/crew found workspace release owned by promotion_release.py:378 and conservative classification by routing.py:_inspect_workspace, which the new orchestration reuses; gc.py:1767 retires database rows and admission/launching.py:851 archives pointer history, so neither duplicates intact delivery-directory archival or its crash-intent reader.\n",
+  "review_run_id": "r-20261113T053703588634-review-of-run-leaves-nothing-behind-d7e829c317c6",
+  "reviewed_base_sha": "1a251aab7ee9b65cca12cc62f7b9b8aeda9d9280",
+  "reviewed_changed_paths": [
+    "docs/evidence/fragments/work-flows-to-the-lane/run-leaves-nothing-behind.html",
+    "reckon/crew/gc.py",
+    "reckon/crew/promotion.py",
+    "reckon/crew/promotion_evidence.py",
+    "reckon/crew/promotion_release.py",
+    "reckon/crew/review.py",
+    "reckon/crew/routing.py",
+    "reckon/crew/runs.py",
+    "reckon/crew/terminal_cleanup.py",
+    "tests/test_a_run_leaves_nothing_behind.py",
+    "tests/test_staged_write_inventory.py"
+  ],
+  "reviewed_commits": [
+    "f301bde50286f3736c76fc4ed7f99d0100fdd334",
+    "a3b19408d40a842150624aff31d1c08975f46542",
+    "3c523e95f103a95969e3f36266c8b410ac6a69bc",
+    "7148cd0949d469f9d86a57a7e21bc36750e740c1",
+    "216e328628a2cb1db9403d470e55f1c2403e7d27",
+    "a6792d1de1323895bd0439b5b17b972a9adf22d9",
+    "55457e5862a4c94d254a2ba117f8f8abf5cbc53b",
+    "8646b869bf8ed924f9485eb4e240516811516fd7",
+    "6ea2e0fb758da980da364b8fac24b7961299de69",
+    "d7e829c317c63d12b571cb0a84e76f5ace9376d6"
+  ],
+  "reviewed_head_sha": "d7e829c317c63d12b571cb0a84e76f5ace9376d6",
+  "reviewed_run_id": "r-20261113T023226263467-run-leaves-nothing-behind",
+  "scores": {
+    "durability": 19,
+    "evidence": 20,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-13T06:08:30.329301+00:00",
+  "total": 119
+}
