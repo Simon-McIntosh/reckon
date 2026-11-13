@@ -19,6 +19,7 @@ from reckon.crew.dispatch import (
     worker_scratch_root,
 )
 from reckon.crew.node import (
+    INTERRUPTED_RUN_PHASE,
     CrewError,
 )
 from reckon.crew.reports import (
@@ -1002,21 +1003,96 @@ def _harvest_lane_receipt(
     return result
 
 
-def _unreconciled_live_runs(pointers: Iterable[Mapping[str, Any]]) -> int:
+def _unreconciled_live_runs(
+    pointers: Iterable[Mapping[str, Any]],
+    served: Mapping[str, str] | None = None,
+) -> int:
     """Count the live pointers no closure disposition excuses.
 
     Each pointer is classified by the closure drain's own per-pointer step,
     :func:`reckon.crew.runs._drain_row`, so this agrees with the drain's
-    ``unreconciled_runs`` by construction: the drain builds its rows with the
-    same function, and a change to the composition reaches both. Nothing is
-    recomputed here, and the drain's plan inventory is not read — a promotion
-    stamps a reading on its row and never consumes the drain's closure count or
-    plan remainder.
+    involvement: the drain builds its rows with the same function, and a change
+    to the composition reaches both. Nothing is recomputed here, and the drain's
+    plan inventory is not read — a promotion stamps a reading on its row and
+    never consumes the drain's closure count or plan remainder.
+
+    ``served`` maps a run id to the classification word that run already
+    holds, so a run whose verdict was read from the station's store is not read
+    again — see :func:`_served_fleet_classifications`. A run it does not name
+    is classified here, host-gated liveness and all.
     """
-    return sum(1 for pointer in pointers if _drain_row(pointer)["unreconciled"])
+    words = served or {}
+    counted = 0
+    for pointer in pointers:
+        run_id = str(pointer.get("run_id") or "")
+        row = (
+            _drain_row(pointer, classification=words[run_id])
+            if run_id in words
+            else _drain_row(pointer)
+        )
+        if row["unreconciled"]:
+            counted += 1
+    return counted
 
 
 _FLEET_UNMEASURED_CAUSE_LIMIT = 200
+
+
+#: Words the fleet reducer substitutes for the run's own recovery word: a
+#: stalled stream, a launch its attempt never backed, a worker that died
+#: mid-turn, and a turn that concluded without a manifest. A stored verdict
+#: carrying one of these is the reducer's reading of the run rather than the
+#: run's classification, so such a run is classified afresh instead of served.
+_FLEET_REFINED_WORDS = frozenset(
+    {"stalled", "launch-failed", "ended-without-manifest", INTERRUPTED_RUN_PHASE}
+)
+
+
+def _served_fleet_classifications(
+    project: str, pointers: Iterable[Mapping[str, Any]]
+) -> dict[str, dict[str, Any]]:
+    """Each live run's stored classification, from the station's own store.
+
+    One read answers the whole fleet, so a promotion's reading costs what that
+    read costs however many runs are live. The store is the node's station,
+    which classifies each live run on its own tick and keeps the verdict; a run
+    dispatched since that tick has no stored verdict yet and is left out, so
+    the reading classifies exactly that run and no other.
+
+    A store that cannot be opened, that was built from another crew home, or
+    that holds no readable verdict answers empty: the reading then classifies
+    afresh, which is correct and merely costs what it always did.
+    """
+    from reckon.crew import station_store
+    from reckon.crew.run_paths import crew_home
+
+    try:
+        store = station_store.StationStore.at_runtime_root()
+    except (station_store.StationStoreError, OSError):
+        return {}
+    if not store.database.exists():
+        return {}
+    try:
+        if store.station_value(station_store.CREW_HOME_KEY) != str(crew_home()):
+            return {}
+        stored = store.classifications()
+    except Exception:  # noqa: BLE001 - an unreadable store is no stored verdict
+        return {}
+    finally:
+        store.close()
+    wanted = {str(pointer.get("run_id") or "") for pointer in pointers}
+    served: dict[str, dict[str, Any]] = {}
+    for run_id, snapshot in stored.items():
+        if run_id not in wanted or not isinstance(snapshot, Mapping):
+            continue
+        if str(snapshot.get("project") or "") not in {"", project}:
+            continue
+        if str(snapshot.get("recovery_classification") or "") in _FLEET_REFINED_WORDS:
+            continue
+        if not snapshot.get("classification"):
+            continue
+        served[run_id] = dict(snapshot)
+    return served
 
 
 def _fleet_state_reading(project: str) -> dict[str, Any]:
@@ -1024,38 +1100,60 @@ def _fleet_state_reading(project: str) -> dict[str, Any]:
 
     The live-pointer projection owns the pointer classification, and the
     unreconciled count is derived from those pointers alone; promotion composes
-    the already-derived facts into the result that an orchestrator is about to
-    read. The reading deliberately stays outside the ledger because it describes
-    the fleet at this moment, not this run.
+    the already-derived facts into the result an orchestrator is about to read.
+    It reads them from the station's stored verdicts, so a promotion's cost is
+    the cost of that one store read however many runs are live: promotion never
+    reaches into another run's stream, manifest or review records on its own
+    path. A stored verdict is written on the station's tick, so a field here may
+    lag that tick and never lags the run — the station classifies a run whose
+    inputs moved. A run with no stored verdict, or one whose stored word is the
+    fleet reducer's reading rather than the run's classification, is classified
+    here, which is the only per-run cost the reading has left.
 
-    When the reading cannot be composed, at the per-pointer step that derives the
-    unreconciled count or earlier when the pointers cannot be listed at all, the
-    result is an unmeasured reading that still states the exception type and
-    message under one named key, bounded in length; the exception never blocks
-    landing, but it leaves a cause a reader can act on instead of a bare absence.
-    Every unmeasured reading names the exception that produced it, whatever step
-    failed, so a stale fixture and a real composition break are distinguishable
-    from the promotion result alone.
+    The reading deliberately stays outside the ledger: it describes the fleet
+    at this moment, not this run.
+
+    When the reading cannot be composed, at the per-pointer step that derives
+    the unreconciled count or earlier when the pointers cannot be listed at
+    all, the result is an unmeasured reading that still states the exception
+    type and message under one named key, bounded in length; the per-run step's
+    exception never blocks landing, but it leaves a cause a reader can act on
+    instead of a bare absence. Every unmeasured reading names the exception
+    that produced it, whatever step failed, so a stale fixture and a real
+    composition break are distinguishable from the promotion result alone.
     """
     observed_at = _utc_now()
     try:
         from reckon.crew import recovery
 
         pointers = list_live(project=project)
-        classified = [recovery.classify_pointer(pointer) for pointer in pointers]
-        actionable = [
-            str(row.get("recovery_classification") or "")
-            for row in classified
-            if str(row.get("recovery_classification") or "")
-            in recovery.ACTIONABLE_RECOVERY_CLASSIFICATIONS
-        ]
+        served = _served_fleet_classifications(project, pointers)
+        words: list[str] = []
+        for pointer in pointers:
+            snapshot = served.get(str(pointer.get("run_id") or ""))
+            word = (
+                str(snapshot.get("recovery_classification") or "")
+                if snapshot is not None
+                else str(
+                    recovery.classify_pointer(pointer).get("recovery_classification")
+                    or ""
+                )
+            )
+            if word in recovery.ACTIONABLE_RECOVERY_CLASSIFICATIONS:
+                words.append(word)
         lanes = {
             str(pointer.get("backend") or "").strip()
             for pointer in pointers
             if str(pointer.get("backend") or "").strip()
         }
         try:
-            unreconciled = _unreconciled_live_runs(pointers)
+            unreconciled = _unreconciled_live_runs(
+                pointers,
+                {
+                    run_id: str(snapshot.get("classification") or "")
+                    for run_id, snapshot in served.items()
+                },
+            )
         except Exception as exc:  # noqa: BLE001 - a named cause never blocks landing
             return _unavailable_fleet_reading(observed_at, cause=exc)
         return {
@@ -1063,8 +1161,8 @@ def _fleet_state_reading(project: str) -> dict[str, Any]:
             "observed_at": observed_at,
             "live_runs": len(pointers),
             "unreconciled_runs": unreconciled,
-            "actionable_runs": len(actionable),
-            "actionable_classifications": sorted(set(actionable)),
+            "actionable_runs": len(words),
+            "actionable_classifications": sorted(set(words)),
             "occupied_lanes": len(lanes),
         }
     except Exception as exc:  # noqa: BLE001 - a named cause never blocks landing
