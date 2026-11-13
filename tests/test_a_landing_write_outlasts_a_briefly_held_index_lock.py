@@ -31,6 +31,10 @@ RUN = "landing-write-outlasts-lock"
 SEEDED = "committed plan\n"
 LANDING = "landing narrative the promotion writes\n"
 HOLD_SECONDS = 20.0
+# A retry bound is a spacing span, so the wall clock a landing spends on it is
+# longer than the span by the cost of each git call it makes. A lock held past a
+# span plus this margin cannot be reached by the last attempt.
+HOLD_PAST_BOUND_SECONDS = 30.0
 
 _HOLDER = """
 import os, sys, time
@@ -162,10 +166,11 @@ def test_a_landing_write_outlasts_a_lock_held_for_twenty_seconds(repository):
 def test_a_lock_held_past_the_bound_refuses_naming_its_age(repository):
     """A lock that outlasts the bound refuses, naming its age and that bound.
 
-    The lock is held past the staging bound and released five seconds later, so
-    the rollback's own wait settles the forward write. The refusal still names
-    how long the lock had been held when the staging gave up and the bound it
-    outlasted, and the plan file returns to its committed content.
+    The lock is held well past the staging bound, so the staging cannot reach
+    it however much a git call costs, and released once the staging has given
+    up, so the rollback's own wait settles the forward write. The refusal still
+    names how long the lock had been held when the staging gave up and the bound
+    it outlasted, and the plan file returns to its committed content.
     """
     root, plan = repository
     attempts = promotion_scope._INDEX_LOCK_RETRY_ATTEMPTS
@@ -173,7 +178,7 @@ def test_a_lock_held_past_the_bound_refuses_naming_its_age(repository):
     bound = promotion_scope._index_lock_retry_bound_seconds(attempts, interval)
     plan.write_text(LANDING, encoding="utf-8")
     with (
-        _IndexLockHolder(root, bound + 5.0),
+        _IndexLockHolder(root, bound + HOLD_PAST_BOUND_SECONDS),
         pytest.raises(promotion.CrewError) as caught,
     ):
         promotion._commit_landing_writes(
