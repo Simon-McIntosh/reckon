@@ -24,7 +24,7 @@
   <title>Work Flows To The Lane | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="194">
+<meta name="plan-version" content="195">
 <meta name="plan-modified" content="2026-11-13">
 </head>
 <body>
@@ -753,7 +753,7 @@
     <div class="r-comment-body"><p>A deferred promotion now resolves a relative gate program against the run's recorded worktree and then its repository, refusing with a message naming the directories tried; the change is sound and tested for the checkout case, and the review records two non-blocking findings: an absolute-program refusal that misstates where it looked, and no test for the repository-fallback root.</p></div>
 </div>
 <div class="r-comment" data-section="s43" data-id="c-run-r-20261113T161309836615-deferred-promotion-resolves-relative-program" data-who="reckon-build" data-when="2026-11-13T16:43:37.573Z">
-    <div class="r-comment-body"><p>A deferred promotion resolves a gate command&#x27;s relative program (dot-venv-bin-python) against the run&#x27;s recorded checkout and then its repository instead of the promoting process&#x27;s working directory, and refuses with a message naming the directories tried; absolute programs and PATH lookups are unchanged.</p></div>
+    <div class="r-comment-body"><p>A deferred promotion resolves a gate command's relative program (dot-venv-bin-python) against the run's recorded checkout and then its repository instead of the promoting process's working directory, and refuses with a message naming the directories tried; absolute programs and PATH lookups are unchanged.</p></div>
 </div>
 <div class="r-comment" data-section="s45" data-id="c-run-r-20261113T165742141004-review-of-review-promoted-before-its-run-f2cafde82d8d" data-who="reckon-build" data-when="2026-11-13T17:10:14.737Z">
     <div class="r-comment-body"><p>§45 review — parsed record scoring goal_fidelity 18, evidence 18, scope_discipline 19, durability 14, fit 20, reuse 20 over base 5057bfacc429 and reviewed head f2cafde82d8de10112f47469abfaab0eb3fa77b0, with added_failure_count 0 and three non-blocking findings (a multi-part refusal loses its parts at promotion_checks.py:1519's only call path, no test covers it, no figure shipped).</p></div>
@@ -814,6 +814,9 @@
 </div>
 <div class="r-comment" data-section="s8" data-id="c-close-s8" data-who="reckon-build" data-when="2026-11-12T02:20:00Z">
     <div class="r-comment-body"><p>§8 landed at <code>ff797f0c45</code>. <a href="/reckon/evidence/archive/work-flows-to-the-lane-landed.html#s8-re-review-need-in-shadow">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s44" data-id="c-run-r-20261113T161415953123-code-reload-never-cuts-off-a-promotion" data-who="reckon-build" data-when="2026-11-13T16:43:04.035Z">
+    <div class="r-comment-body"><p>A code reload no longer cuts off a promotion or a landing in flight: the admission loop refuses new promotion and landing work once the code stamp has moved, waits for the promotions and landing it started to reach their own end, then re-executes. Head arm 54 passed (EXIT=0) against base 51 passed (EXIT=0), and removing the drain fails both in-flight cases (2 failed, 1 passed, EXIT=1).</p></div>
 </div>
 </section>
 </main>
