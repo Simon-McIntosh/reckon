@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="the-monitor-shows-the-work-it-watches">
+  <meta name="plan-evidence-for" content="reckon:the-monitor-shows-the-work-it-watches">
+  <meta name="plan-verifies" content="reckon:the-monitor-shows-the-work-it-watches#s130">
+  <meta name="plan-recorded-at" content="2026-11-13">
+  <meta name="plan-verdict" content="passed">
+  <title>A row replayed on attach is not printed as news | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" id="monitor-replayed-row-marked-s130-landing" data-node="monitor-replayed-row-marked-s130" data-reckon="landed" data-when="2026-11-13">
+  <h2>A row the follower replays on attach now begins with [replay]</h2>
+
+  <p id="monitor-replayed-row-marked-s130-prefix">On a pipe the follower marks every
+  row it derives from what was already on disk when it attached, and leaves a
+  transition written since the attach in the live format. <code>reckon/crew_follow_commands.py</code>
+  carries <code>REPLAY_PREFIX = "[replay] "</code>, and the renderer applies it to a row
+  flagged <code>replay</code> only when the output is not a terminal, so a terminal pane
+  keeps its colour and its own scrollback distinction while a Monitor reading
+  through <code>grep</code> can drop the replayed rows with one filter.
+  <code>crew follow --help</code> states the prefix on the <code>--project</code> option.</p>
+
+  <p id="monitor-replayed-row-marked-s130-two-path">The mark is set where the row is
+  <em>made</em>, not where it is returned. The fleet replay hands each baseline and
+  each pre-boundary transition to the ticker's row path, which may hold a row for
+  its settle window and release it on a later flush, so marking the returned rows
+  would leave a held row unmarked. Baseline rows and the transitions read up to
+  the attach boundary are marked before <code>path.feed</code>, the gap rows a
+  re-arm fills in are marked the same way, and the station subscriber's first poll
+  — the other path that delivers what was already on disk — marks its backlog the
+  same way. The renderer strips the flag before the row reaches
+  <code>note_delivered</code>, the JSON form or the history burst.</p>
+
+  <p id="monitor-replayed-row-marked-s130-snapshot">§124's framed live-work snapshot
+  on a pipe resume is untouched: it is state rather than news, so it is neither
+  prefixed nor withheld, and the third case below holds it to that.</p>
+
+  <p id="monitor-replayed-row-marked-s130-evidence">Evidence:
+  <code>tests/test_a_row_replayed_on_attach_reads_as_replay.py</code> attaches the
+  wired <code>crew follow</code> command to a pipe over a temporary crew home holding
+  two review runs delivered three days before the attach, one run whose transition
+  was stamped the previous evening, and one transition appended at the instant the
+  attach reads its byte boundary. Every pre-attach row begins with
+  <code>[replay] </code>; the transition written after the attach does not.
+  <strong>Commit <code>17b9c0bb1d</code>.</strong> Logs are under the run directory:
+  <code>logs/node_head.log</code> (3 passed, <code>EXIT=0</code>),
+  <code>logs/node_base.log</code> (2 failed, 1 passed, <code>EXIT=1</code>: the first case
+  prints <code>r-replay-review-of-nova-a  new → delivered</code> in the live format, and
+  the help case finds no <code>[replay]</code>), <code>logs/node_negative.log</code>
+  (1 failed, 2 passed, <code>EXIT=1</code>, the failure being the first case).</p>
+
+  <p id="monitor-replayed-row-marked-s130-negative">Declared negative control:
+  removing the attach-time check prints the delivered-three-days-ago row in the
+  same live format, so the first case fails. Removing the mark from
+  <code>_fleet_replay</code> in a scratch copy of this revision does exactly that,
+  and only that: the second and third cases still pass, so the failure is the
+  attach-time check and not a broken tree.</p>
+
+  <p id="monitor-replayed-row-marked-s130-population">Population: the 72 test
+  files importing <code>reckon/crew_follow_commands.py</code> or
+  <code>reckon/crew/follow_checkpoint.py</code>, one arm at a time on
+  <code>all_debug</code> with <code>-n 4</code>. Base revision
+  <code>4d5c4389b7</code>: 12 failed, 600 passed (<code>EXIT=1</code>). This node's
+  tip <code>17b9c0bb1d</code>: 10 failed, 602 passed (<code>EXIT=1</code>), and
+  <strong>no failure is added at the tip</strong>. The two failures the base arm
+  carries and the tip arm does not are this node's own first and second cases,
+  which a revision without the prefix is meant to fail. The ten failures both arms
+  share are host-handoff and pane-settle cases that need a live host process and
+  are red at the base revision too. Logs: <code>logs/base_suite.log</code> and
+  <code>logs/after_suite.log</code>. Ruff check and ruff format --check add no
+  findings on the staged paths: the only findings in
+  <code>reckon/crew_follow_commands.py</code> are the pre-existing
+  <code>SIM103</code> and <code>SIM115</code>, present at the base revision as
+  well, and the formatter's drift count is 8 lines either side of the change.</p>
+</article>
+</body>
+</html>
