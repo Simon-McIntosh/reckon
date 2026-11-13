@@ -1,0 +1,113 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_audit": [
+    {
+      "fails_if": "accept_clean_review ever returned an accepting result for a held run; the assertion requires accepted is False and held is True.",
+      "lines": "tests/test_no_caller_waits_on_a_promotion.py:614-621"
+    },
+    {
+      "fails_if": "a repeated held request were re-judged instead of served from the memo; the assertion requires unchanged is True.",
+      "lines": "tests/test_no_caller_waits_on_a_promotion.py:625"
+    },
+    {
+      "fails_if": "release changed any pointer field other than delivery_hold, moved the checkout head, altered the recorded gate or rewrote the manifest.",
+      "lines": "tests/test_no_caller_waits_on_a_promotion.py:627-636"
+    },
+    {
+      "fails_if": "the released run returned the cached held refusal; reversal of 93f8975688 reproduces exactly this failure in hold-negative-control.log.",
+      "lines": "tests/test_no_caller_waits_on_a_promotion.py:637-639"
+    },
+    {
+      "assessment": "The commit-identity assertion at line 643 compares the ledger row against a fixture-decomposed git head; recorded as a non-blocking caveat.",
+      "lines": "tests/test_no_caller_waits_on_a_promotion.py:643-644"
+    }
+  ],
+  "call_sites": [
+    "reckon/crew/resumption.py:2773 dispatch_awaiting_reviews",
+    "reckon/crew/recovery_review_acceptance.py:1044 accept_clean_review hand-off callback",
+    "reckon/crew/recovery.py:191 accept_clean_review re-export"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-13T01:14:28Z",
+  "findings": [
+    {
+      "file": "tests/test_no_caller_waits_on_a_promotion.py",
+      "id": "f6b8d074495",
+      "line": "643",
+      "severity": "non-blocking",
+      "text": "non-blocking: rows[0][\"commits\"] == [delivered_head] compares the promoted ledger row against a commit the fixture declared in the run pointer via _write_run, so it proves the promotion propagated the recorded commit rather than independently re-resolving the landed commit from the repository; the negative control at hold-negative-control.log covers the memo regression itself, so this is a caveat on commit-identity coverage, not on the guarded behaviour."
+    }
+  ],
+  "gate_evidence": {
+    "after_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_no_caller_waits_on_a_promotion.py tests/test_staged_write_inventory.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261113T011043749121-no-caller-waits-on-a-promotion/hold-after-suite.log",
+      "observed_summary": "72 passed in 133.12s (0:02:13)",
+      "revision": "98f558e30d9b821b7953e3b03cadc519fac821ec"
+    },
+    "baseline_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_no_caller_waits_on_a_promotion.py tests/test_staged_write_inventory.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261113T011043749121-no-caller-waits-on-a-promotion/hold-baseline-suite.log",
+      "observed_summary": "70 passed in 130.57s (0:02:10)",
+      "revision": "11ae57aaeee308e36dfe395a32e05da02445fb6a"
+    }
+  },
+  "item_verdicts": {
+    "diff": "Read the three commits 40ebc24a, 93f8975688 and 98f558e3 against base 11ae57aa commit by commit: a one-line addition of delivery_hold to _acceptance_inputs' pointer field tuple, a 57-line regression test, and a 45-line evidence section; no other code changed.",
+    "done_when": "Read tests/test_no_caller_waits_on_a_promotion.py:592-644 at the reviewed head; it covers both ordinary and head-bound holds through the real acceptance API, and hold-reproduction.log records the defect before repair and hold-negative-control.log records it failing after reversal.",
+    "goal": "Read docs/plans/work-flows-to-the-lane.html s32 and the run's manifest; the increment answers the prior blocking finding that a released delivery hold left the acceptance memo unchanged, and restores automatic acceptance after release while an unchanged hold keeps its cached refusal.",
+    "manifest": "Read the source manifest; baseline_suite at 11ae57aa and after_suite at 98f558e3 both complete with EXIT=0 and zero failure IDs, and the hold-repair artifacts name the reproduction, focused repair and reversed-commit control.",
+    "write_paths": "Read source manifest orientation_write_paths and the incremental diff; the three changed paths (reckon/crew/recovery_review_acceptance.py, tests/test_no_caller_waits_on_a_promotion.py, docs/evidence/fragments/work-flows-to-the-lane/no-caller-waits-on-a-promotion.html) are all inside reckon/crew, the new test and the section evidence fragment."
+  },
+  "justifications": {
+    "durability": "tests/test_no_caller_waits_on_a_promotion.py:637-639 fails when the answering commit is reversed, which hold-negative-control.log demonstrates with the full reversal of 93f8975688 in a scratch tree.",
+    "evidence": "hold-baseline-suite.log records 70 passed at 11ae57aa and hold-after-suite.log records 72 passed at 98f558e3, both EXIT=0, while hold-reproduction.log (2 failed) and hold-negative-control.log (2 failed after reversing 93f8975688) are recorded.",
+    "fit": "The fix is one entry added to the existing pointer field tuple in _acceptance_inputs (reckon/crew/recovery_review_acceptance.py:373-391), matching the module's memo-identity idiom and introducing no new name.",
+    "goal_fidelity": "reckon/crew/recovery_review_acceptance.py:390 now includes delivery_hold in the memo identity, so release_hold's change makes the cached held refusal at :489-495 stop matching and the same eligible delivery is accepted.",
+    "reuse": "The change extends the existing acceptance memo identity and reuses resume.HOLD_FIELD, hold_delivery and release_hold rather than adding another invalidation mechanism; the same identity is reused by the lease recheck at :608.",
+    "scope_discipline": "The incremental diff touches only reckon/crew/recovery_review_acceptance.py:390, tests/test_no_caller_waits_on_a_promotion.py:592-644 and the section's evidence fragment, all inside the declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: Read docs/plans/work-flows-to-the-lane.html s32 and the run's manifest; the increment answers the prior blocking finding that a released delivery hold left the acceptance memo unchanged, restoring automatic acceptance after release.\nVERDICT done_when: Read tests/test_no_caller_waits_on_a_promotion.py:592-644 at the reviewed head; it covers both hold forms through the real acceptance API, and hold-reproduction.log records the defect before repair.\nVERDICT write_paths: Read the source manifest's declared write paths and the incremental diff; all three changed paths lie inside reckon/crew, the new test and the section evidence fragment.\nVERDICT manifest: Read the source manifest; baseline_suite at 11ae57aa and after_suite at 98f558e3 both complete with EXIT=0 and zero failure IDs.\nVERDICT diff: Read 40ebc24a, 93f8975688 and 98f558e3 against base 11ae57aa commit by commit: one source line, a 57-line regression test and a 45-line evidence section.\nCALL_SITES: reckon/crew/resumption.py:2773 dispatch_awaiting_reviews, reckon/crew/recovery_review_acceptance.py:1044 accept_clean_review hand-off callback, reckon/crew/recovery.py:191 accept_clean_review re-export\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/recovery_review_acceptance.py:390 now includes delivery_hold in the memo identity, so a released hold stops matching the cached refusal at :489-495.\nSCORE evidence: 19\nJUSTIFICATION evidence: hold-baseline-suite.log records 70 passed at 11ae57aa and hold-after-suite.log records 72 passed at 98f558e3, both EXIT=0.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: The incremental diff touches only reckon/crew/recovery_review_acceptance.py:390, tests/test_no_caller_waits_on_a_promotion.py:592-644 and the section evidence fragment.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_no_caller_waits_on_a_promotion.py:637-639 fails on full reversal of 93f8975688, demonstrated in hold-negative-control.log.\nSCORE fit: 20\nJUSTIFICATION fit: One entry added to the existing pointer field tuple at reckon/crew/recovery_review_acceptance.py:373-391, matching the module's memo-identity idiom.\nSCORE reuse: 20\nJUSTIFICATION reuse: The change extends the existing acceptance memo identity and reuses resume.HOLD_FIELD, hold_delivery and release_hold, with the same identity reused at :608.\nFINDING tests/test_no_caller_waits_on_a_promotion.py:643 non-blocking: rows[0][\"commits\"] == [delivered_head] proves the promotion propagated the run pointer's declared commit rather than independently re-resolving the landed commit; a caveat on commit-identity coverage, not on the guarded memo behaviour.\n",
+  "reuse_search": {
+    "assessment": "No capability fork: the change extends the existing acceptance memo identity.",
+    "capabilities": [
+      "acceptance refusal memo identity",
+      "coordinator delivery hold and release"
+    ],
+    "owners_read": [
+      "reckon/crew/recovery_review_acceptance.py:362-409 _acceptance_inputs",
+      "reckon/crew/resume.py:41-172 HOLD_FIELD, hold_delivery, release_hold"
+    ]
+  },
+  "review_run_id": "r-20261113T132555223638-review-of-no-caller-waits-on-a-promotion",
+  "reviewed_base_sha": "11ae57aaeee308e36dfe395a32e05da02445fb6a",
+  "reviewed_head_sha": "98f558e30d9b821b7953e3b03cadc519fac821ec",
+  "reviewed_run_id": "r-20261113T011043749121-no-caller-waits-on-a-promotion",
+  "scores": {
+    "durability": 19,
+    "evidence": 19,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "source_commits": [
+    "40ebc24a30204f7476969031524648e5fb83de34",
+    "93f8975688dd546dea8f7e4a22fe288ed50e2a42",
+    "98f558e30d9b821b7953e3b03cadc519fac821ec"
+  ],
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-13T13:35:07.882723+00:00",
+  "total": 118
+}
