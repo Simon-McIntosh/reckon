@@ -196,8 +196,8 @@ def test_session_counts_scope_each_sessions_own_figures_without_a_live_read(
     scoped = recovery.format_watch_transition(
         event, session="mine", ticker=Ticker(width=180, color=False)
     )
-    assert " 1w  0h  0d  0q" in scoped
+    assert " 1w  0n  0d  0q" in scoped
     unscoped = recovery.format_watch_transition(
         event, ticker=Ticker(width=180, color=False)
     )
-    assert " 2w  1h  0d  0q" in unscoped
+    assert " 2w  1n  0d  0q" in unscoped

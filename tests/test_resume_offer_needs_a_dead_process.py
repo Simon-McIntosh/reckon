@@ -159,7 +159,7 @@ def _render_parked_row(pointer: dict, moment: float) -> tuple[dict, dict, str]:
 
 def _counters(line: str) -> tuple[int, int, int, int]:
     """The fleet counters the row carries, read off the rendered block."""
-    found = re.search(r"(\d+)w\s+(\d+)h\s+(\d+)d\s+(\d+)q", line)
+    found = re.search(r"(\d+)w\s+(\d+)n\s+(\d+)d\s+(\d+)q", line)
     assert found is not None, line
     return tuple(int(group) for group in found.groups())
 

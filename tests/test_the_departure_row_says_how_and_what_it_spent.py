@@ -97,7 +97,7 @@ def test_four_departures_render_three_pane_words(home: Path, monkeypatch) -> Non
     assert all(
         word in line
         for word, line in zip(
-            ("landed", "dropped", "halted", "dropped"), lines, strict=True
+            ("landed", "dropped", "needs you", "dropped"), lines, strict=True
         )
     )
     assert len(set(lines)) == 3

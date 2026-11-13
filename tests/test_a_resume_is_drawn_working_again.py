@@ -132,7 +132,7 @@ def test_the_halted_row_is_followed_by_the_delivered_row() -> None:
     released += pane.flush(now=now)
 
     words = [ticker._pane_word(row) for row, _ in released]
-    assert words == ["halted", "working", "delivered"], released
+    assert words == ["needs you", "working", "delivered"], released
     assert _view(_row(STOP, WORKING)).strip()
 
 
