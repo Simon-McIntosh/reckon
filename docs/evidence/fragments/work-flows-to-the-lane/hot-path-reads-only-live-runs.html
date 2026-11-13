@@ -39,7 +39,9 @@
     enumerate <code>runs/*/worker.json</code> and read each file. Its captured run
     failed <code>test_history_does_not_change_the_open_population[station]</code>
     with one failure and EXIT=1, detecting ended worker files. This is a refusal
-    by the instrument, not an inference from a passing suite.</p>
+    by the instrument, not an inference from a passing suite. Its failing id is
+    also red at the corrected head, so this negative control cannot satisfy
+    admission against that head until the head's failure is repaired.</p>
   <table id="hot-path-reads-only-live-runs-live-timings">
     <caption>Read-only live-fleet wall times; local caches prepared before timing</caption>
     <thead><tr><th>Read</th><th>Base [s]</th><th>Candidate at 307b514c998a366ac4ee5dfbfbc55b4db13d8bd0 [s]</th></tr></thead>
@@ -48,7 +50,12 @@
       <tr><td>Review-promotion dry run</td><td>27.683700</td><td>21.192381</td></tr>
     </tbody>
   </table>
-  <p>Both promotion dry runs returned one refusal and would not promote. These
+  <p>A later guarded probe of corrected source
+    <code>467f9dff57ad5c313bdbda82a562967860aa1232</code> recorded obligations at
+    50.292191 s and review-promotion dry run at 13.361930 s, after 103.82 s of
+    cache preparation. Its live fleet had changed to four items and seven
+    unreconciled runs. It again refused promotion and recorded zero shared writes.</p>
+  <p>Both earlier promotion dry runs returned one refusal and would not promote. These
     numbers measure preflight, not a successful promotion. Both obligations
     reads returned seven items and eight unreconciled runs; ages advanced with
     the fleet. Python write auditing and read-only SQLite access guarded the
@@ -68,7 +75,8 @@
     <code>head-suite.log</code>, <code>base-importers.log</code>,
     <code>candidate-importers.log</code>, <code>candidate-delta.json</code>,
     <code>reproduction-suite.log</code>, <code>negative-control-suite.log</code>,
-    <code>base-live.log</code> and <code>head-live.log</code>.
+    <code>base-live.log</code>, <code>head-live.log</code> and
+    <code>final-source-live.log</code>.
     A fresh authorized repair must resolve the default-root bootstrap and the
     importer delta, then record a final-head gate after its evidence commit.
     The node remains blocked; this fragment does not close the plan section.</p>
