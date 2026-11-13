@@ -22,7 +22,14 @@
   several reasons of which the absent review is only the first is not mistaken
   for a request that should stay queued.</p>
 
-  <p>Implementation commit: <code>bcdf396599306872bf8a5223f0591fc2e84fd46c</code>.
+  <p>A refusal that carries several reasons is refused even when the absent
+  review is one of them: the drain hands the predicate the refusal itself rather
+  than its joined text, so an aggregated refusal for a failing declared suite
+  beside a missing review is read as terminal. Only a refusal whose every part
+  is an absent review is written back as waiting.</p>
+
+  <p>Implementation commit: <code>bcdf396599306872bf8a5223f0591fc2e84fd46c</code>,
+  repaired at <code>f5568d40c5953ad47555278b0a56b0fc97685815</code>.
   Paths: <code>reckon/crew/promotion_requests.py</code>,
   <code>reckon/crew/promotion_checks.py</code>,
   <code>tests/test_review_promoted_before_its_run.py</code>.</p>
@@ -33,33 +40,43 @@
     its working directory, and ends in a bare <code>EXIT=</code> line.</caption>
     <thead><tr><th>Measurement</th><th>Recorded result</th></tr></thead>
     <tbody>
-      <tr><td>Gate, head arm, on <code>all_debug</code> (job 1314426)</td>
-        <td>54 passed in 10.94 s; EXIT=0.
+      <tr><td>Gate, head arm, on <code>all_debug</code> (job 1314543, final head
+        <code>f5568d40</code>)</td>
+        <td>55 passed in 12.45 s; EXIT=0.
         <code>tests/test_review_promoted_before_its_run.py</code> and
         <code>tests/test_staged_write_inventory.py</code></td></tr>
       <tr><td>Gate, base arm at <code>5057bfacc4</code>, on
-        <code>all_debug</code></td>
-        <td>51 passed in 11.29 s; EXIT=0. The node's test file does not exist at
+        <code>all_debug</code> (job 1314543)</td>
+        <td>51 passed in 9.15 s; EXIT=0. The node's test file does not exist at
         that revision and is dropped from this arm, so the delta between the arms
-        is exactly the three cases the node adds, with no failure added against
+        is exactly the four cases the node adds, with no failure added against
         the base.</td></tr>
+      <tr><td>Earlier head arm at <code>bcdf3965</code>, on
+        <code>all_debug</code> (job 1314426)</td>
+        <td>54 passed in 10.94 s; EXIT=0 — the same gate before the aggregated
+        refusal was read by its parts.</td></tr>
       <tr><td>Declared mutation: processing queued requests in plain name order
         refuses the run queued before its review</td>
-        <td>2 failed, 1 passed in 0.46 s; EXIT=1. The failing ids are
+        <td>2 failed, 2 passed in 2.39 s; EXIT=1, applied to an extraction of the
+        final head. The failing ids are
         <code>test_a_review_is_promoted_before_the_run_it_reviews</code> and
         <code>test_a_run_refused_only_for_its_queued_review_stays_queued</code>;
-        the third case, a run with no review anywhere, still passes because it
-        does not depend on the guard.</td></tr>
+        the remaining two cases, a run whose refusal carries a second reason and
+        a run with no review anywhere, still pass because neither depends on the
+        requeue guard.</td></tr>
       <tr><td>Adjacent service regression,
         <code>tests/test_no_caller_waits_on_a_promotion.py</code></td>
-        <td>22 passed in 150.93 s; EXIT=0, against the same working tree.</td></tr>
+        <td>22 passed in 123.51 s; EXIT=0, on <code>all_debug</code> at the final head
+        <code>f5568d40</code>.</td></tr>
     </tbody>
   </table>
 
-  <p>The two cases read the drain itself: the first queues the run's request
-  before its review's and reads the review taken up first and both promoted, the
-  review first; the second starts the review and the run in the same width-two
-  pass, holds the review until the run has been refused once, and reads the run
-  requeued and then promoted behind it. The third queues a run with no review
-  queued or stored and reads the missing review refused.</p>
+  <p>The cases read the drain itself: the first queues the run's request before
+  its review's and reads the review taken up first and both promoted, the review
+  first; the second starts the review and the run in the same width-two pass,
+  holds the review until the run has been refused once, and reads the run
+  requeued and then promoted behind it; the third refuses the run for its absent
+  review <em>and</em> a failing declared suite while the review is still queued,
+  and reads the run refused rather than requeued; the fourth queues a run with no
+  review anywhere and reads the missing review refused.</p>
 </section>
