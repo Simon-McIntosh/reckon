@@ -346,12 +346,18 @@ def _hook(
     payload: dict[str, object],
     *,
     claude_pid: int | None = None,
+    publish: bool = True,
 ) -> subprocess.CompletedProcess[str]:
     # Both paths read the session's published snapshot, so a drive publishes the
     # current state first, exactly as the project's producer republishes on a
     # trigger before the next event. The stop path also derives inline, but only
-    # when the snapshot is not fresh, which these drives never leave it.
-    _publish_snapshot()
+    # when the snapshot is not fresh, which these drives never leave it. A case
+    # that changes the live pointers and then drives the hook with ``publish``
+    # off is modelling the real gap the hook closes: an acknowledgement or its
+    # lapse is recorded on the run without republishing the session's snapshot,
+    # so the list the hook reads is the one computed before the change.
+    if publish:
+        _publish_snapshot()
     environment = dict(os.environ)
     environment["PYTHONPATH"] = str(REPO_ROOT)
     # Every case names its harness identity, so nothing ambient steers the
@@ -1072,6 +1078,12 @@ def test_a_lapsed_deferral_blocks_the_stop_again(
     the set it already blocked over and never refuse it again, so the lapse
     would be silent. The record is cleared when no duty is held open, and the
     lapsed duty is refused once more.
+
+    The second and third drives publish no new snapshot. An acknowledgement is
+    recorded on the run's live pointer without republishing the session's
+    snapshot -- that is the gap ``reapply_acknowledgements`` exists to close --
+    so republishing here would put the deferred duty out of the list by a
+    different route and the case would prove nothing about the stop record.
     """
     _blocked_run(repository, tmp_path)
     now = datetime.now(tz=UTC)
@@ -1085,7 +1097,9 @@ def test_a_lapsed_deferral_blocks_the_stop_again(
         runs.record_run_acknowledgement(
             RUN_ID, "waiting on a peer", (now + timedelta(hours=1)).isoformat()
         )
-        deferred = _hook("stop", _stop_payload(repository, "harness-session"))
+        deferred = _hook(
+            "stop", _stop_payload(repository, "harness-session"), publish=False
+        )
         assert deferred.returncode == 0
         assert deferred.stdout == "", "an acknowledged duty must not hold the turn open"
 
@@ -1098,7 +1112,9 @@ def test_a_lapsed_deferral_blocks_the_stop_again(
         assert obligations_view(PROJECT, SESSION)["obligations"], (
             "the run must still owe the duty for this case to show a refusal"
         )
-        lapsed = _hook("stop", _stop_payload(repository, "harness-session"))
+        lapsed = _hook(
+            "stop", _stop_payload(repository, "harness-session"), publish=False
+        )
 
     assert lapsed.returncode == 0
     assert json.loads(lapsed.stdout)["decision"] == "block", (
