@@ -26,7 +26,7 @@
   <title>A Read Answers Inside Its Deadline | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="657">
+<meta name="plan-version" content="658">
 <meta name="plan-modified" content="2026-11-13">
 </head>
 <body>
@@ -1698,6 +1698,12 @@
 <div class="r-comment" data-section="s76" data-id="c-run-r-20261112T192244510547-a-promotion-s-review-lookups-cost-the-same-at-any-store-size" data-who="reckon-build" data-when="2026-11-12T20:16:29.329Z">
     <div class="r-comment-body"><p>A promotion's review lookups now cost the same at any review-store size: the persisted store index records the store directory's stat identity and a cold process adopts it unchanged when that identity is current, so the two review reads a promotion makes cost 20 store accesses at both 700 and 7,000 stored records (33 -&gt; 138 at base), while still selecting the review at the promoted revision, finding a record filed under the reviewer's run id, and reading an absent review as absent.</p></div>
 </div>
+<div class="r-comment" data-section="s77" data-id="c-run-r-20261112T235032217177-review-of-a-persisted-review-index-never-claims-more-than-it-read-98f28719c86d" data-who="reckon-build" data-when="2026-11-13T00:06:47.286Z">
+    <div class="r-comment-body"><p>Review of r-20261112T225255775909-a-persisted-review-index-never-claims-more-than-it-read at head 98f28719c86: parsed, six dimensions scored 20/17/20/19/20/20, no added failures against its base 5be93dc233, one non-blocking finding that the evidence fragment's all_debug and ruff clauses carry no log.</p></div>
+</div>
+<div class="r-comment" data-section="s77" data-id="c-run-r-20261112T225255775909-a-persisted-review-index-never-claims-more-than-it-read" data-who="reckon-build" data-when="2026-11-12T23:31:48.730Z">
+    <div class="r-comment-body"><p>The persisted review-store index records the directory identity read before its listing on both persist paths, so a record filed during the write is listed by the next reader instead of being adopted past: importers arm 137 passed at head against 134 at base, and the new test reads 2 failed at base.</p></div>
+</div>
 <div class="r-comment" data-section="s8" data-id="c-run-r-20261013T020049137583-review-of-one-read-walks-the-tree-once-bfef50fdf25b" data-who="reckon-build" data-when="2026-10-13T02:11:18.051Z">
     <div class="r-comment-body"><p>the review for r-20261013T013021469313-one-read-walks-the-tree-once is stored as a parsed record scoring all six dimensions (total 107/120: goal_fidelity 20, evidence 13, scope_discipline 20, durability 19, fit 16, reuse 19) recording reviewed_base_sha f43062fc8bbedba891a3522e2ffce306ee31b86c and reviewed_head_sha bfef50fdf25bbc9c93105d59986a9d0bd01beef2 with added_failure_count 0 and added_failure_ids [], and carrying one blocking finding (the head gate log cited by after_suite is truncated, its summary and EXIT= line lost to a redundant re-run cancelled at 02:00:19Z) and one follow-on finding (the head revision recorded in after_suite names neither the tree the figure was measured on).</p></div>
 </div>
@@ -1712,9 +1718,6 @@
 </div>
 <div class="r-comment" data-section="s9" data-id="c-close-s9" data-who="reckon-build" data-when="2026-10-13T00:25:00Z">
     <div class="r-comment-body"><p>§9 landed. The cold time is the plan parse, repeated five or six times per file through four memo kinds, each building its own soup. §11 carries the fix. <a href="/reckon/evidence/archive/a-read-answers-inside-its-deadline-landed.html#s9-cold-attribution">evidence</a></p></div>
-</div>
-<div class="r-comment" data-section="s77" data-id="c-run-r-20261112T235032217177-review-of-a-persisted-review-index-never-claims-more-than-it-read-98f28719c86d" data-who="reckon-build" data-when="2026-11-13T00:06:47.286Z">
-    <div class="r-comment-body"><p>Review of r-20261112T225255775909-a-persisted-review-index-never-claims-more-than-it-read at head 98f28719c86: parsed, six dimensions scored 20/17/20/19/20/20, no added failures against its base 5be93dc233, one non-blocking finding that the evidence fragment&#x27;s all_debug and ruff clauses carry no log.</p></div>
 </div>
 </section>
 </main>
