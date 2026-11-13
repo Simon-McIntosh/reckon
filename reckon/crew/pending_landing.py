@@ -14,7 +14,8 @@ dropped once it is old and its run is gone. A record whose run is still live,
 whose pointer carries an unanswered land attempt, which has no promoted row and
 whose promotion holds no lease names a promotion that ended between the record
 and its ledger row: the pass retires the interrupted attempt and then clears the
-record, so the reflex promotes the run again. A
+record, keeping the record whenever that retirement does not reach disk, so the
+reflex promotes the run again. A
 merge that fails is recorded on the record and retried on later passes, up to a
 bound, so a conflicting head stops costing a pass and stays visible.
 """
@@ -453,11 +454,12 @@ def finish_pending_landings(
             # An attempt a previous sweep retired but could not clear its record
             # for is retried the same way, so the record does not outlive it.
             #
-            # The attempt is retired before the record is cleared, because the
+            # The record is cleared only after the attempt is retired, because the
             # record is the only evidence that this promotion stopped short. A
-            # pass that ends between the two steps therefore still leaves a
-            # record for the next pass to retry; clearing first would leave the
-            # live pointer's attempt unanswered with nothing left to read it.
+            # pass that ends between the two steps — or one whose pointer write
+            # fails — therefore still leaves a record for the next pass to
+            # retry; clearing first would leave the live pointer's attempt
+            # unanswered with nothing left to read it.
             if (
                 age > UNFINISHED_PROMOTION_SECONDS
                 and _promoted_row_absent(project, run_id)
@@ -465,6 +467,19 @@ def finish_pending_landings(
                 and _land_attempt_unanswered(run_id)
             ):
                 retired = _retire_interrupted_landing(run_id)
+                if not retired:
+                    # The pointer could not be written, so the record is the
+                    # only evidence left that this promotion stopped short.
+                    # Keep it: clearing it here would leave an attempt nothing
+                    # can retire and nothing left to read it from.
+                    results.append(
+                        {
+                            "run_id": run_id,
+                            "status": "attempt-not-retired",
+                            "attempt_retired": False,
+                        }
+                    )
+                    continue
                 clear_pending(run_id)
                 results.append(
                     {

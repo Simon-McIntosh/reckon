@@ -132,20 +132,9 @@ def test_an_already_removed_pointer_does_not_prevent_finishing(deliveries, monke
     assert not pending_landing._record_path(run["run_id"]).exists()
 
 
-def test_an_interrupted_promotion_keeps_its_record_until_its_attempt_is_retired(
-    deliveries, monkeypatch
-):
-    """A pass that ends before it clears the record leaves the retry reachable.
-
-    The unfinished-promotion branch clears the pending-landing record and
-    retires the interrupted land attempt. A pass killed between the two would,
-    if it cleared first, leave a live pointer carrying an ``attempting``
-    attempt and no record — a hold no later sweep can lift, because the record
-    is the evidence the attempt's promotion stopped. So the attempt and its
-    pointer are retired before the record goes.
-    """
-    deliver, _resumed = deliveries
-    run = deliver("interrupted-promotion", "first original", "first delivered")
+def _unfinished_promotion(deliver, name):
+    """Deliver a run whose promotion stopped between its record and its row."""
+    run = deliver(name, "first original", "first delivered")
     pointer = runs.read_pointer(run["run_id"])
     runs._write_json(
         runs.pointer_path(run["run_id"]),
@@ -161,6 +150,23 @@ def test_an_interrupted_promotion_keeps_its_record_until_its_attempt_is_retired(
         },
     )
     pending_landing.write_pending(run["run_id"], PROJECT, now=1000.0 - 10 * 60)
+    return run
+
+
+def test_an_interrupted_promotion_keeps_its_record_until_its_attempt_is_retired(
+    deliveries, monkeypatch
+):
+    """A pass that ends before it clears the record leaves the retry reachable.
+
+    The unfinished-promotion branch clears the pending-landing record and
+    retires the interrupted land attempt. A pass killed between the two would,
+    if it cleared first, leave a live pointer carrying an ``attempting``
+    attempt and no record — a hold no later sweep can lift, because the record
+    is the evidence the attempt's promotion stopped. So the attempt and its
+    pointer are retired before the record goes.
+    """
+    deliver, _resumed = deliveries
+    run = _unfinished_promotion(deliver, "interrupted-promotion")
     real_clear = pending_landing.clear_pending
 
     def clear_dies(run_id):
@@ -178,6 +184,55 @@ def test_an_interrupted_promotion_keeps_its_record_until_its_attempt_is_retired(
     )
 
     monkeypatch.setattr(pending_landing, "clear_pending", real_clear)
+    results = pending_landing.finish_pending_landings(
+        now=1000.0, only_run=run["run_id"]
+    )
+
+    assert results == [
+        {
+            "run_id": run["run_id"],
+            "status": "retried-unfinished",
+            "attempt_retired": True,
+        }
+    ], results
+    assert not pending_landing._record_path(run["run_id"]).exists()
+    assert (
+        runs.read_pointer(run["run_id"])["admission_landing"]["status"] == "interrupted"
+    )
+
+
+def test_a_record_survives_when_the_attempt_cannot_be_retired(deliveries, monkeypatch):
+    """A failed retirement keeps the record, which is the next sweep's evidence.
+
+    The record is cleared only once the attempt is retired. If the pointer
+    cannot be written, the attempt stays unanswered and the record is the only
+    thing that tells a later sweep why; clearing it would leave the hold this
+    branch exists to lift.
+    """
+    deliver, _resumed = deliveries
+    run = _unfinished_promotion(deliver, "unretired-promotion")
+    real_retire = pending_landing._retire_interrupted_landing
+    monkeypatch.setattr(
+        pending_landing, "_retire_interrupted_landing", lambda run_id: False
+    )
+
+    results = pending_landing.finish_pending_landings(
+        now=1000.0, only_run=run["run_id"]
+    )
+
+    assert results == [
+        {
+            "run_id": run["run_id"],
+            "status": "attempt-not-retired",
+            "attempt_retired": False,
+        }
+    ], results
+    assert pending_landing._record_path(run["run_id"]).is_file()
+    assert (
+        runs.read_pointer(run["run_id"])["admission_landing"]["status"] == "attempting"
+    )
+
+    monkeypatch.setattr(pending_landing, "_retire_interrupted_landing", real_retire)
     results = pending_landing.finish_pending_landings(
         now=1000.0, only_run=run["run_id"]
     )
