@@ -522,8 +522,8 @@ def _section_run_unlanded(
         # a promoted run is the queue's own: the drain names declared work with
         # no live request and no reachable promotion, so a section it does not
         # name has landed and one it does name is still waiting. The derivation
-        # reads the project's ledger itself, so its answer is kept for the pass
-        # rather than recomputed for every request waiting on the same section.
+        # uses the pass's ledger snapshot, and its answer is kept rather than
+        # recomputed for every request waiting on the same section.
         key = (_UNLOADED_CACHE_KEY, project, slug, wanted)
         unloaded = cache.get(key) if cache is not None else None
         if unloaded is None:
@@ -531,6 +531,7 @@ def _section_run_unlanded(
                 project,
                 live,
                 [(slug, {"section_declarations": {section: "implementable"}})],
+                ledger_rows=rows,
             )
             if cache is not None:
                 cache[key] = unloaded

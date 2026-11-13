@@ -1,0 +1,27 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-11-13T01:59:30.005Z",
+  "dispatched_at": "2026-11-13T01:50:18Z",
+  "findings": [
+    "reckon/crew/recovery_wait.py:898 non-blocking: _wait_probe_job_ids reads any comma-separated numeric operand as a scheduler job batch whatever the command is, so a probe such as `nc -z host 80,443` now names jobs 80 and 443; squeue then fails on ids that were never jobs, _scheduler_job_alive returns None, and that run can never read as producer-gone. The direction is fail-safe (no false abandonment) but the previous reading of such a probe as naming no job is lost."
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: Read the node prompt at prompt.txt:38 and the diff; the goal is that a probe passing scheduler job ids is read as a wait on those jobs so a live one keeps the run from reading as abandoned, and reckon/crew/recovery_wait.py:880 plus reckon/crew/recovery_classification.py:550 implement the batch read and the single squeue query about the whole batch.\nVERDICT done_when: The done_when at prompt.txt (FENCE \u2014 EVIDENCE) asks for a new test with a temporary crew home and a stub scheduler covering a live-job batch, an all-absent batch whose row says the scheduler listed none of the three, a no-job probe whose row says the scheduler was not consulted, the absence of the word producer, and a declared negative control; tests/test_a_wait_on_scheduler_jobs_is_not_abandoned.py:228-330 implements each case and logs/negative-control.log records 2 failed, 3 passed, EXIT=1 on the mutation.\nVERDICT write_paths: Read the source manifest's declared paths plus the three names granted in resume-1-advice.txt; the diff's seven changed paths all lie inside that union and no other file is touched.\nVERDICT manifest: Read runs/r-20261113T003754418594-scheduler-wait-is-not-abandoned/manifest.md; it records status complete, five commits, seven changed paths, armed arms 64 to 70 passed with 2 scaffolding errors, importer arms with identical 10-failure id sets, and a negative-control log at a named path.\nVERDICT diff: Read the five commits f855c080d0..9d14291f06 against the base; they add one batch reader and one classifier query change, rewrite the row detail and action prose, update two existing assertions to the new wording, and add six cases plus the landing fragment.\nCALL_SITES: reckon/crew/obligations.py:_producer_gone_item, reckon/crew/recovery_classification.py:classify_pointer, reckon/crew/query.py:446, reckon/crew/recovery_watch.py:502, reckon/crew/station_subscriber.py:136, reckon/serve.py:901\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/recovery_wait.py:898 reads the comma-separated operand and reckon/crew/recovery_classification.py:553 asks squeue once about all of it, so a batch probe with one live job returns from the producer-gone verdict at recovery_classification.py:602.\nSCORE evidence: 18\nJUSTIFICATION evidence: tests/test_a_wait_on_scheduler_jobs_is_not_abandoned.py:243 asserts the exact ids the stubbed squeue was asked about, and the arm logs (logs/armed-base.log, logs/armed-head.log) carry revision, tree, module path and EXIT lines, though the negative-control run predates the added single-bare-number case.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every path in the diff \u2014 reckon/crew/recovery_wait.py, reckon/crew/recovery_classification.py, reckon/crew/obligations.py, the three test files and the evidence fragment \u2014 is inside the declared scope plus the three paths granted at resume-1-advice.txt.\nSCORE durability: 19\nJUSTIFICATION durability: removing the raw-operand scan at reckon/crew/recovery_wait.py:898 reddens both batch cases in logs/negative-control.log, and the row assertions at tests/test_a_wait_on_scheduler_jobs_is_not_abandoned.py:243 are checked against the stub's own record of the argv received rather than against a value the test re-derives.\nSCORE fit: 18\nJUSTIFICATION fit: the new helpers sit beside the existing probe readers in reckon/crew/recovery_wait.py:857-930 and the test's dated incident docstring matches the neighbouring tests/test_a_run_parked_on_a_live_job_keeps_waiting.py:1 idiom.\nSCORE reuse: 20\nJUSTIFICATION reuse: the batch reader extends the existing owner _wait_probe_job_id in the same module, the classifier imports it at reckon/crew/recovery_classification.py:2748 rather than defining a second reader, and a search of reckon/crew for job-id parsing found no other owner.\nFINDING reckon/crew/recovery_wait.py:898 non-blocking: _wait_probe_job_ids reads any comma-separated numeric operand as a scheduler job batch whatever the command is, so a probe such as `nc -z host 80,443` names jobs 80 and 443; squeue fails on ids that were never jobs, _scheduler_job_alive returns None, and that run can never read as producer-gone.",
+  "review_run_id": "r-20261113T014459414513-review-of-scheduler-wait-is-not-abandoned-9d14291f06c9",
+  "reviewed_base_sha": "f855c080d0d4d7170a990ef26f8dc72bd3228f07",
+  "reviewed_head_sha": "9d14291f06c91df833646c339e16574d3634b82b",
+  "reviewed_run_id": "r-20261113T003754418594-scheduler-wait-is-not-abandoned",
+  "scores": {
+    "durability": 19,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-13T02:20:35.582330+00:00",
+  "total": 113
+}

@@ -1466,7 +1466,9 @@ def _update_store_entries(
 
 
 def _persisted_index_document(
-    directory: Path, entries: Iterable[dict[str, Any]]
+    directory: Path,
+    entries: Iterable[dict[str, Any]],
+    identity: tuple[int, ...] | None,
 ) -> dict[str, Any]:
     """The document one store directory's index is persisted as.
 
@@ -1474,14 +1476,17 @@ def _persisted_index_document(
     file it finds, so that reader can tell a file it may reuse from one it must
     parse, and the facts both lookups select on. The file's path is not stored:
     the store directory is in the document, and a name inside it resolves
-    there. The directory's own identity at the moment the entries were read is
-    stored beside them, so a reader can tell a store that has not moved from
-    one that has without listing it.
+    there. The directory's own identity stored beside them is the one taken
+    *before* the listing those entries came from, never a later stat: a record
+    filed between the listing and this write is absent from the entries, and a
+    stored identity that covered it would let a cold reader adopt an index that
+    does not hold the record at all. An identity no reader can compare is
+    stored as none, which makes the next reader list the store.
     """
     return {
         "code_stamp": _index_code_stamp(),
         "store": _resolved(directory),
-        "directory_identity": list(_store_directory_identity(directory) or ()),
+        "directory_identity": list(identity or ()),
         "entries": [
             {
                 "name": entry["name"],
@@ -1497,17 +1502,24 @@ def _persisted_index_document(
     }
 
 
-def _persist_store_entries(directory: Path, entries: list[dict[str, Any]]) -> None:
+def _persist_store_entries(
+    directory: Path,
+    entries: list[dict[str, Any]],
+    identity: tuple[int, ...] | None,
+) -> None:
     """Write the store's index where this node's processes can start from it.
 
-    A disposable cache: an unwritable directory, a full disk or a reader that
-    arrives mid-write costs a later process a from-scratch build rather than
-    the cache, so a write that fails is not an error a lookup reports.
+    ``identity`` is the store directory's identity as it stood before the
+    listing ``entries`` were read from. A disposable cache: an unwritable
+    directory, a full disk or a reader that arrives mid-write costs a later
+    process a from-scratch build rather than the cache, so a write that fails
+    is not an error a lookup reports.
     """
     if not _resolved(directory):
         return
     write_cache_document(
-        _index_cache_path(directory), _persisted_index_document(directory, entries)
+        _index_cache_path(directory),
+        _persisted_index_document(directory, entries, identity),
     )
 
 
@@ -1605,6 +1617,13 @@ def _store_indexes(
     the adopted entries are held as already revalidated: the whole-store pass
     below stays for an index this process built or updated itself, where a
     record rewritten in place is exactly the change it exists to see.
+
+    The identity read here precedes every listing this call makes, and it is
+    the one persisted with the entries those listings produced. A record filed
+    between a listing and the write is absent from those entries, so the
+    recorded identity must not cover it: recording the earlier identity leaves
+    that write having moved the directory away from it, and the next reader
+    lists the store rather than adopting an index short of the record.
     """
     tick_indexes = _TICK_REVIEW_INDEXES.get()
     if tick_indexes is not None:
@@ -1641,7 +1660,7 @@ def _store_indexes(
         entries = _update_store_entries(directory, entries)
         reviewed, review_runs = _index_maps(entries)
     _STORE_INDEXES[directory] = (identity, reviewed, review_runs, entries, False)
-    _persist_store_entries(directory, entries)
+    _persist_store_entries(directory, entries, identity)
     return reviewed, review_runs
 
 
@@ -1694,19 +1713,25 @@ def _refresh_store_entries(
     persisted document whose store has not moved holds that pass as already
     paid: its entries were read from a store no writer has changed since, and
     the pass would re-derive them at a cost that grows with the store.
+
+    The identity persisted with the refreshed entries is read before the
+    listing that produced them, never the one the cache held and never a later
+    stat, so a record filed between that listing and this write is missing from
+    the entries and the next reader lists the store rather than adopting them.
     """
     if _TICK_REVIEW_STORES.get() is not None:
         return _store_index(directory)
     cached = _STORE_INDEXES.get(directory)
     if cached is None:
         return _store_index(directory)
-    identity, reviewed, review_runs, entries, refreshed = cached
+    _, reviewed, review_runs, entries, refreshed = cached
     if refreshed:
         return reviewed
+    identity = _store_directory_identity(directory)
     entries = _update_store_entries(directory, entries)
     reviewed, review_runs = _index_maps(entries)
-    _STORE_INDEXES[directory] = (identity, reviewed, review_runs, entries, True)
-    _persist_store_entries(directory, entries)
+    _STORE_INDEXES[directory] = (identity or (), reviewed, review_runs, entries, True)
+    _persist_store_entries(directory, entries, identity)
     return reviewed
 
 

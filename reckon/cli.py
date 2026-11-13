@@ -121,6 +121,7 @@ from reckon.cli_entry import (
 from reckon.cli_entry import (
     main as main,
 )
+from reckon.crew import resume as _resume_hold
 from reckon.crew_dispatch_commands import (
     _config_value_at as _config_value_at,
 )
@@ -662,3 +663,8 @@ from reckon.project_setup_commands import (
 from reckon.project_setup_commands import (
     tag_rename as tag_rename,
 )
+
+# The single-run resume takes a hold on a delivered run before it launches, and
+# refuses one a promotion already owns, so a landing pass running between the
+# hold and the launch leaves the run to the coordinator who is steering it.
+_resume_hold.guard_resume_command(crew_resume)

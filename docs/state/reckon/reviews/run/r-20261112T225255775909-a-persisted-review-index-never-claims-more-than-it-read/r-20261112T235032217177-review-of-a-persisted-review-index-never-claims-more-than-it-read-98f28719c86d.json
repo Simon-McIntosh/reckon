@@ -1,0 +1,34 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-11-13T00:06:47.286Z",
+  "dispatched_at": "2026-11-12T23:53:39Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/a-read-answers-inside-its-deadline/a-persisted-review-index-never-claims-more-than-it-read.html",
+      "line": 30,
+      "severity": "non-blocking",
+      "summary": "The fragment states every arm ran on all_debug, but no log it cites records a host or partition, and no log records the ruff check the done-when requires, so two gate clauses rest on the manifest's prose rather than on a receipt; the reviewer re-ran ruff on both staged paths at head and it is clean, while the partition remains unverified."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is that a persisted review index never claims more than it read, and reckon/crew/review_records.py:1663 and :1734 now persist the identity read before the listing their entries came from on both persist paths, so no document records a directory state newer than its entries.\nVERDICT done_when: the done-when at docs/plans/a-read-answers-inside-its-deadline.html:427 asks for both persist paths driven with a record filed between the read and the write, a cold reader that finds it, a stat bound on an undisturbed store and a base-revision negative control, and tests/test_a_persisted_review_index_never_claims_more_than_it_read.py drives exactly those, with logs/negative-control.log recording 2 failed, 1 passed, EXIT=1 at 5be93dc233.\nVERDICT write_paths: the declared paths are reckon/crew/review_records.py, tests/, the fragment under docs/evidence/fragments/a-read-answers-inside-its-deadline/ and its figure directory; the diff touches the first three and nothing else.\nVERDICT manifest: read; it records status complete, the importer arms at 137 passed head against 134 passed base, the staged-write census at 51 passed in both arms, the negative control at 2 failed and 1 passed with EXIT=1, and it names logs/review-record and logs/importers-* paths that all exist and each end in a bare EXIT line.\nVERDICT diff: read commit by commit against 5be93dc2334a5c022b1019d3b6d8fc9616f962f7; d44567a982 changes four functions and their two call sites in reckon/crew/review_records.py, and 98f28719c86 adds the 93-line evidence fragment.\nCALL_SITES: reckon/crew/review_records.py:1029 (_record_filed_elsewhere -> _store_index), reckon/crew/review_records.py:1050 (_record_filed_elsewhere -> _refresh_store_entries), reckon/crew/review_records.py:1737 (review_entries_signature -> _store_index), reckon/crew/recovery_memo.py:384 (review_module._store_index)\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/review_records.py:1663 and :1734 pass the identity read above their listing into _persist_store_entries, and _persisted_index_document at :1489 no longer stats the directory itself, so no persist site can record a newer identity than its entries.\nSCORE evidence: 17\nJUSTIFICATION evidence: logs/importers-head.log and logs/importers-base.log record 137 against 134 passed with EXIT=0 and logs/negative-control.log records 2 failed with EXIT=1, but no cited log names a host so the all_debug requirement is claimed rather than receipted, and no log carries the ruff check.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff 5be93dc233 98f28719c86 touches only reckon/crew/review_records.py, tests/test_a_persisted_review_index_never_claims_more_than_it_read.py and the fragment, all inside the declared write paths.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_a_persisted_review_index_never_claims_more_than_it_read.py:131 and :157 assert a cold reader finds a record the test itself wrote into the store, and the recorded base-revision control reddens both by reinstating the over-claiming document, while :188's stat bound reddens if a per-record stat is reintroduced.\nSCORE fit: 20\nJUSTIFICATION fit: reckon/crew/review_records.py:1489 keeps the module's private-helper and docstring idiom, and no added name carries a plan, stage or version label.\nSCORE reuse: 20\nJUSTIFICATION reuse: the change extends the existing persist helpers at reckon/crew/review_records.py:1505 and :1489 rather than adding a second index mechanism, and a search over reckon/crew found no other owner of a persisted store-index identity.\nFINDING docs/evidence/fragments/a-read-answers-inside-its-deadline/a-persisted-review-index-never-claims-more-than-it-read.html:30 non-blocking: the fragment states every arm ran on all_debug but no log it cites records a host or partition, and no log records the ruff check the done-when requires, so two gate clauses rest on the manifest's prose; the reviewer re-ran ruff on both staged paths at head and it is clean, while the partition remains unverified.\n",
+  "review_run_id": "r-20261112T235032217177-review-of-a-persisted-review-index-never-claims-more-than-it-read-98f28719c86d",
+  "reviewed_base_sha": "5be93dc2334a5c022b1019d3b6d8fc9616f962f7",
+  "reviewed_head_sha": "98f28719c86d8ca332f506b1db27c45968706757",
+  "reviewed_node": "a-persisted-review-index-never-claims-more-than-it-read",
+  "reviewed_run_id": "r-20261112T225255775909-a-persisted-review-index-never-claims-more-than-it-read",
+  "rubric": "run-review",
+  "scores": {
+    "durability": 19,
+    "evidence": 17,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-13T01:20:01.380306+00:00",
+  "total": 116
+}

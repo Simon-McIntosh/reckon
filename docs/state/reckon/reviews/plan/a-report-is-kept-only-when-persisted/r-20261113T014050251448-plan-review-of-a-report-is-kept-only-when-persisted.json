@@ -1,0 +1,159 @@
+{
+  "absent_items": [],
+  "accepted_edits": [
+    {
+      "by": "1fb615a0-2801-4418-bbb4-c2914719e520",
+      "digests": {
+        "s2": "9396d7300c138b3407fc2803876606122442333cef7e2724797bf8da6d1fe47c",
+        "s4": "0135c54654765e34c225b2005ed6c7260ffcd2724f3222ebf808142a3e452e49"
+      },
+      "reason": "the edits make exactly the acted answers' changes to this review's findings",
+      "units": [
+        "s2",
+        "s4"
+      ],
+      "when": "2026-11-13T02:19:58.237695+00:00"
+    }
+  ],
+  "completed_at": "2026-11-13T01:56:11.755Z",
+  "dispatched_at": "2026-11-13T01:44:47Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-report-is-kept-only-when-persisted.html:99",
+      "id": "reasoning-1",
+      "reason": "the exemption is justified by a rule that does not exist, so the plan must either give those three folders a retention rule or state plainly that they are out of scope and record the accepted growth.",
+      "text": "the section says all four reckon-written folders \"are swept only by their own existing rules\", but only `plan-review` has one (`_plan_review_raw_reports`, `reckon/crew/routing.py:2068`): `briefs`, `code-review` and `portfolio-review` are written by `plan_review.py` (`reports_dir()/project/code-review`, `.../portfolio-review`) and no rule in `gc.py` or `routing.py` prunes them, while `_run_report_trees` can never reach them because it matches only trees named for a known run id \u2014 so these three families are exempted from both the new item rule and any existing rule, and grow unbounded in the store this plan exists to bound",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-report-is-kept-only-when-persisted.html:58",
+      "id": "done_when-1",
+      "reason": "the declared read surface is what \u00a73's listing and \u00a74's persisted class consume; without a case that filters by plan and kind and reads a plan-attributed record, that half of the endpoint is unmeasured.",
+      "text": "the deliverable declares that a read returns records \"filterable by plan and kind\" and that each record carries \"the plan and section when the source can be attributed to one\" and \"who persisted it, when\", but none of the six done-when bullets exercises the filter or asserts any of those fields, so a node could ship a record that never attributes or filters and still pass",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-report-is-kept-only-when-persisted.html:136",
+      "id": "done_when-2",
+      "reason": "an unmeasured parity obligation is the exact drift the check exists to catch, and a worker reading the write paths alone would leave the check untouched.",
+      "text": "\u00a75 states that \"the parity check that compares surfaces gains the retention class\" in its closing prose, but no done-when bullet measures it and the parity check is not among the section's write paths, so the one rule the repository uses to keep two surfaces from drifting is not covered by the gate",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-report-is-kept-only-when-persisted.html:86",
+      "id": "reasoning-2",
+      "reason": "every name resolves at HEAD and the constraint it carries (one document walk, no third) is the reason for the reuse, so no worker is sent down a wrong path and moving the names to the brief is editorial.",
+      "text": "the section prescribes the implementation rather than the endpoint, naming the document walk and extractor to reuse (`iter_resources`, `_LINK_ATTR_RE`, `audit_links`/`_link_record`) and, at line 56, the four `project_state` functions to read through, which is a reuse map that belongs to the node brief",
+      "type": "reasoning",
+      "would_change": false
+    }
+  ],
+  "plan_commit": "c437e8059cf4c06975510f117a24690df3ed871b",
+  "plan_fingerprint": "54e614f061f436ce9e0852c04bfdb33a2cbc3b8d0ac8c16768d26b2a016871ec",
+  "plan_slug": "a-report-is-kept-only-when-persisted",
+  "plan_version": 9,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "c437e8059cf4c06975510f117a24690df3ed871b",
+      "commit_basis": "edit",
+      "finding": "reasoning-1",
+      "note": "\u00a74 now says only plan-review keeps its own rule (_plan_review_raw_reports); briefs, code-review and portfolio-review have none, so each child of those folders is an item under \u00a74's item rule, and a case shows a 31-day-old unreferenced child of code-review is removed.",
+      "reason": "",
+      "when": "2026-11-13T02:12:53.320295+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "c437e8059cf4c06975510f117a24690df3ed871b",
+      "commit_basis": "edit",
+      "finding": "done_when-1",
+      "note": "\u00a72's done-when gains cases asserting the record's plan and section for an attributable source, its who and when fields, and a read filtered by plan and by kind returning only the matching records.",
+      "reason": "",
+      "when": "2026-11-13T02:13:09.960518+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "c437e8059cf4c06975510f117a24690df3ed871b",
+      "commit_basis": "edit",
+      "finding": "done_when-2",
+      "note": "\u00a75 names the surface parity check among its write paths and its done-when asserts the check compares the retention class and fails when the SPA and the listing disagree.",
+      "reason": "",
+      "when": "2026-11-13T02:13:26.621304+00:00"
+    },
+    {
+      "action": "declined",
+      "by": "",
+      "finding": "reasoning-2",
+      "reason": "Agreed with the reviewer: every name resolves at HEAD and carries the one-walk constraint, so it stays in the section.",
+      "when": "2026-11-13T02:13:43.125125+00:00"
+    }
+  ],
+  "responses": {
+    "done_when-1": {
+      "action": "acted",
+      "by": "",
+      "commit": "c437e8059cf4c06975510f117a24690df3ed871b",
+      "commit_basis": "edit",
+      "note": "\u00a72's done-when gains cases asserting the record's plan and section for an attributable source, its who and when fields, and a read filtered by plan and by kind returning only the matching records.",
+      "reason": "",
+      "when": "2026-11-13T02:13:09.960518+00:00"
+    },
+    "done_when-2": {
+      "action": "acted",
+      "by": "",
+      "commit": "c437e8059cf4c06975510f117a24690df3ed871b",
+      "commit_basis": "edit",
+      "note": "\u00a75 names the surface parity check among its write paths and its done-when asserts the check compares the retention class and fails when the SPA and the listing disagree.",
+      "reason": "",
+      "when": "2026-11-13T02:13:26.621304+00:00"
+    },
+    "reasoning-1": {
+      "action": "acted",
+      "by": "",
+      "commit": "c437e8059cf4c06975510f117a24690df3ed871b",
+      "commit_basis": "edit",
+      "note": "\u00a74 now says only plan-review keeps its own rule (_plan_review_raw_reports); briefs, code-review and portfolio-review have none, so each child of those folders is an item under \u00a74's item rule, and a case shows a 31-day-old unreferenced child of code-review is removed.",
+      "reason": "",
+      "when": "2026-11-13T02:12:53.320295+00:00"
+    },
+    "reasoning-2": {
+      "action": "declined",
+      "by": "",
+      "reason": "Agreed with the reviewer: every name resolves at HEAD and carries the one-walk constraint, so it stays in the section.",
+      "when": "2026-11-13T02:13:43.125125+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/plan-a-report-is-kept-only-when-persisted.v9.json",
+  "review_run_id": "r-20261113T014050251448-plan-review-of-a-report-is-kept-only-when-persisted",
+  "reviewed_blob_sha": "326387cbc45cf9eb8b6cee8f5f2ae0c209e363cf",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `delivery_roots` (`reckon/crew/runs.py:92`), `_run_report_trees` (`reckon/crew/routing.py:1823`), `_plan_review_raw_reports` (`routing.py:2068`) reached from `garbage_collect` (`reckon/crew/gc.py:1000`), `resource_path`/`_validate_resource`/`read_resource`/`write_resource` (`reckon/project_state.py:262,717,471,980`), `iter_resources` (`reckon/resources.py:554`), `_LINK_ATTR_RE` (`resources.py:88`, matching `href|src` as stated), `audit_links`/`_link_record` (`reckon/doccheck.py:2499,2388`) and `figure_rows` (`reckon/figures.py:187`) all resolve at HEAD 63522670a; both extensionless hrefs (`/reckon/the-crew-home-has-a-bound`, `/reckon/crew-state-stays-bounded#s7`) resolve once `.html` is appended and `#s7` exists in that plan.",
+    "done_when": "a finding \u2014 \u00a72's done-when tests persistence and refusals but no read filter or plan attribution, and \u00a75's parity check is named in prose with no bullet that measures it.",
+    "evidence_paths": "pass \u2014 both named records sit under `docs/evidence/fragments/a-report-is-kept-only-when-persisted/`, which exists (the \u00a76 record `the-existing-backlog-leaves-home.html` is on disk), and no gate is sent to a scratchpad or a node-local temporary path.",
+    "naming": "pass \u2014 the proposed names (`report_retention.py`, the three `tests/test_*.py` files) state the mechanism, and no plan label, stage name, ticket number or changelog prose reaches them.",
+    "reasoning": "a finding \u2014 the \u00a74 exemption rests on \"their own existing rules\" for three folders that have none, so the plan bounds the store by ~99% of its bytes and exempts three growing families from every rule at once.",
+    "single_goal": "pass \u2014 each undone section names one deliverable (the persist operation and its record; the surfaces reaching it plus the listing; the expiry judgement; the SPA listing), and \u00a74's coordinator-side real-store dry run is the gate for that one deliverable rather than a second one.",
+    "wiring": "pass \u2014 every declared edge resolves: plan-after `crew-state-stays-bounded` and plan-section-depends-on `{s3:[s2,s4], s4:[s2], s5:[s3,s4]}` name sections that exist and sections that do exist, and the inbound claim in `the-crew-home-has-a-bound` decision `reports-bound-across-projects` names this plan, so no edge the plan needs is missing."
+  },
+  "section_digests": {
+    "_document": "f5b1858f7f61d1a840fbf35cbad9a6e3e8b95ce871c7d4572a14e693d2ed2d7f",
+    "s1": "ee47fe5018715e3fb4b9e9312fa9f5edd9cb7704d33128b5fb7faff903354379",
+    "s2": "fabfd8f6480611eec21428339a764a6b232c6873ac58a1ab06d636558d7c29dc",
+    "s3": "8573e847fda408bfd51552ae8c7f8d2235f117e5893a0e4a0c4757f299a53073",
+    "s4": "142ca084b0c7fd091bd9900bb3d142f180f8a1feefd5e5e03292725bcbe7785e",
+    "s5": "12fc4e01692cfc287ed34209d234dee112e28041f82ffafa272f00a2c99b780b",
+    "s6": "6c471b14972a42e0101dac6f6557f756abdebee752fe914375756de57c03b742"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-13T02:12:47.215854+00:00",
+  "total": null
+}

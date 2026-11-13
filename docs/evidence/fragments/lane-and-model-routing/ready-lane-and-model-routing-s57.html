@@ -1,0 +1,29 @@
+<section class="evidence" data-node="ready-lane-and-model-routing-s57">
+  <h3 id="ready-lane-and-model-routing-s57-title">The router decides on preferences; only a hard constraint excludes a lane</h3>
+  <p id="ready-lane-and-model-routing-s57-what">
+    A reserved-lane policy, a competence verdict and a pacing ceiling below the
+    account's own limit no longer remove a candidate. They travel beside it as
+    evidence the router weighs: a reservation block carrying the intent, the
+    tier floor, the attempt threshold, the window ceiling and its use, and any
+    lift in force with its reason, plus a <code>preferences</code> list. Only a
+    constraint that makes a lane unable to run the node still excludes it:
+    context fit, an execution refusal, serving state, a paused gate, a budget
+    verdict the account would refuse, and the lead's review exclusion.
+  </p>
+  <p id="ready-lane-and-model-routing-s57-fallback">
+    The deterministic fallback, which has no router to ask, is the one place the
+    preferences decide as rules: it keeps an unlifted reservation and places
+    low-think work on the local lane while it has room.
+  </p>
+  <p id="ready-lane-and-model-routing-s57-measure">
+    Measure: the new <code>tests/test_the_router_decides_on_preferences.py</code>
+    passes its five cases and both negative controls; the five landed test files
+    that asserted the removed exclusion now assert the lane is offered and that
+    the term travels beside it, with or without a lift. Over every test file
+    importing the picker, the base revision fails 17 tests; the head first
+    failed 24, the seven extra being tests that still asserted the removed
+    exclusion, and each of those files now passes. Two live picks, with a lift
+    in force, both routed rather than holding, and placed the low-think node on
+    the local lane.
+  </p>
+</section>

@@ -44,6 +44,7 @@ from reckon.crew.routing import (
     _shadow_worktree_records,
 )
 from reckon.crew.runs import (
+    _claim_paths_share,
     _exclusive_write_pattern,
     _live_worktree_claims,
     _manifest_freshness,
@@ -630,15 +631,9 @@ def _accepted_scope_exceptions(
                     or candidate.is_relative_to(claim)
                     or claim.is_relative_to(candidate)
                 ):
-                    # A file the project declares shareable admits a second
-                    # claimant editing a different region: worktrees isolate the
-                    # in-flight work and merging is the orchestrator's job, so a
-                    # whole-file refusal here serialises nodes that do not
-                    # actually collide. Only the exact named file is shareable;
-                    # a directory claim that merely contains it is a different
-                    # path, and paths under such a claim stay refused. Dispatch
-                    # resolves the same list through this same helper.
-                    if candidate == claim and path in shared_files:
+                    # Scope grants on source paths do not reserve them against
+                    # peers; isolated edits are reconciled by the merge.
+                    if _claim_paths_share(shared_files, path, claim.as_posix()):
                         continue
                     if str(pointer.get("phase") or "") in WAITING_REQUEST_PHASES:
                         # A queued, upstream-waiting or held request has no
@@ -797,18 +792,24 @@ def _repository_tree_boundary_violations(
             for tree in before_trees
             if isinstance(tree, Mapping) and str(tree.get("path") or "")
         ]
-    current = _repository_tree_snapshot(repository, roots=roots)
-    after_by_path = {
-        str(tree.get("path") or ""): tree
-        for tree in current["trees"]
-        if isinstance(tree, Mapping)
-    }
     declared = (record.get("node") or {}).get("write_paths") or ()
     declared_roots = _repository_scope_paths(
         declared,
         worktree=own_tree if own_tree is not None else repository,
         repository=repository,
     )
+    # The scan charges a changed path only when the run declares it, so the
+    # untracked read is bounded to those roots: an untracked directory outside
+    # every one of them holds nothing this check can refuse, and walking it once
+    # per file is what a shared checkout's worktree, cache and tool trees cost.
+    current = _repository_tree_snapshot(
+        repository, roots=roots, untracked_roots=declared_roots
+    )
+    after_by_path = {
+        str(tree.get("path") or ""): tree
+        for tree in current["trees"]
+        if isinstance(tree, Mapping)
+    }
     shared_files = _shared_write_paths(str(record.get("project") or ""), repository)
     # The paths each live peer holds its worktree for, resolved through the same
     # helper this run's own declaration reads. A dirty path in a peer's worktree
@@ -877,7 +878,7 @@ def _repository_tree_boundary_violations(
         changed_paths = {
             changed
             for _, changed in _snapshot_entries(after) - _snapshot_entries(before)
-            if changed not in shared_files
+            if not _claim_paths_share(shared_files, changed, changed)
             and any(
                 Path(changed) == root or Path(changed).is_relative_to(root)
                 for root in declared_roots

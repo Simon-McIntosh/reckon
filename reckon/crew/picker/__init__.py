@@ -38,7 +38,7 @@ def _step_label(stage: str) -> str:
     (``state_render_ms`` reads ``state-render``) rather than keeping a list of
     the step names beside it.
     """
-    key = stage[:-3] if stage.endswith("_ms") else stage
+    key = stage.removesuffix("_ms")
     return key.replace("_", "-")
 
 
@@ -302,6 +302,53 @@ def _declared_difficulty(
     return capability, hours, hours_source
 
 
+def _has_room(candidate: Candidate) -> bool:
+    """Whether the lane publishes room for this session.
+
+    A null worker figure is no published measurement, which is unknown rather
+    than zero, so it counts as room: the fallback is the last resort and must
+    not withhold a lane on the absence of a reading.
+    """
+    slots = candidate.worker_slots
+    return slots is None or slots > 0
+
+
+def _fallback_choice(
+    offered: list[Candidate], config: Mapping[str, Any]
+) -> Candidate | None:
+    """The candidate the deterministic fallback places a node on, or None.
+
+    The router weighs preferences; without it they decide. A reserved lane is
+    the orchestrators' own capacity, so an unlifted reservation is kept for the
+    work it names and is never where the fallback puts a node. The local lane
+    keeps high-volume, low-think work while it has room, which is where the
+    default backend sits anyway; a lifted lane is used by availability, and a
+    node with nothing else left holds rather than spends a reservation.
+    """
+    usable = [
+        candidate
+        for candidate in offered
+        if not (
+            candidate.reserved
+            and not (candidate.reservation or {}).get("lift_in_force")
+        )
+    ]
+    local = next((candidate for candidate in usable if candidate.local), None)
+    if local is not None and _has_room(local):
+        return local
+    default = next(
+        (
+            candidate
+            for candidate in usable
+            if candidate.backend == config.get("default_backend")
+        ),
+        None,
+    )
+    if default is not None:
+        return default
+    return usable[0] if usable else None
+
+
 def _answer(
     payload: dict[str, Any], offered: list[Candidate]
 ) -> tuple[str, float, dict[str, float]]:
@@ -538,9 +585,7 @@ def pick(
     if fallback_reason:
         source = "flight-default"
         action = "fallback"
-        selected = next(
-            (c for c in offered if c.backend == config.get("default_backend")), None
-        )
+        selected = _fallback_choice(offered, config)
         if selected is None:
             fallback_reason += "; default-backend-ineligible"
             source = "refused"

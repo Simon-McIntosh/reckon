@@ -1,0 +1,547 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_audit": [
+    {
+      "assertion": "owner['run_id'] != joiner['run_id']",
+      "failure_condition": "Fails if dispatch aliases the owner and joiner to one run; restoring directory exclusivity instead raises before this assertion.",
+      "file": "tests/test_only_unmergeable_paths_are_claimed.py",
+      "line": 103
+    },
+    {
+      "assertion": "owner['worktree'] != joiner['worktree']",
+      "failure_condition": "Fails if both runs receive the same worktree rather than isolated worktrees.",
+      "file": "tests/test_only_unmergeable_paths_are_claimed.py",
+      "line": 104
+    },
+    {
+      "assertion": "pointer['pid'] == os.getpid()",
+      "failure_condition": "Compares the stored PID with the injected launcher return; it fails if dispatch does not persist that return and is only a launch-wiring assertion, while the claim regression raises before it.",
+      "file": "tests/test_only_unmergeable_paths_are_claimed.py",
+      "line": 107
+    },
+    {
+      "assertion": "pointer['phase'] == 'starting'",
+      "failure_condition": "Fails if either run remains queued or held rather than reaching starting.",
+      "file": "tests/test_only_unmergeable_paths_are_claimed.py",
+      "line": 108
+    },
+    {
+      "assertion": "row['verdict'] == 'launched'",
+      "failure_condition": "Fails if directory/file collision admission produces a held verdict, omits the queued run from launched, holds the owner, or leaves the queued pointer out of starting, respectively; restoring the source-directory claim reinstates that collision.",
+      "file": "tests/test_only_unmergeable_paths_are_claimed.py",
+      "line": 134
+    },
+    {
+      "assertion": "result['launched'] == ['r-queued']",
+      "failure_condition": "Fails if directory/file collision admission produces a held verdict, omits the queued run from launched, holds the owner, or leaves the queued pointer out of starting, respectively; restoring the source-directory claim reinstates that collision.",
+      "file": "tests/test_only_unmergeable_paths_are_claimed.py",
+      "line": 135
+    },
+    {
+      "assertion": "owner['run_id'] not in result['held']",
+      "failure_condition": "Fails if directory/file collision admission produces a held verdict, omits the queued run from launched, holds the owner, or leaves the queued pointer out of starting, respectively; restoring the source-directory claim reinstates that collision.",
+      "file": "tests/test_only_unmergeable_paths_are_claimed.py",
+      "line": 136
+    },
+    {
+      "assertion": "runs.read_pointer('r-queued')['phase'] == 'starting'",
+      "failure_condition": "Fails if directory/file collision admission produces a held verdict, omits the queued run from launched, holds the owner, or leaves the queued pointer out of starting, respectively; restoring the source-directory claim reinstates that collision.",
+      "file": "tests/test_only_unmergeable_paths_are_claimed.py",
+      "line": 137
+    },
+    {
+      "assertion": "added == [DIRECTORY]",
+      "failure_condition": "Fails if widening refuses, omits the added directory, or does not persist the scope extension; restoring exclusive source comparison raises instead of returning.",
+      "file": "tests/test_only_unmergeable_paths_are_claimed.py",
+      "line": 151
+    },
+    {
+      "assertion": "DIRECTORY in pointer['node']['write_paths']",
+      "failure_condition": "Fails if widening refuses, omits the added directory, or does not persist the scope extension; restoring exclusive source comparison raises instead of returning.",
+      "file": "tests/test_only_unmergeable_paths_are_claimed.py",
+      "line": 152
+    },
+    {
+      "assertion": "refused.value.run_id == owner['run_id']",
+      "failure_condition": "Fails if artifact dispatch is admitted, names a different holder, omits the holder from the refusal, or queue admission omits the exclusive hold; restoring the landing exemption removes the expected ScopeConflict.",
+      "file": "tests/test_only_unmergeable_paths_are_claimed.py",
+      "line": 174
+    },
+    {
+      "assertion": "owner['run_id'] in str(refused.value)",
+      "failure_condition": "Fails if artifact dispatch is admitted, names a different holder, omits the holder from the refusal, or queue admission omits the exclusive hold; restoring the landing exemption removes the expected ScopeConflict.",
+      "file": "tests/test_only_unmergeable_paths_are_claimed.py",
+      "line": 175
+    },
+    {
+      "assertion": "hold is not None and owner['run_id'] in hold",
+      "failure_condition": "Fails if artifact dispatch is admitted, names a different holder, omits the holder from the refusal, or queue admission omits the exclusive hold; restoring the landing exemption removes the expected ScopeConflict.",
+      "file": "tests/test_only_unmergeable_paths_are_claimed.py",
+      "line": 184
+    },
+    {
+      "assertion": "validate_node(node, repository=repository).ok",
+      "failure_condition": "Fails if validate_node restores its exact peer-scope intersection refusal.",
+      "file": "tests/test_only_unmergeable_paths_are_claimed.py",
+      "line": 191
+    },
+    {
+      "assertion": "f'owner \u2192 {SOURCE}' in prompt",
+      "failure_condition": "Fails if the prompt loses peer disclosure.",
+      "file": "tests/test_only_unmergeable_paths_are_claimed.py",
+      "line": 202
+    },
+    {
+      "assertion": "'overlapping source and test edits are allowed' in prompt",
+      "failure_condition": "Fails if the prompt removes the permission for shared edits or restores either prohibition, respectively.",
+      "file": "tests/test_only_unmergeable_paths_are_claimed.py",
+      "line": 203
+    },
+    {
+      "assertion": "'never touch their paths' not in prompt",
+      "failure_condition": "Fails if the prompt removes the permission for shared edits or restores either prohibition, respectively.",
+      "file": "tests/test_only_unmergeable_paths_are_claimed.py",
+      "line": 204
+    },
+    {
+      "assertion": "'request a scope change instead' not in prompt",
+      "failure_condition": "Fails if the prompt removes the permission for shared edits or restores either prohibition, respectively.",
+      "file": "tests/test_only_unmergeable_paths_are_claimed.py",
+      "line": 205
+    },
+    {
+      "assertion": "joiner['run_id'] != owner['run_id']",
+      "failure_condition": "Fails if the peer-aware dispatch aliases the owner; restoring peer validation instead raises before dispatch completes.",
+      "file": "tests/test_only_unmergeable_paths_are_claimed.py",
+      "line": 208
+    },
+    {
+      "assertion": "_dispatch(repository, 'joiner', [paths[0]])['run_id']",
+      "failure_condition": "Fails or raises if an absent directory or undeclared shared root still prevents dispatch; restoring the root-dependent policy reinstates that refusal.",
+      "file": "tests/test_only_unmergeable_paths_are_claimed.py",
+      "line": 226
+    },
+    {
+      "assertion": "'return 11' in content and 'return 22' in content",
+      "failure_condition": "Fails if either separately edited function is absent from committed HEAD after both real merges.",
+      "file": "tests/test_only_unmergeable_paths_are_claimed.py",
+      "line": 275
+    },
+    {
+      "assertion": "git(origin, 'rev-parse', 'refs/heads/main') == git(repository, 'rev-parse', 'HEAD')",
+      "failure_condition": "Fails if the temporary remote primary differs from the repository primary; the two refs are read independently from different repositories.",
+      "file": "tests/test_only_unmergeable_paths_are_claimed.py",
+      "line": 276
+    },
+    {
+      "assertion": "repairs == [(joiner['run_id'], {'head': second, 'primary': git(repository, 'rev-parse', 'HEAD'), 'paths': [SOURCE]})]",
+      "failure_condition": "Fails if merge conflict verification omits repair dispatch or supplies the wrong run, candidate head, current git primary or conflicting path.",
+      "file": "tests/test_only_unmergeable_paths_are_claimed.py",
+      "line": 301
+    },
+    {
+      "assertion": "'return 11' in git(repository, 'show', f'HEAD:{SOURCE}')",
+      "failure_condition": "Fails if conflict handling loses the already-landed first edit or lands the conflicting second edit despite requiring repair, respectively.",
+      "file": "tests/test_only_unmergeable_paths_are_claimed.py",
+      "line": 311
+    },
+    {
+      "assertion": "'return 22' not in git(repository, 'show', f'HEAD:{SOURCE}')",
+      "failure_condition": "Fails if conflict handling loses the already-landed first edit or lands the conflicting second edit despite requiring repair, respectively.",
+      "file": "tests/test_only_unmergeable_paths_are_claimed.py",
+      "line": 312
+    },
+    {
+      "assertion": "joiner['stacked_on'] == owner['run_id']",
+      "failure_condition": "Fails if sharing returns before the inherited-base relationship is recorded on either pointer; moving the ancestry check below the sharing shortcut reinstates that regression.",
+      "file": "tests/test_only_unmergeable_paths_are_claimed.py",
+      "line": 335
+    },
+    {
+      "assertion": "joiner['run_id'] in runs.read_pointer(owner['run_id'])['stacked_runs']",
+      "failure_condition": "Fails if sharing returns before the inherited-base relationship is recorded on either pointer; moving the ancestry check below the sharing shortcut reinstates that regression.",
+      "file": "tests/test_only_unmergeable_paths_are_claimed.py",
+      "line": 336
+    },
+    {
+      "assertion": "refused.value.run_id == owner['run_id']",
+      "failure_condition": "Fails if an explicit sharing declaration exempts the plan claim, or the refusal names another owner.",
+      "file": "tests/test_only_unmergeable_paths_are_claimed.py",
+      "line": 346
+    },
+    {
+      "assertion": "accepted == [{'path': SOURCE, 'reason': 'Companion source edit.'}]",
+      "failure_condition": "Compares accepted request values with the returned acceptance, but the directory-peer arm raises if the source-sharing shortcut is removed; this checks admission rather than independently certifying the path or reason text.",
+      "file": "tests/test_only_unmergeable_paths_are_claimed.py",
+      "line": 363
+    },
+    {
+      "assertion": "_dispatch(repository, 'joiner', [DIRECTORY])['run_id']",
+      "failure_condition": "Fails or raises if malformed sharing metadata or a declared source exclusion restores a directory hold.",
+      "file": "tests/test_only_unmergeable_paths_are_claimed.py",
+      "line": 376
+    },
+    {
+      "assertion": "run_id.startswith('r-')",
+      "failure_condition": "Fails if dispatch returns a malformed run identity, loses the new or holder pointer, or fails to record either direction of the stacked relationship, respectively.",
+      "file": "tests/test_a_stacked_run_may_write_its_holders_paths.py",
+      "line": 269
+    },
+    {
+      "assertion": "run_id in live",
+      "failure_condition": "Fails if dispatch returns a malformed run identity, loses the new or holder pointer, or fails to record either direction of the stacked relationship, respectively.",
+      "file": "tests/test_a_stacked_run_may_write_its_holders_paths.py",
+      "line": 271
+    },
+    {
+      "assertion": "HOLDER_RUN in live",
+      "failure_condition": "Fails if dispatch returns a malformed run identity, loses the new or holder pointer, or fails to record either direction of the stacked relationship, respectively.",
+      "file": "tests/test_a_stacked_run_may_write_its_holders_paths.py",
+      "line": 273
+    },
+    {
+      "assertion": "read_pointer(HOLDER_RUN).get('stacked_runs') == [run_id]",
+      "failure_condition": "Fails if dispatch returns a malformed run identity, loses the new or holder pointer, or fails to record either direction of the stacked relationship, respectively.",
+      "file": "tests/test_a_stacked_run_may_write_its_holders_paths.py",
+      "line": 274
+    },
+    {
+      "assertion": "read_pointer(run_id).get('stacked_on') == HOLDER_RUN",
+      "failure_condition": "Fails if dispatch returns a malformed run identity, loses the new or holder pointer, or fails to record either direction of the stacked relationship, respectively.",
+      "file": "tests/test_a_stacked_run_may_write_its_holders_paths.py",
+      "line": 275
+    },
+    {
+      "assertion": "CLAIMED_PATH in str(refusal.value)",
+      "failure_condition": "Fails if an independent receipt dispatch is admitted, omits the claimed path or holder from its refusal, or creates a worktree before refusing, respectively.",
+      "file": "tests/test_a_stacked_run_may_write_its_holders_paths.py",
+      "line": 288
+    },
+    {
+      "assertion": "HOLDER_RUN in str(refusal.value)",
+      "failure_condition": "Fails if an independent receipt dispatch is admitted, omits the claimed path or holder from its refusal, or creates a worktree before refusing, respectively.",
+      "file": "tests/test_a_stacked_run_may_write_its_holders_paths.py",
+      "line": 289
+    },
+    {
+      "assertion": "not (tmp_path / 'worktrees').exists()",
+      "failure_condition": "Fails if an independent receipt dispatch is admitted, omits the claimed path or holder from its refusal, or creates a worktree before refusing, respectively.",
+      "file": "tests/test_a_stacked_run_may_write_its_holders_paths.py",
+      "line": 290
+    },
+    {
+      "assertion": "read_pointer(record['run_id'])['phase'] == 'starting'",
+      "failure_condition": "Fails if primary-based source dispatch remains held or is incorrectly recorded as stacked.",
+      "file": "tests/test_a_stacked_run_may_write_its_holders_paths.py",
+      "line": 293
+    },
+    {
+      "assertion": "not record.get('stacked_on')",
+      "failure_condition": "Fails if primary-based source dispatch remains held or is incorrectly recorded as stacked.",
+      "file": "tests/test_a_stacked_run_may_write_its_holders_paths.py",
+      "line": 294
+    },
+    {
+      "assertion": "rows",
+      "failure_condition": "Fails if registry lookup loses the holder, marks its retained claim nonbinding, or omits its recorded descendant, respectively.",
+      "file": "tests/test_a_stacked_run_may_write_its_holders_paths.py",
+      "line": 310
+    },
+    {
+      "assertion": "rows[0]['binding'] is True",
+      "failure_condition": "Fails if registry lookup loses the holder, marks its retained claim nonbinding, or omits its recorded descendant, respectively.",
+      "file": "tests/test_a_stacked_run_may_write_its_holders_paths.py",
+      "line": 311
+    },
+    {
+      "assertion": "descendant in rows[0].get('stacked_runs', [])",
+      "failure_condition": "Fails if registry lookup loses the holder, marks its retained claim nonbinding, or omits its recorded descendant, respectively.",
+      "file": "tests/test_a_stacked_run_may_write_its_holders_paths.py",
+      "line": 312
+    },
+    {
+      "assertion": "result['stacked_descendants'] == [descendant]",
+      "failure_condition": "Fails if promotion omits the live descendant, leaves the completed holder pointer, or deletes the live descendant pointer, respectively.",
+      "file": "tests/test_a_stacked_run_may_write_its_holders_paths.py",
+      "line": 332
+    },
+    {
+      "assertion": "not pointer_path(HOLDER_RUN).exists()",
+      "failure_condition": "Fails if promotion omits the live descendant, leaves the completed holder pointer, or deletes the live descendant pointer, respectively.",
+      "file": "tests/test_a_stacked_run_may_write_its_holders_paths.py",
+      "line": 333
+    },
+    {
+      "assertion": "pointer_path(descendant).exists()",
+      "failure_condition": "Fails if promotion omits the live descendant, leaves the completed holder pointer, or deletes the live descendant pointer, respectively.",
+      "file": "tests/test_a_stacked_run_may_write_its_holders_paths.py",
+      "line": 334
+    },
+    {
+      "assertion": "[row['run_id'] for row in stacked] == [holder]",
+      "failure_condition": "Fails if the dispatch-base ancestry check no longer appends the inherited holder; moving it below the shared-source shortcut loses this metadata.",
+      "file": "tests/test_a_stacked_run_may_write_its_holders_paths.py",
+      "line": 363
+    },
+    {
+      "assertion": "independent == []",
+      "failure_condition": "Fails if an independently based source writer is spuriously recorded as stacked; reinstating source refusal raises before this assertion.",
+      "file": "tests/test_a_stacked_run_may_write_its_holders_paths.py",
+      "line": 386
+    },
+    {
+      "assertion": "admitted.admission['state'] == 'admitted'",
+      "failure_condition": "Fails if inherited-base preview refuses or real dispatch does not create a run.",
+      "file": "tests/test_a_stacked_run_may_write_its_holders_paths.py",
+      "line": 408
+    },
+    {
+      "assertion": "str(record['run_id']).startswith('r-')",
+      "failure_condition": "Fails if inherited-base preview refuses or real dispatch does not create a run.",
+      "file": "tests/test_a_stacked_run_may_write_its_holders_paths.py",
+      "line": 411
+    },
+    {
+      "assertion": "independent.admission['state'] == 'refused'",
+      "failure_condition": "Fails if independent receipt preview admits or reports an unrelated refusal instead of scope-conflict.",
+      "file": "tests/test_a_stacked_run_may_write_its_holders_paths.py",
+      "line": 429
+    },
+    {
+      "assertion": "independent.admission['error'] == 'scope-conflict'",
+      "failure_condition": "Fails if independent receipt preview admits or reports an unrelated refusal instead of scope-conflict.",
+      "file": "tests/test_a_stacked_run_may_write_its_holders_paths.py",
+      "line": 430
+    },
+    {
+      "assertion": "independent.admission['state'] == 'admitted'",
+      "failure_condition": "Fails if independent source preview refuses or actual dispatch remains held rather than starting.",
+      "file": "tests/test_a_stacked_run_may_write_its_holders_paths.py",
+      "line": 436
+    },
+    {
+      "assertion": "read_pointer(launched['run_id'])['phase'] == 'starting'",
+      "failure_condition": "Fails if independent source preview refuses or actual dispatch remains held rather than starting.",
+      "file": "tests/test_a_stacked_run_may_write_its_holders_paths.py",
+      "line": 440
+    },
+    {
+      "assertion": "base",
+      "failure_condition": "Fixture positive controls fail if the holder base or either required live pointer was not created; they are not claimed as source-sharing regression coverage.",
+      "file": "tests/test_a_stacked_run_may_write_its_holders_paths.py",
+      "line": 454
+    },
+    {
+      "assertion": "descendant in live",
+      "failure_condition": "Fixture positive controls fail if the holder base or either required live pointer was not created; they are not claimed as source-sharing regression coverage.",
+      "file": "tests/test_a_stacked_run_may_write_its_holders_paths.py",
+      "line": 457
+    },
+    {
+      "assertion": "HOLDER_RUN in live",
+      "failure_condition": "Fixture positive controls fail if the holder base or either required live pointer was not created; they are not claimed as source-sharing regression coverage.",
+      "file": "tests/test_a_stacked_run_may_write_its_holders_paths.py",
+      "line": 458
+    },
+    {
+      "assertion": "result.exit_code == 0",
+      "failure_condition": "Fails if real completion returns an error instead of committing its acceptance.",
+      "file": "tests/test_a_stopped_runs_claim_does_not_block_another_landing.py",
+      "line": 240
+    },
+    {
+      "assertion": "stored['scope_acceptances'] == [expected]",
+      "failure_condition": "Fails if receipt acceptance omits independently derived stopped-peer metadata, or source acceptance incorrectly retains it; path and reason echo request values and are not independent provenance checks.",
+      "file": "tests/test_a_stopped_runs_claim_does_not_block_another_landing.py",
+      "line": 248
+    },
+    {
+      "assertion": "not pointer_path(OURS).exists()",
+      "failure_condition": "Fails if completion leaves its pointer, mutates the peer bytes, or omits its durable ledger entry, respectively.",
+      "file": "tests/test_a_stopped_runs_claim_does_not_block_another_landing.py",
+      "line": 249
+    },
+    {
+      "assertion": "peer_record() == peer_before",
+      "failure_condition": "Fails if completion leaves its pointer, mutates the peer bytes, or omits its durable ledger entry, respectively.",
+      "file": "tests/test_a_stopped_runs_claim_does_not_block_another_landing.py",
+      "line": 250
+    },
+    {
+      "assertion": "ledger.runs(PROJECT, root=repository)",
+      "failure_condition": "Fails if completion leaves its pointer, mutates the peer bytes, or omits its durable ledger entry, respectively.",
+      "file": "tests/test_a_stopped_runs_claim_does_not_block_another_landing.py",
+      "line": 251
+    },
+    {
+      "assertion": "ACCEPTED in str(refused.value)",
+      "failure_condition": "Fails if the live-artifact refusal omits the overlapping accepted path; admitting the artifact also fails the surrounding expected exception.",
+      "file": "tests/test_a_stopped_runs_claim_does_not_block_another_landing.py",
+      "line": 265
+    },
+    {
+      "assertion": "_accept(ours_head) == [{'path': ACCEPTED, 'reason': 'companion source or artifact edit'}]",
+      "failure_condition": "The expected acceptance echoes the requested path and reason; restoring exclusive source-peer checking raises for the live, undelivered or stale peer instead of returning, so each source-admission assertion reddens on the relevant regression.",
+      "file": "tests/test_a_stopped_runs_claim_does_not_block_another_landing.py",
+      "line": 267
+    },
+    {
+      "assertion": "ledger.runs(PROJECT, root=repository) == []",
+      "failure_condition": "Fails if the direct scope check writes a completion ledger record as a side effect.",
+      "file": "tests/test_a_stopped_runs_claim_does_not_block_another_landing.py",
+      "line": 270
+    },
+    {
+      "assertion": "pointer_path(OURS).is_file()",
+      "failure_condition": "Fails if the direct scope check removes its live pointer.",
+      "file": "tests/test_a_stopped_runs_claim_does_not_block_another_landing.py",
+      "line": 271
+    },
+    {
+      "assertion": "peer_record() == peer_before",
+      "failure_condition": "Fails if checking acceptance or widening changes the peer pointer bytes read independently before the call.",
+      "file": "tests/test_a_stopped_runs_claim_does_not_block_another_landing.py",
+      "line": 272
+    },
+    {
+      "assertion": "_accept(ours_head) == [{'path': ACCEPTED, 'reason': 'companion source or artifact edit'}]",
+      "failure_condition": "The expected acceptance echoes the requested path and reason; restoring exclusive source-peer checking raises for the live, undelivered or stale peer instead of returning, so each source-admission assertion reddens on the relevant regression.",
+      "file": "tests/test_a_stopped_runs_claim_does_not_block_another_landing.py",
+      "line": 287
+    },
+    {
+      "assertion": "ledger.runs(PROJECT, root=repository) == []",
+      "failure_condition": "Fails if the direct scope check writes a completion ledger record as a side effect.",
+      "file": "tests/test_a_stopped_runs_claim_does_not_block_another_landing.py",
+      "line": 290
+    },
+    {
+      "assertion": "pointer_path(OURS).is_file()",
+      "failure_condition": "Fails if the direct scope check removes its live pointer.",
+      "file": "tests/test_a_stopped_runs_claim_does_not_block_another_landing.py",
+      "line": 291
+    },
+    {
+      "assertion": "peer_record() == peer_before",
+      "failure_condition": "Fails if checking acceptance or widening changes the peer pointer bytes read independently before the call.",
+      "file": "tests/test_a_stopped_runs_claim_does_not_block_another_landing.py",
+      "line": 292
+    },
+    {
+      "assertion": "_accept(ours_head) == [{'path': ACCEPTED, 'reason': 'companion source or artifact edit'}]",
+      "failure_condition": "The expected acceptance echoes the requested path and reason; restoring exclusive source-peer checking raises for the live, undelivered or stale peer instead of returning, so each source-admission assertion reddens on the relevant regression.",
+      "file": "tests/test_a_stopped_runs_claim_does_not_block_another_landing.py",
+      "line": 314
+    },
+    {
+      "assertion": "ledger.runs(PROJECT, root=repository) == []",
+      "failure_condition": "Fails if the direct scope check writes a completion ledger record as a side effect.",
+      "file": "tests/test_a_stopped_runs_claim_does_not_block_another_landing.py",
+      "line": 317
+    },
+    {
+      "assertion": "pointer_path(OURS).is_file()",
+      "failure_condition": "Fails if the direct scope check removes its live pointer.",
+      "file": "tests/test_a_stopped_runs_claim_does_not_block_another_landing.py",
+      "line": 318
+    },
+    {
+      "assertion": "peer_record() == peer_before",
+      "failure_condition": "Fails if checking acceptance or widening changes the peer pointer bytes read independently before the call.",
+      "file": "tests/test_a_stopped_runs_claim_does_not_block_another_landing.py",
+      "line": 319
+    },
+    {
+      "assertion": "peer_record() == peer_before",
+      "failure_condition": "Fails if checking acceptance or widening changes the peer pointer bytes read independently before the call.",
+      "file": "tests/test_a_stopped_runs_claim_does_not_block_another_landing.py",
+      "line": 349
+    }
+  ],
+  "call_site_count": 8,
+  "call_sites": [
+    "reckon/crew/admission/holds.py:505 _claim_collision",
+    "reckon/crew/dispatching/preparation.py:1174 peer disclosure",
+    "reckon/crew/dispatching/launch.py:843 launch claim check",
+    "reckon/crew/dispatch_plan.py:1196 dry-run claim check",
+    "reckon/crew/dispatch_claims.py:2487 widening claim check",
+    "reckon/crew/runs.py:1933 legacy claim adapter",
+    "reckon/crew/queue_edit.py:262 queued scope edit",
+    "reckon/crew/promotion_checks.py:2405 promotion acceptance"
+  ],
+  "completed_at": "2026-11-13T05:07:56Z",
+  "dispatched_at": "2026-11-13T04:55:22Z",
+  "findings": [],
+  "gate_evidence": {
+    "after_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_stacked_run_may_write_its_holders_paths.py tests/test_a_stopped_runs_claim_does_not_block_another_landing.py tests/test_only_unmergeable_paths_are_claimed.py tests/test_staged_write_inventory.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261113T020053676895-only-unmergeable-paths-are-claimed/completed-after-suite.log",
+      "revision": "c1dbb46fd03d68012d6731aa17552dbfb3a3e8a5"
+    },
+    "baseline_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_stacked_run_may_write_its_holders_paths.py tests/test_a_stopped_runs_claim_does_not_block_another_landing.py tests/test_staged_write_inventory.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261113T020053676895-only-unmergeable-paths-are-claimed/expanded-baseline-suite.log",
+      "revision": "437ec81650839ed309c6e341b21dce269c911c0a"
+    },
+    "failure_parser_positive_control": [
+      25,
+      25
+    ],
+    "importer_added_failure_count": 0,
+    "importer_added_failure_ids": [],
+    "importer_logs": [
+      "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261113T020053676895-only-unmergeable-paths-are-claimed/baseline-compatibility.log",
+      "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261113T020053676895-only-unmergeable-paths-are-claimed/final-compatibility.log"
+    ],
+    "negative_control_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261113T020053676895-only-unmergeable-paths-are-claimed/completed-negative-control.log",
+    "negative_control_summary": "3 failed in 3.73s; EXIT=1; DirectoryClaimConflict in all three overlap directions"
+  },
+  "input_correlated_assertions_note": "Launcher PID and acceptance path/reason assertions repeat request inputs, as identified individually in assertion_audit; they test propagation or successful admission, not provenance. The actual claim regressions raise before returning, and artifact refusal, persisted phase, independent git content/remote refs, repair callback and peer snapshots supply the behavioral controls. No assertion was found whose two sides move together so that the claimed regression remains green.",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 8 production call site(s)",
+    "diff": "Read commits 56956897224ca0c028a6f92674745ee60d447451, 5fff8fe10739139dfa6e08137be479e3c80bf4a4, c175901bcb37bc780d494d419e504eb9ab226dce and c1dbb46fd03d68012d6731aa17552dbfb3a3e8a5 against base 437ec81650839ed309c6e341b21dce269c911c0a; they change five production modules, three tests and one evidence fragment.",
+    "done_when": "The live section s33 and prompt.txt:137 require sharing, artifact refusal and real merge outcomes; tests/test_only_unmergeable_paths_are_claimed.py:91-376 covers those outcomes and completed-after-suite.log records 100 passed with EXIT=0 at the reviewed head.",
+    "goal": "The goal in the reviewed run's prompt.txt:38 is implemented by reckon/crew/runs.py:1786 and dispatch_claims.py:1523, which share source overlaps and retain exclusive artifact checks.",
+    "manifest": "The reviewed run's manifest.md records all four commits, five changed production modules, final-head gate receipts and the unchanged 25 importer failure IDs, and its baseline_suite and after_suite agree with the opened logs.",
+    "write_paths": "The nine changed paths are inside the original scope in prompt.txt:81-85 plus the two test paths expressly granted in resume-2-advice.txt:1, with no unrelated edits."
+  },
+  "justifications": {
+    "durability": "tests/test_only_unmergeable_paths_are_claimed.py:103-108 fails when directory exclusivity returns, :169-184 fails if artifact refusal disappears, and :275-312 independently checks surviving git content, remote head and actual conflict-repair arguments.",
+    "evidence": "The reviewed run's expanded-baseline-suite.log and completed-after-suite.log name the exact base and head, contain completed summaries of 63 and 100 passing tests, and end in EXIT=0, while completed-negative-control.log records three DirectoryClaimConflict failures after restoring directory exclusivity.",
+    "fit": "reckon/crew/promotion_scope.py:636 reuses the existing runs.py:1786 policy, the new tests reuse temporary repository and git fixtures, and final-lint.log records zero added lint findings with all eight Python paths formatted.",
+    "goal_fidelity": "reckon/crew/runs.py:1786 shares the overlap region independently of source declarations, dispatch_claims.py:1523 retains explicit artifact claims, and prompts.py:973 makes peer paths informational.",
+    "reuse": "Capability searches found runs.py:_SharedWritePaths and _claim_paths_share as the policy owners and tests/helpers/git.py:12 plus tests/test_a_queued_run_is_admitted.py:56 as fixture owners; production edits extend those owners, while new test helpers wrap their APIs for multiple paths, peer declarations and isolated edits.",
+    "scope_discipline": "The diff's five reckon/crew modules, three test files and evidence fragment match prompt.txt:81-85 and the explicit scope extension in resume-2-advice.txt:1."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The goal in the reviewed run's prompt.txt:38 is implemented by reckon/crew/runs.py:1786 and dispatch_claims.py:1523, which share source overlaps and retain exclusive artifact checks.\nVERDICT done_when: The live section s33 and prompt.txt:137 require sharing, artifact refusal and real merge outcomes; tests/test_only_unmergeable_paths_are_claimed.py:91-376 covers those outcomes and completed-after-suite.log records 100 passed with EXIT=0 at the reviewed head.\nVERDICT write_paths: The nine changed paths are inside the original scope in prompt.txt:81-85 plus the two test paths expressly granted in resume-2-advice.txt:1, with no unrelated edits.\nVERDICT manifest: The reviewed run's manifest.md records all four commits, five changed production modules, final-head gate receipts and the unchanged 25 importer failure IDs, and its baseline_suite and after_suite agree with the opened logs.\nVERDICT diff: Read commits 56956897224ca0c028a6f92674745ee60d447451, 5fff8fe10739139dfa6e08137be479e3c80bf4a4, c175901bcb37bc780d494d419e504eb9ab226dce and c1dbb46fd03d68012d6731aa17552dbfb3a3e8a5 against base 437ec81650839ed309c6e341b21dce269c911c0a; they change five production modules, three tests and one evidence fragment.\nCALL_SITES: reckon/crew/admission/holds.py:505 _claim_collision, reckon/crew/dispatching/preparation.py:1174 peer disclosure, reckon/crew/dispatching/launch.py:843 launch claim check, reckon/crew/dispatch_plan.py:1196 dry-run claim check, reckon/crew/dispatch_claims.py:2487 widening claim check, reckon/crew/runs.py:1933 legacy claim adapter, reckon/crew/queue_edit.py:262 queued scope edit, reckon/crew/promotion_checks.py:2405 promotion acceptance\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/runs.py:1786 shares the overlap region independently of source declarations, dispatch_claims.py:1523 retains explicit artifact claims, and prompts.py:973 makes peer paths informational.\nSCORE evidence: 20\nJUSTIFICATION evidence: The reviewed run's expanded-baseline-suite.log and completed-after-suite.log name the exact base and head, contain completed summaries of 63 and 100 passing tests, and end in EXIT=0, while completed-negative-control.log records three DirectoryClaimConflict failures after restoring directory exclusivity.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: The diff's five reckon/crew modules, three test files and evidence fragment match prompt.txt:81-85 and the explicit scope extension in resume-2-advice.txt:1.\nSCORE durability: 20\nJUSTIFICATION durability: tests/test_only_unmergeable_paths_are_claimed.py:103-108 fails when directory exclusivity returns, :169-184 fails if artifact refusal disappears, and :275-312 independently checks surviving git content, remote head and actual conflict-repair arguments.\nSCORE fit: 20\nJUSTIFICATION fit: reckon/crew/promotion_scope.py:636 reuses the existing runs.py:1786 policy, the new tests reuse temporary repository and git fixtures, and final-lint.log records zero added lint findings with all eight Python paths formatted.\nSCORE reuse: 20\nJUSTIFICATION reuse: Capability searches found runs.py:_SharedWritePaths and _claim_paths_share as the policy owners and tests/helpers/git.py:12 plus tests/test_a_queued_run_is_admitted.py:56 as fixture owners; production edits extend those owners, while new test helpers wrap their APIs for multiple paths, peer declarations and isolated edits.\n",
+  "reuse_audit": "No production function, class or module was added: the existing policy owner is extended. Searches for dispatch, temporary repository, git-edit and acceptance capabilities found tests/test_a_source_file_is_shared_by_default.py:87-109, tests/test_a_queued_run_is_admitted.py:56 and tests/helpers/git.py:12. Added repository/node/dispatch/edit/acceptance fixtures wrap these runtime and fixture APIs for list scopes, peers, real commits and direct acceptance; the two exclusive_claim fixtures extend their respective existing source fixtures with a receipt arm rather than implementing another claim policy.",
+  "review_run_id": "r-20261113T042224969691-review-of-only-unmergeable-paths-are-claimed-c1dbb46fd03d",
+  "reviewed_base_sha": "437ec81650839ed309c6e341b21dce269c911c0a",
+  "reviewed_head_sha": "c1dbb46fd03d68012d6731aa17552dbfb3a3e8a5",
+  "reviewed_run_id": "r-20261113T020053676895-only-unmergeable-paths-are-claimed",
+  "scores": {
+    "durability": 20,
+    "evidence": 20,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-13T05:28:04.699989+00:00",
+  "total": 120
+}

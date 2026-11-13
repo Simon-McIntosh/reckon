@@ -70,7 +70,7 @@ def _pick(root, config, *, capability=HARDEST):
     )
 
 
-@pytest.mark.parametrize("used,offered", [(0.42, True), (0.60, False)])
+@pytest.mark.parametrize("used,offered", [(0.42, True), (0.60, True)])
 def test_hardest_pick_reads_a_persisted_five_hour_event(
     live_facts, repo, monkeypatch, tmp_path, used, offered
 ):
@@ -125,8 +125,8 @@ def test_a_supplied_live_view_is_refreshed_with_its_candidate(
     assert group["clocks"]["five_hour"]["utilisation"] == pytest.approx(0.42)
 
 
-@pytest.mark.parametrize("used,offered", [(0.42, True), (0.60, False), (None, False)])
-def test_crew_pick_offers_the_reserved_lane_only_on_a_fresh_open_window(
+@pytest.mark.parametrize("used,offered", [(0.42, True), (0.60, True), (None, True)])
+def test_crew_pick_offers_the_reserved_lane_and_states_its_window(
     live_facts, repo, monkeypatch, tmp_path, used, offered
 ):
     config, _path = _arrange(monkeypatch, tmp_path)
@@ -251,7 +251,7 @@ def test_routine_pick_never_spends_the_reserved_probe(
     options = _pick(repo, config, capability={})
 
     assert calls == []
-    assert "claude-opus" not in _offered(options)
+    assert "claude-opus" in _offered(options)
 
 
 def test_a_fresh_weekly_figure_does_not_stand_in_for_the_five_hour_window(

@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-review-dies-where-nobody-is-looking">
+  <meta name="plan-evidence-for" content="a-review-dies-where-nobody-is-looking">
+  <title>A reopen never launches on a refused advice | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <header>
+      <p class="eyebrow">Execution evidence &middot; fragment</p>
+      <h1>A reopen never launches on a refused advice</h1>
+      <p class="lead"><code>crew resume --reopen --write-path P</code> fell through into the resume it was combined with, so it started an attempt whose advice had been composed for the state the run had left, and consumed the advice a refused resume was holding for the next one. A reopen now widens the run's write paths and launches nothing; it reports the refused advice still waiting, and the caller's separate resume carries that text ahead of its own, as before.</p>
+    </header>
+
+    <section id="ready-a-review-dies-where-nobody-i-s15-the-defect">
+      <h2>The defect: a widen that started a worker</h2>
+      <p>Measured 2026-11-12: <code>crew resume --reopen --write-path reckon/crew/admission/launching.py</code> on r-20261112T064442039104 launched attempt 4 at once. Its advice was <code>resume-refused-advice.txt</code>, which an earlier resume had refused because attempt 3 was in flight; the launch consumed it into attempt 4's <code>resume-3-advice.txt</code>. The caller had asked only to widen the fence, and the attempt started on instructions written for a state the run had left.</p>
+      <p>The reproduction is the negative control recorded below: at the base revision the same three cases fail, because the reopen reaches <code>_resume</code> and starts an attempt.</p>
+    </section>
+
+    <section id="ready-a-review-dies-where-nobody-i-s15-what-changed">
+      <h2>What changed</h2>
+      <ul>
+        <li><code>reckon/crew/resumption.py</code> gains <code>reopen_run</code>: it widens the claim through <code>widen_claim</code>, clears the delivered verdict exactly as a resume does, records the grant, and returns a payload naming the refused advice waiting. <code>REOPEN_RECORD_NAME</code> and <code>_record_reopening</code> move here from the command module, beside the refusal and delivery-reset code they drive. <code>waiting_refused_advice</code> reads the slot without consuming it.</li>
+        <li><code>reckon/crew_run_commands.py</code>: the <code>--reopen</code> branch delegates to <code>reopen_run</code> and returns, so no attempt follows. Combining <code>--reopen</code> with <code>--advice</code> is now refused: there is no turn for advice to enter, and accepting it would look like it had been delivered.</li>
+        <li><code>tests/test_a_reopen_launches_no_worker.py</code> is the gate. <code>tests/test_crew_families_fold.py</code> carried the old expectation that a reopen launches; it now asserts the grant and <code>launched: false</code>.</li>
+      </ul>
+    </section>
+
+    <section id="ready-a-review-dies-where-nobody-i-s15-the-gate">
+      <h2>The gate</h2>
+      <ul>
+        <li><code>test_a_reopen_with_advice_waiting_starts_no_attempt</code> &mdash; a resume is refused with advice while a launch is in flight, the launch ends, and the reopen then grants a new path. No <code>resume-*.jsonl</code> appears, the pointer keeps its attempt, pid and phase, the launch seam is never called, and the output carries <code>launched: false</code> and the kept advice text and path.</li>
+        <li><code>test_the_resume_after_a_reopen_carries_the_refused_advice_first</code> &mdash; the caller's next resume composes the kept advice into its prompt ahead of its own text, and the slot is emptied as it is read.</li>
+        <li><code>test_a_reopen_with_nothing_waiting_names_no_advice</code> &mdash; an empty slot reports empty rather than a stale one.</li>
+      </ul>
+      <table>
+        <thead><tr><th>Arm</th><th>Result</th><th>Log</th></tr></thead>
+        <tbody>
+          <tr><td>Base at <code>71b873595a</code>, the 88 test files that import the changed modules</td><td>28 failed, 994 passed (<code>EXIT=1</code>)</td><td><code>arm-base-importers.log</code></td></tr>
+          <tr><td>Head at <code>e3b2dcc8ac</code>, the same set plus this node's new file (89)</td><td>28 failed, 997 passed (<code>EXIT=1</code>); the failure sets are identical, so the change adds no failure</td><td><code>arm-head-importers.log</code></td></tr>
+          <tr><td>Suite fence, base revision (scratch tree)</td><td>51 passed, <code>EXIT=0</code></td><td><code>suite-base.log</code></td></tr>
+          <tr><td>Suite fence, head <code>e3b2dcc8ac</code></td><td>51 passed, <code>EXIT=0</code></td><td><code>suite-head.log</code></td></tr>
+          <tr><td>Negative control: this node's gate at the base revision</td><td>3 failed, <code>EXIT=1</code> &mdash; all three cases, because the reopen launches an attempt at once there</td><td><code>negative-control.log</code></td></tr>
+        </tbody>
+      </table>
+      <p>Logs live under <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261113T012546102955-ready-a-review-dies-where-nobody-i-s15/</code>. Each begins with its revision, tree and literal command, and ends with a bare <code>EXIT=</code> line. Both importer arms ran under <code>sbatch --partition=rigel</code>, one arm at a time with <code>-n 4</code>. The 28 shared failures are the fleet-and-git-environment cases the base revision already fails on this host; they are listed in <code>base-fail.txt</code> and <code>head-fail.txt</code>, which <code>diff</code> reports identical.</p>
+    </section>
+
+    <section id="ready-a-review-dies-where-nobody-i-s15-negative-control">
+      <h2>Negative control</h2>
+      <p>The base revision is the declared negative control. Its tree at <code>71b873595a</code> was extracted into a scratch directory and the delivered gate copied into it; running it there gives three failures with <code>EXIT=1</code>, and the first case fails at its launch assertion because <code>_resume</code> is reached on the reopen. The base suite arm needed the extracted tree re-committed (<code>ef08f7c</code>) because the inventory fixture reads <code>HEAD</code> through git; that is a scaffolding property of the fixture, not of the change, and the arm's first attempt recorded it as two setup errors.</p>
+    </section>
+  </main>
+</body>
+</html>

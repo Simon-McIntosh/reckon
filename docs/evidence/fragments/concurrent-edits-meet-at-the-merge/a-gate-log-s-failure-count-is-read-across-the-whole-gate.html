@@ -1,0 +1,42 @@
+<section id="a-gate-log-s-failure-count-is-read-across-the-whole-gate-results">
+  <h3>A gate log's failure count is read across the whole gate</h3>
+  <p>A multi-label ctest gate runs ctest once per label into one log. The
+  agreement check between a suite arm and the log it cites cut that log to its
+  last run, so an arm recording the 32 failures an earlier label inherited was
+  compared with a clean final label and refused. The receipt was honest and the
+  reader was reading one label.</p>
+  <p><strong>Reproduced before repair.</strong> At base revision
+  <code>b30f1e1350adcc64d38de45901cccf13801e5b2c</code>, a log whose first ctest
+  label lists 32 failures (exiting 8) and whose second label runs clean
+  (exiting 0), against an arm recording <code>failure_count: 32</code> and
+  <code>failure_ids</code> naming those 32 tests, raised
+  <code>CrewError: ... does not agree with the after_suite arm that describes
+  it</code>, naming the count and the ids the log's last run does not report.
+  Three of the five cases failed there; the log is
+  <code>negative-control.log</code> in the run directory.</p>
+  <p><strong>What changed.</strong> <code>_text_the_receipt_describes</code>
+  selects the part of a log one receipt's figures span. A pytest log holds one
+  run per attempt at the same suite, so it keeps its last-run reading and a
+  receipt copied from an earlier attempt still refuses. A ctest log is the
+  gate's whole text, because its labels are one gate rather than successive
+  attempts. <code>_ctest_failure_ids</code> also resumes scanning past the end
+  of a FAILED block instead of stopping at it, so a failure in any label joins
+  the gate's failure set.</p>
+  <table>
+    <thead><tr><th>Case</th><th>Measured result</th></tr></thead>
+    <tbody>
+      <tr><td>Two labels, 32 then 0; arm records those 32</td><td>Agrees</td></tr>
+      <tr><td>Two labels, one failure in each; arm records both</td><td>Agrees</td></tr>
+      <tr><td>Same 32-failure gate; arm records 31</td><td>Refused, naming 31 against the gate's 32</td></tr>
+      <tr><td>Same gate; arm names a test the gate never reported</td><td>Refused, naming the unknown id</td></tr>
+      <tr><td>Two pytest runs; arm copies the earlier run's figures</td><td>Refused, still read from the last run</td></tr>
+    </tbody>
+  </table>
+  <p>After arm at <code>6ce9342be7bed8a93bc5ee2c549a676b8e2e6e4a</code>:
+    <strong>111 passed</strong>, exit 0. Base arm at
+    <code>b30f1e1350</code>: <strong>106 passed</strong>, exit 0, so the change
+    adds no failure across the fifteen test files covering the changed readers.
+    Negative control, the new test file run against the base tree's own modules:
+    <strong>3 failed, 2 passed</strong>, exit 1. Ruff check and
+    <code>ruff format --check</code> report nothing on the three staged paths.</p>
+</section>

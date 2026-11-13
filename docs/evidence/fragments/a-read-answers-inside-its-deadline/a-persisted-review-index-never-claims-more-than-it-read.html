@@ -1,0 +1,93 @@
+<section id="a-persisted-review-index-never-claims-more-than-it-read-landing">
+  <h2>A persisted review index never claims more than it read</h2>
+
+  <p><strong>What changed.</strong> The persisted review-store index in
+  <code>reckon/crew/review_records.py</code> carries the store directory's stat
+  identity beside the entries it was built from, and a later process adopts it
+  without listing the store only when the identity it reads matches the one
+  recorded. The document was written with an identity read <em>after</em> the
+  listing its entries came from, so a record another process filed between the
+  two — the window the document's own write opens — was missing from the
+  entries while the recorded identity covered it. Every cold process on the
+  node then adopted that index until the directory moved again, and a
+  promotion reading it could miss the review.</p>
+
+  <p>Both paths that persist the index now record the identity read before
+  their listing, and nothing later. <code>_store_indexes</code> passes the
+  identity it already takes at its entry, which precedes both the build and the
+  update; <code>_refresh_store_entries</code> takes one before
+  <code>_update_store_entries</code> instead of persisting the identity its
+  cache held, and stores that one in the cache beside the refreshed entries.
+  <code>_persisted_index_document</code> and <code>_persist_store_entries</code>
+  take the identity rather than stat'ing the directory themselves, so there is
+  no site left where a document can record a directory newer than its entries.
+  The adoption rule is unchanged: a record filed during the write leaves the
+  store looking moved from what the document recorded, and the next reader
+  lists it instead of adopting an index short of the record.</p>
+
+  <h3>Measured</h3>
+
+  <p>Every arm ran on <code>all_debug</code>, one arm at a time, at most
+  <code>-n 4</code>, with the repository venv. Each log's first lines name its
+  revision, its tree, the literal command and the working directory, and its
+  last line is <code>EXIT=&lt;code&gt;</code>. Logs are under
+  <code>logs/</code> in the run directory
+  <code>r-20261112T225255775909-a-persisted-review-index-never-claims-more-than-it-read</code>.</p>
+
+  <table>
+    <thead><tr><th>arm</th><th>revision</th><th>result</th></tr></thead>
+    <tbody>
+      <tr><td>importers of the changed module, head</td>
+        <td><code>5be93dc233</code> + this change (19 files)</td>
+        <td><strong>137 passed, exit 0</strong></td></tr>
+      <tr><td>importers of the changed module, base</td>
+        <td><code>5be93dc233</code> (18 files; the new file is absent there)</td>
+        <td>134 passed, exit 0</td></tr>
+      <tr><td>negative control: the new test against the base module</td>
+        <td><code>5be93dc233</code></td>
+        <td><strong>2 failed, 1 passed, exit 1</strong></td></tr>
+      <tr><td>staged-write census, base</td>
+        <td><code>5be93dc233</code></td><td>51 passed, exit 0</td></tr>
+      <tr><td>staged-write census, after</td>
+        <td><code>d44567a982</code></td><td>51 passed, exit 0</td></tr>
+    </tbody>
+  </table>
+
+  <p>Delta: <strong>zero new failures</strong> in the population that exists at
+  base; the three extra head passes are the three cases this change adds.</p>
+
+  <h3>What the test drives</h3>
+
+  <p><code>tests/test_a_persisted_review_index_never_claims_more_than_it_read.py</code>
+  wraps <code>_persist_store_entries</code> so that a new record is filed in
+  the same store directory at the instant before the index document is
+  written — exactly between the read and the write — and then starts a cold
+  reader. Both persist paths are driven that way: the load-or-update path
+  (<code>test_a_record_filed_before_the_index_write_is_not_claimed</code>) and
+  the refresh a lookup no held entry explains takes
+  (<code>test_a_record_filed_before_the_refresh_write_is_not_claimed</code>).
+  In each the cold reader must find the record, and the load-or-update case
+  also asserts the recorded identity differs from the directory's current one,
+  which is the invariant stated directly rather than only its effect.</p>
+
+  <p>The third case,
+  <code>test_a_cold_reader_of_an_undisturbed_store_stats_nothing_per_record</code>,
+  counts stats in a cold read of an undisturbed 40-record store: <strong>1
+  directory stat, 0 record stats</strong> — no more than the base revision
+  pays, which is the same two figures.</p>
+
+  <h3>The negative control</h3>
+
+  <p>The base revision's <code>_persisted_index_document</code> was exercised by
+  the same file, run against an extraction of
+  <code>5be93dc233</code> with the test copied in. Both race cases fail there,
+  the index-write case reading</p>
+
+  <pre>assert None == PosixPath('.../r-filed-during-the-refresh.json')
+FAILED tests/test_a_persisted_review_index_never_claims_more_than_it_read.py::test_a_record_filed_before_the_index_write_is_not_claimed
+FAILED tests/test_a_persisted_review_index_never_claims_more_than_it_read.py::test_a_record_filed_before_the_refresh_write_is_not_claimed</pre>
+
+  <p>— the cold reader adopts the over-claiming document and misses the record.
+  The stat-count case passes at base, as it must: the change adds no stat to a
+  cold read.</p>
+</section>

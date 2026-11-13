@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="stopped-run-resumes-with-advice">
+  <meta name="plan-title" content="A stopped run resumes with advice">
+  <meta name="plan-summary" content="A drained stop files its attempt exit; legacy local stops recover without weakening the living-worker refusal. Seven regressions pass, and suppressing the exit write refuses the actual CLI resume.">
+  <meta name="plan-evidence-for" content="reckon:work-flows-to-the-lane">
+  <meta name="plan-verifies" content="reckon:work-flows-to-the-lane#s38">
+  <meta name="plan-commits" content="59a8fc57210bf004cf4b62b676c01cbb4ae422c7,dc4c57ab4cc7d74047cacba9d26175617c28437a">
+  <meta name="plan-recorded-at" content="2026-11-13">
+  <meta name="plan-verdict" content="passed">
+  <title>A stopped run resumes with advice | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article id="stopped-run-resumes-with-advice-record" data-node="stopped-run-resumes-with-advice" data-reckon="landed">
+  <h2 id="stopped-run-resumes-with-advice-outcome">A stopped run resumes with advice</h2>
+  <p>At assigned base <code>18385bba31f0292b7514a36666ccdfea1a906624</code>, the new regression
+  reproduces the reported defect: after both stub processes have ended, the actual resume guard says
+  <q>the process reading is 'liveness unknown' — no pid was checked dead on this host and no supervisor exit was recorded</q>.
+  The legacy local-stop case independently reads <code>(None, True)</code>.
+  The reproduction log records <code>2 failed, 3 passed in 1.11s</code>, <code>EXIT=1</code>,
+  before product edits.</p>
+  <p><code>reckon/crew/dispatch_sessions.py</code> now writes the stopped attempt's exit only after
+  the run's whole process tree has drained. It uses the existing supervisor receipt composer and
+  atomic writer, writes the numbered receipt and canonical exit, and names <code>run-stop</code>.
+  A supervisor receipt already filed at that number remains immutable; the canonical copy additionally
+  records the stop. A surviving worker files no exit, and the stop result still names its pid.
+  The recorded write outcome distinguishes a failed modern receipt write from a legacy stop.</p>
+  <p><code>reckon/crew/recovery_liveness.py</code> also recovers legacy stopped records whose placement
+  has no scheduler job identifier: on the recorded launch host, a dead pid and the existing worker
+  probes can settle the end. A living worker, a foreign host, a real scheduler job, or a failed modern
+  receipt write cannot take that compatibility path. The resume and CLI modules need no replacement.</p>
+  <p><code>tests/test_a_stopped_run_resumes_with_advice.py</code> contains seven cases using temporary
+  crew homes and a stub process tree. The successful cases execute the real
+  <code>crew stop</code> and <code>crew resume --advice</code> command objects, then read the resumed
+  worker's own receipt to prove it received the advice and continued the prior session as attempt 2.
+  The survivor ignores the actual <code>SIGTERM</code> while escalation is made ineffective; the CLI
+  refusal names that still-living worker. Other cases cover the legacy resume, foreign-host and
+  scheduler-job unknowns, a legacy stop with a surviving worker, and immutable receipt preservation.</p>
+  <table>
+    <thead><tr><th>Measurement on all_debug, one arm at a time</th><th>Runner summary</th></tr></thead>
+    <tbody>
+      <tr><td>Armed baseline; added test absent</td><td>51 passed in 8.16s; EXIT=0</td></tr>
+      <tr><td>Armed product head, seven new cases plus staged-write inventory</td><td>58 passed in 15.95s; EXIT=0</td></tr>
+      <tr><td>144 importer files at assigned base, at most four workers</td><td>29 failed, 1502 passed, 43 warnings, 3 errors in 296.52s; EXIT=1</td></tr>
+      <tr><td>The same importer files at product head, at most four workers</td><td>27 failed, 1504 passed, 43 warnings, 3 errors in 288.01s; EXIT=1</td></tr>
+      <tr><td>Declared mutation: write no exit record at stop</td><td>1 failed in 0.48s; EXIT=1</td></tr>
+    </tbody>
+  </table>
+  <p>The importer comparison adds <strong>zero failing IDs</strong>; two baseline failing IDs are absent
+  from the head result. The manifest records the comparison and the remaining baseline findings.
+  Ruff check reports <code>All checks passed!</code>, and format check reports
+  <code>3 files already formatted</code> for the changed Python paths.</p>
+  <p>The declared control sets <code>RECKON_STOP_ADVICE_NEGATIVE_CONTROL=1</code>, replacing only
+  the stopped-attempt exit writer with a false return. Both processes still end, but the actual
+  <code>crew resume --advice</code> returns exit 1 with the quoted liveness refusal, failing
+  <code>test_a_stopped_tree_records_its_exit_and_resumes_with_advice</code> at the CLI success assertion.
+  The ordinary head arm passes that same test.</p>
+  <p>The first committed head probe exposed a fixture error: the resumed stub tried to write its
+  receipt outside its writable fence. The supervisor's actual stderr names the read-only path and
+  its attempt-2 receipt records exit code 1. The fixture correction puts the receipt in its temporary
+  run directory; those failed observations and the diagnostic remain in the run record.</p>
+  <p>Durable receipts live under
+  <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261113T044627048212-stopped-run-resumes-with-advice/</code>:
+  <code>reproduction.log</code>, <code>baseline-suite.log</code>, <code>after-suite.log</code>,
+  <code>baseline-importers.log</code>, <code>after-importers.log</code>, <code>negative-control.log</code>,
+  <code>importer-comparison.json</code>, and <code>lint.log</code>. Each test arm records its revision,
+  imported module, extracted working directory, literal command and final exit receipt.
+  The manifest additionally records the final armed gate at the evidence commit.</p>
+</article>
+</body>
+</html>

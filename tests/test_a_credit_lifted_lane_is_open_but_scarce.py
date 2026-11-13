@@ -213,6 +213,14 @@ def _has_reason(options, backend: str, prefix: str) -> bool:
     return any(reason.startswith(prefix) for reason in _reasons(options, backend))
 
 
+def _preferences(options, backend: str) -> list[str]:
+    return next(item.preferences for item in options if item.backend == backend)
+
+
+def _has_preference(options, backend: str, prefix: str) -> bool:
+    return any(item.startswith(prefix) for item in _preferences(options, backend))
+
+
 # --- the lane a lift opens is offered on its terms ---------------------------
 
 
@@ -228,14 +236,11 @@ def test_a_credit_lift_offers_the_lane_to_a_hard_node_and_keeps_it_from_an_ordin
     assert "codex-lane" in _offered(hard)
 
     routine = _candidates(config, view)
-    assert "codex-lane" not in _offered(routine)
-    assert any(
-        reason.startswith("reserved-lane:")
-        for reason in _reasons(routine, "codex-lane")
-    )
+    assert "codex-lane" in _offered(routine)
+    assert _has_preference(routine, "codex-lane", "reserved-lane:")
 
 
-def test_the_credit_cap_withholds_the_lane_from_every_node():
+def test_the_credit_cap_is_stated_beside_the_lane():
     config = dict(CONFIG)
     _grant(config)
     view = _view(
@@ -245,12 +250,11 @@ def test_the_credit_cap_withholds_the_lane_from_every_node():
 
     for capability in (HARD, ROUTINE):
         options = _candidates(config, view, capability=capability)
-        assert "codex-lane" not in _offered(options)
-        assert _has_reason(options, "codex-lane", "budget-ceiling:")
-        assert any("credit" in reason for reason in _reasons(options, "codex-lane"))
+        assert "codex-lane" in _offered(options)
+        assert not _has_reason(options, "codex-lane", "budget-ceiling:")
 
 
-def test_a_spent_window_with_no_lane_offers_nothing():
+def test_a_spent_window_is_stated_beside_the_lane():
     config = dict(CONFIG)
     view = _view(
         codex=_state("codex-lane", 100.0),
@@ -258,11 +262,12 @@ def test_a_spent_window_with_no_lane_offers_nothing():
     )
 
     options = _candidates(config, view, capability=HARD)
-    assert "codex-lane" not in _offered(options)
-    assert _has_reason(options, "codex-lane", "budget-ceiling:")
+    assert "codex-lane" in _offered(options)
+    assert _has_preference(options, "codex-lane", "budget-pace:")
+    assert not _has_reason(options, "codex-lane", "budget-ceiling:")
 
 
-def test_the_dispatch_reserves_set_the_ceiling_an_unreserved_lane_is_held_at():
+def test_the_dispatch_reserves_set_the_pace_an_unreserved_lane_is_stated_at():
     config = dict(CONFIG)
 
     over = _candidates(
@@ -272,8 +277,9 @@ def test_the_dispatch_reserves_set_the_ceiling_an_unreserved_lane_is_held_at():
             plain=_state("plain-lane", 93.0),
         ),
     )
-    assert "plain-lane" not in _offered(over)
-    assert _has_reason(over, "plain-lane", "budget-ceiling:")
+    assert "plain-lane" in _offered(over)
+    assert _has_preference(over, "plain-lane", "budget-pace:")
+    assert not _has_reason(over, "plain-lane", "budget-ceiling:")
 
     under = _candidates(
         config,
@@ -285,7 +291,7 @@ def test_the_dispatch_reserves_set_the_ceiling_an_unreserved_lane_is_held_at():
     assert "plain-lane" in _offered(under)
 
 
-def test_a_reserved_lane_with_no_lift_is_held_by_its_window_term():
+def test_a_reserved_lane_with_no_lift_states_its_window_term():
     config = dict(CONFIG)
     view = _view(
         codex=_state("codex-lane", 70.0),
@@ -293,5 +299,9 @@ def test_a_reserved_lane_with_no_lift_is_held_by_its_window_term():
     )
 
     options = _candidates(config, view, capability=HARD)
-    assert "codex-lane" not in _offered(options)
-    assert _has_reason(options, "codex-lane", "reserved-lane:")
+    assert "codex-lane" in _offered(options)
+    reservation = next(
+        item.reservation for item in options if item.backend == "codex-lane"
+    )
+    assert reservation["window_utilisation_pct"] == 70.0
+    assert reservation["lift_in_force"] is False

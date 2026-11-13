@@ -192,6 +192,95 @@ def consume_refused_advice(run_id: str) -> str:
     return text.strip()
 
 
+def waiting_refused_advice(run_id: str) -> tuple[str, str]:
+    """The advice a refused resume left for this run, and where it waits.
+
+    Read without consuming: a reopen only reports the slot, and the resume
+    that delivers the text is a separate call which empties it as it reads.
+    """
+    path = refused_advice_path(run_id)
+    try:
+        text = path.read_text(encoding="utf-8")
+    except OSError:
+        return "", ""
+    return text.strip(), str(path)
+
+
+#: Where a reopen records what it granted, beside the run's other records.
+REOPEN_RECORD_NAME = "reopened.json"
+
+
+def _record_reopening(
+    run_id: str,
+    *,
+    granted_paths: Sequence[str],
+    reason: str,
+    delivered: Path | None,
+) -> dict[str, Any]:
+    """Record that a run was reopened, and what the reopen granted.
+
+    A reopen is not a verdict, so it is not written as one: the run is still
+    working towards a status of its own, and a status word here would be an
+    outcome no attempt reached — exactly what left a resumed worker classified
+    from its predecessor's delivery. What a reopen does owe a reader is the
+    fact itself, its reason, the paths it granted and the delivered text it set
+    aside, and those are recorded in the run's own directory where the attempt
+    records live.
+    """
+    record = {
+        "run_id": run_id,
+        "reason": reason,
+        "granted_paths": list(granted_paths),
+        "reopened_at": _utc_now(),
+    }
+    if delivered is not None:
+        record["delivered"] = str(delivered)
+    _write_json(run_dir(run_id) / REOPEN_RECORD_NAME, record)
+    return record
+
+
+def reopen_run(
+    run_id: str,
+    write_paths: Sequence[str],
+    *,
+    reason: str = "",
+) -> dict[str, Any]:
+    """Widen a completed run's write scope and start nothing.
+
+    A reopen answers a caller who asked for a wider boundary, not one who asked
+    for work: the advice a launch would carry was composed for a state the run
+    has left, so launching it spends an attempt on instructions nobody wrote
+    for it. The grant is made and reported, and the resume that follows is the
+    caller's own separate call — which carries any advice a refused resume left
+    waiting, as it always has.
+    """
+    from reckon.crew.claims import widen_claim
+
+    record = read_pointer(run_id)
+    _, added = widen_claim(run_id, list(write_paths))
+    widened = read_pointer(run_id)
+    delivered = _reset_delivered_manifest_status(run_id, widened or record)
+    reopening = _record_reopening(
+        run_id,
+        granted_paths=list(write_paths),
+        reason=reason or "reopening the completed run",
+        delivered=delivered,
+    )
+    advice, advice_path = waiting_refused_advice(run_id)
+    return {
+        "run_id": run_id,
+        "reopened": True,
+        "launched": False,
+        "granted_paths": list(write_paths),
+        "added_paths": list(added),
+        "write_paths": list((widened.get("node") or {}).get("write_paths") or []),
+        "reason": reopening["reason"],
+        "reopened_at": reopening["reopened_at"],
+        "refused_advice": advice,
+        "refused_advice_path": advice_path,
+    }
+
+
 def launch_in_flight(record: Mapping[str, Any]) -> bool:
     """Whether a resume of this run has begun and not yet recorded an attempt.
 
@@ -261,6 +350,15 @@ def hold_against_promotion(run_id: str):
     if run_id in held:
         yield
         return
+    # The local lock below sees only a promotion on this host. A promotion on
+    # another host holds the same run through its cross-host lease, so the lease
+    # is read too: a repair round that rides a resume must not start for a run
+    # whose promotion has begun anywhere, because the promotion is about to
+    # settle the record the resumed worker would commit under.
+    from reckon.crew.promotion import promotion_in_flight
+
+    if promotion_in_flight(run_id):
+        raise PromotionInProgressError(run_id)
     try:
         with _pointer_lock(promotion_lock_name(run_id), blocking=False):
             token = _PROMOTION_HELD.set(held | {run_id})

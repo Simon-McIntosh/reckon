@@ -65,7 +65,144 @@
   "plan_slug": "a-report-is-kept-only-when-persisted",
   "plan_version": 8,
   "project": "reckon",
-  "responses": {},
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "8e2a478d584aeb60a6470d14b6763ce06d9bdd2e",
+      "commit_basis": "edit",
+      "finding": "duplicate_owner-1",
+      "note": "\u00a72 now stores persist records as a typed per-project resource through reckon/project_state.py (resource_path, _validate_resource, read_resource/write_resource) and its atomic write, resolved against the mounted docs dir and refused for an unmounted project; no new path rule is added.",
+      "reason": "",
+      "when": "2026-11-13T01:20:56.956562+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "8e2a478d584aeb60a6470d14b6763ce06d9bdd2e",
+      "commit_basis": "edit",
+      "finding": "duplicate_owner-2",
+      "note": "\u00a74 now extends _run_report_trees (reckon/crew/routing.py) instead of adding a pass: its item rule replaces the run-tree rule for the reports store, so a cited or persisted item is never removed by the run-tree rule first; _plan_review_raw_reports keeps its own rule for plan-review raw text.",
+      "reason": "",
+      "when": "2026-11-13T01:21:22.634161+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "8e2a478d584aeb60a6470d14b6763ce06d9bdd2e",
+      "commit_basis": "edit",
+      "finding": "thin_wrapper-1",
+      "note": "\u00a74 is one extended pass: the symlink branch, citation, persist and plan-close rules live inside _run_report_trees, which also stops calling shutil.rmtree on a symlinked item.",
+      "reason": "",
+      "when": "2026-11-13T01:21:41.357557+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "8e2a478d584aeb60a6470d14b6763ce06d9bdd2e",
+      "commit_basis": "edit",
+      "finding": "deep_module-1",
+      "note": "\u00a74 now creates reckon/crew/report_retention.py, whose one classify function returns an item's class (persisted, cited or working) and expiry; the \u00a74 pass and the \u00a73 listing both call it, and \u00a73 declares a wait on \u00a74.",
+      "reason": "",
+      "when": "2026-11-13T01:22:02.903965+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "8e2a478d584aeb60a6470d14b6763ce06d9bdd2e",
+      "commit_basis": "edit",
+      "finding": "duplicate_owner-3",
+      "note": "\u00a75 now names its listing root: report items under reports/<project>/ served by the \u00a73 listing; committed docs/figures stay as figure_rows already serves them and are always retained, so the browser test builds its working and cited figures in the reports store.",
+      "reason": "",
+      "when": "2026-11-13T01:22:27.319943+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "8e2a478d584aeb60a6470d14b6763ce06d9bdd2e",
+      "commit_basis": "edit",
+      "finding": "interface_budget-1",
+      "note": "\u00a73 now adds no MCP view: persisted items are a field of the existing records view; the endpoint is a sub-path of the existing /crew route, not a new top-level route; the MCP action is deferred because CrewArgs carries no action field. What remains new is one CLI verb, two flight settings and one refusal family, which \u00a73 states, with the reason none can be retired: no existing surface persists anything.",
+      "reason": "",
+      "when": "2026-11-13T01:22:46.981679+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "8e2a478d584aeb60a6470d14b6763ce06d9bdd2e",
+      "commit_basis": "edit",
+      "finding": "reuse_search-1",
+      "note": "\u00a74 now cites the reuse map for its citation scan: iter_resources (reckon/resources.py) for the documents, _LINK_ATTR_RE for href/src targets and audit_links/_link_record (reckon/doccheck.py) for extraction; no third document walk is written.",
+      "reason": "",
+      "when": "2026-11-13T01:23:09.395544+00:00"
+    }
+  ],
+  "responses": {
+    "deep_module-1": {
+      "action": "acted",
+      "by": "",
+      "commit": "8e2a478d584aeb60a6470d14b6763ce06d9bdd2e",
+      "commit_basis": "edit",
+      "note": "\u00a74 now creates reckon/crew/report_retention.py, whose one classify function returns an item's class (persisted, cited or working) and expiry; the \u00a74 pass and the \u00a73 listing both call it, and \u00a73 declares a wait on \u00a74.",
+      "reason": "",
+      "when": "2026-11-13T01:22:02.903965+00:00"
+    },
+    "duplicate_owner-1": {
+      "action": "acted",
+      "by": "",
+      "commit": "8e2a478d584aeb60a6470d14b6763ce06d9bdd2e",
+      "commit_basis": "edit",
+      "note": "\u00a72 now stores persist records as a typed per-project resource through reckon/project_state.py (resource_path, _validate_resource, read_resource/write_resource) and its atomic write, resolved against the mounted docs dir and refused for an unmounted project; no new path rule is added.",
+      "reason": "",
+      "when": "2026-11-13T01:20:56.956562+00:00"
+    },
+    "duplicate_owner-2": {
+      "action": "acted",
+      "by": "",
+      "commit": "8e2a478d584aeb60a6470d14b6763ce06d9bdd2e",
+      "commit_basis": "edit",
+      "note": "\u00a74 now extends _run_report_trees (reckon/crew/routing.py) instead of adding a pass: its item rule replaces the run-tree rule for the reports store, so a cited or persisted item is never removed by the run-tree rule first; _plan_review_raw_reports keeps its own rule for plan-review raw text.",
+      "reason": "",
+      "when": "2026-11-13T01:21:22.634161+00:00"
+    },
+    "duplicate_owner-3": {
+      "action": "acted",
+      "by": "",
+      "commit": "8e2a478d584aeb60a6470d14b6763ce06d9bdd2e",
+      "commit_basis": "edit",
+      "note": "\u00a75 now names its listing root: report items under reports/<project>/ served by the \u00a73 listing; committed docs/figures stay as figure_rows already serves them and are always retained, so the browser test builds its working and cited figures in the reports store.",
+      "reason": "",
+      "when": "2026-11-13T01:22:27.319943+00:00"
+    },
+    "interface_budget-1": {
+      "action": "acted",
+      "by": "",
+      "commit": "8e2a478d584aeb60a6470d14b6763ce06d9bdd2e",
+      "commit_basis": "edit",
+      "note": "\u00a73 now adds no MCP view: persisted items are a field of the existing records view; the endpoint is a sub-path of the existing /crew route, not a new top-level route; the MCP action is deferred because CrewArgs carries no action field. What remains new is one CLI verb, two flight settings and one refusal family, which \u00a73 states, with the reason none can be retired: no existing surface persists anything.",
+      "reason": "",
+      "when": "2026-11-13T01:22:46.981679+00:00"
+    },
+    "reuse_search-1": {
+      "action": "acted",
+      "by": "",
+      "commit": "8e2a478d584aeb60a6470d14b6763ce06d9bdd2e",
+      "commit_basis": "edit",
+      "note": "\u00a74 now cites the reuse map for its citation scan: iter_resources (reckon/resources.py) for the documents, _LINK_ATTR_RE for href/src targets and audit_links/_link_record (reckon/doccheck.py) for extraction; no third document walk is written.",
+      "reason": "",
+      "when": "2026-11-13T01:23:09.395544+00:00"
+    },
+    "thin_wrapper-1": {
+      "action": "acted",
+      "by": "",
+      "commit": "8e2a478d584aeb60a6470d14b6763ce06d9bdd2e",
+      "commit_basis": "edit",
+      "note": "\u00a74 is one extended pass: the symlink branch, citation, persist and plan-close rules live inside _run_report_trees, which also stops calling shutil.rmtree on a symlinked item.",
+      "reason": "",
+      "when": "2026-11-13T01:21:41.357557+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/Code/reckon/docs/state/reckon/reviews/plan/a-report-is-kept-only-when-persisted/r-20261112T071453214325-plan-review-of-a-report-is-kept-only-when-persisted.json",
   "review_run_id": "r-20261112T071453214325-plan-review-of-a-report-is-kept-only-when-persisted",
   "reviewed_blob_sha": "c77d4cf55b179078f75988069c4f7d5da2e7640a",
   "rubric": "design",

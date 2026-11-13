@@ -1482,14 +1482,8 @@ def validate_node(
                 "path; a node cannot both edit a file and be briefed without "
                 "reading it. Drop the anchor or the write path.",
             )
-        for peer, paths in sorted(node.peer_scopes.items()):
-            shared = sorted(mine.intersection(paths))
-            if shared:
-                fail(
-                    "scoped",
-                    f"shares {', '.join(shared)} with concurrent node {peer}; "
-                    "serialise the nodes or split the file",
-                )
+        # Peer declarations are information, not write boundaries. Repository-
+        # aware dispatch checks protect only paths a textual merge cannot combine.
         if not role_may_write_repository_paths(node.role):
             refusal = write_scope_refusal(node)
             if refusal is not None:

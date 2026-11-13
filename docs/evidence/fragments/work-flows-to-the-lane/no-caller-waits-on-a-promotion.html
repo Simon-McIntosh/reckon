@@ -143,4 +143,17 @@
     <code>repair-negative-control.log</code>. Initial fixture and scratch Git
     metadata errors are retained with their scaffolding attribution.</p>
   </section>
+
+  <section id="no-caller-waits-on-a-promotion-merge-repair">
+    <h3>Repair holds and promotion requests share the sweep report</h3>
+    <p>The delivery at <code>37ca2c25c5ac53fce51da9feaf0a1611f01b367e</code>
+    merges current primary <code>797c142c307e26b4085eaebe1d75477e6d6306dc</code>.
+    The single conflict was between adjacent sweep report entries. The resolved
+    report retains both <code>repair_held</code>, which exposes the primary
+    branch's refusal to start a floor repair during an active promotion, and
+    <code>promotion_requested</code>, which reports the durable service handoff.
+    Both implementations remain in place. The manifest records the merge
+    commit and the fresh own gate run after that commit; no promotion is
+    requested by this repair.</p>
+  </section>
 </section>

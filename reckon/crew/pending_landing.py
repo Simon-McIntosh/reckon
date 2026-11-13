@@ -13,8 +13,9 @@ and whose reviewed head is not on the primary branch is finished with the same
 dropped once it is old and its run is gone. A record whose run is still live,
 whose pointer carries an unanswered land attempt, which has no promoted row and
 whose promotion holds no lease names a promotion that ended between the record
-and its ledger row: the pass clears it and retires the attempt, so the reflex
-promotes the run again. A
+and its ledger row: the pass retires the interrupted attempt and then clears the
+record, keeping the record whenever that retirement does not reach disk, so the
+reflex promotes the run again. A
 merge that fails is recorded on the record and retried on later passes, up to a
 bound, so a conflicting head stops costing a pass and stays visible.
 """
@@ -240,13 +241,23 @@ def _promotion_lease_held(run_id: str) -> bool:
 
 
 def _land_attempt_unanswered(run_id: str) -> bool:
-    """Whether the run's live pointer carries a land attempt with no receipt."""
+    """Whether the run's live pointer carries a land attempt still to be settled.
+
+    ``attempting`` names an attempt whose promotion never produced a receipt.
+    ``interrupted`` names one this pass retired on an earlier sweep that then
+    ended before clearing the record, so the pair is retried rather than left
+    behind; both are written only here or by the landing pass that refuses to
+    retry them.
+    """
     try:
         pointer = runs.read_pointer(run_id)
     except runs.CrewError:
         return False
     attempt = pointer.get("admission_landing")
-    return isinstance(attempt, Mapping) and attempt.get("status") == "attempting"
+    return isinstance(attempt, Mapping) and attempt.get("status") in (
+        "attempting",
+        "interrupted",
+    )
 
 
 def _retire_interrupted_landing(run_id: str) -> bool:
@@ -452,18 +463,41 @@ def finish_pending_landings(
             # the record outlives every pass and the attempt refuses every
             # landing. Only that unanswered attempt is retried, because without
             # one the record blocks nothing and the reflex already re-promotes.
+            # An attempt a previous sweep retired but could not clear its record
+            # for is retried the same way, so the record does not outlive it.
+            #
+            # The record is cleared only after the attempt is retired, because the
+            # record is the only evidence that this promotion stopped short. A
+            # pass that ends between the two steps — or one whose pointer write
+            # fails — therefore still leaves a record for the next pass to
+            # retry; clearing first would leave the live pointer's attempt
+            # unanswered with nothing left to read it.
             if (
                 age > UNFINISHED_PROMOTION_SECONDS
                 and _promoted_row_absent(project, run_id)
                 and not _promotion_lease_held(run_id)
                 and _land_attempt_unanswered(run_id)
             ):
+                retired = _retire_interrupted_landing(run_id)
+                if not retired:
+                    # The pointer could not be written, so the record is the
+                    # only evidence left that this promotion stopped short.
+                    # Keep it: clearing it here would leave an attempt nothing
+                    # can retire and nothing left to read it from.
+                    results.append(
+                        {
+                            "run_id": run_id,
+                            "status": "attempt-not-retired",
+                            "attempt_retired": False,
+                        }
+                    )
+                    continue
                 clear_pending(run_id)
                 results.append(
                     {
                         "run_id": run_id,
                         "status": "retried-unfinished",
-                        "attempt_retired": _retire_interrupted_landing(run_id),
+                        "attempt_retired": retired,
                     }
                 )
             continue

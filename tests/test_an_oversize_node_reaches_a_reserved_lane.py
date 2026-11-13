@@ -1,14 +1,11 @@
-"""A node no unreserved lane can fit is offered the lane a policy reserves.
+"""A reserved lane is offered to every node its own context fit admits.
 
-The reservation keeps ordinary work off the orchestrators' lane, and its tier
-and attempts terms are what keep an ordinary node on a lane anyone may use. A
-node larger than every unreserved lane's window is the case those terms were
-never meant to settle: no lane outside the policy's coverage can run it at all,
-so withholding the reserved lane refuses the dispatch outright and the work
-never reaches the queue. The waiver that admits it is decided over the whole
-"candidate set, holds every other term -- the lane's window ceiling, its budget
-verdict and its own context fit -- and records itself in the candidate's note
-rather than its exclusions.
+The reservation states when the orchestrators' shared lane is meant to be
+spent: its tier floor, its attempt threshold and its window ceiling are
+preferences the router weighs, so a node below the floor is offered the lane
+with the policy's own words beside it. Context fit, a serving refusal, a paused
+lane and a budget verdict that holds still remove the lane, because those make
+it unable to run the node.
 """
 
 from __future__ import annotations
@@ -25,11 +22,10 @@ from reckon.crew.picker import PickRequest, snapshot
 NOW = datetime(2026, 10, 18, 12, 0, 0, tzinfo=UTC)
 
 #: A node declaring no requirement at all: it reaches no reserved-lane floor, so
-#: the lane is withheld from it on the tier term and never by default.
+#: the lane is a preference for it rather than an exclusion.
 ROUTINE: dict = {}
 LOCAL_WINDOW = 230_144
 CODEX_WINDOW = 400_000
-WAIVER_NOTE = "offered because no open lane fits the node's context"
 
 
 def _config() -> dict:
@@ -166,7 +162,7 @@ def _reasons(options, backend) -> list[str]:
 def test_an_oversize_node_with_no_tier_is_offered_the_reserved_lane(
     live, monkeypatch
 ) -> None:
-    """No unreserved lane fits the node, so the policy's tier term is waived."""
+    """No unreserved lane fits the node, and the reserved lane is offered."""
 
     _windows(monkeypatch)
     options = _candidates(live, _request(300_000))
@@ -179,16 +175,20 @@ def test_an_oversize_node_with_no_tier_is_offered_the_reserved_lane(
         for reason in _reasons(options, "local-served")
     )
     assert "codex-astra" in offered
-    assert offered["codex-astra"].note == WAIVER_NOTE
-    # The pick admits a candidate by an empty reasons list; the exception is
-    # recorded in the note, where pick()'s split cannot read it as an exclusion.
+    assert offered["codex-astra"].reserved
+    # The reservation is evidence: it is never in the reasons list pick() reads
+    # as an exclusion.
     assert offered["codex-astra"].reasons == []
+    assert any(
+        preference.startswith("reserved-lane: ")
+        for preference in offered["codex-astra"].preferences
+    )
 
 
-def test_a_node_within_the_local_window_is_not_offered_the_reserved_lane(
+def test_a_node_within_the_local_window_is_still_offered_the_reserved_lane(
     live, monkeypatch
 ) -> None:
-    """An ordinary node keeps the reservation: nothing needed waiving."""
+    """An ordinary node is offered the lane with the reservation stated."""
 
     _windows(monkeypatch)
     options = _candidates(live, _request(8_000))
@@ -196,30 +196,32 @@ def test_a_node_within_the_local_window_is_not_offered_the_reserved_lane(
         candidate.backend: candidate for candidate in options if not candidate.reasons
     }
     assert "local-served" in offered
-    assert offered["local-served"].note is None
-    assert "codex-astra" not in offered
+    assert "codex-astra" in offered
+    assert offered["codex-astra"].reserved
     assert any(
-        reason.startswith("reserved-lane: ")
-        for reason in _reasons(options, "codex-astra")
+        "hardest tier" in preference
+        for preference in offered["codex-astra"].preferences
     )
 
 
-def test_an_oversize_node_is_refused_when_the_lane_window_is_at_its_ceiling(
+def test_an_oversize_node_reads_the_lane_window_it_is_at_its_ceiling_on(
     live, monkeypatch
 ) -> None:
-    """The window ceiling is not waived: a spent lane still withholds itself."""
+    """A spent window is stated on the reservation rather than applied."""
 
     _windows(monkeypatch)
     options = _candidates(live, _request(300_000), view=_view(codex_pct=60.0))
     offered = {
         candidate.backend: candidate for candidate in options if not candidate.reasons
     }
-    assert "codex-astra" not in offered
-    candidate = next(c for c in options if c.backend == "codex-astra")
-    assert candidate.note is None
-    # The waiver is what the node is judged on, and the window term it never
-    # reaches today is the one that holds: the tier term is gone and the
-    # candidate is still withheld by its own account window.
+    assert "codex-astra" in offered
+    # The window term is stated beside the lane rather than applied to it: the
+    # candidate is offered, its reservation records the ceiling it is over, and
+    # the router decides.
+    reservation = offered["codex-astra"].reservation
+    assert reservation["ceiling_pct"] == 60.0
+    assert reservation["window_utilisation_pct"] == 60.0
+    assert reservation["withheld"]
     policy = flight.reserved_lane_policies(_config())["codex"]
     withheld = snapshot._reserved_lane_exclusion(
         "codex",
@@ -275,11 +277,10 @@ def test_a_lane_excluded_for_another_reason_earns_no_waiver(live, monkeypatch) -
         candidate.backend: candidate for candidate in options if not candidate.reasons
     }
     assert _reasons(options, "local-served") == ["availability: refused"]
-    assert "codex-astra" not in offered
-    assert any(
-        reason.startswith("reserved-lane: ")
-        for reason in _reasons(options, "codex-astra")
-    )
+    # A lane held by another rule is unaffected by the reservation: the
+    # reserved lane is offered because nothing about it removes it.
+    assert "codex-astra" in offered
+    assert offered["codex-astra"].reserved
 
 
 def test_the_waiver_removes_only_the_policys_own_term(live, monkeypatch) -> None:
@@ -302,7 +303,9 @@ def test_the_waiver_removes_only_the_policys_own_term(live, monkeypatch) -> None
     assert "codex-astra" not in offered
     reasons = _reasons(options, "codex-astra")
     assert "lane-gate: paused" in reasons
-    assert any(reason.startswith("reserved-lane: ") for reason in reasons)
+    # The paused gate is the whole reason the lane is gone; the reservation's
+    # own terms are stated beside it rather than added to the exclusion.
+    assert not any(reason.startswith("reserved-lane: ") for reason in reasons)
 
 
 def test_the_policy_is_keyed_by_the_lane_the_state_reads() -> None:

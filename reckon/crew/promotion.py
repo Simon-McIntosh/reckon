@@ -8,6 +8,7 @@ import os
 import re
 import shlex
 import shutil
+import signal
 import socket
 import subprocess
 import threading
@@ -22,6 +23,7 @@ from collections.abc import (
 from contextlib import (
     ExitStack,
     contextmanager,
+    suppress,
 )
 from dataclasses import (
     dataclass,
@@ -158,6 +160,58 @@ from reckon.evidence import (
 # Promotion serialises its landing independently of pointer mutations. The
 # flock excludes local processes and threads; the renewable lease excludes a
 # promotion on another host through the fleet home's atomic link.
+class _PromotionStopped(SystemExit):
+    """A promotion that stopped at a stage boundary after a stop signal."""
+
+
+# A term signal asks the running promotion to stop at its next stage boundary.
+# The handler only records the request: raising from it could interrupt a git
+# child mid-write, leaving a process the promotion started writing after the
+# promotion itself has exited. Stopping at a boundary lets the stage in
+# progress finish, so every child it started has been reaped by then, and the
+# claim is released on the way out.
+_STOP_REQUESTED = threading.Event()
+
+
+def _request_stop_on_termination(signum: int, frame: object) -> None:
+    _STOP_REQUESTED.set()
+
+
+def _install_stop_handler() -> object | None:
+    """Record SIGTERM on the promotion; return the handler it displaced.
+
+    Returns None where no handler may be installed — off the main thread, or
+    where the platform has no SIGTERM — and the caller hands the value back to
+    :func:`_restore_stop_handler`.
+    """
+    if threading.current_thread() is not threading.main_thread():
+        return None
+    if not hasattr(signal, "SIGTERM"):
+        return None
+    return signal.signal(signal.SIGTERM, _request_stop_on_termination)
+
+
+def _restore_stop_handler(previous: object | None) -> None:
+    if previous is None:
+        return
+    with suppress(ValueError, TypeError):
+        signal.signal(signal.SIGTERM, previous)
+
+
+def _stop_at_stage_boundary(stage: str) -> None:
+    """Stop before the next stage when a signal asked the promotion to.
+
+    Every stage boundary that starts a write calls this first.
+    """
+    if not _STOP_REQUESTED.is_set():
+        return
+    raise _PromotionStopped(
+        f"promotion was asked to stop by SIGTERM and stopped before {stage}; "
+        "the stage in progress had finished, no further stage ran, and the "
+        "promotion's claim is released so a retry can take it"
+    )
+
+
 @contextmanager
 def _promotion_lock(run_id: str) -> Iterator[None]:
     with _pointer_lock(f"promotion-{run_id}"):
@@ -265,6 +319,30 @@ def _promotion_lease_held(run_id: str, holder: Any) -> str:
     )
 
 
+def promotion_in_flight(run_id: str) -> str:
+    """Who holds this run's promotion claim, or empty when nobody does.
+
+    The claim is the cross-host lease promotion takes before its first write and
+    releases after its landing, so a fresh holder is a promotion in flight on
+    this host or another. A door that must not act under a promotion reads it
+    here rather than inferring it from a pointer, because the pointer is the
+    promotion's to rewrite and its removal is the last thing the promotion does:
+    a reader watching only the pointer sees a run that looks untouched for the
+    whole of a promotion.
+
+    A lease past its stale window reads as unheld, so a holder that stopped
+    renewing never refuses work forever.
+    """
+    if not run_id:
+        return ""
+    host, pid, job = _promotion_lease_identity()
+    lease = HostLease(crew_home(), _promotion_lease_name(run_id), host, pid, job)
+    holder = lease.holder()
+    if holder is None:
+        return ""
+    return f"host {holder.host} pid {holder.pid}"
+
+
 class _PromotionLeaseRenewer:
     """Keep a held lease fresh while the promotion runs, then stop."""
 
@@ -305,11 +383,17 @@ def _promotion_host_lease(run_id: str) -> Iterator[HostLease]:
         raise CrewError(_promotion_lease_held(run_id, lease.holder()))
     renewer = _PromotionLeaseRenewer(lease)
     renewer.start()
+    # The request is cleared only once this promotion holds the claim, so a
+    # signal delivered to the process before it took one cannot stop it.
+    _STOP_REQUESTED.clear()
+    previous_handler = _install_stop_handler()
     try:
         yield lease
     finally:
+        _restore_stop_handler(previous_handler)
         renewer.stop()
         lease.release()
+        _STOP_REQUESTED.clear()
 
 
 def _landing_checkout(
@@ -1351,8 +1435,15 @@ def _complete_locked(
                 )
                 capture = capture_run_session(record)
                 path = pointer_path(run_id)
-                _remove_promoted_pointer_or_defer(run_id, record)
+                from reckon.crew.terminal_cleanup import queue_cleanup
+
                 retention = existing.get("worktree_retention")
+                queue_cleanup(
+                    {**record, "worktree_retention": retention},
+                    kind="promoted",
+                    gate=str(gate),
+                )
+                _remove_promoted_pointer_or_defer(run_id, record)
                 release = _release_after_promotion(
                     run_id,
                     record,
@@ -2002,6 +2093,9 @@ def _complete_locked(
         # checkout carries no uncommitted state the next reader would trip on. A
         # refused landing then takes back every write it made, including the store
         # row this attempt's own append inserted, so a retry promotes cleanly.
+        # A stop signal takes effect before this stage starts, so the retry the
+        # next promotion runs sees the run exactly as it was before the commit.
+        _stop_at_stage_boundary("the promotion commit")
         landing_check = _report_landing_check(
             _commit_landing_writes(
                 run_id=run_id,
@@ -2024,7 +2118,15 @@ def _complete_locked(
 
         # Return capture metadata while the pointer still exists. Session
         # ownership has already been copied onto the committed ledger row.
+        _stop_at_stage_boundary("the release")
         capture = capture_run_session(record)
+        from reckon.crew.terminal_cleanup import queue_cleanup
+
+        queue_cleanup(
+            {**record, "worktree_retention": worktree_retention},
+            kind="promoted",
+            gate=str(gate),
+        )
         _remove_promoted_pointer_or_defer(run_id, record)
         release = _release_after_promotion(
             run_id,
@@ -2033,6 +2135,7 @@ def _complete_locked(
             process_already_ended=ended_writer,
             gate=str(gate),
         )
+        _stop_at_stage_boundary("the release record")
         release, recorded = _record_release_on_ledger(
             project=project,
             root=ledger_root,
@@ -2070,6 +2173,14 @@ def _complete_locked(
             # leaving it in a bucket no roadmap reads.
             "outside_scope": outside_scope_entries,
         }
+        # A review dimension below its declared floor is work the reflex would
+        # otherwise repair, and no floor repair round starts for a run once its
+        # promotion has begun. Naming the dimension the promotion lands over is
+        # what keeps that work visible instead of leaving it to reappear as a
+        # worktree of commits no landing path reads.
+        owed_repair = owed_floor_repair(run_id, record, reviewed)
+        if owed_repair:
+            receipt["owed_floor_repair"] = owed_repair
         # A plan review's receipt names what the plan-review store did with the
         # review it delivered. A run that is not a plan review carries no such
         # field, so the field's absence itself states the run had no review to
@@ -2219,7 +2330,15 @@ def discard(run_id: str, *, allowed_phases: Sequence[str] = ()) -> dict[str, Any
         # record behind it, and a record written afterwards leaves a window in
         # which the departure is indistinguishable from a vanished pointer.
         written = _write_discard_record(run_id, record)
+        from reckon.crew.terminal_cleanup import queue_cleanup
+
+        queue_cleanup(record, kind="discarded")
         path.unlink()
+        release = _remove_discarded_worktree(record)
+        if written:
+            from reckon.crew.runs import resolve_run_path
+
+            written = str(resolve_run_path(written))
         return {
             "run_id": run_id,
             "pointer_path": str(path),
@@ -2237,7 +2356,7 @@ def discard(run_id: str, *, allowed_phases: Sequence[str] = ()) -> dict[str, Any
             # later dispatch for as long as its holder lives. The run this
             # discard removed is the claim's own, so the claim goes with it.
             "dispatch_claim_released": _release_discarded_dispatch_claim(run_id),
-            **_remove_discarded_worktree(record),
+            **release,
         }
 
 
@@ -2327,6 +2446,8 @@ def _remove_discarded_worktree(record: Mapping[str, Any]) -> dict[str, Any]:
             "arms_kept",
             "arms_logs_copied",
             "arms_withheld",
+            "run_archived",
+            "run_archive_withheld",
         )
         if key in release
     }
@@ -2623,6 +2744,7 @@ from reckon.crew.promotion_checks import (
     _unreviewed_refusal,
     _wait_out_stream_tail,
     _zone_aware_stream_timestamp,
+    owed_floor_repair,
     plan_impl_at,
 )
 from reckon.crew.promotion_evidence import (

@@ -1,0 +1,60 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/cli.py:392",
+    "reckon/crew_follow_commands.py:3102",
+    "reckon/crew_follow_commands.py:3436"
+  ],
+  "completed_at": "2026-11-13T02:20:46.171Z",
+  "dispatched_at": "2026-11-13T02:06:22Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "exempted",
+      "reason": "Non-blocking: the reviewer re-ran ruff independently and confirmed both findings are pre-existing at crew_follow_commands.py:95 and :1182 and every format hunk lies outside the changed regions; only the log file is missing, not the result.",
+      "recorded_at": "2026-11-13T02:33:59.563570+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "manifest.md",
+      "line": 19,
+      "severity": "non-blocking",
+      "text": "The ruff half of the done_when is claimed in prose only: no ruff log was written under logs/, so a reader cannot open the 2-findings-both-pre-existing and 35-line format delta the artifacts list asserts; an independent run confirms both findings sit at reckon/crew_follow_commands.py:95 and :1182 and every format hunk outside the changed regions, so the claim holds and the gap is the missing log, not the result."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "reckon/cli.py:392 (crew follow) reaches crew_follow at reckon/crew_follow_commands.py:3102, whose resume branch calls _follow_resume_output at :3436 with delivered/remember bound to the delivered-states store.",
+    "diff": "Read commit by commit from 5dabbcb3: 7c3ccbc71f changes 70 lines of reckon/crew_follow_commands.py and adds 241 lines of test, and 140e2f4d adds the 61-line evidence fragment; the production change is one derivation, two new keyword parameters and one recording closure.",
+    "done_when": "The done_when (prompt.txt:125, plan section s129) names three cases, a base-revision reproduction, a declared negative control and a zero-delta importing gate; tests/test_a_pipe_rearm_draws_each_run_once.py contains all three cases and the logs record the rest.",
+    "goal": "The node goal (prompt.txt:38) is that a pipe re-arm draws each live run once, reading the delivered states from the store the live rows write; reckon/crew_follow_commands.py:3315-3329 and :3493-3500 now do exactly that.",
+    "manifest": "Read manifest.md: 3/3 cases green at head and 3/3 red at base, negative control red at 7c3ccbc71f, importing gate 506+9 base vs 509+9 head, ruff 2 pre-existing findings, all committed at 140e2f4d.",
+    "write_paths": "Declared paths are reckon/crew_follow_commands.py, tests/test_a_pipe_rearm_draws_each_run_once.py, the evidence fragment and an (unused) docs/figures directory; every path in the diff is inside them."
+  },
+  "justifications": {
+    "durability": "tests/test_a_pipe_rearm_draws_each_run_once.py fails on re-instating the defect: at base-revision 5dabbcb3 all three cases redden on lines asserting the pane draws nothing (the base log's 'Left contains one more item'), and the declared mutation reddens the first case at line 195.",
+    "evidence": "Baseline, head, negative-control and both importing-gate logs under the run's logs/ each open with revision and literal command and close with EXIT=, and logs/base-rearm-cases.log:1-3 shows all three cases failing at the base revision with the second re-arm drawing the row; the ruff half of the done_when is asserted in manifest.md:19 with no log.",
+    "fit": "The change follows the surrounding closure idiom at reckon/crew_follow_commands.py:3331, names its comments by mechanism, and adds no plan, sprint or ticket identifier to code, symbols, filenames or comments.",
+    "goal_fidelity": "reckon/crew_follow_commands.py:3315-3329 builds the delivered-states map from the subscriber checkpoint or the file record, and :3493-3500 hands that same map to the resume derivation and records each drawn row back through note_resumed, so a pipe re-arm reads and records the store the live rows write.",
+    "reuse": "note_resumed composes the owners that already exist \u2014 ticker.TickerPath.reseed at reckon/crew/ticker.py:2718, StationSubscriber.save_checkpoint at reckon/crew/station_subscriber.py:596 and runs.write_delivered \u2014 and adds no second delivered-state store; TickerPath.remember at ticker.py:2696 could not be used because it never overwrites, which is the stated reason for reseeding.",
+    "scope_discipline": "git diff 5dabbcb3..140e2f4d touches exactly reckon/crew_follow_commands.py, tests/test_a_pipe_rearm_draws_each_run_once.py and the node's own evidence fragment, all inside the declared write paths, and 65 of the 70 production lines are the one derivation and its caller."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal (prompt.txt:38) is that a pipe re-arm draws each live run once, reading the delivered states from the store the live rows write; reckon/crew_follow_commands.py:3315-3329 and :3493-3500 now do exactly that.\nVERDICT done_when: the done_when (prompt.txt:125, plan section s129) names three cases, a base-revision reproduction, a declared negative control and a zero-delta importing gate; tests/test_a_pipe_rearm_draws_each_run_once.py contains all three cases and the logs under logs/ record the rest.\nVERDICT write_paths: declared paths are reckon/crew_follow_commands.py, tests/test_a_pipe_rearm_draws_each_run_once.py, the evidence fragment and an unused docs/figures directory; every path in the diff is inside them.\nVERDICT manifest: read manifest.md; it records 3/3 cases green at head and 3/3 red at base, the negative control red at 7c3ccbc71f, the importing gate at 506+9 base against 509+9 head with identical failure ids, and ruff at 2 pre-existing findings.\nVERDICT diff: read commit by commit from 5dabbcb3; 7c3ccbc71f changes 70 lines of reckon/crew_follow_commands.py and adds 241 lines of test, and 140e2f4d adds a 61-line evidence fragment, with the production change being one derivation, two keyword parameters and one recording closure.\nCALL_SITES: reckon/cli.py:392, reckon/crew_follow_commands.py:3102, reckon/crew_follow_commands.py:3436\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew_follow_commands.py:3315-3329 builds the delivered-states map from the subscriber checkpoint or the file record, and :3493-3500 hands that same map to the resume derivation and records each drawn row back through note_resumed.\nSCORE evidence: 17\nJUSTIFICATION evidence: logs/base-rearm-cases.log, logs/base-suite-arm.log, logs/head-suite-arm.log, logs/importing-base.log, logs/importing-head.log and logs/negative-control-rearm.log each carry revision, command and EXIT=, but the ruff half of the done_when has no log.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff 5dabbcb3..140e2f4d touches exactly reckon/crew_follow_commands.py, tests/test_a_pipe_rearm_draws_each_run_once.py and the node's own evidence fragment, all inside the declared write paths.\nSCORE durability: 19\nJUSTIFICATION durability: reinstating the defect reddens tests/test_a_pipe_rearm_draws_each_run_once.py:195, as logs/base-rearm-cases.log and logs/negative-control-rearm.log both record, so the guard fails when the change regresses.\nSCORE fit: 19\nJUSTIFICATION fit: the new closure sits beside note_delivered at reckon/crew_follow_commands.py:3331 in the same idiom, and the added names (delivered, remember, note_resumed) carry no plan, sprint or ticket identifier.\nSCORE reuse: 18\nJUSTIFICATION reuse: note_resumed composes ticker.TickerPath.reseed (reckon/crew/ticker.py:2718), StationSubscriber.save_checkpoint (reckon/crew/station_subscriber.py:596) and runs.write_delivered rather than duplicating a store, and TickerPath.remember (ticker.py:2696) cannot serve because it never overwrites.\nFINDING manifest.md:19 non-blocking: the ruff half of the done_when is claimed in prose with no log under logs/ to open; an independent run reproduces the claim (findings at reckon/crew_follow_commands.py:95 and :1182, format hunks outside the changed regions), so the result holds and the gap is the missing record.",
+  "review_run_id": "r-20261113T020106081485-review-of-a-pipe-rearm-draws-each-run-once-140e2f4d64cc",
+  "reviewed_base_sha": "5dabbcb3e8fcaaa872b10b9731628f934ad4de25",
+  "reviewed_head_sha": "140e2f4d64cc3e5d5dd69a96feb27bd17bab5ca1",
+  "reviewed_run_id": "r-20261113T011602155862-a-pipe-rearm-draws-each-run-once",
+  "scores": {
+    "durability": 19,
+    "evidence": 17,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 18,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-13T02:29:58.940238+00:00",
+  "total": 112
+}

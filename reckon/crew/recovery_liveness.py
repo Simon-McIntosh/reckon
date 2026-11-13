@@ -1243,6 +1243,23 @@ def local_liveness(record: Mapping[str, Any]) -> tuple[bool | None, bool]:
         # as ended and is classified from its manifest as complete or scoring.
         alive = True
         proven = True
+    if (
+        launched_here
+        and alive is None
+        and record.get("phase") == "stopped"
+        and record.get("stopped_at")
+        and "stop_exit_recorded" not in record
+        and record.get("alive_after") == []
+        and record.get("pid")
+        and not record.get("job_id")
+        and process_alive(record["pid"]) is False
+    ):
+        # A stop predating exit receipts can carry a scheduler placement with
+        # no job identifier. On its launch host the stopped tree and dead pid
+        # settle that end; a real scheduler job or a living worker outranks it.
+        # A stop that attempted to file a receipt must supply that receipt,
+        # rather than letting a failed write masquerade as a legacy stop.
+        alive = False
     if alive is True and proven and _recorded_end_of_the_current_attempt(record):
         # The pid this host answered alive for is the supervisor's, and the
         # record says the worker it held has left. Both halves are observed

@@ -20,12 +20,12 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="reckon-tooling,crew">
   <meta name="plan-after" content="a-seat-held-elsewhere-is-not-restarted">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;implementable&quot;,&quot;s12&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;done&quot;,&quot;s14&quot;:&quot;done&quot;,&quot;s15&quot;:&quot;done&quot;,&quot;s16&quot;:&quot;done&quot;,&quot;s17&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;implementable&quot;,&quot;s12&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;done&quot;,&quot;s14&quot;:&quot;done&quot;,&quot;s15&quot;:&quot;done&quot;,&quot;s16&quot;:&quot;done&quot;,&quot;s17&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s18&quot;:&quot;implementable&quot;}">
   <title>A Live Worker Is Never Drawn Halted | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="122">
-<meta name="plan-modified" content="2026-11-11">
+<meta name="plan-version" content="123">
+<meta name="plan-modified" content="2026-11-13">
 <meta name="plan-section-depends-on" content="{&quot;s11&quot;:[&quot;a-live-worker-is-never-drawn-halted#s13&quot;]}">
 </head>
 <body>
@@ -341,6 +341,10 @@
 <section data-reckon="section" data-id="s17" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="done" data-links=""></section>
 <p>§9's producer gives up its seat off the fleet node and announces it once, but the announcement is printed to the producer's log (<code>watch_log_path</code>), not to the transition stream the panes read. Measured 2026-10-24 04:25Z: the reckon, nova and power_convertor seats moved to the fleet node, and no pane drew it. Under the lead's state-change direction, a seat moving between hosts is a state change a coordinator oversees. The release writes one row to the project's watch stream, naming both hosts. That row has no pane word today, so <code>stream_carries</code> would drop it. <code>seat moved</code> becomes a pane word of its own, selected by the release row's own <code>to_state</code> <code>seat-moved</code> (a member of <code>PANE_STATES["seat moved"]</code>), and a member of the carried words. The pane carries the row once.</p><p>Done when a test drives <code>release_seat_when_misplaced</code> to release-and-exit against a temporary stream. The stream holds exactly one seat-release row naming both hosts, and the row policy prints it once. Negative control: at the base revision the stream holds no such row, recorded in the gate log. The tests importing <code>watch_unit</code> or <code>ticker</code> add no failures against the base. Ruff adds no findings on the staged paths. Write paths: <code>reckon/crew/watch_unit.py</code>, <code>reckon/crew/ticker.py</code> (after §15, which writes it), and the new test.</p>
 
+    <h2 id="s18">§18 — A parked worker is drawn waiting, not halted</h2>
+<section data-reckon="section" data-id="s18" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+<p><strong>Why.</strong> nova-d5 reported on 13 November, for nova coordinator c042a637, that the pane showed nova run h200-levers as <code>waiting → halted</code> while its manifest read <code>status: waiting</code>, with a valid <code>wait_probe</code> over seven queued H200 jobs and <code>blockers: none</code>. The lead reads "halted" as a failure, so a correctly parked run looked broken.</p><p><strong>Deliverable.</strong> A run whose manifest says it is waiting on a probe that has not reported a terminal state is drawn as waiting, with what it waits on, never as halted.</p><p><strong>Done when</strong> a test classifies a run whose manifest reads <code>status: waiting</code> with a probe still pending and its worker process ended. The pane row and the classification read waiting and name the probe. A run whose probe has reported a terminal state, and a run with no wait declared and no live worker, still read as before. The negative control is the base revision, where the first run reads halted. The test files importing the changed modules add no failure against the base revision, run on all_debug one arm at a time with at most <code>-n 4</code>. Every log is under the run directory, starts with its revision and the literal command, and ends in <code>EXIT=</code>. Ruff check and ruff format --check add no findings on the staged paths. Write paths: <code>reckon/crew/recovery_classification.py</code>, <code>reckon/crew/recovery_wait.py</code> and a new test file under <code>tests/</code>.</p>
+
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
 <article class="r-fu" data-id="f-alwh-001" data-status="resolved" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-create" data-written-at="2026-10-23" data-recommends-skill="/reckon-build a-live-worker-is-never-drawn-halted" data-resolved-at="2026-10-23T22:05:12+00:00" data-resolved-by="reckon-build">
@@ -377,6 +381,11 @@
     <h4 class="r-fu-title">Land §13, then the census node, run the sampler, then the report node</h4>
     <div class="r-fu-body"><p>§13 launches when queue-fair-share-by-weight and drain-lists-unloaded land, and the census node launches when §13 lands. After the census node lands, the coordinator starts the sampler on the fleet node as one <code>timeout 86400</code> job and records its pid on §11. The report node is dispatched once that job has ended.</p></div>
     <pre class="r-fu-prompt">/reckon-build a-live-worker-is-never-drawn-halted §11</pre>
+    </article>
+<article class="r-fu" data-id="f-alwh-007" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-c0" data-written-at="2026-11-12" data-recommends-skill="/reckon-build a-live-worker-is-never-drawn-halted §18" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Build §18: a parked worker is drawn waiting</h4>
+    <div class="r-fu-body"><p>A parked nova run waiting on seven queued H200 jobs was shown halted.</p></div>
+    <pre class="r-fu-prompt">/reckon-build a-live-worker-is-never-drawn-halted §18</pre>
     </article>
 </section>
   <section data-reckon="comments" id="comments" class="r-comments">
@@ -420,7 +429,7 @@
     <div class="r-comment-body"><p>Independent review of r-20261111T074942597991-ab-omp-local-a-live-worker-is-never-dra-s11 at base 42c70d80c9ff and head 436cae825e63: scores goal_fidelity 18, evidence 18, scope_discipline 20, durability 14, fit 15, reuse 18, two non-blocking findings (the "six dropped ones" arithmetic at census-instrument.html:39, and the duplicated control record in the new fragment), added_failure_count 0 derived from the run's unarmed gate logs.</p></div>
 </div>
 <div class="r-comment" data-section="s11" data-id="c-run-r-20261111T074942597991-ab-omp-local-a-live-worker-is-never-dra-s11" data-who="reckon-build" data-when="2026-11-11T13:04:53.955Z">
-    <div class="r-comment-body"><p>Verified the census instrument and sampler already committed at scripts/census/monitor_census.py with its co-located test: 14 passed EXIT=0 at 42c70d80c9ff, and the re-run 48 hours ending 2026-10-23T12:37Z read 242 carried halted rows, 38 process_alive (24 working-&gt;running), 128 returns_to_progress including §3&#x27;s 12:25:51Z row and 7 after_status_repair including §4&#x27;s 12:14:49Z row.</p></div>
+    <div class="r-comment-body"><p>Verified the census instrument and sampler already committed at scripts/census/monitor_census.py with its co-located test: 14 passed EXIT=0 at 42c70d80c9ff, and the re-run 48 hours ending 2026-10-23T12:37Z read 242 carried halted rows, 38 process_alive (24 working-&gt;running), 128 returns_to_progress including §3's 12:25:51Z row and 7 after_status_repair including §4's 12:14:49Z row.</p></div>
 </div>
 <div class="r-comment" data-section="s12" data-id="c-run-r-20261024T010015758684-review-of-a-full-queue-is-a-wait-not-a-refusal-7999dc3bb6a4" data-who="reckon-build" data-when="2026-10-24T01:11:27.190Z">
     <div class="r-comment-body"><p>Independent review of r-20261024T004234132824-a-full-queue-is-a-wait-not-a-refusal at head 7999dc3bb6a4da13dbb59172cefe78e50620b3c4 scores goal_fidelity 15, evidence 15, scope_discipline 20, durability 17, fit 19, reuse 18 (total 104), adds 0 failures against base f56407c1, and records two non-blocking findings.</p></div>

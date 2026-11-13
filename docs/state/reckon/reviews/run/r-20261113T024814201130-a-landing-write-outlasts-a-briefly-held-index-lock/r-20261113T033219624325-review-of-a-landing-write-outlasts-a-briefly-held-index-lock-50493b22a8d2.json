@@ -1,0 +1,51 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-11-13T03:44:10.437Z",
+  "dispatched_at": "2026-11-13T03:35:40Z",
+  "findings": [
+    {
+      "file": "tests/test_a_landing_write_outlasts_a_briefly_held_index_lock.py",
+      "line": 199,
+      "severity": "non-blocking",
+      "text": "The named-bound assertion compares the refusal's stated bound against the value promotion_scope._index_lock_retry_bound_seconds returns for the same module constants, so both sides derive from the code under test: a regression in that helper (for example returning attempts*retry_seconds instead of (attempts-1)*retry_seconds, or 0) moves both sides together and the assertion stays true. The following age >= bound*0.9 assertion inherits the same coupling, so neither pins the bound the landing actually waited; an independent floor such as bound >= 60 would."
+    },
+    {
+      "file": "tests/test_a_landing_write_waits_out_a_held_index_lock.py",
+      "line": 103,
+      "severity": "non-blocking",
+      "text": "The recorded after arm runs only the new test file and tests/test_staged_write_inventory.py, and the sibling rollback case was measured alone, but this test file also imports reckon.crew.promotion_scope and reads the changed _INDEX_LOCK_RETRY_ATTEMPTS/_INDEX_LOCK_RETRY_INTERVAL_SECONDS constants, and no recorded arm runs it. The plan's clause that the test files importing the changed modules add no failure is therefore only partly evidenced; it patches both constants so the change is unlikely to break it, but that is an inference rather than a measured arm."
+    },
+    {
+      "file": "docs/evidence/fragments/a-landing-never-waits-on-a-shared-index/a-landing-write-outlasts-a-briefly-held-index-lock.html",
+      "line": 46,
+      "severity": "non-blocking",
+      "text": "The evidence fragment's after-arm row names e5db32500e as 'the run's head tree', but the run's head is 50493b22a8; the gate log the manifest cites (after-arm-head.log) ran at 50493b22a8 in 129.04s, while the 128s figure in the fragment belongs to the earlier e5db32500e run (after-arm-final.log). Both runs passed, but the fragment a later reader opens to check the gate against the promoted revision names a revision that is not the head."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "Read commit by commit against cb25b41dfd; 2eec2b11f2 raises the bound and adds the note), 386b45ca06 adds the two-case test, e5db32500e and 50493b22a8 add and revise the evidence fragment, all inside the declared scope.",
+    "done_when": "The done_when asks for a 20s second-process hold that lands with retries recorded, a hold past the bound that refuses naming age and bound, and a base-revision negative control; tests/test_a_landing_write_outlasts_a_briefly_held_index_lock.py implements all three and the manifest records 53 passed at head, 51 passed at base, 2 failed in the negative control.",
+    "goal": "The node goal is that a promotion's landing write outlasts a lock another live writer holds for up to a minute and refuses only past its bound naming the lock's age; reckon/crew/promotion_scope.py:2007-2008 raises the shared bound to 130 attempts 0.5s apart (64.5s) and promotion_scope.py:2027-2050 adds the age-and-bound refusal clause.",
+    "manifest": "Read; it records status complete, the four commits, the gate command and logs, after_suite 0 failures at 50493b22a8, base arm 0 failures at cb25b41dfd, and the negative control at the base revision, plus an outside_scope note for the sibling test the longer bound slows.",
+    "write_paths": "The declared write paths are reckon/crew/promotion_scope.py plus a new tests/ file (and the node's declared evidence fragment); the diff touches exactly those three paths and nothing else."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is that a promotion's landing write outlasts a lock another live writer holds for up to a minute and refuses only past its bound naming the lock's age; reckon/crew/promotion_scope.py:2007 raises the shared bound to 130 attempts 0.5s apart and promotion_scope.py:2027 adds the age-and-bound refusal clause.\nVERDICT done_when: the done_when asks for a 20s second-process hold that lands with retries recorded, a hold past the bound that refuses naming age and bound, and a base-revision negative control; tests/test_a_landing_write_outlasts_a_briefly_held_index_lock.py implements all three and the manifest records 53 passed at head, 51 passed at base, 2 failed in the negative control.\nVERDICT write_paths: the declared write paths are reckon/crew/promotion_scope.py plus a new tests/ file and the node's declared evidence fragment; the diff touches exactly those three paths.\nVERDICT manifest: read; it records the four commits, the gate command and log paths, after_suite 0 failures at 50493b22a8, the base arm 0 failures at cb25b41dfd, and the negative control, plus an outside_scope note for the sibling test the longer bound slows.\nVERDICT diff: read commit by commit against cb25b41dfd; the bound and refusal clause, the two-case test, and the evidence fragment are the whole change.\nCALL_SITES: reckon/crew/promotion_scope.py:_commit_landing_writes, reckon/crew/promotion_scope.py:_stage_landing_writes, reckon/crew/promotion_scope.py:_restore_landing_writes, reckon/crew/promotion.py:1423, reckon/crew/promotion_gate.py:1182, reckon/crew_run_commands.py:1651, reckon/crew/promotion_release.py:817\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/promotion_scope.py:2007 raises the bound to a 64.5s span so a minute-long hold is waited out, and promotion_scope.py:2044 names the lock's age and the bound on refusal.\nSCORE evidence: 15\nJUSTIFICATION evidence: the three arms are logged under the run directory with revision, command and EXIT= (logs/after-arm-head.log, logs/base-arm.log, logs/negative-control.log), but one affected test file was never run and the fragment names e5db32500e as the head.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: the diff is exactly reckon/crew/promotion_scope.py, tests/test_a_landing_write_outlasts_a_briefly_held_index_lock.py and the declared evidence fragment.\nSCORE durability: 15\nJUSTIFICATION durability: the 20s-hold case fails at the base revision (logs/negative-control.log lists both FAILED ids), but the bound assertion at tests/test_a_landing_write_outlasts_a_briefly_held_index_lock.py:199 compares the message against the same helper it exercises.\nSCORE fit: 16\nJUSTIFICATION fit: the change reuses merge._run_waiting_out_a_held_index_lock and merge._index_lock_held (promotion_scope.py:2717) and names its new helpers by mechanism, with ruff clean on both changed paths.\nSCORE reuse: 17\nJUSTIFICATION reuse: promotion_scope.py:2027 is a single note helper shared by the staging and commit refusals and extends merge's lock helpers, but reckon/ledger.py:3071 already formats the same kind of lock-held refusal for ledger writes without being unified with it.\nFINDING tests/test_a_landing_write_outlasts_a_briefly_held_index_lock.py:199 non-blocking: the named-bound assertion compares the refusal against the helper's own return, so both sides move together and a helper regression leaves it green.\nFINDING tests/test_a_landing_write_waits_out_a_held_index_lock.py:103 non-blocking: this affected test file reads the changed constants but no recorded arm runs it.\nFINDING docs/evidence/fragments/a-landing-never-waits-on-a-shared-index/a-landing-write-outlasts-a-briefly-held-index-lock.html:46 non-blocking: the after-arm row names e5db32500e as the run's head tree, where the head is 50493b22a8.",
+  "review_run_id": "r-20261113T033219624325-review-of-a-landing-write-outlasts-a-briefly-held-index-lock-50493b22a8d2",
+  "reviewed_base_sha": "cb25b41dfda82d07332ba485626b5d3d6347a07e",
+  "reviewed_head_sha": "50493b22a8d29ed22f4202c1bd7bc0fff83991cc",
+  "reviewed_run_id": "r-20261113T024814201130-a-landing-write-outlasts-a-briefly-held-index-lock",
+  "scores": {
+    "durability": 15,
+    "evidence": 15,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 17,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-13T04:01:44.491099+00:00",
+  "total": 104
+}
