@@ -151,9 +151,11 @@ def _parsed_once() -> Iterator[None]:
     of that plan are chosen.
 
     The authored section headings are memoised on the same boundary and on the
-    document text itself, so the roadmap's heading walk and every wait edge
-    that names a section of the same plan share one parse rather than paying
-    for two independent ones.
+    document text itself. Queue ordering's heading walk, every wait edge that
+    names a section of the same plan, and the section-todo derivation all
+    resolve the reader through its module, so they share one parse for each
+    distinct plan text rather than paying for one each. A caller that binds the
+    reader by name at import is outside this boundary and parses its own.
     """
     from reckon import _plan_html
 
