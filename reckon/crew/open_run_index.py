@@ -357,6 +357,15 @@ def review_written(path: Path, record: Mapping[str, Any]) -> None:
                 str(record.get("review_run_id") or ""),
             ),
         )
+        from reckon import ledger
+
+        connection.execute(
+            "CREATE TABLE IF NOT EXISTS review_meta (key TEXT PRIMARY KEY, value TEXT)"
+        )
+        connection.execute(
+            "INSERT OR REPLACE INTO review_meta VALUES ('directory', ?)",
+            (json.dumps(ledger._file_identity(path.parent)),),
+        )
 
 
 def review_paths(directory: Path) -> list[Path] | None:
@@ -389,11 +398,22 @@ def review_paths(directory: Path) -> list[Path] | None:
     if directory.name in ids:
         return sorted(directory.glob("*.json"))
     index = _review_index_path(directory)
+    if not index.exists():
+        return None
     paths: set[Path] = declared
-    if index.exists():
+    from reckon import ledger
+
+    try:
         with contextlib.closing(
             sqlite3.connect(f"{index.as_uri()}?mode=ro", uri=True)
         ) as connection:
+            stamp = connection.execute(
+                "SELECT value FROM review_meta WHERE key='directory'"
+            ).fetchone()
+            if stamp is None or stamp[0] != json.dumps(
+                ledger._file_identity(directory)
+            ):
+                return None
             for run_id in ids:
                 paths.update(
                     directory / name
@@ -402,11 +422,11 @@ def review_paths(directory: Path) -> list[Path] | None:
                         (run_id, run_id),
                     )
                 )
-    else:
-        # Legacy flat files are named by subject or producer. This compatibility
-        # lookup reads only names for open runs; filing them publishes the index.
-        for run_id in ids:
-            paths.update(directory.glob(f"{run_id}*.json"))
+    except (OSError, sqlite3.Error):
+        return None
+    # Filename-keyed records can predate the projection's writer.
+    for run_id in ids:
+        paths.update(directory.glob(f"{run_id}*.json"))
     return sorted(paths)
 
 

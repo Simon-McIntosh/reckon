@@ -1635,7 +1635,7 @@ def _store_indexes(
     that write having moved the directory away from it, and the next reader
     lists the store rather than adopting an index short of the record.
     """
-    if open_run_index.pointers() is not None:
+    if open_run_index.review_paths(directory) is not None:
         return _build_store_indexes(directory)
     tick_indexes = _TICK_REVIEW_INDEXES.get()
     if tick_indexes is not None:
