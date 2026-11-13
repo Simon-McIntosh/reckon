@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="docs-project" content="reckon">
+<meta name="reckon-type" content="evidence">
+<title>Five seconds on the real store, cold and warm</title>
+</head>
+<body>
+<main class="plan-doc">
+<h2 id="ready-a-read-costs-what-changed-s7-store">The real store, cold and warm</h2>
+
+<p id="ready-a-read-costs-what-changed-s7-verdict">The log is <strong>invalid</strong> by the section's own rule: the head's cold <code>read_plan</code> on the real store is far over five seconds, so the measure does not pass. The base control does hold — the base tree's cold <code>read_plan</code> exceeded the 180 s bound it was run under — so the instrument was measuring the defect and the head still fails it.</p>
+
+<table id="ready-a-read-costs-what-changed-s7-calls">
+  <thead><tr><th>Call</th><th>Tree</th><th>Condition</th><th>Elapsed</th><th>Stats</th><th>Parses</th></tr></thead>
+  <tbody>
+    <tr><td><code>read_plan(view="summary")</code>, <code>work-is-never-stuck-behind-the-admission-loop</code></td><td>head <code>4d5c4389b7</code></td><td>cold, fresh process, pinned index built by this run</td><td>228.9 s</td><td>186,684 + 6,256 lstat</td><td>509</td></tr>
+    <tr><td>same</td><td>head</td><td>cold, fresh process, persisted index present</td><td>&gt;200 s (timed out)</td><td>—</td><td>—</td></tr>
+    <tr><td>same</td><td>base <code>5a00e8f907</code></td><td>cold, fresh process</td><td>&gt;180 s (timed out, EXIT=124)</td><td>—</td><td>—</td></tr>
+  </tbody>
+</table>
+
+<p id="ready-a-read-costs-what-changed-s7-controls">Two instrument controls were run. The base arm's cold <code>read_plan</code> exceeded 180 s, which proves the cold arm is cold and the target is the defect. The parse-counter control — one cold head run with the parser digest patched so every stored entry is invalid, expecting a parse count equal to the number of plans read — was <strong>not run</strong>, because the head call does not complete inside the node's wall clock; the 509 parses recorded are the counter's own reading on the first cold call, not that control.</p>
+
+<p id="ready-a-read-costs-what-changed-s7-profile">A 90 s <code>py-spy</code> profile of the head cold read (6,078 samples, zero errors) puts the time in this chain, by cumulative sample share:</p>
+<ul id="ready-a-read-costs-what-changed-s7-frames">
+  <li>88.1 % <code>_read_plan_tool</code> → <code>read_plan</code> (<code>reckon/_store.py:1812</code>)</li>
+  <li>86.1 % <code>_resolve_plan_ref</code> (<code>reckon/mcp.py:1971</code>) → <code>_section_dependency_rows</code> (<code>reckon/mcp.py:1938</code>)</li>
+  <li>47.0 % <code>_read_state</code> (<code>reckon/_store.py:812</code>) → <code>_unparsed_section_warnings</code> (<code>reckon/_store.py:700</code>) → <code>_state_with_diagnostics</code> (<code>reckon/_store.py:738</code>)</li>
+  <li>43.8 % BeautifulSoup construction (<code>bs4/__init__.py:476</code>) feeding <code>html.parser</code></li>
+  <li>29.6 % the measure's own <code>os.stat</code> counting wrapper (leaf samples), so the elapsed figures are inflated by the instrument</li>
+</ul>
+
+<p id="ready-a-read-costs-what-changed-s7-reading">The profile says the head's cold read still pays a fresh BeautifulSoup parse under <code>_unparsed_section_warnings</code>, after the persisted discovery parse has already answered, and spends the dominant share in <code>_section_dependency_rows</code> resolving section refs. Both are on the path §2's request scope and §3's persisted seed were meant to make cheap. That is the finding this section asks the coordinator to turn into a new section; it is not repaired here, because this node changes no code.</p>
+
+<p id="ready-a-read-costs-what-changed-s7-instrument">Instrument caveat. The worker fence mounts <code>~/.config/reckon/cache</code> read-only, so the persisted index cannot be written from this run; the measure ran with <code>RECKON_HOME</code> at a scratch home carrying a copy of <code>mounts.json</code> and a symlink to the live crew home, which makes the index writable while the store and pointers stay real. Timings were taken at load average 28–33. The remaining five operations (<code>edit_plan</code>, <code>roadmap</code>, <code>crew dispatch --dry-run</code>, <code>advance_waiting_requests</code>, one admission decision) were not measured: the head <code>read_plan</code> alone consumed the node's wall clock.</p>
+</main>
+</body>
+</html>
