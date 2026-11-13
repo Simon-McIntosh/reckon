@@ -1,0 +1,69 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own manifest: its baseline_suite at 55d2cd5728 records exit_status 0, completed true, failure_count 0 and failure_ids [], and its after_suite at 56b7457d38 records exit_status 0, completed true, failure_count 0 and failure_ids [], so the set difference is empty (0).",
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew_dispatch_commands.py:1131 (crew dispatch --batch calls queue_batch)",
+    "reckon/crew/dispatch_batch.py:651 (queue_batch enters _parsed_once and the plan read scope)"
+  ],
+  "completed_at": "2026-11-13T13:54:54.404Z",
+  "dispatched_at": "2026-11-13T13:44:03Z",
+  "findings": [
+    {
+      "file": "tests/test_a_batch_dispatch_reads_each_plan_once.py",
+      "line": "24",
+      "severity": "non-blocking",
+      "text": "non-blocking: the module docstring says the base revision is the negative control where each entry resolves its own copy and the counts grow, but the node's own logs/base-arm.log shows 52 passed EXIT=0 at 55d2cd57, so the counts do not grow there and the negative control actually demonstrated is the head-side mutation that reverts plan_document_text."
+    },
+    {
+      "file": "tests/test_a_batch_dispatch_reads_each_plan_once.py",
+      "line": "219",
+      "severity": "non-blocking",
+      "text": "non-blocking: the plan-state read-once saving is still held by an upper bound (len(states) <= distinct) that passes at zero reads, so a regression that stops discovery_state being consulted at all leaves the goal's \"every saving\" only partly held."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read the two commits against base 55d2cd57; 56b7457 changes the read-scope docstring and rewrites the test module around a shared _checkout helper, and 61df29c9 adds the 44-line evidence fragment; no production behaviour changes.",
+    "done_when": "the done_when asks for a two-plan/three-section batch whose plan-document read count is two, a headings docstring naming only served callers, and a negative control that reverts plan_document_text to a plain read; tests/test_a_batch_dispatch_reads_each_plan_once.py:279 asserts the count is 2 and :285 the heading parses are 2, dispatch_batch.py:154-157 names queue ordering, wait edges and the section-todo derivation, and logs/negative-control.log records 66 reads with 1 failed EXIT=1.",
+    "goal": "the node goal is to hold every saving the batch read scope claims with a counting test; tests/test_a_batch_dispatch_reads_each_plan_once.py:246-296 adds a second batch (two plans, three sections each) that counts plan-document reads and authored-heading parses, and reckon/crew/dispatch_batch.py:151-157 corrects the scope's docstring to name only the readers it actually serves.",
+    "manifest": "read; it reports status complete, after arm 53 passed EXIT=0, base arm 52 passed EXIT=0, and negative control 1 failed EXIT=1 at 66 reads, and its three named logs exist and carry those results.",
+    "write_paths": "the declared paths are reckon/crew/dispatch_batch.py, reckon/crew/admission/readiness.py, reckon/roadmap.py if reached, the test file and the fragment; the diff touches only dispatch_batch.py, the test file and docs/evidence/fragments/a-queue-holds-the-whole-plan/the-batch-read-scope-claims-are-held-by-tests.html, all inside the fence."
+  },
+  "justifications": {
+    "durability": "tests/test_a_batch_dispatch_reads_each_plan_once.py:279 reddens when readiness.plan_document_text is reverted to a plain read (66 reads, logs/negative-control.log), and :285 would redden if the headings memo were removed because reckon/crew/admission/wait_refs.py:383 walks headings per wait edge, but that second arm is reasoned rather than demonstrated.",
+    "evidence": "logs/after-arm.log records 53 passed EXIT=0 at 56b7457 and logs/base-arm.log 52 passed EXIT=0 at 55d2cd57, and logs/negative-control.log shows the new test reddening at 66 reads, so the gate measures the stated count rather than asserting it.",
+    "fit": "the new fixture and counted wrappers follow the idiom of tests/test_a_batch_dispatch_reads_each_plan_once.py:186-212, and no path, symbol or comment carries a plan or ticket identifier, though the module docstring at :24 still calls the base revision the negative control.",
+    "goal_fidelity": "reckon/crew/dispatch_batch.py:151-157 now names only the three readers that resolve authored_section_headings through the module, and tests/test_a_batch_dispatch_reads_each_plan_once.py:279 holds the document-read saving, but the plan-state saving is still held only by the <= bound at tests/test_a_batch_dispatch_reads_each_plan_once.py:219.",
+    "reuse": "the diff adds no production definition; a search of reckon/ for a plan-read-once owner found readiness.plan_document_text and plan_read_scopes, and the test exercises that owner rather than forking it.",
+    "scope_discipline": "every path in the diff (reckon/crew/dispatch_batch.py, tests/test_a_batch_dispatch_reads_each_plan_once.py, the evidence fragment) is inside the manifest's orientation_write_paths and no production behaviour changed."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to hold every saving the batch read scope claims with a counting test; tests/test_a_batch_dispatch_reads_each_plan_once.py:246-296 adds a second batch (two plans, three sections each) that counts plan-document reads and authored-heading parses, and reckon/crew/dispatch_batch.py:151-157 corrects the scope's docstring to name only the readers it actually serves.\nVERDICT done_when: the done_when asks for a two-plan/three-section batch whose plan-document read count is two, a headings docstring naming only served callers, and a negative control that reverts plan_document_text to a plain read; tests/test_a_batch_dispatch_reads_each_plan_once.py:279 asserts the count is 2 and :285 the heading parses are 2, dispatch_batch.py:154-157 names queue ordering, wait edges and the section-todo derivation, and logs/negative-control.log records 66 reads with 1 failed EXIT=1.\nVERDICT write_paths: the declared paths are reckon/crew/dispatch_batch.py, reckon/crew/admission/readiness.py, reckon/roadmap.py if reached, the test file and the fragment; the diff touches only dispatch_batch.py, the test file and docs/evidence/fragments/a-queue-holds-the-whole-plan/the-batch-read-scope-claims-are-held-by-tests.html, all inside the fence.\nVERDICT manifest: read; it reports status complete, after arm 53 passed EXIT=0, base arm 52 passed EXIT=0, and negative control 1 failed EXIT=1 at 66 reads, and its three named logs exist and carry those results.\nVERDICT diff: read the two commits against base 55d2cd57; 56b7457 changes the read-scope docstring and rewrites the test module around a shared _checkout helper, and 61df29c9 adds the 44-line evidence fragment; no production behaviour changes.\nCALL_SITES: reckon/crew_dispatch_commands.py:1131 (crew dispatch --batch calls queue_batch), reckon/crew/dispatch_batch.py:651 (queue_batch enters _parsed_once and the plan read scope)\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: reckon/crew/dispatch_batch.py:151-157 now names only the three readers that resolve authored_section_headings through the module, and tests/test_a_batch_dispatch_reads_each_plan_once.py:279 holds the document-read saving, but the plan-state saving is still held only by the <= bound at tests/test_a_batch_dispatch_reads_each_plan_once.py:219.\nSCORE evidence: 18\nJUSTIFICATION evidence: logs/after-arm.log records 53 passed EXIT=0 at 56b7457 and logs/base-arm.log 52 passed EXIT=0 at 55d2cd57, and logs/negative-control.log shows the new test reddening at 66 reads, so the gate measures the stated count rather than asserting it.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every path in the diff (reckon/crew/dispatch_batch.py, tests/test_a_batch_dispatch_reads_each_plan_once.py, the evidence fragment) is inside the manifest's orientation_write_paths and no production behaviour changed.\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_a_batch_dispatch_reads_each_plan_once.py:279 reddens when readiness.plan_document_text is reverted to a plain read (66 reads, logs/negative-control.log), and :285 would redden if the headings memo were removed because reckon/crew/admission/wait_refs.py:383 walks headings per wait edge, but that second arm is reasoned rather than demonstrated.\nSCORE fit: 18\nJUSTIFICATION fit: the new fixture and counted wrappers follow the idiom of tests/test_a_batch_dispatch_reads_each_plan_once.py:186-212, and no path, symbol or comment carries a plan or ticket identifier, though the module docstring at :24 still calls the base revision the negative control.\nSCORE reuse: 20\nJUSTIFICATION reuse: the diff adds no production definition; a search of reckon/ for a plan-read-once owner found readiness.plan_document_text and plan_read_scopes, and the test exercises that owner rather than forking it.\nFINDING tests/test_a_batch_dispatch_reads_each_plan_once.py:24 non-blocking: the module docstring says the base revision is the negative control where each entry resolves its own copy and the counts grow, but the node's own logs/base-arm.log shows 52 passed EXIT=0 at 55d2cd57, so the counts do not grow there and the negative control actually demonstrated is the head-side mutation that reverts plan_document_text.\nFINDING tests/test_a_batch_dispatch_reads_each_plan_once.py:219 non-blocking: the plan-state read-once saving is still held by an upper bound (len(states) <= distinct) that passes at zero reads, so a regression that stops discovery_state being consulted at all leaves the goal's \"every saving\" only partly held.",
+  "review_node": "review-of-the-batch-read-scope-claims-are-held-by-tests-61df29c9b44b",
+  "review_run_id": "r-20261113T134225073587-review-of-the-batch-read-scope-claims-are-held-by-tests-61df29c9b44b",
+  "reviewed_base_sha": "55d2cd57284184bff7f4682c3a962667caa20371",
+  "reviewed_head_sha": "61df29c9b44bcef3bff4d07bef42c5e3f474ec2f",
+  "reviewed_run_id": "r-20261113T131123025005-the-batch-read-scope-claims-are-held-by-tests",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash",
+    "reviewer_run_id": "r-20261113T134225073587-review-of-the-batch-read-scope-claims-are-held-by-tests-61df29c9b44b"
+  },
+  "scores": {
+    "durability": 17,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 17,
+    "reuse": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-13T14:00:13.007937+00:00",
+  "total": 109
+}
