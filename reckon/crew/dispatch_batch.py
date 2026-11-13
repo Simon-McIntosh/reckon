@@ -401,7 +401,15 @@ class _PlanRead:
         named: Sequence[str],
         done_when: str,
     ) -> list[str]:
-        """The test path a description stands for, when the done-when names one."""
+        """The test path a description stands for, when the done-when names one.
+
+        The path is read with the repository's one owner of "a test path a text
+        names", the pattern the repair round grants a test from, so both
+        surfaces accept the same set: a ``tests/`` path ending ``.py``. A rule
+        written here instead would drift the moment that one moves.
+        """
+        from reckon.crew.recovery_repair_dispatch import _TEST_PATH_PATTERN
+
         if any("test" in Path(path).name.lower() for path in named):
             return []
         described = _DESCRIBED_FILE.search(sentence)
@@ -409,13 +417,9 @@ class _PlanRead:
             return []
         phrase = " ".join(described.group(0).split())
         candidates: list[str] = []
-        for token in _PATH_TOKEN.findall(done_when):
-            candidate = token.strip(".,;:()")
-            if (
-                candidate.startswith("tests/")
-                and Path(candidate).suffix
-                and candidate not in candidates
-            ):
+        for match in _TEST_PATH_PATTERN.finditer(done_when):
+            candidate = match.group(0)
+            if candidate not in candidates:
                 candidates.append(candidate)
         if len(candidates) == 1:
             return candidates

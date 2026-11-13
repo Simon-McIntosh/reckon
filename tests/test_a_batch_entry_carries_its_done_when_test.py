@@ -2,12 +2,13 @@
 
 A section's write-paths sentence sometimes names a file only by description —
 "and the new test", "and its regression test" — so a fence built from the
-sentence alone omits the test the worker is told to write. A batch of five
+sentence alone omits the test the worker is told to write. A batch of six
 entries over one fixture plan shows the rule: where the sentence describes the
 test and the done-when names exactly one file under ``tests/``, that path joins
 the entry's write paths; where the done-when names two or none, the entry is
-refused by name and the rest are still stored; and a sentence that names its
-test path outright derives exactly what it did before.
+refused by name and the rest are still stored; a sentence that names its test
+path outright derives exactly what it did before; and an entry that supplies
+its own write paths keeps them, the section's sentence never being read for it.
 """
 
 from __future__ import annotations
@@ -41,11 +42,13 @@ CONFIG = {
     "fences": {"time_budget": "25m", "needs_help_after_failures": 2},
 }
 
-SECTIONS = ("s1", "s2", "s3", "s4", "s5")
+SECTIONS = ("s1", "s2", "s3", "s4", "s5", "s6")
 
 #: Each section's prose. Four describe the test their sentence would name, with
 #: the done-when naming one test file, two, and none; the fifth names its test
-#: path outright, so its derivation is the one the base revision made.
+#: path outright, so its derivation is the one the base revision made. The
+#: sixth describes a test its done-when does not name at all, so only an entry
+#: that supplies its own write paths can queue it.
 PROSE = {
     "s1": (
         "<p>One.</p>"
@@ -75,6 +78,11 @@ PROSE = {
         "<p>Write paths: <code>five.py</code> and <code>tests/test_five.py</code>.</p>"
         "<p><strong>Done when</strong> a new <code>tests/test_five.py</code> "
         "shows the five check.</p>"
+    ),
+    "s6": (
+        "<p>Six.</p>"
+        "<p>Write paths: <code>six.py</code> and the new test.</p>"
+        "<p><strong>Done when</strong> the six check passes.</p>"
     ),
 }
 
@@ -113,6 +121,21 @@ def _batch() -> list[dict]:
             "negative_control": f"reverting the {name} guard makes its test fail",
         }
         for name in SECTIONS
+        if name != "s6"
+    ] + [
+        {
+            # s6 describes a test its done-when does not name, so the section
+            # supplies no write paths at all. The entry gives its own, and the
+            # section's sentence is never read for it.
+            "project": PROJECT,
+            "plan": PLAN,
+            "section": "s6",
+            "node": "n-s6-own",
+            "goal": "build s6 with its own paths",
+            "time_budget": "20m",
+            "spec_level": "exact",
+            "write_paths": ["custom/own_six.py"],
+        }
     ]
 
 
@@ -201,7 +224,13 @@ def test_a_batch_entry_carries_its_done_when_test(batch_repo: Path) -> None:
     assert rows["n-s5"]["status"] == "queued", rows["n-s5"]
     assert stored["s5"]["write_paths"] == ["five.py", "tests/test_five.py"]
 
-    assert result["queued"] == 3
+    # An entry that supplies its own write paths is stored with them, and the
+    # section's sentence is never read for it: this section's description
+    # resolves to no path at all, so reading it would refuse the entry.
+    assert rows["n-s6-own"]["status"] == "queued", rows["n-s6-own"]
+    assert stored["s6"]["write_paths"] == ["custom/own_six.py"]
+
+    assert result["queued"] == 4
     assert result["refused"] == 2
 
 
