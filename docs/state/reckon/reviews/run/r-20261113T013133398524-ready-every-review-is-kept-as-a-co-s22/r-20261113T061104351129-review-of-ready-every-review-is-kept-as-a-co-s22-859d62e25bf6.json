@@ -1,0 +1,44 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-11-13T07:19:47.285Z",
+  "dispatched_at": "2026-11-13T07:09:54Z",
+  "findings": [
+    {
+      "file": "tests/test_a_subjectless_review_record_is_refused_at_delivery.py",
+      "line": "1",
+      "severity": "non-blocking",
+      "text": "non-blocking: The node's declared write paths are reckon/crew/review.py, the evidence fragment and the figures directory; this test file is outside all three, so the diff writes a path the fence did not grant. The plan section it implements (docs/plans/every-review-is-kept-as-a-committed-record.html:193) names this test file as a write path, so the brief's fence was under-specified rather than the worker overreaching, and the manifest states it and asks for accept-path ratification; the coordinator should ratify or fold this before the node is treated as in-scope."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261113T013133398524-ready-every-review-is-kept-as-a-co-s22/logs/base-arm.log",
+      "line": "1",
+      "severity": "non-blocking",
+      "text": "non-blocking: The recorded baseline_suite is red (3 failed, EXIT=1) because the pre-existing test's fixture manifest predated the messages_received delivery requirement, so the base arm measures a broken test rather than a healthy base. The behaviour \u00a722 asks the negative control to show cannot occur at this base revision, since the delivery-side refusal predates it; the worker substituted a mutation at base, which is the honest reproduction of the pre-fix behaviour, but a later reader must not read the base arm as evidence that the code under test is what differs."
+    }
+  ],
+  "project": "reckon",
+  "review_run_id": "r-20261113T061104351129-review-of-ready-every-review-is-kept-as-a-co-s22-859d62e25bf6",
+  "reviewed_base_sha": "f98114502d173c1969f1b7c227220017be48666b",
+  "reviewed_head_sha": "859d62e25bf6f1db45527751834466e643df93aa",
+  "reviewed_run_id": "r-20261113T013133398524-ready-every-review-is-kept-as-a-co-s22",
+  "scores": {
+    "durability": 17,
+    "evidence": 17,
+    "fit": 17,
+    "goal_fidelity": 17,
+    "reuse": 18,
+    "scope_discipline": 12
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-13T07:27:20.218684+00:00",
+  "total": 98,
+  "verdicts": {
+    "diff": "Read commit by commit against f98114502d17: two files, +87/-0; the test gains one messages_received fixture line and two cases driving crew complete --dry-run, and the evidence fragment is new.",
+    "done_when": "The section's done-when names tests/test_a_subjectless_review_record_is_refused_at_delivery.py, a delivery check, a subject-carrying pass case and a control log under the run directory; the source manifest records both arms of that file plus the control, and I reproduced 5 passed at the reviewed head in a scratch tree.",
+    "goal": "The plan section's goal (docs/plans/every-review-is-kept-as-a-committed-record.html:189) is that a review record without a subject is refused at delivery rather than at promotion; the landed change is test-and-evidence only, and I confirmed the production refusal it measures at reckon/crew/review.py:919 and the delivery emission at reckon/crew_run_commands.py:3517.",
+    "manifest": "Read; it reports status complete, commit 859d62e25bf6f1db45527751834466e643df93aa, changed_paths of the test and the fragment, an after arm of 5 passed EXIT=0 and a base arm of 3 failed EXIT=1, and it reports the out-of-scope test path it requests accept-path for.",
+    "write_paths": "The run declared reckon/crew/review.py, docs/evidence/fragments/every-review-is-kept-as-a-committed-record/ready-every-review-is-kept-as-a-co-s22.html and docs/figures/every-review-is-kept-as-a-committed-record/ready-every-review-is-kept-as-a-co-s22; the diff writes the fragment inside that scope and the test file outside it."
+  }
+}
