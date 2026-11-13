@@ -25,7 +25,7 @@
   <title>A Read Costs What Changed | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="103">
+<meta name="plan-version" content="104">
 <meta name="plan-modified" content="2026-11-13">
 </head>
 <body>
@@ -331,6 +331,9 @@
 </div>
 <div class="r-comment" data-section="s8" data-id="c-run-r-20261103T103857095482-a-persisted-answer-still-reuses-rows" data-who="reckon-build" data-when="2026-11-04T09:22:03.388Z">
     <div class="r-comment-body"><p>Revalidating a persisted value no longer hashes the source file of each module that produced it: the envelope records each producer's source stat identity beside its digest and reuses the recorded digest when that identity has not moved, so a cold build reuses every covered row by stat identity again; both stat-identity tests and the code-version test pass 8/8 in each of three serial head passes, and reverting the fix turns exactly the two declared tests red.</p></div>
+</div>
+<div class="r-comment" data-section="s7" data-id="c-run-r-20261113T031406256175-ready-a-read-costs-what-changed-s7" data-who="reckon-build" data-when="2026-11-13T10:31:15.758Z">
+    <div class="r-comment-body"><p>§7 measured: the head&#x27;s cold read_plan on the real store takes 228.9-234.8 s against a five-second target; the base control exceeds 180 s; the log is invalid and a py-spy profile names _section_dependency_rows plus a fresh BeautifulSoup parse under _unparsed_section_warnings as the cost.</p></div>
 </div>
 </section>
 </main>
