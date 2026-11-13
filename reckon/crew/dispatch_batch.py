@@ -112,6 +112,15 @@ _SOURCE_EXTENSIONS = frozenset(
 #: space precedes it, while the stops inside a path (``one.py``) never end it.
 _SENTENCE_END = re.compile(r"\.(?=\s|$)")
 
+#: A file the write-paths sentence names only by description, such as "the new
+#: test" or "its regression test". A description carries no path token, so the
+#: sentence alone cannot say where the file goes; the phrase is matched whole,
+#: with its determiner, because a refusal quotes it back to the entry's author.
+_DESCRIBED_FILE = re.compile(
+    r"\b(?:the|its|their|a|an)\s+(?:[A-Za-z0-9_-]+\s+){0,2}tests?\b",
+    re.IGNORECASE,
+)
+
 #: Phases a request reports as waiting for its upstream rather than queued.
 WAITING_UPSTREAM_PHASES = frozenset({"awaiting-upstream", "blocked-upstream"})
 
@@ -313,7 +322,22 @@ class _PlanRead:
         return paragraph
 
     def write_paths(self, section: str) -> list[str]:
-        from reckon.crew.plan_review import _WRITE_PATHS_SENTENCE
+        """Every path the section's write-paths sentence puts in scope.
+
+        A sentence that names a file only by description leaves that file's
+        path unsaid, and a fence built from the sentence alone would let the
+        worker write a file it cannot then commit. Where the description is
+        the only mention of a test — no literal path in the sentence names one
+        — the path comes from the done-when, which names the test the entry
+        will write. Exactly one test path under ``tests/`` resolves it;
+        anything else is refused rather than guessed, because a fence built on
+        a guess either omits the file the worker needs or grants a file nobody
+        asked for.
+        """
+        from reckon.crew.plan_review import (
+            _WRITE_PATHS_SENTENCE,
+            _done_when_paragraph,
+        )
 
         prose = self.section_prose(section)
         match = _WRITE_PATHS_SENTENCE.search(prose)
@@ -359,7 +383,56 @@ class _PlanRead:
                 f"{candidate} is neither present under {self.repo_root} nor in a "
                 f"present directory, from the sentence: {sentence.strip()}"
             )
-        return found
+        # The sentence may itself sit inside the done-when paragraph, so the
+        # evidence for a described file is what the done-when says before its
+        # write-paths sentence: the sentence names no test path by definition
+        # here, and reading it again would only re-read the description.
+        paragraph = _done_when_paragraph(prose) or ""
+        marker = _WRITE_PATHS_SENTENCE.search(paragraph)
+        if marker is not None:
+            paragraph = paragraph[: marker.start()]
+        return found + self._described_test_path(
+            section, sentence=sentence, named=found, done_when=paragraph
+        )
+
+    def _described_test_path(
+        self,
+        section: str,
+        *,
+        sentence: str,
+        named: Sequence[str],
+        done_when: str,
+    ) -> list[str]:
+        """The test path a description stands for, when the done-when names one.
+
+        The path is read with the repository's one owner of "a test path a text
+        names", the pattern the repair round grants a test from, so both
+        surfaces accept the same set: a ``tests/`` path ending ``.py``. A rule
+        written here instead would drift the moment that one moves.
+        """
+        from reckon.crew.recovery_repair_dispatch import _TEST_PATH_PATTERN
+
+        if any("test" in Path(path).name.lower() for path in named):
+            return []
+        described = _DESCRIBED_FILE.search(sentence)
+        if described is None:
+            return []
+        phrase = " ".join(described.group(0).split())
+        candidates: list[str] = []
+        for match in _TEST_PATH_PATTERN.finditer(done_when):
+            candidate = match.group(0)
+            if candidate not in candidates:
+                candidates.append(candidate)
+        if len(candidates) == 1:
+            return candidates
+        raise BatchEntryRefusedError(
+            f"{self.project}:{self.plan}#{section}: the write-paths sentence "
+            f"names a file as {phrase!r} without naming its path, and the "
+            f"done-when names {len(candidates)} file(s) under tests/ "
+            f"({', '.join(candidates) if candidates else 'none'}), so exactly "
+            f"one cannot be taken from it; the entry must give that path, from "
+            f"the sentence: {sentence.strip()}"
+        )
 
     def section_record(self, section: str) -> Mapping[str, Any]:
         from reckon.crew.node import normalize_section
@@ -406,7 +479,9 @@ def _as_list(value: Any) -> list[str]:
     raise BatchEntryRefusedError(f"{value!r} is not a list of strings")
 
 
-def section_derivation(read: _PlanRead, section: str) -> dict[str, tuple[Any, str]]:
+def section_derivation(
+    read: _PlanRead, section: str, *, derive_write_paths: bool = True
+) -> dict[str, tuple[Any, str]]:
     """Each node field this section supplies, with the digest of its value.
 
     A batch entry that omits a field takes the section's, and a released
@@ -422,9 +497,13 @@ def section_derivation(read: _PlanRead, section: str) -> dict[str, tuple[Any, st
     values: dict[str, Any] = {}
     with contextlib.suppress(BatchEntryRefusedError):
         values["done_when"] = read.done_when(section)
-    paths = read.write_paths(section)
-    if paths:
-        values["write_paths"] = paths
+    # An entry that gives its own write paths keeps them, so the sentence is
+    # not read for it at all: a description the sentence cannot resolve must
+    # not refuse an entry that never needed the derivation.
+    if derive_write_paths:
+        paths = read.write_paths(section)
+        if paths:
+            values["write_paths"] = paths
     estimate = read.section_record(section).get("effort_hours")
     if isinstance(estimate, (int, float)):
         values["estimated_hours"] = float(estimate)
@@ -459,7 +538,13 @@ def rederived_section_fields(
     from reckon.crew.plan_review import _digest
 
     read = _PlanRead(project, plan, Path(repo_root))
-    derivation = section_derivation(read, section)
+    # Only a field the request took from the section is re-derived, so a
+    # request that supplied its own write paths is never asked to read the
+    # write-paths sentence: a described test it cannot resolve must not refuse
+    # a release that was never going to use that field.
+    derivation = section_derivation(
+        read, section, derive_write_paths="write_paths" in marked
+    )
     values: dict[str, Any] = {}
     digests: dict[str, dict[str, str]] = {}
     for name, stored_digest in marked.items():
@@ -514,7 +599,8 @@ def _entry_node(
         )
 
     read = plans.read(project, plan)
-    derivation = section_derivation(read, section)
+    write_paths = _as_list(entry.get("write_paths"))
+    derivation = section_derivation(read, section, derive_write_paths=not write_paths)
     derived: dict[str, str] = {}
 
     done_when = str(entry.get("done_when") or "").strip()
@@ -525,7 +611,6 @@ def _entry_node(
                 "done-when, so the entry must give one"
             )
         done_when, derived["done_when"] = derivation["done_when"]
-    write_paths = _as_list(entry.get("write_paths"))
     if not write_paths:
         if "write_paths" not in derivation:
             raise BatchEntryRefusedError(
