@@ -1,0 +1,37 @@
+<section id="gate-review-named-by-node-s8-landing">
+  <h2>A review record that shortens its own run id still promotes</h2>
+
+  <p><strong>What changed.</strong> A review run's record names the run that
+  produced it in <code>review_run_id</code>, and one record arrives with the
+  hash suffix its run id ends in dropped. The delivery verdict in
+  <code>reckon/crew/recovery_review_delivery.py</code> compared that name with
+  the run's id as text, so <code>crew complete</code> refused the promotion with
+  <code>record names a different review run</code> and demanded
+  <code>--outcome</code> for a record that held the whole review. The promotion
+  path in <code>reckon/crew/promotion_checks.py</code> now resolves the name to
+  a run: a name that reaches exactly one run &mdash; this one &mdash; promotes on
+  the stored review, while a name that reaches no run, or more than one, stays
+  refused and the refusal names every run it reached. The exact-id path is
+  unchanged.</p>
+
+  <h3 id="gate-review-named-by-node-s8-measured">Measured</h3>
+
+  <p>At the base revision the fixture review run is refused:
+  <code>record names a different review run; ... naming review run
+  r-20261019T230558980003-review-of-reviewed-run while this run is
+  r-20261019T230558980003-review-of-reviewed-run-3d58ba4688d8</code>. At head it
+  promotes, <code>_resolve_promotion_outcome</code> returns
+  <code>review scored 120, 0 finding(s)</code>, and the live pointer is removed.
+  A name matching two runs is refused with both run ids in the message.</p>
+
+  <p>Arms, each on <code>all_debug</code>: base revision
+  <code>a0ad40b9a0</code> ran <code>tests/test_staged_write_inventory.py</code>
+  (51 passed, <code>EXIT=0</code>); head <code>5c2ce1a4e2</code> ran
+  <code>tests/test_a_review_named_by_node_promotes.py
+  tests/test_staged_write_inventory.py</code> (55 passed,
+  <code>EXIT=0</code>). The negative control, restoring the exact-id match,
+  fails the promoting case and the ambiguity case (2 failed, 2 passed,
+  <code>EXIT=1</code>). Ruff check and ruff format add no finding on the staged
+  paths; the two remaining <code>UP017</code> findings in
+  <code>promotion_checks.py</code> predate this change.</p>
+</section>

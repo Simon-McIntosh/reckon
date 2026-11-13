@@ -6,7 +6,7 @@ import json
 import time
 from collections.abc import Callable, Iterable, Mapping, Sequence
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import UTC, datetime, timezone
 from pathlib import Path
 from typing import Any
 
@@ -1665,6 +1665,116 @@ def _plan_review_promotion_outcome(run_id: str, project: str, plan_slug: str) ->
     return _plan_review_outcome_summary(found[1])
 
 
+#: The delivery condition a review record fails when the ``review_run_id`` it
+#: carries is not this run's exact id. That field names the run that produced
+#: the record, and a record can carry the name with the node's trailing hash
+#: suffix left off, so the name is resolved to a run rather than compared as
+#: text.
+_NAMED_REVIEW_CONDITION = "record names a different review run"
+
+
+def _known_run_ids() -> set[str]:
+    """Every run id this machine can see, from live pointers and run homes."""
+    from reckon.crew.runs import crew_home, live_dir, runs_dir
+
+    found: set[str] = set()
+    for directory, suffix in (
+        (live_dir(), ".json"),
+        (runs_dir(), ""),
+        (crew_home() / "archive" / "runs", ""),
+    ):
+        try:
+            entries = list(directory.iterdir())
+        except OSError:
+            continue
+        for entry in entries:
+            name = entry.name
+            if suffix and name.endswith(suffix):
+                name = name[: -len(suffix)]
+            if name:
+                found.add(name)
+    return found
+
+
+def _resolve_named_review_run(
+    record: Mapping[str, Any],
+    project: str,
+    refusal: Mapping[str, Any],
+    run_id: str,
+) -> tuple[dict[str, Any] | None, Path | None]:
+    """Judge a record's shortened review-run name by the run it reaches.
+
+    A record's ``review_run_id`` names the run that produced it, and that name
+    can arrive with the hash suffix a run's id ends in left off. The delivery
+    verdict compares the name with the run's id as text, which refuses a
+    record that holds the whole review for a reason that is about how the run
+    is spelled rather than about anything missing. The name is a run id, so it
+    is resolved: a name that reaches exactly one run — this one — delivers the
+    record at the path the verdict already found, provided the record was
+    written after this run was dispatched. A name that reaches no run, or more
+    than one, stays refused, and the refusal names the runs it reached so a
+    coordinator can see what has to be disambiguated.
+
+    Returns ``(None, path)`` when the name reaches this run, otherwise the
+    refusal to raise and no path.
+    """
+    from reckon.crew.recovery_review_delivery import (
+        _read_review_record,
+        _review_dispatch_instant,
+    )
+
+    path = Path(str(refusal.get("path") or ""))
+    read = _read_review_record(path)
+    if read is None:
+        return dict(refusal), None
+    body, mtime = read
+    named = str(body.get("review_run_id") or "").strip()
+    if not named or named == run_id or not run_id.startswith(named + "-"):
+        return dict(refusal), None
+    reached = sorted(
+        candidate for candidate in _known_run_ids() if candidate.startswith(named + "-")
+    )
+    if len(reached) > 1:
+        return (
+            {
+                "delivered": False,
+                "condition": _NAMED_REVIEW_CONDITION,
+                "path": str(path),
+                "detail": (
+                    f"the name {named} stored at {path} reaches more than one "
+                    f"run: {', '.join(reached)}"
+                ),
+                "remedy": refusal.get("remedy", ""),
+            },
+            None,
+        )
+    if reached != [run_id]:
+        return dict(refusal), None
+    dispatched = _review_dispatch_instant(record, project)
+    if dispatched is None or mtime <= dispatched:
+        written = datetime.fromtimestamp(mtime, UTC).isoformat()
+        known = (
+            "is unknown"
+            if dispatched is None
+            else f"is {datetime.fromtimestamp(dispatched, UTC).isoformat()}"
+        )
+        return (
+            {
+                "delivered": False,
+                "condition": "record written before the dispatch",
+                "path": str(path),
+                "detail": (
+                    f"stores a record at {path} written at {written}, before "
+                    f"this run was dispatched at {known}, so it is an earlier "
+                    "round's verdict"
+                ),
+                "remedy": "re-dispatch the review so it writes a fresh record",
+            },
+            None,
+        )
+    return None, path
+
+
 def _resolve_promotion_outcome(
     run_id: str,
     record: Mapping[str, Any],
@@ -1720,19 +1830,29 @@ def _resolve_promotion_outcome(
             "the evidence could not be produced"
         )
     refusal = review_delivery_refusal(record, project)
+    named_path: Path | None = None
+    if (
+        refusal is not None
+        and str(refusal.get("condition") or "") == _NAMED_REVIEW_CONDITION
+    ):
+        refusal, named_path = _resolve_named_review_run(
+            record, project, refusal, run_id
+        )
     if refusal is not None:
         raise CrewError(
             f"run {run_id!r} is a review run refused for delivery: "
             f"{refusal['condition']}; {refusal['detail']}; {refusal['remedy']}"
         )
-    delivered = recovery._delivered_review_record(record, project)
-    if delivered is None:
-        raise CrewError(
-            f"run {run_id!r} is a review run whose stored review cannot be "
-            "read, so --outcome has no default to take; store the review or "
-            "write what failed or why the evidence could not be produced"
-        )
-    _, path = delivered
+    if named_path is None:
+        delivered = recovery._delivered_review_record(record, project)
+        if delivered is None:
+            raise CrewError(
+                f"run {run_id!r} is a review run whose stored review cannot be "
+                "read, so --outcome has no default to take; store the review or "
+                "write what failed or why the evidence could not be produced"
+            )
+        _, named_path = delivered
+    path = named_path
     try:
         stored = json.loads(path.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError):
