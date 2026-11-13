@@ -190,7 +190,7 @@ def test_the_counters_are_labelled_w_h_d_q(grid):
         "waiting": "q",
     }
     line = plain(grid.render(_event(working=3, blocked=1, unpromoted=7, waiting=2)))
-    assert "3w  1h  7d  2q" in line
+    assert "3w  1n  7d  2q" in line
 
 
 def test_a_review_shows_the_job_under_review_beside_its_stage(grid):

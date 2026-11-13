@@ -214,7 +214,7 @@ def test_reported_state_chains_when_the_producer_skips_an_observation() -> None:
     )
 
     assert "new → needs you" in abandoned
-    assert "halted → working" in working
+    assert "needs you → working" in working
     assert "working → working" not in working
 
 

@@ -205,7 +205,7 @@ def test_ticker_line_is_compact_and_carries_no_free_text() -> None:
     assert ticker_module.BASELINE_MARKER not in line
     # The counts are a fixed grid whose digits share a column, each number
     # followed by its state's single letter, one space between the cells.
-    assert " 3w  1h  0d" in line
+    assert " 3w  1n  0d" in line
     # The row carries no free text: neither clause of the reason reaches it,
     # and the fixed cells are the whole line.
     assert "first clause" not in line
@@ -381,7 +381,7 @@ def test_follow_renders_at_the_resolved_terminal_width(home, monkeypatch) -> Non
     line = result.output.splitlines()[0]
     assert len(line) <= 207
     # The counters hold their own column inside the resolved-width grid.
-    assert " 3w  1h  0d" in line
+    assert " 3w  1n  0d" in line
 
 
 def test_follow_explicit_width_beats_the_measurement(home, monkeypatch) -> None:

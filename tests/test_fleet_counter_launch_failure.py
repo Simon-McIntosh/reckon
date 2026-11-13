@@ -25,7 +25,7 @@ WIDTH = 180
 # today: a fifth cell or a wider label fails on the literal. Each cell is two
 # right-aligned digits and its letter, one space between cells; a count above
 # two digits widens its own cell, which is why the counts here stay single.
-BLOCK = " 1w  2h  0d  1q"
+BLOCK = " 1w  2n  0d  1q"
 BLOCK_WIDTH = 15
 
 

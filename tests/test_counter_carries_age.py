@@ -110,7 +110,7 @@ def test_a_long_standing_member_prints_no_span_beside_its_counter():
     row = _row([_transition("r-old", ARRIVED_LONG_AGO)], blocked=1)
     assert spans(row) == {}
     assert not AGES.search(row)
-    assert "1h" in row
+    assert "1n" in row
 
 
 def test_the_only_span_on_the_row_is_the_reading_runs_own_elapsed_time():
