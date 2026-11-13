@@ -1,0 +1,42 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "The scoped gate arms add no failure (baseline-suite.log 51 passed, final-head.log 54 passed). The run's broader importer comparison (importer-comparison.json) adds one outside the scoped arms: tests/test_crew_view_serves_every_view.py::test_every_declared_view_answers_the_same_document_on_both_surfaces.",
+  "completed_at": "2026-11-13T11:20:53.112Z",
+  "dispatched_at": "2026-11-13T11:13:57Z",
+  "findings": [
+    {
+      "file": "tests/test_crew_view_serves_every_view.py",
+      "id": "fe6fa8ae7c3",
+      "line": "1",
+      "severity": "blocking",
+      "text": "The reviewed run's complete importer comparison reports one added failure, tests/test_crew_view_serves_every_view.py::test_every_declared_view_answers_the_same_document_on_both_surfaces (base 36 failed / 2471 passed, head 37 failed / 2473 passed), while the done_when requires that importing test files add no failure against base; no cause was established, so the node's own acceptance condition is unmet."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261113T024907373609-wave2-codex-anchored-the-crew-does-its-own-bookke-s28/manifest.md",
+      "id": "f672d0d11bb",
+      "line": "12",
+      "severity": "non-blocking",
+      "text": "The new test module is absent from the dispatch record's write_paths although the plan section's done_when names it explicitly, so `crew check --manifest` refuses with 'changed paths outside the write scope' (audit-final.log, EXIT=1); the coordinator must ratify the path at promotion -- the code scope is correct, the stored grant is not."
+    }
+  ],
+  "project": "reckon",
+  "review_run_id": "r-20261113T104446044139-review-of-wave2-codex-anchored-the-crew-does-its-own-bookke-s28-2ad7048356a3",
+  "review_text": "VERDICT goal: the goal is that a disposition reaches its review from every surface; reckon/crew/obligations.py:3210 now threads the held record's review_run_id and rubric into review_dispositions.dispose_commands so the sub-floor duty names the record it was derived from, and the MCP and figure surfaces were verified preserved.\nVERDICT done_when: the done_when's scoped clauses are met and recorded (reproduction-exact.log 1 failed/2 passed at base; final-head.log 54 passed; negative-mcp-exact.log and negative-duty-exact.log each 1 failed/2 passed), but its no-added-failure clause for the mcp/review_dispositions importer population is unmet by importer-comparison.json.\nVERDICT write_paths: the dispatch record's write_paths name reckon/mcp.py, reckon/crew/review_dispositions.py, reckon/crew/obligations.py and reckon/crew/recovery_review_dispatch.py; every landed code path is inside them except the new test, which the plan section's done_when explicitly names as a write path.\nVERDICT manifest: read; it records the scoped arms (51 passed at base, 54 passed at head), both discriminating mutations, the importer comparison with its one added failure, and its own audit refusal at EXIT=1.\nVERDICT diff: read all four commits (3b5df21f, 342783f5, a8121536, 2ad70483) against base 4c4cf234; they add two lines in reckon/crew/obligations.py, the new test module, and the evidence fragment, 206 insertions and no deletions.\nCALL_SITES: reckon/crew/obligation_snapshot.py:1561, reckon/crew/obligations.py:3236\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/obligations.py:3210 passes review_run_id and rubric from the record the duty was derived from, which is exactly the surface the goal names, with the MCP and figure surfaces verified unchanged.\nSCORE evidence: 11\nJUSTIFICATION evidence: the focused arms are recorded with their revisions and EXIT lines, but the done_when's importer-population clause is contradicted by importer-comparison.json (base 36 failed / head 37 failed) and no cause was established for the added failure.\nSCORE scope_discipline: 16\nJUSTIFICATION scope_discipline: every changed path is within the plan section's declared scope, but tests/test_a_disposition_reaches_its_review_from_every_surface.py is absent from the dispatch record's write_paths, so the manifest audit refuses at EXIT=1.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_a_disposition_reaches_its_review_from_every_surface.py:143 fails at base (reproduction-exact.log) and under the reverted handoff (negative-duty-exact.log), so the guard reddens on the regression it was added to catch.\nSCORE fit: 18\nJUSTIFICATION fit: the two added keyword arguments match the renderer contract documented at reckon/crew/review_dispositions.py:773 and the module's existing review_module usage at reckon/crew/obligations.py:659.\nSCORE reuse: 20\nJUSTIFICATION reuse: the change extends the owner of the capability, review_dispositions.dispose_commands, rather than forking a second renderer, and reuses review._review_record_rubric as review_dispositions.py:242 and recovery_review_dispatch.py:2827 already do.",
+  "reviewed_base_sha": "4c4cf234390f5326b995cee7ad6bda55fe01b5c0",
+  "reviewed_head_sha": "2ad7048356a38c63ffebac1d4258fc9435fc8b42",
+  "reviewed_iteration": "2ad7048356a38c63ffebac1d4258fc9435fc8b42",
+  "reviewed_run_id": "r-20261113T024907373609-wave2-codex-anchored-the-crew-does-its-own-bookke-s28",
+  "scores": {
+    "durability": 18,
+    "evidence": 11,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 16
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-13T11:19:19.976627+00:00",
+  "total": 101
+}
