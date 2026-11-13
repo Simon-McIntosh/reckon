@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-dispatch-returns-without-its-worker">
+  <meta name="plan-evidence-for" content="a-dispatch-returns-without-its-worker">
+  <title>An abandoned launch retires no newer record | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <header>
+      <p class="eyebrow">Execution evidence &middot; fragment</p>
+      <h1>An abandoned launch retires no newer record</h1>
+      <p class="lead">A fresh dispatch that stalls on storage can have its reservation
+      released and a newer attempt reserved for the run. Preparing the attempt records is
+      what retires the run's canonical records: it overwrites <code>attempt.json</code> and
+      unlinks <code>worker.json</code> and <code>exit.json</code>. That preparation ran
+      before the reservation re-read, so an abandoning launch retired records the newer
+      attempt owned, and the liveness refusal inside the preparation did not fire because
+      the newer attempt's worker was not yet live. The re-read now runs first, so a
+      superseded dispatch writes only its own attempt's exit receipt, leaves the pointer,
+      run directory and worktree standing, and starts no supervisor.</p>
+    </header>
+
+    <section id="an-abandoned-launch-retires-no-newer-records-measure">
+      <h2>Measure</h2>
+      <p><code>PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q
+      tests/test_an_abandoned_launch_retires_no_newer_records.py</code> &mdash; 2 passed,
+      0 failed at the head. The first case lets the newer attempt write its attempt, worker
+      and exit records while the older launch is stalled, with no worker live, then asserts
+      those three files are byte-identical afterwards, that the dispatch refused naming the
+      abandonment, that only <code>attempt-1-exit.json</code> was written and that no
+      supervisor started. The second case is the unchanged path: a fresh dispatch whose
+      attempt is still the newest prepares its records and starts its supervisor.</p>
+      <p>The negative control at the base revision ran red on the first case:
+      <code>the abandoned dispatch overwrote the newer attempt's attempt.json</code>, with
+      the differing byte reading attempt 1 where the newer attempt wrote attempt 2. Both
+      logs are under the run directory.</p>
+    </section>
+
+    <section id="an-abandoned-launch-retires-no-newer-records-paths">
+      <h2>Where the change lives</h2>
+      <ul>
+        <li><code>reckon/crew/dispatching/launch.py</code> &mdash; the fresh-dispatch body
+        reads <code>_refuse_if_superseded</code> before
+        <code>_prepare_attempt_records</code>, rather than between the record preparation
+        and the shared supervisor spec write. One fence moved, none added.</li>
+        <li><code>reckon/crew/dispatching/launch.py</code> &mdash;
+        <code>_SupersededLaunchError</code> names both of the fresh dispatch's read sites,
+        and <code>_refuse_if_superseded</code> states that the attempt records belong to the
+        newest attempt beside the spec.</li>
+        <li><code>tests/test_an_abandoned_launch_retires_no_newer_records.py</code> &mdash;
+        both cases, on a temporary crew home and repository, with the operator's own crew
+        home asserted untouched.</li>
+      </ul>
+    </section>
+  </main>
+</body>
+</html>
