@@ -179,6 +179,16 @@
     <p>§31 landed at <code>ab0ad1589f</code> (run <code>r-20261113T011510453024-coordinator-holds-a-delivered-run</code>). A coordinator can hold a delivered run from automatic promotion and landing and release it, the lander and acceptance sweep skip a held run, a resume of a promoted or promoting run refuses with the promotion named, and a resume of a delivered run takes a hold first. Two repair rounds closed the review's blocking findings: a promotion in flight is now refused before the resume holds, and a hold now matches an abbreviated commit spelling. The final re-review raised one non-blocking note on a test guard.</p>
   </section>
 
+  <section id="s30-scheduler-wait-is-not-abandoned" data-evidence-origin="append">
+    <h2>§30 — a wait on scheduler jobs is never read as abandoned while a job is alive</h2>
+    <p>§30 landed at <code>60662c0436</code> (run <code>r-20261113T003754418594-scheduler-wait-is-not-abandoned</code>). A wait whose probe passes scheduler job ids, under a job flag or as a comma-separated list, is read as a wait on those jobs, and the run is not read as abandoned while the scheduler lists any of them alive. Whether a numeric list names jobs or ports is decided by the command, so <code>nc -z host 80,443</code> names no job, and a <code>--jobs=a,b</code> list is read whole. A row says no job is alive only when the scheduler was asked and listed none; it says the scheduler was not consulted, or could not be asked, otherwise, and it names the run's own process rather than “the producer”. This is the misread that had nova restarting a healthy watch producer all day. Two repair rounds closed the review's findings. The landing was refused twice on records that omitted two pre-existing scaffolding errors before the arms were corrected.</p>
+  </section>
+
+  <section id="s37-service-reloads-between-passes" data-evidence-origin="append">
+    <h2>§37 — a service reloads onto new code only between passes</h2>
+    <p>§37 landed at <code>3085087130</code> (run <code>r-20261113T033507849520-service-reloads-between-passes</code>). A declared service that must move to new code finishes its pass and moves at the boundary; a pass that overruns its bound is still restarted, with the bound named in the log. A worker no longer inherits its parent service's pass-boundary variable. On 13 November the supervisor had restarted the admit service on every landing, killing each pass before it ended. The review's one blocking finding, a race on the first pass record, was closed in a repair round, and the re-review scored 19 to 20 with no findings.</p>
+  </section>
+
 </main>
 </body>
 </html>
