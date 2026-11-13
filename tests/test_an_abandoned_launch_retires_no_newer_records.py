@@ -225,19 +225,19 @@ def test_an_abandoned_fresh_dispatch_retires_no_newer_record(
     started = _stub_supervisor(monkeypatch)
 
     before: dict[str, bytes] = {}
-    fenced: list[bool] = []
+    stalled: list[bool] = []
 
-    original_fence = dispatch_module._refuse_if_superseded
+    original_consume = dispatch_module.consume_context_refusal
 
-    def stall_then_fence(*args: object, **kwargs: object) -> None:
+    def stall_then_consume(*args: object, **kwargs: object) -> None:
         # The newer attempt's records appear while this launch is stalled on
-        # storage; the fence then reads its reservation and refuses.
-        if not fenced:
-            fenced.append(True)
+        # storage, before the step that prepares its own attempt records.
+        if not stalled:
+            stalled.append(True)
             before.update(_write_newer_attempt_records(directory))
-        return original_fence(*args, **kwargs)
+        return original_consume(*args, **kwargs)
 
-    monkeypatch.setattr(dispatch_module, "_refuse_if_superseded", stall_then_fence)
+    monkeypatch.setattr(dispatch_module, "consume_context_refusal", stall_then_consume)
 
     refusal: CrewError | None = None
     try:
@@ -245,7 +245,7 @@ def test_an_abandoned_fresh_dispatch_retires_no_newer_record(
     except CrewError as exc:
         refusal = exc
 
-    assert fenced, "the fresh dispatch never reached its reservation fence"
+    assert stalled, "the fresh dispatch never reached its attempt preparation"
     assert refusal is not None, (
         f"the abandoned dispatch started a supervisor instead of refusing: {started}"
     )
