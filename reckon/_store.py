@@ -689,9 +689,14 @@ class _AuthoredChildCounter(HTMLParser):
     already paid for the document once — this counter is the diagnostic's own
     read of the raw text, so that read answers without a second tree.
 
-    The count matches what the soup walk reports: the first ``section``
-    carrying a given ``data-reckon`` value, its direct element children, and
-    none of the structural children the renderers regenerate.
+    The count is the same measure ``_plan_html._authored_child_count`` defines
+    for the write-refusal path — the first ``section`` carrying a given
+    ``data-reckon`` value, its direct element children, and none of the
+    structural children the renderers regenerate. That function's soup is the
+    definition; this one is its raw-text reader, sharing the owner's
+    ``_STRUCTURAL_SECTION_CHILDREN`` and ``_VOID_TAGS`` so the two cannot drift
+    on what counts as structural, and pinned against the owner over every live
+    plan by the test beside it.
     """
 
     def __init__(
@@ -708,14 +713,23 @@ class _AuthoredChildCounter(HTMLParser):
         self._open: list[tuple[str, str | None]] = []
         self.counts: dict[str, int] = {}
 
-    def _claim(self, attrs) -> str | None:
+    def _claim(self, tag: str, attrs) -> str | None:
         """Record the section id this element opens, when it opens a wanted one.
+
+        Only a ``section`` element holds a section's authored children, which is
+        the element ``_plan_html._authored_child_count`` selects on. A ``div``
+        or ``article`` that merely carries a ``data-reckon`` value is not a
+        section and holds none, so claiming it would count children the soup
+        walk does not — and a document that spelled an id on some other element
+        would warn about a section that has nothing in it.
 
         Only the first section carrying a given ``data-reckon`` value is the
         one the diagnostic names, so a repeat of the same value opens no second
         count.
         """
 
+        if tag != "section":
+            return None
         values = dict(attrs)
         reckon_id = values.get("data-reckon")
         if reckon_id not in self._wanted or reckon_id in self.counts:
@@ -730,7 +744,7 @@ class _AuthoredChildCounter(HTMLParser):
 
     def handle_starttag(self, tag: str, attrs) -> None:
         self._count_child(tag)
-        claimed = self._claim(attrs)
+        claimed = self._claim(tag, attrs)
         if claimed is not None:
             self._open.append((tag, claimed))
         elif tag not in self._void:
@@ -738,7 +752,7 @@ class _AuthoredChildCounter(HTMLParser):
 
     def handle_startendtag(self, tag: str, attrs) -> None:
         self._count_child(tag)
-        self._claim(attrs)
+        self._claim(tag, attrs)
 
     def handle_endtag(self, tag: str) -> None:
         # The innermost open element with this name closes, and everything it
