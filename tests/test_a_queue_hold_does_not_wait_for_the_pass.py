@@ -121,27 +121,36 @@ def test_hold_applies_while_a_pass_holds_the_admission_lock(home: Path) -> None:
         assert runs.read_pointer("r-held")["phase"] == queue_admission.HELD_PHASE
 
 
+@pytest.mark.parametrize("prior_phase", ["queued", "awaiting-upstream"])
 def test_release_restores_the_prior_phase_under_the_same_held_lock(
     home: Path,
+    prior_phase: str,
 ) -> None:
-    _request("r-waiting", phase="awaiting-upstream")
-    queue_edit.hold("r-waiting", reason="shrink the pass")
+    _request("r-waiting", phase=prior_phase)
 
     with _PassHoldingTheAdmissionLock():
+        blocked, outcome = _call_within(
+            RETURN_BUDGET_SECONDS, lambda: queue_edit.hold("r-waiting")
+        )
+        assert not blocked, "queue_edit.hold waited on the admission lock"
+        assert "error" not in outcome, outcome.get("error")
+        assert runs.read_pointer("r-waiting")["phase"] == "held"
         blocked, outcome = _call_within(
             RETURN_BUDGET_SECONDS, lambda: queue_edit.release("r-waiting")
         )
         assert not blocked, "queue_edit.release waited on the admission lock"
         assert "error" not in outcome, outcome.get("error")
-        assert runs.read_pointer("r-waiting")["phase"] == "awaiting-upstream"
+        assert runs.read_pointer("r-waiting")["phase"] == prior_phase
 
 
+@pytest.mark.parametrize("held_before_launch", [False, True], ids=["unheld", "held"])
 def test_pass_does_not_launch_a_request_held_after_it_read_the_queue(
-    home: Path, monkeypatch: pytest.MonkeyPatch
+    home: Path, monkeypatch: pytest.MonkeyPatch, held_before_launch: bool
 ) -> None:
     _request("r-raced")
     _open_pass(monkeypatch)
     launched: list[str] = []
+    decided: list[str] = []
 
     def launch(pointer: Mapping[str, Any], **_kwargs: Any) -> dict[str, Any]:
         launched.append(str(pointer["run_id"]))
@@ -158,7 +167,10 @@ def test_pass_does_not_launch_a_request_held_after_it_read_the_queue(
         # The pass has already read this request as queued. The hold lands now,
         # before the launch, exactly as a coordinator's hold does against a pass
         # that is busy with the rest of the queue.
-        queue_edit.hold(str(pointer["run_id"]), reason="shrink the pass")
+        assert pointer["phase"] == "queued"
+        decided.append(str(pointer["run_id"]))
+        if held_before_launch:
+            queue_edit.hold(str(pointer["run_id"]), reason="shrink the pass")
 
     monkeypatch.setattr(
         queue_admission, "_plan_review_owed", coordinator_holds_while_the_pass_decides
@@ -166,6 +178,12 @@ def test_pass_does_not_launch_a_request_held_after_it_read_the_queue(
 
     result = queue_admission.admit_once(lock=False)
 
+    assert decided == ["r-raced"], "the request never reached the launch decisions"
+    if not held_before_launch:
+        assert launched == ["r-raced"]
+        assert result["launched"] == ["r-raced"]
+        assert runs.read_pointer("r-raced")["phase"] == "running"
+        return
     assert launched == [], "the pass launched a request held after it read the queue"
     assert runs.read_pointer("r-raced")["phase"] == queue_admission.HELD_PHASE
     rows = [row for row in result["verdicts"] if row["run_id"] == "r-raced"]
