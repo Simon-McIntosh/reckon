@@ -164,22 +164,23 @@ def test_an_interrupted_promotion_keeps_its_record_until_its_attempt_is_retired(
     real_clear = pending_landing.clear_pending
 
     def clear_dies(run_id):
-        raise OSError("the pass ended before it could clear its record")
+        raise RuntimeError("the pass ended before it could clear its record")
 
     monkeypatch.setattr(pending_landing, "clear_pending", clear_dies)
-    with pytest.raises(OSError):
+    with pytest.raises(RuntimeError, match="ended before"):
         pending_landing.finish_pending_landings(now=1000.0, only_run=run["run_id"])
 
     # The pass died at the record's removal, so what reached disk is the whole
     # of its work: the attempt is retired and the record is still there.
     assert pending_landing._record_path(run["run_id"]).is_file()
     assert (
-        runs.read_pointer(run["run_id"])["admission_landing"]["status"]
-        == "interrupted"
+        runs.read_pointer(run["run_id"])["admission_landing"]["status"] == "interrupted"
     )
 
     monkeypatch.setattr(pending_landing, "clear_pending", real_clear)
-    results = pending_landing.finish_pending_landings(now=1000.0, only_run=run["run_id"])
+    results = pending_landing.finish_pending_landings(
+        now=1000.0, only_run=run["run_id"]
+    )
 
     assert results == [
         {
@@ -190,8 +191,7 @@ def test_an_interrupted_promotion_keeps_its_record_until_its_attempt_is_retired(
     ], results
     assert not pending_landing._record_path(run["run_id"]).exists()
     assert (
-        runs.read_pointer(run["run_id"])["admission_landing"]["status"]
-        == "interrupted"
+        runs.read_pointer(run["run_id"])["admission_landing"]["status"] == "interrupted"
     )
 
 
