@@ -274,7 +274,7 @@ def test_a_section_id_on_another_element_is_not_a_section(
         '<meta name="plan-status" content="active">'
         '<meta name="plan-impl" content="0.25">'
         '<meta name="plan-version" content="1">'
-        "<title>t</title></head><body><main class=\"plan-doc\">"
+        '<title>t</title></head><body><main class="plan-doc">'
         '<div data-reckon="decisions"><article></article><article></article></div>'
         "</main></body></html>",
         encoding="utf-8",
