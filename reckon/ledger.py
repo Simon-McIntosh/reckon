@@ -1672,6 +1672,30 @@ def _active_records(records: Iterable[Any], boundary: float) -> list[dict[str, A
     ]
 
 
+def _payload_slot(
+    connection: sqlite3.Connection,
+    *,
+    headers_only: bool,
+    activity_since: float | None,
+) -> tuple[
+    dict[tuple[str, bool, float | None], tuple[dict[str, Any], int]] | None,
+    tuple[str, bool, float | None] | None,
+    tuple[dict[str, Any], int] | None,
+]:
+    """The read pass's slot for this read, and what it already holds.
+
+    One owner for the key, so the refreshing read and the read-pass reader
+    cannot disagree about what counts as the same payload. Outside a region
+    there is no slot and every read decodes the index for itself.
+    """
+    region = _PAYLOAD_REGION.get()
+    if region is None:
+        return None, None, None
+    database = connection.execute("PRAGMA database_list").fetchone()[2]
+    key = (str(database), bool(headers_only), activity_since)
+    return region, key, region.get(key)
+
+
 def _index_payload(
     connection: sqlite3.Connection,
     meta: Mapping[str, str],
@@ -1701,14 +1725,11 @@ def _index_payload(
     if headers_only and activity_since is None:
         data["runs"] = [{"run_id": run_id} for run_id in _index_membership(connection)]
         return data, version
-    region = _PAYLOAD_REGION.get()
-    key: tuple[str, bool, float | None] | None = None
-    if region is not None:
-        database = connection.execute("PRAGMA database_list").fetchone()[2]
-        key = (str(database), bool(headers_only), activity_since)
-        held = region.get(key)
-        if held is not None:
-            return _project_payload(held, picker_only=picker_only)
+    region, key, held = _payload_slot(
+        connection, headers_only=headers_only, activity_since=activity_since
+    )
+    if held is not None:
+        return _project_payload(held, picker_only=picker_only)
     column = "payload" if region is not None or not picker_only else "picker"
     # Select by an indexed scalar before fetching payload overflow pages.
     parameters = () if activity_since is None else (activity_since,)
@@ -1768,13 +1789,11 @@ def _decode_payload(
     payload already carries every field the picker keeps, so the projection is
     derived from it instead of decoding the index again.
     """
-    region = _PAYLOAD_REGION.get()
-    if region is not None:
-        database = connection.execute("PRAGMA database_list").fetchone()[2]
-        key = (str(database), bool(headers_only), activity_since)
-        held = region.get(key)
-        if held is not None:
-            return _project_payload(held, picker_only=picker_only)
+    _, _, held = _payload_slot(
+        connection, headers_only=headers_only, activity_since=activity_since
+    )
+    if held is not None:
+        return _project_payload(held, picker_only=picker_only)
     return _index_payload(
         connection,
         meta,

@@ -18,8 +18,12 @@ each entry decodes the index for itself, and the count grows with the entries.
 
 from __future__ import annotations
 
+import io
 import json
+import os
 import subprocess
+import sys
+import tarfile
 from contextlib import nullcontext
 from pathlib import Path
 from unittest import mock
@@ -27,6 +31,11 @@ from unittest import mock
 import pytest
 
 from reckon import crew_dispatch_commands, ledger
+
+TREE = Path(__file__).resolve().parents[1]
+#: The revision the change under test is measured against, and the code the
+#: parity arm runs the same entries through.
+BASE_REVISION = "2269d5003c3c58f265de4e260e687fef1ef87106"
 
 PROJECT = "proj"
 SESSION = "coordinator-batch"
@@ -303,6 +312,122 @@ def test_the_batch_writes_unchanged_results(
     assert shared["queued"] == base["queued"]
     assert shared["refused"] == base["refused"]
     assert _stable(shared["results"]) == _stable(base["results"])
+
+
+#: Dispatches one batch through whichever revision of reckon the interpreter
+#: is pointed at, so the same entries can be run over two revisions of the
+#: code and their outcomes compared. The batch and the checkout come from the
+#: caller, so the only difference between the arms is the code on the path.
+_RUNNER = """
+import json
+import sys
+from unittest import mock
+
+import reckon.cli  # noqa: F401  (registers the command tree first)
+from reckon import crew_dispatch_commands
+
+batch, repository, session, config = sys.argv[1:5]
+result = {}
+
+
+def emit(payload, _pretty):
+    result.update(payload)
+
+
+with (
+    mock.patch.object(
+        crew_dispatch_commands,
+        "_dispatch_resolved_flight",
+        return_value=json.loads(config),
+    ),
+    mock.patch.object(crew_dispatch_commands, "_emit_crew_result", emit),
+):
+    crew_dispatch_commands._queue_dispatch_batch(
+        batch,
+        session=session,
+        repo=repository,
+        checkout_path=repository,
+        overrides={},
+        launch_kind="cli",
+        pretty=False,
+    )
+print("RESULT=" + json.dumps(result))
+"""
+
+
+def _extract_revision(target: Path, revision: str = BASE_REVISION) -> Path:
+    """The files at ``revision``, extracted from this checkout's own history."""
+    archived = subprocess.run(
+        ["git", "-C", str(TREE), "archive", revision],
+        check=True,
+        capture_output=True,
+    )
+    target.mkdir(parents=True, exist_ok=True)
+    with tarfile.open(fileobj=io.BytesIO(archived.stdout), mode="r|") as archive:
+        archive.extractall(target, filter="data")
+    return target
+
+
+def _run_over_tree(tree: Path, repository: Path, batch: Path, workspace: Path) -> dict:
+    """Dispatch ``batch`` using the code at ``tree``, in its own interpreter."""
+    script = workspace / "runner.py"
+    script.write_text(_RUNNER, encoding="utf-8")
+    environment = {
+        key: value
+        for key, value in os.environ.items()
+        if key not in {"RECKON_RUN_ID", "PYTHONPATH", "RECKON_STATE_ROOT"}
+    }
+    environment["PYTHONPATH"] = str(tree)
+    environment["RECKON_HOME"] = str(repository.parent / "config")
+    environment["RECKON_STATE_ROOT"] = str(repository / "docs" / "state")
+    completed = subprocess.run(
+        [
+            sys.executable,
+            str(script),
+            str(batch),
+            str(repository),
+            SESSION,
+            json.dumps(_config()),
+        ],
+        cwd=str(tree),
+        env=environment,
+        check=False,
+        capture_output=True,
+        text=True,
+        timeout=600,
+    )
+    assert completed.returncode == 0, completed.stderr[-2000:]
+    marker = [
+        line for line in completed.stdout.splitlines() if line.startswith("RESULT=")
+    ]
+    assert marker, completed.stdout[-2000:]
+    return json.loads(marker[-1][len("RESULT=") :])
+
+
+def test_the_base_revision_writes_the_same_per_entry_results(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The shared decode changes the batch's cost, not what it queues.
+
+    The comparison is against the base revision's code, run over the same
+    entries and an identically seeded home, not against this revision with its
+    region switched off.
+    """
+    head_home = _home(tmp_path, "head-code", monkeypatch)
+    head_repo = _seed_tree(tmp_path / "head-code" / "repo", head_home)
+    head_batch = _batch_file(tmp_path / "head-code")
+
+    base_home = _home(tmp_path, "base-code", monkeypatch)
+    base_repo = _seed_tree(tmp_path / "base-code" / "repo", base_home)
+    base_batch = _batch_file(tmp_path / "base-code")
+
+    base_tree = _extract_revision(tmp_path / "base-tree")
+    head = _run_over_tree(TREE, head_repo, head_batch, tmp_path)
+    base = _run_over_tree(base_tree, base_repo, base_batch, tmp_path)
+
+    assert head["queued"] == base["queued"] == len(ENTRIES), (head, base)
+    assert head["refused"] == base["refused"] == 0, (head, base)
+    assert _stable(head["results"]) == _stable(base["results"])
 
 
 def test_the_negative_control_decodes_once_per_entry(
