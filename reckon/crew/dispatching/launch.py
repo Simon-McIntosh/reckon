@@ -918,10 +918,7 @@ def _launch_dispatch(
                     # published: preparing them retires the canonical worker and
                     # exit records, which belong to the newer attempt once a
                     # newer reservation exists, and they are still the newer
-                    # attempt's while its worker is not yet live. The spec
-                    # written below is the run's shared one too, so a superseded
-                    # launch must reach neither it nor the supervisor that reads
-                    # it.
+                    # attempt's while its worker is not yet live.
                     _refuse_if_superseded(directory, reservation, run_id)
                     _prepare_attempt_records(
                         directory,
@@ -931,6 +928,15 @@ def _launch_dispatch(
                         attempt_started_at=str(record["attempt_started_at"]),
                     )
                     spec_path = directory / SUPERVISOR_SPEC_NAME
+                    _require_fleet_gate_open()
+                    _refuse_a_discarded_launch(run_id)
+                    refuse_a_released_launch(run_id)
+                    # Re-read again immediately before the spawn, unlocked, for
+                    # the same reason the relaunch path does. Both the supervisor
+                    # and the run's shared spec belong to the newest attempt, so
+                    # the spec is written only after this read: two supervisors
+                    # in one worktree is the failure this line prevents.
+                    _refuse_if_superseded(directory, reservation, run_id)
                     _write_json(
                         spec_path,
                         _supervisor_spec(
@@ -940,22 +946,15 @@ def _launch_dispatch(
                             worktree=Path(worktree["path"]),
                             plan=plan,
                             fenced=bool(record["fenced"]),
+                            attempt=int(record["attempt"]),
                             prompt_path=prompt_path,
                             log_path=log_path,
                             stderr_path=stderr_path,
                             facts=dispatch_host,
-                            attempt=int(record["attempt"]),
                             attempt_kind=str(record["attempt_kind"]),
                             attempt_started_at=str(record["attempt_started_at"]),
                         ),
                     )
-                    _require_fleet_gate_open()
-                    _refuse_a_discarded_launch(run_id)
-                    refuse_a_released_launch(run_id)
-                    # Re-read again immediately before the spawn, unlocked, for
-                    # the same reason the relaunch path does: two supervisors in
-                    # one worktree is the failure this line prevents.
-                    _refuse_if_superseded(directory, reservation, run_id)
                     spawned_pid = _start_supervisor(spec_path, directory, run_id)
                     if reservation is not None:
                         # The supervisor only becomes the hold once it exists:
