@@ -149,18 +149,24 @@ def _count_store_reads(directory: Path) -> tuple[list, object]:
     return counted, restore
 
 
+def _clear_caches() -> None:
+    # Named defensively so this file can also be run against a revision that
+    # keeps fewer caches: the negative control has to reach the assertions,
+    # which measure the store scan, rather than die in the fixture.
+    for name in ("_DOCUMENT_MAPS", "_STORE_INDEXES", "_RESOLVED_DIRECTORIES"):
+        cache = getattr(review_records, name, None)
+        if hasattr(cache, "clear"):
+            cache.clear()
+
+
 @pytest.fixture()
 def stored(tmp_path, monkeypatch):
     home = crew_home()
     directory = _store_directory()
     run_ids = _populate(directory)
-    review_records._DOCUMENT_MAPS.clear()
-    review_records._STORE_INDEXES.clear()
-    review_records._RESOLVED_DIRECTORIES.clear()
+    _clear_caches()
     yield directory, run_ids, home
-    review_records._DOCUMENT_MAPS.clear()
-    review_records._STORE_INDEXES.clear()
-    review_records._RESOLVED_DIRECTORIES.clear()
+    _clear_caches()
 
 
 def test_a_stored_record_is_returned_by_its_run_id_without_listing(stored) -> None:
