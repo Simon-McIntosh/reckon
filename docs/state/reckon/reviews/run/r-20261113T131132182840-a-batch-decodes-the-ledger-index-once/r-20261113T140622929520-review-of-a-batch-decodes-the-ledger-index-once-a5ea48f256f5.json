@@ -1,0 +1,75 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 6,
+  "call_sites": [
+    "reckon/crew_dispatch_commands.py:_queue_dispatch_batch",
+    "reckon/crew/promotion.py:_complete_locked",
+    "reckon/crew/obligation_snapshot.py:fleet_state",
+    "reckon/crew/obligation_snapshot.py:sweep_state_documents",
+    "reckon/crew/dispatch_picker.py:_picker_ledger_rows",
+    "reckon/mcp_views.py:_section_attempts"
+  ],
+  "completed_at": "2026-11-13T14:29:34.267Z",
+  "dispatched_at": "2026-11-13T14:08:59Z",
+  "findings": [
+    {
+      "file": "reckon/ledger.py",
+      "line": "1771",
+      "severity": "non-blocking",
+      "text": "non-blocking: _decode_payload repeats the _PAYLOAD_REGION key construction and lookup that _index_payload already performs at :1704-1712, so one cache has two owners and a change to the key has to be made in both places or the two readers disagree."
+    },
+    {
+      "file": "tests/test_a_batch_decodes_the_ledger_index_once.py",
+      "line": "298",
+      "severity": "non-blocking",
+      "text": "non-blocking: the parity check compares the shared-decode batch against the head revision with the region removed (reuse=False), not against the base revision's code the done_when names, so a behaviour change from any other part of this diff would be invisible to it."
+    },
+    {
+      "file": "docs/evidence/fragments/a-queue-holds-the-whole-plan/a-batch-decodes-the-ledger-index-once.html",
+      "line": "4",
+      "severity": "non-blocking",
+      "text": "non-blocking: the landed record describes 'a second reuse region' for the decoded payload, but the payload cache is a second ContextVar inside the one index_reuse region; a reader taking the fragment literally would nest a region and get different sharing."
+    },
+    {
+      "file": "reckon/ledger.py",
+      "line": "1712",
+      "severity": "non-blocking",
+      "text": "non-blocking: inside a region every picker-only read now selects the full payload column and projects it, forfeiting the picker-column optimisation for any region whose reads are all picker-only; no such region exists today, but the trade is not stated at the line."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "six production call sites reach the changed ledger readers; reckon/crew_dispatch_commands.py:_queue_dispatch_batch is the one this diff adds a region to and the other five read through load(), which now shares the decoded payload inside any open region.",
+    "diff": "read commit by commit against 2269d5003c; one commit, four files, 437 insertions and 10 deletions, every path inside the declared scope.",
+    "done_when": "the done_when names tests/test_a_batch_decodes_the_ledger_index_once.py, a 200-row ledger, ten entries over three plans, at-most-once counters, a negative control at ten or more decodes and an all_debug batch timing; the manifest records each of those results and the run directory holds the logs.",
+    "goal": "the node's goal is that every ledger read inside one batch dispatch be answered from a single index decode; reckon/crew_dispatch_commands.py:1132 wraps queue_batch in one ledger.index_reuse() region and reckon/ledger.py:1704 shares the decoded payload across read shapes inside it.",
+    "manifest": "read; it records 54 passed at head and 51 passed at base with EXIT=0, the negative control at 11 decodes over 10 entries with EXIT=1, the 1.59 measured ratio at 10,300 rows, and a clean worktree at a5ea48f256.",
+    "write_paths": "read the manifest's declared paths and dispatch-detail.json; the declared scope is reckon/crew_dispatch_commands.py, reckon/ledger.py, tests/test_a_batch_decodes_the_ledger_index_once.py and the node's evidence fragment."
+  },
+  "justifications": {
+    "durability": "tests/test_a_batch_decodes_the_ledger_index_once.py:277 reddens when the region is removed (11 decodes, logs/negative-control.log), so it guards the production region at reckon/crew_dispatch_commands.py:1132.",
+    "evidence": "tests/test_a_batch_decodes_the_ledger_index_once.py:277 asserts at most one _index_payload decode and :325 asserts the per-entry behaviour is real, and :298 compares the per-entry outcomes against the region-removed run.",
+    "fit": "reckon/ledger.py:1704 re-implements the region-key lookup that _decode_payload already performs at :1771, so one cache has two owners.",
+    "goal_fidelity": "reckon/crew_dispatch_commands.py:1132 opens one ledger.index_reuse() around queue_batch, and the decodes fall from one per entry to one for the whole batch.",
+    "reuse": "the change extends the existing index_reuse region and picker_record projection rather than adding a parallel cache; a search of reckon/ found no other owner of a decoded ledger payload.",
+    "scope_discipline": "git diff 2269d5003c..a5ea48f256 changes exactly the four declared paths and nothing else."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that every ledger read inside one batch dispatch be answered from a single index decode; reckon/crew_dispatch_commands.py:1132 wraps queue_batch in one ledger.index_reuse() region and reckon/ledger.py:1704 shares the decoded payload across read shapes inside it.\nVERDICT done_when: the done_when names tests/test_a_batch_decodes_the_ledger_index_once.py, a 200-row ledger, ten entries over three plans, at-most-once counters, a negative control at ten or more decodes and an all_debug batch timing; the manifest records each of those results and the run directory holds the logs.\nVERDICT write_paths: read the manifest's declared paths and dispatch-detail.json; the declared scope is reckon/crew_dispatch_commands.py, reckon/ledger.py, tests/test_a_batch_decodes_the_ledger_index_once.py and the node's evidence fragment.\nVERDICT manifest: read; it records 54 passed at head and 51 passed at base with EXIT=0, the negative control at 11 decodes over 10 entries with EXIT=1, the 1.59 measured ratio at 10,300 rows, and a clean worktree at a5ea48f256.\nVERDICT diff: read commit by commit against 2269d5003c; one commit, four files, 437 insertions and 10 deletions, every path inside the declared scope.\nCALL_SITES: reckon/crew_dispatch_commands.py:_queue_dispatch_batch, reckon/crew/promotion.py:_complete_locked, reckon/crew/obligation_snapshot.py:fleet_state, reckon/crew/obligation_snapshot.py:sweep_state_documents, reckon/crew/dispatch_picker.py:_picker_ledger_rows, reckon/mcp_views.py:_section_attempts\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew_dispatch_commands.py:1132 opens one ledger.index_reuse() around queue_batch, and the decodes fall from one per entry to one for the whole batch.\nSCORE evidence: 17\nJUSTIFICATION evidence: tests/test_a_batch_decodes_the_ledger_index_once.py:277 asserts at most one _index_payload decode and :325 asserts the per-entry behaviour is real, and :298 compares the per-entry outcomes against the region-removed run.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: git diff 2269d5003c..a5ea48f256 changes exactly the four declared paths and nothing else.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_a_batch_decodes_the_ledger_index_once.py:277 reddens when the region is removed (11 decodes, logs/negative-control.log), so it guards the production region at reckon/crew_dispatch_commands.py:1132.\nSCORE fit: 15\nJUSTIFICATION fit: reckon/ledger.py:1704 re-implements the region-key lookup that _decode_payload already performs at :1771, so one cache has two owners.\nSCORE reuse: 19\nJUSTIFICATION reuse: the change extends the existing index_reuse region and picker_record projection rather than adding a parallel cache; a search of reckon/ found no other owner of a decoded ledger payload.\nFINDING reckon/ledger.py:1771 non-blocking: _decode_payload repeats the _PAYLOAD_REGION key construction and lookup that _index_payload already performs at :1704-1712, so one cache has two owners and a change to the key has to be made in both places or the two readers disagree.\nFINDING tests/test_a_batch_decodes_the_ledger_index_once.py:298 non-blocking: the parity check compares the shared-decode batch against the head revision with the region removed (reuse=False), not against the base revision's code the done_when names, so a behaviour change from any other part of this diff would be invisible to it.\nFINDING docs/evidence/fragments/a-queue-holds-the-whole-plan/a-batch-decodes-the-ledger-index-once.html:4 non-blocking: the landed record describes 'a second reuse region' for the decoded payload, but the payload cache is a second ContextVar inside the one index_reuse region; a reader taking the fragment literally would nest a region and get different sharing.\nFINDING reckon/ledger.py:1712 non-blocking: inside a region every picker-only read now selects the full payload column and projects it, forfeiting the picker-column optimisation for any region whose reads are all picker-only; no such region exists today, but the trade is not stated at the line.\n",
+  "review_run_id": "r-20261113T140622929520-review-of-a-batch-decodes-the-ledger-index-once-a5ea48f256f5",
+  "reviewed_base_sha": "2269d5003c3c58f265de4e260e687fef1ef87106",
+  "reviewed_head_sha": "a5ea48f256f5c04300f1e05e7c35e6ddfae5682b",
+  "reviewed_run_id": "r-20261113T131132182840-a-batch-decodes-the-ledger-index-once",
+  "scores": {
+    "durability": 18,
+    "evidence": 17,
+    "fit": 15,
+    "goal_fidelity": 19,
+    "reuse": 19,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-13T14:52:53.524802+00:00",
+  "total": 107
+}
