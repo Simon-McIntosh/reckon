@@ -11,6 +11,7 @@ from typing import Any, Callable, Mapping, Sequence
 from reckon import review_tiers
 from reckon.crew import runs
 from reckon.crew import review as review_module
+from reckon.crew.resume import hold_reason as delivery_hold_reason
 from reckon.crew.node import (
     CrewError,
 )
@@ -500,6 +501,19 @@ def accept_clean_review(
             runs._write_json(memo_path, {"inputs": refusal_key, "refusal": result})
         return result
 
+    # A coordinator's hold defers the promotion however clean the review reads:
+    # the acceptance sweep is the automatic door, and the coordinator holding
+    # the run is exactly the reader it must not overtake.
+    hold_reason = delivery_hold_reason(pointer, head)
+    if hold_reason:
+        return refuse(
+            {
+                "run_id": run_id,
+                "accepted": False,
+                "reason": f"the run is held from automatic promotion — {hold_reason}",
+                "held": True,
+            }
+        )
     if checkout is None or not checkout.is_dir():
         return refuse(
             {
