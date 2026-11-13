@@ -90,6 +90,50 @@ class _CumulativeDiff:
     changed_lines: dict[str, Any]
 
 
+def _merge_repair_scope(
+    record: Mapping[str, Any], *, tree: Path, head: str
+) -> _CumulativeDiff | None:
+    """Measure a repaired head from its common ancestor with primary.
+
+    Only a run that merged primary beyond its dispatch base takes this path.
+    Other runs retain the cited-commit measurement, including its accounting
+    for paths rewritten across commits. Once primary already contains the head,
+    the citations remain the evidence of what the run delivered.
+    """
+    from reckon.crew import merge
+
+    base = str(record.get("base_sha") or "").strip()
+    repository = str(record.get("repo") or "").strip()
+    if not base or not repository or tree.resolve() == Path(repository).resolve():
+        return None
+    primary = merge._run(Path(repository), "rev-parse", "HEAD")
+    if primary.returncode:
+        raise CrewError("cannot read primary for merge-repaired run scope")
+    common = merge._run(tree, "merge-base", primary.stdout.strip(), head)
+    if common.returncode or not common.stdout.strip():
+        raise CrewError("cannot read the merge-repaired run's common ancestor")
+    common_base = common.stdout.strip()
+    if common_base in {head, base}:
+        return None
+    history = merge._run(
+        tree, "rev-list", "--merges", "--first-parent", f"{base}..{head}"
+    )
+    if history.returncode:
+        raise CrewError("cannot read the merge-repaired run's merge history")
+    if not history.stdout.strip():
+        return None
+    try:
+        paths = tuple(
+            path for _status, path in merge._changed_paths(tree, common_base, head)
+        )
+    except merge.MergeError as exc:
+        raise CrewError(f"cannot measure merge-repaired run scope: {exc}") from exc
+    counts = scoped_diff_stat(cwd=tree, base=common_base, head=head, paths=paths)
+    if not counts.get("available", True):
+        raise CrewError("cannot measure merge-repaired run line counts")
+    return _CumulativeDiff(paths, counts)
+
+
 def _committed_scope(
     *, cwd: Path, commits: Sequence[str], run_id: str = ""
 ) -> _CumulativeDiff:
