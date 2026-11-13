@@ -1,0 +1,13 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>a-station-refresh-walks-the-process-table-once — landing</title>
+</head>
+<body>
+<h1 id="a-station-refresh-walks-the-process-table-once-title">A station refresh walks the process table once</h1>
+<p id="a-station-refresh-walks-the-process-table-once-finding">A station refresh classified every live pointer in the project, and each pointer whose recorded pids had gone fell through to the environment scan that finds a reparented worker by its run mark. That scan is answered from a walk of <code>/proc</code>, which was shared only within a one-second beat — a bound on a poller's pass, not on a sweep's. On a refresh of minutes nearly every pointer's read landed in a beat of its own and walked the table again.</p>
+<p id="a-station-refresh-walks-the-process-table-once-change">The derivation now opens a region (<code>process_table_walk_once()</code>) that pins one walk for its whole length, so every liveness read inside <code>fleet_state</code> is answered from that one table however long the pass takes. The table is a read-only snapshot either way, so each pointer's answer is the one it would have had inside a single beat; a nested region joins the open one, and nothing stays pinned after the outermost block exits. The stop path never reads the region and still walks afresh before it selects a process to signal.</p>
+<p id="a-station-refresh-walks-the-process-table-once-measure">Measured on a synthesised crew home of 30 live pointers, all of them reaching the environment scan, with the process table replaced by a fake that counts its own walks and is shown to answer both alive and dead: one refresh walked the table <strong>once</strong>, against <strong>30</strong> at the base revision, and every pointer's liveness equalled the per-pointer answers.</p>
+</body>
+</html>
