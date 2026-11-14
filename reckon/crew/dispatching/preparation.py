@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import sys
+import time
 
 from . import _unbound_dispatch_call
 from ._imports import (
@@ -103,6 +104,25 @@ _FACADE_BINDINGS = (
     "_session_older_admissible_request",
     "plan_dispatch",
 )
+
+
+# How often one process reaps idle roster members. The reap loads and decodes
+# the whole ledger, and the admission service dispatches every queued launch
+# through this path, so reaping on every dispatch cost minutes per launch while
+# the queue waited. Idle members only need retiring now and then.
+IDLE_MEMBER_REAP_INTERVAL_SECONDS = 600.0
+_LAST_IDLE_MEMBER_REAP: dict[tuple[str, str], float] = {}
+
+
+def _idle_member_reap_due(project: str, root: object) -> bool:
+    """Whether this process should reap the project's idle members now."""
+    key = (str(project), str(root))
+    now = time.monotonic()
+    last = _LAST_IDLE_MEMBER_REAP.get(key)
+    if last is not None and now - last < IDLE_MEMBER_REAP_INTERVAL_SECONDS:
+        return False
+    _LAST_IDLE_MEMBER_REAP[key] = now
+    return True
 
 
 def dispatch(
@@ -1191,13 +1211,14 @@ def dispatch(
         )
         node.peer_scopes = peers
 
-        reap_idle_session_members(
-            project,
-            root=ledger_root,
-            idle_window=str(
-                fences.get("member_idle_window") or DEFAULT_MEMBER_IDLE_WINDOW
-            ),
-        )
+        if _idle_member_reap_due(project, ledger_root):
+            reap_idle_session_members(
+                project,
+                root=ledger_root,
+                idle_window=str(
+                    fences.get("member_idle_window") or DEFAULT_MEMBER_IDLE_WINDOW
+                ),
+            )
         named_member = bool(member)
         # An unnamed dispatch is disposable: it carries a per-run identity instead
         # of the dispatching session's shared one, and it gets no roster row. So
