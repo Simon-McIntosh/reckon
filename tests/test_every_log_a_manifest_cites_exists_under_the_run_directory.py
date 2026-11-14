@@ -56,7 +56,14 @@ def _manifest(path, fields):
             }
         else:
             payload[field] = str(log)
-    path.write_text(json.dumps(payload), encoding="utf-8")
+    path.write_text(
+        "\n".join(
+            f"{key}: {json.dumps(value) if isinstance(value, (dict, list)) else value}"
+            for key, value in payload.items()
+        )
+        + "\n",
+        encoding="utf-8",
+    )
 
 
 def _check():
@@ -64,6 +71,7 @@ def _check():
         main, ["crew", "check", "--manifest", "--run", "log-location-check"]
     )
     assert result.exception is None or result.exit_code == 1, result.output
+    print(f"CHECK RECEIPT: {result.output.strip()}")
     return result, json.loads(result.output)
 
 
