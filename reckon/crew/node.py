@@ -1030,6 +1030,11 @@ _TEST_FILE_RE = re.compile(
 # fixture and a helper are all part of a check, and none of them is collected.
 _COLLECTIBLE_TEST_FILE_RE = re.compile(r"^(?:test_.*|.*_test)\.py$")
 
+# A done-when names the check it asks a reader to run. The pattern is the one
+# the repair round grants a test path the pattern matches, so a node's
+# done-when and a review's remedy recognise the same set of test files.
+_DONE_WHEN_TEST_PATH = re.compile(r"\btests?/[A-Za-z0-9_./-]+\.py\b")
+
 
 def is_test_path(path: str) -> bool:
     """Return whether a declared write path names a test file.
@@ -1073,10 +1078,18 @@ def declares_negative_control(node: TaskNode) -> bool:
 
 
 def negative_control_writes_a_check(node: TaskNode) -> bool:
-    """Return whether a node declares a test path and no negative control."""
+    """Return whether a node writes a check and declares no negative control.
+
+    A check is written when a declared write path is a test file. A node that
+    declares no write paths has no fence to read, so the check it writes is the
+    test file its done-when names: the measure is the same one, read from the
+    same field the measure itself is stated in.
+    """
     if declares_negative_control(node):
         return False
-    return any(is_test_path(path) for path in node.write_paths)
+    if node.write_paths:
+        return any(is_test_path(path) for path in node.write_paths)
+    return bool(_DONE_WHEN_TEST_PATH.search(node.done_when))
 
 
 def negative_control_is_none(declaration: str) -> bool:
@@ -1105,10 +1118,19 @@ def negative_control_finding(node: TaskNode) -> dict[str, str] | None:
     if not negative_control_writes_a_check(node):
         return None
     test_paths = sorted(str(path) for path in node.write_paths if is_test_path(path))
+    if test_paths:
+        trigger = (
+            f"the node's write paths include a test file ({', '.join(test_paths)})"
+        )
+    else:
+        trigger = (
+            "the node's done-when names a test file "
+            f"({', '.join(_DONE_WHEN_TEST_PATH.findall(node.done_when))})"
+        )
     return {
         "property": NEGATIVE_CONTROL_FIELD,
         "detail": (
-            f"the node's write paths include a test file ({', '.join(test_paths)}), "
+            f"{trigger}, "
             f"so it writes a check, but its {NEGATIVE_CONTROL_FIELD} field declares "
             "no mutation that check must fail against; name the mutation in that "
             f"field, or declare it as `{NEGATIVE_CONTROL_NONE}: <reason>` when no "
@@ -1464,9 +1486,7 @@ def validate_node(
             "a decision node precedes this one",
         )
 
-    if not node.write_paths:
-        fail("scoped", "no exclusive write path is enumerated")
-    else:
+    if node.write_paths:
         mine = set(node.write_paths)
         # An anchor is a path the worker must be able to find without being
         # handed its contents, so a path both anchored and written is not a
