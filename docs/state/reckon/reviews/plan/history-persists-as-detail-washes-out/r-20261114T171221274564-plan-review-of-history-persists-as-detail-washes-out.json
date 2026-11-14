@@ -1,0 +1,96 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-14T17:59:20.096Z",
+  "dispatched_at": "2026-11-14T17:44:44Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/history-persists-as-detail-washes-out.html:360",
+      "id": "done_when-1",
+      "reason": "untracking the ledger would strand a committed reader the node's declared search cannot see, and widening the search to the whole repo is a one-line change to the done-when.",
+      "text": "\u00a720 requires the table be \"found by `git grep` over `reckon/`\", but at least two committed readers of `docs/state/<project>/crew.json` sit outside that scope (`docs/figures/plan-review-cycles/measure_review_cycles.py:333`, `docs/research/data/crew-pattern-review/coordinator-overhead/census.py:186`), so the measure can pass while the map it certifies is incomplete",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/history-persists-as-detail-washes-out.html:238",
+      "id": "reasoning-1",
+      "reason": "a node building the contract stage or that \u00a76 row would produce an artifact the locked decision forbids, and \u00a76 states a required measure that cannot be produced once no committed file exists.",
+      "text": "\u00a74 states the committed file \"does not go away; it becomes the export\", which the decision at line 364 contradicts (`committed-export-scope` = \"none: the ledger leaves git\"), and the claim is load-bearing for \u00a73's contract row (\"the file becomes an export (\u00a74)\"), \u00a73:234 (\"the committed file is what travels\") and \u00a76's \"The export reconstructs\" measure at line 311",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/history-persists-as-detail-washes-out.html:267",
+      "id": "reasoning-2",
+      "reason": "the pair argument is the plan's justification for gating rotation last, and after the decision the store is the only store, so the reversibility argument the stage table rests on has to be restated or \u00a75 contradicts the decision it sits beside.",
+      "text": "\u00a75 says \"the two open decisions are one decision\" and that \"until they are, the store is derivable from the committed files and nothing lives only in it, which is the property that makes every earlier stage safe to reverse\"; the export-scope half of that pair is now closed to \"none\", and the derivability sentence is false under it",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/history-persists-as-detail-washes-out.html:359",
+      "id": "reasoning-3",
+      "reason": "the section's single classification column cannot be filled consistently until the author fixes which store the untracking leaves behind, which is the decision \u00a720 exists to serve.",
+      "text": "\u00a720 asks the investigation to state \"which already go through the run store and which read the files directly\", but \"the run store\" is defined as an embedded SQLite database in the crew config home in \u00a72 and as the committed per-run files with the database as an index in \u00a77, so the table's central column has no fixed referent",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/history-persists-as-detail-washes-out.html:335",
+      "id": "reasoning-4",
+      "reason": "the section states an implementation where the plan is a per-run record's endpoint, and its first measure (\"commits only that path\") now contradicts the decision that the path leaves git, so the text invites a node to build either the wrong mechanism or a forbidden commit.",
+      "text": "\u00a77's node 1 gives the change as two named functions (`ledger.append_run`, `ledger.load`) and an ordered four-step node sequence",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/history-persists-as-detail-washes-out.html:403",
+      "id": "wiring-1",
+      "reason": "a coordinator reading the followup chain dispatches the wrong plan, and the section declared implementable here would be built with no driving invocation.",
+      "text": "the only open followup (`f-hpdw-002`) recommends `/reckon-build the-ledger-is-one-file-per-run`, and no followup carries \u00a720's invocation, while that carrying plan's premise (per-run files as the committed record) is the one the 2026-11-14 decision retired",
+      "type": "wiring",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/history-persists-as-detail-washes-out.html:401",
+      "id": "anchors_resolve-1",
+      "reason": "the outcome restates the read-back's finding inline (50 sentences, 43 load-bearing, node 4 without a measure), so the pointer is supplementary, though it is the one piece of evidence here that no longer opens.",
+      "text": "`f-hpdw-001`'s outcome cites `~/.config/reckon/crew/reports/reckon/ship-s19-20260922/review-of-history-persists-as-detail-washes-out/read-back.md`, and that directory does not exist",
+      "type": "anchors_resolve",
+      "would_change": false
+    }
+  ],
+  "plan_commit": "adbf2fa8fff9177a293a8fed5b96d4fae03e3e7d",
+  "plan_fingerprint": "2706a412a1e63884bcaead12b94d643707271d447a0eb68381caf92f4f752064",
+  "plan_slug": "history-persists-as-detail-washes-out",
+  "plan_version": 21,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261114T171221274564-plan-review-of-history-persists-as-detail-washes-out",
+  "reviewed_blob_sha": "e2c11e4e2571b30f7c342082034ed60cdab458af",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "a finding \u2014 the read-back report cited as the evidence for the \u00a77 supersession does not exist at the path given.",
+    "done_when": "a finding \u2014 \u00a720's completeness measure greps only `reckon/`, while two committed readers of the same path live under `docs/`.",
+    "evidence_paths": "pass \u2014 \u00a720's deliverable is a committed fragment under `docs/evidence/fragments/history-persists-as-detail-washes-out/`, following the convention every other plan's fragments use, and its write path is scoped to that fragment only.",
+    "naming": "pass \u2014 the only path the section names (`ledger-leaves-git-map.html`) is mechanism-named, and no plan label, stage name, ticket number or version tag reaches a symbol, a filename or a comment.",
+    "reasoning": "a finding \u2014 \u00a72\u2013\u00a75 argue that the committed file persists as the export while the plan's own locked decision says the ledger leaves git, and \u00a720 asks a node to classify against a \"run store\" that \u00a72 and \u00a77 define as two different things.",
+    "single_goal": "pass \u2014 \u00a720 delivers one artifact (one investigation fragment); \u00a77's four nodes are declared in place as carried by `the-ledger-is-one-file-per-run`.",
+    "wiring": "a finding \u2014 the only open followup recommends another plan, so the single implementable section (\u00a720) has no driving invocation and its nearest pointer names a design the locked decision retires."
+  },
+  "section_digests": {
+    "_document": "6fb3da06ee8b935743342e15b93d1e7517b14abfa2f7992268c76f1b511e62be",
+    "s1": "16a4b0ff613308f968af13a86453cdda7611fbb4a0b662f0998319199f08c1f2",
+    "s2": "81ea5591beea9f0bfe0621b90127946f5c732b8471e2c5373404a592fa5daefe",
+    "s20": "67191581487cdb91491ecf2c3fbc6df9a59015128abe78ba5437da6c30585425",
+    "s3": "3422a7a0a23c318e54716e2fbbaf99599e0142f7bbc74d9eb45f924541cd8ccf",
+    "s4": "6beff7af8378d0a3be80a490fb73cc8c5e6a8ee94449c98de40a252d2f57fcd5",
+    "s5": "0cd70cc30708f232bf564bff0e7825d783d5f5ab455747bfac40ebe742ea0ed3",
+    "s6": "5181e894e8b3823f366d0b459a48ecc8e236e645ca5b1f02071dfc0fdae47681",
+    "s7": "6173f16d89316af11f74c75b5bec44f90742582abf47efd7e72af7af3bb31b50"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-14T18:41:48.681337+00:00",
+  "total": null
+}
