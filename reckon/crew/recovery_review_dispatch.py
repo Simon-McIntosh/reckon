@@ -2575,8 +2575,20 @@ def _dispatch_text_review_for_run(
         ).parent
         directory.mkdir(parents=True, exist_ok=True)
         # The lock spans the pointer check and launch across coordinator sessions.
+        # It is taken without waiting: a held lock means another sweep is
+        # composing this plan's review now, so this sweep has nothing to add and
+        # moves on. Waiting held each session's sweep behind the holder's whole
+        # dispatch, and a session whose sweep is held never reaches its own
+        # code reviews.
         with (directory / "dispatch.lock").open("a") as lock:
-            fcntl.flock(lock, fcntl.LOCK_EX)
+            try:
+                fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+            except BlockingIOError:
+                return {
+                    "dispatched": False,
+                    "review_run_id": None,
+                    "reason": "another sweep is composing this plan's review now",
+                }
             standing = _standing_plan_review(record["project"], record["plan_slug"])
             if standing:
                 return {
