@@ -1,0 +1,152 @@
+<article class="r-evidence" data-node="ready-work-is-never-stuck-behind-t-s23">
+<h3>Why an oversized node did not reach the reserved lane, reproduced</h3>
+
+<p id="ready-work-is-never-stuck-behind-t-s23-landing">The replay reproduces both
+recorded refusals against the revision the attempts actually ran under,
+<code>main@9bdaea5ab66855a2cfc131c4c673be14b59024fc</code>, and its log ends in
+a bare <code>EXIT=0</code>. Each attempt's exclusion set matches the recorded
+row-for-row, in the picker's own order, and each reads
+<code>action=refuse</code>, <code>decision_source=refused</code>,
+<code>fallback_reason=no-eligible-candidates; default-backend-ineligible</code>.</p>
+
+<h4 id="ready-work-is-never-stuck-behind-t-s23-arm">The gate receipt</h4>
+
+<pre><code>=== attempt-1  2026-11-03T02:29:07.892892+00:00
+  excluded claude/claude-*: reserved-lane: claude is reserved while the orchestrators it shares with it needs it; its window reading is unknown or stale
+  excluded clive/deepseek-v4.1-flash: context-fit: context-window-exceeded; context-fit: requested 234021 tokens exceeds 230144; competence: context-window-exceeded
+  excluded codex/gpt-6-*: reserved-lane: codex is reserved while the orchestrators it shares with it needs it; its window reading is unknown or stale
+  excluded native/None: in-harness-backend
+  answer: action=refuse decision_source=refused fallback_reason=no-eligible-candidates; default-backend-ineligible
+  recorded rows: 11   replayed rows: 11
+  exclusion set: reproduced exactly, in the picker's order
+  outcome: reproduced
+
+=== attempt-4  2026-11-03T02:34:43.640120+00:00
+  offer surface: the 'codex' lane alone, because the dispatch named --backend codex
+  excluded codex/gpt-6-astra, codex/gpt-6-luna, codex/gpt-6-sol: reserved-lane (same term)
+  answer: action=refuse decision_source=refused fallback_reason=no-eligible-candidates; default-backend-ineligible
+  recorded rows: 3   replayed rows: 3
+  exclusion set: reproduced exactly, in the picker's order
+  outcome: reproduced
+
+replayed: 2 attempts, refusals reproduced
+EXIT=0</code></pre>
+
+<p id="ready-work-is-never-stuck-behind-t-s23-command">The run, on this node,
+one process each for both attempts, at the recorded revision extracted to a
+scratch tree and imported in process:</p>
+
+<pre><code>cd /tmp/reckon-crew-scratch/r-20261113T030240876162-ready-work-is-never-stuck-behind-t-s23 \
+  &amp;&amp; PYTHONPATH=$PWD/tree-9bdaea5ab6 \
+     /home/ITER/mcintos/Code/reckon/.venv/bin/python \
+     &lt;worktree&gt;/docs/evidence/fragments/work-is-never-stuck-behind-the-admission-loop/replay_oversized_route.py \
+     --repo $PWD/tree-9bdaea5ab6</code></pre>
+
+<p id="ready-work-is-never-stuck-behind-t-s23-module">The module under test is
+the extracted tree's own
+<code>…/tree-9bdaea5ab6/reckon/crew/picker/__init__.py</code>, printed by the
+log's <code># reckon.__file__:</code> header. A second run settles which input
+the reproduction actually rests on: today's picker
+(<code>PYTHONPATH</code> at this worktree) reading the recorded revision's data
+reproduces both attempts identically, rows and outcome
+(<code>logs/isolate-head-code-tree-data.log</code>: <code>replayed: 2 attempts,
+refusals reproduced</code>, <code>EXIT=0</code>).
+So the reproduction is a statement about the repository data the pick read, not
+about the picker's code revision.</p>
+
+<h4 id="ready-work-is-never-stuck-behind-t-s23-why">What the replay says decided each refusal</h4>
+
+<p id="ready-work-is-never-stuck-behind-t-s23-codex">Codex was withheld by the
+reserved-lane policy's window term, not by its tier term.
+<code>_reserved_lane_exclusion</code> (<code>reckon/crew/picker/snapshot.py:1267</code>)
+returns <code>reserved-lane: codex is reserved while the orchestrators it shares
+with it needs it; its window reading is unknown or stale</code>
+(<code>snapshot.py:1317–1320</code>) for each of the three codex models, and that
+reason is appended in the candidate scan at <code>snapshot.py:1749–1770</code>.
+The tier term was not the cause: the node's declared capability meets both
+reserved families' floors, and the replay's summary line says the tier term
+withheld neither lane. The window figure the policy judged is the branch the
+record cannot name — the pick-timing row keeps only reason codes and the
+context estimate (<code>reckon/crew/picker/__init__.py:113–145</code>, which
+writes <code>exclusions</code> and <code>estimated_context</code> for a refusal
+and no <code>offered</code> field). The replay therefore lands on that branch
+both ways: an absent window reading reproduces the record, and a fresh one at
+72% reproduces it identically, because both withhold the reserved lanes on the
+same term. That equivalence is a reconstruction, and the attribution to the
+window term is conditional on it.</p>
+
+<p id="ready-work-is-never-stuck-behind-t-s23-waiver">The oversize waiver never
+reached codex. Its condition, at <code>snapshot.py:1896–1900</code>, admits the
+withheld reserved lanes only when some unreserved candidate exists and every
+unreserved candidate was removed on context fit alone
+(<code>_excluded_only_on_context</code>, <code>snapshot.py:1402–1406</code>,
+which requires every reason to begin <code>context-fit: </code>). In attempt-1
+the one unreserved candidate, the local lane, also carried
+<code>competence: context-window-exceeded</code>; that reason is not a
+<code>context-fit: </code> prefix, so the waiver's guard was false and codex
+stayed withheld. The local lane's own fit verdicts come from the unchanged scan
+(<code>_fit</code>, called at <code>snapshot.py:1786</code>), so this is the
+picker's own answer, not a stubbed verdict.</p>
+
+<p id="ready-work-is-never-stuck-behind-t-s23-local">The local lane is absent
+from the later attempt because that dispatch named the lane by hand: it ran
+<code>--backend codex</code>, so the dispatch never asked the picker about the
+local lane (the named-lane path is
+<code>reckon/crew/dispatch_picker.lane_model_selection</code>, which the replay
+drives for attempt-4). Its three rows are the same reserved-lane term applied to
+the codex models, and it refuses for the same reason. Nothing about the local
+lane's eligibility enters that attempt; it was never offered.</p>
+
+<h4 id="ready-work-is-never-stuck-behind-t-s23-fix">What a fix section would have to change</h4>
+
+<ul>
+<li id="ready-work-is-never-stuck-behind-t-s23-fix-waiver">The <b>oversize
+waiver</b>: its guard at <code>snapshot.py:1896–1900</code> would have to admit a
+reserved lane when the unreserved candidates were removed on fit <em>and
+competence</em> terms that both read the same window, which is a decision about
+which refusal is decisive, not a threshold change.</li>
+<li id="ready-work-is-never-stuck-behind-t-s23-fix-scan">The <b>candidate
+scan</b>: the local lane's <code>competence</code> reason and its
+<code>context-fit</code> reason both carry
+<code>context-window-exceeded</code> for the same estimate, so a scan that
+collapses them to one reason would satisfy the waiver guard without changing
+any lane's eligibility.</li>
+<li id="ready-work-is-never-stuck-behind-t-s23-fix-reroute">The <b>dispatch
+reroute</b> cannot do it today: <code>_reroute_oversized_request</code>
+(<code>reckon/crew/dispatch.py:633–700</code>) chooses through
+<code>widest_fitting_candidate</code> (<code>snapshot.py:612</code>), whose
+<code>usable</code> filter (<code>snapshot.py:633–638</code>) drops every
+candidate carrying any reason. A reserved lane withholds with
+<code>reserved-lane:</code>, so it is never eligible for the reroute, where the
+docstring at <code>snapshot.py:615–629</code> says it exists exactly for this
+node.</li>
+</ul>
+
+<h4 id="ready-work-is-never-stuck-behind-t-s23-limit">What could not be recovered</h4>
+
+<p id="ready-work-is-never-stuck-behind-t-s23-unrecorded">Two inputs are
+reconstructions and one is unrecorded, and each attribution above that rests on
+them is marked conditional. The <b>flight configuration</b> is the resolved
+configuration at the attempts' moment, re-resolved from the four layers
+committed at that revision (shipped/project/catalogue at
+<code>9bdaea5ab6</code>, host at <code>dotfiles@2892816</code>) and embedded in
+the script. The <b>budget-window reading</b> behind the reserved-lane term is
+unrecorded; the replay replays both branches and both reproduce. The <b>live
+lane document</b> is unrecorded and, per the log, feeds worker slots and
+congestion only, so no exclusion reads it.</p>
+
+<p id="ready-work-is-never-stuck-behind-t-s23-head">Run against today's
+repository tree the same script does not reproduce either attempt: attempt-1
+offers the claude and codex lanes instead of withholding them, and attempt-4
+answers <code>hold</code> with
+<code>reserved-lane-unreasoned: codex was picked with no reason on a nested
+re-ask</code> (the recorded refusal is <code>refuse</code>). Both are in the
+run's <code>logs/replay-at-head-the-day-of-delivery.log</code>. The input that
+moved is one field: <code>a-read-costs-what-changed</code> section <code>s6</code>
+declared <code>data-status="implementable"</code> on 3 November and declares
+<code>done</code> today, and the pick reads the section's declaration for the
+node's capability. The pick-timing row carries the node's shape, not the
+section's declared state, so neither attempt's record shows this input; the
+replay must name the revision it reads, which it does.</p>
+
+</article>
