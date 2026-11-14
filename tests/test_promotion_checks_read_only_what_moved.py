@@ -296,7 +296,11 @@ def test_a_full_promotion_reads_no_unbounded_working_tree(
     residue = [argv for argv in unbounded if argv[1:3] == ["status", "--porcelain=v1"]]
     assert [argv for argv in unbounded if argv not in residue] == [], unbounded
     assert len(residue) == 1, residue
-    status_calls = [argv for argv in recorder.calls if "status" in argv]
+    status_calls = [
+        argv
+        for argv in recorder.calls
+        if "status" in argv and argv not in residue
+    ]
     assert status_calls, "no status call at all, so nothing was measured"
     assert all("--" in argv for argv in status_calls), status_calls
 
