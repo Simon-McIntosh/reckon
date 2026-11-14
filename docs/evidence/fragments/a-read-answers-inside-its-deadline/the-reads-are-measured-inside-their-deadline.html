@@ -1,0 +1,50 @@
+<article class="landed-report" data-run-id="r-20261114T144026603146-the-reads-are-measured-inside-their-deadline" data-node="the-reads-are-measured-inside-their-deadline">
+<h3 id="the-reads-are-measured-inside-their-deadline-summary">Roadmap and audit measured against their deadlines; the base control could not answer</h3>
+<p>Three rounds of one fresh process per read, each taking one cold and one warm
+sample, both arms over one frozen corpus at head <code>b4700c0d20</code>, on an
+exclusive <code>all_debug</code> node (job 1315636, 98dci4-clu-3142), with the
+head code tree and the base code tree <code>d249200c7</code> extracted beside it.
+Discovery was cut by the hour and is named as not run.</p>
+
+<table id="the-reads-are-measured-inside-their-deadline-medians">
+<thead><tr><th>Read</th><th>Arm</th><th>Phase</th><th>n</th><th>Median (s)</th><th>Target (s)</th><th>Verdict</th></tr></thead>
+<tbody>
+<tr><td>roadmap</td><td>head</td><td>cold</td><td>3</td><td>15.858</td><td>30</td><td>met</td></tr>
+<tr><td>roadmap</td><td>head</td><td>warm</td><td>3</td><td>0.022</td><td>2</td><td>met</td></tr>
+<tr><td>audit</td><td>head</td><td>warm</td><td>3</td><td>5.772</td><td>3</td><td><strong>MISSED</strong></td></tr>
+<tr><td>audit</td><td>head</td><td>cold</td><td>3</td><td>91.811</td><td>none</td><td>—</td></tr>
+<tr><td>audit</td><td>base</td><td>cold</td><td>3</td><td>49.401</td><td>none</td><td>—</td></tr>
+<tr><td>roadmap</td><td>base</td><td>cold</td><td>3</td><td>unreadable</td><td>30</td><td>no answer</td></tr>
+<tr><td>roadmap</td><td>base</td><td>warm</td><td>3</td><td>unreadable</td><td>2</td><td>no answer</td></tr>
+</tbody></table>
+
+<p><strong>The base control does not hold.</strong> At <code>d249200c7</code> the
+roadmap returns <code>roadmap_error</code> in 39.2–41.7 s, not a composition:
+the frozen corpus pinned at head carries a section status
+<code>descoped</code>, and the base revision's <code>PlanState</code> accepts only
+<code>implementable</code>, <code>deferred</code> and <code>done</code>. So the
+base arm cannot read the corpus the head arm measured — the cause is a
+corpus/revision mismatch, not a read-latency difference.</p>
+
+<h4 id="the-reads-are-measured-inside-their-deadline-attribution">The warm audit excess is attributed from the kept profiles</h4>
+<p>The warm audit is 5.772 s against the 3 s target: an excess of 2.772 s.
+Three cold-and-warm dumps per read are kept under the run directory's
+<code>measure/profiles/</code>; the two kept for the warm audit name:</p>
+<table id="the-reads-are-measured-inside-their-deadline-hotspots">
+<thead><tr><th>Function</th><th>Cumulative (s)</th><th>Share of the 2.772 s excess</th><th>Introduced by</th></tr></thead>
+<tbody>
+<tr><td><code>roadmap._build_roadmap</code></td><td>3.39</td><td>122 %</td><td>47d832767e0</td></tr>
+<tr><td><code>roadmap._plan_authored_state</code></td><td>1.93</td><td>70 %</td><td>b93352322a6</td></tr>
+<tr><td><code>roadmap._section_scoped_edges</code>, with 2.25 M <code>copy.deepcopy</code> calls (1.91 s)</td><td>1.55</td><td>56 %</td><td>2f870c2bf6f</td></tr>
+<tr><td><code>resources.resolve_resource</code></td><td>1.26</td><td>45 %</td><td>unchanged</td></td></tr>
+</tbody></table>
+<p>The single named function <code>_build_roadmap</code> covers the excess, so the
+80 % floor is met; the breakdown shows it is the roadmap build that a warm audit
+pays on every call, dominated by deep-copy of plan state in
+<code>_section_scoped_edges</code> and the per-plan authored
+state read.</p>
+
+<p><strong>Blocker.</strong> Pinning the corpus at the base revision would let both arms read one
+corpus; the corpus revision is a decision this measurement leaves open and must
+be settled before the control can be established.</p>
+</article>
