@@ -4,7 +4,9 @@
   and revalidated by the next pass. Station ticks, admission passes and run-review
   dispatches use that boundary. Current metadata is read through a read-only SQLite
   connection. A stale reader attempts the rebuild transaction without waiting; a busy
-  transaction leaves it reading the last committed projection.</p>
+  transaction leaves it reading the last committed projection. The existing connection
+  helper accepts a read-only mode so an unavailable cache still takes the established
+  authoritative fallback; that dedicated regression probe passes (1 passed in 2.35 seconds).</p>
   <table>
     <thead><tr><th>Measure</th><th>Reproduced defect</th><th>Focused result</th></tr></thead>
     <tbody>
@@ -25,7 +27,9 @@
   <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261114T141121908157-open-run-index-rebuilt-once-per-pass/</code>:
   <code>baseline-fixed.log</code>, <code>reproduction-ready.log</code>,
   <code>focused.log</code>, <code>negative-control.log</code>,
-  <code>regression.log</code>, and the committed-head receipt in <code>after.log</code>.
+  <code>refusal.log</code>, <code>regression-final.log</code>, and the committed-head
+  receipt in <code>after-final.log</code>. The final mutation receipt is
+  <code>negative-control-final.log</code>.
   Each log records its revision, command, resolved import path, working directory and exit status.</p>
   <p>Implementation: <code>666203e7604626a49b77d31af3c96dcd002b71a4</code>.
   The coordinator owns integration and the separately dispatched merged-head verification.</p>

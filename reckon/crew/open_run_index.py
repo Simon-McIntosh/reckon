@@ -148,7 +148,9 @@ def index_path(project: str, root: str | Path | None = None) -> Path:
     return ledger._index_directory() / "open-run-index" / f"{key}.sqlite"
 
 
-def _connect(path: Path) -> sqlite3.Connection:
+def _connect(path: Path, *, read_only: bool = False) -> sqlite3.Connection:
+    if read_only:
+        return sqlite3.connect(f"{path.as_uri()}?mode=ro", uri=True, timeout=0)
     path.parent.mkdir(parents=True, exist_ok=True)
     connection = sqlite3.connect(path, timeout=30)
     connection.execute(
@@ -297,9 +299,7 @@ def _ensure(project: str, root=None) -> Path:
 
     ready = False
     if path.exists():
-        with contextlib.closing(
-            sqlite3.connect(f"{path.as_uri()}?mode=ro", uri=True, timeout=0)
-        ) as connection:
+        with contextlib.closing(_connect(path, read_only=True)) as connection:
             ready = (
                 connection.execute(
                     "SELECT 1 FROM metadata WHERE key='ready' AND value='1'"

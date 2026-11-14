@@ -186,11 +186,17 @@ def test_rebuilt_index_answers_later_stale_lookup_without_writing(
 def test_current_lookup_does_not_open_a_writer(indexed, monkeypatch):
     repo, _home, rows = indexed
 
-    def refuse(*args, **kwargs):
-        pytest.fail("a current index lookup opened a writer")
+    original = open_run_index._connect
+    connections = []
 
-    monkeypatch.setattr(open_run_index, "_connect", refuse)
+    def connect(path, *, read_only=False):
+        assert read_only, "a current index lookup opened a writer"
+        connections.append(path)
+        return original(path, read_only=True)
+
+    monkeypatch.setattr(open_run_index, "_connect", connect)
     assert open_run_index.has_row(PROJECT, rows[0]["run_id"], repo)
+    assert len(connections) == 1
 
 
 def _hold_rebuild(repo, held, release):
