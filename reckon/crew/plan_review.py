@@ -5313,7 +5313,47 @@ def _store_delivered_report(
         return store_code_review(record, base_dir=base_dir)
     if str(record.get("subject") or "") == PORTFOLIO_SUBJECT:
         return store_portfolio_review(record, base_dir=base_dir)
-    return store_plan_review(record, base_dir=base_dir)
+    path = store_plan_review(record, base_dir=base_dir)
+    _commit_record_when_run_promoted(record)
+    return path
+
+
+def _commit_record_when_run_promoted(
+    record: Mapping[str, Any],
+) -> Path | None:
+    """Commit a staging record whose delivering run has already promoted.
+
+    A promotion commits the reviews it finds staged before it appends the run's
+    ledger row, so the row's commit carries them. A delivery that reaches the
+    store later — a pass over a plan whose review already landed — writes its
+    record with no promotion left to commit it, and the record then stays in the
+    host staging store and never travels with the tree. So the store commits
+    such a record itself, through the same committed writer a promotion uses,
+    whenever the crew run that produced it already holds a ledger row.
+
+    A record whose run has not promoted is left staged: its own promotion is the
+    one write that commits it, so nothing is committed twice. A project with no
+    committed reviews tree, or a record that needs no run of its own, resolves
+    nowhere to commit and is left as the store wrote it.
+    """
+    project = str(record.get("project") or "").strip()
+    plan_slug = str(record.get("plan_slug") or "").strip()
+    composed = str(record.get("review_run_id") or "").strip()
+    crew_run = _review_store._plan_review_crew_run_id(project, plan_slug, composed)
+    if not crew_run:
+        return None
+    from reckon.crew.open_run_index import has_row
+
+    if not has_row(project, crew_run):
+        return None
+    from reckon.crew import review_records
+
+    try:
+        path = review_records.store_committed_review(record, project=project)
+    except (OSError, ValueError):
+        return None
+    review_records.commit_record_write(project, path)
+    return path
 
 
 def store_delivered_reviews(
