@@ -1,0 +1,51 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-11-14T14:24:23.840Z",
+  "dispatched_at": "2026-11-14T14:09:55Z",
+  "findings": [
+    {
+      "file": "reckon/crew/recovery_review_acceptance.py",
+      "line": 688,
+      "severity": "non-blocking",
+      "text": "_plan_review_target duplicates the plan-slug reader the repository already owns rather than extending it. reckon/crew/recovery_review_dispatch.py:2367 (_plan_review_pointer_slug) takes a pointer and returns exactly this value, and reckon/crew/promotion_checks.py:63 (_plan_review_plan_slug) owns the same prefix-then-round_node_source step; the addition duplicates both, so a change to the identity rule must now be made in three places."
+    },
+    {
+      "file": "reckon/crew/recovery_review_acceptance.py",
+      "line": 700,
+      "severity": "non-blocking",
+      "text": "_plan_review_target reads the pointer's node as a mapping, while both existing owners tolerate a bare-string node (recovery_review_dispatch.py:2373 and recovery_review_delivery.py:106 both test isinstance(node, Mapping) and fall back to the string). A live plan-review pointer carrying node as a string would now raise AttributeError inside the promotion sweep instead of taking the delivered-record path, so the new helper is less tolerant of the shapes its siblings accept."
+    },
+    {
+      "file": "tests/test_composed_review_writes_under_its_own_run.py",
+      "line": 91,
+      "severity": "non-blocking",
+      "text": "_compose_while_held is defined and never called by either test or by any other helper in the module, and lint does not flag an unused function; it carries the dispatch-hold machinery (queue_dispatch, LanePaused) that the delivered cases do not exercise."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "read all three commits against 3b1cb4603e: 390 insertions in three files \u2014 two private helpers and a plan-review branch in review_self_state, a 270-line test module, and a landing fragment \u2014 with no deletions and no path outside the declared scope.",
+    "done_when": "the done_when asks for a test that composes a plan review, writes exactly where the brief says, promotes and reads the record stored, plus a negative control refusing for a missing record when only the run id is read; tests/test_composed_review_writes_under_its_own_run.py:236 and :253 are those two cases, and gate-after.log records 53 passed with EXIT=0.",
+    "goal": "the node goal is that a composed plan review is briefed to write its record where its own promotion reads it; reckon/crew/recovery_review_acceptance.py:789 makes review_self_state resolve a plan review through the composed directory's dispatch.json join, so the record the brief named is the record promotion reads.",
+    "manifest": "the manifest records gate-base.log 51 passed EXIT=0, gate-after.log 53 passed EXIT=0, negative-control.log 1 failed EXIT=1 and a pre-repair reproduction, and each log's header names its revision, tree, cwd, command and module.__file__ with a bare EXIT line last.",
+    "write_paths": "the declared write paths are reckon, tests/test_composed_review_writes_under_its_own_run.py and docs/evidence/fragments/work-flows-to-the-lane/composed-review-writes-under-its-own-run.html; the diff touches reckon/crew/recovery_review_acceptance.py, that test file and that fragment, and nothing else."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is that a composed plan review is briefed to write its record where its own promotion reads it; reckon/crew/recovery_review_acceptance.py:789 makes review_self_state resolve a plan review through the composed directory's dispatch.json join, so the record the brief named is the record promotion reads.\nVERDICT done_when: the done_when asks for a test that composes a plan review, writes exactly where the brief says, promotes and reads the record stored, plus a negative control refusing for a missing record when only the run id is read; tests/test_composed_review_writes_under_its_own_run.py:236 and :253 are those two cases, and gate-after.log records 53 passed with EXIT=0.\nVERDICT write_paths: the declared write paths are reckon, tests/test_composed_review_writes_under_its_own_run.py and docs/evidence/fragments/work-flows-to-the-lane/composed-review-writes-under-its-own-run.html; the diff touches reckon/crew/recovery_review_acceptance.py, that test file and that fragment, and nothing else.\nVERDICT manifest: the manifest records gate-base.log 51 passed EXIT=0, gate-after.log 53 passed EXIT=0, negative-control.log 1 failed EXIT=1 and a pre-repair reproduction, and each log's header names its revision, tree, cwd, command and module.__file__ with a bare EXIT line last.\nVERDICT diff: read all three commits against 3b1cb4603e: 390 insertions in three files \u2014 two private helpers and a plan-review branch in review_self_state, a 270-line test module, and a landing fragment \u2014 with no deletions and no path outside the declared scope.\nCALL_SITES: reckon/crew/promotion_requests.py:165, reckon/crew/promotion_requests.py:275, reckon/crew/recovery_review_acceptance.py:1085 (dispatch_awaiting_reviews, reached from reckon/crew/resumption.py:2811)\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/recovery_review_acceptance.py:795-806 now returns the delivered report path as the ready record for a plan-review pointer, which is the deliverable the plan section states, and no other promotion behaviour changes.\nSCORE evidence: 16\nJUSTIFICATION evidence: gate-base.log, gate-after.log and negative-control.log each open with the revision, tree, cwd, command and imported module and close with a bare EXIT line, and the negative control reddens the positive case rather than a case written for the mutation.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: git diff 3b1cb4603e..b5ce39fca2 names only reckon/crew/recovery_review_acceptance.py, tests/test_composed_review_writes_under_its_own_run.py and the evidence fragment, all inside the declared paths, and no plan element is edited.\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_composed_review_writes_under_its_own_run.py:236 fails if the plan-review branch at reckon/crew/recovery_review_acceptance.py:789 is put back to the run-review-only read, which repro-before-fix.log records as FF at the pre-repair tree.\nSCORE fit: 16\nJUSTIFICATION fit: the helpers at reckon/crew/recovery_review_acceptance.py:688-725 follow the module's docstring-and-local-import idiom and introduce no forbidden name, though the new test module carries an unused helper at tests/test_composed_review_writes_under_its_own_run.py:91.\nSCORE reuse: 5\nJUSTIFICATION reuse: reckon/crew/recovery_review_acceptance.py:688 re-implements the plan-slug reader that reckon/crew/recovery_review_dispatch.py:2367 already owns, and duplicates the first half of reckon/crew/promotion_checks.py:2953, extending neither.\nFINDING reckon/crew/recovery_review_acceptance.py:688 non-blocking: _plan_review_target duplicates the plan-slug reader the repository already owns rather than extending it. reckon/crew/recovery_review_dispatch.py:2367 (_plan_review_pointer_slug) takes a pointer and returns exactly this value, and reckon/crew/promotion_checks.py:63 (_plan_review_plan_slug) owns the same prefix-then-round_node_source step; the addition duplicates both, so a change to the identity rule must now be made in three places.\nFINDING reckon/crew/recovery_review_acceptance.py:700 non-blocking: _plan_review_target reads the pointer's node as a mapping, while both existing owners tolerate a bare-string node (recovery_review_dispatch.py:2373 and recovery_review_delivery.py:106 both test isinstance(node, Mapping) and fall back to the string). A live plan-review pointer carrying node as a string would now raise AttributeError inside the promotion sweep instead of taking the delivered-record path, so the new helper is less tolerant of the shapes its siblings accept.\nFINDING tests/test_composed_review_writes_under_its_own_run.py:91 non-blocking: _compose_while_held is defined and never called by either test or by any other helper in the module, and lint does not flag an unused function; it carries the dispatch-hold machinery (queue_dispatch, LanePaused) that the delivered cases do not exercise.\n",
+  "review_run_id": "r-20261114T140753022653-review-of-composed-review-writes-under-its-own-run-b5ce39fca217",
+  "reviewed_base_sha": "3b1cb4603ed5fa5eab6683b87d64127596b453cc",
+  "reviewed_head_sha": "b5ce39fca2174fb562d457408e88e1e7556ab06b",
+  "reviewed_run_id": "r-20261114T112549784941-composed-review-writes-under-its-own-run",
+  "scores": {
+    "durability": 17,
+    "evidence": 16,
+    "fit": 16,
+    "goal_fidelity": 18,
+    "reuse": 5,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-14T14:28:22.954310+00:00",
+  "total": 91
+}
