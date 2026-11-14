@@ -1,0 +1,49 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/obligations.py:3950",
+    "reckon/crew/obligation_snapshot.py:1736",
+    "reckon/crew/promotion.py:898"
+  ],
+  "completed_at": "2026-11-14T11:54:40.554Z",
+  "dispatched_at": "2026-11-14T11:30:09Z",
+  "findings": [],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read both commits; e1ea7e5841 moves the ledger read ahead of the pointer test in _settled_state, repairs the sibling test and adds the landed and gone tests (60 insertions, 6 deletions across three files), and f700f0c473 is the evidence fragment alone, so the gate at e1ea7e5841 covers every changed source line.",
+    "done_when": "the done_when names three tests and a negative control; tests/test_refused_promotion_request_settles.py:155, :174 and :248 exercise the promoted, discarded and ack directions, :190 and :214 add the landed and gone directions the prior review found untested, and gate-head.log records 78 passed EXIT=0 while negative-control.log fails test_a_promoted_run_settles_its_refused_request at 3.29s.",
+    "goal": "the section-52 deliverable is that a refused or failed promotion request settles, keeping its record, once its run was promoted in the caller's process, landed, discarded or has no live pointer; reckon/crew/promotion_requests.py:605-637 now reads the discard marker, then the ledger row, then the pointer, so a landed run is settled landed and only a run with neither record nor pointer is gone.",
+    "manifest": "read; it reports the head arm 78 passed in 132.58s against the base arm 73 passed in 130.89s, both EXIT=0, and its measurement_module /tmp/mcintos-gate-base-sSS3yu and cwd match the gate-base.log header, so the provenance the prior review found unreconciled now matches both logs.",
+    "write_paths": "the reviewed manifest declares reckon, both test files, the evidence fragment and a figure directory; the four paths this window changes are inside them, and no plan file or figure was touched."
+  },
+  "justifications": {
+    "durability": "tests/test_refused_promotion_request_settles.py:190 reddens if the pointer test is restored ahead of the ledger read, and :214 reddens if the gone branch is removed; the settled['error'] == REFUSAL assertions at :210 and :234 compare against the constant the fixture wrote, so they guard only that settlement preserves the field.",
+    "evidence": "gate-head.log and gate-base.log carry the 78/132.58s and 73/130.89s arms, both reconcile with the fragment's table and the manifest's measurement_module, though neither log header records the all_debug placement its claims rest on.",
+    "fit": "reckon/crew/promotion_requests.py:605-637 keeps the module's docstring and early-return idiom, and no added name carries a plan label or a version suffix.",
+    "goal_fidelity": "reckon/crew/promotion_requests.py:634 now tests the ledger row before the missing pointer, so the 'landed' reason the deliverable names is reachable and the docstring at :609-615 states the order the code runs.",
+    "reuse": "the window adds no definition; the reorder reuses promotion.discard_recorded at :622, runs._promoted_record_project at :630 and runs.pointer_path at :635 rather than forking a landed-run lookup.",
+    "scope_discipline": "every path in git diff 54c4af53..f700f0c4 is inside the reviewed manifest's declared write paths, and the final commit f700f0c473 is the evidence fragment alone."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the section-52 deliverable is that a refused or failed promotion request settles, keeping its record, once its run was promoted in the caller's process, landed, discarded or has no live pointer; reckon/crew/promotion_requests.py:605-637 now reads the discard marker, then the ledger row, then the pointer, so a landed run is settled landed and only a run with neither record nor pointer is gone.\nVERDICT done_when: the done_when names three tests and a negative control; tests/test_refused_promotion_request_settles.py:155, :174 and :248 exercise the promoted, discarded and ack directions, :190 and :214 add the landed and gone directions the prior review found untested, and gate-head.log records 78 passed EXIT=0 while negative-control.log fails test_a_promoted_run_settles_its_refused_request at 3.29s.\nVERDICT write_paths: the reviewed manifest declares reckon, both test files, the evidence fragment and a figure directory; the four paths this window changes are inside them, and no plan file or figure was touched.\nVERDICT manifest: read; it reports the head arm 78 passed in 132.58s against the base arm 73 passed in 130.89s, both EXIT=0, and its measurement_module /tmp/mcintos-gate-base-sSS3yu and cwd match the gate-base.log header, so the provenance the prior review found unreconciled now matches both logs.\nVERDICT diff: read both commits; e1ea7e5841 moves the ledger read ahead of the pointer test in _settled_state, repairs the sibling test and adds the landed and gone tests (60 insertions, 6 deletions across three files), and f700f0c473 is the evidence fragment alone, so the gate at e1ea7e5841 covers every changed source line.\nCALL_SITES: reckon/crew/obligations.py:3950, reckon/crew/obligation_snapshot.py:1736, reckon/crew/promotion.py:898\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/promotion_requests.py:634 now tests the ledger row before the missing pointer, so the 'landed' reason the deliverable names is reachable and the docstring at :609-615 states the order the code runs.\nSCORE evidence: 18\nJUSTIFICATION evidence: gate-head.log and gate-base.log carry the 78/132.58s and 73/130.89s arms, both reconcile with the fragment's table and the manifest's measurement_module, though neither log header records the all_debug placement its claims rest on.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in git diff 54c4af53..f700f0c4 is inside the reviewed manifest's declared write paths, and the final commit f700f0c473 is the evidence fragment alone.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_refused_promotion_request_settles.py:190 reddens if the pointer test is restored ahead of the ledger read, and :214 reddens if the gone branch is removed; the settled['error'] == REFUSAL assertions at :210 and :234 compare against the constant the fixture wrote, so they guard only that settlement preserves the field.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/crew/promotion_requests.py:605-637 keeps the module's docstring and early-return idiom, and no added name carries a plan label or a version suffix.\nSCORE reuse: 20\nJUSTIFICATION reuse: the window adds no definition; the reorder reuses promotion.discard_recorded at :622, runs._promoted_record_project at :630 and runs.pointer_path at :635 rather than forking a landed-run lookup.",
+  "review_run_id": "r-20261114T112707180861-review-of-refused-promotion-request-settles-f700f0c47355",
+  "reviewed_base": "54c4af532658c3b0f2291ba252af6a78aa8a29c2",
+  "reviewed_base_sha": "54c4af532658c3b0f2291ba252af6a78aa8a29c2",
+  "reviewed_head_sha": "f700f0c473558bf92f5a1e05bca06d7d64beb5e8",
+  "reviewed_run_id": "r-20261114T082607330575-refused-promotion-request-settles",
+  "scores": {
+    "durability": 19,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-14T11:58:16.289656+00:00",
+  "total": 116
+}
