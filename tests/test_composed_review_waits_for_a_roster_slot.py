@@ -211,3 +211,56 @@ def test_a_freed_seat_admits_the_queued_review(
     # so the review the fleet was too busy to place is the one that launched.
     admitted = runs.read_pointer("r-admitted-review-1")
     assert admitted.get("admitted_at")
+
+
+def test_a_direct_local_dispatch_on_a_full_roster_is_queued(
+    project: tuple[Path, Path, Path],
+) -> None:
+    """A direct dispatch that meets a full roster is stored as queued, not lost.
+
+    The dispatch printed a run id and then refused, leaving no pointer, so
+    nothing launched when a seat freed and the coordinator had to retry by hand.
+    A full roster is a wait for a seat, so the request is queued as a router hold
+    queues it.
+    """
+    from reckon.crew.dispatch_admission import LanePaused
+    from reckon.crew.dispatching import preparation
+    from reckon.crew.node import TaskNode
+
+    _home, repo, _path = project
+    _fill_the_roster()
+    brief = repo / "brief.md"
+    brief.write_text("Review the delivery.\n", encoding="utf-8")
+    node = TaskNode(
+        id="review-direct",
+        goal="review the delivered work",
+        plan="fixture",
+        section="delivery",
+        brief=str(brief),
+        role="review",
+        spec_level="exact",
+        done_when=(
+            "the review stores a parsed record scoring all 6 dimensions in the range "
+            "0..20 at docs/evidence/review-direct.html, and the manifest reads complete"
+        ),
+        write_paths=["docs/evidence/review-direct.html"],
+        time_budget="20m",
+    )
+
+    with pytest.raises(LanePaused) as held:
+        preparation.dispatch(
+            node=node,
+            project="sample",
+            repo=repo,
+            config=_config(),
+            session="coordinator",
+            local=True,
+            unreviewed_plan_override=True,
+            unreconciled_override=True,
+            watch_override=True,
+        )
+
+    queued = getattr(held.value, "queued", None)
+    assert queued, held.value
+    assert [pointer["run_id"] for pointer in _queued_reviews()] == [queued["run_id"]]
+    assert "roster is full" in str(queued.get("reason") or "")
