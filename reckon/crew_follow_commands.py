@@ -22,17 +22,13 @@ import click
 # (re-exported) here so a caller reaching them through this module keeps working.
 from reckon import checkout_trust  # noqa: F401 - re-exported for callers
 from reckon._timestamps import parse_utc
+from reckon.crew.follower_registration import _pipe_reader_pids
 from reckon.crew.follower_reload import (  # noqa: F401 - re-exported for callers
     _FollowerReloader,
     _probe_retry_jitter,
     _StampPoll,
 )
-from reckon.crew.session_host import (
-    SETTLE_ENV,
-    SETTLED_EXIT_CODE,
-    owner_alive,
-    process_alive,
-)
+from reckon.crew.session_host import SETTLE_ENV, SETTLED_EXIT_CODE, owner_alive
 from reckon.crew.station_subscriber import STATION_GAP_EVENT
 from reckon.crew_dispatch_commands import _crew_modules, _emit_crew_result, crew
 from reckon.env_duration import read_duration_override
@@ -1605,6 +1601,10 @@ def _follow_watch_lines(
     )
     lifetime_elapsed = False
     consumer_gone = False
+    # Settled once the follower's output has been shown to reach a reader the
+    # process that started it does not hold, so the walk that proves it runs
+    # once rather than on every wait pass.
+    reader_confirmed = False
     # The settle: a follower a settle-aware host runs ends once no live work
     # remains, printing one idle line. ``saw_live`` is the hinge -- a dispatch
     # asks the host for this follower before it publishes the run's pointer, so
@@ -1738,24 +1738,21 @@ def _follow_watch_lines(
         is printed on this path: it is the one path whose whole point is that no
         reader is left.
         """
-        nonlocal consumer_gone
+        nonlocal consumer_gone, reader_confirmed
         if consumer_gone:
             return
         owner_pid, owner_start = runs.follower_owner()
-        owner_alive = owner_pid > 1 and runs.process_alive(owner_pid) is True
-        if owner_alive and owner_start:
-            owner_alive = runs._process_start_time(owner_pid) == owner_start
-        if owner_alive:
+        owner_running = owner_pid > 1 and runs.process_alive(owner_pid) is True
+        if owner_running and owner_start:
+            owner_running = runs._process_start_time(owner_pid) == owner_start
+        if owner_running:
             return
-        # A reader substitutes for the owner only where the arming has actually
-        # gone: the follower has been re-parented because the process that
-        # started it exited. A follower still held by a live parent whose armed
-        # owner was killed elsewhere is a takeover, not an orphan, and keeps the
-        # owner-only ending even when some parent-side pipe still holds a read
-        # end that never reads.
-        if _arming_has_gone() and _stdout_has_reader():
-            return
-        consumer_gone = True
+        if not reader_confirmed:
+            if not _stdout_has_reader(owner_pid):
+                consumer_gone = True
+                return
+            reader_confirmed = True
+        return
 
     def _check_lifetime() -> None:
         """Mark this arming ended when its own deadline has passed.
@@ -2662,52 +2659,56 @@ def _follow_watch_lines(
 
 
 
-def _arming_has_gone() -> bool:
-    """Whether the process that started this follower has exited.
-
-    A follower whose arming process is gone has been re-parented to init or to
-    whatever subreaper adopted it, so its parent no longer names the process
-    that started it, or names nothing alive. A follower still held by a live
-    parent was started by something that is itself running, and a dead *armed*
-    owner in that state is a takeover: the follower is not an orphan and its
-    output is not the last copy of anything a caller is still reading.
-    """
-    parent = os.getppid()
-    alive = process_alive(parent)
-    return parent <= 1 or not alive
-
-
-def _stdout_has_reader(stream=None) -> bool:
-    """Whether this follower's output still reaches a reader it does not own.
+def _stdout_has_reader(owner_pid: int, stream=None) -> bool:
+    """Whether this follower's output still reaches a reader that is not its parent.
 
     A follower armed by a shell that exits — two followers piped into one
     reader, as ``bash -c 'crew follow ... & crew follow ... &' | grep .`` does —
     loses its owner but not its reader: the caller still holds the pipe's read
-    end, and the rows are read until that end closes. That is the delivery, so
-    a follower in that state keeps streaming.
+    end, and the rows are read until that end closes. That is the delivery, so a
+    follower in that state keeps streaming.
 
-    Only a pipe is measured. A pipe's reader is a live process holding the other
-    end, and its closing is visible to the writer as ``POLLERR`` on the write
-    end, which is the same condition that makes the next write fail with
-    ``EPIPE``. A regular file or a terminal has no reader that is held open that
-    way — writing into a log file succeeds whether or not anyone ever reads it —
-    so those answer ``False`` and the owner check keeps its present job for
-    them: an orphan writing into a file holds the registration against the
-    session's next follower for no one's benefit.
+    The parent is not the owner here: the arming process is dead whatever
+    adopted the follower, so re-parenting is judged against the owner read from
+    :func:`reckon.crew.runs.follower_owner`, never by the parent's liveness —
+    under a live subreaper the parent is a running process that never armed the
+    follower at all.
+
+    A socket and a terminal carry a reader by construction, so they answer yes.
+    A piped output is followed to the process holding its read end: the follower
+    keeps streaming only when some process other than its current parent reads
+    it. A parent that did start this follower and holds the read end is an
+    in-process harness whose armed owner was killed elsewhere — a takeover, not
+    an orphan — and that pipe is never read, so the owner-only rule keeps its
+    present job there. A regular file is read by whoever opens it later, which
+    for a command that never exits is nobody: those answer no, and an orphan
+    writing into one still ends and frees the registration instead of refusing
+    every dispatch from its session.
     """
     try:
         target = stream or click.get_text_stream("stdout")
         descriptor = target.fileno()
-        if not stat.S_ISFIFO(os.fstat(descriptor).st_mode):
+        info = os.fstat(descriptor)
+
+        if stat.S_ISREG(info.st_mode):
             return False
+        if not stat.S_ISFIFO(info.st_mode):
+            return True
         poller = select.poll()
         poller.register(descriptor, select.POLLERR)
-        events = poller.poll(0)
+        if any(mask & select.POLLERR for _event, mask in poller.poll(0)):
+            return False
+        parent = os.getppid()
+        # An owner of pid 1 or below is the re-parented marker rather than a
+        # process, so it cannot be compared with the parent.
+        if owner_pid > 1 and parent == owner_pid:
+            return False
+        readers = _pipe_reader_pids(info.st_ino, exclude=os.getpid())
     except (AttributeError, OSError, ValueError):
         # A stream this cannot inspect is treated as having no reader, which is
         # the pre-existing rule: the pending registration is the costlier error.
         return False
-    return not any(mask & select.POLLERR for _event, mask in events)
+    return any(pid != parent for pid in readers)
 
 
 def _echo_follow_line(line: str, *, stream=None) -> None:

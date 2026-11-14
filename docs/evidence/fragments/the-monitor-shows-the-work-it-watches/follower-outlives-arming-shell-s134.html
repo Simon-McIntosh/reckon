@@ -3,14 +3,18 @@
 
   <p id="follower-outlives-arming-shell-s134-landed-fix">The consumer check in
   <code>reckon/crew_follow_commands.py</code> now asks whether the follower's output still has a
-  reader before it treats a dead owner as an ending. <code>_stdout_has_reader()</code> measures only
-  a pipe: a closed read end shows on the write end as <code>POLLERR</code>, the same condition that
-  makes the next write fail with <code>EPIPE</code>, and the command now ends directly on
-  <code>BrokenPipeError</code> from that write. The substitution is gated by
-  <code>_arming_has_gone()</code>: it applies only when the follower has been re-parented, so a
-  follower awaiting a takeover keeps the owner-only ending even when a live parent's pipe still holds
-  an unread read end. Nothing changes for a follower no reader holds — a regular file or a terminal
-  answers no, so it still ends and frees its registration.</p>
+  reader before it treats a dead owner as an ending. <code>_stdout_has_reader(owner_pid)</code>
+  answers for the descriptor's kind: a socket or a terminal carries a reader by construction and
+  answers yes; a regular file answers no, so an orphan writing into one still ends and frees its
+  registration; a pipe first takes the cheap <code>POLLERR</code> probe, the same condition that
+  makes the next write fail with <code>EPIPE</code>, and then follows the read end to the pids
+  holding it through <code>follower_registration._pipe_reader_pids</code>. The follower keeps
+  streaming only when one of those readers is a process other than its current parent, and
+  re-parenting is judged by comparing the parent against the owner recorded by
+  <code>follower_owner()</code>, never by the parent's liveness — under a live subreaper the parent
+  is a running process that never armed the follower. A live parent holding an unread pipe for a
+  dead armed owner is a takeover, and keeps the owner-only ending. The verdict is remembered once
+  won, so the <code>/proc</code> walk runs at most once.</p>
 
   <p id="follower-outlives-arming-shell-s134-landed-proof">The new test arms two session followers as
   background jobs of a shell that exits at once, writing into one reader, and asserts that both are
@@ -32,7 +36,8 @@
 
   <p id="follower-outlives-arming-shell-s134-landed-scope">Files changed:
   <code>reckon/crew_follow_commands.py</code> and
-  <code>tests/test_a_follower_with_a_reader_outlives_its_arming_shell.py</code>. Ruff reports only the
-  two findings that pre-date this change in the command module (SIM103, SIM115) and none in the test,
-  which is format-clean.</p>
+  <code>tests/test_a_follower_with_a_reader_outlives_its_arming_shell.py</code>. <code>ruff check</code>
+  reports only SIM103 and SIM115, both present in the base revision; the test is
+  <code>ruff format</code>-clean, and the command module's remaining format differences are
+  pre-existing double blank lines, none inside the block this change adds.</p>
 </article>
