@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="the-monitor-shows-the-work-it-watches">
+  <meta name="plan-evidence-for" content="reckon:the-monitor-shows-the-work-it-watches">
+  <meta name="plan-verifies" content="reckon:the-monitor-shows-the-work-it-watches#s139">
+  <meta name="plan-recorded-at" content="2026-11-14">
+  <meta name="plan-verdict" content="passed">
+  <title>One unreadable pointer never stops the station tick | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" id="station-tick-survives-one-unreadable-pointer-s139-landing" data-node="station-tick-survives-one-unreadable-pointer-s139" data-reckon="landed" data-when="2026-11-14">
+  <h2>One pointer that cannot be classified costs its own row, not the tick</h2>
+  <p>On 14 November the station died on a single pointer. A blocked CLI run whose backend command was <code>srun</code> reached <code>_stream_session</code> through <code>classify_pointer</code> &rarr; <code>_blocked_session_resolution</code> &rarr; <code>resolve_session</code>, where <code>dialect_for</code> raised <code>BackendError</code> because <code>srun</code> has no launch translation. Nothing between the resolver and <code>run_station</code> isolated that one row, so the pass ended for every other live pointer and took the process with it. The reproduction in the assigned tree printed the escape verbatim from <code>classify_tick</code>: <code>reckon._worker_fence.BackendError: no launch translation for command 'srun'; reckon can translate: claude, clive, codex, omp</code>.</p>
+  <p>Two repairs, measured as separate facts. <code>reckon/crew/station_store.py</code> classifies each pointer under its own guard in <code>classify_tick</code>: a row whose classification raises is recorded with <code>state</code> and <code>classification</code> <code>unreadable</code> and a <code>detail</code> naming the exception's type and message, a line naming the run is written to the station's stderr, and the pass continues. Nothing is stored for that row, so the next tick classifies it again rather than serving the error from the store. <code>reckon/crew/resumption.py</code> adds <code>BackendError</code> to the exceptions <code>_stream_session</code> already treats as an unreadable stream, so an untranslatable command answers an empty session and the resolver falls through to the ledger.</p>
+  <p><strong>Gate.</strong> <code>tests/test_one_unreadable_pointer_never_stops_the_tick.py</code> on a temporary crew home, over three live pointers: two ordinary working runs and one blocked CLI pointer whose backend command is <code>srun</code>. The guard case injects the incident's own <code>BackendError</code> at <code>_stream_session</code> &mdash; the seam the incident's call path named, because the sibling repair removes the natural trigger &mdash; and reads two rows classified <code>working</code> and the <code>srun</code> row <code>unreadable</code> naming <code>BackendError</code>, with no exception escaping; the log case reads the same verdicts plus the <code>station-tick-unreadable: r-srun: BackendError</code> line. The resolver case calls the unpatched <code>_stream_session</code> on the real <code>srun</code> pointer and reads <code>""</code> with no exception, and the unpatched-tick case reads all three rows with <code>srun</code> at <code>blocked</code>. <strong>4 passed.</strong> At the base revision <code>53c4c5238e</code> the same four cases all fail with the exception escaping (<code>4 failed</code>, <code>EXIT=1</code>), log <code>logs/base-revision-new-test.log</code>.</p>
+  <p><strong>Negative control.</strong> The per-pointer guard is removed (the <code>except</code> narrowed to an exception the classifier never raises) and the guard case fails with the exception escaping: 2 failed, 2 passed, <code>EXIT=1</code>, including <code>test_a_pointer_whose_classification_raises_is_recorded_unreadable</code>. Log: <code>logs/negative-control-guard-removed.log</code>.</p>
+</article>
+</body>
+</html>

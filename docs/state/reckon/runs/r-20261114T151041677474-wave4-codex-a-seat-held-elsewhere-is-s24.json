@@ -1,0 +1,824 @@
+{
+  "agent": {
+    "alias": "sol61",
+    "backend": "codex",
+    "effort": "high",
+    "launch": "cli",
+    "model": "gpt-6.1-sol",
+    "sandbox": "worktree-full"
+  },
+  "attempt": 2,
+  "attempt_kind": "resume",
+  "backend": "codex",
+  "base_sha": "de40d35123a47a5b72910de5571132678b023a4f",
+  "boundary_waiver": null,
+  "brief": null,
+  "budget": {
+    "budget_overrun": false,
+    "budget_overrun_notice": null,
+    "budget_overrun_seconds": 0,
+    "budget_overrun_tokens": 0,
+    "cost_usd": null,
+    "detail": "backend reports token usage but no headroom",
+    "headroom": "unknown",
+    "rate_limit_period_minutes": null,
+    "rate_limit_type": null,
+    "refusal": false,
+    "resets_at": null,
+    "surpassed_threshold": null,
+    "threshold_status": null,
+    "tokens": {
+      "cache_write_input_tokens": 0,
+      "cache_write_input_tokens_cumulative": 0,
+      "cached_input_tokens": 12799488,
+      "cached_input_tokens_cumulative": 12799488,
+      "input_tokens": 12977117,
+      "input_tokens_cumulative": 12977117,
+      "output_tokens": 48143,
+      "output_tokens_cumulative": 48143,
+      "reasoning_output_tokens": 27378,
+      "reasoning_output_tokens_cumulative": 27378
+    },
+    "utilisation_pct": null
+  },
+  "changed_lines": {
+    "added": 5,
+    "files": 1,
+    "removed": 0
+  },
+  "clone_matches": [],
+  "commit_resolution": null,
+  "commits": [
+    "1357a083d3d7906010eaa8c75f95e2f35fcf3ab7"
+  ],
+  "completed_at": "2026-11-14T17:02:05Z",
+  "completed_at_source": "stream_mtime",
+  "dispatched_at": "2026-11-14T15:25:15Z",
+  "disposition": null,
+  "dispute_count": 0,
+  "domain_waiver": null,
+  "duration_measurement": {
+    "reason": "model_span_unavailable_at_promotion",
+    "status": "underivable"
+  },
+  "execution_fit": {
+    "allowed": true,
+    "execution_capable": true,
+    "matched_measure": null,
+    "override": false,
+    "role": "implement",
+    "status": "no-execution-measure"
+  },
+  "failure_classification": null,
+  "gate": "passed",
+  "gate_check": {
+    "command": "PYTHONPATH=. /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_live_producer_reads_live.py tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py",
+    "exit_status": 0,
+    "log_digest": null,
+    "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261114T151041677474-wave4-codex-a-seat-held-elsewhere-is-s24/armed-suite/after.log"
+  },
+  "impl_move": {
+    "at_complete": null,
+    "at_dispatch": 0.8051948051948052,
+    "plan": "a-seat-held-elsewhere-is-not-restarted",
+    "reason": "corrective-run:resume",
+    "verdict": "exempt"
+  },
+  "lane": "codex",
+  "lane_advisory": {
+    "backend": "codex",
+    "burn_multiple": 1.787709497206704,
+    "cheaper_lane": {
+      "detail": "",
+      "lane": null,
+      "state": "not_evaluated"
+    },
+    "detail": "'codex' is projected to exhaust at 2026-11-17T11:05:22Z, which is after this node's 7200s horizon ending 2026-11-14T17:23:55.538386+00:00",
+    "horizon_ends_at": "2026-11-14T17:23:55.538386+00:00",
+    "horizon_seconds": 7200,
+    "metered": true,
+    "observed_at": "2026-11-14T15:23:54Z",
+    "precedes_horizon": false,
+    "projected_exhaustion_at": "2026-11-17T11:05:22Z",
+    "resets_at": "2026-11-19T16:24:40Z",
+    "seconds_until_reset": 435645,
+    "state": "quiet",
+    "utilisation_pct": 50.0
+  },
+  "lane_declaration": {
+    "backend": "codex",
+    "headroom": "known",
+    "metered": true,
+    "observed_at": "2026-11-14T15:23:54Z",
+    "read_at": "2026-11-14T15:23:55Z",
+    "resolved_backend": "codex",
+    "utilisation_pct": 50.0
+  },
+  "lane_reading": {
+    "age_seconds": null,
+    "binding_observed": "unknown",
+    "detail": "backend declares no lane document",
+    "generating": "unknown",
+    "headroom": "unknown",
+    "mean_context": "unknown",
+    "observed_at": null,
+    "state": "unknown",
+    "suggested_shelf_life_seconds": null,
+    "throughput": {
+      "age_seconds": null,
+      "aggregate_tokens_per_second": "unknown",
+      "detail": "backend declares no lane document",
+      "mean_tokens_per_second": "unknown",
+      "observed_at": null,
+      "runs": "unknown",
+      "state": "unknown"
+    },
+    "waiting": "unknown"
+  },
+  "lane_receipt": {
+    "effective_context_window": 380000,
+    "notional_cost_usd": "unmeasured",
+    "observed_at": "2026-11-14T17:02:05Z",
+    "quota_state": "measured",
+    "quota_windows": [
+      {
+        "observed_at": "2026-11-14T17:02:05Z",
+        "resets_at": 1795105480,
+        "used_percent": 55.0,
+        "window_minutes": 10080
+      }
+    ],
+    "rate_basis": "unmeasured",
+    "unmeasured": {
+      "notional_cost_usd": "no_dated_rate",
+      "rate_basis": "no_dated_rate"
+    }
+  },
+  "lineage": null,
+  "local": false,
+  "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261114T151041677474-wave4-codex-a-seat-held-elsewhere-is-s24/manifest.md",
+  "member": "disposable-r-20261114T151041677474-wave4-codex-a-seat-held-elsewhere-is-s24",
+  "model_key": "sol",
+  "negative_control": {
+    "added_failure_ids": [
+      "tests/test_a_live_producer_reads_live.py::test_hook_and_producer_share_the_full_lease_interval[0.75-True-17]",
+      "tests/test_a_live_producer_reads_live.py::test_hook_and_producer_share_the_full_lease_interval[0.75-True-None]",
+      "tests/test_a_live_producer_reads_live.py::test_hook_and_producer_share_the_full_lease_interval[0.99-True-17]",
+      "tests/test_a_live_producer_reads_live.py::test_hook_and_producer_share_the_full_lease_interval[0.99-True-None]"
+    ],
+    "baseline_failure_ids": [],
+    "comparison_arm": "after_suite",
+    "control_exit_status": 1,
+    "control_failure_ids": [
+      "tests/test_a_live_producer_reads_live.py::test_hook_and_producer_share_the_full_lease_interval[0.75-True-17]",
+      "tests/test_a_live_producer_reads_live.py::test_hook_and_producer_share_the_full_lease_interval[0.75-True-None]",
+      "tests/test_a_live_producer_reads_live.py::test_hook_and_producer_share_the_full_lease_interval[0.99-True-17]",
+      "tests/test_a_live_producer_reads_live.py::test_hook_and_producer_share_the_full_lease_interval[0.99-True-None]"
+    ],
+    "control_log_source": "manifest",
+    "control_run_failed": true,
+    "declaration": "The negative control restores the defect the manifest names, and the first case fails.",
+    "head_failure_ids": [],
+    "log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261114T151041677474-wave4-codex-a-seat-held-elsewhere-is-s24/negative-control.log",
+    "resolved_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261114T151041677474-wave4-codex-a-seat-held-elsewhere-is-s24/negative-control.log",
+    "test_paths": [
+      "tests/test_a_live_producer_reads_live.py",
+      "tests/test_a_polling_producer_renews_its_lease_on_every_poll.py"
+    ],
+    "verdict": "matched"
+  },
+  "no_commit": null,
+  "node": "wave4-codex-a-seat-held-elsewhere-is-s24",
+  "node_definition": {
+    "admission_findings": [],
+    "after": [],
+    "anchor_paths": [],
+    "brief": "",
+    "brief_path": "",
+    "brief_sha256": "",
+    "capability": {
+      "class": "orchestrator",
+      "requirements": {
+        "reasoning": "deep",
+        "risk": "elevated",
+        "verification": "strict"
+      },
+      "version": "1.0"
+    },
+    "compares_with": "",
+    "coordinator": {
+      "authoring_turn": {
+        "detail": "the dispatching harness exposed no authoring-turn token usage",
+        "status": "unknown",
+        "tokens": null
+      },
+      "harness": null,
+      "runtime_session_id": null,
+      "session_id": "829e5a4a-6870-4aec-876d-ba2efb1b5ecf"
+    },
+    "done_when": "Done when a new tests/test_a_live_producer_reads_live.py shows, against a temporary crew home, the case the manifest names: Either a running follower renews the lease within half an interval on each wait pass, or the hook reads a producer whose lease is inside its interval as live. A producer whose lease has lapsed past its interval is read as gone in both places. The negative control restores the defect the manifest names, and the first case fails. The test files importing reckon.crew.runs and the hook module add no failure against the base revision. Ruff adds no findings on the staged paths. Write paths: reckon/crew/runs.py , reckon/hooks/coordinator_obligations.py , reckon/crew_follow_commands.py and the new test.",
+    "estimated_hours": 1.0,
+    "goal": "Deliver section s24 of a-seat-held-elsewhere-is-not-restarted as its done-when states",
+    "id": "wave4-codex-a-seat-held-elsewhere-is-s24",
+    "images": [],
+    "inputs": [],
+    "lane_declaration": {
+      "backend": "codex",
+      "headroom": "known",
+      "metered": true,
+      "observed_at": "2026-11-14T15:23:54Z",
+      "read_at": "2026-11-14T15:23:55Z",
+      "resolved_backend": "codex",
+      "utilisation_pct": 50.0
+    },
+    "lane_reading": {
+      "age_seconds": null,
+      "binding_observed": "unknown",
+      "detail": "backend declares no lane document",
+      "generating": "unknown",
+      "headroom": "unknown",
+      "mean_context": "unknown",
+      "observed_at": null,
+      "state": "unknown",
+      "suggested_shelf_life_seconds": null,
+      "throughput": {
+        "age_seconds": null,
+        "aggregate_tokens_per_second": "unknown",
+        "detail": "backend declares no lane document",
+        "mean_tokens_per_second": "unknown",
+        "observed_at": null,
+        "runs": "unknown",
+        "state": "unknown"
+      },
+      "waiting": "unknown"
+    },
+    "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261114T151041677474-wave4-codex-a-seat-held-elsewhere-is-s24/manifest.md",
+    "negative_control": "The negative control restores the defect the manifest names, and the first case fails.",
+    "over_fence_reason": "",
+    "peer_scopes": {
+      "a-design-and-a-content-review-run-together": [
+        "docs/evidence/fragments/a-plan-is-reviewed-before-it-is-built/a-design-and-a-content-review-run-together.html",
+        "docs/figures/a-plan-is-reviewed-before-it-is-built/a-design-and-a-content-review-run-together",
+        "reckon/crew/promotion_checks.py",
+        "reckon/crew/recovery_review_dispatch.py",
+        "reckon/crew/recovery_review_subject.py",
+        "reckon/crew/repair.py",
+        "tests/test_a_design_and_a_content_review_run_together.py",
+        "tests/test_a_design_and_content_review_run_together.py"
+      ],
+      "a-figure-review-runs-only-on-an-unmetered-image-lane": [
+        "reckon/crew/recovery_review_dispatch.py",
+        "tests/test_a_figure_review_takes_an_image_lane.py"
+      ],
+      "a-finished-review-releases-its-scope-claim": [
+        "docs/evidence/fragments/a-review-dies-where-nobody-is-looking/a-finished-review-releases-its-scope-claim.html",
+        "docs/figures/a-review-dies-where-nobody-is-looking/a-finished-review-releases-its-scope-claim",
+        "reckon/crew/node.py",
+        "reckon/crew/recovery_review_dispatch.py",
+        "reckon/crew/runs.py",
+        "tests/test_a_finished_review_releases_its_scope_claim.py"
+      ],
+      "a-landing-without-its-pointer-keeps-the-pending-record": [
+        "docs/evidence/fragments/concurrent-edits-meet-at-the-merge/a-landing-without-its-pointer-keeps-the-pending-record.html",
+        "docs/figures/concurrent-edits-meet-at-the-merge/a-landing-without-its-pointer-keeps-the-pending-record",
+        "reckon/crew/pending_landing.py",
+        "reckon/crew_run_commands.py",
+        "tests/test_a_landing_without_its_pointer_keeps_the_pending_record.py"
+      ],
+      "a-launch-span-is-dated-and-bounded": [
+        "docs/evidence/fragments/a-dispatch-returns-without-its-worker/a-launch-span-is-dated-and-bounded.html",
+        "docs/figures/a-dispatch-returns-without-its-worker/a-launch-span-is-dated-and-bounded",
+        "reckon/crew/dispatch.py",
+        "reckon/crew/dispatch_claims.py",
+        "reckon/crew/dispatch_refusals.py",
+        "reckon/crew/queue_admission.py",
+        "reckon/crew/refusals.py",
+        "tests/test_a_launch_span_is_dated_and_bounded.py",
+        "tests/test_crew_refusal_visibility.py"
+      ],
+      "a-promotion-lands-in-under-a-minute-with-peers": [
+        "docs/evidence/fragments/a-landing-never-waits-on-a-shared-index/a-promotion-lands-in-under-a-minute-with-peers.html"
+      ],
+      "a-tick-computes-the-reference-rate-once": [
+        "docs/evidence/fragments/the-monitor-reads-each-fact-once/a-tick-computes-the-reference-rate-once.html",
+        "docs/figures/the-monitor-reads-each-fact-once/a-tick-computes-the-reference-rate-once",
+        "reckon/crew/recovery_stream.py",
+        "tests/test_a_tick_computes_the_reference_rate_once.py"
+      ],
+      "an-unchanged-index-is-parsed-once": [
+        "docs/evidence/fragments/the-monitor-reads-each-fact-once/an-unchanged-index-is-parsed-once.html",
+        "docs/figures/the-monitor-reads-each-fact-once/an-unchanged-index-is-parsed-once",
+        "reckon/crew/review_records.py",
+        "tests/test_an_unchanged_index_is_parsed_once.py"
+      ],
+      "cleanly-reviewed-run-lands-itself": [
+        "docs/evidence/fragments/work-flows-to-the-lane/cleanly-reviewed-run-lands-itself.html",
+        "docs/figures/work-flows-to-the-lane/cleanly-reviewed-run-lands-itself",
+        "reckon",
+        "tests/test_cleanly_reviewed_run_lands_itself.py"
+      ],
+      "composed-review-waits-for-a-roster-slot": [
+        "docs/evidence/fragments/work-flows-to-the-lane/composed-review-waits-for-a-roster-slot.html",
+        "docs/figures/work-flows-to-the-lane/composed-review-waits-for-a-roster-slot",
+        "reckon",
+        "tests/test_composed_review_waits_for_a_roster_slot.py"
+      ],
+      "composed-review-writes-under-its-own-run": [
+        "docs/evidence/fragments/work-flows-to-the-lane/composed-review-writes-under-its-own-run.html",
+        "docs/figures/work-flows-to-the-lane/composed-review-writes-under-its-own-run",
+        "reckon",
+        "tests/test_composed_review_writes_under_its_own_run.py"
+      ],
+      "fenced-worker-tmp-is-its-scratch": [
+        "docs/evidence/fragments/work-flows-to-the-lane/fenced-worker-tmp-is-its-scratch.html",
+        "docs/figures/work-flows-to-the-lane/fenced-worker-tmp-is-its-scratch",
+        "reckon",
+        "tests/test_a_worker_cannot_remove_the_nodes_temporary_files.py",
+        "tests/test_fenced_worker_tmp_is_its_scratch.py"
+      ],
+      "follower-outlives-arming-shell-s134": [
+        "docs/evidence/fragments/the-monitor-shows-the-work-it-watches/follower-outlives-arming-shell-s134.html",
+        "docs/figures/the-monitor-shows-the-work-it-watches/follower-outlives-arming-shell-s134",
+        "reckon/crew_follow_commands.py",
+        "tests/test_a_follower_with_a_reader_outlives_its_arming_shell.py"
+      ],
+      "git-answer-and-resumption-locks-cross-node": [
+        "reckon/crew/recovery_watch.py",
+        "reckon/crew/resumption.py",
+        "tests/test_every_shared_home_lock_holds_across_nodes.py",
+        "tests/test_recovery_store_locks_hold_across_nodes.py"
+      ],
+      "lane-budget-picker-locks-cross-node": [
+        "reckon/crew/budget_reset.py",
+        "reckon/crew/model_catalogue.py",
+        "reckon/crew/paid_lanes.py",
+        "reckon/crew/picker/outcomes.py",
+        "tests/test_every_shared_home_lock_holds_across_nodes.py",
+        "tests/test_lane_and_picker_locks_hold_across_nodes.py"
+      ],
+      "open-run-index-rebuilt-once-per-pass": [
+        "docs/evidence/fragments/work-flows-to-the-lane/open-run-index-rebuilt-once-per-pass.html",
+        "docs/figures/work-flows-to-the-lane/open-run-index-rebuilt-once-per-pass",
+        "reckon",
+        "tests/test_open_run_index_rebuilt_once_per_pass.py"
+      ],
+      "over-fence-budget-recorded-not-refused": [
+        "docs/evidence/fragments/work-flows-to-the-lane/over-fence-budget-recorded-not-refused.html",
+        "docs/figures/work-flows-to-the-lane/over-fence-budget-recorded-not-refused",
+        "reckon",
+        "tests/test_over_fence_budget_recorded_not_refused.py"
+      ],
+      "parallel-nodes-on-one-module-land-measured": [
+        "docs/evidence/fragments/concurrent-edits-meet-at-the-merge/parallel-nodes-on-one-module-land-measured.html"
+      ],
+      "pending-table-empty-and-two-node-measure": [
+        "docs/evidence/archive/every-shared-home-lock-holds-across-nodes-landed.html",
+        "tests/test_every_shared_home_lock_holds_across_nodes.py"
+      ],
+      "promotion-checks-read-only-what-moved": [
+        "reckon/crew/promotion.py",
+        "reckon/crew/promotion_checks.py",
+        "tests/test_promotion_checks_read_only_what_moved.py"
+      ],
+      "queue-edit-keeps-the-named-backend": [
+        "docs/evidence/fragments/work-flows-to-the-lane/queue-edit-keeps-the-named-backend.html",
+        "docs/figures/work-flows-to-the-lane/queue-edit-keeps-the-named-backend",
+        "reckon",
+        "tests/test_queue_edit_keeps_the_named_backend.py"
+      ],
+      "ready-a-review-can-see-the-figure-s20": [
+        "reckon/crew/recovery_review_dispatch.py",
+        "tests/test_a_figure_review_takes_an_image_lane.py"
+      ],
+      "review-dispatch-and-index-lag-locks-cross-node": [
+        "reckon/crew/obligations.py",
+        "reckon/crew/recovery_review_dispatch.py",
+        "tests/test_every_shared_home_lock_holds_across_nodes.py",
+        "tests/test_review_dispatch_lock_holds_across_nodes.py"
+      ],
+      "run-landing-ledger-locks-cross-node": [
+        "reckon/crew/admission/service.py",
+        "reckon/crew/placement.py",
+        "reckon/crew/queue_landing.py",
+        "reckon/crew/runs.py",
+        "reckon/ledger.py",
+        "tests/test_every_shared_home_lock_holds_across_nodes.py",
+        "tests/test_run_and_landing_locks_hold_across_nodes.py"
+      ],
+      "service-runs-mains-code": [
+        "docs/evidence/fragments/work-is-never-stuck-behind-the-admission-loop/service-runs-mains-code.html",
+        "docs/figures/work-is-never-stuck-behind-the-admission-loop/service-runs-mains-code",
+        "reckon/crew/fleet_supervisor.py",
+        "tests/test_a_service_runs_the_code_main_carries.py"
+      ],
+      "store-and-review-index-locks-cross-node": [
+        "reckon/_store.py",
+        "reckon/compliance.py",
+        "reckon/crew/dispatch_peer.py",
+        "reckon/crew/review_records.py",
+        "tests/test_every_shared_home_lock_holds_across_nodes.py",
+        "tests/test_store_and_review_index_locks_hold_across_nodes.py"
+      ],
+      "the-bounded-pass-is-re-measured-after-the-git-repairs": [
+        "docs/evidence/fragments/a-read-answers-inside-its-deadline/the-bounded-pass-is-re-measured-after-the-git-repairs.html"
+      ],
+      "the-census-finds-no-live-worker-drawn-halted": [
+        "docs/evidence/fragments/a-live-worker-is-never-drawn-halted/census-instrument.html",
+        "reckon/crew/live_worker_census.py",
+        "tests/test_live_worker_census.py"
+      ],
+      "the-dispatch-exit-bound-holds-at-working-load": [
+        "docs/evidence/fragments/a-dispatch-returns-without-its-worker/the-dispatch-exit-bound-holds-at-working-load.html",
+        "tests/test_dispatch_returns_without_worker.py"
+      ],
+      "the-old-event-logs-are-retired": [
+        "docs/evidence/fragments/crew-state-stays-bounded/the-old-event-logs-are-retired.html",
+        "docs/figures/crew-state-stays-bounded/the-old-event-logs-are-retired",
+        "reckon/crew/event_log_retirement.py",
+        "reckon/crew/gc.py",
+        "tests/test_the_old_event_logs_are_retired.py"
+      ],
+      "the-reads-are-measured-inside-their-deadline": [
+        "docs/evidence/fragments/a-read-answers-inside-its-deadline/the-reads-are-measured-inside-their-deadline.html"
+      ],
+      "unreadable-queued-pointer-never-fails-ordering": [
+        "docs/evidence/fragments/work-flows-to-the-lane/unreadable-queued-pointer-never-fails-ordering.html",
+        "docs/figures/work-flows-to-the-lane/unreadable-queued-pointer-never-fails-ordering",
+        "reckon",
+        "tests/test_the_admission_pass_survives_a_pointer_without_its_time.py",
+        "tests/test_unreadable_queued_pointer_never_fails_ordering.py"
+      ],
+      "wave3-clive-the-monitor-shows-the-work-i-s86": [
+        "docs/evidence/fragments/the-monitor-shows-the-work-it-watches/wave3-clive-the-monitor-shows-the-work-i-s86.html",
+        "docs/figures/the-monitor-shows-the-work-it-watches/wave3-clive-the-monitor-shows-the-work-i-s86",
+        "reckon/crew/recovery_watch.py",
+        "tests/test_the_obligations_snapshot_is_fresh_or_says_why_it_is_not.py"
+      ],
+      "wave3-clive-the-monitor-shows-the-work-i-s88": [
+        "docs/evidence/fragments/the-monitor-shows-the-work-it-watches/wave3-clive-the-monitor-shows-the-work-i-s88.html",
+        "docs/figures/the-monitor-shows-the-work-it-watches/wave3-clive-the-monitor-shows-the-work-i-s88",
+        "reckon/crew/recovery_classification.py",
+        "tests/test_a_worker_that_ends_its_first_turn_without_acting_is_named_as_such.py"
+      ],
+      "wave3-codex-anchored-the-crew-does-its-own-bookke-s7": [
+        "docs/evidence/fragments/the-crew-does-its-own-bookkeeping/wave3-codex-anchored-the-crew-does-its-own-bookke-s7.html",
+        "docs/figures/the-crew-does-its-own-bookkeeping/wave3-codex-anchored-the-crew-does-its-own-bookke-s7",
+        "reckon/crew/resumption.py",
+        "reckon/crew_run_commands.py",
+        "tests/test_resume_and_reopen_take_a_halted_run_and_need_no_new_write_path.py"
+      ],
+      "wave4-clive-a-landing-never-waits-on-s10": [
+        "reckon/crew/merge.py"
+      ],
+      "wave4-clive-anchored-a-landing-never-waits-on-s11": [
+        "reckon/crew/pending_landing.py",
+        "reckon/crew/promotion.py"
+      ],
+      "wave4-clive-anchored-lane-and-model-routing-s59": [
+        "reckon/crew/dispatch_picker.py",
+        "reckon/crew/dispatch_plan.py",
+        "reckon/crew/picker/__init__.py",
+        "reckon/crew/picker/types.py"
+      ],
+      "wave4-clive-anchored-the-crew-does-its-own-bo-s14": [
+        "reckon/crew/recovery_classification.py"
+      ],
+      "wave4-clive-anchored-the-monitor-shows-the-wo-s72": [
+        "docs/evidence/fragments/the-monitor-shows-the-work-it-watches/wave4-clive-anchored-the-monitor-shows-the-wo-s72.html",
+        "docs/figures/the-monitor-shows-the-work-it-watches/wave4-clive-anchored-the-monitor-shows-the-wo-s72",
+        "reckon/crew_follow_commands.py"
+      ],
+      "wave4-clive-anchored-the-monitor-shows-the-wo-s78": [
+        "reckon/crew/needs_you.py",
+        "reckon/crew_follow_commands.py",
+        "tests/test_follow_needs_you_line.py"
+      ],
+      "wave4-clive-the-monitor-shows-the-wo-s100": [
+        "reckon/crew/recovery_watch.py",
+        "reckon/crew/ticker.py"
+      ],
+      "wave4-clive-the-monitor-shows-the-wo-s106": [
+        "docs/evidence/fragments/the-monitor-shows-the-work-it-watches/wave4-clive-the-monitor-shows-the-wo-s106.html",
+        "docs/figures/the-monitor-shows-the-work-it-watches/wave4-clive-the-monitor-shows-the-wo-s106",
+        "reckon/crew/obligations.py",
+        "reckon/crew/recovery_review_dispatch.py"
+      ],
+      "wave4-clive-the-monitor-shows-the-wo-s73": [
+        "reckon/crew_follow_commands.py"
+      ],
+      "wave4-codex-anchored-a-seat-held-elsewhere-is-s23": [
+        "reckon/crew/watch_unit.py",
+        "reckon/crew_follow_commands.py"
+      ],
+      "wave4-codex-anchored-the-crew-does-its-own-bo-s17": [
+        "reckon/crew/recovery_classification.py",
+        "reckon/crew/recovery_liveness.py"
+      ],
+      "wave4-codex-anchored-the-crew-does-its-own-bo-s18": [
+        "reckon/crew/promotion.py"
+      ],
+      "wave4-codex-anchored-the-crew-does-its-own-bo-s19": [
+        "reckon/crew/resumption.py",
+        "reckon/crew_run_commands.py"
+      ],
+      "wave4-codex-lane-and-model-routing-s53": [
+        "reckon/crew/budget_group.py",
+        "reckon/crew/budget_lift.py",
+        "reckon/crew/lift_watch.py",
+        "reckon/crew/picker/snapshot.py",
+        "reckon/crew/routing.py",
+        "reckon/crew_run_commands.py",
+        "skills/reckon-build/SKILL.md"
+      ],
+      "wave4-codex-the-crew-does-its-own-bo-s13": [
+        "reckon/crew/reports.py",
+        "reckon/crew_run_commands.py"
+      ],
+      "wave4-codex-the-crew-does-its-own-bo-s8": [
+        "reckon/crew/promotion_checks.py",
+        "reckon/crew/promotion_evidence.py"
+      ],
+      "wave4-omp-local-a-landing-survives-a-mov-s2": [
+        "reckon/crew/queue_landing.py"
+      ],
+      "wave4-omp-local-the-crew-does-its-own-bo-s15": [
+        "reckon/crew/obligations.py",
+        "reckon/crew/recovery_classification.py"
+      ],
+      "wave4-omp-local-the-crew-does-its-own-bo-s16": [
+        "reckon/crew/recovery_classification.py"
+      ],
+      "wave4-omp-local-the-monitor-shows-the-wo-s105": [
+        "reckon/crew/obligations.py",
+        "reckon/crew/recovery_classification.py",
+        "reckon/hooks/coordinator_obligations.py"
+      ],
+      "wave4-omp-local-the-monitor-shows-the-wo-s108": [
+        "reckon/crew/obligations.py",
+        "reckon/crew/recovery_review_dispatch.py"
+      ]
+    },
+    "plan": "a-seat-held-elsewhere-is-not-restarted",
+    "regenerate_paths": [],
+    "requested_backend": "codex",
+    "requires_decisions": [],
+    "role": "implement",
+    "section": "§24",
+    "spec_level": "exact",
+    "time_budget": "2h",
+    "token_budget": null,
+    "waits_only_after": false,
+    "write_paths": [
+      "reckon/crew/runs.py",
+      "reckon/hooks/coordinator_obligations.py",
+      "reckon/crew_follow_commands.py",
+      "docs/evidence/fragments/a-seat-held-elsewhere-is-not-restarted/wave4-codex-a-seat-held-elsewhere-is-s24.html",
+      "docs/figures/a-seat-held-elsewhere-is-not-restarted/wave4-codex-a-seat-held-elsewhere-is-s24",
+      "tests/test_a_live_producer_reads_live.py",
+      "tests/test_a_polling_producer_renews_its_lease_on_every_poll.py"
+    ]
+  },
+  "orchestrator_lane_override": null,
+  "orientation_input_tokens": null,
+  "outcome": "",
+  "outside_scope_paths": [
+    "tests/test_crew.py::test_resumed_attempt_owns_its_stream_phase_and_manifest",
+    "tests/test_crew_tool_carries_the_write_verbs.py::test_each_action_matches_its_cli_verb[queue-drop",
+    "tests/test_dispatch_records_the_pace_row.py::test_a_promoted_run_replays_its_allowance_from_the_committed_row",
+    "tests/test_spawn_retries_a_vanished_bind.py::test_a_spawn_refused_over_a_vanished_protected_bind_is_retried[Can't",
+    "tests/test_watch_version_stamp.py::test_producer_live_leaves_a_record_replaced_mid_check_alone",
+    "tests/test_a_killed_worker_resumes_to_completion.py::test_a_killed_worker_is_classified_resumed_and_completed",
+    "tests/test_producer_shares_the_classifier_verdict.py::test_every_liveness_stub_has_producer_classifier_parity[test_a_pointer_phase_advances_from_starting_to_working_to_complete"
+  ],
+  "pace": {
+    "allowance": {
+      "advisory": true,
+      "burn_multiple": 1.7874596025558263,
+      "derived": 0.3076992616860119,
+      "drain_hours": 168.0,
+      "effective_limit": 0.3076992616860119,
+      "elapsed_fraction": 0.2797266015327381,
+      "elapsed_hours": 46.9940690575,
+      "group": "codex-sub",
+      "limited_by": "allowance",
+      "observed_at": "2026-11-14T15:24:18+00:00",
+      "pace_multiple": 1.1,
+      "provider_ceiling": null,
+      "reason": null,
+      "remaining_budget": 0.5,
+      "remaining_windows": null,
+      "resets_at": "2026-11-19T16:24:40Z",
+      "state": "observed",
+      "utilisation": 0.5,
+      "window_minutes": 10080
+    },
+    "bar": {
+      "bar": 0.5,
+      "decided_by": "window",
+      "margin": 0.14375000000000004,
+      "name": "wave4-codex-a-seat-held-elsewhere-is-s24",
+      "score": 0.64375,
+      "state": "observed",
+      "verdict": "send-metered",
+      "window_fill": 0.5
+    },
+    "clocks": {
+      "five_hour": {
+        "age_seconds": 0.648607,
+        "observed_at": "2026-11-14T15:24:18+00:00",
+        "period": "primary",
+        "resets_at": "2026-11-19T16:24:40Z",
+        "state": "observed",
+        "utilisation": 0.5,
+        "window_minutes": 10080
+      },
+      "seven_day": {
+        "age_seconds": null,
+        "observed_at": null,
+        "period": "seven_day",
+        "resets_at": null,
+        "state": "not_published",
+        "utilisation": null,
+        "window_minutes": null
+      }
+    },
+    "group": "codex-sub",
+    "hold": null,
+    "lane": "codex",
+    "lift_id": null,
+    "member": "codex",
+    "node": "wave4-codex-a-seat-held-elsewhere-is-s24",
+    "policy": {
+      "drain_lead_hours": 12.0,
+      "pace_multiple": 1.1
+    },
+    "reason": null,
+    "recorded_at": "2026-11-14T15:24:18.648607+00:00",
+    "score": 0.64375,
+    "session": null,
+    "source": "recorded",
+    "state": "observed"
+  },
+  "picker_selection": {
+    "action": "fallback",
+    "backend": null,
+    "comment": "",
+    "confidence": null,
+    "effort": null,
+    "excluded": [],
+    "fallback_reason": "timeout",
+    "family": null,
+    "jev_model": "~typesafe/jev-latest",
+    "latency_ms": 5000.526,
+    "model": null,
+    "offered": [],
+    "probabilities": {},
+    "stage_ms": {}
+  },
+  "plan": "a-seat-held-elsewhere-is-not-restarted",
+  "plan_impl_at_dispatch": 0.8051948051948052,
+  "plan_link": null,
+  "promoted_by": null,
+  "promoted_revision": "1357a083d3d7906010eaa8c75f95e2f35fcf3ab7",
+  "release": {
+    "arms_kept": [],
+    "arms_logs_copied": [],
+    "arms_removed_paths": [],
+    "arms_withheld": "",
+    "process_signalled": false,
+    "process_withheld": "process is not alive",
+    "scratch_absent": true,
+    "scratch_bytes": null,
+    "scratch_host": "98dci4-clu-2005.iter.org",
+    "scratch_path": "/tmp/reckon-crew-scratch/r-20261114T151041677474-wave4-codex-a-seat-held-elsewhere-is-s24",
+    "scratch_removed": false,
+    "scratch_removed_paths": [],
+    "scratch_withheld": "scratch directory is no longer present",
+    "worktree_audit": {
+      "counts": {
+        "dirty": 0,
+        "disposable": 0,
+        "integrated": 0,
+        "live-referenced": 0,
+        "retained-for-resume": 0,
+        "unintegrated": 0
+      },
+      "worktrees": [
+        {
+          "available": false,
+          "detail": "tree is no longer available",
+          "path": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/829e5a4a-6870-4aec-876d-ba2efb1b5ecf/wave4-codex-a-seat-held-elsewhere-is-s24",
+          "unavailable_state": "missing"
+        }
+      ]
+    },
+    "worktree_released": true
+  },
+  "resume_waiver": null,
+  "review": {
+    "absent": [],
+    "reviewed_base_sha": "de40d35123a47a5b72910de5571132678b023a4f",
+    "reviewed_head_sha": "1357a083d3d7906010eaa8c75f95e2f35fcf3ab7",
+    "scores": {
+      "durability": 16,
+      "evidence": 14,
+      "fit": 17,
+      "goal_fidelity": 12,
+      "reuse": 19,
+      "scope_discipline": 18
+    },
+    "status": "parsed",
+    "total": 96
+  },
+  "review_tier": "full",
+  "role": "implement",
+  "route_mode": "explicit",
+  "run_id": "r-20261114T151041677474-wave4-codex-a-seat-held-elsewhere-is-s24",
+  "scope_acceptances": null,
+  "scope_changed": false,
+  "section": "§24",
+  "session": "829e5a4a-6870-4aec-876d-ba2efb1b5ecf",
+  "session_harness": "codex",
+  "session_id": "01a1daa9-eac4-78b3-bb16-f8cdc1748f09",
+  "session_model": "gpt-6.1-sol",
+  "shadow_controlled": null,
+  "shadow_patch": "",
+  "spec_level": "exact",
+  "stalled": false,
+  "suite_delta": {
+    "added_failure_ids": [],
+    "after_suite": {
+      "command": "PYTHONPATH=. /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_live_producer_reads_live.py tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_digest": null,
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261114T151041677474-wave4-codex-a-seat-held-elsewhere-is-s24/armed-suite/after.log",
+      "revision": "1357a083d3d7906010eaa8c75f95e2f35fcf3ab7"
+    },
+    "baseline_measured_nothing": false,
+    "baseline_suite": {
+      "command": "PYTHONPATH=. /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_digest": null,
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261114T151041677474-wave4-codex-a-seat-held-elsewhere-is-s24/armed-suite/baseline.log",
+      "revision": "de40d35123a47a5b72910de5571132678b023a4f"
+    },
+    "failure_attribution": {},
+    "measured_by": "run",
+    "status": "clean",
+    "suite_command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_live_producer_reads_live.py tests/test_a_polling_producer_renews_its_lease_on_every_poll.py tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py",
+    "waiver_reason": null
+  },
+  "tests_added": 8,
+  "throughput": {
+    "cumulative_cached_input_tokens": 12799488,
+    "cumulative_input_tokens": 25776605,
+    "detail": "turn tokens recorded, but no span was supplied to rate them",
+    "generated_tokens": 75521
+  },
+  "time_budget": "2h",
+  "tool_steps": 23.0,
+  "unplanned_reason": null,
+  "unreconciled_override": null,
+  "wall_seconds": 5810,
+  "watch_override": {
+    "arming_line": "reckon crew watch --project reckon",
+    "attach_line": "/home/ITER/mcintos/Code/reckon/.venv/bin/reckon crew follow --project reckon --session 829e5a4a-6870-4aec-876d-ba2efb1b5ecf",
+    "requested": true,
+    "session_attached": true,
+    "watcher_live": true
+  },
+  "worker_exit": {
+    "attempt": 2,
+    "ended_during": "working",
+    "ended_pids": [],
+    "exit_code": 0,
+    "exited_at": "2026-11-14T17:02:08Z",
+    "last_record_type": "turn.completed",
+    "launched_at": "2026-11-14T16:18:37Z",
+    "recorded_by": "supervisor",
+    "removed_harness_caches": [
+      {
+        "bytes": 74986504,
+        "path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261114T151041677474-wave4-codex-a-seat-held-elsewhere-is-s24/codex-home/cache"
+      },
+      {
+        "bytes": 32753627,
+        "path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261114T151041677474-wave4-codex-a-seat-held-elsewhere-is-s24/codex-home/plugins"
+      }
+    ],
+    "run_id": "r-20261114T151041677474-wave4-codex-a-seat-held-elsewhere-is-s24",
+    "signal": null,
+    "signal_name": null,
+    "stream_records_seen": 389,
+    "worker_pid": 968267
+  },
+  "worker_seconds": 5792,
+  "worker_seconds_source": "rollout_receipts",
+  "worktree_retention": null
+}

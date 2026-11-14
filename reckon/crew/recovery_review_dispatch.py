@@ -24,6 +24,7 @@ from reckon.crew import review as review_module
 from reckon.crew import review_need
 from reckon.crew.node import (
     CrewError,
+    WatcherRequired,
 )
 from reckon.crew.open_run_index import operational_read
 from reckon.crew.reports import (
@@ -735,6 +736,70 @@ def _queue_router_held_review(
         "phase": str(queued.get("phase") or "queued"),
         "waits": [],
         "reason": gate.get("reason"),
+    }
+
+
+def _queue_review_without_producer(
+    record: Mapping[str, Any],
+    *,
+    node: Any,
+    fields: Mapping[str, Any],
+    config: Mapping[str, Any],
+    allow_unreconciled_runs: bool,
+    remedy: str = "",
+) -> dict[str, Any]:
+    """Store a composed run review as a queued request when nothing will sweep.
+
+    A review's reflex runs inside the producer's sweep, so a review composed
+    while no producer stands is a brief on disk and no pointer for any reader:
+    nothing in this process will launch it. Storing it as the queue's own
+    request puts it where the admission pass launches it once a producer is
+    back, and where the reviewed run's obligation row reads it as queued in the
+    meantime. The queue's writer and the dispatch's own request builder are
+    used, so a launch from it is the launch the composed dispatch would make.
+    """
+    from reckon.crew import runs as _runs
+
+    dispatch_module = importlib.import_module("reckon.crew.dispatch")
+    project = str(fields["project"])
+    backend = str(config.get("local_backend") or config.get("default_backend") or "")
+    launch_kind = str(
+        ((config.get("backends") or {}).get(backend) or {}).get("launch") or "cli"
+    )
+    hold = {
+        "state": "producer-gone",
+        "reason": (
+            f"no producer is live for project {project!r}, so nothing would "
+            "sweep this review; it is queued until a producer launches it"
+            + (
+                f" (arm one with `{remedy}`, which is safe against a producer "
+                "that is already up)"
+                if remedy
+                else ""
+            )
+        ),
+    }
+    queued_record = dispatch_module._queued_request_record(
+        run_id=_runs.new_run_id(node.id),
+        project=project,
+        node=node,
+        repo_root=Path(str(record.get("repo") or "")),
+        session=str(fields.get("session") or ""),
+        backend_name=backend,
+        launch_kind=launch_kind,
+        lane_allowance=hold,
+        dispatch_options=_composed_review_options(
+            record, allow_unreconciled_runs=allow_unreconciled_runs
+        ),
+        queued_at=_utc_now(),
+    )
+    queued, position = _runs.queue_dispatch(queued_record)
+    return {
+        "run_id": str(queued.get("run_id") or ""),
+        "position": position,
+        "phase": str(queued.get("phase") or "queued"),
+        "waits": [],
+        "reason": hold["reason"],
     }
 
 
@@ -3950,6 +4015,36 @@ def _dispatch_composed_review(
             "reason": reason,
         }
     except CrewError as exc:
+        # A review's reflex runs inside the producer's sweep, so a project with
+        # no producer has no sweep: the launch is refused for exactly that, and
+        # a refusal would leave the composed brief dark — composed on disk with
+        # no pointer any reader lists. It is written as the queue's own request
+        # instead, which the admission pass launches once a producer is back and
+        # which the reviewed run's obligation row reads as queued meanwhile.
+        if isinstance(exc, WatcherRequired) and not exc.watch.get("watcher_live"):
+            queued = _queue_review_without_producer(
+                record,
+                node=node,
+                fields=fields,
+                config=resolved,
+                allow_unreconciled_runs=allow_unreconciled_runs,
+                remedy=str(exc.watch.get("ensure_line") or ""),
+            )
+            record_dispatch(
+                status="queued",
+                reason=queued["reason"],
+                review_run_id=queued["run_id"],
+                backend=backend,
+                reviewed_head=fields["head"],
+            )
+            return {
+                "run_id": run_id,
+                "dispatched": False,
+                "queued": queued,
+                "review_run_id": queued["run_id"],
+                "backend": backend,
+                "reason": queued["reason"],
+            }
         # Scope, member, follower, context-fit, plan visibility and competence
         # refusals all arrive here. The automatic path must not be the one place
         # they are skipped, so the refusal is recorded and reported rather than

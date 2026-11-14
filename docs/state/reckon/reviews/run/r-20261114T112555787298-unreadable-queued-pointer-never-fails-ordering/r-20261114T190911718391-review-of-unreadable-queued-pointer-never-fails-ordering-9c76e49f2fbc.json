@@ -1,0 +1,32 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-11-14T19:29:59.441Z",
+  "dispatched_at": "2026-11-14T19:12:15Z",
+  "findings": [
+    {
+      "file": "tests/test_a_queued_pointer_without_its_time_reads_no_place.py",
+      "line": 4,
+      "severity": "non-blocking",
+      "summary": "the module docstring's opening paragraph still says the ordering refuses a pointer with no readable time, contradicting the same docstring's new closing paragraph and the code, which now sets such a pointer aside."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that one unreadable queued pointer never fails admission ordering or a review compose; reckon/crew/queue_order.py:340 still splits the queue through partition_placeable and sets the unreadable pointers aside, so the goal holds at the reviewed head.\nVERDICT done_when: the done_when names three cases, its negative control and an all_debug gate written to the fragment; the gained range adds no measure but repairs the fragment until it matches the recorded arms, which read 62 passed and 2 failed at the fragment's head against 55 passed and the same 2 failed at cd5e68ec, so the change adds no failure.\nVERDICT write_paths: the node's declared paths were widened by the coordinator at resume-3 to add tests/test_a_queued_pointer_without_its_time_reads_no_place.py and reckon/crew/admission/ordering.py, and every path the gained diff touches lies inside that widened set plus the always-permitted evidence fragment.\nVERDICT manifest: read in full; it lists the eight commits, both arms with full 40-character revisions, their literal commands, log paths, completed flags and the two identical failure ids, an acted line for each of the four prior findings all naming a768372456efeaeb996916c7c51969cc783f0907, and its gate paragraph agrees with the logs on disk.\nVERDICT diff: read commit by commit from de99d812 to 9c76e49f; a768372456 takes the set-aside split from queue_order.partition_placeable in reckon/crew/admission/ordering.py:235 and rewrites the ordering case to assert it in tests/test_a_queued_pointer_without_its_time_reads_no_place.py, d3197d98d6 and 9c76e49f2f correct the evidence fragment's case description and gate figures, three files with 38 insertions and 24 deletions.\nCALL_SITES: reckon/crew/obligations.py:2523, reckon/crew/obligations.py:3646, reckon/crew/directory.py:429, reckon/crew/query.py:458, reckon/crew/station_subscriber.py:317, reckon/crew/obligation_snapshot.py:1791\nSCORE goal_fidelity: 19\nSCORE evidence: 18\nSCORE scope_discipline: 19\nSCORE durability: 17\nSCORE fit: 16\nSCORE reuse: 20\nJUSTIFICATION goal_fidelity: reckon/crew/queue_order.py:340-351 sets aside a pointer it cannot place and logs its run id, and the gained range makes reckon/crew/admission/ordering.py:235 take that same split rather than partitioning on the raw field.\nJUSTIFICATION evidence: the run's own logs/after-arm-head.log and logs/baseline-arm-record.log each name their revision, command and completed flag and end in EXIT=1 with the same two failing ids, and the fragment now states those counts rather than the narrower arm it reported before.\nJUSTIFICATION scope_discipline: every path in the gained diff is inside the write scope the coordinator widened in resume-3, including reckon/crew/admission/ordering.py and the queued-pointer case file that the earlier round had restored.\nJUSTIFICATION durability: tests/test_a_queued_pointer_without_its_time_reads_no_place.py:170-176 calls admission_order with the malformed pointer and asserts the ranking against the test's own constants, so reinstating the raise at reckon/crew/queue_order.py:340 turns the case red; the refactor at admission/ordering.py:235 changes no behaviour and so has no case that would fail if it were reversed.\nJUSTIFICATION fit: the new case follows the file's existing fixtures and naming, and ruff check and format --check are clean on both changed Python files at 9c76e49f2f, but tests/test_a_queued_pointer_without_its_time_reads_no_place.py:4 still carries the pre-change sentence that the ordering refuses such a pointer.\nJUSTIFICATION reuse: the gained change adds no capability and retires the inline copy of the placeable predicate at reckon/crew/queue_order.py:247 rather than forking it, so every placing reader now takes the split from the one owner at reckon/crew/admission/ordering.py:235.\nFINDING tests/test_a_queued_pointer_without_its_time_reads_no_place.py:4 non-blocking: the module docstring's opening paragraph still says \"the ordering needs that time and refuses a pointer with none\", which the gained commit made false when it changed the ordering to set such a pointer aside, while the same docstring's new closing paragraph states the opposite; the file's own text therefore contradicts itself on the behaviour it documents.",
+  "review_run_id": "r-20261114T190911718391-review-of-unreadable-queued-pointer-never-fails-ordering-9c76e49f2fbc",
+  "reviewed_base_sha": "de99d812f9c2324b8210d1b264d348517ecb88a9",
+  "reviewed_head_sha": "9c76e49f2fbc46d2fe61e96c360c10f407d794f0",
+  "reviewed_run_id": "r-20261114T112555787298-unreadable-queued-pointer-never-fails-ordering",
+  "scores": {
+    "durability": 17,
+    "evidence": 18,
+    "fit": 16,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-14T20:01:40.928804+00:00",
+  "total": 109
+}

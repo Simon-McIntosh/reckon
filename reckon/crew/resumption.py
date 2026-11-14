@@ -42,7 +42,6 @@ alive again.
 
 from __future__ import annotations
 
-import fcntl
 import json
 import os
 import re
@@ -114,6 +113,7 @@ from reckon.crew.runs import (
     record_process_alive,
     run_dir,
 )
+from reckon.node_exclusive_lock import exclusive_lock
 
 # What the resumed worker is told. It states the two things the worker cannot
 # know from inside its own stopped turn — that the limit which stopped it has
@@ -553,17 +553,6 @@ def lane_probe_cache_path(project: str, backend_name: str) -> Path:
     )
 
 
-@contextmanager
-def _lane_probe_lock(project: str, backend_name: str):
-    """Serialize cache refreshes so concurrent callers issue one request."""
-    path = lane_probe_cache_path(project, backend_name).with_suffix(".lock")
-    path.parent.mkdir(parents=True, exist_ok=True)
-    with path.open("a+", encoding="utf-8") as handle:
-        fcntl.flock(handle.fileno(), fcntl.LOCK_EX)
-        try:
-            yield
-        finally:
-            fcntl.flock(handle.fileno(), fcntl.LOCK_UN)
 
 
 def _read_lane_probe_cache(project: str, backend_name: str) -> dict[str, Any]:
@@ -710,7 +699,8 @@ def probe_lane_availability(
 ) -> dict[str, Any]:
     """Return one bounded, serialized serving observation for a backend."""
     moment = _now(now)
-    with _lane_probe_lock(project, backend_name):
+    lock_path = lane_probe_cache_path(project, backend_name).with_suffix(".lock")
+    with exclusive_lock(lock_path):
         previous = _read_lane_probe_cache(project, backend_name)
         if previous and cache_seconds > 0:
             observed = _parse_stamp(previous.get("observed_at"))
@@ -881,7 +871,12 @@ def _stream_session(record: Mapping[str, Any]) -> str:
                 backend=backend,
                 log_path=log,
             )
-        except (CrewError, OSError, ValueError):
+        except (_backends.BackendError, CrewError, OSError, ValueError):
+            # A backend whose command has no launch translation carries no
+            # dialect to read its stream with, which is the same absence an
+            # unreadable stream expresses: this source has no session id to
+            # offer, so the resolver falls through to the ledger rather than
+            # letting one untranslatable command end the caller's pass.
             continue
         found = str(observation.session_id or "").strip()
         if found:
@@ -2416,22 +2411,6 @@ def _sweep_writer_entry(
     }
 
 
-@contextmanager
-def _sweep_status_lock(project: str):
-    """Serialize the read-modify-write on the status record.
-
-    Followers write on a cadence that keeps concurrent writes rare, but the
-    record is a merge after this change rather than a blind overwrite, and two
-    followers on a shared filesystem must not lose each other's entries.
-    """
-    path = sweep_status_path(project).with_suffix(".lock")
-    path.parent.mkdir(parents=True, exist_ok=True)
-    with path.open("a+", encoding="utf-8") as handle:
-        fcntl.flock(handle.fileno(), fcntl.LOCK_EX)
-        try:
-            yield
-        finally:
-            fcntl.flock(handle.fileno(), fcntl.LOCK_UN)
 
 
 def _write_sweep_status(
@@ -2459,7 +2438,9 @@ def _write_sweep_status(
     path = sweep_status_path(project)
     try:
         path.parent.mkdir(parents=True, exist_ok=True)
-        with _sweep_status_lock(project):
+        # Followers on different nodes merge into this record, so the
+        # read-modify-write excludes across nodes rather than per kernel.
+        with exclusive_lock(path.with_suffix(".lock")):
             previous = _read_sweep_status(project)
             kind, key = _normalise_writer(writer)
             writers = dict(previous.get("writers") or {})

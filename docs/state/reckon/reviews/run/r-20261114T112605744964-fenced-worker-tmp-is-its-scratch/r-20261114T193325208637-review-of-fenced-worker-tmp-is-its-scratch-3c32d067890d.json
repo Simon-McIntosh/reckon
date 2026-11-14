@@ -1,0 +1,40 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [],
+  "completed_at": "2026-11-14T20:12:13.443Z",
+  "dispatched_at": "2026-11-14T19:56:01Z",
+  "findings": [
+    {
+      "file": "tests/test_a_worker_cannot_remove_the_nodes_temporary_files.py",
+      "line": "204",
+      "severity": "non-blocking",
+      "text": "offset falls to 2 for any matched value other than the literal \"source\", so a future caller writing matched=\"src\" silently matches the mount's destination and its test would pass while asserting the wrong element; an explicit mapping or a refusal for an unknown value would keep the helper's reading honest."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "Read commit by commit against 953bcec70705f958f462ce8decfc225840bbc7ca: cb8206fdbb replaces the three duplicated argv scans with _mount_index at tests/test_a_worker_cannot_remove_the_nodes_temporary_files.py:195, and 3c32d06789 adds the recorded negative-arm results to the fragment at :67.",
+    "done_when": "The done_when's arms are recorded: gate-head.log at 3c32d067890d562397ec097b17f910ab244cad18 reads 64 passed EXIT=0 against gate-base.log's 59 passed EXIT=0 at a01e2b9afcc862321403374ebd3dd42949df1121, and the sibling file's two declared controls each have a red arm at the same revision.",
+    "goal": "The reviewed node's goal is that a fenced worker's /tmp is its own scratch; these two commits close the previous review's two findings, and the fragment at docs/evidence/fragments/work-flows-to-the-lane/fenced-worker-tmp-is-its-scratch.html:67 records the figures the earlier record asserted without a receipt.",
+    "manifest": "Read; it records both commits, the two green arms, the three red controls with their log paths, and every quoted number agrees with each log's own summary line.",
+    "write_paths": "This round's declared paths are the landing fragment and tests/test_a_worker_cannot_remove_the_nodes_temporary_files.py; git diff --name-only 953bcec707..3c32d06789 names exactly those two and nothing else."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the reviewed node's goal is that a fenced worker's /tmp is its own scratch; this round's commits close the two verdicts the previous review recorded, and docs/evidence/fragments/work-flows-to-the-lane/fenced-worker-tmp-is-its-scratch.html:67 now carries the measured figures for both sibling controls beside the claim.\nVERDICT done_when: the done_when's arms are named in the gate and gate-head.log at 3c32d06789 records 64 passed EXIT=0 against gate-base.log's 59 passed EXIT=0 at a01e2b9a, and the two sibling-file controls each now have a red arm of their own at the same revision.\nVERDICT write_paths: this round's declared paths are the landing fragment and tests/test_a_worker_cannot_remove_the_nodes_temporary_files.py; git diff --name-only 953bcec707..3c32d06789 names exactly those two files and nothing else.\nVERDICT manifest: read the reviewed manifest; it records both commits, the two green arms and the three red controls with their logs, and its numbers match each log's own summary line.\nVERDICT diff: read both files against 953bcec707; cb8206fdbb replaces three duplicated argv scans with _mount_index at tests/test_a_worker_cannot_remove_the_nodes_temporary_files.py:195, and 3c32d06789 adds the recorded arm results to the fragment at :67 and names the three logs in its table caption.\nCALL_SITES: none\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: tests/test_a_worker_cannot_remove_the_nodes_temporary_files.py:204 keeps the offsets the pre-change scans used (1 for a source, 2 for a destination), so the three locators behave as before and both earlier verdicts are answered.\nSCORE evidence: 18\nJUSTIFICATION evidence: docs/evidence/fragments/work-flows-to-the-lane/fenced-worker-tmp-is-its-scratch.html:67 states 2 failed/6 passed and 1 failed/7 passed, and gate-negative-without-seal.log and gate-negative-runtime-creation.log each carry that summary and EXIT=1 at revision 3c32d06789.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat 953bcec707..3c32d06789 reports 28 insertions and 16 deletions across the two declared files, with no third path touched.\nSCORE durability: 19\nJUSTIFICATION durability: the two sibling-file controls are now red arms on disk \u2014 gate-negative-without-seal.log fails test_a_fenced_run_cannot_remove_a_file_outside_its_scratch and test_a_probe_written_directly_into_the_node_tmp_root_lands_in_the_scratch \u2014 so those assertions are shown to fail on the regression they guard.\nSCORE fit: 17\nJUSTIFICATION fit: tests/test_a_worker_cannot_remove_the_nodes_temporary_files.py:195 follows the file's one-walk-one-docstring idiom, but _ro_bind_of at :221 still calls its parameter destination while matching the mount's source.\nSCORE reuse: 18\nJUSTIFICATION reuse: tests/test_a_worker_cannot_remove_the_nodes_temporary_files.py:195 consolidates three in-file scans into one helper; no production module owns an argv-mount locator (reckon/_worker_fence.py only composes the argv), and the remaining copies in tests/test_fenced_worker_tmp_is_its_scratch.py:311 are outside this round's write paths.\nFINDING tests/test_a_worker_cannot_remove_the_nodes_temporary_files.py:204 non-blocking: offset falls to 2 for any matched value other than the literal \"source\", so a future caller writing matched=\"src\" silently matches the mount's destination and its test would pass while asserting the wrong element; an explicit mapping or a refusal for an unknown value would keep the helper's reading honest.\n",
+  "review_run_id": "r-20261114T193325208637-review-of-fenced-worker-tmp-is-its-scratch-3c32d067890d",
+  "reviewed_base_sha": "953bcec70705f958f462ce8decfc225840bbc7ca",
+  "reviewed_head_sha": "3c32d067890d562397ec097b17f910ab244cad18",
+  "reviewed_run_id": "r-20261114T112605744964-fenced-worker-tmp-is-its-scratch",
+  "scores": {
+    "durability": 19,
+    "evidence": 18,
+    "fit": 17,
+    "goal_fidelity": 18,
+    "reuse": 18,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-14T20:14:12.894077+00:00",
+  "total": 110
+}

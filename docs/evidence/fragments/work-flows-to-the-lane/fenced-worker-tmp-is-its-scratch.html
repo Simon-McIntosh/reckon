@@ -1,0 +1,72 @@
+<section id="fenced-worker-tmp-is-its-scratch-landing">
+  <h2>A fenced worker's <code>/tmp</code> is its own scratch directory</h2>
+  <p>The fence sealed the node's <code>/tmp</code> read-only and granted the run
+  its own scratch directory as <code>TMPDIR</code>, but every worker, and the
+  standing guidance each job follows is written with <code>TMPDIR=/tmp</code>,
+  kept writing the literal path. Those writes met the seal and failed with
+  <code>Read-only file system</code>: at least eight runs did so between 09:00
+  and 10:40Z on 14 November, one of them recording its own negative control
+  failing as <code>tempfile.mkdtemp failed on fenced read-only /tmp</code>.</p>
+  <p>The composition now mounts the run's own scratch directory over the node
+  tmp, after the read-only seal, so every <code>/tmp</code> path a worker or its
+  tools write lands inside that scratch whatever <code>TMPDIR</code> says. The
+  seal stays beneath the mount: a sibling run's scratch and every other
+  session's file under the node tmp read as absent rather than merely
+  read-only, and only the runtime paths a launch must write — the fleet's
+  sockets and codex's sandbox marker directory — are re-bound inside the fence's
+  view of the node tmp. A scratch root that is not beneath the node tmp mounts
+  nothing, so a purely synthetic scratch never invents a <code>/tmp</code> it
+  does not own.</p>
+  <table id="fenced-worker-tmp-is-its-scratch-measures">
+    <caption>Measurements run on <code>all_debug</code>, one arm at a time, each
+    arm's log carrying its revision, tree, working directory and command as its
+    first line and its own exit status as its last. The three negative-control
+    arms name <code>gate-negative.log</code> (the dropped mount),
+    <code>gate-negative-without-seal.log</code> and
+    <code>gate-negative-runtime-creation.log</code> in the run directory.</caption>
+    <thead><tr><th>Measure</th><th>Observed result</th></tr></thead>
+    <tbody>
+      <tr><td>Baseline arm at <code>a01e2b9afcc862321403374ebd3dd42949df1121</code>,
+        before the change:
+        <code>tests/test_a_worker_cannot_remove_the_nodes_temporary_files.py tests/test_staged_write_inventory.py</code></td>
+        <td>59 passed, <code>EXIT=0</code>. The scratch test does not exist at
+        this revision.</td></tr>
+      <tr><td>Head arm:
+        <code>tests/test_a_worker_cannot_remove_the_nodes_temporary_files.py tests/test_fenced_worker_tmp_is_its_scratch.py tests/test_staged_write_inventory.py</code></td>
+        <td>64 passed, <code>EXIT=0</code>, with <code>module.__file__</code>
+        resolving inside the worktree.</td></tr>
+      <tr><td>Declared negative control at the head arm's revision, applied to
+        <code>tests/test_fenced_worker_tmp_is_its_scratch.py</code>: the mount is
+        dropped and the seal left in place</td>
+        <td>1 failed, 4 passed, <code>EXIT=1</code>. The first executed test
+        reports <code>/tmp/probe: Read-only file system</code>.</td></tr>
+    </tbody>
+  </table>
+  <p>The head arm carries five cases. Two assert the composed argv: that the
+  node tmp is sealed and then mounted over in that order with the run's own
+  scratch as the source, and that a scratch root outside the node tmp mounts
+  nothing. Three execute the composition: a fenced command writes
+  <code>/tmp/probe</code> and runs <code>tempfile.mkdtemp()</code> with
+  <code>TMPDIR</code> exported as the node tmp, and both land in the run's
+  scratch, the created directory being named by the run's own scratch with the
+  leaf file beneath it; a second command finds a sibling run's scratch and
+  another session's file absent and neither survives its removal attempt; and a
+  third writes each runtime path, the write landing in the node's real runtime
+  directory.</p>
+  <p>Three cases in <code>tests/test_a_worker_cannot_remove_the_nodes_temporary_files.py</code>
+  asserted the earlier contract, in which the node tmp read back read-only
+  outside the run's scratch and a probe written directly into its root was
+  refused. They are kept and re-stated for the composition this section lands: a
+  file another session placed in the node's real node tmp survives a fenced
+  removal and is unchanged, the scratch mount is the only writable grant naming
+  the node tmp and it follows the seal, a probe written straight into the node
+  tmp root lands in the run's own scratch and not in the shared one, and the
+  literal argv carries the mount. That file's own declared negative controls —
+  no node-tmp seal, and the separate runtime-path creation loop restored — still
+  redden the cases they name.</p>
+  <p>Both controls are recorded, each as its own arm on <code>all_debug</code>
+  at the same revision: with the node-tmp seal dropped, the removal case and
+  the node-tmp probe case fail (2 failed, 6 passed, <code>EXIT=1</code>), and
+  with the separate runtime-path creation loop restored, the interception case
+  fails (1 failed, 7 passed, <code>EXIT=1</code>).</p>
+</section>

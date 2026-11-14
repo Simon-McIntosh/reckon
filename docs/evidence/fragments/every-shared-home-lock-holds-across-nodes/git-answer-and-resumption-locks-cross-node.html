@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="every-shared-home-lock-holds-across-nodes">
+  <meta name="plan-title" content="Every shared-home lock holds across nodes">
+  <meta name="plan-evidence-for" content="reckon:every-shared-home-lock-holds-across-nodes">
+  <meta name="plan-verifies" content="reckon:every-shared-home-lock-holds-across-nodes#s4">
+  <meta name="plan-recorded-at" content="2026-11-14">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-tags" content="locks,flock,git-answer,lane-probe,sweep-status">
+  <title>Store, review and recovery locks exclude across nodes — evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+</head>
+<body>
+<article class="r-note" data-node="git-answer-and-resumption-locks-cross-node" data-reckon="landed" data-when="2026-11-14">
+  <h2 id="git-answer-and-resumption-locks-cross-node-head">Store, review and recovery locks exclude across nodes</h2>
+
+  <p id="git-answer-and-resumption-locks-cross-node-what">Three shared-home locks in this
+  node's scope moved onto <code>reckon.node_exclusive_lock.exclusive_lock</code>, whose POSIX
+  record lock the file server holds and <code>flock</code> is not: the git-answer store
+  (<code>reckon/crew/recovery_watch.py</code> <code>_update_git_answer_store</code>), and the
+  lane-probe cache and sweep-status record (<code>reckon/crew/resumption.py</code>
+  <code>probe_lane_availability</code> and <code>_write_sweep_status</code>). Both resumption
+  sites were a context manager each owning exactly one caller, so the wrappers are deleted and
+  the call sites take the lock directly; their path derivations stay with the callers that
+  already hold them.</p>
+
+  <p id="git-answer-and-resumption-locks-cross-node-answers">Each site keeps the answer its
+  callers already got. The git-answer update still returns quietly rather than failing a read
+  when the crew home cannot be written, with the lock's own <code>OSError</code> now raised from
+  inside that existing guard. The lane probe still refreshes under one request at a time and the
+  sweep status still merges per writer rather than overwriting, so the cross-node lock changes
+  who excludes whom without changing any caller's result.</p>
+
+  <p id="git-answer-and-resumption-locks-cross-node-measure">The measurement is
+  <code>tests/test_recovery_store_locks_hold_across_nodes.py</code>. For each site it starts a
+  holder in a second process that takes only <code>fcntl.lockf</code> on the lock file, starts the
+  site beside it, and asserts the site's write has not landed after 1.5 s; the holder is then
+  released and the write is required to land. On the head all three tests pass. Against the base
+  revision <code>ffcba6679c</code> the same file fails all three, each naming that its site "wrote
+  while another process held only the record lock" (<code>3 failed</code>, log
+  <code>negative-control-base-revision.log</code>). That failure is what says the test can tell
+  the two primitives apart, rather than merely passing.</p>
+
+  <p id="git-answer-and-resumption-locks-cross-node-references">Each lock file is opened in
+  <code>reckon/</code> only through the helper. The three derivations are
+  <code>reckon/crew/recovery_watch.py:241</code> (<code>git-object-answers.json.lock</code>),
+  <code>reckon/crew/resumption.py:702</code> (the lane-probe <code>.lock</code>) and
+  <code>reckon/crew/resumption.py:2438</code> (the sweep-status <code>.lock</code>), and each is
+  the argument of one <code>exclusive_lock</code> take. Nothing else opens those paths: the store
+  file name is referenced only by its own path helper and the two cache/status paths only by the
+  code that reads and writes their data files.</p>
+
+  <p id="git-answer-and-resumption-locks-cross-node-guard">The guard
+  <code>tests/test_every_shared_home_lock_holds_across_nodes.py</code> passes with this node's
+  three pending rows removed — <code>reckon/crew/recovery_watch.py::_update_git_answer_store</code>,
+  <code>reckon/crew/resumption.py::_lane_probe_lock</code> and
+  <code>reckon/crew/resumption.py::_sweep_status_lock</code>. The other pending rows belong to
+  the peer nodes migrating their own modules and are untouched here.</p>
+</article>
+</body>
+</html>

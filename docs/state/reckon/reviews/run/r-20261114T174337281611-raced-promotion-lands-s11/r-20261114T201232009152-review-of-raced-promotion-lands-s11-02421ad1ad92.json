@@ -1,0 +1,174 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_audit": [
+    {
+      "fails_if": "The named real-home pointer exists before setup; this guards fixture targeting, not the landing regression.",
+      "location": "tests/test_a_raced_promotion_still_lands.py:68"
+    },
+    {
+      "fails_if": "The test creates or leaves that named pointer in the real home; independent filesystem check, but not a census of every real-home write.",
+      "location": "tests/test_a_raced_promotion_still_lands.py:70"
+    },
+    {
+      "fails_if": "The reviewed commit is already on the remote primary branch before the call; this is a meaningful negative precondition.",
+      "location": "tests/test_a_raced_promotion_still_lands.py:177"
+    },
+    {
+      "fails_if": "Restoring the old pointer-race exception returns CLI exit 1; base and mutant logs demonstrate this failure.",
+      "location": "tests/test_a_raced_promotion_still_lands.py:184"
+    },
+    {
+      "fails_if": "The caller reports success without merging/pushing the reviewed commit; actual Git ancestry is independent of the supplied head argument, although surviving file content is not checked.",
+      "location": "tests/test_a_raced_promotion_still_lands.py:185"
+    },
+    {
+      "fails_if": "Retirement is omitted and the original pointer survives after success.",
+      "location": "tests/test_a_raced_promotion_still_lands.py:186"
+    },
+    {
+      "fails_if": "The pending record is written but clear_pending is removed; it also passes if the pending writer is removed, so it cannot establish pending-record durability.",
+      "location": "tests/test_a_raced_promotion_still_lands.py:187"
+    },
+    {
+      "fails_if": "Restoring the old exception on the newer pointer makes the CLI fail; shown in both red logs.",
+      "location": "tests/test_a_raced_promotion_still_lands.py:212"
+    },
+    {
+      "fails_if": "Landing is skipped while success is returned, leaving the reviewed commit absent from the remote branch.",
+      "location": "tests/test_a_raced_promotion_still_lands.py:213"
+    },
+    {
+      "fails_if": "The newer attempt is removed or its attempt number changes away from independently specified 4; it does not fail when pending_landing_repair is incorrectly added.",
+      "location": "tests/test_a_raced_promotion_still_lands.py:214"
+    }
+  ],
+  "assertion_independence": "No added assertion is a self-equality against a supplied value: ancestry reads Git state and attempt 4 is independently specified; gaps are missing state/content assertions, not tautologies.",
+  "call_site_count": 6,
+  "call_sites": [
+    "reckon/crew/promotion.py:_complete_locked:1602",
+    "reckon/crew/promotion.py:_complete_locked:2281",
+    "reckon/crew_run_commands.py:crew_complete:3677",
+    "reckon/crew_run_commands.py:_land_a_promoted_run:4043",
+    "reckon/crew/promotion_requests.py:_execute:385",
+    "reckon/crew/pending_landing.py:finish_pending_landings:517"
+  ],
+  "completed_at": "2026-11-14T20:22:38Z",
+  "dispatched_at": "2026-11-14T20:16:14Z",
+  "findings": [
+    {
+      "file": "reckon/crew/promotion.py",
+      "line": "395",
+      "severity": "blocking",
+      "text": "blocking: when _retire_a_raced_pointer refuses a newer attempt, _keep_pointer_for_pending_landing marks that newer live pointer pending_landing_repair; the caller then succeeds and clears the pending file at crew_run_commands.py:4043, leaving a newer attempt whose next complete takes the repair-only branch at lines 3626-3641 and cannot find a record to finish; leave the newer attempt's repair state untouched and assert that state in the second test."
+    },
+    {
+      "file": "reckon/crew/promotion.py",
+      "line": "359",
+      "severity": "blocking",
+      "text": "blocking: _record_a_raced_landing overwrites the existing pending record using the current manifest commits or worktree HEAD, rather than preserving the head captured before promotion or using the already-promoted ledger row; if a resume advances that tree or manifest, finish_pending_landings prefers this replacement head at pending_landing.py:517 and can merge a revision the original review did not cover."
+    },
+    {
+      "file": "tests/test_a_raced_promotion_still_lands.py",
+      "line": "133",
+      "severity": "blocking",
+      "text": "blocking: the first promotion is replaced with ledger.append_run plus a commit, so the gate never runs the required pair of promotions or proves that neither real caller raises; exercise both promotion paths with a controlled pause after the first ledger write."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261114T174337281611-raced-promotion-lands-s11/gate-head.log",
+      "line": "3",
+      "severity": "blocking",
+      "text": "blocking: the gate includes only test_staged_write_inventory.py and test_every_shared_home_lock_holds_across_nodes.py beside the new file, omitting relevant direct importers such as test_promoted_review_never_held_for_landing_repair.py and test_a_landing_record_waits_for_the_merge.py; the required importer delta has not been measured."
+    },
+    {
+      "file": "reckon/crew/promotion.py",
+      "line": "313",
+      "severity": "non-blocking",
+      "text": "non-blocking: the new retirement function duplicates the capability already owned by _retire_review_pointer at promotion.py:277 and _release_marked_pointer/pointer_attempt at pending_landing.py:171-208, with a different field list; extend one owner with the required phase-insensitive identity instead of keeping divergent retirement guards."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261114T174337281611-raced-promotion-lands-s11/gate-head.log",
+      "line": "1",
+      "severity": "non-blocking",
+      "text": "non-blocking: the passing head log labels itself 63b51b8337c4d61f3fc0b93d25ffb048273ed293, the base revision, and carries no dirty-tree digest tying its changed source to 24dad14ccd1711480637be1243fe512890536bc1; the 57-pass result is readable but its committed-source provenance is incomplete."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261114T174337281611-raced-promotion-lands-s11/manifest.md",
+      "line": "12",
+      "severity": "non-blocking",
+      "text": "non-blocking: tests is a narrative instead of an executable command and baseline_suite/after_suite are prose instead of the required JSON objects; preserve the measured results in replayable, machine-readable receipt fields."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 6 production call site(s)",
+    "diff": "reviewed 24dad14ccd1711480637be1243fe512890536bc1 and 02421ad1ad929fd5a9975ef5c940ed8d98283ff6 against 63b51b8337c4d61f3fc0b93d25ffb048273ed293; promotion.py adds raced-pointer retirement and pending-record writing, the new test adds two cases, and the second commit adds only the evidence fragment.",
+    "done_when": "prompt.txt:169 requires two actual promotions and the importer comparison; tests/test_a_raced_promotion_still_lands.py:133 seeds the first ledger row and invokes only one promotion, while gate-head.log:3 names only two pre-existing importer files.",
+    "goal": "dispatch-detail.json:admit_request.node.goal asks the losing promotion to land the reviewed head; promotion.py:1602 now permits the caller to merge, but promotion.py:395 contaminates a newer attempt and promotion.py:359 can replace the recorded reviewed head.",
+    "manifest": "manifest.md records two commits, head 57 passed, base 55 passed and two negative-control failures, matching the stored summaries, but its tests field is prose and its suite fields are prose instead of the required JSON receipts.",
+    "write_paths": "prompt.txt:80-85 grants the two production paths, the new test and the evidence fragment; all three paths changed by the two reviewed commits are within that grant."
+  },
+  "justifications": {
+    "durability": "tests/test_a_raced_promotion_still_lands.py:184-189 fails on the demonstrated refusal and missing landing, but line 214 preserves only the newer attempt number and misses the pending-repair flag, and no assertion verifies the pending head or landed marker content.",
+    "evidence": "tests/test_a_raced_promotion_still_lands.py:133 simulates the first row rather than two promotions, and gate-head.log:1 identifies the base revision despite measuring changed source, although all four logs contain real pytest summaries and exit codes.",
+    "fit": "reckon/crew/promotion.py:313 follows the local lock/read/unlink style and uses the pending store, but introduces a second attempt-identity vocabulary beside pending_landing.py:171 and the new test module's opening docstring narrates the historical defect.",
+    "goal_fidelity": "reckon/crew/promotion.py:392-398 allows the ordinary raced landing to finish but marks a newer attempt for the old repair and recomputes the pending head from mutable run state at line 359.",
+    "reuse": "reckon/crew/promotion.py:313 duplicates the compare-under-lock-and-retire capability of promotion.py:277 and pending_landing.py:198 instead of extending their owner, while its pending writer and the test fixture correctly wrap existing stores and repository helpers.",
+    "scope_discipline": "both commits change only reckon/crew/promotion.py, tests/test_a_raced_promotion_still_lands.py and the evidence fragment explicitly granted by prompt.txt:80-85."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: dispatch-detail.json:admit_request.node.goal asks the losing promotion to land the reviewed head; promotion.py:1602 now permits the caller to merge, but promotion.py:395 contaminates a newer attempt and promotion.py:359 can replace the recorded reviewed head.\nVERDICT done_when: prompt.txt:169 requires two actual promotions and the importer comparison; tests/test_a_raced_promotion_still_lands.py:133 seeds the first ledger row and invokes only one promotion, while gate-head.log:3 names only two pre-existing importer files.\nVERDICT write_paths: prompt.txt:80-85 grants the two production paths, the new test and the evidence fragment; all three paths changed by the two reviewed commits are within that grant.\nVERDICT manifest: manifest.md records two commits, head 57 passed, base 55 passed and two negative-control failures, matching the stored summaries, but its tests field is prose and its suite fields are prose instead of the required JSON receipts.\nVERDICT diff: reviewed 24dad14ccd1711480637be1243fe512890536bc1 and 02421ad1ad929fd5a9975ef5c940ed8d98283ff6 against 63b51b8337c4d61f3fc0b93d25ffb048273ed293; promotion.py adds raced-pointer retirement and pending-record writing, the new test adds two cases, and the second commit adds only the evidence fragment.\nCALL_SITES: reckon/crew/promotion.py:_complete_locked:1602, reckon/crew/promotion.py:_complete_locked:2281, reckon/crew_run_commands.py:crew_complete:3677, reckon/crew_run_commands.py:_land_a_promoted_run:4043, reckon/crew/promotion_requests.py:_execute:385, reckon/crew/pending_landing.py:finish_pending_landings:517\nSCORE goal_fidelity: 13\nJUSTIFICATION goal_fidelity: reckon/crew/promotion.py:392-398 allows the ordinary raced landing to finish but marks a newer attempt for the old repair and recomputes the pending head from mutable run state at line 359.\nSCORE evidence: 10\nJUSTIFICATION evidence: tests/test_a_raced_promotion_still_lands.py:133 simulates the first row rather than two promotions, and gate-head.log:1 identifies the base revision despite measuring changed source, although all four logs contain real pytest summaries and exit codes.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: both commits change only reckon/crew/promotion.py, tests/test_a_raced_promotion_still_lands.py and the evidence fragment explicitly granted by prompt.txt:80-85.\nSCORE durability: 14\nJUSTIFICATION durability: tests/test_a_raced_promotion_still_lands.py:184-189 fails on the demonstrated refusal and missing landing, but line 214 preserves only the newer attempt number and misses the pending-repair flag, and no assertion verifies the pending head or landed marker content.\nSCORE fit: 17\nJUSTIFICATION fit: reckon/crew/promotion.py:313 follows the local lock/read/unlink style and uses the pending store, but introduces a second attempt-identity vocabulary beside pending_landing.py:171 and the new test module's opening docstring narrates the historical defect.\nSCORE reuse: 5\nJUSTIFICATION reuse: reckon/crew/promotion.py:313 duplicates the compare-under-lock-and-retire capability of promotion.py:277 and pending_landing.py:198 instead of extending their owner, while its pending writer and the test fixture correctly wrap existing stores and repository helpers.\nFINDING reckon/crew/promotion.py:395 blocking: when _retire_a_raced_pointer refuses a newer attempt, _keep_pointer_for_pending_landing marks that newer live pointer pending_landing_repair; the caller then succeeds and clears the pending file at crew_run_commands.py:4043, leaving a newer attempt whose next complete takes the repair-only branch at lines 3626-3641 and cannot find a record to finish; leave the newer attempt's repair state untouched and assert that state in the second test.\nFINDING reckon/crew/promotion.py:359 blocking: _record_a_raced_landing overwrites the existing pending record using the current manifest commits or worktree HEAD, rather than preserving the head captured before promotion or using the already-promoted ledger row; if a resume advances that tree or manifest, finish_pending_landings prefers this replacement head at pending_landing.py:517 and can merge a revision the original review did not cover.\nFINDING tests/test_a_raced_promotion_still_lands.py:133 blocking: the first promotion is replaced with ledger.append_run plus a commit, so the gate never runs the required pair of promotions or proves that neither real caller raises; exercise both promotion paths with a controlled pause after the first ledger write.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261114T174337281611-raced-promotion-lands-s11/gate-head.log:3 blocking: the gate includes only test_staged_write_inventory.py and test_every_shared_home_lock_holds_across_nodes.py beside the new file, omitting relevant direct importers such as test_promoted_review_never_held_for_landing_repair.py and test_a_landing_record_waits_for_the_merge.py; the required importer delta has not been measured.\nFINDING reckon/crew/promotion.py:313 non-blocking: the new retirement function duplicates the capability already owned by _retire_review_pointer at promotion.py:277 and _release_marked_pointer/pointer_attempt at pending_landing.py:171-208, with a different field list; extend one owner with the required phase-insensitive identity instead of keeping divergent retirement guards.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261114T174337281611-raced-promotion-lands-s11/gate-head.log:1 non-blocking: the passing head log labels itself 63b51b8337c4d61f3fc0b93d25ffb048273ed293, the base revision, and carries no dirty-tree digest tying its changed source to 24dad14ccd1711480637be1243fe512890536bc1; the 57-pass result is readable but its committed-source provenance is incomplete.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261114T174337281611-raced-promotion-lands-s11/manifest.md:12 non-blocking: tests is a narrative instead of an executable command and baseline_suite/after_suite are prose instead of the required JSON objects; preserve the measured results in replayable, machine-readable receipt fields.\n",
+  "recommendation": "repair-before-landing",
+  "reproduction_quote": "Error: the ledger row for run 'r-20261114T094542374628-a-raced-promotion' is already written; do not re-promote. Landing or cleanup failed: run 'r-20261114T094542374628-a-raced-promotion' changed while promotion ran; its promotion is recorded and its pointer is kept, marked pending_landing_repair",
+  "reuse_audit": [
+    "Searched pointer retirement and attempt identity: promotion._retire_review_pointer and pending_landing.pointer_attempt/_release_marked_pointer own it; opened all three and found duplication in _retire_a_raced_pointer.",
+    "_record_a_raced_landing wraps pending_landing.write_pending, whose implementation was opened; no second persistence mechanism.",
+    "Test setup wraps tests.helpers.landing_repository._write_origin_and_checkout/_complete_land and tests.helpers.git.git; opened the repository helper. Ledger-row and station-mark helpers wrap ledger.append_run and promotion_requests._mark_pointer.",
+    "The nested commit_then_mark and commit_then_resume are test-only interposition wrappers on the existing commit boundary.",
+    "Searched ancestry capability: reckon.crew.merge._is_ancestor (opened at line 845) already owns it; the new test adds a small independent subprocess probe for Git state.",
+    "The real-pointer fixture is an independent filesystem assertion for this new synthetic run; no production subsystem added."
+  ],
+  "review_method": "Read-only static review at the explicit revision; read the four existing gate logs; no suite rerun and no mutation. The two runtime findings are control-flow deductions, not newly executed reproductions.",
+  "review_run_id": "r-20261114T201232009152-review-of-raced-promotion-lands-s11-02421ad1ad92",
+  "reviewed_base_sha": "63b51b8337c4d61f3fc0b93d25ffb048273ed293",
+  "reviewed_commits": [
+    "24dad14ccd1711480637be1243fe512890536bc1",
+    "02421ad1ad929fd5a9975ef5c940ed8d98283ff6"
+  ],
+  "reviewed_head_sha": "02421ad1ad929fd5a9975ef5c940ed8d98283ff6",
+  "reviewed_run_id": "r-20261114T174337281611-raced-promotion-lands-s11",
+  "scores": {
+    "durability": 14,
+    "evidence": 10,
+    "fit": 17,
+    "goal_fidelity": 13,
+    "reuse": 5,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "suite_delta_evidence": {
+    "after_suite": {
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261114T174337281611-raced-promotion-lands-s11/gate-head.log",
+      "revision_header": "# revision: 63b51b8337c4d61f3fc0b93d25ffb048273ed293",
+      "summary": "57 passed in 28.35s"
+    },
+    "baseline_suite": {
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261114T174337281611-raced-promotion-lands-s11/gate-base.log",
+      "revision_header": "# revision: 63b51b8337c4d61f3fc0b93d25ffb048273ed293 (tree committed in place as HEAD)",
+      "summary": "55 passed in 29.74s"
+    }
+  },
+  "times_source": "run-record",
+  "timestamp": "2026-11-14T20:42:23.167320+00:00",
+  "total": 79
+}

@@ -48,6 +48,7 @@ from reckon.crew.watch_unit import (
     seat_names_a_live_foreign_producer,
     watch_state,
 )
+from reckon.node_exclusive_lock import exclusive_lock
 
 # The waiting family is the stop that lifts itself, an overdue wait included:
 # a run whose declared external wait has aged past its expectation has not
@@ -239,13 +240,7 @@ def _update_git_answer_store(mutate: Callable[[dict[str, Any]], None]) -> None:
     path = _git_answer_store_path()
     lock_path = path.with_name(f"{path.name}.lock")
     try:
-        path.parent.mkdir(parents=True, exist_ok=True)
-        lock = lock_path.open("a+")
-    except OSError:
-        return
-    with lock:
-        try:
-            fcntl.flock(lock.fileno(), fcntl.LOCK_EX)
+        with exclusive_lock(lock_path):
             store = _read_git_answer_store()
             mutate(store)
             _bound_git_answer_store(store)
@@ -253,10 +248,8 @@ def _update_git_answer_store(mutate: Callable[[dict[str, Any]], None]) -> None:
             temporary = path.with_name(f".{path.name}.{os.getpid()}.tmp")
             temporary.write_text(payload, encoding="utf-8")
             os.replace(temporary, path)
-        except OSError:
-            return
-        finally:
-            fcntl.flock(lock.fileno(), fcntl.LOCK_UN)
+    except OSError:
+        return
 
 
 def _stored_commit_answer(tree: Path, candidate: str) -> str:
@@ -3484,6 +3477,25 @@ def watch_ticker(
                         # running until the next unrelated change. Best-effort on the
                         # same terms as its neighbours.
                         gate_seen = _sweep_gate_rows(project, gate_seen)
+                    # A session's snapshot ages whether or not a document
+                    # moves, so keeping it fresh is a duty of every beat rather
+                    # than of the cadence above. The change gate is the sweep's
+                    # other producer-side trigger, and a quiet fleet never opens
+                    # it: the seat holder stays healthy and goes on drawing rows
+                    # while its sessions' snapshots age out of the freshness
+                    # window. Reaching the sweep on every beat costs a thread
+                    # start and a stat identity; the sweep's own floor interval
+                    # is what decides whether the beat publishes, so a fleet
+                    # that is moving writes no more than it did. Best-effort on
+                    # the same terms as its neighbours, and skipped by any
+                    # process that is not this project's producer.
+                    try:
+                        runs.publish_obligations_on_beat(project)
+                    except Exception as exc:  # noqa: BLE001 - one bad pass ends nothing
+                        print(
+                            f"obligation-beat-failure: {project}: {exc}",
+                            flush=True,
+                        )
                     moment = _utc_seconds()
                     if sweep:
                         current = {

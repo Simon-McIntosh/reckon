@@ -21,6 +21,7 @@ from ._imports import (
     LanePaused,
     Mapping,
     Path,
+    RosterFull,
     TaskNode,
     _actionable_budget_hold,
     _adjacent_live_peers,
@@ -112,6 +113,51 @@ _FACADE_BINDINGS = (
 # the queue waited. Idle members only need retiring now and then.
 IDLE_MEMBER_REAP_INTERVAL_SECONDS = 600.0
 _LAST_IDLE_MEMBER_REAP: dict[tuple[str, str], float] = {}
+
+
+def _committed_node_runs(
+    project: str, root: object, node_id: str
+) -> list[dict[str, Any]]:
+    """The committed runs of one node, in completion order.
+
+    Read from the project's run index with one filtered query, so a dispatch
+    pays for its own node's rows rather than for the whole ledger. An index
+    that cannot be read falls back to the full ledger read, filtered here.
+    """
+    import json as _json
+    import sqlite3
+    from contextlib import closing
+
+    def ordered(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+        return sorted(
+            rows,
+            key=lambda row: (
+                str(row.get("completed_at") or row.get("dispatched_at") or ""),
+                str(row.get("run_id") or ""),
+            ),
+        )
+
+    query = (
+        "SELECT payload FROM aggregate_rows "  # noqa: S608 - values are bound
+        "WHERE json_extract(payload, '$.node') = ? "
+        "UNION ALL SELECT payload FROM records "
+        "WHERE name NOT IN (SELECT run_id FROM aggregate_rows WHERE run_id IS NOT NULL) "
+        "AND json_extract(payload, '$.node') = ?"
+    )
+    try:
+        index_uri = ledger._run_index_path(project, root).as_uri() + "?mode=ro"
+        with closing(sqlite3.connect(index_uri, uri=True)) as connection:
+            rows = [
+                _json.loads(payload)
+                for (payload,) in connection.execute(query, (node_id, node_id))
+            ]
+    except (OSError, sqlite3.Error, ValueError):
+        rows = [
+            row
+            for row in ledger.runs(project, root=root)
+            if str(row.get("node") or "") == node_id
+        ]
+    return ordered([row for row in rows if isinstance(row, dict)])
 
 
 def _idle_member_reap_due(project: str, root: object) -> bool:
@@ -958,6 +1004,29 @@ def dispatch(
     if lane_gate.get("state") in _LANE_GATE_WAITING_STATES:
         raise LanePaused(lane_gate)
 
+    # A full placement roster is a wait for a seat, not a refusal: a direct
+    # local dispatch that meets it is stored as a queued request exactly as a
+    # router hold is, so it launches when a seat frees rather than being lost
+    # after its run id was printed. A request the admission pass is launching is
+    # already queued, and its later roster refusal restores it, so it is not
+    # queued a second time here.
+    if is_local and not shadow_lineage and not admission_launch:
+        try:
+            _refuse_over_concurrency_ceiling(
+                backend_name, backend, project, exclude_run_ids=(run_id,)
+            )
+        except RosterFull as roster:
+            reason = (
+                "the placement reservation's roster is full "
+                f"({roster.occupancy}/{roster.limit}); the request waits for a seat"
+            )
+            lane_allowance = {
+                **lane_allowance,
+                "held": True,
+                "reason": reason,
+                "detail": str(roster),
+            }
+
     # The router's allowance is checked before creating a worktree. A local
     # hold records the request as queued; other holds remain transient. The
     # allowance rides the exception so the caller reports the router's reason.
@@ -1293,7 +1362,14 @@ def dispatch(
                 explicitly_named=explicitly_named_peers,
                 exclude_run_ids=(run_id,),
             )
-        committed_runs = ledger.runs(project, root=ledger_root)
+        # Only shadow lineage and session reuse read runs beyond this node's
+        # own, so every other dispatch reads just the node's rows from the run
+        # index instead of decoding the whole ledger on each launch.
+        committed_runs = (
+            ledger.runs(project, root=ledger_root)
+            if shadow_lineage or backend.get("session_reuse")
+            else _committed_node_runs(project, ledger_root, node.id)
+        )
         session_resolution = (
             _task_session_resolution(
                 node,
