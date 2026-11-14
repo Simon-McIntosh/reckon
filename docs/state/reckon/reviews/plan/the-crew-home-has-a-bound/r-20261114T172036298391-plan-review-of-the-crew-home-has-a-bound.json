@@ -1,0 +1,70 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-14T17:40:07.496Z",
+  "dispatched_at": "2026-11-14T17:31:44Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/the-crew-home-has-a-bound.html:128",
+      "id": "reasoning-1",
+      "reason": "without `--project reckon` on the named command, \u00a714's guarantee is never invoked and the node would run the unscoped destructive pass the hold exists to prevent.",
+      "text": "\u00a75 says the pass \"relies on \u00a714, which scopes every gc sweep to the project it runs for\" and requires \"no removal line names a run that belongs to another project\", but the command it names is the bare `reckon crew gc --apply`: `--project` defaults to `None` (\"all local ledgers by default\", `reckon/crew_run_commands.py:2219-2224`), and \u00a714's deliverable scopes the sweeps only \"With `--project P`\", so the named pass still walks every local ledger and the done-when's own check would fail, which is exactly the return condition `c-hold-s5` set (\"scoped to `--project reckon`\")",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/the-crew-home-has-a-bound.html:175",
+      "id": "done_when-1",
+      "reason": "as written the attribution rule cannot decide the index case, so the node is forced to guess the evidence the section was meant to fix.",
+      "text": "\u00a714 requires the orphan ledger-index sweep to act only on entries belonging to P, and defines belonging as \"its live pointer, manifest or run record names P\", but a `ledger-*.sqlite` index carries none of these: `_orphan_ledger_indexes` identifies it only by `recorded_ledger_path` (`reckon/crew/gc.py:598-656`), so a literal implementation must either invent a fourth rule or report every index as `unknown`/kept, which contradicts the done-when's requirement that \"gc --apply --project reckon removes only reckon's entries\" including its orphan ledger index",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/the-crew-home-has-a-bound.html:175",
+      "id": "reasoning-2",
+      "reason": "the claim sends the node to re-scope a sweep that already meets the endpoint, and the plan's own done-when gives that case no failing base arm to prove the change was needed.",
+      "text": "\u00a714's Why says \"Two sweeps in the same call are unscoped too, `_orphan_ledger_indexes` and `_stale_run_locks`\", but `_stale_run_locks` already offers only a lock whose run id is in `ledgered` (`reckon/crew/routing.py:2055`) and `ledgered` is built from `_gc_projects(repo_root, project)`, which returns only the named project when `--project` is given (`reckon/crew/gc.py:82-89`), so it cannot remove another project's lock today, and the done-when correctly shows no base arm for that case",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "e23d676b00e8d15620116b0c918094cccc27ea38",
+  "plan_fingerprint": "5bf47326de0e9705d2c031b4c03f49139e697d7febd177612a5263eed38ae3c4",
+  "plan_slug": "the-crew-home-has-a-bound",
+  "plan_version": 126,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261114T172036298391-plan-review-of-the-crew-home-has-a-bound",
+  "reviewed_blob_sha": "dde20c53c603be117f91ce07932cbe20e0f70088",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `_unledgered_run_directories` at `reckon/crew/routing.py:2130`, its spare test at :2177, its rows at :2182\u20132189 and `garbage_collect`'s calls at `reckon/crew/gc.py:1198/1214/1225` all resolve, the cited review run `r-20261114T150611148213` resolves to its plan-review report, and `crew-state-stays-bounded` \u00a77 resolves to the hourly retention pass that retires at most 500 directories.",
+    "done_when": "a finding \u2014 \u00a714's done-when requires the orphan ledger-index sweep to attribute an index to a project, but the deliverable's attribution rule names only a live pointer, manifest or run record, none of which a `ledger-*.sqlite` carries.",
+    "evidence_paths": "pass \u2014 \u00a75 moves every command to an `all_debug` job under `env -u SLURM_JOB_ID` and writes logs under the run directory, and \u00a714 puts its logs under the run directory, both durable paths.",
+    "naming": "pass \u2014 neither unit carries a plan label, stage name, ticket number or version tag into code, and neither states a changelog instead of a mechanism.",
+    "reasoning": "a finding \u2014 \u00a75's done-when claims the pass relies on \u00a714's project scoping while the command it names passes no `--project`, so the scoping it depends on never engages, and \u00a714's Why names the stale run-lock sweep as deleting another project's locks when that sweep is already restricted to the selected project's ledger.",
+    "single_goal": "pass \u2014 \u00a75 delivers one reclaim pass and \u00a714 delivers one scoping rule; \u00a714's three sweeps are one endpoint, not three deliverables, and its single gate judges them together.",
+    "wiring": "pass \u2014 \u00a75 declares `depends-on` \u00a714 in the document head, and the new followup f-tchhab-006 carries the \u00a714 invocation, so the relationship the section relies on is present and points at the right node."
+  },
+  "section_digests": {
+    "_document": "c0b75a98a3ec26324d46beef57a7562df44e2ff8dfc3526a58a65b24f263f142",
+    "s1": "32d74b1202f967c9688afa80dbd94719f49d78f6a5afcc8d56d9c46602e1c0a5",
+    "s10": "56c18da5f95c1af6bc07050b4374f565f11fa8750f575894cd4e1cc2b5ea773a",
+    "s11": "80acd3bb5f292230c27316d662ee39353a2f9d2571e4aa608f5e765924e25480",
+    "s12": "45922de00c241b79de39fff9312c389ca9030f6fa16a304a9d0c35e383ad77be",
+    "s13": "acf680c3187bbb981fd28a86fcf53a07328031935536c58872746cc6e10a6f26",
+    "s14": "be35fd9a8dbf585f807d2e90a42c5c5885dfe9c9e955f28fd9de82bc430fac90",
+    "s2": "9328c20a14a28cadebc0cf3424b9fa61772f8c3bea7e4f7b1e097571697c0369",
+    "s3": "42466bfb93ed68c3dcdb669550dae38d00ebbdea5e24407a7579076255209fbf",
+    "s4": "ea437bee063bb05e8f8ddb6f7a30f7f066d66dff1770c1488e31b86a6f5c7ba8",
+    "s5": "7e824e71f9eb8c82ba4d175f4dd2a16fe5e084d2e91ca3b6fe23e712197f87a7",
+    "s6": "3f82b3311550663b1d18b1428203c2b44805aff91f1c998049de11dd82bfe201",
+    "s7": "d966e9dc54000fcf7d43d9d39567b2a791c2670b0224b881649472a126a8f106",
+    "s8": "07d9242815cd2c19cf76c9484aa28c908834190af477f204091de9d695b3e8a5",
+    "s9": "5e8a5c96b9e0b65736bdee8a24254ce6fe4a12c73dcb34c44b3a5a72b6e6d9c8"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-14T17:49:50.412800+00:00",
+  "total": null
+}
