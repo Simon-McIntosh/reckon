@@ -1,0 +1,57 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "none"
+  ],
+  "completed_at": "2026-11-14T13:26:52.524Z",
+  "dispatched_at": "2026-11-14T13:23:14Z",
+  "findings": [
+    {
+      "file": "tests/test_every_module_fits_a_worker_window.py",
+      "line": 1,
+      "severity": "non-blocking",
+      "text": "the done-when requires this test to pass at head, but window_gate.log records 'tokens reckon/crew_follow_commands.py: 50277' against the 50000 bound and '1 failed, 3 passed' at both arms; the manifest records it under outside_scope because the module split is a separate plan deliverable."
+    },
+    {
+      "file": "tests/test_staged_write_inventory.py",
+      "line": 1,
+      "severity": "non-blocking",
+      "text": "the head arm never exercised this file: gate_head.log shows '53 passed, 2 errors', the two errors being git ls-tree exit 128 in the extracted arm, so the no-added-failure evidence covers 53 tests and not this file's two."
+    }
+  ],
+  "justifications": {
+    "durability": "negative_control.log shows the case red ('1 failed') once the suppression returns, so the assertion at tests/test_a_reload_replay_prints_no_self_transition.py:143 fails on the regression it guards.",
+    "evidence": "window_gate.log records 'tokens reckon/crew_follow_commands.py: 50277' and '1 failed' where the done-when requires that test to pass at head.",
+    "fit": "the added assertion follows the file's existing tuple-of-dicts idiom at tests/test_a_reload_replay_prints_no_self_transition.py:149 and moves the docstring with it.",
+    "goal_fidelity": "tests/test_a_reload_replay_prints_no_self_transition.py:143 asserts the section's figure of exactly two rows for the run.",
+    "reuse": "no definition was added; the case reuses the existing _replay helper at tests/test_a_reload_replay_prints_no_self_transition.py:82 and its second return carrying the production row path's fed rows.",
+    "scope_discipline": "git diff --stat 47d4d536 686d94c0 names only tests/test_a_reload_replay_prints_no_self_transition.py and the section's evidence fragment."
+  },
+  "project": "reckon",
+  "review_run_id": "r-20261114T131914953115-review-of-wave3-clive-anchored-the-monitor-shows-the-work-i-s71-686d94c0f5f9",
+  "reviewed_base_sha": "47d4d536120a2e6d4356124856be6285061e6806",
+  "reviewed_head_sha": "686d94c0f5f9e1b0d15c7cba6b7f4adb2d25981a",
+  "reviewed_run_id": "r-20261114T095155422905-wave3-clive-anchored-the-monitor-shows-the-work-i-s71",
+  "scores": {
+    "durability": 19,
+    "evidence": 13,
+    "fit": 19,
+    "goal_fidelity": 17,
+    "reuse": 19,
+    "scope_discipline": 19
+  },
+  "search_note": "searched reckon/crew and tests/ for an existing helper asserting replay row delivery; _replay at tests/test_a_reload_replay_prints_no_self_transition.py:82 is the owner and is extended, not forked.",
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-14T13:35:49.493480+00:00",
+  "total": 106,
+  "verdicts": {
+    "call_sites": "no production code changed, so no runtime path reaches the change; the assertion exercises the production row path through _fleet_replay at tests/test_a_reload_replay_prints_no_self_transition.py:92.",
+    "diff": "read commit by commit from 47d4d536 to 686d94c0: 5a8521b5 adds the two-row assertion to tests/test_a_reload_replay_prints_no_self_transition.py:143 and 686d94ca records the count in the evidence fragment; 2 files, 53 insertions, 2 deletions.",
+    "done_when": "the gate ran tests/test_a_reload_replay_prints_no_self_transition.py with tests/test_staged_write_inventory.py under gate_base.log and gate_head.log, both '53 passed, 2 errors' with EXIT=1, and the removed suppression is shown red in negative_control.log ('1 failed'); the done-when's window-bound item fails at head (50277 > 50000) and is recorded under outside_scope.",
+    "goal": "the goal is to deliver section s71 as its done-when states; the diff is a test-only count assertion plus its evidence fragment, and the suppression it measures is already on main (58e11382fa, 6e091764a7) so nothing product-side remained to land.",
+    "manifest": "read; it states the section was verified rather than repaired, names both commits, records the two-arm suite results, the negative control and the window-bound failure under outside_scope.",
+    "write_paths": "declared paths are reckon/crew_follow_commands.py, tests/test_a_reload_replay_prints_no_self_transition.py, the section's evidence fragment html and its figures directory; the diff touches only the test file and the fragment, both inside them."
+  }
+}
