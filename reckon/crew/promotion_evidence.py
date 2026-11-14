@@ -7,6 +7,8 @@ import json
 import os
 import re
 import subprocess
+import threading
+from collections import OrderedDict
 from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass
 from pathlib import Path
@@ -134,7 +136,45 @@ def _merge_repair_scope(
     return _CumulativeDiff(paths, counts)
 
 
+# A cited commit list names immutable objects, so the scope its diffs measure
+# never changes. The station asks for one finished run's scope on every pass
+# that judges whether the run still owes a review, and each answer was a fresh
+# git diff, recomputed whenever anything else in the run's cache key moved.
+# Only a measured answer over full object names is kept: a symbolic revision
+# can move, and an unavailable diff is worth reading again.
+_COMMITTED_SCOPES: OrderedDict[tuple[str, tuple[str, ...]], _CumulativeDiff] = (
+    OrderedDict()
+)
+_COMMITTED_SCOPE_LIMIT = 4096
+_COMMITTED_SCOPE_LOCK = threading.Lock()
+_FULL_OBJECT_NAME = re.compile(r"[0-9a-f]{40}|[0-9a-f]{64}")
+
+
 def _committed_scope(
+    *, cwd: Path, commits: Sequence[str], run_id: str = ""
+) -> _CumulativeDiff:
+    """The cited commits' scope, measured once for each list of object names."""
+    names = tuple(str(commit) for commit in commits)
+    if not names or not all(_FULL_OBJECT_NAME.fullmatch(name) for name in names):
+        return _committed_scope_uncached(cwd=cwd, commits=commits, run_id=run_id)
+    key = (str(cwd), names)
+    with _COMMITTED_SCOPE_LOCK:
+        cached = _COMMITTED_SCOPES.get(key)
+        if cached is not None:
+            _COMMITTED_SCOPES.move_to_end(key)
+            return _CumulativeDiff(cached.paths, dict(cached.changed_lines))
+    scope = _committed_scope_uncached(cwd=cwd, commits=commits, run_id=run_id)
+    if scope.changed_lines.get("available", True):
+        with _COMMITTED_SCOPE_LOCK:
+            _COMMITTED_SCOPES[key] = _CumulativeDiff(
+                scope.paths, dict(scope.changed_lines)
+            )
+            while len(_COMMITTED_SCOPES) > _COMMITTED_SCOPE_LIMIT:
+                _COMMITTED_SCOPES.popitem(last=False)
+    return scope
+
+
+def _committed_scope_uncached(
     *, cwd: Path, commits: Sequence[str], run_id: str = ""
 ) -> _CumulativeDiff:
     """Return paths and counts from the cited commits' own diffs.
