@@ -1,0 +1,113 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_audit": [
+    {
+      "fails_if": "The code rewrites index.json on a reconcile that changed no entry, so the inode, mtime and size tuple differs; shown red in logs/negative-control.log.",
+      "location": "tests/test_an_unchanged_reconcile_writes_only_its_stamp.py:180"
+    },
+    {
+      "fails_if": "An unchanged reconcile writes different bytes to the document.",
+      "location": "tests/test_an_unchanged_reconcile_writes_only_its_stamp.py:187"
+    },
+    {
+      "fails_if": "A freshly started process must list the store; the probe records scandir. logs/repro-base-second-process-lists-once.log shows the instrument seeing a listing at base.",
+      "location": "tests/test_an_unchanged_reconcile_writes_only_its_stamp.py:191"
+    },
+    {
+      "fails_if": "The cold process answers a document holding fewer than 32 entries.",
+      "location": "tests/test_an_unchanged_reconcile_writes_only_its_stamp.py:196"
+    },
+    {
+      "fails_if": "A record the test wrote is masked by the stamp and never reaches the document.",
+      "location": "tests/test_an_unchanged_reconcile_writes_only_its_stamp.py:203"
+    },
+    {
+      "fails_if": "Adding a record leaves the document's bytes untouched.",
+      "location": "tests/test_an_unchanged_reconcile_writes_only_its_stamp.py:206"
+    }
+  ],
+  "assertion_independence": "No added assertion compares a value the test supplied against the same value returned. The document's stat and bytes are read from the filesystem on both sides, and the listing count comes from a separate interpreter that patches os.scandir and Path.glob before importing the module. The entry-count and added-record assertions use values the test wrote, but each can redden on a code change (an empty answer, or a masked record).",
+  "call_site_count": 8,
+  "call_sites": [
+    "reckon/crew/review.py:store_index_document (re-export, line 4038)",
+    "reckon/crew/review.py:reconcile_foreign_write (re-export, line 4031)",
+    "reckon/crew/review_records.py:_store_indexes:1759",
+    "reckon/crew/review_records.py:_record_identity:173",
+    "reckon/crew/review_records.py:store_index_version:2505",
+    "reckon/crew/review_records.py:store_index_changed_runs:2511",
+    "reckon/crew/review_records.py:review_records_index_names:2534",
+    "reckon/crew/review_records.py:store_index_run_digest:2544"
+  ],
+  "completed_at": "2026-11-14T22:07:37.916Z",
+  "dispatched_at": "2026-11-14T21:22:40Z",
+  "findings": [
+    {
+      "file": "tests/test_a_review_index_reader_never_waits_or_rewrites.py",
+      "id": "b1a7c04e9d2",
+      "line": "30",
+      "severity": "blocking",
+      "text": "blocking: the autouse fixture calls review_records._SETTLED_IDENTITIES, which this change deletes. A tree at the reviewed head runs this file as 2 errors at setup where base runs 2 passed, so promoting this change alone reddens the primary branch. The one-line fixture deletion must land with it; the node reported it under outside_scope."
+    },
+    {
+      "file": "reckon/crew/review_records.py",
+      "id": "c4e1b80a26f",
+      "line": "1957",
+      "severity": "non-blocking",
+      "text": "non-blocking: _read_index_stamp wraps json.loads in its own except clause, re-implementing read_cache_document at review_records.py:1356, whose docstring forbids exactly that. Call the owner and validate its result."
+    },
+    {
+      "file": "reckon/crew/review_records.py",
+      "id": "d90f3e7b5a1",
+      "line": "1987",
+      "severity": "non-blocking",
+      "text": "non-blocking: _persist_index_stamp re-implements write_cache_document at review_records.py:1371 and omits its fsync=False and mode=None cache flags, so each settled-identity advance fsyncs a cache file and is created 0600, unlike the document write at line 2127 whose docstring the helper claims to mirror."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "resolved 8 production entry points that can reach the changed module at the reviewed head; store_index_document and reconcile_foreign_write are both re-exported by reckon/crew/review.py and reach the stamp through _settled_index_document, _store_indexes and _record_identity.",
+    "diff": "read both commits against ffcba6679c: a4b72a5ff5 adds the stamp helpers, reroutes the two identity probes in review_records.py and removes the in-process memo; d89c36e124 adds only the evidence fragment; nothing else changed.",
+    "done_when": "prompt.txt:167-176 names the stamp test's case list, the base behaviour, matched suite arms and ruff; tests/test_an_unchanged_reconcile_writes_only_its_stamp.py:169-208 asserts the unchanged document's inode, mtime, size and bytes, a freshly started process's zero listings, and that an added record still moves the document, and logs/repro-base-second-process-lists-once.log shows the base second process listing the store once. The matched arms at logs/arm-base.log and logs/arm-head.log cover three files and omit tests/test_a_review_index_reader_never_waits_or_rewrites.py, so the no-failure-against-base clause was measured on a set chosen without the file that actually regresses.",
+    "goal": "dispatch-detail.json:admit_request.node.goal asks the review store's identity to be recorded in a small stamp so an unchanged reconcile writes only the stamp; review_records.py:1938-2006 adds _index_stamp_path, _read_index_stamp, _persist_index_stamp and _index_is_settled, and a reconcile that changes no entry writes only .review-index/stamp.json, so the stated deliverable is the deliverable that landed.",
+    "manifest": "read; it records both commits, 56 passed EXIT=0 at the head gate, 53 passed 2 errors at base and 54 passed 2 errors at the head arm, the negative-control log with its exact failure message, and an outside_scope entry for the stale fixture. Its baseline_suite and after_suite receipts name their logs and are readable, though after_suite points at gate-head.log rather than the matched arm, so the pair a reader compares is not the matched pair.",
+    "write_paths": "prompt.txt:80-85 grants four paths; the three files the diff touches are reckon/crew/review_records.py, tests/test_an_unchanged_reconcile_writes_only_its_stamp.py and docs/evidence/fragments/the-monitor-reads-each-fact-once/review-index-stamp-s49.html, all inside the grant, and no path outside it appears in either commit."
+  },
+  "justifications": {
+    "durability": "tests/test_an_unchanged_reconcile_writes_only_its_stamp.py:180-187 fails when the document is rewritten and :191-195 fails when a cold process lists the store, and logs/negative-control.log shows it firing on the declared mutation.",
+    "evidence": "logs/arm-base.log and logs/arm-head.log both cover the same three files and neither includes tests/test_a_review_index_reader_never_waits_or_rewrites.py, so the done_when's no-failure-against-base clause was measured without the file this change breaks.",
+    "fit": "reckon/crew/review_records.py:1938-2006 follows the module's private-helper and cache-write idiom and carries no plan or ticket label, but the stamp writer's call omits the fsync and mode flags the document write beside it passes.",
+    "goal_fidelity": "reckon/crew/review_records.py:1938-2006 stores the settled identity in .review-index/stamp.json and leaves the document untouched when a reconcile changes no entry, which is what the goal asks for.",
+    "reuse": "reckon/crew/review_records.py:1950-1995 re-implements read_cache_document (line 1356) and write_cache_document (line 1371), the module's own owners of this cache-read and cache-write capability.",
+    "scope_discipline": "the diff at d89c36e124 touches only the three granted paths, and the file it breaks outside that grant is reported under outside_scope rather than edited."
+  },
+  "project": "reckon",
+  "recommendation": "Repair the blocking finding first: delete the dead fresh_settled_identities fixture (one line) so the importing test file runs green at the head, then land. The two non-blocking findings are cleanup the stamp helpers should fold into the existing cache-document owners.",
+  "reproduction_quote": "base: PYTHONPATH=<base-tree> pytest -q tests/test_a_review_index_reader_never_waits_or_rewrites.py -> '2 passed in 1.74s'. head: same file at d89c36e124bfbfb04667b52be04d764728873fc5 -> 'ERROR tests/test_a_review_index_reader_never_waits_or_rewrites.py::test_a_held_index_lock_does_not_hold_a_reader', 'ERROR ...::test_a_reconciliation_that_finds_nothing_writes_nothing', 'AttributeError: module reckon.crew.review_records has no attribute _SETTLED_IDENTITIES' at line 30, '2 errors in 0.70s'. Each tree was extracted with git archive into /tmp and removed afterwards.",
+  "reuse_audit": [
+    "Searched for an existing persisted store identity and cache-document read/write: review_records.read_cache_document (line 1356), write_cache_document (line 1371), _load_persisted_entries (line 1700) and _persist_store_entries (line 1654) own those capabilities; opened all four. The stamp's read and write duplicate the first two rather than extending them; no owner of a version-keyed stamp exists."
+  ],
+  "review_method": "Read the node's goal, done_when and write paths from prompt.txt and dispatch-dir.json; read manifest.md and the four gate, arm, reproduction and negative-control logs; read both commits against the base; opened review_records.py at the reviewed head for the call-site read; built base and head trees under /tmp and ran the omitted test file in both to check the reported breakage.",
+  "review_run_id": "r-20261114T211432583899-review-of-review-index-stamp-s49-d89c36e124bf",
+  "reviewed_base_sha": "ffcba6679c7cb5812709911217e6cf43ebbe9870",
+  "reviewed_commits": [
+    "a4b72a5ff5bad244372fc5c164e7a8a6f4dc86f5",
+    "d89c36e124bfbfb04667b52be04d764728873fc5"
+  ],
+  "reviewed_head_sha": "d89c36e124bfbfb04667b52be04d764728873fc5",
+  "reviewed_run_id": "r-20261114T170847087917-review-index-stamp-s49",
+  "scores": {
+    "durability": 19,
+    "evidence": 12,
+    "fit": 17,
+    "goal_fidelity": 18,
+    "reuse": 5,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "suite_delta_evidence": "Derived from the reviewed run's own receipts: baseline_suite logs/arm-base.log reads 53 passed, 2 errors, EXIT=1 with failure_ids the two tests/test_staged_write_inventory.py errors; after_suite logs/gate-head.log reads 56 passed, EXIT=0. Set difference over the recorded ids is empty, so added_failure_count is 0. The matched head arm logs/arm-head.log also reports 54 passed, 2 errors, the same two ids. Neither arm ran tests/test_a_review_index_reader_never_waits_or_rewrites.py, which this change breaks.",
+  "times_source": "run-record",
+  "timestamp": "2026-11-14T22:05:00Z",
+  "total": 89
+}
