@@ -1,0 +1,68 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-11-14T08:01:37.669Z",
+  "dispatched_at": "2026-11-14T07:45:37Z",
+  "findings": [
+    {
+      "category": "correctness",
+      "file": "tests/test_the_review_store_is_indexed_by_its_writers.py",
+      "line": 266,
+      "severity": "non-blocking",
+      "summary": "The foreign-write assertion is `run_ids[3] in store_index_changed_runs(directory, 0) or foreign.name in document['entries']`, and the first clause is already true from `_rebuild_index_document`'s own log (review_records.py:2065-2068 writes one log row per entry, so changed_runs since 0 names all 50 runs). It therefore cannot fail from the reconcile path: a reconcile that lists names but enters nothing leaves listings==1 and record_stats==[] and the case still passes. The case also calls reconcile_foreign_write directly rather than reading through stored_record or review_records_index_names, so the done-when's 'found on the next read' is not demonstrated by any test."
+    },
+    {
+      "category": "correctness",
+      "file": "reckon/crew/review_records.py",
+      "line": 2400,
+      "severity": "non-blocking",
+      "summary": "review_entries_signature answers an indexed run as `[store_index_run_digest(...)]` with no revalidation, so a same-path rewrite of an already-indexed record by a writer that bypassed record_written does not move the obligations key: an in-place write leaves the directory mtime (and so dir_mtime_ns) unchanged, so _settled_index_document does not reconcile and the stored sha256 stays. The base path stat'ed each record through file_memo.file_signature and did catch it."
+    },
+    {
+      "category": "correctness",
+      "file": "reckon/crew/review_records.py",
+      "line": 2000,
+      "severity": "non-blocking",
+      "summary": "_entry_facts carries name, the two run ids, head_carried, head_sha, sha256 and size, but neither the record's mtime nor its inode, which the plan's per-record entry specifies. The omission is what makes the store-directory mtime the only foreign-write probe, which both remaining findings above follow from."
+    },
+    {
+      "category": "fit",
+      "file": "reckon/crew/review_records.py",
+      "line": 2372,
+      "severity": "non-blocking",
+      "summary": "review_entries_signature's docstring still states that 'each indexed file is stat'ed without reading its contents', which the new digest branch no longer does; the one place a reader learns the freshness rule now describes the code it replaced."
+    },
+    {
+      "category": "scope",
+      "file": "reckon/crew/open_run_index.py",
+      "line": 435,
+      "severity": "non-blocking",
+      "summary": "The diff removes about 135 lines from reckon/crew/open_run_index.py (review_written, review_rebuilt and the sqlite reader behind review_paths), a file outside the node's declared write paths. The removal is required by the plan's One index paragraph and is explained in commit 7a3d1af020's body and list is replaced by the writer document, so the work is right but the path needs ratifying rather than passing unremarked."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "pass \u2014 six commits read against eb36ed61; 990dcd93 adds the document and the writer path, dae4f938 keeps it out of the record listings and routes plan_review through it, 7a3d1af020 moves the document into .review-index/ and answers every staging read from it while removing section 35's sqlite index, b24d451a75 records the fragment and 6cd3459136 makes the negative control reach its assertions.",
+    "done_when": "pass with one gap \u2014 tests/test_the_review_store_is_indexed_by_its_writers.py asserts the run-id lookup, the no-scan per-tick read, the changed-run log and digests, the rebuild from one listing, the second-process write and the station's two reads; the foreign-write item is asserted only against a helper call and by an assertion that is true before the reconcile runs.",
+    "goal": "pass \u2014 the goal is to maintain the review-store index from its writers so readers never scan the store; review_records.py:2107 record_written is the single writer path and :2216 store_index_document is the single reader entry, both keyed on the document's version and the store directory's mtime.",
+    "manifest": "pass \u2014 the manifest names the base arm (arms3/base.log, revision eb36ed61), the after arm (arms4/after.log, revision 6cd34591), the negative control (arms4/negative_control.log, revision e31ada22c1), each with a revision header and a bare EXIT= line, and records the superseded test file under outside_scope.",
+    "write_paths": "fail \u2014 five of the six touched paths are inside the declared write paths; reckon/crew/open_run_index.py is not among them, and the plan's Deliverable lists only the five."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is to maintain the review-store index from its writers so readers never scan the store; reckon/crew/review_records.py:2107 record_written is the single writer path and :2216 store_index_document is the reader entry every staging read goes through.\nVERDICT done_when: tests/test_the_review_store_is_indexed_by_its_writers.py asserts the run-id lookup, the per-tick no-scan read, the changed-run log and digests, the rebuild from one listing, the second-process write and the station's two reads; its foreign-write case calls reconcile_foreign_write directly and its line 266 assertion is true before the reconcile runs.\nVERDICT write_paths: the diff at eb36ed61..6cd34591 touches review_records.py, review.py, plan_review.py, the node's test and the fragment, all declared, plus reckon/crew/open_run_index.py, which is not declared.\nVERDICT manifest: read; it names arms3/base.log (eb36ed61), arms4/after.log (6cd34591) and arms4/negative_control.log (e31ada22c1), each opening with its revision and command and ending in EXIT=, and records the superseded test file under outside_scope.\nVERDICT diff: read commit by commit against eb36ed61; six commits, 1080 insertions and 203 deletions over four source files, the node's test and the evidence fragment.\nCALL_SITES: reckon/crew/review.py:_write_record, reckon/crew/plan_review.py:store_plan_review, reckon/crew/review_records.py:_tick_store, reckon/crew/review_records.py:review_entries_signature, reckon/crew/obligations.py:2082,3239,3270,3322, reckon/crew/recovery_memo.py:_misfiled_review_candidates, reckon/crew/review_dispositions.py:stored_record\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/review_records.py:2107 record_written is the one writer path and :2216 store_index_document the one reader entry, and every staging-store reader now goes through them; the plan's per-record mtime and inode are not carried (:2000).\nSCORE evidence: 16\nJUSTIFICATION evidence: arms3/base.log and arms4/after.log are matched arms at eb36ed61 and 6cd34591 with the same two pre-existing inventory errors and zero added, the negative control at arms4/negative_control.log is red on two cases, and the foreign-write demonstration is asserted only against a helper call.\nSCORE scope_discipline: 14\nJUSTIFICATION scope_discipline: tests/test_the_review_store_is_indexed_by_its_writers.py and the three declared source files stay inside the write paths, but reckon/crew/open_run_index.py:435 is edited and is not among them.\nSCORE durability: 16\nJUSTIFICATION durability: the negative control reddens two of the seven cases at e31ada22c1, so the reader-path assertions fail on regression, but tests/test_the_review_store_is_indexed_by_its_writers.py:266 is true before reconcile_foreign_write runs and cannot catch a reconcile that scans without indexing.\nSCORE fit: 17\nJUSTIFICATION fit: the document, its lock and the hashing follow the module's existing idioms, but reckon/crew/review_records.py:2372 still documents the stat-per-file rule the digest branch replaced.\nSCORE reuse: 18\nJUSTIFICATION reuse: section 35's sqlite review index is removed from reckon/crew/open_run_index.py and the store now keeps one index; the new _index_lock at reckon/crew/review_records.py:1905 mirrors reckon/_store.py:395's flock context manager but the plan fixes the lock beside the document, and the search over reckon/crew found no other owner of a writer-maintained store index.\nFINDING tests/test_the_review_store_is_indexed_by_its_writers.py:266 non-blocking: the `or` assertion is already true from the rebuild's own change log, so a reconcile that lists names but indexes nothing still passes, and the done-when's 'found on the next read' is exercised only by a direct helper call.\nFINDING reckon/crew/review_records.py:2400 non-blocking: review_entries_signature answers an indexed run from the stored digest alone, so a same-path rewrite by a writer that bypassed record_written no longer moves the obligations key the base stat-based path caught.\nFINDING reckon/crew/review_records.py:2000 non-blocking: the per-record entry carries neither mtime nor inode, which the plan's design specifies, leaving the store directory's mtime as the only foreign-write probe.\nFINDING reckon/crew/review_records.py:2372 non-blocking: the docstring still says each indexed file is stat'ed, which the digest branch no longer does.\nFINDING reckon/crew/open_run_index.py:435 non-blocking: about 135 lines are removed from a file outside the declared write paths, as the plan's One index paragraph requires and commit 7a3d1af020 explains; the path needs ratifying.\n",
+  "review_run_id": "r-20261114T074257191532-review-of-the-review-store-is-indexed-by-its-writers-6cd345913642",
+  "reviewed_base_sha": "eb36ed6177e612210f6a4e66b77ac098e997e212",
+  "reviewed_head_sha": "6cd345913642e7bced083d896082d56f2a7ed9ef",
+  "reviewed_run_id": "r-20261113T082959041438-the-review-store-is-indexed-by-its-writers",
+  "scores": {
+    "durability": 16,
+    "evidence": 16,
+    "fit": 17,
+    "goal_fidelity": 18,
+    "reuse": 18,
+    "scope_discipline": 14
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-14T08:03:57.811771+00:00",
+  "total": 99
+}
