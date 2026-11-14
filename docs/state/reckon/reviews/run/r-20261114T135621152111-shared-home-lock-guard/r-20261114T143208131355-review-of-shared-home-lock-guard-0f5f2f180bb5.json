@@ -1,0 +1,32 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-11-14T15:10:54.123Z",
+  "dispatched_at": "2026-11-14T14:33:49Z",
+  "findings": [
+    {
+      "file": "tests/test_every_shared_home_lock_holds_across_nodes.py",
+      "line": 187,
+      "severity": "non-blocking",
+      "text": "found = set(flock_sites(...)) discards each site's call count, so a second lock-taking bare flock added inside an already-judged function is absorbed by that key and the guard stays green; a third fcntl.flock inserted into reckon/crew/recovery_watch.py::unwatch in an extraction of 0f5f2f180b raised the census from 45 to 46 calls and the suite still reported 4 passed."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is to refuse any lock-taking flock under reckon/ that is neither judged nor pending, from a census test every product gate runs; tests/test_every_shared_home_lock_holds_across_nodes.py:186-198 asserts an ast-derived key set against the JUDGED (21 keys, 24 calls) and PENDING (21 sites) tables, and docs/state/reckon/flight.yaml:131 declares it a census test that promotion_records._scoped_suite_command composes into a product-source node's gate.\nVERDICT done_when: each clause was measured independently of the worker's account: the delivered file passes (4 passed in a git-archive extraction of 0f5f2f180b), the census reads 42 keys and 45 calls with 24 judged calls over 21 keys and 21 pending sites, the three negative-control logs each end in EXIT=1 naming the site they report, flight.yaml declares the census and a composed product-source gate command was reproduced carrying it, and ruff check and ruff format --check both exit 0 on the delivered file.\nVERDICT write_paths: the manifest declares the test file, docs/state/reckon/flight.yaml, the landing fragment and its figure directory; the diff touches three of those four and nothing outside them.\nVERDICT manifest: read; it records baseline 51 passed EXIT=0 at 06485f75c143 and after 55 passed EXIT=0 at 0f5f2f180bb5, names five log paths, and fills all six rubric lines.\nVERDICT diff: read all four commits against 06485f75c143: cf8d735fcf adds the guard whole, f8e52771ff and bed7cab41c correct the landing fragment's figures, 0f5f2f180b drops a per-run duration from it; 288 insertions, no deletions, no site migrated.\nCALL_SITES: reckon/crew/promotion_records.py:_scoped_suite_command, reckon/crew/dispatching/preparation.py:1398, reckon/crew/dispatching/launch.py:308\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: tests/test_every_shared_home_lock_holds_across_nodes.py:187 keys every lock-taking flock by file and qualified function, and lines 188-192 refuse one that is in neither table, naming reckon.node_exclusive_lock.exclusive_lock as the remedy.\nSCORE evidence: 19\nJUSTIFICATION evidence: after-suite.log records 55 passed and EXIT=0 at the delivered head, and an independent re-run of the delivered file in an extraction of that revision is 4 passed.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff 06485f75c143 0f5f2f180bb5 touches only tests/test_every_shared_home_lock_holds_across_nodes.py, docs/state/reckon/flight.yaml and its landing fragment, 288 insertions and no deletion.\nSCORE durability: 16\nJUSTIFICATION durability: the key-set comparisons at tests/test_every_shared_home_lock_holds_across_nodes.py:188-198 redden when a new module or function takes a bare flock, but the per-site call counts the walk computes are never asserted, so a second flock added inside an already-judged function passes.\nSCORE fit: 19\nJUSTIFICATION fit: the module follows the ast-derived-set-against-literal-table shape of tests/test_staged_write_inventory.py and names its constants by the mechanism they describe, with no plan, stage or ticket identifier anywhere in the file.\nSCORE reuse: 20\nJUSTIFICATION reuse: flock_sites resolves qualified names through reckon/interface_counts.py:definitions and lists modules through :read_trees, and the declaration extends the existing census_tests owner at reckon/crew/promotion_records.py:769 rather than adding a gate path.\nFINDING tests/test_every_shared_home_lock_holds_across_nodes.py:187 non-blocking: found = set(flock_sites(...)) discards each site's call count, so a second lock-taking bare flock added inside an already-judged function is absorbed by that key and the guard stays green \u2014 I inserted a third fcntl.flock into reckon/crew/recovery_watch.py::unwatch in an extraction of 0f5f2f180b, the census rose from 45 to 46 calls, and the suite still reported 4 passed, which makes the quoted 24 judged calls descriptive rather than enforced.\n",
+  "review_run_id": "r-20261114T143208131355-review-of-shared-home-lock-guard-0f5f2f180bb5",
+  "reviewed_base_sha": "06485f75c1438e780a288386d37fc9f558cd4089",
+  "reviewed_head_sha": "0f5f2f180bb5de89559131770dca97107b1ccf39",
+  "reviewed_run_id": "r-20261114T135621152111-shared-home-lock-guard",
+  "scores": {
+    "durability": 16,
+    "evidence": 19,
+    "fit": 19,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-14T15:08:49.376934+00:00",
+  "total": 112
+}
