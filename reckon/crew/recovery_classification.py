@@ -1784,6 +1784,18 @@ def classify_pointer(
         else:
             detail = str(record.get("reason") or "waiting for a local lane slot")
             action = "wait for a local lane slot"
+    elif phase in _PRE_SPAWN_PHASES:
+        # Claimed by its launcher with no worker yet: the phase reading stands,
+        # as it does for a queued request, and it is reported as running, the
+        # reading such a run carried before the liveness arms were skipped for
+        # it. Without a classification here the arms below were skipped too,
+        # and the read raised for every row of the project.
+        classification = "running"
+        detail = (
+            f"the launcher has claimed this run ({phase}) and has not started "
+            "its worker yet"
+        )
+        action = f"reckon crew observe --run {run_id}"
     # A request that has not launched has no process, no stream and no manifest
     # for the arms below to read, and reading that absence as evidence would
     # report a stored request as a run. Its phase reading stands instead; the
