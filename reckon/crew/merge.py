@@ -678,8 +678,104 @@ def _git_dir(repo: Path) -> Path:
     return Path(result.stdout.strip() or (repo / ".git"))
 
 
+# A git process killed while holding ``index.lock`` leaves the lock behind, and
+# every later landing then waits on a lock no process will ever release: an
+# empty lock left in the shared checkout once blocked every merge for over
+# sixteen minutes. Such a lock is cleared, but only on evidence: it must be at
+# least this old, its size and mtime must not have moved across the whole retry
+# window, and no process on this host may hold it open. The checkout is written
+# from other hosts as well, whose file descriptors this host cannot read, so age
+# and stillness carry the judgement for a remote writer — a live git index write
+# grows or touches the lock as it goes and does not stay still and empty for ten
+# minutes.
+INDEX_LOCK_STALE_SECONDS = 600.0
+
+
+def _index_lock_path(repo: Path) -> Path:
+    return _git_dir(repo) / "index.lock"
+
+
 def _index_lock_held(repo: Path) -> bool:
-    return (_git_dir(repo) / "index.lock").exists()
+    return _index_lock_path(repo).exists()
+
+
+def _index_lock_signature(lock: Path) -> tuple[int, int] | None:
+    """Return the lock's ``(mtime_ns, size)``, or ``None`` when it is absent."""
+    try:
+        stat = lock.stat()
+    except FileNotFoundError:
+        return None
+    return (stat.st_mtime_ns, stat.st_size)
+
+
+def _index_lock_age_seconds(lock: Path) -> float | None:
+    try:
+        stat = lock.stat()
+    except FileNotFoundError:
+        return None
+    return max(0.0, time.time() - stat.st_mtime)
+
+
+def _index_lock_held_open_by_a_process(lock: Path) -> bool:
+    """Whether any process on this host has ``lock`` open.
+
+    An unreadable ``/proc`` answers ``True``: a scan that cannot see must not
+    license removing a lock something alive may still depend on.
+    """
+    try:
+        target = os.path.realpath(lock)
+        entries = list(Path("/proc").iterdir())
+    except OSError:
+        return True
+    for entry in entries:
+        if not entry.name.isdigit():
+            continue
+        try:
+            descriptors = list((entry / "fd").iterdir())
+        except OSError:
+            continue
+        for descriptor in descriptors:
+            try:
+                if os.readlink(descriptor) == target:
+                    return True
+            except OSError:
+                continue
+    return False
+
+
+def _clear_a_stale_index_lock(
+    repo: Path,
+    *,
+    observed: tuple[int, int] | None,
+    stale_after_seconds: float = INDEX_LOCK_STALE_SECONDS,
+) -> float | None:
+    """Remove a lock proven stale and return its age, or ``None`` if it is held.
+
+    ``observed`` is the lock's signature when the wait began. A lock that was
+    not there then, that moved since (a live writer touches the file as it
+    writes the index), that is younger than the bound, or that a process holds
+    open is not cleared. The signature and the open-holder scan are read again
+    immediately before the removal, so a writer that takes the lock in the last
+    instant is not cleared either.
+    """
+    lock = _index_lock_path(repo)
+    current = _index_lock_signature(lock)
+    if observed is None or current is None or current != observed:
+        return None
+    age = _index_lock_age_seconds(lock)
+    if age is None or age < stale_after_seconds:
+        return None
+    if _index_lock_held_open_by_a_process(lock):
+        return None
+    if _index_lock_signature(lock) != current:
+        return None
+    if _index_lock_held_open_by_a_process(lock):
+        return None
+    try:
+        lock.unlink()
+    except FileNotFoundError:
+        return None
+    return age
 
 
 def _run_waiting_out_a_held_index_lock(
@@ -690,6 +786,8 @@ def _run_waiting_out_a_held_index_lock(
     retry_seconds: float = DEFAULT_RETRY_SECONDS,
     sleep: Callable[[float], None] = time.sleep,
     on_retry: Callable[[int, subprocess.CompletedProcess[str]], None] | None = None,
+    stale_after_seconds: float = INDEX_LOCK_STALE_SECONDS,
+    on_stale_lock: Callable[[float], None] | None = None,
 ) -> tuple[subprocess.CompletedProcess[str], int]:
     """Run ``step`` until it succeeds, a lock is not what refused it, or it runs out.
 
@@ -701,12 +799,21 @@ def _run_waiting_out_a_held_index_lock(
     with the number of retries made so far and the result that failed, before
     each wait, which is where a caller records the retry.
 
+    When the attempts run out and the lock is still held, the lock is judged
+    stale by :func:`_clear_a_stale_index_lock`; a lock cleared there is recorded
+    through ``on_stale_lock`` with its age and ``step`` is retried once, because
+    the lock a killed writer left behind is exactly what that retry was waiting
+    for. A lock a process holds, one younger than ``stale_after_seconds``, or
+    one that moved refuses as it did before.
+
     Returns the last result with the number of retries made, so a caller that
     reports a lock that outlasted the attempts and a caller that records its
     retries both read one count from one place. The lock is read from the
     checkout's own ``index.lock`` rather than from the failing command's text,
     because that file is what the next attempt waits for.
     """
+    lock = _index_lock_path(repo)
+    observed = _index_lock_signature(lock)
     retries = 0
     result = step(1)
     while result.returncode != 0 and retries + 1 < attempts and _index_lock_held(repo):
@@ -715,6 +822,15 @@ def _run_waiting_out_a_held_index_lock(
             on_retry(retries, result)
         sleep(retry_seconds)
         result = step(retries + 1)
+    if result.returncode != 0 and _index_lock_held(repo):
+        age = _clear_a_stale_index_lock(
+            repo, observed=observed, stale_after_seconds=stale_after_seconds
+        )
+        if age is not None:
+            if on_stale_lock is not None:
+                on_stale_lock(age)
+            retries += 1
+            result = step(retries + 1)
     return result, retries
 
 
@@ -924,6 +1040,7 @@ def land_merge(
     remote: str = "origin",
     attempts: int = DEFAULT_ATTEMPTS,
     retry_seconds: float = DEFAULT_RETRY_SECONDS,
+    stale_lock_seconds: float = INDEX_LOCK_STALE_SECONDS,
     sleep=time.sleep,
     verify: Callable[[Path, str, str, str], None] | None = None,
     release: bool = True,
@@ -954,6 +1071,7 @@ def land_merge(
     repo = Path(repo)
     head_sha = _rev_parse(repo, head)
     branch = _current_branch(repo)
+    stale_locks_cleared: list[float] = []
 
     if _is_ancestor(repo, head_sha, "HEAD"):
         # A previous run landed this head and only its push is outstanding, so
@@ -998,14 +1116,18 @@ def land_merge(
                 attempts=remaining,
                 retry_seconds=retry_seconds,
                 sleep=sleep,
+                stale_after_seconds=stale_lock_seconds,
+                on_stale_lock=stale_locks_cleared.append,
             )
             remaining -= retries + 1
             if result.returncode == 0:
                 break
             if _index_lock_held(repo):
+                age = _index_lock_age_seconds(_index_lock_path(repo))
+                aged = f", aged {age:.1f}s" if age is not None else ""
                 raise MergeError(
                     "the checkout's index.lock stayed held for "
-                    f"{attempts} attempts; nothing was written"
+                    f"{attempts} attempts{aged}; nothing was written"
                 )
             if _rev_parse(repo, "HEAD") != base:
                 if remaining <= 0:
@@ -1031,6 +1153,20 @@ def land_merge(
         # than HEAD's content, restored in the index before the push so no
         # peer's later commit can take them back.
         "unstaged": clear_stale_landed_copies(repo, landed_paths(repo, base, landed)),
+        # A lock left behind by a writer that died before releasing it, removed
+        # so the landing could proceed. Each entry names the lock and its age.
+        "index_lock_cleared": [
+            {
+                "path": str(_index_lock_path(repo)),
+                "age_seconds": round(age, 3),
+                "detail": (
+                    f"removed the checkout's index.lock, aged {age:.1f}s, "
+                    "because no process held it open and its size and mtime "
+                    "did not move across the retry window"
+                ),
+            }
+            for age in stale_locks_cleared
+        ],
     }
     try:
         remote_head = _push_and_confirm(repo, remote, landed, branch)
@@ -1174,6 +1310,7 @@ def land(
     remote: str = "origin",
     attempts: int = DEFAULT_ATTEMPTS,
     retry_seconds: float = DEFAULT_RETRY_SECONDS,
+    stale_lock_seconds: float = INDEX_LOCK_STALE_SECONDS,
     sleep=time.sleep,
     verify: Callable[[Path, str, str, str], None] | None = None,
 ) -> dict:
@@ -1224,6 +1361,7 @@ def land(
         remote=remote,
         attempts=attempts,
         retry_seconds=retry_seconds,
+        stale_lock_seconds=stale_lock_seconds,
         sleep=sleep,
         verify=_refuse_a_dropped_change,
         # The caller's own release follows this landing and reports the tree it
