@@ -987,9 +987,7 @@ def queue_dispatch(
                 # unplaceable pointer would otherwise stop every ordering pass.
                 from reckon.crew.queue_order import readable_queued_at
 
-                record["queued_at"] = readable_queued_at(
-                    record, now=datetime.now(UTC)
-                )
+                record["queued_at"] = readable_queued_at(record, now=datetime.now(UTC))
                 with _pointer_lock(run_id):
                     _write_json(pointer_path(run_id), record)
             # A request is checked for review when it enters the queue: the

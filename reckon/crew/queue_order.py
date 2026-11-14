@@ -244,21 +244,24 @@ def _override(pointer: Mapping[str, Any]) -> int | None:
     )
 
 
-def unplaceable_queued(
+def partition_placeable(
     queued_pointers: Sequence[Mapping[str, Any]],
-) -> list[Mapping[str, Any]]:
-    """The queued pointers whose arrival time cannot be read, in given order.
+) -> tuple[list[Mapping[str, Any]], list[Mapping[str, Any]]]:
+    """Split queued pointers into those the order can place and those it cannot.
 
     A request is placed by when it arrived, so one carrying no readable
-    ``queued_at`` has no place in the order. Such a pointer is set aside rather
-    than ranked, and named here so a caller can report it by run id: one
-    malformed record must cost its own place and no other request's.
+    ``queued_at`` has no place in the order. One malformed record must cost its
+    own place and no other request's, so every reader of the queue takes this
+    split from here rather than reading the field again.
     """
-    return [
-        pointer
-        for pointer in queued_pointers
-        if parse_utc(pointer.get("queued_at")) is None
-    ]
+    placeable: list[Mapping[str, Any]] = []
+    unplaceable: list[Mapping[str, Any]] = []
+    for pointer in queued_pointers:
+        if parse_utc(pointer.get("queued_at")) is None:
+            unplaceable.append(pointer)
+        else:
+            placeable.append(pointer)
+    return placeable, unplaceable
 
 
 def readable_queued_at(record: Mapping[str, Any], *, now: datetime) -> str:
@@ -325,7 +328,7 @@ def admission_order_details(
     ranked: it has no arrival to place it by, and raising here would end every
     ordering pass, and with it every dispatch and review compose that ranks the
     queue, until someone rewrites the one record. The set-aside pointers are
-    named by :func:`unplaceable_queued`, and the next pass orders them again,
+    named by :func:`partition_placeable`, and the next pass orders them again,
     so repair is a rewritten pointer rather than a stopped queue.
     """
     from reckon.crew.recovery_review_delivery import _is_review_run
@@ -334,16 +337,11 @@ def admission_order_details(
         raise ValueError("now must have a timezone")
     moment = now.astimezone(UTC)
 
-    joined = []
-    placeable = []
-    set_aside = []
-    for index, pointer in enumerate(queued_pointers):
-        queued_at = parse_utc(pointer.get("queued_at"))
-        if queued_at is None:
-            set_aside.append(pointer)
-            continue
-        placeable.append(pointer)
-        joined.append((queued_at, index, pointer))
+    placeable, set_aside = partition_placeable(queued_pointers)
+    joined = [
+        (parse_utc(pointer.get("queued_at")), index, pointer)
+        for index, pointer in enumerate(placeable)
+    ]
     if set_aside:
         _LOGGER.warning(
             "queued pointers with no readable queued_at set aside from ordering: %s",

@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 from ..queue_order import readable_queued_at
-
 from . import holds as _holds
 from . import service as _service
 from . import verdicts as _verdicts
@@ -377,9 +376,7 @@ def _launch_queued(
         with contextlib.suppress(OSError):
             _join_admitted_plan_review(pointer, str(launched["run_id"]))
         with contextlib.suppress(OSError):
-            dispatch_picker.record_route_repick(
-                str(launched["run_id"]), route_decision
-            )
+            dispatch_picker.record_route_repick(str(launched["run_id"]), route_decision)
         _carry_section_rederivation(pointer, str(launched["run_id"]))
         _announce_submission(pointer, launched, steering=steering, options=options)
     return launched

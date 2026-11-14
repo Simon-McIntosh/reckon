@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from .. import queue_order
 from . import holds as _holds
 from . import launching as _launching
 from . import ordering as _ordering
@@ -30,7 +31,6 @@ from .shared import (
     copy,
     datetime,
     nullcontext,
-    parse_utc,
     runs,
     time,
 )
@@ -229,14 +229,7 @@ def admit_once(
         # launches for any session. The pointer is left out of the ordering and
         # named in a verdict instead, and every other request is admitted in the
         # order the pass would otherwise have given them.
-        placeable = [
-            pointer
-            for pointer in queued
-            if parse_utc(pointer.get("queued_at")) is not None
-        ]
-        unplaceable = [
-            pointer for pointer in queued if parse_utc(pointer.get("queued_at")) is None
-        ]
+        placeable, unplaceable = queue_order.partition_placeable(queued)
         order = (
             placeable
             if run_id

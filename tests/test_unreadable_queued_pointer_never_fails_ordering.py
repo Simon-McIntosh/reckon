@@ -1,16 +1,10 @@
 """One unreadable queued pointer never takes the ordering, or a compose, down.
 
-A queued request is placed by when it arrived. A pointer whose ``queued_at``
-cannot be read therefore has no place, and the ordering used to refuse the whole
-pass over it: one malformed record — a hand-edited pointer, a failed write — ended
-every ordering pass and every compose that ranks the queue, across all projects,
-until somebody rewrote it by hand. Two dispatches failed that way on 14 November,
-one of them the content review a plan owed before it could be dispatched at all.
-
-So the ordering sets aside the pointer it cannot place, ranks every pointer it
-can, and names the set-aside run so its record can be repaired. The second half
-of the fix is at the other end: a queued pointer is never written without a
-readable arrival is stamped where it is missing.
+A queued request is placed by when it arrived, so a pointer whose ``queued_at``
+cannot be read has no place. The ordering sets it aside rather than failing the
+pass, ranks every pointer it can, and names the set-aside run so its record can
+be repaired. A queued pointer is also never stored without an arrival every
+reader can parse: the writers stamp one where it is missing.
 """
 
 from __future__ import annotations
@@ -88,7 +82,7 @@ def test_the_ordering_ranks_the_readable_pointers_and_names_the_set_aside_one() 
     order = queue_order.admission_order(queued, [], now=NOW)
 
     assert [pointer["run_id"] for pointer in order] == [GOOD_OLDER, GOOD_NEWER]
-    set_aside = queue_order.unplaceable_queued(queued)
+    set_aside = queue_order.partition_placeable(queued)[1]
     assert [pointer["run_id"] for pointer in set_aside] == [UNREADABLE]
 
 
@@ -101,7 +95,7 @@ def test_the_ordering_keeps_its_order_when_no_pointer_is_set_aside() -> None:
     order = queue_order.admission_order(queued, [], now=NOW)
 
     assert [pointer["run_id"] for pointer in order] == [GOOD_OLDER, GOOD_NEWER]
-    assert queue_order.unplaceable_queued(queued) == []
+    assert queue_order.partition_placeable(queued)[1] == []
 
 
 def test_a_malformed_stamp_is_set_aside_like_a_missing_one() -> None:
@@ -111,7 +105,7 @@ def test_a_malformed_stamp_is_set_aside_like_a_missing_one() -> None:
     order = queue_order.admission_order(queued, [], now=NOW)
 
     assert [pointer["run_id"] for pointer in order] == [GOOD_NEWER]
-    assert [p["run_id"] for p in queue_order.unplaceable_queued(queued)] == [
+    assert [p["run_id"] for p in queue_order.partition_placeable(queued)[1]] == [
         UNREADABLE
     ]
 
