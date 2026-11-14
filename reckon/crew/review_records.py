@@ -2147,7 +2147,7 @@ def record_written(path: Path, record: Mapping[str, Any]) -> None:
         sort_keys=True,
         mode=None,
         fsync=False,
-        create_parents=False,
+        create_parents=True,
     )
     _index_stored_record(path, record)
 
