@@ -10,6 +10,13 @@
     }
   },
   "dispatched_at": "2026-11-14T18:52:32Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "folded",
+      "node": "wave4-clive-a-landing-never-waits-on-s10",
+      "recorded_at": "2026-11-14T20:43:00.140841+00:00"
+    }
+  },
   "findings": [
     {
       "detail": "The added _index_lock_age_seconds duplicates an existing capability of the same name and near-identical body at reckon/crew/promotion_scope.py:2029; promotion_scope already imports from merge, so merge cannot delegate without a cycle and the owner is arguably merge, but the addition copies the logic rather than extending the existing owner (the merge-side default INDEX_LOCK_STALE_SECONDS is new, so the two now diverge in purpose, which is worth recording rather than blocking on).",
