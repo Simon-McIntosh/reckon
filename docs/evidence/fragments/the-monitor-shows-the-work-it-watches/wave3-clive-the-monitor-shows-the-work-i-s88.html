@@ -54,4 +54,20 @@ it acted takes the premature end.</p>
 <tr><td>Delivery commits kept</td><td><code>b058eaa9d9</code> and <code>857d4ddafd</code></td></tr>
 </tbody>
 </table>
+<h4>Second landing merge against primary main</h4>
+<p>Primary main advanced the classification module once more while the landing
+was pending, and the same file conflicted again. Git resolved the two sides
+automatically this round: primary main's stuck verdict and this delivery's
+premature-end helpers occupy separate regions of the module, so both stand as
+written. The chain order is unchanged from the first repair, and the gate was
+re-run at the new head rather than carried over from the earlier one.</p>
+<table>
+<thead><tr><th>Measure</th><th>Observed result</th></tr></thead>
+<tbody>
+<tr><td>Second repaired head, <code>d39bc126e8</code></td><td>54 passed in 20.12s, <code>EXIT=0</code></td></tr>
+<tr><td>Base arm, <code>3d4c92834c</code></td><td>51 passed in 13.67s, <code>EXIT=0</code></td></tr>
+<tr><td>Negative control at the third case</td><td>2 failed, 52 passed, <code>EXIT=1</code>; the premature end reads as halted</td></tr>
+<tr><td>Commits cited in the manifest</td><td>delivery <code>b058eaa9d9</code> and <code>857d4ddafd</code>, both merge heads <code>768e520a8c</code> and <code>d39bc126e8</code></td></tr>
+</tbody>
+</table>
 </section>
