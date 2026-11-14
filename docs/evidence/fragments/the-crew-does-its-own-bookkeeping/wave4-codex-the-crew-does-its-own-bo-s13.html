@@ -1,32 +1,40 @@
 <section id="wave4-codex-the-crew-does-its-own-bo-s13-log-citations">
-  <h3>Manifest log citations: guard implemented, importer gate remains open</h3>
-  <p>The shared manifest audit now requires every cited test, suite and negative-control
+  <h3>Manifest log citations: refusal and durable acceptance verified</h3>
+  <p>The shared manifest audit requires every cited test, suite and negative-control
     log to be a readable file inside the manifest's run directory. Relative names
     resolve beside the manifest; symbolic links and parent traversal cannot escape it.
     Refusals name the field and cited path. The CLI reaches this audit before a worker ends.</p>
+  <p>Both existing relative-control cases retain their clean-audit assertions. Each
+    first requires a refusal naming its external test-log citation, then supplies a
+    durable relative test log and requires acceptance of both relative log citations.
+    No skips or weaker assertions were introduced.</p>
   <table>
     <thead><tr><th>Measurement</th><th>Recorded result</th></tr></thead>
     <tbody>
       <tr><td>Unchanged-source reproduction</td><td>17 failed, 2 passed: scratch and
         missing log citations returned <code>ok: true</code>; both durable controls passed.</td></tr>
-      <tr><td>Declared baseline suite</td><td>55 passed</td></tr>
-      <tr><td>Declared head suite, including the new test</td><td>74 passed</td></tr>
-      <tr><td>CLI behavior checks</td><td>19 passed</td></tr>
-      <tr><td>Guard-removal negative control</td><td>17 failed, 2 passed: removing exactly
-        the location-check invocation lets the invalid citations pass again.</td></tr>
-      <tr><td>Direct-importer baseline and head</td><td>24 failed, 507 passed at base;
-        26 failed, 505 passed at head. The two added failure IDs are recorded only
-        under the manifest's <code>outside_scope</code> field.</td></tr>
-      <tr><td>Scoped lint and formatting</td><td>No lint findings; both changed Python
-        files pass the format check.</td></tr>
+      <tr><td>Expanded baseline suite</td><td>5 failed, 74 passed</td></tr>
+      <tr><td>Expanded head suite</td><td>5 failed, 93 passed; identical failing IDs,
+        zero added failures.</td></tr>
+      <tr><td>Focused behavior, including the two existing cases</td><td>21 passed</td></tr>
+      <tr><td>Guard-removal negative control</td><td>19 failed, 2 passed: removing exactly
+        the location-check invocation makes both strengthened cases and all invalid-citation
+        checks fail; the durable acceptance controls still pass.</td></tr>
+      <tr><td>Importer baseline and head</td><td>25 failed, 512 passed in each arm;
+        identical failing IDs, zero added failures across 36 test files.</td></tr>
+      <tr><td>Scoped lint and formatting</td><td>No lint findings; all three changed
+        Python files pass the format check.</td></tr>
     </tbody>
   </table>
   <p>The base revision is <code>b4700c0d20e70b117969d8c907af78d11014ad72</code>;
-    the measured implementation revision is <code>a8273bfc43915a005d84a6c9fb7420608c16b417</code>.
+    the measured source and test revision is <code>ee1c2063901acfab29c4c768625479d7c336157a</code>.
     Revision, literal command, imported module path, working directory and terminal
     <code>EXIT=</code> receipts are preserved in the run directory. All test jobs
-    ran on <code>all_debug</code>, using at most four pytest workers and archived trees.</p>
-  <p>This is a blocked candidate, not a completed section. The required importer delta
-    is not clean; its failures require a test-path scope decision from the coordinator.
-    Shared plan state has not been changed.</p>
+    ran on <code>all_debug</code>, using at most four pytest workers and archived trees.
+    The resumed jobs kept pytest temporary files beneath their own temporary root
+    and removed that root on exit.</p>
+  <p>The failure-ID comparison is preserved in <code>expanded-comparison.json</code>
+    under the run directory. Pre-existing failures remain visible in both arms.
+    The worker's deliverable is complete; section closure and shared plan state remain
+    the coordinator's responsibility.</p>
 </section>
