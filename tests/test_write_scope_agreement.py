@@ -11,8 +11,13 @@ module's pair of entry points exists to catch.
 A declaration may also be written as an absolute path on disk rather than
 relative to the repository. Resolving it before comparing is what lets an
 absolute declaration naming a directory inside the repository accept the same
-changed paths promotion accepts, and what keeps an absolute declaration naming
-a location outside the repository rejecting a repository path at both surfaces.
+changed paths promotion accepts.
+
+A declared write path is a hint rather than a fence, so a repository path the
+declaration does not name is not refused at either surface by virtue of that
+alone; only a class a merge cannot reconcile — a plan document, generated
+state, a cumulative evidence record, a figure topic directory or a dependency
+lock is refused, and both surfaces must refuse identical inputs.
 
 Both surfaces are entered here for the same inputs, so a change to either one
 that moves the contract shows up as a disagreement rather than as a worker
@@ -27,11 +32,16 @@ import pytest
 
 from reckon.crew.node import TaskNode
 from reckon.crew.promotion import _outside_declared_scope
+from reckon.crew.promotion_scope import _changed_artifacts_needing_acceptance
 from reckon.crew.reports import audit_manifest
 
 FILE_DECLARATION = "reckon/crew/reports.py"
 DIRECTORY_DECLARATION = "docs/figures/work-does-not-fall-to-the-coordinator"
 OUTSIDE_DIRECTORY = "declared-outside-the-repository"
+# A figure topic is replaced wholesale, so its class is the one a merge cannot
+# reconcile and the only one these surfaces still refuse.
+MERGE_UNSAFE_PATH = "docs/figures/another-topic/plot.svg"
+COMPANION_PATH = "reckon/crew/other.py"
 
 SCOPE_PAIRS = [
     # (changed path, declared write paths) — file declarations and directory
@@ -87,11 +97,14 @@ def _write_time_accepts(changed: str, declared: list[str], tree: Path) -> bool:
 
 
 def _promotion_accepts(changed: str, declared: list[str], tree: Path) -> bool:
-    """Enter through the promotion-time test; True when nothing falls outside."""
-    outside = _outside_declared_scope(
-        [changed], declared, record={"repo": str(tree)}, tree=tree
-    )
-    return not outside
+    """Enter through the promotion-time test; True when nothing falls outside.
+
+    Composed as the landing composes it: the declaration says what is in scope,
+    and only a class a merge cannot reconcile then needs a coordinator.
+    """
+    record = {"repo": str(tree)}
+    outside = _outside_declared_scope([changed], declared, record=record, tree=tree)
+    return not _changed_artifacts_needing_acceptance(outside, record=record, tree=tree)
 
 
 def _absolute_pair(case: str, tree: Path) -> tuple[str, list[str]]:
@@ -129,8 +142,18 @@ def test_a_path_under_a_declared_directory_is_accepted_by_both(
     assert _promotion_accepts(changed, [DIRECTORY_DECLARATION], tmp_path) is True
 
 
-def test_a_path_under_no_declared_path_is_rejected_by_both(tmp_path: Path) -> None:
-    changed = "reckon/crew/promotion.py"
+def test_a_companion_source_path_is_accepted_by_both(tmp_path: Path) -> None:
+    # A declared write path is a hint: a source file beside the declared one is
+    # isolated in the worktree and reconciled by the merge, so neither surface
+    # asks a coordinator for it.
+    assert _write_time_accepts(COMPANION_PATH, [FILE_DECLARATION], tmp_path) is True
+    assert _promotion_accepts(COMPANION_PATH, [FILE_DECLARATION], tmp_path) is True
+
+
+def test_a_merge_unsafe_path_under_no_declaration_is_rejected_by_both(
+    tmp_path: Path,
+) -> None:
+    changed = MERGE_UNSAFE_PATH
 
     assert _write_time_accepts(changed, [FILE_DECLARATION], tmp_path) is False
     assert _promotion_accepts(changed, [FILE_DECLARATION], tmp_path) is False
@@ -146,13 +169,13 @@ def test_a_path_under_an_absolute_inside_declaration_is_accepted_by_both(
     assert _promotion_accepts(changed, declared, tmp_path) is True
 
 
-def test_an_absolute_outside_declaration_rejects_a_repository_path_in_both(
+def test_an_absolute_outside_declaration_accepts_a_repository_source_path_in_both(
     tmp_path: Path,
 ) -> None:
     declared = [str(tmp_path.parent / OUTSIDE_DIRECTORY)]
 
-    assert _write_time_accepts(FILE_DECLARATION, declared, tmp_path) is False
-    assert _promotion_accepts(FILE_DECLARATION, declared, tmp_path) is False
+    assert _write_time_accepts(FILE_DECLARATION, declared, tmp_path) is True
+    assert _promotion_accepts(FILE_DECLARATION, declared, tmp_path) is True
 
 
 @pytest.mark.parametrize(("changed", "declared"), SCOPE_PAIRS)
@@ -245,7 +268,7 @@ def _reclaimed_promotion_accepts(
     outside = _outside_declared_scope(
         [changed], list(declared), record=record, tree=tree
     )
-    return not outside
+    return not _changed_artifacts_needing_acceptance(outside, record=record, tree=tree)
 
 
 def test_a_reclaimed_run_accepts_a_path_under_a_declared_directory_at_both(
@@ -263,18 +286,18 @@ def test_a_reclaimed_run_accepts_a_path_under_a_declared_directory_at_both(
     )
 
 
-def test_a_reclaimed_run_rejects_a_path_under_no_declaration_at_both(
+def test_a_reclaimed_run_accepts_a_path_under_no_declaration_at_both(
     tmp_path: Path,
 ) -> None:
     worktree, repository, record = _reclaimed_run(tmp_path)
     changed, declared = _reclaimed_pair("undeclared-path", worktree)
 
     assert (
-        _reclaimed_write_time_accepts(changed, declared, worktree, repository) is False
+        _reclaimed_write_time_accepts(changed, declared, worktree, repository) is True
     )
     assert (
         _reclaimed_promotion_accepts(changed, declared, worktree, repository, record)
-        is False
+        is True
     )
 
 
