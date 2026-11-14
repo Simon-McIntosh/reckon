@@ -24,7 +24,7 @@
   <title>Work Flows To The Lane | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="270">
+<meta name="plan-version" content="271">
 <meta name="plan-modified" content="2026-11-14">
 </head>
 <body>
@@ -1053,6 +1053,9 @@
 </div>
 <div class="r-comment" data-section="s59" data-id="c-run-r-20261114T193325208637-review-of-fenced-worker-tmp-is-its-scratch-3c32d067890d" data-who="reckon-build" data-when="2026-11-14T20:12:13.443Z">
     <div class="r-comment-body"><p>review record stored at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261114T112605744964-fenced-worker-tmp-is-its-scratch/review-records/r-20261114T112605744964-fenced-worker-tmp-is-its-scratch.at-3c32d067890d562397ec097b17f910ab244cad18.json — status parsed, reviewed base 953bcec70705f958f462ce8decfc225840bbc7ca, reviewed head 3c32d067890d562397ec097b17f910ab244cad18, scores goal_fidelity 18 / evidence 18 / scope_discipline 20 / durability 19 / fit 17 / reuse 18, added_failure_count 0, one non-blocking finding at tests/test_a_worker_cannot_remove_the_nodes_temporary_files.py:204.</p></div>
+</div>
+<div class="r-comment" data-section="s59" data-id="c-run-r-20261114T112605744964-fenced-worker-tmp-is-its-scratch" data-who="reckon-build" data-when="2026-11-14T19:20:02Z">
+    <div class="r-comment-body"><p>docs/evidence/fragments/work-flows-to-the-lane/fenced-worker-tmp-is-its-scratch.html#fenced-worker-tmp-is-its-scratch-landing — the fence mounts the run&#x27;s own scratch directory over the node tmp after sealing it, so a worker&#x27;s literal /tmp write and tempfile.mkdtemp() under TMPDIR=/tmp land in its scratch, a sibling run&#x27;s scratch and another session&#x27;s file read as absent and survive untouched, and the fleet and codex runtime paths stay writable; base arm 59 passed (EXIT=0) at a01e2b9afcc862321403374ebd3dd42949df1121, after arm 64 passed (EXIT=0) at 3c32d067890d562397ec097b17f910ab244cad18, and the three negative-control arms fail 1, 2 and 1 case respectively (EXIT=1).</p></div>
 </div>
 <div class="r-comment" data-section="s6" data-id="c-s6-directory-claims" data-who="reckon-build" data-when="2026-11-11T17:00:00Z">
     <div class="r-comment-body"><p>§6's reproduction found the 11 November hold was a directory claim (<code>reckon/crew/picker</code>), which <code>concurrent-edits-meet-at-the-merge</code> §2 keeps exclusive, enforced again at launch in <code>reckon/crew/dispatch_claims.py</code>. By the lead's ruling that work does not wait on file claims, §6 now makes a directory claim under a shared root share as its files do, and its run is widened to that module and to the test it supersedes.</p></div>
