@@ -34,7 +34,10 @@ from reckon.crew.dispatch import WATCHER_LOAD_BOUND_SECONDS
 
 # The reflex dispatch is gated by the watch admission, so these tests arm the
 # producer the gate reads rather than accepting the suite-wide waiver.
-pytestmark = pytest.mark.arms_watch_producer
+# The dispatch under test resolves a session through the ledger's SQLite index,
+# whose first build on a loaded node costs minutes; the suite's 300 s default
+# guard would read that cost as a hang rather than as the work being done.
+pytestmark = [pytest.mark.arms_watch_producer, pytest.mark.timeout(1200)]
 
 PROJECT = "release-claim-fixture"
 SESSION = "session-orchestrating"
