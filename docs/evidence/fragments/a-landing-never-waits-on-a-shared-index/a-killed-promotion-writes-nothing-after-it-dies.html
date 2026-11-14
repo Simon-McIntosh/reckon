@@ -26,6 +26,14 @@
 
 <p id="a-killed-promotion-writes-nothing-after-it-dies-measure-head">At the head the same file reports <strong>9 passed</strong>, exit 0. The point that had to be measured before any product code changed is the first: the base already wrote nothing after it died, in all three cases, so the section&rsquo;s doubt about a child the signal does not reach is answered no and no process-reaping code was added.</p>
 
+<h2 id="a-killed-promotion-writes-nothing-after-it-dies-remeasure">Re-measured after the guard landed</h2>
+
+<p id="a-killed-promotion-writes-nothing-after-it-dies-remeasure-base">The check was run again at base revision <code>465c2df0f495</code>, which already carries the boundary stop landed at <code>3c9c41956f</code>. The section&rsquo;s conditional therefore asks a question with a different answer at this revision: with the guard in place the promotion records the signal, finishes the stage it is in, stops at the next boundary and exits, so nothing it started is alive and nothing commits or writes to a ledger after it exits. The nine cases report <strong>9 passed</strong>, exit 0, and the two files in the node&rsquo;s gate report <strong>60 passed</strong>, exit 0 (<code>logs/baseline-suite.log</code>).</p>
+
+<p id="a-killed-promotion-writes-nothing-after-it-dies-remeasure-nochange">The base shows no write after exit at any of the three boundaries, so this node follows the section&rsquo;s instruction for that case: it records the measurement and changes no product code. The node&rsquo;s whole diff is this fragment; nothing in <code>reckon/crew/promotion.py</code> or <code>reckon/crew/runs.py</code> changed, and the guard that produces the measurement is the one already on the branch.</p>
+
+<p id="a-killed-promotion-writes-nothing-after-it-dies-remeasure-control">The check still bites. At <code>ec87744c0977</code>, before the guard, the same file reports <strong>6 failed, 3 passed</strong>, exit 1, over the three no-write cases and the three resumption cases: every failure is the run-time claim a killed promotion leaves behind, and the retry a coordinator runs afterwards is refused by it. No failure at that revision names a post-exit write either, so what a kill damages at these boundaries is the claim, not a surviving writer; the guard is what releases it. The log is <code>logs/negative-control-base-ec87744c.log</code> and starts with its revision, tree, imported module and literal command.</p>
+
 </main>
 </body>
 </html>
