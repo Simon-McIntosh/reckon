@@ -1078,6 +1078,128 @@ def _promoted_awaiting_merge(record: Mapping[str, Any], *, moment: float) -> str
     )
 
 
+#: The reading of a turn that ended before the worker acted. A print-mode worker
+#: gets no turn after the one it is in, so a stream whose whole content is one
+#: assistant message with no tool call is a run that stopped rather than one
+#: that failed: nothing was attempted, nothing reported a fault, and the session
+#: survives to continue. The text the message carried is the only account of
+#: why the run stopped there, so the row quotes it.
+ENDED_WITHOUT_ACTING = "ended-without-acting"
+
+#: A message whose own words name a request that failed — a refused connection,
+#: a prompt past the window — is not a premature end: continuing it would send
+#: the same request again, so the row carries the error the message names.
+_FIRST_TURN_ERROR_RE = re.compile(
+    r"^\s*(?:API Error\b|Prompt is too long\b|Error:)", re.IGNORECASE
+)
+
+#: How much of a message a row quotes. The pane draws one line, so a long one is
+#: clipped rather than left to overflow the cell it has to fit.
+_QUOTED_TEXT_LIMIT = 200
+
+
+def _quoted_stream_text(text: str) -> str:
+    """One line of a worker's message, clipped, ready for a row to quote."""
+    collapsed = " ".join(str(text or "").split())
+    if len(collapsed) <= _QUOTED_TEXT_LIMIT:
+        return collapsed
+    return collapsed[: _QUOTED_TEXT_LIMIT - 1].rstrip() + "…"
+
+
+def _assistant_record_text(event: Mapping[str, Any]) -> str | None:
+    """The text one assistant record carries, or None when it called a tool.
+
+    A record holding a tool call answers None: the worker acted, and whatever it
+    said beside the call is not the whole of its turn.
+    """
+    message = event.get("message")
+    content = message.get("content") if isinstance(message, Mapping) else None
+    if not isinstance(content, list):
+        return None
+    texts: list[str] = []
+    for block in content:
+        if not isinstance(block, Mapping):
+            continue
+        if block.get("type") == "tool_use":
+            return None
+        if block.get("type") == "text":
+            value = str(block.get("text") or "").strip()
+            if value:
+                texts.append(value)
+    return "\n".join(texts).strip()
+
+
+def _record_carries_tool_result(event: Mapping[str, Any]) -> bool:
+    """Whether one stream record answers a tool the worker called."""
+    message = event.get("message")
+    content = message.get("content") if isinstance(message, Mapping) else None
+    if not isinstance(content, list):
+        return False
+    return any(
+        isinstance(block, Mapping) and block.get("type") == "tool_result"
+        for block in content
+    )
+
+
+def _first_turn_without_action(record: Mapping[str, Any]) -> tuple[str, str] | None:
+    """What a run's stream says it ended on, when one turn ended before acting.
+
+    ``("premature", text)`` for a stream holding exactly one assistant record,
+    no tool call and no error; ``("error", text)`` when that record, or the
+    result after it, names an error; None for every other stream, including one
+    whose single turn used a tool, which is a run that acted and so a different
+    reading.
+
+    The stream is read forwards and abandoned at the first record that
+    contradicts the shape — a tool call, a tool result, a second assistant
+    record — so a long stream costs only the records before that point. Only a
+    dead run's stream is read, and only after every manifest, wait, phase and
+    budget reading above has had its say.
+    """
+    found = _record_newest_stream(record)
+    if found is None:
+        return None
+    text = ""
+    assistant_records = 0
+    try:
+        with found[0].open("rb") as handle:
+            for raw in handle:
+                line = raw.strip()
+                if not line:
+                    continue
+                try:
+                    event = json.loads(line)
+                except (TypeError, ValueError):
+                    continue
+                if not isinstance(event, Mapping):
+                    continue
+                kind = event.get("type")
+                if kind == "assistant":
+                    assistant_records += 1
+                    if assistant_records > 1:
+                        return None
+                    said = _assistant_record_text(event)
+                    if said is None:
+                        return None
+                    text = said
+                elif kind == "user":
+                    if _record_carries_tool_result(event):
+                        return None
+                elif kind == "result" and event.get("is_error"):
+                    failure = str(event.get("result") or event.get("error") or "")
+                    failure = " ".join(failure.split())
+                    if not failure:
+                        return None
+                    return ("error", failure)
+    except OSError:
+        return None
+    if assistant_records != 1 or not text:
+        return None
+    if _FIRST_TURN_ERROR_RE.match(text):
+        return ("error", text)
+    return ("premature", text)
+
+
 def classify_pointer(
     record: Mapping[str, Any],
     *,
@@ -1616,6 +1738,10 @@ def classify_pointer(
     marker = None
     needs_help_complete_value = None
     session_refusal: dict[str, str] | None = None
+    # Set only by the premature-end arm below, and read by the recovery reading
+    # so a turn that ended before the worker acted carries the premature end
+    # rather than the abandoned word its dead process would otherwise give it.
+    premature_end: tuple[str, str] | None = None
     # The request phase vocabulary is owned by the admission module, which
     # imports the recovery readers at module level; naming it here at import
     # time would close that loop, so it is named where it is read.
@@ -2416,6 +2542,43 @@ def classify_pointer(
             f"compose run {run_id} again; the pointer holds a claim no run "
             "backs, and a review it claimed is released by the reflex"
         )
+    elif (
+        alive is False
+        and (first_turn := _first_turn_without_action(record)) is not None
+    ):
+        # A print-mode worker gets no turn after the one it is in, so a stream
+        # whose whole content is one message with no tool call is a run that
+        # stopped rather than one that failed: nothing was attempted, nothing
+        # reported a fault, and the session survives to continue. Naming that
+        # reading is what separates resuming the run from diagnosing a failure
+        # that never happened. A message whose own words name an error is the
+        # opposite case and keeps the error, because continuing it would send
+        # the same request again.
+        #
+        # Reached only after every manifest, wait, phase and budget arm above
+        # has had its say, so a run that delivered or declared something is
+        # never read from its stream's shape alone.
+        kind, ended_text = first_turn
+        quote = _quoted_stream_text(ended_text)
+        if kind == "error":
+            classification = "failed"
+            detail = (
+                "the worker's only turn ended on an error, with no tool call "
+                f"before it: {quote!r}"
+            )
+            action = (
+                f"read launch log {record.get('stderr_path')}; repair the "
+                "launch or redispatch the run"
+            )
+        else:
+            classification = INTERRUPTED_RUN_PHASE
+            premature_end = (kind, ended_text)
+            detail = (
+                "a premature end: the worker's only turn carried one message "
+                "and no tool call, and nothing followed it, so the turn ended "
+                f"before the worker acted; it ended on {quote!r}"
+            )
+            action = f"reckon crew resume --run {run_id} --advice continue"
     elif alive is True:
         classification = "running"
         detail = "the process is alive"
@@ -2540,7 +2703,9 @@ def classify_pointer(
             )
 
     hold = refusal_block or exhaustion_block or retry_block or budget_hold
-    if classification == INTERRUPTED_RUN_PHASE:
+    if premature_end is not None:
+        recovery_classification = ENDED_WITHOUT_ACTING
+    elif classification == INTERRUPTED_RUN_PHASE:
         recovery_classification = INTERRUPTED_RUN_PHASE
     elif manifest_unwritten:
         # A live worker between its orientation write and its first status has
@@ -2579,11 +2744,15 @@ def classify_pointer(
         recovery_classification = "wait-aged"
     else:
         recovery_classification = classification
-    recovery_verb = (
-        PRODUCER_GONE_VERB
-        if recovery_classification == PRODUCER_GONE_STATUS
-        else RECOVERY_VERBS[recovery_classification]
-    )
+    if recovery_classification == PRODUCER_GONE_STATUS:
+        recovery_verb = PRODUCER_GONE_VERB
+    elif recovery_classification == ENDED_WITHOUT_ACTING:
+        # The session survives a turn that ended before it acted, so the verb is
+        # the one that continues it rather than the redispatch a lost session
+        # would need.
+        recovery_verb = "resume"
+    else:
+        recovery_verb = RECOVERY_VERBS[recovery_classification]
     if resume_remedy is not None and recovery_classification in {
         INTERRUPTED_RUN_PHASE,
         "stopped",
