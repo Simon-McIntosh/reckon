@@ -2845,8 +2845,14 @@ def _drain_week_view(project: str, pointers: list[dict[str, Any]]) -> dict[str, 
                     }
                 )
 
+    from reckon.crew.recovery_classification import _promoted_awaiting_merge
+
     for record in landed["runs"]:
         plan = str(record.get("plan") or "")
+        if _promoted_awaiting_merge(
+            {**record, "project": project}, moment=now.timestamp()
+        ):
+            continue
         completed = parse_utc(record.get("completed_at"))
         worker_exit = record.get("worker_exit")
         if not isinstance(worker_exit, Mapping):
