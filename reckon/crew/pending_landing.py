@@ -433,7 +433,8 @@ def retire_stuck_review_pointers(*, only_run: str = "") -> list[dict[str, Any]]:
     promotable-stale for good. The ledger row is the promotion's own evidence
     that it finished, so a marked review pointer beside a present row is retired
     here. Only the attempt the mark names is removed, the row is not rewritten,
-    and nothing is re-promoted.
+    and nothing is re-promoted. The run's pending-landing record is cleared in
+    the same step, so the pass never re-attempts a landing for the review.
     """
     from reckon.crew.promotion_requests import COMMAND_REPLY, PENDING, read_promotion
     from reckon.crew.recovery_review_delivery import _is_review_run
@@ -459,6 +460,7 @@ def retire_stuck_review_pointers(*, only_run: str = "") -> list[dict[str, Any]]:
             continue
         if not _release_marked_pointer(run_id, pointer):
             continue
+        clear_pending(run_id)
         retired.append({"run_id": run_id, "status": "retired-review-landing"})
     return retired
 

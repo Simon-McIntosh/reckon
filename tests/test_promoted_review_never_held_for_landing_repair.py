@@ -124,18 +124,32 @@ def _row_path(repository: Path) -> Path:
 
 
 def _move_the_pointer_while_promotion_runs(monkeypatch: pytest.MonkeyPatch) -> None:
-    """Change the pointer after the landing writes commit, as a resume does."""
+    """Record a resume launch on the pointer after the landing writes commit."""
     real_commit = promotion._commit_landing_writes
 
     def commit_then_move(*args: Any, **kwargs: Any) -> Any:
         written = real_commit(*args, **kwargs)
         current = read_pointer(RUN_ID)
-        current["attempt"] = int(current.get("attempt") or 1) + 1
-        current["phase"] = "promotion-requested"
+        current["resume_launch_in_flight"] = True
         _write_json(pointer_path(RUN_ID), current)
         return written
 
     monkeypatch.setattr(promotion, "_commit_landing_writes", commit_then_move)
+
+
+def _start_a_newer_attempt(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Start the run again after the landing writes commit, as a resume does."""
+    real_commit = promotion._commit_landing_writes
+
+    def commit_then_resume(*args: Any, **kwargs: Any) -> Any:
+        written = real_commit(*args, **kwargs)
+        current = read_pointer(RUN_ID)
+        current["attempt"] = int(current.get("attempt") or 1) + 1
+        current["phase"] = "running"
+        _write_json(pointer_path(RUN_ID), current)
+        return written
+
+    monkeypatch.setattr(promotion, "_commit_landing_writes", commit_then_resume)
 
 
 def test_a_review_promoted_under_a_moved_pointer_retires_its_pointer(
@@ -147,6 +161,20 @@ def test_a_review_promoted_under_a_moved_pointer_retires_its_pointer(
 
     assert _row_path(review_run["repository"]).is_file(), "the ledger row is absent"
     assert not pointer_path(RUN_ID).exists(), "the review's pointer stayed held"
+
+
+def test_a_newer_attempts_pointer_is_left_in_place(
+    review_run: dict[str, Any], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A pointer a newer attempt wrote belongs to work still in flight."""
+    _start_a_newer_attempt(monkeypatch)
+
+    crew.complete(RUN_ID, gate="passed", root=review_run["repository"])
+
+    kept = read_pointer(RUN_ID)
+    assert kept["attempt"] == 2, kept
+    assert kept["phase"] == "running", kept
+    assert not kept.get("pending_landing_repair"), kept
 
 
 def test_a_stuck_review_pointer_is_retired_by_the_next_sweep(
@@ -170,10 +198,14 @@ def test_a_stuck_review_pointer_is_retired_by_the_next_sweep(
             "pid_start_time": 0,
         },
     )
+    pending_landing.write_pending(RUN_ID, PROJECT, pointer=read_pointer(RUN_ID))
 
     results = pending_landing.finish_pending_landings()
 
     assert not pointer_path(RUN_ID).exists(), "the stuck review pointer stayed held"
+    assert not list(pending_landing.pending_dir().glob(f"{RUN_ID}.json")), (
+        "the run's pending landing record survived the retirement"
+    )
     assert _row_path(repository).read_bytes() == row_before, "the ledger row changed"
     assert any(
         row.get("run_id") == RUN_ID and row.get("status", "").startswith("retired")
