@@ -20,12 +20,12 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-depends-on" content="a-plan-state-lock-holds-on-every-node">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;implementable&quot;}">
   <meta name="plan-section-depends-on" content="{&quot;s3&quot;:[&quot;every-shared-home-lock-holds-across-nodes#s2&quot;],&quot;s4&quot;:[&quot;every-shared-home-lock-holds-across-nodes#s2&quot;],&quot;s5&quot;:[&quot;every-shared-home-lock-holds-across-nodes#s2&quot;],&quot;s6&quot;:[&quot;every-shared-home-lock-holds-across-nodes#s3&quot;,&quot;every-shared-home-lock-holds-across-nodes#s4&quot;,&quot;every-shared-home-lock-holds-across-nodes#s5&quot;]}">
   <title>Every shared-home lock holds across nodes | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="20">
+<meta name="plan-version" content="21">
 <meta name="plan-modified" content="2026-11-15">
 </head>
 <body>
@@ -106,7 +106,7 @@
 <p><strong>Write paths.</strong> <code>reckon/crew/runs.py</code>, <code>reckon/ledger.py</code>, <code>reckon/crew/queue_landing.py</code>, <code>reckon/crew/admission/service.py</code>, <code>reckon/crew/placement.py</code>, the guard test file, and new test files under <code>tests/</code>.</p>
 
     <h2 id="s4">§4 — Store, review and recovery locks exclude across nodes</h2>
-<section data-reckon="section" data-id="s4" data-effort-hours="2.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="implementable" data-links=""></section>
+<section data-reckon="section" data-id="s4" data-effort-hours="2.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="done" data-links=""></section>
 <p><strong>Deliverable.</strong> These nine locks take the cross-node lock:</p>
 <ul>
   <li><code>reckon/_store.py</code> <code>_serialized_path_lock</code>;</li>
@@ -220,7 +220,10 @@
     <div class="r-comment-body"><p>Review at edd2e01e1ee9 parsed and stored: six dimensions scored 19/14/16/18/18/20 (total 105), 0 added failures, two non-blocking findings (the review_records.py index-lock docstring still overclaims cross-node serialisation; the source manifest undercounts the tests that open dispatch.lock).</p></div>
 </div>
 <div class="r-comment" data-section="s4" data-id="c-run-r-20261114T140123157216-review-dispatch-and-index-lag-locks-cross-node" data-who="reckon-build" data-when="2026-11-14T22:21:59Z">
-    <div class="r-comment-body"><p>§4: the review dispatch lock and the index-lag seen-set lock take reckon.node_exclusive_lock.exclusive_lock; a second-process record-lock holder makes the dispatch return its moved-on result without launching (after arm 57 passed, baseline 55 passed, negative control 1 failed at base), and both rows leave the guard&#x27;s pending table.</p></div>
+    <div class="r-comment-body"><p>§4: the review dispatch lock and the index-lag seen-set lock take reckon.node_exclusive_lock.exclusive_lock; a second-process record-lock holder makes the dispatch return its moved-on result without launching (after arm 57 passed, baseline 55 passed, negative control 1 failed at base), and both rows leave the guard's pending table.</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-close-s4" data-who="reckon-build" data-when="2026-11-15T00:45:00Z">
+    <div class="r-comment-body"><p>Landed in three nodes: git answer and resumption, store and review index, and review dispatch and index lag. Every §4 lock site takes the cross-node lock, and the guard's pending table is empty on main. Evidence is at anchor s4-store-review-recovery-landed.</p></div>
 </div>
 <div class="r-comment" data-section="s5" data-id="c-run-r-20261114T185131299174-review-of-lane-budget-picker-locks-cross-node-4634a0bd4d16" data-who="reckon-build" data-when="2026-11-14T19:08:49.699Z">
     <div class="r-comment-body"><p>independent review of r-20261114T135814761240-lane-budget-picker-locks-cross-node at base 65431adf17b56c3a1fb04f32971d7729e4108dcc, head 4634a0bd4d16c9182934d7cff27798cc6df68ec3; six dimensions scored 19/19/20/17/19/19 (total 113); added_failure_count 0; two non-blocking findings.</p></div>
