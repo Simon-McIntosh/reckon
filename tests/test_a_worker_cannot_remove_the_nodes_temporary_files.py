@@ -192,31 +192,35 @@ class NodeTmp:
         return self.results.read_text()
 
 
-def _bind_of(argv: list[str], destination: Path) -> int:
-    """Return the index of the writable ``--bind`` of ``destination``, or -1."""
-    target = str(_worker_fence.resolved_destination(destination))
+def _mount_index(argv: list[str], flag: str, path: Path, *, matched: str) -> int:
+    """Return the index of the mount of ``flag`` matching ``path``, or -1.
+
+    A mount is three adjacent elements: the flag, the source and the
+    destination. A caller asks about one of the last two — the source a grant
+    copies from, or the destination it lands on — and ``matched`` names which,
+    so the one walk is shared by every locator below.
+    """
+    target = str(_worker_fence.resolved_destination(path))
+    offset = 1 if matched == "source" else 2
     for index, part in enumerate(argv):
-        if part == "--bind" and index + 2 < len(argv) and argv[index + 1] == target:
+        if part == flag and index + 2 < len(argv) and argv[index + offset] == target:
             return index
     return -1
+
+
+def _bind_of(argv: list[str], source: Path) -> int:
+    """Return the index of the writable ``--bind`` copying from ``source``, or -1."""
+    return _mount_index(argv, "--bind", source, matched="source")
 
 
 def _bind_onto(argv: list[str], destination: Path) -> int:
-    """Return the index of the writable ``--bind`` whose target is ``destination``."""
-    target = str(_worker_fence.resolved_destination(destination))
-    for index, part in enumerate(argv):
-        if part == "--bind" and index + 2 < len(argv) and argv[index + 2] == target:
-            return index
-    return -1
+    """Return the index of the writable ``--bind`` landing on ``destination``, or -1."""
+    return _mount_index(argv, "--bind", destination, matched="destination")
 
 
 def _ro_bind_of(argv: list[str], destination: Path) -> int:
     """Return the index of the read-only overlay of ``destination``, or -1."""
-    target = str(_worker_fence.resolved_destination(destination))
-    for index, part in enumerate(argv):
-        if part == "--ro-bind" and index + 2 < len(argv) and argv[index + 1] == target:
-            return index
-    return -1
+    return _mount_index(argv, "--ro-bind", destination, matched="source")
 
 
 def test_the_node_tmp_is_sealed_and_the_runtime_paths_are_granted_after(
