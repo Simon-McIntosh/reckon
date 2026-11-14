@@ -29,6 +29,11 @@
     <p><strong>Landed 2026-11-13.</strong> Worker head <code>88e7bee930bd0a8944912d44d339876e15cc2a9d</code> is an ancestor of <code>main</code>. A sprint move now replies with <code>applied</code> and the sprint versions read back from disk, on success and on refusal. A failure at any of the four transaction steps restores both sprints through one shared journal-restore primitive. Re-review 104 with 0 added failures: base arm 6 failed, head arm 0 failed; importer population 1 failed / 296 passed at base against 1 failed / 302 passed at head, the same pre-existing failure. Three non-blocking findings are folded into node <code>move-reply-keeps-its-verdict-on-a-failed-read</code>, queued under this section: a failed post-write read drops <code>applied</code>, one added ruff S112, and one redundant except clause.</p>
   </section>
 
+  <section id="s3-repair-landed" data-evidence-origin="append">
+    <h2>§3 repair landed: a failed read-back keeps the move&#x27;s verdict</h2>
+    <p><strong>Landed 2026-11-14.</strong> Worker head <code>616f01e709ec39aa0b7163a7903d72d7164395f4</code> is an ancestor of <code>main</code>. When a move's post-write version read fails, the reply still sets <code>applied</code> and names the failed read in <code>warnings</code> (<code>sprint_version_read_failed=&lt;id&gt;</code>). The new test <code>test_a_failed_post_write_version_read_keeps_the_applied_verdict</code> passes at head and fails at base. The unreachable <code>except json.JSONDecodeError</code> clause is gone (three occurrences in <code>reckon/project_state.py</code> at the pre-repair head, two on <code>main</code>), and the move-path ruff S112 is gone. Review 108; its two non-blocking findings concerned the evidence fragment's receipts and were exempted. The landing measure ran both arms on slurm: the same two pre-existing failures at base and head, 0 added.</p>
+  </section>
+
 </main>
 </body>
 </html>
