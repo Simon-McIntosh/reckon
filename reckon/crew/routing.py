@@ -2920,6 +2920,7 @@ def require_plan_reviewed(
     allow_unreviewed: bool = False,
     enforce: bool = False,
     units: Iterable[str] | None = None,
+    _evidence: Any = None,
 ) -> str | None:
     """Judge whether a building dispatch's plan carries an answered review.
 
@@ -3003,8 +3004,16 @@ def require_plan_reviewed(
         # an unresolved resource here has nothing to review.
         return None
 
-    refusals = plan_review.store_delivered_reviews(project, node.plan)
-    design = plan_review.newest_design_review(project, node.plan)
+    refusals = (
+        plan_review.store_delivered_reviews(project, node.plan)
+        if _evidence is None
+        else _evidence.refusals
+    )
+    design = (
+        plan_review.newest_design_review(project, node.plan)
+        if _evidence is None
+        else _evidence.design
+    )
     if design is None or plan_review._review_is_incomplete(design):
         # The design review is the plan's one search of the codebase for
         # machinery it could reuse, so it is owed once, at any version; a design
@@ -3029,10 +3038,17 @@ def require_plan_reviewed(
             "once, before its first implementation node; compose that review with "
             f"`{design_invocation}`",
         )
-    _records, uncovered, changes = plan_review.review_coverage(
-        project, node.plan, plan=resource.path
-    )
-    record = plan_review.read_plan_review(project, node.plan, plan=resource.path)
+    if _evidence is None:
+        _records, uncovered, changes = plan_review.review_coverage(
+            project, node.plan, plan=resource.path
+        )
+    else:
+        _records, uncovered, changes = (
+            _evidence.records,
+            _evidence.uncovered,
+            _evidence.changes,
+        )
+    record = plan_review._newest_by_plan_commit(_records, project) if _records else None
     if scope is not None and not _records:
         # No stored review covers any of the plan, so the review this dispatch
         # is owed is a review of all of it, and the refusal names every unit
@@ -3044,9 +3060,18 @@ def require_plan_reviewed(
         # carries and the review never read is another request's business, and
         # it is still named below so the coordinator sees the whole debt.
         gating = {unit for unit in owed if unit in scope}
-        if plan_review.DOCUMENT_UNIT in gating and not _document_change_is_contract(
-            project, node.plan, plan=resource.path, records=_records
-        ):
+        document_changed = (
+            (
+                _document_change_is_contract(
+                    project, node.plan, plan=resource.path, records=_records
+                )
+                if _evidence is None
+                else _evidence.documents_change_is_contract()
+            )
+            if plan_review.DOCUMENT_UNIT in gating
+            else True
+        )
+        if plan_review.DOCUMENT_UNIT in gating and not document_changed:
             # A document-unit change confined to the plan's remainder prose is
             # no node's contract, so it does not decide this node's hold.
             gating.discard(plan_review.DOCUMENT_UNIT)
@@ -3062,16 +3087,28 @@ def require_plan_reviewed(
             "a plan is reviewed before it is built; compose one with "
             f"`{plan_review.review_invocation(project, node.plan)}`",
         )
-    plan_state = _plan_html.read_state_file(resource.path)
-    plan_records = plan_review.list_plan_reviews(project)
+    plan_state = (
+        _plan_html.read_state_file(resource.path)
+        if _evidence is None
+        else _evidence.state
+    )
+    plan_records = (
+        plan_review.list_plan_reviews(project)
+        if _evidence is None
+        else _evidence.all_records
+    )
     hot = []
     if review_lifecycle.is_hot(
         record, plan_state=plan_state, later_records=plan_records
     ):
         hot.append(record)
-    if design.get("review_path") != record.get("review_path") and (
-        review_lifecycle.is_hot(
-            design, plan_state=plan_state, later_records=plan_records
+    if (
+        record is not None
+        and design.get("review_path") != record.get("review_path")
+        and (
+            review_lifecycle.is_hot(
+                design, plan_state=plan_state, later_records=plan_records
+            )
         )
     ):
         hot.append(design)

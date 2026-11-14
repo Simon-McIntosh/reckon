@@ -254,6 +254,8 @@ class _PlanReviewRecord:
         changes: Mapping[str, float | None],
         digests: Mapping[str, str],
         state: Mapping[str, Any],
+        all_records: Sequence[Mapping[str, Any]],
+        refusals: Sequence[Mapping[str, Any]],
     ) -> None:
         self.project = project
         self.plan_slug = plan_slug
@@ -263,6 +265,20 @@ class _PlanReviewRecord:
         self.changes = changes
         self.digests = digests
         self.state = state
+        self.all_records = all_records
+        self.refusals = refusals
+        from reckon.crew import plan_review
+
+        self.design = max(
+            (
+                record
+                for record in all_records
+                if record.get("plan_slug") == plan_slug
+                and plan_review.is_design_review(record)
+            ),
+            key=lambda record: int(record.get("plan_version") or 0),
+            default=None,
+        )
         self.gate: dict[tuple[str, bool], str | None] = {}
         self._document_is_contract: bool | None = None
 
@@ -296,9 +312,19 @@ class _PlanReviewRecord:
 
         key = (str(node.section or ""), routing._plan_review_exempt(node))
         if key not in self.gate:
-            self.gate[key] = _dispatch_gate_owed(
-                node, project=self.project, repo=repo, options=options
-            )
+            try:
+                self.gate[key] = routing.require_plan_reviewed(
+                    node=node,
+                    project=self.project,
+                    repo=repo,
+                    authority=routing.resolve_dispatch_authority(self.project, repo),
+                    allow_unreviewed=bool(options.get("allow_unreviewed_plan")),
+                    enforce=True,
+                    units=plan_review_units(node.section),
+                    _evidence=self,
+                )
+            except PlanReviewMissingError as exc:
+                self.gate[key] = str(exc)
         return self.gate[key]
 
 
@@ -326,6 +352,9 @@ def _stored_review_key(project: str, plan_slug: str) -> tuple[tuple[str, ...], .
                 str(record.get("reviewed_blob_sha") or ""),
                 str(record.get("status") or ""),
                 hashlib.sha256(
+                    json.dumps(record, sort_keys=True, default=str).encode("utf-8")
+                ).hexdigest(),
+                hashlib.sha256(
                     json.dumps(digests, sort_keys=True, default=str).encode("utf-8")
                 ).hexdigest(),
             )
@@ -340,6 +369,7 @@ def _build_plan_review_record(
     from reckon import _plan_html as plan_html
     from reckon.crew import plan_review
 
+    refusals = plan_review.store_delivered_reviews(project, plan_slug)
     document = path.read_text(encoding="utf-8", errors="replace")
     records, uncovered, changes = plan_review.review_coverage(
         project, plan_slug, plan=document
@@ -353,6 +383,8 @@ def _build_plan_review_record(
         changes=changes,
         digests=plan_review._section_digests(document),
         state=plan_html.read_state_file(path),
+        all_records=plan_review.list_plan_reviews(project),
+        refusals=refusals,
     )
 
 
@@ -412,34 +444,14 @@ def _plan_review_owed(
     *,
     config_for: Callable[[Mapping[str, Any]], Mapping[str, Any]] | None,
 ) -> str | None:
-    """Why this request's own contract owes a stored review, or ``None``.
+    """Hold exactly when a fresh dispatch of this section owes review.
 
-    A request is checked for review when it enters the queue, and the dispatch
-    gate has already judged it there. What admission owes is the narrower
-    question the queue raises: has the plan text this request was queued
-    against moved since, and does no stored review cover the text it moved to?
-    Only the request's own section and the document text it reads as its
-    contract — the summary, the decisions and the gates — are compared, so an
-    edit to another section, an ordering or bookkeeping edit, and a contract
-    change a review already covers all leave the request admissible. A fresh
-    dispatch of the same section and this request therefore reach the same
-    verdict on the same plan.
-
-    Two states carry no comparison of their own, and both are answered by the
-    dispatch gate rather than by holding nothing. A pointer with no contract
-    current for the section it now names — every request written by the queue
-    writer that records none, and every request whose section ``crew queue
-    edit`` changed — has no second side of a digest comparison. A plan whose
-    stored reviews cover no unit the request reads — an unreviewed plan, or one
-    whose every review is incomplete — has no reviewed text to compare against
-    and is owed the review the gate asks for. Each is held exactly when the
-    gate holds it, so the two never disagree.
-
-    Only the enforced mode holds, exactly as the dispatch gate does; under the
-    shipped report-only default the launch proceeds.
+    Missing design, uncovered content and unanswered findings are judged by
+    the dispatch gate over the pass's cached evidence. Queue-time digests do
+    not excuse debt that already existed when the request was stored. Only
+    enforced requests hold; explicit waivers and reader roles remain exempt.
     """
     from reckon import flight
-    from reckon.crew import plan_review, routing
 
     node = _launching._node_from_pointer(pointer)
     project = str(pointer.get("project") or "")
@@ -458,64 +470,12 @@ def _plan_review_owed(
         # A request dispatched with the waiver carries it into the queue: its
         # coordinator has answered the review question for that dispatch.
         return None
-    contract = pointer.get(REVIEW_CONTRACT_KEY)
     path = Path(repo) / "docs" / "plans" / f"{node.plan}.html"
-    if not isinstance(contract, Mapping) or not _contract_is_current(contract, node):
-        # A request queued by a writer that records no contract is judged by the
-        # dispatch gate itself, which is what admission asked before requests
-        # carried their own: it holds on every unit the request reads. Narrowing
-        # that to the request's own contract needs the digests taken at queue
-        # time, so a pointer without them keeps the wider hold rather than
-        # holding nothing. The gate's answer is read through the same per-plan
-        # record, so a pass that holds several such requests over one plan asks
-        # the gate once.
-        try:
-            evidence = _plan_review_record(path, project=project, plan_slug=node.plan)
-        except Exception:  # noqa: BLE001 - an unreadable plan answers through the gate
-            return _dispatch_gate_owed(
-                node, project=project, repo=repo, options=options
-            )
-        return evidence.gate_owed(node, repo=repo, options=options)
     try:
         evidence = _plan_review_record(path, project=project, plan_slug=node.plan)
-        units = plan_review_units(node.section)
-        if not any(unit not in evidence.uncovered for unit in units):
-            # No stored review covers a single unit this request reads — the
-            # plan is unreviewed, or every review is incomplete — so there is no
-            # reviewed text to compare against and the request is owed the
-            # review the dispatch gate asks for. Answering here with the gate's
-            # own verdict is what keeps a queued request and a fresh dispatch
-            # from disagreeing.
-            return evidence.gate_owed(node, repo=repo, options=options)
-        digests = evidence.digests
-        moved: list[str] = []
-        unit = str(contract.get("section") or "")
-        if (
-            unit
-            and unit in evidence.uncovered
-            and str(digests.get(unit) or "") != str(contract.get("section_digest"))
-        ):
-            moved.append(unit)
-        state = evidence.state
-        if (
-            plan_review.DOCUMENT_UNIT in evidence.uncovered
-            and routing._contract_digest(state)
-            != str(contract.get("document_digest") or "")
-            and evidence.documents_change_is_contract()
-        ):
-            moved.append(plan_review.DOCUMENT_UNIT)
-    except Exception:  # noqa: BLE001 - an unreadable plan holds nothing
-        return None
-    if not moved:
-        return None
-    return (
-        f"plan {node.plan!r} in project {project!r} changed after this request "
-        "was queued and no stored review covers the new text; "
-        f"uncovered units: {', '.join(sorted(moved))}; "
-        f"{routing._uncovered_change_detail(moved, evidence.changes)}"
-        "the request waits until a review of that text is stored; "
-        f"compose one with `{plan_review.review_invocation(project, node.plan)}`"
-    )
+    except Exception:  # noqa: BLE001 - unreadable evidence is judged by the gate
+        return _dispatch_gate_owed(node, project=project, repo=repo, options=options)
+    return evidence.gate_owed(node, repo=repo, options=options)
 
 
 def _hold_for_plan_review(pointer: Mapping[str, Any], detail: str) -> bool:

@@ -298,7 +298,7 @@ def test_each_requests_verdict_matches_the_reading_it_replaces(two_section_plan)
     with queue_admission.plan_review_pass():
         answered = _owed(pointer)
     assert answered == _owed(pointer)
-    assert answered is None, "an unanswered finding is the gate's hold, not this one"
+    assert answered is not None, "an unanswered finding holds the queued request"
     refused = _fresh_dispatch(repo, "s2")
     assert refused is not None
     assert "unanswered" in refused

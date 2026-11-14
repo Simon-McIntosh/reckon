@@ -141,7 +141,7 @@ def queue_requests(
     admission reads before it holds the request on the review gate. A caller
     that leaves it unset queues a request the gate judges on its own.
     """
-    from reckon.crew import queue_admission
+    from reckon.crew import plan_review, queue_admission, runs
     from reckon.crew.dispatch_admission import (
         _require_write_paths_in_authority,
         admission_domain_findings,
@@ -251,6 +251,29 @@ def queue_requests(
             "position": position,
             "index": index,
         }
+    owed_plans: set[str] = set()
+    with queue_admission.plan_review_pass():
+        for run_id, row in stored.items():
+            pointer = runs.read_pointer(run_id)
+            detail = queue_admission._plan_review_owed(
+                pointer, config_for=lambda _: config
+            )
+            if detail is not None:
+                queue_admission._hold_for_plan_review(pointer, detail)
+                owed_plans.add(str(pointer.get("plan") or ""))
+                row["reason"] = queue_admission.PLAN_REVIEW_HELD_REASON
+                row["detail"] = detail
+                row["phase"] = runs.read_pointer(run_id)["phase"]
+    for plan in sorted(owed_plans):
+        report = plan_review.compose_owed_plan_reviews(
+            project,
+            only_plan=plan,
+            include_design=True,
+            config=config,
+        )
+        for row in stored.values():
+            if any(node.plan == plan and node.id == row["node"] for node in nodes):
+                row["plan_reviews"] = report
     return stored
 
 

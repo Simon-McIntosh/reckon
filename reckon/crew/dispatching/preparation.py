@@ -125,6 +125,69 @@ def _idle_member_reap_due(project: str, root: object) -> bool:
     return True
 
 
+def _queue_review_held_request(
+    *,
+    node,
+    project,
+    session,
+    repo_root,
+    config,
+    resolution,
+    dispatch_options,
+):
+    """Store the gate's debt using the admission hold, then compose its reviews."""
+    from reckon.crew import plan_review, queue_admission
+
+    refs, projects, _waiting = queue_admission.dispatch_waits(
+        node,
+        repo_root=repo_root,
+        project=project,
+        run_id=resolution.run_id,
+    )
+    queued, position, _phase = _queue_validated_waits(
+        _queued_request_record(
+            run_id=resolution.run_id,
+            project=project,
+            node=node,
+            repo_root=repo_root,
+            session=session,
+            backend_name=resolution.backend,
+            launch_kind=resolution.launch,
+            lane_allowance={},
+            dispatch_options=dispatch_options,
+            queued_at=_utc_now(),
+            local=resolution.local,
+        ),
+        refs=refs,
+        wait_projects=projects,
+        max_requests=flight.queue_max_requests(config),
+    )
+    detail = queue_admission._plan_review_owed(queued, config_for=lambda _: config)
+    if detail is not None:
+        queue_admission._hold_for_plan_review(queued, detail)
+    pointer = read_pointer(str(queued["run_id"]))
+    reviews = plan_review.compose_owed_plan_reviews(
+        project,
+        only_plan=node.plan,
+        include_design=True,
+        config=config,
+    )
+    hold = pointer.get("queue_hold") or {}
+    held = LaneHeld(
+        {"detail": hold.get("detail") or detail, "reason": hold.get("reason")}
+    )
+    held.queued = {
+        "run_id": pointer["run_id"],
+        "position": position,
+        "phase": pointer["phase"],
+        "reason": hold.get("reason"),
+        "detail": hold.get("detail"),
+        "waits": list(refs),
+        "plan_reviews": reviews,
+    }
+    return held
+
+
 def dispatch(
     *,
     node: TaskNode,
@@ -364,6 +427,7 @@ def dispatch(
             default_backend_override=default_backend_override,
             member=member,
             allow_unreviewed_plan=unreviewed_plan_override,
+            queue_review_owed=True,
             repairs=repairs,
             session=session,
             route=route,
@@ -394,6 +458,29 @@ def dispatch(
                 for finding in resolution.validation.findings
             )
         )
+
+    if resolution.plan_review_hold is not None:
+        options = {
+            **(dispatch_options or {}),
+            "allow_unreviewed_plan": unreviewed_plan_override,
+        }
+        stored = _queue_review_held_request(
+            node=node,
+            project=project,
+            session=session,
+            repo_root=repo_root,
+            config=config,
+            resolution=resolution,
+            dispatch_options=options,
+        )
+        _arrange_dispatch_follower(
+            project,
+            session,
+            resolution.launch,
+            watch_required=watch_required,
+            watch_override=watch_override,
+        )
+        raise stored
 
     # A backend resolved without a router answer is the configured default
     # standing in, and nothing has yet weighed it against the node's context

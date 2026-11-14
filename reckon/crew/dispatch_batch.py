@@ -884,6 +884,11 @@ def _queue_batch(
                     "run_id": actual_id,
                     "position": row.get("position"),
                     "waits": list(row.get("waits") or ()),
+                    **{
+                        key: row[key]
+                        for key in ("reason", "detail", "plan_reviews")
+                        if key in row
+                    },
                 }
             )
         except (BatchEntryRefusedError, CrewError) as exc:

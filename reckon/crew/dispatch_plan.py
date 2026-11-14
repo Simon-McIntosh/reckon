@@ -38,6 +38,7 @@ from reckon.crew.node import (
     NodeValidation,
     ScopeConflict,
     TaskNode,
+    PlanReviewMissingError,
     done_when_warnings,
     normalize_section,
     parse_duration,
@@ -115,6 +116,7 @@ class DispatchPlan:
     orchestrator_lane_override: dict[str, str] | None = None
     lane_advisory: dict[str, Any] | None = None
     health_review: dict[str, Any] | None = None
+    plan_review_hold: str | None = None
     open_endedness: float | None = None
     picker_selection: dict[str, Any] | None = None
     route: str = "shadow"
@@ -154,6 +156,7 @@ class DispatchPlan:
             "lane_allowance": (
                 None if self.lane_allowance is None else dict(self.lane_allowance)
             ),
+            "plan_review_hold": self.plan_review_hold,
             "node": self.node.as_dict(),
             "brief": _brief_record(self.node, project=self.project),
             "orchestrator_lane_stop": (
@@ -571,6 +574,7 @@ def plan_dispatch(
     declared_backend: str | None = None,
     member: str = "",
     allow_unreviewed_plan: bool = False,
+    queue_review_owed: bool = False,
     session: str = "",
     watch_required: bool = False,
     watch_override: bool = False,
@@ -852,6 +856,7 @@ def plan_dispatch(
     # prescribed band the bar's local outcome is defined by, and the band would
     # describe nothing rather than the work.
     open_endedness = open_endedness_score(node)
+    plan_review_hold = None
     resolved_authority: dict[str, Any] | None = None
     sandbox_write_roots: tuple[Path, ...] | None = None
     if verdict.ok and repo is not None:
@@ -907,14 +912,20 @@ def plan_dispatch(
                 base=base,
                 authority=resolved_authority,
             )
-            review_warning = require_plan_reviewed(
-                node=node,
-                project=project,
-                repo=repo,
-                authority=resolved_authority,
-                allow_unreviewed=allow_unreviewed_plan,
-                enforce=flight.plan_review_gate_enforces(config),
-            )
+            try:
+                review_warning = require_plan_reviewed(
+                    node=node,
+                    project=project,
+                    repo=repo,
+                    authority=resolved_authority,
+                    allow_unreviewed=allow_unreviewed_plan,
+                    enforce=flight.plan_review_gate_enforces(config),
+                )
+            except PlanReviewMissingError as exc:
+                if not queue_review_owed:
+                    raise
+                plan_review_hold = str(exc)
+                review_warning = None
             if review_warning is not None:
                 warnings.append(review_warning)
             resolved_authority["plan"] = {
@@ -1091,6 +1102,7 @@ def plan_dispatch(
         orchestrator_lane_override=orchestrator_lane_override,
         lane_advisory=lane_advisory,
         health_review=health_review,
+        plan_review_hold=plan_review_hold,
         open_endedness=open_endedness,
         # A resolved plan records the picker answer only when the route used it.
         # A shadow (or deterministic) preview reads the same whatever the picker
