@@ -1,0 +1,78 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "cfbe94929ed9ce8ed4e2438e659e2fe7c8397f36",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/queue_edit.py:392 edit -> _named_route",
+    "reckon/crew_run_commands.py:2945 crew_queue_edit (CLI crew queue edit)",
+    "reckon/mcp_crew_actions.py:308 MCP action to crew_queue_edit"
+  ],
+  "completed_at": "2026-11-14T14:30:58.639Z",
+  "dispatched_at": "2026-11-14T14:15:08Z",
+  "findings": [
+    {
+      "file": "reckon/crew/queue_edit.py",
+      "line": "125",
+      "severity": "blocking",
+      "text": "blocking: `_backend_serves_pair` treats any backend whose entry lane matches as serving every model the lane declares, so against the live configuration `crew queue edit --backend codex-anchored --model astra` (or `luna`) is accepted and stores model_key 'astra', while that backend's entry pins `model: gpt-6.1-sol`/`model_key: sol`, which is what dispatch_plan.resolve_role_override launches; ledger.backend_serving_model refuses the same pair, so this regresses a previous refusal into an accepted route whose recorded model the run will not use \u2014 the wrong-arm harm the commit message cites. The final clause should require the backend be the lane's own entry, as the docstring states."
+    },
+    {
+      "file": "reckon/crew/queue_edit.py",
+      "line": "197",
+      "severity": "non-blocking",
+      "text": "non-blocking: the new `if backend:` branch requires the name to be an exact flight backend entry, so `--backend codex --model sol` \u2014 where `codex` is a catalogue lane and a declared backend with an empty body \u2014 is now refused, although _model_narrowed_backend (reckon/crew_dispatch_commands.py:660) resolved it to the serving `codex-anchored`; no test covers a lane-name spelling."
+    },
+    {
+      "file": "reckon/crew/queue_edit.py",
+      "line": "106",
+      "severity": "non-blocking",
+      "text": "non-blocking: `_backend_serves_pair` duplicates the serving predicate owned by ledger.backend_serving_model (reckon/ledger.py:340-379) instead of extending it, and the copy drops the owner's requirement that the fallback backend be the lane's own \u2014 the divergence that permits the blocking finding above."
+    }
+  ],
+  "head_log_revision": "bb3c81d8ca73582376d57cb4a73dfbe07ded1889",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "examined reckon/crew/queue_edit.py:392 edit -> _named_route, its CLI caller reckon/crew_run_commands.py:2945 crew_queue_edit and the MCP action at reckon/mcp_crew_actions.py:308.",
+    "diff": "read both commits against cfbe9492 \u2014 queue_edit.py gains _backend_serves_pair, _pair_a_named_backend_serves and the `if backend:` branch in _named_route; the 225-line test file adds two cases; the second commit adds the evidence fragment.",
+    "done_when": "the done_when (prompt.txt:132) asks for a served-pair test, a refusal test and a negative control; the manifest records gate-head.log 53 passed EXIT=0, gate-base.log 51 passed EXIT=0 and negative-control.log 2 failed EXIT=1, and the gate ran under sbatch --partition=all_debug, so the measure is asserted, though the refusal case covers only a cross-lane model.",
+    "goal": "the node's goal is that a route edit keeps the backend it names (prompt.txt:38); reckon/crew/queue_edit.py:197-202 returns the named backend and its pair, and test_an_edit_keeps_the_backend_it_names shows codex-anchored stored where two backends serve the model.",
+    "manifest": "read; status complete, commits 1b563065 and bb3c81d8, baseline_suite and after_suite both 0 failures with logs named, negative_control_log named, and changed_paths matching the diff.",
+    "write_paths": "the fence was `reckon`, tests/test_queue_edit_keeps_the_named_backend.py and the fragment; git diff --stat cfbe9492..bb3c81d8 touches exactly reckon/crew/queue_edit.py, that test file and docs/evidence/fragments/work-flows-to-the-lane/queue-edit-keeps-the-named-backend.html."
+  },
+  "justifications": {
+    "durability": "reverting the `if backend:` branch reddens both cases (negative-control.log EXIT=1), but no assertion covers the same-lane model the loose fallback accepts at reckon/crew/queue_edit.py:125.",
+    "evidence": "gate-head.log reads '53 passed' EXIT=0 at bb3c81d8 against '51 passed' EXIT=0 at cfbe9492, and negative-control.log reads '2 failed' EXIT=1, so the recorded gate asserts the done_when's cases.",
+    "fit": "reckon/crew/queue_edit.py:128-170 follows the module's lazy-import and CrewError idiom and carries no plan, ticket or author identifier, though it calls the private ledger._undeclared_model_refusal.",
+    "goal_fidelity": "reckon/crew/queue_edit.py:197-202 keeps the named backend for a pair it serves, but the same branch records a model the backend entry will not run.",
+    "reuse": "reckon/crew/queue_edit.py:106 re-implements the serving predicate owned by reckon/ledger.py:340 backend_serving_model without extending it, and its divergent fallback is what permits the blocking finding.",
+    "scope_discipline": "git diff --stat cfbe9492..bb3c81d8 lists only reckon/crew/queue_edit.py, tests/test_queue_edit_keeps_the_named_backend.py and the evidence fragment, every one inside the fence."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that a route edit keeps the backend it names (prompt.txt:38); reckon/crew/queue_edit.py:197-202 returns the named backend and its pair, and test_an_edit_keeps_the_backend_it_names shows codex-anchored stored where two backends serve the model.\nVERDICT done_when: the done_when (prompt.txt:132) asks for a served-pair test, a refusal test and a negative control; the manifest records gate-head.log 53 passed EXIT=0, gate-base.log 51 passed EXIT=0 and negative-control.log 2 failed EXIT=1, and the gate ran under sbatch --partition=all_debug, so the measure is asserted, though the refusal case covers only a cross-lane model.\nVERDICT write_paths: the fence was `reckon`, tests/test_queue_edit_keeps_the_named_backend.py and the fragment; git diff --stat cfbe9492..bb3c81d8 touches exactly reckon/crew/queue_edit.py, that test file and docs/evidence/fragments/work-flows-to-the-lane/queue-edit-keeps-the-named-backend.html.\nVERDICT manifest: read; status complete, commits 1b563065 and bb3c81d8, baseline_suite and after_suite both 0 failures with logs named, negative_control_log named, and changed_paths matching the diff.\nVERDICT diff: read both commits against cfbe9492 \u2014 queue_edit.py gains _backend_serves_pair, _pair_a_named_backend_serves and the `if backend:` branch in _named_route; the 225-line test file adds two cases; the second commit adds the evidence fragment.\nCALL_SITES: reckon/crew/queue_edit.py:392 edit -> _named_route, reckon/crew_run_commands.py:2945 crew_queue_edit (CLI crew queue edit), reckon/mcp_crew_actions.py:308 MCP action to crew_queue_edit\nSCORE goal_fidelity: 16\nJUSTIFICATION goal_fidelity: reckon/crew/queue_edit.py:197-202 keeps the named backend for a pair it serves, but the same branch records a model the backend entry will not run.\nSCORE evidence: 17\nJUSTIFICATION evidence: gate-head.log reads '53 passed' EXIT=0 at bb3c81d8 against '51 passed' EXIT=0 at cfbe9492, and negative-control.log reads '2 failed' EXIT=1, so the recorded gate asserts the done_when's cases.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat cfbe9492..bb3c81d8 lists only reckon/crew/queue_edit.py, tests/test_queue_edit_keeps_the_named_backend.py and the evidence fragment, every one inside the fence.\nSCORE durability: 16\nJUSTIFICATION durability: reverting the `if backend:` branch reddens both cases (negative-control.log EXIT=1), but no assertion covers the same-lane model the loose fallback accepts at reckon/crew/queue_edit.py:125.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/crew/queue_edit.py:128-170 follows the module's lazy-import and CrewError idiom and carries no plan, ticket or author identifier, though it calls the private ledger._undeclared_model_refusal.\nSCORE reuse: 5\nJUSTIFICATION reuse: reckon/crew/queue_edit.py:106 re-implements the serving predicate owned by reckon/ledger.py:340 backend_serving_model without extending it, and its divergent fallback is what permits the blocking finding.\nFINDING reckon/crew/queue_edit.py:125 blocking: `_backend_serves_pair` treats any backend whose entry lane matches as serving every model the lane declares, so against the live configuration `crew queue edit --backend codex-anchored --model astra` (or `luna`) is accepted and stores model_key 'astra', while that backend's entry pins `model: gpt-6.1-sol`/`model_key: sol`, which is what dispatch_plan.resolve_role_override launches; ledger.backend_serving_model refuses the same pair, so this regresses a previous refusal into an accepted route whose recorded model the run will not use \u2014 the wrong-arm harm the commit message cites. The final clause should require the backend be the lane's own entry, as the docstring states.\nFINDING reckon/crew/queue_edit.py:197 non-blocking: the new `if backend:` branch requires the name to be an exact flight backend entry, so `--backend codex --model sol` \u2014 where `codex` is a catalogue lane and a declared backend with an empty body \u2014 is now refused, although _model_narrowed_backend (reckon/crew_dispatch_commands.py:660) resolved it to the serving `codex-anchored`; no test covers a lane-name spelling.\nFINDING reckon/crew/queue_edit.py:106 non-blocking: `_backend_serves_pair` duplicates the serving predicate owned by ledger.backend_serving_model (reckon/ledger.py:340-379) instead of extending it, and the copy drops the owner's requirement that the fallback backend be the lane's own \u2014 the divergence that permits the blocking finding above.",
+  "review_run_id": "r-20261114T141314377258-review-of-queue-edit-keeps-the-named-backend-bb3c81d8ca73",
+  "reviewed_base_sha": "cfbe94929ed9ce8ed4e2438e659e2fe7c8397f36",
+  "reviewed_head_sha": "bb3c81d8ca73582376d57cb4a73dfbe07ded1889",
+  "reviewed_run_id": "r-20261114T133159214431-queue-edit-keeps-the-named-backend",
+  "reviewer": {
+    "backend": "clive",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash",
+    "reviewer_run_id": "r-20261114T141314377258-review-of-queue-edit-keeps-the-named-backend-bb3c81d8ca73"
+  },
+  "reviewer_run_id": "r-20261114T141314377258-review-of-queue-edit-keeps-the-named-backend-bb3c81d8ca73",
+  "scores": {
+    "durability": 16,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 16,
+    "reuse": 5,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-14T17:19:51.397428+00:00",
+  "total": 92
+}
