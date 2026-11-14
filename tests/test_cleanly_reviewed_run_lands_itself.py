@@ -26,6 +26,9 @@ def delivery(tmp_path, isolated_reckon_home, monkeypatch):
     (isolated_reckon_home / "mounts.json").write_text(
         json.dumps({PROJECT: str(repo / "docs")})
     )
+    state_home = isolated_reckon_home / "state"
+    state_home.mkdir()
+    (state_home / PROJECT).symlink_to(repo / "docs" / "state" / PROJECT)
     monkeypatch.setenv("RECKON_WORKER_SCRATCH_ROOT", str(tmp_path / "scratch"))
     (repo / ".venv").symlink_to(Path(sys.executable).parent.parent)
     plan = repo / "docs" / "plans" / f"{PLAN}.html"
@@ -182,11 +185,15 @@ def test_a_clean_review_lands_and_records_the_measured_head(delivery):
     assert Path(outcome["gate_report"]["log_path"]).read_text().endswith("EXIT=0\n")
     assert delivery["submissions"]
     recorded = ledger.runs(PROJECT, root=delivery["repo"])[0]
+    assert ledger.runs(PROJECT)[0]["run_id"] == RUN
     assert recorded["integrated_gate_check"]["integrated_verdict"] == "passed"
     assert (
         _plan_html.read_state_file(delivery["plan"])["section_declarations"]["s2"]
         == "done"
     )
+
+    committed = _git(delivery["repo"], "show", f"HEAD:docs/plans/{PLAN}.html")
+    assert _plan_html.read_state(committed)["section_declarations"]["s2"] == "done"
 
 
 def test_a_conflicting_head_stays_delivered_and_names_the_conflict(delivery):
@@ -293,6 +300,11 @@ def test_a_promoted_conflict_reports_pending_and_never_landed(delivery, monkeypa
     week = runs._drain_week_view(PROJECT, [pointer])
     assert week["project"]["phases"]["landed"] == 0
     assert week["plans"][PLAN]["phases"]["landed"] == 0
+    from reckon.crew.promotion_requests import _settled_state
+    from reckon.crew.recovery_watch import _ledger_run_id_reader
+
+    assert _ledger_run_id_reader(PROJECT).for_runs([RUN])[RUN] == "complete"
+    assert _settled_state({"run_id": RUN, "project": PROJECT}) != "landed"
 
 
 def test_the_admission_lander_also_respects_the_manual_plan_decision(delivery):

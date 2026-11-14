@@ -1940,6 +1940,17 @@ def _manifest_rewritten(
     )
 
 
+def _ledger_landing_word(project: str, row: Mapping[str, Any]) -> str:
+    """A promotion only announces landing once its head reaches primary."""
+    if not row.get("commits"):
+        return "recorded"
+    from reckon.crew.recovery_classification import _promoted_awaiting_merge
+
+    if _promoted_awaiting_merge({**row, "project": project}, moment=time.time()):
+        return "complete"
+    return "promoted"
+
+
 class _LedgerRunWordReader:
     """Resolve settled words for departures without decoding the whole ledger."""
 
@@ -1958,7 +1969,7 @@ class _LedgerRunWordReader:
                 except (OSError, ValueError, ledger_module.LedgerError):
                     continue
                 if row is not None:
-                    words[run_id] = "promoted" if row.get("commits") else "recorded"
+                    words[run_id] = _ledger_landing_word(self.project, row)
             return words
         try:
             recorded = ledger_module.run_ids(self.project)
@@ -1978,10 +1989,8 @@ class _LedgerRunWordReader:
                 words[run_id] = "recorded"
                 continue
             words[run_id] = (
-                "promoted"
-                if isinstance(row, Mapping)
-                and row.get("run_id") == run_id
-                and row.get("commits")
+                _ledger_landing_word(self.project, row)
+                if isinstance(row, Mapping) and row.get("run_id") == run_id
                 else "recorded"
             )
         if aggregate_only:
@@ -1991,9 +2000,7 @@ class _LedgerRunWordReader:
                 )
                 words.update(
                     {
-                        str(row["run_id"]): (
-                            "promoted" if row.get("commits") else "recorded"
-                        )
+                        str(row["run_id"]): (_ledger_landing_word(self.project, row))
                         for row in rows
                         if row.get("run_id") in aggregate_only
                     }

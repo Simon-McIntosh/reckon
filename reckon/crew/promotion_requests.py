@@ -875,7 +875,15 @@ def _settled_state(request: Mapping[str, Any]) -> str:
     except (OSError, ValueError, CrewError):
         landed = None
     if landed:
-        return "landed"
+        from reckon.crew.recovery_classification import _promoted_awaiting_merge
+
+        return (
+            "promoted"
+            if _promoted_awaiting_merge(
+                {**request, "project": landed}, moment=time.time()
+            )
+            else "landed"
+        )
     if not runs.pointer_path(run_id).exists():
         return "gone"
     return ""
