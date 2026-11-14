@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="the-monitor-shows-the-work-it-watches">
+  <meta name="plan-evidence-for" content="reckon:the-monitor-shows-the-work-it-watches">
+  <meta name="plan-verifies" content="reckon:the-monitor-shows-the-work-it-watches#s85">
+  <meta name="plan-recorded-at" content="2026-11-14">
+  <meta name="plan-verdict" content="passed">
+  <title>A discarded run is never listed as blocked | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" id="wave3-codex-the-monitor-shows-the-work-i-s85-landing" data-node="wave3-codex-the-monitor-shows-the-work-i-s85" data-reckon="landed" data-when="2026-11-14">
+  <h2>A discarded run leaves the needs-you set, the obligations list and the pane</h2>
+  <p>The test drives the chain a coordinator actually runs: it spawns a process carrying the run id, records a run whose manifest reads <code>blocked</code> and whose recorded supervisor has already exited, asserts the run present in the needs-you set, the obligations list, the blocked count and the halt row, then calls the real <code>crew terminate</code> and the real <code>crew discard</code>. Before the discard, this is the one direct instrument: the run is <code>blocked</code> — present in every list, with <code> 1n </code> in the halt row.</p>
+  <p><strong>Gate.</strong> <code>tests/test_a_discarded_run_is_never_listed_as_blocked.py</code>. The fixture is a blocked run whose recorded pid names a supervisor that has exited while a leftover process still carries the run id: a proven-alive process would defer the blocked verdict to <code>running</code>, which is why the shape matters. The stop is asserted to end the leftover (<code>target_pids</code> carries it) and to draw no transition at all — <code>fleet_transitions</code> over the before and after-stop snapshots folds to <code>[]</code>. The discard then removes the pointer and records its marker, and the run is absent from the needs-you set, from <code>obligations()</code> and from <code>recovery.recover()</code> with a blocked count of 0; its departure reads <code>discarded</code> from a previous word in <code>NEEDS_ACTION</code>, and the pane draws <code>→ dropped</code> with <code> 0n </code>, never <code>→ needs you</code>.</p>
+  <p><strong>Arms.</strong> Both arms are git checkouts under the run's scratch directory, with the four follower variables unset, run in place on the fleet node with <code>pytest -n 8</code>. The base tree is revision <code>49431529bc</code> carrying this node's test file, so the same reading runs against the modules at the base revision: base <code>1 passed</code>, <code>EXIT=0</code>; head <code>1 passed</code>, <code>EXIT=0</code>. The behaviour predates the test, and the test adds no failure, which is what a node that adds a missing test to a working guard reports. Logs under the run directory: <code>arms/base.log</code>, <code>arms/head.log</code>.</p>
+  <p><strong>Negative control.</strong> The control classifies the stopped run before reading its discard record: <code>_departure_word</code> is stripped of its discard-record arm, so the reader words the departure from the block the stop left. The test goes red — <code>1 failed</code>, <code>EXIT=1</code> — on <code>assert state == "discarded"</code>, the departure reading <code>withdrawn</code> against <code>discarded</code> expected. Every pre-discard classification in the same run still reads <code>blocked</code>, which is the control's statement: only the discard record moves the run off the block it stopped in. Log: <code>arms/negative_control.log</code>.</p>
+  <p><strong>Lint.</strong> <code>ruff check</code> and <code>ruff format --check</code> on the test path add no findings.</p>
+</article>
+</body>
+</html>
