@@ -1,7 +1,6 @@
 # ruff: noqa: I001, UP035
 from __future__ import annotations
 
-import fcntl
 import importlib
 import json
 import re
@@ -10,7 +9,7 @@ import subprocess
 import tempfile
 import time
 from collections.abc import Iterator
-from contextlib import contextmanager
+from contextlib import ExitStack, contextmanager
 from contextvars import ContextVar
 from datetime import UTC, datetime
 from pathlib import Path
@@ -38,6 +37,7 @@ from reckon.crew.runs import (
     list_live,
     read_pointer,
 )
+from reckon.node_exclusive_lock import LockHeld, exclusive_lock
 
 
 # ── The review reflex: a scoring run runs the command it composed ───────────
@@ -2713,10 +2713,12 @@ def _dispatch_text_review_for_run(
         # moves on. Waiting held each session's sweep behind the holder's whole
         # dispatch, and a session whose sweep is held never reaches its own
         # code reviews.
-        with (directory / "dispatch.lock").open("a") as lock:
+        with ExitStack() as stack:
             try:
-                fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
-            except BlockingIOError:
+                stack.enter_context(
+                    exclusive_lock(directory / "dispatch.lock", blocking=False)
+                )
+            except LockHeld:
                 return {
                     "dispatched": False,
                     "review_run_id": None,

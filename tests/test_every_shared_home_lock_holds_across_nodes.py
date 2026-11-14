@@ -59,12 +59,7 @@ JUDGED: dict[str, str] = {
 
 # Pending: shared-home locks not yet moved onto exclusive_lock. Each migration
 # removes its rows from here and adds judged rows where a site stays bare.
-PENDING: frozenset[str] = frozenset(
-    {
-        "reckon/crew/obligations.py::_record_index_lag",
-        "reckon/crew/recovery_review_dispatch.py::_dispatch_text_review_for_run",
-    }
-)
+PENDING: frozenset[str] = frozenset()
 
 REMEDY = (
     "take reckon.node_exclusive_lock.exclusive_lock, whose record lock the file "
