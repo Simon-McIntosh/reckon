@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="plan">
+  <meta name="plan-slug" content="building-a-plan-queues-all-of-it">
+  <meta name="plan-title" content="Building a plan queues all of it">
+  <meta name="plan-summary" content="One build call queues every implementable section of a plan, with its waits, at once; a plan whose review is owed queues held until the review lands.">
+  <meta name="plan-status" content="active">
+  <meta name="plan-roi" content="high">
+  <meta name="plan-effort-hours" content="9.0">
+  <meta name="plan-capability-version" content="1.0">
+  <meta name="plan-capability-class" content="general">
+  <meta name="plan-capability-reasoning" content="deep">
+  <meta name="plan-capability-verification" content="strict">
+  <meta name="plan-capability-risk" content="elevated">
+  <meta name="plan-sprint" content="S27">
+  <meta name="plan-owner" content="Simon McIntosh">
+  <meta name="plan-tags" content="crew,reckon-tooling">
+  <meta name="plan-after" content="queued-work-needs-no-workaround">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-depends-on" content="{&quot;s4&quot;:[&quot;building-a-plan-queues-all-of-it#s2&quot;,&quot;building-a-plan-queues-all-of-it#s3&quot;]}">
+  <title>Building a plan queues all of it | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <h2 id="s1">§1 — Why: a plan reaches the queue a few sections at a time, and only after its review</h2>
+<section data-reckon="section" data-id="s1" data-effort-hours="0.25" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="standard" data-capability-risk="low" data-status="done" data-links=""></section>
+<p>On the evening of 2026-11-14 the local lane had room, and the reckon queue held a few dozen requests across 18 coordinator sessions. Three things kept it shallow:</p>
+<ul>
+  <li><strong>Coordinators chose sections one at a time.</strong> The build skill told them to "choose each section; never load a plan wholesale". The lead reversed that rule the same evening: queue every reviewed plan at full width, and let the declared section waits gate dependent work. The rule now lives only in instructions, so it depends on every coordinator acting on it.</li>
+  <li><strong>Queueing waits for the review.</strong> The dispatch gate refuses an implementation node until the plan's design review exists and its content review is answered. A coordinator who builds a new plan must therefore compose reviews, wait for them, answer them, and only then queue. The plan's whole width sits outside the queue for that time. The lead's direction: queue when the plan is built, not after the review.</li>
+  <li><strong>Nothing marks who owns a plan's sections.</strong> When several sessions queued at full width, one session queued sections of another session's plan that its owner had deliberately held back (nova, kernel-compile-barrier §3 and §4).</li>
+</ul>
+<p>The admission pass already holds a queued request whose section is not covered by a stored review, as <code>plan-review-owed</code>, and releases it when the review is stored. Waits declared in <code>plan-section-depends-on</code> already park a request until its upstream has passed review and landed. What is missing is the call that puts the whole plan into that queue at once, and a dispatch that queues held rather than refusing when the review is owed.</p>
+
+    <h2 id="s2">§2 — One call queues every implementable section of a plan</h2>
+<section data-reckon="section" data-id="s2" data-effort-hours="3.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="implementable" data-links=""></section>
+<p><strong>Deliverable.</strong> <code>reckon crew dispatch --project &lt;p&gt; --plan &lt;slug&gt; --session &lt;s&gt;</code> with no <code>--section</code> queues one node for every section the plan declares implementable, in one call, naming no lane.</p>
+<ul>
+  <li>Each node takes its fields from its section and its waits from <code>plan-section-depends-on</code>, as a batch entry naming only its section does.</li>
+  <li>A section is skipped, with the reason on its row, when it is done or deferred, or when it already has a live, queued, delivered, promoted or landed run of the same node. A row skipped for another session's run names that session.</li>
+  <li>A section the dispatch cannot queue (no done-when, a malformed contract) is refused on its own row, and the rest still queue.</li>
+  <li>A section whose plan names an owning session other than the caller's is skipped, naming the owner, unless the caller passes the owner's session. The owner is the session recorded on the plan's newest queued or live run, or none.</li>
+</ul>
+<p>The call prints one JSON document with one row per section: queued, awaiting-upstream, held, skipped or refused, each with its reason.</p>
+<p><strong>Done when.</strong> Tests with a temporary repository and crew home show the following:</p>
+<ul>
+  <li>A plan with five implementable sections, two of them waiting on a third, gives three queued rows and two awaiting-upstream rows from one call.</li>
+  <li>A second identical call queues nothing and skips all five, naming the runs.</li>
+  <li>A done section and a deferred section are skipped with those reasons.</li>
+  <li>A section with no done-when is refused on its row while the others queue.</li>
+  <li>A section with a live run of another session is skipped naming that session.</li>
+</ul>
+<p>Negative control: the five-section call against the base revision is refused for naming no section, and the failing run is logged. The gate runs on <code>all_debug</code>, and its log is written to <code>docs/evidence/fragments/building-a-plan-queues-all-of-it/s2.html</code>.</p>
+
+    <h2 id="s3">§3 — A plan whose review is owed queues held, and its reviews are composed</h2>
+<section data-reckon="section" data-id="s3" data-effort-hours="3.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="implementable" data-links=""></section>
+<p><strong>Deliverable.</strong> When a dispatch of a plan's sections meets an owed review, it queues the sections instead of refusing them. This covers a missing design review, content not covered by a stored review, and unanswered findings. Each section is held with the reason the review gate gives, and released by the admission pass once its section is covered and every finding against it is answered. The call composes each review the plan owes, unless one is already queued or in flight, and names those review runs in its output. The review gate's rules are unchanged; only the point at which they hold the request moves, from refusing at dispatch to holding in the queue.</p>
+<p><strong>Done when.</strong> Tests with a temporary repository and crew home show the following:</p>
+<ul>
+  <li>A plan with no stored review: one call queues every section held <code>plan-review-owed</code>, and composes one design and one content review.</li>
+  <li>Storing both reviews with no findings releases the sections on the next admission pass.</li>
+  <li>A stored review with an unanswered finding keeps its section held, and answering the finding releases it.</li>
+  <li>A second call while the reviews are in flight composes no further review.</li>
+</ul>
+<p>Negative control: the no-review call against the base revision refuses at dispatch with the review gate's refusal, and the failing run is logged. The gate runs on <code>all_debug</code>, and its log is written to <code>docs/evidence/fragments/building-a-plan-queues-all-of-it/s3.html</code>.</p>
+
+    <h2 id="s4">§4 — The build skill queues the whole plan as its first act</h2>
+<section data-reckon="section" data-id="s4" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+<p><strong>Deliverable.</strong> <code>skills/reckon-build/SKILL.md</code> makes the one-call full-width queue the first act of <code>/reckon-build &lt;slug&gt;</code>, before any review is composed or answered. Its loop reads: queue the plan, answer reviews as they land, then steer the queue with hold, edit, reprioritise and release. The skill's refusal table and the repository guidance (<code>AGENTS.md</code>) say the same. A section the coordinator knows to be wrong is queued and held with a reason, never left out.</p>
+<p><strong>Done when.</strong> The skill and guidance carry that loop. The skill's existing contract tests pass. A test reads the skill and finds the plan-width dispatch command named before any review command in the build loop. Negative control: that test fails against the base revision's skill, and the failing run is logged.</p>
+
+    <section data-reckon="followups" id="followups" class="r-followups">
+<h2><span class="sec">§</span> Followups</h2>
+<article class="r-fu" data-id="f-bpqa-001" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-create" data-written-at="2026-11-14" data-recommends-skill="/reckon-build building-a-plan-queues-all-of-it" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Priority work: build §2 and §3 on codex, then §4</h4>
+    <div class="r-fu-body"><p>The lead marked this priority work on 2026-11-14 and directed the codex lane. §2 and §3 are independent; §4 waits on both.</p></div>
+    <pre class="r-fu-prompt">/reckon-build building-a-plan-queues-all-of-it</pre>
+    </article>
+</section>
+  </main>
+</body>
+</html>
