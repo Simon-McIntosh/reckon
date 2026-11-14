@@ -185,10 +185,13 @@ def _wait_refusal_classes() -> frozenset[str]:
     """The refusals that leave a queued request waiting rather than in debt.
 
     ``QueueFull`` says the session already holds its share of queued
-    dispatches, and a ``ScopeConflict`` says a live run claims a write path the
-    request needs. A slot opens, or that run ends, whichever the refusal names;
-    nothing the session arms clears either, so both keep the waiting reading
-    and the retry back-off they are stored with.
+    dispatches, ``RosterFull`` that the placement reservation's seats are all
+    taken, and a ``ScopeConflict`` says a live run claims a write path the
+    request needs. A slot or a seat opens, or that run ends, whichever the
+    refusal names; nothing the session arms clears any of them, so they keep
+    the waiting reading and the retry back-off they are stored with. The roster
+    refusal quotes ``reckon crew complete`` for an occupying run, which read as
+    the request's own duty on every coordinator's checklist.
 
     The class family is walked rather than typed out, because a coarser claim
     kind — a directory claim overlapping a peer's exact path — is the same wait
@@ -196,9 +199,10 @@ def _wait_refusal_classes() -> frozenset[str]:
     guidance quotes a dispatch command and reads as a session duty. All of them
     name the session or quote commands, so none is legible from its text alone.
     """
+    from reckon.crew.dispatch_admission import RosterFull
     from reckon.crew.runs import QueueFull
 
-    return frozenset({QueueFull.__name__}) | _scope_claim_classes()
+    return frozenset({QueueFull.__name__, RosterFull.__name__}) | _scope_claim_classes()
 
 
 def _remedy_command_stated_by(text: str) -> str | None:
