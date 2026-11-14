@@ -204,7 +204,7 @@ def test_each_review_is_read_once_until_its_entries_move(
 
     assert _payload(state) == first
     assert refreshed == []
-    assert len(stats) <= LIVE_RUNS, "only this cohort's indexed entries are stat'ed"
+    assert stats == [], "the indexed cohort needs no per-record stat"
     assert reads == []
     assert selected == [], selected
 
@@ -234,7 +234,7 @@ def test_each_review_is_read_once_until_its_entries_move(
     assert selected == [run_id], selected
     assert changed != first
     assert refreshed == []
-    assert stats, "the new review was examined by the existing index"
+    assert stats == [], "the writer indexed the new review without reader stats"
     assert reads, "the new review was read"
     assert all(path.name.startswith(f"{run_id}.") for path in reads), reads
 

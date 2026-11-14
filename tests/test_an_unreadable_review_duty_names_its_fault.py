@@ -176,7 +176,10 @@ def test_a_truncated_record_keeps_the_mid_write_remedy(fleet: dict[str, Path]) -
     head = _write_pointer(fleet, RUN_ID, phase="complete", status="complete")
     _store_valid_review(RUN_ID, head)
     truncated = review_module.review_path(PROJECT, RUN_ID)
+    before = truncated.parent.stat()
     truncated.write_text(_truncated_record(), encoding="utf-8")
+    # Give the foreign write a distinct directory clock tick.
+    os.utime(truncated.parent, ns=(before.st_atime_ns, before.st_mtime_ns + 1_000_000))
     assert truncated.is_file()
 
     assert _sweep(fleet), "the sweep publishes despite the truncated record"
