@@ -30,6 +30,11 @@ from typing import Self
 import pytest
 
 from reckon.crew import merge
+from tests.helpers.git import git as _git
+from tests.test_a_reviewed_head_lands_without_touching_the_index import (
+    _init_checkout,
+    _reviewed_head,
+)
 
 DECLARED_MUTATION = (
     "with the staleness check removed, a lock a live child process holds is "
@@ -39,8 +44,6 @@ DECLARED_MUTATION = (
 # Ten minutes is the bound the module applies; the ages here sit either side of
 # it by a wide margin so a slow test host cannot move a case across the bound.
 STALE_AGES_SECONDS = (11 * 60, 5 * 60, 30)
-
-_ENV = {**os.environ, "GIT_OPTIONAL_LOCKS": "0"}
 
 _HOLDER = """
 import os, sys, time
@@ -57,50 +60,6 @@ except FileNotFoundError:
 """
 
 
-def _run(repo: Path, *args: str):
-    return subprocess.run(
-        ["git", "-C", str(repo), *args],
-        capture_output=True,
-        text=True,
-        check=False,
-        env=_ENV,
-    )
-
-
-def _git(repo: Path, *args: str) -> str:
-    result = _run(repo, *args)
-    assert result.returncode == 0, result.stderr or result.stdout
-    return result.stdout.strip()
-
-
-def _init_checkout(tmp_path: Path) -> tuple[Path, Path]:
-    origin = tmp_path / "origin.git"
-    work = tmp_path / "work"
-    subprocess.run(["git", "init", "--bare", "-q", str(origin)], check=True, env=_ENV)
-    subprocess.run(["git", "init", "-q", str(work)], check=True, env=_ENV)
-    _git(work, "config", "user.email", "author@example.invalid")
-    _git(work, "config", "user.name", "Author")
-    _git(work, "config", "commit.gpgsign", "false")
-    (work / "tracked.txt").write_text("base\n", encoding="utf-8")
-    _git(work, "add", "tracked.txt")
-    _git(work, "commit", "-q", "-m", "base")
-    _git(work, "branch", "-M", "main")
-    _git(work, "remote", "add", "origin", str(origin))
-    _git(work, "push", "-q", "-u", "origin", "main")
-    return origin, work
-
-
-def _reviewed_head(work: Path, branch: str, filename: str, content: str) -> str:
-    """Commit one file on a side branch, leaving main checked out, and return it."""
-    _git(work, "checkout", "-q", "-b", branch)
-    (work / filename).write_text(content, encoding="utf-8")
-    _git(work, "add", filename)
-    _git(work, "commit", "-q", "-m", f"add {filename}")
-    head = _git(work, "rev-parse", "HEAD")
-    _git(work, "checkout", "-q", "main")
-    return head
-
-
 def _place_lock(work: Path, age_seconds: float) -> Path:
     """Write a dry index lock whose mtime is ``age_seconds`` in the past."""
     lock = work / ".git" / "index.lock"
@@ -111,7 +70,14 @@ def _place_lock(work: Path, age_seconds: float) -> Path:
 
 
 class _LockHolder:
-    """A second process that holds the checkout's index lock open for a while."""
+    """A second process that holds the checkout's index lock open for a while.
+
+    This is deliberately not the holder in
+    ``test_a_landing_write_outlasts_a_briefly_held_index_lock``: that one takes
+    the lock and closes the descriptor, so the host's ``/proc`` scan cannot see
+    it. The case here needs a holder the scan must find, so the descriptor stays
+    open for the whole hold.
+    """
 
     def __init__(self, lock: Path, seconds: float):
         self.lock = lock

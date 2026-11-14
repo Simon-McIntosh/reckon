@@ -708,14 +708,6 @@ def _index_lock_signature(lock: Path) -> tuple[int, int] | None:
     return (stat.st_mtime_ns, stat.st_size)
 
 
-def _index_lock_age_seconds(lock: Path) -> float | None:
-    try:
-        stat = lock.stat()
-    except FileNotFoundError:
-        return None
-    return max(0.0, time.time() - stat.st_mtime)
-
-
 def _index_lock_held_open_by_a_process(lock: Path) -> bool:
     """Whether any process on this host has ``lock`` open.
 
@@ -758,11 +750,17 @@ def _clear_a_stale_index_lock(
     immediately before the removal, so a writer that takes the lock in the last
     instant is not cleared either.
     """
+    # The age derivation is the staging path's, in promotion_scope, imported
+    # here rather than written a second time: two readers of the same file would
+    # drift apart silently. The import is inside the call because that module
+    # imports this one for the lock-held check.
+    from reckon.crew.promotion_scope import _index_lock_age_seconds
+
     lock = _index_lock_path(repo)
     current = _index_lock_signature(lock)
     if observed is None or current is None or current != observed:
         return None
-    age = _index_lock_age_seconds(lock)
+    age = _index_lock_age_seconds(repo)
     if age is None or age < stale_after_seconds:
         return None
     if _index_lock_held_open_by_a_process(lock):
@@ -1123,7 +1121,9 @@ def land_merge(
             if result.returncode == 0:
                 break
             if _index_lock_held(repo):
-                age = _index_lock_age_seconds(_index_lock_path(repo))
+                from reckon.crew.promotion_scope import _index_lock_age_seconds
+
+                age = _index_lock_age_seconds(repo)
                 aged = f", aged {age:.1f}s" if age is not None else ""
                 raise MergeError(
                     "the checkout's index.lock stayed held for "
