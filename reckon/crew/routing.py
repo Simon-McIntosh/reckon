@@ -1866,15 +1866,33 @@ PLAN_REVIEW_RAW_REPORT_REASON = (
 )
 
 
-def _newest_mtime(directory: Path) -> datetime:
-    """The newest file mtime beneath a tree, or the tree directory's own."""
-    newest = directory.stat().st_mtime
-    for child in directory.rglob("*"):
-        try:
-            stamp = child.stat().st_mtime
-        except OSError:
-            continue
-        newest = max(newest, stamp)
+def _newest_mtime(item: Path) -> datetime | None:
+    """The newest write time of an item, following a symlink to its target.
+
+    An item is a report item: a folder, a file directly in a reports
+    directory, or a symlink to a folder moved off the crew home. A symlink is
+    judged by its target, because the link's own timestamp says when it was
+    made rather than when anything inside it was last written. ``None`` means
+    no readable file carries a write time, which keeps the item rather than
+    expiring it on a zero.
+    """
+    if item.is_symlink():
+        item = item.resolve()
+    newest: float | None = None
+    try:
+        if item.is_file():
+            newest = item.stat().st_mtime
+        elif item.is_dir():
+            for child in item.rglob("*"):
+                try:
+                    stamp = child.stat().st_mtime
+                except OSError:
+                    continue
+                newest = stamp if newest is None else max(newest, stamp)
+    except OSError:
+        return None
+    if newest is None:
+        return None
     return datetime.fromtimestamp(newest, tz=UTC)
 
 
@@ -1909,14 +1927,21 @@ def _run_report_trees(
     ledgered: set[str],
     retention_days: int,
 ) -> list[dict[str, Any]]:
-    """Run-keyed report trees outside the plan-review family, past retention.
+    """Every report item of a project, judged by the retention classifier.
 
-    A report tree here is a top-level ``reports/<project>/<run-id>/`` directory
-    named for a run gc knows, live or already in the ledger; a topic-named
-    directory filed by hand carries no run name and is never matched. A tree
-    whose run is live is left alone, and the live set is re-read immediately
-    before each removal.
+    An item is a child of ``reports/<project>/``, or a child of one of the
+    reckon-written container folders, and it is kept while a persisted record,
+    a citation, or a live run pointer names it. Otherwise it expires at its
+    plan's close or 30 days after its newest write, whichever comes first. A
+    symlinked item is expired only when the folder it points to lies under the
+    project's staging root; anything else is reported and left alone.
+
+    This rule replaces the run-tree rule for the reports store, so a tree a
+    plan cites is never removed first on age. ``plan-review`` is skipped here
+    because its raw text keeps its own rule.
     """
+
+    from reckon.crew import report_retention
     from reckon.crew.dispatch import tree_size_bytes
     from reckon.crew.runs import reports_dir
 
@@ -1924,41 +1949,73 @@ def _run_report_trees(
     if not reports_root.is_dir():
         return []
     current = now or datetime.now(tz=UTC)
-    cutoff = current - timedelta(days=retention_days)
     entries: list[dict[str, Any]] = []
-    for project_dir in sorted(path for path in reports_root.iterdir() if path.is_dir()):
+    mounted = flight.mounted_project_docs()
+    for project_dir in sorted(p for p in reports_root.iterdir() if p.is_dir()):
         name = project_dir.name
         if project and name != project:
             continue
-        for tree in sorted(path for path in project_dir.iterdir() if path.is_dir()):
-            report_run_id = tree.name
-            if report_run_id == "plan-review":
+        docs_dir = mounted.get(name)
+        if docs_dir is None:
+            continue
+        context = report_retention.build_context(
+            project=name,
+            docs_dir=docs_dir,
+            reports_root=reports_root,
+            now=current,
+        )
+        for item in report_retention.report_items(project_dir):
+            if run_id and item.name != run_id:
                 continue
-            if report_run_id not in live_ids and report_run_id not in ledgered:
+            modified = _newest_mtime(item)
+            verdict = report_retention.classify_item(
+                context, item, newest_write=modified
+            )
+            if verdict.expires is None or verdict.expires > current:
                 continue
-            if run_id and report_run_id != run_id:
-                continue
-            modified = _newest_mtime(tree)
-            if modified > cutoff:
-                continue
-            if _run_has_live_pointer(report_run_id, live_ids, run_id):
-                continue
+            size = tree_size_bytes(item) if item.is_dir() else item.stat().st_size
             entry = {
-                "family": "run",
+                "family": "report-item",
                 "project": name,
-                "run_id": report_run_id,
-                "path": str(tree),
-                "tree": str(tree),
-                "size": tree_size_bytes(tree),
-                "age_days": (current - modified).days,
+                "run_id": item.name,
+                "path": str(item),
+                "tree": str(item),
+                "size": size,
+                "age_days": (current - modified).days if modified else None,
+                "class": verdict.cls,
+                "reason": verdict.reason,
                 "action": "prune",
                 "removed": False,
             }
-            if apply and not _run_has_live_pointer(
-                report_run_id, _live_run_ids(), run_id
-            ):
-                shutil.rmtree(tree)
+            if item.is_symlink():
+                target = item.resolve()
+                permitted = context.staging_root is not None and (
+                    target.is_relative_to(context.staging_root)
+                )
+                if not permitted:
+                    entry["action"] = "keep"
+                    entry["reason"] = (
+                        f"symlink target {target} lies outside the permitted "
+                        "roots; left alone"
+                    )
+                    print(f"keeping report item {item}: {entry['reason']}")
+                    entries.append(entry)
+                    continue
+            if apply:
+                if item.is_symlink():
+                    shutil.rmtree(item.resolve())
+                    item.unlink()
+                elif item.is_dir():
+                    shutil.rmtree(item)
+                else:
+                    item.unlink()
                 entry["removed"] = True
+                print(f"removing report item {item} ({size} bytes): {verdict.reason}")
+            else:
+                print(
+                    f"would remove report item {item} ({size} bytes, "
+                    f"{entry['age_days']} days old): {verdict.reason}"
+                )
             entries.append(entry)
     return entries
 

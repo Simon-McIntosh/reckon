@@ -1,0 +1,80 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/crew/routing.py:2949",
+    "reckon/crew/promotion_checks.py:1690",
+    "reckon/crew/promotion_checks.py:2988",
+    "reckon/crew_dispatch_commands.py:2903",
+    "reckon/crew_dispatch_commands.py:2965"
+  ],
+  "completed_at": "2026-11-14T13:26:35.990Z",
+  "dispatched_at": "2026-11-14T13:22:47Z",
+  "findings": [
+    {
+      "file": "reckon/crew/plan_review.py",
+      "line": 5319,
+      "severity": "non-blocking",
+      "summary": "the behavioural change lands in plan_review.py, which the node's FENCE-SCOPE list does not name; the EVIDENCE fence authorises it as the module the manifest names as the late writer, and the manifest records the reason"
+    },
+    {
+      "file": "tests/test_a_plan_review_staged_after_its_run_promoted_is_still_committed.py",
+      "line": 176,
+      "severity": "non-blocking",
+      "summary": "the failed-commit case raises LedgerError, which is not OSError or ValueError, so it would still pass against the reinstated pre-review swallow of (OSError, ValueError) and does not guard the defect it names"
+    },
+    {
+      "file": "reckon/crew/plan_review.py",
+      "line": 5353,
+      "severity": "non-blocking",
+      "summary": "the committed_review_root(project) is None early return added in the review range has no test exercising it"
+    }
+  ],
+  "project": "reckon",
+  "review_run_id": "r-20261114T131848852540-review-of-wave3-clive-anchored-a-plan-is-reviewed-before-it-s39-d3bed04b9dcc",
+  "reviewed_base_sha": "898a95dbfacd13f5ba8fd905520b1002a3a5dd23",
+  "reviewed_head_sha": "d3bed04b9dcc26ad856139936af32a759da846eb",
+  "reviewed_run_id": "r-20261114T095134283939-wave3-clive-anchored-a-plan-is-reviewed-before-it-s39",
+  "rubric": {
+    "durability": "answered",
+    "evidence": "answered",
+    "fit": "answered",
+    "goal_fidelity": "answered",
+    "reuse": "answered",
+    "scope_discipline": "answered"
+  },
+  "scores": {
+    "durability": 16,
+    "evidence": 13,
+    "fit": 18,
+    "goal_fidelity": 17,
+    "reuse": 20,
+    "scope_discipline": 12
+  },
+  "status": "parsed",
+  "suite_pair": {
+    "after": {
+      "failure_count": 0,
+      "failure_ids": [],
+      "log": "head-arm.log",
+      "revision": "a1af3aac98"
+    },
+    "baseline": {
+      "failure_count": 0,
+      "failure_ids": [],
+      "log": "base-arm.log",
+      "revision": "3d4c92834c759745650c2d0eda93fbb68becca7e"
+    }
+  },
+  "times_source": "run-record",
+  "timestamp": "2026-11-14T15:02:21.168303+00:00",
+  "total": 96,
+  "verdicts": {
+    "call_sites": "checked reckon/crew/routing.py:2949, reckon/crew/promotion_checks.py:1690 and :2988, reckon/crew_dispatch_commands.py:2903 and :2965",
+    "diff": "read commit by commit 898a95dbfa..d3bed04b9d; three files, 33 insertions and 9 deletions, no stray edits",
+    "done_when": "read the late-review test; it asserts the committed file exists and is tracked by git ls-files --error-unmatch, which the negative control reddens",
+    "goal": "read the node goal (deliver s39 of a-plan-is-reviewed-before-it-is-built) against reckon/crew/plan_review.py:5317; the late-commit path is present and its refusal now propagates",
+    "manifest": "read; it records base 3d4c92834c 51 passed EXIT=0 and head a1af3aac98 54 passed EXIT=0 and nc 2 failed EXIT=1, and both suite JSON blocks parse",
+    "write_paths": "read the manifest's declared paths against the diff; plan_review.py is outside the FENCE-SCOPE list but named by the EVIDENCE fence"
+  }
+}
