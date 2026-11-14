@@ -24,7 +24,7 @@
   <title>Work Is Never Stuck Behind the Admission Loop | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="393">
+<meta name="plan-version" content="394">
 <meta name="plan-modified" content="2026-11-14">
 </head>
 <body>
@@ -801,6 +801,9 @@
 </div>
 <div class="r-comment" data-section="s38" data-id="c-run-r-20261113T171457416329-review-of-ready-work-is-never-stuck-behind-t-s38-858617ce0660" data-who="reckon-build" data-when="2026-11-13T17:39:33.051Z">
     <div class="r-comment-body"><p>§38 review landed as a parsed record scoring goal_fidelity 18, evidence 18, scope_discipline 20, durability 19, fit 18, reuse 20 (total 113) with zero added failures and three non-blocking findings (a stale `held` docstring on `_record_stalls`, and two factual slips in the §38 evidence fragment).</p></div>
+</div>
+<div class="r-comment" data-section="s38" data-id="c-run-r-20261113T074832120170-ready-work-is-never-stuck-behind-t-s38" data-who="reckon-build" data-when="2026-11-14T08:22:35Z">
+    <div class="r-comment-body"><p>§38 landed — a request refused before launch now carries exactly one verdict row per pass and its next-pass stall count no longer grows: `refused-before-launch` joins a TERMINAL set in admission/shared.py, the pass&#x27;s held set unions it in admission/selection.py, and admission/verdicts.py:_record_stalls skips a request whose last verdict is terminal; gate 55 passed EXIT=0 at head against 54 passed EXIT=0 at base, importer arms add 0 failures (133 failed at head, 135 at base).</p></div>
 </div>
 <div class="r-comment" data-section="s39" data-id="c-run-r-20261108T104745074252-review-of-lander-leaves-red-run-to-coordinator-f1627c3c88b0" data-who="reckon-build" data-when="2026-11-08T11:11:30.155Z">
     <div class="r-comment-body"><p>Review of admission-loop §39: one blocking finding (record_landed_exemptions overwrites a coordinator's folded disposition with exempted on the next pass), reuse scored 5 for duplicating promotion_checks' failure-id readers.</p></div>
