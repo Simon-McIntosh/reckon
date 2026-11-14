@@ -660,7 +660,12 @@ def _record_repair_dispatch(
             if str(opened.get("round_id") or "") != round_id:
                 opened["count"] = int(opened.get("count") or 0) + 1
                 opened["round_id"] = round_id
+                opened["resumes"] = 0
             opened["attempts"] = attempt
+            # Only an opening write advances this count, and no other outcome
+            # resets it, so a refusal or a hold written between two resumes of
+            # one round cannot restart the round's count toward its cap.
+            opened["resumes"] = int(opened.get("resumes") or 0) + 1
             pointer[REPAIR_ROUNDS_FIELD] = opened
         pointer[REPAIR_DISPATCH_FIELD] = {
             "status": status,
@@ -1774,6 +1779,17 @@ def dispatch_repair_for_run(
         prior = (
             int((recorded or {}).get("attempt") or 0) if same_round and opened else 0
         )
+        # The attempt figure restarts whenever a non-opening outcome (a refusal
+        # while the attempt is still in flight, a hold, a lane wait) was written
+        # between two resumes, so a round alternating resume and refusal never
+        # reaches the cap through it. The run-wide round record counts resumes
+        # of the round in hand and nothing else writes it, so the cap reads the
+        # larger of the two.
+        rounds = durable.get(REPAIR_ROUNDS_FIELD)
+        if isinstance(rounds, Mapping) and str(rounds.get("round_id") or "") == str(
+            round_id or ""
+        ):
+            prior = max(prior, int(rounds.get("resumes") or 0))
         if (
             same_round
             and prior >= 1
