@@ -25,8 +25,8 @@
   pointer stopped admission ordering, the queue position a dispatch reports and
   every review compose, across all projects, until someone rewrote the record.</p>
   <p><code>admission_order_details</code> now leaves out the pointers it cannot
-  place and logs their run ids; <code>unplaceable_queued()</code> names them for
-  any caller that reports them. <code>readable_queued_at()</code> keeps a stamp
+  place and logs their run ids; <code>partition_placeable()</code> returns that
+  split to every caller that ranks or reports the queue. <code>readable_queued_at()</code> keeps a stamp
   that parses and replaces one that does not, and the three writers that could
   store an unusable arrival now stamp through it: <code>runs.queue_dispatch</code>
   for a caller that supplies none, and the two re-queue paths in
@@ -62,14 +62,13 @@
   placeable/unplaceable split lives in <code>queue_order.partition_placeable</code>
   and the admission pass takes it from there, so the order a surface reports and
   the order the pass ranks by cannot disagree.</p>
-  <p>A second case, at
-  <code>tests/test_a_queued_pointer_without_its_time_reads_no_place.py::test_the_admission_ordering_still_refuses_an_unreadable_time</code>,
-  still asserts that refusal and fails at this head. It lies outside this node's
-  write paths, so it is unchanged and reported for the coordinator; the edit it
-  needs is the one already made to the case above. A sweep of every module
-  importing <code>queue_order</code> or <code>admission.selection</code> reads
-  9 failed / 188 passed here against 8 failed / 182 passed at the base
-  revision, and that case is the one added failure.</p>
+  <p>The case in
+  <code>tests/test_a_queued_pointer_without_its_time_reads_no_place.py</code>
+  held the same refusal and now reads the placeable pointer ranked and the
+  unplaceable one named by the split. The queue-position reader in
+  <code>reckon/crew/admission/ordering.py</code> takes that same split rather
+  than reading the field itself, so every reader of the queue places a pointer
+  the same way.</p>
 </article>
 </body>
 </html>

@@ -12,7 +12,6 @@ from .shared import (
     Mapping,
     Sequence,
     datetime,
-    parse_utc,
     queue_order,
 )
 
@@ -225,13 +224,15 @@ def queued_placements(
     the place the ordering gives it.
     """
     moment = now or _service._now()
-    queued = [
+    candidates = [
         pointer
         for pointer in pointers
         if awaits_a_lane_slot(pointer)
         and (not lane or str(pointer.get("backend") or "") == lane)
-        and parse_utc(pointer.get("queued_at")) is not None
     ]
+    # The set-aside split is taken from the module that owns it, so this read
+    # and the pass's own ordering cannot disagree about which requests place.
+    queued, _set_aside = queue_order.partition_placeable(candidates)
     if not queued:
         return {}
     placements: dict[str, dict[str, Any]] = {}

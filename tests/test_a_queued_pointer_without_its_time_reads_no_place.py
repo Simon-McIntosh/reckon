@@ -8,9 +8,9 @@ live read, because the pointer can arrive without the field from anything that
 writes one.
 
 So a pointer whose arrival time cannot be read gets no place, while its run is
-still listed as queued. The ordering itself is untouched — it still refuses
-such a pointer — and one case here holds that too, so the narrowing stays in
-the reader rather than moving into the ordering the admission pass ranks by.
+still listed as queued. The ordering takes the same split from
+``partition_placeable``: it ranks the placeable pointers and names the one it
+set aside, and one case here holds that too.
 """
 
 from __future__ import annotations
@@ -152,9 +152,9 @@ def test_the_live_view_lists_the_unplaceable_run_as_queued(
     assert rows[UNREADABLE].get("reason") is None
 
 
-def test_the_admission_ordering_still_refuses_an_unreadable_time() -> None:
-    """The narrowing lives in the reader: the pass's own ordering is unchanged."""
-    from reckon.crew.queue_order import admission_order
+def test_the_admission_ordering_sets_aside_an_unreadable_time() -> None:
+    """The ordering places the readable pointer and names the one it cannot place."""
+    from reckon.crew.queue_order import admission_order, partition_placeable
 
     now = datetime.now(tz=UTC)
     queued = [
@@ -166,5 +166,9 @@ def test_the_admission_ordering_still_refuses_an_unreadable_time() -> None:
         },
         {"run_id": UNREADABLE, "session": SESSION, "backend": LANE},
     ]
-    with pytest.raises(ValueError, match="no readable queued_at"):
-        admission_order(queued, [], now=now)
+    order = admission_order(queued, [], now=now)
+
+    assert [pointer["run_id"] for pointer in order] == [PLACED_OLDER]
+    placeable, unplaceable = partition_placeable(queued)
+    assert [pointer["run_id"] for pointer in placeable] == [PLACED_OLDER]
+    assert [pointer["run_id"] for pointer in unplaceable] == [UNREADABLE]
