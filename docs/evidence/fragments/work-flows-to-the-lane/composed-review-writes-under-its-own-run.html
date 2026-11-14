@@ -1,0 +1,60 @@
+<section id="composed-review-writes-under-its-own-run-landing">
+  <h2>A plan review's own promotion reads the record its brief named</h2>
+
+  <p>A plan review is composed under a review id its report directory is named
+  for, and the crew run that actually reads the plan is launched under a
+  different id. The composed brief names the report path under the composed
+  directory, so that is the only place a reviewer can write its record. The
+  review run's own promotion read only a run review's head-keyed path, which no
+  plan review declares, so it refused every delivered plan review with
+  <code>the review run stored no readable record for the run it read</code>
+  while the report sat exactly where the brief had sent it. A review whose
+  record its own promotion cannot read is lost, and the plan keeps owing a
+  review.</p>
+
+  <p><code>review_self_state</code> in
+  <code>reckon/crew/recovery_review_acceptance.py</code> now resolves a plan
+  review through the join the promotion step already uses: the composed
+  directory's <code>dispatch.json</code> names the crew run that ran it, and
+  <code>promotion_checks._delivered_plan_review_for_run</code> turns that into
+  the delivered report. A delivered report makes the review ready and promotion
+  stores it; a review that ended with no delivered report under the plan's
+  report root is refused, naming that root. Run reviews take the same path they
+  took before.</p>
+
+  <table id="composed-review-writes-under-its-own-run-measures">
+    <caption>Gate run on <code>all_debug</code>; logs are in the run directory,
+    each starting with its revision, tree, cwd and imported module, and ending
+    with its <code>EXIT=</code> line.</caption>
+    <thead><tr><th>Arm</th><th>Command and result</th></tr></thead>
+    <tbody>
+      <tr><td>Base at <code>3b1cb4603e</code> (job 1315179)</td>
+        <td><code>PYTHONPATH=. .venv/bin/python -m pytest
+        -p no:cacheprovider -q tests/test_staged_write_inventory.py</code> —
+        51 passed in 11.74 s; <code>EXIT=0</code></td></tr>
+      <tr><td>After at <code>3a3c47cd7f</code> (job 1315182)</td>
+        <td><code>PYTHONPATH=. .venv/bin/python -m pytest
+        -p no:cacheprovider -q
+        tests/test_composed_review_writes_under_its_own_run.py
+        tests/test_staged_write_inventory.py</code> — 53 passed in 12.80 s;
+        <code>EXIT=0</code> (two new cases)</td></tr>
+      <tr><td>Negative control: promotion reads only the run id</td>
+        <td>1 failed in 3.32 s; <code>EXIT=1</code>, refusing
+        <code>the review run stored no readable record for the plan it read: no
+        delivered report under .../reports/sample/plan-review/fixture names
+        it</code> where the delivered report is present and parsed</td></tr>
+    </tbody>
+  </table>
+
+  <p>Two cases are added: a stub reviewer that reads the report path out of the
+  composed brief and writes only there — asserting the path sits inside the
+  composed directory — after which the run's own promotion promotes it and the
+  plan-review store holds the record; and the negative control above, which
+  removes the composed-directory join so promotion sees only the run id.</p>
+
+  <p>The reproduction was confirmed before the repair: with the report written
+  at the brief's path and the run's exit recorded, the run's own promotion was
+  refused for a stored record it did not find. Across the test files that
+  import the changed module, 2 failures and 3 errors appear at both the base
+  revision and the head, identical ids, so this change adds none of them.</p>
+</section>
