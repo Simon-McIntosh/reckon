@@ -3510,6 +3510,8 @@ def crew_complete(
     """
     from reckon.crew.promotion_requests import COMMAND_REPLY, request_promotion
 
+    if land and not dry_run:
+        _refuse_a_landing_without_its_pointer(run_id)
     if not wait and not dry_run and COMMAND_REPLY.get() is None:
         parameters = dict(locals())
         for name in ("COMMAND_REPLY", "request_promotion"):
@@ -3740,6 +3742,19 @@ def crew_complete(
             raise click.exceptions.Exit(exit_code)
         return
     _emit_crew_result(result, pretty)
+
+
+def _refuse_a_landing_without_its_pointer(run_id: str) -> None:
+    from reckon.crew import pending_landing, runs
+
+    try:
+        runs.read_pointer(run_id)
+    except runs.CrewError as exc:
+        record = pending_landing.pending_dir() / f"{run_id}.json"
+        raise click.ClickException(
+            f"cannot land {run_id} without a live pointer; "
+            f"pending landing record: {record}. {exc}"
+        ) from exc
 
 
 def _refuse_a_plain_complete_off_the_branch(
