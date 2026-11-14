@@ -65,8 +65,27 @@
             <td>1 failed, <code>EXIT=1</code></td>
             <td><code>logs/negative-control.log</code></td>
           </tr>
+          <tr>
+            <td>suite arm, base 18 files</td>
+            <td><code>47d4d53612</code></td>
+            <td>8 failed, 160 passed, <code>EXIT=1</code></td>
+            <td><code>logs/base-arm.log</code></td>
+          </tr>
+          <tr>
+            <td>suite arm, head 18 files</td>
+            <td><code>5213177784</code></td>
+            <td>8 failed, 160 passed, <code>EXIT=1</code></td>
+            <td><code>logs/head-arm.log</code></td>
+          </tr>
         </tbody>
       </table>
+      <p>Both arms ran on <code>all_debug</code>, one at a time, from
+        <code>git archive</code> trees in a mktemp directory with <code>-n 4</code>, over the
+        done-when test plus every test file importing
+        <code>reckon.crew.promotion_records</code>. Their eight failure ids are identical
+        (<code>KeyError: 'picker_selection'</code> in the pick tests, an unset promotion
+        barrier in the station tests) and reproduce serially without xdist, so the
+        added-failure count is zero.</p>
       <p>The negative control is the one the plan declares: resolving over the write paths
         writes <code>tests/test_deleted.py</code> into the head command, so
         <code>test_each_tree_resolves_the_template_over_the_files_it_holds</code> fails on
