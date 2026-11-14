@@ -21,6 +21,7 @@ from ._imports import (
     LanePaused,
     Mapping,
     Path,
+    RosterFull,
     TaskNode,
     _actionable_budget_hold,
     _adjacent_live_peers,
@@ -1002,6 +1003,29 @@ def dispatch(
     resolution.lane_gate = lane_gate
     if lane_gate.get("state") in _LANE_GATE_WAITING_STATES:
         raise LanePaused(lane_gate)
+
+    # A full placement roster is a wait for a seat, not a refusal: a direct
+    # local dispatch that meets it is stored as a queued request exactly as a
+    # router hold is, so it launches when a seat frees rather than being lost
+    # after its run id was printed. A request the admission pass is launching is
+    # already queued, and its later roster refusal restores it, so it is not
+    # queued a second time here.
+    if is_local and not shadow_lineage and not admission_launch:
+        try:
+            _refuse_over_concurrency_ceiling(
+                backend_name, backend, project, exclude_run_ids=(run_id,)
+            )
+        except RosterFull as roster:
+            reason = (
+                "the placement reservation's roster is full "
+                f"({roster.occupancy}/{roster.limit}); the request waits for a seat"
+            )
+            lane_allowance = {
+                **lane_allowance,
+                "held": True,
+                "reason": reason,
+                "detail": str(roster),
+            }
 
     # The router's allowance is checked before creating a worktree. A local
     # hold records the request as queued; other holds remain transient. The
