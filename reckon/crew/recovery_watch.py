@@ -1880,17 +1880,18 @@ def _fleet_counts(
         for snapshot in rows
     )
     reviewing = sum(
-        state in FLEET_WORKING_STATES
+        str(snapshot.get("state") or "") in FLEET_WORKING_STATES
         and str(snapshot.get("role") or "") == REVIEW_ROLE
-        for snapshot, state in zip(rows, states)
+        for snapshot in rows
     )
     # A delivered run under a live repair attempt is at work again. Only an
     # opening repair record says the round has a worker; the record's own
     # meaning, including which statuses are openings, belongs to the reflex's
     # writer and is read from it here rather than restated.
     repairing = sum(
-        state in FLEET_UNPROMOTED_STATES and bool(snapshot.get("repair_in_flight"))
-        for snapshot, state in zip(rows, states)
+        str(snapshot.get("state") or "") in FLEET_UNPROMOTED_STATES
+        and bool(snapshot.get("repair_in_flight"))
+        for snapshot in rows
     )
     counts = {
         "working": sum(state in FLEET_WORKING_STATES for state in states)

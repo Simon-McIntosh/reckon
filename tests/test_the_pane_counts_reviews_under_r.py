@@ -192,5 +192,8 @@ def test_the_repair_record_says_whether_a_worker_is_answering(
     """
     pointer = {"repair_dispatch": {"status": status, "round_id": "r-abc@deadbeef"}}
     assert recovery_watch._repair_attempt_live(pointer) is live
-    assert recovery_watch._repair_attempt_live({"repair_dispatch": "not a mapping"}) is False
+    assert (
+        recovery_watch._repair_attempt_live({"repair_dispatch": "not a mapping"})
+        is False
+    )
     assert recovery_watch._repair_attempt_live({}) is False
