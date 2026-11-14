@@ -53,6 +53,16 @@
       "note": "s48 is split into three sections, each with its own negative control: s48 the non-blocking reader, s49 the unchanged reconcile writing only its stamp, s50 the per-run lookup",
       "reason": "",
       "when": "2026-11-14T13:03:31.111941+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "1fb615a0-2801-4418-bbb4-c2914719e520",
+      "commit": "e6e17e9bb772c0f2be1816011f00fdee954954f0",
+      "commit_basis": "edit",
+      "finding": "reasoning-1",
+      "note": "s49 keeps the recorded store identity in a small stamp beside the document, which an unchanged reconcile advances, so the next read settles without rewriting the 4.8 MB document",
+      "reason": "",
+      "when": "2026-11-14T13:03:43.987052+00:00"
     }
   ],
   "responses": {
@@ -64,6 +74,15 @@
       "note": "the per-pointer measure moved to s50, which counts store names examined through a recording stand-in over the index entries and any listing, and requires equal counts for 2,000 and 20,000 records, bounded by the classified runs' own records",
       "reason": "",
       "when": "2026-11-14T13:03:19.630083+00:00"
+    },
+    "reasoning-1": {
+      "action": "acted",
+      "by": "1fb615a0-2801-4418-bbb4-c2914719e520",
+      "commit": "e6e17e9bb772c0f2be1816011f00fdee954954f0",
+      "commit_basis": "edit",
+      "note": "s49 keeps the recorded store identity in a small stamp beside the document, which an unchanged reconcile advances, so the next read settles without rewriting the 4.8 MB document",
+      "reason": "",
+      "when": "2026-11-14T13:03:43.987052+00:00"
     },
     "single_goal-1": {
       "action": "acted",
