@@ -51,6 +51,11 @@ REPRODUCED: a run with no live pointer and no ledger row still raises a row
 run r-gone-promoted-and-landed has pointer: False</code></pre>
   <p>So a run promoted, landed, discarded or resumed still raises <code>sweep-failed</code> after a pass, which is the case the section names. No such row exists in the live crew home at this instant. The route that raises one has no settlement path, so the row returns as soon as a sweep fails once for a session that then stops sweeping.</p>
 
+  <h3>The acknowledgement route, measured</h3>
+  <p>The section also asks that <code>crew ack</code> accept any run that still raises a row, whatever its pointer or ledger state. It does not. A run with neither a pointer nor a ledger row is refused unless the caller passes <code>--project</code>, and a row's own next command does not carry it, so the command the coordinator is shown cannot clear the row. Measured directly (<code>probe_ack_gone_run.py</code>, exit 0):</p>
+  <pre><code>REFUSED: CrewError - no live run 'r-gone-with-no-pointer-or-ledger', no ledger record for it, and no --project to file its deferral under (looked in: no mounted project)</code></pre>
+  <p>An acknowledgement does clear a row when it is accepted: the view partitions acknowledged rows out of the duty list, and the live home carries 21 such rows at this instant (13 <code>worktree-held</code>, 3 <code>blocked</code>, 2 <code>promotable-stale</code>, 2 <code>run-queued</code>, 1 <code>review-in-flight</code>). So the acknowledgement path is sound where it admits a run; the gap is in what it admits.</p>
+
   <h3>What the section still needs, and where it lives</h3>
   <p>Three changes are needed, none of them in this node's write paths: <code>reckon/crew/station_obligations.py</code>, to drop a stored sweep failure whose run has no live pointer and no ledger row and to prune the stored entry as it is read; <code>reckon/crew/runs.py</code>, to accept an acknowledgement for a run whose pointer and ledger row are both gone, which today needs <code>--project</code> and otherwise refuses; and a test module under <code>tests/</code> that raises each of the four row kinds and settles the section each way.</p>
   <p>Because this node holds no test path, it runs no suite pair and writes no red log. The reproduction above is the only falsifying evidence it could produce inside its scope.</p>
