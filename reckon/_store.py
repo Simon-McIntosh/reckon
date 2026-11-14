@@ -71,6 +71,7 @@ from collections.abc import Callable, Mapping, Sequence
 from contextlib import ExitStack, contextmanager, suppress
 from contextvars import ContextVar
 from datetime import UTC, date, datetime
+from html.parser import HTMLParser
 from pathlib import Path
 from typing import IO, Any, TextIO
 
@@ -678,6 +679,92 @@ def write_json_atomically(
 # ── HTML-state helpers ────────────────────────────────────────────────────
 
 
+class _AuthoredChildCounter(HTMLParser):
+    """Count each section's authored direct children in one raw pass.
+
+    The read-time diagnostic must answer "does this empty-parsed section hold
+    authored children, and how many?" for every section id in the document.
+    A soup build per section answers the same question at the price of a soup
+    build per section, and a read whose state came from a persisted parse has
+    already paid for the document once — this counter is the diagnostic's own
+    read of the raw text, so that read answers without a second tree.
+
+    The count matches what the soup walk reports: the first ``section``
+    carrying a given ``data-reckon`` value, its direct element children, and
+    none of the structural children the renderers regenerate.
+    """
+
+    def __init__(
+        self,
+        wanted: Sequence[str],
+        *,
+        structural: Sequence[str],
+        void: Sequence[str],
+    ) -> None:
+        super().__init__(convert_charrefs=False)
+        self._wanted = frozenset(wanted)
+        self._structural = frozenset(structural)
+        self._void = frozenset(void)
+        self._open: list[tuple[str, str | None]] = []
+        self.counts: dict[str, int] = {}
+
+    def _claim(self, attrs) -> str | None:
+        """Record the section id this element opens, when it opens a wanted one.
+
+        Only the first section carrying a given ``data-reckon`` value is the
+        one the diagnostic names, so a repeat of the same value opens no second
+        count.
+        """
+
+        values = dict(attrs)
+        reckon_id = values.get("data-reckon")
+        if reckon_id not in self._wanted or reckon_id in self.counts:
+            return None
+        self.counts[reckon_id] = 0
+        return reckon_id
+
+    def _count_child(self, tag: str) -> None:
+        parent = self._open[-1][1] if self._open else None
+        if parent is not None and tag not in self._structural:
+            self.counts[parent] += 1
+
+    def handle_starttag(self, tag: str, attrs) -> None:
+        self._count_child(tag)
+        claimed = self._claim(attrs)
+        if claimed is not None:
+            self._open.append((tag, claimed))
+        elif tag not in self._void:
+            self._open.append((tag, None))
+
+    def handle_startendtag(self, tag: str, attrs) -> None:
+        self._count_child(tag)
+        self._claim(attrs)
+
+    def handle_endtag(self, tag: str) -> None:
+        # The innermost open element with this name closes, and everything it
+        # encloses closes with it; a stray end tag opens nothing to close.
+        for index in range(len(self._open) - 1, -1, -1):
+            if self._open[index][0] == tag:
+                del self._open[index:]
+                return
+
+
+def _authored_child_counts(
+    html_text: str, section_ids: Sequence[str]
+) -> dict[str, int]:
+    """Each section's authored direct-child count, from one raw pass."""
+    from reckon import _plan_html
+
+    counter = _AuthoredChildCounter(
+        section_ids,
+        structural=_plan_html._STRUCTURAL_SECTION_CHILDREN,
+        void=_plan_html._VOID_TAGS,
+    )
+    counter.feed(html_text or "")
+    counter.close()
+    return counter.counts
+
+
 def _unparsed_section_warnings(html_text: str, state: dict[str, Any]) -> list[str]:
     """Warn about data-reckon sections holding authored children the parser
     did not recognise.
@@ -690,14 +777,23 @@ def _unparsed_section_warnings(html_text: str, state: dict[str, Any]) -> list[st
     state it already gets back instead of meeting it only as a write refusal.
     Sections absent from ``state`` are covered too: an absent section has no
     authored children either, so nothing is warned about.
+
+    The counts come from one raw pass over the text, not from a soup per
+    section: a read answered by the persisted parse has already paid to know
+    the document, and this diagnostic only has to look at the bytes. The
+    counts are computed on the first section that needs one, so a document
+    whose every section parsed pays nothing.
     """
     from reckon import _plan_html
 
     out: list[str] = []
+    counts: dict[str, int] | None = None
     for reckon_id in _plan_html.SECTION_IDS:
         if state.get(reckon_id):
             continue  # parsed content is present — nothing unrecognised
-        count = _plan_html._authored_child_count(html_text, reckon_id)
+        if counts is None:
+            counts = _authored_child_counts(html_text, _plan_html.SECTION_IDS)
+        count = counts.get(reckon_id, 0)
         if count == 0:
             continue  # missing or genuinely empty section — nothing at risk
         spelling = _plan_html._SECTION_RECOGNISED_SPELLING.get(reckon_id)
