@@ -1926,13 +1926,18 @@ def _index_holding(directory: Path) -> Path | None:
 
 
 @contextmanager
-def _index_lock(directory: Path) -> Iterator[bool]:
+def _index_lock(directory: Path, *, wait: bool = True) -> Iterator[bool | None]:
     """Hold the store's index lock, or report that it could not be taken.
 
     The lock file sits beside the document so a writer on any node serialises
     against every other node's writer. A directory that cannot hold the lock
     file, or a filesystem without advisory locks, yields ``False`` and the
     caller writes the document unlocked.
+
+    ``wait`` false is for a reader: a lock another process holds yields
+    ``None`` at once rather than blocking, and the reader serves the document
+    as last persisted. A producer, station or follower thread reading the store
+    must never wait on another process's index write.
     """
     import fcntl
 
@@ -1947,7 +1952,13 @@ def _index_lock(directory: Path) -> Iterator[bool]:
         return
     with handle:
         try:
-            fcntl.flock(handle.fileno(), fcntl.LOCK_EX)
+            fcntl.flock(
+                handle.fileno(),
+                fcntl.LOCK_EX if wait else fcntl.LOCK_EX | fcntl.LOCK_NB,
+            )
+        except BlockingIOError:
+            yield None
+            return
         except OSError:
             yield False
             return
@@ -2166,6 +2177,16 @@ def record_written(path: Path, record: Mapping[str, Any]) -> None:
     _index_stored_record(path, record)
 
 
+# The directory identities this process has reconciled and found nothing to
+# change, each with the document version it was checked at. A short-lived file
+# another writer creates and removes in the store moves the directory's
+# identity without moving any record, and recording the new identity meant
+# rewriting the whole document -- megabytes on a shared filesystem, every few
+# seconds. Remembering the check here costs nothing on disk; a moved identity
+# or a new document version is checked again.
+_SETTLED_IDENTITIES: dict[str, tuple[tuple[int, ...], int]] = {}
+
+
 def reconcile_foreign_write(directory: Path) -> int:
     """Pick up added, removed or atomically replaced records without file stats.
 
@@ -2181,8 +2202,16 @@ def reconcile_foreign_write(directory: Path) -> int:
     identity = _store_directory_identity(directory)
     if identity is None or identity == tuple(doc.get("directory_identity") or ()):
         return 0
+    settled = (tuple(identity), int(doc.get("version") or 0))
+    if _SETTLED_IDENTITIES.get(str(directory)) == settled:
+        return 0
     changed = 0
-    with _index_lock(directory):
+    with _index_lock(directory, wait=False) as locked:
+        if locked is None:
+            # Another process holds the index: it is writing or reconciling,
+            # and the document this reader already has is at most that one
+            # write behind.
+            return 0
         doc = _read_index_document(directory) or doc
         identity = _store_directory_identity(directory)
         if identity is None or identity == tuple(doc.get("directory_identity") or ()):
@@ -2240,6 +2269,13 @@ def reconcile_foreign_write(directory: Path) -> int:
             log.append([doc["version"], run_id])
             touched.add(run_id)
             changed += 1
+        if not changed:
+            # Nothing the index describes moved, so nothing is written.
+            _SETTLED_IDENTITIES[str(directory)] = (
+                tuple(identity),
+                int(doc.get("version") or 0),
+            )
+            return 0
         for run_id in touched:
             runs[run_id] = _run_digest(entries, run_id)
         del log[:-_INDEX_LOG_LIMIT]
