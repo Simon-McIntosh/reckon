@@ -21,10 +21,8 @@ from pathlib import Path
 import pytest
 
 from reckon.crew import findings as findings_module
-from reckon.crew import recovery
-from reckon.crew import recovery_review_subject
+from reckon.crew import recovery, recovery_review_subject, review_dispositions, runs
 from reckon.crew import review as review_module
-from reckon.crew import review_dispositions, runs
 
 PROJECT = "plain-text-finding-fixture"
 SESSION = "coordinator-fixture"
@@ -134,12 +132,18 @@ def _write_run(config_home: Path, repo: Path, *, head: str) -> None:
     runs._write_json(
         runs.pointer_path(RUN),
         {
-            "run_id": RUN, "project": PROJECT, "session": SESSION,
-            "repo": str(repo), "worktree": str(repo),
-            "process_alive": False, "launch": "in-harness", "role": "implement",
+            "run_id": RUN,
+            "project": PROJECT,
+            "session": SESSION,
+            "repo": str(repo),
+            "worktree": str(repo),
+            "process_alive": False,
+            "launch": "in-harness",
+            "role": "implement",
             "manifest_path": str(manifest),
             "node": {
-                "id": RUN, "plan": "fixture-plan",
+                "id": RUN,
+                "plan": "fixture-plan",
                 "write_paths": ["pkg/mod.py"],
                 "goal": "expose the reviewed value",
                 "done_when": "the value reads 3 and its test passes",
@@ -174,7 +178,12 @@ def world(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
     _store_earlier_review(RUN, base=seed, head=reviewed)
     repair = _commit(repo, {"pkg/mod.py": "VALUE = 2\n"}, "fix: stop swallowing it")
     _git(repo, "update-ref", "refs/remotes/origin/main", reviewed)
-    return {"config_home": config_home, "repo": repo, "reviewed": reviewed, "repair": repair}
+    return {
+        "config_home": config_home,
+        "repo": repo,
+        "reviewed": reviewed,
+        "repair": repair,
+    }
 
 
 def _compose_the_re_review(world: dict) -> str:
@@ -193,9 +202,7 @@ def test_a_re_review_brief_lists_plain_text_findings_with_severities(world):
 
     assert recovery_review_subject.RE_REVIEW_HEADING in text
     assert f"Previously reviewed head: {world['reviewed']}" in text
-    assert (
-        f"finding 0 [blocking]: {BLOCKING_CLAIM} — folded:{FOLDED_INTO}" in text
-    )
+    assert f"finding 0 [blocking]: {BLOCKING_CLAIM} — folded:{FOLDED_INTO}" in text
     assert (
         f"finding 1 [non-blocking]: {NON_BLOCKING_CLAIM} — "
         f"exempted:{EXEMPTION_REASON}" in text
