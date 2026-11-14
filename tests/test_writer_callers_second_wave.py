@@ -451,19 +451,35 @@ def test_checkpoint_write_delegates(tmp_path, monkeypatch):
     assert kwargs["fsync_directory"] is True
 
 
-def test_review_record_delegates(tmp_path, monkeypatch):
-    from reckon.crew import review
+def test_review_record_delegates(tmp_path, monkeypatch, recording_umask):
+    from reckon import _store
+    from reckon.crew import review_records
 
-    calls = _capture(monkeypatch, review)
-    _drive_review(monkeypatch, tmp_path / "rev.json")
+    indexed = []
+    atomic = []
+    real_indexed = review_records.record_written
+    real_atomic = _store.write_json_atomically
 
-    assert len(calls) == 1
-    kwargs = calls[0]["kwargs"]
-    assert kwargs["indent"] == 2
-    assert kwargs["sort_keys"] is True
-    assert kwargs["mode"] is None
-    assert kwargs["fsync"] is False
-    assert kwargs["create_parents"] is False
+    def indexed_write(path, record):
+        indexed.append((path, record))
+        return real_indexed(path, record)
+
+    def atomic_write(path, payload, **kwargs):
+        atomic.append(kwargs)
+        return real_atomic(path, payload, **kwargs)
+
+    monkeypatch.setattr(review_records, "record_written", indexed_write)
+    monkeypatch.setattr(_store, "write_json_atomically", atomic_write)
+    path = tmp_path / "rev.json"
+    _drive_review(monkeypatch, path)
+
+    assert indexed == [(path, CANONICAL_PAYLOAD)]
+    assert len(atomic) == 1
+    assert atomic[0]["indent"] == 2
+    assert atomic[0]["sort_keys"] is True
+    assert atomic[0]["mode"] is None
+    assert atomic[0]["fsync"] is False
+    assert _written(path) == (CANONICAL_INDENT_SORTED, 0o666 & ~UMASK)
 
 
 def test_paid_lanes_delegates(tmp_path, monkeypatch):

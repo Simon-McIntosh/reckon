@@ -1,24 +1,9 @@
-"""The store index re-reads only what changed, and survives the process.
+"""Writer-maintained review facts survive process restarts and selective updates.
 
-A lookup whose record is not filed under the run it reviews is answered from an
-index of the store, built once per store directory per process. That index used
-to be rebuilt whole whenever the directory's identity moved, which on a busy
-fleet is nearly every read, and every fresh process paid the whole pass again:
-for one project's store that is thousands of files and tens of megabytes of
-JSON, on the path a dispatch, a completion or a recovery takes.
-
-The index is now updated from one directory listing, parsing only the files
-whose name is new or whose stat identity has moved, and it is persisted per
-store directory in a node-local cache every process on the node shares, so a
-fresh process starts from what the last one left instead of parsing the store.
-
-The parse count is the measure, and it is taken on the index's own parse, so
-the read a lookup makes of the record it selected — which is still read again
-from disk so a rewrite in place is answered current — is outside it.
-
-Every environment-resolved directory is pointed at a temporary path, including
-the node-local cache directory, so nothing here reads or writes the operator's
-own store or cache.
+A missing or foreign-stamped document is rebuilt from one store listing.
+Indexed writes update only their record; unchanged readers reuse the persisted
+facts without parsing records. Every updated answer is also checked against a
+fresh rebuild, including the selected record's body and dispositions.
 """
 
 from __future__ import annotations
@@ -87,12 +72,18 @@ def parses(monkeypatch: pytest.MonkeyPatch) -> list[str]:
     """Every file the index's own parse read, in order."""
     counted: list[str] = []
     original = records_module._index_entry
+    original_facts = records_module._entry_facts
 
     def counting(path: Path, info: Any) -> dict[str, Any] | None:
         counted.append(str(path))
         return original(path, info)
 
+    def counting_facts(name, record, data):
+        counted.append(name)
+        return original_facts(name, record, data)
+
     monkeypatch.setattr(records_module, "_index_entry", counting)
+    monkeypatch.setattr(records_module, "_entry_facts", counting_facts)
     return counted
 
 
@@ -104,12 +95,17 @@ def _lookup(directory: Path, run_id: str, head: str | None = None) -> Any:
 def _forget_the_process() -> None:
     """Drop what this process holds, the way a new process would hold nothing."""
     records_module._STORE_INDEXES.clear()
+    records_module._DOCUMENT_MAPS.clear()
 
 
 def _from_scratch(directory: Path, run_id: str, head: str | None = None) -> Any:
     """The same lookup answered after the index is discarded and rebuilt."""
     _forget_the_process()
-    cache = records_module._index_cache_path(directory)
+    cache = (
+        records_module._index_document_path(directory)
+        if records_module._indexable(directory)
+        else records_module._index_cache_path(directory)
+    )
     if cache.exists():
         cache.unlink()
     return _lookup(directory, run_id, head)
@@ -141,8 +137,8 @@ def _store_under(base: Path, run_id: str) -> Path:
 def test_the_first_build_parses_every_record_once(
     store: Path, parses: list[str]
 ) -> None:
-    assert _lookup(store, ABSENT) == (None, None)
-    assert len(parses) == STORE_SIZE, "the first lookup reads the whole store once"
+    assert _from_scratch(store, ABSENT) == (None, None)
+    assert len(parses) == STORE_SIZE, "a missing index reads the whole store once"
 
 
 def test_adding_a_record_parses_only_the_new_file(

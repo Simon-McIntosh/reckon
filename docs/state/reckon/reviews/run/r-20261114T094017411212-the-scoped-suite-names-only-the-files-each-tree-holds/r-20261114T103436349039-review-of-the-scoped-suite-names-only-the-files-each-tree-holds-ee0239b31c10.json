@@ -1,0 +1,44 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-11-14T10:52:43.447Z",
+  "dispatched_at": "2026-11-14T10:35:51Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261114T094017411212-the-scoped-suite-names-only-the-files-each-tree-holds/logs/head-arm.log",
+      "line": 6,
+      "severity": "blocking",
+      "text": "the after-arm gate log was overwritten by a re-run killed at 10:20:20Z and now ends with an ellipsis, carrying no pytest summary and no EXIT= line, so promotion cannot read the after arm's exit status while manifest.md:18 claims exit_status 0 and completed true for it."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261114T094017411212-the-scoped-suite-names-only-the-files-each-tree-holds/manifest.md",
+      "line": 18,
+      "severity": "non-blocking",
+      "text": "after_suite names revision cb720909fe while the reviewed head is ee0239b31c and the log at that path is headed ee0239b31c, so the recorded after arm describes a superseded revision."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261114T094017411212-the-scoped-suite-names-only-the-files-each-tree-holds/manifest.md",
+      "line": 7,
+      "severity": "non-blocking",
+      "text": "commits omits ee0239b31c, which is the reviewed head and carries a landed change to the fragment, so the manifest understates what was committed."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The node goal is to name in the scoped suite only the test files each tree holds; the landed change is the evidence fragment at docs/evidence/fragments/scoring-should-stop-a-promotion/the-scoped-suite-names-only-the-files-each-tree-holds.html, and reckon/crew/promotion_records.py:797:_scoped_suite_command already implements that resolution at the node's base revision.\nVERDICT done_when: The done_when asks that a test in tests/test_a_scoped_suite_names_only_present_files.py fail at the base and be refused for an arm collecting nothing; the manifest records a base arm of 56 passed EXIT=0 at fb92136ada, so the \"fails at the base\" limb was instead measured against the pre-rule module (5 failed EXIT=1 in logs/base-prerule.log), which the fragment states at docs/evidence/fragments/scoring-should-stop-a-promotion/the-scoped-suite-names-only-the-files-each-tree-holds.html:57.\nVERDICT write_paths: The declared write paths are reckon/crew/promotion_records.py, tests/test_a_scoped_suite_names_only_present_files.py, the evidence fragment and docs/figures/; the diff of fb92136ada..ee0239b changes only the evidence fragment.\nVERDICT manifest: Read the manifest; it reports status complete, a head arm of 56 passed EXIT=0 and a base arm of 56 passed EXIT=0, and names logs/head-arm.log as the after-suite log, which is truncated and carries no EXIT= line.\nVERDICT diff: Read both commits (cb720909fe and ee0239b31c) against fb92136ada; they touch one file, carry conventional subjects and bodies, and change only evidence-fragment prose.\nCALL_SITES: reckon/crew/dispatching/suite.py:78, reckon/crew/promotion_records.py:836, reckon/crew/promotion_records.py:909, reckon/crew/promotion_records.py:1085, reckon/crew/recovery_repair_dispatch.py:1297, reckon/crew/resumption.py:1706\nSCORE goal_fidelity: 16\nJUSTIFICATION goal_fidelity: docs/evidence/fragments/scoring-should-stop-a-promotion/the-scoped-suite-names-only-the-files-each-tree-holds.html:40 states the per-tree resolution the file's own section describes, and reckon/crew/promotion_records.py:797 already implements it at base.\nSCORE evidence: 11\nJUSTIFICATION evidence: logs/base-arm.log:7-8 records 56 passed and EXIT=0, but logs/head-arm.log ends at line 6 with an ellipsis and no summary or EXIT= line, so the after arm the manifest records at manifest.md:18 is unreadable as delivered.\nSCORE scope_discipline: 18\nJUSTIFICATION scope_discipline: git diff fb92136ada..ee0239b changes only docs/evidence/fragments/scoring-should-stop-a-promotion/the-scoped-suite-names-only-the-files-each-tree-holds.html, inside the declared write paths.\nSCORE durability: 15\nJUSTIFICATION durability: The diff adds no assertion of its own; the capability it documents is guarded by tests/test_a_scoped_suite_names_only_present_files.py:199-206, which the manifest records failing 5 of 5 against the pre-rule module at logs/base-prerule.log:1.\nSCORE fit: 16\nJUSTIFICATION fit: docs/evidence/fragments/scoring-should-stop-a-promotion/the-scoped-suite-names-only-the-files-each-tree-holds.html:1-18 follows the existing evidence-fragment meta convention, and both commit subjects are conventional with bodies and no banned identifiers.\nSCORE reuse: 20\nJUSTIFICATION reuse: The diff adds no definition; a search of reckon/crew for per-tree test-file resolution found the existing owner reckon/crew/promotion_records.py:797:_scoped_suite_command, which the fragment documents rather than duplicating.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261114T094017411212-the-scoped-suite-names-only-the-files-each-tree-holds/logs/head-arm.log:6 blocking: the after-arm gate log was overwritten by a re-run killed at 10:20:20Z and now ends with an ellipsis, carrying no pytest summary and no EXIT= line, so promotion cannot read the after arm's exit status while manifest.md:18 claims exit_status 0 and completed true for it.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261114T094017411212-the-scoped-suite-names-only-the-files-each-tree-holds/manifest.md:18 non-blocking: after_suite names revision cb720909fe while the reviewed head is ee0239b31c and the log at that path is headed ee0239b31c, so the recorded after arm describes a superseded revision.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261114T094017411212-the-scoped-suite-names-only-the-files-each-tree-holds/manifest.md:7 non-blocking: commits omits ee0239b31c, which is the reviewed head and carries a landed change to the fragment, so the manifest understates what was committed.\n",
+  "review_run_id": "r-20261114T103436349039-review-of-the-scoped-suite-names-only-the-files-each-tree-holds-ee0239b31c10",
+  "reviewed_base_sha": "fb92136adacd509b805dc48763b7c80a81f9a16d",
+  "reviewed_head_sha": "ee0239b31c10838cd6deb2c8cb75413d4ceae8fe",
+  "reviewed_run_id": "r-20261114T094017411212-the-scoped-suite-names-only-the-files-each-tree-holds",
+  "scores": {
+    "durability": 15,
+    "evidence": 11,
+    "fit": 16,
+    "goal_fidelity": 16,
+    "reuse": 20,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-14T11:22:17.389028+00:00",
+  "total": 96
+}

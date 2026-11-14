@@ -26,6 +26,7 @@ from reckon.crew import (
     runs,
 )
 from reckon.crew.node import PlanReviewMissingError, TaskNode
+from reckon.crew.repair import PLAN_REVIEW_RUBRIC_SUFFIX
 
 CONFIG = {
     "default_backend": "worker",
@@ -115,7 +116,14 @@ def test_composer_carries_rubric_snapshot_and_sidecar(project, rubric, items):
     _, repo, path = project
     subject = _subject(rubric=rubric)
     fields = recovery._review_dispatch_fields(subject)
-    assert fields["node_id"] == "plan-review-of-fixture"
+    # The design rubric names itself after the plan, so two reviews of one plan
+    # are two node ids at dispatch; the content rubric keeps the bare id every
+    # stored pointer already carries.
+    assert fields["node_id"] == (
+        f"plan-review-of-fixture{PLAN_REVIEW_RUBRIC_SUFFIX}"
+        if rubric == "design"
+        else "plan-review-of-fixture"
+    )
     brief = Path(fields["brief"]).read_text()
     assert all(item in brief for item in items)
     assert str(path) in brief and str(repo) in brief
@@ -310,7 +318,9 @@ def test_review_plan_dry_run_resolves_the_shared_composition(project):
     )
     assert result.exit_code == 0, result.output
     payload = json.loads(result.stdout)
-    assert payload["node"]["id"] == "plan-review-of-fixture"
+    # A dry run with no rubric names the design rubric, which composes under the
+    # plan's id with the rubric suffix so the content review can run beside it.
+    assert payload["node"]["id"] == f"plan-review-of-fixture{PLAN_REVIEW_RUBRIC_SUFFIX}"
     assert payload["node"]["role"] == "review"
     assert (
         payload["node"]["brief"]
@@ -543,7 +553,9 @@ def test_launch_returns_harness_directive_and_writes_a_live_pointer(
     assert launched["launch"] == "in-harness"
     assert launched["directive"]
     pointer = runs.read_pointer(payload["review_run_id"])
-    assert pointer["node"]["id"] == "plan-review-of-fixture"
+    assert pointer["node"]["id"] == (
+        f"plan-review-of-fixture{PLAN_REVIEW_RUBRIC_SUFFIX}"
+    )
     assert pointer["session"] == "coordinator"
     assert recovery._is_review_node(pointer)
     again = recovery.dispatch_review_for_run(_subject(), config=CONFIG)

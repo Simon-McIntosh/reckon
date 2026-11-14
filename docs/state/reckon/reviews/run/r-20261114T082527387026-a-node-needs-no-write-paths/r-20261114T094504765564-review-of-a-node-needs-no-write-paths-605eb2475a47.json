@@ -1,0 +1,102 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-11-14T10:12:37.222Z",
+  "dispatched_at": "2026-11-14T09:46:51Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "folded",
+      "node": "a-node-needs-no-write-paths",
+      "recorded_at": "2026-11-14T10:39:01.782978+00:00"
+    },
+    "1": {
+      "kind": "folded",
+      "node": "a-node-needs-no-write-paths",
+      "recorded_at": "2026-11-14T10:39:07.027901+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "tests/test_skill_contracts.py",
+      "id": "stale-contract-string",
+      "line": 1937,
+      "severity": "blocking",
+      "text": "blocking: the assertion requires the string 'no exclusive write path is enumerated' in reckon/crew source (crew_source is reckon/crew.py plus reckon/crew/*.py per :1905-1910), which reckon/crew/node.py:1489 removes, so test_ship_documents_dispatch_prerequisites_and_refusal_remedies fails at the reviewed head."
+    },
+    {
+      "file": "tests/test_a_batch_queues_the_chosen_sections.py",
+      "id": "batch-refusal-contract",
+      "line": 238,
+      "severity": "blocking",
+      "text": "blocking: the test asserts result['refused'] == 1 and that entry n-b2 is refused with 'write-paths' in its reason, which is exactly the behaviour reckon/crew/dispatch_batch.py:614 removes, so the suite fails at the reviewed head; the focused gate could not see it."
+    },
+    {
+      "file": "reckon/crew/node.py",
+      "id": "duplicate-test-path-pattern",
+      "line": 1036,
+      "severity": "non-blocking",
+      "text": "non-blocking: the new _DONE_WHEN_TEST_PATH duplicates _TEST_PATH_PATTERN at reckon/crew/recovery_repair_dispatch.py:687 and diverges by accepting test/ as well as tests/, so the negative-control trigger at node.py:1092 and dispatch_batch.py:422's done-when reading recognise different path sets; dispatch_batch.py:408-411 documents that one owner precisely so no second rule drifts from it."
+    },
+    {
+      "file": "reckon/crew/node.py",
+      "id": "stale-negative-control-comment",
+      "line": 1558,
+      "severity": "non-blocking",
+      "text": "non-blocking: the comment above the negative-control call still states the trigger is the declared write path rather than the done-when prose, which this change makes false for a node declaring no paths."
+    },
+    {
+      "file": "docs/evidence/fragments/work-flows-to-the-lane/a-node-needs-no-write-paths.html",
+      "id": "evidence-revision-mismatch",
+      "line": 52,
+      "severity": "non-blocking",
+      "text": "non-blocking: the fragment names the after arm's revision as 868f65ccc while gate-after.log's header names 605eb2475a47809ac98bf80a906b7a4d9646b537, so the receipt disagrees with the log it cites on the one fact a later reader checks."
+    },
+    {
+      "file": "tests/test_a_node_needs_no_write_paths.py",
+      "id": "vacuous-grant-assertion",
+      "line": 181,
+      "severity": "non-blocking",
+      "text": "non-blocking: assert all(path.startswith((...)) for path in pointer['node']['write_paths']) is vacuously true when the list is empty, so it cannot fail the regression it names; the same shape sits at :223 and neither asserts the grant is non-empty."
+    },
+    {
+      "file": "tests/test_a_node_needs_no_write_paths.py",
+      "id": "round-trip-identity-assertion",
+      "line": 274,
+      "severity": "non-blocking",
+      "text": "non-blocking: the assertion compares the stored fence against the literal the test itself handed to _entry rather than an independent source, so it is a round-trip check rather than a guard on dispatch_batch.py:614's handling of a declared node."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "read all three commits (ffaac726a6, 868f65cccd, 605eb2475a) against 6cb753ef86; five files changed, 375 insertions and 18 deletions, all inside the declared roots.",
+    "done_when": "the done_when names tests/test_a_node_needs_no_write_paths.py, and the manifest records both arms: gate-after.log carries revision 605eb2475a and EXIT=0 for 6 passed, gate-base.log carries 6cb753ef86 and EXIT=4 because the new file does not exist at the base.",
+    "goal": "the goal is that a node is dispatched and queued with no write paths; reckon/crew/dispatch_batch.py:614 stops refusing a section that states no write-paths sentence, reckon/crew/node.py:1489 stops failing the scoped property on an empty fence, and reckon/crew/node.py:1078 reads the negative-control trigger from the done-when when no paths are declared.",
+    "manifest": "read; it records 6 passed at 605eb2475a, a base arm that collects no test (EXIT=4), a negative control at 4 failed / 2 passed, and names gate-after.log, gate-base.log and negative-control.log.",
+    "write_paths": "the declared write roots are reckon, tests/test_a_node_needs_no_write_paths.py, docs/evidence/fragments/work-flows-to-the-lane/a-node-needs-no-write-paths.html and the matching docs/figures directory; all five changed paths in the diff lie inside them."
+  },
+  "justifications": {
+    "durability": "the recorded negative control reddens four added tests at tests/test_a_node_needs_no_write_paths.py:125,140,156,231, but the direct-dispatch case at :190 never reaches validate_node and the launcher-grant assertion at :181 and :223 is vacuously true on an empty list.",
+    "evidence": "tests/test_a_node_needs_no_write_paths.py is the file the done_when names and its 6-passed EXIT=0 result is in gate-after.log, but the evidence fragment misquotes the after arm's revision at docs/evidence/fragments/work-flows-to-the-lane/a-node-needs-no-write-paths.html:52.",
+    "fit": "reckon/crew/node.py:1036 follows the module's compiled-pattern idiom, but the comment at :1033-1035 claims its pattern is the repair round's and the comment at :1558 still says the trigger is the declared write path rather than the done-when.",
+    "goal_fidelity": "reckon/crew/dispatch_batch.py:614 and reckon/crew/node.py:1489 remove the two queue-time refusals and reckon/crew/node.py:1092 reads the check from the done-when, so a path-less node queues, launches and owes the negative control; the landed tree nonetheless breaks two existing suites.",
+    "reuse": "reckon/crew/node.py:1036 adds a second 'a test path a text names' pattern when reckon/crew/recovery_repair_dispatch.py:687 owns it and reckon/crew/dispatch_batch.py:413 already imports that owner, so the addition duplicates rather than extends it.",
+    "scope_discipline": "every changed path in git diff 6cb753ef86..605eb2475a lies inside the declared write roots, but the removal at reckon/crew/node.py:1489 leaves tests/test_a_batch_queues_the_chosen_sections.py:238 and tests/test_skill_contracts.py:1937 asserting a behaviour the tree no longer has."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that a node is dispatched and queued with no write paths; reckon/crew/dispatch_batch.py:614 stops refusing a section that states no write-paths sentence, reckon/crew/node.py:1489 stops failing the scoped property on an empty fence, and reckon/crew/node.py:1078 reads the negative-control trigger from the done-when when no paths are declared.\nVERDICT done_when: the done_when names tests/test_a_node_needs_no_write_paths.py; gate-after.log carries revision 605eb2475a with 6 passed EXIT=0 and gate-base.log carries 6cb753ef86 with EXIT=4 because the file is new, and the manifest records both.\nVERDICT write_paths: the declared roots are reckon, tests/test_a_node_needs_no_write_paths.py, docs/evidence/fragments/work-flows-to-the-lane/a-node-needs-no-write-paths.html and the docs/figures directory; all five changed paths lie inside them.\nVERDICT manifest: read; it records 6 passed at 605eb2475a, a base arm collecting no test (EXIT=4), a negative control at 4 failed / 2 passed, and names gate-after.log, gate-base.log and negative-control.log.\nVERDICT diff: read all three commits against 6cb753ef86; five files changed, 375 insertions and 18 deletions, all inside the declared roots.\nCALL_SITES: reckon/crew/dispatching/requests.py:185, reckon/crew/dispatch_plan.py:840, reckon/crew/queue_edit.py:195, reckon/crew/dispatch_batch.py:801, reckon/crew/node.py:1541, reckon/crew/dispatching/preparation.py:106\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: reckon/crew/dispatch_batch.py:614 and reckon/crew/node.py:1489 remove the two queue-time refusals and reckon/crew/node.py:1092 reads the check from the done-when, so a path-less node queues, launches and owes the negative control; the landed tree nonetheless breaks two existing suites.\nSCORE evidence: 15\nJUSTIFICATION evidence: tests/test_a_node_needs_no_write_paths.py is the file the done_when names and its 6-passed EXIT=0 result is in gate-after.log, but the evidence fragment misquotes the after arm's revision at docs/evidence/fragments/work-flows-to-the-lane/a-node-needs-no-write-paths.html:52.\nSCORE scope_discipline: 14\nJUSTIFICATION scope_discipline: every changed path in git diff 6cb753ef86..605eb2475a lies inside the declared write roots, but the removal at reckon/crew/node.py:1489 leaves tests/test_a_batch_queues_the_chosen_sections.py:238 and tests/test_skill_contracts.py:1937 asserting a behaviour the tree no longer has.\nSCORE durability: 15\nJUSTIFICATION durability: the recorded negative control reddens four added tests at tests/test_a_node_needs_no_write_paths.py:125,140,156,231, but the direct-dispatch case at :190 never reaches validate_node and the launcher-grant assertion at :181 and :223 is vacuously true on an empty list.\nSCORE fit: 14\nJUSTIFICATION fit: reckon/crew/node.py:1036 follows the module's compiled-pattern idiom, but the comment at :1033-1035 claims its pattern is the repair round's and the comment at :1558 still says the trigger is the declared write path rather than the done-when.\nSCORE reuse: 4\nJUSTIFICATION reuse: reckon/crew/node.py:1036 adds a second 'a test path a text names' pattern when reckon/crew/recovery_repair_dispatch.py:687 owns it and reckon/crew/dispatch_batch.py:413 already imports that owner, so the addition duplicates rather than extends it.\nFINDING tests/test_skill_contracts.py:1937 blocking: the assertion requires the string 'no exclusive write path is enumerated' in reckon/crew source (crew_source is reckon/crew.py plus reckon/crew/*.py per :1905-1910), which reckon/crew/node.py:1489 removes, so test_ship_documents_dispatch_prerequisites_and_refusal_remedies fails at the reviewed head.\nFINDING tests/test_a_batch_queues_the_chosen_sections.py:238 blocking: the test asserts result['refused'] == 1 and that entry n-b2 is refused with 'write-paths' in its reason, which is exactly the behaviour reckon/crew/dispatch_batch.py:614 removes, so the suite fails at the reviewed head; the focused gate could not see it.\nFINDING reckon/crew/node.py:1036 non-blocking: the new _DONE_WHEN_TEST_PATH duplicates _TEST_PATH_PATTERN at reckon/crew/recovery_repair_dispatch.py:687 and diverges by accepting test/ as well as tests/, so the negative-control trigger at node.py:1092 and dispatch_batch.py:422's done-when reading recognise different path sets; dispatch_batch.py:408-411 documents that one owner precisely so no second rule drifts from it.\nFINDING reckon/crew/node.py:1558 non-blocking: the comment above the negative-control call still states the trigger is the declared write path rather than the done-when prose, which this change makes false for a node declaring no paths.\nFINDING docs/evidence/fragments/work-flows-to-the-lane/a-node-needs-no-write-paths.html:52 non-blocking: the fragment names the after arm's revision as 868f65ccc while gate-after.log's header names 605eb2475a47809ac98bf80a906b7a4d9646b537, so the receipt disagrees with the log it cites on the one fact a later reader checks.\nFINDING tests/test_a_node_needs_no_write_paths.py:181 non-blocking: assert all(path.startswith((...)) for path in pointer['node']['write_paths']) is vacuously true when the list is empty, so it cannot fail the regression it names; the same shape sits at :223 and neither asserts the grant is non-empty.\nFINDING tests/test_a_node_needs_no_write_paths.py:274 non-blocking: the assertion compares the stored fence against the literal the test itself handed to _entry rather than an independent source, so it is a round-trip check rather than a guard on dispatch_batch.py:614's handling of a declared node.",
+  "review_run_id": "r-20261114T094504765564-review-of-a-node-needs-no-write-paths-605eb2475a47",
+  "reviewed_base_sha": "6cb753ef86d6859e0838725e46ff3300e59526c2",
+  "reviewed_head_sha": "605eb2475a47809ac98bf80a906b7a4d9646b537",
+  "reviewed_run_id": "r-20261114T082527387026-a-node-needs-no-write-paths",
+  "scores": {
+    "durability": 15,
+    "evidence": 15,
+    "fit": 14,
+    "goal_fidelity": 17,
+    "reuse": 4,
+    "scope_discipline": 14
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-14T09:58:00+00:00",
+  "total": 79
+}

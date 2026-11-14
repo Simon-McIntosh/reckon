@@ -58,6 +58,12 @@
       <h2>Negative control</h2>
       <p>The base revision is the declared negative control. Its tree at <code>71b873595a</code> was extracted into a scratch directory and the delivered gate copied into it; running it there gives three failures with <code>EXIT=1</code>, and the first case fails at its launch assertion because <code>_resume</code> is reached on the reopen. The base suite arm needed the extracted tree re-committed (<code>ef08f7c</code>) because the inventory fixture reads <code>HEAD</code> through git; that is a scaffolding property of the fixture, not of the change, and the arm's first attempt recorded it as two setup errors.</p>
     </section>
+
+    <section id="ready-a-review-dies-where-nobody-i-s15-reuse-repair">
+      <h2>Reuse repair</h2>
+      <p>A review scored reuse at 5 against a floor of 10, and both causes were real: <code>reopen_run</code> discarded the pointer <code>widen_claim</code> already returned and read it again, and <code>waiting_refused_advice</code> copied the body of <code>consume_refused_advice</code> instead of sharing it. The pointer now comes from the widen, and one <code>_read_refused_advice</code> serves both doors with the consume decided by its caller. Neither change moves a behavioural edge: the gate stays 3 passed, and both suite arms stay 51 passed.</p>
+      <p>The probe measures what the review scored. It patches <code>resumption.read_pointer</code>, runs a reopen, and reads the source to check both advice readers go through the one helper. At <code>ecba127a28</code> it reports 2 direct pointer reads and shared=false, <code>EXIT=1</code>; at the repair it reports 0 and true, <code>EXIT=0</code>. The two runs are <code>reuse-control.log</code> and <code>reuse-probe.log</code>.</p>
+    </section>
   </main>
 </body>
 </html>

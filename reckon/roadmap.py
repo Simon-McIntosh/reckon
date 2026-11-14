@@ -3079,6 +3079,11 @@ def plans_released_by_cleared_blockers(
     return released
 
 
+def _no_classification(_pointer: Mapping[str, Any]) -> Mapping[str, Any]:
+    """No reading for a run with no recorded event, so it is not counted blocked."""
+    return {}
+
+
 def _blocked_section_run_seconds(
     project: str, pointers: Iterable[Mapping[str, Any]]
 ) -> dict[tuple[str, str], float]:
@@ -3092,6 +3097,10 @@ def _blocked_section_run_seconds(
 
     from reckon.crew.recovery import classify_pointer
 
+    scope = _BUILT_ROADMAP.get()
+    classify: Callable[[Mapping[str, Any]], Mapping[str, Any]] = classify_pointer
+    if scope is not None and not scope.classify_runs:
+        classify = _no_classification
     recorded = recorded_live_run_classifications(project)
     now = datetime.now(UTC)
     seconds: dict[tuple[str, str], float] = {}
@@ -3105,7 +3114,7 @@ def _blocked_section_run_seconds(
         if not plan_ref or not section_ref:
             continue
         classified = run_classification_record(
-            pointer, classify=classify_pointer, recorded=recorded
+            pointer, classify=classify, recorded=recorded
         )
         if run_classification(classified) != BLOCKED_RUN_CLASSIFICATION:
             continue
@@ -3214,11 +3223,14 @@ def _held_paths_by_section(
 class _RoadmapScope:
     """The roadmap the builds inside one scope produced, read after its work."""
 
-    __slots__ = ("built", "resolve_coordinators")
+    __slots__ = ("built", "classify_runs", "resolve_coordinators")
 
-    def __init__(self, *, resolve_coordinators: bool) -> None:
+    def __init__(
+        self, *, resolve_coordinators: bool, classify_runs: bool = True
+    ) -> None:
         self.built: dict[str, Any] | None = None
         self.resolve_coordinators = resolve_coordinators
+        self.classify_runs = classify_runs
 
 
 #: The scope whose builds record their roadmap, when a caller opened one. A
@@ -3232,7 +3244,7 @@ _BUILT_ROADMAP: ContextVar[_RoadmapScope | None] = ContextVar(
 
 @contextmanager
 def roadmap_build_scope(
-    *, resolve_coordinators: bool = True
+    *, resolve_coordinators: bool = True, classify_runs: bool = True
 ) -> Iterator[_RoadmapScope]:
     """Record the roadmap the builds inside this scope produce.
 
@@ -3240,9 +3252,17 @@ def roadmap_build_scope(
     caller that needs the whole project's roadmap for more than the ready set
     uses it to make one derivation serve both answers. A caller that only needs
     section verdicts or ranking keys can omit critical-link coordinators.
+
+    ``classify_runs`` off reads a run's blocked state from its recorded watcher
+    event alone, without classifying a run that has none. A ranking key needs a
+    run only when it has been blocked for a day, and such a run has recorded
+    its block; classifying every unrecorded run cost a full review-store read
+    per run on every pass that ranks the queue.
     """
 
-    scope = _RoadmapScope(resolve_coordinators=resolve_coordinators)
+    scope = _RoadmapScope(
+        resolve_coordinators=resolve_coordinators, classify_runs=classify_runs
+    )
     token = _BUILT_ROADMAP.set(scope)
     try:
         yield scope

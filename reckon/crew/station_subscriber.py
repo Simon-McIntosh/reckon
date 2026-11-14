@@ -327,6 +327,7 @@ def live_work_populations(
     # directory listing per row.
     from reckon.crew import obligations
     from reckon.crew.recovery_memo import _classification_input_tick
+    from reckon.resources import resource_scan_scope
 
     grouped: dict[str, list[dict[str, Any]]] = {}
     for pointer in snapshot:
@@ -338,7 +339,11 @@ def live_work_populations(
         # Every terminal run's duty reads the review store, so the pass shares
         # one enumeration of each store directory across all of them, as the
         # station's classify stage does; per run, it grew with runs times store.
-        with _classification_input_tick():
+        # The pass reads plans too, and resolving one checks its identity
+        # against every sibling plan file, so it shares one docs-tree scan and
+        # identity index the same way. The pass writes nothing, which is the
+        # condition the scan scope asks.
+        with _classification_input_tick(), resource_scan_scope():
             for pointer in snapshot:
                 if str(pointer.get("phase") or "") not in node._TERMINAL_RUN_PHASES or (
                     not read_terminal_duties and _record_has_pending_work(pointer)

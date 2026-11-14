@@ -175,6 +175,25 @@ def store_refused_advice(run_id: str, advice: str) -> Path | None:
     return path
 
 
+def _read_refused_advice(run_id: str, *, consume: bool) -> tuple[str, str]:
+    """The advice a refusal kept for this run, and where it waits.
+
+    One reader serves both doors: the resume that delivers the text empties the
+    slot as it reads, and the reopen that only reports it leaves the slot for
+    that resume. Keeping the read in one place is what stops the two from
+    drifting over what an absent or empty slot yields.
+    """
+    path = refused_advice_path(run_id)
+    try:
+        text = path.read_text(encoding="utf-8")
+    except OSError:
+        return "", ""
+    if consume:
+        with suppress(OSError):
+            path.unlink()
+    return text.strip(), str(path)
+
+
 def consume_refused_advice(run_id: str) -> str:
     """Read and clear the advice a refusal left for this run, or ''.
 
@@ -182,14 +201,7 @@ def consume_refused_advice(run_id: str) -> str:
     is read: advice already carried into a resumed turn must not be replayed
     into the one after it as though it were new.
     """
-    path = refused_advice_path(run_id)
-    try:
-        text = path.read_text(encoding="utf-8")
-    except OSError:
-        return ""
-    with suppress(OSError):
-        path.unlink()
-    return text.strip()
+    return _read_refused_advice(run_id, consume=True)[0]
 
 
 def waiting_refused_advice(run_id: str) -> tuple[str, str]:
@@ -198,12 +210,7 @@ def waiting_refused_advice(run_id: str) -> tuple[str, str]:
     Read without consuming: a reopen only reports the slot, and the resume
     that delivers the text is a separate call which empties it as it reads.
     """
-    path = refused_advice_path(run_id)
-    try:
-        text = path.read_text(encoding="utf-8")
-    except OSError:
-        return "", ""
-    return text.strip(), str(path)
+    return _read_refused_advice(run_id, consume=False)
 
 
 #: Where a reopen records what it granted, beside the run's other records.
@@ -265,8 +272,10 @@ def reopen_run(
     added: list[str] = []
     widened = record
     if write_paths:
+        # Use the pointer returned by the grant so the attempt and fence
+        # cannot drift through a second read after widening.
         widened, added = widen_claim(run_id, list(write_paths))
-    delivered = _reset_delivered_manifest_status(run_id, widened or record)
+    delivered = _reset_delivered_manifest_status(run_id, widened)
     reopening = _record_reopening(
         run_id,
         granted_paths=list(write_paths),
@@ -634,14 +643,22 @@ def _request_lane_availability(
     log_path = directory / f"{safe_backend}-{stamp}.jsonl"
     stderr_path = directory / f"{safe_backend}-{stamp}.stderr.log"
     final_path = directory / f"{safe_backend}-{stamp}.final.txt"
+    from reckon.crew.dispatch_launch import resolve_launch_executable
+
     try:
-        plan = _backends.launch_plan(
-            backend_name=backend_name,
-            backend=backend,
-            prompt=AVAILABILITY_PROBE_PROMPT,
-            worktree=worktree,
-            final_message_path=final_path,
-            fence=False,
+        # The probe runs the backend's own command, so it runs the one the
+        # backend's resolution found: a composed argv carries the bare name, and
+        # a launcher whose PATH omits a declared directory would die here and
+        # read as a lane that is down.
+        plan = resolve_launch_executable(
+            _backends.launch_plan(
+                backend_name=backend_name,
+                backend=backend,
+                prompt=AVAILABILITY_PROBE_PROMPT,
+                worktree=worktree,
+                final_message_path=final_path,
+                fence=False,
+            )
         )
         completed = subprocess.run(
             plan.argv,

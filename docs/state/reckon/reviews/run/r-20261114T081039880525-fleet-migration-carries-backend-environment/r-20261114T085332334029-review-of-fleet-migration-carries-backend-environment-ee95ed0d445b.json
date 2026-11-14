@@ -1,0 +1,62 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/crew/fleet_migrate.py:1075 stand-up hold generation",
+    "reckon/crew/fleet_migrate.py:1145 promote-step verify_backend_commands call",
+    "reckon/crew/fleet_node.py:180 hold_path and fleet_node.py:210 generate_hold_script used by both callers",
+    "reckon/project_setup_commands.py:202 hold generation"
+  ],
+  "completed_at": "2026-11-14T09:12:23.777Z",
+  "dispatched_at": "2026-11-14T08:54:55Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/work-flows-to-the-lane/fleet-migration-carries-backend-environment.html",
+      "id": "f97800ecd5f",
+      "line": 56,
+      "severity": "non-blocking",
+      "text": "non-blocking: the head gate row quotes `55 passed in 9.99s` while logs/gate-head.log (mtime 09:49:11, after commit ee95ed0d44 at 09:48:44) reports `55 passed in 9.89s`; the commit whose message says it quotes the recorded logs' figures leaves the fragment disagreeing with the log it cites."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261114T081039880525-fleet-migration-carries-backend-environment/negative-control.log",
+      "id": "f5f8a34be2e",
+      "line": 2,
+      "severity": "non-blocking",
+      "text": "non-blocking: the header names revision 6ff4f572a2 while its own tree line is the head worktree and four tests ran, including a file that does not exist at that base, so a reader comparing the mutation's revision with the tree reads a contradiction."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "Read commit by commit (7e5cae463c, 5dd57e8b44, ee95ed0d44) against 6ff4f572a2: two source modules, one new test file and one evidence fragment, 411 insertions.",
+    "done_when": "The plan's done_when names a bare-submitter hold test, a missing-command migration test, a negative control and a live check plus base arm, and the manifest records all four with their logs.",
+    "goal": "The goal is to carry the flight's declared backend directories into the fleet hold and to refuse a migration whose allocation misses a declared command; fleet_node.py:155-208 and fleet_migrate.py:437-491 do both.",
+    "manifest": "Read; it states 55 passed EXIT=0 at head and 51 passed EXIT=0 at base, names both logs, the negative control and the live-check logs.",
+    "write_paths": "Read the manifest's declared write paths; the diff touches four files and every one is inside them."
+  },
+  "justifications": {
+    "durability": "tests/test_fleet_migration_carries_backend_environment.py:80 fails when hold_path returns only the inherited entries, as the negative control log shows red for that test; each of the four added tests names a concrete condition under which it fails.",
+    "evidence": "The two gate arms are recorded in gate-base.log and gate-head.log with bare EXIT= lines (51 and 55 passed, EXIT=0), but the evidence fragment's head figure and the negative control's revision header do not match the logs they cite; see findings.",
+    "fit": "The added functions follow the surrounding module idiom (fleet_node.py's docstring-led helpers) and introduce no plan label, version suffix or ticket reference.",
+    "goal_fidelity": "reckon/crew/fleet_node.py:180 hold_path appends every declared backend directory to the inherited PATH and fleet_node.py:254 exports it, while fleet_migrate.py:485 refuses a promote whose allocation misses a declared command.",
+    "reuse": "declared_backend_directories delegates to the owner reckon/_backends.py:402 backend_search_directories and unresolved_backend_commands uses shutil.which, though dispatch_launch.py:629 declared_backend_search_path already names the single-backend reader of the same owner.",
+    "scope_discipline": "All four changed paths (reckon/crew/fleet_node.py, reckon/crew/fleet_migrate.py, tests/test_fleet_migration_carries_backend_environment.py, docs/evidence/fragments/work-flows-to-the-lane/fleet-migration-carries-backend-environment.html) are inside the node's declared write paths; bin/fleet-shell needed no change."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is to carry the flight's declared backend directories into the fleet hold and to refuse a migration whose allocation misses a declared command; reckon/crew/fleet_node.py:180 hold_path and reckon/crew/fleet_migrate.py:466 verify_backend_commands do both.\nVERDICT done_when: the plan's done_when names a bare-submitter hold test, a missing-command migration test, a negative control and a live check with a base arm; the manifest records all four and the new test file's four cases pass at head.\nVERDICT write_paths: read the manifest's declared write paths; the diff touches reckon/crew/fleet_node.py, reckon/crew/fleet_migrate.py, tests/test_fleet_migration_carries_backend_environment.py and the evidence fragment, all inside them.\nVERDICT manifest: read; it states 55 passed EXIT=0 at head against 51 passed EXIT=0 at base, and names the gate logs, the negative control and the live-check logs.\nVERDICT diff: read commit by commit (7e5cae463c, 5dd57e8b44, ee95ed0d445b) against base 6ff4f572a2; it adds two helper paths, one pre-switch check, one test file and one evidence fragment.\nCALL_SITES: reckon/crew/fleet_migrate.py:1075, reckon/crew/fleet_migrate.py:1145, reckon/crew/fleet_node.py:180, reckon/project_setup_commands.py:202\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/fleet_node.py:180 hold_path appends every declared backend directory to the inherited PATH and fleet_node.py:254 exports it, while fleet_migrate.py:485 refuses a promote whose allocation misses a declared command.\nSCORE evidence: 15\nJUSTIFICATION evidence: gate-base.log and gate-head.log each end in a bare EXIT=0 line over 51 and 55 passed, but the fragment's head figure and the negative control's revision header do not match the logs they cite.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every changed path in the diff is inside the manifest's declared write paths, and bin/fleet-shell was left unchanged because it needed nothing.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_fleet_migration_carries_backend_environment.py:80 fails when hold_path returns only the inherited entries, as negative-control.log shows, and each added assertion names a concrete failing condition.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/crew/fleet_node.py:155-208 follows the module's docstring-led helper idiom and no added name carries a plan label, version or ticket reference.\nSCORE reuse: 17\nJUSTIFICATION reuse: declared_backend_directories delegates to the owner reckon/_backends.py:402 backend_search_directories and unresolved_backend_commands uses shutil.which, though reckon/crew/dispatch_launch.py:629 already names the single-backend reader of that owner.\nFINDING docs/evidence/fragments/work-flows-to-the-lane/fleet-migration-carries-backend-environment.html:56 non-blocking: the head gate row quotes 55 passed in 9.99s while logs/gate-head.log reports 55 passed in 9.89s, so the fragment disagrees with the log it cites.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261114T081039880525-fleet-migration-carries-backend-environment/negative-control.log:2 non-blocking: the header names revision 6ff4f572a2 while its own tree line is the head worktree and four tests ran, including a file absent at that base.",
+  "review_run_id": "r-20261114T085332334029-review-of-fleet-migration-carries-backend-environment-ee95ed0d445b",
+  "reviewed_base_sha": "6ff4f572a2f9c924c8ead49acb0483323fe2f8d2",
+  "reviewed_head_sha": "ee95ed0d445ba2a26d3c9989ce29f380d495373d",
+  "reviewed_run_id": "r-20261114T081039880525-fleet-migration-carries-backend-environment",
+  "scores": {
+    "durability": 18,
+    "evidence": 15,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 17,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-14T09:12:29.122412+00:00",
+  "total": 106
+}

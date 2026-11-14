@@ -1,30 +1,14 @@
-"""A persisted review index never claims more than it read.
+"""A persisted review index covers only the directory state its listing saw.
 
-The store index is persisted per store directory in a node-local document that
-carries the directory's stat identity beside the entries it was built from. A
-later process adopts that document without listing the store when the identity
-it sees matches the one recorded, so recording an identity taken *after* the
-listing is a silent over-claim: a record filed between the listing and the
-write is missing from the entries while the recorded identity covers it, and
-every cold reader on the node then adopts an index that does not hold the
-record. The invariant the document has to keep is that the identity it records
-is never newer than the entries it holds.
-
-Both paths that persist the index are driven here: the load-or-update path in
-:func:`_store_indexes`, and the refresh a lookup no held entry explains takes
-in :func:`_refresh_store_entries`. Each files a new record in the same
-directory between the read and the write, then starts a cold reader, which
-must find the record. An undisturbed store still costs a cold reader no
-per-record stats.
-
-Every environment-resolved directory is pointed at a temporary path, including
-the node-local cache directory, so nothing here reads or writes the operator's
-own store or cache.
+A concurrent foreign write between listing and persistence must leave the
+stored directory stamp stale, so the next reader discovers the missing name.
+An unchanged store still costs one directory stat and no per-record stats.
 """
 
 from __future__ import annotations
 
 import json
+import os
 from pathlib import Path
 from typing import Any
 
@@ -80,35 +64,44 @@ def store(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
 def _cold_reader() -> None:
     """Drop what this process holds, the way a newly started process holds none."""
     records_module._STORE_INDEXES.clear()
+    records_module._DOCUMENT_MAPS.clear()
 
 
-def _persisted_identity(directory: Path) -> tuple[int, ...]:
-    document = json.loads(records_module._index_cache_path(directory).read_text())
-    return tuple(int(item) for item in document.get("directory_identity") or ())
+def _persisted_identity(directory: Path) -> int:
+    document = json.loads(records_module._index_document_path(directory).read_text())
+    return document["dir_mtime_ns"]
 
 
 def _file_before_each_write(
-    monkeypatch: pytest.MonkeyPatch, directory: Path, run_id: str
+    monkeypatch: pytest.MonkeyPatch,
+    directory: Path,
+    run_id: str,
+    *,
+    after_listing: bool = False,
 ) -> list[Path]:
-    """File one new record the instant before the index document is written.
-
-    The write is where the defect lives: the entries were read from a listing
-    that did not hold this record, so anything the document records about the
-    directory after this point covers a record its entries do not. Wrapping
-    the persist puts the write exactly between the read and the document
-    write, which is where a concurrent writer can put it.
-    """
-    original = records_module._persist_store_entries
+    """Place a foreign record beyond the snapshot the document is recording."""
+    boundary = "_entries_from_listing" if after_listing else "_persist_index_document"
+    original = getattr(records_module, boundary)
     filed: list[Path] = []
 
-    def filing_first(directory_arg: Path, entries: Any, *args: Any) -> None:
+    def file_record():
         if not filed:
+            before = directory.stat()
             path = review_module.review_path(PROJECT, run_id)
-            _write_record(path, _record(run_id, HEAD))
+            path.write_text(json.dumps(_record(run_id, HEAD)))
+            # Directory timestamps can share one filesystem clock tick.
+            os.utime(directory, ns=(before.st_atime_ns, before.st_mtime_ns + 1_000_000))
             filed.append(path)
-        original(directory_arg, entries, *args)
 
-    monkeypatch.setattr(records_module, "_persist_store_entries", filing_first)
+    def crossing_snapshot(*args: Any):
+        if not after_listing:
+            file_record()
+        result = original(*args)
+        if after_listing:
+            file_record()
+        return result
+
+    monkeypatch.setattr(records_module, boundary, crossing_snapshot)
     return filed
 
 
@@ -117,14 +110,15 @@ def test_a_record_filed_before_the_index_write_is_not_claimed(
 ) -> None:
     """The load-or-update path persists an identity its entries do not cover."""
     run_id = "r-filed-during-the-build"
-    filed = _file_before_each_write(monkeypatch, store, run_id)
+    records_module._index_document_path(store).unlink()
+    filed = _file_before_each_write(monkeypatch, store, run_id, after_listing=True)
 
     records_module._store_index(store)
 
     assert filed, "the fixture filed its record before the index was written"
-    assert _persisted_identity(store) != records_module._store_directory_identity(
-        store
-    ), "the persisted identity must not be one taken after the listing"
+    assert _persisted_identity(store) != records_module._directory_mtime_ns(store), (
+        "the persisted identity must not be one taken after the listing"
+    )
 
     _cold_reader()
     entries = records_module._store_index(store).get(run_id) or []
@@ -141,7 +135,10 @@ def test_a_record_filed_before_the_refresh_write_is_not_claimed(
     records_module._store_index(store)
     filed = _file_before_each_write(monkeypatch, store, run_id)
 
-    # A lookup no held entry explains is what reaches the refresh.
+    # A foreign name makes the store reconcile its listing.
+    before = store.stat()
+    (store / "foreign.json").write_text(json.dumps(_record("r-foreign", HEAD)))
+    os.utime(store, ns=(before.st_atime_ns, before.st_mtime_ns + 1_000_000))
     assert records_module._record_filed_elsewhere(store, "r-unexplained", None) == (
         None,
         None,

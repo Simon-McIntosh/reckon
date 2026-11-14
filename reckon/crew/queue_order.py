@@ -199,7 +199,9 @@ def _roadmap_priority_keys(
                     if docs_dir
                     else []
                 )
-                with roadmap_build_scope(resolve_coordinators=False):
+                with roadmap_build_scope(
+                    resolve_coordinators=False, classify_runs=False
+                ):
                     report = build_roadmap(
                         project,
                         inventory,
