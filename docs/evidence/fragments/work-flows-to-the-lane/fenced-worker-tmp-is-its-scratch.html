@@ -20,7 +20,10 @@
   <table id="fenced-worker-tmp-is-its-scratch-measures">
     <caption>Measurements run on <code>all_debug</code>, one arm at a time, each
     arm's log carrying its revision, tree, working directory and command as its
-    first line and its own exit status as its last.</caption>
+    first line and its own exit status as its last. The three negative-control
+    arms name <code>gate-negative.log</code> (the dropped mount),
+    <code>gate-negative-without-seal.log</code> and
+    <code>gate-negative-runtime-creation.log</code> in the run directory.</caption>
     <thead><tr><th>Measure</th><th>Observed result</th></tr></thead>
     <tbody>
       <tr><td>Baseline arm at <code>a01e2b9afcc862321403374ebd3dd42949df1121</code>,
@@ -61,4 +64,9 @@
   literal argv carries the mount. That file's own declared negative controls —
   no node-tmp seal, and the separate runtime-path creation loop restored — still
   redden the cases they name.</p>
+  <p>Both controls are recorded, each as its own arm on <code>all_debug</code>
+  at the same revision: with the node-tmp seal dropped, the removal case and
+  the node-tmp probe case fail (2 failed, 6 passed, <code>EXIT=1</code>), and
+  with the separate runtime-path creation loop restored, the interception case
+  fails (1 failed, 7 passed, <code>EXIT=1</code>).</p>
 </section>
