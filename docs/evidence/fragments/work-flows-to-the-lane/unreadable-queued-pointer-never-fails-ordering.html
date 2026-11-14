@@ -46,16 +46,22 @@
     </tbody>
   </table>
   <p>The gate ran on <code>all_debug</code>:
-  <code>PYTHONPATH=. python -m pytest -p no:cacheprovider -q
+  <code>PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q
+  tests/test_the_admission_pass_survives_a_pointer_without_its_time.py
   tests/test_unreadable_queued_pointer_never_fails_ordering.py
-  tests/test_staged_write_inventory.py</code> — 58 passed, <code>EXIT=0</code>.
-  The declared negative control restores the raise and ends 2 failed with both
-  the ordering case and the review-placement case red.</p>
-  <p>One test outside this node's write scope asserts the removed refusal:
-  <code>tests/test_the_admission_pass_survives_a_pointer_without_its_time.py::test_the_admission_ordering_still_refuses_a_pointer_without_its_time</code>
-  expects <code>ValueError</code> from <code>admission_order</code>, which is the
-  behaviour this section supersedes. It is reported for the coordinator rather
-  than edited here.</p>
+  tests/test_staged_write_inventory.py</code> — 60 passed, 1 failed, whose one
+  failing id
+  (<code>test_the_pass_admits_the_placed_requests_and_names_the_unplaceable_one</code>)
+  fails identically at the base revision, so the change adds no failure. The
+  declared negative control restores the raise and ends 2 failed, with both the
+  ordering case and the review-placement case red.</p>
+  <p>Two cases asserted the refusal this section removes: the one in
+  <code>tests/test_the_admission_pass_survives_a_pointer_without_its_time.py</code>
+  and the one in <code>tests/test_a_queued_pointer_without_its_time_reads_no_place.py</code>.
+  Both now read the placeable pointer ranked and the unreadable one named. The
+  placeable/unplaceable split lives in <code>queue_order.partition_placeable</code>
+  and the admission pass takes it from there, so the order a surface reports and
+  the order the pass ranks by cannot disagree.</p>
 </article>
 </body>
 </html>
