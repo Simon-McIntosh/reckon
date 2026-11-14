@@ -507,25 +507,74 @@ FOLLOWER_PRODUCER_STOPPED_EVENT = "producer-stopped"
 
 
 
-def _logged_producer_stop(project: str) -> str | None:
-    """Read the producer's final reason without loading its long service log."""
+def _producer_log_tail(project: str) -> list[str]:
+    """The producer's last few kilobytes of output, without reading its whole log."""
     from reckon.crew import runs
 
     try:
         with runs.watch_log_path(project).open("rb") as stream:
             stream.seek(0, os.SEEK_END)
             stream.seek(max(0, stream.tell() - 4096))
-            lines = stream.read().decode("utf-8", errors="replace").splitlines()
+            return stream.read().decode("utf-8", errors="replace").splitlines()
     except OSError:
-        return None
-    for line in reversed(lines):
+        return []
+
+
+def _producer_log_message(line: str) -> str:
+    """One log line without the timestamp prefix the service journal adds."""
+    candidate = line.strip()
+    if candidate.startswith("[") and "] " in candidate:
+        candidate = candidate.split("] ", 1)[1]
+    return candidate
+
+
+def _logged_producer_stop(project: str) -> str | None:
+    """Read the producer's final reason without loading its long service log."""
+    for line in reversed(_producer_log_tail(project)):
         if line.strip():
             marker = "reckon crew watch stopped: "
-            candidate = line.strip()
-            if candidate.startswith("[") and "] " in candidate:
-                candidate = candidate.split("] ", 1)[1]
+            candidate = _producer_log_message(line)
             return candidate if candidate.startswith(marker) else None
     return None
+
+
+# What the producer's own log records when its reload cannot be completed. A
+# reload that runs out of time is a different state from one that failed, so
+# each phrase is a statement the producer made about that attempt rather than a
+# statement about the seat being quiet. The line must name the watch command,
+# so a follower's own deferral line in the same file never counts as the
+# producer's.
+_RELOAD_FAILURE_MARKERS = (
+    "could not reload itself",
+    "the new image does not import",
+)
+
+
+def _logged_reload_failure(project: str) -> str | None:
+    """The producer's own record that a reload could not complete, or None."""
+    for line in reversed(_producer_log_tail(project)):
+        candidate = _producer_log_message(line)
+        if not candidate.startswith("reckon crew watch"):
+            continue
+        if any(marker in candidate for marker in _RELOAD_FAILURE_MARKERS):
+            return candidate
+    return None
+
+
+def _reload_window_elapsed(reload_started_at: Any, window: float) -> bool:
+    """Report whether a reload marker is older than the production reload window.
+
+    The marker is a wall-clock UTC stamp written just before the image
+    replacement starts.
+
+    The seat record carries it, and the replacement clears it by rewriting the
+    record, so its presence says only that a replacement was begun — not that
+    it failed. A stamp that cannot be read is reported as expired, because an
+    unreadable marker is not evidence of a reload in flight."""
+    started = parse_utc(reload_started_at)
+    if started is None:
+        return True
+    return (time.time() - started.timestamp()) >= window
 
 
 def _read_seat_host(project: str) -> tuple[str, bool]:
@@ -2241,10 +2290,20 @@ def _follow_watch_lines(
             # down, so a scan on each pass would tax a follower that has
             # nothing to say.
             report_stop = bool(reason) and not producer_stop_reported
-            report_reload = (
-                bool(identity.get("reload_started_at"))
-                and not producer_reload_failure_reported
-            )
+            report_reload = False
+            if identity.get("reload_started_at") and not (
+                producer_reload_failure_reported
+            ):
+                # The marker is written just before the image replacement and
+                # cleared by the replacement that completes it, so a poll that
+                # lands inside the replacement reads the seat record mid-write
+                # and finds no producer. That is a reload in flight, not news:
+                # report only one whose window has elapsed, or one the
+                # producer's own log records as failed.
+                report_reload = (
+                    _reload_window_elapsed(identity["reload_started_at"], reload_window)
+                    or _logged_reload_failure(project) is not None
+                )
             if report_stop or report_reload:
                 watched = _population_has_live_work(project, session=session)
             if report_stop:
