@@ -25,7 +25,7 @@
   <title>Every shared-home lock holds across nodes | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="1">
+<meta name="plan-version" content="2">
 <meta name="plan-modified" content="2026-11-14">
 </head>
 <body>
@@ -99,7 +99,7 @@
 <p><strong>Done when.</strong></p>
 <ul>
   <li>The guard passes with these seven rows removed from pending.</li>
-  <li>For the pointer lock and the landing-pass lock, a test holds the lock's record lock from a second process and shows the non-blocking take reporting it held. With the lock still held, the same test shows that a <code>flock</code>-only take from that second process cannot see it. That second run is the negative control: it must fail to observe the holder.</li>
+  <li>For the pointer lock and the landing-pass lock, a test runs a holder in a second process that takes only the POSIX record lock on the lock file, not <code>flock</code>. The non-blocking take reports the lock held: the refusal for the pointer lock, the busy result for the landing pass. This is the half that excludes across nodes, measured in §1's predecessor and again in §6. The negative control is the same test run against the base revision, where the site takes only <code>flock</code>: it must fail, because the take sees the record-lock holder as free. The failing run is logged.</li>
   <li>Each of the seven lock files is opened in <code>reckon/</code> only through <code>exclusive_lock</code>. The manifest lists every other reference to each path (gc and pruning included) and states why none opens the file.</li>
   <li>The focused tests that import the changed modules add no failures against the stated base.</li>
 </ul>
@@ -128,7 +128,7 @@
 <p><strong>Done when.</strong></p>
 <ul>
   <li>The guard passes with these nine rows removed from pending.</li>
-  <li>For the plan-review dispatch lock, a test holds the record lock from a second process and shows the dispatch returning its moved-on result without launching. With the lock still held, the same test shows that a <code>flock</code>-only take from the second process cannot observe the holder.</li>
+  <li>For the plan-review dispatch lock, a test runs a holder in a second process that takes only the POSIX record lock on the lock file, and shows the dispatch returning its moved-on result without launching. The negative control is the same test run against the base revision: it must fail, because there the dispatch takes only <code>flock</code> and launches past the holder. The failing run is logged.</li>
   <li>The review index docstring describes the lock the code takes.</li>
   <li>Each lock file is opened in <code>reckon/</code> only through <code>exclusive_lock</code>, evidenced as in §3.</li>
   <li>The focused tests that import the changed modules add no failures against the stated base.</li>
@@ -148,8 +148,9 @@
 <p><strong>Done when.</strong></p>
 <ul>
   <li>The guard passes with these five rows removed from pending.</li>
-  <li>A test records two picker holds from two processes, one holding the lock while the other waits, and finds two whole lines in the log.</li>
-  <li>A test holds the catalogue lock's record lock from a second process and shows a refresh reading the snapshot rather than fetching.</li>
+  <li>A test runs a holder in a second process that takes only the POSIX record lock on the picker's lock file. It shows that a hold recorded meanwhile does not reach the log until the holder releases, and then appears as one whole line.</li>
+  <li>A test runs a holder in a second process that takes only the POSIX record lock on the catalogue's lock file, and shows a refresh reading the snapshot rather than fetching.</li>
+  <li>The negative control for both tests is the same test run against the base revision. Each must fail there, because nothing at the base waits on a record lock: the hold is written while the holder holds, and the refresh fetches. Both failing runs are logged.</li>
   <li>Each lock file is opened in <code>reckon/</code> only through <code>exclusive_lock</code>, evidenced as in §3.</li>
   <li>The focused tests that import the changed modules add no failures against the stated base.</li>
 </ul>
