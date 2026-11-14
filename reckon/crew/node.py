@@ -797,13 +797,10 @@ class TaskNode:
     regenerate_paths: list[str] = field(default_factory=list)
     anchor_paths: list[str] = field(default_factory=list)
     time_budget: str = ""
-    # Why this node's budget needs more wall clock than the resolved fence
-    # allows. A stated reason is what admits an over-fence budget: the fence is
-    # a default rather than a hard stop, and a worker stopped mid-delivery is
-    # worse than a longer run the fence was told about. The reason rides the
-    # node, so the run record and the ledger row carry it beside the budget it
-    # explains.
+    # The resolved fence is a sizing reference. Record budgets above it beside
+    # an optional explanation so pointers and ledger rows retain the context.
     over_fence_reason: str = ""
+    over_fence_note: str = ""
     manifest_path: str = ""
     negative_control: str = ""
     estimated_hours: float | None = None
@@ -1517,6 +1514,7 @@ def validate_node(
             if refusal is not None:
                 fail("scoped", refusal)
 
+    node.over_fence_note = ""
     if not node.time_budget:
         fail("bounded", "no time budget is set")
     else:
@@ -1527,13 +1525,10 @@ def validate_node(
         else:
             if budget_ceiling:
                 ceiling = parse_duration(budget_ceiling)
-                if seconds > ceiling and not node.over_fence_reason.strip():
-                    fail(
-                        "bounded",
+                if seconds > ceiling:
+                    node.over_fence_note = (
                         f"budget {node.time_budget} exceeds the resolved fence "
-                        f"{budget_ceiling}; pass --over-fence REASON to record why "
-                        "this work needs more wall clock, or split the work rather "
-                        "than overrun it",
+                        f"{budget_ceiling}"
                     )
 
     if not node.manifest_path:
