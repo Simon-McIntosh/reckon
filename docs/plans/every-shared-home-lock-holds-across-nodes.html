@@ -25,7 +25,7 @@
   <title>Every shared-home lock holds across nodes | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="13">
+<meta name="plan-version" content="14">
 <meta name="plan-modified" content="2026-11-14">
 </head>
 <body>
@@ -200,6 +200,9 @@
 </div>
 <div class="r-comment" data-section="s4" data-id="c-run-r-20261114T140151869239-git-answer-and-resumption-locks-cross-node" data-who="reckon-build" data-when="2026-11-14T18:59:08.197Z">
     <div class="r-comment-body"><p>Migrated the git-answer store (recovery_watch._update_git_answer_store), lane-probe cache (resumption.probe_lane_availability) and sweep-status record (resumption._write_sweep_status) onto reckon.node_exclusive_lock.exclusive_lock, deleted the two one-caller forwarding context managers, and added tests/test_recovery_store_locks_hold_across_nodes.py whose record-lock-only holder makes each site wait (3 passed at head) and which fails all 3 tests against the base revision.</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-run-r-20261114T203906984724-review-of-store-and-review-index-locks-cross-node-afad840f3119" data-who="reckon-build" data-when="2026-11-14T21:12:17.560Z">
+    <div class="r-comment-body"><p>review verdict for r-20261114T140031957329-store-and-review-index-locks-cross-node at afad840f31 (base 6cf4f73a): the gained merge resolution is correct and guarded, total 107/120, zero added failures, no findings.</p></div>
 </div>
 <div class="r-comment" data-section="s5" data-id="c-run-r-20261114T185131299174-review-of-lane-budget-picker-locks-cross-node-4634a0bd4d16" data-who="reckon-build" data-when="2026-11-14T19:08:49.699Z">
     <div class="r-comment-body"><p>independent review of r-20261114T135814761240-lane-budget-picker-locks-cross-node at base 65431adf17b56c3a1fb04f32971d7729e4108dcc, head 4634a0bd4d16c9182934d7cff27798cc6df68ec3; six dimensions scored 19/19/20/17/19/19 (total 113); added_failure_count 0; two non-blocking findings.</p></div>
