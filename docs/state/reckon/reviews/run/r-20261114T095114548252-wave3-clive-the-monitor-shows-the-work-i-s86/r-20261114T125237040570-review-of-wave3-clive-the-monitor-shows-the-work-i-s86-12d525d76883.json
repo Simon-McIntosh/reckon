@@ -1,0 +1,37 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-11-14T13:16:22.341Z",
+  "dispatched_at": "2026-11-14T13:13:17Z",
+  "findings": [
+    {
+      "file": "reckon/crew/recovery_watch.py",
+      "line": 3481,
+      "severity": "blocking",
+      "text": "the new call sits inside `if sweep:` (the change gate over the crew-home token, set at recovery_watch.py:3422 as `home_token is None or token != home_token`), so on a quiet fleet whose token is unchanged the beat never reaches publish_obligations_on_beat \u2014 the exact condition the node's own recorded cause names; the repair is gated behind the trigger it was meant to replace."
+    },
+    {
+      "file": "reckon/crew/runs.py",
+      "line": 3715,
+      "severity": "non-blocking",
+      "text": "publish_obligations_on_beat re-implements the sweep-start path already owned by the change-gate trigger (the _SWEEP_LOCAL.in_sweep guard, the non-blocking sweep_lock acquire, the daemon thread over _run_obligation_sweep) instead of factoring one owner both triggers extend."
+    }
+  ],
+  "project": "reckon",
+  "review_run_id": "r-20261114T125237040570-review-of-wave3-clive-the-monitor-shows-the-work-i-s86-12d525d76883",
+  "reviewed_base_sha": "3728e4ae702a3d61a18fa7e4f6e97f6123d0c1e0",
+  "reviewed_head_sha": "12d525d768837c530caaf03cb2d1d9808435db91",
+  "reviewed_run_id": "r-20261114T095114548252-wave3-clive-the-monitor-shows-the-work-i-s86",
+  "scores": {
+    "durability": 18,
+    "evidence": 16,
+    "fit": 17,
+    "goal_fidelity": 9,
+    "reuse": 14,
+    "scope_discipline": 13
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-14T15:04:36.457330+00:00",
+  "total": 87
+}

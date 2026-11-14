@@ -386,6 +386,46 @@ def test_a_round_resumed_twice_is_exhausted_not_resumed_again(
     )
 
 
+def test_a_refusal_between_resumes_does_not_restart_the_cap(
+    isolated_project: tuple[Path, Path, str], monkeypatch
+) -> None:
+    """A round that alternates resume and refusal is still exhausted at the cap.
+
+    A sweep that finds the round's attempt still in flight records a refusal
+    for the same round. That outcome is not an opening one, so the round's
+    attempt figure restarts at one on the next resume; a cap read from that
+    figure alone never fires, and one run was resumed 434 times that way. The
+    cap counts resumes of the round in hand, which no refusal resets.
+    """
+    config_home, repo, head_sha = isolated_project
+    _completed_pointer(config_home, repo)
+    _store_review(head_sha, [FINDING])
+    resumed = _stub_resume(monkeypatch)
+    _stub_dispatch(monkeypatch)
+
+    def refuse_between() -> None:
+        round_id = runs.read_pointer(RUN_ID)["repair_dispatch"]["round_id"]
+        recovery_repair_dispatch._record_repair_dispatch(
+            RUN_ID,
+            status="refused",
+            reason="the reviewed run could not be resumed: attempt in flight",
+            round_id=round_id,
+        )
+
+    _sweep()
+    refuse_between()
+    _sweep()
+    refuse_between()
+    _sweep()
+    refuse_between()
+    _sweep()
+
+    assert len(resumed) == 2
+    recorded = runs.read_pointer(RUN_ID)["repair_dispatch"]
+    assert recorded["status"] == "exhausted"
+    assert runs.read_pointer(RUN_ID)["repair_rounds"]["resumes"] == 2
+
+
 def test_a_new_round_starts_its_attempt_count_at_one(
     isolated_project: tuple[Path, Path, str], monkeypatch
 ) -> None:
@@ -419,7 +459,9 @@ def test_a_new_round_starts_its_attempt_count_at_one(
     _stub_dispatch(monkeypatch)
     # The run-wide one-round cap would hand this round back; stub it open so
     # the round in hand is reached and its own attempt count is measured.
-    monkeypatch.setattr(recovery_repair_dispatch, "_opened_repair_rounds", lambda _record: {})
+    monkeypatch.setattr(
+        recovery_repair_dispatch, "_opened_repair_rounds", lambda _record: {}
+    )
 
     _sweep()
 

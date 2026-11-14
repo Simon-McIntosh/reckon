@@ -25,8 +25,8 @@
   <title>A report is kept only when persisted | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="15">
-<meta name="plan-modified" content="2026-11-13">
+<meta name="plan-version" content="16">
+<meta name="plan-modified" content="2026-11-14">
 </head>
 <body>
   <main class="plan-doc">
@@ -206,6 +206,9 @@
 </div>
 <div class="r-comment" data-section="s2" data-id="c-run-r-20261112T060815185379-a-persisted-item-has-a-record-and-a-home-outside" data-who="reckon-build" data-when="2026-11-13T06:09:45Z">
     <div class="r-comment-body"><p>§2 lands: persisting copies a figure and any named data files into the project's declared reports.persist_root, verifies each copy's byte count and content hash before appending one record per copy to a new persisted_items project resource (filterable by plan and kind), and refuses by name when the project is unmounted, declares no persist root, or declares one inside the crew home; the gate is tests/test_a_persisted_item_has_a_record.py at 8 passed.</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-run-r-20261114T095120038520-wave3-clive-anchored-a-report-is-kept-only-when-p-s4" data-who="reckon-build" data-when="2026-11-14T13:06:49Z">
+    <div class="r-comment-body"><p>report item retention rule landed — classify_item keeps persisted, cited and live-pointer items and expires the rest at plan close or 30 days; the sweep reads each item&#x27;s newest write once through _newest_mtime and passes it into classify_item.</p></div>
 </div>
 </section>
 </main>

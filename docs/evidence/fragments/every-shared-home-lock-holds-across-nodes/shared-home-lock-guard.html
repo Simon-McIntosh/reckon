@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="every-shared-home-lock-holds-across-nodes">
+  <meta name="plan-title" content="Every shared-home lock holds across nodes">
+  <meta name="plan-evidence-for" content="reckon:every-shared-home-lock-holds-across-nodes">
+  <meta name="plan-verifies" content="reckon:every-shared-home-lock-holds-across-nodes#s2">
+  <meta name="plan-recorded-at" content="2026-11-14">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-tags" content="locks,flock,census,guard">
+  <title>A guard refuses any bare flock that is neither judged nor pending — evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+</head>
+<body>
+<article class="r-note" data-node="shared-home-lock-guard" data-reckon="landed" data-when="2026-11-14">
+  <h2 id="shared-home-lock-guard-head">A guard refuses any bare flock that is neither judged nor pending</h2>
+
+  <p id="shared-home-lock-guard-what"><code>tests/test_every_shared_home_lock_holds_across_nodes.py</code>
+  walks every Python module under <code>reckon/</code>, collects each <code>flock</code> call that
+  asks for a lock rather than releasing one (a bare <code>flock</code>, or one whose operation is
+  not <code>LOCK_UN</code>), and keys it by file and qualified enclosing function. The qualified
+  name comes from <code>reckon/interface_counts.py</code>'s <code>definitions</code> walker, so a
+  method keys as <code>Class.method</code> and a nested function as <code>outer.inner</code> exactly
+  as the interface census names them; there is no second name resolver. The module set is the
+  union of <code>read_trees</code>' revision listing and the working tree, read in the working
+  tree's own bytes, so an uncommitted lock is caught by the same assertion as a committed one.</p>
+
+  <p id="shared-home-lock-guard-tables">Each site must appear in exactly one of two tables.
+  The <em>judged</em> table carries 21 keys covering 24 lock-taking calls, each with the mechanism
+  that makes it safe on one host: the lock file and what it guards exist only on this host, the
+  producer host lease decides the foreign-host case, the renewed follower lease decides it, or the
+  call is the same-node half of the cross-node lock. The <em>pending</em> table carries the 21
+  shared-home sites that have not moved yet, including <code>reckon/compliance.py::_locked</code>,
+  <code>reckon/crew/runs.py::_pointer_lock</code> and
+  <code>reckon/crew/picker/outcomes.py::record_picker_hold</code>. No site was migrated here: the
+  census at the delivered head reads 42 keys and 45 calls, of which 24 calls are judged and 21 are
+  pending.</p>
+
+  <p id="shared-home-lock-guard-failures">The guard has three failures, each naming
+  <code>reckon.node_exclusive_lock.exclusive_lock</code> as the remedy where a site is unjudged:
+  a site in neither table, a table entry with no lock-taking call left, and an entry in both
+  tables. One further test asserts the walk itself sees something known present, so an empty
+  census reads as an instrument failure rather than as a clean tree.</p>
+
+  <p id="shared-home-lock-guard-controls">Three negative controls are logged in the run directory,
+  each a genuine failing run of the real test rather than an assertion about the guard:
+  <code>negative-control-1-scratch-module.log</code> points the guard at a scratch tree holding
+  one module with a bare <code>flock</code> and it fails naming
+  <code>['reckon/fresh.py::write_shared']</code>; <code>negative-control-2-deleted-judged-entry.log</code>
+  removes the judged entry for <code>reckon/crew/watch_unit.py::watch_state</code> from a copy of
+  the test and it fails naming that site; <code>negative-control-3-stale-entry.log</code> adds a
+  pending entry for <code>reckon/crew/runs.py::no_flock_here</code> and it fails naming that stale
+  entry. Each log ends in a bare <code>EXIT=1</code>.</p>
+
+  <p id="shared-home-lock-guard-declared">The guard is declared in
+  <code>docs/state/reckon/flight.yaml</code> under <code>gates.census_tests</code> beside the
+  staged-write inventory. Composed through <code>promotion_records._scoped_suite_command</code>
+  for a node writing product source, the scoped gate command reads
+  <code>PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py</code>,
+  and a node writing only docs composes an empty command — so the guard runs in every product-source
+  node's gate, not only in a full-suite run.</p>
+
+  <p id="shared-home-lock-guard-gate">The baseline arm resolved over the base tree carries the
+  inventory test alone (<code>51 passed</code>, <code>EXIT=0</code>); the after arm at this head
+  carries both (<code>55 passed</code>, <code>EXIT=0</code>). The new file passes
+  <code>ruff check</code> and <code>ruff format --check</code>.</p>
+</article>
+</body>
+</html>
