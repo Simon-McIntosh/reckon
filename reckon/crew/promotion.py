@@ -303,14 +303,83 @@ def _retire_review_pointer(run_id: str, record: Mapping[str, Any]) -> bool:
         return True
 
 
-def _remove_promoted_pointer_or_defer(run_id: str, record: Mapping[str, Any]) -> bool:
+#: The pointer fields that name one attempt of a run. The phase is not one of
+#: them: a promotion request rewrites it while the attempt it belongs to keeps
+#: running, so a mark made during a promotion would otherwise read as a race.
+_ATTEMPT_IDENTITY_FIELDS = ("attempt", "attempt_kind", "pid", "pid_start_time")
+
+
+def _retire_a_raced_pointer(run_id: str, record: Mapping[str, Any]) -> bool:
+    """Remove the live pointer only while it still belongs to ``record``'s attempt.
+
+    A promotion that lost the ledger-row race to another writer owns its pointer
+    in the sense that matters here: the other writer's row is written, the head
+    still has to be merged, and no newer attempt started the run. A mark another
+    writer put on the pointer while this promotion ran — a promotion request, a
+    landing mark — is bookkeeping about a run whose row now has an owner, not a
+    different attempt. A resume that started the run again does change the
+    attempt, and its pointer is left to that attempt.
+    """
+    with _pointer_lock(run_id):
+        path = pointer_path(run_id)
+        if not path.exists():
+            return False
+        try:
+            current = read_pointer(run_id)
+        except CrewError:
+            return False
+        if any(
+            current.get(field) != record.get(field)
+            for field in _ATTEMPT_IDENTITY_FIELDS
+        ):
+            return False
+        try:
+            path.unlink(missing_ok=True)
+        except OSError:
+            return False
+        return True
+
+
+def _record_a_raced_landing(run_id: str, record: Mapping[str, Any]) -> None:
+    """Record the merge a promotion that lost the ledger-row race still owes.
+
+    The row is the other writer's, so the promotion cannot merge from its own
+    return path when its caller did not land: naming the reviewed head in the
+    landing record is what lets the landing pass finish that merge, rather than
+    leaving a delivered run whose head is off the primary branch. Best-effort:
+    the caller refuses over the pointer, and a record that cannot be written is
+    reported by the pass as an absent one.
+    """
+    from reckon.crew import pending_landing
+
+    pending_landing.write_pending(
+        run_id,
+        str(record.get("project") or ""),
+        pointer=record,
+        head=_run_promoted_revision(record, _declared_manifest_commits(record)),
+    )
+
+
+def _remove_promoted_pointer_or_defer(
+    run_id: str,
+    record: Mapping[str, Any],
+    *,
+    finishing_another_writers_row: bool = False,
+) -> bool:
     """Remove the promoted pointer, or keep it marked for the landing pass.
 
     The ledger row and plan comment are committed before this runs, so a
     pointer that moved under the promotion leaves a promoted run whose head was
     never merged: a second recovery would duplicate what the pending-landing
-    pass already does, so the pointer is kept and marked instead. A review run
-    has no head to merge, so its moved pointer is retired rather than kept.
+    pass already does, so the pointer is kept and the merge is recorded for
+    that pass instead. A review run has no head to merge, so its moved pointer
+    is retired rather than kept.
+
+    ``finishing_another_writers_row`` says the row was another writer's when
+    this promotion reached it, so the run is promoted either way. The pointer
+    this promotion read is then retired rather than read as a newer attempt's,
+    and the merge it owes is recorded for the landing pass so a caller that does
+    not land still finishes it.
     """
     try:
         return _remove_promoted_pointer(run_id, record)
@@ -319,8 +388,14 @@ def _remove_promoted_pointer_or_defer(run_id: str, record: Mapping[str, Any]) ->
 
         if _is_review_run(record):
             return _retire_review_pointer(run_id, record)
+        if finishing_another_writers_row:
+            _record_a_raced_landing(run_id, record)
+            if _retire_a_raced_pointer(run_id, record):
+                return True
         if not _keep_pointer_for_pending_landing(run_id):
             raise
+        if finishing_another_writers_row:
+            return False
         raise CrewError(
             f"run {run_id!r} changed while promotion ran; its promotion is "
             "recorded and its pointer is kept, marked pending_landing_repair, so "
@@ -1524,7 +1599,9 @@ def _complete_locked(
                     kind="promoted",
                     gate=str(gate),
                 )
-                _remove_promoted_pointer_or_defer(run_id, record)
+                _remove_promoted_pointer_or_defer(
+                    run_id, record, finishing_another_writers_row=True
+                )
                 # The release runs inside this run's promotion lock, so the
                 # moved-aside copy is left to the trash sweep rather than
                 # deleted here: a copy deleted inline keeps a serial review
@@ -2201,7 +2278,9 @@ def _complete_locked(
             kind="promoted",
             gate=str(gate),
         )
-        _remove_promoted_pointer_or_defer(run_id, record)
+        _remove_promoted_pointer_or_defer(
+            run_id, record, finishing_another_writers_row=already_promoted
+        )
         # The release runs inside this run's promotion lock, so the moved-aside
         # copy is left to the trash sweep rather than deleted here: a copy
         # deleted inline keeps a serial review sweep waiting on the filesystem.
