@@ -57,4 +57,13 @@
   refused for a stored record it did not find. Across the test files that
   import the changed module, 2 failures and 3 errors appear at both the base
   revision and the head, identical ids, so this change adds none of them.</p>
+
+  <p>The repair round removed the duplicated plan-slug read this record's own
+  promotion branch had introduced: it now asks the dispatch module's reader
+  for the plan a pointer names, so the identity rule has one owner, and the
+  test module no longer carries a helper neither case called. Both arms were re-measured after that round: base 51 passed
+  at <code>3b1cb4603e</code> (<code>EXIT=0</code>, job 1315576) and after 53
+  passed at <code>a1f41e2b9b</code> (<code>EXIT=0</code>, job 1315578), each on
+  <code>all_debug</code> with the command logged beside it in the run
+  directory.</p>
 </section>
