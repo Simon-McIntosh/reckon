@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="work-flows-to-the-lane">
+  <meta name="plan-title" content="Work flows to the lane">
+  <meta name="plan-summary" content="A run's armed suite, importer population and review neighbourhood are derived from its delivered diff.">
+  <meta name="plan-evidence-for" content="reckon:work-flows-to-the-lane">
+  <meta name="plan-verifies" content="reckon:work-flows-to-the-lane#s54">
+  <meta name="plan-commits" content="60a645fa9b7806c471d274ab68c97092af203dd8">
+  <meta name="plan-recorded-at" content="2026-11-14">
+  <meta name="plan-verdict" content="recorded">
+  <title>A run's scope comes from its diff | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article id="armed-suite-and-review-scope-from-the-diff-record" data-node="armed-suite-and-review-scope-from-the-diff" data-reckon="landed">
+  <h2 id="armed-suite-and-review-scope-from-the-diff-outcome">A delivered run derives its own scope</h2>
+  <p>The armed suite command, the importer population and the review neighbourhood were read from a
+  run's declared write paths. A run dispatched with none had no prediction to read, so its scoped
+  suite resolved to nothing and no code-review neighbourhood contained it. A delivered diff answers
+  all three, so <code>reckon/crew/delivery_scope.py</code> now derives the effective scope from the
+  changed paths. A run that declared write paths keeps its declared set unchanged; a run that
+  declared none takes the paths its diff changed. The two therefore derive the same armed command,
+  importer population and neighbourhood on the same diff.</p>
+  <p>The landing measurement records the derived scope beside the suite pair through
+  <code>Measurement.scope</code>, and its own test-file resolution goes through the one derivation.
+  The new test proves the equality between a no-write-paths run and a declared run with the same
+  diff, delivers two no-write-paths runs that meet at a merge, and states the negative control: a
+  derivation over an empty write-path list and no diff arms nothing.</p>
+  <h3 id="armed-suite-and-review-scope-from-the-diff-measurements">Checks that detect the defect</h3>
+  <table>
+    <thead><tr><th>Measurement</th><th>Observed result</th></tr></thead>
+    <tbody>
+      <tr><td>Armed base at <code>9c8632ca0b992790566bc487862f2c9be6f8906d</code>, new test absent</td><td>51 passed in 9.44s; EXIT=0</td></tr>
+      <tr><td>Armed head at <code>60a645fa9b7806c471d274ab68c97092af203dd8</code></td><td>54 passed in 9.93s; EXIT=0; zero added failure IDs</td></tr>
+      <tr><td>Declared mutation: derive the armed command from the empty write-path list</td><td>1 failed in 2.54s; EXIT=1; <code>test_a_no_write_paths_run_derives_what_a_declared_run_with_the_same_diff_does</code> reports <code>{'armed_command': ''}</code> against the diff's test file</td></tr>
+    </tbody>
+  </table>
+  <p id="armed-suite-and-review-scope-from-the-diff-receipts">Both arms ran on <code>all_debug</code>
+  with the resolved command and are logged under
+  <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261114T082604258557-armed-suite-and-review-scope-from-the-diff/gate/</code>:
+  <code>base.log</code> (a detached worktree at the base revision) and <code>head.log</code>. Each log
+  names its revision, tree, command, the module it imported (<code>module.__file__</code>) and the
+  resolved working directory, and ends with its bare <code>EXIT=</code> receipt. The base worktree was
+  removed after its arm (<code>REMOVED=0</code>). The negative-control run is in
+  <code>negative-control.log</code> in the same run directory.</p>
+  <p id="armed-suite-and-review-scope-from-the-diff-negative-control">The mutation was applied to the
+  working tree and reverted before the head arm: <code>derive</code> resolved the armed command from
+  <code>declared_scope(record)</code> instead of the effective scope. The first test then read an empty
+  armed command for the no-write-paths run, while two other cases passed. Reverting restores
+  <code>54 passed</code>.</p>
+</article>
+</body>
+</html>
