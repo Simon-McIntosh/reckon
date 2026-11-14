@@ -1,0 +1,49 @@
+<section id="parallel-nodes-on-one-module-land-measured">
+  <h3>Held-on-claim admission verdicts before and after shared write paths landed</h3>
+  <p><strong>Verdict.</strong> The after window is measured: 265 admission passes over 8 hours 32 minutes on 2026-11-14 carry <strong>zero</strong> <code>held-on-claim</code> verdicts, and the same hours expose <strong>27 runs with 47 run/file exposures</strong> — a run admitted with a shared-root file claim while another live run held the same file. That clears the floor of five exposures, so the zero is a measured zero, not an unmeasured one. The negative control is present: the before snapshot carries <strong>157 held-on-claim verdicts on shared-root file paths</strong> (296 held in total). The ledger window after holds <strong>137 distinct concurrent pairs</strong> on one shared-root file, well over the floor of five; every pair is accounted for below, including the one run left with a pending landing repair and one run the coordinator discarded.</p>
+
+  <h4 id="parallel-nodes-on-one-module-land-measured-windows">Both windows' counts</h4>
+  <table>
+    <thead><tr><th>Window</th><th>Admission passes</th><th>Held-on-claim verdicts</th><th>On shared-root file paths</th><th>Unclassified</th><th>Distinct held runs</th></tr></thead>
+    <tbody>
+      <tr><td>Before, 2026-11-07T05:38:15Z–2026-11-08T12:33:24Z (snapshot copied before the shared default landed)</td><td>212</td><td>296</td><td>157</td><td>139</td><td>22</td></tr>
+      <tr><td>After, 2026-11-14T07:38:23Z–2026-11-14T16:10:53Z (live log's retained tail)</td><td>265</td><td>0</td><td>0</td><td>0</td><td>0</td></tr>
+    </tbody>
+  </table>
+  <p><strong>The 139 unclassified before-verdicts are an instrument limit, stated rather than absorbed.</strong> A held verdict's detail line names the claimed path but not the claiming run's project. Resolving it requires that run's ledger record for its project, and the ledger no longer retains the 2026-11-06/07 records those verdicts name (checked directly: <code>state/*/runs/&lt;run_id&gt;.json</code> absent). Earlier receipts guessed <code>reckon/</code> for such paths when a same-named checkout file exists; this measurement does not guess, so those verdicts stay unclassified. The negative control needs only that the before window's shared-root count is above zero, which the 157 strict-classified verdicts establish on their own.</p>
+  <p>Shared-root classification follows each claiming project's own <code>docs/state/&lt;project&gt;/shared-write-paths.json</code> (<code>reckon</code>: <code>reckon/</code>, <code>tests/</code>, <code>scripts/</code>, <code>skills/</code>), refuses any path matched by its <code>exclusive_patterns</code>, and requires a file rather than a directory claim. A project that declares no roots is listed on its own and never counted against the zero; none appeared in the after window's exposure set.</p>
+
+  <h4 id="parallel-nodes-on-one-module-land-measured-exposure">The zero's exposure, counted only in the verdict-copy hours</h4>
+  <p>The verdict log names a path only on a refusal, so the exposure comes from the ledger: a run counts as exposed when the ledger records a <code>launched</code> verdict for it inside 07:38:23Z–16:10:53Z, its own declared write paths name a file under its project's shared roots, and another run in the same project was live at that instant (dispatched, not terminal) with a claim on that same file. Directory claims held by the peer are excluded per §2 and listed separately; there were <strong>0</strong>.</p>
+  <ul>
+    <li>Distinct runs admitted with a shared-root file claim under a live same-file peer: <strong>27</strong> (floor 5).</li>
+    <li>Run/file exposures: <strong>47</strong>.</li>
+    <li>Exposures excluded because the peer claimed the enclosing directory: <strong>0</strong>.</li>
+    <li>Held-on-claim verdicts on shared-root files in those same hours: <strong>0</strong>.</li>
+  </ul>
+  <p>Sample exposures, all admitted while a peer held the same file: <code>r-20261114T094123760799</code> on <code>reckon/crew/plan_review.py</code> (09:46:58Z), <code>r-20261114T094047809362</code> on <code>reckon/crew/recovery_review_dispatch.py</code> (09:46:58Z), <code>r-20261114T094119690995</code> on <code>reckon/crew/runs.py</code>. The full 47-row set is in <code>receipt.json</code> beside the measurement log.</p>
+
+  <h4 id="parallel-nodes-on-one-module-land-measured-pairs">Concurrent same-file pairs and their outcomes</h4>
+  <p>The ledger window after is 2026-11-13T16:10:53Z–2026-11-14T16:10:53Z (24 hours, over the required 12). A pair is two runs of one project whose dispatch-to-terminal intervals overlap and whose declared write paths include the same shared-root file. <strong>137 distinct pairs</strong> qualify; every pair is on one row of the receipt. Pair-member outcomes at measurement time:</p>
+  <table>
+    <thead><tr><th>Member outcome</th><th>Count</th><th>Note</th></tr></thead>
+    <tbody>
+      <tr><td>landed cleanly (head reachable from the freshest main-line ref)</td><td>57</td><td>Landing tested against local <code>main</code> at <code>e9c74b28</code> (newer than <code>origin/main</code> <code>67a52f8d</code>; the lander merges locally and pushes after).</td></tr>
+      <tr><td>open (still running at measurement time)</td><td>208</td><td>The wave was live during the window; these pairs are open, not failing.</td></tr>
+      <tr><td>pending landing repair</td><td>5</td><td><code>r-20261114T095141182096-wave3-clive-the-monitor-shows-the-work-i-s88</code>: <code>promotion</code> refused, <code>pending_landing_repair: true</code> — the §3 repair path is engaged, so this is not an unlanded head without a repair round.</td></tr>
+      <tr><td>discarded, head unlanded</td><td>4</td><td><code>r-20261114T095108157561-wave3-clive-the-monitor-reads-each-fact--s45</code>: <code>discard.json</code> records a coordinator discard at 13:48:09Z. Its head never landed and no repair round exists — the pair arm accounts for it here rather than absorbing it.</td></tr>
+    </tbody>
+  </table>
+  <p>Pairs with a non-clean member all involve those two runs. The discarded run's four pairs share <code>reckon/crew/plan_review.py</code>, <code>reckon/crew/review.py</code>, <code>reckon/crew/review_records.py</code> and <code>tests/test_the_review_store_is_indexed_by_its_writers.py</code> with peers that landed cleanly; the pending-repair run's five pairs share <code>reckon/crew/recovery_classification.py</code>. No other pair had an unlanded head.</p>
+
+  <h4 id="parallel-nodes-on-one-module-land-measured-commands">Commands and where they are logged</h4>
+  <p>Every input and command lives in the measuring run's own directory, <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261114T144956227503-parallel-nodes-on-one-module-land-measured/measure/</code>:</p>
+  <ul>
+    <li><code>cp ~/.cache/reckon-claims/admission-verdicts-before-shared-default.jsonl → measure/before-shared-default.jsonl</code> (the before snapshot, unchanged)</li>
+    <li><code>cp ~/.config/reckon/crew/admission-verdicts.jsonl → measure/after-live-20261114T1612Z.jsonl</code> (the live log's tail, taken before it rolled further)</li>
+    <li><code>/home/ITER/mcintos/Code/reckon/.venv/bin/python measure.py</code> → <code>measure/measure-run.log</code> and <code>measure/receipt.json</code></li>
+    <li><code>git -C /home/ITER/mcintos/Code/reckon merge-base --is-ancestor &lt;head&gt; main</code>, once per pair member, from <code>measure.py</code></li>
+  </ul>
+  <p>The verdict-log copies are a bounded tail: the writer trims the log to 1 MiB on every append, so a copy is valid only for the hours it holds. Both copies carry their own first and last <code>at</code> values, and the receipt records them. The 9 November after-copies named in the plan section no longer exist under <code>~/.config/reckon/crew/runs/r-20261109T074919528432-parallel-nodes-on-one-module/</code> (the directory is absent), so this measurement re-takes the after window from the current retained tail rather than reusing them.</p>
+  <p><strong>Scope note.</strong> This measurement covers only the two counters above and the pair accounting. Conflict-marker scanning of merged main belongs to the separately dispatched test node.</p>
+</section>

@@ -1,0 +1,250 @@
+{
+  "absent_items": [],
+  "accepted_edits": [
+    {
+      "by": "8e41a6d3-d0e0-4927-afd1-771942ebfe6a",
+      "digests": {
+        "s4": "c88a9475bd0f034252a26203fe2fde50efdcbdd582bf064b83d9ecb4ad0f62e6"
+      },
+      "reason": "these edits answer the review's own findings, each recorded with --acted",
+      "units": [
+        "s4"
+      ],
+      "when": "2026-11-14T19:41:37.578122+00:00"
+    }
+  ],
+  "completed_at": "2026-11-14T18:01:38.801Z",
+  "dispatched_at": "2026-11-14T17:49:35Z",
+  "findings": [
+    {
+      "anchor": "reckon/crew/dispatch_batch.py:718",
+      "id": "reuse_search-1",
+      "reason": "the plan's done-when asserts five sections queue from one call, which is unachievable if the enumeration reads declarations that a newly authored plan does not yet persist, and the section needs to say which reader is authoritative.",
+      "text": "`queue_batch` already queues N entries in one call, returns one row per entry with `queued`/`refused` statuses and a reason, derives each omitted field from its section (`:482 section_derivation`), derives each plan once (`:276 _PlanRead`), orders intra-batch waits (`:688 _batch_order`), and the dispatch store already returns the existing request for a repeated (project, plan, section, node) key (`:859`), which is \u00a72's whole \"a second identical call queues nothing\" done-when \u2014 so the only new code \u00a72 needs is the enumeration of a plan's implementable sections and the owner gate, and the node brief must hand `dispatch_batch` that enumeration rather than a second queueing path; note also `roadmap.implementable_sections` (`reckon/roadmap.py:150`) answers from *persisted* declarations and returns empty for a plan whose classification lives only in its markup, which silently turns \u00a72's \"every implementable section\" into \"no sections\" for a freshly authored plan",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew_dispatch_commands.py:1196",
+      "id": "deep_module-1",
+      "reason": "it changes what the node delivers (one importable entry point with the row document as its return value) rather than a command with an inline loop, and that is the difference between \u00a72's done-when being testable and being CLI-coupled.",
+      "text": "the `--plan`/`--section`/`--batch` dispatch command is the plan's only named home for a pipeline that spans five delegations (enumerate sections, skip census, resolve owner, hold for review, compose review), and that command body is already the site of two separate `dispatch` definitions (`:864`, `:1196`); the design that hides this behind one function returning \u00a72's row document \u2014 placed beside `queue_batch` so a temporary-repository test can call it directly \u2014 is the smaller interface, while the plan's shape leaves the row document to be assembled in the command, where \u00a72's five done-when cases can only be exercised through a click test that a coordinator cannot read as evidence",
+      "type": "deep_module",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/plan_review.py:4255",
+      "id": "thin_wrapper-1",
+      "reason": "the section must either route composition through the existing pass or state why its narrower rule is correct where the reflex's is wrong, and as written two composition paths will disagree about the same plan.",
+      "text": "\u00a73's \"unless one is already queued or in flight\" is a two-clause skip rule standing in front of `compose_owed_plan_reviews`, whose own `_owed_review_skip_reason` already answers five further conditions that a dispatch-path copy would not: a plan inside its authoring quiet window (`PLAN_REVIEW_QUIET_SECONDS`), one past its burst window, one that is terminal, one no recent run authors, and one whose stored reviews leave no unit uncovered (`review_coverage`) \u2014 so the wrapper composes a review of a plan a coordinator is still editing, and re-composes one whose findings are merely unanswered, both of which the reflex deliberately refuses",
+      "type": "thin_wrapper",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/plan_coordinator.py:256",
+      "id": "duplicate_owner-1",
+      "reason": "\u00a72's done-when \"a section with a live run of another session is skipped naming that session\" is decided by whichever resolver the node picks, so the brief must name `plan_coordinator` and the section must not restate a competing rule.",
+      "text": "\u00a72's \"the owner is the session recorded on the plan's most recent run, or none\" is already answered by `resolve_plan_coordinators`, which matches each ledger run and live pointer to its plan, keeps the newest inside a configurable window, and returns `coordinator: None` / `tier: \"unowned\"` when there is none \u2014 the module docstring states it exists precisely so no third ownership fact is added, and a second inline resolver in the dispatch path would drift on which phases count (this one keys on dispatch instant plus a staleness window, not on \"queued or live\") and on the brief-dispatched runs it matches through `plan_link`",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/admission/reviews.py:410",
+      "id": "duplicate_owner-2",
+      "reason": "\u00a73's claim that \"only the point at which they hold the request moves\" is only true if the gate and `_plan_review_owed` are changed as one unit, and the section must say the existing hold is the mechanism it extends, because \u00a71 currently reads as if the hold already covers an unreviewed plan, which it does not.",
+      "text": "\u00a73's \"held `plan-review-owed` and released once covered\" is an existing mechanism with an owner: `_plan_review_owed` decides the hold, `PLAN_REVIEW_HELD_REASON` (`reckon/crew/admission/shared.py:163`) names it, `_release_plan_review_holds` (`:684`) releases it automatically on the next pass, and `queue_admission.py:224` already carries the reason through the admission path \u2014 but that owner's documented invariant is that admission holds *narrower* than the dispatch gate and \"each is held exactly when the gate holds it, so the two never disagree\", so moving the gate's refusal to a hold at dispatch requires changing both sides together; a dispatch-side hold written beside this one breaks that invariant silently",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew_dispatch_commands.py:1150",
+      "id": "interface_budget-1",
+      "reason": "the section must name at least what the `--batch` single-plan use becomes and that the \"names no section\" refusal family shrinks, or state why nothing can, before a node adds the surface.",
+      "text": "public_definitions 2707, cli_options 488, mcp_views 15, refusal_families 25; \u00a72 adds a second meaning to the existing `--plan` option (with no `--section`, all sections) plus a five-value row-status vocabulary (`queued`, `awaiting-upstream`, `held`, `skipped`, `refused`) and five skip reasons, and \u00a73 adds an automatic review-composition decision taken inside `dispatch`; retirements the section does not name: the hand-written JSON batch file (`--batch`, `:1150`) becomes unnecessary for a single plan, and the `--section`-required refusal family narrows",
+      "type": "interface_budget",
+      "would_change": true
+    },
+    {
+      "anchor": "skills/reckon-build/references/sprint-orchestration.md:770",
+      "id": "interface_budget-2",
+      "reason": "a node following \u00a74 as written updates two of three carriers and leaves the reference the coordinator actually loads contradicting the skill, so the section must name `sprint-orchestration.md` and the review-round clause as the one it retires.",
+      "text": "\u00a74 names `skills/reckon-build/SKILL.md` and `AGENTS.md` as the carriers of the full-width rule, but a third carrier states the opposite and is the skill's own reference: `sprint-orchestration.md:770` reads \"A coordinator chooses each section rather than loading a plan wholesale\", and `SKILL.md:166` still gates the beat on \"once an owned plan's review round is answered\", which \u00a73 changes; the census of the retired rule is three files, and \u00a74's done-when reads only the skill",
+      "type": "interface_budget",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "48859c4e0bec8bd5b53339641d6f77fc2aea88b5",
+  "plan_fingerprint": "318031fc6a8fa94903e065277a2cd8331a730b9c2968706ba0d7e109297f920f",
+  "plan_slug": "building-a-plan-queues-all-of-it",
+  "plan_version": 0,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "8e41a6d3-d0e0-4927-afd1-771942ebfe6a",
+      "commit": "fa599704a4a90e906e3cd49720b6d1dbe05db03f",
+      "commit_basis": "edit",
+      "finding": "reuse_search-1",
+      "note": "\u00a72 extends queue_batch with section enumeration and the owner gate; carried in the node brief as its reuse map",
+      "reason": "",
+      "when": "2026-11-14T19:36:12.030308+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "8e41a6d3-d0e0-4927-afd1-771942ebfe6a",
+      "commit": "fa599704a4a90e906e3cd49720b6d1dbe05db03f",
+      "commit_basis": "edit",
+      "finding": "deep_module-1",
+      "note": "the node brief places the plan-width pipeline in one function beside queue_batch that returns \u00a72's row document, so tests call it directly",
+      "reason": "",
+      "when": "2026-11-14T19:36:29.661165+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "8e41a6d3-d0e0-4927-afd1-771942ebfe6a",
+      "commit": "fa599704a4a90e906e3cd49720b6d1dbe05db03f",
+      "commit_basis": "edit",
+      "finding": "thin_wrapper-1",
+      "note": "\u00a73 now composes only what the plan-review reflex would compose now, under its own skip rules",
+      "reason": "",
+      "when": "2026-11-14T19:36:59.802119+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "8e41a6d3-d0e0-4927-afd1-771942ebfe6a",
+      "commit": "fa599704a4a90e906e3cd49720b6d1dbe05db03f",
+      "commit_basis": "edit",
+      "finding": "duplicate_owner-1",
+      "note": "\u00a72's owner is the plan's resolved coordinator, the same answer the coordinator view gives; no new ownership fact",
+      "reason": "",
+      "when": "2026-11-14T19:37:30.537850+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "8e41a6d3-d0e0-4927-afd1-771942ebfe6a",
+      "commit": "fa599704a4a90e906e3cd49720b6d1dbe05db03f",
+      "commit_basis": "edit",
+      "finding": "duplicate_owner-2",
+      "note": "\u00a73 states the dispatch gate and the admission hold stay one rule; the brief names both sides to change together",
+      "reason": "",
+      "when": "2026-11-14T19:38:07.231410+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "8e41a6d3-d0e0-4927-afd1-771942ebfe6a",
+      "commit": "fa599704a4a90e906e3cd49720b6d1dbe05db03f",
+      "commit_basis": "edit",
+      "finding": "interface_budget-1",
+      "note": "\u00a72 names the retired single-plan batch file and the narrowed missing-section refusal",
+      "reason": "",
+      "when": "2026-11-14T19:38:34.663626+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "8e41a6d3-d0e0-4927-afd1-771942ebfe6a",
+      "commit": "fa599704a4a90e906e3cd49720b6d1dbe05db03f",
+      "commit_basis": "edit",
+      "finding": "interface_budget-2",
+      "note": "\u00a74 covers sprint-orchestration.md and the SKILL.md gate line, and its test finds no carrier of the retired rule in all three files",
+      "reason": "",
+      "when": "2026-11-14T19:39:12.051631+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "8e41a6d3-d0e0-4927-afd1-771942ebfe6a",
+      "commit": "fa599704a4a90e906e3cd49720b6d1dbe05db03f",
+      "commit_basis": "edit",
+      "finding": "reuse_search-1",
+      "note": "\u00a72 extends queue_batch with section enumeration and the owner gate; carried in the node brief as its reuse map",
+      "reason": "",
+      "when": "2026-11-14T19:39:49.110339+00:00"
+    }
+  ],
+  "responses": {
+    "deep_module-1": {
+      "action": "acted",
+      "by": "8e41a6d3-d0e0-4927-afd1-771942ebfe6a",
+      "commit": "fa599704a4a90e906e3cd49720b6d1dbe05db03f",
+      "commit_basis": "edit",
+      "note": "the node brief places the plan-width pipeline in one function beside queue_batch that returns \u00a72's row document, so tests call it directly",
+      "reason": "",
+      "when": "2026-11-14T19:36:29.661165+00:00"
+    },
+    "duplicate_owner-1": {
+      "action": "acted",
+      "by": "8e41a6d3-d0e0-4927-afd1-771942ebfe6a",
+      "commit": "fa599704a4a90e906e3cd49720b6d1dbe05db03f",
+      "commit_basis": "edit",
+      "note": "\u00a72's owner is the plan's resolved coordinator, the same answer the coordinator view gives; no new ownership fact",
+      "reason": "",
+      "when": "2026-11-14T19:37:30.537850+00:00"
+    },
+    "duplicate_owner-2": {
+      "action": "acted",
+      "by": "8e41a6d3-d0e0-4927-afd1-771942ebfe6a",
+      "commit": "fa599704a4a90e906e3cd49720b6d1dbe05db03f",
+      "commit_basis": "edit",
+      "note": "\u00a73 states the dispatch gate and the admission hold stay one rule; the brief names both sides to change together",
+      "reason": "",
+      "when": "2026-11-14T19:38:07.231410+00:00"
+    },
+    "interface_budget-1": {
+      "action": "acted",
+      "by": "8e41a6d3-d0e0-4927-afd1-771942ebfe6a",
+      "commit": "fa599704a4a90e906e3cd49720b6d1dbe05db03f",
+      "commit_basis": "edit",
+      "note": "\u00a72 names the retired single-plan batch file and the narrowed missing-section refusal",
+      "reason": "",
+      "when": "2026-11-14T19:38:34.663626+00:00"
+    },
+    "interface_budget-2": {
+      "action": "acted",
+      "by": "8e41a6d3-d0e0-4927-afd1-771942ebfe6a",
+      "commit": "fa599704a4a90e906e3cd49720b6d1dbe05db03f",
+      "commit_basis": "edit",
+      "note": "\u00a74 covers sprint-orchestration.md and the SKILL.md gate line, and its test finds no carrier of the retired rule in all three files",
+      "reason": "",
+      "when": "2026-11-14T19:39:12.051631+00:00"
+    },
+    "reuse_search-1": {
+      "action": "acted",
+      "by": "8e41a6d3-d0e0-4927-afd1-771942ebfe6a",
+      "commit": "fa599704a4a90e906e3cd49720b6d1dbe05db03f",
+      "commit_basis": "edit",
+      "note": "\u00a72 extends queue_batch with section enumeration and the owner gate; carried in the node brief as its reuse map",
+      "reason": "",
+      "when": "2026-11-14T19:39:49.110339+00:00"
+    },
+    "thin_wrapper-1": {
+      "action": "acted",
+      "by": "8e41a6d3-d0e0-4927-afd1-771942ebfe6a",
+      "commit": "fa599704a4a90e906e3cd49720b6d1dbe05db03f",
+      "commit_basis": "edit",
+      "note": "\u00a73 now composes only what the plan-review reflex would compose now, under its own skip rules",
+      "reason": "",
+      "when": "2026-11-14T19:36:59.802119+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/Code/reckon/docs/state/reckon/reviews/plan/building-a-plan-queues-all-of-it/r-20261114T174643759471-plan-review-of-building-a-plan-queues-all-of-it.json",
+  "review_run_id": "r-20261114T174643759471-plan-review-of-building-a-plan-queues-all-of-it",
+  "reviewed_blob_sha": "2a5044a77fdf3474617826a8248714a4c1fc94a9",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "a finding \u2014 the plan's two sections put entry enumeration, five skip verdicts, owner resolution, hold creation and review composition in one place without a named seam; placed in the CLI command they are unverifiable except through click, where `dispatch_batch` already owns entry derivation and is importable by both the CLI and a test.",
+    "duplicate_owner": "a finding \u2014 two shared mechanisms are re-derived rather than extended: plan-session ownership by \u00a72, and the review gate's hold-and-release by \u00a73, each owned by a module named below.",
+    "interface_budget": "a finding \u2014 public_definitions 2707, cli_options 488, mcp_views 15, refusal_families 25; \u00a72 adds a dispatch mode and a new row-status vocabulary and \u00a73 adds an automatic composition decision, and neither names what it retires or merges; \u00a74 retires a rule that two other files still carry.",
+    "reuse_search": "a finding \u2014 the machinery \u00a72 and \u00a73 need already exists: `reckon crew dispatch --batch` queues a whole plan's sections in one call (`reckon/crew/dispatch_batch.py:718 queue_batch`), per-section field derivation is `dispatch_batch.section_derivation` (:482), the implementable-section enumeration is `roadmap.implementable_sections` (`reckon/roadmap.py:150`), the declared waits are `roadmap.section_depends_on` (`reckon/roadmap.py:463`), the review-owed hold is `reckon/crew/admission/reviews.py:410 _plan_review_owed`, and the review composition is `reckon/crew/plan_review.py:4330 compose_owed_plan_reviews`. Only the enumeration-plus-owner-gate remains unbuilt, so \u00a72 is a caller of existing machinery and \u00a73 is an extension of an existing hold.",
+    "thin_wrapper": "a finding \u2014 \u00a73's composition rule (\"unless one is already queued or in flight\") is a thinner copy of `_owed_review_skip_reason` (`reckon/crew/plan_review.py:4255`), which also weighs the authoring quiet window, the burst window, terminal status, authorship and unanswered findings, and the plan gives no reason the reflex cannot be extended."
+  },
+  "section_digests": {
+    "_document": "9d8cf663ccdf21c00977d0760dbc1dba06da8c26a951a6b980847e85956e6cf5",
+    "s1": "68aae36865e02028c23514c19fd458ab66921c7ef94761508248c9770120d987",
+    "s2": "a6b6ff9d44e595a5ef69d72014a2a727c006c9638e4eae2f639e4eeffe0a8e28",
+    "s3": "286f43522fdbd0826c263df872f523b1f3d8222157583f2327738b131225980b",
+    "s4": "116df170d55beabe9cf6f79e724b6b7e9bec98c8e94d7d8046c49005264e8356"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-14T18:26:38.134641+00:00",
+  "total": null
+}

@@ -24,10 +24,8 @@ natural reset and leaves the flag alone.
 
 from __future__ import annotations
 
-import fcntl
 import json
 import os
-import threading
 from collections.abc import Iterable, Iterator, Mapping
 from contextlib import contextmanager
 from datetime import UTC, datetime, timedelta
@@ -36,13 +34,10 @@ from typing import Any
 
 from reckon._store import write_json_atomically
 from reckon.crew.obligation_snapshot import crew_home
+from reckon.node_exclusive_lock import exclusive_lock
 
 #: The filename under the crew state home holding every group's flag.
 STORE_FILENAME = "budget-resets.json"
-
-#: Serialises this module's in-process critical sections so a nested call from
-#: the same thread does not deadlock on the file lock below.
-_PROCESS_LOCK = threading.RLock()
 
 #: How far a jumped reset boundary may sit from ``observed_at + window`` and
 #: still read as a fresh window. A reset consumed between two observations is
@@ -97,12 +92,8 @@ def _locked(*, home: Path | None = None) -> Iterator[None]:
     path = state_path(home=home)
     path.parent.mkdir(parents=True, exist_ok=True)
     lock_path = path.with_name(path.name + ".lock")
-    with _PROCESS_LOCK, lock_path.open("a+b") as handle:
-        fcntl.flock(handle.fileno(), fcntl.LOCK_EX)
-        try:
-            yield
-        finally:
-            fcntl.flock(handle.fileno(), fcntl.LOCK_UN)
+    with exclusive_lock(lock_path):
+        yield
 
 
 def _iso(moment: datetime) -> str:

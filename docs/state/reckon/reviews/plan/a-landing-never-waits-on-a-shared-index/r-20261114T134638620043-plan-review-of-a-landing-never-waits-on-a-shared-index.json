@@ -1,0 +1,224 @@
+{
+  "absent_items": [],
+  "accepted_edits": [
+    {
+      "by": "a337e0e6-c34c-4497-878a-bc42ce1b7cf6",
+      "digests": {
+        "s10": "5d5cbb85e08c2cb299d601fc388401675ee5191128e8b85dd642cc2c27b83747",
+        "s11": "5799ddfd0b370de4655ad0bacee8fae5b8388a5711aea97614e95d4519671bff"
+      },
+      "reason": "each edit answers a finding of the content review r-20261114T134638620043 as acted",
+      "units": [
+        "s10",
+        "s11"
+      ],
+      "when": "2026-11-14T17:41:51.597922+00:00"
+    }
+  ],
+  "completed_at": "2026-11-14T13:55:53.123Z",
+  "dispatched_at": "2026-11-14T13:49:28Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-landing-never-waits-on-a-shared-index.html:102",
+      "id": "reasoning-1",
+      "reason": "the root cause the section claims (no live holder exists) is broader than its evidence (no holder on this host), so the mechanism as written can corrupt the index rather than unblock it.",
+      "text": "the staleness proof's third condition (\"no process on this host has the file open, read from /proc/*/fd\") establishes only host-local absence, while the Why's evidence for the very incident is \"no git process on the fleet node holding it\", and the plan's own \u00a75 and \u00a79 record the same checkout being written by promotions and complete runs on nova-39, clu-2068 and the fleet node; a lock a peer host actively holds is therefore invisible here and would be removed under a live writer, letting two writers operate on one index",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-landing-never-waits-on-a-shared-index.html:137",
+      "id": "wiring-1",
+      "reason": "the followup table is this plan's dispatch surface, so an open followup on a done section re-dispatches finished work and contradicts the section state, exactly as f-alnw-004 did for \u00a77.",
+      "text": "_document flips s8 and s9 to `done` (declarations line 23, with \u00a78's re-measurement recorded in the s8 comment of 2026-11-14T10:26 and \u00a79's landing in the s9 comment of 2026-11-13T03:25) yet f-alnw-005 and f-alnw-006 still read `data-status=\"open\"` and still carry `/reckon-build a-landing-never-waits-on-a-shared-index \u00a78` and `\u00a79`",
+      "type": "wiring",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-landing-never-waits-on-a-shared-index.html:142",
+      "id": "wiring-2",
+      "reason": "f-alnw-005 was added for \u00a78 for precisely this reason, and without one a coordinator reading the plan has no prompt naming \u00a710 or \u00a711.",
+      "text": "the two sections this change adds (s10 and s11, both `implementable`) have no `<article class=\"r-fu\">` carrying their invocation, so the plan declares work it gives no dispatch prompt for",
+      "type": "wiring",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-landing-never-waits-on-a-shared-index.html:108",
+      "id": "single_goal-1",
+      "reason": "a node cannot be closed on one verdict when its own deliverable allows an outcome its gate does not read, and this is the finding that collapsed \u00a77 to a single outcome.",
+      "text": "s11's deliverable offers two outcomes (\"It either finishes the landing ... or leaves a pending landing that the next landing pass provably completes within one pass\") while its done-when measures only the first (reviewed head an ancestor of main with the pointer gone after the two calls), so the weaker branch is permitted by the deliverable and unmeasured by the gate",
+      "type": "single_goal",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-landing-never-waits-on-a-shared-index.html:107",
+      "id": "anchors_resolve-1",
+      "reason": "the cross-plan citation is what tells the author which monitor-plan work handed this section over, and a pointer that resolves to nothing sends that reader nowhere.",
+      "text": "s11 cites \"r-20261114T094542374628 (monitor plan \u00a7104)\", but the-monitor-reads-each-fact-once.html's highest section id is s52, so a reader following the pointer finds no such section",
+      "type": "anchors_resolve",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-landing-never-waits-on-a-shared-index.html:103",
+      "id": "done_when-1",
+      "reason": "a declared condition with no case that reddens when it is removed is a guard the section cannot show is present.",
+      "text": "s10's deliverable requires three conditions to hold together (age past two minutes, unchanged mtime across the retries, no open descriptor), but its gate's three cases exercise only age and descriptor ownership, so the mtime condition can be deleted from the implementation with every case still green",
+      "type": "done_when",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "9c8fc8ebc86ebff046bd0fcdab12430dae6af0bc",
+  "plan_fingerprint": "7101113ea4e39392cb4c9f605a25612f0ed2fef1593dd19caee5382f54c94a3f",
+  "plan_slug": "a-landing-never-waits-on-a-shared-index",
+  "plan_version": 45,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "a337e0e6-c34c-4497-878a-bc42ce1b7cf6",
+      "commit": "70ece713a6a335ad0becf260b18fc5afd4d0f6b8",
+      "commit_basis": "edit",
+      "finding": "reasoning-1",
+      "note": "Acted: \u00a710's staleness proof no longer rests on host-local absence alone. A lock is stale only when it is at least ten minutes old and its size and mtime have not moved across the whole retry window, besides having no holder on this host. A live writer on any host grows or touches the lock file as it writes the index, so a still, empty lock that old has a hung or dead holder; the section states the residual risk.",
+      "reason": "",
+      "when": "2026-11-14T17:40:18.748335+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "a337e0e6-c34c-4497-878a-bc42ce1b7cf6",
+      "commit": "70ece713a6a335ad0becf260b18fc5afd4d0f6b8",
+      "commit_basis": "edit",
+      "finding": "done_when-1",
+      "note": "Acted: \u00a710's done-when adds a case that touches the lock's mtime during the retries and requires the refusal, so removing the mtime condition reddens it.",
+      "reason": "",
+      "when": "2026-11-14T17:40:25.490321+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "a337e0e6-c34c-4497-878a-bc42ce1b7cf6",
+      "commit": "70ece713a6a335ad0becf260b18fc5afd4d0f6b8",
+      "commit_basis": "edit",
+      "finding": "single_goal-1",
+      "note": "Acted: \u00a711 has one outcome. The losing promotion finishes the landing of the reviewed head itself, and the done-when measures exactly that.",
+      "reason": "",
+      "when": "2026-11-14T17:40:33.426843+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "a337e0e6-c34c-4497-878a-bc42ce1b7cf6",
+      "commit": "70ece713a6a335ad0becf260b18fc5afd4d0f6b8",
+      "commit_basis": "edit",
+      "finding": "anchors_resolve-1",
+      "note": "Acted: \u00a711 now cites \u00a7104 of the-monitor-shows-the-work-it-watches, the plan that section is in.",
+      "reason": "",
+      "when": "2026-11-14T17:40:38.179785+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "a337e0e6-c34c-4497-878a-bc42ce1b7cf6",
+      "commit": "70ece713a6a335ad0becf260b18fc5afd4d0f6b8",
+      "commit_basis": "edit",
+      "finding": "wiring-1",
+      "note": "Acted: f-alnw-005 and f-alnw-006 are resolved against the done \u00a78 and \u00a79.",
+      "reason": "",
+      "when": "2026-11-14T17:40:45.980735+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "a337e0e6-c34c-4497-878a-bc42ce1b7cf6",
+      "commit": "70ece713a6a335ad0becf260b18fc5afd4d0f6b8",
+      "commit_basis": "edit",
+      "finding": "wiring-2",
+      "note": "Acted: followups carrying the \u00a710 and \u00a711 invocations are added.",
+      "reason": "",
+      "when": "2026-11-14T17:40:49.854078+00:00"
+    }
+  ],
+  "responses": {
+    "anchors_resolve-1": {
+      "action": "acted",
+      "by": "a337e0e6-c34c-4497-878a-bc42ce1b7cf6",
+      "commit": "70ece713a6a335ad0becf260b18fc5afd4d0f6b8",
+      "commit_basis": "edit",
+      "note": "Acted: \u00a711 now cites \u00a7104 of the-monitor-shows-the-work-it-watches, the plan that section is in.",
+      "reason": "",
+      "when": "2026-11-14T17:40:38.179785+00:00"
+    },
+    "done_when-1": {
+      "action": "acted",
+      "by": "a337e0e6-c34c-4497-878a-bc42ce1b7cf6",
+      "commit": "70ece713a6a335ad0becf260b18fc5afd4d0f6b8",
+      "commit_basis": "edit",
+      "note": "Acted: \u00a710's done-when adds a case that touches the lock's mtime during the retries and requires the refusal, so removing the mtime condition reddens it.",
+      "reason": "",
+      "when": "2026-11-14T17:40:25.490321+00:00"
+    },
+    "reasoning-1": {
+      "action": "acted",
+      "by": "a337e0e6-c34c-4497-878a-bc42ce1b7cf6",
+      "commit": "70ece713a6a335ad0becf260b18fc5afd4d0f6b8",
+      "commit_basis": "edit",
+      "note": "Acted: \u00a710's staleness proof no longer rests on host-local absence alone. A lock is stale only when it is at least ten minutes old and its size and mtime have not moved across the whole retry window, besides having no holder on this host. A live writer on any host grows or touches the lock file as it writes the index, so a still, empty lock that old has a hung or dead holder; the section states the residual risk.",
+      "reason": "",
+      "when": "2026-11-14T17:40:18.748335+00:00"
+    },
+    "single_goal-1": {
+      "action": "acted",
+      "by": "a337e0e6-c34c-4497-878a-bc42ce1b7cf6",
+      "commit": "70ece713a6a335ad0becf260b18fc5afd4d0f6b8",
+      "commit_basis": "edit",
+      "note": "Acted: \u00a711 has one outcome. The losing promotion finishes the landing of the reviewed head itself, and the done-when measures exactly that.",
+      "reason": "",
+      "when": "2026-11-14T17:40:33.426843+00:00"
+    },
+    "wiring-1": {
+      "action": "acted",
+      "by": "a337e0e6-c34c-4497-878a-bc42ce1b7cf6",
+      "commit": "70ece713a6a335ad0becf260b18fc5afd4d0f6b8",
+      "commit_basis": "edit",
+      "note": "Acted: f-alnw-005 and f-alnw-006 are resolved against the done \u00a78 and \u00a79.",
+      "reason": "",
+      "when": "2026-11-14T17:40:45.980735+00:00"
+    },
+    "wiring-2": {
+      "action": "acted",
+      "by": "a337e0e6-c34c-4497-878a-bc42ce1b7cf6",
+      "commit": "70ece713a6a335ad0becf260b18fc5afd4d0f6b8",
+      "commit_basis": "edit",
+      "note": "Acted: followups carrying the \u00a710 and \u00a711 invocations are added.",
+      "reason": "",
+      "when": "2026-11-14T17:40:49.854078+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/plan-a-landing-never-waits-on-a-shared-index.v45.json",
+  "review_run_id": "r-20261114T134638620043-plan-review-of-a-landing-never-waits-on-a-shared-index",
+  "reviewed_blob_sha": "a4c00e0870fd1ccf90626ed66b03719dc0b7d9d0",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "a finding \u2014 s11 cites \"monitor plan \u00a7104\", and the-monitor-reads-each-fact-once.html has no section above s52; the sibling citation to work-flows-to-the-lane \u00a750 does resolve.",
+    "done_when": "a finding \u2014 s10's three-case gate never exercises its own \"mtime has not moved across the retries\" condition, so an implementation that omits that check passes every case.",
+    "evidence_paths": "pass \u2014 both new sections place every gate log under the run directory, which is durable, and name no node-local temporary path.",
+    "naming": "pass \u2014 s10 and s11 carry no plan label, stage name, ticket number or version tag into a symbol, filename or comment.",
+    "reasoning": "a finding \u2014 s10's own evidence establishes only that no git process on the fleet node held the lock, while the same shared checkout is written from other hosts, so the proposed proof of staleness can strip a live peer's lock.",
+    "single_goal": "a finding \u2014 s11's deliverable is an either/or (\"either finishes the landing ... or leaves a pending landing\"), the shape \u00a77 was rewritten to remove.",
+    "wiring": "a finding \u2014 _document declares s8 and s9 `done` while f-alnw-005 and f-alnw-006 remain `open` with their build prompts, and the two new sections s10 and s11 carry no followup at all."
+  },
+  "section_digests": {
+    "_document": "f3a84395e9ac6e8cb978d5f5eaeef62130e6fd9b25eb2620aaac8862c8c859b4",
+    "s1": "704da057b1e86cedb79ae983e9f7504afd9303eac87bb25b9d4aa38717913746",
+    "s10": "38d874a475fb79b14a6b56bb38db85c6f7818f70e960640efd037baa2864afd3",
+    "s11": "067bab16b07f8c6641e007e406ee2d366febb5a3ebcd7b689227b17ce48b31f0",
+    "s2": "a72539aa82cfb965c54c35d223b2606608ed39bc8269f82d2e7427267b4636af",
+    "s3": "58b92de94f7a15cbe2a66cb37ebc307ca1d8306003ca55ca38ac6fd12e6266c8",
+    "s4": "f9e5f60efd976441ef227da76beb3f9309fccd0d2f99eee0fc98924588b241aa",
+    "s5": "41308d89a4ece7829b6313c98047025055c9c8dc56e754dc8ccf0501af52b1b3",
+    "s6": "ddc19efe3db5d3e2196ba12f1ccea29b87e0e15e0f71c68c2fc89431d6cca56b",
+    "s7": "2ebeb3cecb2ecb78b7b4d2160d5d040e80b315fd2ed14bebcd78068961e3d9e7",
+    "s8": "b02f4e8c623fc056b518109ad2e4921c5835b87308d0f448c3c0acd9590ab68f",
+    "s9": "397bff46dceb3adfac8e00e31582b6935a480117ee402da0713534c17f544501"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-14T15:18:05.320463+00:00",
+  "total": null
+}

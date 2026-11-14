@@ -1,0 +1,178 @@
+{
+  "absent_items": [],
+  "accepted_edits": [
+    {
+      "by": "8e41a6d3-d0e0-4927-afd1-771942ebfe6a",
+      "digests": {
+        "s15": "c271f7bcaa272ebd4bf87d7b1e7153251ec38aa5863fd8a3d7f12cdf1c66bd06",
+        "s6": "91849d1cd49d8e783c893b01272f0e0f505aed67e379d52d354011a619270a1d",
+        "s7": "0eb7720abb0f46f8d48d47fcf646be85ae58c8a5cc37c98f7ad06ac2f9deb6ff",
+        "s9": "b22a82394cfc2b7163b7fbd8be1087fdb6ec66a16524e9d194431d418894d798"
+      },
+      "reason": "these edits answer the review's own findings, each recorded with --acted",
+      "units": [
+        "s15",
+        "s6",
+        "s7",
+        "s9"
+      ],
+      "when": "2026-11-14T19:40:28.271482+00:00"
+    }
+  ],
+  "completed_at": "2026-11-14T17:37:44.138Z",
+  "dispatched_at": "2026-11-14T17:28:50Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/queued-work-needs-no-workaround/r-20261114T172640264694-plan-review-of-queued-work-needs-no-workaround/plan.html:136",
+      "id": "reasoning-1",
+      "reason": "a worker dispatched to this section is given two incompatible acceptance tests and will read one of them wrong, so the per-node hold it exists to add either is not built or reports falsely.",
+      "text": "\u00a76 requires a section's node to be held while its sibling node stays ready, but the roadmap's ready_sections is built as a list of section ids (`item[\"section\"] for item in row[\"section_readiness`) and carries no node, so the same section cannot be absent from ready_sections in one bullet and queueable by a second node in the next",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/queued-work-needs-no-workaround/r-20261114T172640264694-plan-review-of-queued-work-needs-no-workaround/plan.html:190",
+      "id": "done_when-1",
+      "reason": "a node can pass every named test while neither clause is implemented, which is exactly the D50 \"attempt in flight\" refusal the section exists to remove.",
+      "text": "\u00a79's deliverable states that a coordinator resume with advice supersedes an automatic repair round that has not started its worker, and that every resume prints a transition row, but the done-when tests only the advice hold, the two released holders, and the resume-mark case; never the supersede and never the transition row",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/queued-work-needs-no-workaround/r-20261114T172640264694-plan-review-of-queued-work-needs-no-workaround/plan.html:270",
+      "id": "single_goal-1",
+      "reason": "a worker can deliver a flag fix, pass the one control, and be closed on a verdict that proves neither of the other two behaviours.",
+      "text": "\u00a715 combines three separately failable outcomes \u2014 flag spelling, followup author/date defaults, and resolving a committed plan in a sprint append \u2014 under one verdict, and its single negative control (archived: true) exercises only the first, though the section was split from \u00a714 precisely to stop outcomes that succeed or fail independently sharing a node",
+      "type": "single_goal",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/queued-work-needs-no-workaround/r-20261114T172640264694-plan-review-of-queued-work-needs-no-workaround/plan.html:154",
+      "id": "done_when-2",
+      "reason": "the clause is the remedy for that observed defect and nothing in the node's gate would fail if it were omitted.",
+      "text": "\u00a77's Why cites \"the promoted \u00a72 row also recorded no plan slug\" and the deliverable requires every promoted row to carry its plan slug, but none of the four done-when cases reads a promoted row's plan slug",
+      "type": "done_when",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "fccbfa77c7e4a506c79a4400ffd0c3cee5da1b23",
+  "plan_fingerprint": "2913efa548d5fd003e849b62fa8abf0151124207d83f100e124e88042949857c",
+  "plan_slug": "queued-work-needs-no-workaround",
+  "plan_version": 0,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "8e41a6d3-d0e0-4927-afd1-771942ebfe6a",
+      "commit": "fa599704a4a90e906e3cd49720b6d1dbe05db03f",
+      "commit_basis": "edit",
+      "finding": "reasoning-1",
+      "note": "\u00a76's ready-set case is per node: a section whose only node has a promoted run is absent, one with a second unqueued node stays listed",
+      "reason": "",
+      "when": "2026-11-14T19:34:02.183094+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "8e41a6d3-d0e0-4927-afd1-771942ebfe6a",
+      "commit": "fa599704a4a90e906e3cd49720b6d1dbe05db03f",
+      "commit_basis": "edit",
+      "finding": "done_when-1",
+      "note": "\u00a79's done-when adds the coordinator-advice supersede and the transition row on every resume",
+      "reason": "",
+      "when": "2026-11-14T19:34:25.013186+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "8e41a6d3-d0e0-4927-afd1-771942ebfe6a",
+      "commit": "fa599704a4a90e906e3cd49720b6d1dbe05db03f",
+      "commit_basis": "edit",
+      "finding": "single_goal-1",
+      "note": "\u00a715 now has one test and one base-revision negative control per case; the three stay one section as one op surface, each separately verdicted",
+      "reason": "",
+      "when": "2026-11-14T19:34:39.164742+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "8e41a6d3-d0e0-4927-afd1-771942ebfe6a",
+      "commit": "fa599704a4a90e906e3cd49720b6d1dbe05db03f",
+      "commit_basis": "edit",
+      "finding": "done_when-2",
+      "note": "\u00a77's done-when reads the plan slug on the ledger row a promotion writes for an implementation run",
+      "reason": "",
+      "when": "2026-11-14T19:35:02.172147+00:00"
+    }
+  ],
+  "responses": {
+    "done_when-1": {
+      "action": "acted",
+      "by": "8e41a6d3-d0e0-4927-afd1-771942ebfe6a",
+      "commit": "fa599704a4a90e906e3cd49720b6d1dbe05db03f",
+      "commit_basis": "edit",
+      "note": "\u00a79's done-when adds the coordinator-advice supersede and the transition row on every resume",
+      "reason": "",
+      "when": "2026-11-14T19:34:25.013186+00:00"
+    },
+    "done_when-2": {
+      "action": "acted",
+      "by": "8e41a6d3-d0e0-4927-afd1-771942ebfe6a",
+      "commit": "fa599704a4a90e906e3cd49720b6d1dbe05db03f",
+      "commit_basis": "edit",
+      "note": "\u00a77's done-when reads the plan slug on the ledger row a promotion writes for an implementation run",
+      "reason": "",
+      "when": "2026-11-14T19:35:02.172147+00:00"
+    },
+    "reasoning-1": {
+      "action": "acted",
+      "by": "8e41a6d3-d0e0-4927-afd1-771942ebfe6a",
+      "commit": "fa599704a4a90e906e3cd49720b6d1dbe05db03f",
+      "commit_basis": "edit",
+      "note": "\u00a76's ready-set case is per node: a section whose only node has a promoted run is absent, one with a second unqueued node stays listed",
+      "reason": "",
+      "when": "2026-11-14T19:34:02.183094+00:00"
+    },
+    "single_goal-1": {
+      "action": "acted",
+      "by": "8e41a6d3-d0e0-4927-afd1-771942ebfe6a",
+      "commit": "fa599704a4a90e906e3cd49720b6d1dbe05db03f",
+      "commit_basis": "edit",
+      "note": "\u00a715 now has one test and one base-revision negative control per case; the three stay one section as one op surface, each separately verdicted",
+      "reason": "",
+      "when": "2026-11-14T19:34:39.164742+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/Code/reckon/docs/state/reckon/reviews/plan/queued-work-needs-no-workaround/r-20261114T172640264694-plan-review-of-queued-work-needs-no-workaround.json",
+  "review_run_id": "r-20261114T172640264694-plan-review-of-queued-work-needs-no-workaround",
+  "reviewed_blob_sha": "2ab5bb03238fc0773dccbb49dbd2fdb0d8ad95ff",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 the cited commit 1e9c272ea7 and tests/test_the_reflex_resumes_an_unpromoted_run.py both resolve at the reviewed base; the cited plans a-read-answers-inside-its-deadline, the-monitor-reads-each-fact-once, a-landing-never-waits-on-a-shared-index and work-flows-to-the-lane all exist under docs/plans/, and the refusal text \"leaves the worker to infer intent\" resolves to reckon/crew/node.py:1424.",
+    "done_when": "a finding \u2014 \u00a79's deliverable carries two clauses its done-when never exercises, and \u00a77's promoted-row-plan-slug clause is likewise untested.",
+    "evidence_paths": "pass \u2014 each gated section writes its log to the section's evidence fragment, and no section names a temporary or session-scratch path.",
+    "naming": "pass \u2014 no plan label, stage name or ticket number is carried into a named symbol in any in-scope unit; defect ids (D28, D98\u2026) appear only as prose citations holding the plan's own evidence.",
+    "reasoning": "a finding \u2014 \u00a76's two done-when bullets cannot both hold under the roadmap's section-granular ready set, so the per-node hold it specifies has no readable endpoint for a split section.",
+    "single_goal": "a finding \u2014 \u00a715 carries three independently failable deliverables (flag coercion, followup defaults, sprint append) under one verdict, with a negative control covering only the first.",
+    "wiring": "pass \u2014 the only declared wire is plan-after to work-flows-to-the-lane, and the sections declare themselves mutually independent; no depends-on is claimed that a section's content contradicts."
+  },
+  "section_digests": {
+    "_document": "9e7c1f47c82a32198a768a0d742fa501f509af8190630cb4e5b244c673fdf894",
+    "s1": "965e293bc718e24bc6e0b306c2e31f4694e8d3d1f2aafc97e86aac0ccdc0eb46",
+    "s10": "501d0d72406c2fda4dc47939b9700d2c42eb9011387b4df7abdfcc55d906d345",
+    "s11": "4dc7e37e7c9ff6d074c540a19ff75d7db784999f7b811a999a052a00fcbacb39",
+    "s12": "cf244a99091ee04721474e6caad0adad1fb1c907edc99e9fd73b86fb3251685c",
+    "s13": "8cdf1aaa77a692163d0b36bc751a206e8f6c96460d0e44b85d9feb5a76f99659",
+    "s14": "e033ab0daa427195a357d93c3b5969c3fae24f311a8dafa8b2a6bad8db0b518e",
+    "s15": "4c9e6678d62fa918431c7a16478627fa72e460df28c7647a7d4290703257fb03",
+    "s2": "872b1ec9c49f32d972d450016002b1265e846673cd1aef42c41aaccc50583998",
+    "s3": "2a385591edce8d1cb26d41f176fb084cd634d113eb130d2581ce97000bcb3eea",
+    "s4": "0116c3c4a34b6e607b2564cc4300d3784ba5d7596a0000d0b59c40e1801dcd1a",
+    "s5": "81cc22db14da433d65d2cbfd466e233d778e9b5d50552dc7a013e94a3b25ad15",
+    "s6": "99e5b8851f86f77d8e4ef12e2e248e7dd60866457aefd88a71bb27b995a2c253",
+    "s7": "9fee4fd0f7f4f5e9f48b412c1669579c6c1476c490e6cf1e06c0f5658245f9fa",
+    "s8": "5dcf0f324a6b831b76a043e465731eff46456979ae084bcfc764ff0d40816359",
+    "s9": "f759e15cddee8d1462bb8158b60286275daec51f462aebe02b984d1980d19608"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-14T18:22:18.470393+00:00",
+  "total": null
+}

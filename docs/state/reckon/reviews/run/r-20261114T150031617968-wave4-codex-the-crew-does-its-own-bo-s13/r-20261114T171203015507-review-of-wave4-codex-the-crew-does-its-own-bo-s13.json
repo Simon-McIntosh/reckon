@@ -1,0 +1,40 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "body": "VERDICT goal: the node goal is section s13 of the-crew-does-its-own-bookkeeping, and the diff adds _log_location_findings at reckon/crew/reports.py:1555, wired into audit_manifest at reports.py:2824, which refuses a cited log that resolves outside the manifest's run directory.\nVERDICT done_when: the done_when asks for a test refusing a scratch-dir citation and accepting a run-dir one, a negative control that removes the check, and a base/after suite delta; tests/test_every_log_a_manifest_cites_exists_under_the_run_directory.py:80-141 asserts the refusal and the acceptance, and expanded-negative-control.log records 19 failed / 2 passed after the check is removed.\nVERDICT write_paths: the manifest declares tests/test_every_log_a_manifest_cites_exists_under_the_run_directory.py, reckon/crew/reports.py, tests/test_a_control_log_is_judged_at_write.py, and the evidence fragment and figure paths; the diff touches reports.py, the new test, test_a_control_log_is_judged_at_write.py and the fragment, all inside that set.\nVERDICT manifest: read; it reports 21 focused checks passing, 0 added failure ids on both the expanded suite and the 36-file importer set, a manifest audit returning ok=true, and every gate log under the run directory.\nVERDICT diff: read all six commits from b4700c0d to 37df9713; four files and 252 insertions, the production change being 39 lines in reports.py (the helper plus two call-site lines and one _cited_log_paths addition).\nCALL_SITES: reckon/crew/reports.py:audit_manifest, reckon/crew_run_commands.py (the crew check --manifest path)\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/reports.py:2824 calls the new _log_location_findings inside audit_manifest, which is the refusal the section requires.\nSCORE evidence: 16\nJUSTIFICATION evidence: expanded-after.log records 5 failed and 93 passed and expanded-comparison.json reports 0 added failure ids against b4700c0d, and the negative control at expanded-negative-control.log records 19 failed, though the base arm carries the same five pre-existing failures.\nSCORE scope_discipline: 17\nJUSTIFICATION scope_discipline: every path in the diff is inside the manifest's declared write paths, and the fragment docs/evidence/fragments/the-crew-does-its-own-bookkeeping/wave4-codex-the-crew-does-its-own-bo-s13.html is the only non-code file changed.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_every_log_a_manifest_cites_exists_under_the_run_directory.py:96 asserts a non-zero exit and :98 asserts the finding names the cited path, which reddens when the audit_manifest wiring at reports.py:2824 is removed, as the recorded control shows.\nSCORE fit: 16\nJUSTIFICATION fit: the helper mirrors the finding-list shape of its neighbour _test_log_findings at reports.py:1589 and reuses the _NONE_VALUES convention at reports.py:3106.\nSCORE reuse: 11\nJUSTIFICATION reuse: _log_location_findings at reports.py:1569 re-implements containment that _resolves_under at reports.py:3111 already owns.\nFINDING reckon/crew/reports.py:1569 non-blocking: containment is re-implemented with Path.resolve().is_relative_to instead of the module's own _resolves_under helper, so two notions of in-run-directory containment now exist and can drift.",
+  "completed_at": "",
+  "dispatched_at": "2026-11-14T15:45:00Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "exempted",
+      "reason": "non-blocking; carried to the plan's next health review",
+      "recorded_at": "2026-11-14T18:35:12.756069+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "reckon/crew/reports.py",
+      "id": "fa446cf6a37",
+      "line": 1569,
+      "severity": "non-blocking",
+      "text": "reckon/crew/reports.py:1569 non-blocking: _log_location_findings re-implements containment with Path.resolve().is_relative_to(root) while the same module already owns _resolves_under at reports.py:3111 (used at reports.py:3091); the addition duplicates rather than extends the owner."
+    }
+  ],
+  "project": "reckon",
+  "review_run_id": "r-20261114T171203015507-review-of-wave4-codex-the-crew-does-its-own-bo-s13",
+  "reviewed_base_sha": "b4700c0d20e70b117969d8c907af78d11014ad72",
+  "reviewed_head_sha": "37df9713bd295381dc78ed26c6d0fc37e8bf36f6",
+  "reviewed_run_id": "r-20261114T150031617968-wave4-codex-the-crew-does-its-own-bo-s13",
+  "scores": {
+    "durability": 18,
+    "evidence": 16,
+    "fit": 16,
+    "goal_fidelity": 18,
+    "reuse": 11,
+    "scope_discipline": 17
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-14T18:30:58.221402+00:00",
+  "total": 96
+}

@@ -62,12 +62,7 @@ JUDGED: dict[str, str] = {
 PENDING: frozenset[str] = frozenset(
     {
         "reckon/crew/admission/service.py::_admit_lock",
-        "reckon/crew/budget_reset.py::_locked",
-        "reckon/crew/model_catalogue.py::_refresh_lock",
         "reckon/crew/obligations.py::_record_index_lag",
-        "reckon/crew/paid_lanes.py::publish_document",
-        "reckon/crew/paid_lanes.py::refresh_reserved_window",
-        "reckon/crew/picker/outcomes.py::record_picker_hold",
         "reckon/crew/placement.py::_reservation_hold_lock",
         "reckon/crew/queue_landing.py::land_once",
         "reckon/crew/recovery_review_dispatch.py::_dispatch_text_review_for_run",

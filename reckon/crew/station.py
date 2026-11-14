@@ -46,6 +46,14 @@ from reckon.crew_follow_commands import _FOLLOWER_SOURCE_ROOT_ENV as SOURCE_ROOT
 # else in the fleet moved.
 SWEEP_BEAT_SECONDS = resumption.DEFAULT_SWEEP_SECONDS
 
+# How many sessions' sweeps run at once. Every sweep runs on the station's one
+# interpreter, so its CPU work is serialised by the interpreter lock whatever
+# the thread count, and each extra thread only takes a further share from the
+# tick that wakes sessions: with one thread per session, about eighteen sweeps
+# left the tick a few percent of the interpreter and a pass of over ten
+# minutes. Four keep a sweep's storage waits overlapped with another's work.
+SWEEP_CONCURRENCY = 4
+
 # The sweep's own record of who ran it. The station is not a follower and has
 # no session of its own, so it takes the shared slot a hand-run pass uses
 # rather than a follower's per-session entry.
@@ -303,6 +311,11 @@ class SweepBeat:
     It may outlast a tick, so the station hands it to its own thread. A session
     already sweeping keeps one pending request when its inputs change; otherwise
     a delivery during that sweep can be missed until some later tick.
+
+    At most ``concurrency`` sweeps run at once. A due sweep beyond the bound
+    waits in arrival order, keeping the newest moment it was asked for, and a
+    thread that finishes its session takes the next waiting one, so the thread
+    count never passes the bound.
     """
 
     def __init__(
@@ -311,8 +324,14 @@ class SweepBeat:
         sweep: Callable[..., Any] | None = None,
         start: Callable[[Callable[[], None]], None] | None = None,
         beat_seconds: float = SWEEP_BEAT_SECONDS,
+        concurrency: int | None = None,
     ) -> None:
         self.on_report: Callable[[str, str, Mapping[str, Any]], None] | None = None
+        self.concurrency = max(
+            1, SWEEP_CONCURRENCY if concurrency is None else int(concurrency)
+        )
+        self._running = 0
+        self._waiting: dict[tuple[str, str], datetime] = {}
         self.sweep = resumption.sweep if sweep is None else sweep
         self.beat_seconds = beat_seconds
         self._start = _start_thread if start is None else start
@@ -342,10 +361,23 @@ class SweepBeat:
                 # change arrived. Keep one follow-up pass for the newest tick.
                 self._pending[key] = moment
                 return False
+            if key in self._waiting:
+                # Already queued: the pass it waits for reads the newest tick.
+                self._waiting[key] = moment
+                return False
             self._last[key] = stamp
+            if self._running >= self.concurrency:
+                self._waiting[key] = moment
+                return True
             self._in_flight.add(key)
+            self._running += 1
         self._start(lambda: self._run(project, session, key, moment))
         return True
+
+    def waiting(self) -> list[tuple[str, str]]:
+        """The sessions whose due sweep waits for a free slot, oldest first."""
+        with self._lock:
+            return list(self._waiting)
 
     def _run(
         self, project: str, session: str, key: tuple[str, str], moment: datetime
@@ -378,8 +410,16 @@ class SweepBeat:
                 pending = self._pending.pop(key, None)
                 if pending is None:
                     self._in_flight.discard(key)
-                    return
-                moment = pending
+                    if not self._waiting:
+                        self._running -= 1
+                        return
+                    # This thread's slot passes to the oldest waiting session.
+                    key = next(iter(self._waiting))
+                    moment = self._waiting.pop(key)
+                    project, session = key
+                    self._in_flight.add(key)
+                else:
+                    moment = pending
                 self._last[key] = moment.timestamp()
 
 
@@ -393,6 +433,13 @@ REFLEX_BEAT_SECONDS = 30.0
 # derivation can run far longer than a shutdown should, so the wait is bounded
 # and the duties it had not yet published are the next station's to derive.
 DUTY_DRAIN_SECONDS = 10.0
+
+# How long a due reload is held for the derivations in flight to land. A reload
+# replaces the image and ends every thread, so a derivation slower than the gap
+# between two landings on the primary branch was ended on every reload and its
+# project's duties never moved. The station keeps ticking while it holds, and
+# the bound keeps one stuck derivation from pinning old code for ever.
+RELOAD_HOLD_SECONDS = 900.0
 
 
 class _CommitBarrier:
@@ -447,6 +494,7 @@ class DutyBeat:
         self._workers: dict[str, threading.Thread] = {}
         self._commit = threading.Condition()
         self._committing = 0
+        self._quiescing = False
 
     def committing(self) -> _CommitBarrier:
         """Hold every derivation at its first step until the block ends."""
@@ -474,9 +522,15 @@ class DutyBeat:
         changed: bool,
         moment: datetime | None,
     ) -> bool:
-        """Start this project's derivation unless one is already in flight."""
+        """Start this project's derivation unless one is in flight or a reload waits.
+
+        While a reload waits for the derivations in flight to land, no new one
+        starts: one that started would only be ended by the reload, and starting
+        them tick after tick would leave the reload nothing quiet to wait for. A
+        refused change is kept, so the derivation it asked for still runs.
+        """
         with self._lock:
-            if project in self._in_flight:
+            if self._quiescing or project in self._in_flight:
                 if changed:
                     self._changed.add(project)
                 return False
@@ -502,6 +556,17 @@ class DutyBeat:
         """The projects whose derivation is running right now."""
         with self._lock:
             return set(self._in_flight)
+
+    def quiesce(self) -> bool:
+        """Start no new derivation; answer whether none is still in flight."""
+        with self._lock:
+            self._quiescing = True
+            return not self._in_flight
+
+    def resume(self) -> None:
+        """Start derivations again after a reload that did not happen."""
+        with self._lock:
+            self._quiescing = False
 
     def drain(self, timeout: float | None = None) -> None:
         """Wait for the derivations this station started to finish."""
@@ -730,9 +795,16 @@ class StationReloader:
             except (OSError, ValueError):
                 pass
         self.deferred_identity: str | None = None
+        self._held_since: float | None = None
 
-    def poll(self) -> None:
-        """Check committed code after a tick and re-execute when it moves."""
+    def poll(self, duties: DutyBeat | None = None) -> None:
+        """Check committed code after a tick and re-execute when it moves.
+
+        With ``duties`` named, a due reload first lets the derivations in flight
+        land: it stops new ones and returns, and the station keeps ticking until
+        a later poll finds none running or :data:`RELOAD_HOLD_SECONDS` has
+        passed. A reload that does not happen starts the derivations again.
+        """
         if self.image_pin is not None:
             checkout_trust.refresh_materialized_tree_pin(
                 self.image_pin, self.import_root
@@ -740,12 +812,33 @@ class StationReloader:
         current = checkout_trust.source_code_identity(
             self.source_root / "reckon", source_root=self.source_root
         )
-        if current in (checkout_trust.IDENTITY_UNKNOWN, self.identity):
+        due = (
+            current not in (checkout_trust.IDENTITY_UNKNOWN, self.identity)
+            and current != self.deferred_identity
+            and re.fullmatch(r"[0-9a-f]{40}", current) is not None
+        )
+        if due and duties is not None and not self._quiet(duties):
             return
-        if current == self.deferred_identity or not re.fullmatch(
-            r"[0-9a-f]{40}", current
-        ):
-            return
+        try:
+            if due:
+                self._replace(current)
+        finally:
+            # Reached only when no exec happened: nothing was due, the image did
+            # not import, or the exec itself failed. A hold taken for a reload
+            # that is no longer due must not leave the derivations stopped.
+            self._held_since = None
+            if duties is not None:
+                duties.resume()
+
+    def _quiet(self, duties: DutyBeat) -> bool:
+        """Whether the derivations have landed, or the hold has run out."""
+        idle = duties.quiesce()
+        now = time.monotonic()
+        if self._held_since is None:
+            self._held_since = now
+        return idle or now - self._held_since >= RELOAD_HOLD_SECONDS
+
+    def _replace(self, current: str) -> None:
         image, _removed, _kept, pin = checkout_trust.materialize_committed_tree(
             self.source_root, current, active_root=self.import_root
         )
@@ -1127,7 +1220,7 @@ def run_station(
                     break
                 if once:
                     break
-                reloader.poll()
+                reloader.poll(station.duties)
                 time.sleep(interval)
             if renewal.lost():
                 raise StationHeldError(f"station lost its lease at {lease.path}")

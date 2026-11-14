@@ -583,7 +583,11 @@ def _section_run_unlanded(
     for row in rows:
         run_id = str(row.get("run_id") or "")
         revision = str(row.get("promoted_revision") or "").strip()
-        if run_id and revision and not _release._discarded(run_id) and identifies(row):
+        # The section match is a dictionary read and the discard check a file
+        # lookup, so the match goes first: a pass resolves this for every
+        # waiting request, and checking every ledger row's discard record on
+        # shared storage made one pass take many minutes.
+        if run_id and revision and identifies(row) and not _release._discarded(run_id):
             promoted[run_id] = revision
 
     # The runs of this section that may still land, each with the revision it

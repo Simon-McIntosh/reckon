@@ -1,0 +1,49 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/_worker_fence.py:1352",
+    "reckon/_worker_fence.py:1736"
+  ],
+  "completed_at": "2026-11-14T18:37:30.336Z",
+  "dispatched_at": "2026-11-14T18:22:23Z",
+  "findings": [
+    {
+      "file": "tests/test_a_worker_cannot_remove_the_nodes_temporary_files.py",
+      "line": "204",
+      "severity": "non-blocking",
+      "text": "_bind_onto re-implements the argv walk that _bind_of owns at :195, differing only in which element it compares (source at index+1 versus destination at index+2), so the file now carries three near-identical locators that can drift apart; one parametrised helper would extend the owner instead of duplicating it. It duplicates the owner rather than extending or wrapping it."
+    },
+    {
+      "file": "docs/evidence/fragments/work-flows-to-the-lane/fenced-worker-tmp-is-its-scratch.html",
+      "line": "61",
+      "severity": "non-blocking",
+      "text": "The landing record states that the sibling file's own two declared negative controls still redden the cases they name, and commit c02b0dcdd1 repeats the claim, but no log records either run: the only negative arm on disk, gate-negative.log, runs tests/test_fenced_worker_tmp_is_its_scratch.py alone, so the claim about the re-stated cases rests on the worker's account rather than on a receipt a later reader can open."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "Read commit by commit against b543b3702b: c02b0dcdd1 re-states the three sibling cases for the mounted composition and adds _bind_onto, and 953bcec707 restates the landing record's measures and status paragraph.",
+    "done_when": "Section 59's done-when asks for the executed cases plus a negative control; the head arm now names both test files together and records 64 passed EXIT=0 in gate-head.log, against 59 passed EXIT=0 at the base revision in gate-base.log.",
+    "goal": "The reviewed node's goal is that a fenced worker's /tmp is its own scratch; these two commits carry the sibling test file over to that contract, asserting the mount on the composed argv at tests/test_a_worker_cannot_remove_the_nodes_temporary_files.py:249 and its executed consequence at :343, :380 and :495.",
+    "manifest": "Read; it records the re-stated sibling cases and the repaired fragment, both arms at exit 0 and the negative control at exit 1, and it reports no failure outside this node's diff.",
+    "write_paths": "Read the reviewed manifest's declared paths for this round \u2014 the landing fragment and tests/test_a_worker_cannot_remove_the_nodes_temporary_files.py; the diff b543b3702b..953bcec7 touches exactly those two and nothing else."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the reviewed node's goal is that a fenced worker's /tmp is its own scratch; these two commits carry tests/test_a_worker_cannot_remove_the_nodes_temporary_files.py over to the mounted composition, asserting the mount at :249 and the executed absence of another session's file at :343 and :380.\nVERDICT done_when: the done-when's arms are now both files, and gate-head.log at 953bcec7 records 64 passed EXIT=0 against gate-base.log's 59 passed EXIT=0 at a01e2b9a, so the sibling file the earlier review found red is green in the arm that names it.\nVERDICT write_paths: the declared round is the landing fragment and tests/test_a_worker_cannot_remove_the_nodes_temporary_files.py; git diff b543b3702b..953bcec7 touches exactly those two files and nothing else.\nVERDICT manifest: read; it names both commits, the re-stated cases, both arms at exit 0, the declared negative control at exit 1, and states no failure remains outside the node's diff.\nVERDICT diff: read commit by commit; c02b0dcdd1 adds 88 lines and removes 45 in the sibling test file only, and 953bcec707 restates the landing record's measure table and status paragraph.\nCALL_SITES: reckon/_worker_fence.py:1352, reckon/_worker_fence.py:1736\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: tests/test_a_worker_cannot_remove_the_nodes_temporary_files.py:249 asserts the run's scratch is mounted over the node tmp after the seal, and :343/:380 assert its executed consequence.\nSCORE evidence: 16\nJUSTIFICATION evidence: gate-head.log records the sibling file inside the head arm at 64 passed EXIT=0, and gate-negative.log records 1 failed EXIT=1, but no log records the sibling file's own two negative controls that docs/evidence/fragments/work-flows-to-the-lane/fenced-worker-tmp-is-its-scratch.html:61 says still redden.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff b543b3702b..953bcec7 touches only the two declared paths, with no production, plan or figure edit.\nSCORE durability: 18\nJUSTIFICATION durability: reinstating the read-only seal with no mount would redden tests/test_a_worker_cannot_remove_the_nodes_temporary_files.py:372 on returncode and :409 on the probe landing in the scratch, though the seal itself is now observed only by the argv case at :233.\nSCORE fit: 18\nJUSTIFICATION fit: the re-stated cases keep the file's own NodeTmp fixture and production-path composition idiom at tests/test_a_worker_cannot_remove_the_nodes_temporary_files.py:164, and introduce no plan, ticket or version label.\nSCORE reuse: 5\nJUSTIFICATION reuse: _bind_onto at tests/test_a_worker_cannot_remove_the_nodes_temporary_files.py:204 duplicates the argv walk _bind_of owns at :195 rather than extending it with a parameter, so the capability now has two copies.\nFINDING tests/test_a_worker_cannot_remove_the_nodes_temporary_files.py:204 non-blocking: _bind_onto re-implements _bind_of's argv walk at :195, differing only in which element it compares, so the file now carries three near-identical locators that can drift apart.\nFINDING docs/evidence/fragments/work-flows-to-the-lane/fenced-worker-tmp-is-its-scratch.html:61 non-blocking: the claim that the sibling file's two declared negative controls still redden the cases they name is recorded in no log, since gate-negative.log runs only tests/test_fenced_worker_tmp_is_its_scratch.py.",
+  "review_run_id": "r-20261114T181958435969-review-of-fenced-worker-tmp-is-its-scratch-953bcec70705",
+  "reviewed_base_sha": "b543b3702bf8893f356921af4d3805c0bcf1be89",
+  "reviewed_head_sha": "953bcec70705f958f462ce8decfc225840bbc7ca",
+  "reviewed_run_id": "r-20261114T112605744964-fenced-worker-tmp-is-its-scratch",
+  "scores": {
+    "durability": 18,
+    "evidence": 16,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 5,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-14T19:04:30.254806+00:00",
+  "total": 96
+}
