@@ -57,4 +57,16 @@
   manifest paths, configured roles and specification levels, so their assertions
   reach review evaluation. CLI parity assertions read stdout independently of
   stderr progress.</p>
+  <p id="bpq-owed-review-queues-held-merge-repair">Merge repair at
+  <code>4a23200b5472aa0f75771dff8644ff28a223aab1</code> retains both
+  the review-debt queue helper and the local-lane reserve helper from primary
+  <code>d447311185a91f35959e517a02ac9948f4eb533f</code>. Both helpers
+  match their owning parents; the node-filtered run lookup is also retained.
+  The fresh focused gate reports 147 passed and 2 failed in 28.45s
+  (<code>EXIT=1</code>); the three reservation/run-lookup test files report
+  12 passed in 1.02s (<code>EXIT=0</code>). The fresh original-base dispatch
+  control reports 1 failed in 1.44s (<code>EXIT=1</code>), with the required
+  review-gate refusal. The manifest carries the failure disposition and
+  final-head suite receipt. The merge is committed; a passing gate remains
+  outstanding.</p>
 </section>
