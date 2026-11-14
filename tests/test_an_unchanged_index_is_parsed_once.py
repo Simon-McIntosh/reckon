@@ -6,7 +6,10 @@ station's refresh path and once more for each reader that asked it a question.
 The document is only replaced when a writer moves it, so a read that finds the
 same file may keep the mapping it already parsed and spend one stat instead.
 The test counts decodes through a recording stand-in for ``json.loads`` and
-checks that a write still makes the next read see the new document.
+checks that a write still makes the next read see the new document. It also
+checks that a reader cannot change the document another reader is handed: the
+reuse hands every reader of an unchanged file one held parse, so the shape it
+hands out decides whether that sharing is safe.
 """
 
 from __future__ import annotations
@@ -17,6 +20,7 @@ from pathlib import Path
 
 import pytest
 
+from reckon import file_memo
 from reckon.crew import review, review_records
 
 PROJECT = "fixture"
@@ -37,13 +41,10 @@ def _payload(run_id: str, index: int) -> dict:
     }
 
 
-def _forget_parsed_document(directory: Path) -> None:
-    # Named defensively so this case also runs against a revision that keeps no
-    # parsed copy: the negative control has to reach the assertion rather than
-    # die in the fixture.
-    forget = getattr(review_records, "_forget_parsed_index_document", None)
-    if forget is not None:
-        forget(directory)
+def _forget_parsed_document() -> None:
+    # The memo is process-wide and outlives one store, so the measurement has to
+    # start from a process that holds nothing.
+    file_memo.clear()
 
 
 @pytest.fixture()
@@ -56,9 +57,9 @@ def indexed_store():
     # Settle the store, then drop this process's copy so the measurement starts
     # from a file that has to be read.
     review_records.store_index_document(directory)
-    _forget_parsed_document(directory)
+    _forget_parsed_document()
     yield directory
-    _forget_parsed_document(directory)
+    _forget_parsed_document()
 
 
 @contextmanager
@@ -106,3 +107,32 @@ def test_an_unchanged_index_is_parsed_once(indexed_store) -> None:
     assert refreshed is not None
     assert f"{new_run}.json" in refreshed["entries"], sorted(refreshed["entries"])
     assert refreshed["entries"][f"{new_run}.json"]["reviewed_run_id"] == new_run
+
+
+def test_the_index_read_routes_through_the_shared_memo(
+    indexed_store, monkeypatch
+) -> None:
+    directory = indexed_store
+    real = file_memo.memoized
+    kinds: list[str] = []
+
+    def recording(kind, path, compute, **kwargs):
+        kinds.append(kind)
+        return real(kind, path, compute, **kwargs)
+
+    monkeypatch.setattr(file_memo, "memoized", recording)
+    review_records.store_index_document(directory)
+    assert kinds == ["index_document"], kinds
+
+
+def test_a_held_index_document_is_read_only(indexed_store) -> None:
+    directory = indexed_store
+    held = review_records.store_index_document(directory)
+    assert held is not None
+    with pytest.raises(TypeError):
+        held["entries"]["injected.json"] = {}
+    with pytest.raises(TypeError):
+        held["entries"].clear()
+    again = review_records.store_index_document(directory)
+    assert again is not None
+    assert "injected.json" not in again["entries"]

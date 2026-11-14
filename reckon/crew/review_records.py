@@ -1995,27 +1995,11 @@ def _document_is_usable(directory: Path, doc: Any) -> bool:
     return isinstance(doc.get("runs"), dict)
 
 
-# The parsed document this process last read from each store, keyed on the
-# document file's inode, size and modification time. Every writer replaces the
-# document under a new inode, so an unchanged key means unchanged content and
-# a repeat read costs one stat rather than a parse of megabytes. An entry is
-# dropped as this process persists a document, and a writer that mutates one
-# takes its own copy rather than the cached mapping.
-_PARSED_INDEX_DOCUMENTS: dict[
-    str, tuple[tuple[int, int, int], dict[str, Any] | None]
-] = {}
-
-
-def _forget_parsed_index_document(directory: Path) -> None:
-    """Drop this process's parsed copy, so the next read takes the file."""
-    _PARSED_INDEX_DOCUMENTS.pop(str(directory), None)
-
-
 def _fresh_index_document(directory: Path) -> dict[str, Any] | None:
-    """Read and parse the document afresh, neither consulting nor filling the cache.
+    """Read and parse the document afresh, consulting no memo and filling none.
 
-    A writer mutates the document it reads, so it takes this private copy: the
-    cached mapping is what other readers in this process are already holding.
+    A writer mutates the document it reads, so it takes this private copy
+    rather than the shared one the read path hands out.
     """
     try:
         raw = _index_document_path(directory).read_bytes()
@@ -2028,37 +2012,31 @@ def _fresh_index_document(directory: Path) -> dict[str, Any] | None:
     return doc if _document_is_usable(directory, doc) else None
 
 
-def _read_index_document(directory: Path) -> dict[str, Any] | None:
+def _read_index_document(directory: Path) -> Mapping[str, Any] | None:
     """The store's index document, parsed once per unchanged file.
 
-    A read costs one stat while the document is unchanged: the parsed mapping
-    is kept keyed on the file's inode, size and modification time, and every
-    write replaces the file under a new inode. A changed or unusable document
-    -- another checkout's, another store's, half written or not JSON -- is
-    parsed again and answers ``None`` exactly as a missing one does, because an
-    index that cannot be read is not an index.
+    :func:`reckon.file_memo.memoized` owns the reuse: a read costs one stat
+    while the file is unchanged. The code stamp is part of the memo's variant
+    because it decides whether a document is usable, so a document is also read
+    again when the stamp this process files under changes. Inside a read-only
+    region the held document reaches a reader as a read-only view, so a reader
+    cannot change what the next reader is given; a writer takes
+    :func:`_fresh_index_document` for itself instead. A changed or unusable
+    document -- another checkout's, another store's, half written or not JSON
+    -- reads as ``None`` exactly as a missing one does, because an index that
+    cannot be read is not an index.
     """
-    path = _index_document_path(directory)
-    try:
-        info = path.stat()
-    except OSError:
-        _forget_parsed_index_document(directory)
-        return None
-    key = (info.st_ino, info.st_size, info.st_mtime_ns)
-    cached = _PARSED_INDEX_DOCUMENTS.get(str(directory))
-    if cached is not None and cached[0] == key:
-        # The stamp a document is filed under is process state, not file
-        # content, so a held mapping is re-checked rather than trusted: an
-        # unusable one answers nothing and the caller rebuilds.
-        return cached[1] if _document_is_usable(directory, cached[1]) else None
-    document = _fresh_index_document(directory)
-    _PARSED_INDEX_DOCUMENTS[str(directory)] = (key, document)
-    return document
+    with file_memo.read_only_region():
+        return file_memo.memoized(
+            "index_document",
+            _index_document_path(directory),
+            lambda: _fresh_index_document(directory),
+            variant=_index_code_stamp(),
+        )
 
 
 def _persist_index_document(directory: Path, doc: Mapping[str, Any]) -> None:
     """Write the store's index document atomically in the store's index dir."""
-    _forget_parsed_index_document(directory)
     try:
         from reckon._store import write_json_atomically
 
@@ -2328,7 +2306,7 @@ def reconcile_foreign_write(directory: Path) -> int:
     return changed
 
 
-def store_index_document(directory: Path) -> dict[str, Any] | None:
+def store_index_document(directory: Path) -> Mapping[str, Any] | None:
     """The store's index document, as current as its writers have left it.
 
     The document is probed against the store directory's identity, which is the
@@ -2349,7 +2327,7 @@ def store_index_document(directory: Path) -> dict[str, Any] | None:
     return document
 
 
-def _settled_index_document(directory: Path) -> dict[str, Any] | None:
+def _settled_index_document(directory: Path) -> Mapping[str, Any] | None:
     """Read the document and bring it up to date with the store it describes."""
     document = _read_index_document(directory)
     if document is not None:
