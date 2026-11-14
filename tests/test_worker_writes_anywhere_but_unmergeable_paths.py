@@ -20,6 +20,7 @@ from __future__ import annotations
 
 import shutil
 import subprocess
+import tempfile
 from pathlib import Path
 
 import pytest
@@ -102,6 +103,11 @@ class Repository:
             declared_write_paths=declared,
             worktree=str(self.worktree),
         )
+        # The ambient temp root is a delivery root the fence grants, and the
+        # fixture lives under it, so it is dropped here: otherwise the worktree
+        # would be writable through that grant and the negative control could
+        # not tell whether the worktree grant is doing the work.
+        roots = tuple(root for root in roots if root != Path(tempfile.gettempdir()))
         patterns = (
             unmergeable_patterns(None, self.worktree) if seal and not declared else ()
         )
