@@ -26,7 +26,7 @@
   <title>The Escape Lane And Reviews Keep Pace | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="6">
+<meta name="plan-version" content="7">
 <meta name="plan-modified" content="2026-11-15">
 </head>
 <body>
@@ -65,7 +65,7 @@
     <h2 id="s7">§7 — An admission pass is bounded, and says what each launch cost</h2>
 <section data-reckon="section" data-id="s7" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
     <p><strong>Why.</strong> One pass ran 1,046 s launching. A pass that runs long holds every freed seat until it ends, and its stalls hide which step was slow.</p>
-    <p><strong>Deliverable.</strong> A pass launches until a stated time budget (60 s by default, from flight) is spent, then ends and lets the next pass continue, so freed seats are filled within a pass's budget. Each launch records its own duration and its slowest step on the verdict row. With §3 landed, profile the admit service again and repair the next largest per-launch cost the profile names.</p>
+    <p><strong>Deliverable.</strong> A pass launches until a stated time budget (60 s by default, from flight) is spent, then ends and lets the next pass continue, so freed seats are filled within a pass's budget. Each launch records its own duration and its slowest step on the verdict row. With §3 landed, profile the admit service again and repair the next largest per-launch cost the profile names. <strong>Landed so far:</strong> the profile after §3 (pass ending 22:30:44Z on 14 November, 1,373 s launching) put about 45% of each launch in three repeated reads, now each done once. <code>57980a8a3d</code> keeps plan headings per document text and the resolved mount table for a minute. <code>a0d74ec10b</code> keeps scope path resolution for the length of an admission pass, through <code>runs.resolution_scope</code>. Arms on all_debug job 1316212: base 260 failed, head 259 failed, 2 fixed. One added failure, an inotify deadline under <code>-n 4</code>, passes alone at both revisions. The pass budget is still to build.</p>
     <p><strong>Done when.</strong> A test with launches stubbed to take 20 s each and a 60 s budget shows a pass launches three and the next pass takes up the rest. A 120 s <code>py-spy record --idle</code> of the live admit service before and after names the per-launch cost removed, and the median launch duration over one evening falls below 15 s. Write paths: <code>reckon/crew/admission/</code>, the step the profile names, and the new test.</p>
 
     <h2 id="s8">§8 — The queue is loaded at full width and its depth reads fleet-wide</h2>
