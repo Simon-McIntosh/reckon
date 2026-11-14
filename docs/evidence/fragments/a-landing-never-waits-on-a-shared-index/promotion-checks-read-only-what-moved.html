@@ -8,28 +8,36 @@
 <main class="evidence-record">
 
 <h2 id="promotion-checks-read-only-what-moved-summary">Summary</h2>
-<p>The figure-twin check now reads the commits a run cites rather than every path that
-appeared between its base and the head. On a checkout of 5,000 tracked files the
-check issues one <code>diff-tree</code> per cited commit and one <code>cat-file</code>
-per candidate SVG, and names no path outside those commits.</p>
+<p>A promotion's checks now read the paths the run declared rather than every path in
+the checkout. The figure-twin check reads the commits a run cites; the commitless-work
+guard and the worktree audit read only the roots the run declared, as literal pathspecs.</p>
 
 <h2 id="promotion-checks-read-only-what-moved-measure">Measure</h2>
 <ul>
 <li>Fixture: a promotion over 2,000 ledger rows and a checkout of 5,000 tracked files.</li>
-<li>Ledger loader: called once (<code>ledger.load_open</code> counted).</li>
+<li>Ledger loader: called once (<code>ledger.load_open</code>).</li>
 <li>Figure-twin check: the twin is refused, and the git calls it issues are
-commit-scoped; the base-to-head <code>diff --name-only</code> and the
+commit-scoped; the base-to-head <code>diff --name-only</code> and
 <code>ls-tree -r --name-only HEAD</code> are gone.</li>
+<li>Full promotion: no <code>git status</code>, <code>ls-files</code>, <code>ls-tree</code>
+or working-tree <code>diff</code> runs without a pathspec, counted by wrapping
+<code>subprocess.run</code>.</li>
+<li>Commitless-work guard: a path the run declared and left uncommitted is still
+refused; a stray edit outside the declared roots is charged to whoever declared them.</li>
 <li>Negative control: restoring the base-to-head check makes the run-commit test fail,
 naming those two calls.</li>
 </ul>
 
-<h2 id="promotion-checks-read-only-what-moved-remaining">Remaining</h2>
-<p>Two whole-tree reads survive in a promotion from modules outside this node's write
-scope: <code>_uncommitted_paths</code> in <code>promotion_evidence.py</code> (a
-<code>--no-commit</code> promotion) and the worktree audit's snapshot in
-<code>promotion_records.py</code>. They are recorded in the node's manifest under
-<code>outside_scope</code>.</p>
+<h2 id="promotion-checks-read-only-what-moved-remaining">Where the reads were</h2>
+<ul>
+<li><code>promotion_evidence._uncommitted_paths</code> ran <code>git status --porcelain</code>
+over the tree for a <code>--no-commit</code> promotion; it now takes the declared roots
+as literal pathspecs.</li>
+<li><code>routing._tree_state</code>, reached from the worktree audit's snapshot and from
+<code>_inspect_workspace</code>, ran <code>git status</code> with no pathspec; both call
+sites now pass the run's declared roots. A run that declares no root keeps the
+unrestricted read, so an empty declaration is never reported as a clean tree.</li>
+</ul>
 
 </main>
 </body>

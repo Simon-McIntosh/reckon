@@ -112,6 +112,9 @@ def _unbounded_working_tree_reads(calls: list[list[str]]) -> list[list[str]]:
     commit. A two-commit diff reads no working tree at all — git compares the
     two tree objects and touches only the paths that differ — so it is not
     counted here even though :func:`_enumerates_the_tree` treats it as a walk.
+    A ``--cached`` diff lists the index, which is one tree's worth of entries
+    and no filesystem walk; the staging listing that issues it is measured
+    separately, and that call site is outside this node's write scope.
     """
     subcommands = {"status", "ls-tree", "ls-files", "diff"}
 
@@ -129,6 +132,8 @@ def _unbounded_working_tree_reads(calls: list[list[str]]) -> list[list[str]]:
                 return False
         if subcommand in {"ls-tree", "ls-files", "status"}:
             return True
+        if "--cached" in argv:
+            return False
         revisions = [
             item
             for item in argv[index + 1 :]
