@@ -291,6 +291,38 @@ def test_a_live_pointer_keeps_its_copy(scratch_root: Path, crew_home: Path) -> N
     assert copy.exists()
 
 
+def test_settling_never_walks_a_live_runs_copy(
+    scratch_root: Path, crew_home: Path, monkeypatch
+) -> None:
+    """A copy the pass keeps is not sized, so a launch never pays for walking it.
+
+    The pass runs ahead of every launch and resume. Sizing walks every file in a
+    copy, and a live run's scratch can hold tens of thousands: walking each live
+    copy on every resume held one resume's reservation past the bound that
+    reclaims it, so the run was reserved again and never launched. Only a copy
+    about to be removed is sized, because its size is recorded as it dies.
+    """
+    copy = _run_copy(RUN)
+    _finished_run_directory(RUN)
+    _live_pointer(RUN)
+    dispatch = importlib.import_module("reckon.crew.dispatch")
+
+    walked: list[str] = []
+    real = dispatch.tree_size_bytes
+
+    def counting(path, *args, **kwargs):
+        walked.append(str(path))
+        return real(path, *args, **kwargs)
+
+    monkeypatch.setattr(dispatch, "tree_size_bytes", counting)
+
+    result = settle_run_scratch(apply=True)
+
+    assert copy.exists()
+    assert walked == []
+    assert [entry["bytes"] for entry in result["entries"]] == [None]
+
+
 def test_a_copy_a_process_holds_is_left(scratch_root: Path, crew_home: Path) -> None:
     copy = _run_copy(RUN)
     _finished_run_directory(RUN)
