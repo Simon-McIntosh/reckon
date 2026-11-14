@@ -24,7 +24,7 @@
   <title>Work Flows To The Lane | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="239">
+<meta name="plan-version" content="240">
 <meta name="plan-modified" content="2026-11-14">
 </head>
 <body>
@@ -970,7 +970,7 @@
     <div class="r-comment-body"><p>review of r-20261114T112502305428 at ba4761a8 stored parsed, scores goal_fidelity 19 / evidence 19 / scope_discipline 20 / durability 19 / fit 19 / reuse 20, added_failure_count 0 derived from the run's own baseline_suite (51 passed, EXIT=0 at 81709f1d) and after_suite (53 passed, EXIT=0 at ba4761a8), no findings.</p></div>
 </div>
 <div class="r-comment" data-section="s56" data-id="c-run-r-20261114T112502305428-plain-text-finding-does-not-stop-a-re-review" data-who="reckon-build" data-when="2026-11-14T12:11:30.636Z">
-    <div class="r-comment-body"><p>A stored review whose findings are plain text no longer stops its run being reviewed again: declared_severity reads a non-mapping finding through finding_claim and answers the severity a leading blocking:/non-blocking: word states, so a re-review brief lists both plain-text findings with [blocking] and [non-blocking] rather than raising AttributeError; disposing such a finding was already correct and its test now holds it. Gate at ba4761a8: 53 passed, EXIT=0 (baseline at 81709f1d: 51 passed, EXIT=0); negative control removing the guard fails the re-review case with AttributeError: &#x27;str&#x27; object has no attribute &#x27;get&#x27;, 1 failed, EXIT=1.</p></div>
+    <div class="r-comment-body"><p>A stored review whose findings are plain text no longer stops its run being reviewed again: declared_severity reads a non-mapping finding through finding_claim and answers the severity a leading blocking:/non-blocking: word states, so a re-review brief lists both plain-text findings with [blocking] and [non-blocking] rather than raising AttributeError; disposing such a finding was already correct and its test now holds it. Gate at ba4761a8: 53 passed, EXIT=0 (baseline at 81709f1d: 51 passed, EXIT=0); negative control removing the guard fails the re-review case with AttributeError: 'str' object has no attribute 'get', 1 failed, EXIT=1.</p></div>
 </div>
 <div class="r-comment" data-section="s6" data-id="c-s6-directory-claims" data-who="reckon-build" data-when="2026-11-11T17:00:00Z">
     <div class="r-comment-body"><p>§6's reproduction found the 11 November hold was a directory claim (<code>reckon/crew/picker</code>), which <code>concurrent-edits-meet-at-the-merge</code> §2 keeps exclusive, enforced again at launch in <code>reckon/crew/dispatch_claims.py</code>. By the lead's ruling that work does not wait on file claims, §6 now makes a directory claim under a shared root share as its files do, and its run is widened to that module and to the test it supersedes.</p></div>
@@ -1016,6 +1016,9 @@
 </div>
 <div class="r-comment" data-section="s8" data-id="c-close-s8" data-who="reckon-build" data-when="2026-11-12T02:20:00Z">
     <div class="r-comment-body"><p>§8 landed at <code>ff797f0c45</code>. <a href="/reckon/evidence/archive/work-flows-to-the-lane-landed.html#s8-re-review-need-in-shadow">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s58" data-id="c-run-r-20261114T124049234084-review-of-unreadable-queued-pointer-never-fails-ordering-7fec44167755" data-who="reckon-build" data-when="2026-11-14T12:55:42.534Z">
+    <div class="r-comment-body"><p>reviewed r-20261114T112555787298-unreadable-queued-pointer-never-fails-ordering at cd5e68ec..7fec4416 and stored a parsed six-dimension record; the change does what the goal states, and four non-blocking findings are recorded (a duplicated placeable/unplaceable partition owned by admission/selection.py, a helper with no production caller, one added failure in an existing out-of-scope test, and docstring changelog prose)</p></div>
 </div>
 </section>
 </main>
