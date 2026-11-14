@@ -7,6 +7,7 @@ import json
 import os
 import select
 import sys
+import threading
 import time
 import uuid
 from pathlib import (
@@ -77,8 +78,38 @@ def _dotted_name(node: ast.AST) -> str:
     return ""
 
 
+# One file's references, keyed by its path, repository and on-disk identity.
+# Adjacency compares a dispatching node with every live peer, so one launch read
+# the same files once per peer pair, and an admission pass did so once per
+# launch: on 14 November the admit service spent all of a sampled minute parsing
+# them and took seventeen minutes over one pass. A file whose size and change
+# time are unmoved has the references it had, so it is parsed once.
+_REFERENCES: dict[tuple[str, str, int, int], frozenset[str]] = {}
+_REFERENCES_LIMIT = 8192
+_REFERENCES_LOCK = threading.Lock()
+
+
 def _python_references(path: Path, repo: Path) -> set[str]:
     """Read import and qualified-call references from one Python source file."""
+    try:
+        stat = path.stat()
+    except OSError:
+        return set()
+    key = (str(path), str(repo), stat.st_size, stat.st_mtime_ns)
+    with _REFERENCES_LOCK:
+        known = _REFERENCES.get(key)
+    if known is not None:
+        return set(known)
+    references = _parsed_python_references(path, repo)
+    with _REFERENCES_LOCK:
+        if len(_REFERENCES) >= _REFERENCES_LIMIT:
+            _REFERENCES.clear()
+        _REFERENCES[key] = frozenset(references)
+    return references
+
+
+def _parsed_python_references(path: Path, repo: Path) -> set[str]:
+    """Parse one Python source file for its import and qualified-call references."""
     try:
         tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
     except (OSError, SyntaxError, UnicodeError):
@@ -519,6 +550,7 @@ def _stamp_agent_display(
         if spelling:
             stamped["effort_spelling"] = spelling
     return stamped
+
 
 from .dispatch_admission import (  # noqa: E402
     _require_fleet_gate_open,
