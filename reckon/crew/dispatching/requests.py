@@ -133,6 +133,10 @@ def queue_requests(
     run_ids: Mapping[str, str] | None = None,
     cap: int | None = None,
     allow_unreviewed_plan: bool = False,
+    local: bool = False,
+    comment: str = "",
+    priority: int | None = None,
+    dry_run: bool = False,
 ) -> dict[str, Any]:
     """Validate a request batch, then use dispatch's queue writer for each.
 
@@ -140,6 +144,15 @@ def queue_requests(
     single dispatch does: it rides the request's ``dispatch_options``, which
     admission reads before it holds the request on the review gate. A caller
     that leaves it unset queues a request the gate judges on its own.
+
+    ``local`` chooses the resolved local backend and records the request on it,
+    ``comment`` is the steering text admission hands the picker, and
+    ``priority`` is the queue ranking override the reprioritise verb records.
+    Each is stored on the request a single dispatch would store it on.
+
+    ``dry_run`` judges every node exactly as a launch would and reports one row
+    per node, writing no pointer and no run directory: the preview answers what
+    would be stored, and the validation is the same one a queued request meets.
     """
     from reckon.crew import queue_admission
     from reckon.crew.dispatch_admission import (
@@ -149,9 +162,17 @@ def queue_requests(
     )
 
     nodes = list(nodes)
-    lane = str(backend_name or "").strip() or str(
-        config.get("local_backend") or config.get("default_backend") or ""
+    local_backend = str(config.get("local_backend") or "")
+    lane = (
+        str(backend_name or "").strip()
+        or local_backend
+        or str(config.get("default_backend") or "")
     )
+    if local and local_backend:
+        # Choosing the local lane is the same decision ``--local`` records: the
+        # request runs on the backend the configuration names as local, and the
+        # pointer records that it does.
+        lane = local_backend
     if not lane:
         raise CrewError("queueing a request names no backend to queue it for")
     assigned_ids = {
@@ -230,10 +251,33 @@ def queue_requests(
                 "session": session,
                 "no_watch": True,
                 "allow_unreviewed_plan": allow_unreviewed_plan,
+                **({"comment": comment} if comment else {}),
             },
             queued_at=_utc_now(),
+            local=bool(local) or lane == local_backend,
             backlog=backlog,
         )
+        if priority is not None:
+            # The same three keys the reprioritise verb writes, so the ordering
+            # reads a request queued with a priority exactly as one ranked after
+            # it was queued.
+            record["priority_override"] = int(priority)
+            record["priority_override_set_at"] = _utc_now()
+            record["priority_override_reason"] = "batch entry"
+        if dry_run:
+            # A preview answers what would be stored: the node contract, the
+            # admission domain and the waits are all judged above this point,
+            # so every refusal a real queueing would raise is raised here.
+            # Nothing is written.
+            stored[str(run_id)] = {
+                "node": node.id,
+                "section": node.section,
+                "phase": "would-queue",
+                "waits": list(refs_by_run[run_id]),
+                "position": None,
+                "index": index,
+            }
+            continue
         queued, position, phase = _queue_validated_waits(
             record,
             refs=refs_by_run[run_id],
