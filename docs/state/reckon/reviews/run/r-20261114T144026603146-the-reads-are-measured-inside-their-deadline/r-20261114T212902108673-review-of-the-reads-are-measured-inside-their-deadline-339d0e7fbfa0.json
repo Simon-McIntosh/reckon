@@ -1,0 +1,50 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "the reviewed run records no baseline_suite or after_suite pair: it is a measurement node whose suite fence is unarmed",
+  "completed_at": "2026-11-14T22:05:24.763Z",
+  "dispatched_at": "2026-11-14T21:35:39Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/a-read-answers-inside-its-deadline/the-reads-are-measured-inside-their-deadline.html",
+      "line": 111,
+      "severity": "non-blocking",
+      "summary": "The plan's \u00a76 done-when activates a live-MCP postcondition once every target is met \u2014 roadmap(project=\"reckon\") through the MCP server, restarted on the promoted code, returns without storage-slow \u2014 and the fragment records only in-process mcp._roadmap() calls, so the deadline wrapper (reckon/_mcp_tools.py:9, reckon/mcp_deadlines.py) that turns a blocked read into storage-slow was never exercised; the run's own manifest records rubric.mcp_postcondition as NOT answered."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261114T144026603146-the-reads-are-measured-inside-their-deadline/measure/summarize.py",
+      "line": 12,
+      "severity": "non-blocking",
+      "summary": "TARGETS is keyed by (read, phase) only, so the head arm's warm-audit 3 s target is applied to the base arm and measure/core/sbatch.log:28 prints \"audit | base | warm | 3 | 4.468 | 3.0 | MISSED\" against a target the plan assigns to the head arm only; the plan, measure/gate.log:31 says that cell carries no target."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261114T144026603146-the-reads-are-measured-inside-their-deadline/measure/summarize.py",
+      "line": 24,
+      "severity": "non-blocking",
+      "summary": "The glob includes every *-build.log, so the summary's medians are taken over four samples (the untargeted build warm-up plus three rounds) and disagree with the gate log's three-round medians: measure/core/sbatch.log:33 reports roadmap head cold 7.526 at n=4 while measure/gate.log:23 and the fragment report 7.481 at n=3."
+    }
+  ],
+  "plan_section": "s6",
+  "plan_slug": "a-read-answers-inside-its-deadline",
+  "project": "reckon",
+  "review_run_id": "r-20261114T212902108673-review-of-the-reads-are-measured-inside-their-deadline-339d0e7fbfa0",
+  "review_text": "VERDICT goal: the goal is to measure roadmap, audit and discovery reads cold and warm on a frozen corpus against their deadlines; docs/evidence/fragments/a-read-answers-inside-its-deadline/the-reads-are-measured-inside-their-deadline.html:29-40 records all six medians per arm and marks the three targets.\nVERDICT done_when: the done-when's log clause is met by measure/gate.log:16-33 (medians beside the \u00a71 figures, targets marked, both jobs EXIT=0 at :56-57), but its live-MCP clause, roadmap(project=\"reckon\") through the MCP server restarted on the promoted code, was not run.\nVERDICT write_paths: the node's single declared path is the one file the diff adds, docs/evidence/fragments/a-read-answers-inside-its-deadline/the-reads-are-measured-inside-their-deadline.html; the dumps, corpus revision and logs the done-when requires sit under the run's own directory.\nVERDICT manifest: read; status complete, commits b8a9fc24f2 and 339d0e7f, the tests line names the two sbatch measurement jobs as the gate, and rubric.mcp_postcondition is recorded NOT answered.\nVERDICT diff: two commits against b4700c0d read commit by commit; the first rewrote the fragment and the second replaced it, both touching only that file for 111 added lines and no code or test.\nCALL_SITES: reckon/evidence.py:687 compose_landed_record, reckon/serve.py:2705, reckon/mcp.py:1344, reckon/doccheck.py:1970\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: docs/evidence/fragments/a-read-answers-inside-its-deadline/the-reads-are-measured-inside-their-deadline.html:29-40 tabulates every read, arm and phase with its median and verdict, which is what the goal names.\nSCORE evidence: 15\nJUSTIFICATION evidence: measure/gate.log:16-33 records the three targeted medians beside the \u00a71 figures and both jobs exited 0, but the done-when's live-MCP clause is unrun and measure/core/sbatch.log:28-33 disagrees with that table.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: the diff adds exactly one file, docs/evidence/fragments/a-read-answers-inside-its-deadline/the-reads-are-measured-inside-their-deadline.html, which is the node's declared write path.\nSCORE durability: 10\nJUSTIFICATION durability: the diff adds no assertion and no repository test, so nothing in the repo fails if this measurement regresses; the only guard is the instrument check at measure/arm.py:23-64 (ok=False on an error or empty answer, EXIT=3 outside the code tree), which lives in the run directory.\nSCORE fit: 18\nJUSTIFICATION fit: the fragment opens with the same article class=\"landed-report\" data-run-id/data-node wrapper as its sibling docs/evidence/fragments/a-read-answers-inside-its-deadline/a-read-takes-no-lock.html and introduces no plan, sprint or version label.\nSCORE reuse: 20\nJUSTIFICATION reuse: the diff adds no function, class or module; the fragment is data consumed by the existing composer reckon/evidence.py:687, so no repository capability is forked.\n",
+  "reviewed_base_sha": "b4700c0d20e70b117969d8c907af78d11014ad72",
+  "reviewed_head_commits": [
+    "339d0e7fbfa0de40237f034a72d2b97a35f5131f"
+  ],
+  "reviewed_head_sha": "339d0e7fbfa0de40237f034a72d2b97a35f5131f",
+  "reviewed_run_id": "r-20261114T144026603146-the-reads-are-measured-inside-their-deadline",
+  "scores": {
+    "durability": 10,
+    "evidence": 15,
+    "fit": 18,
+    "goal_fidelity": 17,
+    "reuse": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-14T22:14:22.416156+00:00",
+  "total": 99
+}
