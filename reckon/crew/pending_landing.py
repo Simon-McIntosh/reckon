@@ -426,6 +426,47 @@ def _repair_gate_command_refusal(
     )
 
 
+def retire_stuck_review_pointers(*, only_run: str = "") -> list[dict[str, Any]]:
+    """Retire a review run's pending-landing mark once its ledger row is written.
+
+    A review run has nothing to land, so a ``pending_landing_repair`` mark on it
+    names a review the landing pass can never finish: ``crew complete --wait``
+    refuses a review, and the obligations hook lists the pointer as
+    promotable-stale for good. The ledger row is the promotion's own evidence
+    that it finished, so a marked review pointer beside a present row is retired
+    here. Only the attempt the mark names is removed, the row is not rewritten,
+    and nothing is re-promoted. The run's pending-landing record is cleared in
+    the same step, so the pass never re-attempts a landing for the review.
+    """
+    from reckon.crew.promotion_requests import COMMAND_REPLY, PENDING, read_promotion
+    from reckon.crew.recovery_review_delivery import _is_review_run
+
+    retired: list[dict[str, Any]] = []
+    for pointer in runs.list_live():
+        if not pointer.get("pending_landing_repair"):
+            continue
+        run_id = str(pointer.get("run_id") or "")
+        project = str(pointer.get("project") or "")
+        if not run_id or not project or (only_run and run_id != only_run):
+            continue
+        if not _is_review_run(pointer):
+            continue
+        if (
+            COMMAND_REPLY.get() is None
+            and read_promotion(run_id).get("phase") in PENDING
+        ):
+            continue
+        if _promoted_row(project, run_id) is None:
+            continue
+        if _promotion_lease_held(run_id):
+            continue
+        if not _release_marked_pointer(run_id, pointer):
+            continue
+        clear_pending(run_id)
+        retired.append({"run_id": run_id, "status": "retired-review-landing"})
+    return retired
+
+
 def finish_pending_landings(
     *, now: float | None = None, land=None, live_run_ids=None, only_run: str = ""
 ) -> list[dict[str, Any]]:
@@ -438,15 +479,15 @@ def finish_pending_landings(
 
     moment = time.time() if now is None else now
     lander = land or merge.land
+    results: list[dict[str, Any]] = retire_stuck_review_pointers(only_run=only_run)
     directory = pending_dir()
     if not directory.is_dir():
-        return []
+        return results
     live = (
         set(live_run_ids)
         if live_run_ids is not None
         else {str(pointer.get("run_id") or "") for pointer in runs.list_live()}
     )
-    results: list[dict[str, Any]] = []
     for path in sorted(directory.glob("*.json")):
         record = _read(path)
         if record is None:

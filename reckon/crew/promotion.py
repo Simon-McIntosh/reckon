@@ -275,17 +275,50 @@ def _keep_pointer_for_pending_landing(run_id: str) -> bool:
         return True
 
 
+def _retire_review_pointer(run_id: str, record: Mapping[str, Any]) -> bool:
+    """Remove a review run's pointer only while its attempt is the promotion's.
+
+    A review run has nothing to land, so a pointer that moved under its promotion
+    is retired rather than kept for a landing repair that can never happen. The
+    ledger row and any committed review record are already written before this
+    runs, and the run reads as promoted from its row; a kept pointer would be
+    listed as promotable-stale for good, because a review is never a run a merge
+    repair could finish. A pointer a newer attempt has since written belongs to
+    work still in flight, so only the attempt the promotion read is removed.
+    """
+    from reckon.crew.pending_landing import pointer_attempt
+
+    with _pointer_lock(run_id):
+        try:
+            current = read_pointer(run_id)
+        except CrewError:
+            return False
+        if pointer_attempt(current) != pointer_attempt(record):
+            return False
+        path = pointer_path(run_id)
+        try:
+            path.unlink(missing_ok=True)
+        except OSError:
+            return False
+        return True
+
+
 def _remove_promoted_pointer_or_defer(run_id: str, record: Mapping[str, Any]) -> bool:
     """Remove the promoted pointer, or keep it marked for the landing pass.
 
     The ledger row and plan comment are committed before this runs, so a
     pointer that moved under the promotion leaves a promoted run whose head was
     never merged: a second recovery would duplicate what the pending-landing
-    pass already does, so the pointer is kept and marked instead.
+    pass already does, so the pointer is kept and marked instead. A review run
+    has no head to merge, so its moved pointer is retired rather than kept.
     """
     try:
         return _remove_promoted_pointer(run_id, record)
     except CrewError as exc:
+        from reckon.crew.recovery_review_delivery import _is_review_run
+
+        if _is_review_run(record):
+            return _retire_review_pointer(run_id, record)
         if not _keep_pointer_for_pending_landing(run_id):
             raise
         raise CrewError(
