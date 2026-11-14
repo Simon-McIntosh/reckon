@@ -8,7 +8,6 @@ import os
 import re
 import subprocess
 import sys
-import time
 from collections.abc import Callable, Iterable, Mapping, Sequence
 from contextlib import contextmanager
 from datetime import UTC
@@ -2026,19 +2025,6 @@ def _index_lock_retry_bound_seconds(attempts: int, retry_seconds: float) -> floa
     return max(0, attempts - 1) * retry_seconds
 
 
-def _index_lock_age_seconds(checkout: Path) -> float | None:
-    """How long the checkout's ``index.lock`` has existed, or None without one.
-
-    A writer creates the lock as it starts an index write and removes it when
-    it finishes, so the file's age is how long the lock has been held.
-    """
-    try:
-        lock = _git_dir(checkout) / "index.lock"
-        return max(0.0, time.time() - lock.stat().st_mtime)
-    except OSError:
-        return None
-
-
 def _index_lock_outlasted_bound_note(
     checkout: Path, *, attempts: int, retry_seconds: float
 ) -> str:
@@ -2727,7 +2713,7 @@ def _revision_is_ancestor(checkout: Path, revision: str, target: str) -> bool:
 
 
 from reckon.crew.merge import (
-    _git_dir,
+    _index_lock_age_seconds,
     _index_lock_held,
     _run_waiting_out_a_held_index_lock,
     clear_stale_landed_copies,

@@ -699,6 +699,19 @@ def _index_lock_held(repo: Path) -> bool:
     return _index_lock_path(repo).exists()
 
 
+def _index_lock_age_seconds(checkout: Path) -> float | None:
+    """How long the checkout's ``index.lock`` has existed, or None without one.
+
+    A writer creates the lock as it starts an index write and removes it when it
+    finishes, so the file's age is how long the lock has been held.
+    """
+    try:
+        lock = _index_lock_path(checkout)
+        return max(0.0, time.time() - lock.stat().st_mtime)
+    except OSError:
+        return None
+
+
 def _index_lock_signature(lock: Path) -> tuple[int, int] | None:
     """Return the lock's ``(mtime_ns, size)``, or ``None`` when it is absent."""
     try:
@@ -750,12 +763,6 @@ def _clear_a_stale_index_lock(
     immediately before the removal, so a writer that takes the lock in the last
     instant is not cleared either.
     """
-    # The age derivation is the staging path's, in promotion_scope, imported
-    # here rather than written a second time: two readers of the same file would
-    # drift apart silently. The import is inside the call because that module
-    # imports this one for the lock-held check.
-    from reckon.crew.promotion_scope import _index_lock_age_seconds
-
     lock = _index_lock_path(repo)
     current = _index_lock_signature(lock)
     if observed is None or current is None or current != observed:
@@ -1121,8 +1128,6 @@ def land_merge(
             if result.returncode == 0:
                 break
             if _index_lock_held(repo):
-                from reckon.crew.promotion_scope import _index_lock_age_seconds
-
                 age = _index_lock_age_seconds(repo)
                 aged = f", aged {age:.1f}s" if age is not None else ""
                 raise MergeError(
