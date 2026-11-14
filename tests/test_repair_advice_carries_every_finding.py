@@ -90,6 +90,7 @@ def _composed(base_dir: str) -> dict:
         PROJECT,
         RUN_ID,
         base_dir=base_dir,
+        source_node=NODE_ID,
         dimension_floors={DIMENSION: FLOOR},
     )
     assert isinstance(node, dict)
