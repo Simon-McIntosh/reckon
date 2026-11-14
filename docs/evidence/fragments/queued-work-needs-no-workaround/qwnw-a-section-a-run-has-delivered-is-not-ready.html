@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="queued-work-needs-no-workaround">
+  <meta name="plan-title" content="Queued work needs no workaround">
+  <meta name="plan-evidence-for" content="reckon:queued-work-needs-no-workaround">
+  <meta name="plan-verifies" content="reckon:queued-work-needs-no-workaround#s6">
+  <meta name="plan-recorded-at" content="2026-11-14">
+  <meta name="plan-verdict" content="blocked">
+  <meta name="plan-tags" content="readiness,promotion,ledger,batch,admission">
+  <title>A section a run has delivered is not ready — evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+</head>
+<body>
+<article class="r-note" data-node="qwnw-a-section-a-run-has-delivered-is-not-ready" data-reckon="landed" data-when="2026-11-14">
+  <h2 id="qwnw-a-section-a-run-has-delivered-is-not-ready-head">A delivered section still reads ready, and the deliverable sits outside this node's write grant</h2>
+
+  <p id="qwnw-a-section-a-run-has-delivered-is-not-ready-what">This node was dispatched to implement the section's deliverable: the roadmap's
+  ready set, batch dispatch and admission must treat a section's node as not ready while that
+  node has a live, delivered, promoted or landed implementation run, and say which run holds it.
+  The node's declared write paths are its landing fragment and its figure directory only
+  (<code>docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-a-section-a-run-has-delivered-is-not-ready.html</code>,
+  <code>docs/figures/queued-work-needs-no-workaround/qwnw-a-section-a-run-has-delivered-is-not-ready</code>),
+  and the promotion gate records its suite as unarmed because no test lies in that scope. The change
+  the section asks for is a code change in four modules plus its tests. It is therefore delivered as a
+  measured diagnosis and a ready-to-run brief rather than as a code change, and the node reports
+  <code>blocked</code> on the missing grant.</p>
+
+  <p id="qwnw-a-section-a-run-has-delivered-is-not-ready-reproduction">The defect reproduces on the base revision
+  <code>34e8cf65b53bd57225fc6acbf74230a493a3527e</code>, with a hermetic fixture: a temporary docs tree
+  holding one plan declaring <code>s1</code> and <code>s2</code> implementable, a temporary state root, a
+  temporary crew home, and one ledger row for a promoted run on <code>demo#s1</code>
+  (<code>gate: passed</code>, <code>promoted_at</code> set). With <b>one ledger row and zero live
+  pointers</b>, <code>build_roadmap</code> reports
+  <code>s1 verdict: {'ready': True, 'blockers': []}</code>, no <code>ready_sections</code> key at all,
+  and no section row for <code>s1</code>. The run is in the ledger and nowhere in the readiness answer.
+  The command and its full output are in
+  <code>negative-control-base-promoted-section-reads-ready.log</code> in the run directory.</p>
+
+  <p id="qwnw-a-section-a-run-has-delivered-is-not-ready-mechanism">The mechanism is structural, not a missed
+  edge case. The roadmap's only run input is <code>crew.list_live()</code>, joined into per-section rows at
+  <code>reckon/roadmap.py:3642</code>; section readiness is then computed from declared holds alone —
+  <code>named_holds</code> at <code>reckon/roadmap.py:4444</code> into
+  <code>section_readiness_verdict</code> at <code>reckon/roadmap.py:952</code>, whose
+  <code>ready</code> is <code>plan_ready and not blockers</code>. Promotion unlinks the live pointer
+  (<code>reckon/crew/promotion.py:251</code>, <code>_remove_promoted_pointer</code>), so the moment a node
+  is delivered the run leaves the only set the roadmap reads. Per-section run blockers reach the page
+  only through the section rows at <code>reckon/roadmap.py:4695</code>, which are built from the same
+  live set.</p>
+
+  <p id="qwnw-a-section-a-run-has-delivered-is-not-ready-sites">A fix has these sites, and one constraint that
+  shapes it:</p>
+  <ul id="qwnw-a-section-a-run-has-delivered-is-not-ready-sites-list">
+    <li>the hold itself — read delivered, promoted and landed runs from the ledger
+    (<code>reckon/ledger.py</code>'s <code>runs</code>/<code>picker_runs</code>, whose rows carry
+    <code>plan</code>, <code>section</code>, <code>gate</code> and <code>completed_at</code>), join them by node
+    with the live pointers, and add the row as a section blocker beside the existing kinds;</li>
+    <li><b>the constraint</b>: the dispatch and admission path reaches readiness through
+    <code>reckon/crew/plan_review.py:6321</code> into <code>roadmap.section_readiness_rows</code>
+    (<code>reckon/roadmap.py:3297</code>), which builds with
+    <code>include_attempts=False, readiness_only=True</code>. Ledger reads are skipped on exactly the
+    path that decides a dispatch, so the fix cannot ride on <code>section_attempts_by_plan</code>;</li>
+    <li>batch dispatch: <code>reckon/crew/dispatch_batch.py:845</code> stores each entry through
+    <code>queue_one</code> and derives the status at <code>:869</code>; a held entry needs its own status
+    and the run id, beside <code>already-queued</code> and <code>awaiting-upstream</code>;</li>
+    <li>the wiring finding: a sibling of <code>_undeclared_wait_findings</code> and
+    <code>_overlapping_scope_findings</code> at <code>reckon/roadmap.py:4554</code>, using the ancestry
+    probe already in the tree (<code>reckon/crew/merge.py:845</code> <code>_is_ancestor</code>) so a done
+    section whose run's head is not on the integration branch names that run;</li>
+    <li>the promoted-but-unmerged case already has an instrument: <code>_keep_pointer_for_pending_landing</code>
+    (<code>reckon/crew/promotion.py:255</code>) marks the pointer it cannot remove, and
+    <code>reckon/crew/pending_landing.py:141</code> already computes <code>on_branch</code>.</li>
+  </ul>
+
+  <p id="qwnw-a-section-a-run-has-delivered-is-not-ready-open">Three questions the section leaves to the
+  implementation and that the re-dispatch brief should settle rather than rediscover: which run states
+  hold (the section names live, delivered, promoted and landed, and a landed run's hold must not outlive
+  its section's own declaration); how a node is identified when a section carries several (the hold is
+  per node, so the second node of the section must stay ready); and how far the ledger read may cost on
+  the dispatch path, which today avoids it deliberately.</p>
+
+  <p id="qwnw-a-section-a-run-has-delivered-is-not-ready-ask">The grant this node needs to finish the
+  section is: <code>reckon/roadmap.py</code>, <code>reckon/crew/dispatch_batch.py</code>,
+  <code>reckon/crew/plan_review.py</code> (if the readiness pass needs the join),
+  <code>reckon/crew/admission/readiness.py</code>, and a test module at
+  <code>tests/test_a_section_a_run_has_delivered_is_not_ready.py</code>. With those, the
+  reproduction above becomes the test's positive case and the base-revision run recorded here is its
+  negative control.</p>
+</article>
+</body>
+</html>
