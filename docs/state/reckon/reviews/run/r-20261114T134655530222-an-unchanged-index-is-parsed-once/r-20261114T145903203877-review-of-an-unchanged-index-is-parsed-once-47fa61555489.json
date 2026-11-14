@@ -1,0 +1,67 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 7,
+  "call_sites": [
+    "reckon/crew/review_records.py:_tick_store",
+    "reckon/crew/review_records.py:_record_identity",
+    "reckon/crew/review_records.py:_load_persisted_entries",
+    "reckon/crew/review_records.py:_settled_index_document",
+    "reckon/crew/review_records.py:_index_stored_record",
+    "reckon/crew/review_records.py:reconcile_foreign_write",
+    "reckon/crew/review.py (re-export at 4029-4041)"
+  ],
+  "completed_at": "2026-11-14T15:39:21.676Z",
+  "dispatched_at": "2026-11-14T15:12:04Z",
+  "findings": [
+    {
+      "file": "reckon/crew/review_records.py",
+      "line": "2004",
+      "severity": "non-blocking",
+      "text": "non-blocking: `_PARSED_INDEX_DOCUMENTS` re-implements the capability `reckon/file_memo.py:358` `memoized` already owns (memoise a per-file parse against the file's stat identity), which this module already imports at review_records.py:34; kind, path and variant=code-stamp plus a read_only_region would serve the same need, so the addition duplicates the owner instead of extending it."
+    },
+    {
+      "file": "reckon/crew/review_records.py",
+      "line": "2053",
+      "severity": "non-blocking",
+      "text": "non-blocking: a cache hit hands every caller the same mutable dict, so the safety of the process-wide copy rests only on the convention at review_records.py:2017-2018 that writers use `_fresh_index_document`; `file_memo.memoized` enforces this by handing out a copy or a read-only view, which this path forgoes."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 7 production call site(s)",
+    "diff": "read all four commits against base 869274dbfa; they add the parse cache, route writers and the settle path through a private parse, drop the cache on persist and re-check a held mapping against the code stamp, changing three files only.",
+    "done_when": "The done_when names tests/test_an_unchanged_index_is_parsed_once.py asserting 100 calls parse once and the first call after record_written parses once more and returns the new entry, with a base negative control that fails; the test at tests/test_an_unchanged_index_is_parsed_once.py:93 and :103 is exactly that, and logs/negative-control.log:25 reproduces \"100 reads of an unchanged index document parsed it 100 times\".",
+    "goal": "the goal is to parse an unchanged review index document once per process; reckon/crew/review_records.py:2031-2056 keys the kept mapping on the file's inode, size and mtime and returns it on a key match, exactly as the goal states.",
+    "manifest": "read; status complete, four commits, pop arms 192 passed and 193 passed with 0 failure ids reported and on disk, negative control 1 failed / EXIT=1, and every log it cites opens with revision and literal command and ends in a bare EXIT=.",
+    "write_paths": "the source prompt's fence is reckon/crew/review_records.py, the node test, and the fragment/figures; `git diff --name-only 869274dbfa..47fa615554` names review_records.py, tests/test_an_unchanged_index_is_parsed_once.py and the fragment, and no figure was written."
+  },
+  "justifications": {
+    "durability": "tests/test_an_unchanged_index_is_parsed_once.py:93 fails with 100 parses if the cache is removed, but the code-stamp re-check at review_records.py:2053 is covered only by the pre-existing tests/test_the_review_store_index_re_reads_only_what_changed.py, not by a new assertion.",
+    "evidence": "logs/after-arm.log records 52 passed EXIT=0 at 47fa6155 and logs/negative-control.log:25 shows the defect was reproduced at base; the fragment's ruff claim is unlogged, though I re-ran ruff on both staged files and it is clean.",
+    "fit": "the added _PARSED_INDEX_DOCUMENTS at reckon/crew/review_records.py:2004 follows the module's existing store-keyed mapping shape (_DOCUMENT_MAPS, _STORE_INDEXES) and no name violates the naming rules.",
+    "goal_fidelity": "reckon/crew/review_records.py:2047-2053 returns the kept mapping when (st_ino, st_size, st_mtime_ns) matches and parses afresh otherwise, which is the goal's mechanism and its measure.",
+    "reuse": "reckon/file_memo.py:358 `memoized` already owns stat-keyed per-file parse memoisation, is imported at review_records.py:34, and the added cache duplicates it rather than extending it.",
+    "scope_discipline": "every path in git diff 869274dbfa..47fa615554 lies inside the declared write paths, and the fragment is the only prose added."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is to parse an unchanged review index document once per process; reckon/crew/review_records.py:2031-2056 keys the kept mapping on the file's inode, size and mtime and returns it on a key match, exactly as the goal states.\nVERDICT done_when: The done_when names tests/test_an_unchanged_index_is_parsed_once.py asserting 100 calls parse once and the first call after record_written parses once more and returns the new entry, with a base negative control that fails; the test at tests/test_an_unchanged_index_is_parsed_once.py:93 and :103 is exactly that, and logs/negative-control.log:25 reproduces \"100 reads of an unchanged index document parsed it 100 times\".\nVERDICT write_paths: the source prompt's fence is reckon/crew/review_records.py, the node test, and the fragment/figures; `git diff --name-only 869274dbfa..47fa615554` names review_records.py, tests/test_an_unchanged_index_is_parsed_once.py and the fragment, and no figure was written.\nVERDICT manifest: read; status complete, four commits, pop arms 192 passed and 193 passed with 0 failure ids reported and on disk, negative control 1 failed / EXIT=1, and every log it cites opens with revision and literal command and ends in a bare EXIT=.\nVERDICT diff: read all four commits against base 869274dbfa; they add the parse cache, route writers and the settle path through a private parse, drop the cache on persist and re-check a held mapping against the code stamp, changing three files only.\nCALL_SITES: reckon/crew/review_records.py:_tick_store, reckon/crew/review_records.py:_record_identity, reckon/crew/review_records.py:_load_persisted_entries, reckon/crew/review_records.py:_settled_index_document, reckon/crew/review_records.py:_index_stored_record, reckon/crew/review_records.py:reconcile_foreign_write, reckon/crew/review.py (re-export at 4029-4041)\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/review_records.py:2047-2053 returns the kept mapping when (st_ino, st_size, st_mtime_ns) matches and parses afresh otherwise, which is the goal's mechanism and its measure.\nSCORE evidence: 18\nJUSTIFICATION evidence: logs/after-arm.log records 52 passed EXIT=0 at 47fa6155 and logs/negative-control.log:25 shows the defect was reproduced at base; the fragment's ruff claim is unlogged, though I re-ran ruff on both staged files and it is clean.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every path in git diff 869274dbfa..47fa615554 lies inside the declared write paths, and the fragment is the only prose added.\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_an_unchanged_index_is_parsed_once.py:93 fails with 100 parses if the cache is removed, but the code-stamp re-check at review_records.py:2053 is covered only by the pre-existing tests/test_the_review_store_index_re_reads_only_what_changed.py, not by a new assertion.\nSCORE fit: 16\nJUSTIFICATION fit: the added _PARSED_INDEX_DOCUMENTS at reckon/crew/review_records.py:2004 follows the module's existing store-keyed mapping shape (_DOCUMENT_MAPS, _STORE_INDEXES) and no name violates the naming rules.\nSCORE reuse: 5\nJUSTIFICATION reuse: reckon/file_memo.py:358 `memoized` already owns stat-keyed per-file parse memoisation, is imported at review_records.py:34, and the added cache duplicates it rather than extending it.\nFINDING reckon/crew/review_records.py:2004 non-blocking: `_PARSED_INDEX_DOCUMENTS` re-implements the capability `reckon/file_memo.py:358` `memoized` already owns (memoise a per-file parse against the file's stat identity), which this module already imports at review_records.py:34; kind, path and variant=code-stamp plus a read_only_region would serve the same need, so the addition duplicates the owner instead of extending it.\nFINDING reckon/crew/review_records.py:2053 non-blocking: a cache hit hands every caller the same mutable dict, so the safety of the process-wide copy rests only on the convention at review_records.py:2017-2018 that writers use `_fresh_index_document`; `file_memo.memoized` enforces this by handing out a copy or a read-only view, which this path forgoes.",
+  "review_run_id": "r-20261114T145903203877-review-of-an-unchanged-index-is-parsed-once-47fa61555489",
+  "reviewed_base_sha": "869274dbfaa088e78ce8b7292cca87732b425a45",
+  "reviewed_head_sha": "47fa6155548914b3ddaef8be01c3045c7fa07f2e",
+  "reviewed_run_id": "r-20261114T134655530222-an-unchanged-index-is-parsed-once",
+  "scores": {
+    "durability": 17,
+    "evidence": 18,
+    "fit": 16,
+    "goal_fidelity": 19,
+    "reuse": 5,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-14T16:01:24.835386+00:00",
+  "total": 94
+}
