@@ -566,15 +566,37 @@ a count. Take names from `reckon crew view obligations --project P --session S`,
 where each row carries the run and the command that answers it.
 See `references/sprint-orchestration.md` §17.
 
-## Concurrency — the roster is the whole authority
+## Concurrency — the router gate is the bound; the queue holds the rest
 
-There is no slot pool and no numeric worker cap anywhere in Reckon. free members
-are the only ceiling: per-member serialisation refuses a member that already
-owns a non-terminal live pointer. Every dispatch gets a disposable worker, and
-concurrency comes from the members a project already has: reuse them, register
-none. Where ready nodes outnumber free members, the wave waits; redispatch each
-member as soon as its finished node is verified, because no dependent node
-builds on unverified work. Do not wait for the slowest active node.
+The local lane's one concurrency bound is the serve's router gate (its width,
+12 on 14 November): requests past it wait in the router's queue and hold no
+card. Reckon launches a queued request's worker as soon as the admit service
+reaches it, and the launched worker waits on the router, so a deep queue is
+how the cards stay full overnight and after coordinators stop. Do not ration
+dispatch to the running count, and do not hold work back because the lane
+looks full.
+
+- **Queue, then steer.** Queue every implementable section of a plan you own
+  in one `crew dispatch --batch`, waits declared, and steer it with
+  `crew queue edit`, `hold`, `release`, `reprioritise` and `drop`. A dispatch
+  that answers `"queued": true` is done; leave it.
+- **Priority moves a request forward, not past the gate.** Use
+  `crew queue reprioritise --priority <n>` for work others wait on (a plan
+  review that gates a whole plan, a fix the lead marked priority).
+- **The fleet node's cores are reported, not enforced.** A worker waiting on
+  the router holds no core. The reservation roster (80) guards memory against
+  a runaway launch only.
+- **Codex launches at once when its lane is open.** A dispatch the picker
+  routes to codex, or one naming it, starts immediately rather than queueing,
+  so it is the escape hatch for urgent work. A codex request that was queued
+  does not yet launch by itself; launch it by hand through the admit verb's
+  single-run form.
+- **"Needs you" on a queued row is not a launch.** Trust the pointer: a
+  `phase: queued` pointer with no pid has not started, whatever the monitor
+  draws.
+
+Every dispatch still gets a disposable worker; reuse the members a project
+already has and register none.
 
 ## Advisory fleet-size guide
 

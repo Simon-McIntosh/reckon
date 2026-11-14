@@ -793,13 +793,12 @@ def test_ship_refills_members_without_crossing_unverified_dependencies() -> None
         ).read_text()
     )
 
-    assert "Concurrency — the roster is the whole authority" in ship
-    assert "There is no slot pool and no numeric worker cap anywhere in Reckon" in ship
-    assert "free members are the only ceiling" in ship
-    assert "concurrency comes from the members a project already has" in ship
-    assert "redispatch each member as soon as its finished node is verified" in ship
-    assert "no dependent node builds on unverified work" in ship
-    assert "Do not wait for the slowest active node" in ship
+    assert "Concurrency — the router gate is the bound; the queue holds the rest" in ship
+    assert "requests past it wait in the router's queue and hold no card" in ship
+    assert "Do not ration dispatch to the running count" in ship
+    assert "The fleet node's cores are reported, not enforced" in ship
+    assert "Codex launches at once when its lane is open" in ship
+    assert "reuse the members a project already has and register none" in ship
     assert "independent refill may start" in reference
 
 
