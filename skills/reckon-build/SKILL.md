@@ -159,8 +159,11 @@ That reuse map stays in the brief. The plan states the endpoint and names no
 module, function or file to extend, so a plan that does is a review finding
 rather than something to implement.
 
-**Queue every reviewed plan at its full width, in one beat.** Once a plan's
-review round is answered, size every implementable section into nodes and queue
+**Queue every reviewed plan you are orchestrating at its full width, in one
+beat.** Queue only the plans or sprints you own: those the lead assigned you or
+you authored and are building. Never queue another session's plan, an unowned
+or superseded plan, or a legacy sprint you were not asked to run; name it to
+the lead instead. Once an owned plan's review round is answered, size every implementable section into nodes and queue
 all of them in one beat with one
 `reckon crew dispatch --batch <file>` call, naming no lane so the picker routes
 each request. One entry per chosen section, naming its project, plan, section,
