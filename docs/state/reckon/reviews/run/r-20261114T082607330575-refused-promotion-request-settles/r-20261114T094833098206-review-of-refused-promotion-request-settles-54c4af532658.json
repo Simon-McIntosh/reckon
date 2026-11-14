@@ -1,0 +1,76 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/crew/obligations.py:3950",
+    "reckon/crew/obligation_snapshot.py:1736",
+    "reckon/crew/promotion.py:898",
+    "reckon/crew_run_commands.py:2008",
+    "reckon/crew/runs.py:2291"
+  ],
+  "completed_at": "2026-11-14T10:15:12.224Z",
+  "dispatched_at": "2026-11-14T09:49:21Z",
+  "findings": [
+    {
+      "file": "reckon/crew/promotion_requests.py",
+      "line": "626",
+      "severity": "non-blocking",
+      "text": "non-blocking: _settled_state returns 'gone' as soon as the pointer is absent, before the ledger lookup at :629, so a landed run whose pointer has gone is recorded settled='gone' rather than 'landed' and the docstring's claim at :613-615 that a ledger row settles it landed is contradicted; the no-duty behaviour is right but the landed branch is unreachable when no pointer exists."
+    },
+    {
+      "file": "tests/test_refused_promotion_request_settles.py",
+      "line": "174",
+      "severity": "non-blocking",
+      "text": "non-blocking: the discard test takes the discard_recorded branch, so the 'gone' settlement the deliverable names ('no longer has a live pointer') has no test that reddens if it regresses."
+    },
+    {
+      "file": "docs/evidence/fragments/work-flows-to-the-lane/refused-promotion-request-settles.html",
+      "line": "53",
+      "severity": "non-blocking",
+      "text": "non-blocking: the fragment and manifest quote 51 passed in 13.26s and a scratch tree /tmp/mcintos-gate-base-ly68Cz, while the cited gate-base.log header reads /tmp/mcintos-gate-base-xWYAvI and its summary line reads 51 passed in 9.44s, and the log's mtime (10:20) is after the manifest's (10:16), so the recorded provenance does not reconcile with the log it cites."
+    },
+    {
+      "file": "tests/test_no_caller_waits_on_a_promotion.py",
+      "line": "559",
+      "severity": "non-blocking",
+      "text": "non-blocking: the landed behaviour makes all four parametrisations of this test red because they still assert a duty for a pointer-less run (related-tests.log: 4 failed, 29 passed) and the assertion must read the request as settled; the worker recorded it under outside_scope and it is folded into the peer node no-caller-waits-on-a-promotion rather than repaired here."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 5 production call site(s)",
+    "diff": "read commit by commit; 81c3e9d adds the SETTLED phase, _settled_state, _settle, settle_requests_for, the failure_obligations settlement, the eager promotion.complete call and the crew ack fallback, and 54c4af5 adds only the 79-line evidence fragment, so the gate at 81c3e9d covers all changed source.",
+    "done_when": "the done_when names three tests and a negative control; tests/test_refused_promotion_request_settles.py:155,174,202 are those three, the head gate log records 54 passed EXIT=0, and negative-control.log shows the mutation failing test_a_promoted_run_settles_its_refused_request and naming the in-process promoted run.",
+    "goal": "the section-52 deliverable is that a refused or failed promotion request settles \u2014 phase promotion-settled \u2014 once its run was promoted in the caller's process, landed, discarded, or has no live pointer, with crew ack deferring a pointer-less row; reckon/crew/promotion_requests.py:605-680, reckon/crew/promotion.py:893-900 and reckon/crew/runs.py:2286-2294 implement exactly those three.",
+    "manifest": "read; it reports head 54 passed against base 51 with EXIT=0 and the mutation failing one test, but its measurement_module (/tmp/mcintos-gate-base-ly68Cz) and its quoted base duration (13.26s) do not match the gate-base.log it cites (/tmp/mcintos-gate-base-xWYAvI, 9.44s).",
+    "write_paths": "the reviewed manifest declares reckon, tests/test_refused_promotion_request_settles.py, the evidence fragment and a figure directory; every changed path is inside them, no figure was written, and no plan file was touched."
+  },
+  "justifications": {
+    "durability": "the three added tests redden on regression, as negative-control.log shows at tests/test_refused_promotion_request_settles.py:165, but no test reaches the 'gone' branch at reckon/crew/promotion_requests.py:626-627, and the request-derived ack project at reckon/crew/runs.py:2288-2293 is never exercised.",
+    "evidence": "tests/test_refused_promotion_request_settles.py:155-187 and negative-control.log record the measure, but the manifest's measurement_module and 13.26s base duration disagree with the gate-base.log header (/tmp/mcintos-gate-base-xWYAvI) and summary line (9.44s) it cites.",
+    "fit": "reckon/crew/promotion_requests.py:638-660 matches the module's docstring style and reuses runs._pointer_lock and runs._write_json, and no added name carries a plan label or version suffix.",
+    "goal_fidelity": "reckon/crew/promotion_requests.py:684-700 settles a refusal whose run has gone before raising a duty, and reckon/crew/promotion.py:893-900 settles the in-process promoted run the deliverable names.",
+    "reuse": "the addition extends the owners it needs \u2014 promotion.discard_recorded at promotion_requests.py:622, runs._promoted_record_project at :629, and the module that owns the request file \u2014 rather than forking a store.",
+    "scope_discipline": "every changed path is inside the declared write paths, including reckon/crew/runs.py:2286, and no file outside them was touched."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the section-52 deliverable is that a refused or failed promotion request settles \u2014 phase promotion-settled \u2014 once its run was promoted in the caller's process, landed, discarded, or has no live pointer, with crew ack deferring a pointer-less row; reckon/crew/promotion_requests.py:605-680, reckon/crew/promotion.py:893-900 and reckon/crew/runs.py:2286-2294 implement exactly those three.\nVERDICT done_when: the done_when names three tests and a negative control; tests/test_refused_promotion_request_settles.py:155,174,202 are those three, the head gate log records 54 passed EXIT=0, and negative-control.log shows the mutation failing test_a_promoted_run_settles_its_refused_request and naming the in-process promoted run.\nVERDICT write_paths: the reviewed manifest declares reckon, tests/test_refused_promotion_request_settles.py, the evidence fragment and a figure directory; every changed path is inside them, no figure was written, and no plan file was touched.\nVERDICT manifest: read; it reports head 54 passed against base 51 with EXIT=0 and the mutation failing one test, but its measurement_module (/tmp/mcintos-gate-base-ly68Cz) and its quoted base duration (13.26s) do not match the gate-base.log it cites (/tmp/mcintos-gate-base-xWYAvI, 9.44s).\nVERDICT diff: read commit by commit; 81c3e9d adds the SETTLED phase, _settled_state, _settle, settle_requests_for, the failure_obligations settlement, the eager promotion.complete call and the crew ack fallback, and 54c4af5 adds only the 79-line evidence fragment, so the gate at 81c3e9d covers all changed source.\nCALL_SITES: reckon/crew/obligations.py:3950, reckon/crew/obligation_snapshot.py:1736, reckon/crew/promotion.py:898, reckon/crew_run_commands.py:2008, reckon/crew/runs.py:2291\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/promotion_requests.py:684-700 settles a refusal whose run has gone before raising a duty, and reckon/crew/promotion.py:893-900 settles the in-process promoted run the deliverable names.\nSCORE evidence: 16\nJUSTIFICATION evidence: tests/test_refused_promotion_request_settles.py:155-187 and negative-control.log record the measure, but the manifest's measurement_module and 13.26s base duration disagree with the gate-base.log header (/tmp/mcintos-gate-base-xWYAvI) and summary line (9.44s) it cites.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every changed path is inside the declared write paths, including reckon/crew/runs.py:2286, and no file outside them was touched.\nSCORE durability: 15\nJUSTIFICATION durability: the three added tests redden on regression, as negative-control.log shows at tests/test_refused_promotion_request_settles.py:165, but no test reaches the 'gone' branch at reckon/crew/promotion_requests.py:626-627, and the request-derived ack project at reckon/crew/runs.py:2288-2293 is never exercised.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/crew/promotion_requests.py:638-660 matches the module's docstring style and reuses runs._pointer_lock and runs._write_json, and no added name carries a plan label or version suffix.\nSCORE reuse: 19\nJUSTIFICATION reuse: the addition extends the owners it needs \u2014 promotion.discard_recorded at promotion_requests.py:622, runs._promoted_record_project at :629, and the module that owns the request file \u2014 rather than forking a store.\nFINDING reckon/crew/promotion_requests.py:626 non-blocking: _settled_state returns 'gone' as soon as the pointer is absent, before the ledger lookup at :629, so a landed run whose pointer has gone is recorded settled='gone' rather than 'landed' and the docstring's claim at :613-615 that a ledger row settles it landed is contradicted; the no-duty behaviour is right but the landed branch is unreachable when no pointer exists.\nFINDING tests/test_refused_promotion_request_settles.py:174 non-blocking: the discard test takes the discard_recorded branch, so the 'gone' settlement the deliverable names ('no longer has a live pointer') has no test that reddens if it regresses.\nFINDING docs/evidence/fragments/work-flows-to-the-lane/refused-promotion-request-settles.html:53 non-blocking: the fragment and manifest quote 51 passed in 13.26s and a scratch tree /tmp/mcintos-gate-base-ly68Cz, while the cited gate-base.log header reads /tmp/mcintos-gate-base-xWYAvI and its summary line reads 51 passed in 9.44s, and the log's mtime (10:20) is after the manifest's (10:16), so the recorded provenance does not reconcile with the log it cites.\nFINDING tests/test_no_caller_waits_on_a_promotion.py:559 non-blocking: the landed behaviour makes all four parametrisations of this test red because they still assert a duty for a pointer-less run (related-tests.log: 4 failed, 29 passed) and the assertion must read the request as settled; the worker recorded it under outside_scope and it is folded into the peer node no-caller-waits-on-a-promotion rather than repaired here.",
+  "review_run_id": "r-20261114T094833098206-review-of-refused-promotion-request-settles-54c4af532658",
+  "reviewed_base": "9c8632ca0b992790566bc487862f2c9be6f8906d",
+  "reviewed_base_sha": "9c8632ca0b992790566bc487862f2c9be6f8906d",
+  "reviewed_head_sha": "54c4af532658c3b0f2291ba252af6a78aa8a29c2",
+  "reviewed_run_id": "r-20261114T082607330575-refused-promotion-request-settles",
+  "scores": {
+    "durability": 15,
+    "evidence": 16,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-14T10:20:21.675387+00:00",
+  "total": 107
+}
