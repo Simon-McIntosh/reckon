@@ -452,6 +452,46 @@ def _landing_checkout(
     )
 
 
+def _promotion_commits(
+    record: Mapping[str, Any], manifest_commits: Sequence[Any]
+) -> list[str]:
+    """Read the run's committed range even when a repair cleared its citations."""
+    from .recovery_review_subject import _review_tree, reviewed_commits
+
+    history = reviewed_commits(
+        _review_tree(record),
+        str(record.get("base_sha") or record.get("base") or "").strip(),
+        "HEAD",
+    )
+    if history:
+        return [sha for sha, _subject in history]
+    return [str(sha) for sha in manifest_commits]
+
+
+def _default_gate_evidence_from_manifest(
+    record: Mapping[str, Any],
+    *,
+    verdict: str,
+    gate_check: Mapping[str, Any] | None,
+    commits: Sequence[str],
+    no_commit_reason: str = "",
+) -> tuple[dict[str, Any], tuple[str, ...]]:
+    """Fill omitted citations from history before defaulting the gate evidence.
+
+    Explicit citations and a commitless declaration retain their own guards.
+    The manifest remains the fallback when no committed range can be read.
+    """
+    if not commits and not no_commit_reason.strip():
+        commits = _promotion_commits(record, ())
+    return _manifest_gate_evidence(
+        record,
+        verdict=verdict,
+        gate_check=gate_check,
+        commits=commits,
+        no_commit_reason=no_commit_reason,
+    )
+
+
 @operational_read
 def complete(
     run_id: str,
@@ -2869,7 +2909,6 @@ from reckon.crew.promotion_gate import (
 )
 from reckon.crew.promotion_records import (
     _complete_withdrawn_run,
-    _default_gate_evidence_from_manifest,
     _evaluate_suite_delta,
     _manifest_reads_blocked,
     _manifest_relative_path,
@@ -2883,6 +2922,9 @@ from reckon.crew.promotion_records import (
     _resume_worktree_retention,
     _retire_disposable_identity,
     _worktree_audit,
+)
+from reckon.crew.promotion_records import (
+    _default_gate_evidence_from_manifest as _manifest_gate_evidence,
 )
 from reckon.crew.promotion_release import (
     _ARM_ARTIFACT_FIELD,
