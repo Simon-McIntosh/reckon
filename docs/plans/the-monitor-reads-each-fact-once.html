@@ -25,7 +25,7 @@
   <title>The Monitor Reads Each Fact Once | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="278">
+<meta name="plan-version" content="279">
 <meta name="plan-modified" content="2026-11-14">
 </head>
 <body>
@@ -1174,6 +1174,12 @@ staged paths.</p>
 <div class="r-comment" data-section="s45" data-id="c-run-r-20261114T095108157561-wave3-clive-the-monitor-reads-each-fact--s45" data-who="reckon-build" data-when="2026-11-14T12:30:10Z">
     <div class="r-comment-body"><p>§45 the review store keeps one index document, inside its directory, that its writers advance (record entry, run digest, version, change log) and its readers answer from without listing or stat-ing the store; a record written outside that path is found by one names-only listing, and a missing document is rebuilt from one. Gate tests/test_the_review_store_is_indexed_by_its_writers.py at the repaired head: 60 passed together with tests/test_staged_write_inventory.py, over 500 records across 50 runs, with no listing and no record stat on the reads after a store.</p></div>
 </div>
+<div class="r-comment" data-section="s46" data-id="c-run-r-20261114T130442036371-review-of-every-review-record-write-moves-the-index-0e561dea1e86" data-who="reckon-build" data-when="2026-11-14T13:57:27Z">
+    <div class="r-comment-body"><p>Independent review of 8753ba2f08416ceaf8ca0b413f5e7edbbc493a9d..0e561dea1e86da59b000609c4916a5387e79c5e6 parsed all six dimensions at 20/20 with no findings and zero added failure IDs.</p></div>
+</div>
+<div class="r-comment" data-section="s46" data-id="c-run-r-20261114T100607338350-every-review-record-write-moves-the-index" data-who="reckon-build" data-when="2026-11-14T12:53:29Z">
+    <div class="r-comment-body"><p>Eight review writer entry points now change the indexed run digest and advance the version; all eight checks fail with publication disabled, foreign reconciliation has a failing control, armed gate 60 base / 77 head passed, and 341-file importer arms add zero failure IDs.</p></div>
+</div>
 <div class="r-comment" data-section="s47" data-id="c-run-r-20261114T121050391443-review-of-a-plan-write-keeps-the-ledger-index-31209a2504f6" data-who="reckon-build" data-when="2026-11-14T12:26:22.224Z">
     <div class="r-comment-body"><p>Reviewed r-20261114T102533509163-a-plan-write-keeps-the-ledger-index at base 75fa11d2c6 / head 31209a2504: the ledger keeps its own write generation, a plan write no longer invalidates the ledger index, gate 3 passed, population arms 174 failed at base against 173 at head with 0 added, negative control reddens at base with one ledger load. Scores goal_fidelity 20, evidence 18, scope_discipline 14, durability 19, fit 19, reuse 20; two non-blocking findings (an out-of-fence test retarget, and arm-log command headers carrying a placeholder).</p></div>
 </div>
@@ -1263,9 +1269,6 @@ staged paths.</p>
 </div>
 <div class="r-comment" data-section="s9" data-id="c-run-r-20261027T042852990093-obligations-read-the-station" data-who="reckon-build" data-when="2026-10-27T13:28:42Z">
     <div class="r-comment-body"><p>The station computes each live session's obligations once per change into its node-local store and exports one change-only snapshot per project at most every 10 s, with the carried station heartbeat republished once it has moved and the file is 90 s old so a quiet station never reads as stopped; the prompt hook and the crew obligations view both answer from it, in that order ahead of the derivation, and a station heartbeat past the 120 s window is reported stale with its age.</p></div>
-</div>
-<div class="r-comment" data-section="s46" data-id="c-run-r-20261114T130442036371-review-of-every-review-record-write-moves-the-index-0e561dea1e86" data-who="reckon-build" data-when="2026-11-14T13:57:27Z">
-    <div class="r-comment-body"><p>Independent review of 8753ba2f08416ceaf8ca0b413f5e7edbbc493a9d..0e561dea1e86da59b000609c4916a5387e79c5e6 parsed all six dimensions at 20/20 with no findings and zero added failure IDs.</p></div>
 </div>
 </section>
 </main>
