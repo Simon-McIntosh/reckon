@@ -1825,6 +1825,19 @@ def _exclusive_write_pattern(shared: frozenset[str], path: str) -> str:
     )
 
 
+def unmergeable_patterns(project: str | None, repo: Path) -> tuple[str, ...]:
+    """Return the repository-relative patterns git cannot reconcile.
+
+    The shipped artifact classes and the project's own declared patterns, so a
+    run fenced against these refuses exactly what a claim on the same path
+    treats as exclusive. A declaration that cannot be read adds nothing: an
+    unreadable sharing declaration is already a refusal everywhere a claim is
+    compared, and the fence seals the default classes regardless.
+    """
+    declared = getattr(_shared_write_paths(project, repo), "exclusive_patterns", ())
+    return tuple(dict.fromkeys([*DEFAULT_EXCLUSIVE_PATHS, *declared]))
+
+
 def _shared_write_paths(project: str | None, repo: Path) -> frozenset[str]:
     """Read the repository's exclusive artifact policy for claim comparisons.
 
