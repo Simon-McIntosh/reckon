@@ -10,7 +10,7 @@
   <meta name="plan-summary" content="Codex always finds a seat, priority work goes first, reviews keep pace with implementation, and admission drains the queue as fast as seats free.">
   <meta name="plan-status" content="active">
   <meta name="plan-roi" content="high">
-  <meta name="plan-effort-hours" content="14">
+  <meta name="plan-effort-hours" content="14.0">
   <meta name="plan-capability-version" content="1.0">
   <meta name="plan-capability-class" content="general">
   <meta name="plan-capability-reasoning" content="deep">
@@ -21,12 +21,12 @@
   <meta name="plan-tags" content="reckon-tooling,crew">
   <meta name="plan-after" content="work-is-never-stuck-behind-the-admission-loop">
   <meta name="plan-informs" content="a-session-spends-a-priority-budget">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;implementable&quot;}">
   <meta name="plan-section-depends-on" content="{&quot;s5&quot;:[&quot;the-escape-lane-and-reviews-keep-pace#s2&quot;],&quot;s6&quot;:[&quot;the-escape-lane-and-reviews-keep-pace#s7&quot;]}">
   <title>The Escape Lane And Reviews Keep Pace | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="1">
+<meta name="plan-version" content="2">
 <meta name="plan-modified" content="2026-11-14">
 </head>
 <body>
@@ -38,32 +38,32 @@
     <p>Reviews and implementations also compete in one queue with nothing to keep their cadence matched. A delivered run waits on its review before it can land, so a review that queues behind a wave of implementations holds finished work. And the same evening the sweep filed a review-self promotion request on a review its coordinator had held, moving a request that never launched out of the queue for good.</p>
 
     <h2 id="s2">§2 — The local lane leaves seats for a named lane</h2>
-<section data-reckon="section" data-id="s2" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="elevated" data-status="implementable" data-links=""></section>
+<section data-reckon="section" data-id="s2" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="elevated" data-status="done" data-links=""></section>
     <p><strong>Deliverable.</strong> The local lane stops <code>LOCAL_LANE_RESERVE</code> (3) seats, and their cores, short of the roster cap and the cores bound, at a direct dispatch and at an admission launch alike. A dispatch naming any other lane is measured against the bounds as they stand, so a codex request finds the reserved room. Built as <code>e7bfe1da15</code>: <code>reckon/crew/placement.py</code>, <code>reckon/crew/dispatch_admission.py</code> (<code>_refuse_over_reservation_roster</code> and <code>_refuse_over_concurrency_ceiling</code> take a <code>reserve</code>) and <code>reckon/crew/dispatching/preparation.py</code> (<code>_local_lane_reserve</code>).</p>
     <p><strong>Done when.</strong> <code>tests/test_a_named_lane_keeps_seats_the_local_queue_cannot_take.py</code> shows that at cap minus reserve occupied a local dispatch is refused naming the reserve, a named lane is admitted up to the cap and refused at it. It fails at base. The tests naming placement, dispatch admission, the dispatch preparation or the roster add no failure against the base on all_debug. Once landed and the admit service has reloaded, nova's codex review of <code>r-20261113T162733537202-known-answer-recovery</code> is dispatched once and launches.</p>
 
     <h2 id="s3">§3 — A dispatch parses a peer's Python file once until it changes</h2>
-<section data-reckon="section" data-id="s3" data-effort-hours="1" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="done" data-links=""></section>
+<section data-reckon="section" data-id="s3" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="done" data-links=""></section>
     <p><strong>Landed</strong> as <code>5c94f6f973</code>, merged to main. <code>_python_references</code> in <code>reckon/crew/dispatch_peer.py</code> keeps each file's references keyed by path, repository, size and change time, bounded and under a lock. <code>tests/test_a_peer_file_is_parsed_once_until_it_changes.py</code> shows five adjacency checks parse each file once and an edited file is parsed again; both cases fail at base. Arms on all_debug job 1316092: base 34 failed 568 passed, head 34 failed 570 passed, identical failure ids.</p>
 
     <h2 id="s4">§4 — A held review is not requested for its own promotion</h2>
-<section data-reckon="section" data-id="s4" data-effort-hours="0.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+<section data-reckon="section" data-id="s4" data-effort-hours="0.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="done" data-links=""></section>
     <p><strong>Deliverable.</strong> <code>held</code> joins <code>_PRE_LAUNCH_PHASES</code> in <code>reckon/crew/recovery_review_acceptance.py</code>, so the sweep records a held review as waiting and leaves its phase alone instead of filing a review-self request. Built as <code>dc1f1b01ac</code>. <strong>Done when</strong> the <code>held</code> case of <code>tests/test_an_unlaunched_review_is_not_requested.py</code> fails at base and passes at head, and the tests naming review acceptance or review-self add no failure against the base on all_debug.</p>
 
     <h2 id="s5">§5 — A request for a named lane queues, and is admitted into the reserve ahead of the local queue</h2>
-<section data-reckon="section" data-id="s5" data-effort-hours="4" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="implementable" data-links=""></section>
+<section data-reckon="section" data-id="s5" data-effort-hours="4.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="implementable" data-links=""></section>
     <p><strong>Why.</strong> §2 makes room, but a codex request still gets a seat only by being dispatched at the moment one is free. A coordinator should state the request once and have it run when room and the lane allow, as local work already does.</p>
     <p><strong>Deliverable.</strong> A dispatch naming a lane other than the local one, refused only by the roster or cores bound, is stored as a queued request exactly as a held local dispatch is. The admit service launches such a request into the reserved seats, and launches a request carrying an explicit priority override (<code>crew queue reprioritise</code>) before ordinary work of its lane. A named lane under a budget hold keeps its request queued and says so on the request, and nothing is rebound to another lane without the coordinator. The ordering reads the priority that <code>a-session-spends-a-priority-budget</code> defines; this section adds no budget of its own.</p>
     <p><strong>Done when.</strong> A test fills the roster to cap minus reserve with local work, queues one codex request and two local requests, frees one seat, and shows one admission pass launches the codex request and not a local one. A second case shows a local request with a priority override launches ahead of an earlier local request without one. A third shows a codex request under a budget hold stays queued with the hold named. The tests importing <code>reckon.crew.queue_admission</code> or the admission package add no failure against the base on all_debug, one arm at a time with at most <code>-n 4</code>. Write paths: <code>reckon/crew/dispatching/preparation.py</code>, <code>reckon/crew/admission/</code>, <code>reckon/crew/queue_admission.py</code> and the new test.</p>
 
     <h2 id="s6">§6 — Reviews and implementations are admitted at a matched cadence</h2>
-<section data-reckon="section" data-id="s6" data-effort-hours="3" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="implementable" data-links=""></section>
+<section data-reckon="section" data-id="s6" data-effort-hours="3.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="implementable" data-links=""></section>
     <p><strong>Why.</strong> A delivered run lands only after its review, so a review queued behind a wave of implementations holds finished work, while a wave of reviews holds back new work. Both are wanted, at a similar cadence.</p>
     <p><strong>Deliverable.</strong> When reviews and implementations both wait, each admission pass shares the seats it fills between the two roles in proportion to how many of each are waiting, with no role taking fewer than one seat in three, and among reviews the review of a delivered run goes first. Fair use between sessions still applies inside each role. The share is a named constant, and the pass records, per role, how many it launched and the age of the oldest it left waiting, so the cadence can be read.</p>
     <p><strong>Done when.</strong> A test queues nine implementations and three reviews with three free seats and shows one pass launches at least one review and at least one implementation, the delivered run's review first. A second case with only one role waiting fills every seat from it. A measurement over one evening of live passes, read from <code>admission-verdicts.jsonl</code>, reports launches and oldest waiting age per role before and after. Write paths: <code>reckon/crew/admission/</code>, <code>reckon/crew/queue_order.py</code> and the new test.</p>
 
     <h2 id="s7">§7 — An admission pass is bounded, and says what each launch cost</h2>
-<section data-reckon="section" data-id="s7" data-effort-hours="2" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+<section data-reckon="section" data-id="s7" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
     <p><strong>Why.</strong> One pass ran 1,046 s launching. A pass that runs long holds every freed seat until it ends, and its stalls hide which step was slow.</p>
     <p><strong>Deliverable.</strong> A pass launches until a stated time budget (60 s by default, from flight) is spent, then ends and lets the next pass continue, so freed seats are filled within a pass's budget. Each launch records its own duration and its slowest step on the verdict row. With §3 landed, profile the admit service again and repair the next largest per-launch cost the profile names.</p>
     <p><strong>Done when.</strong> A test with launches stubbed to take 20 s each and a 60 s budget shows a pass launches three and the next pass takes up the rest. A 120 s <code>py-spy record --idle</code> of the live admit service before and after names the per-launch cost removed, and the median launch duration over one evening falls below 15 s. Write paths: <code>reckon/crew/admission/</code>, the step the profile names, and the new test.</p>
@@ -83,8 +83,7 @@
     </article>
 </section>
 
-<section data-reckon="comments" id="comments" class="r-comments">
-</section>
+
 </main>
 </body>
 </html>
