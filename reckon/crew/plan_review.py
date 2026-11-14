@@ -5335,6 +5335,10 @@ def _commit_record_when_run_promoted(
     one write that commits it, so nothing is committed twice. A project with no
     committed reviews tree, or a record that needs no run of its own, resolves
     nowhere to commit and is left as the store wrote it.
+
+    A commit that fails raises out of this pass rather than being swallowed: the
+    record is still staged and otherwise nothing would commit it, so a delivery
+    that could not land its record must fail loudly where its caller can see it.
     """
     project = str(record.get("project") or "").strip()
     plan_slug = str(record.get("plan_slug") or "").strip()
@@ -5346,12 +5350,11 @@ def _commit_record_when_run_promoted(
 
     if not has_row(project, crew_run):
         return None
+    if _review_store.committed_review_root(project) is None:
+        return None
     from reckon.crew import review_records
 
-    try:
-        path = review_records.store_committed_review(record, project=project)
-    except (OSError, ValueError):
-        return None
+    path = review_records.store_committed_review(record, project=project)
     review_records.commit_record_write(project, path)
     return path
 

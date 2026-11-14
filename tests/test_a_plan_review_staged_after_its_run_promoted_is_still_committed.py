@@ -161,6 +161,25 @@ def test_a_record_stored_after_its_run_promoted_reaches_the_committed_store(
     assert tracked.returncode == 0, tracked.stderr
 
 
+def test_a_failed_commit_raises_rather_than_leaving_the_record_staged(
+    project_tree: tuple[Path, Path, Path],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A record with no promotion left to commit it fails loudly, not silently."""
+    _config_home, _repo, plan_path = project_tree
+    _deliver(plan_path)
+    _promote()
+    from reckon.crew import review_records
+
+    def refuse_commit(project: str, path: str | Path) -> bool:
+        raise ledger.LedgerError("index.lock held by a peer commit")
+
+    monkeypatch.setattr(review_records, "commit_record_write", refuse_commit)
+
+    with pytest.raises(ledger.LedgerError, match=r"index\.lock held"):
+        plan_review.store_delivered_reviews(PROJECT, SLUG)
+
+
 def test_a_record_stored_before_its_run_promoted_stays_staged(
     project_tree: tuple[Path, Path, Path],
 ) -> None:
