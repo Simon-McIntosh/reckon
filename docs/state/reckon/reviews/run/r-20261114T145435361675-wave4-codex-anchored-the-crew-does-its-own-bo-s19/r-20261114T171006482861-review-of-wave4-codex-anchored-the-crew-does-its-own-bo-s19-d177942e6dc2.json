@@ -1,0 +1,66 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "de40d35123a47a5b72910de5571132678b023a4f",
+  "call_sites": [
+    "reckon/crew_run_commands.py:2400 crew_resume -> receipt built and returned to the CLI caller",
+    "reckon/crew_run_commands.py:2645 receipt dict construction consumed by crew CLI resume command"
+  ],
+  "completed_at": "2026-11-14T17:36:48.966Z",
+  "dispatched_at": "2026-11-14T17:30:12Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/the-crew-does-its-own-bookkeeping/wave4-codex-anchored-the-crew-does-its-own-bo-s19.html",
+      "line": "1",
+      "severity": "non-blocking",
+      "text": "non-blocking: the diff changes docs/evidence/fragments/...-s19.html, which the dispatch-detail write_paths (reckon/crew_run_commands.py, reckon/crew/resumption.py) do not list; the node's orientation write paths do, so record the landing-evidence path in the dispatch scope next time."
+    },
+    {
+      "file": "tests/test_a_resume_reports_its_own_launch.py",
+      "line": "52",
+      "severity": "non-blocking",
+      "text": "non-blocking: the refusal assertion checks the run id in the output but never the first call's pid, so \"naming the first\" in the done_when is satisfied only weakly; asserting the launcher pid would tie the refusal to the specific call."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261114T145435361675-wave4-codex-anchored-the-crew-does-its-own-bo-s19/final.log",
+      "line": "1",
+      "severity": "non-blocking",
+      "text": "non-blocking: the gate ran without the pytest -n 8 the done_when names and in an extracted /tmp tree instead of in place on the fleet node; the result stands but the invocation deviates from the stated measure."
+    }
+  ],
+  "head_log_revision": "d177942e6dc213f468a826405cde469b6bfca0a9",
+  "item_verdicts": {
+    "diff": "two commits, 101 insertions across three files: one receipt field, an 83-line test, and 17 lines of evidence fragment; nothing outside that.",
+    "done_when": "tests/test_a_resume_reports_its_own_launch.py:48-53 makes one launcher-tracked call and issues a second in-flight call that is refused with \"already has a resume launching\" naming the run; negative.log shows the guard firing.",
+    "goal": "the goal is to deliver section s19's done-when: a resume reports its launch while a second concurrent call is refused; reckon/crew_run_commands.py:2645 supplies the receipt field the test reads.",
+    "manifest": "the manifest records 57 passed at head and 0 failures in both suite arms, names every log path, and records the negative control log at negative.log.",
+    "write_paths": "the node's orientation_write_paths name crew_run_commands.py, crew/resumption.py, the evidence fragment, the figures dir and the new test; the diff stays within them."
+  },
+  "justifications": {
+    "durability": "tests/test_a_resume_reports_its_own_launch.py:73 asserts receipt[\"advice\"] == advice and fails with KeyError when the added receipt field is removed, as negative.log's 2 failed records.",
+    "evidence": "final.log records 57 passed EXIT=0 at revision d177942e6d and negative.log records 2 failed EXIT=1, but the gate ran without the -n 8 the done_when names and in an extracted /tmp tree rather than in place on the fleet node.",
+    "fit": "reckon/crew_run_commands.py:2645 adds one field inside the receipt dict beside \"pid\" and \"resumed_turn\", following the surrounding idiom and adding no prohibited name.",
+    "goal_fidelity": "reckon/crew_run_commands.py:2645 adds \"advice\": advice to the resume launch receipt, which is exactly the deliverable section s19 names.",
+    "reuse": "the change adds one key to an existing receipt dict and introduces no new mechanism; a search over reckon/crew upon resume receipts found only the existing crew_resume builder.",
+    "scope_discipline": "the three changed paths in git diff --stat de40d351..d177942e are reckon/crew_run_commands.py, tests/test_a_resume_reports_its_own_launch.py and the evidence fragment, all inside the node's recorded orientation write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to deliver section s19's done-when; reckon/crew_run_commands.py:2645 adds the advice field to the resume launch receipt.\nVERDICT done_when: done_when asks a test to make one resume call reporting its launch and a second concurrent call refused naming the difference; tests/test_a_resume_reports_its_own_launch.py:48-53 does both and negative.log records 2 failed when the guard is reverted.\nVERDICT write_paths: the diff's three changed paths lie inside the node's recorded orientation write paths, though the dispatch-detail write_paths omit the evidence fragment.\nVERDICT manifest: read; it records 57 passed at head, 0 failures in both suite arms, every log path, and the negative control at negative.log.\nVERDICT diff: read commit by commit; 4985803705 adds one receipt field and an 83-line test, d177942e6d adds 17 lines of landing evidence.\nCALL_SITES: reckon/crew_run_commands.py:2400 crew_resume, reckon/crew_run_commands.py:2645 receipt construction\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew_run_commands.py:2645 adds \"advice\": advice to the receipt, exactly the section's deliverable.\nSCORE evidence: 14\nJUSTIFICATION evidence: final.log records 57 passed EXIT=0 at d177942e6d but the gate omits the done_when's -n 8 and runs in an extracted /tmp tree.\nSCORE scope_discipline: 15\nJUSTIFICATION scope_discipline: changed paths are inside orientation_write_paths but the evidence fragment is absent from dispatch-detail write_paths.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_a_resume_reports_its_own_launch.py:73 fails with KeyError if the advice field is removed, shown by negative.log's 2 failed.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/crew_run_commands.py:2645 sits beside \"pid\" and \"resumed_turn\" in the same receipt dict and adds no prohibited name.\nSCORE reuse: 20\nJUSTIFICATION reuse: no owner for a resume receipt field is duplicated; the change extends the existing builder at reckon/crew_run_commands.py:2645.\nFINDING docs/evidence/fragments/the-crew-does-its-own-bookkeeping/wave4-codex-anchored-the-crew-does-its-own-bo-s19.html:1 non-blocking: the fragment is outside the dispatch-detail write paths.\nFINDING tests/test_a_resume_reports_its_own_launch.py:52 non-blocking: the refusal assertion checks run id but not the first call's pid.\nFINDING final.log:1 non-blocking: the gate omits the done_when's -n 8 and ran in an extracted tree.\n",
+  "review_run_id": "r-20261114T171006482861-review-of-wave4-codex-anchored-the-crew-does-its-own-bo-s19-d177942e6dc2",
+  "reviewed_base_sha": "de40d35123a47a5b72910de5571132678b023a4f",
+  "reviewed_head_sha": "d177942e6dc213f468a826405cde469b6bfca0a9",
+  "reviewed_run_id": "r-20261114T145435361675-wave4-codex-anchored-the-crew-does-its-own-bo-s19",
+  "reviewer_run_id": "r-20261114T171006482861-review-of-wave4-codex-anchored-the-crew-does-2dc2",
+  "scores": {
+    "durability": 18,
+    "evidence": 14,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 15
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-14T18:14:30.328023+00:00",
+  "total": 104
+}
