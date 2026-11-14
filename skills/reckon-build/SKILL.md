@@ -549,8 +549,13 @@ or departed), and `seat moved` (the producer moved to another node).
 
 **The counters**:
 
-- `w`: live workers: runs dispatched, starting or running, review runs
-  included. Your session is doing work while this is above zero.
+- `w`: live implementation work: runs dispatched, starting or running, apart
+  from review runs, and including a delivered run whose review sent it back to
+  a repair round that is running now. Your session is doing work while this is
+  above zero.
+- `r`: live review work: review runs dispatched, starting or running. Read it
+  beside `w`, so a session whose only live run is a review reads as reviewing
+  rather than as idle.
 - `n`: needs you: runs stopped on your move. Read `crew view obligations` for
   the command each one needs.
 - `d`: delivered and not yet landed. A delivered run must not sit: promote and

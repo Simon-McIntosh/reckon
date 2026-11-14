@@ -826,6 +826,21 @@ def _pointer_role(pointer: Mapping[str, Any]) -> str:
     return role
 
 
+def _repair_attempt_live(pointer: Mapping[str, Any]) -> bool:
+    """Whether a run's pointer records a repair round with a live attempt.
+
+    A review that files a blocking finding resumes the reviewed run's own
+    worker, and the reflex records the round it acted on in the run's pointer.
+    Only an opening status means a worker is answering the round: a round the
+    reflex held, declined, refused or exhausted produced none, so it names
+    nothing in flight however recently the record was written.
+    """
+    dispatch = pointer.get(REPAIR_DISPATCH_FIELD)
+    if not isinstance(dispatch, Mapping):
+        return False
+    return str(dispatch.get("status") or "") in REPAIR_ROUND_OPENING_STATUSES
+
+
 # A state that needs action always may explain itself, and so may a member of
 # the waiting family: the clause on a waiting row names what lifts it and on a
 # blocked row names what a reader can do, so the explained set is the action
@@ -1510,6 +1525,10 @@ def _compute_watch_snapshot(
         # way — the snapshot carries the raw spelling and the renderer narrows
         # it to fit its column.
         "role": _pointer_role(pointer),
+        # Whether a repair round for this run has a worker answering it, so the
+        # counter can read a run that the review sent back to work as working
+        # while its manifest still carries the verdict it delivered.
+        "repair_in_flight": _repair_attempt_live(pointer),
         # Whether this run is a shadow of a committed primary. Dispatch decides
         # shadowship at launch and writes the lineage onto the pointer; the
         # renderer dims a shadow row end to end from that fact, so the snapshot
@@ -1829,13 +1848,24 @@ FLEET_BLOCKED_STATES = tuple(sorted(NEEDS_ACTION - WAITING_STATES))
 def _fleet_counts(
     snapshots: Mapping[str, Mapping[str, Any]], *, session: str | None = None
 ) -> dict[str, int]:
-    """Partition the fleet into working, blocked, delivered, and waiting work.
+    """Partition the fleet into working, reviewing, blocked, delivered and waiting.
 
-    ``working`` is what a reader means by a live worker. ``blocked`` is
-    everything that has stopped progressing and needs the coordinator, a stall
-    or a failure included. ``unpromoted`` is delivered work waiting on a gate.
-    ``waiting`` is a run whose declared external condition remains outstanding.
-    A run that leaves the fleet is in none of them.
+    ``working`` is what a reader means by a live implementation worker, and
+    ``reviewing`` is the review work running beside it: a run launched to review
+    counts here rather than in ``working``, so a session whose only live run is
+    a review does not read as idle. ``blocked`` is everything that has stopped
+    progressing and needs the coordinator, a stall or a failure included.
+    ``unpromoted`` is delivered work waiting on a gate. ``waiting`` is a run
+    whose declared external condition remains outstanding. A run that leaves the
+    fleet is in none of them.
+
+    A delivered run whose repair round holds a live attempt counts as working,
+    not delivered: the review sent it back to work, and its manifest keeps the
+    verdict it delivered until it delivers again.
+
+    ``reviewing`` joins the result only when some run is reviewing, the same way
+    ``waiting`` does, so a fleet with no review carries no zero for a reader to
+    misinterpret and the figure's presence itself says reviews are running.
 
     ``session`` narrows the counted population to the runs that session owns,
     using the ownership already persisted on each snapshot; omitted, the
@@ -1849,15 +1879,33 @@ def _fleet_counts(
         str(snapshot.get("recovery_classification") or "") == "held"
         for snapshot in rows
     )
+    reviewing = sum(
+        state in FLEET_WORKING_STATES
+        and str(snapshot.get("role") or "") == REVIEW_ROLE
+        for snapshot, state in zip(rows, states)
+    )
+    # A delivered run under a live repair attempt is at work again. Only an
+    # opening repair record says the round has a worker; the record's own
+    # meaning, including which statuses are openings, belongs to the reflex's
+    # writer and is read from it here rather than restated.
+    repairing = sum(
+        state in FLEET_UNPROMOTED_STATES and bool(snapshot.get("repair_in_flight"))
+        for snapshot, state in zip(rows, states)
+    )
     counts = {
-        "working": sum(state in FLEET_WORKING_STATES for state in states),
+        "working": sum(state in FLEET_WORKING_STATES for state in states)
+        - reviewing
+        + repairing,
         "blocked": sum(
             str(snapshot.get("state") or "") in FLEET_BLOCKED_STATES
             and str(snapshot.get("recovery_classification") or "") != "held"
             for snapshot in rows
         ),
-        "unpromoted": sum(state in FLEET_UNPROMOTED_STATES for state in states),
+        "unpromoted": sum(state in FLEET_UNPROMOTED_STATES for state in states)
+        - repairing,
     }
+    if reviewing:
+        counts["reviewing"] = reviewing
     waiting = (
         sum(
             str(snapshot.get("state") or "") in FLEET_WAITING_STATES
@@ -2472,6 +2520,10 @@ def _watch_transition(
         "process_alive": snapshot.get("process_alive"),
         "liveness_proven": snapshot.get("liveness_proven"),
         "working": counts["working"],
+        # Review work running beside the implementation workers. It rides the
+        # event even at zero so every row renders the same five counter cells
+        # and the columns after them never move.
+        "reviewing": counts.get("reviewing", 0),
         "blocked": counts["blocked"],
         "unpromoted": counts["unpromoted"],
         # The same partition per owning session, taken by the fold at this
@@ -2826,7 +2878,7 @@ def _session_counts_in_other_projects(project: str, session: str) -> dict[str, i
     if not project or not session:
         return {}
     own = watch_stream_path(project)
-    total = {"working": 0, "blocked": 0, "unpromoted": 0}
+    total = {"working": 0, "reviewing": 0, "blocked": 0, "unpromoted": 0}
     waiting_seen = False
     waiting = 0
     stamp: str | None = None
@@ -2908,10 +2960,10 @@ def _scoped_watch_event(event: Mapping[str, Any], session: str) -> dict[str, Any
     nothing, and neither does a project whose watcher has stopped. A follower
     with no session is one project's pane and keeps that project's counts.
 
-    ``working``/``blocked``/``unpromoted`` (and ``waiting``) carry the
-    session-wide figures the pane renders; the same row's own-project figures
-    travel beside them under ``project_*``, so a consumer of either reading
-    loses nothing.
+    ``working``/``reviewing``/``blocked``/``unpromoted`` (and ``waiting``)
+    carry the session-wide figures the pane renders; the same row's own-project
+    figures travel beside them under ``project_*``, so a consumer of either
+    reading loses nothing.
     """
     sessions = event.get("session_counts")
     if isinstance(sessions, Mapping):
@@ -2926,6 +2978,7 @@ def _scoped_watch_event(event: Mapping[str, Any], session: str) -> dict[str, Any
 
     project_counts = {
         "working": int(own.get("working") or 0),
+        "reviewing": int(own.get("reviewing") or 0),
         "blocked": int(own.get("blocked") or 0),
         "unpromoted": int(own.get("unpromoted") or 0),
     }
@@ -2937,16 +2990,18 @@ def _scoped_watch_event(event: Mapping[str, Any], session: str) -> dict[str, Any
         elsewhere = _session_counts_in_other_projects(
             str(event.get("project") or ""), session
         )
-        for key in ("working", "blocked", "unpromoted"):
+        for key in ("working", "reviewing", "blocked", "unpromoted"):
             total[key] = total.get(key, 0) + elsewhere.get(key, 0)
         if "waiting" in elsewhere:
             total["waiting"] = total.get("waiting", 0) + elsewhere["waiting"]
 
     scoped = dict(event)
     scoped["working"] = total.get("working", 0)
+    scoped["reviewing"] = total.get("reviewing", 0)
     scoped["blocked"] = total.get("blocked", 0)
     scoped["unpromoted"] = total.get("unpromoted", 0)
     scoped["project_working"] = project_counts.get("working", 0)
+    scoped["project_reviewing"] = project_counts.get("reviewing", 0)
     scoped["project_blocked"] = project_counts.get("blocked", 0)
     scoped["project_unpromoted"] = project_counts.get("unpromoted", 0)
     if "waiting" in project_counts:
@@ -3831,12 +3886,15 @@ from .recovery_review_delivery import (  # noqa: E402
     _stop_delivered_reviews,
 )
 from .recovery_review_dispatch import (  # noqa: E402
+    REPAIR_DISPATCH_FIELD,
+    REPAIR_ROUND_OPENING_STATUSES,
     _resolved_review_config,
     dispatch_review_for_run,
 )
 from .recovery_vocabulary import (  # noqa: E402
     RECOVERY_CLASSES,
     RECOVERY_VERBS,
+    REVIEW_ROLE,
     WAITING_STATUS,
 )
 from .recovery_wait import (  # noqa: E402
