@@ -5,7 +5,8 @@ alive. A review still waiting in the queue, on an upstream landing, or for its
 launcher has no worker yet, so it fell through to a ``review-self`` request.
 The request moved the pointer from ``queued`` to ``promotion-requested``, a
 phase admission never launches, and the review was stranded with no record and
-no way to produce one. Measured on 14 November across three projects.
+no way to produce one. Measured on 14 November across three projects, and
+again that night for a review its coordinator had held.
 """
 
 from __future__ import annotations
@@ -23,7 +24,7 @@ repository = waits.repository
 real_crew_home_is_not_a_fixture_target = waits.real_crew_home_is_not_a_fixture_target
 
 
-@pytest.mark.parametrize("phase", ["queued", "awaiting-upstream", "starting"])
+@pytest.mark.parametrize("phase", ["queued", "awaiting-upstream", "starting", "held"])
 def test_an_unlaunched_review_keeps_its_phase_and_gets_no_request(
     repository: Path, tmp_path: Path, phase: str
 ) -> None:
