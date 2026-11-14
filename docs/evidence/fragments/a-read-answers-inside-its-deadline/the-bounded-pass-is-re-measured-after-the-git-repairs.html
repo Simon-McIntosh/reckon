@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-read-answers-inside-its-deadline">
+  <meta name="plan-evidence-for" content="reckon:a-read-answers-inside-its-deadline">
+  <meta name="plan-verifies" content="reckon:a-read-answers-inside-its-deadline#s42">
+  <meta name="plan-recorded-at" content="2026-11-14">
+  <meta name="plan-verdict" content="failed">
+  <title>The bounded pass re-measured after the git repairs | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" id="the-bounded-pass-is-re-measured-after-the-git-repairs-landing" data-node="the-bounded-pass-is-re-measured-after-the-git-repairs" data-reckon="landed" data-when="2026-11-14">
+  <h2>The bounded pass re-measured after the git repairs: both bounds still missed</h2>
+  <p>The after revision <code>b4700c0d20</code> measured a first <code>fleet_state</code> of <strong>200.037 s</strong> on a node-local copy of the crew home, and 104.155 s on the second call, against the 10 s bound. The pass then hit the harness's 420 s timeout inside <code>sweep</code> 1, so the second bound has no reading. §42's gate is stated above this profile, and it fired.</p>
+  <p>The corpus is not the one §34 measured: 89,225 files and 2,078,176,239 bytes over 133 live pointers, against 34,748 files and 918,801,240 bytes over 51. The same first call under <code>cProfile</code> read 281.356 s, so the 200 s is a property of the derivation rather than of the instrument.</p>
+  <p>The before revision could not run: it reports <code>FlightConfigError</code> on the live project <code>flight.yaml</code>, <code>EXIT=1</code>, because §34's harness pinned only the crew-home layer while <code>flight.resolve</code> reads the live project layer through <code>mounts.json</code>.</p>
+  <p>Every log names its revision, corpus and host, shows <code>reckon.__file__</code> under its arm's tree and ends in <code>EXIT=</code>; the full record is the run directory's <code>report/</code>.</p>
+  </article>
+</body>
+</html>
