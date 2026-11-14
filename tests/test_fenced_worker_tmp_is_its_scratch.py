@@ -222,7 +222,7 @@ class ScratchTree:
         self.codex = self.fixture_root / ".codex"
         self.fleet.mkdir()
         self.codex.mkdir()
-        self.home = root / "home"
+        self.home = self.base / "home"
         self.run = self.home / ".config" / "reckon" / "crew" / "runs" / RUN_ID
         self.run.mkdir(parents=True)
         self.manifest = self.run / "manifest.md"
