@@ -20,12 +20,12 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="reckon-tooling,crew">
   <meta name="plan-after" content="the-monitor-reads-each-fact-once">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;implementable&quot;,&quot;s11&quot;:&quot;implementable&quot;,&quot;s2&quot;:&quot;descoped&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;implementable&quot;,&quot;s11&quot;:&quot;implementable&quot;,&quot;s2&quot;:&quot;descoped&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;implementable&quot;}">
   <meta name="plan-section-depends-on" content="{&quot;s4&quot;:[&quot;a-landing-never-waits-on-a-shared-index#s3&quot;]}">
   <title>A Landing Never Waits On A Shared Index | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="48">
+<meta name="plan-version" content="49">
 <meta name="plan-modified" content="2026-11-14">
 </head>
 <body>
@@ -109,6 +109,12 @@
 <p><strong>Deliverable.</strong> A promotion that finds the other writer's ledger row already written treats that row as its own success and finishes the landing of the reviewed head it names itself, through the same merge the winning writer would run. It then retires the live pointer. The run is never left delivered with its head off main.</p>
 <p><strong>Done when.</strong> A new test <code>tests/test_a_raced_promotion_still_lands.py</code> runs two promotions of one reviewed implementation against a temporary repository, the second starting after the first has written the ledger row. When the second call returns, the reviewed head is an ancestor of main, the live pointer is gone, and neither call raised. At the base revision the head is not on main and the pointer reads <code>pending_landing_repair</code>. The negative control removes the loser's landing step and fails the case. The test files importing <code>reckon/crew/promotion.py</code> or <code>reckon/crew/pending_landing.py</code> add no failure against the base, run on the all_debug partition one arm at a time with at most <code>-n 4</code>. Each log is under the run directory, starts with its revision and the literal command, and ends in <code>EXIT=</code>. Ruff check and ruff format --check add no findings on the staged paths. Write paths: <code>reckon/crew/promotion.py</code>, <code>reckon/crew/pending_landing.py</code> and the new test.</p>
 
+    <h2 id="s12">The stale-lock check reuses the holder scan and the lock-age owner</h2>
+<section data-reckon="section" data-id="s12" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+<p><strong>Why.</strong> The review of §10's run scored reuse 5 of 20. Its stale-lock check added <code>_processes_holding</code>, which re-implements the process-holder scan owned by <code>reckon/crew/gc.py</code> (re-exported through <code>reckon/crew/routing.py</code> and used by <code>reckon/crew/dispatch_sessions.py</code>), with different matching semantics. It also added <code>_index_lock_age_seconds</code>, which duplicates the function of the same name in <code>reckon/crew/promotion_scope.py</code>, so one lock's age now has two definitions. And every other caller of the shared wait helper (in <code>promotion_scope.py</code> and <code>ledger.py</code>) clears a proven-stale lock without passing <code>on_stale_removed</code>, so those clearings leave no line in the landing record.</p>
+<p><strong>Deliverable.</strong> The stale-lock check calls the one holder scan and the one lock-age function, extended where it needs a capability they lack. Every caller of the wait helper passes the removal callback, so each clearing is named with the lock's age wherever it happens.</p>
+<p><strong>Done when.</strong> <code>git grep</code> at head finds one definition of the holder scan and one of the lock-age function. A test drives each wait-helper caller through a proven-stale lock and finds one line naming the lock and its age in that caller's record. §10's four stale-lock cases still pass, and the importers of the touched modules add no failure against the base, run on all_debug one arm at a time with at most <code>-n 4</code>. Write paths: <code>reckon/crew/merge.py</code>, <code>reckon/crew/gc.py</code>, <code>reckon/crew/promotion_scope.py</code>, <code>reckon/ledger.py</code> and the new test.</p>
+
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
 <article class="r-fu" data-id="f-alnw-001" data-status="resolved" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-create" data-written-at="2026-10-22" data-recommends-skill="/reckon-build a-landing-never-waits-on-a-shared-index §2" data-resolved-at="2026-11-06T08:48:44+00:00" data-resolved-by="">
@@ -168,6 +174,9 @@
 <div class="r-comment" data-section="s10" data-id="c-run-r-20261114T193420264150-review-of-stale-index-lock-cleared-s10-7bb5a3626416" data-who="reckon-build" data-when="2026-11-14T20:14:07.497Z">
     <div class="r-comment-body"><p>review record for r-20261114T174207045976-stale-index-lock-cleared-s10 written at review-records/r-20261114T174207045976-stale-index-lock-cleared-s10.at-7bb5a362641628cd3675551a1fff1c63428761e5.json (and its headless spelling beside it), status parsed, six scores, reviewed base 1ce60abb857f9692212788f166561bd7a1820255 and head 7bb5a362641628cd3675551a1fff1c63428761e5</p></div>
 </div>
+<div class="r-comment" data-section="s11" data-id="c-run-r-20261114T201232009152-review-of-raced-promotion-lands-s11-02421ad1ad92" data-who="reckon-build" data-when="2026-11-14T20:22:38Z">
+    <div class="r-comment-body"><p>Independent review at 02421ad1ad929fd5a9975ef5c940ed8d98283ff6 stores all six scores 13/10/20/14/17/5, zero added failures in the recorded 55-to-57-test arms, four blocking findings and three non-blocking findings; repair is required before the source node lands.</p></div>
+</div>
 <div class="r-comment" data-section="s5" data-id="c-run-r-20261106T134612700154-review-of-retry-a-held-index-lock-in-a-promotions-commit-and-restore-5568106b9358" data-who="reckon-build" data-when="2026-11-06T13:57:16.941Z">
     <div class="r-comment-body"><p>review of r-20261106T124416537003-retry-a-held-index-lock-in-a-promotions-commit-and-restore at 5568106b9358 stored parsed with scores goal_fidelity 16, evidence 12, scope_discipline 18, durability 17, fit 18, reuse 20 (total 101), one blocking finding at tests/test_rollback_asks_head.py:117 and two non-blocking findings.</p></div>
 </div>
@@ -212,9 +221,6 @@
 </div>
 <div class="r-comment" data-section="s9" data-id="c-run-r-20261113T024814201130-a-landing-write-outlasts-a-briefly-held-index-lock" data-who="reckon-build" data-when="2026-11-13T03:25:49.353Z">
     <div class="r-comment-body"><p>A landing's staging, commit and rollback now wait out a shared index lock another writer holds for up to a minute (130 attempts 0.5 s apart, a 64.5 s span, up from 12 attempts and a 5.5 s span) and refuse only on a lock that outlasts it, naming the lock's age and the bound; gate 53 passed at head 50493b22a8, base arm 51 passed, and the negative control is 2 failed at cb25b41dfd with the 20 s hold rolling the promotion back.</p></div>
-</div>
-<div class="r-comment" data-section="s11" data-id="c-run-r-20261114T201232009152-review-of-raced-promotion-lands-s11-02421ad1ad92" data-who="reckon-build" data-when="2026-11-14T20:22:38Z">
-    <div class="r-comment-body"><p>Independent review at 02421ad1ad929fd5a9975ef5c940ed8d98283ff6 stores all six scores 13/10/20/14/17/5, zero added failures in the recorded 55-to-57-test arms, four blocking findings and three non-blocking findings; repair is required before the source node lands.</p></div>
 </div>
 </section>
 </main>
