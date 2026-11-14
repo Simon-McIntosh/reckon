@@ -177,6 +177,22 @@ def test_a_log_ending_in_a_non_zero_exit_is_accepted(tmp_path: Path) -> None:
     assert _findings(_manifest(f"negative_control_log: {log}"), _node()) == []
 
 
+def _durable_test_log(tmp_path: Path) -> Path:
+    path = tmp_path / "gate.log"
+    path.write_text(
+        "# command: python -m pytest tests/test_example_check.py\n1 passed\nEXIT=0\n",
+        encoding="utf-8",
+    )
+    return path
+
+
+def _assert_only_external_test_log_is_refused(findings: list[str], cited: str) -> None:
+    assert len(findings) == 1
+    assert "test_logs" in findings[0]
+    assert cited in findings[0]
+    assert "resolves outside the run directory" in findings[0]
+
+
 def test_a_relative_path_resolves_beside_the_manifest_it_is_written_in(
     tmp_path: Path,
 ) -> None:
@@ -185,6 +201,13 @@ def test_a_relative_path_resolves_beside_the_manifest_it_is_written_in(
     body = _manifest("negative_control_log: red.log")
     manifest_path.write_text(body, encoding="utf-8")
 
+    _assert_only_external_test_log_is_refused(
+        _findings(body, _node(), manifest_path), parse_manifest(body)["test_logs"][0]
+    )
+
+    _durable_test_log(tmp_path)
+    body = body.replace("test_logs: /tmp/control-log-check.log", "test_logs: gate.log")
+    manifest_path.write_text(body, encoding="utf-8")
     assert _findings(body, _node(), manifest_path) == []
 
 
@@ -194,7 +217,15 @@ def test_the_nodes_own_manifest_path_resolves_a_relative_log(tmp_path: Path) -> 
     body = _manifest("negative_control_log: red.log")
     manifest_path.write_text(body, encoding="utf-8")
 
-    assert _findings(body, _node(manifest_path=str(manifest_path))) == []
+    node = _node(manifest_path=str(manifest_path))
+    _assert_only_external_test_log_is_refused(
+        _findings(body, node), parse_manifest(body)["test_logs"][0]
+    )
+
+    _durable_test_log(tmp_path)
+    body = body.replace("test_logs: /tmp/control-log-check.log", "test_logs: gate.log")
+    manifest_path.write_text(body, encoding="utf-8")
+    assert _findings(body, node) == []
 
 
 def test_a_run_that_declared_no_control_is_not_judged(tmp_path: Path) -> None:
