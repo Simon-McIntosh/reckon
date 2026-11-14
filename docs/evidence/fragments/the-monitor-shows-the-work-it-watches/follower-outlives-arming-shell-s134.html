@@ -31,8 +31,20 @@
       <tr><td>first case, base</td><td><code>47d4d53612</code></td><td>1 failed — a follower ended inside the span</td></tr>
       <tr><td>first case, owner-only check restored</td><td>head + negative control</td><td>1 failed — same assertion</td></tr>
       <tr><td>two sibling guard files + new test, head</td><td><code>2bcfdec2f5</code></td><td>9 passed</td></tr>
+      <tr><td>both cases, final head</td><td><code>c7de78b608</code></td><td>2 passed, <code>test_staged_write_inventory</code> alongside: 53 passed</td></tr>
+      <tr><td>population: every test file importing the follow command, base</td><td><code>47d4d53612</code></td><td>14 failed, 516 passed</td></tr>
+      <tr><td>population: every test file importing the follow command, head</td><td><code>c7de78b608</code></td><td>14 failed, 516 passed</td></tr>
     </tbody>
   </table>
+
+  <p id="follower-outlives-arming-shell-s134-landed-population">The two population arms
+  ran one at a time on an <code>all_debug</code> partition job, each over the 69 test files
+  that import <code>reckon/crew_follow_commands.py</code>, at <code>-n 4</code>, with the
+  tree extracted from its own revision inside the population job. Their failure id sets are
+  identical: the same fourteen tests fail at both revisions, so the change adds none and
+  removes none. Those fourteen are subprocess and <code>crew follow</code> launches that
+  exceed a 30 s wait under parallel load in a compute-node sandbox, and they are listed on
+  the logs' <code>FAILED</code> lines.</p>
 
   <p id="follower-outlives-arming-shell-s134-landed-scope">Files changed:
   <code>reckon/crew_follow_commands.py</code> and
