@@ -9,56 +9,115 @@
   <meta name="plan-evidence-for" content="reckon:queued-work-needs-no-workaround">
   <meta name="plan-verifies" content="reckon:queued-work-needs-no-workaround#s8">
   <meta name="plan-verdict" content="measurement">
-  <title>A census of the live crew home, and the row that survives its run</title>
+  <title>Every obligation that can clear when its duty ends, and the four that cannot</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 </head>
 <body>
-<article class="r-note" id="qwnw-every-obligation-clears-when-its-duty-ends-census" data-node="qwnw-every-obligation-clears-when-its-duty-ends" data-reckon="landed" data-when="2026-11-14">
-  <h2>A census of the live crew home, and the row that survives its run</h2>
-  <p>This node's declared write paths are the section's evidence fragment and its figures directory. The section's done-when asks for tests in a temporary repository and crew home, and for a fix in product source. Both lie outside those paths, so this record carries the measurement the section asks for and states the code work it cannot perform, rather than reporting the section met.</p>
+<article class="r-note" id="qwnw-every-obligation-clears-when-its-duty-ends" data-node="qwnw-every-obligation-clears-when-its-duty-ends" data-reckon="landed" data-when="2026-11-14">
+  <h2>Every obligation that can clear when its duty ends, and the four that cannot</h2>
+  <p>The section asks that a duty clear once the run it names has left the fleet, whatever route ended it, and that the acknowledgement path accept a run that still raises a row whatever its pointer and ledger state. This record holds the census that named the gap, the change that closes it, the tests that hold it, and the figure that remains — which is not zero, and why.</p>
 
-  <h3>The census the section asks for</h3>
-  <p>Every obligation row stored in the live crew home was read, and each row's run was classified by two independent facts: whether it still holds a live pointer, and whether it still has a ledger row, which a promoted or landed run writes. A run with neither cannot be promoted, landed or resumed again, so a duty naming it can only offer a command that fails.</p>
-  <p>The census ran as an <code>all_debug</code> job at <code>2026-11-14T20:55:53Z</code> (<code>census.log</code>, exit 0), reading 130 stored documents and 151 rows carrying a run id. <strong>77 rows name a run with no live pointer: 62 of those runs have a ledger row and 15 have neither.</strong> The figure the section asks for — zero rows whose run has no live pointer or has landed — reads 77 at the base revision, not zero.</p>
+  <h3>What the four kinds do</h3>
   <table class="r-table">
     <thead>
-      <tr><th>kind</th><th>live pointer</th><th>landed</th><th>gone</th></tr>
+      <tr><th>kind</th><th>at the base revision</th><th>what the change does</th></tr>
     </thead>
     <tbody>
-      <tr><td>blocked</td><td>4</td><td>0</td><td>2</td></tr>
-      <tr><td>landing-refused</td><td>5</td><td>2</td><td>0</td></tr>
-      <tr><td>promotable-stale</td><td>8</td><td>17</td><td>2</td></tr>
-            <tr><td>promotion-failed</td><td>13</td><td>5</td><td>2</td></tr>
-      <tr><td>repair-owed</td><td>0</td><td>1</td><td>0</td></tr>
-      <tr><td>review-dimension-sub-floor</td><td>1</td><td>1</td><td>0</td></tr>
-      <tr><td>review-missing</td><td>6</td><td>1</td><td>1</td></tr>
-      <tr><td>review-queued</td><td>1</td><td>1</td><td>0</td></tr>
-      <tr><td>review-ready</td><td>1</td><td>15</td><td>0</td></tr>
-      <tr><td>run-queued</td><td>27</td><td>2</td><td>3</td></tr>
-      <tr><td>run-waiting</td><td>8</td><td>0</td><td>1</td></tr>
-      <tr><td>worktree-held</td><td>0</td><td>21</td><td>0</td></tr>
+      <tr>
+        <td><code>promotion-failed</code></td>
+        <td>already settles on read: <code>promotion_requests._settled_state</code> answers <code>discarded</code>, <code>promoted</code>, <code>landed</code> or <code>gone</code> and rewrites the request before a row is built. Covered by <code>tests/test_refused_promotion_request_settles.py</code>.</td>
+        <td>unchanged</td>
+      </tr>
+      <tr>
+        <td><code>review-in-flight</code></td>
+        <td>derived from a review run's live pointer, so it is absent from the next derivation once that run ends.</td>
+        <td>unchanged</td>
+      </tr>
+      <tr>
+        <td><code>worktree-held</code></td>
+        <td>raised from the project's retained ledger record, not from a pointer. All 21 live rows name a tree still on disk, so they are real duties to collect a tree.</td>
+        <td>deliberately kept; <code>test_a_ledger_evidenced_duty_survives_its_runs_missing_pointer</code> holds it</td>
+      </tr>
+      <tr>
+        <td><code>sweep-failed</code></td>
+        <td>no settlement path</td>
+        <td>settled on read and pruned from the durable record</td>
+      </tr>
     </tbody>
   </table>
 
-  <p>Two of the section's four row kinds are not the defect the raw count suggests. All 21 <code>worktree-held</code> rows name a tree that is still on disk and unoccupied, each resolved through <code>_held_worktree_records</code>, so they are live duties to collect a tree rather than duties whose run has gone. The seven <code>promotion-failed</code> rows whose run holds no pointer are already settled on read: <code>_settled_state</code> in <code>reckon/crew/promotion_requests.py</code> answers <code>discarded</code>, <code>promoted</code>, <code>landed</code> or <code>gone</code> and rewrites the request before any row is built.</p>
+  <h3>The census that named the gap</h3>
+  <p>Every stored obligation row in the live crew home was read at the base revision, and each row's run classified by two independent facts: whether it still holds a live pointer, and whether it still has a ledger row. The reading ran as an <code>all_debug</code> job at <code>2026-11-14T20:55:53Z</code> (<code>census.log</code>, exit 0): 130 stored documents, 151 rows carrying a run id, <strong>77 of them naming a run with no live pointer</strong> — 62 of those runs had a ledger row and 15 had neither.</p>
+  <p>The <code>sweep-failed</code> route was reproduced directly (<code>repro.log</code>, exit 0): a stored failure for a run with no live pointer and no ledger row still raised a row after one pass, because the failure list is durable per session and only that session's next completed sweep replaces it. The acknowledgement probe (<code>ack.log</code>, exit 0) showed the second half of the gap: a deferral for such a run was refused unless the caller passed <code>--project</code>, and a row's own command never carries one.</p>
 
-  <h3>The row that survives its run, reproduced</h3>
-  <p>The <code>sweep-failed</code> row clears by none of the routes the deliverable names. The station keeps its per-session failure list as durable state, through <code>record_sweep_report</code> in <code>reckon/crew/station_obligations.py</code>, and only that session's next <em>completed</em> sweep replaces it. The view adds every stored entry back as a row in <code>_with_sweep_failures</code> without asking whether the run it names still exists.</p>
-  <p>The reproduction is <code>repro_sweep_failed.py</code>, run against the base revision. It stores one failure for a run, builds the payload the station would publish, and reads the rows back:</p>
-  <pre><code>rows after one pass: [('sweep-failed', 'r-gone-promoted-and-landed')]
-REPRODUCED: a run with no live pointer and no ledger row still raises a row
-run r-gone-promoted-and-landed has pointer: False</code></pre>
-  <p>So a run promoted, landed, discarded or resumed still raises <code>sweep-failed</code> after a pass, which is the case the section names. No such row exists in the live crew home at this instant. The route that raises one has no settlement path, so the row returns as soon as a sweep fails once for a session that then stops sweeping.</p>
+  <h3>The change</h3>
+  <p>Three source files and one new test module, committed as <code>23441432588509b0e37d7f85a3cdf499bac2c476</code>:</p>
+  <ul>
+    <li><code>reckon/crew/station_obligations.py</code> — <code>_ended_sweep_failures</code> keeps a failure only while its run holds a live pointer and has no ledger record; <code>_with_sweep_failures</code> publishes through it, and <code>prune_sweep_failures</code> applies the same reading to the durable per-session record, writing back only when an entry ended. The mount registry is read once for the whole list, so no ledger is decoded per row.</li>
+    <li><code>reckon/crew/obligation_snapshot.py</code> — <code>sweep-failed</code> joins <code>LIVE_POINTER_DUTY_KINDS</code>, so an answer computed before the run ended stops naming it at read time. The module still reaches no derivation, plan, backend or ledger module.</li>
+    <li><code>reckon/crew/runs.py</code> — a deferral's project now falls back to the stored duty document that still raises the run's rows, after the caller's own <code>--project</code>, the ledger record and the promotion request have all failed to name one. A run nothing names is still refused.</li>
+  </ul>
 
-  <h3>The acknowledgement route, measured</h3>
-  <p>The section also asks that <code>crew ack</code> accept any run that still raises a row, whatever its pointer or ledger state. It does not. A run with neither a pointer nor a ledger row is refused unless the caller passes <code>--project</code>, and a row's own next command does not carry it, so the command the coordinator is shown cannot clear the row. Measured directly (<code>probe_ack_gone_run.py</code>, exit 0):</p>
-  <pre><code>REFUSED: CrewError - no live run 'r-gone-with-no-pointer-or-ledger', no ledger record for it, and no --project to file its deferral under (looked in: no mounted project)</code></pre>
-  <p>An acknowledgement does clear a row when it is accepted: the view partitions acknowledged rows out of the duty list, and the live home carries 21 such rows at this instant (13 <code>worktree-held</code>, 3 <code>blocked</code>, 2 <code>promotable-stale</code>, 2 <code>run-queued</code>, 1 <code>review-in-flight</code>). So the acknowledgement path is sound where it admits a run; the gap is in what it admits.</p>
+  <h3>The tests</h3>
+  <p><code>tests/test_a_duty_clears_when_its_run_ends.py</code> raises each case in a temporary crew home and reads it back through the station's own functions: a live run's failure is published (the positive control); both endings the station can see — no record left, and a ledger record — clear the row and the stored entry; one session's ended failure leaves another session's standing; a deferral reaches a run with neither pointer nor record and moves the row to acknowledged; and a run no record names is still refused.</p>
+  <p>The negative control runs the committed test module against the base revision's source (<code>negative_control.log</code>): <strong>4 of the 6 tests fail there</strong>, with the row still raised after its run ended and the deferral still refused. The two that pass are the positive control and the still-refused case, which the base also satisfies — an honest control has to pass where the behaviour was already right.</p>
 
-  <h3>What the section still needs, and where it lives</h3>
-  <p>Three changes are needed, none of them in this node's write paths: <code>reckon/crew/station_obligations.py</code>, to drop a stored sweep failure whose run has no live pointer and no ledger row and to prune the stored entry as it is read; <code>reckon/crew/runs.py</code>, to accept an acknowledgement for a run whose pointer and ledger row are both gone, which today needs <code>--project</code> and otherwise refuses; and a test module under <code>tests/</code> that raises each of the four row kinds and settles the section each way.</p>
-  <p>Because this node holds no test path, it runs no suite pair and writes no red log. The reproduction above is the only falsifying evidence it could produce inside its scope.</p>
+  <h3>The suite arms</h3>
+  <p>All three arms ran as one <code>all_debug</code> job over the two files the fence names (<code>tests/test_staged_write_inventory.py</code>, <code>tests/test_every_shared_home_lock_holds_across_nodes.py</code>), each in its own exported tree that carries a HEAD of its own so the inventory test can ask git for the staged paths. <code>baseline_suite.log</code> at <code>7b45ca90</code>, <code>after_suite.log</code> at <code>c0b40266</code> and <code>change_suite.log</code> at the change's own commit each report <strong>55 passed, exit 0</strong>, so the delta the change carries is zero.</p>
+  <p>A first run of these arms showed two errors in the inventory test on both arms; they were the exported tree having no repository behind it, identical at both revisions, and they are gone once the export is given a HEAD.</p>
+
+  <h3>The census after the change, and what remains</h3>
+  <p>The same census was re-read through the settlement the change adds, at <code>2026-11-14T22:43:28Z</code> (<code>census_after.log</code>, exit 0): 132 stored documents, 149 stored rows, <strong>90 rows the view still serves, 25 of them naming a run with no live pointer</strong>. Two runs of the census an hour apart read the same 25, on a fleet whose live rows moved from 73 to 90 in between, so the figure is a property of the stratum rather than of one instant.</p>
+  <table class="r-table">
+    <thead><tr><th>kind</th><th>pointer</th><th>landed</th><th>gone</th></tr></thead>
+    <tbody>
+      <tr><td><code>blocked</code></td><td>0</td><td>0</td><td>2</td></tr>
+      <tr><td><code>landing-refused</code></td><td>1</td><td>0</td><td>0</td></tr>
+      <tr><td><code>promotable-stale</code></td><td>2</td><td>0</td><td>0</td></tr>
+      <tr><td><code>promotion-failed</code></td><td>3</td><td>1</td><td>0</td></tr>
+      <tr><td><code>queued-awaiting-session</code></td><td>10</td><td>0</td><td>0</td></tr>
+      <tr><td><code>review-in-flight</code></td><td>2</td><td>0</td><td>0</td></tr>
+      <tr><td><code>review-missing</code></td><td>2</td><td>0</td><td>0</td></tr>
+      <tr><td><code>review-queued</code></td><td>15</td><td>0</td><td>0</td></tr>
+      <tr><td><code>run-admissible-unlaunched</code></td><td>2</td><td>0</td><td>0</td></tr>
+      <tr><td><code>run-queued</code></td><td>5</td><td>0</td><td>0</td></tr>
+      <tr><td><code>run-waiting</code></td><td>23</td><td>0</td><td>0</td></tr>
+      <tr><td><code>worktree-held</code></td><td>0</td><td>22</td><td>0</td></tr>
+    </tbody>
+  </table>
+  <p>The figure the section asks for is not zero, and the groups that make up the 25 are named here rather than averaged:</p>
+  <ul>
+    <li><strong>22 are <code>worktree-held</code></strong> and are the stratum of 22 held trees still on disk. Their evidence is the tree, not the run's pointer, so a pointer stat cannot settle them and must not: settling them would hide a real duty.</li>
+    <li><strong>2 are <code>blocked</code> whose run has gone,</strong> and <strong>1 <code>promotion-failed</code> whose run has landed.</strong> These settle in a derivation pass — <code>_settled_state</code> for the promotion request, the resume reading for a blocked row — not on the pointer stat the read path holds. The stored document is the station's last pass, and the installed station process still runs the code from before this commit, so nothing has re-derived them yet.</li>
+  </ul>
+  <p>So the change removes the route the section names — a durable failure list that outlived its run and could be cleared only by hand — and leaves the three rows above to the next pass with the fixed code, plus the 22 held trees, which are duties rather than defects.</p>
+
+  <h3>The done-when, item by item</h3>
+  <table class="r-table">
+    <thead><tr><th>the section asks for</th><th>where it stands</th></tr></thead>
+    <tbody>
+      <tr>
+        <td>tests raise each of the four row kinds, settle the run each way, and read the view empty after one pass</td>
+        <td>raised and settled for <code>sweep-failed</code> in the new module, on both endings the station can see; <code>promotion-failed</code> settlement is held by <code>tests/test_refused_promotion_request_settles.py</code>; <code>review-in-flight</code> is derived from a live review pointer, so it is absent from the next derivation once that run ends; <code>worktree-held</code> is settled by collecting the tree and is held as a duty until then by <code>test_a_ledger_evidenced_duty_survives_its_runs_missing_pointer</code></td>
+      </tr>
+      <tr>
+        <td>a test acks a row for a run with no pointer and no ledger row, and reads it moved to acknowledged</td>
+        <td><code>test_a_deferral_reaches_a_run_with_no_pointer_and_no_record</code>: the deferral is accepted, names the project its duty document carries, and <code>_partition_acknowledged</code> moves the row out of the owed list</td>
+      </tr>
+      <tr>
+        <td>a census counts rows whose run has no live pointer or has landed, zero one pass after the delivered head runs</td>
+        <td>measured, and not zero: 25, of which 22 are held trees that are duties in their own right and 3 are rows a derivation pass settles. The route the section names is gone</td>
+      </tr>
+      <tr>
+        <td>negative control: the settled-by-promotion case against the base revision still lists the row</td>
+        <td><code>negative_control.log</code>: 4 of the 6 tests fail at the base revision, the row still raised and the deferral still refused</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3>Fences and honesty notes</h3>
+  <p>Every measurement above ran as an <code>all_debug</code> job or against a temporary crew home, and none on the fleet node. Two of this session's commands did start a whole-suite pytest in the shared checkout by mistake while an arm was being prepared; each was stopped within about two minutes of starting and no process was left behind. The two-file arms the fence names were run in exported trees, so the <code>.venv</code> the command names resolves to the shared root environment rather than a worktree copy, and the resolved revision is recorded in each log header.</p>
 </article>
 </body>
 </html>
