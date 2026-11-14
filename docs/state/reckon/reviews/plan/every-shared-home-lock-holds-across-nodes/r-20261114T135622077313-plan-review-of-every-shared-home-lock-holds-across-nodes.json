@@ -1,0 +1,37 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-14T14:13:05.529Z",
+  "dispatched_at": "2026-11-14T14:03:48Z",
+  "findings": [],
+  "plan_commit": "d473ba395ca97d1812a8c27637710d7c5067ac23",
+  "plan_fingerprint": "ff2f2986e5db6d5b46f6a25f84af3c883e7593e4fc0e843fd89bc251c68f5c11",
+  "plan_slug": "every-shared-home-lock-holds-across-nodes",
+  "plan_version": 2,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261114T135622077313-plan-review-of-every-shared-home-lock-holds-across-nodes",
+  "reviewed_blob_sha": "0a6878ecf81ef671858144d1d90e94a1a0c9c4ca",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every symbol the two units name exists at HEAD (`_pointer_lock`, `queue_dispatch`, `update_watch_registration`, `_ledger_write_lock`, `land_once`, `_admit_lock`, `_reservation_hold_lock`, `budget_reset._locked`, `_refresh_lock`, `refresh_reserved_window`, `publish_document`, `record_picker_hold`), the cited census fragment `docs/evidence/fragments/a-plan-state-lock-holds-on-every-node/every-flock-is-accounted-for.html` exists and does list both `paid_lanes.py:654` and `:822` as separate sites, `docs/state/reckon/flight.yaml` exists, and the extensionless href `/reckon/a-plan-state-lock-holds-on-every-node` resolves as `docs/plans/a-plan-state-lock-holds-on-every-node.html`.",
+    "done_when": "pass \u2014 \u00a73 and \u00a75 each now declare a base-revision negative control, and each control is genuinely red at the base: `_pointer_lock` (reckon/crew/runs.py:493), `land_once` (reckon/crew/queue_landing.py:1897), `record_picker_hold` (reckon/crew/picker/outcomes.py:280) and `_refresh_lock` (reckon/crew/model_catalogue.py:292) take only `flock` today, so a POSIX-record-lock-only holder is invisible to them and each test fails there as the plan states; the migrated head arm is green because `exclusive_lock` (reckon/node_exclusive_lock.py:73) takes the record lock too and raises `LockHeld`.",
+    "evidence_paths": "pass \u2014 \u00a73 and \u00a75 write their failing base runs into the node's run directory (the same durable location \u00a72 fixes for its three controls), and \u00a76's two-node log lives on GPFS under `~/.cache/reckon-lock-proto/`, which exists and already carries `probe-98dci4-clu-2001.log` and `proto-gate.log`; nothing lands in a node-local scratch path.",
+    "naming": "pass \u2014 the changed lines introduce no plan label, stage name, ticket number or version tag, and their prose states the mechanism (the record lock is the half the file server holds; closing any descriptor drops it) rather than citing a tracker entry.",
+    "reasoning": "pass, on all three checks \u2014 (a) the stated root cause matches the cited evidence: `probe-98dci4-clu-2001.log` records \"record lock seen by another process: while held=held, after a second descriptor closed=free\", which is exactly the property \u00a75 acts on by giving the picker lock its own file, and \u00a71's census count (43 sites at 7d8ca3f, 45 with two new at 03b18d9, 21 shared) is consistent with the 24 judged + 21 pending split; (b) the endpoint is reachable and checkable: a second process can take only `lockf` on a lock file, and because `exclusive_lock` takes `flock` first (reckon/node_exclusive_lock.py:65) and `lockf` second (:73), a record-lock-only holder is refused by the record half while a `flock`-only base site is not, which is what makes each control able to fail; (c) neither unit prescribes implementation beyond the endpoint \u2014 the functions and files named are the identity of the locks that must hold across nodes, not a code path or formula, and no step sequence is given for how to take the lock.",
+    "single_goal": "pass \u2014 \u00a73 is one goal (the run/queue/landing/ledger lock family holds across nodes, closed by one guard verdict: seven rows leave pending, two behavioural controls), and \u00a75 is one goal (the lane/budget/picker family, five rows, two controls); the two argued-concordant same-node controls in \u00a75 serve that one gate rather than being a second deliverable.",
+    "wiring": "pass \u2014 `plan-depends-on` names `a-plan-state-lock-holds-on-every-node`, which resolves to `docs/plans/a-plan-state-lock-holds-on-every-node.html`, and the section waits (s3/s4/s5 \u2192 s2, s6 \u2192 s3+s4+s5) match the followup's guard-first ordering; the 21 pending sites split 7 (\u00a73) + 9 (\u00a74) + 5 (\u00a75), and 45 census sites \u2212 21 shared = the 24 judged calls \u00a72 declares, so no dependency or count is missing."
+  },
+  "section_digests": {
+    "_document": "4d38e92acdabfa19f6f7f3a12c8a74da360c239446c9e8cdc24207433b4ffe3e",
+    "s1": "a75973b8e1a6a73fd685e3eb80975309bc946a73f47a56f1c7704b0202b23e59",
+    "s2": "bd6b80063ec83bde16ad3166f499ed3e326b1e2e6207c79d89eb3aff8e6b9139",
+    "s3": "2d70443df397cd476436ec103dd20a3ef8db07d22e2f9e8aa53dd81983aa08a9",
+    "s4": "adc6ec9ac461fbe70f99706976f20905ef94be2aba5c8a017718e50229090e28",
+    "s5": "11cab29d01778594ff065cf9d454ddad5735731604e9dc8ea2c97f23c0a54d7a",
+    "s6": "0b940b56b8b52c5769f4f6eaf09bdae842b04973c399f3e2ec476aa51d9036fb"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-14T14:33:58.697946+00:00",
+  "total": null
+}
