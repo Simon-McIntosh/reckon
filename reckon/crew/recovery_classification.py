@@ -1208,10 +1208,13 @@ def classify_pointer(
     manifest_commits = list(manifest_data.get("commits") or [])
     manifest_blockers = list(manifest_data.get("blockers") or [])
     needs_help = manifest_data.get("needs_help")
-    # Populated only while a dead unfinished run is being distinguished as an
-    # interruption with retained work or as an abandonment with nothing left:
-    # asking git costs a subprocess, so live and settled delivery paths never pay.
-    commits_beyond_base = 0
+    # Completed runs retain the same history count as interrupted ones even
+    # when a repair rewrote the manifest without its earlier commit citations.
+    commits_beyond_base = (
+        _commits_beyond_base(record)
+        if manifest_status in TERMINAL_MANIFEST_STATUSES
+        else 0
+    )
     # Liveness is read at the moment it is used, not carried from the fleet
     # read that loaded the pointer, through the one host-gated reading every
     # consumer shares.
@@ -2876,14 +2879,20 @@ def _promotion_command(
     easy to leave out, the canonicalisation of the citations against the
     run's own tree and the base-citation case below.
 
-    The citations are canonicalised against the run's tree, so a commit the
+    Citations come from the run's history beyond its base, with the manifest
+    as the fallback when that range is unreadable or empty. They are
+    canonicalised against the run's tree, so a commit the
     tree cannot resolve is dropped rather than offered. A run that changed
     nothing records its dispatch base as its only commit, and promotion
     refuses a citation of the base — the base predates the run — so the offer
     names the declaration a commitless run promotes under instead of the
     citation that reproduces the refusal.
     """
-    commits = _canonical_commits(_review_tree(record), manifest_commits)
+    from .promotion import _promotion_commits
+
+    commits = _canonical_commits(
+        _review_tree(record), _promotion_commits(record, manifest_commits)
+    )
     base = str(record.get("base_sha") or "").strip()
     if len(commits) == 1 and base and same_revision(commits[0], base):
         return (

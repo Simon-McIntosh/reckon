@@ -1,6 +1,7 @@
 """A rewritten repair manifest cannot erase the run's committed history."""
 
 import shlex
+from pathlib import Path
 
 import pytest
 
@@ -70,3 +71,34 @@ def test_completed_repair_reports_its_commits_beyond_base(repaired_run):
     assert recovery_watch._commits_beyond_base(record) == len(commits)
     row = recovery_classification.classify_pointer(record)
     assert row["commits_beyond_base"] == len(commits)
+
+
+def test_partial_repair_citations_do_not_hide_earlier_commits(repaired_run):
+    record, commits = repaired_run
+    Path(record["manifest_path"]).write_text(
+        f"node: repaired-run\nstatus: complete\ncommits: {commits[-1]}\n"
+    )
+    _, presented = promotion._default_gate_evidence_from_manifest(
+        record, verdict="passed", gate_check=None, commits=()
+    )
+    assert list(presented) == commits
+
+
+def test_explicit_promotion_citations_keep_their_own_guard(repaired_run):
+    record, commits = repaired_run
+    _, presented = promotion._default_gate_evidence_from_manifest(
+        record, verdict="passed", gate_check=None, commits=(commits[-1],)
+    )
+    assert list(presented) == [commits[-1]]
+
+
+def test_explicit_commitless_declaration_is_not_filled_from_history(repaired_run):
+    record, _ = repaired_run
+    _, presented = promotion._default_gate_evidence_from_manifest(
+        record,
+        verdict="passed",
+        gate_check=None,
+        commits=(),
+        no_commit_reason="investigation result only",
+    )
+    assert presented == ()
