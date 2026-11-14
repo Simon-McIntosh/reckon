@@ -76,6 +76,7 @@ from reckon.crew.runs import (
     list_live,
     pointer_path,
     reports_dir,
+    resolved_path,
     run_dir,
     runs_dir,
 )
@@ -356,7 +357,7 @@ def _pointer_can_meet(
         for path, _normalized, _derived_from in _expanded_scope_paths(
             declared, repository, derivation_cache[key]
         ):
-            absolute = (repository / path).resolve().as_posix()
+            absolute = resolved_path(repository / path).as_posix()
             if any(
                 _scopes_overlap(absolute, candidate) for candidate in candidate_paths
             ):

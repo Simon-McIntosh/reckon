@@ -6,6 +6,7 @@ import os
 import shlex
 import socket
 import threading
+import time
 from collections import (
     defaultdict,
 )
@@ -1712,14 +1713,27 @@ def _orchestrator_lane_stop_line(stop: Mapping[str, Any]) -> str:
     return f"{stop['detail']}; {stop['discharge']}"
 
 
-def _path_is_tmpfs(path: str | Path) -> bool:
-    """Return whether a path resolves beneath a tmpfs or ramfs mount."""
-    target = Path(path).expanduser().resolve()
-    best: tuple[int, str] | None = None
+# How long one reading of the mount table is reused. Resolving every mount
+# point reaches each mounted filesystem, the shared ones included, and the
+# placement check asked it once per launch, a measurable share of an admission
+# pass. Mounts change rarely, and a minute is shorter than any launch it serves.
+_MOUNT_TABLE_SECONDS = 60.0
+_MOUNT_TABLE: dict[str, Any] = {}
+_MOUNT_TABLE_LOCK = threading.Lock()
+
+
+def _mount_table() -> tuple[tuple[Path, str], ...]:
+    """Each mount point, resolved, with its filesystem type, read at most once a minute."""
+    now = time.monotonic()
+    with _MOUNT_TABLE_LOCK:
+        read_at = _MOUNT_TABLE.get("at")
+        if read_at is not None and now - read_at < _MOUNT_TABLE_SECONDS:
+            return _MOUNT_TABLE["table"]
     try:
         lines = Path("/proc/self/mountinfo").read_text().splitlines()
     except OSError:
-        return False
+        return ()
+    mounts: list[tuple[Path, str]] = []
     for line in lines:
         fields, separator, trailing = line.partition(" - ")
         if not separator:
@@ -1729,8 +1743,20 @@ def _path_is_tmpfs(path: str | Path) -> bool:
         if len(parts) < 5 or not trailing_parts:
             continue
         mount = Path(parts[4].replace("\\040", " ")).resolve()
+        mounts.append((mount, trailing_parts[0]))
+    table = tuple(mounts)
+    with _MOUNT_TABLE_LOCK:
+        _MOUNT_TABLE.update(at=now, table=table)
+    return table
+
+
+def _path_is_tmpfs(path: str | Path) -> bool:
+    """Return whether a path resolves beneath a tmpfs or ramfs mount."""
+    target = Path(path).expanduser().resolve()
+    best: tuple[int, str] | None = None
+    for mount, kind in _mount_table():
         if target == mount or target.is_relative_to(mount):
-            candidate = (len(mount.parts), trailing_parts[0])
+            candidate = (len(mount.parts), kind)
             if best is None or candidate[0] > best[0]:
                 best = candidate
     return bool(best and best[1] in {"tmpfs", "ramfs"})

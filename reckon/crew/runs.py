@@ -1272,6 +1272,40 @@ class _LiveScopeClaim:
         return claim
 
 
+# Each path one admission pass resolves, and what it resolved to. Every launch
+# checks its scope against every live pointer's declared paths, and resolving
+# each of them walks the path on shared storage: on 14 November that was about
+# an eighth of each launch. Symlinks under a checkout do not move between two
+# launches of one pass, so inside a pass one path is resolved once; outside a
+# pass nothing is kept and every caller resolves as before.
+_RESOLVED_PATHS: ContextVar[dict[str, Path] | None] = ContextVar(
+    "reckon_resolved_paths", default=None
+)
+
+
+@contextmanager
+def resolution_scope():
+    """Resolve each path once for the length of the block, such as one admission pass."""
+    token = _RESOLVED_PATHS.set({})
+    try:
+        yield
+    finally:
+        _RESOLVED_PATHS.reset(token)
+
+
+def resolved_path(path: Path) -> Path:
+    """``path.resolve()``, kept for the enclosing :func:`resolution_scope` if one is open."""
+    memo = _RESOLVED_PATHS.get()
+    if memo is None:
+        return path.resolve()
+    key = str(path)
+    found = memo.get(key)
+    if found is None:
+        found = path.resolve()
+        memo[key] = found
+    return found
+
+
 def _repository_relative_scope(path: str, repo: Path | None) -> str | None:
     """Normalize an in-repository scope to a repository-relative POSIX path.
 
@@ -1296,7 +1330,7 @@ def _repository_relative_scope(path: str, repo: Path | None) -> str | None:
             return None
         return Path(text).as_posix()
     raw = Path(path).expanduser()
-    resolved = (raw if raw.is_absolute() else repo / raw).resolve()
+    resolved = resolved_path(raw if raw.is_absolute() else repo / raw)
     try:
         relative = resolved.relative_to(repo)
     except ValueError:
@@ -1355,7 +1389,9 @@ def _expanded_scope_paths(
         declared = _repository_relative_scope(str(raw_path), repo)
         if declared is None:
             raw = Path(str(raw_path)).expanduser()
-            absolute = (raw if raw.is_absolute() else repo / raw).resolve().as_posix()
+            absolute = resolved_path(
+                raw if raw.is_absolute() else repo / raw
+            ).as_posix()
             expanded[absolute] = (absolute, None)
             continue
         expanded[declared] = (declared, None)
