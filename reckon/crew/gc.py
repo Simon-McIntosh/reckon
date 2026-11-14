@@ -35,6 +35,7 @@ from reckon.crew.routing import (
     _pinnable_unique_commits,
     _plan_review_raw_reports,
     _pointer_lock,
+    _project_ledger_paths,
     _registered_worktrees,
     _releasable_roots,
     _release_worktree_whole,
@@ -596,18 +597,36 @@ def _ledger_cache_roots() -> list[Path]:
 
 
 def _orphan_ledger_indexes(
-    *, apply: bool, now: datetime | None, report_removals: bool = False
+    *,
+    apply: bool,
+    now: datetime | None,
+    report_removals: bool = False,
+    project: str | None = None,
+    repo: Path | None = None,
 ) -> list[dict[str, Any]]:
     """Offer missing-source ledger caches and aged caches carrying no source.
 
     Every index records its canonical ledger path. A missing source is an
     orphan; an unrecorded index gets the grace window so an unfinished build
     is left alone. Open descriptors and SQLite write locks protect live users.
+
+    With ``project`` named the sweep reclaims only indexes recorded against
+    that project's own ledger, the path its registered mount resolves to. An
+    index belonging to another project, or to none the sweep can name, is
+    reported as kept, naming its project or ``unknown``, and is never removed.
     """
     from reckon import ledger as ledger_module
 
     current = now or datetime.now(tz=UTC)
     stale_before = current - timedelta(days=LEDGER_INDEX_UNRECORDED_MAX_AGE_DAYS)
+    ledger_projects: dict[Path, str] = {}
+    if repo is not None:
+        ledger_projects = _project_ledger_paths(repo)
+    if project is not None and repo is not None:
+        with contextlib.suppress(ledger_module.LedgerError, OSError, ValueError):
+            ledger_projects.setdefault(
+                ledger_module.ledger_path(project, root=repo).resolve(), project
+            )
     entries: list[dict[str, Any]] = []
     for root in _ledger_cache_roots():
         if not root.is_dir():
@@ -628,14 +647,30 @@ def _orphan_ledger_indexes(
                     if datetime.fromtimestamp(stat.st_mtime, tz=UTC) > stale_before:
                         continue
                     reason = "unrecorded-stale"
+                attributed = ""
+                if recorded is not None:
+                    try:
+                        attributed = ledger_projects.get(Path(recorded).resolve(), "")
+                    except OSError:
+                        attributed = ""
                 entry = {
                     "path": str(index),
                     "size": stat.st_size,
                     "recorded_ledger_path": recorded,
+                    "project": attributed or "unknown",
                     "reason": reason,
                     "action": "prune",
                     "removed": False,
                 }
+                if project is not None and attributed != project:
+                    entry["action"] = "keep"
+                    entry["kept"] = (
+                        f"belongs to project {attributed!r}"
+                        if attributed
+                        else "belongs to no project the sweep can name"
+                    ) + f", and this pass reclaims only project {project!r}"
+                    entries.append(entry)
+                    continue
                 if (
                     apply
                     and not holders.get(index.name)
@@ -1218,11 +1253,17 @@ def garbage_collect(
             live_ids=live_ids,
             ledgered=ledgered,
             retention_days=retention_days,
+            project=project,
+            repo=repo_root,
         )
         # The ledger index cache is global, keyed by checkout rather than by
         # run, so a pass confined to one run's artifacts does not reach it.
         ledger_index_reports = (
-            _orphan_ledger_indexes(apply=apply, now=now) if run_id is None else []
+            _orphan_ledger_indexes(
+                apply=apply, now=now, project=project, repo=repo_root
+            )
+            if run_id is None
+            else []
         )
         persisted_memo_reports = (
             _expired_persisted_memos(apply=apply, now=now or datetime.now(tz=UTC))
