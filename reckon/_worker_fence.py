@@ -1349,6 +1349,51 @@ def create_node_tmp_runtime_paths() -> list[Path]:
     return [resolved_destination(path) for path in paths]
 
 
+def worker_tmp_mount_source(
+    writable_roots: Iterable[str | Path], *, node_tmp: str | Path | None
+) -> Path | None:
+    """Return the run's own scratch directory to mount over the node tmp.
+
+    A worker that follows the standing instruction to export TMPDIR=/tmp points
+    its own ``tempfile`` at the node tmp, which the fence seals read-only: a
+    write to a literal ``/tmp`` path then fails with ``Read-only file system``
+    and costs the run a retry, or yields evidence that measured the sandbox
+    rather than the code. Mounting the run's own scratch over the node tmp makes
+    every ``/tmp`` path resolve inside that scratch, whatever ``TMPDIR`` says,
+    while a sibling run's scratch and every other session's file on the node tmp
+    become absent rather than merely read-only — the fence's writable grant puts
+    the run's own directory back beneath it, and only at its own path.
+
+    Returned only when the run's scratch really sits beneath the node tmp the
+    fence seals, which is the production layout: the scratch root is pinned to
+    the node's own tmp and each run's directory is a direct child of
+    ``<node tmp>/reckon-crew-scratch``. A scratch root placed elsewhere by
+    ``RECKON_WORKER_SCRATCH_ROOT`` is not reachable through ``/tmp`` at all, so
+    no mount is composed and the node tmp keeps its read-only seal.
+
+    The candidate is the shallowest handed writable root beneath the scratch
+    root: the run's own directory, which dispatch, resume and lane change each
+    grant the fence. No candidate means the launch owns no scratch to mount, and
+    then nothing is composed rather than an empty directory being invented.
+    """
+    if node_tmp is None:
+        return None
+    from reckon.crew.dispatch_launch import worker_scratch_root
+
+    scratch_root = resolved_destination(worker_scratch_root())
+    node_target = resolved_destination(node_tmp)
+    if scratch_root == node_target or not scratch_root.is_relative_to(node_target):
+        return None
+    own = [
+        target
+        for target in (resolved_destination(Path(raw)) for raw in writable_roots)
+        if target != scratch_root and target.is_relative_to(scratch_root)
+    ]
+    if not own:
+        return None
+    return min(own, key=lambda path: len(path.parts))
+
+
 def node_tmp_seal_root() -> Path | None:
     """Return the node's own ``/tmp`` to seal read-only, or None when it is absent.
 
@@ -1572,6 +1617,16 @@ def fence_argv(
     grant and leave its lane writing against the seal; see
     :func:`node_tmp_runtime_paths` and :func:`create_node_tmp_runtime_paths`.
 
+    Where the run's own scratch sits beneath the sealed node tmp — the
+    production layout, since the scratch root is pinned to ``/tmp`` — that
+    scratch directory is then mounted over the node tmp itself, so every
+    ``/tmp`` path a worker or its tools write lands inside its own scratch
+    whatever ``TMPDIR`` says, and a sibling run's scratch and every other
+    session's file on the node tmp read as absent rather than merely read-only.
+    The runtime paths are re-bound inside that view, and the run's own scratch
+    is re-bound at its own path by the ordinary grant, so a ``TMPDIR`` naming
+    it still resolves; see :func:`worker_tmp_mount_source`.
+
     The two shared delivery stores — the reports root and the review store — are
     sealed the same way: overlaid read-only among the protected paths, with only
     the run's declared paths beneath them re-bound writable by the ordinary
@@ -1668,6 +1723,19 @@ def fence_argv(
     # the composed argv expect to find, the vanished-bind retry among them.
     for source, destination in node_tmp_seal:
         fenced += ["--ro-bind", str(source), str(destination)]
+    # The run's own scratch directory is mounted over the node tmp, so a worker's
+    # literal /tmp path — and tempfile with TMPDIR=/tmp — lands in its own
+    # scratch instead of against the seal above, while a sibling run's scratch
+    # and every other session's file on the node tmp become absent rather than
+    # merely read-only. Emitted after the seal and before the grants, which is
+    # what leaves the seal in force for a composition that mounts no scratch
+    # (a preview, or a scratch root outside the node tmp) and what lets each
+    # runtime path below be re-bound inside the scratch view. The seal stays
+    # because it is what a fence that mounts no scratch still holds. See
+    # :func:`worker_tmp_mount_source`.
+    tmp_mount = worker_tmp_mount_source(roots, node_tmp=node_tmp)
+    if tmp_mount is not None:
+        fenced += ["--bind", str(tmp_mount), str(node_tmp)]
     # A masked path is hidden, not sealed: the protected overlay above still
     # exposes its content read-only, so a directory gets an empty tmpfs and a
     # file gets /dev/null, both of which read as absent. Emitted after the
