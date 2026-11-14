@@ -1088,8 +1088,14 @@ def _with_unreadable_records(rows: Any, findings: Any) -> list[dict[str, Any]]:
 # of them, and hiding one on a ``stat`` would be a silent omission rather than
 # a settlement. The review duties are the exception, and each is settled on
 # more than the ``stat``: see :data:`REVIEW_DUTY_KINDS`.
+#
+# ``sweep-failed`` belongs with the pointer kinds because its premise is that
+# the run can be observed: the command its row carries is ``crew observe
+# --run``, and a run whose pointer has gone has landed, been discarded or been
+# reaped, so that command can no longer do anything. The failure record behind
+# the row is durable per session, which is why nothing else retired it.
 LIVE_POINTER_DUTY_KINDS = frozenset(
-    {"landing-refused", "review-ready", "promotable-stale"}
+    {"landing-refused", "review-ready", "promotable-stale", "sweep-failed"}
 )
 
 # The duty kinds that describe a run waiting in the queue, and so are owed only
