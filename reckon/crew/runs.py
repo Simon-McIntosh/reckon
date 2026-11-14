@@ -23,7 +23,11 @@ from collections.abc import (
     Mapping as Mapping,
     Sequence as Sequence,
 )
-from contextlib import contextmanager as contextmanager, suppress as suppress
+from contextlib import (
+    ExitStack as ExitStack,
+    contextmanager as contextmanager,
+    suppress as suppress,
+)
 from contextvars import ContextVar as ContextVar
 from dataclasses import dataclass as dataclass, field as field
 from datetime import UTC as UTC, datetime as datetime, timedelta as timedelta
@@ -38,6 +42,7 @@ from reckon._store import (
 )
 from reckon._timestamps import parse_utc as parse_utc
 from reckon.env_duration import read_duration_override
+from reckon.node_exclusive_lock import LockHeld, exclusive_lock
 from reckon.crew.host_lease import (
     LEASE_RENEW_SECONDS as LEASE_RENEW_SECONDS,
     HostLease as HostLease,
@@ -487,17 +492,12 @@ def _pointer_lock(run_id: str, *, blocking: bool = True):
     behind (a promotion) is a refusal rather than a wait.
     """
     path = crew_home() / "locks" / f"{run_id}.lock"
-    path.parent.mkdir(parents=True, exist_ok=True)
-    with path.open("a+b") as handle:
-        flags = fcntl.LOCK_EX if blocking else fcntl.LOCK_EX | fcntl.LOCK_NB
+    with ExitStack() as held:
         try:
-            fcntl.flock(handle.fileno(), flags)
-        except BlockingIOError as exc:
+            held.enter_context(exclusive_lock(path, blocking=blocking))
+        except LockHeld as exc:
             raise PointerLockHeldError(run_id) from exc
-        try:
-            yield
-        finally:
-            fcntl.flock(handle.fileno(), fcntl.LOCK_UN)
+        yield
 
 
 def _mutate_pointer(
@@ -882,129 +882,124 @@ def queue_dispatch(
     ordered nowhere in the admission queue.
     """
     lock = crew_home() / "locks" / "queued-dispatch.lock"
-    lock.parent.mkdir(parents=True, exist_ok=True)
-    with lock.open("a+b") as handle:
-        fcntl.flock(handle.fileno(), fcntl.LOCK_EX)
-        try:
-            project = str(record["project"])
-            identity = _node_identity(record)
-            live = _list_live_records(project=project)
-            existing = next(
+    with ExitStack() as stack:
+        stack.enter_context(exclusive_lock(lock))
+        project = str(record["project"])
+        identity = _node_identity(record)
+        live = _list_live_records(project=project)
+        existing = next(
+            (
+                pointer
+                for pointer in live
+                if pointer.get("phase") == "queued"
+                and _node_identity(pointer) == identity
+            ),
+            None,
+        )
+        if existing is None:
+            # No queued copy of the request. A run of the same node still in
+            # flight is answered as it is, with no second pointer: the
+            # request is already somewhere between the queue and a worker.
+            # The gap where no live pointer names the node — an admission
+            # handing the request to a launch — is covered by the dispatch
+            # path's own check against the handover record, not here: this
+            # primitive is also how the admission pass itself re-queues, and
+            # that write must not be answered by its own handover.
+            current = next(
                 (
                     pointer
                     for pointer in live
-                    if pointer.get("phase") == "queued"
-                    and _node_identity(pointer) == identity
+                    if _node_identity(pointer) == identity
+                    and str(pointer.get("phase") or "") not in _TERMINAL_RUN_PHASES
                 ),
                 None,
             )
-            if existing is None:
-                # No queued copy of the request. A run of the same node still in
-                # flight is answered as it is, with no second pointer: the
-                # request is already somewhere between the queue and a worker.
-                # The gap where no live pointer names the node — an admission
-                # handing the request to a launch — is covered by the dispatch
-                # path's own check against the handover record, not here: this
-                # primitive is also how the admission pass itself re-queues, and
-                # that write must not be answered by its own handover.
-                current = next(
-                    (
-                        pointer
-                        for pointer in live
-                        if _node_identity(pointer) == identity
-                        and str(pointer.get("phase") or "") not in _TERMINAL_RUN_PHASES
-                    ),
-                    None,
-                )
-                if current is not None:
-                    return dict(current), None
-            existing_run_id = str(existing["run_id"]) if existing is not None else None
-            requeued = False
-            if existing_run_id is not None:
-                with _pointer_lock(existing_run_id):
-                    if pointer_path(existing_run_id).exists():
-                        current = read_pointer(existing_run_id)
-                        if current.get("phase") != "queued":
-                            raise CrewError(
-                                f"queued run {existing_run_id!r} changed phase; "
-                                "retry dispatch"
-                            )
-                        record["run_id"] = existing_run_id
-                        record["queued_at"] = current["queued_at"]
-                        record["created_at"] = current["created_at"]
-                        record = _merged_requeue(current, record)
-                        requeued = True
-                        _write_json(pointer_path(existing_run_id), record)
-                    # A pointer that vanished between the scan and this lock was
-                    # discarded underneath the re-queue: fall through and queue
-                    # afresh rather than reading a pointer that is gone.
-            if not requeued:
-                from reckon.crew.queue_admission import (
-                    QUEUED_PHASE,
-                    WAITING_UPSTREAM_PHASES,
-                )
-                from reckon.crew.recovery_review_delivery import _is_review_run
+            if current is not None:
+                return dict(current), None
+        existing_run_id = str(existing["run_id"]) if existing is not None else None
+        requeued = False
+        if existing_run_id is not None:
+            with _pointer_lock(existing_run_id):
+                if pointer_path(existing_run_id).exists():
+                    current = read_pointer(existing_run_id)
+                    if current.get("phase") != "queued":
+                        raise CrewError(
+                            f"queued run {existing_run_id!r} changed phase; "
+                            "retry dispatch"
+                        )
+                    record["run_id"] = existing_run_id
+                    record["queued_at"] = current["queued_at"]
+                    record["created_at"] = current["created_at"]
+                    record = _merged_requeue(current, record)
+                    requeued = True
+                    _write_json(pointer_path(existing_run_id), record)
+                # A pointer that vanished between the scan and this lock was
+                # discarded underneath the re-queue: fall through and queue
+                # afresh rather than reading a pointer that is gone.
+        if not requeued:
+            from reckon.crew.queue_admission import (
+                QUEUED_PHASE,
+                WAITING_UPSTREAM_PHASES,
+            )
+            from reckon.crew.recovery_review_delivery import _is_review_run
 
-                if not _is_review_run(record):
-                    bound = (
-                        max_requests
-                        if max_requests is not None
-                        else _resolved_queue_max_requests(record)
+            if not _is_review_run(record):
+                bound = (
+                    max_requests
+                    if max_requests is not None
+                    else _resolved_queue_max_requests(record)
+                )
+                held = sum(
+                    1
+                    for pointer in live
+                    if pointer.get("phase") in (QUEUED_PHASE, *WAITING_UPSTREAM_PHASES)
+                    and str(pointer.get("project") or project) == project
+                    and not _is_review_run(pointer)
+                )
+                if held >= bound:
+                    raise QueueFull(
+                        project=project,
+                        session=str(record.get("session") or ""),
+                        held=held,
+                        cap=bound,
                     )
-                    held = sum(
+                if cap is not None:
+                    session = str(record.get("session") or "")
+                    session_held = sum(
                         1
                         for pointer in live
-                        if pointer.get("phase")
-                        in (QUEUED_PHASE, *WAITING_UPSTREAM_PHASES)
-                        and str(pointer.get("project") or project) == project
+                        if pointer.get("phase") == "queued"
+                        and str(pointer.get("session") or "") == session
                         and not _is_review_run(pointer)
                     )
-                    if held >= bound:
-                        raise QueueFull(
-                            project=project,
-                            session=str(record.get("session") or ""),
-                            held=held,
-                            cap=bound,
-                        )
-                    if cap is not None:
-                        session = str(record.get("session") or "")
-                        session_held = sum(
-                            1
-                            for pointer in live
-                            if pointer.get("phase") == "queued"
-                            and str(pointer.get("session") or "") == session
-                            and not _is_review_run(pointer)
-                        )
-                        if session_held >= cap:
-                            raise QueueFull(session=session, held=session_held, cap=cap)
-                run_id = str(record["run_id"])
-                with _pointer_lock(run_id):
-                    _write_json(pointer_path(run_id), record)
-            # A request is checked for review when it enters the queue: the
-            # digests of the text it was dispatched for are stamped here, from
-            # the plan as this dispatch wrote it, so later admission compares
-            # the plan against this request's own contract rather than against
-            # whatever the plan says at its first pass.
-            from reckon.crew.queue_admission import record_review_contract
+                    if session_held >= cap:
+                        raise QueueFull(session=session, held=session_held, cap=cap)
+            run_id = str(record["run_id"])
+            with _pointer_lock(run_id):
+                _write_json(pointer_path(run_id), record)
+        # A request is checked for review when it enters the queue: the
+        # digests of the text it was dispatched for are stamped here, from
+        # the plan as this dispatch wrote it, so later admission compares
+        # the plan against this request's own contract rather than against
+        # whatever the plan says at its first pass.
+        from reckon.crew.queue_admission import record_review_contract
 
-            record_review_contract(record)
-            _write_steering(
-                str(record["run_id"]),
-                str(dict(record.get("node") or {}).get("brief") or ""),
-            )
-            from reckon.crew.queue_order import admission_order
+        record_review_contract(record)
+        _write_steering(
+            str(record["run_id"]),
+            str(dict(record.get("node") or {}).get("brief") or ""),
+        )
+        from reckon.crew.queue_order import admission_order
 
-            live = _list_live_records(project=str(record["project"]))
-            queued = [pointer for pointer in live if pointer.get("phase") == "queued"]
-            order = admission_order(queued, live, now=datetime.now(UTC))
-            position = next(
-                index
-                for index, pointer in enumerate(order, 1)
-                if pointer["run_id"] == record["run_id"]
-            )
-            return record, position
-        finally:
-            fcntl.flock(handle.fileno(), fcntl.LOCK_UN)
+        live = _list_live_records(project=str(record["project"]))
+        queued = [pointer for pointer in live if pointer.get("phase") == "queued"]
+        order = admission_order(queued, live, now=datetime.now(UTC))
+        position = next(
+            index
+            for index, pointer in enumerate(order, 1)
+            if pointer["run_id"] == record["run_id"]
+        )
+        return record, position
 
 
 _RESUME_BUDGET = re.compile(
@@ -3313,15 +3308,11 @@ def update_watch_registration(project: str, **fields: Any) -> dict[str, Any]:
     path = watch_registration_path(project)
     path.parent.mkdir(parents=True, exist_ok=True)
     lock = watch_registration_lock_path(project)
-    with lock.open("a+b") as guard:
-        fcntl.flock(guard.fileno(), fcntl.LOCK_EX)
-        try:
-            record = read_watch_registration(project)
-            record.setdefault("project", project)
-            record.update(fields)
-            write_json_atomically(path, record)
-        finally:
-            fcntl.flock(guard.fileno(), fcntl.LOCK_UN)
+    with exclusive_lock(lock):
+        record = read_watch_registration(project)
+        record.setdefault("project", project)
+        record.update(fields)
+        write_json_atomically(path, record)
     return record
 
 
