@@ -1,0 +1,55 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-11-14T11:53:00.128Z",
+  "dispatched_at": "2026-11-14T11:28:35Z",
+  "findings": [
+    {
+      "file": "tests/test_a_node_needs_no_write_paths.py",
+      "id": "round-trip-fence-assertion",
+      "line": 276,
+      "severity": "non-blocking",
+      "text": "the stored fence is checked against the literal the test itself passed in at :271, so it reddens only if dispatch mutates a declared fence."
+    },
+    {
+      "file": "reckon/crew/node.py",
+      "id": "second-test-path-reader",
+      "line": 1105,
+      "severity": "non-blocking",
+      "text": "_done_when_test_paths repeats the extraction loop of reckon/crew/dispatch_batch.py:421-426 over the same owner pattern, and without its de-duplication."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "read both commits; reckon/crew/node.py, the batch suite, the new test file, tests/test_skill_contracts.py and the evidence fragment, 50 insertions and 18 deletions.",
+    "done_when": "the done_when names tests/test_a_node_needs_no_write_paths.py; baseline_suite and after_suite are both logged, and I re-ran the two named suites at head for 8 passed.",
+    "goal": "the goal is a node queued with no write paths; reckon/crew/node.py:1087 reads the trigger from the done-when through the one owner pattern.",
+    "manifest": "read; the arms, the four shared failures and negative_control_log are each checked against gate-repair-base.log, gate-repair-after.log and negative-control.log.",
+    "write_paths": "five paths in git diff 605eb2475a..0ecbd6e125, all inside the reckon, evidence-fragment and repair-granted suite fence."
+  },
+  "justifications": {
+    "durability": "the four negative-control FAILED ids at negative-control.log:140-143 are all real cases, and the grant assertion added at tests/test_a_node_needs_no_write_paths.py:181 can now fail.",
+    "evidence": "gate-repair-after.log:1 names b706f47528 and its summary reads 128 passed with the base arm at 122.",
+    "fit": "the function-level import at reckon/crew/node.py:1113 follows reckon/crew/dispatch_batch.py:413, and the string assertion at tests/test_skill_contracts.py:1937 reddens only on a message change.",
+    "goal_fidelity": "reckon/crew/node.py:1087 and tests/test_a_batch_queues_the_chosen_sections.py:238 show a path-less node queued with an empty fence.",
+    "reuse": "reckon/crew/node.py:1113 imports the owner pattern rather than keeping a second regex, but its loop at :1115 repeats the extraction already written at reckon/crew/dispatch_batch.py:421-426.",
+    "scope_discipline": "every changed path lies inside the fence granted at resume-1-advice.txt:5."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT diff: read both commits; reckon/crew/node.py, the batch suite, the new test file, tests/test_skill_contracts.py and the evidence fragment, 50 insertions and 18 deletions.\nVERDICT done_when: the done_when names tests/test_a_node_needs_no_write_paths.py; baseline_suite and after_suite are both logged, and I re-ran the two named suites at head for 8 passed.\nVERDICT goal: the goal is a node queued with no write paths; reckon/crew/node.py:1087 reads the trigger from the done-when through the one owner pattern.\nVERDICT manifest: read; the arms, the four shared failures and negative_control_log are each checked against gate-repair-base.log, gate-repair-after.log and negative-control.log.\nVERDICT write_paths: five paths in git diff 605eb2475a..0ecbd6e125, all inside the reckon, evidence-fragment and repair-granted suite fence.\nCALL_SITES: reckon/crew/node.py:1570, reckon/crew/dispatch_plan.py:840, reckon/crew/dispatching/requests.py:185, reckon/crew/queue_edit.py:195, reckon/crew/dispatching/_imports.py:175\nSCORE durability: 17\nJUSTIFICATION durability: the four negative-control FAILED ids at negative-control.log:140-143 are all real cases, and the grant assertion added at tests/test_a_node_needs_no_write_paths.py:181 can now fail.\nSCORE evidence: 18\nJUSTIFICATION evidence: gate-repair-after.log:1 names b706f47528 and its summary reads 128 passed with the base arm at 122.\nSCORE fit: 18\nJUSTIFICATION fit: the function-level import at reckon/crew/node.py:1113 follows reckon/crew/dispatch_batch.py:413, and the string assertion at tests/test_skill_contracts.py:1937 reddens only on a message change.\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/node.py:1087 and tests/test_a_batch_queues_the_chosen_sections.py:238 show a path-less node queued with an empty fence.\nSCORE reuse: 16\nJUSTIFICATION reuse: reckon/crew/node.py:1113 imports the owner pattern rather than keeping a second regex, but its loop at :1115 repeats the extraction already written at reckon/crew/dispatch_batch.py:421-426.\nSCORE scope_discipline: 18\nJUSTIFICATION scope_discipline: every changed path lies inside the fence granted at resume-1-advice.txt:5.\nFINDING tests/test_a_node_needs_no_write_paths.py:276 non-blocking: the stored fence is checked against the literal the test itself passed in at :271, so it reddens only if dispatch mutates a declared fence.\nFINDING reckon/crew/node.py:1105 non-blocking: _done_when_test_paths repeats the extraction loop of reckon/crew/dispatch_batch.py:421-426 over the same owner pattern, and without its de-duplication.\n",
+  "review_run_id": "r-20261114T103915497713-review-of-a-node-needs-no-write-paths-0ecbd6e1250d",
+  "reviewed_base_sha": "605eb2475a47809ac98bf80a906b7a4d9646b537",
+  "reviewed_head_sha": "0ecbd6e1250dbfeb48a06e3aada8b766a55125ed",
+  "reviewed_run_id": "r-20261114T082527387026-a-node-needs-no-write-paths",
+  "scores": {
+    "durability": 17,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 16,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-14T12:13:41.561938+00:00",
+  "total": 105
+}
