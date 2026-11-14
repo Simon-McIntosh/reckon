@@ -2047,7 +2047,10 @@ def _read_index_document(directory: Path) -> dict[str, Any] | None:
     key = (info.st_ino, info.st_size, info.st_mtime_ns)
     cached = _PARSED_INDEX_DOCUMENTS.get(str(directory))
     if cached is not None and cached[0] == key:
-        return cached[1]
+        # The stamp a document is filed under is process state, not file
+        # content, so a held mapping is re-checked rather than trusted: an
+        # unusable one answers nothing and the caller rebuilds.
+        return cached[1] if _document_is_usable(directory, cached[1]) else None
     document = _fresh_index_document(directory)
     _PARSED_INDEX_DOCUMENTS[str(directory)] = (key, document)
     return document
