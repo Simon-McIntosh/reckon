@@ -2184,12 +2184,27 @@ def _follow_watch_lines(
             if first_attach:
                 first_attach = False
                 resume_state = {}
-                if session is not None and subscriber.history:
+                # The row painter of a fresh process remembers no run, and it
+                # draws a run it does not remember as arriving from ``new``.
+                # The subscriber's checkpoint holds the word the pane last drew
+                # for each run, so the painter is seeded from it on every
+                # attach: without that, every re-arm and every reload onto new
+                # code drew each run's next row as ``new -> <word>``.
+                #
+                # A reload in place keeps the pane, so it owes the reader no
+                # snapshot of the session's work; only a re-arm, whose pane may
+                # have been cleared, draws one. Drawing it on every reload
+                # reprinted the session's live runs each time main moved.
+                if session is not None and (
+                    subscriber.history or subscriber.path.reported
+                ):
                     yield {
                         "event": FOLLOWER_RESUME_EVENT,
                         "project": project,
                         "session": session or "",
-                        "reported": {},
+                        "reported": dict(subscriber.path.reported),
+                        "resume_snapshot": bool(subscriber.history)
+                        and not reloaded_in_place,
                     }
             # Everything the first poll delivers was already on the station
             # when this arming attached: the rows after its stored cursor are
@@ -3420,6 +3435,9 @@ def crew_follow(
             if not run_id or not state:
                 return
             delivered_states[run_id] = state
+            # The painter draws the run's next row from the word just shown,
+            # rather than from ``new`` or from the checkpoint's older word.
+            _seed_ticker_memory(grid, {run_id: state})
             if subscriber is None:
                 runs_module.write_delivered(project, session, delivered_states)
                 return
@@ -3451,6 +3469,10 @@ def crew_follow(
             # follower's own bookkeeping rather than part of the pane's event,
             # so it is taken off before the event goes on to the reader.
             _seed_ticker_memory(grid, event.pop("reported", None))
+            # Whether this attach owes the pane a snapshot of the session's
+            # work. Absent, it does, as every attach did before a reload in
+            # place could say otherwise.
+            resume_snapshot = bool(event.pop("resume_snapshot", True))
             # A row the arming re-announced rather than drew as news: it is a
             # fresh line for the pane, but the run's row is already the one the
             # stored history carries, so recording it again would replay the
@@ -3524,7 +3546,10 @@ def crew_follow(
                 # terminal, the burst opens under one dim frame line that names
                 # it as earlier history, so a restored row is never acted on. A
                 # pipe is handed the session's current work instead, framed as
-                # state, so a re-arm is never silent about what it owns.
+                # state, so a re-arm is never silent about what it owns. A reload
+                # in place only seeds the painter above and draws nothing.
+                if not resume_snapshot:
+                    continue
                 if json_output:
                     _emit_crew_result(event, pretty, observation=True)
                 elif session is not None:
