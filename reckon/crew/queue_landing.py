@@ -18,9 +18,8 @@ from typing import Any
 
 from reckon import checkout_trust, ledger
 from reckon.crew import landing_measure, recovery, runs
-from reckon.crew.node import CrewError, is_collectible_test_path
+from reckon.crew.node import CrewError
 from reckon.crew.open_run_index import operational_read
-from reckon.crew.promotion_records import _node_test_files
 from reckon.crew.recovery_review_acceptance import _review_accepts_promotion
 from reckon.crew.resume import hold_reason as delivery_hold_reason
 
@@ -1015,14 +1014,9 @@ def _landing_test_files(
     named, so a fixture is not handed to the runner and a deleted test is not
     passed to it.
     """
-    named = _node_test_files(pointer)
-    if named:
-        return named
-    return sorted(
-        path
-        for path in changed
-        if is_collectible_test_path(path) and (Path(tree) / path).is_file()
-    )
+    from reckon.crew import delivery_scope
+
+    return delivery_scope.changed_test_files(pointer, changed, tree)
 
 
 def _measure_delivery(
@@ -1124,6 +1118,14 @@ def _measure_delivery(
             if not promoted and _landed_elsewhere(pointer, run_id):
                 raise _LandedElsewhereError
             try:
+                from reckon.crew import delivery_scope
+
+                derived = delivery_scope.derive(
+                    pointer,
+                    changed=changed,
+                    tree=measured_tree,
+                    revision=measured_head,
+                )
                 measured = landing_measure.measure_run(
                     command=command,
                     tree=measured_tree,
@@ -1131,7 +1133,7 @@ def _measure_delivery(
                     head_sha=measured_head,
                     base_tree=base_tree,
                     logs_dir=logs,
-                    test_files=_landing_test_files(pointer, changed, measured_tree),
+                    test_files=derived["test_files"],
                     timeout=timeout,
                     stored=stored,
                     project=project,
@@ -1141,6 +1143,7 @@ def _measure_delivery(
                 measured = replace(
                     measured,
                     head=head,
+                    scope=derived,
                     population={
                         **measured.population,
                         "main_sha": primary,

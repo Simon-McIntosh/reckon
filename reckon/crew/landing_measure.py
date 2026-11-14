@@ -311,6 +311,11 @@ class Measurement:
     suite: dict[str, Any]
     population: dict[str, Any]
     isolated: dict[str, dict[str, list[bool]]] = field(default_factory=dict)
+    #: The run's scope as its delivered diff implies it: the test files the
+    #: suite runs, the importers the population measures and the production
+    #: neighbourhood a review reads. Empty when the run declared its own and
+    #: kept them.
+    scope: dict[str, Any] = field(default_factory=dict)
     real: tuple[str, ...] = ()
     unreadable: str = ""
     head: str = ""
@@ -328,6 +333,7 @@ class Measurement:
             "execution": self.execution,
             "suite": self.suite,
             "population": self.population,
+            "scope": self.scope,
             "isolated": self.isolated,
             "real": list(self.real),
             "flakes": [
@@ -371,6 +377,7 @@ class Measurement:
                 if isinstance(arms, Mapping)
             },
             real=tuple(str(test_id) for test_id in record.get("real") or ()),
+            scope=dict(record.get("scope") or {}),
             unreadable=str(record.get("unreadable") or ""),
             head=str(record.get("head") or ""),
             project=str(record.get("project") or ""),
