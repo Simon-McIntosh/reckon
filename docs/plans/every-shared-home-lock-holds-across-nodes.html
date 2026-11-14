@@ -25,7 +25,7 @@
   <title>Every shared-home lock holds across nodes | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="8">
+<meta name="plan-version" content="9">
 <meta name="plan-modified" content="2026-11-14">
 </head>
 <body>
@@ -193,7 +193,10 @@
     <div class="r-comment-body"><p>§5 landed: five lane, budget and picker locks moved onto <code>exclusive_lock</code> (commits <code>786228ab9d</code>, <code>4634a0bd4d</code>). The cross-node tests fail at base. Review scored 113 of 120. <a href="/reckon/evidence/archive/every-shared-home-lock-holds-across-nodes-landed.html#s5-lane-budget-picker-landed">evidence</a></p></div>
 </div>
 <div class="r-comment" data-section="s5" data-id="c-run-r-20261114T135814761240-lane-budget-picker-locks-cross-node" data-who="reckon-build" data-when="2026-11-14T18:45:14.240Z">
-    <div class="r-comment-body"><p>moved the banked-reset, model-catalogue refresh, paid-lane document and picker-hold locks onto reckon.node_exclusive_lock.exclusive_lock and removed their five rows from the guard&#x27;s pending table; the guard passes, and a second-process POSIX record-lock holder makes the picker&#x27;s hold wait and the catalogue refresh read the snapshot instead of fetching (both fail at the base revision).</p></div>
+    <div class="r-comment-body"><p>moved the banked-reset, model-catalogue refresh, paid-lane document and picker-hold locks onto reckon.node_exclusive_lock.exclusive_lock and removed their five rows from the guard's pending table; the guard passes, and a second-process POSIX record-lock holder makes the picker's hold wait and the catalogue refresh read the snapshot instead of fetching (both fail at the base revision).</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-run-r-20261114T191620527558-review-of-git-answer-and-resumption-locks-cross-node-3766d298f9ef" data-who="reckon-build" data-when="2026-11-14T19:35:56.210Z">
+    <div class="r-comment-body"><p>Independent review of run r-20261114T140151869239-git-answer-and-resumption-locks-cross-node at head 3766d298f9ef572879b95d0d7b2bf2be14cca8b0 against base ffcba6679c7cb5812709911217e6cf43ebbe9870 scored goal_fidelity 20, evidence 19, scope_discipline 20, durability 19, fit 13, reuse 19, with added_failure_count 0 and one non-blocking finding (four blank lines left in reckon/crew/resumption.py where the deleted lock context managers stood, so ruff format --check regresses on that file).</p></div>
 </div>
 </section>
 </main>
