@@ -1,0 +1,50 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/crew/station.py:991",
+    "reckon/crew/resumption.py:980"
+  ],
+  "completed_at": "2026-11-14T20:24:33.914Z",
+  "dispatched_at": "2026-11-14T20:16:27Z",
+  "findings": [
+    {
+      "file": "reckon/crew/station_store.py",
+      "line": 262,
+      "severity": "non-blocking",
+      "text": "_unreadable_snapshot's docstring claims the row carries the same keys a classified snapshot does so a fold reads it as a state change, but no test asserts that key parity; a divergence in the hand-built row would be silent."
+    }
+  ],
+  "justifications": {
+    "durability": "tests/test_one_unreadable_pointer_never_stops_the_tick.py:141-155 asserts state/classification, the exception type and the incident message, and the negative-control log shows the same cases failing when the guard is removed.",
+    "evidence": "the gate command in the manifest is the literal text that ran and both arms plus the base-revision new-test log show non-zero failure at base against zero at head.",
+    "fit": "the guard follows the surrounding per-row idiom of reckon/crew/station_store.py:861 and reuses the snapshot vocabulary (state/classification/recovery_classification) rather than inventing one.",
+    "goal_fidelity": "reckon/crew/station_store.py:867 catches an exception from _watch_snapshot, prints the row on stderr and stores an unreadable snapshot, so the pass reaches every other pointer.",
+    "reuse": "search over reckon/crew found no other unreadable-pointer snapshot builder; _unreadable_snapshot is the owner of that row shape and _stream_session's unreadable-stream catch at resumption.py:884 is extended rather than duplicated.",
+    "scope_discipline": "every changed path in the diff lies under the declared write paths; no unrelated refactor accompanies the guard."
+  },
+  "project": "reckon",
+  "review_run_id": "r-20261114T201352243370-review-of-station-tick-survives-one-unreadable-pointer-s139-4934628faeb3",
+  "reviewed_base_sha": "53c4c5238e06f1dfbe160fa870cd3417b34ebc7b",
+  "reviewed_head_sha": "4934628faeb3b6ddfb373e1169f0723eeed7832f",
+  "reviewed_run_id": "r-20261114T165711969303-station-tick-survives-one-unreadable-pointer-s139",
+  "scores": {
+    "durability": 17,
+    "evidence": 18,
+    "fit": 17,
+    "goal_fidelity": 18,
+    "reuse": 18,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-14T20:36:56.289287+00:00",
+  "total": 106,
+  "verdicts": {
+    "diff": "read commit by commit (single commit 4934628fae): guard plus _unreadable_snapshot in station_store.py, BackendError added to _stream_session's catch in resumption.py, a 174-line test file, and an evidence fragment.",
+    "done_when": "done_when names tests/test_one_unreadable_pointer_never_stops_the_tick.py; manifest records 4 passed at head and 4 failed at base, and I read both logs (after-arm.log 59 passed EXIT=0, base-arm.log 55 passed EXIT=0).",
+    "goal": "goal is that one unreadable pointer never ends the station tick; reckon/crew/station_store.py:864 wraps the per-pointer _watch_snapshot call in a guard that records an unreadable row and continues.",
+    "manifest": "read; it states the gate, both suite arms with failure_count 0, the negative control and the scaffolding attribution for two base-arm retries.",
+    "write_paths": "read the manifest's declared write paths; the diff touches station_store.py, resumption.py, the new test file and one evidence fragment, plus a figure path in the declaration, all inside the fence."
+  }
+}
