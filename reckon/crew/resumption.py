@@ -175,6 +175,25 @@ def store_refused_advice(run_id: str, advice: str) -> Path | None:
     return path
 
 
+def _read_refused_advice(run_id: str, *, consume: bool) -> tuple[str, str]:
+    """The advice a refusal kept for this run, and where it waits.
+
+    One reader serves both doors: the resume that delivers the text empties the
+    slot as it reads, and the reopen that only reports it leaves the slot for
+    that resume. Keeping the read in one place is what stops the two from
+    drifting over what an absent or empty slot yields.
+    """
+    path = refused_advice_path(run_id)
+    try:
+        text = path.read_text(encoding="utf-8")
+    except OSError:
+        return "", ""
+    if consume:
+        with suppress(OSError):
+            path.unlink()
+    return text.strip(), str(path)
+
+
 def consume_refused_advice(run_id: str) -> str:
     """Read and clear the advice a refusal left for this run, or ''.
 
@@ -182,14 +201,7 @@ def consume_refused_advice(run_id: str) -> str:
     is read: advice already carried into a resumed turn must not be replayed
     into the one after it as though it were new.
     """
-    path = refused_advice_path(run_id)
-    try:
-        text = path.read_text(encoding="utf-8")
-    except OSError:
-        return ""
-    with suppress(OSError):
-        path.unlink()
-    return text.strip()
+    return _read_refused_advice(run_id, consume=True)[0]
 
 
 def waiting_refused_advice(run_id: str) -> tuple[str, str]:
@@ -198,12 +210,7 @@ def waiting_refused_advice(run_id: str) -> tuple[str, str]:
     Read without consuming: a reopen only reports the slot, and the resume
     that delivers the text is a separate call which empties it as it reads.
     """
-    path = refused_advice_path(run_id)
-    try:
-        text = path.read_text(encoding="utf-8")
-    except OSError:
-        return "", ""
-    return text.strip(), str(path)
+    return _read_refused_advice(run_id, consume=False)
 
 
 #: Where a reopen records what it granted, beside the run's other records.
@@ -256,10 +263,11 @@ def reopen_run(
     """
     from reckon.crew.claims import widen_claim
 
-    record = read_pointer(run_id)
-    _, added = widen_claim(run_id, list(write_paths))
-    widened = read_pointer(run_id)
-    delivered = _reset_delivered_manifest_status(run_id, widened or record)
+    # The widened pointer is the one widen_claim wrote, so the grant, the
+    # attempt number and the fence all come from one read rather than a second
+    # one that could see a peer's write in between.
+    widened, added = widen_claim(run_id, list(write_paths))
+    delivered = _reset_delivered_manifest_status(run_id, widened)
     reopening = _record_reopening(
         run_id,
         granted_paths=list(write_paths),
