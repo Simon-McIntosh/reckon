@@ -25,6 +25,7 @@ from reckon.crew import review_need
 from reckon.crew.node import (
     CrewError,
 )
+from reckon.crew.open_run_index import operational_read
 from reckon.crew.reports import (
     ManifestParseError,
     parse_manifest,
@@ -2219,7 +2220,9 @@ def _no_lane_reason(
 # from the run, so it is free to be re-routed; an attempt a lane actually
 # carried and dropped is demoted by :func:`_failed_review_backend` instead, and
 # the two records answer different questions.
-HELD_REVIEW_DISPATCH_STATUSES = frozenset({"lane-paused", "awaiting-lane"})
+HELD_REVIEW_DISPATCH_STATUSES = frozenset(
+    {"lane-paused", "awaiting-lane", "roster-full"}
+)
 
 
 def _zero_slot_held_lane(
@@ -3075,6 +3078,65 @@ def claim_refusal_still_holds(claim: Mapping[str, Any]) -> bool:
     return bool(claim_disposition(pointer).binding)
 
 
+def _release_delivered_review_claim(
+    record: Mapping[str, Any],
+    fields: Mapping[str, Any],
+    *,
+    config: Mapping[str, Any] | None = None,
+) -> list[dict[str, Any]]:
+    """End each delivered review run whose claim fences this dispatch's paths.
+
+    A later review of the same run names the headless record path the earlier
+    review declared, so a finished review's claim on that path refuses the
+    dispatch that follows it — and a finished review's recorded worktree is
+    gone, so the claim reads as work nobody can inspect and stands until
+    somebody ends the run by hand. A review's whole deliverable is the record
+    it stored, so once that record parses and its own manifest reads complete
+    the run has nothing left to write: it is ended here by the very promotion
+    its self-promotion sweep would reach, in the order the dispatch needs it —
+    before this dispatch's scope is judged. A reviewer that has not delivered
+    has not reached that state, keeps its claim, and the refusal stands.
+    """
+    from reckon.crew.node import claim_disposition
+    from reckon.crew.recovery_review_acceptance import promote_review_run_itself
+
+    project = str(record.get("project") or "")
+    if not project:
+        return []
+    wanted = {
+        Path(str(path)).expanduser().resolve().as_posix()
+        for path in fields.get("write_paths") or ()
+    }
+    released: list[dict[str, Any]] = []
+    for pointer in list_live(project=project):
+        if not _is_review_run(pointer):
+            continue
+        node = pointer.get("node")
+        declared = {
+            Path(str(path)).expanduser().resolve().as_posix()
+            for path in (node.get("write_paths") if isinstance(node, Mapping) else ())
+            or ()
+        }
+        if not declared & wanted:
+            continue
+        if not claim_disposition(pointer).binding:
+            continue
+        promotion = promote_review_run_itself(pointer, config=config)
+        if not promotion or not promotion.get("promoted"):
+            continue
+        released.append(
+            {
+                "run_id": str(pointer.get("run_id") or ""),
+                "record_path": str(promotion.get("record_path") or ""),
+                "reason": (
+                    "its record is complete and stored, so it has nothing left "
+                    "to write and its claim was released"
+                ),
+            }
+        )
+    return released
+
+
 def stored_claim_refusal(record: Mapping[str, Any]) -> dict[str, Any] | None:
     """The hold a refused review dispatch still stands under, or None.
 
@@ -3244,6 +3306,7 @@ def _resume_superseded_refusal(
     }
 
 
+@operational_read
 def dispatch_review_for_run(
     record: Mapping[str, Any],
     *,
@@ -3474,7 +3537,7 @@ def _dispatch_composed_review(
         return {"run_id": run_id, "dispatched": False, "reason": reason}
 
     dispatch_module = importlib.import_module("reckon.crew.dispatch")
-    from reckon.crew.dispatch import BudgetHold, LaneHeld, LanePaused
+    from reckon.crew.dispatch import BudgetHold, LaneHeld, LanePaused, RosterFull
     from reckon.crew.node import TaskNode
 
     resolved = _resolved_review_config(project, config)
@@ -3658,6 +3721,17 @@ def _dispatch_composed_review(
                 authority_error=review_authority_error,
             )
 
+    # A later review of the same run names the record path an earlier review
+    # declared, so a finished review whose own run has not ended yet would
+    # refuse the dispatch its successor exists to make. A dry run promises to
+    # write nothing, so it reports the claim it would meet rather than ending
+    # the run underneath it.
+    released_reviews = (
+        []
+        if dry_run
+        else _release_delivered_review_claim(record, fields, config=resolved)
+    )
+
     if dry_run:
         # The plan review's brief is composed rather than given, so a preview
         # holds its text while a dispatch writes it. The resolver reads the
@@ -3817,6 +3891,64 @@ def _dispatch_composed_review(
         if queued:
             report["queued"] = dict(queued)
         return report
+    except RosterFull as exc:
+        # The placement reservation's roster is at its cap: every seat the
+        # allocation was sized for is held by a resident worker, so no worker
+        # for this review can be placed right now. A seat is freed when one of
+        # those workers ends, which is what the queued request waits for — the
+        # review is written as a queued request and launches from the brief its
+        # composed directory already holds, rather than being refused and
+        # costing the run it reviews the review it is owed.
+        gate = {
+            "detail": str(exc),
+            "reason": (
+                "the placement reservation's roster is full "
+                f"({exc.occupancy}/{exc.limit})"
+            ),
+        }
+        try:
+            queued = _queue_router_held_review(
+                record,
+                node=node,
+                fields=fields,
+                config=resolved,
+                backend=backend,
+                gate=gate,
+                allow_unreconciled_runs=allow_unreconciled_runs,
+            )
+        except (CrewError, OSError) as exc2:
+            # The reflex is a sweep: a refused or failed queue write is
+            # reported here rather than ending the project's whole review pass.
+            reason = f"the roster-full review could not be queued: {exc2}"
+            record_dispatch(
+                status="refused",
+                reason=reason,
+                backend=backend,
+                reviewed_head=fields["head"],
+            )
+            return {
+                "run_id": run_id,
+                "dispatched": False,
+                "refused": True,
+                "backend": backend,
+                "reason": reason,
+            }
+        reason = str(gate["reason"])
+        record_dispatch(
+            status="roster-full",
+            reason=reason,
+            backend=backend,
+            reviewed_head=fields["head"],
+        )
+        return {
+            "run_id": run_id,
+            "dispatched": False,
+            "backend": backend,
+            "error": "lane-paused",
+            "lane_gate": gate,
+            "queued": dict(queued or {}),
+            "reason": reason,
+        }
     except CrewError as exc:
         # Scope, member, follower, context-fit, plan visibility and competence
         # refusals all arrive here. The automatic path must not be the one place
@@ -3856,6 +3988,7 @@ def _dispatch_composed_review(
         "scope": fields.get("scope"),
         "review_tier": fields.get("review_tier"),
         "reason": f"dispatched the composed review as run {review_run_id}",
+        **({"released_reviews": released_reviews} if released_reviews else {}),
         **({"dispatch": launched} if record.get("subject") == "plan" else {}),
     }
 

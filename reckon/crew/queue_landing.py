@@ -1996,6 +1996,30 @@ def _land_deliveries(settled_landings: set[str] | None = None) -> dict[str, Any]
         if hold_reason:
             skipped.append({"run_id": run_id, "status": "held", "reason": hold_reason})
             continue
+        from reckon.crew.review_landing import manual_landing_reason
+
+        manual_reason = manual_landing_reason(pointer)
+        if manual_reason:
+            previous = pointer.get("admission_landing") or {}
+            if previous.get("guard") != manual_reason or previous.get("head") != head:
+                _record_attempt(
+                    run_id,
+                    head=head,
+                    guard=manual_reason,
+                    status="refused",
+                    code_stamp=_landing_code_stamp(),
+                    review_stamp=manual_reason,
+                    previous=previous,
+                    remedy=f"reckon crew complete --run {run_id} --gate passed --land",
+                )
+                obligations.append(
+                    {
+                        "run_id": run_id,
+                        "session": str(pointer.get("session") or ""),
+                        "guard": manual_reason,
+                    }
+                )
+            continue
         owed = _owed_review_tiers(pointer)
         reviews: dict[str, dict[str, Any] | None] = {}
         stale, stale_tier = "", ""

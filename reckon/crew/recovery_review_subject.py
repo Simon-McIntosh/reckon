@@ -937,6 +937,84 @@ def materialize_run_review_brief(source: str | Path) -> bool:
     return True
 
 
+# The line a composed brief names the revision it reviews on. The writer below
+# reads it back, so the line and its reader live beside the composition that
+# emits it rather than in a second spelling a later edit could drift from.
+_REVIEWED_HEAD_LINE = "Reviewed head:"
+
+
+def brief_named_head(path: Path) -> str:
+    """The revision a composed brief names, or empty when it names none.
+
+    A brief written before a run resumed names the head the run had then, and a
+    reader holding the file cannot tell that from one written about the
+    revision the run carries now. Reading the named head back is what lets the
+    writer below tell the two apart without a second record to keep in step.
+    """
+    try:
+        text = path.read_text(encoding="utf-8")
+    except OSError:
+        return ""
+    for line in text.splitlines():
+        if line.startswith(_REVIEWED_HEAD_LINE):
+            return line[len(_REVIEWED_HEAD_LINE) :].strip()
+    return ""
+
+
+def _owes_a_review_brief(record: Mapping[str, Any]) -> bool:
+    """Whether a delivered record is a worker run whose review reads a brief.
+
+    A plan review's brief names a plan snapshot rather than a run's head, and a
+    review run's own record is its deliverable rather than work another review
+    reads, so neither owes this brief. Every other delivered run does.
+    """
+    if record.get("subject") == "plan":
+        return False
+    if not str(record.get("run_id") or ""):
+        return False
+    return not _is_review_node(record)
+
+
+def write_delivered_run_review_brief(record: Mapping[str, Any]) -> Path | None:
+    """Compose a delivered run's review brief, naming the head it delivered.
+
+    A brief reaches the run directory only when a review dispatch names it, so
+    a run that has delivered and is then resumed keeps whichever brief a
+    dispatch wrote before the resume: a reader opening it is told the revision
+    the run had then, while the run carries another. And a run whose
+    obligations a coordinator deferred receives no dispatch at all, so its
+    brief is never written and the coordinator composes it by hand.
+
+    Both come from the same absence — no writer runs at delivery. This writes
+    the brief where the run's own delivery is recorded, composed from the head
+    the run's tree carries now, so the file follows a resume and exists for a
+    deferred run whose coordinator still has to dispatch its review. The
+    deferral is never consulted: a deferred obligation is work put off, not
+    evidence the run's deliverable is different.
+
+    Nothing is written when the existing brief already names this head, so a
+    delivery that moves nothing costs no write, and a run whose head resolves
+    to nothing gets no brief rather than one naming an unknown revision.
+    """
+    if not _owes_a_review_brief(record):
+        return None
+    head = _run_head_for_review(record)
+    if not head:
+        return None
+    try:
+        path = _review_brief_path(record)
+    except (OSError, ValueError):
+        return None
+    if same_revision(brief_named_head(path), head):
+        return None
+    try:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(_review_brief_text(record, head), encoding="utf-8")
+    except OSError:
+        return None
+    return path
+
+
 def _plan_review_node_id(slug: str, rubric: str) -> str:
     """The node id a plan review of ``rubric`` composes under.
 

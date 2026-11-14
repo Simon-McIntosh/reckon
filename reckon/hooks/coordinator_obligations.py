@@ -1524,13 +1524,16 @@ def recheck_worktree_held_rows(
     """The payload minus the rows a held answer can no longer stand behind.
 
     Every reading of a held answer passes through here, so this is where it is
-    settled against the fleet as it reads now. Two rows are dropped:
+    settled against the fleet as it reads now. A row is dropped when:
 
-    * a duty whose run holds no live pointer. The pointer was there when the
+    * its duty's run holds no live pointer. The pointer was there when the
       answer was computed; its removal is the run landing or ending, which no
       held answer can see until its producer ticks again (``snapshot_module``
-      owns that rule, and the crew view reads it the same way).
-    * a worktree-held row whose tree the fleet has released.
+      owns that rule, and the crew view reads it the same way);
+    * its kind names state the run's current pointer has already answered -- a
+      promoted run that no longer reads complete, or a stopped run resumed
+      after the manifest the row was built from;
+    * it is a worktree-held row whose tree the fleet has released.
 
     A row whose run still holds its tree is left exactly as the snapshot
     carried it; only a row whose record shows the tree released, or whose

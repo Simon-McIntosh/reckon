@@ -1,0 +1,49 @@
+<section class="r-evidence" id="wave3-clive-anchored-a-report-is-kept-only-when-p-s4-landed">
+  <h2 id="wave3-clive-anchored-a-report-is-kept-only-when-p-s4-title">An unpersisted report expires at its plan's close or after 30 days</h2>
+
+  <p id="wave3-clive-anchored-a-report-is-kept-only-when-p-s4-summary">
+    The retention sweep's report-tree pass is now an item rule. A new
+    <code>reckon/crew/report_retention.py</code> owns one
+    <code>classify_item</code> judgement, which the sweep calls: an item is
+    <em>persisted</em> when a §2 record keeps a copy inside it, <em>cited</em>
+    when its path or a path inside it appears in one of the project's plan,
+    research or evidence documents, and <em>working</em> otherwise. A working
+    item expires at its plan's close when it is attributed to a plan — by its
+    own folder name, or by a ledger run naming that plan whose report directory
+    lies inside it — and otherwise at 30 days after its newest write.
+  </p>
+
+  <p id="wave3-clive-anchored-a-report-is-kept-only-when-p-s4-measure">
+    Gate: <code>tests/test_an_unpersisted_report_expires.py</code> beside
+    <code>tests/test_staged_write_inventory.py</code>, 63 passed at the head
+    revision; the base arm over the same tree resolved to
+    <code>tests/test_staged_write_inventory.py</code> alone, 51 passed.
+  </p>
+
+  <ul id="wave3-clive-anchored-a-report-is-kept-only-when-p-s4-cases">
+    <li>31-day unreferenced item removed; 29-day item kept.</li>
+    <li>The real reports store is unchanged by a sweep in the synthetic home,
+    measured on this project's own path before and after.</li>
+    <li>29-day item named for a closed plan removed; for an open plan kept; 31-day item of an open plan removed at the ceiling.</li>
+    <li>29-day item attributed through a ledger run's report path removed on that plan's close; a 29-day unattributable item kept whatever any plan's status.</li>
+    <li>Kept at 90 days: a persisted item, a directly cited item, an item cited only through a file inside it, one cited from a research document, one cited from an evidence fragment, and one named by a live pointer.</li>
+    <li>No reckon-written folder removed whole; a 31-day <code>code-review</code> child removed; <code>plan-review</code> contents untouched.</li>
+    <li>An expired symlinked item loses both target and link; a symlink outside the staging root is kept and reported.</li>
+    <li>The dry run's candidate list equals what <code>--apply</code> removes.</li>
+  </ul>
+
+  <p id="wave3-clive-anchored-a-report-is-kept-only-when-p-s4-negative">
+    Negative control: with the citation branch of <code>classify_item</code>
+    disabled, <code>test_every_keeper_survives_ninety_days</code> fails
+    (1 failed, 11 passed), showing the citation check is what keeps the cited
+    item rather than incidental age. The real-store case is falsifiable the same
+    way: taking its before-snapshot after the removable item exists fails it
+    (1 failed), so the comparison detects a removal rather than always passing.
+  </p>
+
+  <p id="wave3-clive-anchored-a-report-is-kept-only-when-p-s4-outside">
+    Outside this node's scope: the real-store dry run and the per-project
+    staging-root settings live in other repositories and belong to the
+    coordinator's measurement step.
+  </p>
+</section>

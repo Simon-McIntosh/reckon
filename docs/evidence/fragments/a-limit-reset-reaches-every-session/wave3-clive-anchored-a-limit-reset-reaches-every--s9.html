@@ -1,0 +1,42 @@
+<article class="r-evidence" data-node="wave3-clive-anchored-a-limit-reset-reaches-every--s9">
+<h3 id="wave3-clive-anchored-a-limit-reset-reaches-every--s9-what">The reset row says continue and opens no worker lane</h3>
+<p id="wave3-clive-anchored-a-limit-reset-reaches-every--s9-body">A limit-reset row reached the pane as
+the transition its pane word made — <code>new → working</code> — so no session stopped at the
+usage limit was told to continue, and a row recorded under the worker lane's own group read as that lane
+having no limit left. <code>ticker._reset_line</code> draws the row as its own clause: the stage cell
+reads <code>limit</code>, the job cell names the budget group, and <code>limit_reset_text</code>
+composes the headline, the clock, the instruction and the announcer's reason in one place. The
+instruction is chosen by what the group's declaration establishes through <code>group_is_paced</code>:
+a group no backend paces is the orchestrator wallet and reads <code>limits reset (five_hour):
+orchestrator sessions continue; worker lanes keep their limits</code>, while a group a backend paces
+reads the same worker-lane clause and claims nothing about orchestrator sessions. Every row closes by
+naming the worker lanes it does not release, so no row opens a lane it never named. The producer's
+<code>_reset_detail</code> carries the event's own facts and composes no instruction, which is what lets
+the renderer resolve the wallet once, where the row is printed.</p>
+<p id="wave3-clive-anchored-a-limit-reset-reaches-every--s9-verify">The behaviour was already present at
+<code>ec65874c93</code> when this node opened, so nothing was reimplemented. What was missing was
+coverage of the last element the deliverable names — the announcer's reason printed after the
+instruction — and this node adds that assertion to the orchestrator case. The rendered row at width 200
+reads <code>11:49:20  limit      claude-orchestrators          limits reset (five_hour): orchestrator
+sessions continue; worker lanes keep their limits — the lead said the limit reset</code>, and the case
+now requires the announcer's reason in it. The negative control drops the reset branch from
+<code>Ticker.render</code>, restoring the transition path; the same case then fails with a row reading
+<code>12:05:56  lift  claude-orchestrators  new → working …</code> and no instruction.</p>
+<h3 id="wave3-clive-anchored-a-limit-reset-reaches-every--s9-measure">Measure</h3>
+<p id="wave3-clive-anchored-a-limit-reset-reaches-every--s9-figures">Both arms are git checkouts under
+the run's own scratch directory with the four follower variables unset, run in place on the fleet node
+at <code>pytest -n 8</code> over <code>tests/test_a_limit_reset_reaches_every_pane.py</code> and
+<code>tests/test_staged_write_inventory.py</code>: base <code>e896425b2</code> <strong>65 passed</strong>
+(23.37 s) and head <code>49e5d3193</code> <strong>65 passed</strong> (21.19 s), both <code>EXIT=0</code>,
+with no failure id in either arm. The negative control at the head exits <code>1</code> with
+<code>1 failed</code> on <code>test_an_orchestrator_reset_says_continue_and_opens_no_worker_lane</code>.
+<code>ruff check</code> and <code>ruff format --check</code> add no findings on the node's files. The
+node's diff is one test file and two added lines, so every product module is byte-identical between the
+arms and the files importing <code>lift_watch</code> or <code>ticker</code> cannot differ between them;
+both cohort files named in the gate pass in both arms.
+<code>tests/test_every_module_fits_a_worker_window.py</code> does not pass at this head: thirteen
+pre-existing modules exceed the 50,000-token bound and are not allowlisted
+(<code>reckon/crew/ticker.py</code> at 51,071 among them, unchanged by this node). No module named in
+that failure is in this node's diff, so the condition is identical at the base revision and is reported
+as outside this node's scope rather than repaired here.</p>
+</article>

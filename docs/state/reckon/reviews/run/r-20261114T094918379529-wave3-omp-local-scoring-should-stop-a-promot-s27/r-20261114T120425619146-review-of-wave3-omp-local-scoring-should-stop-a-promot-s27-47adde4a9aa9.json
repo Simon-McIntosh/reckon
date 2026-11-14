@@ -1,0 +1,54 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "",
+  "dispatched_at": "2026-11-14T11:14:07Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "folded",
+      "node": "wave3-omp-local-scoring-should-stop-a-promot-s27",
+      "recorded_at": "2026-11-14T13:44:12.884374+00:00"
+    }
+  },
+  "findings": [
+    {
+      "id": "f660e4d8b0e",
+      "line": 12,
+      "path": "manifest.md",
+      "severity": "blocking",
+      "summary": "the manifest's tests, baseline_suite and after_suite fields all name tests/test_staged_write_inventory.py, which measures nothing about the done-when file, so the gate receipt promotion builds from that line reports a green run unrelated to the claim"
+    },
+    {
+      "id": "f577caf8607",
+      "line": 96,
+      "path": "docs/evidence/fragments/scoring-should-stop-a-promotion/wave3-omp-local-scoring-should-stop-a-promot-s27.html",
+      "severity": "non-blocking",
+      "summary": "the evidence fragment ends without a trailing newline"
+    },
+    {
+      "id": "f8c20251e5c",
+      "line": 1,
+      "path": "tests/test_a_stale_lease_record_does_not_expose_a_pin.py",
+      "severity": "non-blocking",
+      "summary": "the dispatch's declared write paths named this file while the done-when named tests/test_a_scoped_suite_names_only_present_files.py, a scope-composition defect the worker correctly disclosed under outside_scope"
+    }
+  ],
+  "project": "reckon",
+  "review_run_id": "r-20261114T120425619146-review-of-wave3-omp-local-scoring-should-stop-a-promot-s27-47adde4a9aa9",
+  "review_text": "VERDICT goal: the node's goal is to deliver section s27 of scoring-should-stop-a-promotion as its done_when states; docs/evidence/fragments/scoring-should-stop-a-promotion/wave3-omp-local-scoring-should-stop-a-promot-s27.html:30 records that the rule already sat in the base tree, so the node verified rather than reimplemented it.\nVERDICT done_when: the done_when names tests/test_a_scoped_suite_names_only_present_files.py; the manifest's artifacts and the head-done-when.log it cites record 5 passed EXIT=0, but the manifest's own tests, baseline_suite and after_suite fields name tests/test_staged_write_inventory.py instead.\nVERDICT write_paths: the manifest's declared paths were reckon/crew/promotion_records.py, tests/test_a_stale_lease_record_does_not_expose_a_pin.py, the evidence fragment and a figures path; the diff touches only the fragment.\nVERDICT manifest: read; it records complete, one landed change 47adde4a9a, 51 passed EXIT=0 in both arms measured over tests/test_staged_write_inventory.py, and discloses under outside_scope that it wrote no test file.\nVERDICT diff: read change by change against 47d4d53612; a single change adds one 96-line evidence fragment and nothing else.\nCALL_SITES: reckon/crew/delivery_scope.py:147, reckon/crew/promotion_records.py:959, reckon/crew/resumption.py:1723, reckon/crew/dispatching/suite.py:78\nSCORE goal_fidelity: 16\nJUSTIFICATION goal_fidelity: wave3-omp-local-scoring-should-stop-a-promot-s27.html:33 shows the rule was already at base 47d4d53612, so the verified-not-reimplemented outcome is right, though it ships documentation rather than the test the done_when names.\nSCORE evidence: 12\nJUSTIFICATION evidence: manifest.md:12 names tests/test_staged_write_inventory.py as the gate, so the receipt promotion reads measures 51 tests unrelated to the done-when file that head-done-when.log shows green.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: the whole diff is the single added fragment at docs/evidence/fragments/scoring-should-stop-a-promotion/wave3-omp-local-scoring-should-stop-a-promot-s27.html, inside the declared write paths.\nSCORE durability: 12\nJUSTIFICATION durability: the diff adds no assertion, so durability rests wholly on the pre-existing tests that the node's negative-control.log shows firing under the removed presence check.\nSCORE fit: 17\nJUSTIFICATION fit: the fragment follows the plan-doc section structure of docs/ with plan-* metas, though the file omits a trailing newline.\nSCORE reuse: 20\nJUSTIFICATION reuse: the diff adds no definition at all, so nothing forks a capability; the guard it documents already lives in reckon/crew/promotion_records.py:797 and was not rewritten.\nFINDING manifest.md:12 blocking: the tests, baseline_suite and after_suite fields all name tests/test_staged_write_inventory.py, which measures nothing about the done-when the goal asserts, so the gate receipt built from that line reports a green run unrelated to the claim.\nFINDING docs/evidence/fragments/scoring-should-stop-a-promotion/wave3-omp-local-scoring-should-stop-a-promot-s27.html:96 non-blocking: the evidence fragment ends without a trailing newline.\nFINDING tests/test_a_stale_lease_record_does_not_expose_a_pin.py:1 non-blocking: the dispatch named this file in write_paths while the done_when named tests/test_a_scoped_suite_names_only_present_files.py, a scope-composition defect the worker disclosed under outside_scope.\n",
+  "reviewed_base_sha": "47d4d536120a2e6d4356124856be6285061e6806",
+  "reviewed_head_sha": "47adde4a9aa9298db0ce9fcd13106571db8e2cfe",
+  "reviewed_run_id": "r-20261114T094918379529-wave3-omp-local-scoring-should-stop-a-promot-s27",
+  "scores": {
+    "durability": 12,
+    "evidence": 12,
+    "fit": 17,
+    "goal_fidelity": 16,
+    "reuse": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-14T12:12:39.392086+00:00",
+  "total": 96
+}

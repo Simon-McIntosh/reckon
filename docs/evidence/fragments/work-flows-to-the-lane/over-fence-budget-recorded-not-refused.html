@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="over-fence-budget-recorded-not-refused">
+  <meta name="plan-status" content="done">
+  <meta name="plan-title" content="Budgets above the time fence are recorded">
+  <meta name="plan-summary" content="Dispatch and batch queueing accept longer budgets, preserving the note and optional reason on their pointers.">
+  <meta name="plan-evidence-for" content="work-flows-to-the-lane">
+  <meta name="plan-verifies" content="work-flows-to-the-lane#s63">
+  <meta name="plan-verdict" content="pass">
+  <title>Budgets above the time fence — evidence</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body><main class="plan-doc">
+<section id="over-fence-budget-recorded-not-refused-evidence">
+  <h2>Budgets above the time fence are recorded</h2>
+  <p>Commit <code>25b85b5769e36fc28f65c7bba7d9efab777b4f89</code>
+  changes the shared node validator to record <code>over_fence_note</code>
+  instead of refusing a budget above the resolved fence. The optional
+  <code>over_fence_reason</code> remains separate and now travels through batch
+  entries. Dispatch help describes the reason as optional. The picker source
+  and its use of the configured fence are unchanged.</p>
+  <p>The defect reproduced on base
+  <code>7acce13077496a0942555e7eb59a68416d6ad14a</code>:
+  a 240-minute budget against a two-hour fence returned
+  <code>not-dispatchable</code> with
+  <q>budget 240m exceeds the resolved fence 2h; pass --over-fence REASON</q>.
+  The regression probe reported <code>5 failed, 1 passed in 1.38s</code>.
+  Its passing case reads the picker's deterministic fallback as
+  <code>stub-lane</code> while preserving the declared <code>240m</code> budget;
+  the same assertion passes after the change. The fixture supplies lane facts
+  and an unavailable transport, so this compares deterministic routing rather
+  than a live provider's answer.</p>
+  <table>
+    <thead><tr><th>Case</th><th>Recorded result</th></tr></thead>
+    <tbody>
+      <tr><td>Dispatch, no reason</td><td>Accepted pointer: budget 240m, note naming fence 2h, empty reason.</td></tr>
+      <tr><td>Dispatch, supplied reason</td><td>Accepted pointer: same note beside the unchanged reason.</td></tr>
+      <tr><td>Batch queue, no reason or supplied reason</td><td>One request queued per case; pointer and rebuilt node preserve note and reason.</td></tr>
+      <tr><td>Budget revised below fence</td><td>Note cleared; malformed duration still refused.</td></tr>
+    </tbody>
+  </table>
+  <p>On <code>all_debug</code>, the base scoped arm reports
+  <code>51 passed in 10.56s</code>, exit 0. The implementation scoped arm reports
+  <code>57 passed in 10.55s</code>, exit 0: six added passing cases and zero added
+  failures. The final-head receipt is recorded in the manifest after this
+  evidence commit. Restoring the refusal in a temporary extraction produces
+  <code>5 failed, 1 passed in 0.98s</code>, exit 1, including the no-reason dispatch
+  and batch tests. The production worktree retains the accepting implementation.</p>
+  <p>Gate receipts are under
+  <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261114T141330434465-over-fence-budget-recorded-not-refused/</code>:
+  <code>baseline.log</code>, <code>reproduction.log</code>, <code>head.log</code>,
+  <code>final-head.log</code>, and <code>negative-control.log</code>. Each declares
+  its command and revision and ends with an exit code; the mutation receipt also
+  identifies the imported module and working directory. Ruff check and format
+  check pass on the four changed Python files. Coordinator promotion and merged
+  integration verification remain separate from this node's scoped result.</p>
+</section>
+</main></body>
+</html>

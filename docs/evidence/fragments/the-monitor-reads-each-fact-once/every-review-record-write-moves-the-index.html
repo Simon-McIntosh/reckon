@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-evidence-for" content="reckon:the-monitor-reads-each-fact-once">
+  <title>Every review-record write publishes its index</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article id="every-review-record-write-moves-the-index-landing" data-node="every-review-record-write-moves-the-index" data-reckon="landing" data-when="2026-11-14">
+  <h2>Every review-record write publishes its index</h2>
+  <p><strong>Reproduction.</strong> At base <code>8753ba2f08416ceaf8ca0b413f5e7edbbc493a9d</code>, the new behavioral probe reports <code>2 failed, 14 passed in 2.39s</code>. Both failures say <q>the indexed run digest did not change</q>: <code>commit_record_write</code> after an in-place caller rewrite, and <code>store_code_review</code>. The other six writer checks already pass. The existing foreign-write test already takes its version after the rebuild, and the signature docstring already describes a digest; those working behaviors were verified and retained.</p>
+  <p><strong>Change.</strong> Code-review stores and committed plan-review answers use <code>record_written</code>. Repairing a source record uses the same writer with its validated serialized bytes, preserving field layout. <code>commit_record_write</code> publishes changed indexed staging bytes before deciding whether any file is tracked; a matching indexed hash avoids a duplicate replacement and generation. The signature documentation makes the bound explicit: an external rewrite retaining its inode is visible at a rebuild.</p>
+  <p><strong>Behavioral coverage.</strong> A temporary crew home holds one already indexed reviewed run. Eight entry points each change its digest and advance its version: <code>store_review</code>, <code>store_committed_review</code>, <code>commit_record_write</code>, CLI repair, CLI finding disposition, CLI dimension disposition, <code>store_code_review</code> and <code>store_plan_review</code>. Reader reconciliation is disabled during these checks so it cannot conceal a writer bypass. The committed-store case uses its public <code>committed_root</code> argument to place the fixture beneath the indexable temporary store; production committed trees keep their existing index policy.</p>
+  <p><strong>Disabling controls.</strong> The test file also replaces publication with a no-op and verifies that both checks become false for every writer. An independent mutation run replacing <code>record_written</code> in its defining module and public re-export fails all eight positive writer cases: <code>8 failed in 1.23s</code>, <code>EXIT=1</code>. Replacing <code>reconcile_foreign_write</code> with a function returning zero fails the foreign-run change-log assertion after the rebuild version: <code>1 failed in 1.23s</code>, <code>EXIT=1</code>. The foreign-write test retains this disabling control in the suite.</p>
+  <table>
+    <thead><tr><th>Measure</th><th>Base</th><th>Implementation head</th><th>Added failures</th></tr></thead>
+    <tbody>
+      <tr><td>Armed node gate</td><td>60 passed in 14.32s; EXIT=0</td><td>77 passed in 14.11s; EXIT=0</td><td>0</td></tr>
+      <tr><td>341 importer files, all_debug</td><td>189 failed, 2638 passed, 8 warnings, 6 errors in 597.47s (0:09:57); EXIT=1</td><td>188 failed, 2640 passed, 8 warnings, 6 errors in 598.91s (0:09:58); EXIT=1</td><td>0 failure or error IDs</td></tr>
+    </tbody>
+  </table>
+  <p><strong>Provenance and limits.</strong> The implementation head is <code>b875035d7aecd7abc51267759991a91a9e35b294</code>. Both importer arms ran as separate <code>all_debug</code> jobs from isolated extractions; each log records the revision, literal command, imported module path, working directory and final exit status. The comparison removes one base-only failure, <code>tests/test_a_request_validates_the_tree_once.py::test_the_review_store_and_state_pages_are_still_read</code>, and adds none. The remaining failures and errors lie outside this node's write scope and were not repaired. Ruff reports no finding at base or head, and all five Python paths pass its format check.</p>
+  <p><strong>Receipts.</strong> The run directory <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261114T100607338350-every-review-record-write-moves-the-index</code> holds <code>reproduction-corrected.log</code>, <code>baseline.log</code>, <code>head.log</code>, <code>negative-control.log</code>, <code>foreign-control.log</code>, <code>importers-base.log</code>, <code>importers-head.log</code>, <code>importer-delta.json</code> and <code>lint.log</code>. The final manifest carries the gate at the final committed head. Coordinator review, integration and merged-head verification remain outside this worker's authority.</p>
+</article>
+</body>
+</html>

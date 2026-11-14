@@ -1,0 +1,57 @@
+{
+  "absent": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/crew/recovery_watch.py:281",
+    "reckon/crew/recovery_watch.py:298",
+    "reckon/crew/recovery_watch.py:330",
+    "reckon/budget.py:2210",
+    "reckon/crew/picker/snapshot.py:1482",
+    "reckon/crew/resumption.py:2902"
+  ],
+  "completed_at": "2026-11-14T19:35:56.210Z",
+  "dispatched_at": "2026-11-14T19:19:54Z",
+  "findings": [
+    {
+      "file": "reckon/crew/resumption.py",
+      "line": "554",
+      "severity": "non-blocking",
+      "text": "deleting _lane_probe_lock leaves four blank lines at 554-557 before _read_lane_probe_cache and again at 2407-2410 before _write_sweep_status, so ruff format --check passes on the base file and fails on the head file; the commit newly fails the repository's stated formatting target on a path it stages."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "verified 5 production call sites (and the path use) that reach the changed functions.",
+    "diff": "read commit by commit; 2 commits, 5 files, all inside the declared scope, migrating three locks and adding one test file plus its landing fragment.",
+    "done_when": "the applicable measures are the guard passing with the three rows removed, a second-process record-lock holder test per site, and a base-revision negative control; gates/head-suite-template.log (58 passed) and negative-control-base-revision.log (3 failed, EXIT=1) carry all three.",
+    "goal": "the goal is to move the git-answer store, lane-probe and sweep-status locks onto the cross-node lock; reckon/crew/recovery_watch.py:243 and reckon/crew/resumption.py:703,2438 do exactly that and nothing else.",
+    "manifest": "read; it records commits 9e902a03b1 and 3766d298f9, a green head arm (58 passed) and base arm (55 passed), a zero added-failure delta, and the negative-control log path.",
+    "write_paths": "read the run's declared write paths and the two commit stats; all five changed paths are inside them."
+  },
+  "justifications": {
+    "durability": "reverting any of the three sites to bare flock reddens tests/test_recovery_store_locks_hold_across_nodes.py::waits_for_holder, which the base-revision negative control shows by failing all three at ffcba6679c.",
+    "evidence": "tests/test_recovery_store_locks_hold_across_nodes.py holds a second-process record-lock holder in front of each site and the logged base run fails all three (gates head-suite-template.log 58 passed, negative-control-base-revision.log 3 failed), so the measure is shown to discriminate rather than merely pass.",
+    "fit": "reckon/crew/resumption.py:554-557 and :2407-2410 leave four blank lines where the deleted context managers stood, so ruff format --check fails on the head file where it passed on the base file.",
+    "goal_fidelity": "reckon/crew/recovery_watch.py:243 and reckon/crew/resumption.py:703 and :2438 each hand over to reckon.node_exclusive_lock.exclusive_lock, so all three locks the goal names take the cross-node primitive.",
+    "reuse": "each site extends the repository's existing reckon/node_exclusive_lock.exclusive_lock owner and the two single-caller wrappers are deleted; the cross-process holder helper has no prior owner (tests/test_a_plan_state_lock_holds_on_every_node.py:_posix_lock_attempt only takes and releases in one shot, it does not hold a lock across a window).",
+    "scope_discipline": "every path in the two commits (reckon/crew/recovery_watch.py, reckon/crew/resumption.py, tests/test_every_shared_home_lock_holds_across_nodes.py, tests/test_recovery_store_locks_hold_across_nodes.py, the evidence fragment) is inside the node's declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is to move the git-answer store, lane-probe and sweep-status locks onto the cross-node lock; reckon/crew/recovery_watch.py:243 and reckon/crew/resumption.py:703,2438 do exactly that and nothing else.\nVERDICT done_when: the applicable measures are the guard passing with the three rows removed, a second-process record-lock holder test per site, and a base-revision negative control; gates/head-suite-template.log shows 58 passed and negative-control-base-revision.log shows 3 failed with EXIT=1.\nVERDICT write_paths: read the run's declared write paths and the two commit stats; all five changed paths are inside them.\nVERDICT manifest: read; it records commits 9e902a03b1 and 3766d298f9, a green head arm (58 passed), a green base arm (55 passed), a zero added-failure delta, and the negative-control log path.\nVERDICT diff: read commit by commit; 2 commits touching 5 files, all inside the declared scope, migrating three locks and adding one test file plus its landing fragment.\nCALL_SITES: reckon/crew/recovery_watch.py:281, reckon/crew/recovery_watch.py:298, reckon/crew/recovery_watch.py:330, reckon/budget.py:2210, reckon/crew/picker/snapshot.py:1482, reckon/crew/resumption.py:2902\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/recovery_watch.py:243 and reckon/crew/resumption.py:703,2438 each hand over to the cross-node primitive the goal names.\nSCORE evidence: 19\nJUSTIFICATION evidence: tests/test_recovery_store_locks_hold_across_nodes.py drives a second-process record-lock holder at each site and the logged base run fails all three.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in the two commits is inside the node's declared write paths.\nSCORE durability: 19\nJUSTIFICATION durability: reverting a site to bare flock reddens tests/test_recovery_store_locks_hold_across_nodes.py::waits_for_holder, shown by the base-revision negative control.\nSCORE fit: 13\nJUSTIFICATION fit: reckon/crew/resumption.py:554-557 and :2407-2410 leave four blank lines each, so ruff format --check fails on the head file where it passed at the base.\nSCORE reuse: 19\nJUSTIFICATION reuse: each site extends reckon/node_exclusive_lock.exclusive_lock and deletes the two single-caller wrappers; the cross-process holder helper has no prior owner.\nFINDING reckon/crew/resumption.py:554 non-blocking: deleting _lane_probe_lock leaves four blank lines at 554-557 before _read_lane_probe_cache and again at 2407-2410 before _write_sweep_status, so ruff format --check fails on the head file where it passed at the base; the commit newly fails the repository's stated formatting target on a path it stages.",
+  "review_run_id": "r-20261114T191620527558-review-of-git-answer-and-resumption-locks-cross-node-3766d298f9ef",
+  "reviewed_base_sha": "ffcba6679c7cb5812709911217e6cf43ebbe9870",
+  "reviewed_head_sha": "3766d298f9ef572879b95d0d7b2bf2be14cca8b0",
+  "reviewed_run_id": "r-20261114T140151869239-git-answer-and-resumption-locks-cross-node",
+  "scores": {
+    "durability": 19,
+    "evidence": 19,
+    "fit": 13,
+    "goal_fidelity": 20,
+    "reuse": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-14T19:37:56.581693+00:00",
+  "total": 110
+}

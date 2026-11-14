@@ -1,0 +1,16 @@
+<section id="wave3-codex-anchored-the-crew-does-its-own-bookke-s7-reopening">
+<h3>Reopen a halted run with its existing scope</h3>
+<p>Reopening accepts a halted or completed run without requiring another write path. An explicit grant still widens the scope. Reopening starts no worker; the caller's subsequent resume carries the advice and records the resumed attempt. A live process or an in-flight resume is refused before preparing the delivery.</p>
+<p>The base reproduction returned <code>--reopen needs --write-path</code> and <code>--reopen requires a completed run</code>. Four regression cases cover stopped and completed runs resuming with unchanged scope, a stopped run receiving another path, and a live-worker refusal. The resume cases reuse the recorded-run fixture and launcher seam, retaining <code>attempt &gt; prior_attempt</code>.</p>
+<table>
+<thead><tr><th>Measure</th><th>Recorded result</th></tr></thead>
+<tbody>
+<tr><td>Scoped base at <code>ea71db9a33c6</code></td><td>51 passed</td></tr>
+<tr><td>Scoped repaired head at <code>d9efc6416ae3</code></td><td>55 passed</td></tr>
+<tr><td>Completed-only rule restored</td><td>2 failed, 2 passed; stopped reopen refused</td></tr>
+<tr><td>Base resumption module restored</td><td>3 failed, 1 passed; reopening without a path refused</td></tr>
+<tr><td>Initial importer comparison, 104 base / 105 head modules</td><td>Base: 35 failed, 1185 passed, 3 errors. Repaired head: 34 failed, 1190 passed, 3 errors. Zero added failing ids.</td></tr>
+</tbody>
+</table>
+<p>All revision arms and mutations run in separate all_debug jobs from git archives extracted into job-local temporary trees, with the four follower variables unset. Logs retain the literal commands, imported module paths, resolved working directories and exit statuses. Initial importer discovery was rerun with the project interpreter after system Python could not parse the source; no importer test had started in those discovery failures. The manifest carries the final committed-head verification and scoped Ruff receipts. Existing importer failures are returned to the coordinator without out-of-scope edits.</p>
+</section>

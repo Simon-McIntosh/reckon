@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-review-dies-where-nobody-is-looking">
+  <meta name="plan-evidence-for" content="a-review-dies-where-nobody-is-looking">
+  <title>A finished review releases its scope claim | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <header>
+      <p class="eyebrow">Execution evidence &middot; fragment</p>
+      <h1>A finished review releases its scope claim</h1>
+      <p class="lead">A review run declares the reviewed run's <code>review-records/&lt;run&gt;.json</code>, so a follow-up review of the same run names that same path. When the earlier review had delivered its record but had not been promoted, its claim fenced that path, because the review's recorded worktree is reclaimed when its worker ends and the claim then reads as work nobody can inspect. The second dispatch was refused with a scope conflict and the operators ended the finished review by hand six times. A delivered review now ends itself through the same self-promotion its own sweep reaches, before the later review's scope is judged, and a reviewer that has not delivered keeps its claim.</p>
+    </header>
+
+    <section id="wave3-omp-local-a-review-dies-where-nobody-i-s16-the-defect">
+      <h2>The defect: a delivered review's claim outlives its work</h2>
+      <p>Measured against the base revision <code>a4ef64e348</code> with the gate copied into a scratch tree: a review run whose record parses, whose manifest reads complete and whose worker has exited still fences <code>review-records/&lt;reviewed run&gt;.json</code>, because <code>claim_disposition</code> reads a recorded worktree that is gone as work it cannot inspect. The follow-up review is refused <code>scope-conflict</code> naming that holder.</p>
+    </section>
+
+    <section id="wave3-omp-local-a-review-dies-where-nobody-i-s16-what-changed">
+      <h2>What changed</h2>
+      <ul>
+        <li><code>reckon/crew/recovery_review_dispatch.py</code>: <code>_release_delivered_review_claim</code> walks the project's live pointers, keeps those whose declared paths meet this dispatch's composed record paths and whose claim still binds, and ends each through <code>promote_review_run_itself</code> &mdash; the promotion the review-self sweep already reaches, which files the record and deletes the pointer. It runs in <code>_dispatch_composed_review</code> before the scope check, never for a dry run, and the launched report carries <code>released_reviews</code>.</li>
+        <li><code>tests/test_a_finished_review_releases_its_scope_claim.py</code> is the gate.</li>
+      </ul>
+    </section>
+
+    <section id="wave3-omp-local-a-review-dies-where-nobody-i-s16-the-gate">
+      <h2>The gate</h2>
+      <ul>
+        <li><code>test_a_finished_review_releases_its_record_path</code> &mdash; a review of the run is delivered (record parses, manifest complete, exit recorded, dead pid, reclaimed worktree). The follow-up review of the same run at a later head is dispatched: it is admitted, the finished review's pointer is gone, <code>released_reviews</code> names it, and the stored record's bytes are unchanged.</li>
+        <li><code>test_a_working_review_keeps_its_claim</code> &mdash; the same shape with the review's manifest still in progress: the second dispatch is refused, the reviewed run's dispatch record carries <code>status: refused</code> with the claim naming the working review, and that pointer is left in place.</li>
+      </ul>
+      <table>
+        <thead><tr><th>Arm</th><th>Result</th><th>Log</th></tr></thead>
+        <tbody>
+          <tr><td>Gate at head <code>fcb8e3c959</code></td><td>2 passed (<code>EXIT=0</code>)</td><td><code>logs/after-arm.log</code></td></tr>
+          <tr><td>Negative control: the same gate at base <code>a4ef64e348</code>, in a scratch tree</td><td>1 failed, 1 passed (<code>EXIT=1</code>) &mdash; the admitted case fails because the second dispatch meets the delivered review's live claim</td><td><code>logs/base-arm.log</code></td></tr>
+        </tbody>
+      </table>
+      <p>Logs live under <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261114T095016967708-wave3-omp-local-a-review-dies-where-nobody-i-s16/</code>. Each begins with the revision, the tree and the literal command, and ends with a bare <code>EXIT=</code> line. <code>ruff check</code> and <code>ruff format --check</code> report no finding on the staged paths.</p>
+    </section>
+
+    <section id="wave3-omp-local-a-review-dies-where-nobody-i-s16-negative-control">
+      <h2>Negative control</h2>
+      <p>The base revision is the declared control. Its tree was extracted from <code>git archive a4ef64e348</code> into a scratch directory and the delivered gate copied into it; running it there fails the admitted case with the scope conflict naming <code>r-20261012T130000000000-review-of-reviewed-run</code>, which is the defect this change removes, and the working-review case passes because keeping the claim is the behaviour the base already has.</p>
+    </section>
+  </main>
+</body>
+</html>

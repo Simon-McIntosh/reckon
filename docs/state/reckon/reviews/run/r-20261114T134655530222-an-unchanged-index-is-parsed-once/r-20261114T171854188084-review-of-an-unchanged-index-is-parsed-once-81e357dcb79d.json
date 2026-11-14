@@ -1,0 +1,69 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 9,
+  "call_sites": [
+    "reckon/crew/review_records.py:77",
+    "reckon/crew/review_records.py:173",
+    "reckon/crew/review_records.py:1740",
+    "reckon/crew/review_records.py:2418",
+    "reckon/crew/review_records.py:2424",
+    "reckon/crew/review_records.py:2447",
+    "reckon/crew/review_records.py:2457",
+    "reckon/crew/recovery_memo.py:446",
+    "reckon/crew/review.py:4041"
+  ],
+  "completed_at": "2026-11-14T18:04:46.823Z",
+  "dispatched_at": "2026-11-14T17:43:18Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/the-monitor-reads-each-fact-once/an-unchanged-index-is-parsed-once.html",
+      "line": "24",
+      "severity": "non-blocking",
+      "text": "non-blocking: the \"What landed\" paragraph still describes the cache the head replaced -- a mapping the module keeps keyed on inode, size and mtime, with every writer replacing the cache entry as it persists -- while reckon/crew/review_records.py:2029-2034 now asks file_memo.memoized and _persist_index_document touches no entry, so a reader who stops at that paragraph is told a mechanism the tree does not contain; the repair paragraph corrects it only in general terms."
+    },
+    {
+      "file": "docs/evidence/fragments/the-monitor-reads-each-fact-once/an-unchanged-index-is-parsed-once.html",
+      "line": "34",
+      "severity": "non-blocking",
+      "text": "non-blocking: the Logs paragraph says every cited log is headed with its tree, revision, working directory, literal command and imported module path, but logs/repair-suite-base.log, logs/repair-suite-after.log and logs/negative-control-repair.log carry no module line, and the manifest's measurement_module module field names the population arm's tree rather than the tree these gate arms ran in."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 9 production call site(s)",
+    "diff": "read all six commits against base 869274db; they add a per-process parse cache, replace it with reckon.file_memo.memoized plus a read-only handout, re-check the code stamp on a held document, and record evidence -- three files, 210 insertions and 12 deletions, every path inside the fence.",
+    "done_when": "the done_when names tests/test_an_unchanged_index_is_parsed_once.py measuring that 100 calls outside a tick parse once, that the first read after record_written parses once more and returns the new entry, and that the base parses at least 100 times; tests/test_an_unchanged_index_is_parsed_once.py:94 and :104 are that measure, and logs/negative-control.log ends EXIT=1 with \"100 reads of an unchanged index document parsed it 100 times\".",
+    "goal": "the goal is to parse an unchanged review index document once per process, keyed on the file's inode, size and mtime; reckon/crew/review_records.py:2015-2034 asks reckon.file_memo.memoized for _index_document_path(directory), and reckon/file_memo.py:281-293 derives that key from (st_dev, st_ino, st_size, st_mtime_ns, st_ctime_ns), so a repeat read over an unchanged file costs one stat exactly as the goal states.",
+    "manifest": "read; status complete, six commits, baseline_suite 52 passed EXIT=0 at 47fa6155 and after_suite 54 passed EXIT=0 at 81e357db, negative_control_log naming logs/negative-control-repair.log with 3 failed EXIT=1, and `crew check --manifest --run r-20261114T134655530222-an-unchanged-index-is-parsed-once` returns ok:true with no findings.",
+    "write_paths": "the run's fence was reckon/crew/review_records.py, tests/test_an_unchanged_index_is_parsed_once.py, the evidence fragment and a figures document's directory; `git diff --name-only 869274dbfa..81e357dcb7` names only the first three, so the diff stays inside the declared scope and no figure was written."
+  },
+  "justifications": {
+    "durability": "tests/test_an_unchanged_index_is_parsed_once.py:104 reddens when a write leaves a held document answering (0 parses or a missing entry), :125 reddens when the read stops routing through the shared memo, and :132 reddens with DID NOT RAISE at the repair base, which logs/negative-control-repair.log shows all three of; the code-stamp variant is still guarded only by the pre-existing tests/test_the_review_store_index_re_reads_only_what_changed.py.",
+    "evidence": "logs/repair-suite-base.log records 52 passed EXIT=0 at 47fa6155 and logs/repair-suite-after.log 54 passed EXIT=0 at 81e357db, but those two arms ran in place under cwd /dev/shm/repair-arms-1942 and /dev/shm/head-arm rather than the all_debug sbatch job the done_when names, and their headers carry no imported-module line.",
+    "fit": "reckon/crew/review_records.py:2029-2034 uses the read_only_region/memoized pairing this module already reaches file_memo for at review_records.py:191, and the added names (kind \"index_document\", _fresh_index_document) carry no plan, ticket or version label.",
+    "goal_fidelity": "reckon/crew/review_records.py:2029-2034 hands the parse to reckon.file_memo.memoized under _index_document_path(directory), whose key reckon/file_memo.py:281-293 derives from the file's stat identity, which is the goal's mechanism and a superset of the three fields it names.",
+    "reuse": "the read routes through reckon/file_memo.py:358 memoized, the owner this repository already uses for a stat-keyed parse, and the hand-rolled mapping the first commit added is absent from the head (no _PARSED_INDEX_DOCUMENTS remains), so the addition extends the owner rather than duplicating it.",
+    "scope_discipline": "`git diff --name-only 869274dbfa..81e357dcb7` names reckon/crew/review_records.py, tests/test_an_unchanged_index_is_parsed_once.py and the evidence fragment, which is exactly the declared scope, and it carries no plan, sprint or index state."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is to parse an unchanged review index document once per process, keyed on the file's inode, size and mtime; reckon/crew/review_records.py:2015-2034 asks reckon.file_memo.memoized for _index_document_path(directory), and reckon/file_memo.py:281-293 derives that key from (st_dev, st_ino, st_size, st_mtime_ns, st_ctime_ns), so a repeat read over an unchanged file costs one stat exactly as the goal states.\nVERDICT done_when: the done_when names tests/test_an_unchanged_index_is_parsed_once.py measuring that 100 calls outside a tick parse once, that the first read after record_written parses once more and returns the new entry, and that the base parses at least 100 times; tests/test_an_unchanged_index_is_parsed_once.py:94 and :104 are that measure, and logs/negative-control.log ends EXIT=1 with \"100 reads of an unchanged index document parsed it 100 times\".\nVERDICT write_paths: the run's fence was reckon/crew/review_records.py, tests/test_an_unchanged_index_is_parsed_once.py, the evidence fragment and a figures document's directory; `git diff --name-only 869274dbfa..81e357dcb7` names only the first three, so the diff stays inside the declared scope and no figure was written.\nVERDICT manifest: read; status complete, six commits, baseline_suite 52 passed EXIT=0 at 47fa6155 and after_suite 54 passed EXIT=0 at 81e357db, negative_control_log naming logs/negative-control-repair.log with 3 failed EXIT=1, and `crew check --manifest --run r-20261114T134655530222-an-unchanged-index-is-parsed-once` returns ok:true with no findings.\nVERDICT diff: read all six commits against base 869274db; they add a per-process parse cache, replace it with reckon.file_memo.memoized plus a read-only handout, re-check the code stamp on a held document, and record evidence -- three files, 210 insertions and 12 deletions, every path inside the fence.\nCALL_SITES: reckon/crew/review_records.py:77, reckon/crew/review_records.py:173, reckon/crew/review_records.py:1740, reckon/crew/review_records.py:2418, reckon/crew/review_records.py:2424, reckon/crew/review_records.py:2447, reckon/crew/review_records.py:2457, reckon/crew/recovery_memo.py:446, reckon/crew/review.py:4041\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/review_records.py:2029-2034 hands the parse to reckon.file_memo.memoized under _index_document_path(directory), whose key reckon/file_memo.py:281-293 derives from the file's stat identity, which is the goal's mechanism and a superset of the three fields it names.\nSCORE evidence: 16\nJUSTIFICATION evidence: logs/repair-suite-base.log records 52 passed EXIT=0 at 47fa6155 and logs/repair-suite-after.log 54 passed EXIT=0 at 81e357db, but those two arms ran in place under cwd /dev/shm/repair-arms-1942 and /dev/shm/head-arm rather than the all_debug sbatch job the done_when names, and their headers carry no imported-module line.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: `git diff --name-only 869274dbfa..81e357dcb7` names reckon/crew/review_records.py, tests/test_an_unchanged_index_is_parsed_once.py and the evidence fragment, which is exactly the declared scope, and it carries no plan, sprint or index state.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_an_unchanged_index_is_parsed_once.py:104 reddens when a write leaves a held document answering (0 parses or a missing entry), :125 reddens when the read stops routing through the shared memo, and :132 reddens with DID NOT RAISE at the repair base, which logs/negative-control-repair.log shows all three of; the code-stamp variant is still guarded only by the pre-existing tests/test_the_review_store_index_re_reads_only_what_changed.py.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/crew/review_records.py:2029-2034 uses the read_only_region/memoized pairing this module already reaches file_memo for at review_records.py:191, and the added names (kind \"index_document\", _fresh_index_document) carry no plan, ticket or version label.\nSCORE reuse: 20\nJUSTIFICATION reuse: the read routes through reckon/file_memo.py:358 memoized, the owner this repository already uses for a stat-keyed parse, and the hand-rolled mapping the first commit added is absent from the head (no _PARSED_INDEX_DOCUMENTS remains), so the addition extends the owner rather than duplicating it.\nFINDING docs/evidence/fragments/the-monitor-reads-each-fact-once/an-unchanged-index-is-parsed-once.html:24 non-blocking: the \"What landed\" paragraph still describes the cache the head replaced -- a mapping the module keeps keyed on inode, size and mtime, with every writer replacing the cache entry as it persists -- while reckon/crew/review_records.py:2029-2034 now asks file_memo.memoized and _persist_index_document touches no entry, so a reader who stops at that paragraph is told a mechanism the tree does not contain; the repair paragraph corrects it only in general terms.\nFINDING docs/evidence/fragments/the-monitor-reads-each-fact-once/an-unchanged-index-is-parsed-once.html:34 non-blocking: the Logs paragraph says every cited log is headed with its tree, revision, working directory, literal command and imported module path, but logs/repair-suite-base.log, logs/repair-suite-after.log and logs/negative-control-repair.log carry no module line, and the manifest's measurement_module module field names the population arm's tree rather than the tree these gate arms ran in.\n",
+  "review_run_id": "r-20261114T171854188084-review-of-an-unchanged-index-is-parsed-once-81e357dcb79d",
+  "reviewed_base_sha": "869274dbfaa088e78ce8b7292cca87732b425a45",
+  "reviewed_head_sha": "81e357dcb79d5edbcafa0ad3dd5fb2c5b47132d7",
+  "reviewed_run_id": "r-20261114T134655530222-an-unchanged-index-is-parsed-once",
+  "scores": {
+    "durability": 19,
+    "evidence": 16,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-14T18:25:50.450227+00:00",
+  "total": 113
+}

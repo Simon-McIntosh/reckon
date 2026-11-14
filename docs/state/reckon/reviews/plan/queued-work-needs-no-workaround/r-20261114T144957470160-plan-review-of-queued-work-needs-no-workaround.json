@@ -1,0 +1,76 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-14T15:10:34Z",
+  "dispatched_at": "2026-11-14T14:57:24Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/queued-work-needs-no-workaround.html:256",
+      "id": "reuse_search-1",
+      "reason": "replace the unsupported no-op premise and the assumed-red baseline with the specific boundary or data shape that still fails; preserve the supported paths as regression controls instead of commissioning another operation or another delta rule.",
+      "text": "Two claims of missing behavior already have working prior art: the same-failure red-base case selected as section 13's mandatory failing baseline is admitted by reckon/crew/promotion_evidence.py:1964, and section 14's claim at docs/plans/queued-work-needs-no-workaround.html:262 that no op scopes a decision is contradicted by the existing set decisions.<key>.sections branch at reckon/_store.py:3819 and its validation owner at reckon/_store.py:4250; focused existing tests passed both acceptance paths and their invalid-input refusals",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/queued-work-needs-no-workaround.html:152",
+      "id": "reuse_search-2",
+      "reason": "add a whole-plan case with all sections declared done but one delivered head absent from the integration branch, require it to remain held, and require release after that head lands, so the shortcut cannot launch downstream work without its upstream product.",
+      "text": "Releasing a whole-plan wait solely because all sections say done or descoped would bypass the delivered-but-unlanded hold already enforced for section waits by reckon/crew/admission/readiness.py:535 and its callers at reckon/crew/admission/readiness.py:826, reckon/crew/admission/readiness.py:901, reckon/crew/admission/readiness.py:914 and reckon/crew/admission/readiness.py:1276; reckon/roadmap.py:740 already owns whole-plan completion semantics, while admission's plan branch at reckon/crew/admission/readiness.py:1268 currently judges only lifecycle status",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/queued-work-needs-no-workaround.html:109",
+      "id": "deep_module-1",
+      "reason": "extend the endpoint and its gate to require identical delivered-test selection and review coverage for the same diff with absent, accurate and misleading declarations; otherwise removing refusals makes work promotable while its advisory hint can still exclude the changed code and tests from verification.",
+      "text": "Section 4 proves that a node declaring a.py may change b.py and promote, but does not require the suite and review to follow b.py: the existing deep scope owner still returns declared paths in reckon/crew/delivery_scope.py:48, prefers declared tests in reckon/crew/delivery_scope.py:62, and builds the review neighborhood from that selection in reckon/crew/delivery_scope.py:93; reckon/crew/promotion_records.py:750 supplies the declaration-only test list",
+      "type": "deep_module",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/queued-work-needs-no-workaround.html:60",
+      "id": "interface_budget-1",
+      "reason": "each adding section must state its own interface tradeoff, preferably extending the existing priority representation and repair action, or explicitly explain why the added surface cannot replace anything.",
+      "text": "The surface-addition census is section 2's queue-priority dispatch option at docs/plans/queued-work-needs-no-workaround.html:60 and section 11's suite-arm repair verb/options at docs/plans/queued-work-needs-no-workaround.html:218; neither section accounts for retirement, merger or necessary net growth against the supplied public_definitions 2693, cli_options 488, mcp_views 15 and refusal_families 25; existing priority storage is owned by reckon/crew/queue_edit.py:490 and status repair by reckon/crew/runs.py:2386",
+      "type": "interface_budget",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "1ad29c422cfb1131f78e07671c5fc308604b8d10",
+  "plan_fingerprint": "aff7fe0f370884ba42382ac341356fd3d16b4571a8556e53a709fe6da5908530",
+  "plan_slug": "queued-work-needs-no-workaround",
+  "plan_version": 0,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261114T144957470160-plan-review-of-queued-work-needs-no-workaround",
+  "reviewed_blob_sha": "e52c119d09a2137e961bb0ed3610fb0ef7c7d855",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "a finding \u2014 reckon/crew/delivery_scope.py:48 is the existing owner of effective delivery scope, but its declaration-first branches would keep narrowing verification after section 4 makes declarations advisory.",
+    "duplicate_owner": "pass \u2014 the reuse map identifies existing owners for path resolution, request ordering, dependency readiness, reservations, obligations, review storage and plan mutation; no endpoint requires a second owner of those mechanisms.",
+    "interface_budget": "a finding \u2014 public_definitions 2693, cli_options 488, mcp_views 15, refusal_families 25, supplied at 2026-11-14T14:49:57.567798Z; sections 2 and 11 add dispatch-priority and suite-arm-repair surface without naming what they retire or merge, or why nothing can be.",
+    "reuse_search": "findings \u2014 existing decision-scope writes in reckon/_store.py:3819 and red-base admission in reckon/crew/promotion_evidence.py:1964 already implement parts described as absent, while whole-plan release must preserve the landing check in reckon/crew/admission/readiness.py:535.",
+    "thin_wrapper": "pass \u2014 the endpoints can extend dispatch_batch.section_derivation, the existing stdout boundary, delivery_scope, admission readiness, repair composition and the existing edit operations without introducing a forwarding layer."
+  },
+  "section_digests": {
+    "_document": "40e572c9c579bff980c10d9d2af457a83dabe1e3eeae56b554271e0f7c76918d",
+    "s1": "965e293bc718e24bc6e0b306c2e31f4694e8d3d1f2aafc97e86aac0ccdc0eb46",
+    "s10": "f6c044e131f6bfaf0da7ea2f00983d519b46b93a28423c69395e81a0f5ecdec8",
+    "s11": "4dc7e37e7c9ff6d074c540a19ff75d7db784999f7b811a999a052a00fcbacb39",
+    "s12": "465a1fdddaeefa553610e87a965cefdc6fa0adc8ad4c048f6d6c999aab0189d8",
+    "s13": "8cdf1aaa77a692163d0b36bc751a206e8f6c96460d0e44b85d9feb5a76f99659",
+    "s14": "ced904b84d66ad66ce41c4a6cc68f8ded5e1538e71ac2c66565f001aeb979274",
+    "s2": "872b1ec9c49f32d972d450016002b1265e846673cd1aef42c41aaccc50583998",
+    "s3": "945aa882e80e72c109b2134e2ceebb5cb80a1d269325624f3780ad793cb88440",
+    "s4": "0116c3c4a34b6e607b2564cc4300d3784ba5d7596a0000d0b59c40e1801dcd1a",
+    "s5": "81cc22db14da433d65d2cbfd466e233d778e9b5d50552dc7a013e94a3b25ad15",
+    "s6": "a2c21c95b666e89f9317aade42e7d9f9b3b46c3b3897e990c73256ad56dd5a54",
+    "s7": "e3b57f9eec7788e78e87778466c4b8e0e18338b86ca18feee8dda6bfd4cbcb07",
+    "s8": "c26d50fb17e8764e8bd397242f2dc8b7bc4a0aef3a37e869b29980bd2cd8d5c5",
+    "s9": "504687d358c491054bf80ee2a0c6805a6f3d245b232c1a3f9198487b9efeba0d"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-14T17:14:45.937805+00:00",
+  "total": null
+}

@@ -236,7 +236,9 @@ def admit_until_stopped(
 
     _adopt_launched_workers_from_reexec()
     promotion_width, _ = _promotion_settings(flight.resolve().config)
-    promotions = PromotionService(width=promotion_width)
+    # The stamp is what the drain watches to stop starting work on code the
+    # service is about to replace in place.
+    promotions = PromotionService(width=promotion_width, code_stamp=_admit_code_stamp)
     admission_options: dict[str, Any] = {"lane": lane}
     if launcher is not None:
         admission_options["launcher"] = launcher
@@ -275,6 +277,8 @@ def admit_until_stopped(
     passes = 0
     code_stamp = _admit_code_stamp()
     worker = _landing._LandingWorker(lander)
+    # The queue refills itself between passes.
+    promotions.start_refill()
     try:
         while True:
             with service_pass():
@@ -319,4 +323,5 @@ def admit_until_stopped(
     except KeyboardInterrupt:
         return {"passes": passes}
     finally:
+        promotions.stop_refill()
         worker.stop()

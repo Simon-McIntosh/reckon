@@ -2,12 +2,11 @@
 
 from __future__ import annotations
 
-import fcntl
 import hashlib
 import json
 import subprocess
 from collections.abc import Callable, Iterator, Mapping
-from contextlib import contextmanager
+from contextlib import ExitStack, contextmanager
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -17,6 +16,7 @@ from reckon import flight
 from reckon._store import write_json_atomically
 from reckon._timestamps import parse_utc
 from reckon.crew import obligation_snapshot
+from reckon.node_exclusive_lock import LockHeld, exclusive_lock
 
 # The probe is one headless request through the lane's own command. Its prompt
 # is one line, and its bound is short because a refused model name fails fast
@@ -282,23 +282,17 @@ def _refresh_lock() -> Iterator[bool]:
     The lock makes the refresh one fetch however many projects are watched: a
     producer that cannot take it is another's fetch already in flight, so it
     reads the snapshot on disk instead of fetching. The lock is released when
-    the handle closes, including after a fetch that raised.
+    the block ends, including after a fetch that raised.
     """
     root = _root()
     root.mkdir(parents=True, exist_ok=True)
-    handle = (root / "refresh.lock").open("a+")
-    try:
+    with ExitStack() as held:
         try:
-            fcntl.flock(handle.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
-        except BlockingIOError:
+            held.enter_context(exclusive_lock(root / "refresh.lock", blocking=False))
+        except LockHeld:
             yield False
             return
-        try:
-            yield True
-        finally:
-            fcntl.flock(handle.fileno(), fcntl.LOCK_UN)
-    finally:
-        handle.close()
+        yield True
 
 
 def _probe_model_name(catalog_id: str) -> str:

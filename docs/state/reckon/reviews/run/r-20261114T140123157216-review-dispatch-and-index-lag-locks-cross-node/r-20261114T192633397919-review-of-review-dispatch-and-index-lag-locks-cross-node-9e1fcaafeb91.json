@@ -1,0 +1,60 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 6,
+  "call_sites": [
+    "reckon/crew_dispatch_commands.py:3163 dispatch_review_for_run",
+    "reckon/crew/recovery_watch.py:3785 dispatch_review_for_run",
+    "reckon/crew/plan_review.py:4565 dispatch_review_for_run",
+    "reckon/crew/recovery_review_acceptance.py:1224 dispatch_review_for_run",
+    "reckon/crew/obligations.py:3976 _index_lag_notice",
+    "reckon/crew/obligation_snapshot.py:1889 _index_lag_notice"
+  ],
+  "completed_at": "2026-11-14T19:46:11.593Z",
+  "dispatched_at": "2026-11-14T19:30:12Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261114T140123157216-review-dispatch-and-index-lag-locks-cross-node/manifest.md",
+      "line": "13",
+      "severity": "non-blocking",
+      "text": "non-blocking: retry_failures is empty although the baseline arm's first attempt failed with 1 failed, 52 passed, 2 errors, EXIT=1 (arms-submit-1315790.log) and the focused arm's first attempt failed with 1 failed, 18 passed, EXIT=1 (focused-submit-1315802.log) before green reruns, so a reader cannot tell whether the flake is unrelated scaffolding or an instability in the modules under test."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 6 production call site(s)",
+    "diff": "read against base db9288122b commit by commit; one commit, five files, 205 insertions and 31 deletions, all inside the declared scope, with a conventional subject and a body.",
+    "done_when": "the measure asks the guard to pass with both rows removed, a second-process record-lock holder to move the dispatch on without launching, and the base revision to fail that same test; tests/test_every_shared_home_lock_holds_across_nodes.py:67 drops both rows, tests/test_review_dispatch_lock_holds_across_nodes.py:62 starts the holder, and the recorded base run fails at tests/test_review_dispatch_lock_holds_across_nodes.py:101 with EXIT=1.",
+    "goal": "the node's goal is to move the plan-review dispatch lock and the index-lag seen-set lock onto the cross-node lock, and the diff takes reckon.node_exclusive_lock.exclusive_lock at reckon/crew/recovery_review_dispatch.py:2653 and reckon/crew/obligations.py:3491.",
+    "manifest": "read; it records status complete, commit 9e1fcaafeb, both suite arms in JSON with log paths, the base arm's module and cwd, the negative-control log, and the out-of-scope review-index docstring, though retry_failures is empty while two first-attempt arm runs failed before their green reruns.",
+    "write_paths": "read the five declared repo paths and the figures-directory grant; the diff touches four declared paths plus the evidence fragment, every one inside the grant, and leaves the figures directory untouched."
+  },
+  "justifications": {
+    "durability": "tests/test_review_dispatch_lock_holds_across_nodes.py:101 asserts report[\"dispatched\"] is False against a record-lock holder, and the base run at negative-control-base-dispatch-lock.log reads that same assertion as True, so it reddens on a reversion to flock.",
+    "evidence": "after-suite.log reads 57 passed EXIT=0 at 9e1fcaafeb and baseline-suite.log 55 passed EXIT=0 at db9288122b, and negative-control-base-dispatch-lock.log fails tests/test_review_dispatch_lock_holds_across_nodes.py:101 with EXIT=1 at the base revision.",
+    "fit": "the dispatch keeps the lock take inside an ExitStack at reckon/crew/recovery_review_dispatch.py:2650 so only a LockHeld from the take maps to the moved-on report, matching the surrounding contextmanager idiom.",
+    "goal_fidelity": "reckon/crew/recovery_review_dispatch.py:2653 and reckon/crew/obligations.py:3491 both call exclusive_lock, and both rows are gone from tests/test_every_shared_home_lock_holds_across_nodes.py:67.",
+    "reuse": "both sites call the existing owner reckon/node_exclusive_lock.py:63 exclusive_lock and the diff adds no lock helper of its own.",
+    "scope_discipline": "every path in the diff is inside the declared write paths listed at manifest.md:3, though the manifest lists the guard test at manifest.md:12 without the scope_note the brief asked for."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to move the plan-review dispatch lock and the index-lag seen-set lock onto the cross-node lock, and the diff takes reckon.node_exclusive_lock.exclusive_lock at reckon/crew/recovery_review_dispatch.py:2653 and reckon/crew/obligations.py:3491.\nVERDICT done_when: the measure asks the guard to pass with both rows removed, a second-process record-lock holder to move the dispatch on without launching, and the base revision to fail that same test; tests/test_every_shared_home_lock_holds_across_nodes.py:67 drops both rows, tests/test_review_dispatch_lock_holds_across_nodes.py:62 starts the holder, and the recorded base run fails at tests/test_review_dispatch_lock_holds_across_nodes.py:101 with EXIT=1.\nVERDICT write_paths: read the five declared repo paths and the figures-directory grant; the diff touches four declared paths plus the evidence fragment, every one inside the grant, and leaves the figures directory untouched.\nVERDICT manifest: read; it records status complete, commit 9e1fcaafeb, both suite arms in JSON with log paths, the base arm's module and cwd, the negative-control log, and the out-of-scope review-index docstring, though retry_failures is empty while two first-attempt arm runs failed before their green reruns.\nVERDICT diff: read against base db9288122b commit by commit; one commit, five files, 205 insertions and 31 deletions, all inside the declared scope, with a conventional subject and a body.\nCALL_SITES: reckon/crew_dispatch_commands.py:3163 dispatch_review_for_run, reckon/crew/recovery_watch.py:3785 dispatch_review_for_run, reckon/crew/plan_review.py:4565 dispatch_review_for_run, reckon/crew/recovery_review_acceptance.py:1224 dispatch_review_for_run, reckon/crew/obligations.py:3976 _index_lag_notice, reckon/crew/obligation_snapshot.py:1889 _index_lag_notice\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/recovery_review_dispatch.py:2653 and reckon/crew/obligations.py:3491 both call exclusive_lock, and both rows are gone from tests/test_every_shared_home_lock_holds_across_nodes.py:67.\nSCORE evidence: 17\nJUSTIFICATION evidence: after-suite.log reads 57 passed EXIT=0 at 9e1fcaafeb and baseline-suite.log 55 passed EXIT=0 at db9288122b, and negative-control-base-dispatch-lock.log fails tests/test_review_dispatch_lock_holds_across_nodes.py:101 with EXIT=1 at the base revision.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every path in the diff is inside the declared write paths listed at manifest.md:3, though the manifest lists the guard test at manifest.md:12 without the scope_note the brief asked for.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_review_dispatch_lock_holds_across_nodes.py:101 asserts report[\"dispatched\"] is False against a record-lock holder, and the base run at negative-control-base-dispatch-lock.log reads that same assertion as True, so it reddens on a reversion to flock.\nSCORE fit: 19\nJUSTIFICATION fit: the dispatch keeps the lock take inside an ExitStack at reckon/crew/recovery_review_dispatch.py:2650 so only a LockHeld from the take maps to the moved-on report, matching the surrounding contextmanager idiom.\nSCORE reuse: 20\nJUSTIFICATION reuse: both sites call the existing owner reckon/node_exclusive_lock.py:63 exclusive_lock and the diff adds no lock helper of its own.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261114T140123157216-review-dispatch-and-index-lag-locks-cross-node/manifest.md:13 non-blocking: retry_failures is empty although the baseline arm's first attempt failed with 1 failed, 52 passed, 2 errors, EXIT=1 (arms-submit-1315790.log) and the focused arm's first attempt failed with 1 failed, 18 passed, EXIT=1 (focused-submit-1315802.log) before green reruns, so a reader cannot tell whether the flake is unrelated scaffolding or an instability in the modules under test.\n",
+  "review_run_id": "r-20261114T192633397919-review-of-review-dispatch-and-index-lag-locks-cross-node-9e1fcaafeb91",
+  "reviewed_base_sha": "db9288122bd023b8fdd7d96b52f732e3ebed861e",
+  "reviewed_head_sha": "9e1fcaafeb91b91837f1ed58e86637123be3c36e",
+  "reviewed_run_id": "r-20261114T140123157216-review-dispatch-and-index-lag-locks-cross-node",
+  "scores": {
+    "durability": 18,
+    "evidence": 17,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-14T19:48:13.114182+00:00",
+  "total": 112
+}

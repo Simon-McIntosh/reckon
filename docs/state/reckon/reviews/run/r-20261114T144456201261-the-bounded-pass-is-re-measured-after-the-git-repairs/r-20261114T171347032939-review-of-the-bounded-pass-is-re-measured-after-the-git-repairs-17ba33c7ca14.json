@@ -1,0 +1,96 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failure_note": "the reviewed node ran unarmed: baseline_suite and after_suite are both null in its manifest and its manifest declares baseline_suite/after_suite absent, so no suite pair exists; the count is recorded as 0 because the review contract requires an integer, and 0 here means no arms ran rather than a measured delta of zero (a reader re-deriving from the manifest's manifest.data.*_suite fields gets None)",
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/evidence.py:694 compose_evidence_record",
+    "reckon/serve.py:2694 serve a cumulative record with its fragments composed in",
+    "reckon/compliance.py:107 glob a verdict's fragment directory",
+    "reckon/doccheck.py:1954 read a record through its composition",
+    "reckon/resources.py:69 EVIDENCE_FRAGMENTS_SUBTREE"
+  ],
+  "completed_at": "2026-11-14T17:44:38.028Z",
+  "dispatched_at": "2026-11-14T17:27:00Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/a-read-answers-inside-its-deadline/the-bounded-pass-is-re-measured-after-the-git-repairs.html",
+      "line": "21",
+      "severity": "non-blocking",
+      "text": "non-blocking: the corpus is quoted as 2,078,176,239 bytes and no log carries that figure \u2014 report/logs/sbatch-probe-1315575.out:6 reads `census_rc=0 files=89225 bytes=2077566239` with the same 89,225 files and 133 pointers, copy-node-1315575.log:17 reads `total size is 2,077,579,390`, and job 1315583's census reads 2,078,176,065 \u2014 so the landed record's own number cannot be reconciled against the evidence it cites, although the 2.6x/2.3x conclusion is unchanged under any of those figures."
+    },
+    {
+      "file": "docs/evidence/fragments/a-read-answers-inside-its-deadline/the-bounded-pass-is-re-measured-after-the-git-repairs.html",
+      "line": "19",
+      "severity": "non-blocking",
+      "text": "non-blocking: the heading states both bounds are still missed while the second bound has no reading at all, which report/report.md:27 records as \"short of five; not claimed met\", so the landed record upgrades an absent reading into a miss that no log supports."
+    },
+    {
+      "file": "docs/evidence/fragments/a-read-answers-inside-its-deadline/the-bounded-pass-is-re-measured-after-the-git-repairs.html",
+      "line": "23",
+      "severity": "non-blocking",
+      "text": "non-blocking: the claim that every log names its revision, corpus and host, shows reckon.__file__ and ends in EXIT= is false for five of the nine files in report/logs \u2014 census.log, both copy-node logs and both sbatch driver logs carry no revision, host or command line and none ends in a bare `EXIT=` line \u2014 though all four measurement logs comply."
+    },
+    {
+      "file": "report/report.md",
+      "line": "72",
+      "severity": "non-blocking",
+      "text": "non-blocking: cites `summary-prof-node-after-j1315583.log`, which does not exist in report/logs, and the counts it would supply sit in report/profile-counts.txt instead, so a reader following the landed fragment to \"the run directory's report/\" is sent to an anchor that cannot be opened."
+    },
+    {
+      "file": "report/profile-counts.txt",
+      "line": "6",
+      "severity": "non-blocking",
+      "text": "non-blocking: records `posix.stat: 0 entries` while the log it summarises reads `calls=259379` for `<built-in method posix.stat>` at report/logs/prof-node-after-j1315583.log:12, so a summariser defect publishes a zero for a quantity visible in the same run; the report quotes the log's figure, so the artifact rather than the report is wrong."
+    },
+    {
+      "file": "report/report.md",
+      "line": "63",
+      "severity": "non-blocking",
+      "text": "non-blocking: plan \u00a742 asks that where \u00a744's store exists in the copied corpus the report give one pass per storage with the store removed for reference, and the report neither states whether that store was present nor gives the reference pass, although the gate firing before any second job may make it inapplicable."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 5 production call site(s)",
+    "diff": "read the single commit 17ba33c7ca against base b4700c0d20, which adds one 26-line evidence fragment under its own anchor id and no product code, no figure and no test.",
+    "done_when": "plan \u00a742 asks for medians, slowest passes, A/A spreads and both verdicts for the bounds plus the four counts and the profile of a miss, and the plan's own early stop fired at 20x the bound, after which report/report.md:117-150 supplies the counts (subprocess.run 174/1.302 s, copy.deepcopy 32,917,347/25.941 s, posix.stat 259,379/21.704 s, _run_file_record 0) and names eight functions carrying the excess, so the gate asserts the miss clause and cannot produce a median or an A/A spread by construction.",
+    "goal": "the goal is to re-measure the bounded pass after the git-call repairs against both bounds, and report/logs/pass-node-after-1-j1315575.log:5-6 records the after revision b4700c0d20 at `call=fleet_state index=1 seconds=200.037` and `index=2 seconds=104.155` against the 10 s bound, so bound 1 is re-measured and missed while bound 2 has no reading because the same pass ends `EXIT=124` at its 420 s timeout inside sweep 1.",
+    "manifest": "read, status complete with commit 17ba33c7ca, changed_paths the one fragment, `tests:` the literal sbatch probe command, test_logs naming the pass log, baseline_suite and after_suite null because the node ran unarmed, and outside_scope naming the before-arm harness defect that its own log corroborates.",
+    "write_paths": "the fence was docs/evidence/fragments/a-read-answers-inside-its-deadline/the-bounded-pass-is-re-measured-after-the-git-repairs.html and the figures directory for the same node, and `git diff --stat b4700c0d20e70b117969d8c907af78d11014ad72..17ba33c7ca1421dee0619802dda9b3b14b728b8e` lists that one file with 26 insertions and nothing else."
+  },
+  "justifications": {
+    "durability": "the diff adds no assertion to audit \u2014 the deliverable is an evidence fragment \u2014 so the record's only guard is that its numbers reconcile with report/logs, and two claims at the-bounded-pass-is-re-measured-after-the-git-repairs.html:19 and :21 do not.",
+    "evidence": "report/logs/pass-node-after-1-j1315575.log:1-8 names its revision, corpus, host, literal command, reckon.__file__ under the arm's tree and `EXIT=124`, but the landed fragment at :21 quotes 2,078,176,239 bytes for a census that report/logs/sbatch-probe-1315575.out:6 records as 2077566239.",
+    "fit": "the fragment follows the shape of its sibling docs/evidence/fragments/a-read-answers-inside-its-deadline/a-cold-read-parses-each-plan-once.html, but sets `plan-verdict` to \"failed\" where the composer's vocabulary at reckon/evidence.py:376 is pass/qualified/fail and indents its closing article, and carries no name the naming rules forbid.",
+    "goal_fidelity": "report/logs/pass-node-after-1-j1315575.log:5 records the after revision's first fleet_state at 200.037 s, so the re-measurement happened, but bound 2 is unmeasured and the landed fragment's heading at docs/evidence/fragments/a-read-answers-inside-its-deadline/the-bounded-pass-is-re-measured-after-the-git-repairs.html:19 states both bounds missed.",
+    "reuse": "the change defines no mechanism; the fragment is consumed by the existing composer at reckon/evidence.py:694, and a search of docs/evidence/fragments (136 plan directories) and of reckon/evidence.py found the fragment shape already owned there.",
+    "scope_discipline": "`git diff --stat b4700c0d20..17ba33c7ca` lists only docs/evidence/fragments/a-read-answers-inside-its-deadline/the-bounded-pass-is-re-measured-after-the-git-repairs.html, the single declared fragment path, and the harness scripts went to the run's report directory that the done_when names."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is to re-measure the bounded pass after the git-call repairs against both bounds, and report/logs/pass-node-after-1-j1315575.log:5-6 records the after revision b4700c0d20 at `call=fleet_state index=1 seconds=200.037` and `index=2 seconds=104.155` against the 10 s bound, so bound 1 is re-measured and missed while bound 2 has no reading because the same pass ends `EXIT=124` at its 420 s timeout inside sweep 1.\nVERDICT done_when: plan \u00a742 asks for medians, slowest passes, A/A spreads and both verdicts for the bounds plus the four counts and the profile of a miss, and the plan's own early stop fired at 20x the bound, after which report/report.md:117-150 supplies the counts (subprocess.run 174/1.302 s, copy.deepcopy 32,917,347/25.941 s, posix.stat 259,379/21.704 s, _run_file_record 0) and names eight functions carrying the excess, so the gate asserts the miss clause and cannot produce a median or an A/A spread by construction.\nVERDICT write_paths: the fence was docs/evidence/fragments/a-read-answers-inside-its-deadline/the-bounded-pass-is-re-measured-after-the-git-repairs.html and the figures directory for the same node, and `git diff --stat b4700c0d20e70b117969d8c907af78d11014ad72..17ba33c7ca1421dee0619802dda9b3b14b728b8e` lists that one file with 26 insertions and nothing else.\nVERDICT manifest: read, status complete with commit 17ba33c7ca, changed_paths the one fragment, `tests:` the literal sbatch probe command, test_logs naming the pass log, baseline_suite and after_suite null because the node ran unarmed, and outside_scope naming the before-arm harness defect that its own log corroborates.\nVERDICT diff: read the single commit 17ba33c7ca against base b4700c0d20, which adds one 26-line evidence fragment under its own anchor id and no product code, no figure and no test.\nCALL_SITES: reckon/evidence.py:694 compose_evidence_record, reckon/serve.py:2694 serve a cumulative record with its fragments composed in, reckon/compliance.py:107 glob a verdict's fragment directory, reckon/doccheck.py:1954 read a record through its composition, reckon/resources.py:69 EVIDENCE_FRAGMENTS_SUBTREE\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: report/logs/pass-node-after-1-j1315575.log:5 records the after revision's first fleet_state at 200.037 s, so the re-measurement happened, but bound 2 is unmeasured and the landed fragment's heading at docs/evidence/fragments/a-read-answers-inside-its-deadline/the-bounded-pass-is-re-measured-after-the-git-repairs.html:19 states both bounds missed.\nSCORE evidence: 15\nJUSTIFICATION evidence: report/logs/pass-node-after-1-j1315575.log:1-8 names its revision, corpus, host, literal command, reckon.__file__ under the arm's tree and `EXIT=124`, but the landed fragment at :21 quotes 2,078,176,239 bytes for a census that report/logs/sbatch-probe-1315575.out:6 records as 2077566239.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: `git diff --stat b4700c0d20..17ba33c7ca` lists only docs/evidence/fragments/a-read-answers-inside-its-deadline/the-bounded-pass-is-re-measured-after-the-git-repairs.html, the single declared fragment path, and the harness scripts went to the run's report directory that the done_when names.\nSCORE durability: 12\nJUSTIFICATION durability: the diff adds no assertion to audit \u2014 the deliverable is an evidence fragment \u2014 so the record's only guard is that its numbers reconcile with report/logs, and two claims at the-bounded-pass-is-re-measured-after-the-git-repairs.html:19 and :21 do not.\nSCORE fit: 16\nJUSTIFICATION fit: the fragment follows the shape of its sibling docs/evidence/fragments/a-read-answers-inside-its-deadline/a-cold-read-parses-each-plan-once.html, but sets `plan-verdict` to \"failed\" where the composer's vocabulary at reckon/evidence.py:376 is pass/qualified/fail and indents its closing article, and carries no name the naming rules forbid.\nSCORE reuse: 20\nJUSTIFICATION reuse: the change defines no mechanism; the fragment is consumed by the existing composer at reckon/evidence.py:694, and a search of docs/evidence/fragments (136 plan directories) and of reckon/evidence.py found the fragment shape already owned there.\nFINDING docs/evidence/fragments/a-read-answers-inside-its-deadline/the-bounded-pass-is-re-measured-after-the-git-repairs.html:21 non-blocking: the corpus is quoted as 2,078,176,239 bytes and no log carries that figure \u2014 report/logs/sbatch-probe-1315575.out:6 reads `census_rc=0 files=89225 bytes=2077566239` with the same 89,225 files and 133 pointers, copy-node-1315575.log:17 reads `total size is 2,077,579,390`, and job 1315583's census reads 2,078,176,065 \u2014 so the landed record's own number cannot be reconciled against the evidence it cites, although the 2.6x/2.3x conclusion is unchanged under any of those figures.\nFINDING docs/evidence/fragments/a-read-answers-inside-its-deadline/the-bounded-pass-is-re-measured-after-the-git-repairs.html:19 non-blocking: the heading states both bounds are still missed while the second bound has no reading at all, which report/report.md:27 records as \"short of five; not claimed met\", so the landed record upgrades an absent reading into a miss that no log supports.\nFINDING docs/evidence/fragments/a-read-answers-inside-its-deadline/the-bounded-pass-is-re-measured-after-the-git-repairs.html:23 non-blocking: the claim that every log names its revision, corpus and host, shows reckon.__file__ and ends in EXIT= is false for five of the nine files in report/logs \u2014 census.log, both copy-node logs and both sbatch driver logs carry no revision, host or command line and none ends in a bare `EXIT=` line \u2014 though all four measurement logs comply.\nFINDING report/report.md:72 non-blocking: cites `summary-prof-node-after-j1315583.log`, which does not exist in report/logs, and the counts it would supply sit in report/profile-counts.txt instead, so a reader following the landed fragment to \"the run directory's report/\" is sent to an anchor that cannot be opened.\nFINDING report/profile-counts.txt:6 non-blocking: records `posix.stat: 0 entries` while the log it summarises reads `calls=259379` for `<built-in method posix.stat>` at report/logs/prof-node-after-j1315583.log:12, so a summariser defect publishes a zero for a quantity visible in the same run; the report quotes the log's figure, so the artifact rather than the report is wrong.\nFINDING report/report.md:63 non-blocking: plan \u00a742 asks that where \u00a744's store exists in the copied corpus the report give one pass per storage with the store removed for reference, and the report neither states whether that store was present nor gives the reference pass, although the gate firing before any second job may make it inapplicable.",
+  "review_run_id": "r-20261114T171347032939-review-of-the-bounded-pass-is-re-measured-after-the-git-repairs-17ba33c7ca14",
+  "reviewed_base_sha": "b4700c0d20e70b117969d8c907af78d11014ad72",
+  "reviewed_head_sha": "17ba33c7ca1421dee0619802dda9b3b14b728b8e",
+  "reviewed_run_id": "r-20261114T144456201261-the-bounded-pass-is-re-measured-after-the-git-repairs",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash",
+    "note": "unarmed suite on the reviewed node: baseline_suite and after_suite are null in its manifest, so the added-failure delta is 0 by absence of arms",
+    "reviewer_run_id": "r-20261114T171347032939-review-of-the-bounded-pass-is-re-measured-after-the-git-repairs-17ba33c7ca14"
+  },
+  "scores": {
+    "durability": 12,
+    "evidence": 15,
+    "fit": 16,
+    "goal_fidelity": 17,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-14T17:38:51Z",
+  "total": 100
+}

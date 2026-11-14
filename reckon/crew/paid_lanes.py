@@ -34,7 +34,6 @@ it is half-written would read a truncated account list as a real absence:
 
 from __future__ import annotations
 
-import fcntl
 import json
 import os
 import shlex
@@ -50,6 +49,7 @@ from reckon import service
 from reckon._store import write_json_atomically
 from reckon._timestamps import parse_utc
 from reckon.crew import window_reading
+from reckon.node_exclusive_lock import exclusive_lock
 from reckon.service import (
     systemd_user_dir,  # noqa: F401 - re-exported: the unit directory resolves in reckon.service
 )
@@ -650,8 +650,7 @@ def refresh_reserved_window(
     now = moment or datetime.now(tz=UTC)
     target = document_path(path)
     target.parent.mkdir(parents=True, exist_ok=True)
-    with target.with_name(target.name + ".lock").open("a+") as lock:
-        fcntl.flock(lock, fcntl.LOCK_EX)
+    with exclusive_lock(target.with_name(target.name + ".lock")):
         document = read_document(target)
         if not isinstance(document, dict) or not isinstance(
             document.get("accounts"), Mapping
@@ -818,8 +817,7 @@ def publish_document(
     backends = config.get("backends") or {}
     target = document_path(path)
     target.parent.mkdir(parents=True, exist_ok=True)
-    with target.with_name(target.name + ".lock").open("a+") as lock:
-        fcntl.flock(lock, fcntl.LOCK_EX)
+    with exclusive_lock(target.with_name(target.name + ".lock")):
         previous = read_document(target)
         retained = _previous_probe_candidates(previous)
         gathered = {

@@ -1922,43 +1922,72 @@ def read_plan(
     return _read_state(project, slug, root, artifact_type)
 
 
-def write_generation_path(project: str) -> Path:
-    """Return the file holding one project's plan-write generation.
+def _generation_path(project: str, family: str) -> Path:
+    """Return one project's counter for one family of writes.
 
-    The counter is one file per project under the crew home, which the whole
-    fleet shares, so a write made by any process on any node is visible to
+    A counter is one file per project per family under the crew home, which the
+    whole fleet shares, so a write made by any process on any node is visible to
     every other reader of that project. It is deliberately not in the docs
     tree: a counter inside the tree would move the tree's own signature and
     make every write look like a plan-file change.
+
+    Each family is its own file so that a write of one kind cannot move a key
+    another kind's readers hold. A plan write and a ledger write share no
+    documents, so a single counter made each one invalidate the other's cache.
     """
     readable = re.sub(r"[^A-Za-z0-9._-]", "-", project).strip("-") or "project"
     digest = hashlib.sha256(project.encode()).hexdigest()[:12]
-    return _config_home() / "crew" / "write-generation" / f"{readable}-{digest}"
+    return _config_home() / "crew" / family / f"{readable}-{digest}"
 
 
-def read_write_generation(project: str) -> str:
-    """Read one project's plan-write generation as a comparable string.
+def write_generation_path(project: str) -> Path:
+    """Return the file holding one project's plan-write generation."""
+    return _generation_path(project, "write-generation")
+
+
+def ledger_write_generation_path(project: str) -> Path:
+    """Return the file holding one project's ledger-write generation.
+
+    Only a ledger write advances this counter, and only a ledger reader keys on
+    it. A plan write leaves it alone, so a ledger index keyed on it survives a
+    promotion's plan record, a comment or a section edit: those write no run
+    document, so there is nothing for the index to revalidate.
+    """
+    return _generation_path(project, "ledger-write-generation")
+
+
+def _read_generation(path: Path) -> str:
+    """Read one generation as a comparable string, absence reading as ``none``.
 
     Absence reads as ``"none"`` rather than as an error: a project never
-    written through the store has no generation, and a reader that treats the
+    written through this path has no generation, and a reader that treats the
     missing file as invalid would recompute forever. The whole read is one
     open, so a read that only wants the key pays one open per project.
     """
     try:
-        return write_generation_path(project).read_text().strip() or "none"
+        return path.read_text().strip() or "none"
     except OSError:
         return "none"
 
 
-def advance_write_generation(project: str) -> None:
-    """Advance one project's plan-write generation past its current value.
+def read_write_generation(project: str) -> str:
+    """Read one project's plan-write generation as a comparable string."""
+    return _read_generation(write_generation_path(project))
+
+
+def read_ledger_write_generation(project: str) -> str:
+    """Read one project's ledger-write generation as a comparable string."""
+    return _read_generation(ledger_write_generation_path(project))
+
+
+def _advance_generation(path: Path) -> None:
+    """Advance one counter past its current value.
 
     Monotonic and never rewound: the value only has to differ from the one a
     reader last saw, so a counter that cannot be read or written is not fatal
     to the write it follows. A failed advance is what a reader sees as an
     unchanged generation, and it falls back to the revalidation window.
     """
-    path = write_generation_path(project)
     try:
         path.parent.mkdir(parents=True, exist_ok=True)
         current = int(path.read_text().strip())
@@ -1966,6 +1995,16 @@ def advance_write_generation(project: str) -> None:
         current = 0
     with suppress(OSError):
         path.write_text(f"{current + 1}\n")
+
+
+def advance_write_generation(project: str) -> None:
+    """Advance one project's plan-write generation past its current value."""
+    _advance_generation(write_generation_path(project))
+
+
+def advance_ledger_write_generation(project: str) -> None:
+    """Advance one project's ledger-write generation past its current value."""
+    _advance_generation(ledger_write_generation_path(project))
 
 
 def write_plan(

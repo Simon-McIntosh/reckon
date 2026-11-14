@@ -1,0 +1,60 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "the reviewed run's baseline_suite at fd2c43f7 ran tests/test_staged_write_inventory.py (51 passed, EXIT=0, failure_count 0) and its after_suite at 68d7308cd6 ran that file plus the node's four tests (55 passed, EXIT=0, failure_count 0), so the shared file gained no failures and the four added tests are new rather than a delta: added failures are 0.",
+  "call_site_count": 7,
+  "call_sites": [
+    "reckon/crew/admission/service.py:261 promotions.tick() in the one-pass helper",
+    "reckon/crew/admission/service.py:281 promotions.start_refill()",
+    "reckon/crew/admission/service.py:290 promotions.begin_drain()",
+    "reckon/crew/admission/service.py:291 promotions.wait_for_in_flight()",
+    "reckon/crew/admission/service.py:300 promotions.tick() in the service loop",
+    "reckon/crew/admission/service.py:326 promotions.stop_refill()",
+    "reckon/crew/promotion_requests.py:642 self.tick() in the refill thread"
+  ],
+  "completed_at": "2026-11-14T11:53:39.771Z",
+  "dispatched_at": "2026-11-14T11:26:52Z",
+  "findings": [
+    {
+      "file": "reckon/crew/promotion_requests.py",
+      "line": 643,
+      "severity": "non-blocking",
+      "text": "the exception guard added in this round is untested - deleting the try/except leaves all four tests green, so a refill that raises would silently revert the queue to pass-speed draining with nothing failing the suite."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "reckon/crew/admission/service.py:261 promotions.tick() in the one-pass helper, reckon/crew/admission/service.py:281 promotions.start_refill(), reckon/crew/admission/service.py:290 promotions.begin_drain(), reckon/crew/admission/service.py:291 promotions.wait_for_in_flight(), reckon/crew/admission/service.py:300 promotions.tick() in the service loop, reckon/crew/admission/service.py:326 promotions.stop_refill(), reckon/crew/promotion_requests.py:642 self.tick() in the refill thread",
+    "diff": "read both commits against 5cb42dbbe2: 7e2723c8a3 adds the tick lock, the _tick_locked body, the refill exception guard, the TERMINAL removal and the interleave test, and 68d7308cd6 records the serialisation mutant and corrects the head count in the evidence fragment; 145 insertions across three files, all inside the scope.",
+    "done_when": "the done_when's first two clauses are gated by tests/test_promotion_queue_drains_at_slot_speed.py:97-125 and :161-218 at the node's base revision, and this round adds :221-300, whose mutant at logs/serialisation-mutant.log reddens at 'begin_drain returned through a tick in flight'; the base arm (51 passed) and head arm (55 passed) are both recorded at logs/base-arm.log and logs/head-arm.log. The third clause, a live one-hour drain rate, still reads 0 at docs/evidence/fragments/work-flows-to-the-lane/the-lane fragment because the drain log did not exist before this change; only its oldest-wait half (70 s) is a positive live measurement.",
+    "goal": "the node's goal is that the promotion queue drains as fast as its slots allow; this round's landed change makes that drain safe against the reload it depends on, with begin_drain holding the tick lock at reckon/crew/promotion_requests.py:653 and tick holding it for its whole body at :726, so no promotion starts after the drain decision and every thread a racing tick started is in the set wait_for_in_flight reads at :669. The queue-speed deliverable itself landed before this base.",
+    "manifest": "the manifest reports status complete with four commits and a repair checkpoint, a head arm of 55 passed and a negative control of 2 failed, and both logs exist under logs/ and reconcile with the figures it quotes; the serialisation-mutant claim it adds matches that log's single failure at the same assertion.",
+    "write_paths": "the reviewed manifest declares reckon/crew/promotion_requests.py, reckon/crew/addition/service.py, reckon/crew_run_commands.py, tests/test_promotion_queue_drains_at_slot_speed.py and the evidence fragment; git diff 5cb42dbbe2..68d7308cd6 touches exactly the first, the fourth and the fifth, so every landed path is inside the declared scope and the two unchanged ones are simply not part of this round."
+  },
+  "justifications": {
+    "durability": "tests/test_promotion_queue_drains_at_slot_speed.py:277 reddens when the lock is removed, proven by logs/serialisation-mutant.log, but nothing fails if the exception guard at reckon/crew/promotion_requests.py:643 is deleted.",
+    "evidence": "the head and base arms and the serialisation mutant are all recorded at logs/head-arm.log, logs/base-arm.log and logs/serialisation-mutant.log, but docs/evidence/fragments/work-flows-to-the-lines/promotion-queue-drains-at-slot-speed.html:26 still has no live drain rate because the drain log is new.",
+    "fit": "reckon/crew/promotion_requests.py:27 adds the module logger exactly as reckon/crew/station_subject.py:40 does, and ruff check and ruff format --check are clean on both changed Python paths.",
+    "goal_fidelity": "reckon/crew/promotion_requests.py:653 and :726 put the drain decision and a whole tick on one lock, which is exactly the reload-safety half the goal's drain needs.",
+    "reuse": "this round adds only a stdlib threading.Lock instance at reckon/crew/promotion_requests.py:567 and a module logger, and the module already owns its own tick/claim machinery at :47, so no capability is forked.",
+    "scope_discipline": "git diff 5cb42dbbe2..68d7308cd6 changes only reckon/crew/promotion_requests.py, tests/test_promotion_queue_drains_at_slot_speed.py and the evidence fragment, all declared in the manifest."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that the promotion queue drains as fast as its slots allow; this round's landed change makes that drain safe against the reload it depends on, with begin_drain holding the tick lock at reckon/crew/promotion_requests.py:653 and tick holding it for its whole body at :726, so no promotion starts after the drain decision and every thread a racing tick started is in the set wait_for_in_flight reads at :669. The queue-speed deliverable itself landed before this base.\nVERDICT done_when: the done_when's first two clauses are gated by tests/test_promotion_queue_drains_at_slot_speed.py:97-125 and :161-218 at the node's base revision, and this round adds :221-300, whose mutant at logs/serialisation-mutant.log reddens at 'begin_drain returned through a tick in flight'; the base arm (51 passed) and head arm (55 passed) are both recorded at logs/base-arm.log and logs/head-arm.log. The third clause, a live one-hour drain rate, still reads 0 at docs/evidence/fragments/work-flows-to-the-lane/the-lane fragment because the drain log did not exist before this change; only its oldest-wait half (70 s) is a positive live measurement.\nVERDICT write_paths: the reviewed manifest declares reckon/crew/promotion_requests.py, reckon/crew/addition/service.py, reckon/crew_run_commands.py, tests/test_promotion_queue_drains_at_slot_speed.py and the evidence fragment; git diff 5cb42dbbe2..68d7308cd6 touches exactly the first, the fourth and the fifth, so every landed path is inside the declared scope and the two unchanged ones are simply not part of this round.\nVERDICT manifest: the manifest reports status complete with four commits and a repair checkpoint, a head arm of 55 passed and a negative control of 2 failed, and both logs exist under logs/ and reconcile with the figures it quotes; the serialisation-mutant claim it adds matches that log's single failure at the same assertion.\nVERDICT diff: read both commits against 5cb42dbbe2: 7e2723c8a3 adds the tick lock, the _tick_locked body, the refill exception guard, the TERMINAL removal and the interleave test, and 68d7308cd6 records the serialisation mutant and corrects the head count in the evidence fragment; 145 insertions across three files, all inside the scope.\nCALL_SITES: reckon/crew/admission/service.py:261 promotions.tick() in the one-pass helper, reckon/crew/admission/service.py:281 promotions.start_refill(), reckon/crew/admission/service.py:290 promotions.begin_drain(), reckon/crew/admission/service.py:291 promotions.wait_for_in_flight(), reckon/crew/admission/service.py:300 promotions.tick() in the service loop, reckon/crew/admission/service.py:326 promotions.stop_refill(), reckon/crew/promotion_requests.py:642 self.tick() in the refill thread\nSCORE goal_fidelity: 18\nSCORE evidence: 15\nSCORE scope_discipline: 19\nSCORE durability: 16\nSCORE fit: 17\nSCORE reuse: 18\nJUSTIFICATION goal_fidelity: reckon/crew/promotion_requests.py:653 and :726 put the drain decision and a whole tick on one lock, which is exactly the reload-safety half the goal's drain needs.\nJUSTIFICATION evidence: the head and base arms and the serialisation mutant are all recorded at logs/head-arm.log, logs/base-arm.log and logs/serialisation-mutant.log, but docs/evidence/fragments/work-flows-to-the-lines/promotion-queue-drains-at-slot-speed.html:26 still has no live drain rate because the drain log is new.\nJUSTIFICATION scope_discipline: git diff 5cb42dbbe2..68d7308cd6 changes only reckon/crew/promotion_requests.py, tests/test_promotion_queue_drains_at_slot_speed.py and the evidence fragment, all declared in the manifest.\nJUSTIFICATION durability: tests/test_promotion_queue_drains_at_slot_speed.py:277 reddens when the lock is removed, proven by logs/serialisation-mutant.log, but nothing fails if the exception guard at reckon/crew/promotion_requests.py:643 is deleted.\nJUSTIFICATION fit: reckon/crew/promotion_requests.py:27 adds the module logger exactly as reckon/crew/station_subject.py:40 does, and ruff check and ruff format --check are clean on both changed Python paths.\nJUSTIFICATION reuse: this round adds only a stdlib threading.Lock instance at reckon/crew/promotion_requests.py:567 and a module logger, and the module already owns its own tick/claim machinery at :47, so no capability is forked.\nFINDING reckon/crew/promotion_requests.py:643 non-blocking: the exception guard added in this round is untested - deleting the try/except around begin_drain/tick leaves all four tests green, so a refill that raises would silently revert the queue to pass-speed draining with nothing failing the suite.",
+  "review_run_id": "r-20261114T102208505581-review-of-promotion-queue-drains-at-slot-speed-68d7308cd605",
+  "reviewed_base_sha": "5cb42dbbe22c396914fbeaebf55631ee08e44285",
+  "reviewed_commit": "68d7308cd6051021db432ed08ba85cde614c80e0",
+  "reviewed_head_sha": "68d7308cd6051021db432ed08ba85cde614c80e0",
+  "reviewed_run_id": "r-20261113T161430369224-promotion-queue-drains-at-slot-speed",
+  "scores": {
+    "durability": 16,
+    "evidence": 15,
+    "fit": 17,
+    "goal_fidelity": 18,
+    "reuse": 18,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-14T11:43:27+00:00",
+  "total": 103
+}

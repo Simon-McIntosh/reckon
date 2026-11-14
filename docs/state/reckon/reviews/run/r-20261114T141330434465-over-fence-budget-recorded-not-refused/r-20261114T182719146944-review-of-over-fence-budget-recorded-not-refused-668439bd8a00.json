@@ -1,0 +1,99 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_independence": "No tautological input-to-itself guard found: budget/reason inputs are compared with actual stored/reconstructed outputs, so a lost or changed field fails; rendered_state uses a test renderer and proves node_budget propagation only, not production prompt rendering.",
+  "assertion_review": [
+    {
+      "fails_if": "Stored budget or optional reason is dropped/changed, or the independently fixed note is absent/wrong; reinstating the refusal also fails the acceptance assertions before this helper.",
+      "lines": "30-33"
+    },
+    {
+      "fails_if": "Queued-node reconstruction drops the note or reason; the note equality is anchored by line 33 to a fixed expected note, not two unconstrained values.",
+      "lines": "35-37"
+    },
+    {
+      "fails_if": "Dispatch returns nonzero or not-ok, or batch rejects/queues no request; the refusal mutation demonstrably fails these checks.",
+      "lines": "81,83,101-102"
+    },
+    {
+      "fails_if": "Over-fence validation refuses or fails to set a note, revalidation below the fence leaves the note stale, or malformed time becomes acceptable.",
+      "lines": "117-123"
+    },
+    {
+      "fails_if": "The picker budget changes from 240m or deterministic fallback stops choosing the available stub lane; single-candidate forced transport failure does not test comparative normal routing.",
+      "lines": "135,165-166"
+    }
+  ],
+  "call_site_count": 7,
+  "call_sites": [
+    "reckon/crew/dispatch_plan.py:840",
+    "reckon/crew/dispatching/requests.py:185",
+    "reckon/crew/dispatch_batch.py:801",
+    "reckon/crew/dispatch_batch.py:845",
+    "reckon/crew/admission/launching.py:71",
+    "reckon/crew_dispatch_commands.py:1718",
+    "reckon/crew_dispatch_commands.py:2264"
+  ],
+  "completed_at": "2026-11-14T18:35:21Z",
+  "dispatched_at": "2026-11-14T18:31:00Z",
+  "findings": [],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 7 production call site(s)",
+    "diff": "Read commits 25b85b5769e36fc28f65c7bba7d9efab777b4f89 and 668439bd8a007834d69da3ae088aac0d7f9522a4 against 7acce13077496a0942555e7eb59a68416d6ad14a; the first changes the shared validator, batch reason forwarding, CLI help and six test cases, and the second adds the evidence fragment.",
+    "done_when": "Read live work-flows-to-the-lane section s63 and dispatch-detail.json (admit_request.node.done_when); baseline.log, final-head.log and negative-control.log demonstrate accepted dispatch and batch pointers, optional reasons, stable deterministic picker fallback and refusal sensitivity.",
+    "goal": "Read the source goal in dispatch-detail.json (admit_request.node.goal); reckon/crew/node.py:1517-1532 records budgets above the fence without a bounded refusal.",
+    "manifest": "Read the source manifest.md and opened its baseline_suite and after_suite log paths; completed receipts show 51 baseline passes and 57 head passes with zero added failure IDs, and the refusal mutation records five failures.",
+    "write_paths": "Read dispatch-detail.json (admit_request.node.write_paths) and manifest.md orientation_write_paths; all five changed paths fall within the declared reckon, test and evidence scopes."
+  },
+  "justifications": {
+    "durability": "tests/test_over_fence_budget_recorded_not_refused.py:30-37,81-123 fails on refused dispatch, dropped pointer fields, lost reconstruction, stale notes or accepted malformed durations, and negative-control.log confirms five failures when the refusal is reinstated.",
+    "evidence": "tests/test_over_fence_budget_recorded_not_refused.py:81-105 reads stored pointers and the recorded red and green receipts substantiate acceptance, while lines 131-166 establish unchanged single-candidate fallback rather than a normal multi-candidate picker decision.",
+    "fit": "reckon/crew/node.py:803 adds a descriptive dataclass field and reckon/crew/dispatch_batch.py:642 extends the existing builder using its surrounding coercion idiom without forbidden source naming.",
+    "goal_fidelity": "reckon/crew/node.py:1517-1532 replaces only the over-ceiling refusal with a recorded note, and reckon/crew/dispatch_batch.py:642 forwards the optional reason through the existing node builder.",
+    "reuse": "Capability searches for budget validation, pointer reconstruction and fixture configuration resolve to reckon/crew/node.py:1337, reckon/crew/admission/launching.py:71 and tests/test_every_path_meets_the_node_contract.py:102, which the change extends or reuses without adding a parallel production mechanism.",
+    "scope_discipline": "The five paths in the two-commit diff are all covered by dispatch-detail.json admit_request.node.write_paths, including the independently assigned evidence fragment."
+  },
+  "limitations": [
+    "Picker parity is deterministic single-candidate fallback, explicitly disclosed in the evidence fragment; no live provider or multi-candidate decision is measured.",
+    "Failure delta covers the source declared gate only, not a full suite or merged head."
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: Read the source goal in dispatch-detail.json (admit_request.node.goal); reckon/crew/node.py:1517-1532 records budgets above the fence without a bounded refusal.\nVERDICT done_when: Read live work-flows-to-the-lane section s63 and dispatch-detail.json (admit_request.node.done_when); baseline.log, final-head.log and negative-control.log demonstrate accepted dispatch and batch pointers, optional reasons, stable deterministic picker fallback and refusal sensitivity.\nVERDICT write_paths: Read dispatch-detail.json (admit_request.node.write_paths) and manifest.md orientation_write_paths; all five changed paths fall within the declared reckon, test and evidence scopes.\nVERDICT manifest: Read the source manifest.md and opened its baseline_suite and after_suite log paths; completed receipts show 51 baseline passes and 57 head passes with zero added failure IDs, and the refusal mutation records five failures.\nVERDICT diff: Read commits 25b85b5769e36fc28f65c7bba7d9efab777b4f89 and 668439bd8a007834d69da3ae088aac0d7f9522a4 against 7acce13077496a0942555e7eb59a68416d6ad14a; the first changes the shared validator, batch reason forwarding, CLI help and six test cases, and the second adds the evidence fragment.\nCALL_SITES: reckon/crew/dispatch_plan.py:840, reckon/crew/dispatching/requests.py:185, reckon/crew/dispatch_batch.py:801, reckon/crew/dispatch_batch.py:845, reckon/crew/admission/launching.py:71, reckon/crew_dispatch_commands.py:1718, reckon/crew_dispatch_commands.py:2264\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/node.py:1517-1532 replaces only the over-ceiling refusal with a recorded note, and reckon/crew/dispatch_batch.py:642 forwards the optional reason through the existing node builder.\nSCORE evidence: 19\nJUSTIFICATION evidence: tests/test_over_fence_budget_recorded_not_refused.py:81-105 reads stored pointers and the recorded red and green receipts substantiate acceptance, while lines 131-166 establish unchanged single-candidate fallback rather than a normal multi-candidate picker decision.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: The five paths in the two-commit diff are all covered by dispatch-detail.json admit_request.node.write_paths, including the independently assigned evidence fragment.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_over_fence_budget_recorded_not_refused.py:30-37,81-123 fails on refused dispatch, dropped pointer fields, lost reconstruction, stale notes or accepted malformed durations, and negative-control.log confirms five failures when the refusal is reinstated.\nSCORE fit: 20\nJUSTIFICATION fit: reckon/crew/node.py:803 adds a descriptive dataclass field and reckon/crew/dispatch_batch.py:642 extends the existing builder using its surrounding coercion idiom without forbidden source naming.\nSCORE reuse: 20\nJUSTIFICATION reuse: Capability searches for budget validation, pointer reconstruction and fixture configuration resolve to reckon/crew/node.py:1337, reckon/crew/admission/launching.py:71 and tests/test_every_path_meets_the_node_contract.py:102, which the change extends or reuses without adding a parallel production mechanism.\n",
+  "review_run_id": "r-20261114T182719146944-review-of-over-fence-budget-recorded-not-refused-668439bd8a00",
+  "reviewed_base_sha": "7acce13077496a0942555e7eb59a68416d6ad14a",
+  "reviewed_head_sha": "668439bd8a007834d69da3ae088aac0d7f9522a4",
+  "reviewed_run_id": "r-20261114T141330434465-over-fence-budget-recorded-not-refused",
+  "scores": {
+    "durability": 19,
+    "evidence": 19,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "suite_evidence": {
+    "after_suite": {
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261114T141330434465-over-fence-budget-recorded-not-refused/final-head.log",
+      "summary": "57 passed in 12.02s"
+    },
+    "baseline_suite": {
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261114T141330434465-over-fence-budget-recorded-not-refused/baseline.log",
+      "summary": "51 passed in 10.56s"
+    }
+  },
+  "times_source": "run-record",
+  "timestamp": "2026-11-14T19:01:59.713223+00:00",
+  "total": 118
+}

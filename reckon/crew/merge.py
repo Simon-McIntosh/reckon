@@ -1175,6 +1175,7 @@ def land(
     attempts: int = DEFAULT_ATTEMPTS,
     retry_seconds: float = DEFAULT_RETRY_SECONDS,
     sleep=time.sleep,
+    verify: Callable[[Path, str, str, str], None] | None = None,
 ) -> dict:
     """Land ``head``, confirm its change survived the merge, and push it.
 
@@ -1211,6 +1212,8 @@ def land(
                 "the merge dropped the reviewed change, so nothing was moved "
                 "or pushed: " + "; ".join(dropped)
             )
+        if verify is not None:
+            verify(checkout, base, merged_head, commit)
 
     report = land_merge(
         repo,

@@ -476,15 +476,34 @@ def commit_record_write(project: str, path: str | Path | Iterable[str | Path]) -
     ``path`` names one file, as a disposition writes, or a set of files that
     share the one commit: a repair rewrites a committed record and preserves
     the as-delivered copy beside it, and the two belong to the same write.
+    Indexed staging paths publish any changed bytes before returning, even
+    though no commit is made for those paths.
     """
-    committed = _review.committed_review_root(project)
-    if committed is None:
-        return False
-    root = Path(committed).resolve()
     if isinstance(path, (str, Path)):
         paths = [Path(path)]
     else:
         paths = [Path(item) for item in path]
+    # Callers can have rewritten a staging record in place. Publish those
+    # bytes before deciding whether any path belongs to the committed tree.
+    # An already published write needs no second replacement or generation.
+    for item in paths:
+        if item.suffix != ".json" or not _indexable(item.parent):
+            continue
+        try:
+            data = item.read_bytes()
+            record = json.loads(data)
+        except (OSError, ValueError):
+            continue
+        if not isinstance(record, Mapping):
+            continue
+        document = _read_index_document(item.parent) or {}
+        entry = (document.get("entries") or {}).get(item.name) or {}
+        if entry.get("sha256") != _sha256_hex(data):
+            record_written(item, record, serialized=data)
+    committed = _review.committed_review_root(project)
+    if committed is None:
+        return False
+    root = Path(committed).resolve()
     inside: list[Path] = []
     for item in paths:
         try:
@@ -1926,13 +1945,18 @@ def _index_holding(directory: Path) -> Path | None:
 
 
 @contextmanager
-def _index_lock(directory: Path) -> Iterator[bool]:
+def _index_lock(directory: Path, *, wait: bool = True) -> Iterator[bool | None]:
     """Hold the store's index lock, or report that it could not be taken.
 
     The lock file sits beside the document so a writer on any node serialises
     against every other node's writer. A directory that cannot hold the lock
     file, or a filesystem without advisory locks, yields ``False`` and the
     caller writes the document unlocked.
+
+    ``wait`` false is for a reader: a lock another process holds yields
+    ``None`` at once rather than blocking, and the reader serves the document
+    as last persisted. A producer, station or follower thread reading the store
+    must never wait on another process's index write.
     """
     import fcntl
 
@@ -1947,7 +1971,13 @@ def _index_lock(directory: Path) -> Iterator[bool]:
         return
     with handle:
         try:
-            fcntl.flock(handle.fileno(), fcntl.LOCK_EX)
+            fcntl.flock(
+                handle.fileno(),
+                fcntl.LOCK_EX if wait else fcntl.LOCK_EX | fcntl.LOCK_NB,
+            )
+        except BlockingIOError:
+            yield None
+            return
         except OSError:
             yield False
             return
@@ -2142,7 +2172,9 @@ def _index_stored_record(path: Path, record: Mapping[str, Any]) -> None:
         _persist_index_document(directory, doc)
 
 
-def record_written(path: Path, record: Mapping[str, Any]) -> None:
+def record_written(
+    path: Path, record: Mapping[str, Any], *, serialized: bytes | None = None
+) -> None:
     """Write one review record and advance the store's index for it.
 
     This is the store's one writer path. The record is serialised to a sibling
@@ -2151,19 +2183,37 @@ def record_written(path: Path, record: Mapping[str, Any]) -> None:
     what is on disk rather than what was meant to be. The entry, the run's
     digest, the version and the change log move in the same locked write, so a
     reader that sees the new version sees the new entry.
-    """
-    from reckon._store import write_json_atomically
 
-    write_json_atomically(
-        path,
-        dict(record),
-        indent=2,
-        sort_keys=True,
-        mode=None,
-        fsync=False,
-        create_parents=True,
-    )
+    ``serialized`` preserves a caller's field layout when it repairs a record;
+    the index still hashes the bytes that were written.
+    """
+    from reckon._store import write_atomically, write_json_atomically
+
+    if serialized is None:
+        write_json_atomically(
+            path,
+            dict(record),
+            indent=2,
+            sort_keys=True,
+            mode=None,
+            fsync=False,
+            create_parents=True,
+        )
+    else:
+        write_atomically(
+            path, lambda handle: handle.write(serialized), binary=True, fsync=False
+        )
     _index_stored_record(path, record)
+
+
+# The directory identities this process has reconciled and found nothing to
+# change, each with the document version it was checked at. A short-lived file
+# another writer creates and removes in the store moves the directory's
+# identity without moving any record, and recording the new identity meant
+# rewriting the whole document -- megabytes on a shared filesystem, every few
+# seconds. Remembering the check here costs nothing on disk; a moved identity
+# or a new document version is checked again.
+_SETTLED_IDENTITIES: dict[str, tuple[tuple[int, ...], int]] = {}
 
 
 def reconcile_foreign_write(directory: Path) -> int:
@@ -2181,8 +2231,16 @@ def reconcile_foreign_write(directory: Path) -> int:
     identity = _store_directory_identity(directory)
     if identity is None or identity == tuple(doc.get("directory_identity") or ()):
         return 0
+    settled = (tuple(identity), int(doc.get("version") or 0))
+    if _SETTLED_IDENTITIES.get(str(directory)) == settled:
+        return 0
     changed = 0
-    with _index_lock(directory):
+    with _index_lock(directory, wait=False) as locked:
+        if locked is None:
+            # Another process holds the index: it is writing or reconciling,
+            # and the document this reader already has is at most that one
+            # write behind.
+            return 0
         doc = _read_index_document(directory) or doc
         identity = _store_directory_identity(directory)
         if identity is None or identity == tuple(doc.get("directory_identity") or ()):
@@ -2240,6 +2298,13 @@ def reconcile_foreign_write(directory: Path) -> int:
             log.append([doc["version"], run_id])
             touched.add(run_id)
             changed += 1
+        if not changed:
+            # Nothing the index describes moved, so nothing is written.
+            _SETTLED_IDENTITIES[str(directory)] = (
+                tuple(identity),
+                int(doc.get("version") or 0),
+            )
+            return 0
         for run_id in touched:
             runs[run_id] = _run_digest(entries, run_id)
         del log[:-_INDEX_LOG_LIMIT]
@@ -2434,8 +2499,10 @@ def review_entries_signature(project: str, reviewed_run_id: str) -> tuple[Any, .
 
     A staging record written through the store moves its run's digest. Another
     run's new record leaves this key unchanged. Records outside the indexed
-    staging store use their file identities. The committed directory is included
-    because promotion can replace staging as the source.
+    staging store use their file identities. Indexed files are not revalidated:
+    an external rewrite retaining its inode is visible only after a rebuild.
+    The committed directory is included because promotion can replace staging
+    as the source.
     """
     directory = _review.review_store_root() / project
     digest = store_index_run_digest(directory, reviewed_run_id)

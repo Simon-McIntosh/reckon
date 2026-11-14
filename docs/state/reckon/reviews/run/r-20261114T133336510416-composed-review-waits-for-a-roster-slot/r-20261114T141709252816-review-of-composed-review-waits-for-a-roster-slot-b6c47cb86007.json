@@ -1,0 +1,82 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "f9ef714581e99472eafc9f68f1852b7f46a5deea",
+  "call_site_count": 8,
+  "call_sites": [
+    "reckon/crew/dispatch_admission.py:297 _refuse_over_reservation_roster raised inside the admission pass",
+    "reckon/crew/dispatch.py:329 facade export of _refuse_over_reservation_roster",
+    "reckon/crew/dispatching/_imports.py:371 facade binding",
+    "reckon/crew_dispatch_commands.py:3163 crew review -> dispatch_review_for_run",
+    "reckon/crew/recovery_review_acceptance.py:1098 reflex sweep -> dispatch_review_for_run and its :1106 report bucket",
+    "reckon/crew/recovery_watch.py:3778 watch reflex -> dispatch_review_for_run",
+    "reckon/crew/plan_review.py:4569 content-review pass -> dispatch_review_for_run",
+    "reckon/crew/recovery_review_dispatch.py:2250 _zero_slot_held_lane reads HELD_REVIEW_DISPATCH_STATUSES"
+  ],
+  "completed_at": "2026-11-14T14:31:27.348Z",
+  "dispatched_at": "2026-11-14T14:20:48Z",
+  "findings": [
+    {
+      "file": "reckon/crew/recovery_review_dispatch.py",
+      "line": "3945",
+      "severity": "non-blocking",
+      "text": "non-blocking: the roster-full arm reports error \"lane-paused\", so the reflex sweep's recovery_review_acceptance.py:1106 branch files a queued roster hold in its lane_paused bucket and a consumer of that report cannot tell a roster hold that queued a request from a paused gate that queued nothing."
+    },
+    {
+      "file": "reckon/crew/recovery_review_dispatch.py",
+      "line": "2222",
+      "severity": "non-blocking",
+      "text": "non-blocking: \"roster-full\" is added to HELD_REVIEW_DISPATCH_STATUSES with no assertion over _zero_slot_held_lane, so deleting the entry leaves tests/test_composed_review_waits_for_a_roster_slot.py green and the re-routing behaviour the change claims is unguarded."
+    },
+    {
+      "file": "manifest.md",
+      "line": "20",
+      "severity": "non-blocking",
+      "text": "non-blocking: the source manifest quotes the base arm as \"51 passed in 12.36s\" while logs/base-arm.log's summary line reads \"51 passed in 13.71s\", and its baseline_suite.command names the worktree interpreter where the log header records \"PYTHONPATH=. .venv/bin/python -m pytest ...\" in the extracted base tree, so the recorded command is not the literal command the log ran."
+    }
+  ],
+  "head_log_revision": "6c4c0fa9169dc432d863845ad7dff39cba9afbb2",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "diff": "read both commits against base f9ef714581e99472eafc9f68f1852b7f46a5deea \u2014 6c4c0fa916 adds RosterFull at dispatch_admission.py:1267 and raises it at :215, exports it on the facade and binds it in dispatching/_imports.py, and adds a 64-line except RosterFull arm at recovery_review_dispatch.py:3892 plus the 213-line test file; b6c47cb860 adds the 73-line evidence fragment and no code.",
+    "done_when": "the done_when asks for a test that composes on a full roster and reads a queued pointer, then frees a slot and reads it admitted, plus a negative control that leaves no pointer and a gate on all_debug whose log reaches the evidence fragment; tests/test_composed_review_waits_for_a_roster_slot.py:166 and :185 supply both halves, logs/negative-control.log reads \"2 failed\" EXIT=1, and logs/gate.log reads \"53 passed in 11.34s\" EXIT=0 at head 6c4c0fa916 with job 1315386 confirmed COMPLETED on partition all_debug by sacct, though the fragment records the gate's command and result rather than the log body.",
+    "goal": "the node goal is that a composed review waits for a roster slot instead of being refused; reckon/crew/dispatch_admission.py:215 now raises RosterFull from the roster cap and reckon/crew/recovery_review_dispatch.py:3892 catches it, writing the review through the queue's own writer rather than returning a refusal with nothing written.",
+    "manifest": "read; status complete, commits 6c4c0fa916 and b6c47cb860, baseline_suite 0 failures at f9ef714581, after_suite 0 failures at 6c4c0fa916, negative_control_log naming logs/negative-control.log, and an artifacts line that quotes \"51 passed in 12.36s\" where logs/base-arm.log's summary reads 13.71s.",
+    "write_paths": "the node was fenced to reckon, tests/test_composed_review_waits_for_a_roster_slot.py, docs/evidence/fragments/work-flows-to-the-lane/composed-review-waits-for-a-roster-slot.html and a figures directory; the diff touches four files under reckon/, the new test file and the fragment, every one inside that fence and nothing in the figures directory."
+  },
+  "justifications": {
+    "durability": "logs/negative-control.log shows the declared mutation (the roster refusal left as a bare CrewError) reddens both new tests at EXIT=1, but nothing in tests/test_composed_review_waits_for_a_roster_slot.py exercises the \"roster-full\" entry added to HELD_REVIEW_DISPATCH_STATUSES at reckon/crew/recovery_review_dispatch.py:2222, so removing it would leave the file green.",
+    "evidence": "logs/gate.log reads \"53 passed in 11.34s\" EXIT=0 at 6c4c0fa916 and sacct shows job 1315386 COMPLETED on partition all_debug, but the manifest's artifacts line at manifest.md:20 quotes the base arm as 12.36s where logs/base-arm.log reads 13.71s, so one recorded figure does not reconcile with the log it cites.",
+    "fit": "the added RosterFull at reckon/crew/dispatch_admission.py:1267 follows the LaneHeld/_GateReadDeadline idiom beside it including the noqa: N818 marker, and the added comments state the mechanism with no plan, ticket or author reference, but the arm at recovery_review_dispatch.py:3945 reports the roster hold under the \"lane-paused\" error token a reader takes for a paused gate whose dispatch queued nothing.",
+    "goal_fidelity": "reckon/crew/recovery_review_dispatch.py:3892-3948 writes the roster-held review as a queued request through _queue_router_held_review and keeps the composed directory the queued pointer's brief resolves through, which is the deliverable at docs/plans/work-flows-to-the-lane.html:309.",
+    "reuse": "the arm reuses _queue_router_held_review at reckon/crew/recovery_review_dispatch.py:692, which composes a record through dispatch's own _queued_request_record and stores it with runs.queue_dispatch, and no second queue writer or roster-cap mechanism exists in reckon/crew.",
+    "scope_discipline": "git show --stat f9ef714581..b6c47cb860 lists only reckon/crew/dispatch.py, dispatching/_imports.py, dispatch_admission.py, recovery_review_dispatch.py, tests/test_composed_review_waits_for_a_roster_slot.py and the evidence fragment, every one inside the declared fence."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is that a composed review waits for a roster slot instead of being refused; reckon/crew/dispatch_admission.py:215 now raises RosterFull from the roster cap and reckon/crew/recovery_review_dispatch.py:3892 catches it, writing the review through the queue's own writer rather than returning a refusal with nothing written.\nVERDICT done_when: the done_when asks for a test that composes on a full roster and reads a queued pointer, then frees a slot and reads it admitted, plus a negative control that leaves no pointer and a gate on all_debug whose log reaches the evidence fragment; tests/test_composed_review_waits_for_a_roster_slot.py:166 and :185 supply both halves, logs/negative-control.log reads \"2 failed\" EXIT=1, and logs/gate.log reads \"53 passed in 11.34s\" EXIT=0 at head 6c4c0fa916 with job 1315386 confirmed COMPLETED on partition all_debug by sacct, though the fragment records the gate's command and result rather than the log body.\nVERDICT write_paths: the node was fenced to reckon, tests/test_composed_review_waits_for_a_roster_slot.py, docs/evidence/fragments/work-flows-to-the-lane/composed-review-waits-for-a-roster-slot.html and a figures directory; the diff touches four files under reckon/, the new test file and the fragment, every one inside that fence and nothing in the figures directory.\nVERDICT manifest: read; status complete, commits 6c4c0fa916 and b6c47cb860, baseline_suite 0 failures at f9ef714581, after_suite 0 failures at 6c4c0fa916, negative_control_log naming logs/negative-control.log, and an artifacts line that quotes \"51 passed in 12.36s\" where logs/base-arm.log's summary reads 13.71s.\nVERDICT diff: read both commits against base f9ef714581e99472eafc9f68f1852b7f46a5deea \u2014 6c4c0fa916 adds RosterFull at dispatch_admission.py:1267 and raises it at :215, exports it on the facade and binds it in dispatching/_imports.py, and adds a 64-line except RosterFull arm at recovery_review_dispatch.py:3892 plus the 213-line test file; b6c47cb860 adds the 73-line evidence fragment and no code.\nCALL_SITES: reckon/crew/dispatch_admission.py:297 _refuse_over_reservation_roster raised inside the admission pass, reckon/crew/dispatch.py:329 facade export of _refuse_over_reservation_roster, reckon/crew/dispatching/_imports.py:371 facade binding, reckon/crew_dispatch_commands.py:3163 crew review -> dispatch_review_for_run, reckon/crew/recovery_review_acceptance.py:1098 reflex sweep -> dispatch_review_for_run and its :1106 report bucket, reckon/crew/recovery_watch.py:3778 watch reflex -> dispatch_review_for_run, reckon/crew/plan_review.py:4569 content-review pass -> dispatch_review_for_run, reckon/crew/recovery_review_dispatch.py:2250 _zero_slot_held_lane reads HELD_REVIEW_DISPATCH_STATUSES\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/recovery_review_dispatch.py:3892-3948 writes the roster-held review as a queued request through _queue_router_held_review and keeps the composed directory the queued pointer's brief resolves through, which is the deliverable at docs/plans/work-flows-to-the-lane.html:309.\nSCORE evidence: 17\nJUSTIFICATION evidence: logs/gate.log reads \"53 passed in 11.34s\" EXIT=0 at 6c4c0fa916 and sacct shows job 1315386 COMPLETED on partition all_debug, but the manifest's artifacts line at manifest.md:20 quotes the base arm as 12.36s where logs/base-arm.log reads 13.71s, so one recorded figure does not reconcile with the log it cites.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git show --stat f9ef714581..b6c47cb860 lists only reckon/crew/dispatch.py, dispatching/_imports.py, dispatch_admission.py, recovery_review_dispatch.py, tests/test_composed_review_waits_for_a_roster_slot.py and the evidence fragment, every one inside the declared fence.\nSCORE durability: 18\nJUSTIFICATION durability: logs/negative-control.log shows the declared mutation (the roster refusal left as a bare CrewError) reddens both new tests at EXIT=1, but nothing in tests/test_composed_review_waits_for_a_roster_slot.py exercises the \"roster-full\" entry added to HELD_REVIEW_DISPATCH_STATUSES at reckon/crew/recovery_review_dispatch.py:2222, so removing it would leave the file green.\nSCORE fit: 18\nJUSTIFICATION fit: the added RosterFull at reckon/crew/dispatch_admission.py:1267 follows the LaneHeld/_GateReadDeadline idiom beside it including the noqa: N818 marker, and the added comments state the mechanism with no plan, ticket or author reference, but the arm at recovery_review_dispatch.py:3945 reports the roster hold under the \"lane-paused\" error token a reader takes for a paused gate whose dispatch queued nothing.\nSCORE reuse: 20\nJUSTIFICATION reuse: the arm reuses _queue_router_held_review at reckon/crew/recovery_review_dispatch.py:692, which composes a record through dispatch's own _queued_request_record and stores it with runs.queue_dispatch, and no second queue writer or roster-cap mechanism exists in reckon/crew.\nFINDING reckon/crew/recovery_review_dispatch.py:3945 non-blocking: the roster-full arm reports error \"lane-paused\", so the reflex sweep's recovery_review_acceptance.py:1106 branch files a queued roster hold in its lane_paused bucket and a consumer of that report cannot tell a roster hold that queued a request from a paused gate that queued nothing.\nFINDING reckon/crew/recovery_review_dispatch.py:2222 non-blocking: \"roster-full\" is added to HELD_REVIEW_DISPATCH_STATUSES with no assertion over _zero_slot_held_lane, so deleting the entry leaves tests/test_composed_review_waits_for_a_roster_slot.py green and the re-routing behaviour the change claims is unguarded.\nFINDING manifest.md:20 non-blocking: the source manifest quotes the base arm as \"51 passed in 12.36s\" while logs/base-arm.log's summary line reads \"51 passed in 13.71s\", and its baseline_suite.command names the worktree interpreter where the log header records \"PYTHONPATH=. .venv/bin/python -m pytest ...\" in the extracted base tree, so the recorded command is not the literal command the log ran.",
+  "review_run_id": "r-20261114T141709252816-review-of-composed-review-waits-for-a-roster-slot-b6c47cb86007",
+  "reviewed_base_sha": "f9ef714581e99472eafc9f68f1852b7f46a5deea",
+  "reviewed_head_sha": "b6c47cb86007baa4c2c10cb62f1484c6e4348fc6",
+  "reviewed_run_id": "r-20261114T133336510416-composed-review-waits-for-a-roster-slot",
+  "reviewer": {
+    "backend": "clive",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash",
+    "reviewer_run_id": "r-20261114T141709252816-review-of-composed-review-waits-for-a-roster-slot-b6c47cb86007"
+  },
+  "reviewer_run_id": "r-20261114T141709252816-review-of-composed-review-waits-for-a-roster-slot-b6c47cb86007",
+  "scores": {
+    "durability": 18,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-14T17:20:56.261675+00:00",
+  "total": 112
+}

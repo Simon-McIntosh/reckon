@@ -103,7 +103,11 @@ WORKER_MCP_SERVERS_KEY = "worker_mcp_servers"
 # path reckon invents.
 REPORTS_KEY = "reports"
 PERSIST_ROOT_KEY = "persist_root"
-REPORTS_PATH_KEYS = (PERSIST_ROOT_KEY,)
+# Where a project's working reports wait after they are moved off the crew home.
+# An item that is a symlink may be expired only when the folder it points to
+# lies under this root, so a project that names none keeps every symlink it has.
+STAGING_ROOT_KEY = "staging_root"
+REPORTS_PATH_KEYS = (PERSIST_ROOT_KEY, STAGING_ROOT_KEY)
 
 # The lanes a pick may reach only on the terms a policy states, keyed by lane
 # name and read from the host layer and the project layer like any other key. A

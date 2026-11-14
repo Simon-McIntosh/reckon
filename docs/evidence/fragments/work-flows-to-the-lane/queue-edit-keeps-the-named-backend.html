@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="work-flows-to-the-lane">
+  <meta name="plan-evidence-for" content="reckon:work-flows-to-the-lane">
+  <meta name="plan-verifies" content="reckon:work-flows-to-the-lane#s61">
+  <meta name="plan-recorded-at" content="2026-11-14">
+  <meta name="plan-verdict" content="passed">
+  <title>A route edit keeps the backend it names | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" id="queue-edit-keeps-the-named-backend-landing"
+  data-node="queue-edit-keeps-the-named-backend" data-reckon="landed" data-when="2026-11-14">
+  <h2>A queue edit naming a backend keeps that backend</h2>
+  <p>A queued request edited with <code>--backend</code> beside <code>--model</code>
+  resolved the model to whichever configured backend carried its lane and model
+  key first, so the named backend was silently replaced. Two backends may serve
+  one pair: in the flight configuration a lane's plain backend and an editing
+  variant of it carry the same lane and model key, so
+  <code>--backend codex-anchored --model sol</code> stored <code>codex</code>
+  while reporting <code>changed: ["route"]</code>.</p>
+  <p>The edit now asks the named backend directly. The model is resolved within
+  that backend's own lane, and the backend is kept when its entry serves the
+  pair. When it does not, the edit is refused naming both; nothing is written.</p>
+  <ul id="queue-edit-keeps-the-named-backend-what-changed">
+    <li><code>reckon/crew/queue_edit.py::_named_route</code> keeps a named
+    backend when one is given beside a model, instead of resolving the model to
+    the first backend that serves it.</li>
+    <li><code>reckon/crew/queue_edit.py::_pair_a_named_backend_serves</code>
+    resolves the model within the named backend's lane and refuses with the
+    backend and the model both named.</li>
+    <li><code>reckon/crew/queue_edit.py::_backend_serves_pair</code> decides
+    whether that backend's own entry carries the pair, by the same two paths the
+    catalogue resolver accepts.</li>
+  </ul>
+  <p><code>tests/test_queue_edit_keeps_the_named_backend.py</code> drives the
+  crew queue verb over a temporary crew home whose configuration declares
+  <code>codex</code>, <code>codex-anchored</code> and <code>claude</code>, the
+  first two both serving lane <code>codex</code> model key <code>sol</code>.</p>
+  <table id="queue-edit-keeps-the-named-backend-cases">
+    <caption>Gate run on <code>all_debug</code>; logs are in the run
+    directory (<code>gate-base.log</code>, <code>gate-head.log</code>,
+    <code>negative-control.log</code>).</caption>
+    <thead><tr><th>Case</th><th>What it shows</th></tr></thead>
+    <tbody>
+      <tr><td>an edit keeps the backend it names</td><td>the named <code>codex-anchored</code> is stored, with lane <code>codex</code> and model key <code>sol</code></td></tr>
+      <tr><td>a model the named backend does not serve is refused</td><td>the edit names <code>codex-anchored</code> and <code>sonnet</code>, exits non-zero, and leaves the pointer unchanged</td></tr>
+    </tbody>
+  </table>
+  <p>The negative control resolves the model to its first defining backend,
+  which is the defect this node repairs. Applied to the named-backend branch, it
+  stores <code>codex</code> in the first test and accepts the second edit, and
+  both cases fail with <code>EXIT=1</code>.</p>
+  <p>The armed suite runs the node's own test file beside
+  <code>tests/test_staged_write_inventory.py</code>: the base revision
+  <code>cfbe9492</code> passes 51, head <code>1b563065</code> passes 53.</p>
+</article>
+</body>
+</html>

@@ -2730,9 +2730,7 @@ def record_response(
         # answer invisible to every committed-first reader, so the committed copy
         # is rewritten and committed in one commit through the same helper a
         # promotion uses.
-        write_json_atomically(
-            committed, updated, indent=2, sort_keys=True, fsync=False, mode=None
-        )
+        _review_store.record_written(committed, updated)
         _commit_record_write(str(updated.get("project") or ""), committed)
         from reckon.crew.findings import note_record_written
 
@@ -2894,9 +2892,7 @@ def accept_edits(
     updated[ACCEPTED_EDITS_KEY] = accepted
     committed = _committed_copy_of(updated)
     if committed is not None:
-        write_json_atomically(
-            committed, updated, indent=2, sort_keys=True, fsync=False, mode=None
-        )
+        _review_store.record_written(committed, updated)
         _commit_record_write(project, committed)
         return committed
     return store_plan_review(updated, base_dir=base_dir)
@@ -5311,7 +5307,50 @@ def _store_delivered_report(
         return store_code_review(record, base_dir=base_dir)
     if str(record.get("subject") or "") == PORTFOLIO_SUBJECT:
         return store_portfolio_review(record, base_dir=base_dir)
-    return store_plan_review(record, base_dir=base_dir)
+    path = store_plan_review(record, base_dir=base_dir)
+    _commit_record_when_run_promoted(record)
+    return path
+
+
+def _commit_record_when_run_promoted(
+    record: Mapping[str, Any],
+) -> Path | None:
+    """Commit a staging record whose delivering run has already promoted.
+
+    A promotion commits the reviews it finds staged before it appends the run's
+    ledger row, so the row's commit carries them. A delivery that reaches the
+    store later — a pass over a plan whose review already landed — writes its
+    record with no promotion left to commit it, and the record then stays in the
+    host staging store and never travels with the tree. So the store commits
+    such a record itself, through the same committed writer a promotion uses,
+    whenever the crew run that produced it already holds a ledger row.
+
+    A record whose run has not promoted is left staged: its own promotion is the
+    one write that commits it, so nothing is committed twice. A project with no
+    committed reviews tree, or a record that needs no run of its own, resolves
+    nowhere to commit and is left as the store wrote it.
+
+    A commit that fails raises out of this pass rather than being swallowed: the
+    record is still staged and otherwise nothing would commit it, so a delivery
+    that could not land its record must fail loudly where its caller can see it.
+    """
+    project = str(record.get("project") or "").strip()
+    plan_slug = str(record.get("plan_slug") or "").strip()
+    composed = str(record.get("review_run_id") or "").strip()
+    crew_run = _review_store._plan_review_crew_run_id(project, plan_slug, composed)
+    if not crew_run:
+        return None
+    from reckon.crew.open_run_index import has_row
+
+    if not has_row(project, crew_run):
+        return None
+    if _review_store.committed_review_root(project) is None:
+        return None
+    from reckon.crew import review_records
+
+    path = review_records.store_committed_review(record, project=project)
+    review_records.commit_record_write(project, path)
+    return path
 
 
 def store_delivered_reviews(
@@ -5458,8 +5497,10 @@ CODE_REVIEW_FILE_PREFIX = "code-"
 # The write-path sentence a plan section carries, and the path-shaped tokens it
 # names. A section's write paths are authored prose rather than markup, so the
 # composer reads the sentence that states them and takes the ``.py`` paths from
-# it rather than guessing at any path-like token in the prose.
-_WRITE_PATHS_SENTENCE = re.compile(r"write\s+paths?\s*:", re.IGNORECASE)
+# it rather than guessing at any path-like token in the prose. The label ends in
+# a colon or a full stop: both are authored as a bold lead-in, and a section
+# that writes "Write paths." rather than "Write paths:" states the same paths.
+_WRITE_PATHS_SENTENCE = re.compile(r"write\s+paths?\s*[.:]", re.IGNORECASE)
 _PY_PATH_TOKEN = re.compile(r"[A-Za-z0-9_][A-Za-z0-9_./-]*\.py")
 
 
@@ -5974,9 +6015,7 @@ def store_code_review(
         stored["timestamp"] = datetime.now(UTC).isoformat()
     path = code_review_path(project, key, base_dir)
     path.parent.mkdir(parents=True, exist_ok=True)
-    write_json_atomically(
-        path, stored, indent=2, sort_keys=True, fsync=False, mode=None
-    )
+    _review_store.record_written(path, stored)
     from reckon.crew.findings import note_record_written
 
     note_record_written(path, project=project)

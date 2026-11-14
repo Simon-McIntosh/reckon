@@ -1,0 +1,50 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-11-14T18:05:24.304Z",
+  "dispatched_at": "2026-11-14T18:00:50Z",
+  "findings": [
+    {
+      "file": "tests/test_a_review_row_knows_the_producer_is_down.py",
+      "line": 171,
+      "severity": "non-blocking",
+      "summary": "test_a_row_with_a_live_producer_still_promises_the_sweep asserts duty['reflex_window_seconds'] == obligations._reflex_review_window_seconds(), the same function the production row sets that field from, so both sides move together and the assertion holds whatever the value is."
+    },
+    {
+      "file": "reckon/crew/obligations.py",
+      "line": 906,
+      "severity": "non-blocking",
+      "summary": "_producer_lease re-implements the lease-liveness rule that reckon/hooks/coordinator_obligations.py:1011 producer_lease_is_live already owns (different record source: runs.watch_lease_renewed_at rather than the lease path), rather than extending that owner; it shares runs.producer_lease_seconds() so the threshold is not forked."
+    },
+    {
+      "file": "tests/test_a_review_row_knows_the_producer_is_down.py",
+      "line": 148,
+      "severity": "non-blocking",
+      "summary": "assert obligations._overdue_figure(silence) in command uses the production renderer on both sides; the independent guard is the surrounding 'the producer is down' / absence-of-'expected within' pair."
+    }
+  ],
+  "project": "reckon",
+  "review_run_id": "r-20261114T175512640980-review-of-wave4-clive-the-monitor-shows-the-wo-s106-14fc5a39b837",
+  "reviewed_base_sha": "df6e63a5130aabdc0a624274ce2ad15ffde1ef1d",
+  "reviewed_head_sha": "14fc5a39b837165563e6f25cff2e70fbba6df675",
+  "reviewed_run_id": "r-20261114T145736997716-wave4-clive-the-monitor-shows-the-wo-s106",
+  "scores": {
+    "durability": 14,
+    "evidence": 15,
+    "fit": 17,
+    "goal_fidelity": 18,
+    "reuse": 12,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-14T18:55:56.397414+00:00",
+  "total": 96,
+  "verdicts": {
+    "diff": "Read both commits: 314c066daf adds the lease read and the queue-without-producer path, 14fc5a39b8 adds the evidence fragment; 368 insertions, 7 deletions across four files, all inside the declared scope.",
+    "done_when": "The done_when names tests/test_a_review_row_knows_the_producer_is_down.py; the manifest records its 3/3 pass and gates/negative-control.log records the first case failing when the lease read is removed.",
+    "goal": "The node's goal is that a review row reads the producer's lease and a composition with no producer is queued rather than left as a dark brief; reckon/crew/obligations.py:906-940 and reckon/crew/recovery_review_dispatch.py:741-804 land both halves.",
+    "manifest": "Read; status complete, three deliverables committed, baseline_suite and after_suite both completed at 107 failures and 5 errors with identical id sets, negative control recorded in gates/negative-control.log.",
+    "write_paths": "The manifest declares four paths (obligations.py, recovery_review_dispatch.py, the new test, the evidence fragment); git diff --stat over df6e63a5..14fc5a39 names exactly those four and nothing else."
+  }
+}

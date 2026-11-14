@@ -212,7 +212,14 @@ def _refuse_over_reservation_roster(
     # reader would otherwise be shown every live run on the machine, most of
     # which are not inside the allocation at all.
     occupying_ids = [str(pointer.get("run_id") or "unknown") for pointer in occupants]
-    raise CrewError(f"{refusal} Occupying runs: {', '.join(occupying_ids) or 'none'}.")
+    raise RosterFull(
+        f"{refusal} A seat frees when one of those workers ends, so a request "
+        f"queued behind this cap launches then. "
+        f"Occupying runs: {', '.join(occupying_ids) or 'none'}.",
+        occupancy=len(occupants),
+        limit=placement_module.RESERVATION_ROSTER_LIMIT,
+        occupying=occupying_ids,
+    )
 
 
 def _refuse_over_concurrency_ceiling(
@@ -1255,6 +1262,27 @@ class LaneHeld(LanePaused):
     rides the exception, so every surface reports the figure the router
     published rather than a second opinion about it.
     """
+
+
+class RosterFull(CrewError):  # noqa: N818 - a held condition named beside the lane holds
+    """A dispatch found the placement reservation's roster at its cap.
+
+    The cap is a queueable resource rather than a refusal: the node is ready,
+    the allocation is simply carrying as many placed workers as it was sized
+    for, and one of them finishing frees the seat this dispatch would take. A
+    caller that can queue writes the request and relaunches it when a seat
+    frees, so the composition of a review is not lost while the fleet is busy.
+
+    It stays a :class:`CrewError` so every refusal surface reports it, and it
+    carries the occupancy the decision was taken on together with the seats
+    that produced it, so a reader sees the same population the guard counted.
+    """
+
+    def __init__(self, message: str, *, occupancy: int, limit: int, occupying: list[str]) -> None:
+        super().__init__(message)
+        self.occupancy = occupancy
+        self.limit = limit
+        self.occupying = list(occupying)
 
 
 class _GateReadDeadline(Exception):  # noqa: N818 - an internal marker, not a raised API

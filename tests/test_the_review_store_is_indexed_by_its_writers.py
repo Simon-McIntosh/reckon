@@ -263,13 +263,21 @@ def test_a_foreign_write_is_found_by_one_listing_of_names(stored) -> None:
         for item in counted
         if item.startswith("stat:") and item != "stat:directory"
     ]
-    assert review_records.store_index_changed_runs(directory, version) == {run_ids[3]}
+    assert review_records.store_index_changed_runs(directory, version) == {
+        run_ids[3]
+    }, "reconciliation did not publish the foreign run after the rebuild version"
     assert foreign.name in review_records.store_index_document(directory)["entries"]
     assert len(listings) == 1, f"the foreign write cost {len(listings)} listings"
     assert record_stats == [], (
         "the foreign write re-stat'ed records the index already held: "
         f"{record_stats[:6]}"
     )
+
+
+def test_the_foreign_write_check_detects_disabled_reconciliation(stored, monkeypatch):
+    monkeypatch.setattr(review_records, "reconcile_foreign_write", lambda *_: 0)
+    with pytest.raises(AssertionError, match="did not publish the foreign run"):
+        test_a_foreign_write_is_found_by_one_listing_of_names(stored)
 
 
 def test_a_missing_index_is_rebuilt_from_one_listing(stored) -> None:

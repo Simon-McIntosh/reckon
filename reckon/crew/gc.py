@@ -1648,7 +1648,12 @@ def settle_run_scratch(
         entry: dict[str, Any] = {
             "run_id": name,
             "path": str(child),
-            "bytes": tree_size_bytes(child),
+            # Only a copy this pass is about to remove is sized. Sizing walks
+            # every file beneath it, and a live run's scratch can hold tens of
+            # thousands; this pass runs ahead of every launch and resume, so
+            # walking the live trees each time held a resume's reservation
+            # past the bound that reclaims it, and the run never launched.
+            "bytes": tree_size_bytes(child) if state == RUN_SCRATCH_SETTLED else None,
             "ctime_age_seconds": age,
             "state": state,
             "withheld": reason if state != RUN_SCRATCH_SETTLED else "",

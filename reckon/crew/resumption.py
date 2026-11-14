@@ -252,7 +252,7 @@ def reopen_run(
     *,
     reason: str = "",
 ) -> dict[str, Any]:
-    """Widen a completed run's write scope and start nothing.
+    """Prepare a halted or completed run, optionally widening its write scope.
 
     A reopen answers a caller who asked for a wider boundary, not one who asked
     for work: the advice a launch would carry was composed for a state the run
@@ -263,15 +263,23 @@ def reopen_run(
     """
     from reckon.crew.claims import widen_claim
 
-    # The widened pointer is the one widen_claim wrote, so the grant, the
-    # attempt number and the fence all come from one read rather than a second
-    # one that could see a peer's write in between.
-    widened, added = widen_claim(run_id, list(write_paths))
+    record = read_pointer(run_id)
+    if local_liveness(record)[0] is True:
+        raise live_process_refusal(record, reading="alive")
+    in_flight = live_attempt_refusal(run_id, record)
+    if in_flight is not None:
+        raise in_flight
+    added: list[str] = []
+    widened = record
+    if write_paths:
+        # Use the pointer returned by the grant so the attempt and fence
+        # cannot drift through a second read after widening.
+        widened, added = widen_claim(run_id, list(write_paths))
     delivered = _reset_delivered_manifest_status(run_id, widened)
     reopening = _record_reopening(
         run_id,
         granted_paths=list(write_paths),
-        reason=reason or "reopening the completed run",
+        reason=reason or "reopening the stopped run",
         delivered=delivered,
     )
     advice, advice_path = waiting_refused_advice(run_id)

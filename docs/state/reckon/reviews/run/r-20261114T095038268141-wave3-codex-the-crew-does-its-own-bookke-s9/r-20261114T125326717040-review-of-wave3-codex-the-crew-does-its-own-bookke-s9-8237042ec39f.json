@@ -1,0 +1,63 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-11-14T13:16:25.047Z",
+  "dispatched_at": "2026-11-14T13:13:16Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "exempted",
+      "reason": "the importer arms were measured by the coordinator on rigel job 1315185 at base e6a503b649 and head 8237042ec3 with -n 16: 71 failed/1120 passed vs 71 failed/1126 passed, 0 added; logs ~/.cache/reckon-arms/s9-importers/{base,head}.log; the landing re-measures the armed suite at the landed head",
+      "recorded_at": "2026-11-14T14:49:55.424334+00:00"
+    },
+    "1": {
+      "kind": "exempted",
+      "reason": "non-blocking; carried to the plan's next health review",
+      "recorded_at": "2026-11-14T14:50:49.507192+00:00"
+    },
+    "2": {
+      "kind": "exempted",
+      "reason": "non-blocking; carried to the plan's next health review",
+      "recorded_at": "2026-11-14T14:51:10.949311+00:00"
+    }
+  },
+  "findings": [
+    {
+      "failure_scenario": "If the landed promotion/classification change broke an importer (a circular import or a call-site signature mismatch in another test module importing reckon.crew.promotion), nothing in the recorded evidence would show it: the two-file head arm never imports those modules through the importer population, and no completed importer arm exists to compare.",
+      "file": "reckon/crew/recovery_classification.py",
+      "line": 1211,
+      "severity": "blocking",
+      "summary": "The done_when requires the test files importing the two changed modules to add no failure against a base arm, run with pytest -n 8; the importer arms never reached a summary (base capped twice, head stopped under the two-failure rule) and the recorded gate ran two files without -n 8, yet the manifest records status complete with rubric.goal_fidelity and rubric.evidence both reading 'missing'."
+    },
+    {
+      "failure_scenario": "A high-volume caller that classifies many settled pointers with a moving worktree head pays a git read per pointer; the mitigation is the cache, and where the cache is cold the settled path now does work the previous design reserved for dead-run adjudication.",
+      "file": "reckon/crew/recovery_classification.py",
+      "line": 1211,
+      "severity": "non-blocking",
+      "summary": "classify_pointer now calls _commits_beyond_base(record) for every terminal-status pointer, where the removed comment stated live and settled delivery paths deliberately never paid a git read; the cost is mitigated by the revision-keyed cache in recovery_watch._commits_beyond_base but the deliberate previous choice is reversed without a note."
+    },
+    {
+      "failure_scenario": "A run whose manifest cites a commit landed on a different branch or an amended history drops that citation without a warning, so promotion presents fewer commits than the manifest declared while the record gives no signal that a citation was discarded.",
+      "file": "reckon/crew/promotion.py",
+      "line": 419,
+      "severity": "non-blocking",
+      "summary": "_promotion_commits returns the git history range whenever it is non-empty, so a manifest citation naming a commit outside base..HEAD is silently discarded rather than merged or reported, and the docstring describes the manifest as fallback only."
+    }
+  ],
+  "project": "reckon",
+  "review_run_id": "r-20261114T125326717040-review-of-wave3-codex-the-crew-does-its-own-bookke-s9-8237042ec39f",
+  "reviewed_base_sha": "e6a503b649948c21917054fdd3a09999a99d84f6",
+  "reviewed_head_sha": "8237042ec39f0a46f18cec46654fd23467a9edb0",
+  "reviewed_run_id": "r-20261114T095038268141-wave3-codex-the-crew-does-its-own-bookke-s9",
+  "scores": {
+    "durability": 17,
+    "evidence": 9,
+    "fit": 17,
+    "goal_fidelity": 16,
+    "reuse": 17,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-14T14:55:49.538772+00:00",
+  "total": 94
+}

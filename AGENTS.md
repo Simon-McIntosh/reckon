@@ -28,11 +28,11 @@ prevents. Pointers below, one per rule; the references hold the full text.
   - size an operational cap from population and measured unit rate so the
     cohort completes — and name the scarce resource
   - an operational run outliving a turn runs in bounded slices
-  - queue the sections you have chosen in one beat with `crew dispatch --batch`,
-    from any plans whose review is answered, including those whose upstream has
-    not landed; the queue holds
-    their declared waits until admission can release them. Choose each section;
-    never load a plan wholesale
+  - queue every reviewed plan you own (assigned to you, or authored and being
+    built by you) at its full width in one beat with `crew dispatch --batch`;
+    never another session's, an unowned or a superseded plan, including sections whose upstream has not landed;
+    the declared waits are the gate, holding each node until its upstream has
+    passed review and landed. Do not ration; reprioritise what is urgent
 
 ## Project
 
@@ -226,6 +226,7 @@ writeback, content parity, fleet safety).
 | Implement the work a plan describes; record outcomes; followup with §05 invocation | `reckon-build` | `/reckon-build <slug> [section]` |
 | Sprint / milestone / roadmap state (the project index) | `reckon-sprint` | `/reckon-sprint` |
 | Pure-read inspection across all plans in this repo | `reckon-status` | `/reckon-status` |
+| Broadcast an orchestrator usage-limit reset to every live session | `reckon-reset` | `/reckon-reset` |
 | Pending work, true blockers, critical/open paths, and DAG wiring | `reckon-roadmap` | `/reckon-roadmap` |
 | Fix, redraw or iterate on a figure under `docs/figures/`, in the session | `reckon-plot` | `/reckon-plot <figure>` |
 | Set up or refresh reckon infra in a repo (CSS, mounts, state dir, symlink) | `reckon-sync` | `/reckon-sync` |
