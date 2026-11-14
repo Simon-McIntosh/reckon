@@ -1918,6 +1918,7 @@ def _store_index(directory: Path) -> dict[str, list[dict[str, Any]]]:
 
 _INDEX_DIRNAME = ".review-index"
 _INDEX_NAME = "index.json"
+_INDEX_STAMP_NAME = "stamp.json"
 _INDEX_LOCK_NAME = "lock"
 _INDEX_LOG_LIMIT = 4096
 
@@ -1932,6 +1933,85 @@ def _index_document_path(directory: Path) -> Path:
     and none could settle.
     """
     return directory / _INDEX_DIRNAME / _INDEX_NAME
+
+
+def _index_stamp_path(directory: Path) -> Path:
+    """The settled store identity that belongs to one store's index.
+
+    It sits beside the document for the same reason the document sits in this
+    subdirectory: a write here does not move the store directory's own identity.
+    Keeping the settled identity in a file of its own is what lets a reconcile
+    that changed nothing record it by writing a few dozen bytes, instead of
+    rewriting a document of megabytes to change one field of it.
+    """
+    return directory / _INDEX_DIRNAME / _INDEX_STAMP_NAME
+
+
+def _read_index_stamp(directory: Path) -> tuple[tuple[int, ...], int] | None:
+    """The store identity a previous reconcile settled, and its document version.
+
+    A missing, half-written or unusable stamp answers ``None`` exactly as an
+    absent one does, which makes the next reader reconcile and write it again.
+    """
+    try:
+        raw = json.loads(_index_stamp_path(directory).read_bytes())
+    except (OSError, ValueError):
+        return None
+    if not isinstance(raw, Mapping):
+        return None
+    identity = raw.get("directory_identity")
+    if not isinstance(identity, list) or not identity:
+        return None
+    try:
+        return tuple(int(item) for item in identity), int(raw.get("version") or 0)
+    except (TypeError, ValueError):
+        return None
+
+
+def _persist_index_stamp(
+    directory: Path, identity: tuple[int, ...] | None, version: int
+) -> None:
+    """Record the store identity this process found settled, against a version.
+
+    ``identity`` is the store directory's identity as it stood before the
+    listing the settled entries came from, never a later stat: a record written
+    after that listing moves the identity again, so the stamp cannot mask it.
+    The write is a cache write like the document's: an unwritable directory
+    costs the next reader a reconcile rather than being an error it reports.
+    """
+    if identity is None or not _resolved(directory):
+        return
+    try:
+        from reckon._store import write_json_atomically
+
+        write_json_atomically(
+            _index_stamp_path(directory),
+            {"directory_identity": list(identity), "version": int(version)},
+            indent=None,
+            sort_keys=True,
+        )
+    except OSError:
+        return
+
+
+def _index_is_settled(
+    directory: Path, document: Mapping[str, Any], identity: tuple[int, ...] | None
+) -> bool:
+    """Whether a persisted stamp already accounts for this store state.
+
+    Both the identity and the document version must match. A moved identity
+    means something may have changed in the store; a moved version means the
+    document describes records the stamp was not written beside.
+    """
+    if identity is None:
+        return False
+    stamp = _read_index_stamp(directory)
+    if stamp is None:
+        return False
+    held_identity, held_version = stamp
+    return held_identity == identity and held_version == int(
+        document.get("version") or 0
+    )
 
 
 def _index_holding(directory: Path) -> Path | None:
@@ -2034,7 +2114,13 @@ def _read_index_document(directory: Path) -> dict[str, Any] | None:
 
 
 def _persist_index_document(directory: Path, doc: Mapping[str, Any]) -> None:
-    """Write the store's index document atomically in the store's index dir."""
+    """Write the store's index document atomically in the store's index dir.
+
+    The stamp is written at the same moment, from the identity and version the
+    document itself records, so a document never describes a state its stamp
+    contradicts: a reader either sees both, or sees the stamp lagging and
+    reconciles.
+    """
     try:
         from reckon._store import write_json_atomically
 
@@ -2049,6 +2135,12 @@ def _persist_index_document(directory: Path, doc: Mapping[str, Any]) -> None:
         )
     except OSError:
         return
+    identity = doc.get("directory_identity")
+    _persist_index_stamp(
+        directory,
+        tuple(int(item) for item in identity) if identity else None,
+        int(doc.get("version") or 0),
+    )
 
 
 def _entry_facts(name: str, record: Mapping[str, Any], data: bytes) -> dict[str, Any]:
@@ -2206,16 +2298,6 @@ def record_written(
     _index_stored_record(path, record)
 
 
-# The directory identities this process has reconciled and found nothing to
-# change, each with the document version it was checked at. A short-lived file
-# another writer creates and removes in the store moves the directory's
-# identity without moving any record, and recording the new identity meant
-# rewriting the whole document -- megabytes on a shared filesystem, every few
-# seconds. Remembering the check here costs nothing on disk; a moved identity
-# or a new document version is checked again.
-_SETTLED_IDENTITIES: dict[str, tuple[tuple[int, ...], int]] = {}
-
-
 def reconcile_foreign_write(directory: Path) -> int:
     """Pick up added, removed or atomically replaced records without file stats.
 
@@ -2224,15 +2306,17 @@ def reconcile_foreign_write(directory: Path) -> int:
     at. Directory entries supply their inodes without stat-ing the files.
     Only added or replaced names are read; removed names are dropped. An
     external rewrite retaining its inode becomes visible at the next rebuild.
+
+    A reconcile that finds nothing changed is not repeated by any other
+    process: the identity it settled is written to the stamp beside the
+    document, and the next reader -- on this node or any other -- settles from
+    that file with one stat and no listing.
     """
     doc = _read_index_document(directory)
     if doc is None:
         return 0
     identity = _store_directory_identity(directory)
-    if identity is None or identity == tuple(doc.get("directory_identity") or ()):
-        return 0
-    settled = (tuple(identity), int(doc.get("version") or 0))
-    if _SETTLED_IDENTITIES.get(str(directory)) == settled:
+    if identity is None or _index_is_settled(directory, doc, identity):
         return 0
     changed = 0
     with _index_lock(directory, wait=False) as locked:
@@ -2243,7 +2327,7 @@ def reconcile_foreign_write(directory: Path) -> int:
             return 0
         doc = _read_index_document(directory) or doc
         identity = _store_directory_identity(directory)
-        if identity is None or identity == tuple(doc.get("directory_identity") or ()):
+        if identity is None or _index_is_settled(directory, doc, identity):
             return 0
         try:
             with os.scandir(directory) as scanned:
@@ -2299,11 +2383,9 @@ def reconcile_foreign_write(directory: Path) -> int:
             touched.add(run_id)
             changed += 1
         if not changed:
-            # Nothing the index describes moved, so nothing is written.
-            _SETTLED_IDENTITIES[str(directory)] = (
-                tuple(identity),
-                int(doc.get("version") or 0),
-            )
+            # Nothing the index describes moved, so the document is left
+            # untouched and only the stamp records the identity that settled.
+            _persist_index_stamp(directory, identity, int(doc.get("version") or 0))
             return 0
         for run_id in touched:
             runs[run_id] = _run_digest(entries, run_id)
@@ -2342,9 +2424,7 @@ def _settled_index_document(directory: Path) -> dict[str, Any] | None:
         # Several directory writes can share one filesystem clock tick. Size
         # and ctime are part of the same stat and keep a new name observable.
         identity = _store_directory_identity(directory)
-        if identity is not None and identity == tuple(
-            document.get("directory_identity") or ()
-        ):
+        if _index_is_settled(directory, document, identity):
             return document
         reconcile_foreign_write(directory)
         return _read_index_document(directory) or document
