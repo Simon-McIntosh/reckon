@@ -44,6 +44,7 @@ def _node(section="s2"):
         done_when="The section check passes.",
         time_budget="20m",
         spec_level="exact",
+        manifest_path=str(runs.run_dir(f"build-{section}") / "manifest.md"),
     )
 
 

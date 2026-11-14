@@ -26,6 +26,7 @@ from reckon.crew import (
     runs,
 )
 from reckon.crew.node import PlanReviewMissingError, TaskNode
+from tests.test_review_plan_command import CONFIG
 from tests.test_review_plan_command import project as project  # noqa: PLC0414
 
 SECTIONS = ("s2", "s3")
@@ -127,6 +128,10 @@ def _node(section: str = "s2") -> TaskNode:
         plan="fixture",
         section=section,
         role="implement",
+        done_when="The section contract check passes.",
+        write_paths=[f"{section}.py"],
+        time_budget="20m",
+        manifest_path=str(runs.run_dir(f"build-{section}") / "manifest.md"),
     )
 
 
@@ -138,7 +143,7 @@ def _queue(repo, section: str = "s2") -> dict:
         project="sample",
         session="coordinator",
         repo_root=repo,
-        config={"default_backend": "worker", "local_backend": "worker"},
+        config={**CONFIG, "roles": {**CONFIG["roles"], "implement": {}}},
     )
     run_id = next(iter(stored))
     return runs.read_pointer(run_id)

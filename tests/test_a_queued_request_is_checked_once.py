@@ -15,6 +15,7 @@ from reckon.crew import (
     runs,
 )
 from reckon.crew.node import TaskNode
+from tests.test_review_plan_command import CONFIG
 from tests.test_review_plan_command import project as project  # noqa: PLC0414
 
 SECTIONS = ("s2", "s3")
@@ -118,6 +119,10 @@ def _node(section: str) -> TaskNode:
         plan="fixture",
         section=section,
         role="implement",
+        done_when="The section contract check passes.",
+        write_paths=[f"{section}.py"],
+        time_budget="20m",
+        manifest_path=str(runs.run_dir(f"build-{section}") / "manifest.md"),
     )
 
 
@@ -238,7 +243,7 @@ def test_the_request_records_its_digests_at_queue_time(two_section_plan):
     """Queueing a request stamps the section and contract digests it reads."""
     _home, repo, path = two_section_plan
     node = _node("s2")
-    config = {"default_backend": "worker", "local_backend": "worker"}
+    config = {**CONFIG, "roles": {**CONFIG["roles"], "implement": {}}}
     stored = queue_admission.queue_requests(
         [node], project="sample", session="coordinator", repo_root=repo, config=config
     )
