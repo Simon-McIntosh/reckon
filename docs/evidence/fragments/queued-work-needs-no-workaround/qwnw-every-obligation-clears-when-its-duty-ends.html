@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="queued-work-needs-no-workaround">
+  <meta name="plan-evidence-for" content="reckon:queued-work-needs-no-workaround">
+  <meta name="plan-verifies" content="reckon:queued-work-needs-no-workaround#s8">
+  <meta name="plan-verdict" content="measurement">
+  <title>A census of the live crew home, and the row that survives its run</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" id="qwnw-every-obligation-clears-when-its-duty-ends-census" data-node="qwnw-every-obligation-clears-when-its-duty-ends" data-reckon="landed" data-when="2026-11-14">
+  <h2>A census of the live crew home, and the row that survives its run</h2>
+  <p>This node's declared write paths are the section's evidence fragment and its figures directory. The section's done-when asks for tests in a temporary repository and crew home, and for a fix in product source. Both lie outside those paths, so this record carries the measurement the section asks for and states the code work it cannot perform, rather than reporting the section met.</p>
+
+  <h3>The census the section asks for</h3>
+  <p>Every obligation row stored in the live crew home was read, and each row's run was classified by two independent facts: whether it still holds a live pointer, and whether it still has a ledger row, which a promoted or landed run writes. A run with neither cannot be promoted, landed or resumed again, so a duty naming it can only offer a command that fails.</p>
+  <p>The census ran as an <code>all_debug</code> job at <code>2026-11-14T20:55:53Z</code> (<code>census.log</code>, exit 0), reading 130 stored documents and 151 rows carrying a run id. <strong>77 rows name a run with no live pointer: 62 of those runs have a ledger row and 15 have neither.</strong> The figure the section asks for — zero rows whose run has no live pointer or has landed — reads 77 at the base revision, not zero.</p>
+  <table class="r-table">
+    <thead>
+      <tr><th>kind</th><th>live pointer</th><th>landed</th><th>gone</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>blocked</td><td>4</td><td>0</td><td>2</td></tr>
+      <tr><td>landing-refused</td><td>5</td><td>2</td><td>0</td></tr>
+      <tr><td>promotable-stale</td><td>8</td><td>17</td><td>2</td></tr>
+            <tr><td>promotion-failed</td><td>13</td><td>5</td><td>2</td></tr>
+      <tr><td>repair-owed</td><td>0</td><td>1</td><td>0</td></tr>
+      <tr><td>review-dimension-sub-floor</td><td>1</td><td>1</td><td>0</td></tr>
+      <tr><td>review-missing</td><td>6</td><td>1</td><td>1</td></tr>
+      <tr><td>review-queued</td><td>1</td><td>1</td><td>0</td></tr>
+      <tr><td>review-ready</td><td>1</td><td>15</td><td>0</td></tr>
+      <tr><td>run-queued</td><td>27</td><td>2</td><td>3</td></tr>
+      <tr><td>run-waiting</td><td>8</td><td>0</td><td>1</td></tr>
+      <tr><td>worktree-held</td><td>0</td><td>21</td><td>0</td></tr>
+    </tbody>
+  </table>
+
+  <p>Two of the section's four row kinds are not the defect the raw count suggests. All 21 <code>worktree-held</code> rows name a tree that is still on disk and unoccupied, each resolved through <code>_held_worktree_records</code>, so they are live duties to collect a tree rather than duties whose run has gone. The seven <code>promotion-failed</code> rows whose run holds no pointer are already settled on read: <code>_settled_state</code> in <code>reckon/crew/promotion_requests.py</code> answers <code>discarded</code>, <code>promoted</code>, <code>landed</code> or <code>gone</code> and rewrites the request before any row is built.</p>
+
+  <h3>The row that survives its run, reproduced</h3>
+  <p>The <code>sweep-failed</code> row clears by none of the routes the deliverable names. The station keeps its per-session failure list as durable state, through <code>record_sweep_report</code> in <code>reckon/crew/station_obligations.py</code>, and only that session's next <em>completed</em> sweep replaces it. The view adds every stored entry back as a row in <code>_with_sweep_failures</code> without asking whether the run it names still exists.</p>
+  <p>The reproduction is <code>repro_sweep_failed.py</code>, run against the base revision. It stores one failure for a run, builds the payload the station would publish, and reads the rows back:</p>
+  <pre><code>rows after one pass: [('sweep-failed', 'r-gone-promoted-and-landed')]
+REPRODUCED: a run with no live pointer and no ledger row still raises a row
+run r-gone-promoted-and-landed has pointer: False</code></pre>
+  <p>So a run promoted, landed, discarded or resumed still raises <code>sweep-failed</code> after a pass, which is the case the section names. No such row exists in the live crew home at this instant. The route that raises one has no settlement path, so the row returns as soon as a sweep fails once for a session that then stops sweeping.</p>
+
+  <h3>What the section still needs, and where it lives</h3>
+  <p>Three changes are needed, none of them in this node's write paths: <code>reckon/crew/station_obligations.py</code>, to drop a stored sweep failure whose run has no live pointer and no ledger row and to prune the stored entry as it is read; <code>reckon/crew/runs.py</code>, to accept an acknowledgement for a run whose pointer and ledger row are both gone, which today needs <code>--project</code> and otherwise refuses; and a test module under <code>tests/</code> that raises each of the four row kinds and settles the section each way.</p>
+  <p>Because this node holds no test path, it runs no suite pair and writes no red log. The reproduction above is the only falsifying evidence it could produce inside its scope.</p>
+</article>
+</body>
+</html>
