@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="scoring-should-stop-a-promotion">
+  <meta name="plan-title" content="The scoped suite names only the files each tree holds">
+  <meta name="plan-summary" content="The scoped suite resolves the armed template over the files each arm's own tree holds: a write path is not a file that exists, so the head arm drops a test the change deleted and the base arm drops a dead test file. Both arms match the armed command under the comparison, and an arm that collected nothing is refused as unmeasured. The rule is already in the tree at the base revision (00a0fc0750), so this node verified the five cases in the done-when's named test file, measured the same file red against the pre-rule tree at 45124a4c54, and re-ran the declared mutation (presence check removed) to watch the guard fire: 1 failed, EXIT=1, with the head command naming the deleted test.">
+  <meta name="plan-evidence-for" content="scoring-should-stop-a-promotion">
+  <meta name="plan-recorded-at" content="2026-11-14">
+  <meta name="plan-verdict" content="passed">
+  <title>The scoped suite names only the files each tree holds | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <h1>The scoped suite names only the files each tree holds</h1>
+
+    <section id="wave3-omp-local-scoring-should-stop-a-promot-s27-standing">
+      <h2>Where this node found the work</h2>
+      <p>The plan's change is already in the tree at the base revision
+        <code>47d4d53612</code>: <code>_scoped_suite_command</code> in
+        <code>reckon/crew/promotion_records.py</code> takes the revision an arm runs
+        against and keeps only the scoped files that revision's own object store holds,
+        the arm comparison accepts that per-tree resolution of the same template, and an
+        after arm left naming no file or either arm exiting 4 or 5 with no failure is
+        refused as unmeasured. The rule arrived at <code>00a0fc0750</code>, before the base
+        revision of this node.</p>
+      <p>So this node did not reimplement the guard. It verified it at the head, measured
+        the same test file red against the pre-rule tree, and re-ran the declared mutation
+        to watch the guard fire. No product source and no test file was changed; the node's
+        only repository write is this fragment.</p>
+    </section>
+
+    <section id="wave3-omp-local-scoring-should-stop-a-promot-s27-evidence">
+      <h2>Evidence</h2>
+      <p>The five cases in
+        <code>tests/test_a_scoped_suite_names_only_present_files.py</code> pass at the head
+        revision over the tree as delivered, and the same file fails wholesale against the
+        pre-rule tree extracted at <code>45124a4c54</code>, where
+        <code>_scoped_suite_command</code> has no <code>revision</code> parameter at all:</p>
+      <table>
+        <thead>
+          <tr><th>arm</th><th>revision</th><th>result</th><th>log</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>head, done-when file</td>
+            <td><code>47d4d53612</code></td>
+            <td>5 passed, <code>EXIT=0</code></td>
+            <td><code>logs/head-done-when.log</code></td>
+          </tr>
+          <tr>
+            <td>same file, pre-rule tree</td>
+            <td><code>45124a4c54</code></td>
+            <td>5 failed, <code>EXIT=1</code></td>
+            <td><code>logs/pre-rule-red.log</code></td>
+          </tr>
+          <tr>
+            <td>negative control: presence check removed</td>
+            <td><code>47d4d53612</code></td>
+            <td>1 failed, <code>EXIT=1</code></td>
+            <td><code>logs/negative-control.log</code></td>
+          </tr>
+        </tbody>
+      </table>
+      <p>The negative control is the one the plan declares: resolving over the write paths
+        writes <code>tests/test_deleted.py</code> into the head command, so
+        <code>test_each_tree_resolves_the_template_over_the_files_it_holds</code> fails on
+        <code>assert 'tests/test_added.py' not in ...tests/test_added.py
+        tests/test_deleted.py tests/test_kept.py</code>. The exit 4 that defect produced is
+        reproduced directly — a pytest invocation naming the deleted file in a tree that
+        does not hold it — in <code>logs/exit-4-reproduction.log</code>:
+        <code>ERROR: file or directory not found: tests/test_deleted.py</code> …
+        <code>EXIT=4</code>.</p>
+      <p>The base revision already carries the rule, so the done-when's "the same test fails
+        at the base" is measured against the pre-rule tree rather than against
+        <code>47d4d53612</code>: at the declared base the file passes because the change has
+        already landed there.</p>
+    </section>
+
+    <section id="wave3-omp-local-scoring-should-stop-a-promot-s27-scope">
+      <h2>Scope note</h2>
+      <p>The dispatch's write scope named
+        <code>tests/test_a_stale_lease_record_does_not_expose_a_pin.py</code>, the test file
+        the plan's own history records as deleted with the record it tested. A fixture
+        recreating that file would be invented coverage, and nothing in the done-when needs
+        it, so the node wrote no test file. The done-when's named file is unchanged and
+        green.</p>
+    </section>
+  </main>
+</body>
+</html>
