@@ -1,0 +1,55 @@
+<section id="wave4-omp-local-a-landing-survives-a-mov-s2">
+  <h2>A moved primary is reused only on an unreadable-free measurement</h2>
+  <p>The reuse itself was verified, its guard forced red, and the fixture it
+  runs through repaired below.</p>
+  <table>
+    <thead>
+      <tr>
+        <th>Delivery</th>
+        <th>Observed result at 9fcf1375</th>
+        <th>At the head of this node</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Measured, then a <code>docs/plans/</code> commit lands</td>
+        <td>Passed</td>
+        <td>Lands without being measured again</td>
+      </tr>
+      <tr>
+        <td>Measured, then a <code>reckon/</code> commit lands</td>
+        <td>failed before the suite pair ran</td>
+        <td>Measured again</td>
+      </tr>
+      <tr>
+        <td>Docs-only commit, then a real merge conflict</td>
+        <td>Not landed; the verification refuses the stale measurement</td>
+        <td>Not landed; refused again</td>
+      </tr>
+      <tr>
+        <td>A second delivery waits for a later pass</td>
+        <td>failed before the suite pair ran</td>
+        <td>The deferred id carries a non-empty reason</td>
+      </tr>
+    </tbody>
+  </table>
+  <p>At the base revision <code>9fcf1375abfdb1148fa3086ead9cdb64c87ed544</code>
+  the focused file reports <strong>3 failed, 3 passed in 7.07s</strong>, exit 1:
+  the stubbed base and candidate checkouts were empty directories, and the
+  measurement now derives the review neighbourhood by reading the checkout's
+  git object store, so three claims raised
+  <code>CalledProcessError</code> before reaching the suite pair. A well-formed
+  measurement reads a checkout, so the fixture does what production does:
+  a detached worktree of the fixture repository. At the head of this node the
+  same file reports <strong>6 passed in 15.54s</strong>, exit 0.</p>
+  <p>The declared negative control — restoring "every moved primary
+  invalidates" — produces <strong>4 failed, 2 passed in 11.62s</strong>, exit 1,
+  with the first claim reporting “a measurement a docs-only move cannot change
+  was repeated”. The guard fires because the guard exists, not because the
+  delivery removed the behaviour.</p>
+  <p>No product source changed: the reuse in
+  <code>reckon/crew/queue_landing.py</code> (judged on the committed
+  <code>reckon/</code> identity, the tests, <code>pyproject.toml</code>,
+  <code>uv.lock</code> and the catalogue at both revisions) is the behaviour the
+  measure asks for, and the test that shows it was the stale part.</p>
+</section>
