@@ -1,0 +1,42 @@
+<section id="wave3-clive-anchored-the-monitor-shows-the-work-i-s71">
+  <h3 id="wave3-clive-anchored-the-monitor-shows-the-work-i-s71-heading">A reload's replayed baseline prints no self-transition</h3>
+  <p id="wave3-clive-anchored-the-monitor-shows-the-work-i-s71-found">
+    The suppression this section asks for was already on <code>main</code> when
+    this node was dispatched: <code>58e11382fa</code> made the fleet replay carry
+    the state the pane last showed and drop a baseline re-announcing it, and
+    <code>6e091764a7</code> widened that decision to the duty shown beside the
+    word. The section's file and its four cases were present and passing at the
+    node's base revision <code>47d4d536120a</code>, so the work here was to
+    verify the behaviour and to state the measure the done-when asks for rather
+    than to reimplement a working guard.
+  </p>
+  <p id="wave3-clive-anchored-the-monitor-shows-the-work-i-s71-measure">
+    Measured on the follower's own fleet replay over a recorded stream of three
+    rows &mdash; the run's move into <code>waiting</code>, the reload's replayed
+    <code>new &rarr; waiting</code> baseline, then a real
+    <code>waiting &rarr; working</code> &mdash; exactly <strong>two</strong> rows
+    reach the row path for the run, the first sighting and the real change, and
+    the replayed baseline reaches it not at all. With the suppression removed,
+    the declared negative control, the same case finds <strong>three</strong>
+    rows, the baseline among them, and fails.
+  </p>
+  <p id="wave3-clive-anchored-the-monitor-shows-the-work-i-s71-change">
+    The first case in
+    <code>tests/test_a_reload_replay_prints_no_self_transition.py</code> now
+    asserts that count on the rows the replay delivered. It did not before: the
+    existing cases asserted that the baseline is withheld and that the pane draws
+    the first sighting, but a regression that also withheld the genuine change
+    would have read as a quiet pane. The row path withholds the move into
+    <code>working</code> for its own reason, so the assertion is taken where the
+    row path is handed its rows rather than on what the pane drew. No product
+    source changed.
+  </p>
+  <p id="wave3-clive-anchored-the-monitor-shows-the-work-i-s71-bounds">
+    The module-window bound the same done-when names does not pass at either
+    arm: <code>reckon/crew_follow_commands.py</code> measures
+    <strong>50,277</strong> estimated tokens against the 50,000 bound,
+    byte-for-byte identical in both arms. This node changed no product source,
+    so the figure is pre-existing and belongs to the module split the plan places
+    elsewhere.
+  </p>
+</section>

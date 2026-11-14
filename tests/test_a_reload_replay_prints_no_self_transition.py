@@ -110,9 +110,11 @@ def test_a_replay_of_the_pane_shown_state_draws_no_row(tmp_path) -> None:
     ``new -> waiting`` baseline for it declaring the same condition, then a real
     ``waiting -> working``. The baseline re-announces what the pane already
     holds, so it draws nothing, and the move into ``working`` asks the
-    coordinator for nothing, so the stream leaves it to crew view.
+    coordinator for nothing, so the stream leaves it to crew view. Two rows
+    reach that path for the run — the first sighting and the real change — and
+    the replayed baseline reaches it not at all.
     """
-    rows, _fed = _replay(
+    rows, fed = _replay(
         tmp_path,
         [
             _event(
@@ -138,6 +140,13 @@ def test_a_replay_of_the_pane_shown_state_draws_no_row(tmp_path) -> None:
         ],
     )
 
+    assert [(row.get("from_state"), row.get("to_state")) for row in fed] == [
+        ("working", "waiting"),
+        ("waiting", "working"),
+    ], (
+        "exactly two rows reach the row path for the run: the first sighting and "
+        f"the real change; got {fed!r}"
+    )
     assert [row.get("to_state") for row in rows] == ["waiting"], (
         f"the run is drawn for its first sighting only; got {rows!r}"
     )
