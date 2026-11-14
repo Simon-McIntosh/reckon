@@ -1,0 +1,62 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "Derived from the reviewed run's own arms on disk: baseline_suite names suite-base-arm.log at revision fb92136adacd509b805dc48763b7c80a81f9a16d, command PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py, completed true, 51 passed, EXIT=0, no FAILED line; after_suite names suite-merge-arm.log at revision 9aa03357ccc4875e3a22921b8dc6b5914bf6e7ea, command PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_landing_without_its_pointer_keeps_the_pending_record.py tests/test_staged_write_inventory.py, completed true, 58 passed, EXIT=0, no FAILED line. Both logs end with a bare EXIT= line and both carry their summary line, so both arms are readable; their failure sets are empty and the set difference is empty, 0 added failures. The 58 reconciles with the base arm's 51 plus the seven items the node's test file collects (six test functions, one parametrized twice). suite-record-path-callers.log at the same head adds five caller files, 34 passed, EXIT=0, also with no FAILED line.",
+  "call_sites": [
+    "reckon/crew_run_commands.py:3507 (crew_complete calls _refuse_a_landing_without_its_pointer before any landing write)",
+    "reckon/crew_run_commands.py:3670 (the retained inline refusal reads pending_landing._record_path)",
+    "reckon/crew/recovery_classification.py:1035 (_promoted_awaiting_merge reads pending_landing._record_path)",
+    "reckon/crew/recovery_repair_dispatch.py:93, :134, :137 (merge-repair dispatch reads and writes the pending record through _record_path)",
+    "reckon/crew/queue_landing.py:1900 (the landing pass calls pending_landing.finish_pending_landings)"
+  ],
+  "completed_at": "2026-11-14T14:20:48.355Z",
+  "dispatched_at": "2026-11-14T14:09:57Z",
+  "finding_dispositions": {},
+  "findings": [
+    {
+      "file": "reckon/crew_run_commands.py",
+      "line": "3660",
+      "severity": "non-blocking",
+      "text": "The merge keeps the node's inline no-pointer branch in crew_complete after main's _refuse_a_landing_without_its_pointer call at :3507, which raises for the same condition before this branch can be reached: reckon/crew/runs.py:1081-1096 raises for a missing, malformed or non-object pointer, so the branch is reachable only for a pointer file holding an empty object. It is dead code, and the distinction it drew is lost - main's helper names a pending landing record path in its message whether or not a record exists, so a run with neither a pointer nor a record is now told to look at a file that is not there. The goal behaviour (refuse before writing, leave the record standing) is still delivered by the earlier refusal, which is why this does not hold the node."
+    },
+    {
+      "file": "reckon/crew_run_commands.py",
+      "line": "3764",
+      "severity": "non-blocking",
+      "text": "The helper builds the pending record path inline as pending_landing.pending_dir() / f\"{run_id}.json\" instead of calling the accessor at reckon/crew/pending_landing.py:60. This is the one resolution of that path the module owns, and this node's repair exists precisely because a second spelling of it drifted: if the record's filename or directory changes, _record_path moves and this refusal goes on naming the default path, so the message points a coordinator at a record the pass no longer reads."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "Read 9aa03357cc against 0344f019e5 for the two files named in this review's goal: the conflict resolution keeps main's _refuse_a_landing_without_its_pointer at :3758 alongside the node's inline no-pointer branch at :3660-3676, and appends main's three tests at :103-178 while keeping the node's three at :63-100; the other hunks in crew_run_commands.py (the promotions command, the ack project resolution, the reopen changes) are primary main's commits carried in by the merge, not the node's authored content.",
+    "done_when": "prompt.txt:126 names tests/test_a_landing_without_its_pointer_keeps_the_pending_record.py with three assertions (non-zero exit, unchanged record bytes, one row from finish_pending_landings) plus an empty-project no-write case; suite-merge-arm.log records that file run with tests/test_staged_write_inventory.py at revision 9aa03357ccc4875e3a22921b8dc6b5914bf6e7ea, 58 passed, EXIT=0, and the file at the reviewed head carries exactly those assertions at :72-89 and :163.",
+    "goal": "The reviewed node's goal, prompt.txt:38, is to keep a pending-landing record when its run's pointer is gone so the landing pass can still finish it; at the reviewed head the refusal at reckon/crew_run_commands.py:3507 runs before the land block writes at :3662 and the node's test at tests/test_a_landing_without_its_pointer_keeps_the_pending_record.py:72-89 shows the record's bytes unchanged with finish_pending_landings returning one already-landed row.",
+    "manifest": "Read; status complete, commits 92b4484919b20ae4859bf6fe5d4afad4f0e13e39, 0344f019e546364f04feebcdb65cbdf7b14da870 and 9aa03357ccc4875e3a22921b8dc6b5914bf6e7ea, arms recorded as merge 58 passed, after 54 passed, base 51 passed, five caller files 34 passed, and a negative control reproducing the AttributeError at EXIT=1 over the parent tree; the source worktree it names resolves to 9aa03357cc and is clean.",
+    "write_paths": "prompt.txt:80-83 declares reckon/crew/pending_landing.py, reckon/crew_run_commands.py and tests/test_a_landing_without_its_pointer_keeps_the_pending_record.py; the merge's own conflict resolution (git show --cc 9aa03357cc) touches only the latter two, and pending_landing.py at the head is byte-identical to 0344f019e5's copy, so nothing the node authored left the fence."
+  },
+  "justifications": {
+    "durability": "tests/test_a_landing_without_its_pointer_keeps_the_pending_record.py:72-89 asserts the record bytes, the non-zero exit and one row from finish_pending_landings, all read back from disk, so it reddens if the refusal or the guarded write regress; a regression confined to the dead branch at :3660 reddens nothing, and this score rests on the composite behaviour the test does guard.",
+    "evidence": "suite-merge-arm.log names revision 9aa03357cc, its tree and its command, records 58 passed and ends with EXIT=0, and the count reconciles with the base arm's 51 plus the seven items the node's test file collects.",
+    "fit": "The helper follows the file's private-underscore idiom and its click.ClickException refusal matches the surrounding style, but leaving a second unreachable refusal in the same function is the merge's own hygiene defect.",
+    "goal_fidelity": "reckon/crew_run_commands.py:3507 refuses before the land block writes at :3662, so the record that pending_landing._record_path(run_id) names survives the call and the pass still finds it, as the goal states.",
+    "reuse": "reckon/crew_run_commands.py:3764 rebuilds the record path that reckon/crew/pending_landing.py:60 owns, and the merged head carries both that helper and the node's inline refusal at :3660 for one capability, so the merge duplicates a resolution it could have extended.",
+    "scope_discipline": "The merge's conflict resolution touches only the two paths this review covers, but it leaves reckon/crew_run_commands.py:3660 unreachable behind the refusal at :3507 rather than reconciling the two, which is kept-out-of-scope duplicate code rather than a path outside the fence."
+  },
+  "project": "reckon",
+  "review_node": "review-of-a-landing-without-its-pointer-keeps-the-pending-record-9aa03357ccc4",
+  "review_run_id": "r-20261114T140746832912-review-of-a-landing-without-its-pointer-keeps-the-pending-record-9aa03357ccc4",
+  "reviewed_base_sha": "0344f019e546364f04feebcdb65cbdf7b14da870",
+  "reviewed_head_sha": "9aa03357ccc4875e3a22921b8dc6b5914bf6e7ea",
+  "reviewed_run_id": "r-20261114T093943384148-a-landing-without-its-pointer-keeps-the-pending-record",
+  "scores": {
+    "durability": 14,
+    "evidence": 18,
+    "fit": 15,
+    "goal_fidelity": 17,
+    "reuse": 10,
+    "scope_discipline": 16
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-14T14:28:18.204504+00:00",
+  "total": 90
+}

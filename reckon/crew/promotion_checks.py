@@ -37,6 +37,7 @@ from reckon.crew.node import (
     role_may_write_repository_paths,
 )
 from reckon.crew.plan_review import _is_run_comment
+from reckon.crew.repair import round_node_source
 from reckon.crew.reports import (
     TERMINAL_MANIFEST_STATUSES,
     ManifestParseError,
@@ -56,6 +57,17 @@ from reckon.crew.runs import (
     record_process_alive,
 )
 from reckon.evidence import EXECUTABLE_SECTION_ROLES
+
+
+def _plan_review_plan_slug(node_id: str, prefix: str) -> str:
+    """The plan a plan-review node id names, or ``""`` when it names none.
+
+    Read through the function that owns the node-id grammar rather than by
+    slicing the prefix off here, because a design review writes its rubric after
+    the slug. A slice would read the rubric as part of the plan and promote the
+    review against a plan that does not exist.
+    """
+    return round_node_source(str(node_id or ""), prefix)
 
 
 @dataclass(frozen=True)
@@ -1848,8 +1860,9 @@ def _resolve_promotion_outcome(
     project = str(record.get("project") or "")
     node_id = str((record.get("node") or {}).get("id") or "")
     prefix = recovery.PLAN_REVIEW_NODE_PREFIX
-    if node_id.startswith(prefix) and node_id[len(prefix) :]:
-        return _plan_review_promotion_outcome(run_id, project, node_id[len(prefix) :])
+    plan_slug = _plan_review_plan_slug(node_id, prefix)
+    if plan_slug:
+        return _plan_review_promotion_outcome(run_id, project, plan_slug)
     if not recovery._is_review_run(record):
         stored = review_module.record_for_review_run(project, run_id)
         if stored is not None:
@@ -2960,7 +2973,7 @@ def _plan_review_record_for_promoting_run(
     prefix = recovery.PLAN_REVIEW_NODE_PREFIX
     if not node_id.startswith(prefix):
         return None
-    plan_slug = node_id[len(prefix) :]
+    plan_slug = _plan_review_plan_slug(node_id, prefix)
     if not plan_slug:
         return None
     matched = _delivered_plan_review_for_run(project, plan_slug, run_id)
@@ -3054,7 +3067,7 @@ def _plan_review_store_outcome(
     prefix = recovery.PLAN_REVIEW_NODE_PREFIX
     if not node_id.startswith(prefix):
         return None
-    plan_slug = node_id[len(prefix) :]
+    plan_slug = _plan_review_plan_slug(node_id, prefix)
     if not plan_slug:
         return None
     delivery = _delivered_plan_review_for_run(project, plan_slug, run_id)
@@ -3133,7 +3146,7 @@ def _misdelivered_plan_review_directories(
     prefix = recovery.PLAN_REVIEW_NODE_PREFIX
     if not node_id.startswith(prefix):
         return None
-    plan_slug = node_id[len(prefix) :]
+    plan_slug = _plan_review_plan_slug(node_id, prefix)
     if not plan_slug:
         return None
     root = plan_review._plan_review_report_root(project, plan_slug)

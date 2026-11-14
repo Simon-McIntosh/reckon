@@ -435,113 +435,23 @@ def read_rows(
     return sorted(found.values(), key=lambda row: str(row.get("completed_at") or ""))
 
 
-def _review_index_path(directory: Path) -> Path:
-    from reckon import ledger
-
-    key = hashlib.sha256(str(directory.resolve()).encode()).hexdigest()
-    return ledger._index_directory() / "review-lookup" / f"{key}.sqlite"
-
-
-@_publish
-def review_written(path: Path, record: Mapping[str, Any], *, previous=None) -> None:
-    """Advance a complete review projection or leave it marked for recovery."""
-    from reckon import ledger
-
-    index = _review_index_path(path.parent)
-    existed = index.exists()
-    index.parent.mkdir(parents=True, exist_ok=True)
-    with (
-        contextlib.closing(sqlite3.connect(index, timeout=30)) as connection,
-        connection,
-    ):
-        _review_schema(connection)
-        metadata = dict(connection.execute("SELECT key, value FROM review_meta"))
-        complete = (
-            (
-                metadata.get("complete") == "1"
-                and metadata.get("directory") == json.dumps(previous)
-            )
-            if existed
-            else not any(item.name != path.name for item in path.parent.glob("*.json"))
-        )
-        _review_rows(connection, [(path.name, record)])
-        connection.executemany(
-            "INSERT OR REPLACE INTO review_meta VALUES (?, ?)",
-            [
-                ("directory", json.dumps(ledger._file_identity(path.parent))),
-                ("complete", str(int(complete))),
-            ],
-        )
-
-
-def _review_schema(connection) -> None:
-    connection.execute(
-        "CREATE TABLE IF NOT EXISTS reviews (name TEXT PRIMARY KEY, subject TEXT, producer TEXT)"
-    )
-    connection.execute("CREATE INDEX IF NOT EXISTS by_subject ON reviews(subject)")
-    connection.execute("CREATE INDEX IF NOT EXISTS by_producer ON reviews(producer)")
-    connection.execute(
-        "CREATE TABLE IF NOT EXISTS review_meta (key TEXT PRIMARY KEY, value TEXT)"
-    )
-
-
-def _review_rows(connection, rows) -> None:
-    connection.executemany(
-        "INSERT OR REPLACE INTO reviews VALUES (?, ?, ?)",
-        [
-            (
-                name,
-                str(row.get("reviewed_run_id") or ""),
-                str(row.get("review_run_id") or ""),
-            )
-            for name, row in rows
-        ],
-    )
-
-
-def review_rebuilt(directory: Path, entries, stamp) -> None:
-    """Publish the full reader's answer as the next operational lookup."""
-    try:
-        index = _review_index_path(directory)
-        index.parent.mkdir(parents=True, exist_ok=True)
-        with (
-            contextlib.closing(sqlite3.connect(index, timeout=30)) as connection,
-            connection,
-        ):
-            _review_schema(connection)
-            metadata = dict(connection.execute("SELECT key, value FROM review_meta"))
-            if metadata.get("complete") == "1" and metadata.get(
-                "directory"
-            ) == json.dumps(stamp):
-                return
-            connection.execute("DELETE FROM reviews")
-            _review_rows(connection, [(entry["name"], entry) for entry in entries])
-            connection.executemany(
-                "INSERT OR REPLACE INTO review_meta VALUES (?, ?)",
-                [("directory", json.dumps(stamp)), ("complete", "1")],
-            )
-    except (OSError, sqlite3.Error):
-        return
-
-
 def review_paths(directory: Path) -> list[Path] | None:
-    """The review files open work can refer to, or None for a history read."""
+    """The review files open work can refer to, or None for a history read.
+
+    A store that keeps a writer-maintained index answers its own record lookups
+    from that index and never reaches here, so this is the path a directory
+    without one takes -- the committed reviews tree, which the project's
+    checkout tracks. What the live pointers can narrow to on their own is a
+    directory that is itself named by open work; anything finer needs the
+    store's own entries, and a directory without an index has none to consult.
+    """
     snapshot = pointers()
     if snapshot is None:
         return None
     ids = {str(row.get("run_id") or "") for row in snapshot} - {""}
-    declared: set[Path] = set()
     for row in snapshot:
         node = row.get("node") or {}
         if isinstance(node, Mapping):
-            for name in node.get("write_paths") or ():
-                path = Path(name)
-                if (
-                    path.is_absolute()
-                    and path.parent == directory
-                    and path.suffix == ".json"
-                ):
-                    declared.add(path)
             subject = re.fullmatch(
                 r"review-of-(.+)-[0-9a-f]{8,40}(?:-figure)?", str(node.get("id") or "")
             )
@@ -553,32 +463,7 @@ def review_paths(directory: Path) -> list[Path] | None:
     ids.discard("")
     if directory.name in ids:
         return sorted(directory.glob("*.json"))
-    index = _review_index_path(directory)
-    if not index.exists():
-        return None
-    paths: set[Path] = declared
-    from reckon import ledger
-
-    try:
-        with contextlib.closing(
-            sqlite3.connect(f"{index.as_uri()}?mode=ro", uri=True)
-        ) as connection:
-            metadata = dict(connection.execute("SELECT key, value FROM review_meta"))
-            if metadata.get("complete") != "1" or metadata.get(
-                "directory"
-            ) != json.dumps(ledger._file_identity(directory)):
-                return None
-            for run_id in ids:
-                paths.update(
-                    directory / name
-                    for (name,) in connection.execute(
-                        "SELECT name FROM reviews WHERE subject=? OR producer=?",
-                        (run_id, run_id),
-                    )
-                )
-    except (OSError, sqlite3.Error):
-        return None
-    return sorted(paths)
+    return None
 
 
 @_read_fallback(_history_version)

@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import sys
+
 from . import _unbound_dispatch_call
 from ._imports import (
     _LANE_GATE_WAITING_STATES,
@@ -1160,6 +1162,9 @@ def dispatch(
             brief=brief,
             registered_at=claim_registered_at,
         )
+        # Keep the identity visible if the caller exits during launch. Stdout
+        # remains the command's final JSON document, so notices use stderr.
+        print(f"reckon: created run {run_id}", file=sys.stderr, flush=True)
     with (
         _request_claim_restored_on_refusal(run_id, request_pointer)
         if admission_launch

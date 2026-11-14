@@ -1,0 +1,73 @@
+<section id="a-write-paths-sentence-is-read-in-either-form-landing">
+  <h2>A section's write-paths label is read with a colon or a full stop</h2>
+
+  <p><strong>What changed.</strong> <code>_WRITE_PATHS_SENTENCE</code> in
+  <code>reckon/crew/plan_review.py</code> matched only a colon after
+  &ldquo;Write path&rdquo; or &ldquo;Write paths&rdquo;, so a section authored
+  with the equally common <strong>Write paths.</strong> lead-in handed no paths
+  to either of its readers: the section reader
+  (<code>code_review_paths_from_plan</code>) and the batch entry reader
+  (<code>_PlanRead.write_paths</code> in
+  <code>reckon/crew/dispatch_batch.py</code>, which imports the same pattern).
+  A <code>crew dispatch --batch</code> entry that omitted <code>write_paths</code>
+  was therefore refused with &ldquo;the section states no write-paths sentence
+  and the entry gives none&rdquo; for a section that states them. The pattern now
+  accepts either punctuation, so both readers take the sentence once.</p>
+
+  <p><strong>Audit coverage.</strong> <code>reckon audit-doc</code> gains a
+  <code>write-paths-sentence-unparsed</code> warning: a plan section that opens
+  a paragraph with the write-paths label in a form neither reader parses is
+  reported when the plan is audited, rather than surfacing as a refused
+  dispatch. The subject is the label sentence, not the phrase: a section that
+  discusses write paths in prose raises nothing, and neither does a section
+  whose prose already yields paths through the section reader. Over
+  <code>docs/plans</code> and <code>docs/evidence</code> the check reports 296
+  and 274 sections on any prose mention, and 0 and 0 once it is narrowed to an
+  unparseable label sentence.</p>
+
+  <h3 id="a-write-paths-sentence-is-read-in-either-form-measured">Measured</h3>
+
+  <p>The new test holds eight cases. A full-stop section yields its
+  code-formatted path through the section reader and through the batch reader;
+  the colon form still yields its paths through both; a batch entry for a
+  full-stop section with no <code>write_paths</code> queues carrying the
+  section's paths; and <code>audit-doc</code> warns on a label in neither form
+  while accepting both parseable forms. The eighth case is the narrowing the
+  review asked for: a section that mentions write paths in prose beside a
+  parseable label raises no warning.</p>
+
+  <table id="a-write-paths-sentence-is-read-in-either-form-arms">
+    <caption>Every arm ran on <code>all_debug</code>; each log's first line names
+    its revision, tree and command and its last line reads
+    <code>EXIT=&lt;code&gt;</code>.</caption>
+    <thead><tr><th>arm</th><th>revision</th><th>result</th></tr></thead>
+    <tbody>
+      <tr><td>after suite (node's two files)</td>
+        <td><code>344fc562</code>, worktree head</td>
+        <td>59 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>baseline suite (template over the base tree, new test absent)</td>
+        <td><code>465c2df0</code></td>
+        <td>51 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>wide gate, base (every test importing the changed modules)</td>
+        <td><code>465c2df0</code>, new test absent</td>
+        <td>3 failed, 579 passed, <code>EXIT=1</code></td></tr>
+      <tr><td>wide gate, head</td>
+        <td><code>c3ca399f</code>, worktree head</td>
+        <td>3 failed, 586 passed, <code>EXIT=1</code></td></tr>
+      <tr><td>negative control: colon-only pattern restored</td>
+        <td><code>344fc562</code> + mutation</td>
+        <td>4 failed, 4 passed, <code>EXIT=1</code></td></tr>
+    </tbody>
+  </table>
+
+  <p>The negative control restores the colon-only pattern; the full-stop section
+  reader, the full-stop batch reader, the batch queue and the audit acceptance
+  of the full-stop form all fail, while the colon case still passes.</p>
+
+  <p>The wide gate's three failures are the same ids on both arms
+  (<code>test_mcp_views.py::test_raw_and_schema_are_explicit_layers</code>,
+  <code>test_skill_contracts.py::test_ship_crew_views_match_the_typed_mcp_surface</code>
+  and <code>test_skill_contracts.py::test_every_registered_crew_verb_is_documented_or_exempt</code>),
+  so the change adds none; the head arm's extra passes are the new test's
+  eight cases.</p>
+</section>

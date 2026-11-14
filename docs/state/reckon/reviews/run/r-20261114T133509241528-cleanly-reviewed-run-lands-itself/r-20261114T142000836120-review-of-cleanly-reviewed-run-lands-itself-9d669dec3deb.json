@@ -1,0 +1,474 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_review": [
+    {
+      "assertion": "'--partition=all_debug' in argv",
+      "failure_condition_and_regression": "Changing the submitted partition away from all_debug fails this independent argv check.",
+      "file": "tests/test_cleanly_reviewed_run_lands_itself.py",
+      "line": 123
+    },
+    {
+      "assertion": "not _on_primary(delivery)",
+      "failure_condition_and_regression": "A fixture that already lands the worker head fails the starting ancestry check.",
+      "file": "tests/test_cleanly_reviewed_run_lands_itself.py",
+      "line": 177
+    },
+    {
+      "assertion": "_on_primary(delivery)",
+      "failure_condition_and_regression": "Restoring promotion-only acceptance leaves the actual git ancestry false; the recorded mutation demonstrates failure.",
+      "file": "tests/test_cleanly_reviewed_run_lands_itself.py",
+      "line": 179
+    },
+    {
+      "assertion": "(delivery['repo'] / 'left.txt').read_text() == 'feature\\n'",
+      "failure_condition_and_regression": "Dropping the introduced feature content during integration fails the on-disk marker check.",
+      "file": "tests/test_cleanly_reviewed_run_lands_itself.py",
+      "line": 180
+    },
+    {
+      "assertion": "report['accepted'] == [RUN]",
+      "failure_condition_and_regression": "Failing to add the delivered run to accepted results fails the expected report membership.",
+      "file": "tests/test_cleanly_reviewed_run_lands_itself.py",
+      "line": 181
+    },
+    {
+      "assertion": "outcome['merged'] is True",
+      "failure_condition_and_regression": "Returning false or omitting merged after a successful landing fails.",
+      "file": "tests/test_cleanly_reviewed_run_lands_itself.py",
+      "line": 183
+    },
+    {
+      "assertion": "outcome['gate_report']['integrated_verdict'] == 'passed'",
+      "failure_condition_and_regression": "Returning a non-passing merged gate verdict fails.",
+      "file": "tests/test_cleanly_reviewed_run_lands_itself.py",
+      "line": 184
+    },
+    {
+      "assertion": "Path(outcome['gate_report']['log_path']).read_text().endswith('EXIT=0\\n')",
+      "failure_condition_and_regression": "Missing or nonzero terminal gate receipt fails; this reads the recorded log, not the supplied gate string.",
+      "file": "tests/test_cleanly_reviewed_run_lands_itself.py",
+      "line": 185
+    },
+    {
+      "assertion": "delivery['submissions']",
+      "failure_condition_and_regression": "Bypassing partition submission fails the nonempty recorded submissions check.",
+      "file": "tests/test_cleanly_reviewed_run_lands_itself.py",
+      "line": 186
+    },
+    {
+      "assertion": "ledger.runs(PROJECT)[0]['run_id'] == RUN",
+      "failure_condition_and_regression": "Failing to expose the promoted row through the rootless ledger fails identity lookup; RUN is a selector identity, not a supplied success verdict.",
+      "file": "tests/test_cleanly_reviewed_run_lands_itself.py",
+      "line": 188
+    },
+    {
+      "assertion": "recorded['integrated_gate_check']['integrated_verdict'] == 'passed'",
+      "failure_condition_and_regression": "Failing to store a passing integrated gate receipt in the ledger fails.",
+      "file": "tests/test_cleanly_reviewed_run_lands_itself.py",
+      "line": 189
+    },
+    {
+      "assertion": "_plan_html.read_state_file(delivery['plan'])['section_declarations']['s2'] == 'done'",
+      "failure_condition_and_regression": "Omitting section declaration writeback fails the working-tree plan read.",
+      "file": "tests/test_cleanly_reviewed_run_lands_itself.py",
+      "line": 190
+    },
+    {
+      "assertion": "_plan_html.read_state(committed)['section_declarations']['s2'] == 'done'",
+      "failure_condition_and_regression": "Omitting the commit for declaration writeback fails the committed plan read.",
+      "file": "tests/test_cleanly_reviewed_run_lands_itself.py",
+      "line": 196
+    },
+    {
+      "assertion": "not _on_primary(delivery)",
+      "failure_condition_and_regression": "Merging the conflicting head fails independent ancestry.",
+      "file": "tests/test_cleanly_reviewed_run_lands_itself.py",
+      "line": 207
+    },
+    {
+      "assertion": "_git(repo, 'rev-parse', 'HEAD') == before",
+      "failure_condition_and_regression": "Moving primary despite conflict fails the pre-pass vs post-pass git revision comparison.",
+      "file": "tests/test_cleanly_reviewed_run_lands_itself.py",
+      "line": 208
+    },
+    {
+      "assertion": "runs.pointer_path(RUN).is_file()",
+      "failure_condition_and_regression": "Removing the live delivery on conflict fails.",
+      "file": "tests/test_cleanly_reviewed_run_lands_itself.py",
+      "line": 209
+    },
+    {
+      "assertion": "ledger.runs(PROJECT, root=repo) == []",
+      "failure_condition_and_regression": "Promoting despite pre-merge conflict fails the empty ledger check.",
+      "file": "tests/test_cleanly_reviewed_run_lands_itself.py",
+      "line": 210
+    },
+    {
+      "assertion": "'left.txt' in _outcome(report)['reason']",
+      "failure_condition_and_regression": "Dropping the conflicting path from the refusal fails.",
+      "file": "tests/test_cleanly_reviewed_run_lands_itself.py",
+      "line": 211
+    },
+    {
+      "assertion": "'conflict' in obligation['guard']",
+      "failure_condition_and_regression": "Dropping conflict identity from the obligation fails.",
+      "file": "tests/test_cleanly_reviewed_run_lands_itself.py",
+      "line": 213
+    },
+    {
+      "assertion": "'reckon crew' in obligation['remedy']",
+      "failure_condition_and_regression": "Omitting the actionable crew remedy fails.",
+      "file": "tests/test_cleanly_reviewed_run_lands_itself.py",
+      "line": 214
+    },
+    {
+      "assertion": "not delivery['submissions']",
+      "failure_condition_and_regression": "Attempting gate submission despite merge conflict fails.",
+      "file": "tests/test_cleanly_reviewed_run_lands_itself.py",
+      "line": 215
+    },
+    {
+      "assertion": "runs.read_pointer(RUN)['admission_landing'] == obligation",
+      "failure_condition_and_regression": "Rewriting the same refusal on the second reflex pass changes the observed obligation and fails; the captured value is prior external state, not a code input.",
+      "file": "tests/test_cleanly_reviewed_run_lands_itself.py",
+      "line": 217
+    },
+    {
+      "assertion": "not _on_primary(delivery)",
+      "failure_condition_and_regression": "Publishing the incompatible merged tree fails ancestry.",
+      "file": "tests/test_cleanly_reviewed_run_lands_itself.py",
+      "line": 228
+    },
+    {
+      "assertion": "_git(repo, 'rev-parse', 'HEAD') == before",
+      "failure_condition_and_regression": "Moving primary on a failed merged gate fails the before/after git comparison.",
+      "file": "tests/test_cleanly_reviewed_run_lands_itself.py",
+      "line": 229
+    },
+    {
+      "assertion": "runs.pointer_path(RUN).is_file()",
+      "failure_condition_and_regression": "Removing the failed delivery pointer fails.",
+      "file": "tests/test_cleanly_reviewed_run_lands_itself.py",
+      "line": 230
+    },
+    {
+      "assertion": "ledger.runs(PROJECT, root=repo) == []",
+      "failure_condition_and_regression": "Promoting a gate-failing candidate fails.",
+      "file": "tests/test_cleanly_reviewed_run_lands_itself.py",
+      "line": 231
+    },
+    {
+      "assertion": "outcome['gate_report']['integrated_verdict'] == 'failed'",
+      "failure_condition_and_regression": "Calling the incompatible merged gate passed fails.",
+      "file": "tests/test_cleanly_reviewed_run_lands_itself.py",
+      "line": 233
+    },
+    {
+      "assertion": "'tests/test_contract.py::test_merge_contract' in outcome['reason']",
+      "failure_condition_and_regression": "Dropping the actual failing test id from the refusal fails.",
+      "file": "tests/test_cleanly_reviewed_run_lands_itself.py",
+      "line": 234
+    },
+    {
+      "assertion": "'test_merge_contract' in runs.read_pointer(RUN)['admission_landing']['guard']",
+      "failure_condition_and_regression": "Dropping the failing test name from the coordinator obligation fails.",
+      "file": "tests/test_cleanly_reviewed_run_lands_itself.py",
+      "line": 235
+    },
+    {
+      "assertion": "not _on_primary(delivery)",
+      "failure_condition_and_regression": "Ignoring the manual decision and merging fails ancestry.",
+      "file": "tests/test_cleanly_reviewed_run_lands_itself.py",
+      "line": 254
+    },
+    {
+      "assertion": "_git(delivery['repo'], 'rev-parse', 'HEAD') == before",
+      "failure_condition_and_regression": "Moving the repository for a manual decision fails the git comparison.",
+      "file": "tests/test_cleanly_reviewed_run_lands_itself.py",
+      "line": 255
+    },
+    {
+      "assertion": "runs.pointer_path(RUN).is_file()",
+      "failure_condition_and_regression": "Removing a manually reserved delivery fails.",
+      "file": "tests/test_cleanly_reviewed_run_lands_itself.py",
+      "line": 256
+    },
+    {
+      "assertion": "'coordinator' in _outcome(report)['reason']",
+      "failure_condition_and_regression": "Losing the manual coordinator reason fails.",
+      "file": "tests/test_cleanly_reviewed_run_lands_itself.py",
+      "line": 257
+    },
+    {
+      "assertion": "not delivery['submissions']",
+      "failure_condition_and_regression": "Submitting a gate despite the manual hold fails.",
+      "file": "tests/test_cleanly_reviewed_run_lands_itself.py",
+      "line": 258
+    },
+    {
+      "assertion": "not pending_landing._record_path(RUN).exists()",
+      "failure_condition_and_regression": "Creating a pending landing despite the manual hold fails.",
+      "file": "tests/test_cleanly_reviewed_run_lands_itself.py",
+      "line": 259
+    },
+    {
+      "assertion": "code != 0",
+      "failure_condition_and_regression": "Returning success after a promoted conflict fails.",
+      "file": "tests/test_cleanly_reviewed_run_lands_itself.py",
+      "line": 293
+    },
+    {
+      "assertion": "outcome['merged'] is False",
+      "failure_condition_and_regression": "Claiming a conflicted merge succeeded fails.",
+      "file": "tests/test_cleanly_reviewed_run_lands_itself.py",
+      "line": 294
+    },
+    {
+      "assertion": "outcome['pending_landing'] == str(pending_landing._record_path(RUN))",
+      "failure_condition_and_regression": "Failing to name the canonical persistent pending record fails; this checks the independent path owner rather than a path passed into the landing function.",
+      "file": "tests/test_cleanly_reviewed_run_lands_itself.py",
+      "line": 295
+    },
+    {
+      "assertion": "not _on_primary(delivery)",
+      "failure_condition_and_regression": "Actually merging the conflicted head fails.",
+      "file": "tests/test_cleanly_reviewed_run_lands_itself.py",
+      "line": 296
+    },
+    {
+      "assertion": "'awaits its merge' in recovery.classify_pointer(pointer)['detail']",
+      "failure_condition_and_regression": "Classifying a promoted but unmerged delivery as settled fails.",
+      "file": "tests/test_cleanly_reviewed_run_lands_itself.py",
+      "line": 297
+    },
+    {
+      "assertion": "snapshot['state'] != 'promoted'",
+      "failure_condition_and_regression": "Emitting promoted landing state despite conflict fails.",
+      "file": "tests/test_cleanly_reviewed_run_lands_itself.py",
+      "line": 299
+    },
+    {
+      "assertion": "week['project']['phases']['landed'] == 0",
+      "failure_condition_and_regression": "Counting the unmerged row as landed project work fails.",
+      "file": "tests/test_cleanly_reviewed_run_lands_itself.py",
+      "line": 301
+    },
+    {
+      "assertion": "week['plans'].get(PLAN, {'phases': {'landed': 0}})['phases']['landed'] == 0",
+      "failure_condition_and_regression": "Counting the unmerged row in a present plan bucket fails; an absent bucket is accepted as zero and project count is independently checked at line 301.",
+      "file": "tests/test_cleanly_reviewed_run_lands_itself.py",
+      "line": 302
+    },
+    {
+      "assertion": "_ledger_run_id_reader(PROJECT).for_runs([RUN])[RUN] == 'complete'",
+      "failure_condition_and_regression": "Emitting a landing departure word for an unmerged delivery fails.",
+      "file": "tests/test_cleanly_reviewed_run_lands_itself.py",
+      "line": 306
+    },
+    {
+      "assertion": "_settled_state({'run_id': RUN, 'project': PROJECT}) != 'landed'",
+      "failure_condition_and_regression": "Settling the promoted request as landed despite conflict fails.",
+      "file": "tests/test_cleanly_reviewed_run_lands_itself.py",
+      "line": 307
+    },
+    {
+      "assertion": "not _on_primary(delivery)",
+      "failure_condition_and_regression": "Admission lander ignoring manual policy fails ancestry.",
+      "file": "tests/test_cleanly_reviewed_run_lands_itself.py",
+      "line": 320
+    },
+    {
+      "assertion": "not report['landed']",
+      "failure_condition_and_regression": "Reporting a manually reserved delivery landed fails.",
+      "file": "tests/test_cleanly_reviewed_run_lands_itself.py",
+      "line": 321
+    },
+    {
+      "assertion": "'coordinator' in report['obligations'][0]['guard']",
+      "failure_condition_and_regression": "Omitting the admission manual-policy obligation fails.",
+      "file": "tests/test_cleanly_reviewed_run_lands_itself.py",
+      "line": 322
+    },
+    {
+      "assertion": "not delivery['submissions']",
+      "failure_condition_and_regression": "Submitting a measurement despite the manual policy fails.",
+      "file": "tests/test_cleanly_reviewed_run_lands_itself.py",
+      "line": 323
+    },
+    {
+      "assertion": "outcome['promoted'] is True",
+      "failure_condition_and_regression": "Failing to promote the prepared candidate before the induced primary movement fails.",
+      "file": "tests/test_cleanly_reviewed_run_lands_itself.py",
+      "line": 345
+    },
+    {
+      "assertion": "outcome['merged'] is False",
+      "failure_condition_and_regression": "Publishing after the post-promotion merged gate fails this false-merge assertion.",
+      "file": "tests/test_cleanly_reviewed_run_lands_itself.py",
+      "line": 346
+    },
+    {
+      "assertion": "outcome['accepted'] is False",
+      "failure_condition_and_regression": "Accepting the post-promotion gate failure fails.",
+      "file": "tests/test_cleanly_reviewed_run_lands_itself.py",
+      "line": 347
+    },
+    {
+      "assertion": "not _on_primary(delivery)",
+      "failure_condition_and_regression": "Advancing primary to the failing merged tree fails ancestry.",
+      "file": "tests/test_cleanly_reviewed_run_lands_itself.py",
+      "line": 348
+    },
+    {
+      "assertion": "pending_landing._record_path(RUN).is_file()",
+      "failure_condition_and_regression": "Dropping recovery state after post-promotion gate failure fails.",
+      "file": "tests/test_cleanly_reviewed_run_lands_itself.py",
+      "line": 349
+    },
+    {
+      "assertion": "retried[0]['status'] == 'failed'",
+      "failure_condition_and_regression": "Recovery bypassing the failed gate and returning finished fails.",
+      "file": "tests/test_cleanly_reviewed_run_lands_itself.py",
+      "line": 351
+    },
+    {
+      "assertion": "'test_merge_contract' in retried[0]['error']",
+      "failure_condition_and_regression": "Recovery omitting the actual failing test name fails.",
+      "file": "tests/test_cleanly_reviewed_run_lands_itself.py",
+      "line": 352
+    },
+    {
+      "assertion": "not _on_primary(delivery)",
+      "failure_condition_and_regression": "Recovery moving primary despite the failed gate fails ancestry.",
+      "file": "tests/test_cleanly_reviewed_run_lands_itself.py",
+      "line": 353
+    },
+    {
+      "assertion": "ledger.runs(PROJECT) == []",
+      "failure_condition_and_regression": "An unexpectedly nonempty isolated ledger fails the fixture precondition.",
+      "file": "tests/test_cleanly_reviewed_run_lands_itself.py",
+      "line": 357
+    },
+    {
+      "assertion": "PLAN not in week['plans']",
+      "failure_condition_and_regression": "Creating a weekly plan bucket for no rows fails.",
+      "file": "tests/test_cleanly_reviewed_run_lands_itself.py",
+      "line": 359
+    },
+    {
+      "assertion": "week['plans'].get(PLAN, {'phases': {'landed': 0}})['phases']['landed'] == 0",
+      "failure_condition_and_regression": "No reachable failure condition once line 359 passed: the assertion reads its own supplied fallback zero; excluded from durability credit.",
+      "file": "tests/test_cleanly_reviewed_run_lands_itself.py",
+      "line": 360
+    }
+  ],
+  "call_site_count": 8,
+  "call_sites": [
+    "reckon/crew/recovery_review_acceptance.py:dispatch_awaiting_reviews",
+    "reckon/crew/recovery_review_acceptance.py:accept_clean_review",
+    "reckon/crew/queue_landing.py:_land_deliveries",
+    "reckon/crew_run_commands.py:_land_a_promoted_run",
+    "reckon/crew/pending_landing.py:finish_pending_landings",
+    "reckon/crew/recovery_watch.py:_LedgerRunWordReader.for_runs",
+    "reckon/crew/runs.py:_drain_week_view",
+    "reckon/crew/promotion_requests.py:_settled_state"
+  ],
+  "completed_at": "2026-11-14T14:29:47Z",
+  "dispatched_at": "2026-11-14T14:23:29Z",
+  "findings": [
+    {
+      "file": "reckon/crew/recovery_review_acceptance.py",
+      "line": "709",
+      "severity": "blocking",
+      "text": "blocking: The automatic path clears pending state in reckon/crew_run_commands.py:4043 before finish_landing commits and pushes the section declaration; a refused beat only adds landing_beat_refusal and returns accepted, and a crash in this interval leaves no retry record or live pointer, so the code can land while the section stays implementable indefinitely; retaining the pending record alone is insufficient because pending_landing.py:477 calls _settled_landing, which clears already-integrated records before finish_landing can run."
+    },
+    {
+      "file": "tests/test_cleanly_reviewed_run_lands_itself.py",
+      "line": "360",
+      "severity": "non-blocking",
+      "text": "non-blocking: Given line 359 already asserts PLAN is absent, dict.get returns the test's own literal zero and this assertion cannot fail for any result that reaches it; it adds no regression protection and should not be counted as coverage of weekly landing totals."
+    }
+  ],
+  "gate_evidence": {
+    "after_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_cleanly_reviewed_run_lands_itself.py tests/test_staged_write_inventory.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261114T133509241528-cleanly-reviewed-run-lands-itself/final-head.log",
+      "observed_failure_ids": [],
+      "revision": "9d669dec3deb3a69b46b1b9a4ed0eb05c0169caf",
+      "summary": "59 passed in 18.65s"
+    },
+    "baseline_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261114T133509241528-cleanly-reviewed-run-lands-itself/baseline-relative.log",
+      "observed_failure_ids": [],
+      "revision": "f9ef714581e99472eafc9f68f1852b7f46a5deea",
+      "summary": "51 passed in 9.29s"
+    }
+  },
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 8 production call site(s)",
+    "diff": "Read all four commits from f9ef714581e99472eafc9f68f1852b7f46a5deea through 9d669dec3deb3a69b46b1b9a4ed0eb05c0169caf; the implementation, view corrections, focused test repair and evidence update add the intended behavior with a declaration-recovery defect.",
+    "done_when": "The source prompt.txt:132 and live s60 require five delivery scenarios plus a promotion-only negative control; tests/test_cleanly_reviewed_run_lands_itself.py covers those scenarios and the recorded logs show 59 head passes and two mutation failures.",
+    "goal": "The source prompt.txt:38 asks for a cleanly reviewed run to land without its coordinator; reckon/crew/recovery_review_acceptance.py:576 now merges it, but declaration failures can permanently strand the plan state.",
+    "manifest": "The source manifest.md names four commits, base/head, baseline_suite and after_suite, and its 51/59 passing summaries agree with baseline-relative.log and final-head.log including their EXIT=0 receipts.",
+    "write_paths": "The source prompt.txt:80 grants reckon, the delivery test, evidence fragment and figure directory; all eleven changed paths remain within those grants."
+  },
+  "justifications": {
+    "durability": "tests/test_cleanly_reviewed_run_lands_itself.py:179 independently proves ancestry and line 196 proves committed section state, but no assertion covers interrupted or refused declaration writeback and line 360 guarantees its own expected zero.",
+    "evidence": "tests/test_cleanly_reviewed_run_lands_itself.py:176 exercises the required runtime reflex in temporary repositories, while final-head.log records 59 passed with EXIT=0 and negative-control.log records 2 failed with EXIT=1.",
+    "fit": "reckon/crew/review_landing.py composes the surrounding lazy-import, Mapping and report conventions and its introduced names describe mechanisms without banned release or task labels.",
+    "goal_fidelity": "reckon/crew/recovery_review_acceptance.py:709 records a declaration refusal but still returns accepted at line 743 after reckon/crew_run_commands.py:4043 has cleared the recovery record.",
+    "reuse": "reckon/crew/review_landing.py wraps landing_measure._partition_runner and _arm, merge.build_merge_commit, queue_landing._landing_beat and _record_attempt, while recovery_watch.py:1943 delegates ancestry to recovery_classification._promoted_awaiting_merge rather than forking those owners.",
+    "scope_discipline": "The eleven paths in the base-to-head diff fall within the four scopes declared at the source prompt.txt:80 and implement landing, truthful views, tests or evidence."
+  },
+  "negative_control": {
+    "exit_status": 1,
+    "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261114T133509241528-cleanly-reviewed-run-lands-itself/negative-control.log",
+    "mutation": "Bypass the post-promotion merge and section writeback; ancestry assertion fails.",
+    "summary": "2 failed, 57 passed in 13.05s"
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The source prompt.txt:38 asks for a cleanly reviewed run to land without its coordinator; reckon/crew/recovery_review_acceptance.py:576 now merges it, but declaration failures can permanently strand the plan state.\nVERDICT done_when: The source prompt.txt:132 and live s60 require five delivery scenarios plus a promotion-only negative control; tests/test_cleanly_reviewed_run_lands_itself.py covers those scenarios and the recorded logs show 59 head passes and two mutation failures.\nVERDICT write_paths: The source prompt.txt:80 grants reckon, the delivery test, evidence fragment and figure directory; all eleven changed paths remain within those grants.\nVERDICT manifest: The source manifest.md names four commits, base/head, baseline_suite and after_suite, and its 51/59 passing summaries agree with baseline-relative.log and final-head.log including their EXIT=0 receipts.\nVERDICT diff: Read all four commits from f9ef714581e99472eafc9f68f1852b7f46a5deea through 9d669dec3deb3a69b46b1b9a4ed0eb05c0169caf; the implementation, view corrections, focused test repair and evidence update add the intended behavior with a declaration-recovery defect.\nCALL_SITES: reckon/crew/recovery_review_acceptance.py:dispatch_awaiting_reviews, reckon/crew/recovery_review_acceptance.py:accept_clean_review, reckon/crew/queue_landing.py:_land_deliveries, reckon/crew_run_commands.py:_land_a_promoted_run, reckon/crew/pending_landing.py:finish_pending_landings, reckon/crew/recovery_watch.py:_LedgerRunWordReader.for_runs, reckon/crew/runs.py:_drain_week_view, reckon/crew/promotion_requests.py:_settled_state\nSCORE goal_fidelity: 16\nJUSTIFICATION goal_fidelity: reckon/crew/recovery_review_acceptance.py:709 records a declaration refusal but still returns accepted at line 743 after reckon/crew_run_commands.py:4043 has cleared the recovery record.\nSCORE evidence: 20\nJUSTIFICATION evidence: tests/test_cleanly_reviewed_run_lands_itself.py:176 exercises the required runtime reflex in temporary repositories, while final-head.log records 59 passed with EXIT=0 and negative-control.log records 2 failed with EXIT=1.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: The eleven paths in the base-to-head diff fall within the four scopes declared at the source prompt.txt:80 and implement landing, truthful views, tests or evidence.\nSCORE durability: 16\nJUSTIFICATION durability: tests/test_cleanly_reviewed_run_lands_itself.py:179 independently proves ancestry and line 196 proves committed section state, but no assertion covers interrupted or refused declaration writeback and line 360 guarantees its own expected zero.\nSCORE fit: 20\nJUSTIFICATION fit: reckon/crew/review_landing.py composes the surrounding lazy-import, Mapping and report conventions and its introduced names describe mechanisms without banned release or task labels.\nSCORE reuse: 20\nJUSTIFICATION reuse: reckon/crew/review_landing.py wraps landing_measure._partition_runner and _arm, merge.build_merge_commit, queue_landing._landing_beat and _record_attempt, while recovery_watch.py:1943 delegates ancestry to recovery_classification._promoted_awaiting_merge rather than forking those owners.\nFINDING reckon/crew/recovery_review_acceptance.py:709 blocking: The automatic path clears pending state in reckon/crew_run_commands.py:4043 before finish_landing commits and pushes the section declaration; a refused beat only adds landing_beat_refusal and returns accepted, and a crash in this interval leaves no retry record or live pointer, so the code can land while the section stays implementable indefinitely; retaining the pending record alone is insufficient because pending_landing.py:477 calls _settled_landing, which clears already-integrated records before finish_landing can run.\nFINDING tests/test_cleanly_reviewed_run_lands_itself.py:360 non-blocking: Given line 359 already asserts PLAN is absent, dict.get returns the test's own literal zero and this assertion cannot fail for any result that reaches it; it adds no regression protection and should not be counted as coverage of weekly landing totals.\n",
+  "reproduction_quote": "reproduction.log: the run's commits are not on the primary branch yet; a coordinator merges it; test_a_clean_review_lands_and_records_the_measured_head failed with EXIT=1.",
+  "reuse_search": {
+    "landing_words": "Opened recovery_classification._promoted_awaiting_merge; _ledger_landing_word wraps it.",
+    "merge_and_gate": "Opened merge.land and build_merge_commit, promotion_gate.rerun_gate_at_integrated_revision, landing_measure._partition_runner and _arm; the new adapter pins and archives the merge candidate using existing execution owners.",
+    "plan_writeback_and_refusal": "Opened queue_landing._landing_beat and _record_attempt; new functions wrap these owners and existing commit/push owners.",
+    "test_helpers": "Opened tests/helpers/landing_repository.py:_write_origin_and_checkout; fixture extends that owner, _on_primary is a direct independent git ancestry probe, _pass and _outcome are local invocation/selection adapters; scheduler substitutes transport while using the production archive script."
+  },
+  "review_method": "Read-only committed-revision review; no suite rerun or implementation mutation performed.",
+  "review_run_id": "r-20261114T142000836120-review-of-cleanly-reviewed-run-lands-itself-9d669dec3deb",
+  "reviewed_base_sha": "f9ef714581e99472eafc9f68f1852b7f46a5deea",
+  "reviewed_commits": [
+    "8e755387b8f1f744da8b4041580a254765ef0e31",
+    "0f3f363ec8b12b0cc04f562f619b7fa75c728b17",
+    "86aaf08bcf413ac98eca6e942e3b37cb2f9d7991",
+    "9d669dec3deb3a69b46b1b9a4ed0eb05c0169caf"
+  ],
+  "reviewed_head_sha": "9d669dec3deb3a69b46b1b9a4ed0eb05c0169caf",
+  "reviewed_run_id": "r-20261114T133509241528-cleanly-reviewed-run-lands-itself",
+  "scores": {
+    "durability": 16,
+    "evidence": 20,
+    "fit": 20,
+    "goal_fidelity": 16,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-14T14:30:46.357169+00:00",
+  "total": 112
+}

@@ -1197,12 +1197,17 @@ _ABSENT_GENERATION = "none"
 
 
 def ledger_generation_path(project: str) -> Path:
-    """The file the store keeps one project's write generation in."""
-    return _store.write_generation_path(project)
+    """The file the store keeps one project's ledger-write generation in."""
+    return _store.ledger_write_generation_path(project)
 
 
 def ledger_generation(project: str) -> str | None:
-    """The project's write generation, or ``None`` when no write recorded one.
+    """The project's ledger-write generation, or ``None`` when none was recorded.
+
+    The counter is the ledger's own, so only a ledger write advances it. A plan
+    write — a promotion's plan record, a comment, a section edit — writes no
+    run document, and a reader keyed on it would pay a full index rebuild for
+    an unrelated write.
 
     The store reads an absent counter as ``"none"``. That value must not key a
     reuse: a ledger whose documents were all written by something that never
@@ -1212,7 +1217,7 @@ def ledger_generation(project: str) -> str | None:
     is the "read the documents" case, so absence keeps its old meaning while a
     counter that exists is compared by equality.
     """
-    generation = _store.read_write_generation(project)
+    generation = _store.read_ledger_write_generation(project)
     return None if generation == _ABSENT_GENERATION else generation
 
 
@@ -1239,9 +1244,9 @@ def _bump_generation(project: str) -> None:
     have. The store keeps its own lenient behaviour for its other callers, which
     is why the verification lives here and not in the owner.
     """
-    before = _store.read_write_generation(project)
-    _store.advance_write_generation(project)
-    if _store.read_write_generation(project) != before:
+    before = _store.read_ledger_write_generation(project)
+    _store.advance_ledger_write_generation(project)
+    if _store.read_ledger_write_generation(project) != before:
         return
     with contextlib.suppress(OSError):
         ledger_generation_path(project).unlink()

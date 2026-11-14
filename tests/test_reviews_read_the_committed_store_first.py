@@ -244,13 +244,13 @@ def test_the_review_run_lookup_serves_from_the_store_index(
         _plan_review_record(),
     )
     builds: list[Path] = []
-    real_build = records_module._build_store_indexes
+    real_build = records_module._rebuild_index_document
 
     def counting(directory: Path):
         builds.append(directory)
         return real_build(directory)
 
-    monkeypatch.setattr(records_module, "_build_store_indexes", counting)
+    monkeypatch.setattr(records_module, "_rebuild_index_document", counting)
     review_module.record_for_review_run(PROJECT, REVIEW_RUN)
     assert len(builds) == 1
     # A second lookup for the same directory is served from the cached index

@@ -79,20 +79,26 @@ def store(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
 
 @pytest.fixture()
 def record_reads(monkeypatch: pytest.MonkeyPatch) -> list[str]:
-    """Record every file the code under test reads through ``Path.read_text``."""
+    """Record text and byte reads of the store records."""
     reads: list[str] = []
     original = Path.read_text
+    original_bytes = Path.read_bytes
 
     def counting(self: Path, *args: Any, **kwargs: Any) -> str:
         reads.append(str(self))
         return original(self, *args, **kwargs)
 
+    def counting_bytes(self: Path) -> bytes:
+        reads.append(str(self))
+        return original_bytes(self)
+
     monkeypatch.setattr(Path, "read_text", counting)
+    monkeypatch.setattr(Path, "read_bytes", counting_bytes)
     return reads
 
 
 def _store_reads(reads: list[str], store: Path) -> list[str]:
-    return [path for path in reads if path.startswith(str(store))]
+    return [path for path in reads if Path(path).parent == store]
 
 
 def test_many_misses_read_each_stored_record_at_most_once(

@@ -373,16 +373,37 @@ def test_placement_delegates(tmp_path, monkeypatch):
 
 
 def test_plan_review_delegates(tmp_path, monkeypatch):
-    from reckon.crew import plan_review
+    from reckon import _store
+    from reckon.crew import plan_review, review, review_records
 
-    calls = _capture(monkeypatch, plan_review)
-    plan_review.store_plan_review(dict(REVIEW_RECORD), base_dir=tmp_path / "reviews")
+    indexed = []
+    atomic = []
+    real_indexed = review_records.record_written
+    real_atomic = _store.write_json_atomically
 
-    assert len(calls) == 1
-    kwargs = calls[0]["kwargs"]
-    assert kwargs["indent"] == 2
-    assert kwargs["sort_keys"] is True
-    assert kwargs["mode"] is None
+    def indexed_write(path, record):
+        indexed.append((path, record))
+        return real_indexed(path, record)
+
+    def atomic_write(path, payload, **kwargs):
+        atomic.append(kwargs)
+        return real_atomic(path, payload, **kwargs)
+
+    monkeypatch.setattr(review, "record_written", indexed_write)
+    monkeypatch.setattr(_store, "write_json_atomically", atomic_write)
+    path = plan_review.store_plan_review(
+        dict(REVIEW_RECORD), base_dir=tmp_path / "reviews"
+    )
+
+    assert indexed == [(path, REVIEW_RECORD)]
+    assert len(atomic) == 1
+    assert atomic[0]["indent"] == 2
+    assert atomic[0]["sort_keys"] is True
+    assert atomic[0]["mode"] is None
+    assert _written(path) == (
+        json.dumps(REVIEW_RECORD, indent=2, sort_keys=True) + "\n",
+        _process_default_mode(),
+    )
 
 
 def test_resources_manifest_delegates(tmp_path, monkeypatch):

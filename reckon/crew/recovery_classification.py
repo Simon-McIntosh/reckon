@@ -1198,6 +1198,15 @@ def _first_turn_without_action(record: Mapping[str, Any]) -> tuple[str, str] | N
     if _FIRST_TURN_ERROR_RE.match(text):
         return ("error", text)
     return ("premature", text)
+def _stuck_verdict_for(record: Mapping[str, Any]) -> dict[str, Any] | None:
+    """Ask the drain view's stuck verdict about one pointer.
+
+    Imported inside the function that uses it, because ``runs`` imports this
+    module and a module-scope import would close the loop.
+    """
+    from reckon.crew import runs as runs_module
+
+    return runs_module.stuck_verdict(record)
 
 
 def classify_pointer(
@@ -1752,6 +1761,12 @@ def classify_pointer(
         WAITING_UPSTREAM_PHASES,
     )
 
+    # The one stuck verdict every surface reads. The pass history is read
+    # through its own memoised reader, so a view classifying many requests
+    # parses the log once and every row is judged from the same reading,
+    # exactly as the drain view and the stop hook judge it.
+    stuck = _stuck_verdict_for(record) if phase else None
+
     if phase in WAITING_UPSTREAM_PHASES:
         classification = phase
         # A request held on a section it waits for is stored, not launched, and
@@ -1788,6 +1803,12 @@ def classify_pointer(
         else:
             detail = str(record.get("reason") or "waiting for a local lane slot")
             action = "wait for a local lane slot"
+    if stuck is not None:
+        # The request is stuck on a wait that will not resolve by itself, so
+        # the row names the one stuck verdict's reason rather than the phase's
+        # own sentence.
+        detail = f"stuck: {stuck['reason']}"
+        action = "escalate this stuck request; the wait cannot resolve by itself"
     elif filed_review is not None:
         # The reviewer's process has ended and its latest attempt filed a
         # parsed review into the store, which is the review run's whole
@@ -2930,6 +2951,11 @@ def classify_pointer(
         "worktree": record.get("worktree"),
         "detail": detail,
         "next_action": action,
+        # The reason the one stuck verdict gives, carried beside the
+        # classifier's own, so a reader of this row and a reader of the drain
+        # view or the hook text are told the same thing about the same request.
+        "stuck": stuck is not None,
+        "stuck_reason": str(stuck.get("reason") or "") if stuck else None,
         # Set only for a blocked run: "?" when the escape-hatch question is
         # complete enough that `reckon crew resume --advice` can answer it,
         # "!" when the reader has to read the manifest itself. The fact behind

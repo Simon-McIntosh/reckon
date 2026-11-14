@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="the-monitor-shows-the-work-it-watches">
+  <meta name="plan-evidence-for" content="reckon:the-monitor-shows-the-work-it-watches">
+  <meta name="plan-verifies" content="reckon:the-monitor-shows-the-work-it-watches#s101">
+  <meta name="plan-recorded-at" content="2026-11-14">
+  <title>One stuck verdict, read by every surface | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" id="every-surface-reads-one-stuck-verdict-landing" data-node="every-surface-reads-one-stuck-verdict" data-reckon="landed" data-when="2026-11-14">
+  <h2>A request that can never start reads as stuck on every surface that shows it</h2>
+  <p>The drain view derived its own notion of a stuck request while the live view and the stop hook each reported the same request as an ordinary wait, so a wait that can never resolve looked like patience on two surfaces and like a stall on one. The verdict is now one function, <code>runs.stuck_verdict</code>, which judges a pointer from its own stamps and from the admission pass history: a wait whose ref names no project or run it can land in is <code>wait-unresolvable</code>; a request left admissible with lane room across three admission passes without launching is <code>admissible-unlaunched</code>; the drain view's existing one-hour case remains <code>waiting</code>. A request merely behind earlier ones on a launching lane is not stuck at all, so <code>held-behind-earlier-request</code> and <code>unplaced</code> leave the stuck set. The pass history is read once per view and handed to every row, so no two rows in one view judge from different readings of the log, and a pass that never mentions the request stops the count rather than counting toward it.</p>
+  <p>The drain view builds its <code>stuck</code> rows from that function, <code>recovery_classification.classify_pointer</code> carries its reason on the live row, and <code>obligation_snapshot.apply_stuck_verdict</code> writes the same reason onto the duty the stop hook formats, under a kind of its own so the checklist prints the line rather than counting it among waits nobody can shorten.</p>
+  <p><code>tests/test_every_surface_reads_one_stuck_verdict.py</code> builds the drain view's existing stuck case, both new cases and one request that is merely waiting, then reads each from the drain view and the live view and through the hook's own formatter: the three name the same requests stuck for the same reason and the waiting request is stuck on none. Two further cases pin the boundaries — a request is not stuck after two admission passes and is stuck after three, and a request behind earlier ones is never stuck. Three cases pass. Two negative controls were applied and both fire: having the obligation row derive its own text fails the agreement case, and marking a request stuck on its first unlaunched pass fails the two-pass case.</p>
+</article>
+</body>
+</html>

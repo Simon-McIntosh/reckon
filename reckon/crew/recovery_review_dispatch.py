@@ -331,6 +331,12 @@ IN_HARNESS_LAUNCH = "in-harness"
 # grammar the writer enforces.
 _REVIEW_HEAD_PATTERN = re.compile(r"[0-9A-Fa-f]{7,64}")
 
+# The goal line a composed plan review carries, which names the rubric the
+# review was asked for: ``review the <rubric> of plan <slug>``. It is the one
+# field on a live pointer that tells a design review and a content review of
+# the same plan apart, because both compose under the plan's node id.
+_PLAN_REVIEW_GOAL_RUBRIC_RE = re.compile(r"^review the (?P<rubric>[A-Za-z]+) of plan\s")
+
 
 def _review_record_subject(path: Path) -> tuple[str, str]:
     """The reviewed run and head a granted record path spells, if either.
@@ -781,7 +787,11 @@ def join_admitted_plan_review(pointer: Mapping[str, Any], launched_run_id: str) 
     prefix = PLAN_REVIEW_NODE_PREFIX
     if not node_id.startswith(prefix):
         return ""
-    slug = node_id[len(prefix) :]
+    # A design review's id carries its rubric after the slug, so the slug comes
+    # from the reader that owns that grammar rather than from a prefix strip.
+    from reckon.crew.repair import round_node_source
+
+    slug = round_node_source(node_id, prefix)
     project = str(pointer.get("project") or "")
     if not (slug and project and launched_run_id):
         return ""
@@ -2349,6 +2359,39 @@ def _resolved_review_config(
     return runs.resolved_tick_config(project, config)
 
 
+def _plan_review_pointer_slug(pointer: Mapping[str, Any]) -> str:
+    """The plan a live plan-review pointer names, or "" when it names none.
+
+    A design review's node id carries its rubric after the plan slug, so the
+    slug is recovered through the reader that owns that grammar rather than by
+    stripping the prefix here: one spelling of the identity, written by the
+    composer and read by the same rule.
+    """
+    from reckon.crew.repair import round_node_source
+
+    node = pointer.get("node")
+    if not isinstance(node, Mapping):
+        return ""
+    return round_node_source(str(node.get("id") or ""), PLAN_REVIEW_NODE_PREFIX)
+
+
+def _plan_review_rubric(pointer: Mapping[str, Any]) -> str:
+    """The rubric a live plan-review pointer composes for, or "" when unread.
+
+    A plan review's node id names the plan alone, so the two rubrics of one
+    plan share it; the rubric is carried by the composed node's own goal line,
+    which the composer writes as ``review the <rubric> of plan <slug>``. That
+    goal is the declared identity of the review the pointer launched, so it
+    answers for a queued request as it does for a running one, and it names no
+    path a reviewer could have written differently.
+    """
+    node = pointer.get("node")
+    if not isinstance(node, Mapping):
+        return ""
+    match = _PLAN_REVIEW_GOAL_RUBRIC_RE.match(str(node.get("goal") or ""))
+    return match.group("rubric").lower() if match else ""
+
+
 def _delivered_plan_review(project: str, plan_slug: str, run_id: str) -> bool:
     """Whether a plan review run's record is stored and readable.
 
@@ -2471,6 +2514,7 @@ def _standing_plan_review(
     plan_slug: str,
     *,
     session: str = "",
+    rubric: str | None = None,
     pointers: Sequence[Mapping[str, Any]] | None = None,
 ) -> str:
     """The live plan-review run standing for ``plan_slug``, or empty.
@@ -2484,33 +2528,48 @@ def _standing_plan_review(
     again, so the review a view names comes from the same reading as the row
     that names it.
 
+``rubric`` narrows the answer to reviews of that rubric, so a design review
+    and a content review of one plan — which read it independently — can be in
+    flight together, while a second review of a rubric already running is still
+    found and refused. A pointer whose rubric cannot be read keeps standing for
+    every rubric: the reader must not compose a duplicate because a record it
+    could not classify left the answer unknown. A caller with no rubric to
+    state (an obligation asking whether any review of the plan is running) is
+    answered by the plan alone.
+
     Only a review still working stands. Once its record is stored and readable
     the review has delivered, and what remains is its promotion, which is
     owed and listed as it is today; it does not hold the next round's compose.
     A review whose worker has ended stands for nothing either, whatever its
-    record says: a review is stored only by its promotion, so a reviewer that
-    delivered and is waiting to be promoted would otherwise hold the gate for
-    the whole of its promotion, and for good if that promotion is never
-    started. A review still working stands only while it reads the plan's
-    current version, or already reads every unit changed past the version it
-    composed for; a newer plan version it does not cover is composed as a new
-    review rather than answered with the older one. A review whose record is
-    missing or unreadable, and one whose scope cannot be read, is still working,
-    and keeps the gate.
+    record says: a review is stored only by its promotion, and only while it
+    reads the plan's current version, or already reads every unit changed past
+    the version it composed for. A review whose record is missing or
+    unreadable, and one whose scope cannot be read, is still working, and
+    keeps the gate.
+
+    The narrowings compose, and the answer is the same whichever fires first:
+    a review of the other rubric, one that has delivered, one whose worker has
+    ended and one reading an older plan version than it covers are each
+    skipped.
 
     A pointer whose ``node`` is not a mapping is skipped rather than read: this
     runs inside every session's obligations reading, and one malformed pointer
     on disk must not raise the reader out of listing everything else.
     """
     live = list_live(project=project) if pointers is None else pointers
+    wanted = str(rubric or "").strip().lower()
     for pointer in live:
         node = pointer.get("node")
         if not isinstance(node, Mapping):
             continue
-        if node.get("id") != f"{PLAN_REVIEW_NODE_PREFIX}{plan_slug}":
+        if _plan_review_pointer_slug(pointer) != plan_slug:
             continue
         if session and str(pointer.get("session") or "") != session:
             continue
+        if wanted:
+            standing_rubric = _plan_review_rubric(pointer)
+            if standing_rubric and standing_rubric != wanted:
+                continue
         run_id = str(pointer.get("run_id") or "")
         if _delivered_plan_review(project, plan_slug, run_id):
             continue
@@ -2550,11 +2609,17 @@ def _dispatch_text_review_for_run(
     exception stays visible after the command that supplied it is gone.
     """
     if record.get("subject") == "plan":
+        # The rubric this compose asks for, read from the record the same way
+        # the composed fields read it, so the in-flight check refuses a second
+        # review of this rubric and admits a review of the other one.
+        rubric = str(record.get("rubric") or "design").strip().lower()
         if dry_run:
             # A preview takes no lock and creates nothing: the directory and
             # its lock file are themselves artifacts of a dispatch that has not
             # happened, and the in-flight read it guards is a plain read here.
-            standing = _standing_plan_review(record["project"], record["plan_slug"])
+            standing = _standing_plan_review(
+                record["project"], record["plan_slug"], rubric=rubric
+            )
             if standing:
                 return {
                     "dispatched": False,
@@ -2589,7 +2654,9 @@ def _dispatch_text_review_for_run(
                     "review_run_id": None,
                     "reason": "another sweep is composing this plan's review now",
                 }
-            standing = _standing_plan_review(record["project"], record["plan_slug"])
+            standing = _standing_plan_review(
+                record["project"], record["plan_slug"], rubric=rubric
+            )
             if standing:
                 return {
                     "dispatched": False,
@@ -3006,6 +3073,65 @@ def claim_refusal_still_holds(claim: Mapping[str, Any]) -> bool:
     if not pointer:
         return False
     return bool(claim_disposition(pointer).binding)
+
+
+def _release_delivered_review_claim(
+    record: Mapping[str, Any],
+    fields: Mapping[str, Any],
+    *,
+    config: Mapping[str, Any] | None = None,
+) -> list[dict[str, Any]]:
+    """End each delivered review run whose claim fences this dispatch's paths.
+
+    A later review of the same run names the headless record path the earlier
+    review declared, so a finished review's claim on that path refuses the
+    dispatch that follows it — and a finished review's recorded worktree is
+    gone, so the claim reads as work nobody can inspect and stands until
+    somebody ends the run by hand. A review's whole deliverable is the record
+    it stored, so once that record parses and its own manifest reads complete
+    the run has nothing left to write: it is ended here by the very promotion
+    its self-promotion sweep would reach, in the order the dispatch needs it —
+    before this dispatch's scope is judged. A reviewer that has not delivered
+    has not reached that state, keeps its claim, and the refusal stands.
+    """
+    from reckon.crew.node import claim_disposition
+    from reckon.crew.recovery_review_acceptance import promote_review_run_itself
+
+    project = str(record.get("project") or "")
+    if not project:
+        return []
+    wanted = {
+        Path(str(path)).expanduser().resolve().as_posix()
+        for path in fields.get("write_paths") or ()
+    }
+    released: list[dict[str, Any]] = []
+    for pointer in list_live(project=project):
+        if not _is_review_run(pointer):
+            continue
+        node = pointer.get("node")
+        declared = {
+            Path(str(path)).expanduser().resolve().as_posix()
+            for path in (node.get("write_paths") if isinstance(node, Mapping) else ())
+            or ()
+        }
+        if not declared & wanted:
+            continue
+        if not claim_disposition(pointer).binding:
+            continue
+        promotion = promote_review_run_itself(pointer, config=config)
+        if not promotion or not promotion.get("promoted"):
+            continue
+        released.append(
+            {
+                "run_id": str(pointer.get("run_id") or ""),
+                "record_path": str(promotion.get("record_path") or ""),
+                "reason": (
+                    "its record is complete and stored, so it has nothing left "
+                    "to write and its claim was released"
+                ),
+            }
+        )
+    return released
 
 
 def stored_claim_refusal(record: Mapping[str, Any]) -> dict[str, Any] | None:
@@ -3591,6 +3717,17 @@ def _dispatch_composed_review(
                 authority_error=review_authority_error,
             )
 
+    # A later review of the same run names the record path an earlier review
+    # declared, so a finished review whose own run has not ended yet would
+    # refuse the dispatch its successor exists to make. A dry run promises to
+    # write nothing, so it reports the claim it would meet rather than ending
+    # the run underneath it.
+    released_reviews = (
+        []
+        if dry_run
+        else _release_delivered_review_claim(record, fields, config=resolved)
+    )
+
     if dry_run:
         # The plan review's brief is composed rather than given, so a preview
         # holds its text while a dispatch writes it. The resolver reads the
@@ -3789,6 +3926,7 @@ def _dispatch_composed_review(
         "scope": fields.get("scope"),
         "review_tier": fields.get("review_tier"),
         "reason": f"dispatched the composed review as run {review_run_id}",
+        **({"released_reviews": released_reviews} if released_reviews else {}),
         **({"dispatch": launched} if record.get("subject") == "plan" else {}),
     }
 

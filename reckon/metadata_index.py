@@ -1634,6 +1634,48 @@ def discovery_state(
     return fresh
 
 
+def persisted_discovery_entries(docs_dir: Path, project: str) -> dict[str, dict]:
+    """The persisted entries as stored, keyed by docs-relative path, unvalidated.
+
+    A pass that resolves many single plans reads the store once and validates
+    each entry only when it is asked for, through :func:`current_discovery`.
+    :func:`discovery_state` instead stats every covered file on each call, which
+    is the right price for a whole-tree read and the wrong one for a pass that
+    needs one plan at a time. An absent or unusable store answers empty.
+    """
+
+    return _load_persisted(docs_dir, project)
+
+
+def current_discovery(
+    docs_dir: Path, project: str, relative: str, entry: Mapping[str, object] | None
+) -> dict | None:
+    """One persisted entry's discovery state, if the file's bytes still match it.
+
+    The same test :func:`discovery_state` applies to every entry, applied to one:
+    the file's current stat identity against the one recorded, then its content
+    digest. A file whose bytes moved, or that cannot be read, answers ``None``,
+    and the caller parses it.
+    """
+
+    if not isinstance(entry, Mapping):
+        return None
+    discovery = entry.get("discovery")
+    if not isinstance(discovery, Mapping):
+        return None
+    path = docs_dir / relative
+    observed = covered_stat(docs_dir, project, relative, path)
+    if observed is None:
+        return None
+    if entry.get("signature") == _stat_signature(observed):
+        return dict(discovery)
+    try:
+        digest = file_memo.content_digest(path)
+    except OSError:
+        return None
+    return dict(discovery) if entry.get("digest") == digest else None
+
+
 def _batch_key(docs_dir: Path, project: str) -> tuple[str, str]:
     return (str(Path(docs_dir).resolve()), project)
 

@@ -1952,6 +1952,26 @@ def crew_drain(project, session, leaves, pretty):
     )
 
 
+@crew.command(name="promotions")
+@click.option(
+    "--window",
+    "window_seconds",
+    type=float,
+    default=3600.0,
+    help="Seconds back over which finished promotions are counted.",
+)
+@click.option("--pretty", is_flag=True, help="Indent the JSON for reading.")
+def crew_promotions(window_seconds, pretty):
+    """Report the promotion queue: waiting, oldest wait, and drain rate.
+
+    A coordinator reads this to answer whether the queue is draining and, when
+    it is not, which request has been waiting longest.
+    """
+    from reckon.crew.promotion_requests import promotion_queue_report
+
+    _emit_crew_result(promotion_queue_report(window_seconds=window_seconds), pretty)
+
+
 @crew.command(name="ack")
 @click.option(
     "--run",
@@ -1982,7 +2002,7 @@ def crew_ack(run_id, notice_id, reason, until, pretty, project=None):
     A live run's deferral is written beside its pointer; one for a run already
     promoted is written under the crew home and swept once its instant passes.
     """
-    _accept_a_matching_project(run_id, project)
+    resolved_project = _accept_a_matching_project(run_id, project)
     if bool(run_id) == bool(notice_id):
         raise click.ClickException("exactly one of --run and --notice is required")
     if notice_id:
@@ -2005,7 +2025,9 @@ def crew_ack(run_id, notice_id, reason, until, pretty, project=None):
     from reckon.crew import runs as runs_module
 
     try:
-        updated = runs_module.record_run_acknowledgement(run_id, reason, until)
+        updated = runs_module.record_run_acknowledgement(
+            run_id, reason, until, project=resolved_project
+        )
     except crew_module.CrewError as exc:
         raise click.ClickException(str(exc)) from exc
     _emit_crew_result(
@@ -2377,7 +2399,9 @@ def _record_resumed_time_budget(
     "--ready", is_flag=True, help="Resume every newly ready run in a project."
 )
 @click.option(
-    "--reopen", is_flag=True, help="Reopen a completed run before resuming it."
+    "--reopen",
+    is_flag=True,
+    help="Reopen a halted or completed run before resuming it.",
 )
 @click.option(
     "--write-path",
@@ -2445,7 +2469,7 @@ def crew_resume(
     """Resume one stopped run, every ready run, or a run on another backend.
 
     The ready sweep answers provider holds and declared external waits.
-    Reopening grants paths and repairs a completed delivery before its session
+    Reopening optionally grants paths and repairs a stopped delivery before its session
     continues; a backend move may choose the lane's declared model. A resume
     may state a new allowance with ``--time-budget``, recorded on the run so
     the attempt it launches is judged against that clock rather than the one
@@ -2486,15 +2510,13 @@ def crew_resume(
             "--time-budget is recorded on the run; it cannot be previewed with "
             "--print-only"
         )
-    if reopen and (not write_paths or backend or print_only):
-        raise click.UsageError(
-            "--reopen needs --write-path and cannot combine with --backend or --print-only"
-        )
+    if reopen and (backend or print_only):
+        raise click.UsageError("--reopen cannot combine with --backend or --print-only")
     if reopen and advice:
         # The reopen starts nothing, so there is no turn for advice to enter.
         # Accepting it would look like it had been delivered.
         raise click.UsageError(
-            "--advice starts a resume; --reopen only widens a completed run. "
+            "--advice starts a resume; --reopen prepares a halted or completed run. "
             "Reopen first, then resume with the advice in a separate call"
         )
     if not advice and not reopen:
@@ -2511,15 +2533,8 @@ def crew_resume(
         if reopen:
             from reckon.crew.resumption import reopen_run
 
-            if str(record.get("phase") or "") != "complete" and (
-                _manifest_reported_status(record) != "complete"
-            ):
-                raise click.ClickException("--reopen requires a completed run")
-            # A reopen answers a caller asking for a wider boundary, not one
-            # asking for work. Launching here spent an attempt on advice
-            # composed for a state the run had left. The grant is made and
-            # reported, and any advice a refused resume left waiting is named
-            # for the resume the caller starts next.
+            # Reopening prepares the stopped delivery and any scope grant;
+            # the caller's next resume supplies the instructions to execute.
             _emit_crew_result(
                 reopen_run(run_id, list(write_paths), reason=reason), pretty
             )
@@ -3488,6 +3503,8 @@ def crew_complete(
     """
     from reckon.crew.promotion_requests import COMMAND_REPLY, request_promotion
 
+    if land and not dry_run:
+        _refuse_a_landing_without_its_pointer(run_id)
     if not wait and not dry_run and COMMAND_REPLY.get() is None:
         parameters = dict(locals())
         for name in ("COMMAND_REPLY", "request_promotion"):
@@ -3718,6 +3735,19 @@ def crew_complete(
             raise click.exceptions.Exit(exit_code)
         return
     _emit_crew_result(result, pretty)
+
+
+def _refuse_a_landing_without_its_pointer(run_id: str) -> None:
+    from reckon.crew import pending_landing, runs
+
+    try:
+        runs.read_pointer(run_id)
+    except runs.CrewError as exc:
+        record = pending_landing.pending_dir() / f"{run_id}.json"
+        raise click.ClickException(
+            f"cannot land {run_id} without a live pointer; "
+            f"pending landing record: {record}. {exc}"
+        ) from exc
 
 
 def _refuse_a_plain_complete_off_the_branch(

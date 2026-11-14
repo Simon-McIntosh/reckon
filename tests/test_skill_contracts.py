@@ -1934,7 +1934,7 @@ def test_ship_documents_dispatch_prerequisites_and_refusal_remedies() -> None:
     assert "a goal containing `;` is not one deliverable" in ship
     assert "every node needs at least one `--write-path`" in ship
     assert '" then ", ";"' in crew_source
-    assert "no exclusive write path is enumerated" in crew_source
+    assert "the node's done-when names a test file" in crew_source
     assert "commit the plan before dispatching" in crew_source
     assert "<config-home>/crew/runs/<run-id>/manifest.md" in reference
     assert "<scratchpad>/<node-id>-manifest.md" not in reference

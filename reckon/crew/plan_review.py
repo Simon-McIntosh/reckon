@@ -757,9 +757,7 @@ def store_plan_review(
     if not stored.get("timestamp"):
         stored["timestamp"] = datetime.now(UTC).isoformat()
     path = _target_path(project, plan_slug, int(plan_version), stored, base_dir)
-    write_json_atomically(
-        path, stored, indent=2, sort_keys=True, fsync=False, mode=None
-    )
+    _review_store.record_written(path, stored)
     return path
 
 
@@ -2732,9 +2730,7 @@ def record_response(
         # answer invisible to every committed-first reader, so the committed copy
         # is rewritten and committed in one commit through the same helper a
         # promotion uses.
-        write_json_atomically(
-            committed, updated, indent=2, sort_keys=True, fsync=False, mode=None
-        )
+        _review_store.record_written(committed, updated)
         _commit_record_write(str(updated.get("project") or ""), committed)
         from reckon.crew.findings import note_record_written
 
@@ -2896,9 +2892,7 @@ def accept_edits(
     updated[ACCEPTED_EDITS_KEY] = accepted
     committed = _committed_copy_of(updated)
     if committed is not None:
-        write_json_atomically(
-            committed, updated, indent=2, sort_keys=True, fsync=False, mode=None
-        )
+        _review_store.record_written(committed, updated)
         _commit_record_write(project, committed)
         return committed
     return store_plan_review(updated, base_dir=base_dir)
@@ -5460,8 +5454,10 @@ CODE_REVIEW_FILE_PREFIX = "code-"
 # The write-path sentence a plan section carries, and the path-shaped tokens it
 # names. A section's write paths are authored prose rather than markup, so the
 # composer reads the sentence that states them and takes the ``.py`` paths from
-# it rather than guessing at any path-like token in the prose.
-_WRITE_PATHS_SENTENCE = re.compile(r"write\s+paths?\s*:", re.IGNORECASE)
+# it rather than guessing at any path-like token in the prose. The label ends in
+# a colon or a full stop: both are authored as a bold lead-in, and a section
+# that writes "Write paths." rather than "Write paths:" states the same paths.
+_WRITE_PATHS_SENTENCE = re.compile(r"write\s+paths?\s*[.:]", re.IGNORECASE)
 _PY_PATH_TOKEN = re.compile(r"[A-Za-z0-9_][A-Za-z0-9_./-]*\.py")
 
 
@@ -5976,9 +5972,7 @@ def store_code_review(
         stored["timestamp"] = datetime.now(UTC).isoformat()
     path = code_review_path(project, key, base_dir)
     path.parent.mkdir(parents=True, exist_ok=True)
-    write_json_atomically(
-        path, stored, indent=2, sort_keys=True, fsync=False, mode=None
-    )
+    _review_store.record_written(path, stored)
     from reckon.crew.findings import note_record_written
 
     note_record_written(path, project=project)

@@ -556,7 +556,7 @@ def test_a_review_promotion_survives_pointer_removal_before_its_receipt(
 
 @pytest.mark.parametrize("kind", ["acceptance", "review-self"])
 @pytest.mark.parametrize("row_state", ["absent", "different-run"])
-def test_a_missing_review_pointer_needs_its_own_promoted_row(
+def test_a_refusal_for_a_run_with_no_pointer_settles(
     repository, isolated_reckon_home, kind, row_state
 ):
     from reckon import ledger
@@ -584,7 +584,14 @@ def test_a_missing_review_pointer_needs_its_own_promoted_row(
     assert receipt["phase"] == requests.REFUSED, receipt
     expected = "no live run" if row_state == "absent" else "names a different run"
     assert expected in receipt["error"], receipt
-    assert requests.failure_obligations(PROJECT, SESSION)[0]["run_id"] == run_id
+    # The refusal is still recorded, but the run it named can no longer be
+    # followed up: the pointer is gone and no ledger row names this run, so
+    # the request settles instead of raising a duty whose command cannot apply.
+    assert requests.failure_obligations(PROJECT, SESSION) == []
+    settled = requests.read_promotion(run_id)
+    assert settled["phase"] == requests.SETTLED, settled
+    assert settled["settled"] == "gone", settled
+    assert settled["error"] == receipt["error"], "the refusal's error is kept"
     print(f"{kind} / {row_state}: {receipt['phase']}: {receipt['error']}")
 
 

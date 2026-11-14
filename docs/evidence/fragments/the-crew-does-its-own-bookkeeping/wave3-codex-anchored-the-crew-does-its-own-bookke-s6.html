@@ -1,0 +1,6 @@
+<section id="wave3-codex-anchored-the-crew-does-its-own-bookke-s6-reproduction">
+  <h3>A dispatch publishes its identity before launch work</h3>
+  <p>At revision <code>293b3ddd68558b435ceff29cf3400c39807a7470</code>, a subprocess dispatch reached a deliberately blocked launch with a durable pointer. Killing the caller left both stdout and stderr empty. The regression assertion failed; the completed-call JSON control passed: 1 failed, 1 passed in 15.63 seconds.</p>
+  <p>The dispatch now flushes its created run id to stderr immediately after publishing the claim. Stdout keeps the final JSON document. The focused repaired check passed both the interrupted-call assertion and the completed-call JSON control: 2 passed in 23.30 seconds.</p>
+  <p>The declared mutation removes the early notice, leaving the final JSON to name the run only at the end. An archived all_debug run then failed the interrupted-call assertion with an existing pointer and empty stdout and stderr: 1 failed, 1 passed in 6.30 seconds, exit 1. The archived baseline inventory arm passed 51 tests in 9.28 seconds, exit 0. The final committed head's combined arm and exact revision are recorded in the run manifest.</p>
+</section>

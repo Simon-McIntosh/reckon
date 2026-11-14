@@ -1,0 +1,60 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-11-14T10:51:45.435Z",
+  "dispatched_at": "2026-11-14T10:37:17Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "exempted",
+      "reason": "the base figure is carried by logs/baseline-suite.log, which has the revision and command header; the fragment's 9-case arm is a quotation of it",
+      "recorded_at": "2026-11-14T11:30:13.435452+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261114T094119690995-a-killed-promotion-writes-nothing-after-it-dies/logs/base-probe.log",
+      "line": "1",
+      "severity": "non-blocking",
+      "text": "non-blocking: the 9-case base arm the fragment quotes at line 30 carries no revision, tree or literal-command header, against the done_when's \"Every log ... starts with its revision and the literal command\" (prompt.txt:129), so the \"9 passed\" figure is tied to base 465c2df0f4 only indirectly through logs/baseline-suite.log, which does carry the header and includes those nine cases among its 60."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "read the single commit 6a866430f1 against base 465c2df0f495d270143ab87b0a0fbb5cc04390b4; it appends 8 lines of evidence prose to the fragment and changes no source file and no test.",
+    "done_when": "the done_when's own conditional at prompt.txt:129 \u2014 if the base shows no write after exit at any boundary, the node records the measurement and changes no product code \u2014 is exactly what happened; the gate named there, tests/test_a_killed_promotion_writes_nothing_after_it_dies.py plus tests/test_staged_write_inventory.py, reports 60 passed EXIT=0 at both base 465c2df0f495d270143ab87b0a0fbb5cc04390b4 (logs/baseline-suite.log) and head 6a866430f1 (logs/after-suite.log), and logs/negative-control-base-ec87744c.log shows 6 failed, 3 passed, exit 1, so the guard is shown to bite one commit earlier.",
+    "goal": "the reviewed node's goal is \"make a promotion killed partway write nothing after it dies\" (prompt.txt:38, plan \u00a78 deliverable); the single landed commit adds only the re-measurement section at docs/evidence/fragments/a-landing-never-waits-on-a-shared-index/a-killed-promotion-writes-nothing-after-it-dies.html:28-34, recording that at base 465c2df0f4 the three stage-boundary kills leave no live process and no post-exit write.",
+    "manifest": "read; it reports commit 6a866430f1, 60 passed exit 0 at base and at head, a red negative control at ec87744c reading 6 failed, 3 passed, exit 1, and ruff clean on the three staged paths, and all four cited logs carry this with a revision header and a bare EXIT= line.",
+    "write_paths": "the dispatch fence at prompt.txt:80-85 declares five paths; the diff touches exactly one of them, the evidence fragment, and the manifest's changed_paths matches the diff exactly, though the done_when sentence at prompt.txt:129 names only promotion.py, runs.py and a new test file, so its list and the fence disagree and the fence is the scope the worker was held to."
+  },
+  "justifications": {
+    "durability": "no assertion is added by this docs-only commit, so its durability rests on the pre-existing tests/test_a_killed_promotion_writes_nothing_after_it_dies.py:324-327 settled==at_death comparison, which the worker showed red at ec87744c in logs/negative-control-base-ec87744c.log with 6 failed.",
+    "evidence": "logs/baseline-suite.log and logs/after-suite.log carry revision, tree, imported module, literal command and a bare EXIT=0, but logs/base-probe.log, the 9-case base arm the fragment quotes at line 30, carries no revision, tree or command header, so that figure cannot be tied to 465c2df0f4 by its own log.",
+    "fit": "the added section at docs/evidence/fragments/a-landing-never-waits-on-a-shared-index/a-killed-promotion-writes-nothing-after-it-dies.html:28 follows the fragment's existing measure-and-no-change structure with node-prefixed ids, and adds no name the naming rules forbid.",
+    "goal_fidelity": "docs/evidence/fragments/a-landing-never-waits-on-a-shared-index/a-killed-promotion-writes-nothing-after-it-dies.html:30-32 records the measurement the no-write conditional asks for and leaves reckon/crew/promotion.py untouched as that conditional directs.",
+    "reuse": "the commit adds no definition or mechanism; it reuses the boundary-stop guard in reckon/crew/promotion.py and the nine-case test file rather than forking either, and the one structure it adds is prose in the cumulative evidence fragment that already owns this measurement.",
+    "scope_discipline": "the only path in commit 6a866430f1 is docs/evidence/fragments/a-landing-never-waits-on-a-shared-index/a-killed-promotion-writes-nothing-after-it-dies.html, which is inside the fence at prompt.txt:84, and nothing the goal does not imply was added."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the reviewed node's goal is \"make a promotion killed partway write nothing after it dies\" (prompt.txt:38, plan \u00a78 deliverable); the single landed commit adds only the re-measurement section at docs/evidence/fragments/a-landing-never-waits-on-a-shared-index/a-killed-promotion-writes-nothing-after-it-dies.html:28-34, recording that at base 465c2df0f4 the three stage-boundary kills leave no live process and no post-exit write.\nVERDICT done_when: the done_when's own conditional at prompt.txt:129 \u2014 if the base shows no write after exit at any boundary, the node records the measurement and changes no product code \u2014 is exactly what happened; the gate named there, tests/test_a_killed_promotion_writes_nothing_after_it_dies.py plus tests/test_staged_write_inventory.py, reports 60 passed EXIT=0 at both base 465c2df0f495d270143ab87b0a0fbb5cc04390b4 (logs/baseline-suite.log) and head 6a866430f1 (logs/after-suite.log), and logs/negative-control-base-ec87744c.log shows 6 failed, 3 passed, exit 1, so the guard is shown to bite one commit earlier.\nVERDICT write_paths: the dispatch fence at prompt.txt:80-85 declares five paths; the diff touches exactly one of them, the evidence fragment, and the manifest's changed_paths matches the diff exactly, though the done_when sentence at prompt.txt:129 names only promotion.py, runs.py and a new test file, so its list and the fence disagree and the fence is the scope the worker was held to.\nVERDICT manifest: read; it reports commit 6a866430f1, 60 passed exit 0 at base and at head, a red negative control at ec87744c reading 6 failed, 3 passed, exit 1, and ruff clean on the three staged paths, and all four cited logs carry this with a revision header and a bare EXIT= line.\nVERDICT diff: read the single commit 6a866430f1 against base 465c2df0f495d270143ab87b0a0fbb5cc04390b4; it appends 8 lines of evidence prose to the fragment and changes no source file and no test.\nCALL_SITES: none\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: docs/evidence/fragments/a-landing-never-waits-on-a-shared-index/a-killed-promotion-writes-nothing-after-it-dies.html:30-32 records the measurement the no-write conditional asks for and leaves reckon/crew/promotion.py untouched as that conditional directs.\nSCORE evidence: 15\nJUSTIFICATION evidence: logs/baseline-suite.log and logs/after-suite.log carry revision, tree, imported module, literal command and a bare EXIT=0, but logs/base-probe.log, the 9-case base arm the fragment quotes at line 30, carries no revision, tree or command header, so that figure cannot be tied to 465c2df0f4 by its own log.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the only path in commit 6a866430f1 is docs/evidence/fragments/a-landing-never-waits-on-a-shared-index/a-killed-promotion-writes-nothing-after-it-dies.html, which is inside the fence at prompt.txt:84, and nothing the goal does not imply was added.\nSCORE durability: 14\nJUSTIFICATION durability: no assertion is added by this docs-only commit, so its durability rests on the pre-existing tests/test_a_killed_promotion_writes_nothing_after_it_dies.py:324-327 settled==at_death comparison, which the worker showed red at ec87744c in logs/negative-control-base-ec87744c.log with 6 failed.\nSCORE fit: 18\nJUSTIFICATION fit: the added section at docs/evidence/fragments/a-landing-never-waits-on-a-shared-index/a-killed-promotion-writes-nothing-after-it-dies.html:28 follows the fragment's existing measure-and-no-change structure with node-prefixed ids, and adds no name the naming rules forbid.\nSCORE reuse: 20\nJUSTIFICATION reuse: the commit adds no definition or mechanism; it reuses the boundary-stop guard in reckon/crew/promotion.py and the nine-case test file rather than forking either, and the one structure it adds is prose in the cumulative evidence fragment that already owns this measurement.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261114T094119690995-a-killed-promotion-writes-nothing-after-it-dies/logs/base-probe.log:1 non-blocking: the 9-case base arm the fragment quotes at line 30 carries no revision, tree or literal-command header, against the done_when's \"Every log ... starts with its revision and the literal command\" (prompt.txt:129), so the \"9 passed\" figure is tied to base 465c2df0f4 only indirectly through logs/baseline-suite.log, which does carry the header and includes those nine cases among its 60.\nReviewed_base_sha: 465c2df0f495d270143ab87b0a0fbb5cc04390b4\nReviewed_head_sha: 6a866430f1d43922072ab3a4d65832499b296ac6",
+  "review_run_id": "r-20261114T103601399927-review-of-a-killed-promotion-writes-nothing-after-it-dies-6a866430f1d4",
+  "reviewed_base_sha": "465c2df0f495d270143ab87b0a0fbb5cc04390b4",
+  "reviewed_head_sha": "6a866430f1d43922072ab3a4d65832499b296ac6",
+  "reviewed_run_id": "r-20261114T094119690995-a-killed-promotion-writes-nothing-after-it-dies",
+  "scores": {
+    "durability": 14,
+    "evidence": 15,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-14T11:23:48.717634+00:00",
+  "total": 106
+}

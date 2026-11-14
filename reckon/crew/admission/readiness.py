@@ -221,6 +221,45 @@ def _persisted_plan_states(project: str, docs_dir: Path) -> Mapping[str, Any]:
     return states
 
 
+#: One pass's persisted plan entries, read from the store once and validated
+#: one file at a time as each plan is asked for. A pass resolves many wait edges
+#: over a few plans, and reading the whole validated discovery state per edge
+#: stat-ed every covered file in the tree each time: an admission pass that
+#: validates each queued launch's section waits ran for seventeen minutes.
+_PASS_PLAN_ENTRIES: contextvars.ContextVar[dict[tuple[str, str], Any] | None] = (
+    contextvars.ContextVar("pass_plan_entries", default=None)
+)
+
+
+def _persisted_plan_state(
+    project: str, docs_dir: Path, relative: str
+) -> Mapping[str, Any] | None:
+    """One plan's persisted parse, if its file's bytes still match it.
+
+    Inside a pass the store's entries are read once and each entry is checked
+    against its own file when it is asked for, so a plan written during the pass
+    fails its check and is parsed afresh rather than seeded with what the pass
+    first read. Outside a pass the store is read for this one plan.
+    """
+
+    from reckon import metadata_index
+
+    held = _PASS_PLAN_ENTRIES.get()
+    key = (str(docs_dir), project)
+    try:
+        if held is not None and key in held:
+            entries = held[key]
+        else:
+            entries = metadata_index.persisted_discovery_entries(docs_dir, project)
+            if held is not None:
+                held[key] = entries
+        return metadata_index.current_discovery(
+            docs_dir, project, relative, entries.get(relative)
+        )
+    except Exception:  # noqa: BLE001 - an unreadable store parses as before
+        return None
+
+
 @contextmanager
 def plan_read_scopes() -> Iterator[None]:
     """Observe the docs tree once for the length of one read-only pass.
@@ -246,12 +285,14 @@ def plan_read_scopes() -> Iterator[None]:
     from reckon.resources import resource_scan_scope
 
     tokens = _PASS_PLAN_STATES.set({})
+    entry_tokens = _PASS_PLAN_ENTRIES.set({})
     document_tokens = _PLAN_DOCUMENT_CACHE.set({})
     try:
         with discovery_file_scope(), resource_scan_scope():
             yield
     finally:
         _PLAN_DOCUMENT_CACHE.reset(document_tokens)
+        _PASS_PLAN_ENTRIES.reset(entry_tokens)
         _PASS_PLAN_STATES.reset(tokens)
 
 
@@ -303,7 +344,7 @@ def _plan_state_and_text(
     from reckon import _plan_html as plan_html_reader
 
     html_file = Path(docs_dir) / "plans" / f"{slug}.html"
-    stored = _persisted_plan_states(project, Path(docs_dir)).get(f"plans/{slug}.html")
+    stored = _persisted_plan_state(project, Path(docs_dir), f"plans/{slug}.html")
     if isinstance(stored, Mapping) and stored.get("state") is not None:
         plan_html_reader.reuse_parsed_state(html_file, stored["state"])
     return plan_html_reader.read_state_and_text_file(html_file)
@@ -311,11 +352,18 @@ def _plan_state_and_text(
 
 @contextmanager
 def readiness_pass() -> Iterator[None]:
-    """Hold one admission pass, whose reads are shared across its requests."""
+    """Hold one admission pass, whose reads are shared across its requests.
+
+    The pass also holds one read of the persisted plan entries, which each
+    launch's section-wait check validates per plan rather than re-reading the
+    whole discovery state.
+    """
     token = _READINESS_PASS_ACTIVE.set(True)
+    entry_token = _PASS_PLAN_ENTRIES.set({})
     try:
         yield
     finally:
+        _PASS_PLAN_ENTRIES.reset(entry_token)
         _READINESS_PASS_ACTIVE.reset(token)
 
 

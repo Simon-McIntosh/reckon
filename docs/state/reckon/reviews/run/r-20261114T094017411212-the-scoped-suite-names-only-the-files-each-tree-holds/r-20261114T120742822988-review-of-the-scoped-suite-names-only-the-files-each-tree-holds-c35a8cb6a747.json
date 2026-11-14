@@ -1,0 +1,32 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-11-14T12:17:02.088Z",
+  "dispatched_at": "2026-11-14T12:11:14Z",
+  "findings": [
+    {
+      "file": "reckon/crew/prompts.py",
+      "line": 1013,
+      "severity": "non-blocking",
+      "text": "the temporary-file-then-move rule is recorded only in the evidence fragment, while the worker prompt that tells a worker how to write its gate log still says nothing about it, so a future run can again redirect the durable path and truncate it."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the source node goal is to make the armed scoped suite name only the test files each arm's tree holds and to record its evidence; the gained change at docs/evidence/fragments/scoring-should-stop-a-promotion/the-scoped-suite-names-only-the-files-each-tree-holds.html:75-82 records the re-measured arms and the gate-log write rule, which is the repair the prior review's blocking finding asked for.\nVERDICT done_when: the done_when names tests/test_a_scoped_suite_names_only_present_files.py and an arm collecting nothing refused as unmeasured; the run's own gate logs record 56 passed EXIT=0 for both arms (logs/head-arm.log:7-8 at c35a8cb6a747, logs/base-arm.log:7-8 at fb92136ada).\nVERDICT write_paths: the declared write paths are reckon/crew/promotion_records.py, tests/test_a_scoped_suite_names_only_present_files.py, the evidence fragment and docs/figures/; the gained diff ee0239b31c..c35a8cb6a747 changes only the evidence fragment, inside them.\nVERDICT manifest: read; it reports status complete, commits cb720909fe ee0239b31c c35a8cb6, both arms 56 passed EXIT=0, and names logs/head-arm.log and logs/base-arm.log, both of which now end in a bare EXIT= line.\nVERDICT diff: read the single gained commit c35a8cb6a747 against ee0239b31c; it adds eight lines of prose to the evidence fragment, with a conventional subject and body, and nothing else.\nCALL_SITES: none\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: docs/evidence/fragments/scoring-should-stop-a-promotion/the-scoped-suite-names-only-the-files-each-tree-holds.html:75-82 states the re-measured arms and the temporary-file gate-log rule the repair exists to record.\nSCORE evidence: 18\nJUSTIFICATION evidence: the arm logs named by the manifest now carry a pytest summary and a bare EXIT=0 (logs/head-arm.log:7-8 at c35a8cb6a747; logs/base-arm.log:7-8) and logs/negative-control-truncated-gate-log.log:8-9 measures the truncation the rule prevents.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --name-only ee0239b31c..c35a8cb6a747 lists only docs/evidence/fragments/scoring-should-stop-a-promotion/the-scoped-suite-names-only-the-files-each-tree-holds.html, inside the declared write paths.\nSCORE durability: 12\nJUSTIFICATION durability: the gained diff adds prose only, no assertion, and the truncation control at logs/negative-control-truncated-gate-log.log:8-9 is a demonstration log rather than a repository test that reddens if the rule is lost.\nSCORE fit: 18\nJUSTIFICATION fit: the added paragraph at docs/evidence/fragments/scoring-should-stop-a-promotion/the-scoped-suite-names-only-the-files-each-tree-holds.html:75-82 follows the fragment's existing evidence-prose convention and carries no banned identifier.\nSCORE reuse: 20\nJUSTIFICATION reuse: the diff adds no definition; a search over reckon/ for gate-log writing found the existing instruction at reckon/crew/prompts.py:1013, which the fragment documents rather than duplicating.\nFINDING reckon/crew/prompts.py:1013 non-blocking: the temporary-file-then-move rule is recorded only in the evidence fragment, while the worker prompt that tells a worker how to write its gate log still says nothing about it, so a future run can again redirect the durable path and truncate it.\n",
+  "review_run_id": "r-20261114T120742822988-review-of-the-scoped-suite-names-only-the-files-each-tree-holds-c35a8cb6a747",
+  "reviewed_base_sha": "ee0239b31c10838cd6deb2c8cb75413d4ceae8fe",
+  "reviewed_head_sha": "c35a8cb6a7474b360104823c7ccd5cbe777f5253",
+  "reviewed_run_id": "r-20261114T094017411212-the-scoped-suite-names-only-the-files-each-tree-holds",
+  "scores": {
+    "durability": 12,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-14T13:23:48.232339+00:00",
+  "total": 106
+}

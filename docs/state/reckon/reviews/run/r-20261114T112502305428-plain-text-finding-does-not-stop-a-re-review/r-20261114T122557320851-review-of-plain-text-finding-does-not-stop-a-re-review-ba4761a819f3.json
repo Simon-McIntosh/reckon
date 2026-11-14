@@ -1,0 +1,53 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own arm logs: logs/baseline.log at 81709f1d records 51 passed with no FAILED line and EXIT=0, logs/after.log at ba4761a8 records 53 passed with no FAILED line and EXIT=0, so the set difference is empty (0).",
+  "call_site_count": 8,
+  "call_sites": [
+    "reckon/crew/recovery_review_subject.py:574 (_earlier_finding_rows renders each earlier finding's severity into the re-review brief)",
+    "reckon/crew/recovery_review_acceptance.py:55 (review acceptance gates on a finding's declared severity)",
+    "reckon/crew/queue_landing.py:1531 (disposal path reads a finding's severity)",
+    "reckon/crew/repair.py:211 (repair reflex reads a finding's severity)",
+    "reckon/crew/repair.py:306 (open work list reads a finding's severity)",
+    "reckon/crew/reports.py:1956 (report decides whether a finding declares a severity)",
+    "reckon/crew/recovery_review_dispatch.py:1324 (review dispatch reads a finding's severity)",
+    "reckon/crew/findings.py:301 (landing guard reads a finding's severity)"
+  ],
+  "completed_at": "2026-11-14T12:39:56.896Z",
+  "dispatched_at": "2026-11-14T12:30:54Z",
+  "findings": [],
+  "item_verdicts": {
+    "diff": "read commit by commit against 81709f1d: b8daf96b03 adds the two-line non-mapping branch and its docstring in reckon/crew/review.py, 1225f52ef3 adds the 55-line evidence fragment, ba4761a819 formats the new 222-line test; 292 insertions and 3 deletions across three files.",
+    "done_when": "the section's done_when names two tests, a negative control and an all_debug gate; tests/test_plain_text_finding_does_not_stop_a_re_review.py:205 and :207 assert the brief lists finding 0 [blocking] and finding 1 [non-blocking] with their dispositions, :222 asserts the non-blocking finding is disposable, and logs/after.log records 53 passed EXIT=0 with sacct showing every arm job COMPLETED on all_debug.",
+    "goal": "the node's goal is that a stored review whose findings are plain text no longer stops its run being re-reviewed, carrying each finding's text and the severity its leading word states; reckon/crew/review.py:223-224 now reads a non-mapping finding through _severity_stated_in_text, recovery_review_subject.py:574 falls back to \"unstated severity\", and both done-when cases pass at the reviewed head, so the goal is met.",
+    "manifest": "read; it reports status complete over three commits, a baseline arm of 51 passed EXIT=0 at 81709f1d and an after arm of 53 passed EXIT=0 at ba4761a8, and a negative control of 1 failed 1 passed EXIT=1, and each of those three logs on disk reads as reported.",
+    "write_paths": "the manifest declares reckon, tests/test_plain_text_finding_does_not_stop_a_re_review.py, the evidence fragment and an unused figures directory; the diff against 81709f1d touches reckon/crew/review.py, the new test and docs/evidence/fragments/work-flows-to-the-lane/plain-text-finding-does-not-stop-a-re-review.html, all inside the fence."
+  },
+  "justifications": {
+    "durability": "negative-control.log shows the two-line guard removed reinstates the defect and reddens tests/test_plain_text_finding_does_not_stop_a_re_review.py:205 with AttributeError: 'str' object has no attribute 'get', which is exactly the regression it guards; the disposal assertion at :222 discriminates against a dropped or misindexed write because the fixture seeds finding 1 with a different exemption, though its expected value is the reason the test itself supplied.",
+    "evidence": "logs/after.log at ba4761a8 records 53 passed EXIT=0 and logs/baseline.log at 81709f1d records 51 passed EXIT=0, sacct shows jobs 1315165/1315171/1315177/1315189 COMPLETED on all_debug, and I re-ran the two node tests at the reviewed head in an extracted tree: 2 passed.",
+    "fit": "the guard sits inside the single severity reader as one isinstance branch with a docstring paragraph in the module's own explanatory voice, and the new test follows the per-file _git/_commit fixture idiom of tests/test_a_review_with_no_base_is_not_carried.py:33 rather than introducing a shared helper the repo does not have.",
+    "goal_fidelity": "reckon/crew/review.py:223-224 routes a bare-string finding to _severity_stated_in_text, which applies the same leading-word rule every record finding's claim uses, and the production composer at recovery_review_subject.py:574 needs no change because it already reads through declared_severity and finding_claim.",
+    "reuse": "the added branch reuses finding_claim and the module's existing _SEVERITY_PREFIX at reckon/crew/review.py:180 rather than adding a second severity parser; a search of the tree and of tests/ for a competing severity reader or git-fixture owner found none outside this one reader, and _git/_commit are duplicated per file by established convention across a dozen test modules.",
+    "scope_discipline": "every path in the diff (reckon/crew/review.py, tests/test_plain_text_finding_does_not_stop_a_re_review.py, the evidence fragment) lies inside the manifest's declared write paths listed in orientation_write_paths, and nothing else changed."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that a stored review whose findings are plain text no longer stops its run being re-reviewed, carrying each finding's text and the severity its leading word states; reckon/crew/review.py:223-224 now reads a non-mapping finding through _severity_stated_in_text, recovery_review_subject.py:574 falls back to \"unstated severity\", and both done-when cases pass at the reviewed head, so the goal is met.\nVERDICT done_when: the section's done_when names two tests, a negative control and an all_debug gate; tests/test_plain_text_finding_does_not_stop_a_re_review.py:205 and :207 assert the brief lists finding 0 [blocking] and finding 1 [non-blocking] with their dispositions, :222 asserts the non-blocking finding is disposable, and logs/after.log records 53 passed EXIT=0 with sacct showing every arm job COMPLETED on all_debug.\nVERDICT write_paths: the manifest declares reckon, tests/test_plain_text_finding_does_not_stop_a_re_review.py, the evidence fragment and an unused figures directory; the diff against 81709f1d touches reckon/crew/review.py, the new test and docs/evidence/fragments/work-flows-to-the-lane/plain-text-finding-does-not-stop-a-re-review.html, all inside the fence.\nVERDICT manifest: read; it reports status complete over three commits, a baseline arm of 51 passed EXIT=0 at 81709f1d and an after arm of 53 passed EXIT=0 at ba4761a8, and a negative control of 1 failed 1 passed EXIT=1, and each of those three logs on disk reads as reported.\nVERDICT diff: read commit by commit against 81709f1d: b8daf96b03 adds the two-line non-mapping branch and its docstring in reckon/crew/review.py, 1225f52ef3 adds the 55-line evidence fragment, ba4761a819 formats the new 222-line test; 292 insertions and 3 deletions across three files.\nCALL_SITES: reckon/crew/recovery_review_subject.py:574 (_earlier_finding_rows renders each earlier finding's severity into the re-review brief), reckon/crew/recovery_review_acceptance.py:55 (review acceptance gates on a finding's declared severity), reckon/crew/queue_landing.py:1531 (disposal path reads a finding's severity), reckon/crew/repair.py:211 (repair reflex reads a finding's severity), reckon/crew/repair.py:306 (open work list reads a finding's severity), reckon/crew/reports.py:1956 (report decides whether a finding declares a severity), reckon/crew/recovery_review_dispatch.py:1324 (review dispatch reads a finding's severity), reckon/crew/findings.py:301 (landing guard reads a finding's severity)\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/review.py:223-224 routes a bare-string finding to _severity_stated_in_text, which applies the same leading-word rule every record finding's claim uses, and the production composer at recovery_review_subject.py:574 needs no change because it already reads through declared_severity and finding_claim.\nSCORE evidence: 19\nJUSTIFICATION evidence: logs/after.log at ba4761a8 records 53 passed EXIT=0 and logs/baseline.log at 81709f1d records 51 passed EXIT=0, sacct shows jobs 1315165/1315171/1315177/1315189 COMPLETED on all_debug, and I re-ran the two node tests at the reviewed head in an extracted tree: 2 passed.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in the diff (reckon/crew/review.py, tests/test_plain_text_finding_does_not_stop_a_re_review.py, the evidence fragment) lies inside the manifest's declared write paths listed in orientation_write_paths, and nothing else changed.\nSCORE durability: 19\nJUSTIFICATION durability: negative-control.log shows the two-line guard removed reinstates the defect and reddens tests/test_plain_text_finding_does_not_stop_a_re_review.py:205 with AttributeError: 'str' object has no attribute 'get', which is exactly the regression it guards; the disposal assertion at :222 discriminates against a dropped or misindexed write because the fixture seeds finding 1 with a different exemption, though its expected value is the reason the test itself supplied.\nSCORE fit: 19\nJUSTIFICATION fit: the guard sits inside the single severity reader as one isinstance branch with a docstring paragraph in the module's own explanatory voice, and the new test follows the per-file _git/_commit fixture idiom of tests/test_a_review_with_no_base_is_not_carried.py:33 rather than introducing a shared helper the repo does not have.\nSCORE reuse: 20\nJUSTIFICATION reuse: the added branch reuses finding_claim and the module's existing _SEVERITY_PREFIX at reckon/crew/review.py:180 rather than adding a second severity parser; a search of the tree and of tests/ for a competing severity reader or git-fixture owner found none outside this one reader, and _git/_commit are duplicated per file by established convention across a dozen test modules.",
+  "review_node": "review-of-plain-text-finding-does-not-stop-a-re-review-ba4761a819f3",
+  "review_run_id": "r-20261114T122557320851-review-of-plain-text-finding-does-not-stop-a-re-review-ba4761a819f3",
+  "reviewed_base_sha": "81709f1d3eeb7e9b9bed213a7afcb1e12b1ad3b5",
+  "reviewed_head_sha": "ba4761a819f3d37c536e71cc7fa7f0e0d267cb8c",
+  "reviewed_run_id": "r-20261114T112502305428-plain-text-finding-does-not-stop-a-re-review",
+  "scores": {
+    "durability": 19,
+    "evidence": 19,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-14T12:48:49.108449+00:00",
+  "total": 116
+}

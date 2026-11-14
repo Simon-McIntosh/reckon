@@ -1,16 +1,8 @@
-"""A run's review can sit under another run's id, and the memo must see it move.
+"""Indexed content changes invalidate the memo for a misfiled review.
 
-A review worker writes its record by hand, so a record can sit at a path keyed
-on the reviewer's own run id while its content names the run it reviews. A run
-with no record of its own is answered from that file, and the classification
-memo keys the run's own candidate paths and the review directory's identity —
-neither of which moves when the misfiled record is rewritten in place. A memo
-written before the rewrite would go on serving the earlier verdict, so the row
-reads promotable on a review that has since said otherwise.
-
-These tests hold that the misfiled record's own identity is part of the key: a
-rewrite in place is seen on the next classification, while an unchanged record
-leaves the memo in force rather than defeating it.
+A review can sit at a path keyed on the reviewer while its content names the
+reviewed run. A write through the store must change that run's memo key and
+reclassify it, while an unchanged record keeps its cached verdict.
 """
 
 from __future__ import annotations
@@ -22,7 +14,7 @@ from pathlib import Path
 import pytest
 
 from reckon import _backends, crew
-from reckon.crew import recovery, review
+from reckon.crew import recovery, review, review_records
 
 # A moment every classification in this module is taken at, so the two arms of a
 # parity case differ by the memo and by nothing else.
@@ -167,21 +159,15 @@ def reviewed(tmp_path: Path):
 def test_a_misfiled_record_rewritten_in_place_reclassifies(
     isolated_reckon_home: Path, reviewed
 ) -> None:
-    """The record is keyed on its own identity, so an in-place rewrite is seen.
-
-    The rewrite moves no directory entry and none of the run's own files, which
-    are every input the key held before: without the misfiled file's own
-    identity in the key the memo would serve the parsed verdict on a record
-    that no longer says it.
-    """
+    """A writer updates the misfiled record's digest and invalidates the memo."""
     record, head = reviewed
 
     before = _classify(record)
     assert before["classification"] == "promotable"
 
-    _write(
+    review_records.record_written(
         _misfiled_path(),
-        _misfiled_record_text(TARGET_RUN, head=head, verdict="unparsed"),
+        json.loads(_misfiled_record_text(TARGET_RUN, head=head, verdict="unparsed")),
     )
 
     after = _classify(record)

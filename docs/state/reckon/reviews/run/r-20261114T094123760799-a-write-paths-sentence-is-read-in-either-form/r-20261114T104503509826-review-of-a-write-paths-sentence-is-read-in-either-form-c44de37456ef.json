@@ -1,0 +1,32 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-11-14T11:22:29.118Z",
+  "dispatched_at": "2026-11-14T10:54:10Z",
+  "findings": [
+    {
+      "file": "reckon/doccheck.py",
+      "line": 1068,
+      "severity": "non-blocking",
+      "text": "non-blocking: the check fires on any prose mention of \"write path(s)\" rather than only on a label sentence, so over this repository's own docs it reports 549 sections (297 in docs/plans, 238 in docs/evidence), 137 of which already carry a parseable \"Write paths:\" label in the same section; the message then asserts a sentence is unparseable when the readers do parse the section's label. Measurement: /home/ITER/mcintos/.config/reckon/crew/runs/r-20261114T104503509826-review-of-a-write-paths-sentence-is-read-in-either-form-c44de37456ef/measure-doccheck-noise.log"
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is that a section's write-paths label is read whether it ends in a colon or a full stop; reckon/crew/plan_review.py:5464 now compiles r\"write\\s+paths?\\s*[.:]\", and reckon/crew/dispatch_batch.py:338 imports that same pattern, so both readers take either form.\nVERDICT done_when: the done_when names four cases in tests/test_a_write_paths_sentence_is_read_in_either_form.py; the file holds seven tests covering exactly those four, and the manifest records the head arm at 58 passed, EXIT=0.\nVERDICT write_paths: the declared scope is reckon/crew/plan_review.py, reckon/doccheck.py, tests/test_a_write_paths_sentence_is_read_in_either_form.py, the landing fragment and the figure directory; the diff touches the first four and writes no figure.\nVERDICT manifest: read; it states the head arm 58 passed and the base arm 51 passed, names every log, and its landing line quotes the negative control at 4 failed, 3 passed, EXIT=1.\nVERDICT diff: read commit by commit against 465c2df0; c3ca399f changes two product files and adds the test, c44de374 adds the landing fragment, 310 insertions and 2 deletions across four files all inside the declared scope.\nCALL_SITES: reckon/crew/plan_review.py:code_review_paths_from_plan, reckon/crew/dispatch_batch.py:_PlanRead.write_paths, reckon/crew/dispatch_batch.py:_PlanRead.done_when, reckon/doccheck.py:audit_html\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/plan_review.py:5464 widens the one shared pattern and reckon/crew/dispatch_batch.py:338 imports it, so neither reader can drift from the other.\nSCORE evidence: 18\nJUSTIFICATION evidence: base-arm.log and head-arm.log each end in a bare EXIT=0 line at their own revision, and negative-control.log ends EXIT=1 with the four full-stop cases failing.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in the diff is one of the declared write paths in the source run's manifest, and the declared figure directory was left unused.\nSCORE durability: 19\nJUSTIFICATION durability: reinstating the colon-only pattern reddens four assertions at negative-control.log, including the batch-queue case that reads runs.read_pointer rather than a value the test passed in.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/doccheck.py:1062 imports a private name from reckon.crew lazily, matching the existing lazy crew imports at reckon/doccheck.py:2215 and 2242.\nSCORE reuse: 20\nJUSTIFICATION reuse: the audit check imports the same _WRITE_PATHS_SENTENCE the two readers use rather than compiling a second copy, so there is one owner of the sentence's grammar.\nFINDING reckon/doccheck.py:1068 non-blocking: the new audit check fires on any prose mention of \"write path(s)\", not only on a label sentence, so running it over this repository's own docs reports 549 sections (297 in docs/plans, 238 in docs/evidence), 137 of which already carry a parseable \"Write paths:\" label in the same section \u2014 the finding then tells a reader a sentence is unparseable when it is not.\n",
+  "review_run_id": "r-20261114T104503509826-review-of-a-write-paths-sentence-is-read-in-either-form-c44de37456ef",
+  "reviewed_base_sha": "465c2df0f495d270143ab87b0a0fbb5cc04390b4",
+  "reviewed_head_sha": "c44de37456ef5dc1fb940d014038b22a60a93a9a",
+  "reviewed_run_id": "r-20261114T094123760799-a-write-paths-sentence-is-read-in-either-form",
+  "scores": {
+    "durability": 19,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-14T11:24:25.011040+00:00",
+  "total": 114
+}

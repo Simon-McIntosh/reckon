@@ -894,9 +894,10 @@ def _omitted_probe_inputs(*, supplied: Mapping[str, bool]) -> list[str]:
     "negative_control",
     default="",
     help=(
-        "The mutation this node's checks must fail against, declared when its "
-        "write paths include a test file; `none: <reason>` for a check that "
-        "admits no applicable mutation."
+        "The mutation this node's checks must fail against, declared when a "
+        "write path is a test file or, for a node with no write paths, when "
+        "its done-when names one; `none: <reason>` for a check that admits no "
+        "applicable mutation."
     ),
 )
 @click.option(
@@ -1259,9 +1260,10 @@ def _queue_dispatch_batch(
     "negative_control",
     default="",
     help=(
-        "The mutation this node's checks must fail against, declared when its "
-        "write paths include a test file; `none: <reason>` for a check that "
-        "admits no applicable mutation."
+        "The mutation this node's checks must fail against, declared when a "
+        "write path is a test file or, for a node with no write paths, when "
+        "its done-when names one; `none: <reason>` for a check that admits no "
+        "applicable mutation."
     ),
 )
 @click.option("--node", "node_id", default="", help="Stable node id.")
