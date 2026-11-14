@@ -3,11 +3,11 @@ from __future__ import annotations
 import argparse
 import ast
 import ctypes
-import fcntl
 import json
 import os
 import select
 import sys
+import threading
 import time
 import uuid
 from pathlib import (
@@ -33,6 +33,7 @@ from reckon.crew.runs import (
     read_pointer,
     run_dir,
 )
+from reckon.node_exclusive_lock import exclusive_lock
 
 _INOTIFY_EVENTS = 0x00000100 | 0x00000008 | 0x00000080
 
@@ -77,8 +78,38 @@ def _dotted_name(node: ast.AST) -> str:
     return ""
 
 
+# One file's references, keyed by its path, repository and on-disk identity.
+# Adjacency compares a dispatching node with every live peer, so one launch read
+# the same files once per peer pair, and an admission pass did so once per
+# launch: on 14 November the admit service spent all of a sampled minute parsing
+# them and took seventeen minutes over one pass. A file whose size and change
+# time are unmoved has the references it had, so it is parsed once.
+_REFERENCES: dict[tuple[str, str, int, int], frozenset[str]] = {}
+_REFERENCES_LIMIT = 8192
+_REFERENCES_LOCK = threading.Lock()
+
+
 def _python_references(path: Path, repo: Path) -> set[str]:
     """Read import and qualified-call references from one Python source file."""
+    try:
+        stat = path.stat()
+    except OSError:
+        return set()
+    key = (str(path), str(repo), stat.st_size, stat.st_mtime_ns)
+    with _REFERENCES_LOCK:
+        known = _REFERENCES.get(key)
+    if known is not None:
+        return set(known)
+    references = _parsed_python_references(path, repo)
+    with _REFERENCES_LOCK:
+        if len(_REFERENCES) >= _REFERENCES_LIMIT:
+            _REFERENCES.clear()
+        _REFERENCES[key] = frozenset(references)
+    return references
+
+
+def _parsed_python_references(path: Path, repo: Path) -> set[str]:
+    """Parse one Python source file for its import and qualified-call references."""
     try:
         tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
     except (OSError, SyntaxError, UnicodeError):
@@ -218,8 +249,7 @@ def _update_peer_index(
     root = _channel_root(run_id)
     root.mkdir(parents=True, exist_ok=True)
     lock_path = root / "peers.lock"
-    with lock_path.open("a+b") as handle:
-        fcntl.flock(handle.fileno(), fcntl.LOCK_EX)
+    with exclusive_lock(lock_path):
         index_path = root / "peers.json"
         index = _read_json(index_path) or {"run_id": run_id, "peers": {}}
         peers = index.setdefault("peers", {})
@@ -229,7 +259,6 @@ def _update_peer_index(
             peers[peer_run_id] = dict(details)
         index["updated_at"] = _utc_now()
         _write_json(index_path, index)
-        fcntl.flock(handle.fileno(), fcntl.LOCK_UN)
 
 
 def _wire_peer_channels(
@@ -521,6 +550,7 @@ def _stamp_agent_display(
         if spelling:
             stamped["effort_spelling"] = spelling
     return stamped
+
 
 from .dispatch_admission import (  # noqa: E402
     _require_fleet_gate_open,

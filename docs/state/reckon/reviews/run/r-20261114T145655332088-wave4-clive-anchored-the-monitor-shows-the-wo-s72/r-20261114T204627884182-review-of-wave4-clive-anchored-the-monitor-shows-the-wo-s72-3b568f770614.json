@@ -1,0 +1,39 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-11-14T21:27:52.513Z",
+  "dispatched_at": "2026-11-14T21:19:33Z",
+  "findings": [],
+  "justifications": {
+    "durability": "tests/test_a_completed_reload_is_not_reported_as_a_stop.py:106 plants a marker at _instant(120) and asserts one row, so reinstating the reverted bool(marker) report reddens it; the stale-line case at line 124 supplies a log line dated 600 s before the marker and asserts no row, so removing the stamp comparison reddens it.",
+    "evidence": "arm-base-final.log at 50cf9e4e and arm-head-final.log at b99ba42e both show 1 failed with EXIT=1 (54 passed vs 58 passed), and negative-control-stale-line.log shows 1 failed, 3 passed, EXIT=1; the after arm added four passing cases of the node own.",
+    "fit": "reckon/crew_follow_commands.py:512-596 follows the module's existing tail-reading idiom and reuses the reload_window constant already imported on the stale-producer path; no plan, sprint, ticket or version identifiers appear in symbols, filenames or comments.",
+    "goal_fidelity": "reckon/crew_follow_commands.py:2312 gates report_reload on _reload_window_elapsed or _logged_reload_failure, so a completed reload inside the window prints nothing while an overrun still reports once.",
+    "reuse": "searched reckon/ for an existing reload-window or log-tail helper; the window comes from the existing reload_window bound and the tail reader replaces the single-purpose _logged_producer_stop body it extends, so no capability is forked.",
+    "scope_discipline": "every path in 50cf9e4e..3b568f770614 is one the manifest declares (the two source paths plus the named test file); no plan metas or shared state were written."
+  },
+  "project": "reckon",
+  "review_run_id": "r-20261114T204627884182-review-of-wave4-clive-anchored-the-monitor-shows-the-wo-s72-3b568f770614",
+  "reviewed_base_sha": "50cf9e4e08445ab2b646fc409ceb84b4ae49bfdf",
+  "reviewed_head_sha": "3b568f770614622993a8e1cd9f693d0ecfccacb4",
+  "reviewed_run_id": "r-20261114T145655332088-wave4-clive-anchored-the-monitor-shows-the-wo-s72",
+  "scores": {
+    "durability": 18,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-14T21:40:01.438186+00:00",
+  "total": 111,
+  "verdicts": [
+    "VERDICT goal: the source node reports each of its goal, done_when, write_paths, manifest, diff and call sites; the landed change makes reckon/crew_follow_commands.py grant a reload in flight the same 65-second window the stale-producer path already uses and accept the producer's own failure line as a second signal, matching the stated goal.",
+    "VERDICT done_when: the done_when names tests/test_a_completed_reload_is_not_reported_as_a_stop.py; the manifest records the base and head arms at 50cf9e4e and b99ba42e: 1 failed, 54 passed EXIT=1 against 1 failed, 58 passed EXIT=1 in arm-base-final.log and arm-head-final.log.",
+    "VERDICT write_paths: the source node declared reckon/crew_follow_commands.py, docs/evidence/fragments/the-monitor-shows-the-work-it-watches/wave4-clive-anchored-the-monitor-shows-the-wo-s72.html and docs/figures/the-monitor-shows-the-work-it-watches/wave4-clive-anchored-the-monitor-shows-the-wo-s72; the diff touches exactly the first two plus tests/test_a_completed_reload_is_not_reported_as_a_stop.py, all inside the fence.",
+    "VERDICT manifest: read; it records the arms, the negative control at negative-control-stale-line.log (1 failed, 3 passed EXIT=1), the out-of-scope module-window failure, and per-dimension rubric lines.",
+    "VERDICT diff: read commit by commit from 50cf9e4e to 3b568f770614; reckon/crew_follow_commands.py adds _producer_log_tail, _producer_log_message, _producer_log_stamp, _logged_reload_failure and _reload_window_elapsed and gates report_reload at line 2312 on the window or a dated failure line; the test file adds four cases; the fragment HTML records the landing."
+  ]
+}

@@ -59,7 +59,6 @@ mutators, serve.py, single-checkout agents) are completely unaffected.
 
 from __future__ import annotations
 
-import fcntl
 import hashlib
 import html
 import json
@@ -77,6 +76,7 @@ from typing import IO, Any, TextIO
 
 from reckon._schema import PlanRef, is_section_identity
 from reckon.lifecycle import TERMINAL_STATUSES
+from reckon.node_exclusive_lock import exclusive_lock
 
 PLAN_SUMMARY_MAX_LENGTH = 160
 
@@ -404,13 +404,8 @@ def _serialized_path_lock(path: Path, namespace: str):
     """
     identity = hashlib.sha256(str(path.resolve()).encode()).hexdigest()
     lock_path = _config_home() / "locks" / namespace / f"{identity}.lock"
-    lock_path.parent.mkdir(parents=True, exist_ok=True)
-    with lock_path.open("a+b") as handle:
-        fcntl.flock(handle.fileno(), fcntl.LOCK_EX)
-        try:
-            yield
-        finally:
-            fcntl.flock(handle.fileno(), fcntl.LOCK_UN)
+    with exclusive_lock(lock_path):
+        yield
 
 
 @contextmanager

@@ -1,0 +1,130 @@
+{
+  "absent_items": [],
+  "accepted_edits": [
+    {
+      "by": "1fb615a0-2801-4418-bbb4-c2914719e520",
+      "digests": {
+        "s54": "00b9abf2130abb2999241ac6fd7315689fb0e33781634dd2dcc8a999e79a14cf"
+      },
+      "reason": "e752fd0802 edits only s54's log-line measure and s53's stray comma, answering done_when-1 of r-20261114T193415758001",
+      "units": [
+        "s54"
+      ],
+      "when": "2026-11-14T20:21:15.246264+00:00"
+    }
+  ],
+  "completed_at": "2026-11-14T20:14:05.691Z",
+  "dispatched_at": "2026-11-14T19:57:02Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/the-monitor-reads-each-fact-once.html:698",
+      "id": "done_when-1",
+      "reason": "the node would build a test whose control cannot reach its stated number and whose head measure no code path writes, so the log-line half of the deliverable would be unproven; the measure must name the component that actually emits the line (the station beat over a drained refusal receipt, or the sweep's own report entry) or be re-sourced to the count the named entry point can produce.",
+      "text": "s54's done-when requires the test to \"count the station-sweep-run-failure lines the station's sweep runner writes for the run over the three unmoved sweeps and assert one\", with the base control at 3, but a `dispatch_awaiting_reviews` call never writes that line: it is printed only by `SweepBeat._run` (`reckon/crew/station.py:392-400`) from `report[\"reviews\"][\"failed\"]`, while a refusal returned from `review_self_state` reaches `review_self_refused` on the inline path (`_apply`, `recovery_review_acceptance.py:1080-1090`) and the durable-request path only writes a fresh `promotions.request()` receipt in phase `promotion-requested` (`promotion_requests.py:253-286`, \"Record one request and return without doing any promotion work\"), so `failed` stays empty and no line is printed on either revision \u2014 the base count is 0, not 3, and the head assertion of one has no source",
+      "type": "done_when",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "66a190fa61f76f699fe551fc5113bfa093597049",
+  "plan_fingerprint": "e28f6bf56b02d4313ecfdbd44281e464c205220ff043627248b2acd462ca68b2",
+  "plan_slug": "the-monitor-reads-each-fact-once",
+  "plan_version": 286,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "1fb615a0-2801-4418-bbb4-c2914719e520",
+      "commit": "e752fd0802f6b20f26c3c22348ec179f81988a50",
+      "commit_basis": "edit",
+      "finding": "done_when-1",
+      "note": "s54's log-line measure now drives SweepBeat, the only writer of station-sweep-run-failure lines, across three sweeps with the durable request drained between them; the base control records both counts and a base log count of 0 is reported, not passed (e752fd0802)",
+      "reason": "",
+      "when": "2026-11-14T20:21:00.866209+00:00"
+    }
+  ],
+  "responses": {
+    "done_when-1": {
+      "action": "acted",
+      "by": "1fb615a0-2801-4418-bbb4-c2914719e520",
+      "commit": "e752fd0802f6b20f26c3c22348ec179f81988a50",
+      "commit_basis": "edit",
+      "note": "s54's log-line measure now drives SweepBeat, the only writer of station-sweep-run-failure lines, across three sweeps with the durable request drained between them; the base control records both counts and a base log count of 0 is reported, not passed (e752fd0802)",
+      "reason": "",
+      "when": "2026-11-14T20:21:00.866209+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/plan-the-monitor-reads-each-fact-once.v286.json",
+  "review_run_id": "r-20261114T193415758001-plan-review-of-the-monitor-reads-each-fact-once",
+  "reviewed_blob_sha": "382ca289eb94b9bd268992f80c5432940a8b3c58",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `process_signal.py:286` is `BEAT_SECONDS = 1.0`, `obligation_snapshot.py:1631` is the `process_table_walk_once()` entry and the only one in `reckon/`, `station_subscriber.py:346` lies inside `live_work_populations`, and `review_self_state` in `recovery_review_acceptance.py:800-892` emits the quoted refusal; the extensionless hrefs resolve as `.html`.",
+    "done_when": "a finding \u2014 s54's new \"station-sweep-run-failure lines\" count measures a line written by `reckon/crew/station.py:396` from `report[\"reviews\"][\"failed\"]`, which the sweep the done-when names never populates for a refusal.",
+    "evidence_paths": "pass \u2014 both done-whens place their matched arms' logs under the run directory with revision, literal command and a closing `EXIT=` line, and neither names a scratchpad path.",
+    "naming": "pass \u2014 no plan labels, stage names or ticket numbers reach a symbol; the s53 deliverable's residual \",.\" is a copy-edit and carries no label.",
+    "reasoning": "pass \u2014 s54's root cause matches its evidence (the cited text appears 141 times for `r-20261114T140510733842-...` in `~/.local/state/fleet/services/station.log`, 20,608 `station-sweep-run-failure` lines in the file), and s53's premise holds: `process_table_walk_once` is entered only at `obligation_snapshot.py:1631`, and the block at `station_subscriber.py:346` opens `_classification_input_tick()` and `resource_scan_scope()` but no process-table region.",
+    "single_goal": "pass \u2014 s53 delivers one walk per tick pass; s54's two clauses are one behaviour (remember a refusal and stop redoing its work), closed by one verdict on the record-search count.",
+    "wiring": "pass \u2014 neither changed section declares a `depends-on`, and none is needed: s53 edits `reckon/crew/station_subscriber.py` and s54 `reckon/crew/recovery_review_acceptance.py`, and neither consumes another section's record."
+  },
+  "section_digests": {
+    "_document": "07aab5ccd402ce143dd5cad3fbe7524fab654a2a80a0fb34c277c18fe3cc0def",
+    "s1": "bd759b66b2b75254305e473bf6b8af6218ef25d95b0db1638ed2668f0cdd9441",
+    "s10": "d21f2adf110c82d39fa9834752ac3f47dba7ac886c59cfd85feb23c1e8d1003f",
+    "s11": "9e8b94316ed45fc2103d1edc216fbb0dd3862f559824ad1c43299b305a3af6bd",
+    "s12": "21fc271f915167db3cca4f7d0eee1f4553b5dec7b96127d71d294e5ae242bc02",
+    "s13": "3b11fe0cd53015121e6d566c554c6c77b13236b3700a90279e77a6bc755ea0a3",
+    "s14": "5f6675ba84aab4ad594b121e888aace2d69e497390559d38f0c220e5894ac588",
+    "s15": "efa38c205c7332a7867b6d87358cd9f89fe1568beaa9f9e5eee96862dd70b6f0",
+    "s16": "65cd8e559a7a5ebf018bc9fe50a07bb0954f67405ab6f17c7377c38ccd363aa7",
+    "s17": "1dee50822a308fa4eeea0a45fd3cdaf6de52d9a1d74a91c2b9c7605d179da2ad",
+    "s18": "ba63c0b1b83ec93cc99d92a3c1f67dcf92d700e20f4f9acd88362705d6b4d123",
+    "s19": "16239e5fae49e56b170433557a77981816880756e3ae545a741ca9ec70feae63",
+    "s2": "e0f306f01b1530661ef28be3f19592348c45f24e7826567d58a2f0a4f79dd284",
+    "s20": "d14d2b70bb40dd552f306726f24f5e3c79bc5efcd7f9b74bcb7d3de8f16f5e8e",
+    "s21": "9ff7b29b83f9c8ab95a0a469c997950ef226fc3d99d8dcffdbf0683df7a1f26c",
+    "s22": "1bdc9ac90396c56bcbcc8c3c4f44aa6b30cbd59c4da001825159a7b8245e054c",
+    "s23": "a810ffe181d2787722d8f9538a4348592269fe163ba23cc59939376cb13edcbb",
+    "s24": "e861dcc5044a0a1fb36c4a374ca71717aeb97054e5a3ff1aef57c9779c7147f5",
+    "s25": "a0939bd3d8ab0fa4b5c0c88de3cb9cdab3531338fe35d0c12b4338fc3c4d1563",
+    "s26": "a8fb9d8585830b87ed826347ff724ddecc8fb9a43ad9ac1540d6499e3689d03e",
+    "s27": "3c9e47dc777eeadabbe3898d4b8f69d91defbaff009d050f2906732cb87e50c8",
+    "s28": "982b473728d61b81a3d37050384bee85f3f1fb5366aad0668c5370a51367e82c",
+    "s29": "159b45ee319dc13bffea961474eb544e5a26d161bf686ebe5b7fabf95f5266c7",
+    "s3": "f42c4644817feac0c199cd8510d2e284079b1c8fb777c7b79ced63531a8d983f",
+    "s30": "2d8c9efccd4f8eeede43f5fabe6f6b9cacc2207ce97ca700584bfedd0e512dd2",
+    "s31": "27817d420beefc15258f2f52ea8c616f3e04b4035773fe437f6cfe7f31506100",
+    "s32": "836f1473b1691ab0150f1e32791c295f7511abd66cb29f93b48dc0d347998d51",
+    "s33": "39a7d7a43bc6e97cd0c11235cfbe6c06a5b6968dab69e8147978bd164bbfef4e",
+    "s34": "16da5de7a5c4ee31ac2d9a43b888bed8fb1ec1138a2194a35c9b8eacbf03a2b1",
+    "s35": "4a0acdec0fa4d9eaa1066ee46c8a4aec8079db0452d014a442005e104c03c2cc",
+    "s36": "2a4a0d6ab4a994e2d7542482f7b44d106ab0920143bf39d14b292c7c2ec02e8a",
+    "s37": "4d92cdfe9ba1661dc549241d07f5134250aedec9d46757600f427fc52c4741dd",
+    "s38": "2cd435157dcdf14e39d4dbcd90e98b171feba9df13c5e142e0edf0d8fd4a3bf5",
+    "s39": "8808ed4531ebe4589c1b5bb7c7b0e5644b141d532a6dcc3fef92ae640e08d57c",
+    "s4": "c98e197194f43124e5a982992370bf1c08593aa17fb304787a4d7b87f42a0107",
+    "s40": "444368fd31b2649852412e7533de8628a94071d7942154f1a75921b923006779",
+    "s41": "b1092da2f507a79ce2706ec4aa2660d53c3b5250d4790b92d2dcd190f4387e17",
+    "s42": "ef98f2534552feb3a2ebf8768c6fcb43355940cef2804ddc7c77c6917785de19",
+    "s43": "0ca81d067129f3af34ec2d359c605e716be1488a1545039d936cdb1c7bbee2ec",
+    "s44": "2f0b0e686cace2db876cf00fcfaf9bb695e130bf88094a901ff7e7808b059cfc",
+    "s45": "d69c6ab4c51eb99b6262547a934d3cadb8896d272251707771027d8dacb77bcb",
+    "s46": "15bf3fae7afcff6c9b316fb4d28bd070c2190192e9b9b5c3711b26f9dbc4895f",
+    "s47": "de3c85d7297232abbe6767af5f61b6546c68c206440469f03779df09dfe9c21f",
+    "s48": "c0407ba2af0106d21163a3e1ba1bcd7ea34373211a81f3c100d623def503ec70",
+    "s49": "244b3877f19c81d81c7fda520bf6bbf2ff2d74a6a23a463bc92b50fe0b2043e0",
+    "s5": "0329936ec702c07e4a2ef8c756961740635d0dd8c7a1d14646983f1c32f09790",
+    "s50": "1c953bda33cda6d81de9479ed929ef63b0796d3c593d23de08c5f4568449f544",
+    "s51": "dbea6dee91f6029d698f151362338fc42e7401db7c931fc9d87fada7c147fcbb",
+    "s52": "b35a6850269241b61ee3a2475ddb65e655481cf4051d580fb5402d19c1987d7a",
+    "s53": "dc62a63df7e73414761dd755ab8c58fcbb49e51ecc7cc7de0d62e2280010ef39",
+    "s54": "2a019925ef7c3546ab7eed4be8086a8b1aa478b5a38d34089feb868534eb40cf",
+    "s6": "1f19e9f8c46bc0674347ba5a3c97588b846d125a5fbcf9533e8a5a3f9ec00bb6",
+    "s7": "dff81fd58ae3afef69063faed237df9bb4056bdb98556a1e5a053e6807ae3d16",
+    "s8": "4a70cad80d8613feb4b30861587298ff1109616ba9a35992821009274f17ae3f",
+    "s9": "8597fbe3fc93694e846c364272c698acf84b09466b4798491eb74279d62cef1d"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-14T20:18:17.707112+00:00",
+  "total": null
+}
