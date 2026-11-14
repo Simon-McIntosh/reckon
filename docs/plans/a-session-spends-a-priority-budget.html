@@ -59,7 +59,7 @@
 <ul>
   <li>A session gives a request a priority at submission, through <code>crew dispatch</code>, a batch entry or <code>crew review</code>. It changes that priority at any time before launch, through <code>crew queue reprioritise</code>.</li>
   <li>The points a session has placed on its unlaunched requests never exceed its budget. A submission or change that would exceed it is refused, naming the budget, the points in use and the requests holding them. A request's points return to the budget when it launches, is dropped or is discarded.</li>
-  <li>Admission orders requests across sessions in this order: delivered reviews first; then any request that has waited past the ageing bound, oldest first; then priority, highest first; then fair share by live runs; then roadmap rank. Ageing sits above priority on purpose, so a spent budget can move work ahead but cannot starve another session.</li>
+  <li>Each lane keeps its own queue, as admission does today; within a lane, admission orders requests across sessions in this order: delivered reviews first; then any request that has waited past the ageing bound, oldest first; then priority, highest first; then fair share by live runs; then roadmap rank. Ageing sits above priority on purpose, so a spent budget can move work ahead but cannot starve another session.</li>
 </ul>
 <p><strong>Done when.</strong> Tests with a temporary repository and crew home show the following:</p>
 <ul>
@@ -103,7 +103,7 @@
 <ul>
   <li>A test with a stub scheduler dispatches more workers than the old roster cap, reads one job submission per worker on the named partition, and reads no refusal naming the roster.</li>
   <li>A test raises a pending worker's priority and reads the scheduler asked to reorder it.</li>
-  <li>A live measurement on <code>rigel</code> dispatches 30 workers. It reads 30 jobs in the scheduler and no worker process on the fleet node, and the router's gate waiting count is above zero while its in-flight count stays at its width.</li>
+  <li>A live measurement on <code>rigel</code> dispatches 30 workers. It reads 30 worker jobs in the scheduler, pending or running, and no worker process on the fleet node. At a moment when more of them are generating than the gate's width, it reads the router's in-flight count at the width and its waiting count above zero.</li>
 </ul>
 <p>Negative control: the first test against the base revision refuses past 25, naming the roster cap, and the failing run is logged. The gate runs on <code>all_debug</code>, and the live measurement's log is written to <code>docs/evidence/fragments/a-session-spends-a-priority-budget/s5.html</code>.</p>
 
