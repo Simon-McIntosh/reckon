@@ -78,8 +78,20 @@
 
   <p id="run-landing-ledger-locks-cross-node-guard">The guard's pending table drops these seven rows
   and adds no judged rows, because no <code>flock</code> call is left at any of the seven sites.
-  The census at this head reads 35 sites and 38 lock-taking calls: 21 judged keys, unchanged, and
-  14 pending. The four guard tests pass, and no site is in neither table.</p>
+  At the delivery head the census read 35 sites and 38 lock-taking calls: 21 judged keys, unchanged,
+  and 14 pending. After the merge below, a concurrent lane-and-picker migration also leaves the
+  tree, so the repaired head reads 30 sites and 33 calls, still 21 judged and now 9 pending. Both
+  censuses classify every site: none is in neither table and no judged or pending row is stale. The
+  four guard tests pass at the repaired head.</p>
+
+  <p id="run-landing-ledger-locks-cross-node-merge">A landing merge against primary
+  <code>a946964dd3</code> conflicted on this node's guard file alone, where both sides edit the same
+  pending table. Each side removes rows for the sites it migrated and neither restores the other's,
+  so the resolution keeps both removals: this node's seven plus the five the merged work migrated
+  (<code>budget_reset.py</code>, <code>model_catalogue.py</code>, the two
+  <code>paid_lanes.py</code> sites and <code>picker/outcomes.py</code>). No row is left for a site that now takes the record lock, and
+  the guard passes with that table. The merge head is <code>1d0e64557b</code>; the delivery commits
+  <code>a355eac555</code>, <code>bcbe687be0</code> and <code>e48cf2ab3b</code> remain its ancestors.</p>
 
   <p id="run-landing-ledger-locks-cross-node-focused">The wider population is the 261 test files that
   name one of the five changed modules, run on a compute partition in both arms. The base arm reads
