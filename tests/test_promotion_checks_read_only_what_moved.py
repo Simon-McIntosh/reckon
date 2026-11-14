@@ -275,7 +275,9 @@ def test_a_full_promotion_reads_no_unbounded_working_tree(
     root = _build_checkout(tmp_path / "repo")
     _five_thousand_files(root)
     _seed(root, tmp_path)
-    _declare_write_paths(["docs/"])
+    # A declared root that the fixture never writes: the read is bounded, and
+    # nothing in it is the run's uncommitted work.
+    _declare_write_paths(["docs/report"])
 
     result, recorder = _promote(root, home)
 
