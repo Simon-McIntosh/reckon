@@ -476,15 +476,34 @@ def commit_record_write(project: str, path: str | Path | Iterable[str | Path]) -
     ``path`` names one file, as a disposition writes, or a set of files that
     share the one commit: a repair rewrites a committed record and preserves
     the as-delivered copy beside it, and the two belong to the same write.
+    Indexed staging paths publish any changed bytes before returning, even
+    though no commit is made for those paths.
     """
-    committed = _review.committed_review_root(project)
-    if committed is None:
-        return False
-    root = Path(committed).resolve()
     if isinstance(path, (str, Path)):
         paths = [Path(path)]
     else:
         paths = [Path(item) for item in path]
+    # Callers can have rewritten a staging record in place. Publish those
+    # bytes before deciding whether any path belongs to the committed tree.
+    # An already published write needs no second replacement or generation.
+    for item in paths:
+        if item.suffix != ".json" or not _indexable(item.parent):
+            continue
+        try:
+            data = item.read_bytes()
+            record = json.loads(data)
+        except (OSError, ValueError):
+            continue
+        if not isinstance(record, Mapping):
+            continue
+        document = _read_index_document(item.parent) or {}
+        entry = (document.get("entries") or {}).get(item.name) or {}
+        if entry.get("sha256") != _sha256_hex(data):
+            record_written(item, record, serialized=data)
+    committed = _review.committed_review_root(project)
+    if committed is None:
+        return False
+    root = Path(committed).resolve()
     inside: list[Path] = []
     for item in paths:
         try:
@@ -2153,7 +2172,9 @@ def _index_stored_record(path: Path, record: Mapping[str, Any]) -> None:
         _persist_index_document(directory, doc)
 
 
-def record_written(path: Path, record: Mapping[str, Any]) -> None:
+def record_written(
+    path: Path, record: Mapping[str, Any], *, serialized: bytes | None = None
+) -> None:
     """Write one review record and advance the store's index for it.
 
     This is the store's one writer path. The record is serialised to a sibling
@@ -2162,18 +2183,26 @@ def record_written(path: Path, record: Mapping[str, Any]) -> None:
     what is on disk rather than what was meant to be. The entry, the run's
     digest, the version and the change log move in the same locked write, so a
     reader that sees the new version sees the new entry.
-    """
-    from reckon._store import write_json_atomically
 
-    write_json_atomically(
-        path,
-        dict(record),
-        indent=2,
-        sort_keys=True,
-        mode=None,
-        fsync=False,
-        create_parents=True,
-    )
+    ``serialized`` preserves a caller's field layout when it repairs a record;
+    the index still hashes the bytes that were written.
+    """
+    from reckon._store import write_atomically, write_json_atomically
+
+    if serialized is None:
+        write_json_atomically(
+            path,
+            dict(record),
+            indent=2,
+            sort_keys=True,
+            mode=None,
+            fsync=False,
+            create_parents=True,
+        )
+    else:
+        write_atomically(
+            path, lambda handle: handle.write(serialized), binary=True, fsync=False
+        )
     _index_stored_record(path, record)
 
 
@@ -2470,8 +2499,10 @@ def review_entries_signature(project: str, reviewed_run_id: str) -> tuple[Any, .
 
     A staging record written through the store moves its run's digest. Another
     run's new record leaves this key unchanged. Records outside the indexed
-    staging store use their file identities. The committed directory is included
-    because promotion can replace staging as the source.
+    staging store use their file identities. Indexed files are not revalidated:
+    an external rewrite retaining its inode is visible only after a rebuild.
+    The committed directory is included because promotion can replace staging
+    as the source.
     """
     directory = _review.review_store_root() / project
     digest = store_index_run_digest(directory, reviewed_run_id)
