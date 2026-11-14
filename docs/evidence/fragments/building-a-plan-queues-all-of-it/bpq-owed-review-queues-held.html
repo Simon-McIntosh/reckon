@@ -1,0 +1,50 @@
+<section id="bpq-owed-review-queues-held-landing">
+  <h2>Review debt queues held and releases through the shared gate</h2>
+  <p>Implementation dispatch stores requests held with <code>plan-review-owed</code>
+  and the review gate's own reason. Admission judges missing design reviews,
+  uncovered content and unanswered findings through that same gate over its
+  cached evidence. Review responses participate in the cache identity, so an
+  answer releases a held section even when no plan text changes.</p>
+  <p>Owed reviews are composed through <code>compose_owed_plan_reviews</code>,
+  scoped to the dispatched plan, with the reflex's eligibility rules. A plan
+  needing both rubrics composes one design and one content review. Dispatch
+  results carry those review runs; the CLI preview reports the corresponding
+  hold without storing requests.</p>
+  <table id="bpq-owed-review-queues-held-measures">
+    <caption>Temporary repositories and crew homes; gates ran on
+    <code>all_debug</code>. The gate log records its exact revision, imported
+    module, working directory, relative command and terminal exit status.</caption>
+    <thead><tr><th>Measure</th><th>Observed result</th></tr></thead>
+    <tbody>
+      <tr><td>Unreviewed plan, one batch call</td><td>2 sections held;
+      1 design and 1 content review composed; repeat call composes 0 extra reviews.</td></tr>
+      <tr><td>Reviews stored without findings</td><td>Both sections release on
+      the next admission pass.</td></tr>
+      <tr><td>Unanswered finding on one section</td><td>Only that section holds;
+      answering the finding releases it without a plan edit.</td></tr>
+      <tr><td>Composition eligibility</td><td>Editing, terminal and already
+      covered plans compose no new review.</td></tr>
+      <tr><td>Focused gate at <code>630b0fd7101e32ad1ebf15dc08d9904a85882f64</code></td>
+      <td>147 passed in 30.32s; <code>EXIT=0</code>, including CLI preview and launch parity.</td></tr>
+      <tr><td>Required suite at base
+      <code>bc316766333df704e7a671de195467dc836ab4b1</code></td>
+      <td>55 passed in 20.86s; <code>EXIT=0</code>.</td></tr>
+      <tr><td>Required suite at source revision
+      <code>7af35b70046dfd99c6c1842aaca118c07543269a</code></td>
+      <td>55 passed in 19.87s; <code>EXIT=0</code>; zero added failures.</td></tr>
+      <tr><td>Base refusal control</td><td>1 failed in 1.24s;
+      <code>EXIT=1</code>. Dispatch raises <code>PlanReviewMissingError</code>:
+      “carries no stored review under the design rubric”, instead of returning
+      a held request.</td></tr>
+    </tbody>
+  </table>
+  <p><a href="/reckon/evidence/fragments/building-a-plan-queues-all-of-it/s3.html">Focused gate log</a>.
+  Suite and refusal-control logs are retained in the run directory. The
+  manifest records the final delivery revision and suite receipt. Integration
+  with the independently implemented plan-width command is measured by the
+  separately assigned merged-head verification.</p>
+  <p>The related queue fixtures now supply complete node contracts, including
+  manifest paths, configured roles and specification levels, so their assertions
+  reach review evaluation. CLI parity assertions read stdout independently of
+  stderr progress.</p>
+</section>
