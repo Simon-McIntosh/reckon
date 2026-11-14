@@ -55,13 +55,21 @@
   fails identically at the base revision, so the change adds no failure. The
   declared negative control restores the raise and ends 2 failed, with both the
   ordering case and the review-placement case red.</p>
-  <p>Two cases asserted the refusal this section removes: the one in
+  <p>The case in
   <code>tests/test_the_admission_pass_survives_a_pointer_without_its_time.py</code>
-  and the one in <code>tests/test_a_queued_pointer_without_its_time_reads_no_place.py</code>.
-  Both now read the placeable pointer ranked and the unreadable one named. The
+  asserted the refusal this section removes and now reads the placeable pointer
+  ranked and the unreadable one named. The
   placeable/unplaceable split lives in <code>queue_order.partition_placeable</code>
   and the admission pass takes it from there, so the order a surface reports and
   the order the pass ranks by cannot disagree.</p>
+  <p>A second case, at
+  <code>tests/test_a_queued_pointer_without_its_time_reads_no_place.py::test_the_admission_ordering_still_refuses_an_unreadable_time</code>,
+  still asserts that refusal and fails at this head. It lies outside this node's
+  write paths, so it is unchanged and reported for the coordinator; the edit it
+  needs is the one already made to the case above. A sweep of every module
+  importing <code>queue_order</code> or <code>admission.selection</code> reads
+  9 failed / 188 passed here against 8 failed / 182 passed at the base
+  revision, and that case is the one added failure.</p>
 </article>
 </body>
 </html>
