@@ -260,7 +260,8 @@ def admit_until_stopped(
         worker.tick()
         promotions.tick()
         landing = worker.settle()
-        result = _selection.admit_once(**admission_options)
+        with runs.resolution_scope():
+            result = _selection.admit_once(**admission_options)
         ended = time.monotonic()
         result["release"] = release
         result["landing"] = landing
@@ -300,7 +301,8 @@ def admit_until_stopped(
                 promotions.tick()
                 release = _release._release_tick()
                 released = time.monotonic()
-                admitted = _selection.admit_once(**admission_options)
+                with runs.resolution_scope():
+                    admitted = _selection.admit_once(**admission_options)
                 ended = time.monotonic()
                 landing = worker.last
                 admitted["release"] = release
