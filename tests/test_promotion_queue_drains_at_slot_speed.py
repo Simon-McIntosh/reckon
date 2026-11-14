@@ -109,9 +109,7 @@ def test_a_freed_slot_takes_the_next_request(monkeypatch):
         began = time.monotonic()
         # One admission pass, then a pass held far longer than the queue takes.
         service.tick()
-        drained = _wait_until(
-            lambda: _all_promoted(run_ids), 3 * PROMOTION_SECONDS + 5
-        )
+        drained = _wait_until(lambda: _all_promoted(run_ids), 3 * PROMOTION_SECONDS + 5)
         elapsed = time.monotonic() - began
     finally:
         service.stop_refill()
@@ -119,7 +117,7 @@ def test_a_freed_slot_takes_the_next_request(monkeypatch):
     assert drained, f"{len(finished)} of {len(run_ids)} promotions finished"
     assert _all_promoted(run_ids)
     # The property under test: the request that fills a freed slot starts within
-# one promotion time of that slot being freed, with no pass in between.
+    # one promotion time of that slot being freed, with no pass in between.
     assert moments["start"][2] - moments["finish"][0] < PROMOTION_SECONDS
     assert elapsed <= 3 * PROMOTION_SECONDS + SUITE_OVERHEAD_SECONDS, (
         f"five requests at width 2 took {elapsed:.2f} s, over three "
@@ -218,3 +216,85 @@ def test_a_moved_code_stamp_starts_nothing_more():
     finally:
         reloaded.stop_refill()
     assert _all_promoted(run_ids)
+
+
+def test_a_drain_does_not_interleave_with_a_refill_tick(monkeypatch):
+    """A drain decision and a refill tick cannot both be half done.
+
+    The refill thread and the admission pass tick this same service. A tick
+    that read the queue before the drain was decided would otherwise start a
+    promotion after the reload had been decided, on a thread the reload's
+    wait had already stopped watching. Here the refill tick parks between two
+    requests; the drain is requested while it is parked, and every start is in
+    the list the drain returned on.
+    """
+    run_ids = ["r-interleave-1", "r-interleave-2", "r-interleave-3"]
+    for run_id in run_ids:
+        _queue(run_id)
+
+    starts: list[tuple[str, float]] = []
+    finished: list[str] = []
+    in_flight = threading.Event()
+    tick_parked = threading.Event()
+    release_tick = threading.Event()
+
+    real_review_waits = promotion_requests._review_self_waits
+    seen = {"calls": 0}
+
+    def parking_review_waits(request):
+        seen["calls"] += 1
+        if seen["calls"] == 2 and threading.current_thread().name == "promotion-refill":
+            tick_parked.set()
+            assert release_tick.wait(10), "the parked refill tick was never released"
+        return real_review_waits(request)
+
+    monkeypatch.setattr(promotion_requests, "_review_self_waits", parking_review_waits)
+
+    finish = threading.Event()
+
+    def perform(request):
+        starts.append((str(request["run_id"]), time.monotonic()))
+        in_flight.set()
+        assert finish.wait(10), "the promotions in flight were never released"
+        finished.append(str(request["run_id"]))
+        return {"ok": True, "run_id": request["run_id"], "record": {"commits": []}}
+
+    service = PromotionService(width=2, execute=perform)
+    service.start_refill()
+    try:
+        assert tick_parked.wait(10), "the refill tick never reached the second request"
+        drained = threading.Event()
+
+        def drain():
+            service.begin_drain()
+            drained.set()
+
+        drainer = threading.Thread(target=drain, name="test-drain", daemon=True)
+        drainer.start()
+        assert in_flight.wait(10), "the first promotion never started"
+        # The drain blocks on the tick that is parked between two requests.
+        time.sleep(0.2)
+        assert drainer.is_alive(), "begin_drain returned through a tick in flight"
+        release_tick.set()
+        assert drained.wait(10), "begin_drain never returned"
+        drainer.join(5)
+
+        # The tick in flight started both requests before the drain returned,
+        # so both threads were in the set the drain's wait takes.
+        assert _wait_until(lambda: len(starts) == 2, 5), starts
+        assert service.tick() == []
+        assert (
+            promotion_requests.read_promotion(run_ids[2]).get("phase")
+            == promotion_requests.REQUESTED
+        )
+        finish.set()
+        assert service.wait_for_in_flight(timeout=10) == []
+        # Both promotions ran to completion, so the wait covered the thread the
+        # racing tick started as well as the one started behind it.
+        assert _wait_until(lambda: len(finished) == 2, 5), len(finished)
+        assert [run_id for run_id, _ in starts] == run_ids[:2]
+        assert service._threads == []
+    finally:
+        release_tick.set()
+        finish.set()
+        service.stop_refill()

@@ -9,6 +9,7 @@ existing guards, lease and idempotent ledger/release path.
 from __future__ import annotations
 
 import json
+import logging
 import os
 import re
 import threading
@@ -24,6 +25,8 @@ from reckon.crew import runs
 from reckon.crew.host_lease import HostLease, local_host
 from reckon.crew.node import CrewError
 
+_LOGGER = logging.getLogger(__name__)
+
 REQUESTED = "promotion-requested"
 RUNNING = "promotion-running"
 PROMOTED = "promoted"
@@ -37,7 +40,6 @@ DEFERRED = "promotion-deferred"
 WAITING = "promotion-waiting"
 PENDING = frozenset({REQUESTED, RUNNING})
 ERRORS = frozenset({FAILED, REFUSED})
-TERMINAL = frozenset({PROMOTED, FAILED, REFUSED, DEFERRED})
 
 # How long the drain waits for a wakeup before looking for requests another
 # process queued. A freed slot wakes it immediately, so this only bounds the
@@ -562,6 +564,7 @@ class PromotionService:
         self.execute = execute or _execute
         self.code_stamp = code_stamp
         self._threads: list[threading.Thread] = []
+        self._tick_lock = threading.Lock()
         self._draining = False
         self._refill_wakeup = threading.Event()
         self._refill_stop = threading.Event()
@@ -579,7 +582,9 @@ class PromotionService:
         """
         if self._refill_thread is not None and self._refill_thread.is_alive():
             return
-        self._refill_armed_stamp = None if self.code_stamp is None else self.code_stamp()
+        self._refill_armed_stamp = (
+            None if self.code_stamp is None else self.code_stamp()
+        )
         self._refill_stop.clear()
         self._refill_thread = threading.Thread(
             target=self._refill,
@@ -616,22 +621,37 @@ class PromotionService:
             return False
 
     def _refill(self) -> None:
-        """Read the queue and start what fits, on its own clock."""
+        """Read the queue and start what fits, on its own clock.
+
+        One failure is recorded and the loop carries on: a queue that could not
+        be read this second, or a promotion that raised while starting, must not
+        end the only thread that refills a freed slot for the rest of the
+        service's life.
+        """
         while not self._refill_stop.is_set():
             self._refill_wakeup.wait(REFILL_POLL_SECONDS)
             self._refill_wakeup.clear()
             if self._refill_stop.is_set() or self._draining:
                 return
-            if self._code_moved():
-                # Hand the replacement to the admission loop: it waits for the
-                # promotions in flight and re-executes the process image.
-                self.begin_drain()
-                return
-            self.tick()
+            try:
+                if self._code_moved():
+                    # Hand the replacement to the admission loop: it waits for
+                    # the promotions in flight and re-executes the image.
+                    self.begin_drain()
+                    return
+                self.tick()
+            except Exception:  # one failed refill must not stop the drain
+                _LOGGER.exception("promotion refill failed; the next tick retries")
 
     def begin_drain(self) -> None:
-        """Start no further promotion; work already running still finishes."""
-        self._draining = True
+        """Start no further promotion; work already running still finishes.
+
+        The decision is taken under the tick lock, so it cannot land between a
+        tick reading the queue and that tick starting a promotion: this call
+        returns only once no tick is in flight, and every tick after it refuses.
+        """
+        with self._tick_lock:
+            self._draining = True
         self._refill_wakeup.set()
 
     def wait_for_in_flight(self, timeout: float | None = None) -> list[str]:
@@ -643,7 +663,12 @@ class PromotionService:
         """
         deadline = None if timeout is None else time.monotonic() + timeout
         still_running: list[str] = []
-        for thread in list(self._threads):
+        # Read under the tick lock: a tick that was in flight when the drain was
+        # decided has appended its threads before this snapshot is taken, and no
+        # later tick can append one.
+        with self._tick_lock:
+            in_flight = list(self._threads)
+        for thread in in_flight:
             thread.join(
                 None if deadline is None else max(0.0, deadline - time.monotonic())
             )
@@ -690,7 +715,19 @@ class PromotionService:
 
         Requests are taken in the order :func:`_pending_requests` gives, so a
         review starts ahead of the run it reviews when both are waiting.
+
+        Two callers tick this instance — the admission pass and the refill
+        thread — so a tick holds ``_tick_lock`` for its whole body. A drain
+        decision taken between two ticks would otherwise be made while a tick
+        was half done, and that tick would start a promotion after the reload
+        had already been decided, and after the set of threads the reload waits
+        for had been read.
         """
+        with self._tick_lock:
+            return self._tick_locked()
+
+    def _tick_locked(self) -> list[str]:
+        """One tick, with the drain decision serialised against it."""
         self._threads = [thread for thread in self._threads if thread.is_alive()]
         if self._draining:
             return []
