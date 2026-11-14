@@ -2674,6 +2674,17 @@ def _commit_preserving_plan_text(
                         )
                     blobs[relative] = (mode, blob)
                 tree = private_git("write-tree")
+                if tree == private_git("rev-parse", f"{head}^{{tree}}"):
+                    return {
+                        "committed": False,
+                        "reason": "no_change",
+                        "landing_check": {
+                            "ok": True,
+                            "reversals": reversals,
+                            "mismatched": [],
+                            "pending_prose": [str(path) for path in text_edits],
+                        },
+                    }
                 revision = _commit_tree(
                     checkout, tree, [head], f"{subject}\n\n{body}\n"
                 )

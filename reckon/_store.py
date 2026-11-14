@@ -2505,7 +2505,19 @@ def plan_text_projection(document: str) -> tuple[str, list[tuple[int, str]]]:
         slots.append((length, owned[match.group()]))
         cursor = match.end()
     chunks.append(masked[cursor:])
-    return "".join(chunks), slots
+    authored = "".join(chunks)
+    whitespace = list(re.finditer(r"(?<=>)\s+(?=<)", authored))
+    slots = [
+        (
+            offset - sum(
+                min(max(offset - match.start(), 0), match.end() - match.start())
+                for match in whitespace
+            ),
+            content,
+        )
+        for offset, content in slots
+    ]
+    return re.sub(r"(?<=>)\s+(?=<)", "", authored), slots
 
 
 def _plan_text_receipt_path(path: Path) -> Path:
