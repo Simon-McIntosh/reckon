@@ -770,9 +770,10 @@ REVIEW_SELF_WAITING = "waiting"
 
 #: The phases a run's pointer carries before any worker has been spawned for
 #: it: a request waiting for a lane slot, one waiting on an upstream landing,
-#: and one the launcher has claimed but not yet started. A review in one of
-#: them has produced nothing, so its own promotion is not yet owed.
-_PRE_LAUNCH_PHASES = frozenset({"queued", "awaiting-upstream", "starting"})
+#: one the launcher has claimed but not yet started, and one a coordinator
+#: paused in the queue. A review in one of them has produced nothing, so its
+#: own promotion is not yet owed.
+_PRE_LAUNCH_PHASES = frozenset({"queued", "awaiting-upstream", "starting", "held"})
 REVIEW_SELF_REFUSED = "refused"
 
 
