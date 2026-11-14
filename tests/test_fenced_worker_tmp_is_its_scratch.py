@@ -173,12 +173,36 @@ def _node_tmp_root(self_root: Path) -> Path:
     return synthetic
 
 
+def _base_outside(node_tmp: Path) -> Path:
+    """A temp directory the node-tmp mount cannot shadow.
+
+    The run directory, the synthetic home and the stubs are reached through the
+    fence's whole-filesystem bind, so they may sit anywhere the fence does not
+    replace. They may not sit *inside* the node tmp: the mount over that path is
+    the thing under test, and a run directory inside the node tmp is exactly what
+    it hides. pytest's own temporary root is under ``/tmp`` on a compute node, so
+    when the node tmp is the real ``/tmp`` the base has to be chosen elsewhere.
+    """
+    for parent in (Path("/dev/shm"), Path.home()):  # noqa: S108 - not a tmp file
+        if not os.access(parent, os.W_OK):
+            continue
+        if parent.resolve().is_relative_to(node_tmp.resolve()):
+            continue
+        return Path(tempfile.mkdtemp(prefix="reckon-tmp-fixture-base-", dir=parent))
+    raise RuntimeError(f"no writable temp directory outside the node tmp {node_tmp}")
+
+
 class ScratchTree:
     """A node tmp holding the run's scratch, a sibling's, and an outsider's file."""
 
     def __init__(self, root: Path) -> None:
-        self.base = root
         self.node_tmp = _node_tmp_root(root)
+        if root.resolve().is_relative_to(self.node_tmp.resolve()):
+            self.base = _base_outside(self.node_tmp)
+            self.outside_base = self.base
+        else:
+            self.base = root
+            self.outside_base = None
         self.fixture_root = Path(
             tempfile.mkdtemp(
                 prefix=f"reckon-tmp-fixture-{uuid.uuid4().hex[:8]}-", dir=self.node_tmp
@@ -209,6 +233,8 @@ class ScratchTree:
 
     def cleanup(self) -> None:
         shutil.rmtree(self.fixture_root, ignore_errors=True)
+        if self.outside_base is not None:
+            shutil.rmtree(self.outside_base, ignore_errors=True)
 
     def point_the_node_tmp(self, monkeypatch: pytest.MonkeyPatch) -> None:
         monkeypatch.setattr(_worker_fence, "NODE_TMP_ROOT", self.node_tmp)
