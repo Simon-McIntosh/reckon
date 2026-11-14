@@ -550,14 +550,36 @@ _RELOAD_FAILURE_MARKERS = (
 )
 
 
-def _logged_reload_failure(project: str) -> str | None:
-    """The producer's own record that a reload could not complete, or None."""
+def _producer_log_stamp(line: str):
+    """The instant a log line was written, from the prefix its writer adds."""
+    candidate = line.strip()
+    if not (candidate.startswith("[") and "] " in candidate):
+        return None
+    return parse_utc(candidate[1 : candidate.index("] ")])
+
+
+def _logged_reload_failure(project: str, reload_started_at: Any) -> str | None:
+    """The producer's own record that this reload could not complete, or None.
+
+    The log keeps its lines across reloads, so a failure recorded for an
+    earlier attempt is still in the tail when a later one is in flight. Only a
+    line written at or after the stamp the seat record carries describes the
+    measure: a line dated before the marker belongs to a reload that has
+    already been superseded, and it is dated from the prefix the log writer
+    adds. A line carrying no such prefix cannot be dated, so it is read as the
+    current attempt rather than withheld.
+    """
+    started = parse_utc(reload_started_at)
     for line in reversed(_producer_log_tail(project)):
         candidate = _producer_log_message(line)
         if not candidate.startswith("reckon crew watch"):
             continue
-        if any(marker in candidate for marker in _RELOAD_FAILURE_MARKERS):
-            return candidate
+        if not any(marker in candidate for marker in _RELOAD_FAILURE_MARKERS):
+            continue
+        stamped = _producer_log_stamp(line)
+        if started is not None and stamped is not None and stamped < started:
+            continue
+        return candidate
     return None
 
 
@@ -2300,10 +2322,9 @@ def _follow_watch_lines(
                 # and finds no producer. That is a reload in flight, not news:
                 # report only one whose window has elapsed, or one the
                 # producer's own log records as failed.
-                report_reload = (
-                    _reload_window_elapsed(identity["reload_started_at"], reload_window)
-                    or _logged_reload_failure(project) is not None
-                )
+                report_reload = _reload_window_elapsed(
+                    identity["reload_started_at"], reload_window
+                ) or _logged_reload_failure(project, identity["reload_started_at"])
             if report_stop or report_reload:
                 watched = _population_has_live_work(project, session=session)
             if report_stop:

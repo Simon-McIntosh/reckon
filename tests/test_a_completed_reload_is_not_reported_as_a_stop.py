@@ -133,6 +133,28 @@ def test_a_reload_that_overruns_the_window_prints_exactly_one_row(
     assert "stopped during its reload" in rows[0]["line"]
 
 
+def test_a_failure_line_from_an_earlier_reload_is_not_reported_for_this_one(
+    tmp_path, monkeypatch
+) -> None:
+    """A superseded reload's failure line stays in the log; it is not this news.
+
+    The log keeps its lines across reloads, so a failure recorded for an
+    earlier attempt is still in the tail while a later reload is in flight.
+    Only a line written at or after the marker the seat record carries
+    describes the measure.
+    """
+    _isolated_home(tmp_path, monkeypatch)
+    _plant_seat(pid=None, host="peer-node", reload_started_at=_instant(30))
+    log = runs.watch_log_path(PROJECT)
+    log.parent.mkdir(parents=True, exist_ok=True)
+    log.write_text(
+        f"[{_instant(600)}] reckon crew watch is stale and could not reload "
+        "itself (OSError: probe); cycle it with: reckon crew watch --ensure\n"
+    )
+    events = _drive(on_sleep=lambda poll: None)
+    assert _reload_rows(events) == []
+
+
 def test_a_reload_the_producer_logs_as_failed_is_reported_at_once(
     tmp_path, monkeypatch
 ) -> None:
