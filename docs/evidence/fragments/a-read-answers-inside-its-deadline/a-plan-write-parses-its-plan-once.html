@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="docs-project" content="reckon">
+<title>A plan write parses the plan once — landing record</title>
+</head>
+<body>
+<main class="evidence-record">
+
+<h2 id="a-plan-write-parses-its-plan-once-summary">A plan write parses the plan once</h2>
+
+<p id="a-plan-write-parses-its-plan-once-what">One plan write now parses its document once and hands that parse to every
+pass. Before, <code>write_state</code> rebuilt the document per pass: the section-record
+splice built a soup, the body-resident comment census built another, the
+authored-child census built one per collection section it checked, and the
+record-carrying question built one more. On a real 517 KB plan one landing's
+write built five document-sized soups; on the node's fixture it built six.</p>
+
+<p id="a-plan-write-parses-its-plan-once-how">A private <code>_PlanDocumentParse</code> holds a lazily built soup and structural
+scan for one text. <code>write_state</code> builds one and passes it to
+<code>_splice_section_records</code>, <code>_body_resident_comment_counts</code>,
+<code>_authored_child_count</code>, <code>_reject_emptying_unparsed_section</code> and
+<code>_impl_is_carried_by_records</code>. The section-record splice now runs before
+any meta edit, because it indexes the document by the source offsets that parse
+holds, so it must see the text the parse was built from. The passes it feeds
+occupy disjoint regions from the meta writers, so the bytes written are
+unchanged.</p>
+
+<h2 id="a-plan-write-parses-its-plan-once-measure">Measure</h2>
+
+<ul id="a-plan-write-parses-its-plan-once-figures">
+<li>Fixture write, document-sized soups: <strong>1</strong> at head against <strong>6</strong>
+when the per-pass parse is restored (the negative control).</li>
+<li>Real 517 KB plan write, document-sized soups: <strong>1</strong> at head against
+<strong>5</strong> at the base revision, counted with the same wrapper.</li>
+<li>Bytes written: identical to the base revision's writer for the same inputs, on
+both the fixture and the 517 KB plan (<code>cmp</code> clean).</li>
+<li>Focused plan-write tests importing the changed modules: 116 passed at base and
+116 passed at head, no added failure.</li>
+<li>Gate arms: base <code>tests/test_staged_write_inventory.py</code> 49 passed with two
+setup errors from the extraction carrying no git object store (scaffolding, not
+code under test); after arm 54 passed, exit 0.</li>
+<li>Ruff check on the staged paths adds no finding against the base revision; both
+staged files are format-clean.</li>
+</ul>
+
+<p id="a-plan-write-parses-its-plan-once-test">The node's test is
+<code>tests/test_a_plan_write_parses_its_plan_once.py</code>. It counts document-sized
+soups during one landing's write, asserts exactly one, and asserts the written
+bytes equal the per-pass writer's output for the same inputs.</p>
+
+<p id="a-plan-write-parses-its-plan-once-merge">The landing met a conflict against
+primary main, which had since added a head meta for descope reasons. Resolving
+kept both: the section-record splice still runs before the meta writers, because
+it indexes the document by the offsets the parse holds, and the descope-reasons
+meta write sits with the other meta writers. A diff of the merged file against the
+delivered head contains only additions, so neither side was discarded. At the
+merged head the node gate and the descope tests pass together (15), the focused
+plan-write arm passes (179), and the file adds no ruff finding against the upstream
+revision.</p>
+
+</main>
+</body>
+</html>
