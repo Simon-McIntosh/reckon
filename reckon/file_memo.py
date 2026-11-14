@@ -32,7 +32,11 @@ _Signature = tuple[int, int, int, int, int]
 #: ``by_content``. The two are never compared with each other: one entry's
 #: identity kind follows from the kind its caller asked for.
 _Identity = _Signature | str
-_CACHE: OrderedDict[tuple[str, str, Hashable], tuple[_Identity, object]] = OrderedDict()
+#: Each file-backed entry also carries a cell ``[value, view]`` that every
+#: read-only region shares, so the read-only view of one stored value is built
+#: once rather than once per region: a reader that opens its own region around
+#: one read would otherwise rebuild the whole document's view on every call.
+_CACHE: OrderedDict[tuple[str, str, Hashable], tuple[Any, ...]] = OrderedDict()
 _LOCK = threading.Lock()
 
 # A read-only region in which a memoised value is shared rather than copied.
@@ -179,8 +183,8 @@ def _read_only(value: Any) -> Any:
     :class:`_ReadOnlySet`, each carrying the value's own items so every read is
     unchanged; a frozenset, which cannot hold a mutable member, is rebuilt as a
     plain frozenset of read-only members, and anything else is returned as it
-    is. The rebuild is the region's one added cost, and :func:`_handout` does it
-    once per document per region rather than once per hand-out.
+    is. The rebuild is the region's one added cost, and :func:`_handout` does it once
+    per stored value, shared by every region, rather than once per hand-out.
     """
 
     if isinstance(value, (_ReadOnlyDict, _ReadOnlyList, _ReadOnlyTuple, _ReadOnlySet)):
@@ -401,7 +405,7 @@ def memoized[T](
             _CACHE.move_to_end(key)
             value = entry[1]
             if region is not None:
-                region[key] = [value, None]
+                region[key] = entry[2]
                 return _handout(region[key], mutable)  # type: ignore[return-value]
             return copy.deepcopy(value)  # type: ignore[return-value]
     value = compute()
@@ -410,12 +414,13 @@ def memoized[T](
         # itself, the region hands a read-only view of it on from here, so a
         # second reader of the same document inside the region neither stats nor
         # decodes again, and no caller can change the stored value.
+        cell: list[Any] = [value, None]
         with _LOCK:
-            _CACHE[key] = (identity, value)
+            _CACHE[key] = (identity, value, cell)
             _CACHE.move_to_end(key)
             while len(_CACHE) > _MAX_ENTRIES:
                 _CACHE.popitem(last=False)
-        region[key] = [value, None]
+        region[key] = cell
         return _handout(region[key], mutable)  # type: ignore[return-value]
     try:
         unchanged = (
@@ -428,8 +433,9 @@ def memoized[T](
     if unchanged:
         # A write that landed mid-parse leaves the entry unstored, so the
         # next reader parses the new bytes rather than a torn read.
+        stored = copy.deepcopy(value)
         with _LOCK:
-            _CACHE[key] = (identity, copy.deepcopy(value))
+            _CACHE[key] = (identity, stored, [stored, None])
             _CACHE.move_to_end(key)
             while len(_CACHE) > _MAX_ENTRIES:
                 _CACHE.popitem(last=False)

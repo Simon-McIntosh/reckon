@@ -1034,6 +1034,30 @@ def producer_lease_is_live(project: str, *, now: float | None = None) -> bool:
     return (moment - float(renewed)) < producer_lease_seconds()
 
 
+def producer_seat_holder(project: str) -> tuple[int | None, str]:
+    """The pid and host the seat's registration records, where it records them.
+
+    A stale snapshot is a reading of the seat holder's own write, so naming who
+    holds the seat is what tells a coordinator whether the staleness is its own
+    or another process's. A record that is missing or unreadable answers with no
+    holder rather than a guess, and the line then says only what it knows.
+    """
+    try:
+        record = json.loads(
+            producer_lease_path(project).read_text(encoding="utf-8") or "{}"
+        )
+    except (OSError, ValueError):
+        return None, ""
+    if not isinstance(record, dict):
+        return None, ""
+    pid = record.get("pid")
+    host = record.get("host")
+    named_pid = (
+        pid if not isinstance(pid, bool) and isinstance(pid, int) and pid > 0 else None
+    )
+    return named_pid, str(host) if isinstance(host, str) else ""
+
+
 def not_fresh_line(
     state: str,
     *,
@@ -1073,6 +1097,13 @@ def not_fresh_line(
             if age is None
             else f"the snapshot is {age}s old"
         )
+        holder_pid, holder_host = producer_seat_holder(project)
+        if holder_pid is not None or holder_host:
+            holder = f"pid {holder_pid}" if holder_pid is not None else "no pid"
+            if holder_host:
+                holder = f"{holder} on {holder_host}"
+            wrote = "at an unrecorded time" if age is None else f"{age}s ago"
+            reason = f"{reason}; the seat holder ({holder}) last wrote it {wrote}"
     elif state == module.FOLLOWER_RELEASED:
         age = module.snapshot_age_seconds(document)
         published = "with no readable age" if age is None else f"{age}s ago"
@@ -1158,11 +1189,12 @@ def stale_station_line(*, project: str, session: str, answer: Mapping[str, Any])
         measured = "is stamped with no readable time"
     else:
         measured = f"is {_format_age(int(age))} old"
-    where = (
-        "the station's heartbeat"
-        if answer.get("source") == "station"
-        else "the exported station snapshot's heartbeat"
-    )
+    if answer.get("source") == "station":
+        where = "the station's heartbeat"
+    else:
+        exported = module.station_snapshot_path(project)
+        where = f"the heartbeat in the exported station snapshot `{exported}`"
+
     return (
         f"reckon obligations for session {session} (project {project}) are not "
         f"current: {where} {measured}, past the "
@@ -1334,6 +1366,27 @@ def _prompt(payload: dict[str, Any]) -> int:
     project, session = located
     module = snapshot_module()
     station = module.read_station_answer(project, session)
+    if (
+        station is not None
+        and station.get("stale")
+        and station.get("source") == "snapshot"
+    ):
+        # The rows came from the station's export, and it is stale, but the
+        # session's own producer snapshot may be current: then those rows are
+        # the ones to serve, and the export's beat says nothing about them. A
+        # snapshot the same stale station wrote is no newer than its export,
+        # so its own age must be inside the window too.
+        own = module.read_snapshot(project, session)
+        own_state, _host = module.freshness_reading(
+            own, project=project, session=session
+        )
+        own_age = module.snapshot_age_seconds(own) if own else None
+        if (
+            own_state == module.FRESH
+            and own_age is not None
+            and own_age <= module.STATION_STALE_SECONDS
+        ):
+            station = None
     if station is not None:
         if station.get("stale"):
             _inject_reading(

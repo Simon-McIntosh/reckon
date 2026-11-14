@@ -24,7 +24,7 @@ import json
 import os
 import stat
 from collections.abc import Iterable, Iterator, Mapping
-from contextlib import contextmanager
+from contextlib import ExitStack, contextmanager
 from contextvars import ContextVar
 from datetime import UTC, datetime
 from fnmatch import fnmatchcase
@@ -33,6 +33,7 @@ from typing import Any
 
 from reckon import file_memo
 from reckon.crew import open_run_index
+from reckon.node_exclusive_lock import LockHeld, exclusive_lock
 
 # Each producer tick freezes the store's names and indexed content hashes.
 # Parsed bytes use the shared bounded memo; writer updates move the next tick's
@@ -1948,43 +1949,33 @@ def _index_holding(directory: Path) -> Path | None:
 def _index_lock(directory: Path, *, wait: bool = True) -> Iterator[bool | None]:
     """Hold the store's index lock, or report that it could not be taken.
 
-    The lock file sits beside the document so a writer on any node serialises
-    against every other node's writer. A directory that cannot hold the lock
-    file, or a filesystem without advisory locks, yields ``False`` and the
-    caller writes the document unlocked.
+    The lock is :func:`reckon.node_exclusive_lock.exclusive_lock`, whose POSIX
+    record lock the file server holds, so a writer on any node serialises
+    against every other node's writer rather than only this node's. A directory
+    that cannot hold the lock file, or a filesystem without advisory locks,
+    yields ``False`` and the caller writes the document unlocked.
 
     ``wait`` false is for a reader: a lock another process holds yields
     ``None`` at once rather than blocking, and the reader serves the document
     as last persisted. A producer, station or follower thread reading the store
     must never wait on another process's index write.
     """
-    import fcntl
-
     holding = _index_holding(directory)
     if holding is None:
         yield False
         return
-    try:
-        handle = (holding / _INDEX_LOCK_NAME).open("a")
-    except OSError:
-        yield False
-        return
-    with handle:
+    with ExitStack() as held:
         try:
-            fcntl.flock(
-                handle.fileno(),
-                fcntl.LOCK_EX if wait else fcntl.LOCK_EX | fcntl.LOCK_NB,
+            held.enter_context(
+                exclusive_lock(holding / _INDEX_LOCK_NAME, blocking=wait)
             )
-        except BlockingIOError:
+        except LockHeld:
             yield None
             return
         except OSError:
             yield False
             return
-        try:
-            yield True
-        finally:
-            fcntl.flock(handle.fileno(), fcntl.LOCK_UN)
+        yield True
 
 
 def _sha256_hex(data: bytes) -> str:
@@ -2014,13 +2005,11 @@ def _document_is_usable(directory: Path, doc: Any) -> bool:
     return isinstance(doc.get("runs"), dict)
 
 
-def _read_index_document(directory: Path) -> dict[str, Any] | None:
-    """Read the store's index document, or ``None`` when there is not one.
+def _fresh_index_document(directory: Path) -> dict[str, Any] | None:
+    """Read and parse the document afresh, consulting no memo and filling none.
 
-    The read is a read: no stat of the document, the directory or a record. An
-    unusable document -- another checkout's, another store's, half written or
-    not JSON -- answers ``None`` exactly as a missing one does, because an index
-    that cannot be read is not an index.
+    A writer mutates the document it reads, so it takes this private copy
+    rather than the shared one the read path hands out.
     """
     try:
         raw = _index_document_path(directory).read_bytes()
@@ -2031,6 +2020,29 @@ def _read_index_document(directory: Path) -> dict[str, Any] | None:
     except ValueError:
         return None
     return doc if _document_is_usable(directory, doc) else None
+
+
+def _read_index_document(directory: Path) -> Mapping[str, Any] | None:
+    """The store's index document, parsed once per unchanged file.
+
+    :func:`reckon.file_memo.memoized` owns the reuse: a read costs one stat
+    while the file is unchanged. The code stamp is part of the memo's variant
+    because it decides whether a document is usable, so a document is also read
+    again when the stamp this process files under changes. Inside a read-only
+    region the held document reaches a reader as a read-only view, so a reader
+    cannot change what the next reader is given; a writer takes
+    :func:`_fresh_index_document` for itself instead. A changed or unusable
+    document -- another checkout's, another store's, half written or not JSON
+    -- reads as ``None`` exactly as a missing one does, because an index that
+    cannot be read is not an index.
+    """
+    with file_memo.read_only_region():
+        return file_memo.memoized(
+            "index_document",
+            _index_document_path(directory),
+            lambda: _fresh_index_document(directory),
+            variant=_index_code_stamp(),
+        )
 
 
 def _persist_index_document(directory: Path, doc: Mapping[str, Any]) -> None:
@@ -2148,7 +2160,7 @@ def _index_stored_record(path: Path, record: Mapping[str, Any]) -> None:
     entry = _entry_facts(path.name, record, data)
     entry["inode"] = inode
     with _index_lock(directory):
-        doc = _read_index_document(directory)
+        doc = _fresh_index_document(directory)
         if doc is None:
             doc = _rebuild_index_document(directory)
         version = int(doc.get("version") or 0) + 1
@@ -2225,7 +2237,7 @@ def reconcile_foreign_write(directory: Path) -> int:
     Only added or replaced names are read; removed names are dropped. An
     external rewrite retaining its inode becomes visible at the next rebuild.
     """
-    doc = _read_index_document(directory)
+    doc = _fresh_index_document(directory)
     if doc is None:
         return 0
     identity = _store_directory_identity(directory)
@@ -2241,7 +2253,7 @@ def reconcile_foreign_write(directory: Path) -> int:
             # and the document this reader already has is at most that one
             # write behind.
             return 0
-        doc = _read_index_document(directory) or doc
+        doc = _fresh_index_document(directory) or doc
         identity = _store_directory_identity(directory)
         if identity is None or identity == tuple(doc.get("directory_identity") or ()):
             return 0
@@ -2314,7 +2326,7 @@ def reconcile_foreign_write(directory: Path) -> int:
     return changed
 
 
-def store_index_document(directory: Path) -> dict[str, Any] | None:
+def store_index_document(directory: Path) -> Mapping[str, Any] | None:
     """The store's index document, as current as its writers have left it.
 
     The document is probed against the store directory's identity, which is the
@@ -2335,7 +2347,7 @@ def store_index_document(directory: Path) -> dict[str, Any] | None:
     return document
 
 
-def _settled_index_document(directory: Path) -> dict[str, Any] | None:
+def _settled_index_document(directory: Path) -> Mapping[str, Any] | None:
     """Read the document and bring it up to date with the store it describes."""
     document = _read_index_document(directory)
     if document is not None:
@@ -2354,7 +2366,8 @@ def _settled_index_document(directory: Path) -> dict[str, Any] | None:
     except OSError:
         return None
     with _index_lock(directory):
-        document = _read_index_document(directory)
+        # Another process may have written while this one waited for the lock.
+        document = _fresh_index_document(directory)
         if document is None:
             document = _rebuild_index_document(directory)
             _persist_index_document(directory, document)
