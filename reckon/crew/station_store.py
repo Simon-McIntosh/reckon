@@ -38,6 +38,7 @@ from __future__ import annotations
 
 import json
 import sqlite3
+import sys
 import threading
 from collections.abc import Iterable, Mapping
 from contextlib import closing
@@ -257,6 +258,50 @@ def _read_pointer_record(path: Path) -> dict[str, Any]:
     many times a pointer is actually parsed.
     """
     return json.loads(path.read_text(encoding="utf-8"))
+
+
+def _unreadable_snapshot(
+    record: Mapping[str, Any], error: BaseException
+) -> dict[str, Any]:
+    """The row a pointer gets when its classification raises.
+
+    One pointer that cannot be classified must not end the pass for every other
+    live run, so the raising pointer is recorded as unreadable, naming the
+    exception's type and message, and the pass carries on. The row carries the
+    same keys a classified snapshot does, so a fold comparing it with the last
+    observation of the same run reads it as a state change rather than as a
+    row of a different shape.
+    """
+    run_id = str(record.get("run_id") or "")
+    node = record.get("node")
+    node = node if isinstance(node, Mapping) else {}
+    agent = record.get("agent")
+    agent = agent if isinstance(agent, Mapping) else {}
+    return {
+        "run_id": run_id,
+        "node": str(node.get("id") or run_id or "unknown"),
+        "project": str(record.get("project") or ""),
+        "session": str(record.get("session") or ""),
+        "admitted_from": str(record.get("admitted_from") or ""),
+        "backend": str(record.get("backend") or "").strip(),
+        "model": str(agent.get("model") or "").strip(),
+        "effort": str(agent.get("effort") or "").strip(),
+        "alias": str(agent.get("alias") or "").strip(),
+        "role": str(record.get("role") or ""),
+        "lineage": record.get("lineage"),
+        "state": "unreadable",
+        "classification": "unreadable",
+        "recovery_classification": "unreadable",
+        # Neither liveness nor a manifest was read: the classification raised
+        # before it could establish either, so both stay explicitly None rather
+        # than borrowing an answer from the pointer.
+        "process_alive": None,
+        "liveness_proven": None,
+        "needs_help_complete": None,
+        # The sentence that reaches a coordinator: the failure's own type and
+        # message, so the pointer can be repaired from what the row says.
+        "detail": (f"the run could not be classified: {type(error).__name__}: {error}"),
+    }
 
 
 def _read_range(path: Path, offset: int, limit: int | None = None) -> bytes:
@@ -785,6 +830,11 @@ class StationStore:
         as the pointer and the stream. A worker that finishes by writing its
         manifest moves neither its pointer nor its stream, and its delivery is
         still seen on the tick that manifest lands.
+
+        Each pointer is classified under its own guard. A pointer whose
+        classification raises is recorded unreadable, carrying the exception's
+        type and message on its row, and the pass continues to the rest: one
+        unreadable pointer costs its own row and never the station's tick.
         """
         self.guard.check()
         moment = recovery._utc_seconds() if now_seconds is None else float(now_seconds)
@@ -811,13 +861,29 @@ class StationStore:
             for path, record in parsed_rows:
                 run_id = str(record["run_id"])
                 present.add(run_id)
-                verdict = recovery._watch_snapshot(
-                    record,
-                    moment=moment,
-                    stall_seconds=stall_seconds,
-                    cache=cache,
-                    pointers=records,
-                )
+                try:
+                    verdict = recovery._watch_snapshot(
+                        record,
+                        moment=moment,
+                        stall_seconds=stall_seconds,
+                        cache=cache,
+                        pointers=records,
+                    )
+                except Exception as error:  # noqa: BLE001 - one pointer must not end the tick
+                    # A pointer that cannot be classified is recorded unreadable,
+                    # naming its failure, and the pass carries on to the rest
+                    # instead of ending the tick for every other live run and
+                    # taking the station down with it. Nothing is stored for it,
+                    # so the next tick classifies it again rather than serving
+                    # the error from the store.
+                    print(
+                        f"station-tick-unreadable: {run_id}: "
+                        f"{type(error).__name__}: {error}",
+                        file=sys.stderr,
+                        flush=True,
+                    )
+                    verdicts[run_id] = _unreadable_snapshot(record, error)
+                    continue
                 verdicts[run_id] = verdict
                 served = cache.get(run_id)
                 if served is not None:
