@@ -1,0 +1,62 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own gate logs: baseline_suite (c3ab4d3c8021, logs/base-arm.log) exit 0 with failure_ids [], after_suite (fad32654e5, logs/after-arm.log) exit 0 with failure_ids []; the head arm adds the new test file and neither arm fails, so added failures = 0.",
+  "completed_at": "2026-11-12T23:35:22.075Z",
+  "dispatched_at": "2026-11-12T23:25:29Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "exempted",
+      "reason": "Non-blocking, accepted for this landing: the fragment quotes the head gate as '8 passed in 34.19s' while the only durable head log, logs/after-arm.log, records '8 passed in 71.77s'; the figure landed in the evidence does not reconcile with the log the run cites",
+      "recorded_at": "2026-11-13T00:35:26.399367+00:00"
+    },
+    "1": {
+      "kind": "exempted",
+      "reason": "Non-blocking, accepted for this landing: this file imports reckon.crew.pending_landing and exercises the promoted-but-unmerged landing the diff changes, yet it appears in neither arm, so the done-when's 'test files importing the changed modules' clause is measu",
+      "recorded_at": "2026-11-13T00:35:41.766257+00:00"
+    },
+    "2": {
+      "kind": "exempted",
+      "reason": "Non-blocking, accepted for this landing: the table cell reads 'the rewrote attempt keeps its pointer', which is ungrammatical and should read 'the attempt that rewrote it'; the claim it makes is correct, so this is a prose defect in a landed evidence record onl",
+      "recorded_at": "2026-11-13T00:35:55.036173+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/a-landing-never-waits-on-a-shared-index/a-promotion-that-moved-under-itself-still-lands.html",
+      "line": "13",
+      "severity": "non-blocking",
+      "text": "the fragment quotes the head gate as '8 passed in 34.19s' while the only durable head log, logs/after-arm.log, records '8 passed in 71.77s'; the figure landed in the evidence does not reconcile with the log the run cites."
+    },
+    {
+      "file": "tests/test_an_interrupted_landing_is_finished_by_the_next_pass.py",
+      "line": "40",
+      "severity": "non-blocking",
+      "text": "this file imports reckon.crew.pending_landing and exercises the promoted-but-unmerged landing the diff changes, yet it appears in neither arm, so the done-when's 'test files importing the changed modules' clause is measured over two of the five importing files; tests/test_a_conflicting_landing_is_repaired.py and tests/test_a_discarded_run_stays_discarded.py are likewise absent from both arms."
+    },
+    {
+      "file": "docs/evidence/fragments/a-landing-never-waits-on-a-shared-index/a-promotion-that-moved-under-itself-still-lands.html",
+      "line": "9",
+      "severity": "non-blocking",
+      "text": "the table cell reads 'the rewrote attempt keeps its pointer', which is ungrammatical and should read 'the attempt that rewrote it'; the claim it makes is correct, so this is a prose defect in a landed evidence record only."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: pass \u2014 the goal is \"a promotion that moved under itself still lands\"; reckon/crew/pending_landing.py:329-334 now lets the landing pass merge a promoted row whose pointer lost its mark, and tests/test_a_promotion_that_moved_under_itself_still_lands.py:213 asserts the reviewed head reaches the remote branch afterwards.\nVERDICT done_when: pass \u2014 the done-when's behaviour is asserted: the pointer is moved during a --land promotion (tests/test_a_promotion_that_moved_under_itself_still_lands.py:126), the next pass leaves the head on the remote branch and releases the pointer (:167-168), a hand-merged head is recognised without a second merge (:172-190), and the negative control is red at base (logs/negative-control-base.log, EXIT=1). The clause \"test files importing the changed modules\" was measured over two of the five importing files; the omitted arm is filed as a non-blocking finding below.\nVERDICT write_paths: pass \u2014 the diff touches reckon/crew/pending_landing.py, tests/test_a_promotion_that_moved_under_itself_still_lands.py and the node's fragment, all under the declared paths (reckon/crew/promotion.py, tests/ and the fragment); nothing outside them changed.\nVERDICT manifest: pass \u2014 read the reviewed manifest; it records status complete, head fad32654e5, the head gate (8 passed, EXIT=0), the base arm (5 passed, EXIT=0) and the negative control (1 failed 2 passed, EXIT=1), each with a log path that exists.\nVERDICT diff: pass \u2014 read the single commit fad32654e5 against base c3ab4d3c8021: 18 lines in reckon/crew/pending_landing.py, a 218-line test file and a 15-line evidence fragment; the source hunk adds one clause and rewrites the comment above it.\nCALL_SITES: reckon/crew_run_commands.py:3547, reckon/crew_run_commands.py:3578, reckon/crew/queue_landing.py:1882\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/pending_landing.py:333 drops the mark as the sole evidence of an owed merge, and the pass reaches merge.land at :371 for a record carrying its pointer snapshot.\nSCORE evidence: 14\nJUSTIFICATION evidence: the head gate and the base negative control are recorded in logs/after-arm.log (8 passed, EXIT=0) and logs/negative-control-base.log (1 failed, EXIT=1), but the arms ran on the fleet node rather than the all_debug partition the done-when names, and only two of the five test files importing the changed module appear in any arm.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every path in the diff \u2014 reckon/crew/pending_landing.py, the new test, the fragment \u2014 is inside the declared write paths, and no plan file or shared index was touched.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_a_promotion_that_moved_under_itself_still_lands.py:213 asserts the pass returns \"finished\" for a record whose pointer lost its mark, and the base negative control shows that assertion red with results == [] when the old skip is restored, while tests/test_a_landing_record_waits_for_the_merge.py:285 keeps the record-without-pointer boundary green.\nSCORE fit: 17\nJUSTIFICATION fit: the change is one clause and a mechanism comment in the existing loop at reckon/crew/pending_landing.py:317-335 with no new name or helper, though the fragment at docs/evidence/fragments/a-landing-never-waits-on-a-shared-index/a-promotion-that-moved-under-itself-still-lands.html:9 reads \"the rewrote attempt\".\nSCORE reuse: 20\nJUSTIFICATION reuse: the hunk adds no definition; it reuses write_pending's pointer snapshot (reckon/crew/pending_landing.py:49-67), pointer_attempt (:128) and _release_marked_pointer (:155), and a search over reckon/crew found no other owner of the landing-finish capability.\nFINDING docs/evidence/fragments/a-landing-never-waits-on-a-shared-index/a-promotion-that-moved-under-itself-still-lands.html:13 non-blocking: the fragment quotes the head gate as \"8 passed in 34.19s\" while the only durable head log, logs/after-arm.log, records \"8 passed in 71.77s\"; the figure landed in the evidence does not reconcile with the log the run cites, so a reader has no log that reproduces it.\nFINDING tests/test_an_interrupted_landing_is_finished_by_the_next_pass.py:40 non-blocking: this file imports reckon.crew.pending_landing and exercises the promoted-but-unmerged landing the diff changes, yet it appears in neither arm, so the done-when's \"test files importing the changed modules\" clause is measured over two of the five importing files; tests/test_a_conflicting_landing_is_repaired.py and tests/test_a_discarded_run_stays_discarded.py are likewise absent from both arms.\nFINDING docs/evidence/fragments/a-landing-never-waits-on-a-shared-index/a-promotion-that-moved-under-itself-still-lands.html:9 non-blocking: the table cell reads \"the rewrote attempt keeps its pointer\", which is ungrammatical and should read \"the attempt that rewrote it\"; the claim it makes is correct, so this is a prose defect in a landed evidence record only.",
+  "review_run_id": "r-20261112T232247871249-review-of-a-promotion-that-moved-under-itself-still-lands-fad32654e562",
+  "reviewed_base_sha": "c3ab4d3c8021ee9c24ab9bd5a1c5366418616707",
+  "reviewed_head_sha": "fad32654e5623a8ffc26eba4a7a08388a97302a5",
+  "reviewed_run_id": "r-20261112T221638996828-a-promotion-that-moved-under-itself-still-lands",
+  "scores": {
+    "durability": 19,
+    "evidence": 14,
+    "fit": 17,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-13T01:16:34.169719+00:00",
+  "total": 108
+}

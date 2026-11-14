@@ -1,0 +1,157 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-11T10:58:33.231Z",
+  "dispatched_at": "2026-11-11T10:54:57Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/a-queue-holds-the-whole-plan/r-20261111T105247531721-plan-review-of-a-queue-holds-the-whole-plan/plan.html:208",
+      "id": "reasoning-1",
+      "reason": "without saying \"the same landed check \u00a78 landed\", the node adds a second answer to a question the plan already answered once, which is precisely the drift \u00a78 was written to remove.",
+      "text": "s40 requires \"every run of that section that has delivered or been promoted has its head reachable from the primary branch\", but the shipped check for exactly this fact is `_request_state` in `reckon/crew/queue_admission.py:3382-3396`, which reads the run's ledger row and tests its `promoted_revision` as an ancestor of HEAD in the project's registered checkout \u2014 and \u00a78 of this same plan (`plan.html:80`, declared done) states it \"never names a branch, so a project whose primary branch is develop is answered the same way\"; s40 reintroduces a branch-naming test beside it, so a worker can implement either and the two disagree for any project whose primary branch is not the checkout's current branch, and for a promoted run whose `promoted_revision` is its base",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/a-queue-holds-the-whole-plan/r-20261111T105247531721-plan-review-of-a-queue-holds-the-whole-plan/plan.html:208",
+      "id": "done_when-1",
+      "reason": "two cases that read as \"promotion status decides\" would have the node implement the wrong predicate, and a hand-merged run would then hold the queue indefinitely.",
+      "text": "the fourth case holds the request while the upstream run is \"delivered and unpromoted\", but it does not state that run's head is off the primary branch; a run merged onto the branch without being promoted (a hand merge, or a reviewed change landed by the coordinator) satisfies the Deliverable's reachability rule and should release, yet as written the case invites a gate on promotion status instead of reachability, and the third case (\"promotes the upstream run without merging it\") covers the converse shape",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/a-queue-holds-the-whole-plan/r-20261111T105247531721-plan-review-of-a-queue-holds-the-whole-plan/plan.html:208",
+      "id": "done_when-2",
+      "reason": "without a rule and a case for a discarded delivered run, the node can deadlock the queue on the very state s37 exists to clean up, and the fourth case asserts the opposite treatment for the same \"delivered, will never land\" shape.",
+      "text": "s40's rule (\"no run of it is unlanded\") has no release path for a delivered run that is subsequently discarded or superseded: its head will never reach the primary branch, so under the stated rule the section's waiters wait forever, while the shipped `_request_state` treats exactly that shape as ABANDONED (`reckon/crew/queue_admission.py:3339-3341`, `_discarded(run_id)`), and s40's own carve-out accepts that a section done with no run releases",
+      "type": "done_when",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "9a03a96ca13b41e4aec1d7b955f0d3d7871e0707",
+  "plan_fingerprint": "46a834671c6defece5aa284ac14852c023209971654ce390fb65e623622aeb5e",
+  "plan_slug": "a-queue-holds-the-whole-plan",
+  "plan_version": 337,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "32d95395f746b7c35f65eab38d7b3d03ec6cf2b9",
+      "commit_basis": "edit",
+      "finding": "reasoning-1",
+      "note": "\u00a740 now names the existing landed test, a promoted revision being an ancestor of the registered checkout's HEAD, as its reference, and targets only the delivered-but-unpromoted run it did not cover.",
+      "reason": "",
+      "when": "2026-11-11T11:01:19.002242+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "32d95395f746b7c35f65eab38d7b3d03ec6cf2b9",
+      "commit_basis": "edit",
+      "finding": "done_when-1",
+      "note": "\u00a740's cases now state that the upstream run's head is not in HEAD while the request waits.",
+      "reason": "",
+      "when": "2026-11-11T11:01:37.179538+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "32d95395f746b7c35f65eab38d7b3d03ec6cf2b9",
+      "commit_basis": "edit",
+      "finding": "done_when-2",
+      "note": "\u00a740 now releases the wait when the holding run is discarded or superseded, with a case for a discarded delivered run.",
+      "reason": "",
+      "when": "2026-11-11T11:02:00.024034+00:00"
+    }
+  ],
+  "responses": {
+    "done_when-1": {
+      "action": "acted",
+      "by": "",
+      "commit": "32d95395f746b7c35f65eab38d7b3d03ec6cf2b9",
+      "commit_basis": "edit",
+      "note": "\u00a740's cases now state that the upstream run's head is not in HEAD while the request waits.",
+      "reason": "",
+      "when": "2026-11-11T11:01:37.179538+00:00"
+    },
+    "done_when-2": {
+      "action": "acted",
+      "by": "",
+      "commit": "32d95395f746b7c35f65eab38d7b3d03ec6cf2b9",
+      "commit_basis": "edit",
+      "note": "\u00a740 now releases the wait when the holding run is discarded or superseded, with a case for a discarded delivered run.",
+      "reason": "",
+      "when": "2026-11-11T11:02:00.024034+00:00"
+    },
+    "reasoning-1": {
+      "action": "acted",
+      "by": "",
+      "commit": "32d95395f746b7c35f65eab38d7b3d03ec6cf2b9",
+      "commit_basis": "edit",
+      "note": "\u00a740 now names the existing landed test, a promoted revision being an ancestor of the registered checkout's HEAD, as its reference, and targets only the delivered-but-unpromoted run it did not cover.",
+      "reason": "",
+      "when": "2026-11-11T11:01:19.002242+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/Code/reckon/docs/state/reckon/reviews/plan/a-queue-holds-the-whole-plan/r-20261111T105247531721-plan-review-of-a-queue-holds-the-whole-plan.json",
+  "review_run_id": "r-20261111T105247531721-plan-review-of-a-queue-holds-the-whole-plan",
+  "reviewed_blob_sha": "b42f5f665e94b936011f10d605ef3b3efe77a2a4",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 e0b2a6abb and a10d921b2 both resolve as commits in /home/ITER/mcintos/Code/power_convertor, and the cited module `reckon/crew/queue_admission.py` resolves in this repo.",
+    "done_when": "a finding \u2014 the fourth case leaves a delivered, unpromoted upstream run waiting but never says its head is off the primary branch, so it can be satisfied by a promotion-status gate that contradicts the Deliverable's reachability rule, and no case covers a delivered run that is later discarded.",
+    "evidence_paths": "pass \u2014 every log the done-when requires is under the run directory, which survives the run; nothing is written to node-local scratch.",
+    "naming": "pass \u2014 no plan label, stage name or ticket number reaches a symbol, filename or comment; the section ids are plan structure, not code names.",
+    "reasoning": "a finding \u2014 the landed test s40 names (\"head reachable from the primary branch\") is a second, different test for a fact \u00a78 already landed, which reads a run's `promoted_revision` as an ancestor of HEAD in the project's registered checkout and deliberately never names a branch.",
+    "single_goal": "pass \u2014 s40 carries one deliverable (gate section-wait release on the upstream run having landed) and one gate.",
+    "wiring": "pass \u2014 s40 is the last open section whose write path is `reckon/crew/queue_admission.py`, every sibling writing that module (s29, s31, s37, s38, s39) is declared done, and `plan-section-depends-on` lists s14 as waiting on s40, so nothing launches onto the same module in one pass."
+  },
+  "section_digests": {
+    "_document": "b352a818628a39c87f6cc732a8434ef21f2ef02bc678b930019be72a808b5dc0",
+    "s1": "fb24c0e002fa9969e0ca173681e8f1dcea04b4f039e33a0fa1dd5ea373f593de",
+    "s10": "16609a44238dbb7645a90d45c150d317a07b1793b4cd9dfa9bb33f1b4e086a0c",
+    "s11": "5cf5ffce08aa5567c1bacc4682131c122ab49241a6b6867d3f8a859b9aeb336e",
+    "s12": "0d1d902926dbea2c5a6d51db22d9d538d2d1d08c571f68cfd85e7dfedbf2cf8e",
+    "s13": "b2f3a4dc4441527ebac138fcd2583e79959e677a2bb235937905ef5260c68abe",
+    "s14": "48fefdd9daf0a510f622d4efc2c33c5a3105e8f4dc9b719521fcd69460bd490a",
+    "s15": "088f32a17914862634f01581550d494a75aeccecd6f4b1ad7529c606614cd8f1",
+    "s16": "3baae65f9838c420131b091c23c8e0495b371ceb323b379111c27677117bfa36",
+    "s17": "e8d19190fe8ad7ac0ada9570da1e1403020d996fade35345888d232283a712f3",
+    "s18": "c41a5f40b44fad7c9170e75afe458887ecf383dfbdfbd87f44b1aba18db385ce",
+    "s19": "3bd989d1975e3410388984d6b187e73537eb6741a9325640197d88ec68579fac",
+    "s2": "6f40396130f7ded32c5a1af11477c8349c23419b986be7ea455def69278413e9",
+    "s20": "1650ed742b05d1b8454fbb0792d83df930c357b4929ce75b0b82b8574b007375",
+    "s21": "92ae2c978f0293fbe8f09066288ab258d7d810c4bedc3ce5fe964f064ca7310e",
+    "s22": "47e2cfd2937f003b333a5627f777e7bc72cb16eaf677da44f2683b7c2cbe138b",
+    "s23": "8b0cff55659bab7a4f30061f3adc4d4e822c8679c7c659a592a131c825a356a8",
+    "s24": "e41f5feee9ab0bd1cb7371a93fa8f654ccd277325b302e34421d3b0ea907d869",
+    "s25": "d156187078ac0ab4d87d1398fe13f74eee443a0f2e48ed45f963ef238d8737d9",
+    "s26": "abf23ffa47584798ae7c0303cda18d5e3ded7f690e2e692a13f35b2c021f2813",
+    "s27": "272f482e0766b56080b610bdbf7ac48bc9ddfa2ed1cfb8c8a85cd9ecd5b32d93",
+    "s28": "cd767c148ee02023bec11cd941361b5cc37e14d542a4c6a132a48261b3b2497b",
+    "s29": "e7851807f93e49d39fd9789aa3dd5638ecc35016f60f53bc0c4fe3413a6bcf20",
+    "s3": "afea9aff41cb2215f28079810dcc13a5df1c6eb744cbd74c37b09ed3114da92a",
+    "s30": "b3148b61a2b1805ec38f8705fedffdb786ccee3a47f4a8bebcd794ce6b0983cf",
+    "s31": "23ef7a8f162555218fc698e3569bcef26b43435845dbb6c5af88193a0e76166e",
+    "s32": "04cecab62796d354c65abbea09c54c3d37a9155ab0d83b7da53e5c481a8cf8c6",
+    "s33": "9db5479d0d5cb815819bdb4c45cebe9064b8b2b85c07514b9bd6689e07590ac3",
+    "s34": "28ec67c9ff9af2e77a8ceca28cfe58dda22acf33e78752ecdc0c93437ec47ddd",
+    "s35": "53659cabcb1f264ddcdacc4c1d9271f132812f7e63527176f2a850f9317197fb",
+    "s36": "3c14bcaafca65d0775675f39af63a2199a057de32633294444dc446aab5a1fba",
+    "s37": "6889a6da568c36055f4606baa4ab3e17b94fa4a9d1fd14faa24909c0fa9e3243",
+    "s38": "0c15038b408405c23aad25c08b3c665a64c029cc83dfe975274581f85a2359a7",
+    "s39": "2d4849df481c1704d8a10e424069f9a5fb6de9a853f0284cf2ba5bd7246d929e",
+    "s4": "903a94096df2ca117b8f5060f5de2c87e89549a4efa774b1fbbec134d7a46b63",
+    "s40": "fbe190c0c7066b6b6e1995e97661591f90556be2dc57d5125b24dbed7c42fbc8",
+    "s5": "a00c22d22d70c8a2ed3e7b08d58ef99957f2613d76b12181c91bcbb2a3517ade",
+    "s6": "a81480c94db3372e03fb8862f58fcb5017c6a0d5c4471ceecbf3c71a6850ce93",
+    "s7": "dbc7a6a07a37d3070088479d5385db177893a680c91d69feeea5aa537d0217d2",
+    "s8": "0baa02deb68c4c0f5702a20bc5b40684841e6b87295760a1f835f27d114094ef",
+    "s9": "4e5362394123fc5c53f2d2c0702fd5df85854d91227c9782171176d0fbe23314"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-11T10:59:57.873045+00:00",
+  "total": null
+}

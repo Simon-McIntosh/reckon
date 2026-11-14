@@ -1,0 +1,71 @@
+{
+  "added_failure_count": 4,
+  "added_failure_ids": [
+    "tests/test_a_source_file_is_shared_by_default.py::test_admission_admits_a_file_under_a_directory_claim",
+    "tests/test_a_source_file_is_shared_by_default.py::test_directory_claims_share_their_files_under_a_shared_root[pkg-pkg/source.py]",
+    "tests/test_a_source_file_is_shared_by_default.py::test_directory_claims_share_their_files_under_a_shared_root[pkg-pkg]",
+    "tests/test_a_source_file_is_shared_by_default.py::test_directory_claims_share_their_files_under_a_shared_root[pkg/source.py-pkg]"
+  ],
+  "added_failures_note": "derived as the sorted set difference of baseline-suite.log and after-suite.log failure ids; each of the four is the renamed form of a baseline-failing id (test_directory_claims_stay_exclusive[...] and test_admission_keeps_a_directory_claim_exclusive), and all twelve failures in both arms are the same backend-launch error, so no test newly fails",
+  "call_sites": [
+    "reckon/crew/queue_admission.py:1181 (_claim_collision, via _live_claim_hold at :2295)",
+    "reckon/crew/dispatch_claims.py:1561 (_live_conflict_rows, reached from dispatch_plan.py:1125 and :1134)",
+    "reckon/crew/dispatch_claims.py:2200 (_raise_repository_scope_conflict, reached from dispatch.py:2743 and :3536, dispatch_plan.py:1197, dispatch_claims.py:2467, runs.py:1825)",
+    "reckon/crew/queue_edit.py:262 (_live_claim_conflict, reached from :408)"
+  ],
+  "completed_at": "2026-11-11T20:13:14.135Z",
+  "dispatched_at": "2026-11-11T19:55:43Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "folded",
+      "node": "shared-root-claim-never-holds",
+      "recorded_at": "2026-11-11T22:30:54.746948+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "tests/test_a_source_file_is_shared_by_default.py",
+      "line": 159,
+      "severity": "blocking",
+      "text": "test_queue_edits_keep_a_directory_claim_exclusive still asserts refusal is not None for a holder claiming the directory pkg against a request for pkg/source.py under shared_roots [\"pkg/\"], but reckon/crew/queue_edit.py:262 now calls runs._claim_paths_share, which admits that pair: probing _live_claim_conflict at the reviewed head returns None for the directory/file pair while the exclusive-pattern control still refuses it. The assertion encodes the superseded rule and its name states the opposite of the landed behaviour, so it would fail in any environment where _dispatch's backend launch succeeds; in both gate arms it is masked because _dispatch aborts first at dispatch.py:3436 with 'codex inbox hook trust could not be established by hooks/list'."
+    },
+    {
+      "file": "reckon/crew/runs.py",
+      "line": 1652,
+      "severity": "non-blocking",
+      "text": "_SharedWritePaths.__contains__ now checks the explicit paths set before the directory test, so a directory named in the project's explicit \"paths\" declaration shares where the previous order refused every directory; no assertion covers that broadening and it is a behaviour change beyond the shared-root rule the goal states."
+    },
+    {
+      "file": "tests/test_a_source_file_is_shared_by_default.py",
+      "line": 128,
+      "severity": "non-blocking",
+      "text": "The renamed test_directory_claims_share_their_files_under_a_shared_root and the renamed admission test carry new ids while failing identically in both arms, so the log-derived delta is four added failure ids even though no test newly fails; the manifest says 'none is added' without naming the retired ids, so the suite-delta guard cannot recognise them as renames."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "Production call sites examined at the reviewed head: reckon/crew/queue_admission.py:1181 _claim_collision (reached from _live_claim_hold at :2295 in the admission pass), reckon/crew/dispatch_claims.py:1561 _live_conflict_rows and :2200 _raise_repository_scope_conflict, and reckon/crew/queue_edit.py:262, which is reached from the queue-edit command at :408 so the fourth comparison site now asks the same predicate.",
+    "diff": "Read commit by commit from the prior reviewed head d9014b91ca to f0a704370a: four commits (two code, two evidence) across five files; the code commits make a directory under a shared root share as its files do and route the queue-edit comparison through the same predicate, and no commit reaches outside the declared scope.",
+    "done_when": "The done_when names tests/test_a_shared_root_claim_never_holds_a_request.py, the exclusive-pattern refusal and a held directory claim; the manifest records base and head arms (12 failures each, EXIT=1) and the node's test file passes 7/7 at the reviewed head, while the held-directory clause holds only under the exclusive-pattern reading asserted at tests/test_a_shared_root_claim_never_holds_a_request.py:253.",
+    "goal": "The goal is to reproduce the 11 November hold of a queued request on a shared-root file claim and make such an overlap admit whatever the holder's phase; reckon/crew/runs.py:1697 _claim_paths_share plus the directory membership change at reckon/crew/runs.py:1651 now admit the reproduced pair and the reproduction test passes at the reviewed head, but tests/test_a_source_file_is_shared_by_default.py:153 still asserts a directory claim refuses exactly that pair.",
+    "manifest": "The manifest reports status complete, nine commits, both suite arms with 12 failure ids each and a negative-control log; its statement that the head added no failure is true of the twelve backend-launch failures but false of the id set, where the four renamed tests read as added.",
+    "write_paths": "The run's declared scope is the nine paths in its manifest orientation line; every path in d9014b91ca..f0a704370a and in the run's whole diff f5944f742b..f0a704370a lies inside it, and no file outside the fence is touched."
+  },
+  "project": "reckon",
+  "review_note": "Reviewed head f0a704370ae97cde800d13f811fd63067c6d3764 against base d9014b91ca5233494afb353424f5d5841242ad25 (the head the prior review read) and against the run's original base f5944f742b19712faf9d257b635716233fb2ca1d. The four gained commits are ff29902507 and fb7b4d5f94 (code) plus c0467bb557 and f0a704370a (evidence). The prior review's blocking finding is repaired: _SharedWritePaths.__contains__ no longer refuses an existing directory under a root, so _claim_paths_share(shared, pkg, pkg) is True, and the queue-edit comparison at queue_edit.py:262 now calls the same predicate. I re-ran the node's test file at the reviewed head in a scratch extraction and got 8 passed, including test_two_claims_on_one_shared_directory_share and test_the_queue_edit_admits_the_reproduced_pair; the negative-control log shows that assertion red (1 failed, EXIT=1) when queue_edit.py is reverted, so it measures the change. The suite arms record 12 failures at both revisions, all 'codex inbox hook trust could not be established by hooks/list' at dispatch.py:3436; the manifest's 'none is added' is true of those failures but the id set differs by the four renamed tests recorded above. The remaining defect is that test_queue_edits_keep_a_directory_claim_exclusive still asserts the rule this change retires, and the gate cannot reach its assertion because every dispatch-based test aborts at the backend first.",
+  "review_run_id": "r-20261111T195149315355-review-of-shared-root-claim-never-holds-f0a704370ae9",
+  "reviewed_base_sha": "d9014b91ca5233494afb353424f5d5841242ad25",
+  "reviewed_head_sha": "f0a704370ae97cde800d13f811fd63067c6d3764",
+  "reviewed_run_id": "r-20261111T154857625015-shared-root-claim-never-holds",
+  "scores": {
+    "durability": 12,
+    "evidence": 14,
+    "fit": 16,
+    "goal_fidelity": 16,
+    "reuse": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-11T20:47:59.034987+00:00",
+  "total": 97
+}

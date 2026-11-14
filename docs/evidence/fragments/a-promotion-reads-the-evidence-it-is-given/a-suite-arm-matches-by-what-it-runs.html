@@ -1,0 +1,62 @@
+<section id="a-suite-arm-matches-by-what-it-runs-landing">
+  <h2>A suite arm matches by what it runs, not how it is spelled</h2>
+
+  <p><strong>What changed.</strong> <code>_arm_missing_fields</code> in
+  <code>reckon/crew/promotion_records.py</code> compared an arm's recorded
+  command with the armed one after normalising whitespace only. A worker
+  records the shell string it ran, so three spellings of the same run were
+  refused as missing evidence: the test files named in another order than the
+  armed template sorts them into, the interpreter written as the environment's
+  absolute path where the template is relative, and a leading
+  <code>cd &lt;tree&gt; &amp;&amp;</code> into the tree the arm ran in. Each
+  refusal cost a resume round and a failed promotion for an arm that had run
+  the suite.</p>
+
+  <p><strong>The comparison now reads the command.</strong> A new
+  <code>_arm_command_matches</code> splits the recorded string with
+  <code>shlex</code> and canonicalises it in three ways: a leading
+  <code>cd</code> into the arm's own tree is dropped (a <code>cd</code> anywhere
+  else still refuses), the interpreter word is resolved to one path against
+  that tree so <code>.venv/bin/python</code> and its absolute path meet, and
+  the test-file arguments are compared as a set rather than in order. Every
+  other word, including each flag, is still compared in place, so a different
+  test file, a different flag or a different interpreter still refuses. Both
+  the scoped and the unscoped branch of <code>_arm_missing_fields</code> use it.</p>
+
+  <h3 id="a-suite-arm-matches-by-what-it-runs-measured">Measured</h3>
+
+  <p>The new <code>tests/test_a_suite_arm_matches_by_what_it_runs.py</code> shows
+  five cases against <code>_arm_missing_fields</code> over a scratch git tree
+  holding two collectible tests and an interpreter: the same files in another
+  order match, the absolute interpreter matches, a leading <code>cd</code> into
+  the arm's own tree matches, a missing test file refuses, and an extra pytest
+  flag refuses. All five pass at the head
+  (<code>7c38e14f2201332e888ce5f70e3a50ca7565ecf5</code>).</p>
+
+  <p>The suite pair promotion reads, each arm resolved over its own tree: the
+  base arm at <code>22716863ce</code> names only the census test and reports
+  <code>51 passed</code>, exit 0; the after arm at the head names the new test
+  and the census test and reports <code>56 passed</code>, exit 0. The test files
+  importing <code>reckon.crew.promotion_records</code> report the same six
+  failures at both revisions (<code>6 failed, 140 passed</code> at the base,
+  <code>6 failed, 145 passed</code> at the head), all pre-existing in
+  <code>tests/test_crew_promotion.py</code> and
+  <code>tests/test_promotion_records_the_pick.py</code>, so the change adds no
+  failure.</p>
+
+  <p><strong>Negative control.</strong> Restoring the whitespace-only comparison
+  makes the first three cases refuse and the last two pass:
+  <code>3 failed, 2 passed</code>, exit 1, with the failures being
+  <code>test_the_same_files_in_another_order_match</code>,
+  <code>test_the_absolute_interpreter_of_the_runs_environment_matches</code> and
+  <code>test_a_leading_cd_into_the_arms_own_tree_matches</code>.</p>
+
+  <p><strong>Ruff by delta.</strong> <code>ruff check</code> and
+  <code>ruff format --check</code> report no finding on either staged path.</p>
+
+  <p><strong>Logs.</strong> <code>logs/baseline.log</code>,
+  <code>logs/after.log</code>, <code>logs/base-importers.log</code>,
+  <code>logs/head-importers.log</code> and
+  <code>logs/negative-control.log</code> under the run directory, each opening
+  with its revision and literal command and ending in <code>EXIT=</code>.</p>
+</section>

@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="work-flows-to-the-lane">
+  <meta name="plan-title" content="A batch entry carries the plan-review waiver">
+  <meta name="plan-summary" content="A batch entry may set allow_unreviewed_plan: the waiver rides the stored request's dispatch_options exactly as the single-dispatch flag does, so admission admits that request instead of holding it on the review gate. An entry without the field queues unchanged and is held by the gate, and a misspelt field is still refused by name.">
+  <meta name="plan-evidence-for" content="work-flows-to-the-lane">
+  <meta name="plan-verifies" content="work-flows-to-the-lane#s12">
+  <meta name="plan-verdict" content="pass">
+  <title>A batch entry carries the plan-review waiver &mdash; evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<main class="plan-doc">
+  <h1 id="batch-entry-carries-review-waiver-title">A batch entry carries the plan-review waiver</h1>
+  <p id="batch-entry-carries-review-waiver-defect">Queueing several sections in one batch call was impossible for any section whose plan carried no review. A single dispatch accepts <code>--allow-unreviewed-plan</code>, but a batch entry had no field for it, so each such section went out as its own call &mdash; about two and a half minutes apiece for the sections this plan was built from.</p>
+
+  <p id="batch-entry-carries-review-waiver-change"><code>reckon/crew/dispatch_batch.py</code> now accepts <code>allow_unreviewed_plan</code> on an entry, and <code>reckon/crew/dispatch.py</code>'s <code>queue_requests</code> stamps it onto the stored request's <code>dispatch_options</code>, which is the field admission reads before it holds a request on the review gate. The waiver therefore travels the same path as the single-dispatch flag rather than a parallel one: an admission pass sees the request's own options and admits it. The value is required to be a boolean, so a batch file spelling it <code>"false"</code> cannot waive the review by being a non-empty string. A field the entry does not carry leaves the queue path exactly as it was, and the unknown-field refusal still fires first, naming the misspelt key.</p>
+
+  <section id="batch-entry-carries-review-waiver-cases">
+    <h2>The cases the node pins</h2>
+    <ul>
+      <li id="batch-entry-carries-review-waiver-case-waived">A batch entry naming a plan no review covers, with <code>allow_unreviewed_plan</code> true, queues; its pointer's <code>dispatch_options.allow_unreviewed_plan</code> reads true, and the admission gate owes it nothing.</li>
+      <li id="batch-entry-carries-review-waiver-case-unwaived">The same entry shape without the field queues as before, and with the project's review gate set to its enforced mode the admission gate holds it, naming the plan's missing review.</li>
+      <li id="batch-entry-carries-review-waiver-case-misspelt">An entry carrying <code>allow_unreviewd_plan</code> is refused, the row's reason naming the unknown field, and nothing is stored for it.</li>
+      <li id="batch-entry-carries-review-waiver-case-control">The control the two holds rest on: with no waiver and no stored review, the gate reports the plan's review missing rather than admitting the request, so the admitted case measures the waiver and not an empty gate.</li>
+    </ul>
+  </section>
+
+  <section id="batch-entry-carries-review-waiver-measure">
+    <h2>Measure</h2>
+    <p id="batch-entry-carries-review-waiver-measure-arms">The node gate ran both arms one at a time in scratch trees on <code>all_debug</code> at <code>-n 4</code>, with the module under test resolving from each tree. At base <code>6fd868ab8a</code> the population of tests importing the two modified modules read 40 failed and 695 passed, exit 1; at head <code>9aa4025058</code> the same population read 40 failed and 699 passed, exit 1. The forty failing ids are byte-identical between the arms &mdash; none added, none removed &mdash; and the four extra passes are the new file's four cases. Those forty are pre-existing environment-dependent failures of the shared fleet node, not of this change. The promotion suite the fence names (<code>tests/test_a_batch_entry_carries_its_waivers.py</code> and <code>tests/test_staged_write_inventory.py</code>) read 51 passed at base and 55 passed at head, exit 0 on both. The negative control removed <code>allow_unreviewed_plan</code> from the accepted entry fields and failed exactly the two cases that rely on the waiver &mdash; <code>test_a_waived_entry_queues_recording_its_waiver</code> and <code>test_the_gate_holds_the_unwaived_entry_and_admits_the_waived_one</code> &mdash; 2 failed and 2 passed, exit 1, the row's reason reading <em>entry 1 carries unknown field(s): allow_unreviewed_plan</em>. Ruff check and <code>format --check</code> report no findings on the three staged paths. Logs and commands are in the run manifest.</p>
+  </section>
+</main>
+</body>
+</html>

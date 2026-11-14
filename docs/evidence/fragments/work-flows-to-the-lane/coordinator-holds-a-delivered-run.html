@@ -1,0 +1,66 @@
+<section id="coordinator-holds-a-delivered-run-landing">
+  <h2>A coordinator can hold a delivered run from landing</h2>
+  <p>The automatic lander promoted a delivered run the moment its evidence read
+  clean, and a promotion deletes the run's live pointer. A coordinator that had
+  planned to steer that delivery found its resume printing nothing and raising
+  nothing, because the run it named had already been promoted and merged; the
+  repair had to be carried as a new plan section.</p>
+  <p>A hold now lives on the run record as a single field naming who deferred
+  the landing, why, and when. The landing pass skips a held run rather than
+  refusing it — a refusal is a judgement the pass makes and can retract, while a
+  hold ends only when its coordinator releases it — and the review-acceptance
+  sweep returns an unheld-run refusal naming the hold's reason. Releasing the
+  hold records the reason the deferral ended beside the reason it began, so the
+  run's own record explains the delay it carried.</p>
+  <p>The single-run resume takes the hold before it launches, so a landing pass
+  running between the two finds the run held instead of free to promote. A
+  resume of a run a promotion already owns is refused with a non-zero exit that
+  names the promotion and the revision it asserted, rather than launching
+  nothing in silence. The guard is installed on the resume command from the
+  CLI's import hub, so the resume door's own composition is untouched.</p>
+  <p>A promotion claims its host lease before it does any work and removes the
+  run's pointer only at the very end, so the pointer is present through almost
+  the whole promotion window. The lease is therefore read before the pointer: a
+  resume issued anywhere in that window is refused, naming the promotion, and
+  takes no hold. A hold a resume took also names the head the resume was issued
+  against, so it stops covering the run once a later attempt delivers a
+  different head — the repaired delivery reaches the lander instead of waiting
+  for a release nobody remembers to give. Both spellings are compared as
+  revisions rather than as strings, because a manifest may name its commit
+  abbreviated while a hold is taken against the full head; reading those as two
+  commits would end the hold and land the delivery it was taken to defer.</p>
+  <table id="coordinator-holds-a-delivered-run-measures">
+    <caption>Measurements: the node gate ran in place, one arm at a time; the
+    importer arms ran on <code>all_debug</code>, one arm at a time, four
+    workers. Logs carry the revision, tree, command and imported module, and
+    end with a bare exit-status line.</caption>
+    <thead><tr><th>Measure</th><th>Observed result</th></tr></thead>
+    <tbody>
+      <tr><td>Base arm at <code>55d49260706d</code>, node tests</td>
+        <td>49 passed, 2 errors, <code>EXIT</code> 1: the two errors are the
+        staged-write inventory reader's <code>git ls-tree</code> against a
+        scratch extraction that is not a git checkout, and the same file passes
+        51 of 51 in a checkout.</td></tr>
+      <tr><td>Head arm at the run's head, node tests</td>
+        <td>59 passed, <code>EXIT=0</code>: 51 staged-write checks and eight new
+        cases.</td></tr>
+      <tr><td>Base importer arm at <code>55d49260706d</code>, 51 files</td>
+        <td>9 failed, 368 passed, 3 errors, <code>EXIT</code> 1.</td></tr>
+      <tr><td>Head importer arm, 52 files</td>
+        <td>9 failed, 373 passed, 3 errors, <code>EXIT</code> 1: the same twelve
+        failure and error identities as the base arm, with five more passes —
+        no failure added.</td></tr>
+      <tr><td>Declared mutation applied: ignore the hold in the lander</td>
+        <td>2 failed, 3 passed, <code>EXIT=1</code>. The held run is promoted by
+        the landing pass, and the first case fails printing the run it landed.</td></tr>
+      <tr><td>Promotion-lease guard reverted, the finding's own control</td>
+        <td>1 failed, 6 passed, <code>EXIT=1</code>. A run whose pointer is still
+        present while a promotion holds its lease is resumed and launched, and
+        the case fails at the launcher.</td></tr>
+      <tr><td>Abbreviated-spelling repair reverted, its own control</td>
+        <td>1 failed, 7 passed, <code>EXIT=1</code>. A held run whose manifest
+        names its commit short is landed, and the case fails printing the run
+        it landed.</td></tr>
+    </tbody>
+  </table>
+</section>

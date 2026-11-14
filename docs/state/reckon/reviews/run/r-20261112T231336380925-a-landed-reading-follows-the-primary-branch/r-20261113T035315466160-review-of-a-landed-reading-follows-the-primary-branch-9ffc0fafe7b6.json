@@ -1,0 +1,67 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": "reckon/crew/directory.py:342, reckon/crew/forgotten_runs.py:94, reckon/crew/obligations.py:1310, reckon/crew/pending_landing.py:288, reckon/crew/promotion.py:498, reckon/crew/promotion_release.py:1045, reckon/crew/query.py:446, reckon/crew/query.py:589, reckon/crew/query.py:1067, reckon/crew/queue_landing.py:1674, reckon/crew/queue_landing.py:1915, reckon/crew/recovery_watch.py:502, reckon/crew/recovery_watch.py:1397, reckon/crew/recovery_watch.py:3593, reckon/crew/recovery_watch.py:3675, reckon/crew/resumption.py:2537, reckon/crew/runs.py:2525, reckon/crew/runs.py:4574, reckon/crew/station_subscriber.py:136, reckon/flight.py:2986, reckon/mcp_views.py:2043, reckon/roadmap.py:3108, reckon/serve.py:901",
+  "completed_at": "2026-11-13T04:53:49.601Z",
+  "dispatched_at": "2026-11-13T04:41:30Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "exempted",
+      "reason": "the coordinator re-ran the node's test on base code (3 failed, 3 passed) and the report-only case is a guard that holds at base by design; the fail-closed and unmerged cases are the ones that fail",
+      "recorded_at": "2026-11-13T07:15:05.530804+00:00"
+    },
+    "1": {
+      "kind": "exempted",
+      "reason": "a deliberate two-field identity, stated by the reviewer as correct for the memo it keys; routing it through signature_from_stat is a refinement, not a defect",
+      "recorded_at": "2026-11-13T07:15:53.198241+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "arms.sh",
+      "line": 31,
+      "severity": "non-blocking",
+      "text": "The negative control still measures the base revision alone, so the guard 6ecbeec9 adds has no red log. arms.sh:11 fixes BASE=3886d8d4 and :31 runs the node's test over an archive of it, where the report-only case already passes because that reader never asked the branch; negative-control.log therefore reads 3 failed, 3 passed with the new case among the three that pass. The regression this commit repairs is the intermediate reading aecee18b, not the base, so the refused case is recorded nowhere the node wrote. Measured independently for this review: the head test file run against an extraction of aecee18b fails with `assert 'complete' == 'recorded'` at tests/test_a_landed_reading_follows_the_primary_branch.py:231, and passes 6/6 against an extraction of 9ffc0faf. A second negative-control arm over aecee18b would make the commitment's own refusal reproducible from the run directory."
+    },
+    {
+      "file": "reckon/crew/recovery_classification.py",
+      "line": 845,
+      "severity": "non-blocking",
+      "text": "_checkout_identity reads `entry.st_dev` and `entry.st_ino` itself, while reckon/file_memo.py:283 signature_from_stat is documented as the one place the stat identity's fields and their order are written. The two-field subset is deliberate here, since a signature carrying mtime and size changes on every write into .git and would defeat the memo it keys, but nothing in the new function says so, so a future reader comparing the two may read the divergence as a copy that drifted."
+    }
+  ],
+  "justifications": {
+    "durability": "tests/test_a_landed_reading_follows_the_primary_branch.py:231 asserts `recorded` and the reproduced negative control at aecee18b fails with `assert 'complete' == 'recorded'`, so removing recovery_classification.py:1001 reddens it.",
+    "evidence": "gate-base.log reads 51 passed EXIT=0 at 3886d8d4 and gate-after.log reads 57 passed EXIT=0 at 9ffc0faf, and recomputing the arm delta from base-arm.log and head-arm.log gives the same ten failing ids at both arms with none added; no log records the red on the intermediate reading this commit repairs.",
+    "fit": "recovery_classification.py:929 widens _delivered_head's return to a three-tuple whose docstring names the third answer's meaning, and the new case at :1001 carries a one-line comment stating why an empty head is an answer rather than an absence.",
+    "goal_fidelity": "recovery_classification.py:1001 returns the empty sentence when the ledger row was read and names no commit, so a report-only completion keeps the word `recorded` it earned, which is exactly the previous review's first finding repaired.",
+    "reuse": "recovery_classification.py:845 builds its own stat identity from st_dev and st_ino while reckon/file_memo.py:283 signature_from_stat declares itself the one place those fields are written; the two-field subset is deliberate because the memo must survive writes to .git.",
+    "scope_discipline": "git diff --stat aecee18b..9ffc0faf touches only arms.sh, recovery_classification.py, the node's test file and its fragment, all four inside the declared write paths."
+  },
+  "project": "reckon",
+  "review_run_id": "r-20261113T035315466160-review-of-a-landed-reading-follows-the-primary-branch-9ffc0fafe7b6",
+  "reviewed_base_sha": "aecee18b9e10e37f8c570097d4888c7960721d07",
+  "reviewed_head_sha": "9ffc0fafe7b69077e7e9c84a1277df7fb84fda1d",
+  "reviewed_run_id": "r-20261112T231336380925-a-landed-reading-follows-the-primary-branch",
+  "rubric": "six-dimension landed-change review",
+  "scores": {
+    "durability": 18,
+    "evidence": 16,
+    "fit": 17,
+    "goal_fidelity": 18,
+    "reuse": 16,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-13T05:10:00+00:00",
+  "total": 105,
+  "verdicts": {
+    "call_sites": "The changed reading reaches production only through classify_pointer (recovery_classification.py:2751 calls _promoted_awaiting_* directly), and its callers were read at the landed head: crew/directory.py:342, crew/forgotten_runs.py:94, crew/obligations.py:1310, crew/pending_landing.py:288, crew/promotion.py:498, crew/promotion_release.py:1045, crew/query.py:446/:589/:1067, crew/queue_landing.py:1674/:1915, crew/recovery_watch.py:502/:1397/:3593/:3675, crew/resumption.py:2537, crew/runs.py:2525/:4574, crew/station_subscriber.py:136, flight.py:2986, mcp_views.py:2043, roadmap.py:3108 and serve.py:901.",
+    "diff": "Read commit by commit against aecee18b: 6ecbeec960 adds the row_read third answer to _delivered_head and the empty-head return at recovery_classification.py:1001, keys both memos by _checkout_identity, space-joins the arm test lists in arms.sh, and adds the recorded-no-commits case; 9ffc0fafe7 updates only the evidence fragment and its measure table.",
+    "done_when": "The done_when names tests/test_a_landed_reading_follows_the_primary_branch.py with three cases and a base negative control; the file now holds six cases (tests/test_a_landed_reading_follows_the_primary_branch.py:196 unreadable branch, :218 recorded with no commits) and the manifest records gate-base.log 51 passed EXIT=0 and gate-after.log 57 passed EXIT=0.",
+    "goal": "The node's goal is that a promoted run reads landed only when its delivered head is an ancestor of the primary branch; this increment (\u00a740, commits aecee18b..9ffc0faf) closes the report-only hole that goal opened, at reckon/crew/recovery_classification.py:1001, where a ledger row read and naming no commit now returns the empty sentence instead of drawing a settled completion as an owed merge.",
+    "manifest": "Read at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261112T231336380925-a-landed-reading-follows-the-primary-branch/manifest.md; it states status complete, records the five commits, names every arm log, and its artifacts line now attributes head-arm.log to 6ecbeec9, which is the revision that log's own first line carries.",
+    "write_paths": "Read the manifest's declared paths and the diff's four files: reckon/crew/recovery_classification.py, tests/test_a_landed_reading_follows_the_primary_branch.py, arms.sh and docs/evidence/fragments/the-monitor-reads-each-fact-once/a-landed-reading-follows-the-primary-branch.html all lie inside them; nothing else changed in the range."
+  }
+}

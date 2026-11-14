@@ -1,0 +1,66 @@
+<section id="landing-measures-mismatched-arm" class="evidence-fragment">
+  <h2>§17 — A landing measures a mismatched arm instead of refusing on it</h2>
+  <p>
+    The suite-delta check judged a delivered run by the two arms its manifest
+    recorded, and any arm it could not use — one missing, one recorded at a
+    revision behind the run's head, or one naming a command other than the armed
+    one — was refused as missing evidence. The refusal was about how the pair was
+    written down, not about the code, and every instance cost the worker a resume
+    with the review already clean.
+  </p>
+  <p>
+    The landing now takes the reading itself.
+    <code>landing_measure.armed_observations</code> runs the armed command at the
+    base revision and at the run's head and returns each arm in the observation
+    shape promotion already reads, carrying <code>measured_by: landing</code>.
+    A declared measurement partition submits each arm as its own job, so a
+    mismatch costs a queue wait rather than a suite run on the landing host.
+  </p>
+  <p>
+    <code>promotion_records._evaluate_suite_delta</code> calls it only when the
+    recorded pair cannot be used. A pair that matches is still used unmeasured.
+    The measured pair is written to
+    <code>&lt;run&gt;/landing-measure/measured-arms.json</code> and onto the live
+    pointer as <code>suite_measured_arms</code>, and the delta is calculated on
+    it: a measured arm that adds a failure still refuses, naming the id.
+  </p>
+  <h3 id="landing-measures-mismatched-arm-arms">What the measure shows</h3>
+  <table id="landing-measures-mismatched-arm-table">
+    <thead>
+      <tr><th>Case</th><th>Outcome</th></tr>
+    </thead>
+    <tr>
+      <td>After arm recorded at a superseded head</td>
+      <td>measured at the head and lands; the run records the arm with
+        <code>measured_by: landing</code></td>
+    </tr>
+    <tr>
+      <td>Baseline arm naming another command</td>
+      <td>measured with the armed command at both revisions and lands</td>
+    </tr>
+    <tr>
+      <td>No after arm recorded at all</td>
+      <td>measured at the head and lands</td>
+    </tr>
+    <tr>
+      <td>A matching recorded pair</td>
+      <td>used unmeasured; no arm is run</td>
+    </tr>
+    <tr>
+      <td>A measured arm that adds a failure</td>
+      <td>refused, naming the added id</td>
+    </tr>
+  </table>
+  <p>
+    Negative control: made to refuse on the mismatched arm as before, the suite
+    reads <code>4 failed, 2 passed</code>, <code>EXIT=1</code>, the
+    superseded-head case among them.
+  </p>
+  <p>
+    Suite arms, run one at a time on <code>all_debug</code>: base revision
+    <code>dc998c19</code> with the new test copied in reads
+    <code>6 failed, 49 passed, 2 errors</code> (the six new tests fail because the
+    behaviour they measure does not exist there); head <code>40a055fe</code>
+    reads <code>57 passed</code>, <code>EXIT=0</code>.
+  </p>
+</section>

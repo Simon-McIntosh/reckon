@@ -1,0 +1,19 @@
+<article class="r-evidence" data-node="the-existing-backlog-leaves-home">
+  <h3 id="the-existing-backlog-leaves-home-title">The existing backlog leaves home</h3>
+
+  <p><strong>What was done.</strong> On 11 November, at the lead's instruction, the coordinator copied the imas-efit and nova report trees to the staging root <code>/work/projects/imas_gpu/crew-reports/&lt;project&gt;</code>, as SLURM job 1310012. It then swapped each settled child folder for a symlink to its copy, as job 1310020, which started only once the copy had succeeded. Every action is logged under <code>/work/projects/imas_gpu/_moves/crew-reports/</code>: <code>copy-1310012.log</code> and <code>swap-1310020.log</code>.</p>
+
+  <p><strong>The copy.</strong> Both trees verified, each with a comparison listing 0 differences and file counts and byte totals equal on both sides. imas-efit: 274,610 files, 315,396,284,292 bytes. nova: verified in the same job.</p>
+
+  <table>
+    <thead><tr><th>Project</th><th>Home before</th><th>Home after</th><th>Folders linked</th><th>Folders kept</th></tr></thead>
+    <tbody>
+      <tr><td>nova</td><td>35 GB</td><td>33 MB</td><td>51</td><td><code>code-review</code>, <code>plan-review</code> and <code>portfolio-review</code> (reckon writes here); <code>icm-limb-geometry</code> (changed 3 days before)</td></tr>
+      <tr><td>imas-efit</td><td>295 GB</td><td>26 MB</td><td>15</td><td><code>briefs</code>, <code>code-review</code>, <code>plan-review</code> and <code>portfolio-review</code> (reckon writes here)</td></tr>
+    </tbody>
+  </table>
+
+  <p><strong>The guard fired.</strong> The 7-day settle check kept nova's <code>icm-limb-geometry</code>, which had changed 3 days earlier, and the log records it as <code>KEEP … changed 3d ago</code>. That is the negative control: a folder that was not settled stayed a real directory in home. All seven reckon-written folders were kept by name. Each of the 66 linked folders had a fresh comparison listing 0 differences, and matching counts and bytes, before its rename. The late-write copy after each link carried 0 files. Each original was removed only after a second comparison also listed 0 differences.</p>
+
+  <p><strong>What was spared and why.</strong> Both project directories stay real directories, so dispatch's write-path containment and the fence's seal of the reports root are unchanged. Every other project's reports, together under 1 GB, were left in place. Nothing was deleted outright: the copies on <code>/work</code> stay until §4 expires them.</p>
+</article>

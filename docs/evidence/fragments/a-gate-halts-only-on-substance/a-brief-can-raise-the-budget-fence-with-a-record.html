@@ -1,0 +1,56 @@
+<section id="a-brief-can-raise-the-budget-fence-with-a-record-landing">
+  <h2>A blank reason is not a reason</h2>
+
+  <p><strong>What this node found.</strong> The plan's §3 behaviour was
+  already at the base revision: <code>crew dispatch --over-fence REASON</code>
+  admits an over-fence budget only when the recorded reason is non-blank, the
+  refusal otherwise names the option, and an in-fence budget touches none of
+  it. So this node verified the behaviour rather than rebuilding it, and closed
+  the one arm the check relies on that no test exercised.</p>
+
+  <p>The bounded check reads <code>over_fence_reason.strip()</code>, so a reason
+  made only of whitespace must leave the refusal standing — that is what makes
+  "a recorded reason" mean a stated one rather than any non-empty string. No
+  arm covered it. The arm added here asserts the pair at the check itself:
+  whitespace alone is refused, and a reason padded with surrounding whitespace
+  still admits.</p>
+
+  <p><strong>The first version of that arm was vacuous, and the record shows
+  it.</strong> Written through the dispatch command, the blank case asserted
+  only that the command refused — and it stayed green under a mutation that
+  ignores the recorded reason entirely, because the command refuses every
+  over-fence budget in that state for a different reason. The assertion
+  survived the very regression it sat beside. Re-asserted at the check, each of
+  two mutations now takes it red: reading the raw reason fails the blank arm,
+  and ignoring the reason fails the padded one and both reason-bearing arms.</p>
+
+  <table id="a-brief-can-raise-the-budget-fence-with-a-record-arms">
+    <caption>Every arm is a log whose header names its revision, tree and
+    command and whose last line reads <code>EXIT=&lt;code&gt;</code>.</caption>
+    <thead><tr><th>arm</th><th>revision</th><th>result</th></tr></thead>
+    <tbody>
+      <tr><td>base</td><td>c4eff770, both files as the suite names them</td><td>58 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>after</td><td>b1754bab, the same command</td><td>60 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>declared control: the recorded reason ignored</td><td>b1754bab + mutation at <code>reckon/crew/node.py:1508</code></td><td>3 failed, 57 passed, <code>EXIT=1</code></td></tr>
+      <tr><td>probe: the raw reason read, <code>strip</code> dropped</td><td>b1754bab + mutation at <code>reckon/crew/node.py:1508</code></td><td>1 failed, 8 passed, <code>EXIT=1</code></td></tr>
+    </tbody>
+  </table>
+
+  <p>The after arm adds three passing tests over the base arm's population: no
+  failure is added, and the new ids are the blank and padded arms and the queued
+  round-trip arm.</p>
+
+  <p><strong>A claim in this record that was wrong, and how it was settled.</strong>
+  An earlier version of this fragment reported, as work standing outside the
+  node's scope, that the queued request's rebuild
+  (<code>_node_from_pointer</code>, <code>reckon/crew/queue_admission.py:198</code>)
+  dropped <code>over_fence_reason</code> and would refuse a queued request at
+  launch. Review refused it, and the code agrees with the review: the rebuild
+  iterates <code>fields(TaskNode)</code> and carries every declared field, with
+  only <code>manifest_path</code> and <code>write_paths</code> deliberately
+  rewritten. Measured on a stored node: the reason survives the rebuild
+  unchanged, and a stored node with the field removed rebuilds as empty. Nothing
+  is owed to a repair node, and the arm now asserting this sits in the check's
+  own file so the statement is tested rather than asserted. The declared option
+  is in <code>reckon/crew_dispatch_commands.py</code>.</p>
+</section>

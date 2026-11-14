@@ -96,12 +96,37 @@ def _pointer(home: Path, *, run_id: str, session: str, node: str) -> dict:
     return record
 
 
+#: The model-id prefixes a catalogue declares a window for. The board reads each
+#: model's window from the catalogue, and the suite points the catalogue at an
+#: absent file, so a fixture that expects a measured window supplies its own.
+#: A window no table in the tree holds, so the row can only carry it when the
+#: reader consults the configuration rather than a hardcoded figure.
+_FIXTURE_WINDOW = 123_456
+
+_WINDOW_PREFIXES = (
+    "claude-fable-5",
+    "claude-opus-5",
+    "claude-sonnet-5",
+    "claude-haiku-5",
+    "claude-haiku-4",
+)
+
+
+def _catalogue(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Point the catalogue at a fixture declaring the models' context windows."""
+    path = tmp_path / "model-catalogue.yaml"
+    windows = "".join(f"  {prefix}: {_FIXTURE_WINDOW}\n" for prefix in _WINDOW_PREFIXES)
+    path.write_text(f"version: 1\nmodel_windows:\n{windows}", encoding="utf-8")
+    monkeypatch.setenv("RECKON_MODEL_CATALOGUE", str(path))
+
+
 def _seed(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, *, session: str) -> dict:
     home = tmp_path / "config"
     home.mkdir()
     monkeypatch.setenv("RECKON_HOME", str(home))
     monkeypatch.delenv("RECKON_STATE_ROOT", raising=False)
     monkeypatch.setattr(directory_module, "_TRANSCRIPT_ROOT", tmp_path / "projects")
+    _catalogue(tmp_path, monkeypatch)
     return _pointer(home, run_id="run-live", session=session, node="build-the-coil")
 
 
@@ -128,10 +153,29 @@ def test_a_fixture_transcript_yields_its_context_use_and_window(
     assert use["used_tokens"] == charging["input_tokens"] == 250_040
     assert use["status"] == "measured"
     assert use["model"] == "claude-opus-5-5"
-    assert use["window_tokens"] == 1_000_000
+    assert use["window_tokens"] == _FIXTURE_WINDOW
     # The fraction is the figure against its own window, at full precision.
-    assert use["fraction"] == pytest.approx(250_040 / 1_000_000)
+    assert use["fraction"] == pytest.approx(250_040 / _FIXTURE_WINDOW)
     assert use["source"] == "claude-code-session-transcript"
+
+
+def test_a_host_layer_window_is_read_not_dropped(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # A window is routing configuration, so a host layer that declares one must
+    # reach the row: reading only the catalogue would drop this silently.
+    record = _seed(tmp_path, monkeypatch, session=SESSION)
+    host = tmp_path / "host-flight.yaml"
+    host.write_text(
+        "version: 1\nmodel_windows:\n  claude-opus-5: 777000\n", encoding="utf-8"
+    )
+    monkeypatch.setenv("RECKON_FLIGHT_CONFIG", str(host))
+    _transcript(tmp_path / "projects", SESSION)
+
+    use = _row(directory(PROJECT, pointers=[record]), SESSION)["context_use"]
+
+    assert use["window_tokens"] == 777_000
+    assert use["fraction"] == pytest.approx(250_040 / 777_000)
 
 
 def test_a_missing_transcript_reads_unmeasured_never_zero(

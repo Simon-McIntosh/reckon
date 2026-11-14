@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-plan-is-reviewed-before-it-is-built">
+  <meta name="plan-title" content="A plan review's receipt says whether the review was stored">
+  <meta name="plan-summary" content="A plan review's promotion receipt carries plan_review_store, read back off the delivery the plan-review store recorded: written when a record carries the delivery's id, the store's own refusal reason when it refused, and the composed directory with the run id it fails to name when the composed report names no run. store is unchanged and a run that is not a plan review carries no such field. Verified at the current head: both arms agree on every failure id, and the declared control turns the field's four cases red.">
+  <meta name="plan-evidence-for" content="reckon:a-plan-is-reviewed-before-it-is-built">
+  <meta name="plan-verifies" content="reckon:a-plan-is-reviewed-before-it-is-built#s37">
+  <meta name="plan-recorded-at" content="2026-11-13">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-commits" content="31ab20badf56a1628fb939ca550149838cd273b6,cea40c78c9">
+  <meta name="plan-tags" content="crew,promotion,plan-review,receipt,store">
+  <title>A plan review's receipt says whether the review was stored — evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" data-node="ready-a-plan-is-reviewed-before-it-s37" data-reckon="landed" data-when="2026-11-13">
+  <h2 id="ready-a-plan-is-reviewed-before-it-s37-landed">A plan review's receipt says whether the review was stored</h2>
+
+  <p id="ready-a-plan-is-reviewed-before-it-s37-mechanism">The receipt's <code>store</code> field is the promoted run's own ledger index append — <code>_index_append</code> in <code>reckon/ledger.py</code> — so a plan review whose record never reached the plan-review store still read <code>store: written</code>. The receipt now carries <code>plan_review_store</code>, present only when the promoting run's node id carries the plan-review prefix, and its value is read back off the delivery the store recorded through the join promotion already uses. <code>_delivered_plan_review_for_run</code> resolves the report directory whose <code>dispatch.json</code> names the promoting run; the sidecar's <code>stored</code> and <code>store_error</code> keys are the outcome and its reason. A promoting plan review whose composed report names no run is read back from the store through the composed directory its write paths name before anything is said about it, because the store joins a delivery by the directory it was written from rather than by the run its dispatch names; only when no stored record carries it does the receipt name that directory and the run id it fails to name. The computation lives in <code>_plan_review_store_outcome</code> in <code>reckon/crew/promotion_checks.py</code>, beside <code>_plan_review_record_for_promoting_run</code>, whose <code>plan_review.store_delivered_reviews</code> call produces the outcome; <code>reckon/crew/promotion.py</code> attaches the field to the receipt it assembles, after the rounds are read. <code>store</code> is unchanged.</p>
+
+  <h2 id="ready-a-plan-is-reviewed-before-it-s37-measure-heading">Measure</h2>
+  <table>
+    <thead><tr><th>Measure</th><th>Result</th><th>Receipt or qualification</th></tr></thead>
+    <tbody>
+      <tr><td>A stored plan review reads written</td><td><code>plan_review_store.status == "written"</code> while <code>store.status</code> is <code>written</code></td><td><code>test_a_stored_plan_review_reads_written</code>; passes in both arms</td></tr>
+      <tr><td>A refused store names its reason</td><td><code>failed</code> with <code>unknown review rubric</code>, the same reason the store recorded on the delivery's sidecar; <code>store</code> still <code>written</code></td><td><code>test_a_refused_store_names_its_reason_and_leaves_store_alone</code></td></tr>
+      <tr><td>A composed report naming no run</td><td><code>failed</code>, naming the composed directory and the promoting run id</td><td><code>test_a_composed_report_naming_no_run_names_the_directory_and_the_run</code></td></tr>
+      <tr><td>A delivery the store holds by directory</td><td><code>written</code>, though the dispatch names no run</td><td><code>test_a_report_the_store_holds_by_directory_reads_written</code></td></tr>
+      <tr><td>A run review's receipt</td><td>No <code>plan_review_store</code> key at all</td><td><code>test_a_run_review_receipt_carries_no_plan_review_store_field</code></td></tr>
+      <tr><td>Base arm</td><td>41 failed, 928 passed, 7 warnings in 512.42s; EXIT=1</td><td>base-arm.log; revision <code>b575b660a0</code>, scratch extraction, four follower variables unset, <code>-n 8</code>, its own basetemp</td></tr>
+      <tr><td>Head arm</td><td>41 failed, 928 passed, 7 warnings in 439.12s; EXIT=1</td><td>head-arm.log; the same 134 files at the same revision, same conditions</td></tr>
+      <tr><td>Added failures</td><td>0</td><td>head-failures.txt against base-failures.txt: 41 ids each, neither set has a member the other lacks</td></tr>
+      <tr><td>Declared negative control, field dropped</td><td>4 failed, 1 passed in 17.32s; EXIT=1</td><td>negative-control.log; with the receipt's assignment removed, all four field-carrying cases fail and only the run-review case passes</td></tr>
+      <tr><td>What the control's second case then reads</td><td><code>RECEIPT_STORE {'status': 'written'}</code>, and the receipt's key list carries no <code>plan_review_store</code></td><td>negative-control-reading.log; the mutant's second case instrumented to print the receipt instead of asserting the field</td></tr>
+      <tr><td>Scoped lint and format</td><td>0 added findings</td><td>Two pre-existing <code>UP017</code> findings in <code>promotion_checks.py</code> and one file <code>ruff format --check</code> would reformat, present at both revisions; none in the receipt test; this node stages no Python</td></tr>
+    </tbody>
+  </table>
+
+  <h2>What changed</h2>
+  <p>Nothing in the product source: the field, its no-join branch and its test were already on the primary branch at this node's base revision (<code>31ab20badf</code> adds the field, <code>cea40c78c9</code> reads the store before reporting a review unstored and commits the repository test). This dispatch is the section's verification at the current head and its landing record. The behaviour is confirmed rather than reimplemented, and the arms are measured at both revisions over the population the gate names, so the delta is stated rather than assumed.</p>
+
+  <p>The receipt field's own text still reaches the operator: <code>crew complete</code> prints what the store did beside the ledger's <code>store</code>, and the four cases above are the one guard on that reading. The declared control shows the guard fires: with the assignment dropped, the refused review's receipt carries no <code>plan_review_store</code> and reads only <code>store: {'status': 'written'}</code> — the exact reading the section exists to stop.</p>
+
+  <h2>Durable receipts</h2>
+  <table>
+    <thead><tr><th>Artifact</th><th>Path</th></tr></thead>
+    <tbody>
+      <tr><td>manifest.md</td><td>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261113T012735898111-ready-a-plan-is-reviewed-before-it-s37/manifest.md</td></tr>
+      <tr><td>base-arm.log</td><td>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261113T012735898111-ready-a-plan-is-reviewed-before-it-s37/logs/base-arm.log</td></tr>
+      <tr><td>head-arm.log</td><td>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261113T012735898111-ready-a-plan-is-reviewed-before-it-s37/logs/head-arm.log</td></tr>
+      <tr><td>negative-control.log</td><td>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261113T012735898111-ready-a-plan-is-reviewed-before-it-s37/logs/negative-control.log</td></tr>
+      <tr><td>negative-control-reading.log</td><td>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261113T012735898111-ready-a-plan-is-reviewed-before-it-s37/logs/negative-control-reading.log</td></tr>
+    </tbody>
+  </table>
+</article>
+</body>
+</html>

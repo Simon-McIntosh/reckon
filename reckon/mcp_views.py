@@ -4013,6 +4013,7 @@ CREW_VIEWS: tuple[str, ...] = (
     "models",
     "velocity",
     "scores",
+    "review-need",
     "plan-review",
     "findings",
 )
@@ -4322,6 +4323,73 @@ def _fit_scopes(
     return render(kept, shortened)
 
 
+def run_inbox_messages(run_id: str) -> dict[str, Any] | None:
+    """One run's inbox, split into what is still waiting and what became of it.
+
+    A message written by ``crew tell`` sits unclaimed until the run's next tool
+    call, so a coordinator looking at the run needs to know whether its
+    instruction is still queueing or already in front of the worker. Both halves
+    read the run's own directory: the same store the hook claims from, so this
+    answer cannot disagree with the delivery. A message the hook could not hand
+    over is listed under ``failed`` and never under ``delivered``: the two are
+    different outcomes and a coordinator that cannot tell them apart reads a
+    lost instruction as a received one. ``None`` when the run has no live
+    pointer or no manifest to locate that directory from — an ended run's
+    directory is not what this view is for.
+    """
+    from reckon.crew import runs as runs_module
+    from reckon.hooks import worker_inbox
+
+    try:
+        pointer = runs_module.read_pointer(run_id)
+    except Exception:  # noqa: BLE001 - an unknown run is an absent inbox, not an error
+        return None
+    manifest_path = (pointer or {}).get("manifest_path")
+    if not manifest_path:
+        return None
+    run_directory = Path(manifest_path).expanduser().parent
+    unclaimed = [
+        entry
+        for entry in (
+            _unclaimed_message(path)
+            for path in worker_inbox.pending_messages(run_directory)
+        )
+        if entry is not None
+    ]
+    return {
+        "unclaimed": unclaimed,
+        "unclaimed_count": len(unclaimed),
+        "unreadable_count": sum(1 for entry in unclaimed if entry.get("unreadable")),
+        "delivered": worker_inbox.delivered_receipts(run_directory),
+        "failed": worker_inbox.failed_receipts(run_directory),
+    }
+
+
+def _unclaimed_message(path: Path) -> dict[str, Any] | None:
+    """One waiting message as the view reports it, or None if it just went.
+
+    Listing and reading are two steps, and the hook's claim is a rename that can
+    land between them: the message is then delivered, not lost, and its receipt
+    appears in the same answer. Reporting the race as an error would fail a
+    coordinator's read of a run whose delivery was working.
+
+    Only the vanished file is that race. Any other read failure names a message
+    that is still queued and cannot be shown, which is a state the coordinator
+    must be able to see: it is reported as present and unreadable rather than
+    dropped, because a message that disappears from the view is indistinguishable
+    from one that was never written.
+    """
+    entry: dict[str, Any] = {"message": path.name}
+    try:
+        entry["bytes"] = path.stat().st_size
+        entry["text"] = path.read_text(encoding="utf-8", errors="replace")
+    except FileNotFoundError:
+        return None
+    except OSError as exc:
+        entry["unreadable"] = f"{type(exc).__name__}: {exc}"
+    return entry
+
+
 def serve_crew_view(
     view: str = "summary",
     *,
@@ -4586,7 +4654,7 @@ def serve_crew_view(
                 cursor=cursor,
             )
         if view == "runs":
-            return crew_runs_view(
+            payload = crew_runs_view(
                 project,
                 run_id=run_id,
                 checkout_path=checkout_path,
@@ -4603,6 +4671,13 @@ def serve_crew_view(
                 fields=fields,
                 limit=limit,
             )
+            # A named run also answers what is still waiting to reach it, so a
+            # coordinator reading one run sees its queued message rather than
+            # having to open the inbox on disk to find out.
+            inbox = run_inbox_messages(run_id) if run_id else None
+            if inbox is not None:
+                payload = {**payload, "inbox": inbox}
+            return payload
         if view == "scopes":
             docs_dir = _docs_dir_for_project(project, checkout_path)
             if docs_dir is None:
@@ -4810,6 +4885,18 @@ def serve_crew_view(
                 "version": version,
                 "path": str(ledger_module.ledger_path(project, checkout_path)),
                 "runs": runs,
+            }
+        if view == "review-need":
+            # The shadow records what each further code review was predicted to
+            # find and what it found. Nothing is skipped on it, so this view is
+            # the whole of what a decision to skip would rest on.
+            from reckon.crew import review_need as review_need_module
+
+            return {
+                "ok": True,
+                "project": project,
+                "view": view,
+                **review_need_module.shadow_view(project),
             }
         if view == "scores":
             # The committed rows are the only input: the reader is

@@ -1,0 +1,672 @@
+{
+  "agent": {
+    "alias": "sol61",
+    "backend": "codex",
+    "effort": "high",
+    "launch": "cli",
+    "model": "gpt-6.1-sol",
+    "sandbox": "worktree-full"
+  },
+  "attempt": 1,
+  "attempt_kind": "dispatch",
+  "backend": "codex",
+  "base_sha": "5bb73fb01223153182a97cfe13e193050cdd204b",
+  "boundary_waiver": null,
+  "brief": null,
+  "budget": {
+    "budget_overrun": false,
+    "budget_overrun_notice": null,
+    "budget_overrun_seconds": 0,
+    "budget_overrun_tokens": 0,
+    "cost_usd": null,
+    "detail": "backend reports token usage but no headroom",
+    "headroom": "unknown",
+    "rate_limit_period_minutes": null,
+    "rate_limit_type": null,
+    "refusal": false,
+    "resets_at": null,
+    "surpassed_threshold": null,
+    "threshold_status": null,
+    "tokens": {
+      "cache_write_input_tokens": 0,
+      "cache_write_input_tokens_cumulative": 0,
+      "cached_input_tokens": 9691648,
+      "cached_input_tokens_cumulative": 9691648,
+      "input_tokens": 9878797,
+      "input_tokens_cumulative": 9878797,
+      "output_tokens": 39440,
+      "output_tokens_cumulative": 39440,
+      "reasoning_output_tokens": 16163,
+      "reasoning_output_tokens_cumulative": 16163
+    },
+    "utilisation_pct": null
+  },
+  "changed_lines": {
+    "added": 235,
+    "files": 3,
+    "removed": 7
+  },
+  "clone_matches": [],
+  "commit_resolution": null,
+  "commits": [
+    "84b64e24adf42c265c32b795524fe82d47a6f21b",
+    "1fac8d89c0c6cc472a8bd45fb0d8d80ab551fb3e"
+  ],
+  "completed_at": "2026-11-12T03:52:29Z",
+  "completed_at_source": "stream_mtime",
+  "dispatched_at": "2026-11-12T03:28:37Z",
+  "disposition": null,
+  "dispute_count": 0,
+  "domain_waiver": null,
+  "duration_measurement": {
+    "reason": "model_span_unavailable_at_promotion",
+    "status": "underivable"
+  },
+  "execution_fit": {
+    "allowed": true,
+    "execution_capable": true,
+    "matched_measure": null,
+    "override": false,
+    "role": "implement",
+    "status": "no-execution-measure"
+  },
+  "failure_classification": null,
+  "gate": "passed",
+  "gate_check": {
+    "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_sole_station_keeps_its_lease.py tests/test_staged_write_inventory.py",
+    "exit_status": 0,
+    "log_digest": null,
+    "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261112T032541772809-a-sole-station-keeps-its-lease/logs/armed-head-coord.log"
+  },
+  "impl_move": {
+    "at_complete": 0.8606451612903225,
+    "at_dispatch": 0.8606451612903225,
+    "plan": "the-monitor-reads-each-fact-once",
+    "reason": "the coordinator closes s30 by hand after the landing; the plan's impl derives from section declarations it sets then",
+    "verdict": "waived"
+  },
+  "lane": "codex",
+  "lane_advisory": {
+    "backend": "codex",
+    "burn_multiple": 1.5249896439313437,
+    "cheaper_lane": {
+      "detail": "",
+      "lane": null,
+      "state": "not_evaluated"
+    },
+    "detail": "'codex' is projected to exhaust at 2026-11-13T18:48:04Z, which is after this node's 3600s horizon ending 2026-11-12T04:25:55.417652+00:00",
+    "horizon_ends_at": "2026-11-12T04:25:55.417652+00:00",
+    "horizon_seconds": 3600,
+    "metered": true,
+    "observed_at": "2026-11-12T03:25:53Z",
+    "precedes_horizon": false,
+    "projected_exhaustion_at": "2026-11-13T18:48:04Z",
+    "resets_at": "2026-11-14T15:28:13Z",
+    "seconds_until_reset": 216139,
+    "state": "quiet",
+    "utilisation_pct": 98.0
+  },
+  "lane_declaration": {
+    "backend": "codex",
+    "headroom": "known",
+    "metered": true,
+    "observed_at": "2026-11-12T03:25:53Z",
+    "read_at": "2026-11-12T03:25:55Z",
+    "resolved_backend": "codex",
+    "utilisation_pct": 98.0
+  },
+  "lane_reading": {
+    "age_seconds": null,
+    "binding_observed": "unknown",
+    "detail": "backend declares no lane document",
+    "generating": "unknown",
+    "headroom": "unknown",
+    "mean_context": "unknown",
+    "observed_at": null,
+    "state": "unknown",
+    "suggested_shelf_life_seconds": null,
+    "throughput": {
+      "age_seconds": null,
+      "aggregate_tokens_per_second": "unknown",
+      "detail": "backend declares no lane document",
+      "mean_tokens_per_second": "unknown",
+      "observed_at": null,
+      "runs": "unknown",
+      "state": "unknown"
+    },
+    "waiting": "unknown"
+  },
+  "lane_receipt": {
+    "effective_context_window": 380000,
+    "notional_cost_usd": "unmeasured",
+    "observed_at": "2026-11-12T03:52:29Z",
+    "quota_state": "measured",
+    "quota_windows": [
+      {
+        "observed_at": "2026-11-12T03:52:29Z",
+        "resets_at": 1794670093,
+        "used_percent": 98.0,
+        "window_minutes": 10080
+      }
+    ],
+    "rate_basis": "unmeasured",
+    "unmeasured": {
+      "notional_cost_usd": "no_dated_rate",
+      "rate_basis": "no_dated_rate"
+    }
+  },
+  "lineage": null,
+  "local": false,
+  "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261112T032541772809-a-sole-station-keeps-its-lease/manifest.md",
+  "member": "disposable-r-20261112T032541772809-a-sole-station-keeps-its-lease",
+  "model_key": "sol",
+  "negative_control": {
+    "added_failure_ids": [
+      "tests/test_a_sole_station_keeps_its_lease.py::test_a_dead_holder_release_requires_a_known_matching_pid_namespace[]",
+      "tests/test_a_sole_station_keeps_its_lease.py::test_a_dead_holder_release_requires_a_known_matching_pid_namespace[pid:[elsewhere]]",
+      "tests/test_a_sole_station_keeps_its_lease.py::test_a_matching_pid_number_in_another_namespace_cannot_reattach",
+      "tests/test_a_sole_station_keeps_its_lease.py::test_dispatch_pid_probe_cannot_evict_a_station_during_a_slow_tick"
+    ],
+    "baseline_failure_ids": [],
+    "comparison_arm": "after_suite",
+    "control_exit_status": 1,
+    "control_failure_ids": [
+      "tests/test_a_sole_station_keeps_its_lease.py::test_a_dead_holder_release_requires_a_known_matching_pid_namespace[]",
+      "tests/test_a_sole_station_keeps_its_lease.py::test_a_dead_holder_release_requires_a_known_matching_pid_namespace[pid:[elsewhere]]",
+      "tests/test_a_sole_station_keeps_its_lease.py::test_a_matching_pid_number_in_another_namespace_cannot_reattach",
+      "tests/test_a_sole_station_keeps_its_lease.py::test_dispatch_pid_probe_cannot_evict_a_station_during_a_slow_tick"
+    ],
+    "control_run_failed": true,
+    "declaration": "at the base revision the reproduction loses the lease, so the test fails",
+    "head_failure_ids": [],
+    "log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261112T032541772809-a-sole-station-keeps-its-lease/negative-control-final.log",
+    "resolved_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261112T032541772809-a-sole-station-keeps-its-lease/negative-control-final.log",
+    "test_paths": [
+      "tests/test_a_sole_station_keeps_its_lease.py"
+    ],
+    "verdict": "matched"
+  },
+  "no_commit": null,
+  "node": "a-sole-station-keeps-its-lease",
+  "node_definition": {
+    "admission_findings": [],
+    "after": [],
+    "anchor_paths": [],
+    "brief": "",
+    "brief_path": "",
+    "brief_sha256": "",
+    "capability": {
+      "class": "general",
+      "requirements": {
+        "reasoning": "standard",
+        "risk": "moderate",
+        "verification": "strict"
+      },
+      "version": "1.0"
+    },
+    "compares_with": "",
+    "coordinator": {
+      "authoring_turn": {
+        "source": "claude-code-session-transcript",
+        "status": "measured",
+        "tokens": {
+          "cache_creation_input_tokens": 4596,
+          "cached_input_tokens": 556904,
+          "input_tokens": 561502,
+          "output_tokens": 1423,
+          "reasoning_output_tokens": 82,
+          "total_tokens": 562925,
+          "uncached_input_tokens": 2
+        }
+      },
+      "harness": "claude-code",
+      "runtime_session_id": "1fb615a0-2801-4418-bbb4-c2914719e520",
+      "session_id": "1fb615a0-2801-4418-bbb4-c2914719e520"
+    },
+    "done_when": "tests/test_a_sole_station_keeps_its_lease.py reproduces the cause the node found and passes at head with the station keeping its lease; the manifest records the cause with its evidence; importer arms of reckon.crew.station and reckon.crew.host_lease run as an all_debug partition job add no failure against base; ruff check and ruff format --check clean on staged paths.",
+    "estimated_hours": null,
+    "goal": "Find why a sole station loses its own lease and keep it through a slow tick",
+    "id": "a-sole-station-keeps-its-lease",
+    "images": [],
+    "inputs": [],
+    "lane_declaration": {
+      "backend": "codex",
+      "headroom": "known",
+      "metered": true,
+      "observed_at": "2026-11-12T03:25:53Z",
+      "read_at": "2026-11-12T03:25:55Z",
+      "resolved_backend": "codex",
+      "utilisation_pct": 98.0
+    },
+    "lane_reading": {
+      "age_seconds": null,
+      "binding_observed": "unknown",
+      "detail": "backend declares no lane document",
+      "generating": "unknown",
+      "headroom": "unknown",
+      "mean_context": "unknown",
+      "observed_at": null,
+      "state": "unknown",
+      "suggested_shelf_life_seconds": null,
+      "throughput": {
+        "age_seconds": null,
+        "aggregate_tokens_per_second": "unknown",
+        "detail": "backend declares no lane document",
+        "mean_tokens_per_second": "unknown",
+        "observed_at": null,
+        "runs": "unknown",
+        "state": "unknown"
+      },
+      "waiting": "unknown"
+    },
+    "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261112T032541772809-a-sole-station-keeps-its-lease/manifest.md",
+    "negative_control": "at the base revision the reproduction loses the lease, so the test fails",
+    "over_fence_reason": "",
+    "peer_scopes": {
+      "a-design-and-a-content-review-run-together": [
+        "docs/evidence/fragments/a-plan-is-reviewed-before-it-is-built/a-design-and-a-content-review-run-together.html",
+        "docs/figures/a-plan-is-reviewed-before-it-is-built/a-design-and-a-content-review-run-together",
+        "reckon/crew/promotion_checks.py",
+        "reckon/crew/recovery_review_dispatch.py",
+        "reckon/crew/recovery_review_subject.py",
+        "reckon/crew/repair.py",
+        "tests/test_a_design_and_a_content_review_run_together.py",
+        "tests/test_a_design_and_content_review_run_together.py"
+      ],
+      "a-launch-span-is-dated-and-bounded": [
+        "docs/evidence/fragments/a-dispatch-returns-without-its-worker/a-launch-span-is-dated-and-bounded.html",
+        "docs/figures/a-dispatch-returns-without-its-worker/a-launch-span-is-dated-and-bounded",
+        "reckon/crew/dispatch.py",
+        "reckon/crew/dispatch_claims.py",
+        "reckon/crew/dispatch_refusals.py",
+        "reckon/crew/queue_admission.py",
+        "reckon/crew/refusals.py",
+        "tests/test_a_launch_span_is_dated_and_bounded.py",
+        "tests/test_crew_refusal_visibility.py"
+      ],
+      "a-live-launch-holder-is-not-stranded": [
+        "docs/evidence/fragments/work-is-never-stuck-behind-the-admission-loop/a-live-launch-holder-is-not-stranded.html",
+        "docs/figures/work-is-never-stuck-behind-the-admission-loop/a-live-launch-holder-is-not-stranded",
+        "reckon/crew/queue_admission.py",
+        "reckon/crew/recovery_liveness.py",
+        "tests/test_a_live_launch_holder_is_not_stranded.py"
+      ],
+      "a-plan-write-parses-its-plan-once": [
+        "docs/evidence/fragments/a-read-answers-inside-its-deadline/a-plan-write-parses-its-plan-once.html",
+        "docs/figures/a-read-answers-inside-its-deadline/a-plan-write-parses-its-plan-once",
+        "reckon/_plan_html.py",
+        "reckon/_store.py",
+        "tests/test_a_plan_write_parses_its_plan_once.py"
+      ],
+      "a-section-wait-releases-when-its-upstream-lands-not-when-it": [
+        "docs/evidence/fragments/a-queue-holds-the-whole-plan/a-section-wait-releases-when-its-upstream-lands-not-when-it.html",
+        "docs/figures/a-queue-holds-the-whole-plan/a-section-wait-releases-when-its-upstream-lands-not-when-it",
+        "reckon/crew/queue_admission.py",
+        "tests/test_a_wait_releases_when_its_upstream_lands.py"
+      ],
+      "ab-clive-lane-and-model-routing-s53": [
+        "reckon/crew/budget_group.py",
+        "reckon/crew/budget_lift.py",
+        "reckon/crew/lift_watch.py",
+        "reckon/crew/picker/snapshot.py",
+        "reckon/crew/routing.py",
+        "reckon/crew_run_commands.py",
+        "skills/reckon-build/SKILL.md"
+      ],
+      "ab-codex-anchored-a-seat-held-elsewhere-s23": [
+        "reckon/crew/watch_unit.py",
+        "reckon/crew_follow_commands.py"
+      ],
+      "ab2-codex-anchored-lane-and-model-routing-s59": [
+        "reckon/crew/dispatch_picker.py",
+        "reckon/crew/dispatch_plan.py",
+        "reckon/crew/picker/__init__.py",
+        "reckon/crew/picker/types.py"
+      ],
+      "crew-census-lists-and-stops-ownerless": [
+        "docs/evidence/fragments/a-crew-process-ends-with-its-owner/crew-census-lists-and-stops-ownerless.html",
+        "docs/figures/a-crew-process-ends-with-its-owner/crew-census-lists-and-stops-ownerless",
+        "reckon/crew/census.py",
+        "reckon/crew/runs.py",
+        "reckon/crew_run_commands.py",
+        "skills/reckon-build/SKILL.md",
+        "skills/reckon-build/references/coordinator-reference.md",
+        "tests/test_crew_census.py",
+        "tests/test_crew_help_names_its_state.py",
+        "tests/test_skill_contracts.py"
+      ],
+      "decision-holds-named-sections": [
+        "docs/_shared/plan.schema.json",
+        "docs/evidence/fragments/work-flows-to-the-lane/decision-holds-named-sections.html",
+        "docs/figures/work-flows-to-the-lane/decision-holds-named-sections",
+        "reckon/_plan_html.py",
+        "reckon/_schema.py",
+        "reckon/crew/dispatch.py",
+        "reckon/crew/queue_admission.py",
+        "reckon/roadmap.py",
+        "tests/test_a_decision_holds_only_the_sections_it_names.py"
+      ],
+      "dispatch-over-the-backlog": [
+        "docs/evidence/fragments/work-flows-to-the-lane/dispatch-over-the-backlog.html",
+        "reckon/crew/dispatch.py",
+        "reckon/crew/queue_admission.py",
+        "tests/test_a_dispatch_is_not_refused_on_its_backlog.py",
+        "tests/test_a_held_request_records_what_holds_it.py",
+        "tests/test_a_queued_launch_ignores_the_coordinator_backlog.py",
+        "tests/test_crew.py",
+        "tests/test_crew_drain_by_coordinator.py",
+        "tests/test_dispatch_result_matches_launch.py"
+      ],
+      "refused-review-writes-nothing": [
+        "docs/evidence/fragments/work-flows-to-the-lane/refused-review-writes-nothing.html",
+        "docs/figures/work-flows-to-the-lane/refused-review-writes-nothing",
+        "reckon/crew/plan_review.py",
+        "reckon/crew_run_commands.py",
+        "tests/test_a_refused_plan_review_writes_nothing.py"
+      ],
+      "service-runs-mains-code": [
+        "docs/evidence/fragments/work-is-never-stuck-behind-the-admission-loop/service-runs-mains-code.html",
+        "docs/figures/work-is-never-stuck-behind-the-admission-loop/service-runs-mains-code",
+        "reckon/crew/fleet_supervisor.py",
+        "tests/test_a_service_runs_the_code_main_carries.py"
+      ],
+      "shared-root-claim-never-holds": [
+        "docs/evidence/fragments/work-flows-to-the-lane/shared-root-claim-never-holds.html",
+        "docs/figures/work-flows-to-the-lane/shared-root-claim-never-holds",
+        "reckon/crew/claims.py",
+        "reckon/crew/dispatch_claims.py",
+        "reckon/crew/queue_admission.py",
+        "reckon/crew/queue_edit.py",
+        "reckon/crew/runs.py",
+        "tests/test_a_shared_root_claim_never_holds_a_request.py",
+        "tests/test_a_source_file_is_shared_by_default.py"
+      ],
+      "the-old-event-logs-are-retired": [
+        "docs/evidence/fragments/crew-state-stays-bounded/the-old-event-logs-are-retired.html",
+        "docs/figures/crew-state-stays-bounded/the-old-event-logs-are-retired",
+        "reckon/crew/event_log_retirement.py",
+        "reckon/crew/gc.py",
+        "tests/test_the_old_event_logs_are_retired.py"
+      ],
+      "worktree-leaves-shared-config": [
+        "docs/evidence/fragments/work-flows-to-the-lane/worktree-leaves-shared-config.html",
+        "docs/figures/work-flows-to-the-lane/worktree-leaves-shared-config",
+        "reckon/crew/routing.py",
+        "tests/test_a_worktree_leaves_the_shared_config_alone.py"
+      ]
+    },
+    "plan": "the-monitor-reads-each-fact-once",
+    "regenerate_paths": [],
+    "requested_backend": "codex",
+    "requires_decisions": [],
+    "role": "implement",
+    "section": "§30",
+    "spec_level": "guided",
+    "time_budget": "60m",
+    "token_budget": null,
+    "waits_only_after": false,
+    "write_paths": [
+      "reckon/crew/station.py",
+      "reckon/crew/host_lease.py",
+      "tests/test_a_sole_station_keeps_its_lease.py",
+      "docs/evidence/fragments/the-monitor-reads-each-fact-once/a-sole-station-keeps-its-lease.html",
+      "docs/figures/the-monitor-reads-each-fact-once/a-sole-station-keeps-its-lease"
+    ]
+  },
+  "orchestrator_lane_override": null,
+  "orientation_input_tokens": null,
+  "outcome": "",
+  "outside_scope_paths": [
+    "station.log",
+    "obligations.py",
+    "station_subscriber.py",
+    "tests/test_one_promotion_of_a_run_at_a_time.py",
+    "tests/test_one_run_cannot_stop_a_sweep.py",
+    "tests/test_follower_freshness.py",
+    "tests/test_a_slow_station_still_reads_as_alive.py",
+    "tests/test_the_station_never_holds_a_run_lock_across_its_tick.py",
+    "tests/test_the_station_starts_where_workers_run.py;",
+    "receipts.json"
+  ],
+  "pace": {
+    "allowance": {
+      "advisory": true,
+      "burn_multiple": 1.524768569252347,
+      "derived": 0.7069925375813493,
+      "drain_hours": 168.0,
+      "effective_limit": 0.7069925375813493,
+      "elapsed_fraction": 0.6427204887103175,
+      "elapsed_hours": 107.97704210333333,
+      "group": "codex-sub",
+      "limited_by": "allowance",
+      "observed_at": "2026-11-12T03:26:50+00:00",
+      "pace_multiple": 1.1,
+      "provider_ceiling": null,
+      "re_anchor": {
+        "allowance": 0.8294762540097277,
+        "lift_id": "codex-sub-1794082577-c029e5",
+        "multiple": 1.1,
+        "t_end": "2026-11-11T09:00:01Z",
+        "u_end": 0.77
+      },
+      "reason": null,
+      "remaining_budget": 0.020000000000000018,
+      "remaining_windows": null,
+      "resets_at": "2026-11-14T15:28:13Z",
+      "state": "observed",
+      "utilisation": 0.98,
+      "window_minutes": 10080
+    },
+    "bar": {
+      "bar": 0.9988159999999999,
+      "decided_by": "window",
+      "margin": -0.2613159999999999,
+      "name": "a-sole-station-keeps-its-lease",
+      "score": 0.7375,
+      "state": "observed",
+      "verdict": "hold",
+      "window_fill": 0.98
+    },
+    "clocks": {
+      "five_hour": {
+        "age_seconds": 0.351572,
+        "observed_at": "2026-11-12T03:26:50+00:00",
+        "period": "primary",
+        "resets_at": "2026-11-14T15:28:13Z",
+        "state": "observed",
+        "utilisation": 0.98,
+        "window_minutes": 10080
+      },
+      "seven_day": {
+        "age_seconds": null,
+        "observed_at": null,
+        "period": "seven_day",
+        "resets_at": null,
+        "state": "not_published",
+        "utilisation": null,
+        "window_minutes": null
+      }
+    },
+    "group": "codex-sub",
+    "hold": null,
+    "lane": "codex",
+    "lift_id": null,
+    "member": "codex",
+    "node": "a-sole-station-keeps-its-lease",
+    "policy": {
+      "drain_lead_hours": 12.0,
+      "pace_multiple": 1.1
+    },
+    "reason": null,
+    "recorded_at": "2026-11-12T03:26:50.351572+00:00",
+    "score": 0.7375,
+    "session": null,
+    "source": "recorded",
+    "state": "observed"
+  },
+  "picker_selection": {
+    "action": "fallback",
+    "backend": null,
+    "comment": "remaining proposals of the promotion-stall RCA; critical-work standing approval",
+    "confidence": null,
+    "effort": null,
+    "excluded": [],
+    "fallback_reason": "timeout in pick:capability",
+    "family": null,
+    "jev_model": "~typesafe/jev-latest",
+    "latency_ms": 5006.14,
+    "model": null,
+    "offered": [],
+    "probabilities": {},
+    "stage_ms": {
+      "budget-snapshot": 950.155,
+      "context-estimate": 81.204,
+      "records": 1383.707,
+      "verdict-inputs": 2627.024
+    }
+  },
+  "plan": "the-monitor-reads-each-fact-once",
+  "plan_impl_at_dispatch": 0.8606451612903225,
+  "plan_link": null,
+  "promoted_by": null,
+  "promoted_revision": "1fac8d89c0c6cc472a8bd45fb0d8d80ab551fb3e",
+  "release": {
+    "arms_kept": [],
+    "arms_logs_copied": [],
+    "arms_removed_paths": [],
+    "arms_withheld": "",
+    "process_signalled": false,
+    "process_withheld": "process is not alive",
+    "scratch_bytes": 0,
+    "scratch_host": "98dci4-clu-2023.iter.org",
+    "scratch_path": "/tmp/reckon-crew-scratch/r-20261112T032541772809-a-sole-station-keeps-its-lease",
+    "scratch_removed": true,
+    "scratch_removed_paths": [
+      {
+        "bytes": 0,
+        "path": "/tmp/reckon-crew-scratch/r-20261112T032541772809-a-sole-station-keeps-its-lease"
+      }
+    ],
+    "scratch_withheld": "",
+    "worktree_audit": {
+      "counts": {
+        "dirty": 0,
+        "disposable": 0,
+        "integrated": 0,
+        "live-referenced": 0,
+        "retained-for-resume": 0,
+        "unintegrated": 0
+      },
+      "worktrees": [
+        {
+          "available": false,
+          "detail": "tree is no longer available",
+          "path": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/1fb615a0-2801-4418-bbb4-c2914719e520/a-sole-station-keeps-its-lease",
+          "unavailable_state": "missing"
+        }
+      ]
+    },
+    "worktree_released": true
+  },
+  "resume_waiver": null,
+  "review": {
+    "absent": [],
+    "reviewed_base_sha": "5bb73fb01223153182a97cfe13e193050cdd204b",
+    "reviewed_head_sha": "1fac8d89c0c6cc472a8bd45fb0d8d80ab551fb3e",
+    "scores": {
+      "durability": 20,
+      "evidence": 19,
+      "fit": 20,
+      "goal_fidelity": 20,
+      "reuse": 20,
+      "scope_discipline": 20
+    },
+    "status": "parsed",
+    "total": 119
+  },
+  "review_tier": "full",
+  "role": "implement",
+  "route_mode": "explicit",
+  "run_id": "r-20261112T032541772809-a-sole-station-keeps-its-lease",
+  "scope_acceptances": null,
+  "scope_changed": false,
+  "section": "§30",
+  "session": "1fb615a0-2801-4418-bbb4-c2914719e520",
+  "session_harness": "codex",
+  "session_id": "01a1cdcd-d7b7-7ab2-862f-b257859d3d18",
+  "session_model": "gpt-6.1-sol",
+  "shadow_controlled": null,
+  "shadow_patch": "",
+  "spec_level": "guided",
+  "stalled": false,
+  "suite_delta": {
+    "added_failure_ids": [],
+    "after_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_sole_station_keeps_its_lease.py tests/test_staged_write_inventory.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_digest": null,
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261112T032541772809-a-sole-station-keeps-its-lease/logs/armed-head-coord.log",
+      "revision": "1fac8d89c0c6cc472a8bd45fb0d8d80ab551fb3e"
+    },
+    "baseline_measured_nothing": false,
+    "baseline_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_digest": null,
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261112T032541772809-a-sole-station-keeps-its-lease/logs/armed-base-coord.log",
+      "revision": "5bb73fb01223153182a97cfe13e193050cdd204b"
+    },
+    "failure_attribution": {},
+    "measured_by": "run",
+    "status": "clean",
+    "suite_command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_sole_station_keeps_its_lease.py tests/test_staged_write_inventory.py",
+    "waiver_reason": null
+  },
+  "tests_added": 1,
+  "throughput": {
+    "cumulative_cached_input_tokens": 9691648,
+    "cumulative_input_tokens": 19570445,
+    "detail": "turn tokens recorded, but no span was supplied to rate them",
+    "generated_tokens": 55603
+  },
+  "time_budget": "60m",
+  "tool_steps": 168.0,
+  "unplanned_reason": null,
+  "unreconciled_override": null,
+  "wall_seconds": 1432,
+  "watch_override": null,
+  "worker_exit": {
+    "attempt": 1,
+    "ended_during": "working",
+    "ended_pids": [],
+    "exit_code": 0,
+    "exited_at": "2026-11-12T03:52:34Z",
+    "last_record_type": "turn.completed",
+    "launched_at": "2026-11-12T03:29:07Z",
+    "recorded_by": "supervisor",
+    "removed_harness_caches": [
+      {
+        "bytes": 69740123,
+        "path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261112T032541772809-a-sole-station-keeps-its-lease/codex-home/cache"
+      },
+      {
+        "bytes": 28814443,
+        "path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261112T032541772809-a-sole-station-keeps-its-lease/codex-home/plugins"
+      }
+    ],
+    "run_id": "r-20261112T032541772809-a-sole-station-keeps-its-lease",
+    "signal": null,
+    "signal_name": null,
+    "stream_records_seen": 405,
+    "worker_pid": 2349069
+  },
+  "worker_seconds": 1432,
+  "worker_seconds_source": "wall_fallback",
+  "worktree_retention": null
+}

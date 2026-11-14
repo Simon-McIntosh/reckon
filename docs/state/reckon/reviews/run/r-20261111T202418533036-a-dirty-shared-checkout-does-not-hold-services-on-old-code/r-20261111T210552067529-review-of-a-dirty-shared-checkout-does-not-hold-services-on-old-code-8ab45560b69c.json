@@ -1,0 +1,82 @@
+{
+  "absent": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew/fleet_supervisor.py:2676",
+    "reckon/crew/fleet_supervisor.py:2432",
+    "reckon/crew/fleet_supervisor.py:2548",
+    "reckon/crew/fleet_supervisor.py:2559"
+  ],
+  "completed_at": "2026-11-11T21:26:04.976Z",
+  "dispatched_at": "2026-11-11T21:08:39Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "folded",
+      "node": "a-dirty-shared-checkout-does-not-hold-services-on-old-code",
+      "recorded_at": "2026-11-11T21:32:56.406815+00:00"
+    },
+    "1": {
+      "kind": "folded",
+      "node": "a-dirty-shared-checkout-does-not-hold-services-on-old-code",
+      "recorded_at": "2026-11-11T21:32:06.417450+00:00"
+    },
+    "2": {
+      "kind": "folded",
+      "node": "a-dirty-shared-checkout-does-not-hold-services-on-old-code",
+      "recorded_at": "2026-11-11T21:32:21.700416+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "reckon/crew/fleet_supervisor.py",
+      "line": "1608",
+      "text": "blocking: `replacement.image_pin = state.image_pin` copies a value that `_stop_locked` (:1736) has already cleared through `_release_image_pin`, so the replacement holds no lease on the published image it runs from; a concurrent `materialize_committed_tree` prune (checkout_trust.py:630-662, which refuses only an entry whose `.in-use` file holds a live flock) can then remove the code the service imports underneath it, which is exactly the failure the field comment at :1345-1348 says the lease prevents."
+    },
+    {
+      "file": "reckon/crew/fleet_supervisor.py",
+      "line": "2725",
+      "text": "non-blocking: the `elif verdict.moved and tree_dirty(): services.reload()` branch, the half that makes the periodic loop reach the declared services at all; no test exercises it (`grep -rn tree_dirty tests/` is empty), so deleting it leaves the whole suite green while reintroducing ten-hour-old service code."
+    },
+    {
+      "file": "tests/test_a_dirty_checkout_does_not_hold_services_on_old_code.py",
+      "line": "1",
+      "text": "non-blocking: the gate ran this new file plus the unrelated tests/test_staged_write_inventory.py at both arms, but 19 test files import `reckon.crew.fleet_supervisor` (for example tests/test_a_service_runs_the_code_main_carries.py:176 and tests/test_fleet_supervisor_runs_declared_services.py:169, which drive the renamed `_runs_recorded_code` replacement through `reload()`) and were run at neither arm, so the done_when's 'test files importing the changed modules add no failure against the base revision' is unmeasured; the gate also ran inside the fleet allocation rather than the all_debug partition the done_when names."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "reckon/crew/fleet_supervisor.py:2676 (the CLI entry into serve), :2432 (the supervision thread's periodic reload), and :2548/:2559 (the serve request loop's reload calls) are the production paths that reach the changed decision.",
+    "diff": "read commit by commit from 121eead60c to 8ab45560b6; d6d88e3156 changes reckon/crew/fleet_supervisor.py (+176/-24) and adds the 274-line test, and 8ab45560b6 adds the 38-line evidence fragment.",
+    "done_when": "the done_when names a base-revision reproduction, two new test cases and a negative control; logs/reproduction-base.log (2 failed, EXIT=1), logs/after-suite.log (53 passed, EXIT=0) and logs/negative-control.log (1 failed, EXIT=1 naming the dirty-checkout test) exist, but the 'test files importing the changed modules add no failure against base' arm ran only tests/test_staged_write_inventory.py.",
+    "goal": "the node goal is a declared service keeping main's committed head within one supervisor check whatever the shared working tree holds; reckon/crew/fleet_supervisor.py:1440-1530 `_code_decision` now compares the committed head's identity alone and returns restart on a moved head under a dirty tree.",
+    "manifest": "read; it reports status complete, commits d6d88e3156 and 8ab45560b6, both arm results, the negative control log path and the reproduction, and every figure it states matches the log I opened.",
+    "write_paths": "the manifest declares reckon/crew/fleet_supervisor.py, tests/test_a_dirty_checkout_does_not_hold_services_on_old_code.py and the evidence fragment; git diff --stat 121eead60c..8ab45560b6 lists exactly those three paths."
+  },
+  "justifications": {
+    "durability": "tests/test_a_dirty_checkout_does_not_hold_services_on_old_code.py:223 fails at the base revision (logs/reproduction-base.log) and the declared mutation reddens it, but no assertion reaches the serve() tree_dirty branch at :2725 nor the pin ordering at :1608, so those halves can regress with the suite green.",
+    "evidence": "the four gate logs sit under the run directory with revision, command and EXIT lines (after-suite.log: 53 passed / EXIT=0), but the done_when's importing-test arm ran only the unrelated tests/test_staged_write_inventory.py while 19 test files import fleet_supervisor, and the gate ran on the fleet allocation rather than the all_debug partition named.",
+    "fit": "fleet_supervisor.py:1443 _committed_image and :1534 _code_decision follow the surrounding private-method, one-line-log and docstring idiom, and no added name carries a plan, sprint or ticket identifier.",
+    "goal_fidelity": "fleet_supervisor.py:1505-1525 returns 'restart' whenever the recorded stamp differs from the committed head and the working tree is dirty, materializing an image at :1443, so a dirty tree no longer holds the service on old code; it loses points only because the image lease the change documents is not actually held (:1608).",
+    "reuse": "_committed_image (fleet_supervisor.py:1443) delegates to checkout_trust.materialize_committed_tree (checkout_trust.py:584) rather than forking it, and no existing owner exists for prefixing a published image onto a child service environment.",
+    "scope_discipline": "every path in git diff 121eead60c..8ab45560b6 is one of the three declared paths, and no plan, index or peer-owned file appears in the diff."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is a declared service keeping main's committed head within one supervisor check whatever the shared working tree holds; reckon/crew/fleet_supervisor.py:1440-1530 `_code_decision` now compares the committed head's identity alone and returns restart on a moved head under a dirty tree.\nVERDICT done_when: the done_when names a base-revision reproduction, two new test cases and a negative control; logs/reproduction-base.log (2 failed, EXIT=1), logs/after-suite.log (53 passed, EXIT=0) and logs/negative-control.log (1 failed, EXIT=1 naming the dirty-checkout test) exist, but the 'test files importing the changed modules add no failure against base' arm ran only tests/test_staged_write_inventory.py.\nVERDICT write_paths: the manifest declares reckon/crew/fleet_supervisor.py, tests/test_a_dirty_checkout_does_not_hold_services_on_old_code.py and the evidence fragment; git diff --stat 121eead60c..8ab45560b6 lists exactly those three paths.\nVERDICT manifest: read; it reports status complete, commits d6d88e3156 and 8ab45560b6, both arm results, the negative control log path and the reproduction, and every figure it states matches the log I opened.\nVERDICT diff: read commit by commit from 121eead60c to 8ab45560b6; d6d88e3156 changes reckon/crew/fleet_supervisor.py (+176/-24) and adds the 274-line test, and 8ab45560b6 adds the 38-line evidence fragment.\nCALL_SITES: reckon/crew/fleet_supervisor.py:2676, reckon/crew/fleet_supervisor.py:2432, reckon/crew/fleet_supervisor.py:2548, reckon/crew/fleet_supervisor.py:2559\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: fleet_supervisor.py:1505-1525 returns 'restart' whenever the recorded stamp differs from the committed head and the working tree is dirty, materializing an image at :1443, so a dirty tree no longer holds the service on old code; it loses points only because the image lease the change documents is not actually held (:1608).\nSCORE evidence: 12\nJUSTIFICATION evidence: the four gate logs sit under the run directory with revision, command and EXIT lines (after-suite.log: 53 passed / EXIT=0), but the done_when's importing-test arm ran only the unrelated tests/test_staged_write_inventory.py while 19 test files import fleet_supervisor, and the gate ran on the fleet allocation rather than the all_debug partition named.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every path in git diff 121eead60c..8ab45560b6 is one of the three declared paths, and no plan, index or peer-owned file appears in the diff.\nSCORE durability: 13\nJUSTIFICATION durability: tests/test_a_dirty_checkout_does_not_hold_services_on_old_code.py:223 fails at the base revision (logs/reproduction-base.log) and the declared mutation reddens it, but no assertion reaches the serve() tree_dirty branch at :2725 nor the pin ordering at :1608, so those halves can regress with the suite green.\nSCORE fit: 18\nJUSTIFICATION fit: fleet_supervisor.py:1443 _committed_image and :1534 _code_decision follow the surrounding private-method, one-line-log and docstring idiom, and no added name carries a plan, sprint or ticket identifier.\nSCORE reuse: 18\nJUSTIFICATION reuse: _committed_image (fleet_supervisor.py:1443) delegates to checkout_trust.materialize_committed_tree (checkout_trust.py:584) rather than forking it, and no existing owner exists for prefixing a published image onto a child service environment.\nFINDING reckon/crew/fleet_supervisor.py:1608 blocking: `replacement.image_pin = state.image_pin` copies a value that `_stop_locked` (:1736) has already cleared through `_release_image_pin`, so the replacement holds no lease on the published image it runs from, so a concurrent `materialize_committed_tree` prune (checkout_trust.py:630-662) can remove the code the service imports underneath it, which is exactly the failure the field comment at :1345-1348 says the lease prevents.\nFINDING reckon/crew/fleet_supervisor.py:2725 non-blocking: the `elif verdict.moved and tree_dirty(): services.reload()` branch, the half that makes the periodic loop reach the declared services at all, has no test, so deleting it leaves the whole suite green while reintroducing ten-hour-old service code.\nFINDING tests/test_a_dirty_checkout_does_not_hold_services_on_old_code.py:1 non-blocking: the gate ran this new file plus the unrelated tests/test_staged_write_inventory.py at both arms, but 19 test files import fleet_supervisor and were run at neither arm, so the done_when's 'test files importing the changed modules add no failure against the base revision' is unmeasured.\n",
+  "review_run_id": "r-20261111T210552067529-review-of-a-dirty-shared-checkout-does-not-hold-services-on-old-code-8ab45560b69c",
+  "reviewed_base_sha": "121eead60cb49209baeef96c6afd48072001e103",
+  "reviewed_head_sha": "8ab45560b69cc5565b647f3151f1a15bdc3c0449",
+  "reviewed_run_id": "r-20261111T202418533036-a-dirty-shared-checkout-does-not-hold-services-on-old-code",
+  "scores": {
+    "durability": 13,
+    "evidence": 12,
+    "fit": 18,
+    "goal_fidelity": 17,
+    "reuse": 18,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-11T22:00:00+00:00",
+  "total": 97
+}

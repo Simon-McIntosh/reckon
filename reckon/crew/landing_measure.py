@@ -38,6 +38,7 @@ from __future__ import annotations
 import ast
 import contextlib
 import hashlib
+import json
 import math
 import os
 import re
@@ -80,6 +81,13 @@ BOUND_MULTIPLE = 2.0
 #: A line a failing test runner reports its failing id on.
 _FAILED_ID = re.compile(r"^(?:FAILED|ERROR)[ \t]+(\S+)", re.MULTILINE)
 
+#: The receipt a partitioned arm's own EXIT trap prints. The scheduler writes
+#: lines of its own after it — an ``srun: error: … Exited with exit code N``
+#: line, for one — so the receipt is read on its own line and not as the log's
+#: last one. The last match wins: a line the suite itself printed earlier is
+#: superseded by the trap's own, which is written after everything the arm ran.
+_EXIT_RECEIPT = re.compile(r"^EXIT=(\d+)[ \t]*$", re.MULTILINE)
+
 #: The token an armed command carries in place of the node's own test files.
 _SCOPED_PLACEHOLDER = "{node_test_files}"
 
@@ -88,6 +96,165 @@ _SCOPED_PLACEHOLDER = "{node_test_files}"
 _ASSIGNMENT = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*=")
 
 _RUN = subprocess.run
+_SCHEDULER_RUN = subprocess.run
+
+# The limit covers whole measurements, including their isolated re-runs.
+MEASUREMENT_WIDTH_ENV = "RECKON_LANDING_MEASUREMENT_WIDTH"
+DEFAULT_MEASUREMENT_WIDTH = 2
+_ACTIVE_JOB_STATES = frozenset(
+    {"PENDING", "RUNNING", "CONFIGURING", "COMPLETING", "SUSPENDED", "REQUEUED"}
+)
+
+
+class MeasurementJobError(ValueError):
+    """A terminal scheduler job cannot supply evidence for its landing."""
+
+
+def measurement_width() -> int:
+    """The number of scheduler measurements the lander may have in flight."""
+    try:
+        return max(1, int(os.environ.get(MEASUREMENT_WIDTH_ENV, "2")))
+    except ValueError:
+        return DEFAULT_MEASUREMENT_WIDTH
+
+
+def submit_measurement(
+    request_path: Path, *, config: Mapping[str, Any], bound: float
+) -> dict[str, Any]:
+    """Submit a whole measurement and return its durable scheduler identity."""
+    import sys
+
+    request = json.loads(request_path.read_text(encoding="utf-8"))
+    log = request_path.parent / "job.log"
+    source = Path(__file__).resolve().parents[2]
+    invocation = shlex.join(
+        [
+            sys.executable,
+            "-c",
+            (
+                "from pathlib import Path; import sys; "
+                "from reckon.crew.queue_landing import run_measurement_request; "
+                "run_measurement_request(Path(sys.argv[1]))"
+            ),
+            str(request_path),
+        ]
+    )
+    script = f"""set -euo pipefail
+scratch=
+trap 'status=$?; if [ -n "$scratch" ]; then rm -rvf "$scratch"; fi; printf "EXIT=%s\\n" "$status"' EXIT
+export TMPDIR={NODE_LOCAL_TEMP_ROOT}
+scratch=$(mktemp -d "$TMPDIR/$USER-landing-job-XXXXXX")
+export TMPDIR="$scratch" RECKON_WORKER_SCRATCH_ROOT="$scratch"
+export PYTHONPATH={shlex.quote(str(source))}
+{invocation}
+"""
+    landing = config.get("landing") or {}
+    selected, argv, environment = partition_submission(
+        script=script,
+        partition=str(landing.get("measure_partition") or "all_debug"),
+        long_partition=str(landing.get("measure_long_partition") or "rigel"),
+        bound_seconds=bound,
+        chdir=Path(request["pointer"]["repo"]),
+        log_path=log,
+    )
+    argv.remove("--wait")
+    finished = _SCHEDULER_RUN(
+        argv, capture_output=True, text=True, check=False, timeout=30, env=environment
+    )
+    match = re.fullmatch(r"(\d+)(?:;[^\n]+)?\n?", finished.stdout or "")
+    if finished.returncode or not match:
+        raise ValueError(
+            f"measurement submission failed; log {log}: "
+            f"{finished.stderr or finished.stdout or finished.returncode}"
+        )
+    return {
+        "job_id": match.group(1),
+        "log_path": str(log),
+        "request_path": str(request_path),
+        "result_path": str(request_path.parent / "result.json"),
+        "partition": selected,
+        "bound_seconds": bound,
+        "submitted_at": time.time(),
+        "status": "pending",
+        "head": request["head"],
+        "primary": request["primary"],
+        "command": request["pointer"]["suite_command"],
+    }
+
+
+def measurement_job_state(job: Mapping[str, Any]) -> str:
+    """Read one scheduler observation; an absent accounting row is unknown."""
+    job_id = str(job["job_id"])
+    for argv in (
+        ["squeue", "-h", "-j", job_id, "-o", "%T"],
+        ["sacct", "-n", "-X", "-j", job_id, "--format=State", "--parsable2"],
+    ):
+        finished = _SCHEDULER_RUN(
+            argv, capture_output=True, text=True, check=False, timeout=10
+        )
+        if finished.returncode:
+            raise ValueError(
+                f"job {job_id}, log {job['log_path']}: scheduler query failed: "
+                f"{finished.stderr or finished.stdout}"
+            )
+        states = (finished.stdout or "").strip().splitlines()
+        if states:
+            return states[0].strip().split("|")[0].split()[0].rstrip("+")
+    return "UNKNOWN"
+
+
+def active_measurement_jobs(pointers: Iterable[Mapping[str, Any]]) -> set[str]:
+    """Count scheduler work even when its delivery currently waits on review."""
+    active = set()
+    for pointer in pointers:
+        job = pointer.get("landing_measurement_job")
+        if not isinstance(job, Mapping) or job.get("status") != "pending":
+            continue
+        try:
+            state = measurement_job_state(job)
+        except (OSError, ValueError, subprocess.TimeoutExpired):
+            state = "UNKNOWN"
+        if state in _ACTIVE_JOB_STATES or state == "UNKNOWN":
+            active.add(str(pointer["run_id"]))
+    return active
+
+
+def read_measurement_job(job: Mapping[str, Any]) -> Measurement | None:
+    """A terminal job needs both a successful receipt and a matching result."""
+    job_id, log_path = str(job["job_id"]), str(job["log_path"])
+    state = measurement_job_state(job)
+    if state in _ACTIVE_JOB_STATES or state == "UNKNOWN":
+        return None
+    if state != "COMPLETED":
+        raise MeasurementJobError(
+            f"measurement job {job_id} ended {state}; log {log_path}"
+        )
+    try:
+        output = Path(log_path).read_text(encoding="utf-8")
+        record = json.loads(Path(str(job["result_path"])).read_text(encoding="utf-8"))
+    except (OSError, ValueError, TypeError) as exc:
+        raise MeasurementJobError(
+            f"measurement job {job_id} receipt unreadable; log {log_path}: {exc}"
+        ) from exc
+    error = ""
+    if not re.search(r"^EXIT=0\n?\Z", output, re.MULTILINE):
+        error = "the job has no terminal EXIT=0 receipt"
+    elif not isinstance(record, Mapping):
+        error = "the job result is not a measurement record"
+    if error:
+        raise MeasurementJobError(
+            f"measurement job {job_id} receipt unreadable; log {log_path}: {error}"
+        )
+    measured = Measurement.from_dict(record)
+    if measured.head != job["head"] or measured.command != job["command"]:
+        error = "the job result names a different delivery"
+    elif measured.population.get("main_sha") != job["primary"]:
+        error = "the job result names a different primary"
+    if error:
+        raise MeasurementJobError(
+            f"measurement job {job_id} receipt unreadable; log {log_path}: {error}"
+        )
+    return measured
 
 
 @dataclass(frozen=True)
@@ -99,6 +266,10 @@ class Arm:
     failure_ids: tuple[str, ...]
     log_path: str = ""
     timed_out: bool = False
+    #: Why a submitted arm's log could not be read, when the reason is known:
+    #: a log with no receipt, or one whose receipt disagrees with the status
+    #: the scheduler returned. Empty when the arm simply has no status.
+    unreadable_reason: str = ""
     #: Wall-clock seconds the arm took, and how many files its population
     #: read. The pair is what a later arm's bound is sized from, so an arm
     #: that took 900 s is not judged again under a bound that ignores it.
@@ -140,6 +311,11 @@ class Measurement:
     suite: dict[str, Any]
     population: dict[str, Any]
     isolated: dict[str, dict[str, list[bool]]] = field(default_factory=dict)
+    #: The run's scope as its delivered diff implies it: the test files the
+    #: suite runs, the importers the population measures and the production
+    #: neighbourhood a review reads. Empty when the run declared its own and
+    #: kept them.
+    scope: dict[str, Any] = field(default_factory=dict)
     real: tuple[str, ...] = ()
     unreadable: str = ""
     head: str = ""
@@ -157,6 +333,7 @@ class Measurement:
             "execution": self.execution,
             "suite": self.suite,
             "population": self.population,
+            "scope": self.scope,
             "isolated": self.isolated,
             "real": list(self.real),
             "flakes": [
@@ -200,6 +377,7 @@ class Measurement:
                 if isinstance(arms, Mapping)
             },
             real=tuple(str(test_id) for test_id in record.get("real") or ()),
+            scope=dict(record.get("scope") or {}),
             unreadable=str(record.get("unreadable") or ""),
             head=str(record.get("head") or ""),
             project=str(record.get("project") or ""),
@@ -545,9 +723,101 @@ def _arm(
         int(finished.returncode),
         failing_ids(output),
         str(log_path),
+        unreadable_reason=str(getattr(finished, "unreadable_reason", "") or ""),
         elapsed_seconds=elapsed,
         file_count=file_count,
     )
+
+
+_LONG_PARTITION_BOUND_SECONDS = 3600.0
+
+
+def partition_for_bound(
+    partition: str,
+    long_partition: str,
+    bound_seconds: float,
+) -> str:
+    """The partition a measure runs on, given its bound.
+
+    A bound past an hour takes the long partition, because the short
+    partitions end a job that outlives them rather than letting it finish.
+    """
+    if bound_seconds > _LONG_PARTITION_BOUND_SECONDS:
+        return long_partition or "rigel"
+    return partition
+
+
+def partition_submission(
+    *,
+    script: str,
+    partition: str,
+    long_partition: str,
+    bound_seconds: float,
+    chdir: Path,
+    log_path: Path,
+) -> tuple[str, list[str], dict[str, str]]:
+    """The one batch submission form every partitioned measure uses.
+
+    The argv and the environment are built here and nowhere else, so a caller
+    submitting to a measure partition cannot drift from the form the landing
+    measure uses. ``sbatch --wait`` submits a job of its own and blocks until
+    that job ends; the job runs the script as an ``srun`` step inside itself,
+    because a bare ``srun`` from the fleet node stays inside the fleet
+    allocation whatever partition it names. The job's ``--time`` is the
+    caller's bound rendered as ``HH:MM:SS``, so the scheduler ends an overrun
+    rather than leaving it to a client-side timeout, and the caller's
+    scheduler variables are removed so the job is not attached to whatever
+    allocation the submission came from.
+
+    The selected partition is returned beside them, because a caller that
+    reports where its measure ran needs the partition the bound chose rather
+    than the one that was declared for short bounds.
+    """
+    selected = partition_for_bound(partition, long_partition, bound_seconds)
+    seconds = max(1, math.ceil(bound_seconds))
+    hours, remainder = divmod(seconds, 3600)
+    minutes, seconds = divmod(remainder, 60)
+    bound = f"{hours:02d}:{minutes:02d}:{seconds:02d}"
+    step = (
+        shlex.join(
+            [
+                "srun",
+                f"--partition={selected}",
+                f"--time={bound}",
+                "--ntasks=1",
+                "bash",
+                "-c",
+                script,
+            ]
+        )
+        + " > "
+        + shlex.quote(str(log_path))
+        + " 2>&1"
+    )
+    argv = [
+        "sbatch",
+        "--wait",
+        "--parsable",
+        f"--partition={selected}",
+        f"--time={bound}",
+        "--nodes=1",
+        "--ntasks=1",
+        f"--cpus-per-task={POPULATION_WORKERS}",
+        "--mem=32G",
+        f"--output={log_path}.scheduler",
+        f"--error={log_path}.scheduler",
+        f"--chdir={chdir}",
+        "--wrap",
+        step,
+    ]
+    environment = {
+        key: value
+        for key, value in os.environ.items()
+        if not key.startswith(("SLURM_", "SBATCH_"))
+    }
+    environment["RECKON_ALLOW_NESTED_LAUNCH"] = "1"
+    environment["TMPDIR"] = NODE_LOCAL_TEMP_ROOT
+    return selected, argv, environment
 
 
 def _partition_runner(
@@ -579,11 +849,6 @@ def _partition_runner(
     def run(command, **options):
         revision = base_sha if Path(options["cwd"]) == base_tree else head_sha
         timeout = options["timeout"]
-        selected = long_partition if timeout > 3600 else partition
-        seconds = max(1, math.ceil(timeout))
-        hours, remainder = divmod(seconds, 3600)
-        minutes, seconds = divmod(remainder, 60)
-        bound = f"{hours:02d}:{minutes:02d}:{seconds:02d}"
         log = Path(options.pop("arm_log_path")).resolve()
         scratch_id = hashlib.sha256(str(log).encode()).hexdigest()[:12]
         quote = shlex.quote
@@ -620,47 +885,14 @@ set +e
 status=$?
 exit "$status"
 """
-        # The batch job owns the step: srun from the fleet itself would stay
-        # inside the fleet allocation even when it names a different partition.
-        step = (
-            shlex.join(
-                [
-                    "srun",
-                    f"--partition={selected}",
-                    f"--time={bound}",
-                    "--ntasks=1",
-                    "bash",
-                    "-c",
-                    script,
-                ]
-            )
-            + " > "
-            + quote(str(log))
-            + " 2>&1"
+        _selected, argv, env = partition_submission(
+            script=script,
+            partition=partition,
+            long_partition=long_partition,
+            bound_seconds=timeout,
+            chdir=shared_repo,
+            log_path=log,
         )
-        argv = [
-            "sbatch",
-            "--wait",
-            "--parsable",
-            f"--partition={selected}",
-            f"--time={bound}",
-            "--nodes=1",
-            "--ntasks=1",
-            f"--cpus-per-task={POPULATION_WORKERS}",
-            "--mem=32G",
-            f"--output={log}.scheduler",
-            f"--error={log}.scheduler",
-            f"--chdir={shared_repo}",
-            "--wrap",
-            step,
-        ]
-        env = {
-            k: v
-            for k, v in os.environ.items()
-            if not k.startswith(("SLURM_", "SBATCH_"))
-        }
-        env["RECKON_ALLOW_NESTED_LAUNCH"] = "1"
-        env["TMPDIR"] = NODE_LOCAL_TEMP_ROOT
         log.write_text("")
         try:
             finished = runner(
@@ -698,16 +930,29 @@ exit "$status"
         output = log.read_text() if log.exists() else ""
         # Only the arm receipt can report a test exit. A failed submission or a
         # job killed before its receipt is unreadable even if stdout looks green.
-        receipt = re.search(r"^EXIT=(\d+)\n?\Z", output, re.MULTILINE)
-        status = int(receipt.group(1)) if receipt else 3
-        if status != finished.returncode:
+        # The scheduler appends lines of its own to the job's log after the
+        # arm's trap has printed the receipt, so the receipt is read on its own
+        # line rather than as the log's last one; the last such line is the
+        # trap's, since the trap prints after everything the arm itself ran.
+        receipts = _EXIT_RECEIPT.findall(output)
+        status = int(receipts[-1]) if receipts else 3
+        reason = ""
+        if not receipts:
+            reason = "carries no exit receipt"
+        elif status != finished.returncode:
+            reason = (
+                f"reported exit {status} in its receipt while the job returned "
+                f"{finished.returncode}"
+            )
             status = 3
-        return subprocess.CompletedProcess(
+        returned = subprocess.CompletedProcess(
             command,
             status,
             output or f"{finished.stdout or ''}{finished.stderr or ''}",
             "",
         )
+        returned.unreadable_reason = reason
+        return returned
 
     return run
 
@@ -914,6 +1159,204 @@ def measure_run(
         head=head_sha,
         project=project,
     )
+
+
+def arm_observation(
+    command: str, revision: str, arm: Arm, *, measured_by: str = "landing"
+) -> dict[str, Any]:
+    """One arm as the suite-observation record a run's manifest carries.
+
+    The shape is the one promotion already reads for ``baseline_suite`` and
+    ``after_suite``, so an arm the landing measured is judged by the same code
+    and the same refusal as an arm the run recorded.
+    """
+    return {
+        "revision": revision,
+        "command": command,
+        "exit_status": arm.exit_status,
+        "completed": arm.exit_status in (0, 1),
+        "failure_count": len(arm.failure_ids),
+        "failure_ids": list(arm.failure_ids),
+        "log_path": arm.log_path,
+        "measured_by": measured_by,
+    }
+
+
+def armed_observations(
+    *,
+    command: str,
+    tree: Path,
+    base_tree: Path,
+    base_sha: str,
+    head_sha: str,
+    logs_dir: Path,
+    test_files: Iterable[str] = (),
+    run=None,
+    timeout: float = DEFAULT_MEASURE_TIMEOUT_SECONDS,
+    project: str = "",
+    config: Mapping[str, Any] | None = None,
+) -> dict[str, Any]:
+    """Run the armed command at both revisions and return each as an observation.
+
+    A run whose recorded arms are missing, were recorded at another revision, or
+    name another command has not produced the evidence its own landing needs, so
+    the landing takes the reading itself: the armed command is what promotion
+    runs, and the arms it produces here are that evidence, taken at the base and
+    the head the landing needs rather than at whatever the run happened to
+    record. Each arm carries ``measured_by: landing`` so a later reader can tell
+    it from one the run recorded.
+
+    A configured measurement partition submits each arm as its own job, the same
+    way :func:`measure_run` does, so a mismatch costs a queue wait rather than a
+    suite run on the node the landing is executing on. The return value carries
+    ``unreadable`` instead of a pair when the command cannot be measured at all.
+    """
+    runner = run or _RUN
+    node_tests = [str(path).strip() for path in test_files if str(path).strip()]
+    environment, argv = armed_argv(command, node_tests)
+    if not argv:
+        return {"unreadable": "the run armed no suite command"}
+    if _SCOPED_PLACEHOLDER in (command or "") and not node_tests:
+        return {
+            "unreadable": (
+                "the armed command measures the node's own test files, "
+                "and the node names none"
+            )
+        }
+    if config is None:
+        from reckon import flight
+
+        config = flight.resolve(project or None, checkout_path=str(tree)).config
+    landing = config.get("landing") or {}
+    partition = str(landing.get("measure_partition") or "")
+    if partition:
+        runner = _partition_runner(
+            runner,
+            repo=tree,
+            base_tree=base_tree,
+            base_sha=base_sha,
+            head_sha=head_sha,
+            partition=partition,
+            long_partition=str(landing.get("measure_long_partition") or "rigel"),
+            test_files=node_tests,
+        )
+        runner.partitioned = True
+    _carry_missing_tests(base_tree, tree, node_tests)
+    logs = Path(logs_dir)
+    base_arm = _arm(
+        argv,
+        base_tree,
+        logs / "armed-baseline.log",
+        runner,
+        timeout,
+        environment,
+        file_count=len(node_tests),
+    )
+    head_arm = _arm(
+        argv,
+        tree,
+        logs / "armed-after.log",
+        runner,
+        timeout,
+        environment,
+        file_count=len(node_tests),
+    )
+    unreadable = ""
+    for name, arm in (("baseline", base_arm), ("after", head_arm)):
+        if not arm.readable and not unreadable:
+            unreadable = (
+                f"the measured {name} arm exceeded its {timeout:g}s bound"
+                if arm.timed_out
+                else f"the measured {name} arm {arm.unreadable_reason}"
+                if arm.unreadable_reason
+                else f"the measured {name} arm did not run"
+            )
+    if unreadable:
+        return {"unreadable": unreadable}
+    return {
+        "baseline_suite": arm_observation(command, base_sha, base_arm),
+        "after_suite": arm_observation(command, head_sha, head_arm),
+    }
+
+
+def control_mutation_observation(
+    *,
+    command: str,
+    tree: Path,
+    base_tree: Path,
+    base_sha: str,
+    logs_dir: Path,
+    test_files: Iterable[str] = (),
+    run=None,
+    timeout: float = DEFAULT_MEASURE_TIMEOUT_SECONDS,
+    project: str = "",
+    config: Mapping[str, Any] | None = None,
+) -> dict[str, Any]:
+    """Run a node's own tests over the tree its repair is absent from.
+
+    A node declares the mutation its check must fail against, and running that
+    check over the unfixed base is the mutation performed: the node's tests are
+    carried into a checkout of the run's base revision and run there, so a case
+    that measures a restored guard fails exactly where the guard is missing.
+    The failing ids are the control's own, judged by the same reader promotion
+    uses for a log the run recorded.
+
+    The run is submitted to the configured measurement partition the way an
+    armed arm is, so taking the reading costs a queue wait rather than a suite
+    run on the landing host. The return value carries ``unreadable`` when the
+    command cannot be measured at all.
+    """
+    runner = run or _RUN
+    node_tests = [str(path).strip() for path in test_files if str(path).strip()]
+    environment, argv = armed_argv(command, node_tests)
+    if not argv:
+        return {"unreadable": "the run armed no suite command"}
+    if _SCOPED_PLACEHOLDER in (command or "") and not node_tests:
+        return {
+            "unreadable": (
+                "the armed command measures the node's own test files, "
+                "and the node names none"
+            )
+        }
+    if config is None:
+        from reckon import flight
+
+        config = flight.resolve(project or None, checkout_path=str(tree)).config
+    landing = config.get("landing") or {}
+    partition = str(landing.get("measure_partition") or "")
+    if partition:
+        runner = _partition_runner(
+            runner,
+            repo=tree,
+            base_tree=base_tree,
+            base_sha=base_sha,
+            head_sha=base_sha,
+            partition=partition,
+            long_partition=str(landing.get("measure_long_partition") or "rigel"),
+            test_files=node_tests,
+        )
+        runner.partitioned = True
+    _carry_missing_tests(base_tree, tree, node_tests)
+    arm = _arm(
+        argv,
+        base_tree,
+        Path(logs_dir) / "control-mutation.log",
+        runner,
+        timeout,
+        environment,
+        file_count=len(node_tests),
+    )
+    if not arm.readable:
+        return {
+            "unreadable": (
+                f"the control mutation exceeded its {timeout:g}s bound"
+                if arm.timed_out
+                else f"the control mutation {arm.unreadable_reason}"
+                if arm.unreadable_reason
+                else "the control mutation did not run"
+            )
+        }
+    return {"control_suite": arm_observation(command, base_sha, arm)}
 
 
 def _fails(

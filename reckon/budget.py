@@ -49,6 +49,7 @@ rather than a zero, which is the first rule above applied to a second quantity.
 
 from __future__ import annotations
 
+import json
 from collections.abc import Callable, Iterable, Mapping, Sequence
 from dataclasses import dataclass, replace
 from datetime import UTC, datetime, timedelta
@@ -56,7 +57,7 @@ from pathlib import Path
 from types import SimpleNamespace
 from typing import Any
 
-from reckon import _backends, crew, ledger
+from reckon import _backends, crew, file_memo, ledger
 from reckon._timestamps import parse_utc
 from reckon.crew import budget_group, window_reading
 from reckon.crew import reserve as reserve_module
@@ -666,21 +667,48 @@ def _readings(
         # trailing window, and reading it here would cost the picker a second
         # decode of a store it has already read once for the same pick.
         return found
+
+    def collect() -> list[_Reading]:
+        return _ledger_readings(project, root=root, config=config, records=records)
+
     try:
-        data, _version = (
-            ledger.load(project, root)
-            if records is None
-            else ledger.indexed_headers(project, root)
-        )
-        records = data["runs"] if records is None else records
-        members = {
-            str(item.get("id") or ""): str(item.get("harness") or "")
-            for item in data.get("members", ())
-            if item.get("id") and item.get("harness")
-        }
+        generation = ledger.ledger_generation(project) if records is None else None
+        if generation is None:
+            found.extend(collect())
+        else:
+            # Attribution and account-surface opt-in depend on backend settings.
+            # The ledger stamp excludes the index's identity, which a read can move.
+            key = (
+                generation,
+                json.dumps(ledger.index_state_stamp(project, root), sort_keys=True),
+                repr((config or {}).get("backends")),
+            )
+            found.extend(file_memo.memoized_key("budget_readings", key, collect))
     except ledger.LedgerError:
-        records = []
-        members = {}
+        pass
+    return found
+
+
+def _ledger_readings(
+    project: str,
+    *,
+    root: str | Path | None,
+    config: Mapping[str, Any] | None,
+    records: Iterable[Mapping[str, Any]] | None,
+) -> list[_Reading]:
+    """Derive historical readings independently of the moving live pointers."""
+    found: list[_Reading] = []
+    data, _version = (
+        ledger.load(project, root)
+        if records is None
+        else ledger.indexed_headers(project, root)
+    )
+    records = data["runs"] if records is None else records
+    members = {
+        str(item.get("id") or ""): str(item.get("harness") or "")
+        for item in data.get("members", ())
+        if item.get("id") and item.get("harness")
+    }
     for record in records:
         stamp = record.get("completed_at")
         when = _parse_stamp(stamp)

@@ -1,13 +1,17 @@
 # ruff: noqa: I001, UP035
 from __future__ import annotations
 
+import hashlib
+import json
 import subprocess
+from contextlib import suppress
 from pathlib import Path
 from typing import Any, Callable, Mapping, Sequence
 
 from reckon import review_tiers
 from reckon.crew import runs
 from reckon.crew import review as review_module
+from reckon.crew.resume import hold_reason as delivery_hold_reason
 from reckon.crew.node import (
     CrewError,
 )
@@ -355,6 +359,82 @@ def _remote_unreadable_reason(
     )
 
 
+def _acceptance_inputs(
+    pointer: Mapping[str, Any],
+    head: str,
+    tree: Path | None,
+    review: Mapping[str, Any] | None,
+    gate: Mapping[str, Any] | None,
+    commits: Sequence[str],
+) -> str:
+    """Identify the run, review and gate judged, without observing the remote."""
+    from .recovery_memo import _file_identity, _worktree_head_identity
+
+    fields = (
+        "run_id",
+        "project",
+        "repo",
+        "worktree",
+        "base_sha",
+        "node",
+        "attempt",
+        "attempt_kind",
+        "phase",
+        "pid",
+        "pid_start_time",
+        "session_id",
+        "backend",
+        "agent",
+        "log_path",
+        "resume_launch_in_flight",
+        "delivery_hold",
+        "manifest_path",
+    )
+    checkout = str(pointer.get("repo") or "")
+    manifest = str(pointer.get("manifest_path") or "")
+    gate_log = str((gate or {}).get("log_path") or "")
+    inputs = {
+        "pointer": {field: pointer.get(field) for field in fields},
+        "head": head,
+        "tree_head": _worktree_head_identity(tree),
+        "checkout_head": _worktree_head_identity(Path(checkout)) if checkout else "",
+        "checkout_exists": Path(checkout).is_dir() if checkout else False,
+        "review": review,
+        "gate": gate,
+        "commits": list(commits),
+        "manifest": _file_identity(manifest) if manifest else "",
+        "gate_log": _file_identity(gate_log) if gate_log else "",
+    }
+    return hashlib.sha256(
+        json.dumps(inputs, sort_keys=True, default=str).encode()
+    ).hexdigest()
+
+
+def _acceptance_remote_inputs(checkout: Path | None, commits: Sequence[str]) -> list:
+    """The remote tip and commit availability that can release a refusal.
+
+    Read the remote even when a refusal is cached: a push from another checkout
+    moves no local ref, but makes an unmerged run eligible for acceptance.
+    """
+    from reckon.crew import merge
+
+    if checkout is None or not checkout.is_dir() or not commits:
+        return []
+    branch, detail = _checked_out_branch(checkout)
+    remote_head, _route, remote_detail = (
+        merge._read_remote_head(checkout, "origin", branch)
+        if branch
+        else (None, None, "")
+    )
+    return [
+        branch,
+        detail,
+        remote_head,
+        remote_detail,
+        [_names_a_commit(checkout, commit) for commit in commits],
+    ]
+
+
 def accept_clean_review(
     pointer: Mapping[str, Any],
     *,
@@ -365,8 +445,9 @@ def accept_clean_review(
     When a review run completes with a stored record that is complete and
     carries no blocking finding, the reviewed run is promoted without a
     coordinator, whatever its scores: the non-blocking findings it
-    does carry are recorded as exempted, the commits its manifest names must
-    already be ancestors of the repository's head, the run's own recorded gate
+    does carry are recorded as deferred, by the writer the landing path uses, the
+    commits its manifest names must already be ancestors of the repository's head,
+    the run's own recorded gate
     must already have passed, the gate is re-run against the repository's
     current head with the run merged, and on all of those passing the run is
     promoted with ``promoted_by: review-acceptance`` on its ledger row.
@@ -382,6 +463,7 @@ def accept_clean_review(
     nothing to add. A dict is returned whenever the run was eligible and an
     outcome was reached, so the sweep records why a refusal did not promote.
     """
+    pointer = {**pointer, **runs.read_dispatch_detail(pointer)}
     run_id = str(pointer.get("run_id") or "")
     project = str(pointer.get("project") or "")
     if not run_id or not project:
@@ -397,19 +479,58 @@ def accept_clean_review(
         return None
     checkout_value = str(pointer.get("repo") or "").strip()
     checkout = Path(checkout_value).expanduser() if checkout_value else None
-    if checkout is None or not checkout.is_dir():
-        return {
-            "run_id": run_id,
-            "accepted": False,
-            "reason": "the run names no repository to verify the merged gate against",
-        }
     gate_check, commits = _recorded_gate_passed(pointer)
+    inputs = _acceptance_inputs(pointer, head, tree, review, gate_check, commits)
+    refusal_key = [inputs, _acceptance_remote_inputs(checkout, commits)]
+    memo_path = runs.run_dir(run_id) / "acceptance-refusal.json"
+    try:
+        memo = json.loads(memo_path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        memo = None
+    if (
+        isinstance(memo, dict)
+        and memo.get("inputs") == refusal_key
+        and isinstance(memo.get("refusal"), dict)
+        and memo["refusal"].get("accepted") is False
+    ):
+        return {**memo["refusal"], "unchanged": True}
+
+    def refuse(result: dict[str, Any]) -> dict[str, Any]:
+        # A cache that cannot be written costs another judgement, not a
+        # different acceptance verdict.
+        with suppress(OSError):
+            runs._write_json(memo_path, {"inputs": refusal_key, "refusal": result})
+        return result
+
+    # A coordinator's hold defers the promotion however clean the review reads:
+    # the acceptance sweep is the automatic door, and the coordinator holding
+    # the run is exactly the reader it must not overtake.
+    hold_reason = delivery_hold_reason(pointer, head)
+    if hold_reason:
+        return refuse(
+            {
+                "run_id": run_id,
+                "accepted": False,
+                "reason": f"the run is held from automatic promotion — {hold_reason}",
+                "held": True,
+            }
+        )
+    if checkout is None or not checkout.is_dir():
+        return refuse(
+            {
+                "run_id": run_id,
+                "accepted": False,
+                "reason": "the run names no repository to verify the merged gate against",
+            }
+        )
     if gate_check is None:
-        return {
-            "run_id": run_id,
-            "accepted": False,
-            "reason": "the run records no passing gate to re-run at the merged head",
-        }
+        return refuse(
+            {
+                "run_id": run_id,
+                "accepted": False,
+                "reason": "the run records no passing gate to re-run at the merged head",
+            }
+        )
     # The run's work must already be on the branch the remote carries. A run
     # reaching acceptance straight after its review has not been merged, so a
     # gate re-run here would verify a tree the change is not in and record a
@@ -418,22 +539,26 @@ def accept_clean_review(
     # so acceptance stands down naming the cause rather than promoting blind.
     missing, remote_refusal = _commits_missing_from(checkout, commits)
     if remote_refusal is not None:
-        return {
-            "run_id": run_id,
-            "accepted": False,
-            "reason": _remote_unreadable_reason(remote_refusal, commits),
-            "remote_cause": remote_refusal.get("cause"),
-        }
+        return refuse(
+            {
+                "run_id": run_id,
+                "accepted": False,
+                "reason": _remote_unreadable_reason(remote_refusal, commits),
+                "remote_cause": remote_refusal.get("cause"),
+            }
+        )
     if missing:
-        return {
-            "run_id": run_id,
-            "accepted": False,
-            "reason": (
-                "the run's commits are not on the primary branch yet; a "
-                "coordinator merges it: " + ", ".join(sha[:12] for sha in missing)
-            ),
-            "unmerged_commits": list(missing),
-        }
+        return refuse(
+            {
+                "run_id": run_id,
+                "accepted": False,
+                "reason": (
+                    "the run's commits are not on the primary branch yet; a "
+                    "coordinator merges it: " + ", ".join(sha[:12] for sha in missing)
+                ),
+                "unmerged_commits": list(missing),
+            }
+        )
     from reckon.crew import promotion as promotion_module
 
     worktree = str(pointer.get("worktree") or "").strip()
@@ -445,24 +570,61 @@ def accept_clean_review(
         worktree_roots=(worktree,) if worktree else (),
     )
     if str(report.get("integrated_verdict")) != "passed":
-        return {
-            "run_id": run_id,
-            "accepted": False,
-            "reason": str(
-                report.get("finding")
-                or report.get("reason")
-                or "the integrated gate did not pass at the merged head"
-            ),
-            "gate_report": report,
-        }
-    try:
-        result = promotion_module.complete(
-            run_id,
-            gate="passed",
-            gate_check=gate_check,
-            root=checkout,
-            promoted_by="review-acceptance",
+        return refuse(
+            {
+                "run_id": run_id,
+                "accepted": False,
+                "reason": str(
+                    report.get("finding")
+                    or report.get("reason")
+                    or "the integrated gate did not pass at the merged head"
+                ),
+                "gate_report": report,
+            }
         )
+    try:
+        with promotion_module._promotion_host_lease(run_id):
+            # Manifest-backed runs are live deliveries. Reconstructed records
+            # supplied directly without a manifest keep complete's own resolver.
+            current = (
+                runs.read_pointer(run_id) if pointer.get("manifest_path") else pointer
+            )
+            current = {**current, **runs.read_dispatch_detail(current)}
+            from .recovery_memo import _classification_input_tick
+            from .recovery_review_dispatch import _resolve_review_head_and_tree
+
+            # A sweep's review snapshot predates the judgement. Re-read its
+            # inputs under the lease rather than reusing that tick's answer.
+            with _classification_input_tick():
+                current_head, current_tree = (
+                    _resolve_review_head_and_tree(current)
+                    if pointer.get("manifest_path")
+                    else _review_head_and_tree(current)
+                )
+                current_review, _ = select_review_for_head(
+                    project, run_id, current_head, tree=current_tree
+                )
+                current_gate, current_commits = _recorded_gate_passed(current)
+                if inputs != _acceptance_inputs(
+                    current,
+                    current_head,
+                    current_tree,
+                    current_review,
+                    current_gate,
+                    current_commits,
+                ):
+                    return {
+                        "run_id": run_id,
+                        "accepted": False,
+                        "reason": "the run or its acceptance inputs changed while it was judged",
+                    }
+            result = promotion_module.complete(
+                run_id,
+                gate="passed",
+                gate_check=gate_check,
+                root=checkout,
+                promoted_by="review-acceptance",
+            )
     except (CrewError, OSError) as refusal:
         return {
             "run_id": run_id,
@@ -470,18 +632,26 @@ def accept_clean_review(
             "reason": str(refusal),
             "gate_report": report,
         }
-    # Read only once the promotion has happened: an exemption written before it
-    # would mark a finding exempted on a run the promotion then refused.
-    exempted: list[int] = []
-    exemption_refusal = ""
+    # Read only once the promotion has happened: a deferral written before it
+    # would mark a finding deferred on a run the promotion then refused.
+    #
+    # The findings are recorded as deferred, by the writer the landing pass
+    # uses, because a run promoted here and a run landed there are one run
+    # arriving by two paths. An exemption written here would close a finding
+    # that path leaves open work, so which path promoted a run would decide
+    # whether its unreviewed findings were still owed.
+    from reckon.crew import review_dispositions
+
+    deferred: list[int] = []
+    deferral_refusal = ""
     try:
-        exempted = record_landed_exemptions(
-            project, run_id, review, reviewed_head_sha=head or None
+        deferred = review_dispositions.record_landed_deferrals(
+            project, run_id, reviewed_head_sha=head or None
         )
     except (OSError, ValueError) as refusal:
-        exemption_refusal = (
+        deferral_refusal = (
             "the run was promoted but its review's non-blocking findings could "
-            f"not be recorded as exempted: {refusal}"
+            f"not be recorded as deferred: {refusal}"
         )
     return {
         "run_id": run_id,
@@ -490,9 +660,14 @@ def accept_clean_review(
         "review": {
             "total": review.get("total") if review else None,
             "blocking_findings": 0,
-            "exempted_findings": len(exempted),
+            "deferred_findings": len(deferred),
         },
-        **({"exemption_refusal": exemption_refusal} if exemption_refusal else {}),
+        **({"deferral_refusal": deferral_refusal} if deferral_refusal else {}),
+        **(
+            {"owed_floor_repair": result["owed_floor_repair"]}
+            if result.get("owed_floor_repair")
+            else {}
+        ),
         "gate_report": report,
         "ledger": {
             "path": str(result.get("ledger_path") or ""),
@@ -503,6 +678,86 @@ def accept_clean_review(
             ),
         },
     }
+
+
+REVIEW_SELF_READY = "ready"
+REVIEW_SELF_WAITING = "waiting"
+REVIEW_SELF_REFUSED = "refused"
+
+
+def review_self_state(
+    pointer: Mapping[str, Any],
+) -> tuple[str, str, Path | None]:
+    """Whether a review run's own promotion is ready, still coming, or lost.
+
+    A review stores its record while it is still working, so "the record is not
+    there yet" is the ordinary state of a live reviewer and not a finding
+    against it. Only a run that has ended without storing a record has nothing
+    left to deliver. That distinction is what stops an early request from being
+    refused while the reviewer still owes the record, and what refuses the same
+    request once the reviewer has ended.
+
+    ``("ready", "", record_path)`` means the promotion may proceed.
+    ``("waiting", reason, None)`` means the run is still producing the record,
+    so a request waits instead of being drained or refused.
+    ``("refused", reason, None)`` means nothing further will arrive, so the
+    request is refused naming the condition that failed.
+    """
+    project = str(pointer.get("project") or "")
+    manifest_path = Path(str(pointer.get("manifest_path") or ""))
+    if _complete_manifest_write_time(manifest_path) is None:
+        return (
+            REVIEW_SELF_WAITING,
+            (
+                "the review run's manifest does not read complete, so its "
+                "verdict has not been written"
+            ),
+            None,
+        )
+    # A live worker owns the run and is still producing the record this
+    # promotion reads, so the request waits rather than deleting its pointer.
+    if record_process_alive(pointer) is True:
+        return (
+            REVIEW_SELF_WAITING,
+            "the review run's worker is still alive",
+            None,
+        )
+    # The supervisor records its exit in the run directory before it ends, so
+    # its exit record is the run's receipt that both processes have stopped.
+    if _run_exit_record(pointer) is None:
+        return (
+            REVIEW_SELF_WAITING,
+            (
+                "the review run's supervisor has recorded no exit, so the run "
+                "has not ended"
+            ),
+            None,
+        )
+    # A run review's delivery is identified by the head it was dispatched to
+    # read, and a record of an earlier round is not this run's verdict.
+    declares = _declared_head_keyed_record(pointer, project)
+    if _is_run_review_node(pointer) and declares is None:
+        return (
+            REVIEW_SELF_REFUSED,
+            (
+                "the review run declares no head-keyed record path, so the "
+                "head it was dispatched to read is unnamed; its record cannot "
+                "be told from an earlier round's"
+            ),
+            None,
+        )
+    stored = _delivered_review_record(pointer, project)
+    if stored is None:
+        named = f" for head {declares[1]}" if declares is not None else ""
+        return (
+            REVIEW_SELF_REFUSED,
+            (
+                f"the review run stored no readable record{named} for the run "
+                "it read, so it has nothing a coordinator would not add"
+            ),
+            None,
+        )
+    return REVIEW_SELF_READY, "", stored[1]
 
 
 def promote_review_run_itself(
@@ -526,9 +781,10 @@ def promote_review_run_itself(
     itself and never dispatches a review of it, so no chain of reviews of
     reviews can start. The reflex's skip of every review node stays in force
     for acceptance and for review dispatch. A review run whose manifest is not
-    complete, whose worker is still alive, whose supervisor has not recorded
-    an exit, or whose record is missing or unparsed is left for the
-    coordinator, and the refusal returned names which of those held.
+    complete, whose worker is still alive, or whose supervisor has not
+    recorded an exit is still producing that record, so it is reported as
+    waiting and its pointer keeps its working phase. One that has ended
+    without a readable record is refused, naming the missing record.
 
     ``None`` is returned for a run that is not a review run at all, because an
     ordinary or implement run is never promoted by this path. A dict is
@@ -540,66 +796,17 @@ def promote_review_run_itself(
     run_id = str(pointer.get("run_id") or "")
     if not run_id:
         return None
-    project = str(pointer.get("project") or "")
-    manifest_path = Path(str(pointer.get("manifest_path") or ""))
-    if _complete_manifest_write_time(manifest_path) is None:
+    state, reason, record_path = review_self_state(pointer)
+    if state != REVIEW_SELF_READY:
+        # A run still producing its record has not failed: the caller keeps the
+        # request waiting rather than refusing it and losing the run's only
+        # promotion path.
         return {
             "run_id": run_id,
             "promoted": False,
-            "reason": (
-                "the review run's manifest does not read complete, so its "
-                "verdict has not been written"
-            ),
+            "waiting": state == REVIEW_SELF_WAITING,
+            "reason": reason,
         }
-    # The worker must have exited: a live worker owns the run, and promoting it
-    # would delete the pointer out from under a process still producing the
-    # record this branch reads.
-    if record_process_alive(pointer) is True:
-        return {
-            "run_id": run_id,
-            "promoted": False,
-            "reason": "the review run's worker is still alive",
-        }
-    # The supervisor records its exit in the run directory before it ends, so
-    # its exit record is the run's receipt that both processes have stopped.
-    if _run_exit_record(pointer) is None:
-        return {
-            "run_id": run_id,
-            "promoted": False,
-            "reason": (
-                "the review run's supervisor has recorded no exit, so the run "
-                "has not ended"
-            ),
-        }
-    # A run review's delivery is identified by the head it was dispatched to
-    # read, which its dispatch spells as the head-keyed record path it grants.
-    # One declaring no such path cannot be told apart from a round that read an
-    # earlier revision, so it is refused here naming the unnamed head rather
-    # than promoted on whichever record happens to sit where it was told to
-    # write.
-    declares = _declared_head_keyed_record(pointer, project)
-    if _is_run_review_node(pointer) and declares is None:
-        return {
-            "run_id": run_id,
-            "promoted": False,
-            "reason": (
-                "the review run declares no head-keyed record path, so the "
-                "head it was dispatched to read is unnamed; its record cannot "
-                "be told from an earlier round's"
-            ),
-        }
-    stored = _delivered_review_record(pointer, project)
-    if stored is None:
-        named = f" for head {declares[1]}" if declares is not None else ""
-        return {
-            "run_id": run_id,
-            "promoted": False,
-            "reason": (
-                f"the review run stored no readable record{named} for the run "
-                "it read, so it has nothing a coordinator would not add"
-            ),
-        }
-    _, record_path = stored
     from reckon.crew import promotion as promotion_module
 
     checkout_value = str(pointer.get("repo") or "").strip()
@@ -613,6 +820,8 @@ def promote_review_run_itself(
             promoted_by="review-self",
         )
     except (CrewError, OSError) as refusal:
+        if isinstance(refusal, CrewError) and not runs.pointer_path(run_id).exists():
+            raise
         return {
             "run_id": run_id,
             "promoted": False,
@@ -642,6 +851,7 @@ def dispatch_awaiting_reviews(
     launcher: Callable[..., Any] | None = None,
     session: str | None = None,
     pointers: Sequence[Mapping[str, Any]] | None = None,
+    promotions: Any = None,
 ) -> dict[str, Any]:
     """Dispatch the review every scoring run composes, and report each outcome.
 
@@ -662,16 +872,107 @@ def dispatch_awaiting_reviews(
     chose them. Left unset it is resolved from the follower registration this
     process holds, so a sweep inside a follower is confined to its own session
     without the caller having to declare it.
+
+    ``promotions`` hands each promotion and acceptance to a worker of its own
+    instead of running it in this thread. A promotion takes minutes, so a sweep
+    that ran them one after another held every review it owed behind them. The
+    reviews are dispatched in the pass over the runs; the promotions are handed
+    over only once that pass is done, so no promotion can complete before the
+    reviews this sweep owed are dispatched. ``None`` keeps the older behaviour
+    of running each promotion at the point the run is read, which is what a
+    caller that wants one run's outcome in the returned report asks for.
     """
+    # Deferred: promotion imports the checks this module's own callers load, so
+    # the module is bound where the sweep runs rather than at import time.
+    from reckon.crew import promotion as promotion_module
+
     reports: list[dict[str, Any]] = []
+    failed: list[dict[str, Any]] = []
+    vanished: list[dict[str, Any]] = []
     dispatched: list[str] = []
     refused: list[dict[str, Any]] = []
     accepted: list[str] = []
     self_promoted: list[str] = []
     review_self_refused: list[dict[str, Any]] = []
+    review_self_waiting: list[dict[str, Any]] = []
     awaiting_lane: list[str] = []
     lane_paused: list[str] = []
     repaired: list[str] = []
+    repair_held: list[dict[str, Any]] = []
+    in_flight: list[dict[str, Any]] = []
+    handed: list[tuple[str, str, Callable[[], dict[str, Any] | None]]] = []
+    requested: list[str] = []
+
+    def _run_job(
+        run_id: str, job: Callable[[], dict[str, Any] | None]
+    ) -> dict[str, Any]:
+        """Run one promotion or acceptance and name its outcome.
+
+        The exception is classified where it is raised, because a pointer that
+        has gone since it was read tells a vanished run from one that failed.
+        """
+        try:
+            return {"run_id": run_id, "result": job()}
+        except Exception as exc:  # noqa: BLE001 - each run's turn is its own
+            entry = {
+                "run_id": run_id,
+                "error": f"{type(exc).__name__}: {exc}",
+            }
+            if isinstance(exc, CrewError) and not runs.pointer_path(run_id).exists():
+                return {"run_id": run_id, "vanished": entry}
+            return {"run_id": run_id, "failed": entry}
+
+    def _apply(kind: str, run_id: str, outcome: Mapping[str, Any]) -> None:
+        if "vanished" in outcome:
+            vanished.append(outcome["vanished"])
+            return
+        if "failed" in outcome:
+            failed.append(outcome["failed"])
+            return
+        if outcome.get("in_flight"):
+            in_flight.append(
+                {
+                    "run_id": run_id,
+                    "kind": kind,
+                    "reason": str(outcome.get("reason") or ""),
+                }
+            )
+            return
+        result = outcome.get("result")
+        if result is None:
+            return
+        if kind == "review-self":
+            if result.get("promoted"):
+                self_promoted.append(str(result.get("run_id") or ""))
+            elif result.get("waiting"):
+                # The reviewer still owes its record, so nothing has been
+                # refused and the run keeps its working phase.
+                review_self_waiting.append(result)
+            else:
+                # A refused self-promotion is kept in its own list rather than
+                # in ``reports``: that list is what a caller reads to find the
+                # runs a review was composed or accepted for, and a review run
+                # only ever promotes itself, so it is not a run awaiting review
+                # and must not displace that reading.
+                review_self_refused.append(result)
+            return
+        reports.append(result)
+        if result.get("accepted"):
+            accepted.append(str(result.get("run_id") or ""))
+
+    def _hand_off(
+        run_id: str, kind: str, job: Callable[[], dict[str, Any] | None]
+    ) -> None:
+        from reckon.crew.promotion_requests import PromotionRequests
+
+        if isinstance(promotions, PromotionRequests):
+            handed.append((run_id, kind, job))
+            return
+        if promotions is None:
+            _apply(kind, run_id, _run_job(run_id, job))
+            return
+        handed.append((run_id, kind, job))
+
     sweeping = session if session is not None else _sweeping_session(project)
     live = list_live(project=project) if pointers is None else pointers
     for pointer in runs._tick_pointers(live):
@@ -685,133 +986,247 @@ def dispatch_awaiting_reviews(
             # Another session's run: its review is that session's to compose,
             # because only that coordinator chose its lane and its member.
             continue
-        # Every review run is handled here and not by the compose and accept
-        # passes below: a review run is never its own source run, because
-        # counting one as a run awaiting review is what composes a review of a
-        # review, and each link of that chain is a real dispatch against a real
-        # member. A review run whose stored record is present promotes itself;
-        # one that is not ready is left for its coordinator and is never
-        # dispatched a review of.
-        if _is_review_run(pointer):
-            self_promotion = promote_review_run_itself(pointer, config=config)
-            if self_promotion is not None:
-                if self_promotion.get("promoted"):
-                    self_promoted.append(str(self_promotion.get("run_id") or ""))
-                else:
-                    # A refused self-promotion is kept in its own list rather
-                    # than in ``reports``: that list is what a caller reads to
-                    # find the runs a review was composed or accepted for, and
-                    # a review run only ever promotes itself, so it is not a
-                    # run awaiting review and must not displace that reading.
-                    review_self_refused.append(self_promotion)
-            continue
-        # A run resumed since its queued review was recorded carries a head the
-        # review no longer speaks for; the queued attempt is withdrawn rather
-        # than left standing against a revision the run has moved past.
-        withdraw_superseded_review(pointer)
-        scan: dict[str, Any] | None = None
         try:
+            # Every review run is handled here and not by the compose and accept
+            # passes below: a review run is never its own source run, because
+            # counting one as a run awaiting review is what composes a review of a
+            # review, and each link of that chain is a real dispatch against a real
+            # member. A review run whose stored record is present promotes itself;
+            # one that is not ready is left for its coordinator and is never
+            # dispatched a review of.
+            if _is_review_run(pointer):
+                # Promotion can reconstruct a missing pointer from durable records;
+                # a sweep acts only on the live run it was asked to handle.
+                run_id = str(pointer.get("run_id") or "")
+                runs.read_pointer(run_id)
+                # A reviewer that is still running is not owed a request:
+                # requesting now is what moved a working pointer to
+                # promotion-requested and then refused it for a record that had
+                # not been written yet. The request is made on a later pass,
+                # once the reviewer has ended. One that ended without a record
+                # is requested, so its refusal reaches the coordinator.
+                state, reason, _record = review_self_state(pointer)
+                if (
+                    record_process_alive(pointer) is True
+                    and state == REVIEW_SELF_WAITING
+                ):
+                    review_self_waiting.append(
+                        {
+                            "run_id": run_id,
+                            "promoted": False,
+                            "waiting": True,
+                            "reason": reason,
+                        }
+                    )
+                    continue
+                _hand_off(
+                    run_id,
+                    "review-self",
+                    lambda pointer=pointer: promote_review_run_itself(
+                        pointer, config=config
+                    ),
+                )
+                continue
+            # A run resumed since its queued review was recorded carries a head the
+            # review no longer speaks for; the queued attempt is withdrawn rather
+            # than left standing against a revision the run has moved past.
+            withdraw_superseded_review(pointer)
             scan = classify_pointer(
                 pointer, **({"pointers": live} if pointers is not None else {})
             )
-        except Exception:  # noqa: BLE001 - one unreadable run must not stop the sweep
-            scan = None
-        if scan is not None and scan["classification"] == "scoring":
-            # A run whose tier is none changes no runtime source, so promotion
-            # lands it with the review gate standing down and records the tier
-            # as the reason no review exists. Composing a review for it anyway
-            # spends a member and a lane on a diff no reviewer is owed, so the
-            # tier is resolved through promotion's own resolver and the skip is
-            # recorded here rather than left as a silent absence.
-            run_id = str(pointer.get("run_id") or "")
-            remaining = review_settle_seconds_remaining(pointer)
-            if remaining > 0:
-                # A run resumed within the settle window is still moving toward
-                # the head it will be reviewed at; composing now would read a
-                # revision the run is about to leave, so the sweep waits.
-                reason = (
-                    "the run was resumed less than five minutes ago, so its "
-                    "head has not settled; the reflex waits before reviewing it"
+            if scan is not None and scan["classification"] == "scoring":
+                # A run whose tier is none changes no runtime source, so promotion
+                # lands it with the review gate standing down and records the tier
+                # as the reason no review exists. Composing a review for it anyway
+                # spends a member and a lane on a diff no reviewer is owed, so the
+                # tier is resolved through promotion's own resolver and the skip is
+                # recorded here rather than left as a silent absence.
+                run_id = str(pointer.get("run_id") or "")
+                remaining = review_settle_seconds_remaining(pointer)
+                if remaining > 0:
+                    # A run resumed within the settle window is still moving toward
+                    # the head it will be reviewed at; composing now would read a
+                    # revision the run is about to leave, so the sweep waits.
+                    reason = (
+                        "the run was resumed less than five minutes ago, so its "
+                        "head has not settled; the reflex waits before reviewing it"
+                    )
+                    _record_review_dispatch(run_id, status="settling", reason=reason)
+                    reports.append(
+                        {
+                            "run_id": run_id,
+                            "dispatched": False,
+                            "settling_seconds": int(remaining),
+                            "reason": reason,
+                        }
+                    )
+                    continue
+                tier = _sweep_review_tier(pointer, scan.get("manifest_commits") or [])
+                if tier == review_tiers.NONE:
+                    reason = (
+                        "the run changes no runtime source, so its review tier is "
+                        "none; no review is dispatched and the merged-head gate "
+                        "checks it instead"
+                    )
+                    _record_review_dispatch(run_id, status="skipped", reason=reason)
+                    reports.append(
+                        {
+                            "run_id": run_id,
+                            "dispatched": False,
+                            "review_tier": review_tiers.NONE,
+                            "reason": reason,
+                        }
+                    )
+                else:
+                    report = dispatch_review_for_run(
+                        pointer, config=config, launcher=launcher
+                    )
+                    reports.append(report)
+                    if report.get("dispatched"):
+                        dispatched.append(str(report.get("review_run_id") or ""))
+                    elif report.get("awaiting_lane"):
+                        awaiting_lane.append(str(report.get("run_id") or ""))
+                    elif report.get("error") == "lane-paused":
+                        lane_paused.append(str(report.get("run_id") or ""))
+                    elif report.get("refused"):
+                        # The report itself, not a generator over it: a refusal list
+                        # is read and serialized by whoever consumes the sweep, and a
+                        # generator is neither readable nor JSON-serializable, so the
+                        # refusal would be lost at exactly the moment a reader needs
+                        # to know which lane was refused.
+                        refused.append(report)
+            # The accepting branch: a promotable run whose stored review is clean is
+            # promoted here, without a coordinator command, once its own recorded
+            # gate has passed and the gate still passes at the repository's merged
+            # head. A run that is not acceptance-eligible returns None and is left
+            # to its coordinator, and an eligible run whose acceptance was refused
+            # is reported with its reason rather than silently skipped.
+            if scan is not None and scan["classification"] == "promotable":
+                _hand_off(
+                    str(pointer.get("run_id") or ""),
+                    "acceptance",
+                    lambda pointer=pointer: accept_clean_review(pointer, config=config),
                 )
-                _record_review_dispatch(run_id, status="settling", reason=reason)
-                reports.append(
+            # The repair pass, keyed on the stored review rather than on the run's
+            # classification: a review carrying findings may leave the run reading
+            # promotable, so gating this on ``scoring`` alone would leave a
+            # finding-bearing round unrepaired. Its guards — role, identity,
+            # liveness, record-only findings, and a pointer re-read at launch —
+            # leave every run they do not apply to untouched, so sweeping the rest
+            # of the fleet is unaffected.
+            # A repair round starts only for a run that is not being promoted.
+            # The two outcomes are exclusive by construction: promotion settles
+            # a run's record and takes its pointer, and a round opened under a
+            # promotion either writes that settled record or commits in a
+            # worktree no landing path will read. The pointer cannot answer this
+            # on its own, because a promotion from its first write to its
+            # landing leaves the pointer looking untouched; the promotion's own
+            # claim is what the door reads.
+            holder = promotion_module.promotion_in_flight(
+                str(pointer.get("run_id") or "")
+            )
+            if holder:
+                repair_held.append(
                     {
-                        "run_id": run_id,
-                        "dispatched": False,
-                        "settling_seconds": int(remaining),
-                        "reason": reason,
-                    }
-                )
-                continue
-            tier = _sweep_review_tier(pointer, scan.get("manifest_commits") or [])
-            if tier == review_tiers.NONE:
-                reason = (
-                    "the run changes no runtime source, so its review tier is "
-                    "none; no review is dispatched and the merged-head gate "
-                    "checks it instead"
-                )
-                _record_review_dispatch(run_id, status="skipped", reason=reason)
-                reports.append(
-                    {
-                        "run_id": run_id,
-                        "dispatched": False,
-                        "review_tier": review_tiers.NONE,
-                        "reason": reason,
+                        "run_id": str(pointer.get("run_id") or ""),
+                        "reason": (
+                            "a promotion of this run has begun (" + holder + "), so "
+                            "no floor repair round is opened for it: the run's "
+                            "promotion names the work it lands over"
+                        ),
                     }
                 )
             else:
-                report = dispatch_review_for_run(
+                repair_report = dispatch_repair_for_run(
                     pointer, config=config, launcher=launcher
                 )
-                reports.append(report)
-                if report.get("dispatched"):
-                    dispatched.append(str(report.get("review_run_id") or ""))
-                elif report.get("awaiting_lane"):
-                    awaiting_lane.append(str(report.get("run_id") or ""))
-                elif report.get("error") == "lane-paused":
-                    lane_paused.append(str(report.get("run_id") or ""))
-                elif report.get("refused"):
-                    # The report itself, not a generator over it: a refusal list
-                    # is read and serialized by whoever consumes the sweep, and a
-                    # generator is neither readable nor JSON-serializable, so the
-                    # refusal would be lost at exactly the moment a reader needs
-                    # to know which lane was refused.
-                    refused.append(report)
-        # The accepting branch: a promotable run whose stored review is clean is
-        # promoted here, without a coordinator command, once its own recorded
-        # gate has passed and the gate still passes at the repository's merged
-        # head. A run that is not acceptance-eligible returns None and is left
-        # to its coordinator, and an eligible run whose acceptance was refused
-        # is reported with its reason rather than silently skipped.
-        if scan is not None and scan["classification"] == "promotable":
-            acceptance = accept_clean_review(pointer, config=config)
-            if acceptance is not None:
-                reports.append(acceptance)
-                if acceptance.get("accepted"):
-                    accepted.append(str(acceptance.get("run_id") or ""))
-        # The repair pass, keyed on the stored review rather than on the run's
-        # classification: a review carrying findings may leave the run reading
-        # promotable, so gating this on ``scoring`` alone would leave a
-        # finding-bearing round unrepaired. Its guards — role, identity,
-        # liveness, record-only findings, and a pointer re-read at launch —
-        # leave every run they do not apply to untouched, so sweeping the rest
-        # of the fleet is unaffected.
-        repair_report = dispatch_repair_for_run(
-            pointer, config=config, launcher=launcher
-        )
-        if repair_report.get("dispatched"):
-            reports.append(repair_report)
-            repaired.append(str(repair_report.get("repair_run_id") or ""))
+                if repair_report.get("dispatched"):
+                    reports.append(repair_report)
+                    repaired.append(str(repair_report.get("repair_run_id") or ""))
+        except Exception as exc:  # noqa: BLE001 - isolate each run's whole turn
+            run_id = str(pointer.get("run_id") or "")
+            entry = {"run_id": run_id, "error": f"{type(exc).__name__}: {exc}"}
+            if isinstance(exc, CrewError) and not runs.pointer_path(run_id).exists():
+                vanished.append(entry)
+            else:
+                failed.append(entry)
+    # The reviews this sweep owed are dispatched by now, so the promotions go
+    # to their workers with nothing left waiting behind them. A run another
+    # sweep is already promoting is reported in flight rather than promoted a
+    # second time beside it.
+    from reckon.crew.promotion_requests import PromotionRequests
+
+    if isinstance(promotions, PromotionRequests):
+        for run_id, kind, _job in handed:
+            receipt = promotions.request(run_id, kind, config=config)
+            if receipt.get("phase") in {"promotion-requested", "promotion-running"}:
+                requested.append(run_id)
+            elif receipt.get("phase") in {"promotion-failed", "promotion-refused"}:
+                failed.append(
+                    {"run_id": run_id, "error": str(receipt.get("error") or "")}
+                )
+    elif promotions is not None and handed:
+        for run_id, kind, job in handed:
+
+            def _job(
+                job: Callable[[], dict[str, Any] | None] = job,
+                run_id: str = run_id,
+                kind: str = kind,
+            ) -> dict[str, Any]:
+                # A worker starts after the pass that read the pointer, so the
+                # run may have stopped being live in between — another run's
+                # promotion can settle or remove it. Promotion is handed the
+                # pointer it read, so without this read the sweep would act on
+                # a run whose record has gone. It is the same judgement the
+                # pass makes when the pointer cannot be read at all, made at
+                # the moment the promotion would write.
+                if kind == "review-self" and not runs.pointer_path(run_id).exists():
+                    return {
+                        "run_id": run_id,
+                        "kind": kind,
+                        "vanished": {
+                            "run_id": run_id,
+                            "error": (
+                                "the run's pointer is gone since this sweep read "
+                                "it, so there is no live run to promote"
+                            ),
+                        },
+                    }
+                return {**_run_job(run_id, job), "kind": kind}
+
+            if not promotions.submit(run_id, _job):
+                in_flight.append(
+                    {
+                        "run_id": run_id,
+                        "kind": kind,
+                        "reason": (
+                            "another sweep is already promoting this run, so "
+                            "this one leaves it to that promotion"
+                        ),
+                    }
+                )
+        for outcome in promotions.wait():
+            _apply(
+                str(outcome.get("kind") or ""),
+                str(outcome.get("run_id") or ""),
+                outcome,
+            )
     return {
         "reports": reports,
+        "failed": failed,
+        "vanished": vanished,
         "dispatched": dispatched,
         "refused": refused,
         "accepted": accepted,
         "self_promoted": self_promoted,
+        "in_flight": in_flight,
         "review_self_refused": review_self_refused,
+        "review_self_waiting": review_self_waiting,
         "awaiting_lane": awaiting_lane,
         "lane_paused": lane_paused,
         "repaired": repaired,
+        "repair_held": repair_held,
+        "promotion_requested": requested,
     }
 
 

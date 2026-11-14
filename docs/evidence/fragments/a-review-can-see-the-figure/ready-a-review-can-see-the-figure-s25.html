@@ -1,0 +1,111 @@
+<section id="ready-a-review-can-see-the-figure-s25-landing">
+  <h2>A figure review is complete by its own rubric</h2>
+
+  <p><strong>What changed.</strong> The completeness rule in
+  <code>reckon/crew/recovery_review_subject.py</code>
+  (<code>_review_missing_measures</code>) judged every stored review record
+  against the six landed-node score dimensions. A figure review records a
+  verdict per item of its own rubric instead, so a figure record that carried all
+  six of its measures was refused at its first promotion as an incomplete
+  review, naming six dimensions it was never asked for. The rule now reads the
+  record's rubric through the same reader <code>crew check --review</code>
+  applies: a figure record is complete when it carries a non-blank verdict for
+  every item of <code>FIGURE_REVIEW_ITEMS</code>, and its refusal names the
+  figure item it lacks. Because the rule lives in the one helper every other
+  reader calls, <code>_review_is_complete</code> and the six production paths
+  that read it give the delivery check's answer rather than a second one</p>
+
+  <p>Every other record keeps the completeness rule as it was, so a text record
+  and a claims record are judged exactly as before. A <code>rubric_items</code>
+  value that is not a mapping reports every item missing rather than raising,
+  because the check runs on classification paths that must not take the pass
+  down with them. The delivery check delegates to the shared rule and holds no
+  measure list of its own.</p>
+
+  <h3>Measured</h3>
+
+  <p>Gate: the test files importing <code>reckon.crew.recovery_review_delivery</code>,
+  resolved over each arm's own tree, run one arm at a time with
+  <code>-n&nbsp;4</code> and the repository venv. Each log's first line names its
+  revision, tree, resolved module and the literal command, and its last line
+  reads <code>EXIT=&lt;code&gt;</code>.</p>
+
+  <table>
+    <thead><tr><th>arm</th><th>revision</th><th>result</th></tr></thead>
+    <tbody>
+      <tr><td>base (22 files; the new case does not exist there)</td>
+        <td><code>082607a9e8</code></td>
+        <td>236 passed, 1 error, exit 1</td></tr>
+      <tr><td>head (23 files, the new case included)</td>
+        <td><code>e02558b00c</code> working tree</td>
+        <td><strong>246 passed</strong>, 1 error, exit 1 — no added failure</td></tr>
+      <tr><td>new case against the base module (the recorded defect)</td>
+        <td><code>082607a9e8</code></td>
+        <td>8 failed, 2 passed, exit 1</td></tr>
+      <tr><td>negative control (the code-only measure list restored)</td>
+        <td>mutated head</td>
+        <td>8 failed, 2 passed, exit 1</td></tr>
+    </tbody>
+  </table>
+
+  <ul>
+    <li><strong>The reproduction.</strong> A figure record carrying all six
+    rubric verdicts and no <code>scores</code>, promoted with
+    <code>crew complete --gate not-run</code>, is refused with
+    <em>not a complete review: it lacks goal_fidelity, evidence,
+    scope_discipline, durability, fit, reuse, total</em> — the same sentence the
+    plan records from power_convertor on 10 November. The two code-review cases
+    in the same file pass at that revision, so the failure is the figure
+    rubric's alone.</li>
+    <li><strong>The negative control.</strong> Restoring the code-only measure
+    list for every record turns the eight figure cases red with that refusal and
+    leaves the two code cases green, which is exactly the separation the change
+    introduces.</li>
+    <li><strong>The one error in both arms.</strong>
+    <code>test_delivered_reviews_share_the_ticks_single_live_read</code> errors
+    in setup in both arms and on the base revision:
+    <code>recovery_watch</code> carries no
+    <code>watch_lease_renewed_at</code> to monkeypatch. It is present at base
+    and unchanged by this node, so it is not an added failure.</li>
+    <li><strong>What is not measured here.</strong> Verifying the merged result
+    belongs to a separately dispatched test node.</li>
+  </ul>
+
+  <h3>Repair after review</h3>
+
+  <p>An independent review of this landing found the figure branch in the wrong
+  place: it had been added to the delivery check as a second completeness
+  dispatcher beside <code>_review_missing_measures</code>, so the delivery check
+  and the six production readers of <code>_review_is_complete</code> could
+  answer differently for the same record. The repair moves the branch into that
+  owner and leaves the delivery check delegating to it, so one rule answers for
+  every reader. The delivery module therefore carries no diff from the base
+  revision at all: the whole change is 35 lines in
+  <code>reckon/crew/recovery_review_subject.py</code>.</p>
+
+  <ul>
+    <li><strong>A figure record is complete for the fleet, not just for
+    promotion.</strong> The test now asserts
+    <code>_review_is_complete(body) is True</code> on the same body it proves
+    deliverable, so the classification, repair-dispatch, review-dispatch,
+    acceptance and obligations readers give the promotion check's answer.</li>
+    <li><strong>The record proven deliverable is one the review contract
+    accepts.</strong> Both fixtures carry <code>added_failure_count</code> and
+    <code>added_failure_ids</code>, and the test asserts
+    <code>review_record_refusals(body) == []</code> before staging it. The
+    earlier fixtures omitted both, so the case proved delivery for a record
+    <code>crew check --review</code> would have refused.</li>
+    <li><strong>Negative control.</strong> Reverting the owner to its delivered
+    form, leaving the delivery check delegating, turns eight cases red: the
+    deliver-and-promote case, the blank-verdict case, and all six
+    missing-measure cases.</li>
+    <li><strong>Arms after the repair.</strong> The gate is the test files
+    importing either review module, resolved in each arm's own tree and run one
+    arm at a time at <code>-n&nbsp;4</code>: base
+    <code>082607a9e8</code> gives 349 passed, 2 failed, 1 error; the repaired
+    head <code>943681379d</code> gives <strong>359 passed</strong>, the same two
+    failures and the same error, so the delta is the ten new cases and no new
+    failure. Both arms' two failures are citation-resolution cases unrelated to
+    this change and failing identically at the base revision.</li>
+  </ul>
+</section>

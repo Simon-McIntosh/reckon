@@ -8,6 +8,7 @@ import os
 import re
 import shlex
 import shutil
+import signal
 import socket
 import subprocess
 import threading
@@ -20,7 +21,9 @@ from collections.abc import (
     Sequence,
 )
 from contextlib import (
+    ExitStack,
     contextmanager,
+    suppress,
 )
 from dataclasses import (
     dataclass,
@@ -90,6 +93,7 @@ from reckon.crew.node import (
     parse_duration,
     role_may_write_repository_paths,
 )
+from reckon.crew.open_run_index import operational_read
 from reckon.crew.picker.outcomes import (
     OVERRIDDEN_HOLD_ROUTE_MODE,
     overridden_hold,
@@ -125,6 +129,7 @@ from reckon.crew.routing import (
     _shadow_patch_retained,
     _shadow_worktree_records,
     _signal_process_group,
+    deferring_worktree_copy_deletion,
     mounted_repository_projects,
     run_directory_of,
 )
@@ -157,6 +162,58 @@ from reckon.evidence import (
 # Promotion serialises its landing independently of pointer mutations. The
 # flock excludes local processes and threads; the renewable lease excludes a
 # promotion on another host through the fleet home's atomic link.
+class _PromotionStopped(SystemExit):
+    """A promotion that stopped at a stage boundary after a stop signal."""
+
+
+# A term signal asks the running promotion to stop at its next stage boundary.
+# The handler only records the request: raising from it could interrupt a git
+# child mid-write, leaving a process the promotion started writing after the
+# promotion itself has exited. Stopping at a boundary lets the stage in
+# progress finish, so every child it started has been reaped by then, and the
+# claim is released on the way out.
+_STOP_REQUESTED = threading.Event()
+
+
+def _request_stop_on_termination(signum: int, frame: object) -> None:
+    _STOP_REQUESTED.set()
+
+
+def _install_stop_handler() -> object | None:
+    """Record SIGTERM on the promotion; return the handler it displaced.
+
+    Returns None where no handler may be installed — off the main thread, or
+    where the platform has no SIGTERM — and the caller hands the value back to
+    :func:`_restore_stop_handler`.
+    """
+    if threading.current_thread() is not threading.main_thread():
+        return None
+    if not hasattr(signal, "SIGTERM"):
+        return None
+    return signal.signal(signal.SIGTERM, _request_stop_on_termination)
+
+
+def _restore_stop_handler(previous: object | None) -> None:
+    if previous is None:
+        return
+    with suppress(ValueError, TypeError):
+        signal.signal(signal.SIGTERM, previous)
+
+
+def _stop_at_stage_boundary(stage: str) -> None:
+    """Stop before the next stage when a signal asked the promotion to.
+
+    Every stage boundary that starts a write calls this first.
+    """
+    if not _STOP_REQUESTED.is_set():
+        return
+    raise _PromotionStopped(
+        f"promotion was asked to stop by SIGTERM and stopped before {stage}; "
+        "the stage in progress had finished, no further stage ran, and the "
+        "promotion's claim is released so a retry can take it"
+    )
+
+
 @contextmanager
 def _promotion_lock(run_id: str) -> Iterator[None]:
     with _pointer_lock(f"promotion-{run_id}"):
@@ -264,6 +321,30 @@ def _promotion_lease_held(run_id: str, holder: Any) -> str:
     )
 
 
+def promotion_in_flight(run_id: str) -> str:
+    """Who holds this run's promotion claim, or empty when nobody does.
+
+    The claim is the cross-host lease promotion takes before its first write and
+    releases after its landing, so a fresh holder is a promotion in flight on
+    this host or another. A door that must not act under a promotion reads it
+    here rather than inferring it from a pointer, because the pointer is the
+    promotion's to rewrite and its removal is the last thing the promotion does:
+    a reader watching only the pointer sees a run that looks untouched for the
+    whole of a promotion.
+
+    A lease past its stale window reads as unheld, so a holder that stopped
+    renewing never refuses work forever.
+    """
+    if not run_id:
+        return ""
+    host, pid, job = _promotion_lease_identity()
+    lease = HostLease(crew_home(), _promotion_lease_name(run_id), host, pid, job)
+    holder = lease.holder()
+    if holder is None:
+        return ""
+    return f"host {holder.host} pid {holder.pid}"
+
+
 class _PromotionLeaseRenewer:
     """Keep a held lease fresh while the promotion runs, then stop."""
 
@@ -304,13 +385,41 @@ def _promotion_host_lease(run_id: str) -> Iterator[HostLease]:
         raise CrewError(_promotion_lease_held(run_id, lease.holder()))
     renewer = _PromotionLeaseRenewer(lease)
     renewer.start()
+    # The request is cleared only once this promotion holds the claim, so a
+    # signal delivered to the process before it took one cannot stop it.
+    _STOP_REQUESTED.clear()
+    previous_handler = _install_stop_handler()
     try:
         yield lease
     finally:
+        _restore_stop_handler(previous_handler)
         renewer.stop()
         lease.release()
+        _STOP_REQUESTED.clear()
 
 
+def _landing_checkout(
+    record: Mapping[str, Any], root: str | Path | None
+) -> Path | None:
+    """The checkout a promotion's landing commit would be written into.
+
+    Resolved the way the landing gate resolves it, so the early judgement of
+    the checkout's git state names the same repository the landing commit later
+    does: the project's registered mount decides it when one exists, and a run
+    whose record names none falls back to the repository the record carries.
+    """
+    project = str(record.get("project") or "")
+    landing_root: str | Path | None = root
+    if project and project_mount_repository(project) is not None:
+        landing_root = resolve_project_repository(project, root, flag="--checkout-path")
+    if landing_root is None:
+        landing_root = record.get("repo")
+    return (
+        Path(landing_root).expanduser().resolve() if landing_root is not None else None
+    )
+
+
+@operational_read
 def complete(
     run_id: str,
     *,
@@ -405,6 +514,14 @@ def complete(
                     would_wait_for_pick=awaiting_pick,
                 )
             return _complete_withdrawn_run(run_id, record)
+        # Whether a landing commit can be written at all depends only on the
+        # checkout's git state, and nothing else promotion reads changes that
+        # answer. A checkout carrying a peer's open merge, rebase, cherry-pick
+        # or revert is refused here, before the ledger is read or any store is
+        # opened, rather than after the minutes of work whose only possible end
+        # is this same refusal — work that in a serial sweep delays every later
+        # promotion by as much.
+        _require_committable_checkout(_landing_checkout(record, root), run_id)
         # A run review delivers its record inside its own run directory and the
         # supervisor files it into the store when the worker ends. A supervisor
         # that died before that filing leaves the record where the reviewer
@@ -598,174 +715,181 @@ def complete(
                 waiver_reason=domain_waiver,
             )
 
-        (
-            root,
-            overridden_worktree_changes,
-            _manifest_status,
-            live_run_waived,
-            _partner_hold,
-            _shadow_commit,
-            commit_list_shortfall,
-            _commits_beyond_base,
-            _gate_log_agrees,
-            _verdict_matches_exit_status,
-            _runnable_gate_command,
-            _executable_gate_command,
-            review_waived,
-            _misdelivered_review,
-            _standing_suite,
-            resume_waived,
-            landing,
-            _png_twin_absent,
-            _domain_checks,
-        ) = _require_independently(
-            [
-                _repository_root,
-                lambda: _require_commit_for_changed_manifest(
-                    run_id, record, no_commit_reason=no_commit
-                ),
-                lambda: _require_recognised_manifest_status(run_id, record),
-                # A run whose own worker is still alive and not finished is
-                # refused before any store is written: deleting its live
-                # pointer now would orphan the process until it exits on its
-                # own. The waiver names the reason and rides the promoted row.
-                lambda: _require_worker_stopped_before_promotion(
-                    run_id, record, waiver_reason=live_run_waiver
-                ),
-                # A paired dispatch starts both arms from one base, and that
-                # only holds while neither lands first: an arm promoted while
-                # its partner is still running would put its result in the main
-                # checkout for the partner to read. The hold lifts once the
-                # partner's pointer is terminal or gone.
-                lambda: _require_partner_terminal_before_promotion(run_id, record),
-                lambda: _refuse_commits_for_a_shadow(run_id, record, commit_list),
-                lambda: _require_gate_evidence(
+        # The landing checks read the ledger several times and the locked
+        # promotion reads it again a moment later. One region serves them
+        # all one index decode per read key, and _complete_locked closes it
+        # before its append so a read after the row is written is fresh.
+        with ExitStack() as ledger_reads:
+            ledger_reads.enter_context(ledger.index_reuse())
+            (
+                root,
+                overridden_worktree_changes,
+                _manifest_status,
+                live_run_waived,
+                _partner_hold,
+                _shadow_commit,
+                commit_list_shortfall,
+                _commits_beyond_base,
+                _gate_log_agrees,
+                _verdict_matches_exit_status,
+                _runnable_gate_command,
+                _executable_gate_command,
+                review_waived,
+                _misdelivered_review,
+                _standing_suite,
+                resume_waived,
+                landing,
+                _png_twin_absent,
+                _domain_checks,
+            ) = _require_independently(
+                [
+                    _repository_root,
+                    lambda: _require_commit_for_changed_manifest(
+                        run_id, record, no_commit_reason=no_commit
+                    ),
+                    lambda: _require_recognised_manifest_status(run_id, record),
+                    # A run whose own worker is still alive and not finished is
+                    # refused before any store is written: deleting its live
+                    # pointer now would orphan the process until it exits on its
+                    # own. The waiver names the reason and rides the promoted row.
+                    lambda: _require_worker_stopped_before_promotion(
+                        run_id, record, waiver_reason=live_run_waiver
+                    ),
+                    # A paired dispatch starts both arms from one base, and that
+                    # only holds while neither lands first: an arm promoted while
+                    # its partner is still running would put its result in the main
+                    # checkout for the partner to read. The hold lifts once the
+                    # partner's pointer is terminal or gone.
+                    lambda: _require_partner_terminal_before_promotion(run_id, record),
+                    lambda: _refuse_commits_for_a_shadow(run_id, record, commit_list),
+                    lambda: _require_gate_evidence(
+                        run_id,
+                        record,
+                        verdict=verdict,
+                        commits=commit_list,
+                        no_commit_reason=no_commit,
+                    ),
+                    # The citations themselves must be the run's own work, judged
+                    # before any store is written so a run that cannot be asserted
+                    # truthfully is refused with nothing landed and nothing to
+                    # unwind.
+                    lambda: _require_commits_beyond_base(run_id, record, commit_list),
+                    lambda: _require_gate_log_agrees(
+                        run_id, gate_check, record, verdict=verdict
+                    ),
+                    # The verdict and the asserted status are two statements about
+                    # one run: a passing verdict beside a nonzero exit status is
+                    # refused from those two facts alone, whether or not the log
+                    # carries a terminal EXIT record of its own for the comparison
+                    # above to read.
+                    lambda: _require_verdict_matches_exit_status(
+                        run_id, record, gate_check, verdict=verdict
+                    ),
+                    # The recorded command is what the integration re-run executes,
+                    # so a text that describes the command or names no program must
+                    # be refused here rather than land on a row that later reports a
+                    # failure the merge did not cause.
+                    lambda: _require_runnable_gate_command(run_id, gate_check),
+                    lambda: _require_executable_gate_command(run_id, gate_check),
+                    _review_gate,
+                    # A plan review that wrote its report outside its assigned
+                    # directory leaves the delivery read by neither the store nor
+                    # promotion, so the review is lost silently. Refuse it, naming
+                    # both directories, rather than promote a run whose report sits
+                    # where nothing joins it.
+                    lambda: _require_plan_review_delivered_in_its_directory(
+                        landing_project, run_id, record
+                    ),
+                    # The project's declared suite is the gate that sees the whole
+                    # tree, and the lighter promotions wait on it. The tier is the
+                    # one just resolved, so a full review -- which reads the run for
+                    # itself -- is never held.
+                    lambda: _require_standing_suite(
+                        landing_project,
+                        resolved.get("review_tier") or review_tiers.FULL,
+                        resolved.get("root", root),
+                    ),
+                    _resume_gate,
+                    _landing_gate,
+                    # A figure rule that needs no eyes is checked by the tool, so a
+                    # coordinator never enforces it by hand. The one such rule a
+                    # run's commits can break is the PNG twin: a worker that
+                    # rasterises its SVG to look at it leaves the copy in the tree,
+                    # and the page renders the SVG while the copy drifts. The same
+                    # finding reaches the worker through `crew check --manifest`.
+                    lambda: _require_no_png_twin_of_an_svg(run_id, record),
+                    # The repository declares, beside each domain rule, the check
+                    # whose zero exit means the rule holds. They are replayed
+                    # against the tree that ships through the same integration
+                    # replay as the project's suite command, so a result that
+                    # breaks a declared rule is refused at promotion rather than
+                    # only carried in the brief.
+                    _domain_gate,
+                ]
+            )
+            suite_delta = _evaluate_suite_delta(
+                run_id,
+                record,
+                waiver_reason=suite_delta_waiver,
+                dry_run=dry_run,
+            )
+            if dry_run:
+                return _dry_run_report(
                     run_id,
                     record,
                     verdict=verdict,
-                    commits=commit_list,
-                    no_commit_reason=no_commit,
-                ),
-                # The citations themselves must be the run's own work, judged
-                # before any store is written so a run that cannot be asserted
-                # truthfully is refused with nothing landed and nothing to
-                # unwind.
-                lambda: _require_commits_beyond_base(run_id, record, commit_list),
-                lambda: _require_gate_log_agrees(
-                    run_id, gate_check, record, verdict=verdict
-                ),
-                # The verdict and the asserted status are two statements about
-                # one run: a passing verdict beside a nonzero exit status is
-                # refused from those two facts alone, whether or not the log
-                # carries a terminal EXIT record of its own for the comparison
-                # above to read.
-                lambda: _require_verdict_matches_exit_status(
-                    run_id, record, gate_check, verdict=verdict
-                ),
-                # The recorded command is what the integration re-run executes,
-                # so a text that describes the command or names no program must
-                # be refused here rather than land on a row that later reports a
-                # failure the merge did not cause.
-                lambda: _require_runnable_gate_command(run_id, gate_check),
-                lambda: _require_executable_gate_command(run_id, gate_check),
-                _review_gate,
-                # A plan review that wrote its report outside its assigned
-                # directory leaves the delivery read by neither the store nor
-                # promotion, so the review is lost silently. Refuse it, naming
-                # both directories, rather than promote a run whose report sits
-                # where nothing joins it.
-                lambda: _require_plan_review_delivered_in_its_directory(
-                    landing_project, run_id, record
-                ),
-                # The project's declared suite is the gate that sees the whole
-                # tree, and the lighter promotions wait on it. The tier is the
-                # one just resolved, so a full review -- which reads the run for
-                # itself -- is never held.
-                lambda: _require_standing_suite(
-                    landing_project,
-                    resolved.get("review_tier") or review_tiers.FULL,
-                    resolved.get("root", root),
-                ),
-                _resume_gate,
-                _landing_gate,
-                # A figure rule that needs no eyes is checked by the tool, so a
-                # coordinator never enforces it by hand. The one such rule a
-                # run's commits can break is the PNG twin: a worker that
-                # rasterises its SVG to look at it leaves the copy in the tree,
-                # and the page renders the SVG while the copy drifts. The same
-                # finding reaches the worker through `crew check --manifest`.
-                lambda: _require_no_png_twin_of_an_svg(run_id, record),
-                # The repository declares, beside each domain rule, the check
-                # whose zero exit means the rule holds. They are replayed
-                # against the tree that ships through the same integration
-                # replay as the project's suite command, so a result that
-                # breaks a declared rule is refused at promotion rather than
-                # only carried in the brief.
-                _domain_gate,
-            ]
-        )
-        suite_delta = _evaluate_suite_delta(
-            run_id,
-            record,
-            waiver_reason=suite_delta_waiver,
-            dry_run=dry_run,
-        )
-        if dry_run:
-            return _dry_run_report(
+                    gate_check=gate_check,
+                    refusals=(),
+                    no_commit=no_commit,
+                    no_impl_change=no_impl_change,
+                    would_file_reviews=delivered_reviews,
+                    would_wait_for_pick=awaiting_pick,
+                )
+            result = _complete_locked(
                 run_id,
-                record,
-                verdict=verdict,
-                gate_check=gate_check,
-                refusals=(),
+                record=record,
+                gate=gate,
+                failure_classification=classification,
+                commits=commit_list,
                 no_commit=no_commit,
+                no_commit_uncommitted=overridden_worktree_changes,
+                outcome=outcome,
+                tests_added=tests_added,
+                scope_changed=scope_changed,
+                changed_lines=changed_lines,
+                completed_at=completed_at,
+                root=root,
+                gate_check=gate_check,
+                require_gate_check=require_gate_check,
+                suite_delta=suite_delta,
+                boundary_waiver=boundary_waiver,
+                domain_waiver_record=_domain_checks,
+                resume_remedy=resolved.get("resume_remedy"),
+                resume_waived=resume_waived,
+                reviewed=resolved.get("reviewed"),
+                review_waived=review_waived,
+                review_tier=resolved.get("review_tier") or "",
+                negative_control_waiver=negative_control_waiver,
+                recoverable_session=resolved.get("recoverable_session"),
+                discard_resume_worktree=discard_resume_worktree,
+                accepted_paths=accepted_paths,
+                commit_list_shortfall=commit_list_shortfall,
                 no_impl_change=no_impl_change,
-                would_file_reviews=delivered_reviews,
-                would_wait_for_pick=awaiting_pick,
+                live_run_waived=live_run_waived,
+                plan_link=plan_link,
+                unplanned_reason=unplanned_reason,
+                promoted_by=promoted_by,
+                landing=landing,
+                ledger_reads=ledger_reads,
             )
-        result = _complete_locked(
-            run_id,
-            record=record,
-            gate=gate,
-            failure_classification=classification,
-            commits=commit_list,
-            no_commit=no_commit,
-            no_commit_uncommitted=overridden_worktree_changes,
-            outcome=outcome,
-            tests_added=tests_added,
-            scope_changed=scope_changed,
-            changed_lines=changed_lines,
-            completed_at=completed_at,
-            root=root,
-            gate_check=gate_check,
-            require_gate_check=require_gate_check,
-            suite_delta=suite_delta,
-            boundary_waiver=boundary_waiver,
-            domain_waiver_record=_domain_checks,
-            resume_remedy=resolved.get("resume_remedy"),
-            resume_waived=resume_waived,
-            reviewed=resolved.get("reviewed"),
-            review_waived=review_waived,
-            review_tier=resolved.get("review_tier") or "",
-            negative_control_waiver=negative_control_waiver,
-            recoverable_session=resolved.get("recoverable_session"),
-            discard_resume_worktree=discard_resume_worktree,
-            accepted_paths=accepted_paths,
-            commit_list_shortfall=commit_list_shortfall,
-            no_impl_change=no_impl_change,
-            live_run_waived=live_run_waived,
-            plan_link=plan_link,
-            unplanned_reason=unplanned_reason,
-            promoted_by=promoted_by,
-            landing=landing,
-        )
-        if commit_list_shortfall is not None:
-            result["commit_list_shortfall"] = dict(commit_list_shortfall)
-        # The section this run delivered has now landed, so the requests queued
-        # behind it are released here rather than at the next admission pass:
-        # release latency is then the promotion's own duration instead of the
-        # duration of whatever pass is in progress.
-        result["released"] = _release_waiters_of_the_landed_section(record)
-        return result
+            if commit_list_shortfall is not None:
+                result["commit_list_shortfall"] = dict(commit_list_shortfall)
+            # The section this run delivered has now landed, so the requests queued
+            # behind it are released here rather than at the next admission pass:
+            # release latency is then the promotion's own duration instead of the
+            # duration of whatever pass is in progress.
+            result["released"] = _release_waiters_of_the_landed_section(record)
+            return result
 
 
 def _release_waiters_of_the_landed_section(
@@ -1110,6 +1234,22 @@ def _shadow_control_marks(
     return marks
 
 
+def _profile_fold_anchor(
+    project: str, ledger_root: str | Path | None
+) -> dict[str, Any] | None:
+    """The ledger state a promotion's profile fold may extend, or ``None``.
+
+    Read before the append, from file metadata alone, so the fold that follows
+    can compare it with the state the stored profile was written against
+    without opening the ledger's index or any run document.
+    """
+
+    try:
+        return ledger.index_state_stamp(project, ledger_root)
+    except (OSError, ValueError, TypeError):
+        return None
+
+
 def _budget_overrun_facts(
     record: Mapping[str, Any], *, finished: str | None = None
 ) -> dict[str, Any]:
@@ -1145,6 +1285,7 @@ def _budget_overrun_facts(
     }
 
 
+@operational_read
 def _complete_locked(
     run_id: str,
     *,
@@ -1181,6 +1322,7 @@ def _complete_locked(
     unplanned_reason: str = "",
     landing: Mapping[str, Any] | None = None,
     promoted_by: str = "",
+    ledger_reads: ExitStack | None = None,
 ) -> dict[str, Any]:
     """Promote a finished run into the owning repository's committed ledger.
 
@@ -1230,608 +1372,630 @@ def _complete_locked(
             root=ledger_root,
             checkout=checkout,
         )
-    ledger_data, ledger_version = ledger.load(project, root=ledger_root)
-    damaged_record = ledger.run_path(project, run_id, ledger_root)
-    if damaged_record in ledger.damaged_run_records(project):
-        raise ledger.LedgerError(
-            f"cannot promote run {run_id!r}: its record is damaged at {damaged_record}"
-        )
-    existing = next(
-        (
-            item
-            for item in ledger_data["runs"]
-            if str(item.get("run_id") or "") == run_id
-        ),
-        None,
-    )
-    if existing is not None:
-        existing_path = ledger.run_path(project, run_id, ledger_root)
-        if not existing_path.is_file():
-            existing_path = ledger.ledger_path(project, ledger_root)
-        with _report_written_ledger_row(
-            run_id,
-            ledger_path=existing_path,
-            row_present=lambda: _ledger_holds_row(project, ledger_root, run_id),
-        ):
-            comment = (
-                {"recorded": False, "reason": "shadow evidence does not land code"}
-                if shadow
-                else _record_landing_comment(
-                    project=project,
-                    plan=str(node.get("plan") or ""),
-                    section=str(node.get("section") or ""),
-                    run_id=run_id,
-                    narrative=outcome,
-                    author=_COORDINATOR_LANDING_AUTHOR,
-                    when=str(existing.get("completed_at") or _utc_now()),
-                    root=ledger_root,
-                    worker_tree=tree,
-                    worker_commits=_declared_manifest_commits(record),
-                    landing=_declared_manifest_landing(record),
-                )
+    # Every ledger read between here and the append is served from one index
+    # decode per read key: the landing checks and this record's own read
+    # re-read the same ledger milliseconds apart, and each read decoded the
+    # whole index afresh. The caller opens the region so its checks share it;
+    # a direct caller gets one of its own. Exiting it here, before the append,
+    # is what makes a read after the append decode afresh and see the row this
+    # promotion has just written.
+    reads = ledger_reads if ledger_reads is not None else ExitStack()
+    if ledger_reads is None:
+        reads.enter_context(ledger.index_reuse())
+    with reads:
+        ledger_data, ledger_version = ledger.load_open(project, root=ledger_root)
+        damaged_record = ledger.run_path(project, run_id, ledger_root)
+        if damaged_record in ledger.damaged_run_records(project):
+            raise ledger.LedgerError(
+                f"cannot promote run {run_id!r}: its record is damaged at {damaged_record}"
             )
-            landing_check = _report_landing_check(
-                _commit_landing_writes(
-                    run_id=run_id,
-                    verdict=str(gate).strip().lower(),
-                    checkout=checkout,
-                    paths=_plan_comment_store_path(
+        from reckon.crew.open_run_index import row_for_run
+
+        existing = row_for_run(project, run_id, ledger_root)
+        if existing is not None:
+            existing_path = ledger.run_path(project, run_id, ledger_root)
+            if not existing_path.is_file():
+                existing_path = ledger.ledger_path(project, ledger_root)
+            with _report_written_ledger_row(
+                run_id,
+                ledger_path=existing_path,
+                row_present=lambda: _ledger_holds_row(project, ledger_root, run_id),
+            ):
+                comment = (
+                    {"recorded": False, "reason": "shadow evidence does not land code"}
+                    if shadow
+                    else _record_landing_comment(
                         project=project,
                         plan=str(node.get("plan") or ""),
-                        comment=comment,
+                        section=str(node.get("section") or ""),
+                        run_id=run_id,
+                        narrative=outcome,
+                        author=_COORDINATOR_LANDING_AUTHOR,
+                        when=str(existing.get("completed_at") or _utc_now()),
                         root=ledger_root,
-                        checkout=checkout,
-                    ),
+                        worker_tree=tree,
+                        worker_commits=_declared_manifest_commits(record),
+                        landing=_declared_manifest_landing(record),
+                    )
                 )
-            )
-            capture = capture_run_session(record)
-            path = pointer_path(run_id)
-            _remove_promoted_pointer_or_defer(run_id, record)
-            retention = existing.get("worktree_retention")
-            release = _release_after_promotion(
+                landing_check = _report_landing_check(
+                    _commit_landing_writes(
+                        run_id=run_id,
+                        verdict=str(gate).strip().lower(),
+                        checkout=checkout,
+                        paths=_plan_comment_store_path(
+                            project=project,
+                            plan=str(node.get("plan") or ""),
+                            comment=comment,
+                            root=ledger_root,
+                            checkout=checkout,
+                        ),
+                    )
+                )
+                capture = capture_run_session(record)
+                path = pointer_path(run_id)
+                from reckon.crew.terminal_cleanup import queue_cleanup
+
+                retention = existing.get("worktree_retention")
+                queue_cleanup(
+                    {**record, "worktree_retention": retention},
+                    kind="promoted",
+                    gate=str(gate),
+                )
+                _remove_promoted_pointer_or_defer(run_id, record)
+                # The release runs inside this run's promotion lock, so the
+                # moved-aside copy is left to the trash sweep rather than
+                # deleted here: a copy deleted inline keeps a serial review
+                # sweep waiting on the filesystem.
+                with deferring_worktree_copy_deletion():
+                    release = _release_after_promotion(
+                        run_id,
+                        record,
+                        retention if isinstance(retention, Mapping) else None,
+                        gate=str(gate),
+                    )
+                release, recorded = _record_release_on_ledger(
+                    project=project,
+                    root=ledger_root,
+                    run_id=run_id,
+                    release=release,
+                    checkout=checkout,
+                )
+                release.update(_retire_disposable_identity(record))
+                if recorded is not None:
+                    existing = recorded
+                result = {
+                    "run_id": run_id,
+                    "project": project,
+                    "ledger_path": str(existing_path),
+                    "ledger_version": ledger_version,
+                    "pointer_removed": not path.exists(),
+                    "record": dict(existing),
+                    "already_promoted": True,
+                    "stacked_descendants": stacked_descendants_still_live(record),
+                    "session_capture": capture,
+                    "plan_comment": comment,
+                    "release": release,
+                    "landing_check": landing_check,
+                }
+                lane_receipt = existing.get("lane_receipt")
+                if isinstance(lane_receipt, Mapping):
+                    result["lane_receipt"] = dict(lane_receipt)
+                # This is a bounded fleet reading, not a readiness recommendation: the
+                # result states only what promotion observed, and the orchestrator owns
+                # every decision about what to do next.
+                result["fleet_state"] = _fleet_state_reading(project)
+                return result
+
+        # A writer still alive when a prompt promotion arrives is about to be ended
+        # by this promotion's own release step; end it before the observation so the
+        # bounded settle can fold the terminal record its shutdown writes. A run the
+        # release would not signal — no terminal manifest, or a non-cli launch —
+        # keeps the existing live-process behaviour, and nothing waits on a process
+        # this promotion is not going to end.
+        ended_writer = _end_live_writer_for_settle(record)
+        stream = _promotion_terminal_observation(
+            record, settle_even_if_alive=ended_writer
+        )
+        if completed_at:
+            finished = _assume_utc_if_naive(completed_at)
+            completion_source = "provided"
+        elif stream.completed_at:
+            finished = stream.completed_at
+            completion_source = stream.completion_source or "terminal_event"
+        else:
+            finished = _utc_now()
+            completion_source = "promotion_time"
+        worktree_retention = _resume_worktree_retention(
+            record,
+            recoverable_session,
+            retained_at=finished,
+            discard=discard_resume_worktree,
+            gate=str(gate),
+        )
+        if landing is None:
+            landing = _landing_preconditions(
                 run_id,
                 record,
-                retention if isinstance(retention, Mapping) else None,
-                gate=str(gate),
-            )
-            release, recorded = _record_release_on_ledger(
-                project=project,
-                root=ledger_root,
-                run_id=run_id,
-                release=release,
                 checkout=checkout,
+                ledger_root=ledger_root,
+                commits=commits,
+                gate=gate,
+                failure_classification=failure_classification,
+                no_impl_change=no_impl_change,
+                plan_link=plan_link,
+                unplanned_reason=unplanned_reason,
+                boundary_waiver=boundary_waiver,
+                negative_control_waiver=negative_control_waiver,
+                accepted_paths=accepted_paths,
+                gate_check=gate_check,
+                require_gate_check=require_gate_check,
             )
-            release.update(_retire_disposable_identity(record))
-            if recorded is not None:
-                existing = recorded
-            result = {
-                "run_id": run_id,
-                "project": project,
-                "ledger_path": str(existing_path),
-                "ledger_version": ledger_version,
-                "pointer_removed": not path.exists(),
-                "record": dict(existing),
-                "already_promoted": True,
-                "stacked_descendants": stacked_descendants_still_live(record),
-                "session_capture": capture,
-                "plan_comment": comment,
-                "release": release,
-                "landing_check": landing_check,
-            }
-            lane_receipt = existing.get("lane_receipt")
-            if isinstance(lane_receipt, Mapping):
-                result["lane_receipt"] = dict(lane_receipt)
-            # This is a bounded fleet reading, not a readiness recommendation: the
-            # result states only what promotion observed, and the orchestrator owns
-            # every decision about what to do next.
-            result["fleet_state"] = _fleet_state_reading(project)
-            return result
+        commit_list = list(landing["commits"])
+        shadow_patch = str(landing["shadow_patch"] or "")
+        changed_lines = landing["changed_lines"]
+        scope_acceptances = list(landing["scope_acceptances"] or [])
+        boundary_waived = landing["boundary_waived"]
+        brief_owner = landing["brief_owner"]
+        impl_move = landing["impl_move"]
+        manifest_text = landing["manifest_text"]
+        manifest = landing["manifest"]
+        negative_control = landing["negative_control"]
 
-    # A writer still alive when a prompt promotion arrives is about to be ended
-    # by this promotion's own release step; end it before the observation so the
-    # bounded settle can fold the terminal record its shutdown writes. A run the
-    # release would not signal — no terminal manifest, or a non-cli launch —
-    # keeps the existing live-process behaviour, and nothing waits on a process
-    # this promotion is not going to end.
-    ended_writer = _end_live_writer_for_settle(record)
-    stream = _promotion_terminal_observation(record, settle_even_if_alive=ended_writer)
-    if completed_at:
-        finished = _assume_utc_if_naive(completed_at)
-        completion_source = "provided"
-    elif stream.completed_at:
-        finished = stream.completed_at
-        completion_source = stream.completion_source or "terminal_event"
-    else:
-        finished = _utc_now()
-        completion_source = "promotion_time"
-    worktree_retention = _resume_worktree_retention(
-        record,
-        recoverable_session,
-        retained_at=finished,
-        discard=discard_resume_worktree,
-        gate=str(gate),
-    )
-    if landing is None:
-        landing = _landing_preconditions(
+        from reckon.crew.resumption import resolve_session
+
+        session_id = resolve_session(
             run_id,
+            record=record,
+            project=str(record.get("project") or ""),
+            root=record.get("repo"),
+        )["session_id"]
+        lane_receipt = _harvest_lane_receipt(
             record,
-            checkout=checkout,
-            ledger_root=ledger_root,
-            commits=commits,
-            gate=gate,
-            failure_classification=failure_classification,
-            no_impl_change=no_impl_change,
-            plan_link=plan_link,
-            unplanned_reason=unplanned_reason,
-            boundary_waiver=boundary_waiver,
-            negative_control_waiver=negative_control_waiver,
-            accepted_paths=accepted_paths,
-            gate_check=gate_check,
-            require_gate_check=require_gate_check,
+            session_id=session_id,
+            observed_at=finished,
         )
-    commit_list = list(landing["commits"])
-    shadow_patch = str(landing["shadow_patch"] or "")
-    changed_lines = landing["changed_lines"]
-    scope_acceptances = list(landing["scope_acceptances"] or [])
-    boundary_waived = landing["boundary_waived"]
-    brief_owner = landing["brief_owner"]
-    impl_move = landing["impl_move"]
-    manifest_text = landing["manifest_text"]
-    manifest = landing["manifest"]
-    negative_control = landing["negative_control"]
+        from reckon.crew.open_run_index import latest_session_row
 
-    from reckon.crew.resumption import resolve_session
+        previous = latest_session_row(project, session_id, ledger_root)
+        measured_budget = ledger.per_run_budget(stream.budget, previous)
+        # The overrun the worker was messaged about rides the committed row, so the
+        # live pointer's verdict is not the only place a run's overrun exists. The
+        # pair is measured here with the same reader the watch uses, against the
+        # same record, so the row's figure and the message's figure are one fact
+        # read twice rather than two clocks.
+        measured_budget.update(_budget_overrun_facts(record, finished=finished))
+        wall_seconds = _elapsed_seconds(record.get("created_at"), finished)
+        stalled = _wall_exceeded_budget(wall_seconds, node.get("time_budget"))
+        worker_seconds = stream.worker_seconds
+        if stream.worker_seconds_source is not None:
+            # A run that made more than one attempt carries the composition its
+            # worker span was summed from — the attempts' own event spans and their
+            # clients' receipts — so the row names what was measured rather than the
+            # single-mechanism word a one-attempt run keeps.
+            worker_seconds_source = stream.worker_seconds_source
+        elif stream.rollout_seconds is not None:
+            # A codex receipt measures the model span the exec stream cannot: its
+            # own wall span is authoritative over the stream's absence, on a normal
+            # finish and on a stalled one alike, so it is read before the fallbacks.
+            worker_seconds = stream.rollout_seconds
+            worker_seconds_source = "rollout_receipt"
+        elif worker_seconds is not None:
+            worker_seconds_source = "stream_events"
+        elif stream.completion_source == "stream_mtime" and stalled:
+            worker_seconds_source = "stalled"
+        elif stream.completion_source == "stream_mtime" and wall_seconds is not None:
+            worker_seconds = wall_seconds
+            worker_seconds_source = "wall_fallback"
+        else:
+            worker_seconds_source = "unavailable"
 
-    session_id = resolve_session(
-        run_id,
-        record=record,
-        project=str(record.get("project") or ""),
-        root=record.get("repo"),
-    )["session_id"]
-    lane_receipt = _harvest_lane_receipt(
-        record,
-        session_id=session_id,
-        observed_at=finished,
-    )
-    previous = next(
-        (
-            item
-            for item in reversed(ledger_data["runs"])
-            if session_id and item.get("session_id") == session_id
-        ),
-        None,
-    )
-    measured_budget = ledger.per_run_budget(stream.budget, previous)
-    # The overrun the worker was messaged about rides the committed row, so the
-    # live pointer's verdict is not the only place a run's overrun exists. The
-    # pair is measured here with the same reader the watch uses, against the
-    # same record, so the row's figure and the message's figure are one fact
-    # read twice rather than two clocks.
-    measured_budget.update(_budget_overrun_facts(record, finished=finished))
-    wall_seconds = _elapsed_seconds(record.get("created_at"), finished)
-    stalled = _wall_exceeded_budget(wall_seconds, node.get("time_budget"))
-    worker_seconds = stream.worker_seconds
-    if stream.worker_seconds_source is not None:
-        # A run that made more than one attempt carries the composition its
-        # worker span was summed from — the attempts' own event spans and their
-        # clients' receipts — so the row names what was measured rather than the
-        # single-mechanism word a one-attempt run keeps.
-        worker_seconds_source = stream.worker_seconds_source
-    elif stream.rollout_seconds is not None:
-        # A codex receipt measures the model span the exec stream cannot: its
-        # own wall span is authoritative over the stream's absence, on a normal
-        # finish and on a stalled one alike, so it is read before the fallbacks.
-        worker_seconds = stream.rollout_seconds
-        worker_seconds_source = "rollout_receipt"
-    elif worker_seconds is not None:
-        worker_seconds_source = "stream_events"
-    elif stream.completion_source == "stream_mtime" and stalled:
-        worker_seconds_source = "stalled"
-    elif stream.completion_source == "stream_mtime" and wall_seconds is not None:
-        worker_seconds = wall_seconds
-        worker_seconds_source = "wall_fallback"
-    else:
-        worker_seconds_source = "unavailable"
-
-    # Routing evidence is read from the delivered manifest at promotion, so a
-    # later measure can separate a followup touch from a defect on the row
-    # alone; the run directory survives, pruned only later by crew gc. An
-    # unreadable manifest
-    # leaves outside-scope paths unmeasured (key absent) and the dispute count
-    # "unknown" — a node never measured is not one that measured zero.
-    outside_scope_entries = (
-        None
-        if manifest is None
-        else list(manifest.get(OUTSIDE_SCOPE_MANIFEST_FIELD) or [])
-    )
-    outside_scope_paths = (
-        None
-        if outside_scope_entries is None
-        else ledger.outside_scope_paths_from_entries(outside_scope_entries)
-    )
-    predecessor = ledger.predecessor_run_id(
-        supplied=_coordinator_supplied_predecessor(record),
-        base_sha=str(record.get("base_sha") or record.get("base") or ""),
-        runs=ledger_data["runs"],
-        exclude_run_id=run_id,
-    )
-    dispute_count = (
-        "unknown"
-        if manifest_text is None
-        else ledger.stated_correction_count(manifest_text)
-    )
-    # An attached review is copied onto the committed row at promotion, so its
-    # dimension scores and their total survive the loss of the crew
-    # configuration home. The store keeps the verbatim text and findings; the
-    # row keeps the compact block that joins to the run which earned it.
-    # The cited gate log is copied into the row's own run directory before the
-    # record is built, so the row names a path that outlives the worktree and the
-    # reaper rather than one that was true only when it was written. The step is
-    # best-effort: a log already in the run directory, a citation that does not
-    # resolve on this machine, and a copy that cannot be read or written all
-    # leave the check as given, because preservation must never decide the verdict.
-    gate_check = _preserve_cited_gate_log(run_id, gate_check)
-    # The worker's own exit record is copied onto the row before promotion
-    # releases the live pointer and the worktree. The run directory survives
-    # until crew gc prunes it, but the row must carry the record regardless: the
-    # facts a census reads (the terminating signal and whether the exit landed
-    # mid-work either way) then outlive the pointer. The row's ``exit_status`` is
-    # left as the gate command's status; the worker's exit is a separate fact
-    # under its own key, so a run with no exit record carries no ``worker_exit``
-    # key rather than an empty one.
-    worker_exit = _promoted_worker_exit(run_id)
-    # The revision this promotion asserts landed, resolved while the run's tree
-    # is still present. A shadow asserts no code, so it records none.
-    promoted_revision = "" if shadow else _run_promoted_revision(record, commit_list)
-    # The six-line clone detector reports each function this run added or
-    # modified whose normalised window duplicates another function already in
-    # reckon/ or tests/ at the promoted revision. It is a review signal: a
-    # readable revision yields the list of matches (empty when none), and a
-    # case no revision pair can be measured for records the unmeasured marker
-    # rather than the empty list, so the two never read alike. Neither fails
-    # the promotion.
-    if shadow:
-        clone_matches: Any = ledger.unmeasured_clone_report("shadow run lands no code")
-    elif not (commit_list and promoted_revision):
-        clone_matches = ledger.unmeasured_clone_report(
-            "the run asserted no revision pair to compare"
+        # Routing evidence is read from the delivered manifest at promotion, so a
+        # later measure can separate a followup touch from a defect on the row
+        # alone; the run directory survives, pruned only later by crew gc. An
+        # unreadable manifest
+        # leaves outside-scope paths unmeasured (key absent) and the dispute count
+        # "unknown" — a node never measured is not one that measured zero.
+        outside_scope_entries = (
+            None
+            if manifest is None
+            else list(manifest.get(OUTSIDE_SCOPE_MANIFEST_FIELD) or [])
         )
-    else:
-        measured = clones.promotion_clone_matches(
-            tree,
+        outside_scope_paths = (
+            None
+            if outside_scope_entries is None
+            else ledger.outside_scope_paths_from_entries(outside_scope_entries)
+        )
+        predecessor = ledger.predecessor_run_id(
+            supplied=_coordinator_supplied_predecessor(record),
             base_sha=str(record.get("base_sha") or record.get("base") or ""),
-            tip=promoted_revision,
+            runs=ledger_data["runs"],
+            exclude_run_id=run_id,
         )
-        clone_matches = (
-            measured
-            if measured is not None
-            else ledger.unmeasured_clone_report("the revision pair could not be read")
+        dispute_count = (
+            "unknown"
+            if manifest_text is None
+            else ledger.stated_correction_count(manifest_text)
         )
-    # A brief run carries the digest and stored path of the brief it read in
-    # place of a plan section, so a promoted row still points at the exact text
-    # the worker saw. The block is present only for a brief run, which is what
-    # makes the row's ``plan`` null rather than empty.
-    brief_run = str(node.get("brief") or "").strip()
-    brief_block = (
-        {
-            "sha256": str(node.get("brief_sha256") or ""),
-            "path": str(node.get("brief_path") or ""),
-        }
-        if brief_run
-        else None
-    )
-    # The crew session that dispatched this run rides the committed row beside
-    # the run it belongs to, because this promotion deletes the live pointer
-    # that carried it while ``session_id`` names the worker's own harness
-    # session rather than the coordinator's. It is null rather than absent when
-    # no pointer named one, because every key in ``RECORD_FIELDS`` is present on
-    # every promoted row.
-    pointer_session = str(record.get("session") or "").strip() or None
-    # The disposition verb rides the committed row for the same reason: the
-    # live pointer that carries it is deleted by this promotion, so a row that
-    # does not read it here can never recover it. A run with no recorded
-    # disposition records null, never an inferred verb.
-    disposition = _recorded_disposition(record)
-    # A review run's deliverable is the record it stored for the subject it
-    # read, so landing the run lands the record with it — and every earlier
-    # round of that subject too, so a review of another head is not left only in
-    # the host staging store. The rounds are read here, before the ledger row is
-    # assembled, so the round this run produced can name the row and every
-    # round's committed write can join the row's commit below. A run that is not
-    # a review, or a review run that delivered no readable round, leaves the
-    # row's review block as the review gate resolved it.
-    committed_review_payloads: list[dict[str, Any]] = []
-    # A plan review's record reaches the plan-review store from the same call
-    # that reads its rounds, so its outcome is read back after that call and
-    # reported on the receipt beside the run store's own outcome. The two say
-    # different things: ``store`` is the ledger's index append, and a plan
-    # review that never reached the review store still shows it as written.
-    plan_review_store: dict[str, Any] | None = None
-    if not shadow:
-        committed_review_payloads = _delivered_review_payloads_for_commit(
-            record, project, run_id, root=ledger_root
+        # An attached review is copied onto the committed row at promotion, so its
+        # dimension scores and their total survive the loss of the crew
+        # configuration home. The store keeps the verbatim text and findings; the
+        # row keeps the compact block that joins to the run which earned it.
+        # The cited gate log is copied into the row's own run directory before the
+        # record is built, so the row names a path that outlives the worktree and the
+        # reaper rather than one that was true only when it was written. The step is
+        # best-effort: a log already in the run directory, a citation that does not
+        # resolve on this machine, and a copy that cannot be read or written all
+        # leave the check as given, because preservation must never decide the verdict.
+        gate_check = _preserve_cited_gate_log(run_id, gate_check)
+        # The worker's own exit record is copied onto the row before promotion
+        # releases the live pointer and the worktree. The run directory survives
+        # until crew gc prunes it, but the row must carry the record regardless: the
+        # facts a census reads (the terminating signal and whether the exit landed
+        # mid-work either way) then outlive the pointer. The row's ``exit_status`` is
+        # left as the gate command's status; the worker's exit is a separate fact
+        # under its own key, so a run with no exit record carries no ``worker_exit``
+        # key rather than an empty one.
+        worker_exit = _promoted_worker_exit(run_id)
+        # The revision this promotion asserts landed, resolved while the run's tree
+        # is still present. A shadow asserts no code, so it records none.
+        promoted_revision = (
+            "" if shadow else _run_promoted_revision(record, commit_list)
         )
-        plan_review_store = _plan_review_store_outcome(project, run_id, record)
-    committed_review_payload = next(
-        (
-            payload
-            for payload in committed_review_payloads
-            if str(payload.get("review_run_id") or "").strip() == run_id
-        ),
-        None,
-    )
-    if committed_review_payload is None and committed_review_payloads:
-        # A round whose own body carried no review run id is filed under this
-        # run's id above, so it is normally the selected one; if none names the
-        # row, the first round still stands in so the row's review block is not
-        # left absent.
-        committed_review_payload = committed_review_payloads[0]
-    if committed_review_payload is not None:
-        committed_block = review_module.ledger_block(committed_review_payload)
-        if committed_block is not None:
-            committed_block["id"] = run_id
-            reviewed = committed_block
-    run = ledger.build_record(
-        run_id=run_id,
-        project=project,
-        plan=str(node.get("plan") or ""),
-        section=str(node.get("section") or ""),
-        brief=brief_block,
-        plan_link=str((brief_owner or {}).get("plan_link") or ""),
-        unplanned_reason=str((brief_owner or {}).get("unplanned_reason") or ""),
-        node=str(node.get("id") or ""),
-        node_definition=node,
-        role=str(record.get("role") or ""),
-        spec_level=str(node.get("spec_level") or ""),
-        member_id=str(record.get("member") or ""),
-        backend=str(
-            record.get("backend") or (record.get("agent") or {}).get("backend") or ""
-        ),
-        agent=record.get("agent") or {},
-        dispatched_at=str(record.get("created_at") or ""),
-        completed_at=finished,
-        completed_at_source=completion_source,
-        worker_seconds=worker_seconds,
-        worker_seconds_source=worker_seconds_source,
-        wall_seconds=wall_seconds,
-        stalled=stalled,
-        time_budget=str(node.get("time_budget") or ""),
-        base_sha=str(record.get("base_sha") or ""),
-        commits=commit_list,
-        changed_lines=changed_lines,
-        tests_added=tests_added,
-        gate=gate,
-        failure_classification=failure_classification,
-        outcome=outcome,
-        disposition=disposition,
-        manifest_path=str(record.get("manifest_path") or ""),
-        scope_changed=scope_changed,
-        session=pointer_session,
-        session_id=session_id,
-        session_harness=(record.get("session_harness") or record.get("dialect"))
-        if session_id
-        else None,
-        session_model=(
-            record.get("session_model") or (record.get("agent") or {}).get("model")
+        # The six-line clone detector reports each function this run added or
+        # modified whose normalised window duplicates another function already in
+        # reckon/ or tests/ at the promoted revision. It is a review signal: a
+        # readable revision yields the list of matches (empty when none), and a
+        # case no revision pair can be measured for records the unmeasured marker
+        # rather than the empty list, so the two never read alike. Neither fails
+        # the promotion.
+        if shadow:
+            clone_matches: Any = ledger.unmeasured_clone_report(
+                "shadow run lands no code"
+            )
+        elif not (commit_list and promoted_revision):
+            clone_matches = ledger.unmeasured_clone_report(
+                "the run asserted no revision pair to compare"
+            )
+        else:
+            measured = clones.promotion_clone_matches(
+                tree,
+                base_sha=str(record.get("base_sha") or record.get("base") or ""),
+                tip=promoted_revision,
+            )
+            clone_matches = (
+                measured
+                if measured is not None
+                else ledger.unmeasured_clone_report(
+                    "the revision pair could not be read"
+                )
+            )
+        # A brief run carries the digest and stored path of the brief it read in
+        # place of a plan section, so a promoted row still points at the exact text
+        # the worker saw. The block is present only for a brief run, which is what
+        # makes the row's ``plan`` null rather than empty.
+        brief_run = str(node.get("brief") or "").strip()
+        brief_block = (
+            {
+                "sha256": str(node.get("brief_sha256") or ""),
+                "path": str(node.get("brief_path") or ""),
+            }
+            if brief_run
+            else None
         )
-        if session_id
-        else None,
-        budget=measured_budget,
-        lane_receipt=lane_receipt,
-        throughput=stream.throughput,
-        budget_fallback=record.get("budget_fallback"),
-        lineage=record.get("lineage"),
-        shadow_patch=shadow_patch,
-        # Read through the accessor: the pointer carries only a path to the
-        # dispatch-time detail file, and a pointer written before the move
-        # still carries the value inline.
-        unreconciled_override=dispatch_field(record, "unreconciled_override"),
-        orchestrator_lane_override=record.get("orchestrator_lane_override"),
-        gate_check=gate_check,
-        require_gate_check=require_gate_check,
-        suite_delta=suite_delta,
-        resume_remedy=resume_remedy,
-        outside_scope_paths=outside_scope_paths,
-        predecessor_run=predecessor,
-        dispute_count=dispute_count,
-        review=reviewed,
-        clone_matches=clone_matches,
-        promoted_by=promoted_by,
-    )
-    # The picker's answer rides the dispatch-time detail file once it has moved
-    # off the pointer, so the row reads it through the accessor. An answer the
-    # record carried inline is the same value through the same call.
-    selection = dispatch_field(record, "picker_selection")
-    if selection is not None:
-        run["picker_selection"] = (
-            dict(selection) if isinstance(selection, Mapping) else selection
+        # The crew session that dispatched this run rides the committed row beside
+        # the run it belongs to, because this promotion deletes the live pointer
+        # that carried it while ``session_id`` names the worker's own harness
+        # session rather than the coordinator's. It is null rather than absent when
+        # no pointer named one, because every key in ``RECORD_FIELDS`` is present on
+        # every promoted row.
+        pointer_session = str(record.get("session") or "").strip() or None
+        # The disposition verb rides the committed row for the same reason: the
+        # live pointer that carries it is deleted by this promotion, so a row that
+        # does not read it here can never recover it. A run with no recorded
+        # disposition records null, never an inferred verb.
+        disposition = _recorded_disposition(record)
+        # A review run's deliverable is the record it stored for the subject it
+        # read, so landing the run lands the record with it — and every earlier
+        # round of that subject too, so a review of another head is not left only in
+        # the host staging store. The rounds are read here, before the ledger row is
+        # assembled, so the round this run produced can name the row and every
+        # round's committed write can join the row's commit below. A run that is not
+        # a review, or a review run that delivered no readable round, leaves the
+        # row's review block as the review gate resolved it.
+        committed_review_payloads: list[dict[str, Any]] = []
+        # A plan review's record reaches the plan-review store from the same call
+        # that reads its rounds, so its outcome is read back after that call and
+        # reported on the receipt beside the run store's own outcome. The two say
+        # different things: ``store`` is the ledger's index append, and a plan
+        # review that never reached the review store still shows it as written.
+        plan_review_store: dict[str, Any] | None = None
+        if not shadow:
+            committed_review_payloads = _delivered_review_payloads_for_commit(
+                record, project, run_id, root=ledger_root
+            )
+            plan_review_store = _plan_review_store_outcome(project, run_id, record)
+        committed_review_payload = next(
+            (
+                payload
+                for payload in committed_review_payloads
+                if str(payload.get("review_run_id") or "").strip() == run_id
+            ),
+            None,
         )
-    # A hold and the dispatch that went past it are both known only here: the
-    # advisory pick lands after dispatch returns, so the run's route mode was
-    # recorded before the answer existed. A row carrying a holding answer is
-    # therefore one the operator overruled, and it is named with its own value
-    # rather than sharing the shadow picks, so a reader can count how often a
-    # hold is overruled.
-    if overridden_hold(run.get("picker_selection")):
-        run["route_mode"] = OVERRIDDEN_HOLD_ROUTE_MODE
-    run["attempt"] = int(record.get("attempt") or 1)
-    run["attempt_kind"] = str(record.get("attempt_kind") or "dispatch")
-    # The worker's exit record rides the row verbatim, and the key is written
-    # only when the run directory held one: a present-but-empty key would read
-    # as a supervisor that ran and recorded nothing.
-    if worker_exit is not None:
-        run["worker_exit"] = worker_exit
-    # The revision the promotion asserts landed rides the row so a later sweep
-    # can ask about it without the worktree, which promotion is about to
-    # release. A run that asserted no code leaves the key absent rather than
-    # recording a base it never touched, so an absent key never reads as a
-    # promotion whose work was verified as landed.
-    if promoted_revision:
-        run["promoted_revision"] = promoted_revision
-    # The job a placed launch was charged to rides the committed row beside the
-    # run it belongs to, because the ledger row is the durable record a later
-    # attribution reads; the live pointer it was first written on is removed by
-    # this promotion. A run that declared no placement records the key absent
-    # rather than zero, so an unplaced run is distinguishable from a placed one
-    # whose scheduler never answered.
-    job_id = record.get("job_id")
-    if job_id is not None:
-        run["job_id"] = str(job_id)
-    # A deliberate commitless promotion survives on the record with its reason,
-    # so a later reader can tell it from one that recorded nothing by accident.
-    if str(no_commit).strip():
-        run["no_commit"] = str(no_commit).strip()
-    # A deliberate override of the worktree-evidence guard records the paths it
-    # covered, so the ledger says which uncommitted repository work was declined
-    # a commit beside the reason given, rather than only that a commit was
-    # declined. No manifest field can put a path here.
-    uncommitted = sorted(
-        {str(path).strip() for path in no_commit_uncommitted if str(path).strip()}
-    )
-    if uncommitted:
-        run["no_commit_uncommitted_paths"] = uncommitted
-    # The impl comparison and its outcome ride the row, so a later audit can
-    # separate a plan that moved from one promoted against a recorded waiver.
-    if impl_move.get("at_dispatch") is not None:
-        run["plan_impl_at_dispatch"] = impl_move["at_dispatch"]
-    run["impl_move"] = dict(impl_move)
-    # The negative-control verdict rides the row, so an audit can separate a
-    # red log that was delivered and matched from a declaration of none that was
-    # recorded with its reason rather than refused.
-    run["negative_control"] = dict(negative_control)
-    # A presented-list shortfall survives on the record so a reader of the
-    # ledger sees the boundary check may have been under-scoped, not only the
-    # coordinator that was looking at the immediate report.
-    if commit_list_shortfall:
-        run["commit_list_shortfall"] = dict(commit_list_shortfall)
-    if boundary_waived is not None:
-        run["boundary_waiver"] = boundary_waived
-    # A waived declared invariant rides the row the way the other waivers do.
-    promotion_waivers.record_domain_waiver(run, domain_waiver_record)
-    if scope_acceptances:
-        run["scope_acceptances"] = scope_acceptances
-    # A discarded resume path survives on the row with the session it discarded
-    # and the reason given, so an audit can tell a deliberate discard from the
-    # accidental one this refusal exists to prevent.
-    if resume_waived is not None:
-        run["resume_waiver"] = dict(resume_waived)
-        if discard_resume_worktree:
-            run["resume_waiver"]["worktree_discarded"] = True
-    if review_waived is not None:
-        run["review_waiver"] = dict(review_waived)
-    # The tier rides the row on every promotion. For a run that changed no
-    # runtime source it is the recorded reason no review exists — the merged-head
-    # gate re-run and the node's negative control are what checked it instead —
-    # so a later reader can tell a deliberate no-review tier from a review that
-    # was simply never produced.
-    if review_tier:
-        run["review_tier"] = review_tier
-    # A run promoted while its own worker was still alive survives on the row
-    # with the reason given, so an audit can tell a deliberate promotion of a
-    # live worker from the accidental orphan this refusal exists to prevent.
-    if live_run_waived is not None:
-        run["live_run_waiver"] = dict(live_run_waived)
-    if worktree_retention is not None:
-        run["worktree_retention"] = dict(worktree_retention)
-    watch_override = record.get("watch_override")
-    if isinstance(watch_override, Mapping):
-        run["watch_override"] = dict(watch_override)
-    execution_fit = record.get("execution_fit")
-    if isinstance(execution_fit, Mapping):
-        run["execution_fit"] = dict(execution_fit)
-    # A run launched without the fence carries the reason it was waived onto the
-    # committed row, so the ledger says which runs ran unprotected and why. The
-    # pointer holds it only until promotion deletes it, and a reader asking why
-    # a worker could write outside its grant needs it in the durable row. An
-    # ordinary fenced dispatch records no such key.
-    fence_waiver = record.get("fence_waiver")
-    if isinstance(fence_waiver, Mapping):
-        run["fence_waiver"] = dict(fence_waiver)
-    # The defaults a layer left writable ride the row beside the waiver, for the
-    # same reason: the pointer that held them is deleted at promotion, and a
-    # reader asking whether a run could write outside its fence's own grant needs
-    # them in the durable row. A run whose fence removed nothing records no such
-    # key, so the row never carries an empty list that would read as a fence
-    # built and found whole.
-    fence_unprotected = record.get("fence_unprotected_paths")
-    if fence_unprotected:
-        run["fence_unprotected_paths"] = [str(path) for path in fence_unprotected]
-    # The advisory a dispatch computed rides the committed row the same way it
-    # rode the live pointer, together with the lane declaration and reading it
-    # was derived from. Promotion deletes that pointer, so an advisory reaching
-    # only the pointer is readable exactly until the run becomes evidence, and
-    # the row is where a later reader asks whether the advice was taken --
-    # ``backend`` already names the lane that was chosen, so the pair on the row
-    # is what tells taking the advice apart from declining it. Each key is
-    # written only when the pointer carried it: a row holding a null advisory
-    # would read as a lane that was assessed and found quiet, which is the
-    # opposite of a run whose dispatch never emitted one.
-    for lane_key in ("lane_advisory", "lane_declaration", "lane_reading"):
-        lane_value = record.get(lane_key)
-        if lane_value is None:
-            continue
-        run[lane_key] = (
-            dict(lane_value) if isinstance(lane_value, Mapping) else lane_value
-        )
-    # A shadow whose stream read its primary's landed answer is void as
-    # calibration evidence; the stream is still on disk at this point (the run
-    # directory survives until crew gc) so promotion scans it rather than
-    # trusting a worker's self-report. Contamination recreates the primary's
-    # answer from the object store, never from the shadow's own patch.
-    if shadow:
-        run.update(
-            _shadow_control_marks(record, ledger_data["runs"], tree, run.get("lineage"))
-        )
-    # A terminal run's stream is immutable, so its two figures are computed once
-    # here, from the run's own stream, and recorded on the row; a later derive
-    # then reads the ledger instead of reopening the stream. A stream that is
-    # already gone records each figure as absent rather than as zero, so a
-    # missing measurement never reads as a free run.
-    run.update(capabilities.derive_run_figures(run))
-    # The landing comment is written last of the plan-facing steps: the record
-    # is assembled, and every refusal it raises is raised, before anything is
-    # written to the plan. A promotion that refuses after writing the comment
-    # leaves the plan mutated for the caller that retries it, and the first
-    # attempt's narrative pins the outcome every later attempt must repeat
-    # byte-identical to avoid the narrative-conflict refusal. None of the
-    # checks above needs the comment to exist, so none of them follows it.
-    comment = (
-        {"recorded": False, "reason": "shadow evidence does not land code"}
-        if shadow
-        else _record_landing_comment(
+        if committed_review_payload is None and committed_review_payloads:
+            # A round whose own body carried no review run id is filed under this
+            # run's id above, so it is normally the selected one; if none names the
+            # row, the first round still stands in so the row's review block is not
+            # left absent.
+            committed_review_payload = committed_review_payloads[0]
+        if committed_review_payload is not None:
+            committed_block = review_module.ledger_block(committed_review_payload)
+            if committed_block is not None:
+                committed_block["id"] = run_id
+                reviewed = committed_block
+        run = ledger.build_record(
+            run_id=run_id,
             project=project,
             plan=str(node.get("plan") or ""),
             section=str(node.get("section") or ""),
-            run_id=run_id,
-            narrative=outcome,
-            author=_COORDINATOR_LANDING_AUTHOR,
-            when=finished,
-            root=ledger_root,
-            worker_tree=tree,
-            worker_commits=commit_list or _declared_manifest_commits(record),
-            landing=_declared_manifest_landing(record),
+            brief=brief_block,
+            plan_link=str((brief_owner or {}).get("plan_link") or ""),
+            unplanned_reason=str((brief_owner or {}).get("unplanned_reason") or ""),
+            node=str(node.get("id") or ""),
+            node_definition=node,
+            role=str(record.get("role") or ""),
+            spec_level=str(node.get("spec_level") or ""),
+            member_id=str(record.get("member") or ""),
+            backend=str(
+                record.get("backend")
+                or (record.get("agent") or {}).get("backend")
+                or ""
+            ),
+            agent=record.get("agent") or {},
+            dispatched_at=str(record.get("created_at") or ""),
+            completed_at=finished,
+            completed_at_source=completion_source,
+            worker_seconds=worker_seconds,
+            worker_seconds_source=worker_seconds_source,
+            wall_seconds=wall_seconds,
+            stalled=stalled,
+            time_budget=str(node.get("time_budget") or ""),
+            base_sha=str(record.get("base_sha") or ""),
+            commits=commit_list,
+            changed_lines=changed_lines,
+            tests_added=tests_added,
+            gate=gate,
+            failure_classification=failure_classification,
+            outcome=outcome,
+            disposition=disposition,
+            manifest_path=str(record.get("manifest_path") or ""),
+            scope_changed=scope_changed,
+            session=pointer_session,
+            session_id=session_id,
+            session_harness=(record.get("session_harness") or record.get("dialect"))
+            if session_id
+            else None,
+            session_model=(
+                record.get("session_model") or (record.get("agent") or {}).get("model")
+            )
+            if session_id
+            else None,
+            budget=measured_budget,
+            lane_receipt=lane_receipt,
+            throughput=stream.throughput,
+            budget_fallback=record.get("budget_fallback"),
+            lineage=record.get("lineage"),
+            shadow_patch=shadow_patch,
+            # Read through the accessor: the pointer carries only a path to the
+            # dispatch-time detail file, and a pointer written before the move
+            # still carries the value inline.
+            unreconciled_override=dispatch_field(record, "unreconciled_override"),
+            orchestrator_lane_override=record.get("orchestrator_lane_override"),
+            gate_check=gate_check,
+            require_gate_check=require_gate_check,
+            suite_delta=suite_delta,
+            resume_remedy=resume_remedy,
+            outside_scope_paths=outside_scope_paths,
+            predecessor_run=predecessor,
+            dispute_count=dispute_count,
+            review=reviewed,
+            clone_matches=clone_matches,
+            promoted_by=promoted_by,
         )
-    )
-    # The narrative the comment recorded lives in the plan, so the row carries
-    # its outcome empty rather than twice.
-    if comment.get("recorded"):
-        run["outcome"] = ""
-    already_promoted = False
+        # The picker's answer rides the dispatch-time detail file once it has moved
+        # off the pointer, so the row reads it through the accessor. An answer the
+        # record carried inline is the same value through the same call.
+        selection = dispatch_field(record, "picker_selection")
+        if selection is not None:
+            run["picker_selection"] = (
+                dict(selection) if isinstance(selection, Mapping) else selection
+            )
+        # A hold and the dispatch that went past it are both known only here: the
+        # advisory pick lands after dispatch returns, so the run's route mode was
+        # recorded before the answer existed. A row carrying a holding answer is
+        # therefore one the operator overruled, and it is named with its own value
+        # rather than sharing the shadow picks, so a reader can count how often a
+        # hold is overruled.
+        if overridden_hold(run.get("picker_selection")):
+            run["route_mode"] = OVERRIDDEN_HOLD_ROUTE_MODE
+        run["attempt"] = int(record.get("attempt") or 1)
+        run["attempt_kind"] = str(record.get("attempt_kind") or "dispatch")
+        # The worker's exit record rides the row verbatim, and the key is written
+        # only when the run directory held one: a present-but-empty key would read
+        # as a supervisor that ran and recorded nothing.
+        if worker_exit is not None:
+            run["worker_exit"] = worker_exit
+        # The revision the promotion asserts landed rides the row so a later sweep
+        # can ask about it without the worktree, which promotion is about to
+        # release. A run that asserted no code leaves the key absent rather than
+        # recording a base it never touched, so an absent key never reads as a
+        # promotion whose work was verified as landed.
+        if promoted_revision:
+            run["promoted_revision"] = promoted_revision
+        # The job a placed launch was charged to rides the committed row beside the
+        # run it belongs to, because the ledger row is the durable record a later
+        # attribution reads; the live pointer it was first written on is removed by
+        # this promotion. A run that declared no placement records the key absent
+        # rather than zero, so an unplaced run is distinguishable from a placed one
+        # whose scheduler never answered.
+        job_id = record.get("job_id")
+        if job_id is not None:
+            run["job_id"] = str(job_id)
+        # A deliberate commitless promotion survives on the record with its reason,
+        # so a later reader can tell it from one that recorded nothing by accident.
+        if str(no_commit).strip():
+            run["no_commit"] = str(no_commit).strip()
+        # A deliberate override of the worktree-evidence guard records the paths it
+        # covered, so the ledger says which uncommitted repository work was declined
+        # a commit beside the reason given, rather than only that a commit was
+        # declined. No manifest field can put a path here.
+        uncommitted = sorted(
+            {str(path).strip() for path in no_commit_uncommitted if str(path).strip()}
+        )
+        if uncommitted:
+            run["no_commit_uncommitted_paths"] = uncommitted
+        # The impl comparison and its outcome ride the row, so a later audit can
+        # separate a plan that moved from one promoted against a recorded waiver.
+        if impl_move.get("at_dispatch") is not None:
+            run["plan_impl_at_dispatch"] = impl_move["at_dispatch"]
+        run["impl_move"] = dict(impl_move)
+        # The negative-control verdict rides the row, so an audit can separate a
+        # red log that was delivered and matched from a declaration of none that was
+        # recorded with its reason rather than refused.
+        run["negative_control"] = dict(negative_control)
+        # A presented-list shortfall survives on the record so a reader of the
+        # ledger sees the boundary check may have been under-scoped, not only the
+        # coordinator that was looking at the immediate report.
+        if commit_list_shortfall:
+            run["commit_list_shortfall"] = dict(commit_list_shortfall)
+        if boundary_waived is not None:
+            run["boundary_waiver"] = boundary_waived
+        # A waived declared invariant rides the row the way the other waivers do.
+        promotion_waivers.record_domain_waiver(run, domain_waiver_record)
+        if scope_acceptances:
+            run["scope_acceptances"] = scope_acceptances
+        # A discarded resume path survives on the row with the session it discarded
+        # and the reason given, so an audit can tell a deliberate discard from the
+        # accidental one this refusal exists to prevent.
+        if resume_waived is not None:
+            run["resume_waiver"] = dict(resume_waived)
+            if discard_resume_worktree:
+                run["resume_waiver"]["worktree_discarded"] = True
+        if review_waived is not None:
+            run["review_waiver"] = dict(review_waived)
+        # The tier rides the row on every promotion. For a run that changed no
+        # runtime source it is the recorded reason no review exists — the merged-head
+        # gate re-run and the node's negative control are what checked it instead —
+        # so a later reader can tell a deliberate no-review tier from a review that
+        # was simply never produced.
+        if review_tier:
+            run["review_tier"] = review_tier
+        # A run promoted while its own worker was still alive survives on the row
+        # with the reason given, so an audit can tell a deliberate promotion of a
+        # live worker from the accidental orphan this refusal exists to prevent.
+        if live_run_waived is not None:
+            run["live_run_waiver"] = dict(live_run_waived)
+        if worktree_retention is not None:
+            run["worktree_retention"] = dict(worktree_retention)
+        watch_override = record.get("watch_override")
+        if isinstance(watch_override, Mapping):
+            run["watch_override"] = dict(watch_override)
+        execution_fit = record.get("execution_fit")
+        if isinstance(execution_fit, Mapping):
+            run["execution_fit"] = dict(execution_fit)
+        # A run launched without the fence carries the reason it was waived onto the
+        # committed row, so the ledger says which runs ran unprotected and why. The
+        # pointer holds it only until promotion deletes it, and a reader asking why
+        # a worker could write outside its grant needs it in the durable row. An
+        # ordinary fenced dispatch records no such key.
+        fence_waiver = record.get("fence_waiver")
+        if isinstance(fence_waiver, Mapping):
+            run["fence_waiver"] = dict(fence_waiver)
+        # The defaults a layer left writable ride the row beside the waiver, for the
+        # same reason: the pointer that held them is deleted at promotion, and a
+        # reader asking whether a run could write outside its fence's own grant needs
+        # them in the durable row. A run whose fence removed nothing records no such
+        # key, so the row never carries an empty list that would read as a fence
+        # built and found whole.
+        fence_unprotected = record.get("fence_unprotected_paths")
+        if fence_unprotected:
+            run["fence_unprotected_paths"] = [str(path) for path in fence_unprotected]
+        # The advisory a dispatch computed rides the committed row the same way it
+        # rode the live pointer, together with the lane declaration and reading it
+        # was derived from. Promotion deletes that pointer, so an advisory reaching
+        # only the pointer is readable exactly until the run becomes evidence, and
+        # the row is where a later reader asks whether the advice was taken --
+        # ``backend`` already names the lane that was chosen, so the pair on the row
+        # is what tells taking the advice apart from declining it. Each key is
+        # written only when the pointer carried it: a row holding a null advisory
+        # would read as a lane that was assessed and found quiet, which is the
+        # opposite of a run whose dispatch never emitted one.
+        for lane_key in ("lane_advisory", "lane_declaration", "lane_reading"):
+            lane_value = record.get(lane_key)
+            if lane_value is None:
+                continue
+            run[lane_key] = (
+                dict(lane_value) if isinstance(lane_value, Mapping) else lane_value
+            )
+        # A shadow whose stream read its primary's landed answer is void as
+        # calibration evidence; the stream is still on disk at this point (the run
+        # directory survives until crew gc) so promotion scans it rather than
+        # trusting a worker's self-report. Contamination recreates the primary's
+        # answer from the object store, never from the shadow's own patch.
+        if shadow:
+            run.update(
+                _shadow_control_marks(
+                    record, ledger_data["runs"], tree, run.get("lineage")
+                )
+            )
+        # A terminal run's stream is immutable, so its two figures are computed once
+        # here, from the run's own stream, and recorded on the row; a later derive
+        # then reads the ledger instead of reopening the stream. A stream that is
+        # already gone records each figure as absent rather than as zero, so a
+        # missing measurement never reads as a free run.
+        run.update(capabilities.derive_run_figures(run))
+        # The landing comment is written last of the plan-facing steps: the record
+        # is assembled, and every refusal it raises is raised, before anything is
+        # written to the plan. A promotion that refuses after writing the comment
+        # leaves the plan mutated for the caller that retries it, and the first
+        # attempt's narrative pins the outcome every later attempt must repeat
+        # byte-identical to avoid the narrative-conflict refusal. None of the
+        # checks above needs the comment to exist, so none of them follows it.
+        comment = (
+            {"recorded": False, "reason": "shadow evidence does not land code"}
+            if shadow
+            else _record_landing_comment(
+                project=project,
+                plan=str(node.get("plan") or ""),
+                section=str(node.get("section") or ""),
+                run_id=run_id,
+                narrative=outcome,
+                author=_COORDINATOR_LANDING_AUTHOR,
+                when=finished,
+                root=ledger_root,
+                worker_tree=tree,
+                worker_commits=commit_list or _declared_manifest_commits(record),
+                landing=_declared_manifest_landing(record),
+            )
+        )
+        # The narrative the comment recorded lives in the plan, so the row carries
+        # its outcome empty rather than twice.
+        if comment.get("recorded"):
+            run["outcome"] = ""
+        already_promoted = False
+    # The ledger state the run-time profile fold may extend, read before the
+    # append moves it. A fold inside this promotion needs it to prove the
+    # samples a previous refresh stored are this history minus the row about to
+    # be written, so it can extend them without reading the ledger.
+    profile_anchor = _profile_fold_anchor(project, ledger_root)
     try:
         written = ledger.append_run(project, run, root=ledger_root)
     except ledger.LedgerError:
         # Another completion can land after the read above. Treat only an
         # observed matching record as success; every other ledger error is
         # still a refusal.
-        refreshed, ledger_version = ledger.load(project, root=ledger_root)
-        existing = next(
-            (
-                item
-                for item in refreshed["runs"]
-                if str(item.get("run_id") or "") == run_id
-            ),
-            None,
-        )
+        existing = row_for_run(project, run_id, ledger_root)
         if existing is None:
             raise
         already_promoted = True
@@ -1845,14 +2009,20 @@ def _complete_locked(
         }
     # The promotion that moves a project's ledger is the one moment its profile
     # content changes, so it publishes the run-time profile the picks will later
-    # serve instead of letting a pick rebuild it. This runs after the append, for
-    # the promoted run's project, and never fails the promotion: the profile is
-    # an operational reading, and a build or cache write that fails leaves the
-    # previous reading in place rather than undoing a landed run.
+    # serve instead of letting a pick rebuild it. It hands the refresh the row it
+    # just wrote beside the ledger state it saw before writing it, so the fold
+    # extends the stored samples without decoding the ledger index or reading
+    # run documents; a promotion's cost therefore does not grow with the ledger.
+    # This never fails the promotion: the profile is an operational reading, and
+    # a cache write that fails leaves the previous reading in place rather than
+    # undoing a landed run.
+    profile_refresh = None
     try:
         from reckon.crew.picker import lane_context as _lane_context
 
-        _lane_context.refresh_run_time_profile(project)
+        profile_refresh = _lane_context.refresh_run_time_profile(
+            project, appended=(run,), anchor=profile_anchor
+        )
     except Exception:  # noqa: BLE001, S110 - advisory profiling cannot prevent a landing
         pass
     committed_review_paths: list[Path] = []
@@ -1915,6 +2085,9 @@ def _complete_locked(
         # checkout carries no uncommitted state the next reader would trip on. A
         # refused landing then takes back every write it made, including the store
         # row this attempt's own append inserted, so a retry promotes cleanly.
+        # A stop signal takes effect before this stage starts, so the retry the
+        # next promotion runs sees the run exactly as it was before the commit.
+        _stop_at_stage_boundary("the promotion commit")
         landing_check = _report_landing_check(
             _commit_landing_writes(
                 run_id=run_id,
@@ -1937,15 +2110,28 @@ def _complete_locked(
 
         # Return capture metadata while the pointer still exists. Session
         # ownership has already been copied onto the committed ledger row.
+        _stop_at_stage_boundary("the release")
         capture = capture_run_session(record)
-        _remove_promoted_pointer_or_defer(run_id, record)
-        release = _release_after_promotion(
-            run_id,
-            record,
-            worktree_retention,
-            process_already_ended=ended_writer,
+        from reckon.crew.terminal_cleanup import queue_cleanup
+
+        queue_cleanup(
+            {**record, "worktree_retention": worktree_retention},
+            kind="promoted",
             gate=str(gate),
         )
+        _remove_promoted_pointer_or_defer(run_id, record)
+        # The release runs inside this run's promotion lock, so the moved-aside
+        # copy is left to the trash sweep rather than deleted here: a copy
+        # deleted inline keeps a serial review sweep waiting on the filesystem.
+        with deferring_worktree_copy_deletion():
+            release = _release_after_promotion(
+                run_id,
+                record,
+                worktree_retention,
+                process_already_ended=ended_writer,
+                gate=str(gate),
+            )
+        _stop_at_stage_boundary("the release record")
         release, recorded = _record_release_on_ledger(
             project=project,
             root=ledger_root,
@@ -1983,10 +2169,23 @@ def _complete_locked(
             # leaving it in a bucket no roadmap reads.
             "outside_scope": outside_scope_entries,
         }
+        # A review dimension below its declared floor is work the reflex would
+        # otherwise repair, and no floor repair round starts for a run once its
+        # promotion has begun. Naming the dimension the promotion lands over is
+        # what keeps that work visible instead of leaving it to reappear as a
+        # worktree of commits no landing path reads.
+        owed_repair = owed_floor_repair(run_id, record, reviewed)
+        if owed_repair:
+            receipt["owed_floor_repair"] = owed_repair
         # A plan review's receipt names what the plan-review store did with the
         # review it delivered. A run that is not a plan review carries no such
         # field, so the field's absence itself states the run had no review to
         # store.
+        if (
+            isinstance(profile_refresh, Mapping)
+            and profile_refresh.get("status") == "unavailable"
+        ):
+            receipt["run_time_profile"] = dict(profile_refresh)
         if plan_review_store is not None:
             receipt["plan_review_store"] = plan_review_store
         return receipt
@@ -2132,7 +2331,15 @@ def discard(run_id: str, *, allowed_phases: Sequence[str] = ()) -> dict[str, Any
         # record behind it, and a record written afterwards leaves a window in
         # which the departure is indistinguishable from a vanished pointer.
         written = _write_discard_record(run_id, record)
+        from reckon.crew.terminal_cleanup import queue_cleanup
+
+        queue_cleanup(record, kind="discarded")
         path.unlink()
+        release = _remove_discarded_worktree(record)
+        if written:
+            from reckon.crew.runs import resolve_run_path
+
+            written = str(resolve_run_path(written))
         return {
             "run_id": run_id,
             "pointer_path": str(path),
@@ -2150,7 +2357,7 @@ def discard(run_id: str, *, allowed_phases: Sequence[str] = ()) -> dict[str, Any
             # later dispatch for as long as its holder lives. The run this
             # discard removed is the claim's own, so the claim goes with it.
             "dispatch_claim_released": _release_discarded_dispatch_claim(run_id),
-            **_remove_discarded_worktree(record),
+            **release,
         }
 
 
@@ -2240,6 +2447,8 @@ def _remove_discarded_worktree(record: Mapping[str, Any]) -> dict[str, Any]:
             "arms_kept",
             "arms_logs_copied",
             "arms_withheld",
+            "run_archived",
+            "run_archive_withheld",
         )
         if key in release
     }
@@ -2536,6 +2745,7 @@ from reckon.crew.promotion_checks import (
     _unreviewed_refusal,
     _wait_out_stream_tail,
     _zone_aware_stream_timestamp,
+    owed_floor_repair,
     plan_impl_at,
 )
 from reckon.crew.promotion_evidence import (

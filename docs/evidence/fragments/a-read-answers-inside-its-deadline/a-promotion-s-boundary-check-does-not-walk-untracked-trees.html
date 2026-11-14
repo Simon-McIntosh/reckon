@@ -1,0 +1,44 @@
+<section id="a-promotion-s-boundary-check-does-not-walk-untracked-trees-landing">
+  <h2>A boundary check reads only the roots a run can be charged for</h2>
+
+  <p><strong>What changed.</strong> A promotion's repository-boundary check took its status read with
+  <code>--untracked-files=all</code> over every dispatch-visible tree, so a shared checkout's
+  untracked worktree, cache and tool trees cost one directory walk per file on the filesystem for
+  paths the check could never charge: it refuses a changed path only when the run's own declaration
+  covers it. <code>git status</code> is now read with the declared roots named as literal pathspecs
+  (<code>reckon/crew/routing.py</code>, <code>_tree_state</code> and
+  <code>_repository_tree_snapshot</code>), so an untracked directory outside every declared root is
+  never opened, while a declared path inside one is still reported. A run that declares no write path
+  reads no untracked entry at all, because nothing can be charged to it. Every selected tree is still
+  read exactly once, so the number of status calls a fenced or unfenced run makes is unchanged.</p>
+
+  <p>The bound is drawn from the run's declaration in <code>_repository_tree_boundary_violations</code>
+  (<code>reckon/crew/promotion_scope.py</code>), the same root set that check already uses to decide
+  whether a changed path is chargeable, so the read and the charge cannot disagree about which roots
+  matter.</p>
+
+  <h3 id="a-promotion-s-boundary-check-does-not-walk-untracked-trees-measured">Measured</h3>
+
+  <p>Both arms of the timing comparison run against one checkout, one recorded baseline and one run
+  record; only the contents of the untracked directory change between them, so the two figures differ
+  for no reason but the one under test. The baseline is recorded while that directory is empty, which
+  is the case the check must not pay for: the tree grows between the dispatch that recorded the
+  baseline and the promotion that re-reads it.</p>
+
+  <table id="a-promotion-s-boundary-check-does-not-walk-untracked-trees-arms">
+    <caption>Every arm is a log whose first line names its revision, tree and
+    command and whose last line reads <code>EXIT=&lt;code&gt;</code>.</caption>
+    <thead><tr><th>arm</th><th>revision</th><th>result</th></tr></thead>
+    <tbody>
+      <tr><td>new test file, head</td><td>8020d97a93</td><td>6 passed</td></tr>
+      <tr><td>importing tests, head</td><td>8020d97a93</td><td>see manifest</td></tr>
+      <tr><td>importing tests, base</td><td>930eccbb3a</td><td>see manifest</td></tr>
+      <tr><td>negative control: timing test at base</td><td>930eccbb3a</td><td>fails on its ratio</td></tr>
+    </tbody>
+  </table>
+
+  <p><strong>Why the negative control is the ratio.</strong> The test asserts that the 20,000-file
+  check costs no more than twice the empty one. At the base revision the untracked read walks all
+  20,000 files, so the same assertion fails there while the head measure holds, which is what
+  separates the bound from a check that had merely stopped looking.</p>
+</section>

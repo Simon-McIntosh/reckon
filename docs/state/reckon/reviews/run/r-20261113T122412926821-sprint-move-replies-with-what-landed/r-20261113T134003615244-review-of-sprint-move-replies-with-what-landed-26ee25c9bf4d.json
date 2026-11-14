@@ -1,0 +1,69 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 6,
+  "call_sites": [
+    "reckon/mcp_edit_plan.py:2271 (_edit_plan_tool calls _edit_plan)",
+    "reckon/mcp.py:3801 (edit_plan tool registration)",
+    "reckon/mcp_edit_plan.py:1681 (_edit_plan calls apply_resource_ops)",
+    "reckon/project_state.py:2657 (apply_resource_ops calls move_sprint_item)",
+    "reckon/project_state.py:2674 (apply_resource_ops calls push_sprint)",
+    "reckon/project_state.py:2683 (apply_resource_ops calls _close_sprint_with_carry_forward)"
+  ],
+  "completed_at": "2026-11-13T13:49:28.964Z",
+  "dispatched_at": "2026-11-13T13:42:05Z",
+  "findings": [
+    {
+      "file": "reckon/project_state.py",
+      "line": "2118",
+      "severity": "non-blocking",
+      "text": "_sprint_holds_item re-implements the row-slug extraction that reckon/_store.py:3468 sprint_item_slug already owns, and drops that owner's path-spelling fallback and whitespace strip, so the new read-back predicate can disagree with the module that owns the item shape about what a sprint holds."
+    },
+    {
+      "file": "reckon/mcp_edit_plan.py",
+      "line": "1760",
+      "severity": "non-blocking",
+      "text": "the resource_edit_error branch returns ok=false with no applied field, so a move refused before any write (for example the item already in the destination) leaves the applied verdict unstated, and the fragment's claim that a refused resource edit carries applied:false holds only for the ProjectStateError branch at line 1750."
+    },
+    {
+      "file": "reckon/project_state.py",
+      "line": "2324",
+      "severity": "non-blocking",
+      "text": "the not-applied branch retires the journal, deleting its before-bytes, and then raises without restoring either sprint, so on the one path where the read-back disagrees with the two writes the item can be left in both sprints or neither with the recovery journal already gone, against the plan's all-or-nothing requirement."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "move_sprint_item is reached only through reckon/project_state.py:2657 apply_resource_ops, which reckon/mcp_edit_plan.py:1681 calls from _edit_plan, itself reached from the edit_plan tool at reckon/mcp_edit_plan.py:2271 and registered at reckon/mcp.py:3801-3803; push_sprint and _close_sprint_with_carry_forward are reached at reckon/project_state.py:2674 and :2683.",
+    "diff": "The single commit 26ee25c9bf against e5236d42cc50 changes four files, 357 insertions and 21 deletions: read-back and journal retirement in project_state.py, the applied/sprint_versions reply and applied:false refusal in mcp_edit_plan.py, the five-case fault test, and the landing fragment.",
+    "done_when": "The done-when injects a fault after the journal write, after the first write, after the second write and at the commit mark including a gone journal, asserting one-sprint membership and a reply matching a fresh read; tests/test_a_sprint_move_replies_with_what_landed.py:96-172 runs all four through the edit-plan path and suite-after.log records 56 passed EXIT=0, while negative-control-base.log records 5 failed at e5236d42cc50.",
+    "goal": "The node goal is that a two-sprint move ends all-or-nothing with a reply matching disk; reckon/project_state.py:2318-2334 returns applied plus both versions read from the resources, and reckon/mcp_edit_plan.py:1707-1713 places them on the reply.",
+    "manifest": "manifest.md records status complete, commit 26ee25c9bf, the two suite arms with logs and exit statuses, the population arms at both revisions, the negative-control log at negative-control-base.log, and six rubric self-check lines; its landing line states the measure's figure.",
+    "write_paths": "The source dispatch declares reckon/project_state.py, reckon/mcp_edit_plan.py, tests/test_a_sprint_move_replies_with_what_landed.py, the landing fragment and a figure directory; the diff touches the first four and nothing outside them."
+  },
+  "justifications": {
+    "durability": "tests/test_a_sprint_move_replies_with_what_landed.py:126-138 compares the reply's sprint_versions against a fresh read_resource of both sprints rather than against the versions the test passed in, and the negative control negative-control-base.log shows the two commit-mark cases failing at e5236d42cc50 with 'reply says not applied while the item is in S5', so reinstating the raise-after-write reddens the suite; the 'after the second sprint write' step is covered only through the commit-mark injection, not by a fault injected between that write and the read-back.",
+    "evidence": "The head gate log suite-after.log ends 'EXIT=0' with 56 passed at revision 26ee25c9bf over the new test file plus tests/test_staged_write_inventory.py, and the plan's wider requirement (test files importing project_state.py or the edit_plan sprint path) is recorded as population-base.log 1 failed/279 passed versus population-head.log 1 failed/284 passed, a delta of zero added failures against the same pre-existing test_mcp_views id.",
+    "fit": "reckon/project_state.py:2095 and :2118 follow the adjacent helper style and docstring idiom of _mark_move_journal_committed, and no filename, symbol or comment in the diff carries a plan, sprint, ticket or version label.",
+    "goal_fidelity": "reckon/project_state.py:2318-2334 reads both sprints back after the second write, decides applied from them and returns applied with both on-disk versions, and reckon/mcp_edit_plan.py:1707-1713 puts applied and sprint_versions into the edit-plan reply, so a move no longer answers ok=false once both writes have landed.",
+    "reuse": "reckon/project_state.py:2118 re-implements the row-slug extraction that reckon/_store.py:3468 sprint_item_slug already owns and that project_state.py already imports other helpers from, while _retire_move_journal at :2095 does wrap the existing _mark_move_journal_committed and _durable_unlink pair.",
+    "scope_discipline": "Every path in the diff against e5236d42cc50 \u2014 reckon/project_state.py, reckon/mcp_edit_plan.py, tests/test_a_sprint_move_replies_with_what_landed.py and the landing fragment \u2014 lies inside the four write paths the source dispatch declares at its FENCE \u2014 SCOPE block."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is that a two-sprint move ends all-or-nothing with a reply matching disk; reckon/project_state.py:2318-2334 decides applied from a fresh read of both sprints and reckon/mcp_edit_plan.py:1707-1713 puts applied and sprint_versions on the reply.\nVERDICT done_when: the done-when injects a fault after the journal write, after the first write, after the second write and at the commit mark including a gone journal; tests/test_a_sprint_move_replies_with_what_landed.py:96-172 runs all four through the edit-plan path and suite-after.log records 56 passed EXIT=0 while negative-control-base.log records 5 failed at e5236d42cc50.\nVERDICT write_paths: the source dispatch declares reckon/project_state.py, reckon/mcp_edit_plan.py, tests/test_a_sprint_move_replies_with_what_landed.py, the landing fragment and a figure directory; the diff touches the first four and nothing outside them.\nVERDICT manifest: manifest.md states status complete with commit 26ee25c9bf, both suite arms with logs and exit statuses, both population arms, negative-control-base.log and six rubric lines; its landing line states the measured figure.\nVERDICT diff: the single commit 26ee25c9bf against e5236d42cc50 changes four files, 357 insertions and 21 deletions, read-back and journal retirement in reckon/project_state.py, the applied and sprint_versions reply in reckon/mcp_edit_plan.py, the five-case fault test and the landing fragment.\nCALL_SITES: reckon/mcp_edit_plan.py:2271 (_edit_plan_tool calls _edit_plan), reckon/mcp.py:3801 (edit_plan tool registration), reckon/mcp_edit_plan.py:1681 (_edit_plan calls apply_resource_ops), reckon/project_state.py:2657 (apply_resource_ops calls move_sprint_item), reckon/project_state.py:2674 (apply_resource_ops calls push_sprint), reckon/project_state.py:2683 (apply_resource_ops calls _close_sprint_with_carry_forward)\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/project_state.py:2318-2334 reads both sprints back after the second write and returns applied with both on-disk versions, and reckon/mcp_edit_plan.py:1707-1713 puts both on the reply, so a move no longer answers ok=false once both writes have landed.\nSCORE evidence: 17\nJUSTIFICATION evidence: suite-after.log ends EXIT=0 with 56 passed at revision 26ee25c9bf, and population-base.log (1 failed, 279 passed) against population-head.log (1 failed, 284 passed) shows zero added failures against the same pre-existing tests/test_mcp_views.py id.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in the diff against e5236d42cc50 lies inside the four write paths the source dispatch declares at its FENCE \u2014 SCOPE block.\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_a_sprint_move_replies_with_what_landed.py:126-138 compares the reply against a fresh read_resource rather than the versions it passed in, and negative-control-base.log shows the commit-mark cases failing at e5236d42cc50 with 'reply says not applied while the item is in S5', though the second-write step is covered only via the commit-mark injection.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/project_state.py:2095 and :2118 follow the adjacent helper and docstring idiom of _mark_move_journal_committed, and no name or comment in the diff carries a plan, sprint, ticket or version label.\nSCORE reuse: 5\nJUSTIFICATION reuse: reckon/project_state.py:2118 re-implements the row-slug extraction owned by reckon/_store.py:3468 sprint_item_slug rather than extending it, while _retire_move_journal at :2095 does wrap the existing commit-mark and unlink pair.\nFINDING reckon/project_state.py:2118 non-blocking: _sprint_holds_item duplicates reckon/_store.py:3468 sprint_item_slug and drops its path-spelling fallback and strip, so the read-back can disagree with the owner about what a sprint holds.\nFINDING reckon/mcp_edit_plan.py:1760 non-blocking: the resource_edit_error branch carries no applied field, so a move refused before any write leaves the applied verdict unstated, contrary to the fragment's claim.\nFINDING reckon/project_state.py:2324 non-blocking: the not-applied branch retires the journal and raises without restoring, so a read-back disagreement can leave the item in both sprints or neither with no recovery journal.\n",
+  "review_run_id": "r-20261113T134003615244-review-of-sprint-move-replies-with-what-landed-26ee25c9bf4d",
+  "reviewed_base_sha": "e5236d42cc50a34aff0f01599badb059b2024d2f",
+  "reviewed_head_sha": "26ee25c9bf4d4ef5ad9f919e868054a218ec7f35",
+  "reviewed_run_id": "r-20261113T122412926821-sprint-move-replies-with-what-landed",
+  "scores": {
+    "durability": 17,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 5,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-13T14:00:53.724837+00:00",
+  "total": 95
+}

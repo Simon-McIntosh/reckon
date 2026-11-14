@@ -101,7 +101,7 @@ def test_successive_arms_share_one_producer_and_stream(home) -> None:
             ]
             assert baselines[0] == baselines[1]
             assert len(baselines[0]) == 2
-            assert all(" 2w  0h  0d" in line for line in baselines[0])
+            assert all(" 2w  0n  0d" in line for line in baselines[0])
 
             _set_phase("r-first", "working")
             crew.list_live(project="proj")
@@ -141,8 +141,8 @@ def test_transition_appends_once_and_reader_restart_from_end_is_quiet(home) -> N
     lines = [recovery.format_watch_transition(event, ticker=wide) for event in events]
     assert len(lines) == 2
     # The baseline names inventory; the transition names both sides once.
-    assert sum("halted" in line for line in lines) == 1
-    assert "working → halted" in lines[-1]
+    assert sum("needs you" in line for line in lines) == 1
+    assert "working → needs you" in lines[-1]
     assert ticker_module.BASELINE_MARKER not in lines[0]
     assert "working" in lines[0]
     assert "new → working" in lines[0]
@@ -153,7 +153,7 @@ def test_transition_appends_once_and_reader_restart_from_end_is_quiet(home) -> N
     # transition even when model and effort are absent.
     assert re.match(r"^\d{2}:\d{2}:\d{2}", lines[-1])
     assert lines[-1].index("only-node") < lines[-1].index("working")
-    assert " 0w  1h  0d" in lines[-1]
+    assert " 0w  1n  0d" in lines[-1]
     assert events[-1]["run_id"] == "r-only"
 
 
@@ -181,4 +181,4 @@ def test_late_reader_gets_current_baseline_and_only_future_lines(home) -> None:
     assert "new → delivered" in subsequent[0]
     assert "dispatched" not in subsequent[0]
     assert "working" not in subsequent[0]
-    assert " 0w  0h  1d" in subsequent[0]
+    assert " 0w  0n  1d" in subsequent[0]

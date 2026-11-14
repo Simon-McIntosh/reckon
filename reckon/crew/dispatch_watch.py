@@ -13,6 +13,9 @@ import time
 from pathlib import (
     Path,
 )
+from contextvars import (
+    ContextVar,
+)
 from typing import (
     Any,
     Callable,
@@ -31,6 +34,7 @@ from reckon.crew.refusals import (
 )
 from reckon.crew.runs import (
     WATCH_LOG_ENV,
+    WATCH_SEAT_LOST_EXIT,
     _process_start_time,
     _write_json,
     watch_lock_path,
@@ -242,7 +246,8 @@ def _watch_executable() -> str:
 # a path only the arming process held would reach the watcher on the route that
 # does not need it and be missing on the fleet route that does. Both routes are
 # covered once the supervisor exports it, whichever process runs the argv.
-_WATCH_PRODUCER_SUPERVISOR = """
+_WATCH_PRODUCER_SUPERVISOR = (
+    """
 import os
 import signal
 import subprocess
@@ -263,6 +268,8 @@ os.environ[sys.argv[1]] = sys.argv[2]
 first_delay = float(sys.argv[3])
 cap = float(sys.argv[4])
 steady_seconds = float(sys.argv[5])
+project = sys.argv[6]
+module_root = sys.argv[7]
 delay = first_delay
 crashes = 0
 producer = None
@@ -274,15 +281,28 @@ def stop(signum, _frame):
     if producer is not None and producer.poll() is None:
         producer.send_signal(signum)
 
+def seat_held_elsewhere(child_pid):
+    # Asked of the module rather than reimplemented here: which producer owns a
+    # project's seat, and whether that producer is still alive, is one answer
+    # defined in one place. An unreadable answer reads as "no other producer",
+    # which is the state that may be restarted.
+    sys.path.insert(0, module_root)
+    try:
+        from reckon.crew.dispatch_watch import watch_seat_held_elsewhere
+        return watch_seat_held_elsewhere(project, exclude_pid=child_pid)
+    except Exception:
+        return False
+
 for signum in (signal.SIGTERM, signal.SIGHUP, signal.SIGINT):
     signal.signal(signum, stop)
 
 while True:
     if stopping is not None:
         raise SystemExit(128 + stopping)
-    producer = subprocess.Popen(sys.argv[6:], stdin=subprocess.DEVNULL,
+    producer = subprocess.Popen(sys.argv[8:], stdin=subprocess.DEVNULL,
                                 stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
                                 close_fds=True)
+    child_pid = producer.pid
     started = time.monotonic()
     if stopping is not None and producer.poll() is None:
         producer.send_signal(stopping)
@@ -291,6 +311,11 @@ while True:
     producer = None
     if stopping is not None:
         raise SystemExit(128 + stopping)
+    if status == __SEAT_LOST_EXIT__ and seat_held_elsewhere(child_pid):
+        # Another live producer owns the project's seat. This one did not lose
+        # the seat by failing to renew it, it was taken, and starting it again
+        # would contest the seat the fleet already holds.
+        raise SystemExit(status)
     if not (1 <= status <= 127 or status < 0):
         raise SystemExit(status)
     if ran_seconds >= steady_seconds:
@@ -304,9 +329,37 @@ while True:
         raise SystemExit(status)
     time.sleep(delay)
     delay = min(delay * 2, cap)
-""".replace("__IDENTITY_NAMES__", repr(SESSION_IDENTITY_ENV_NAMES)).replace(
-    "__IDENTITY_PREFIX__", repr(SESSION_IDENTITY_ENV_PREFIX)
+""".replace("__IDENTITY_NAMES__", repr(SESSION_IDENTITY_ENV_NAMES))
+    .replace("__IDENTITY_PREFIX__", repr(SESSION_IDENTITY_ENV_PREFIX))
+    .replace("__SEAT_LOST_EXIT__", repr(WATCH_SEAT_LOST_EXIT))
 )
+
+
+def watch_seat_held_elsewhere(project: str, *, exclude_pid: int | None = None) -> bool:
+    """Whether a producer other than ``exclude_pid`` holds the project's seat.
+
+    A record naming another host's producer is taken at its word: that pid is
+    not in this host's table, and the lease is the only evidence available. A
+    record naming this host must name a process that is still running, because
+    the record a producer leaves behind is the commonest thing here — the
+    registration outlives the process that wrote it, and reading that as a
+    live holder would decline every restart the seat actually needs.
+    """
+    from reckon.crew.host_lease import local_host
+
+    state = watch_state(project)
+    if not state["watcher_live"]:
+        return False
+    watcher = state["watcher"] or {}
+    holder_pid = watcher.get("pid")
+    if holder_pid is None:
+        return False
+    if exclude_pid is not None and str(holder_pid) == str(exclude_pid):
+        return False
+    holder_host = str(watcher.get("host") or "")
+    if holder_host and holder_host != local_host():
+        return True
+    return _process_start_time(holder_pid) is not None
 
 
 def _watch_producer_argv(project: str) -> list[str]:
@@ -326,6 +379,8 @@ def _watch_producer_argv(project: str) -> list[str]:
         str(FIRST_BACKOFF_SECONDS),
         str(BACKOFF_CAP_SECONDS),
         str(STEADY_RUN_SECONDS),
+        project,
+        str(Path(__file__).resolve().parents[2]),
         _watch_executable(),
         "crew",
         "watch",
@@ -767,6 +822,21 @@ def _ask_session_host(
     return False
 
 
+def _await_session_host_child(project: str, session: str) -> bool:
+    """Whether this host runs a live child for the pair, within the ask's bound.
+
+    The wait is the one a request waits out, bounded by the same producer
+    deadline, so a caller that has already delivered its request reads the same
+    answer the ask would: the host's own live child for the pair, or nothing.
+    """
+    deadline = time.monotonic() + WATCHER_LOAD_BOUND_SECONDS
+    while time.monotonic() < deadline:
+        if _session_host_child_pid(project, session) is not None:
+            return True
+        time.sleep(0.1)
+    return False
+
+
 def _ask_session_host_for_follower(project: str, session: str | None) -> bool:
     """Ask this session's host to follow the project, returning whether it did.
 
@@ -805,9 +875,25 @@ def _rearm_session_follower(project: str, session: str | None) -> tuple[bool, st
         return False, "the run records no session, so no host owns its follower"
     calling = _calling_session()
     if calling != session:
+        # The resume's own host can still take the run: the request names the
+        # run's pair and travels to this process's FIFO, which is the pane the
+        # caller watches. Report the refusal only when no waiting host took it.
+        handoff = hand_off_mismatched_session(project, session)
+        # A resume composes no launch record, so the hand-off it recorded is
+        # dropped here rather than left for a later dispatch to claim.
+        take_session_hand_off()
+        # A delivered request is not a follower: the answer is this host's live
+        # child for the pair, observed within the same bound the matched ask
+        # waits out, so a resume never reports a re-arm the pane does not show.
+        if (
+            handoff is not None
+            and handoff["handed_to_host"]
+            and _await_session_host_child(project, session)
+        ):
+            return True, ""
         return False, (
-            f"the run belongs to session {session}, and only that session's own "
-            "host can re-arm its follower"
+            f"the run belongs to session {session}, and no waiting host for the "
+            f"calling session {calling or '(none)'} took it"
         )
     rearmed = _ask_session_host(
         project, session, lambda: _session_host_child_pid(project, session) is not None
@@ -838,19 +924,122 @@ def _request_host_follower(project: str, session: str | None) -> bool:
     fifo = _session_host_fifo()
     if fifo is None:
         return False
-    line = (
+    return _deliver_request(fifo, project, session)
+
+
+def _request_line(project: str, session: str) -> bytes:
+    """The one request line written to a session host's FIFO."""
+    return (
         json.dumps(
             {"project": project, "session": session, "owner_checked": True}
         ).encode("utf-8")
         + b"\n"
     )
+
+
+def _deliver_request(fifo: Path, project: str, session: str) -> bool:
+    """Write one follow request to ``fifo``, without waiting for a reader.
+
+    The deadline is already in the past, which asks ``_write_fleet_request``
+    for a single attempt: a FIFO with no reader is a fallback, not a wait.
+    """
     try:
-        # A deadline already in the past asks ``_write_fleet_request`` for a
-        # single attempt: no reader on the FIFO is a fallback, not a wait.
-        _write_fleet_request(fifo, line, time.monotonic())
+        _write_fleet_request(fifo, _request_line(project, session), time.monotonic())
     except CrewError:
         return False
     return True
+
+
+_SESSION_HAND_OFF: ContextVar[dict[str, Any] | None] = ContextVar(
+    "crew_session_hand_off", default=None
+)
+
+
+def take_session_hand_off() -> dict[str, Any] | None:
+    """The hand-off this dispatch recorded, cleared as it is read.
+
+    A dispatch arranges its follower before it composes the launch record, so
+    the hand-off is carried between the two steps in this process. Reading it
+    clears the slot, which is what keeps it a per-dispatch fact: a later
+    dispatch in the same process cannot inherit one, and a record that reads
+    ``None`` names a dispatch whose session matched its caller.
+    """
+    handoff = _SESSION_HAND_OFF.get()
+    _SESSION_HAND_OFF.set(None)
+    return handoff
+
+
+def _mismatch_stream() -> Any:
+    """Where the hand-off line is written, or None when nothing reads it.
+
+    A dispatch's stdout carries its payload, and a reader parsing that payload
+    cannot have a line beside it. The line is for the operator, so it is
+    written where a terminal receives it and nowhere else: a piped dispatch
+    carries the same fact in its ``host_handoff`` field, which a caller reads
+    instead of the line.
+    """
+    return sys.stdout if sys.stdout.isatty() else None
+
+
+def _emit_session_mismatch(line: str) -> None:
+    """Write the hand-off line to the terminal that asked for the dispatch."""
+    stream = _mismatch_stream()
+    if stream is not None:
+        print(line, file=stream, flush=True)
+
+
+def _session_mismatch_line(handoff: Mapping[str, Any]) -> str:
+    """The one line a mismatched dispatch prints, naming both sessions."""
+    requested = handoff["requested_session"]
+    calling = handoff["calling_session"] or "no calling session"
+    if handoff["handed_to_host"]:
+        return (
+            f"dispatch session {requested} differs from calling session {calling}; "
+            "the calling session's waiting host took the run"
+        )
+    return (
+        f"dispatch session {requested} differs from calling session {calling}; "
+        "no waiting host received the run"
+    )
+
+
+def hand_off_mismatched_session(
+    project: str, session: str | None
+) -> dict[str, Any] | None:
+    """Hand a mismatched dispatch's run to the calling session's waiting host.
+
+    The host that runs a session's follower is named for the Claude process
+    issuing the request, so a request naming another session reaches this
+    process's host. ``_request_host_follower`` refuses such a pair because that
+    host does not own the session; a refusal on its own leaves the caller's
+    pane with no run and no reason. This path writes the request deliberately:
+    the caller's pane is the one that has to show the run, the pair stays the
+    run's own because that is the pair the run is registered under, and one
+    line on stdout names both sessions so the hand-off is never silent.
+
+    ``None`` is returned when the two names agree, leaving the ordinary ask
+    path untouched. Otherwise one line naming both sessions is printed, the
+    hand-off is left for ``take_session_hand_off`` to put on the launch record
+    the dispatch composes next, and the ``host_handoff`` record names the
+    requested session, the calling session, and whether a waiting host took the
+    request.
+    """
+    calling = _calling_session()
+    requested = str(session or "")
+    if not requested or requested == calling:
+        return None
+    fifo = _session_host_fifo()
+    handed = False
+    if fifo is not None and _session_host_waiting():
+        handed = _deliver_request(fifo, project, requested)
+    handoff: dict[str, Any] = {
+        "requested_session": requested,
+        "calling_session": calling,
+        "handed_to_host": handed,
+    }
+    _emit_session_mismatch(_session_mismatch_line(handoff))
+    _SESSION_HAND_OFF.set(handoff)
+    return handoff
 
 
 def _session_host_may_be_waiting() -> bool:

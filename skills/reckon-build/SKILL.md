@@ -145,10 +145,19 @@ live in a plan or brief.
 ## Shape the wave
 
 The unit of dispatch is the section's deliverable. A section is one node unless
-two of its write scopes must run in parallel; list exclusive write paths per
-item, use isolated worktrees by default, and never dispatch two workers that
-write the same file. Each node carries a brief citing the reuse map: the module
-to extend, the interface not to widen, the question the worker may not settle.
+two of its parts must run in parallel. List each node's write paths and dispatch
+it even when a peer names one of them: concurrent edits to one source file are
+dispatched in isolated worktrees, and they meet at the merge — a landing that
+conflicts is repaired in the worktree that produced it and re-integrated, never
+held back at dispatch. Exclusive scope remains only for a path a textual merge
+cannot reconcile: a plan document, a cumulative evidence record, generated
+state, a figure topic directory, a dependency lock, or a directory claim. Two
+live nodes never hold one of those. Each node carries a brief citing the reuse
+map: the module to extend, the interface not to widen, the question the worker
+may not settle.
+That reuse map stays in the brief. The plan states the endpoint and names no
+module, function or file to extend, so a plan that does is a review finding
+rather than something to implement.
 
 **Queue the work you have chosen in one beat.** Decide which sections need doing
 now, often a few from each of several plans whose review rounds are answered.
@@ -205,9 +214,12 @@ it>`. Stating neither is reported with the admission findings beside the
 contract properties.
 
 Dispatch ensures one live producer before creating a worktree. Peer scopes come
-from live pointers in the same project and repository: dispatch refuses
-containing or contained path claims before creating a worktree and names the
-owning run. `--peer <other-node>=<their-paths>` is optional, to supplement peers
+from live pointers in the same project and repository, and a claim is compared
+only for the paths a textual merge cannot reconcile: a source or test file in
+common is dispatched, while a claim on an exclusive path — a plan document, a
+cumulative evidence record, generated state, a figure topic directory or a
+dependency lock — is refused before creating a worktree, naming the owning run.
+`--peer <other-node>=<their-paths>` is optional, to supplement peers
 with no live pointer yet. `--no-watch` is the explicit exception for a
 synchronous one-off; it records the arming command, the watcher liveness and the
 unattached session on the live run and its promoted ledger record. Use
@@ -239,7 +251,7 @@ worktree, a manifest, a gate and a ledger record.
 | `plan-unavailable` | 4 | Commit the plan before dispatching. |
 | `competence-refusal` | 5 | Route the node to a backend meeting the capability. |
 | `unreconciled-runs` | 6 | Reconcile each reported run, or set the waiver. |
-| `scope-conflict` | 7 | Wait for the owning run to release its path claim. |
+| `scope-conflict` | 7 | Only an exclusive path conflicts: a plan document, a cumulative evidence record, generated state, a figure topic directory, a dependency lock, or a directory claim. Wait for that path's owning run, or re-dispatch on another path; a source or test file never raises it, because concurrent edits meet at the merge. |
 | `watcher-required` | 8 | Arm the `attach_line`; use `--no-watch` only deliberately. |
 | `member-in-flight` | 9 | Wait for the named run to reach a terminal phase. |
 | `queue-full` | 75 | The project holds `queue.max_requests` queued requests across its sessions; a dispatch past the bound is refused naming that bound. |
@@ -257,6 +269,7 @@ reckon crew budget --lift --group <group> (--multiple <m> | --drain-by <time> | 
 reckon crew budget --lift --clear --group <group> [--session <id>] [--id <lift>]
 reckon crew budget --list [--group <group>] [--pretty]
 reckon crew check --manifest --run <id>    reckon crew check --review (--run <id> | --record <path>)
+reckon crew census [--apply]    # Lists reckon processes whose recorded owner is dead; with --apply, stops exactly those, printing each.
 reckon crew complete --run <id> --gate <verdict> --commit <sha> --outcome <text> --tests-added <n> --scope-changed
 reckon crew directory --project <project> --run <id> --node <node>
 reckon crew dispatch --project <project> --plan <slug> --section <section> --role <role> --node <node> --goal <goal> --done-when <measure> --write-path <path> --regenerate-path <path> --input <path> --compares-with <measurement> --peer <other-node>=<their-paths> --time-budget <duration> --session <session> --set <override> --dry-run --member <member> --manifest <path> --allow-unreconciled-runs --no-watch
@@ -380,13 +393,13 @@ and records the result, and `reckon crew suite waive --project <project>
 <!-- landing-beat-examples -->
 ```json
 [
-  {"op": "append_evidence", "plan": "my-plan", "anchor": "s2",
+  {"op": "append_evidence", "plan": "my-plan", "anchor": "s2-data-prep",
    "title": "§2 — data prep pipeline landed",
    "body": "<p>Built <code>src/data_prep.py</code>; 11,237 shots in 3h12m; eval MAE 0.04.</p>"},
   {"op": "set", "path": "section_declarations.s2", "value": "done"},
   {"op": "append", "target": "comments", "section": "s2",
    "item": {"id": "c-close-s2", "who": "reckon-build", "when": "2026-06-24T00:00:00Z",
-     "body": "<p>§2 landed: built <code>src/data_prep.py</code> (commit <code>abc1234</code>); 11,237 shots encoded in 3h12m; eval MAE 0.04. <a href=\"/my-project/evidence/archive/my-plan-landed.html#s2\">evidence</a></p>"}}
+     "body": "<p>§2 landed: built <code>src/data_prep.py</code> (commit <code>abc1234</code>); 11,237 shots encoded in 3h12m; eval MAE 0.04. <a href=\"/my-project/evidence/archive/my-plan-landed.html#s2-data-prep\">evidence</a></p>"}}
 ]
 ```
 
@@ -408,6 +421,13 @@ independent evidence. Read the obligations view,
 `crew(view="obligations", session=<session>)`, as part of this and work it to
 empty, or acknowledge each item with `reckon crew ack`, before the turn ends; a
 non-terminal in-flight run with no process is not a completed fleet.
+
+A live worker that needs one more instruction before it ends takes it through
+`reckon crew tell --run <id> "<message>"`, which writes the message into the
+run's inbox for delivery at its next tool call; the reply reports
+`queued_for_next_tool_call`, and only the run's own receipt shows it arrived.
+A message to a run that has ended is refused, naming the channel that reaches
+a stopped worker instead.
 
 ### 5b. Read what the worker produced
 
@@ -487,7 +507,7 @@ same session is a defect, not redundancy. To watch more than your own runs, name
 them on the one follower with `--observe-session`. Never arm a second follower.
 
 **Read the counts on the rows, and take names from the obligations list.** A
-follower row carries the fleet's four counters — `w` working, `h` halted, `d`
+follower row carries the fleet's four counters — `w` working, `n` needs you, `d`
 delivered, `q` queued — so the pane tells you how much is outstanding at a
 glance. It does not name the runs: a line composed for the pane was measured as
 noise, printed again on a cadence while nothing had changed. To learn which runs
@@ -527,7 +547,7 @@ the next step: four lines, one per axis, at most two lines each.
 ```text
 Dispatching wave 2 — 3 workers
 WHAT   §3 dispatch primitive (impl-a) · §4 observation (impl-b) · §5 docs (impl-c)
-WHY    §3 unblocks §4 and §5; all three read the §2 contract; no shared files
+WHY    §3 unblocks §4 and §5; all three read the §2 contract; edits meet at the merge
 HOW    detached worktrees, scopes below, manifests on disk
 WHEN   ~20 min each; gate g-end-to-end closes the wave — §6 stays shut until it passes
 ```

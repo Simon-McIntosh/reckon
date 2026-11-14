@@ -1,0 +1,54 @@
+<section id="station-runs-the-census-landing">
+  <h3>The station applies the ownership census every minute</h3>
+  <p>The station runs a dedicated census thread beside its tick and heartbeat,
+  and only when its caller opts in. Starting the station no longer signals
+  anything as a side effect: a station run that did not ask for the sweep never
+  calls the census and never opens a process descriptor. The thread calls the
+  existing census and apply functions, so local ownership checks, ancestry
+  exclusion and pidfd signalling are unchanged. Its monotonic interval is 60
+  seconds, and its join is bounded, so a slow sweep cannot hold shutdown.</p>
+  <p>Apply revalidates a whole sweep against one walk of the process table
+  instead of walking <code>/proc</code> once per listed pid, and every row is
+  judged against that same table. The target's start tick is confirmed again
+  after its descriptor is opened, so a pid recycled mid-sweep is spared rather
+  than signalled. The stop line is printed only after that confirmation:
+  <code>stopping</code> is followed by the result, each JSON record naming the
+  pid and its recorded owner, and a spared row prints no stop line at all. An
+  unreadable census prints its exception and retries on the next beat.</p>
+  <table id="station-runs-the-census-measures">
+    <caption>Verification of the isolated change</caption>
+    <thead><tr><th>Measure</th><th>Receipt</th></tr></thead>
+    <tbody>
+      <tr><td>Node suite, base and head on a partition node</td><td>Base
+      <code>51 passed in 10.26 s</code>; head at <code>d9195ad8be</code> <code>59 passed in 11.13 s</code> (<code>final-head-suite.log</code>).
+      Both exit 0; zero added failures.</td></tr>
+      <tr><td>Negative control on the base source</td><td><code>8 failed</code>, exit 1 (<code>negative-control.log</code>), including <code>ownerless stub survived the station
+      beat</code>: the base station never runs the sweep at all.</td></tr>
+      <tr><td>Station and census importer arms</td><td>Over 66 files, base <code>11 failed, 511
+      passed</code> and head <code>11 failed, 511 passed</code> (<code>baseline-importers.log</code>, <code>after-importers.log</code>).
+      Identical failing ids, zero added and zero removed.</td></tr>
+      <tr><td>Opt-in guard</td><td>A station run with the sweep unrequested
+      records no call to <code>census.census</code> or <code>apply_census</code>,
+      constructs no census beat, and leaves no <code>station-census</code>
+      thread; a planted ownerless stub survives while <code>os.kill</code> and
+      the pidfd entry points raise on any call.</td></tr>
+      <tr><td>Gate-removal control</td><td>Deleting the <code>if
+      census_sweep:</code> line makes the guard test fail with
+      <code>an unopted station ran the census: ['census', 'apply']</code>, so
+      the guard is falsifiable rather than swallowed by the beat thread's
+      exception handler.</td></tr>
+      <tr><td>Command opt-in</td><td><code>crew station --census-sweep</code>
+      forwards <code>census_sweep=True</code> to <code>run_station</code>; the
+      default forwards <code>False</code>.</td></tr>
+      <tr><td>Shutdown</td><td>A recording beat shows <code>start</code> then
+      <code>stop</code> across a station run that opted in.</td></tr>
+      <tr><td>Lint and format</td><td>Ruff check and format check pass on
+      <code>reckon/crew/census.py</code>, <code>reckon/crew/station.py</code> and the test file. <code>reckon/crew_follow_commands.py</code> carries the same two findings (SIM103, SIM115) and format drift at head as at base; this change adds none.</td></tr>
+    </tbody>
+  </table>
+  <p>Implementation commits <code>2bdded66a569614f4a93489e91b1dd1b36087a17</code>
+  and its test repair. Durable receipts, the negative-control log and
+  imported-module provenance are in run
+  <code>r-20261112T043103964878-station-runs-the-census</code>; the arms ran on
+  an <code>all_debug</code> partition node, never on the fleet node. <code>crew station --census-sweep</code> landed in this node. The fleet supervisor still starts the station without it, so the sweep stays off in production until the coordinator turns it on.</p>
+</section>

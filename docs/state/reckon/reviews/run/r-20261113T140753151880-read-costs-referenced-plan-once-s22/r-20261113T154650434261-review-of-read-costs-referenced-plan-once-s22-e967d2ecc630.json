@@ -1,0 +1,69 @@
+{
+  "absent": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 3,
+  "call_sites": "reckon/mcp.py:1104 _read_plan, reckon/mcp.py:1109 _read_plan, reckon/mcp.py:3666 _audit_read, reckon/mcp.py:850 _read_plan reached from _read_plan_tool:1182, _read_legacy_project_resource:1392 and _read_plan_view:1631,1696,1755, reckon/mcp.py:3346 _audit_read reached from _audit:3334",
+  "completed_at": "2026-11-13T16:03:36.674Z",
+  "dispatched_at": "2026-11-13T15:53:19Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "exempted",
+      "reason": "non-blocking; carried to the plan's next health review",
+      "recorded_at": "2026-11-13T17:37:24.736681+00:00"
+    },
+    "1": {
+      "kind": "exempted",
+      "reason": "non-blocking; carried to the plan's next health review",
+      "recorded_at": "2026-11-13T17:37:28.181608+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "tests/test_a_plan_read_reads_each_referenced_plan_once.py",
+      "line": "241",
+      "severity": "non-blocking",
+      "text": "the only assertion that the index actually answered is `0 < len(lookups.projects) <= len({FIRST, SECOND})`; a regression making _indexed_plan_states return {} for every project would send each ref to the _parsed_plan_state fallback, still make zero full reads and still call the index once, so every assertion stays green while each referenced plan is parsed from its own document instead of being read from the index the goal names \u2014 an assertion distinguishing the index hit from the fallback (e.g. counting _parsed_plan_state) would close it."
+    },
+    {
+      "file": "reckon/mcp.py",
+      "line": "1986",
+      "severity": "non-blocking",
+      "text": "the live-vs-archived bucket in _indexed_plan_states silently prefers the live document when a slug has both copies, whereas _store._resolve_html_file documents that a genuine live-plus-archived pair raises a collision that must not be silently resolved, so a ref to a duplicated slug now reports found=true from the live copy where the base revision's read_plan raised and _resolve_plan_ref returned found=false; the docstring at reckon/mcp.py:1963 asserts the pick matches a full read's resolution, which is not true for that pair."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "three production call sites thread the cache and resolve refs through the new path.",
+    "diff": "read commit by commit: one commit, e967d2ecc6, adding _indexed_plan_states, _indexed_plan_state and _parsed_plan_state to reckon/mcp.py, threading one state_cache through _read_plan and _audit_read, and adding a 257-line test; no unrelated edits.",
+    "done_when": "the done_when names tests/test_a_plan_read_reads_each_referenced_plan_once.py with a full-read counter, an index-lookup counter, a base-revision row comparison and a six-full-read negative control; all four are present at lines 228-257 and the gatet logs record 52 passed EXIT=0 with the control at 1 failed EXIT=1.",
+    "goal": "the node goal is to answer one plan read with each referenced plan read at most once from the index; reckon/mcp.py:1952 and :1991 deliver that and the test counts one index lookup for two referenced plans.",
+    "manifest": "the source manifest reads complete and records the commit, both suite arms, the wide mcp batch at base and head (2 failed / 186 passed on both sides, same two ids), and the negative control path; it omits the ruff result the done_when names.",
+    "write_paths": "the manifest declares reckon/mcp.py, the new test, the landing fragment and a figures dir; git diff --stat over bd28fcaf..e967d2ec shows exactly the first three changed and nothing else."
+  },
+  "justifications": {
+    "durability": "tests/test_a_plan_read_reads_each_referenced_plan_once.py:234 fails on the reinstated defect, as the negative control shows at EXIT=1, and :256 compares the rows against the real base-revision per-ref read rather than against the code under test; but :241 is the only assertion that the index answered, so a permanent index miss that fell through to _parsed_plan_state would leave the suite green.",
+    "evidence": "the done_when's test tests/test_a_plan_read_reads_each_referenced_plan_once.py ran green at the reviewed head (52 passed, EXIT=0 in logs/head-arm.log) with a red negative control (1 failed, EXIT=1, four reads of first-target and two of second-target) in logs/negative-control.log; the manifest records no ruff result although the done_when names it, and I verified it clean myself.",
+    "fit": "the three added helpers in reckon/mcp.py are named by what they do and the lazy `from reckon import metadata_index` matches the module's existing local-import idiom, but the docstring at reckon/mcp.py:1963 claims the live-first pick matches a full read's resolution, which _store._resolve_html_file contradicts for a live-plus-archived pair.",
+    "goal_fidelity": "reckon/mcp.py:1952 _indexed_plan_states answers every ref from one per-project index lookup and reckon/mcp.py:1991 _indexed_plan_state memoises it, so the reviewed read makes zero full reads of either referenced plan; the index build it triggers parses the project tree on a cold store, which is broader than the goal's wording but not a full read of a referenced plan.",
+    "reuse": "the change reuses metadata_index.discovery_state as the owner of per-file parsed state and _store._resolve_html_file plus _plan_html.read_state_file for the miss path, adding no second parser or second plan reader; the only new mechanism is a per-read memo dict keyed by (project, checkout_path).",
+    "scope_discipline": "the single commit e967d2ecc6 touches only reckon/mcp.py, tests/test_a_plan_read_reads_each_referenced_plan_once.py and docs/evidence/fragments/a-read-costs-what-changed/read-costs-referenced-plan-once-s22.html, all inside the declared write paths; the declared figure path is unused and the metadata-index repair is recorded under outside_scope rather than made."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is one plan read that reads each referenced plan at most once from the index; reckon/mcp.py:1952 _indexed_plan_states serves every ref from one per-project lookup and :1991 memoises it.\nVERDICT done_when: the done_when names tests/test_a_plan_read_reads_each_referenced_plan_once.py with a full-read counter, an index-lookup counter, a base-revision row comparison and a six-full-read control; lines 228-257 carry all four and the logs record 52 passed EXIT=0 and a control at 1 failed EXIT=1.\nVERDICT write_paths: the manifest declares reckon/mcp.py, the new test, the landing fragment and an unused figures dir; git diff --stat bd28fcaf..e967d2ec changes exactly the first three.\nVERDICT manifest: read and consistent with the artefacts, recording both suite arms, the wide mcp batch identical at base and head, and the negative control; it does not record the ruff result the done_when names, which I ran clean on both staged paths.\nVERDICT diff: one commit, reviewed against bd28fcaf, adding three index-backed helpers to reckon/mcp.py and threading one state cache through _read_plan and _audit_read, plus the new test.\nCALL_SITES: reckon/mcp.py:1104 _read_plan, reckon/mcp.py:1109 _read_plan, reckon/mcp.py:3666 _audit_read\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/mcp.py:1952 and :1991 make zero full reads of either referenced plan, at the cost of a project-wide index build on a cold store.\nSCORE evidence: 17\nJUSTIFICATION evidence: logs/head-arm.log records 52 passed EXIT=0 and logs/negative-control.log records 1 failed EXIT=1, but the manifest omits the ruff result the done_when names.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: commit e967d2ecc6 touches only the three declared paths and records the metadata-index repair under outside_scope instead of making it.\nSCORE durability: 16\nJUSTIFICATION durability: tests/test_a_plan_read_reads_each_referenced_plan_once.py:234 reddens on the reinstated defect per the negative control, but :241 cannot tell an index hit from the parse fallback.\nSCORE fit: 17\nJUSTIFICATION fit: the added helpers follow the module's naming and lazy-import idiom, but the docstring at reckon/mcp.py:1963 claims a live-first pick matches a full read's resolution, which _store._resolve_html_file contradicts.\nSCORE reuse: 19\nJUSTIFICATION reuse: the change reuses metadata_index.discovery_state and _store._resolve_html_file rather than adding a second parser or plan reader.\nFINDING tests/test_a_plan_read_reads_each_referenced_plan_once.py:241 non-blocking: no assertion distinguishes an index hit from the _parsed_plan_state fallback, so a permanent index miss leaves the suite green.\nFINDING reckon/mcp.py:1986 non-blocking: a live-plus-archived duplicate slug is silently resolved to the live copy where _resolve_html_file raises a collision, and the docstring at :1963 claims otherwise.\n",
+  "review_run_id": "r-20261113T154650434261-review-of-read-costs-referenced-plan-once-s22-e967d2ecc630",
+  "reviewed_base_sha": "bd28fcaf100d9ea35eb2ea820280a206ba19a292",
+  "reviewed_head_sha": "e967d2ecc6303503b9a111b79884225288011267",
+  "reviewed_run_id": "r-20261113T140753151880-read-costs-referenced-plan-once-s22",
+  "scores": {
+    "durability": 16,
+    "evidence": 17,
+    "fit": 17,
+    "goal_fidelity": 19,
+    "reuse": 19,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-13T17:35:21.933531+00:00",
+  "total": 107
+}

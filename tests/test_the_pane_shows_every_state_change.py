@@ -111,7 +111,7 @@ def test_the_in_review_row_renders_on_the_reviewed_run() -> None:
     The left word comes from the run's real last word: the row the policy
     released before it is fed through the same painter, so nothing is written
     into the painter's memory by the test. A control feeds a halt instead, and
-    the same row then reads ``halted -> in review``, which is what shows the
+    the same row then reads ``needs you -> in review``, which is what shows the
     left word is the run's own rather than a constant of the row. The row names
     the review run beside the reviewed run's node, the pair of facts a reader
     needs to follow a review off the run it reads.
@@ -142,7 +142,7 @@ def test_the_in_review_row_renders_on_the_reviewed_run() -> None:
     halted.render(_row(IMPL, "working", "blocked"), with_session=True)
     control = halted.render(in_review, with_session=True)
 
-    assert f"halted {ticker.ARROW} in review" in control, control
+    assert f"needs you {ticker.ARROW} in review" in control, control
     assert "delivered" not in control, control
 
 

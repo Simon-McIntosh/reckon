@@ -139,7 +139,15 @@ def select_review_for_head(
     """
     if not head:
         return None, ""
-    stored = review_module.read_review(project, run_id, reviewed_head_sha=head)
+    from reckon.crew.recovery_memo import _read_review_once
+
+    record = {"project": project, "run_id": run_id}
+    stored = _read_review_once(
+        record,
+        ("head", head),
+        lambda: review_module.read_review(project, run_id, reviewed_head_sha=head),
+        tree=tree,
+    )
     if (
         stored is not None
         and stored.get("rubric") == review_module.FIGURE_REVIEW_RUBRIC
@@ -147,7 +155,12 @@ def select_review_for_head(
         stored = None
     if stored is not None:
         return ledger.normalize_identity(stored), ""
-    newest = review_module.read_review(project, run_id)
+    newest = _read_review_once(
+        record,
+        ("newest",),
+        lambda: review_module.read_review(project, run_id),
+        tree=tree,
+    )
     if (
         newest is not None
         and newest.get("rubric") == review_module.FIGURE_REVIEW_RUBRIC
@@ -482,12 +495,174 @@ def _claims_review_done_when(run_id: str) -> str:
 _DELTA_UNSET: Any = object()
 
 
+# The heading a re-review's brief carries the review it follows under. One
+# heading for one block, so a reader handed two briefs sees the same marker
+# whether or not the run had been reviewed before.
+RE_REVIEW_HEADING = "Earlier review this re-review follows"
+
+
+def reviewed_commits(
+    tree: Path | None, older: str, newer: str
+) -> list[tuple[str, str]] | None:
+    """The commits between two revisions, oldest first, as ``(sha, subject)``.
+
+    ``None`` when either revision is unnamed or git cannot list the range: a
+    re-review names its committed range as the work its reviewer must judge, so
+    the caller states an unreadable range as unreadable rather than as no
+    commits. An empty list and a range git refused are different facts, and only
+    the first belongs under a heading that promises nothing changed.
+    """
+    if tree is None or not older or not newer:
+        return None
+    try:
+        completed = subprocess.run(
+            ["git", "log", "--reverse", "--format=%H %s", f"{older}..{newer}"],
+            cwd=tree,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+    except OSError:
+        return None
+    if completed.returncode:
+        return None
+
+    commits: list[tuple[str, str]] = []
+    for line in completed.stdout.splitlines():
+        sha, _, subject = line.strip().partition(" ")
+        if sha:
+            commits.append((sha, subject.strip()))
+    return commits
+
+
+def _earlier_finding_rows(
+    project: str, run_id: str, reviewed_head: str
+) -> list[str] | None:
+    """One row per finding the earlier review raised, with its disposition.
+
+    ``None`` means the earlier review could not be read, which the caller states
+    as unreadable; an empty list means it was read and raised no findings. The
+    two are kept apart because a first review and a re-review whose predecessor
+    raised nothing are different briefs, and a reader told the second must not
+    infer the first.
+
+    The row is built from the record's own findings list, index by index,
+    because a disposition is keyed by that index. Normalising the list first
+    would drop a claimless entry and shift every later index onto another
+    finding's disposition.
+    """
+    from reckon.crew import findings as findings_module
+
+    try:
+        stored = review_module.stored_record(
+            project, run_id, reviewed_head_sha=reviewed_head
+        )[1]
+    except (OSError, ValueError):
+        return None
+    if not isinstance(stored, Mapping):
+        return None
+    raw = stored.get("findings")
+    if raw is None:
+        return []
+    if isinstance(raw, (str, bytes)) or not isinstance(raw, Sequence):
+        return None
+    rows: list[str] = []
+    for index, finding in enumerate(raw):
+        claim = review_module.finding_claim(finding)
+        if claim is None:
+            continue
+        severity = review_module.declared_severity(finding) or "unstated severity"
+        if len(claim) > _RE_REVIEW_CLAIM_LIMIT:
+            claim = claim[: _RE_REVIEW_CLAIM_LIMIT - 3].rstrip() + "..."
+        anchor = ""
+        if isinstance(finding, Mapping):
+            path = str(finding.get("file") or finding.get("path") or "").strip()
+            line = finding.get("line")
+            if path:
+                anchor = f" {path}" + (f":{line}" if isinstance(line, int) else "")
+        disposition = findings_module.finding_disposition(stored, index)
+        rows.append(f"  finding {index} [{severity}]{anchor}: {claim} — {disposition}")
+    return rows
+
+
+# A finding's claim is quoted into a brief a reviewer reads whole, so one long
+# claim does not crowd out the others. The limit is on the quoted copy only;
+# the stored record keeps the claim in full, and the row names the finding's
+# index and anchor so the reviewer can read it at source.
+_RE_REVIEW_CLAIM_LIMIT = 240
+
+
+def _re_review_block(
+    record: Mapping[str, Any], delta: Mapping[str, Any], head: str
+) -> str:
+    """The block a re-review's brief carries about the review before it.
+
+    A re-review's reviewer is asked to judge the commits the run gained since it
+    was last reviewed, and to say for each earlier blocking finding whether the
+    new head resolves it. ``delta`` is the move the reviewer is composed from —
+    the head the earlier review read and the head the run carries now — so the
+    block names both ends of the range it quotes and nothing the earlier review
+    had not already landed.
+
+    Empty when ``delta`` names no earlier head: a brief for a first review
+    carries no block, and the absence is what makes the two briefs tell apart.
+    """
+    reviewed_head = str(delta.get("reviewed_head") or "").strip()
+    if not reviewed_head:
+        return ""
+    current = str(delta.get("head") or head or "").strip()
+    run_id = str(record.get("run_id") or "")
+    project = str(record.get("project") or "")
+    tree = _review_tree(record)
+    commits = reviewed_commits(tree, reviewed_head, current)
+    lines = [RE_REVIEW_HEADING, f"Previously reviewed head: {reviewed_head}"]
+    if commits:
+        lines.append(f"Commits since that head ({len(commits)}):")
+        lines.append("")
+        lines.extend(f"  {sha} {subject}".rstrip() for sha, subject in commits)
+    elif commits is None:
+        lines.append("Commits since that head: git could not list the range")
+    else:
+        lines.append(
+            "Commits since that head: none (git lists no commit between the two "
+            "revisions)"
+        )
+    rows = _earlier_finding_rows(project, run_id, reviewed_head) if run_id else None
+    if rows:
+        lines.extend(
+            [
+                "",
+                "Earlier review's findings, with the disposition recorded against each:",
+                "",
+            ]
+        )
+        lines.extend(rows)
+    elif rows == []:
+        lines.extend(["", "Earlier review's findings: it raised none."])
+    else:
+        lines.append(
+            "Earlier review's findings: they could not be read for the head it reviewed"
+        )
+    lines.extend(
+        [
+            "",
+            (
+                "Judge the commits named above against this run's goal and "
+                "done-when, and state in this review, for each earlier blocking "
+                "finding, whether the new head resolves it."
+            ),
+        ]
+    )
+    return "\n".join(lines)
+
+
 def _review_brief_text(
     record: Mapping[str, Any],
     head: str,
     *,
     rubric: str | None = None,
     project_path: str | None = None,
+    delta: Mapping[str, Any] | None = None,
 ) -> str:
     """The rubric text and run identity a run review's brief carries.
 
@@ -506,6 +681,14 @@ def _review_brief_text(
     are read from, so a caller holding a fixture config does not have to install
     one; without it the project's own layer is resolved as the dispatch resolves
     it.
+
+    ``delta`` is the move a second or later review is composed for — the head the
+    earlier review read and the head the run carries now — and makes the brief a
+    re-review's: the block it requires names the head that review read, the
+    commits since, and each finding it raised with the disposition recorded
+    against it, and asks for each earlier blocking finding whether the new head
+    resolves it. A brief composed without it is a first review's, and a reviewer
+    reads nothing about a review the run has not had.
     """
     rubric_name = str(rubric or "").strip().lower()
     if rubric_name == review_module.FIGURE_REVIEW_RUBRIC:
@@ -558,6 +741,14 @@ def _review_brief_text(
     )
     if declared_block:
         lines.extend(["", declared_block])
+    # The move the dispatch is composed from is the only thing that makes this
+    # brief a re-review's: without it the reviewer reads the run whole and is
+    # told nothing about the earlier review, which is what a first review's
+    # brief must say.
+    if isinstance(delta, Mapping):
+        re_review = _re_review_block(record, delta, head)
+        if re_review:
+            lines.extend(["", re_review])
     if rubric_name:
         lines.insert(0, f"Review rubric: {rubric_name}")
     text = rubric_text.rstrip("\n") + "\n\n" + "\n".join(lines) + "\n"
@@ -971,7 +1162,7 @@ def _review_dispatch_fields(
     # as coordinator instructions, so every plan gate still runs. Writing the
     # brief here, before the lane decides, is what lets the printed
     # ``review-missing`` command and the executed dispatch name one path.
-    brief_text = _review_brief_text(record, head, rubric=rubric_name)
+    brief_text = _review_brief_text(record, head, rubric=rubric_name, delta=delta)
     brief_file = _review_brief_path(record, rubric=rubric_name)
     # The brief is materialized only for the dispatch, never on a read: a read
     # that composed it wrote review-brief.md into the reviewed run's directory,
@@ -1279,7 +1470,13 @@ def newest_review_for_headless_run(
     """
     if reclaimed:
         return None
-    review = review_module.read_review(project, run_id)
+    from reckon.crew.recovery_memo import _read_review_once
+
+    review = _read_review_once(
+        {"project": project, "run_id": run_id},
+        ("newest",),
+        lambda: review_module.read_review(project, run_id),
+    )
     return ledger.normalize_identity(review) if review is not None else None
 
 
@@ -1335,16 +1532,41 @@ def _review_missing_measures(
     arithmetic a reviewer read. A claims record is complete on its own terms:
     it carries the verdicts for the findings the review re-ran and the summary
     check, and is not measured against the six dimensions a read-only run never
-    scored. The rubric key chooses the measure, so neither record is read as
-    absent of the other's. An empty list is a complete record; the names are
-    what a refusal reports, so a review the fleet cannot promote says which
-    measure it is missing rather than that it cannot be read.
+    scored. A figure record is complete when it carries a verdict for every
+    item of its own rubric, because a figure review judges the rendered
+    artifact and records verdicts rather than scores. The rubric key chooses
+    the measure, so no record is read as absent of another's. An empty list is
+    a complete record; the names are what a refusal reports, so a review the
+    fleet cannot promote says which measure it is missing rather than that it
+    cannot be read.
     """
     if not review or review.get("status") != "parsed":
         return ["status"]
-    if review.get("rubric") == review_module.CLAIMS_RUBRIC:
+    rubric = review_module._review_record_rubric(review)
+    if rubric == review_module.CLAIMS_RUBRIC:
         return _claims_missing_measures(review)
+    if rubric == review_module.FIGURE_REVIEW_RUBRIC:
+        return _figure_missing_measures(review)
     return _landed_missing_measures(review)
+
+
+def _figure_missing_measures(review: Mapping[str, Any]) -> list[str]:
+    """The figure rubric items a record carries no verdict for.
+
+    A verdict line that states nothing is not a verdict, so an item whose value
+    is blank is reported missing rather than taken as checked. A
+    ``rubric_items`` value that is not a mapping cannot name the items it
+    carries, so every item is reported missing rather than iterated over
+    something that does not answer.
+    """
+    items = review.get("rubric_items")
+    if not isinstance(items, Mapping):
+        return list(review_module.FIGURE_REVIEW_ITEMS)
+    return [
+        item
+        for item in review_module.FIGURE_REVIEW_ITEMS
+        if not str(items.get(item) or "").strip()
+    ]
 
 
 def _landed_missing_measures(review: Mapping[str, Any]) -> list[str]:

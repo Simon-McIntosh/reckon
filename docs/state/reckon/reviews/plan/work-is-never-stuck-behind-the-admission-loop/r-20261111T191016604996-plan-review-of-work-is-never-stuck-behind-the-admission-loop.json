@@ -1,0 +1,213 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-11T19:46:24.146Z",
+  "dispatched_at": "2026-11-11T19:34:58Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/work-is-never-stuck-behind-the-admission-loop.html#s35",
+      "id": "reasoning-1",
+      "reason": "an implementable node dispatched here would find the defect non-reproducing and must stop under the evidence contract, so the section should be re-verified against the tree and collapsed to done or restated to whatever arm is actually missing.",
+      "text": "\u00a735 reads \"each one waiting in queue_edit.hold \u2192 _admit_lock (reckon/crew/queue_edit.py near line 594), the lock the running pass holds\" and declares that hold must stop taking it; `reckon/crew/queue_edit.py` has no `_admit_lock` at all (it lives in `reckon/crew/queue_admission.py:150`), and `hold` at queue_edit.py:624 and `release` at 648 already carry a docstring stating they change only the pointer they change and \"never take[s] the admission lock\", while the pre-launch re-read is already in the tree at `reckon/crew/queue_admission.py:328` (`_launch_reread_refusal`, called at 5594, refusing with \"the request was held while the pass waited on it\") \u2014 so both halves of the section's endpoint are met at 634b6807",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/work-is-never-stuck-behind-the-admission-loop.html#s4",
+      "id": "anchors_resolve-1",
+      "reason": "a worker told to read \"near line 3244\" lands in unrelated code, and the author would either re-measure the numbers or, better, drop them from plan text and leave the symbol to the node brief.",
+      "text": "the line numbers the implementable sections hand a worker no longer land on the code they name: \u00a74 says \"_plan_review_owed (reckon/crew/queue_admission.py, near line 3244)\" but that function is at 4647 in a 6202-line file, and \"plan_review._section_digests(path) (near line 3319)\" is at plan_review.py:473; \u00a731 says \"_restore_queued and the requeue of failed launches (reckon/crew/queue_admission.py, near lines 1215\u20131300)\" but `_write_pointer` is at 1974 and `_restore_queued` at 2000; \u00a723 says \"widest_fitting_candidate (snapshot.py, near lines 639\u2013645)\" but it is at 612; and \u00a735 cites two queue_edit.py lines that hold neither the symbol nor a lock",
+      "type": "anchors_resolve",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/work-is-never-stuck-behind-the-admission-loop.html#s7",
+      "id": "anchors_resolve-2",
+      "reason": "both sections are declared done, so no node will be dispatched to that path and no future work is redirected by correcting it, though the two statements are now false of the tree.",
+      "text": "\u00a77's write paths name `reckon/crew/needs_you.py` and \u00a714 rests an argument on it (\"nothing in production imports reckon/crew/needs_you.py\", \"six test files still import it\"), but the module was retired in 85f888a7a1 and no longer exists; only two test files reference needs_you at all",
+      "type": "anchors_resolve",
+      "would_change": false
+    },
+    {
+      "anchor": "docs/plans/work-is-never-stuck-behind-the-admission-loop.html#s49",
+      "id": "anchors_resolve-3",
+      "reason": "adding the two numbers makes the followups resolvable by label in a plan that carries 49 numbered sections, and the cost is two headings.",
+      "text": "sections s49 and s50 carry headings with no section number (\"A requeued fleet job resumes its services\", \"A resume records the host that launched it\") while every other section of the plan is numbered, and the open followups address them as \"Build \u00a749\" and \"Build \u00a750\", so the two references resolve only by matching prose against the declaration map",
+      "type": "anchors_resolve",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/work-is-never-stuck-behind-the-admission-loop.html#s23",
+      "id": "done_when-1",
+      "reason": "without an arm whose reconstructed input is perturbed and whose outcome must therefore change, the node's whole evidence claim rests on output it could copy, which is the failure the section exists to avoid after three refuted mechanism guesses.",
+      "text": "\u00a723's done-when is \"the replay script reproduces the recorded outcome of both attempts\", which a script that loads the recorded exclusion rows and prints them also passes; the deliverable's own safeguard, \"it never stubs a routing or competence verdict\", appears in no arm, so the measure cannot show the picker withheld codex rather than the report repeating the records",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/work-is-never-stuck-behind-the-admission-loop.html#s31",
+      "id": "single_goal-1",
+      "reason": "the reconstruction is what tells the repair which of two write-backs to bound, and a node that omits it can pass its gate with a guard aimed at the wrong one.",
+      "text": "\u00a731's deliverable opens \"First reconstruct from the pass log and the failure fields which write-back recreated the pointer. Then every write-back ... is refused\", but its done-when has three cases all about the refusal and none about the reconstruction, so the investigation can be skipped and the node still closes",
+      "type": "single_goal",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "0aac2c5fe1496fd2ba0ef7be54027cf57eafeb9a",
+  "plan_fingerprint": "008f180d131857b8c44299670936dda832a13789419846c02ca2b93ac69210ad",
+  "plan_slug": "work-is-never-stuck-behind-the-admission-loop",
+  "plan_version": 366,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "declined",
+      "by": "",
+      "finding": "reasoning-1",
+      "reason": "the finding is on a section not dispatched in this round; it is settled when that section is dispatched. This round builds \u00a751, which drew no finding",
+      "when": "2026-11-11T20:15:31.041503+00:00"
+    },
+    {
+      "action": "declined",
+      "by": "",
+      "finding": "anchors_resolve-1",
+      "reason": "the finding is on a section not dispatched in this round; it is settled when that section is dispatched. This round builds \u00a751, which drew no finding",
+      "when": "2026-11-11T20:15:53.498458+00:00"
+    },
+    {
+      "action": "declined",
+      "by": "",
+      "finding": "anchors_resolve-2",
+      "reason": "the finding is on a section not dispatched in this round; it is settled when that section is dispatched. This round builds \u00a751, which drew no finding",
+      "when": "2026-11-11T20:16:12.334059+00:00"
+    },
+    {
+      "action": "declined",
+      "by": "",
+      "finding": "anchors_resolve-3",
+      "reason": "the finding is on a section not dispatched in this round; it is settled when that section is dispatched. This round builds \u00a751, which drew no finding",
+      "when": "2026-11-11T20:16:27.880123+00:00"
+    },
+    {
+      "action": "declined",
+      "by": "",
+      "finding": "done_when-1",
+      "reason": "the finding is on a section not dispatched in this round; it is settled when that section is dispatched. This round builds \u00a751, which drew no finding",
+      "when": "2026-11-11T20:16:47.175983+00:00"
+    },
+    {
+      "action": "declined",
+      "by": "",
+      "finding": "single_goal-1",
+      "reason": "the finding is on a section not dispatched in this round; it is settled when that section is dispatched. This round builds \u00a751, which drew no finding",
+      "when": "2026-11-11T20:17:06.150828+00:00"
+    }
+  ],
+  "responses": {
+    "anchors_resolve-1": {
+      "action": "declined",
+      "by": "",
+      "reason": "the finding is on a section not dispatched in this round; it is settled when that section is dispatched. This round builds \u00a751, which drew no finding",
+      "when": "2026-11-11T20:15:53.498458+00:00"
+    },
+    "anchors_resolve-2": {
+      "action": "declined",
+      "by": "",
+      "reason": "the finding is on a section not dispatched in this round; it is settled when that section is dispatched. This round builds \u00a751, which drew no finding",
+      "when": "2026-11-11T20:16:12.334059+00:00"
+    },
+    "anchors_resolve-3": {
+      "action": "declined",
+      "by": "",
+      "reason": "the finding is on a section not dispatched in this round; it is settled when that section is dispatched. This round builds \u00a751, which drew no finding",
+      "when": "2026-11-11T20:16:27.880123+00:00"
+    },
+    "done_when-1": {
+      "action": "declined",
+      "by": "",
+      "reason": "the finding is on a section not dispatched in this round; it is settled when that section is dispatched. This round builds \u00a751, which drew no finding",
+      "when": "2026-11-11T20:16:47.175983+00:00"
+    },
+    "reasoning-1": {
+      "action": "declined",
+      "by": "",
+      "reason": "the finding is on a section not dispatched in this round; it is settled when that section is dispatched. This round builds \u00a751, which drew no finding",
+      "when": "2026-11-11T20:15:31.041503+00:00"
+    },
+    "single_goal-1": {
+      "action": "declined",
+      "by": "",
+      "reason": "the finding is on a section not dispatched in this round; it is settled when that section is dispatched. This round builds \u00a751, which drew no finding",
+      "when": "2026-11-11T20:17:06.150828+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/Code/reckon/docs/state/reckon/reviews/plan/work-is-never-stuck-behind-the-admission-loop/r-20261111T191016604996-plan-review-of-work-is-never-stuck-behind-the-admission-loop.json",
+  "review_run_id": "r-20261111T191016604996-plan-review-of-work-is-never-stuck-behind-the-admission-loop",
+  "reviewed_blob_sha": "5aa1931681268fbb1148aa5edb519d51d32545bc",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "findings \u2014 the line numbers cited by \u00a74, \u00a723, \u00a731 and \u00a735 have drifted off the code they name, \u00a77 and \u00a714 cite a module the tree no longer carries, and \u00a749 and \u00a750 carry no section number in their headings while the followups address them as \u00a749 and \u00a750.",
+    "done_when": "a finding \u2014 \u00a723's done-when can be satisfied by a replay script that echoes the recorded verdict rows, because no arm distinguishes driving the picker in process from printing the records it was built from.",
+    "evidence_paths": "pass \u2014 gate logs go under the run's own directory and \u00a723's report fragment path exists on disk (docs/evidence/fragments/work-is-never-stuck-behind-the-admission-loop), so no evidence rests in a scratchpad or a node-local temp path.",
+    "naming": "pass \u2014 the plan's new test files and the sections' described symbols are named by the mechanism they deliver, with no stage, sprint or ticket label reaching code.",
+    "reasoning": "a finding \u2014 \u00a735 states that hold and release take the admission lock, and the tree already has them refusing to do so, so its endpoint is met and a node dispatched on it would find nothing to repair.",
+    "single_goal": "a finding \u2014 \u00a731 carries a reconstruction of which write-back recreated a pointer and a repair in one node, and its done-when measures only the repair.",
+    "wiring": "pass \u2014 every depends-on of this plan resolves to a section that exists and is landed (its own #s2, #s3, #s5, #s8, #s19, #s26, #s28, #s37, #s48) or to an external one present in its own plan (a-queue-holds-the-whole-plan#s18, a-read-costs-what-changed#s6, a-review-gate-judges-what-it-covers#s10, a-dispatch-returns-without-its-worker#s25), and plan-informs names a plan that exists."
+  },
+  "section_digests": {
+    "_document": "7673d5b9dd3938114a738170fbb09a4afbdfab75d26e652f61867d52f1a88a32",
+    "s1": "b585c5379c7260e3b347e966ec3a72d783db9b05657e4127ff337ac5161458e9",
+    "s10": "98088891e2546735c88e0018dd2adbec8a9f9cb618cada74e28a4095e47f5f36",
+    "s11": "64172d367078831447521db5db6f564603855f46c387c906413737be38d7cefa",
+    "s12": "a326ddd2ee6a25d3a5bd7e7faf7faebb13b159435640d33f4c6c5edcca238229",
+    "s13": "43c63cb3547e9638882e45af647c6eca92cdbd77c8006cbf416ed717619a79d5",
+    "s14": "8ad0ca2171f9b9e5d1a4402bed0ba51d908267ec88069268c781013864f569fa",
+    "s15": "97b76e836bce15b65611e3a1c12d5628da0992c3b604881d88f2e406aec3097b",
+    "s16": "de7130b93ad47423ed1f2ac37f7d700e9e1875834a26a33af10a97e2476eafa7",
+    "s17": "e0db3dac4c8e5a22f059034f39cf37bf8c5bd249834f218c25bdec42bc4151ed",
+    "s18": "dac73bb15e3a6db1d4fce585091868e67027d7235101498beef9a59ec2d88363",
+    "s19": "c1cb9323a74f953649b86e65f30cfa320b3f38079883c2a62230fe0b33e58fac",
+    "s2": "f6c0cf62d2c938252c455003a50bb8b8c59948880c30ba53eb34d4d29e8c23fc",
+    "s20": "132bce7e7e2e5612ff43da2f5ac5d14df2686c95a8118525bacac4349e87cb1b",
+    "s21": "ee777267cd96cff6866d857040b00da4e88084663ba40545bb4727aa3450d15c",
+    "s22": "ded37e8e903c88b4c4ba24e9bcfd1cc917e8112037b46dcbbf603bc8a83b9c4b",
+    "s23": "ccb7d854a9adbfef64161daad60b53aa6d860102e4771ff9a5577ab600a8cf79",
+    "s24": "61e0aa46c530807b80f7d600cfda4b2ccbbbe6a7695e74d51056473811046ce6",
+    "s25": "e45eb6699ec467a5bd9381005ac8a37e5079839d93875987c3ae51c7f7c2b7b3",
+    "s26": "2bdadd53a5742d8a2188a592cb048d2bb7bc8ace23f8f154eaff76cd539be41d",
+    "s27": "3e00c68c2c7c78bd8c8b8456b0718c3bd0720d2858b7c95db2196c25e03b289c",
+    "s28": "ed6ca5aa57e4f51ab3ceaeb3d9939a36b018a580d6ba698918ebd906a9b5e16d",
+    "s29": "3aa37627da7e8cb8a62888647fafa8d4833f2c35caca60b2937ad5cb7692711d",
+    "s3": "b7cc7a6cb809c6aca3267aa75867832638d1e895c70283c8b66cbe5415e358f6",
+    "s30": "b8b8706c9acabd5006293450da1eac5c27a1d9cbc69cc594fbdba230ca1d1eac",
+    "s31": "ac4b803910e2499bc7b5387d115251c945ada6fcb6411ad4badc3fa09aa77ec2",
+    "s32": "22711f595f248a553e4c98745f773436a8e3f3fd93718028095777acf063c506",
+    "s33": "fe3a748bc5a61e7ac5d17cc712da88ad843725ce9aad7e3ed9470af61c1cd300",
+    "s34": "f4f8c99832a81234a920d6788e9b3ea8bdb5ebf2124bbb64379dda3ea113277c",
+    "s35": "2ed3877471fd213967e72162b1f3d2cc9e086e047f2fd9d723e6c3e2abe2f396",
+    "s36": "54d73c62fdbeea28623fcf99c6d67154627d70aedb131fbed6d09343a3074979",
+    "s37": "d77b9f249be97d69d0ec0919ab6f556cfce7d44cc3a10d2ff943fdfb072fa9c2",
+    "s38": "5964a7a77be985b0b3a188ae40216cb8baef56f2191fab4e66aba5ae6d73ef5e",
+    "s39": "f6ca758ac5780e061aa1fdc392bec7946778a45f169cd9f74684d452968d3caa",
+    "s4": "8220f4acb86bde075d194dffed5ce2cf67af7ba21c21fd4e67d63a215ff7f5c6",
+    "s40": "c0d32ee979fa8e4251090e331dd712a49044a120812f19a6ace10646f45e073b",
+    "s41": "ab9f7902ff9c3414612cf1954249191ab419cb53bab4e904f557af396368d13f",
+    "s42": "238db2fe928160e0127a007bea71f684924880378290ef3193126ab399c35a7b",
+    "s43": "60a13d8600c9f51f039bb4b59ffe32650f8309befe2a208722fd8c79a3737894",
+    "s44": "24cd56d2400f9014d179dc0e05d6df66a228486d9e9c93b6010ccff7e7fcf2b2",
+    "s45": "4ce93449a6aada32697c3981d68a78204974791964659975a9156a5eafbb3124",
+    "s46": "82417e4bcdef0d350e3eae871a0b7ecad1ea580a176a73a6078d79ad7b7c7128",
+    "s47": "0ac5b7fd96906e00c359cee80c1ad2793fe0a5af62bca7fb9909772f197f397e",
+    "s48": "63c26252b8d426e8c668733f7ed25973f74923607908ad0a6545e4d9b933253b",
+    "s49": "69e8f228aeb34ad2c352b9ca480fc4ec6166923e0c880e6d7deab9dce9cc4131",
+    "s5": "4d9eb434bba38de1ca75e0c65b3f3f0e5ee2dacb10a39e95ba851ca1e42db9a5",
+    "s50": "707001b3140668b98cb19c7efca4759913ecf1decc2039272b9da1c1a048918b",
+    "s51": "bd97097f262aea2e0dab4b784ff53cde5dd0472b2564bf35ec0c834ac98d0297",
+    "s6": "2f92e5358487aabaeb8d2b0c54fdf9a0407281e571a7eadaef0a2509754e3666",
+    "s7": "685d1132a4afe44934d774958ddc7017f71d596bb02f6b58bc7410028d8a10ae",
+    "s8": "aeee45dae61c75d687aed6c0439881dc004712a5242684e89b8625cdb5da8390",
+    "s9": "9240ba8b6a2a944280b3e2a2f692d8c76e5e57a675753250f8e0dcfd4e801bcb"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-11T20:05:57.488632+00:00",
+  "total": null
+}

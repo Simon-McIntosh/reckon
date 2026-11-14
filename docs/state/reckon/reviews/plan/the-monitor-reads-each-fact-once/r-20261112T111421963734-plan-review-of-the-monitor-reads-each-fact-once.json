@@ -1,0 +1,156 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-12T11:30:50.714Z",
+  "dispatched_at": "2026-11-12T11:25:59Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/the-monitor-reads-each-fact-once.html:608",
+      "id": "wiring-1",
+      "reason": "without an entry point the four sections are invisible to the coordinator's dispatch path and the chain it was written into cannot start them, the same defect earlier rounds answered by adding followups.",
+      "text": "s34, s35, s36 and s37 are declared `implementable` (plan.html:609, 613, 617, 621) and no followup in the plan carries a `/reckon-build \u2026 \u00a734`\u2026`\u00a737` prompt: the sole open followup is f-tmref-004 for \u00a77, so a coordinator reading the chain has no dispatch entry point for any of the four new sections",
+      "type": "wiring",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/the-monitor-reads-each-fact-once.html:612",
+      "id": "evidence_paths-1",
+      "reason": "the contract requires a worker to confirm a recorded defect still reproduces before repairing it, and without a saved snapshot or log the worker can reproduce from nothing but the prose, so the defect may be repaired against a remembered reading.",
+      "text": "s35's Why states that overdue figures \"stayed identical across about 40 minutes of snapshots\" with `computed_at` 10:53Z, s34's states a duty read `review-missing` \"from about 07:40Z until 10:54Z\", and s36's states a pointer's phase and `launched_at`, and none of the three names a file a later reader can open, unlike the plan's other cost claims which cite a `.raw`, `.log` or RCA path",
+      "type": "evidence_paths",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/the-monitor-reads-each-fact-once.html:608",
+      "id": "anchors_resolve-1",
+      "reason": "the review run is the object both sections' claims are about, so the citation cannot be checked and the worker cannot read the review's own record to confirm the phase it is said to be in.",
+      "text": "s34 names the review run it is about as `r-\u2026071728958783` and s37 names its conflicting claim holder as `r-\u2026063050980180`, truncated ids that resolve to no record, while the same sections state their other run ids in full",
+      "type": "anchors_resolve",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/the-monitor-reads-each-fact-once.html:616",
+      "id": "done_when-1",
+      "reason": "a node told to fix the placement source spends its first step proving a component already correct, and could close that half of the deliverable while the duty still misreads a launched run.",
+      "text": "s36's deliverable asks that `queue_admission.queued_placements` \"count only pointers still in the queued phase\", but that function already filters on `phase == \"queued\"` and a readable `queued_at` at base (`reckon/crew/queue_admission.py:5772-5774`), so the placements half of the deliverable is already satisfied and the negative control's \"position 1\" cannot have come from it; the stale field is more plausibly the stored `classification == \"queued\"` row that `_queued_row_item` consumes (`reckon/crew/obligations.py:3319-3345`)",
+      "type": "done_when",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "3e748c88cc6e58a502544dcef568c5c7496f6d75",
+  "plan_fingerprint": "9ad81e6d7724c9b4a1fa869df9232bc4eae88f5fe64cebba4641fce25898caec",
+  "plan_slug": "the-monitor-reads-each-fact-once",
+  "plan_version": 207,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "declined",
+      "by": "",
+      "finding": "wiring-1",
+      "reason": "The entry point exists outside the followup chain: all four sections were dispatched as one batch at 11:02-11:06Z (runs r-20261112T110221445514, r-20261112T110348511503, r-20261112T110444695714, r-20261112T110602029678), two already launched. A /reckon-build followup would point a coordinator at sections already queued and invite a duplicate dispatch.",
+      "when": "2026-11-12T12:25:44.309321+00:00"
+    },
+    {
+      "action": "declined",
+      "by": "",
+      "finding": "anchors_resolve-1",
+      "reason": "Both ids resolve under ~/.config/reckon/crew/runs with their slug suffix, which the reviewer's exact-name check missed: r-20261112T071728958783-review-of-the-picker-never-budgets-below-the-compute-a-bri-da59df00accf and r-20261112T063050980180-review-of-finding-on-own-file-opens-repair-e82aa6bb9769. Editing the section text now would strand its queued run; the full ids are recorded here for the worker and the next reader.",
+      "when": "2026-11-12T12:25:51.941552+00:00"
+    },
+    {
+      "action": "declined",
+      "by": "",
+      "finding": "evidence_paths-1",
+      "reason": "The readings were live monitor snapshots from a peer session and were not saved; no file exists to cite and none can be made retroactively. Each section's done-when builds the defect on a temporary crew home and its negative control requires the base revision to show it, so the worker reproduces the defect from code at base rather than from a remembered reading. The cited run records (now resolved in full) remain under ~/.config/reckon/crew/runs.",
+      "when": "2026-11-12T12:26:00.827045+00:00"
+    },
+    {
+      "action": "declined",
+      "by": "",
+      "finding": "done_when-1",
+      "reason": "Accepted as a read of the code, not a plan change: the deliverable already directs the node to find and record in its manifest which stale field made the run read as queued, and the test asserts both that the pointer is not a run-queued duty and not a placement. If placements already filter by phase, that half is a regression guard costing one assertion, and the node fixes the duty source (_queued_row_item's stored classification) the review names. The node is already running, so a plan edit would not reach it.",
+      "when": "2026-11-12T12:26:10.230600+00:00"
+    }
+  ],
+  "responses": {
+    "anchors_resolve-1": {
+      "action": "declined",
+      "by": "",
+      "reason": "Both ids resolve under ~/.config/reckon/crew/runs with their slug suffix, which the reviewer's exact-name check missed: r-20261112T071728958783-review-of-the-picker-never-budgets-below-the-compute-a-bri-da59df00accf and r-20261112T063050980180-review-of-finding-on-own-file-opens-repair-e82aa6bb9769. Editing the section text now would strand its queued run; the full ids are recorded here for the worker and the next reader.",
+      "when": "2026-11-12T12:25:51.941552+00:00"
+    },
+    "done_when-1": {
+      "action": "declined",
+      "by": "",
+      "reason": "Accepted as a read of the code, not a plan change: the deliverable already directs the node to find and record in its manifest which stale field made the run read as queued, and the test asserts both that the pointer is not a run-queued duty and not a placement. If placements already filter by phase, that half is a regression guard costing one assertion, and the node fixes the duty source (_queued_row_item's stored classification) the review names. The node is already running, so a plan edit would not reach it.",
+      "when": "2026-11-12T12:26:10.230600+00:00"
+    },
+    "evidence_paths-1": {
+      "action": "declined",
+      "by": "",
+      "reason": "The readings were live monitor snapshots from a peer session and were not saved; no file exists to cite and none can be made retroactively. Each section's done-when builds the defect on a temporary crew home and its negative control requires the base revision to show it, so the worker reproduces the defect from code at base rather than from a remembered reading. The cited run records (now resolved in full) remain under ~/.config/reckon/crew/runs.",
+      "when": "2026-11-12T12:26:00.827045+00:00"
+    },
+    "wiring-1": {
+      "action": "declined",
+      "by": "",
+      "reason": "The entry point exists outside the followup chain: all four sections were dispatched as one batch at 11:02-11:06Z (runs r-20261112T110221445514, r-20261112T110348511503, r-20261112T110444695714, r-20261112T110602029678), two already launched. A /reckon-build followup would point a coordinator at sections already queued and invite a duplicate dispatch.",
+      "when": "2026-11-12T12:25:44.309321+00:00"
+    }
+  },
+  "review_run_id": "r-20261112T111421963734-plan-review-of-the-monitor-reads-each-fact-once",
+  "reviewed_blob_sha": "da64b45975649fd960e62a054a466e3312af30f6",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "a finding \u2014 s34 and s37 abbreviate two run ids as `r-\u2026071728958783` and `r-\u2026063050980180`, which no reader can open; the full ids elsewhere in the same sections (`r-20261112T060543442651`, `r-20261112T060747023508`, `r-20261112T105655465934`) are stated in full, so the truncation is not the plan's convention.",
+    "done_when": "a finding \u2014 s36's negative control asserts `run-queued` \"at position 1\", but the placement source named in its deliverable, `queue_admission.queued_placements`, already filters to `phase == \"queued\"` at base (`reckon/crew/queue_admission.py:5772`), so the position cannot come from there and the stated reproduction is not supported by the cited path.",
+    "evidence_paths": "a finding \u2014 s34, s35 and s36 rest on readings reckon-d1 took live (snapshot figures, a pointer's fields, a duty string) and name no saved path for any of them.",
+    "naming": "pass \u2014 the new write paths are named by capability (`obligation_snapshot`, `queue_admission`, `recovery_review_dispatch`), the test filenames state the behaviour, and no plan label, ticket number or version tag appears in a symbol or comment the sections name.",
+    "reasoning": "pass \u2014 each Why's stated cause fits its cited observation (a duty that names a reflex while the review waits on promotion; reason text that does not move while `age_seconds` grows and `computed_at` is fresh; a queued duty on a run whose pointer has `launched_at`; a refusal recorded with no later sweep reading it as lifted), each endpoint is obtainable and falsifiable, and the only named fix shapes (s35's \"cache key carries the age, or the text is composed after the cache\") restate the endpoint rather than fixing a mechanism.",
+    "single_goal": "pass \u2014 each of s34\u2013s37 names one deliverable: a duty reading (s34), a clock-tracking figure (s35), a phase filter (s36), a retry after a cleared refusal (s37).",
+    "wiring": "a finding \u2014 four new sections (s34\u2013s37) are declared `implementable`, and the only open followup, `f-tmref-004` at plan.html:644, carries `/reckon-build the-monitor-reads-each-fact-once \u00a77`, so none of the four has an entry point."
+  },
+  "section_digests": {
+    "_document": "4a3f08ef6a66e3c57ce3b8aa16fa5de499443756a08d3db0b8ccfcc9b418d5dc",
+    "s1": "bd759b66b2b75254305e473bf6b8af6218ef25d95b0db1638ed2668f0cdd9441",
+    "s10": "d21f2adf110c82d39fa9834752ac3f47dba7ac886c59cfd85feb23c1e8d1003f",
+    "s11": "9e8b94316ed45fc2103d1edc216fbb0dd3862f559824ad1c43299b305a3af6bd",
+    "s12": "21fc271f915167db3cca4f7d0eee1f4553b5dec7b96127d71d294e5ae242bc02",
+    "s13": "3b11fe0cd53015121e6d566c554c6c77b13236b3700a90279e77a6bc755ea0a3",
+    "s14": "5f6675ba84aab4ad594b121e888aace2d69e497390559d38f0c220e5894ac588",
+    "s15": "efa38c205c7332a7867b6d87358cd9f89fe1568beaa9f9e5eee96862dd70b6f0",
+    "s16": "65cd8e559a7a5ebf018bc9fe50a07bb0954f67405ab6f17c7377c38ccd363aa7",
+    "s17": "1dee50822a308fa4eeea0a45fd3cdaf6de52d9a1d74a91c2b9c7605d179da2ad",
+    "s18": "ba63c0b1b83ec93cc99d92a3c1f67dcf92d700e20f4f9acd88362705d6b4d123",
+    "s19": "16239e5fae49e56b170433557a77981816880756e3ae545a741ca9ec70feae63",
+    "s2": "e0f306f01b1530661ef28be3f19592348c45f24e7826567d58a2f0a4f79dd284",
+    "s20": "d14d2b70bb40dd552f306726f24f5e3c79bc5efcd7f9b74bcb7d3de8f16f5e8e",
+    "s21": "9ff7b29b83f9c8ab95a0a469c997950ef226fc3d99d8dcffdbf0683df7a1f26c",
+    "s22": "1bdc9ac90396c56bcbcc8c3c4f44aa6b30cbd59c4da001825159a7b8245e054c",
+    "s23": "a810ffe181d2787722d8f9538a4348592269fe163ba23cc59939376cb13edcbb",
+    "s24": "e861dcc5044a0a1fb36c4a374ca71717aeb97054e5a3ff1aef57c9779c7147f5",
+    "s25": "a0939bd3d8ab0fa4b5c0c88de3cb9cdab3531338fe35d0c12b4338fc3c4d1563",
+    "s26": "a8fb9d8585830b87ed826347ff724ddecc8fb9a43ad9ac1540d6499e3689d03e",
+    "s27": "3c9e47dc777eeadabbe3898d4b8f69d91defbaff009d050f2906732cb87e50c8",
+    "s28": "982b473728d61b81a3d37050384bee85f3f1fb5366aad0668c5370a51367e82c",
+    "s29": "159b45ee319dc13bffea961474eb544e5a26d161bf686ebe5b7fabf95f5266c7",
+    "s3": "f42c4644817feac0c199cd8510d2e284079b1c8fb777c7b79ced63531a8d983f",
+    "s30": "2d8c9efccd4f8eeede43f5fabe6f6b9cacc2207ce97ca700584bfedd0e512dd2",
+    "s31": "27817d420beefc15258f2f52ea8c616f3e04b4035773fe437f6cfe7f31506100",
+    "s32": "836f1473b1691ab0150f1e32791c295f7511abd66cb29f93b48dc0d347998d51",
+    "s33": "39a7d7a43bc6e97cd0c11235cfbe6c06a5b6968dab69e8147978bd164bbfef4e",
+    "s34": "16da5de7a5c4ee31ac2d9a43b888bed8fb1ec1138a2194a35c9b8eacbf03a2b1",
+    "s35": "4a0acdec0fa4d9eaa1066ee46c8a4aec8079db0452d014a442005e104c03c2cc",
+    "s36": "2a4a0d6ab4a994e2d7542482f7b44d106ab0920143bf39d14b292c7c2ec02e8a",
+    "s37": "4d92cdfe9ba1661dc549241d07f5134250aedec9d46757600f427fc52c4741dd",
+    "s4": "c98e197194f43124e5a982992370bf1c08593aa17fb304787a4d7b87f42a0107",
+    "s5": "0329936ec702c07e4a2ef8c756961740635d0dd8c7a1d14646983f1c32f09790",
+    "s6": "1f19e9f8c46bc0674347ba5a3c97588b846d125a5fbcf9533e8a5a3f9ec00bb6",
+    "s7": "dff81fd58ae3afef69063faed237df9bb4056bdb98556a1e5a053e6807ae3d16",
+    "s8": "4a70cad80d8613feb4b30861587298ff1109616ba9a35992821009274f17ae3f",
+    "s9": "8597fbe3fc93694e846c364272c698acf84b09466b4798491eb74279d62cef1d"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-12T11:35:00.355815+00:00",
+  "total": null
+}

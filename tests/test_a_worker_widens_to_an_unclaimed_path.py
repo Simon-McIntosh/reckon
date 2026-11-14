@@ -69,6 +69,11 @@ def _widen(*arguments: str, env: dict[str, str] | None = None):
 def workspace(tmp_path: Path, isolated_reckon_home: Path) -> Path:
     """An isolated crew home and a repository directory beside the pointers."""
     (tmp_path / "repo" / "docs").mkdir(parents=True)
+    declaration = tmp_path / "repo" / "docs" / "state" / "sample"
+    declaration.mkdir(parents=True)
+    (declaration / "shared-write-paths.json").write_text(
+        json.dumps({"shared_roots": []}), encoding="utf-8"
+    )
     return tmp_path
 
 

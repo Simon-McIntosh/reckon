@@ -1,0 +1,196 @@
+{
+  "absent_items": [],
+  "accepted_edits": [
+    {
+      "by": "efd0ee8c-9d4e-4fa3-a440-ac05791d4758",
+      "digests": {
+        "s12": "d44ce1d2fa90c5f2f1dd2fb0bb6089cd3d96c9c116f8d7265bb17c462321716a"
+      },
+      "reason": "every finding answered acted; the edits are the answers",
+      "units": [
+        "s12"
+      ],
+      "when": "2026-11-13T07:19:56.655006+00:00"
+    }
+  ],
+  "completed_at": "2026-11-13T06:50:33.953Z",
+  "dispatched_at": "2026-11-13T06:40:55Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/concurrent-edits-meet-at-the-merge.html:185",
+      "id": "done_when-1",
+      "reason": "without `reckon/crew_run_commands.py` the call that writes the pending record before promotion cannot be moved or cleared, so the node as written cannot satisfy its own done-when.",
+      "text": "\u00a712 requires that a refused `crew complete --land` leave \"no promotion commit, no release commit, no ledger row and no pending-landing record\", but the ordering that produces those writes is in `reckon/crew_run_commands.py`: `pending_landing.write_pending` runs before `crew_module.complete` (:3601 before :3605), the land runs after promotion (:3652), `clear_pending` is reached only on a successful land (`_land_a_promoted_run`, :3933), and a post-promotion failure is caught and turned into a refusal (:3923). The shortfall the section cites is computed in `reckon/crew/promotion_evidence.py:808`, not in `promotion.py:728` as the Why states (that line only unpacks the returned value). Neither `crew_run_commands.py` nor `promotion_evidence.py` is in the section's write paths, so a worker fenced to `promotion.py`, `pending_landing.py`, `recovery_repair_dispatch.py` and the new test cannot deliver the stated endpoint and will either report a scope blocker or leave the defect standing",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/concurrent-edits-meet-at-the-merge.html:185",
+      "id": "single_goal-1",
+      "reason": "splitting the stale-record cleanup into its own section, or dropping it, changes what a node is scored on.",
+      "text": "\u00a712's deliverable joins two endpoints that fail independently and are repaired in different modules: \"either lands the head it cites, or refuses before writing anything\" (promotion's commit-list presentation plus the pending-landing write ordering, `promotion.py` / `pending_landing.py`), and \"a pending-landing record whose run's cited head is already merged is cleared by the next merge-repair pass and never resurrects the run\" (the repair pass, `recovery_repair_dispatch.py`). The done-when's two cases exercise one each, so a single verdict would close a section whose record-cleanup half could be broken and unreported, and the gate proves neither property alone",
+      "type": "single_goal",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/concurrent-edits-meet-at-the-merge.html:185",
+      "id": "reasoning-1",
+      "reason": "a wrong root cause sends the repair at the shortfall report, which is deliberately non-fatal, while the refusal-after-writes ordering the section exists to fix is left unchanged.",
+      "text": "the Why states the call \"refused with `commit_list_shortfall`\", but `_require_gate_evidence` (`reckon/crew/promotion_evidence.py:808`) returns the shortfall as a value and its docstring is explicit that a shortfall \"must not turn a passing promotion into a failed one\" (:853); promotion stores it on the result (:882) and records it on the row (:1871). Nothing raises it, so it cannot have been the refusal. The run's own landing record for r-20261113T012546102955 shows the refusal at `stage_retry` with \"Unable to create '/home/ITER/mcintos/Code/reckon/.git/index.lock': File exists\", after the two commit steps had already succeeded. The section's real defect \u2014 a post-promotion failure is converted to a refusal while the promotion, its release commit, its ledger row and the pending record stand \u2014 is genuine and reproducible from that record, but the named cause points a worker at the shortfall path instead of at the write ordering",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/concurrent-edits-meet-at-the-merge.html:185",
+      "id": "anchors_resolve-1",
+      "reason": "a repair brief is required to confirm the defect reproduces before repair, and a worker told to clear a record that is not there cannot confirm it, while the head 23c73bb6b8 the plan quotes is still unintegrated in the run's worktree (release.json) \u2014 which is the fact worth citing instead.",
+      "text": "\u00a712 states \"The pending-landing record still points at 23c73, and discarding it risks the resurrection path\", but `~/.config/reckon/crew/pending-landings/` holds fifteen records and none names run r-20261113T012546102955, head 23c73bb6b8 or its project; a search of that directory for the head returns nothing. The reason is structural: `pending_landing.write_pending` (`reckon/crew/pending_landing.py:64`) writes only run_id, project, written_at, attempts and the pointer \u2014 it records no head and no status at all, and the `awaiting-review` status the plan quotes is written by the admit service's lander (`reckon/crew/queue_landing.py:391`), a different writer. So the named artifact cannot be the one the plan describes, and the live risk the section cites as motivation no longer exists",
+      "type": "anchors_resolve",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/concurrent-edits-meet-at-the-merge.html:23",
+      "id": "wiring-1",
+      "reason": "an open driving followup for a section declared done re-dispatches finished work, and the plan's own state-integrity rule requires the driving followup to be resolved when a section lands.",
+      "text": "`plan-section-declarations` now marks s2, s3, s9, s10 and s11 done, but f-cem-001 (\"Build \u00a72 and \u00a73 in parallel\", recommending `/reckon-build \u2026 \u00a72`) and f-cem-002 (\"Build \u00a79\u2013\u00a711\", recommending `/reckon-build \u2026 \u00a79`) remain `data-status=\"open\"`. A coordinator reading the followups is pointed at three finished sections while the one unfinished section, s12, has its own open followup f-cem-003",
+      "type": "wiring",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "31076cd9244c9cb7f54387b15024c9b19928713e",
+  "plan_fingerprint": "f3a05f489dde4a971d637c9eb43706d1974395952b9f840fa3e911f2071868bb",
+  "plan_slug": "concurrent-edits-meet-at-the-merge",
+  "plan_version": 69,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "dfc6a0419399dd8a31352e81d7f0d46f5be577cf",
+      "commit_basis": "edit",
+      "finding": "done_when-1",
+      "note": "\u00a712's write paths now name crew_run_commands.py, pending_landing.py and queue_landing.py, the modules that write the record before promotion, turn a post-promotion failure into a refusal, and read the record",
+      "reason": "",
+      "when": "2026-11-13T07:17:33.830125+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "dfc6a0419399dd8a31352e81d7f0d46f5be577cf",
+      "commit_basis": "edit",
+      "finding": "single_goal-1",
+      "note": "\u00a712 now has one endpoint: an interrupted landing finishes at the head it cited; the stale-record cleanup is a case of that endpoint, not a second one",
+      "reason": "",
+      "when": "2026-11-13T07:17:53.850897+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "dfc6a0419399dd8a31352e81d7f0d46f5be577cf",
+      "commit_basis": "edit",
+      "finding": "reasoning-1",
+      "note": "\u00a712's Why now names the index.lock failure at stage_retry after promotion as the cause, not the shortfall",
+      "reason": "",
+      "when": "2026-11-13T07:18:11.890964+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "dfc6a0419399dd8a31352e81d7f0d46f5be577cf",
+      "commit_basis": "edit",
+      "finding": "anchors_resolve-1",
+      "note": "\u00a712 no longer cites a pending record naming 23c73; it names the pointer's admission_landing awaiting-review hold written by queue_landing.py:391 and the record's missing head",
+      "reason": "",
+      "when": "2026-11-13T07:18:40.675206+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "dfc6a0419399dd8a31352e81d7f0d46f5be577cf",
+      "commit_basis": "edit",
+      "finding": "wiring-1",
+      "note": "f-cem-001 and f-cem-002 are resolved; f-cem-003 drives \u00a712",
+      "reason": "",
+      "when": "2026-11-13T07:19:04.435576+00:00"
+    }
+  ],
+  "responses": {
+    "anchors_resolve-1": {
+      "action": "acted",
+      "by": "",
+      "commit": "dfc6a0419399dd8a31352e81d7f0d46f5be577cf",
+      "commit_basis": "edit",
+      "note": "\u00a712 no longer cites a pending record naming 23c73; it names the pointer's admission_landing awaiting-review hold written by queue_landing.py:391 and the record's missing head",
+      "reason": "",
+      "when": "2026-11-13T07:18:40.675206+00:00"
+    },
+    "done_when-1": {
+      "action": "acted",
+      "by": "",
+      "commit": "dfc6a0419399dd8a31352e81d7f0d46f5be577cf",
+      "commit_basis": "edit",
+      "note": "\u00a712's write paths now name crew_run_commands.py, pending_landing.py and queue_landing.py, the modules that write the record before promotion, turn a post-promotion failure into a refusal, and read the record",
+      "reason": "",
+      "when": "2026-11-13T07:17:33.830125+00:00"
+    },
+    "reasoning-1": {
+      "action": "acted",
+      "by": "",
+      "commit": "dfc6a0419399dd8a31352e81d7f0d46f5be577cf",
+      "commit_basis": "edit",
+      "note": "\u00a712's Why now names the index.lock failure at stage_retry after promotion as the cause, not the shortfall",
+      "reason": "",
+      "when": "2026-11-13T07:18:11.890964+00:00"
+    },
+    "single_goal-1": {
+      "action": "acted",
+      "by": "",
+      "commit": "dfc6a0419399dd8a31352e81d7f0d46f5be577cf",
+      "commit_basis": "edit",
+      "note": "\u00a712 now has one endpoint: an interrupted landing finishes at the head it cited; the stale-record cleanup is a case of that endpoint, not a second one",
+      "reason": "",
+      "when": "2026-11-13T07:17:53.850897+00:00"
+    },
+    "wiring-1": {
+      "action": "acted",
+      "by": "",
+      "commit": "dfc6a0419399dd8a31352e81d7f0d46f5be577cf",
+      "commit_basis": "edit",
+      "note": "f-cem-001 and f-cem-002 are resolved; f-cem-003 drives \u00a712",
+      "reason": "",
+      "when": "2026-11-13T07:19:04.435576+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/Code/reckon/docs/state/reckon/reviews/plan/concurrent-edits-meet-at-the-merge/r-20261113T063703150573-plan-review-of-concurrent-edits-meet-at-the-merge.json",
+  "review_run_id": "r-20261113T063703150573-plan-review-of-concurrent-edits-meet-at-the-merge",
+  "reviewed_blob_sha": "b1debb7c92da9875cbb9f20118443864fc2d0680",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "a finding \u2014 \u00a712 asserts a pending-landing record under `crew/pending-landings/` \"still points at 23c73\", and no such record exists.",
+    "done_when": "a finding \u2014 \u00a712 grants three modules, but the behaviour it forbids is produced in `reckon/crew_run_commands.py`, which is not among its write paths.",
+    "evidence_paths": "pass \u2014 \u00a712 requires every log under the run directory, opening with its revision and the literal command and ending in `EXIT=`, and its evidence inputs are durable paths under the crew run directory.",
+    "naming": "pass \u2014 the new test file is named for the behaviour it measures, and no plan label, stage name or ticket number reaches the section's names.",
+    "reasoning": "a finding \u2014 the stated root cause (`commit_list_shortfall` \"only reported\") is not the mechanism the cited evidence shows, because that value is returned and never raised, and the run's own landing record shows the refusal at `stage_retry` on an `index.lock`.",
+    "single_goal": "a finding \u2014 \u00a712 carries two independent endpoints: honouring the cited head at promotion, and clearing a stale pending-landing record in the merge-repair pass.",
+    "wiring": "a finding \u2014 `_document` marks s2, s3, s9, s10 and s11 done while followups f-cem-001 and f-cem-002 remain open recommending those sections."
+  },
+  "section_digests": {
+    "_document": "b6028395e44f4c83a6a84d74b1bf20df00345e45727ad79cebf77ef20458970f",
+    "s1": "3b65e328477dcad431890ad6e57cffb8c8385c67744b318213b4ad9eea2ee1c1",
+    "s10": "e8472937ce59a6c791cb2b42a60eee597bc2ae3a43d0db9ae5cc9ebe61cc8d49",
+    "s11": "7185088dec97bbe621a6c8604b017e1309cdf9ed12c9f1018f3f4a0925479f38",
+    "s12": "3669f506a6f53f349442e7fa5bc8b634323eb73ab4207de95c55454800b1092f",
+    "s2": "bd0097b598a59627cecc4193f6a0815cc60aa0926670d4db5cb738cef62049a4",
+    "s3": "675d18417ee1df0c38d4ff105292833f6aee25b598a13faeee5014f08a3de827",
+    "s4": "16684fd478883b396d5e8f5e3a562edb3b727dcf5ff6e6a326afc75b84b32254",
+    "s5": "f192ba5b1e26f6e57e9650504aca535703eb93332d1030dd1a75fe040ef041e7",
+    "s6": "a3972e388ac76ab83edc0fc942d90bdfa8b94d9a04ee5d436ddf459d03859173",
+    "s7": "9e07feae77865a57d989ea02f10c0b69b3867dfe8f8a9b684e67be62750f6560",
+    "s8": "c0c2b4ab76c3adbd96cc5fa0191b8793a15bcef1b15d35af1b7c16db59bb89e4",
+    "s9": "70801aa3e0f1ac1b0f12696b59036350ff8cccb56ec6eebac7049aefe579ab60"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-13T07:09:19.629157+00:00",
+  "total": null
+}

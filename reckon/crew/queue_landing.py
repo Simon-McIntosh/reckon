@@ -2,12 +2,14 @@
 
 from __future__ import annotations
 
+import fcntl
 import json
 import os
 import re
 import subprocess
 import sys
 import time
+import uuid
 from collections.abc import Mapping, Sequence
 from contextlib import ExitStack
 from dataclasses import replace
@@ -16,18 +18,42 @@ from typing import Any
 
 from reckon import checkout_trust, ledger
 from reckon.crew import landing_measure, recovery, runs
-from reckon.crew.node import CrewError, is_test_path
-from reckon.crew.promotion_records import _node_test_files
-from reckon.crew.recovery_review_acceptance import (
-    _review_accepts_promotion,
-    record_landed_exemptions,
-)
+from reckon.crew.node import CrewError
+from reckon.crew.open_run_index import operational_read
+from reckon.crew.recovery_review_acceptance import _review_accepts_promotion
+from reckon.crew.resume import hold_reason as delivery_hold_reason
 
 _run_srun = subprocess.run
 
 
 class _LandedElsewhereError(Exception):
     """The selected run no longer needs a landing attempt here."""
+
+
+def _ledger_row(pointer: Mapping[str, Any], run_id: str) -> Mapping[str, Any] | None:
+    """The run's ledger row, or None when no row was written for it.
+
+    A row exists for a run that was promoted, discarded or refused, so the row
+    alone does not say the run has been promoted; ``promoted_revision`` does.
+    """
+    project = str(pointer.get("project") or "")
+    repo = str(pointer.get("repo") or "")
+    row_path = ledger.run_path(project, run_id, ledger._run_ledger_root(project, repo))
+    if not row_path.is_file():
+        return None
+    try:
+        row = json.loads(row_path.read_text(encoding="utf-8"))
+    except (OSError, ValueError) as exc:
+        raise CrewError(f"ledger row unreadable for {run_id!r}: {exc}") from exc
+    if not isinstance(row, Mapping) or row.get("run_id") != run_id:
+        raise CrewError(f"ledger row names a different run: {row_path}")
+    return row
+
+
+def _promoted_row_head(pointer: Mapping[str, Any], run_id: str) -> str:
+    """The revision the run's ledger row records it was promoted at, or ""."""
+    row = _ledger_row(pointer, run_id) or {}
+    return str(row.get("promoted_revision") or "").strip()
 
 
 def _landed_elsewhere(pointer: Mapping[str, Any], run_id: str) -> bool:
@@ -38,18 +64,7 @@ def _landed_elsewhere(pointer: Mapping[str, Any], run_id: str) -> bool:
         if not runs.pointer_path(run_id).is_file():
             return True
         raise
-    project = str(pointer.get("project") or "")
-    repo = str(pointer.get("repo") or "")
-    row_path = ledger.run_path(project, run_id, ledger._run_ledger_root(project, repo))
-    if not row_path.is_file():
-        return False
-    try:
-        row = json.loads(row_path.read_text(encoding="utf-8"))
-    except (OSError, ValueError) as exc:
-        raise CrewError(f"ledger row unreadable for {run_id!r}: {exc}") from exc
-    if not isinstance(row, Mapping) or row.get("run_id") != run_id:
-        raise CrewError(f"ledger row names a different run: {row_path}")
-    return True
+    return _ledger_row(pointer, run_id) is not None
 
 
 # A revision as a manifest entry may spell it: hexadecimal, at least the
@@ -995,15 +1010,13 @@ def _landing_test_files(
     batch entry taking its scope from section prose often is, still delivered
     the tests its done-when asked for, so the test files the delivery changed
     are measured instead of refusing the landing as having nothing to run. Only
-    files present in the measured tree are named, so a deleted test is not
-    passed to the runner.
+    files pytest can collect and that are present in the measured tree are
+    named, so a fixture is not handed to the runner and a deleted test is not
+    passed to it.
     """
-    named = _node_test_files(pointer)
-    if named:
-        return named
-    return sorted(
-        path for path in changed if is_test_path(path) and (Path(tree) / path).is_file()
-    )
+    from reckon.crew import delivery_scope
+
+    return delivery_scope.changed_test_files(pointer, changed, tree)
 
 
 def _measure_delivery(
@@ -1014,6 +1027,7 @@ def _measure_delivery(
     stored: Sequence[Mapping[str, Any]] = (),
     *,
     promoted: bool = False,
+    request: Mapping[str, Any] | None = None,
 ) -> Any:
     """Measure current primary against the merge of one delivered run.
 
@@ -1055,11 +1069,20 @@ def _measure_delivery(
             head=head,
             project=project,
         )
-    timeout = _measure_timeout(pointer)
+    config = request["config"] if request is not None else _measure_config(pointer)
+    timeout = (
+        landing_measure.measure_timeout(config)
+        if request is not None
+        else _measure_timeout(pointer)
+    )
     logs = runs.run_dir(run_id) / "landing-measure"
-    if promoted:
+    if request is not None:
+        logs = Path(str(request["logs_dir"]))
+    elif promoted:
         logs = logs / "promoted"
-    primary = _primary_revision(pointer)
+    primary = (
+        str(request["primary"]) if request is not None else _primary_revision(pointer)
+    )
     if not primary:
         measured = landing_measure.Measurement(
             command=command,
@@ -1083,6 +1106,10 @@ def _measure_delivery(
                 measured_head, measured_tree = stack.enter_context(
                     landing_measure.candidate_checkout(repo, primary, head, timeout)
                 )
+            elif request is not None:
+                measured_tree = stack.enter_context(
+                    landing_measure.base_checkout(repo, head, timeout)
+                )
             if not promoted and _landed_elsewhere(pointer, run_id):
                 raise _LandedElsewhereError
             base_tree = stack.enter_context(
@@ -1091,6 +1118,14 @@ def _measure_delivery(
             if not promoted and _landed_elsewhere(pointer, run_id):
                 raise _LandedElsewhereError
             try:
+                from reckon.crew import delivery_scope
+
+                derived = delivery_scope.derive(
+                    pointer,
+                    changed=changed,
+                    tree=measured_tree,
+                    revision=measured_head,
+                )
                 measured = landing_measure.measure_run(
                     command=command,
                     tree=measured_tree,
@@ -1098,16 +1133,17 @@ def _measure_delivery(
                     head_sha=measured_head,
                     base_tree=base_tree,
                     logs_dir=logs,
-                    test_files=_landing_test_files(pointer, changed, measured_tree),
+                    test_files=derived["test_files"],
                     timeout=timeout,
                     stored=stored,
                     project=project,
                     changed=changed,
-                    config=_measure_config(pointer),
+                    config=config,
                 )
                 measured = replace(
                     measured,
                     head=head,
+                    scope=derived,
                     population={
                         **measured.population,
                         "main_sha": primary,
@@ -1132,14 +1168,154 @@ def _measure_delivery(
             head=head,
             project=project,
         )
-    _record_suite_evidence(run_id, measured, promoted=promoted)
+    if request is None:
+        _record_suite_evidence(run_id, measured, promoted=promoted)
     return measured
+
+
+def run_measurement_request(path: Path) -> None:
+    """Run the comparisons inside their scheduler allocation, never the fleet."""
+    from reckon._store import write_json_atomically
+
+    request = json.loads(path.read_text(encoding="utf-8"))
+    # The outer job owns the allocation. Its arms run there rather than
+    # submitting further scheduler jobs and waiting for a second allocation.
+    config = dict(request["config"])
+    config["landing"] = {**config.get("landing", {}), "measure_partition": ""}
+    request["config"] = config
+    os.environ["PYTHONPATH"] = "."
+    measured = _measure_delivery(
+        request["pointer"],
+        request["run_id"],
+        request["head"],
+        request["pointer"]["repo"],
+        request["stored"],
+        promoted=True,
+        request=request,
+    )
+    write_json_atomically(
+        path.parent / "result.json", replace(measured, execution="slurm").as_dict()
+    )
+
+
+def _scheduled_measurement(
+    pointer: Mapping[str, Any],
+    run_id: str,
+    head: str,
+    primary: str,
+    stored: Sequence[Mapping[str, Any]],
+    active: set[str],
+) -> landing_measure.Measurement | None:
+    """Adopt a persisted job, or submit once when the configured width allows."""
+    from reckon._store import write_json_atomically
+
+    job = pointer.get("landing_measurement_job")
+    if isinstance(job, Mapping) and job.get("status") in {"pending", "complete"}:
+        try:
+            measured = landing_measure.read_measurement_job(job)
+        except landing_measure.MeasurementJobError:
+            raise
+        except (OSError, ValueError, subprocess.TimeoutExpired):
+            # An unavailable scheduler says nothing about job completion.
+            # Keep its slot occupied and try the observation on a later pass.
+            return None
+        if measured is None:
+            return None
+        active.discard(run_id)
+        runs._mutate_pointer(
+            run_id,
+            lambda record: {
+                **record,
+                "landing_measurement_job": {**job, "status": "complete"},
+            },
+        )
+        if (
+            job["head"] == head
+            and job["command"] == pointer.get("suite_command")
+            and (
+                job["primary"] == primary
+                or _moved_primary_keeps_the_measurement(
+                    pointer, job["primary"], primary
+                )
+            )
+        ):
+            _record_suite_evidence(run_id, measured)
+            return measured
+        # A finished job for another head still releases its slot, but cannot
+        # stand as evidence about the delivery now being judged.
+    if len(active) >= landing_measure.measurement_width():
+        return None
+    config = _measure_config(pointer)
+    directory = runs.run_dir(run_id) / "landing-measure" / uuid.uuid4().hex
+    directory.mkdir(parents=True, exist_ok=True)
+    request_path = directory / "request.json"
+    request = {
+        "run_id": run_id,
+        "head": head,
+        "primary": primary,
+        "pointer": dict(pointer),
+        "stored": list(stored),
+        "config": dict(config),
+        "logs_dir": str(directory),
+    }
+    write_json_atomically(request_path, request)
+    # Four comparison arms plus isolated repeats share one bounded job. The
+    # stored arm rates widen its bound when previous populations took longer.
+    elapsed = max(
+        (
+            sum(
+                float(arm.get("elapsed_seconds") or 0)
+                for arm in landing_measure._arm_records(record)
+            )
+            for record in stored
+        ),
+        default=0,
+    )
+    bound = max(_measure_timeout(pointer) * 10, elapsed * 2)
+    job = landing_measure.submit_measurement(request_path, config=config, bound=bound)
+    runs._mutate_pointer(
+        run_id, lambda record: {**record, "landing_measurement_job": job}
+    )
+    active.add(run_id)
+    return None
 
 
 def _promoted_candidate(
     pointer: Mapping[str, Any], run_id: str, head: str, tree: str
 ) -> str:
     """Measure publication after completion has committed its records."""
+    from reckon.crew import merge
+
+    primary = _primary_revision(pointer)
+    command = str(pointer.get("suite_command") or "").strip()
+    measured = _stored_measurement(run_id, head, command, primary, pointer)
+    if measured is not None:
+        candidate = merge.build_merge_commit(
+            Path(str(pointer.get("repo") or tree)),
+            primary,
+            head,
+            "merge: integrate the measured delivery",
+            "Combine the reviewed delivery with publication records that leave "
+            "the measured product unchanged.",
+        )
+        _record_suite_evidence(
+            run_id,
+            replace(
+                measured,
+                population={
+                    **measured.population,
+                    "main_sha": primary,
+                    "candidate_sha": candidate,
+                },
+            ),
+            promoted=True,
+        )
+        return candidate
+    if (_measure_config(pointer).get("landing") or {}).get("measure_partition"):
+        raise CrewError(
+            "the primary product changed during promotion; a new scheduler "
+            "measurement is required before publishing the candidate"
+        )
     measured = _measure_delivery(pointer, run_id, head, tree, promoted=True)
     refusal = _measure_guard(measured)
     if refusal:
@@ -1329,29 +1505,38 @@ def _review_added_failure_guard(review: Mapping[str, Any] | None) -> str:
 def _undisposed_finding_guard(review: Mapping[str, Any] | None) -> str:
     """The refusal a finding nobody has answered raises, or "".
 
-    Landing on an undisposed finding would record a judgement nobody made: the
-    exemption the landing pass used to write was its own decision, taken after
-    the fact, not the reviewer's and not the coordinator's.
+    Only a finding that withholds the landing refuses it: one that declares the
+    blocking severity, and one that declares nothing at all, since an unreadable
+    severity is a judgement the reviewer left unstated. A finding the reviewer
+    declared non-blocking is carried forward unjudged — the landing records it
+    as deferred once the run lands, and it stays open work from there — so it
+    does not hold the run.
+
+    The split is the deferral writer's, not a second reading of the severities:
+    :func:`reckon.crew.findings.undisposed_finding_indexes` names both halves, so
+    the guard admits exactly the findings that writer records and refuses the
+    rest, and the index the refusal prints is the index the writer keys against.
     """
     from reckon.crew import findings as findings_module
+    from reckon.crew import review as review_module
 
     if not isinstance(review, Mapping):
         return ""
+    findings = findings_module._record_findings(review)
     open_rows: list[str] = []
-    for index, finding in enumerate(findings_module._record_findings(review)):
-        if not str(finding.get("text") or "").strip():
-            continue
-        if findings_module.finding_disposition(review, index) != "open":
-            continue
+    for index in findings_module.undisposed_finding_indexes(
+        review, holding_landing=True
+    ):
+        finding = findings[index]
+        severity = review_module.declared_severity(finding)
         path = str(finding.get("path") or "").strip()
         line = str(finding.get("line") or "").strip()
         anchor = f"{path}:{line}" if path and line else path or f"finding {index}"
-        severity = str(finding.get("severity") or "unstated severity")
-        open_rows.append(f"{anchor} ({severity})")
+        open_rows.append(f"{anchor} ({severity or 'unstated severity'})")
     if not open_rows:
         return ""
     return (
-        f"{RED_SUITE_GUARD}: the run's review carries findings with no "
+        f"{RED_SUITE_GUARD}: the run's review carries blocking findings with no "
         "disposition: " + "; ".join(open_rows)
     )
 
@@ -1598,20 +1783,17 @@ def _verified_measurement(
 
 def _land(run_id: str) -> tuple[bool, str]:
     """Hand the measured delivery to completion, which owns publication."""
-    from reckon.crew import merge
+    from reckon.crew.promotion_requests import PENDING, request_promotion
+    from reckon.crew_run_commands import crew_complete
 
-    try:
-        _verified_measurement(run_id)
-    except (OSError, ValueError, CrewError, merge.MergeError) as exc:
-        return False, str(exc)
-
-    environment = os.environ.copy()
-    source = str(Path(__file__).resolve().parents[2])
-    environment["PYTHONPATH"] = os.pathsep.join(
-        part for part in (source, environment.get("PYTHONPATH", "")) if part
-    )
-    timeout = _land_timeout(run_id)
-    return _run_land_command(_land_command(run_id), environment, timeout)
+    command = _land_command(run_id)
+    with crew_complete.make_context(
+        "complete", command[command.index("complete") + 1 :]
+    ) as context:
+        receipt = request_promotion(run_id, kind="command", options=context.params)
+    if receipt.get("phase") in PENDING:
+        return True, "promotion-requested"
+    return False, str(receipt.get("error") or "promotion already settled")
 
 
 def _run_land_command(
@@ -1669,15 +1851,15 @@ def _delivery_order(pointer: Mapping[str, Any]) -> tuple[int, str]:
     )
 
 
+@operational_read
 def land_once() -> dict[str, Any]:
     """Land each accepted delivery once and return obligations for refusals.
 
-    At most one delivered run is measured per pass. A measurement runs the
-    suite at two revisions plus up to six isolated re-runs, so measuring every
-    waiting run in one pass would delay the next landing for the sum of their
-    suite times. Admission runs independently. The rest wait for later passes
-    in delivery order, and a measurement is reused while its primary, delivered
-    head and command stay unchanged.
+    Partitioned measurements are submitted without waiting, up to the
+    configured in-flight width. Later passes adopt their persisted jobs and
+    consume completed receipts. A delivery with reusable evidence can land in
+    the same pass while those jobs remain pending. In-place measurements keep
+    their single-measurement bound for callers outside the scheduler service.
 
     A head refused on an earlier pass is judged again as soon as the rule that
     refused it or the review it read has changed, so a run held by a rule since
@@ -1708,27 +1890,48 @@ def land_once() -> dict[str, Any]:
 
     # A landing promoted but never merged is finished before new deliveries are
     # judged: its promotion already counts as landed everywhere else.
-    finished = pending_landing.finish_pending_landings()
-    with plan_read_scopes():
-        result = _land_deliveries()
+    lock = runs.crew_home() / "locks" / "landing-pass.lock"
+    lock.parent.mkdir(parents=True, exist_ok=True)
+    with lock.open("a+b") as handle:
+        try:
+            fcntl.flock(handle.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except BlockingIOError:
+            return {"landed": [], "obligations": [], "deferred": [], "busy": True}
+        finished = pending_landing.finish_pending_landings()
+        with plan_read_scopes():
+            result = _land_deliveries(
+                settled_landings={
+                    str(row.get("run_id") or "")
+                    for row in finished
+                    if row.get("status") in ("finished", "already-landed")
+                }
+            )
     if finished:
         result["interrupted_landings"] = finished
     return result
 
 
-def _land_deliveries() -> dict[str, Any]:
+def _land_deliveries(settled_landings: set[str] | None = None) -> dict[str, Any]:
+    settled_landings = settled_landings or set()
     landed: list[str] = []
+    requested: list[str] = []
     skipped: list[dict[str, str]] = []
     obligations: list[dict[str, str]] = []
     deferred: list[str] = []
     deferred_reasons: dict[str, str] = {}
     measured_this_pass = False
     live = sorted(runs.list_live(), key=_delivery_order)
+    active_measurements = landing_measure.active_measurement_jobs(live)
     # One history read per project for the whole pass, not one per run: the
     # run directory holds thousands of entries on shared storage, and the pass
     # exists to stay off that cost.
     history: dict[str, list[dict[str, Any]]] = {}
     for pointer in live:
+        if pointer.get("promotion_status") in {
+            "promotion-requested",
+            "promotion-running",
+        }:
+            continue
         if pointer.get("pending_landing_repair"):
             continue
         if (
@@ -1745,6 +1948,14 @@ def _land_deliveries() -> dict[str, Any]:
             continue
         head, tree = recovery._review_head_and_tree(pointer)
         if not head:
+            continue
+        # This pass just finished this run's landing at the head that landing
+        # cited, so nothing here lands it again. Reading this pointer's reviews
+        # would hold the run awaiting-review at whatever head a resume moved it
+        # to — a revision no review read, and an obligation no later pass can
+        # answer, because the run is already promoted.
+        if run_id in settled_landings and _promoted_row_head(pointer, run_id):
+            skipped.append({"run_id": run_id, "status": "landed-elsewhere"})
             continue
         entries = classified.get("manifest_commits") or ()
         delivered = _delivered_revision(entries)
@@ -1771,6 +1982,19 @@ def _land_deliveries() -> dict[str, Any]:
                     )
             continue
         if not recovery.same_revision(head, delivered):
+            continue
+        # A coordinator's hold defers this delivery however clean its evidence
+        # reads. It is skipped rather than refused: a refusal is a judgement
+        # the pass makes and can retract, while a hold is the coordinator's
+        # decision and ends only when it is released or the run delivers a new
+        # head, which a hold a resume took stops covering.
+        # The revision handed over is the head the pass resolved, not the
+        # manifest's own spelling of it: a manifest may name its commit
+        # abbreviated, and a hold taken against the full head must cover that
+        # delivery rather than be read as naming a different one.
+        hold_reason = delivery_hold_reason(pointer, head)
+        if hold_reason:
+            skipped.append({"run_id": run_id, "status": "held", "reason": hold_reason})
             continue
         owed = _owed_review_tiers(pointer)
         reviews: dict[str, dict[str, Any] | None] = {}
@@ -1967,6 +2191,44 @@ def _land_deliveries() -> dict[str, Any]:
             # The stored head is this head: reuse it, and re-apply it to the
             # pointer so a promoted pass still records what it measured on.
             _record_suite_evidence(run_id, measured)
+        elif (_measure_config(pointer).get("landing") or {}).get(
+            "measure_partition"
+        ) or pointer.get("landing_measurement_job"):
+            if project not in history:
+                history[project] = _pass_history(live, project)
+            try:
+                measured = _scheduled_measurement(
+                    pointer,
+                    run_id,
+                    head,
+                    primary,
+                    history[project],
+                    active_measurements,
+                )
+            except (OSError, ValueError, subprocess.TimeoutExpired) as exc:
+                job = pointer.get("landing_measurement_job")
+                if isinstance(job, Mapping):
+                    active_measurements.discard(run_id)
+                    runs._mutate_pointer(
+                        run_id,
+                        lambda record, job=job: {
+                            **record,
+                            "landing_measurement_job": {**job, "status": "failed"},
+                        },
+                    )
+                measured = landing_measure.Measurement(
+                    command=command,
+                    suite={},
+                    population={},
+                    head=head,
+                    unreadable=str(exc),
+                )
+            if measured is None:
+                deferred.append(run_id)
+                deferred_reasons[run_id] = (
+                    "the measurement job is pending or its in-flight width is full"
+                )
+                continue
         elif command and measured_this_pass:
             deferred.append(run_id)
             deferred_reasons[run_id] = (
@@ -2027,9 +2289,9 @@ def _land_deliveries() -> dict[str, Any]:
             continue
         # The review's non-blocking findings do not hold the landing, and the
         # finding a reviewer raised must not vanish with the pointer that
-        # carried it. Exemptions are recorded only once the landing has
-        # succeeded: a refusal here leaves the run unlanded, and marking its
-        # findings exempted would say a landing happened that did not.
+        # carried it. Each one is deferred only once the landing has succeeded:
+        # a refusal here leaves the run unlanded, and recording a deferral would
+        # say a landing happened that did not.
         try:
             _record_attempt(
                 run_id,
@@ -2061,11 +2323,16 @@ def _land_deliveries() -> dict[str, Any]:
         ):
             skipped.append({"run_id": run_id, "status": "landed-elsewhere"})
             continue
+        if accepted and guard == "promotion-requested":
+            requested.append(run_id)
+            continue
         if accepted:
             landed.append(run_id)
             try:
-                record_landed_exemptions(
-                    project, run_id, review, reviewed_head_sha=head
+                from reckon.crew import review_dispositions as dispositions_module
+
+                dispositions_module.record_landed_deferrals(
+                    project, run_id, reviewed_head_sha=head
                 )
             except (OSError, ValueError) as exc:
                 # The landing stands; only the record of what the reviewer
@@ -2076,7 +2343,7 @@ def _land_deliveries() -> dict[str, Any]:
                         "session": str(pointer.get("session") or ""),
                         "guard": (
                             "the run landed but its review's non-blocking "
-                            "findings could not be recorded as exempted: "
+                            "findings could not be recorded as deferred: "
                             f"{type(exc).__name__}: {exc}"
                         ),
                     }
@@ -2112,6 +2379,8 @@ def _land_deliveries() -> dict[str, Any]:
                 refused["remedy"] = remedy
             obligations.append(refused)
     result = {"landed": landed, "obligations": obligations, "deferred": deferred}
+    if requested:
+        result["promotion_requested"] = requested
     if deferred_reasons:
         result["deferred_reasons"] = deferred_reasons
     if skipped:

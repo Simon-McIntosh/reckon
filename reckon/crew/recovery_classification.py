@@ -26,6 +26,13 @@ from reckon.crew.reports import (
     parse_manifest,
 )
 
+#: The word a promoted run reads while its delivered head is not on the primary
+#: branch. It is the delivered state rather than a landed one: promotion writes
+#: a ledger row, and only the merge puts the change on a branch. The word is
+#: shared by the lifecycle classification and the fleet verdict so a row cannot
+#: report the same run as two different outcomes.
+PROMOTED_UNMERGED_STATE = "complete"
+
 
 def _manifest_is_the_predecessor_attempts_report(
     record: Mapping[str, Any],
@@ -124,6 +131,18 @@ _UNRECONCILED_RUNS_REFUSAL = "UnreconciledRuns"
 # of them: ``- <run_id>: <next action>``. The action is that run's own remedy,
 # read from the refusal rather than composed again here.
 _UNRECONCILED_RUN_LINE = re.compile(r"^-\s+(\S+):\s+(.+)$", re.MULTILINE)
+
+# The clauses a queued request's refused launch is reported under. A refusal of
+# the lane is the common one; a refusal of a condition of the dispatching
+# session is the other, and both leave the request queued. The snapshot carries
+# the same words, so the reader that draws the refusal recognises it by the
+# text written here rather than spelling the prefix a second time.
+QUEUED_REFUSAL_PREFIX = "the queued launch was refused: "
+QUEUED_REFUSAL_SESSION_PREFIX = (
+    "the last admission attempt was refused for a condition of this session "
+    "rather than of the lane: "
+)
+QUEUED_REFUSAL_PREFIXES = (QUEUED_REFUSAL_PREFIX, QUEUED_REFUSAL_SESSION_PREFIX)
 
 
 def _wait_refusal_classes() -> frozenset[str]:
@@ -318,10 +337,7 @@ def _queued_failure_remedy(record: Mapping[str, Any]) -> dict[str, str] | None:
         if project:
             with contextlib.suppress(CrewError):
                 command = _watch_attach_line(project, session=session)
-        detail = (
-            f"the last admission attempt was refused for a condition of this "
-            f"session rather than of the lane: {text}"
-        )
+        detail = f"{QUEUED_REFUSAL_SESSION_PREFIX}{text}"
     else:
         command = _remedy_command_stated_by(text)
         if command is None:
@@ -331,7 +347,7 @@ def _queued_failure_remedy(record: Mapping[str, Any]) -> dict[str, str] | None:
             and _plan_review_remedy_is_answered(command)
         ):
             return None
-        detail = f"the queued launch was refused: {text}"
+        detail = f"{QUEUED_REFUSAL_PREFIX}{text}"
     return {"detail": detail, "next_command": command}
 
 
@@ -433,6 +449,17 @@ PRODUCER_GONE_STATUS = "producer-gone"
 #: stop the coordinator decides, and investigating it is the remedy.
 PRODUCER_GONE_VERB = "investigate"
 
+#: What one scheduler query about a wait's jobs established, kept apart because
+#: only one of the four readings says anything about whether the work has ended.
+_SCHEDULER_NO_JOBS = "no-jobs"
+_SCHEDULER_LISTED = "listed"
+_SCHEDULER_UNLISTED = "unlisted"
+_SCHEDULER_UNASKABLE = "unaskable"
+
+#: Standing for "the scheduler has not been asked yet", so a caller that has
+#: already asked can hand its answer down rather than put the question twice.
+_NOT_READ = object()
+
 
 def _wait_probe_history(record: Mapping[str, Any]) -> list[dict[str, Any]]:
     """The probe observations the sweep has recorded for a wait, oldest first.
@@ -510,36 +537,63 @@ def _wait_value_still_seconds(
     return max(0.0, now_seconds - reference)
 
 
-def _scheduler_job_alive(probe: Sequence[Any]) -> bool | None:
-    """Whether the scheduler still lists the job a wait's probe names.
+def _scheduler_jobs_reading(probe: Sequence[Any]) -> tuple[str, tuple[str, ...]]:
+    """How the scheduler answered about the jobs a wait's probe names.
 
-    The job id comes from the shared probe reader, so every shape a wait is
-    written in names its job: an ``squeue`` vector, a ``sacct`` vector, and an
-    interpreter's code string reaching either. Reading the id from the probe's
-    own head instead would ask the scheduler nothing about the two shapes whose
-    command is not ``squeue``, and their silence is indistinguishable from a
-    job that has ended.
+    The job ids come from the shared probe reader, so every shape a wait is
+    written in names its jobs: an ``squeue`` vector, a ``sacct`` vector, an
+    interpreter's code string reaching either, and a script handed a
+    comma-separated batch of ids. Reading them from the probe's own head
+    instead would ask the scheduler nothing about the shapes whose command is
+    not ``squeue``, and their silence is indistinguishable from jobs that have
+    ended.
 
-    None means the wait names no scheduler job, or the scheduler could not be
-    asked: an unreadable answer is not evidence the job is gone, so it never
-    contributes to calling the producer gone.
+    A wait may name a batch, so the question is asked about all of them in one
+    query and answered as listed as soon as the scheduler lists any. The batch
+    is why the answer is not a single job's: one completed job beside five
+    still running is a healthy wait, and reading it per job would call the wait
+    dead on the one that finished.
+
+    The four readings are kept apart because they support different claims. No
+    job is named: the scheduler was never consulted. The scheduler listed a
+    job: the wait has something left to lift it. It listed none: the question
+    was put and answered. It could not be asked at all, because the command is
+    absent or refused the query: nothing was measured, so the row must say the
+    scheduler could not be asked rather than that no job is alive.
     """
-    job_id = _wait_probe_job_id(probe)
-    if not job_id:
-        return None
+    job_ids = _wait_probe_job_ids(probe)
+    if not job_ids:
+        return (_SCHEDULER_NO_JOBS, ())
     try:
         result = subprocess.run(
-            ["squeue", "-h", "-j", job_id],
+            ["squeue", "-h", "-j", ",".join(job_ids)],
             capture_output=True,
             text=True,
             check=False,
             timeout=1.0,
         )
     except (OSError, subprocess.SubprocessError):
-        return None
+        return (_SCHEDULER_UNASKABLE, job_ids)
     if result.returncode != 0:
-        return None
-    return bool((result.stdout or "").strip())
+        return (_SCHEDULER_UNASKABLE, job_ids)
+    if (result.stdout or "").strip():
+        return (_SCHEDULER_LISTED, job_ids)
+    return (_SCHEDULER_UNLISTED, job_ids)
+
+
+def _scheduler_job_alive(probe: Sequence[Any]) -> bool | None:
+    """Whether the scheduler still lists any job a wait's probe names.
+
+    None means the wait names no scheduler job, or the scheduler could not be
+    asked: an unreadable answer is not evidence the jobs are gone, so it never
+    contributes to calling the run abandoned.
+    """
+    state = _scheduler_jobs_reading(probe)[0]
+    if state == _SCHEDULER_LISTED:
+        return True
+    if state == _SCHEDULER_UNLISTED:
+        return False
+    return None
 
 
 def _producer_gone_verdict(
@@ -550,6 +604,7 @@ def _producer_gone_verdict(
     alive: bool | None,
     liveness_proven: bool,
     now_seconds: float,
+    scheduler_alive: bool | object | None = _NOT_READ,
 ) -> dict[str, Any] | None:
     """Whether a waiting run's producer is provably gone, and on what evidence.
 
@@ -569,16 +624,19 @@ def _producer_gone_verdict(
     """
     if alive is not False or liveness_proven is not True:
         return None
-    # A wait that names a job is only settled by a scheduler that answered and
-    # listed no such job; a scheduler that could not be asked leaves the job's
+    # A wait that names jobs is only settled by a scheduler that answered and
+    # listed none of them; a scheduler that could not be asked leaves their
     # liveness unknown rather than absent. A wait naming no job asks nothing of
     # the scheduler, so its silence says nothing either way.
     probe = wait.get("probe") or ()
-    if (
-        _wait_probe_job_id(probe) is not None
-        and _scheduler_job_alive(probe) is not False
-    ):
-        return None
+    if _wait_probe_job_id(probe) is not None:
+        if scheduler_alive is _NOT_READ:
+            scheduler_alive = _scheduler_job_alive(probe)
+        if scheduler_alive is not False:
+            return None
+    # Read only once the question is settled: which jobs the scheduler was
+    # asked about is the row's evidence, not part of the gate.
+    job_ids = _wait_probe_job_ids(probe)
     still = _wait_value_still_seconds(
         record, wait=wait, observation=observation, now_seconds=now_seconds
     )
@@ -587,8 +645,12 @@ def _producer_gone_verdict(
     return {
         "still_seconds": int(still),
         "observed": (observation or {}).get("observed"),
-        "probe": [str(item) for item in wait.get("probe") or ()],
+        "probe": [str(item) for item in probe],
         "terminal": list(wait.get("terminal") or ()),
+        # The jobs the scheduler was asked about, so the row can say what was
+        # consulted instead of asserting no job is alive on a question nobody
+        # put. An empty list is the wait that names none of them.
+        "scheduler_jobs": [str(job_id) for job_id in job_ids],
     }
 
 
@@ -661,6 +723,25 @@ def _review_run_in_flight(
     if not _review_in_flight_phase(phase):
         return "", ""
     return review_run_id, phase
+
+
+#: The phases a review run's pointer carries once its review is written and
+#: nothing but a promotion remains. A review holds its pointer through them, so
+#: it is still readable while it is no longer working on the revision.
+DELIVERED_REVIEW_PHASES = frozenset({"complete"})
+
+
+def _review_pointer_delivered(pointer: Mapping[str, Any] | None) -> bool:
+    """Whether a review run's own pointer records the review as delivered.
+
+    A delivered review holds its pointer until a promotion lands its record, so
+    the phase is what separates "still working on the revision" from "waiting
+    to be landed", and it is read here so both surfaces that ask share one
+    vocabulary.
+    """
+    if not isinstance(pointer, Mapping):
+        return False
+    return str(pointer.get("phase") or "") in DELIVERED_REVIEW_PHASES
 
 
 def _review_pointer_phase(review_run_id: str) -> str:
@@ -787,6 +868,214 @@ def _lane_admission_detail(
         "source": str(lane_reading.get("source") or ""),
         "observed_at": observed_at or None,
     }
+
+
+#: How long the revision a checkout's primary branch carried is reused. A sweep
+#: classifies every live row within one pass, so a short window reads the branch
+#: once for the whole pass and still notices a merge that lands between passes.
+_PRIMARY_REVISION_TTL_SECONDS = 5.0
+
+#: The ancestry answers already taken, keyed by the checkout, the delivered head
+#: and the primary revision the answer was taken against. Ancestry of a fixed
+#: pair is fixed, so an answer stays true until the branch moves, which changes
+#: the key. Cleared wholesale at the limit rather than evicted one by one: the
+#: entries are cheap to recompute and a sweep repopulates what it still needs.
+_ANCESTRY_MEMO: dict[tuple[Any, ...], bool] = {}
+_ANCESTRY_MEMO_LIMIT = 4096
+
+#: The primary revision last read from each checkout, with the moment it was
+#: read, so one pass over many rows of one project asks git once.
+_PRIMARY_REVISION_MEMO: dict[tuple[Any, ...], tuple[float, str]] = {}
+
+
+def _checkout_identity(checkout: Path) -> tuple[Any, ...]:
+    """The cache key that names one checkout *instance* rather than one path.
+
+    A path can be emptied and made a repository again — a worktree reclaimed
+    and reused, a temporary tree replaced — and the new repository shares
+    nothing with the old one but its name. The git directory's identity is what
+    separates them, so a cached revision is never carried across the change.
+    """
+    try:
+        entry = (checkout / ".git").stat()
+    except OSError:
+        return (str(checkout),)
+    return (str(checkout), entry.st_dev, entry.st_ino)
+
+
+def _primary_branch_revision(checkout: Path, moment: float) -> str:
+    """The commit ``checkout``'s primary branch carries, or empty when unreadable."""
+    key = _checkout_identity(checkout)
+    cached = _PRIMARY_REVISION_MEMO.get(key)
+    if cached is not None and 0 <= moment - cached[0] <= _PRIMARY_REVISION_TTL_SECONDS:
+        return cached[1]
+    revision = ""
+    if checkout.is_dir():
+        from reckon.crew import merge
+
+        try:
+            branch = merge._current_branch(checkout)
+        except merge.MergeError:
+            branch = "HEAD"
+        answer = subprocess.run(
+            [
+                "git",
+                "-C",
+                str(checkout),
+                "rev-parse",
+                "--verify",
+                f"{branch}^{{commit}}",
+            ],
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        if answer.returncode == 0:
+            revision = answer.stdout.strip()
+    _PRIMARY_REVISION_MEMO[key] = (moment, revision)
+    return revision
+
+
+def _head_on_primary_branch(checkout: Path, head: str, moment: float) -> bool | None:
+    """Whether ``head`` is reachable from ``checkout``'s primary branch.
+
+    ``None`` is the answer whenever the question could not be asked — an
+    unreadable checkout, an unresolvable head, a git failure — because a broken
+    probe must not be reported as a merge that is owed.
+
+    The answer is cached by the pair it was taken against. A sweep draws every
+    live row and each row that is promoted asks the same two questions, so the
+    cache is what keeps the branch read and the ancestry walk off the per-row
+    path: a tick costs one ``rev-parse`` per checkout and one ancestry walk per
+    distinct delivered head. The walk itself is the review store's own probe, so
+    the repository has one answer to "is this commit reachable from that one"
+    rather than a copy per caller.
+    """
+    primary = _primary_branch_revision(checkout, moment)
+    if not primary or not head:
+        return None
+    key = (_checkout_identity(checkout), head, primary)
+    cached = _ANCESTRY_MEMO.get(key)
+    if cached is not None:
+        return cached
+    from reckon.crew import plan_review
+
+    try:
+        on_branch = plan_review._commit_is_ancestor(checkout, head, primary)
+    except (OSError, ValueError):
+        on_branch = None
+    if on_branch is None:
+        return None
+    if len(_ANCESTRY_MEMO) >= _ANCESTRY_MEMO_LIMIT:
+        _ANCESTRY_MEMO.clear()
+    _ANCESTRY_MEMO[key] = on_branch
+    return on_branch
+
+
+def _delivered_head(record: Mapping[str, Any]) -> tuple[Path | None, str, bool]:
+    """The repository a run's head lands in, the head its row names, and whether it read one.
+
+    The head comes from the run's own ledger row rather than from its worktree,
+    because the row is what promotion wrote: the promoted revision when it
+    recorded one, and otherwise the last commit it promoted. The row is found
+    through the ledger's own ownership resolution, which is the same one
+    promotion writes it under, so a run implementing one project's plan in
+    another repository's checkout is still found.
+
+    The third answer separates a row that was read from one that was not. A row
+    read and naming no commit is a completion that delivered nothing — there is
+    no head to place on a branch, so it owes no merge. A row that could not be
+    read leaves the head unknown, which is an unverified landing rather than a
+    settled one.
+    """
+    project = str(record.get("project") or "")
+    run_id = str(record.get("run_id") or "")
+    if not project or not run_id:
+        return None, "", False
+    from reckon.crew.node import claim_repository
+
+    checkout = claim_repository(record)
+    try:
+        root = ledger._run_ledger_root(project, str(record.get("repo") or ""))
+        path = ledger.run_path(project, run_id, root)
+        row = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError, ledger.LedgerError):
+        return checkout, "", False
+    if not isinstance(row, Mapping) or str(row.get("run_id") or "") != run_id:
+        return checkout, "", False
+    promoted = str(row.get("promoted_revision") or "").strip()
+    if promoted:
+        return checkout, promoted, True
+    commits = [str(commit).strip() for commit in (row.get("commits") or ())]
+    return checkout, next((commit for commit in reversed(commits) if commit), ""), True
+
+
+def _promoted_awaiting_merge(record: Mapping[str, Any], *, moment: float) -> str:
+    """The sentence for a promoted run whose merge is still owed, or empty.
+
+    Two facts say a promotion's change is on no branch. ``crew complete --land``
+    writes one record per landing under the crew home before it promotes and
+    removes it only once the delivered head is on the primary branch, so a
+    record that still exists marks a landing in flight; its status names repair
+    when the pass recorded a merge conflict and a plain merge otherwise. The
+    record alone is not enough: a promotion that ended before writing one leaves
+    a ledger row and a head no branch carries, and a run reads landed only when
+    its head is an ancestor of the primary branch. So the head's ancestry is
+    asked whatever the record says, and it fails closed: when the branch, the
+    head or the walk cannot be read, the landing is unverified rather than
+    landed, because a reader who believes a landed row stops attending to the
+    run.
+    """
+    run_id = str(record.get("run_id") or "")
+    if not run_id:
+        return ""
+    from reckon.crew import pending_landing
+
+    try:
+        record_path = pending_landing._record_path(run_id)
+    except (OSError, ValueError):
+        return ""
+    pending = pending_landing._read(record_path)
+    status = ""
+    if pending is not None:
+        status = (
+            "awaiting-merge-repair"
+            if pending.get("merge_conflict")
+            else "awaiting-merge"
+        )
+    checkout, head, row_read = _delivered_head(record)
+    if row_read and not head:
+        # A completion that delivered no commits has nothing to place on a
+        # branch, so it owes no merge and stays settled.
+        return ""
+    on_branch = (
+        _head_on_primary_branch(checkout, head, moment)
+        if checkout is not None
+        else None
+    )
+    if on_branch is True:
+        # A branch carries the head, so the run has landed and a record left
+        # behind describes a merge that has since finished.
+        return ""
+    if on_branch is False:
+        if status:
+            return (
+                "the run is promoted and awaits its merge: its pending landing "
+                f"reads {status}"
+            )
+        return (
+            "the run is promoted and awaits its merge: its delivered head is not "
+            "on the primary branch"
+        )
+    if status:
+        return (
+            "the run is promoted and awaits its merge: its landing is unverified "
+            f"and its pending landing reads {status}"
+        )
+    return (
+        "the run is promoted and awaits its merge: its landing is unverified, "
+        "the head's ancestry could not be read"
+    )
 
 
 def classify_pointer(
@@ -1618,6 +1907,13 @@ def classify_pointer(
         )
     elif wait is not None and wait["valid"]:
         classification = WAITING_STATUS
+        # One scheduler query answers both questions this branch asks: whether
+        # any job still holds the wait, and whether the row must say the
+        # scheduler could not be asked. Asking once keeps a sweep from putting
+        # the same question twice when the scheduler is slow or absent.
+        probe_words = wait.get("probe") or ()
+        named_jobs = _wait_probe_job_ids(probe_words)
+        scheduler_alive = _scheduler_job_alive(probe_words) if named_jobs else None
         if (
             wait_observation
             and wait_observation["state"] == "met"
@@ -1676,6 +1972,7 @@ def classify_pointer(
                 alive=alive,
                 liveness_proven=liveness_proven,
                 now_seconds=moment,
+                scheduler_alive=scheduler_alive if named_jobs else _NOT_READ,
             )
         ) is not None:
             # Nothing that could lift this wait is alive. A file wait's probe
@@ -1686,18 +1983,35 @@ def classify_pointer(
             # produce the thing waited on. The row stops reading as working and
             # the session owes a decision, because no later sweep will lift it.
             classification = PRODUCER_GONE_STATUS
+            scheduler_jobs = verdict.get("scheduler_jobs") or []
+            if scheduler_jobs:
+                # The scheduler answered and listed none of the jobs the wait
+                # names, so the row can say that rather than assert an absence
+                # it never looked for. The batch is named in full because one
+                # completed job beside five still running is a healthy wait,
+                # and a reader must be able to see which ones were asked about.
+                scheduler_clause = (
+                    f"and the scheduler listed none of the {len(scheduler_jobs)} "
+                    f"jobs the wait names ({', '.join(scheduler_jobs)}), so no "
+                    "later sweep can lift it"
+                )
+            else:
+                scheduler_clause = (
+                    "and the wait names no scheduler job, so the scheduler was "
+                    "not consulted and its silence says nothing about whether "
+                    "the work has ended"
+                )
             detail = (
                 f"waiting {wait['age_seconds']}s on {wait['condition']}; the "
-                f"producer is gone — no process of the run is alive and the "
-                f"probe {verdict['observed']!r} has not changed for "
-                f"{verdict['still_seconds']}s — with no scheduler job alive, so "
-                f"no later sweep can lift it; terminal when the probe reports "
-                f"{', '.join(verdict['terminal'])}"
+                f"run's own process is gone — no process of the run is alive "
+                f"and the probe {verdict['observed']!r} has not changed for "
+                f"{verdict['still_seconds']}s — {scheduler_clause}; terminal "
+                f"when the probe reports {', '.join(verdict['terminal'])}"
             )
             action = (
                 f"reckon crew resume --run {run_id} --advice continue to carry "
-                f"the wait past its gone producer, or discard the run with "
-                f"reckon crew discard --run {run_id}"
+                f"the wait past the end of the run's own process, or discard "
+                f"the run with reckon crew discard --run {run_id}"
             )
             wait_verdict = verdict
         else:
@@ -1706,6 +2020,16 @@ def classify_pointer(
                 if wait_observation is not None
                 else "the condition probe did not answer"
             )
+            # A wait that names jobs leaves the scheduler's answer owed, and a
+            # query that could not be put leaves it unanswered. The row says
+            # so rather than answering it with an absence nobody measured.
+            if named_jobs and scheduler_alive is None:
+                observation_detail = (
+                    f"{observation_detail}; the scheduler could not be asked "
+                    f"about the {len(named_jobs)} jobs the wait names "
+                    f"({', '.join(named_jobs)}), so its silence says nothing "
+                    "about whether they are still running"
+                )
             detail = (
                 f"waiting {wait['age_seconds']}s on {wait['condition']}; "
                 f"{observation_detail}; terminal when the probe reports "
@@ -2503,7 +2827,29 @@ def classify_pointer(
         record, classified, moment=moment, stall_seconds=stale_after_seconds
     )
     settled = classified["fleet_verdict"]["state"]
-    if settled in FLEET_SETTLED_STATES:
+    awaiting_merge = (
+        _promoted_awaiting_merge(record, moment=moment)
+        if settled in FLEET_SETTLED_STATES
+        else ""
+    )
+    if awaiting_merge:
+        # A ledger row records the promotion; it does not put the delivered
+        # head on the primary branch. Until the landing record is gone, or the
+        # head's ancestry says a branch carries it, the run is delivered and
+        # reads that way, naming what the merge is still waiting on, so a
+        # coordinator is not told to stop attending to a change no branch
+        # carries yet.
+        detail = awaiting_merge
+        classified["fleet_verdict"] = {
+            **classified["fleet_verdict"],
+            "state": PROMOTED_UNMERGED_STATE,
+            "recovery_classification": PROMOTED_UNMERGED_STATE,
+            "detail": detail,
+        }
+        classified["classification"] = PROMOTED_UNMERGED_STATE
+        classified["detail"] = detail
+        classified["next_action"] = f"reckon crew observe --run {run_id}"
+    elif settled in FLEET_SETTLED_STATES:
         # The ledger's word also names the lifecycle reading, so a committed
         # completion cannot read as two different outcomes on one row.
         classified["classification"] = settled
@@ -2629,6 +2975,7 @@ from .recovery_wait import (  # noqa: E402
     _run_wait_condition_probe,
     _wait_condition_observation,
     _wait_probe_job_id,
+    _wait_probe_job_ids,
 )
 from .recovery_watch import (  # noqa: E402
     FLEET_SETTLED_STATES,

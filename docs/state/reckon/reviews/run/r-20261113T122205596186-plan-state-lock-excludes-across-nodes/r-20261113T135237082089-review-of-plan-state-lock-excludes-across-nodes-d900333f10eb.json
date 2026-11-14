@@ -1,0 +1,93 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 6,
+  "call_sites": [
+    "reckon/project_state.py:_resource_lock",
+    "reckon/project_state.py:_resource_locks",
+    "reckon/project_state.py:write_resource",
+    "reckon/project_state.py:create_project_state",
+    "reckon/project_state.py:recover_project_state_transactions",
+    "reckon/project_state.py:move_sprint_item"
+  ],
+  "completed_at": "2026-11-13T14:01:57.311Z",
+  "dispatched_at": "2026-11-13T13:54:07Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "exempted",
+      "reason": "the case's final assertions (item in exactly one sprint, recovered == []) already fail on a partial restore; the unasserted capture adds no guard the test lacks",
+      "recorded_at": "2026-11-13T14:13:52.638170+00:00"
+    },
+    "1": {
+      "kind": "exempted",
+      "reason": "the coordinator removes the stray <meta name=nothing> from the fragment in the landing beat; it carries no content and no reader consumes it (corrects an earlier disposition of this index that carried finding 0's reason)",
+      "recorded_at": "2026-11-13T14:14:19.175221+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "tests/test_a_plan_state_lock_holds_on_every_node.py",
+      "line": "161",
+      "severity": "non-blocking",
+      "text": "observed['source'] and observed['target'] are captured inside while_held and never asserted, so the before-bytes snapshot the case reads guards nothing; a restore that fixed one sprint would be caught only by the final item assertions and recovered == [], not by the capture the comment implies is checked."
+    },
+    {
+      "file": "docs/evidence/fragments/a-plan-state-lock-holds-on-every-node/plan-state-lock-excludes-across-nodes.html",
+      "line": "7",
+      "severity": "non-blocking",
+      "text": "the fragment ships a stray placeholder meta element, <meta name=\"nothing\">, which carries no content and reads as leftover wiring in a served evidence page."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": {
+      "detail": "every plan-state write reaches the changed lock through project_state._resource_locks, used by write_resource, create_project_state, recover_project_state_transactions, move_sprint_item, push and close.",
+      "verdict": "pass"
+    },
+    "diff": {
+      "detail": "one commit, d900333f10, adds reckon/node_exclusive_lock.py and the probe, replaces the inline flock in project_state._resource_lock, adds the two-case test file and an evidence fragment; the journal-before-restore guard in recovery is untouched.",
+      "verdict": "pass"
+    },
+    "done_when": {
+      "detail": "the done_when asks for a two-node probe with differing hostnames and its base negative control plus thread and recovery tests; logs/head-probe.log and logs/base-probe.log name clu-3141 and clu-3142, logs/negative-control.log shows the two guarded ids red at base, and the head arm records 53 passed.",
+      "verdict": "pass"
+    },
+    "goal": {
+      "detail": "the goal is a plan-state lock that excludes a holder on another node, and reckon/node_exclusive_lock.py:60 adds fcntl.lockf to the flock that project_state._resource_lock takes, which is where reckon/project_state.py:2134 restores a journal and :2200 moves an item.",
+      "verdict": "pass"
+    },
+    "manifest": {
+      "detail": "the manifest records the head arm command and its 53-passed result, the base arm at 51, the importer arms at 10 failed / 555 passed and 8 failed / 559 passed, and names every log path the record cites.",
+      "verdict": "pass"
+    },
+    "write_paths": {
+      "detail": "the declared paths are project_state.py, one new module under reckon/, the probe under scripts/, the named test file and the evidence fragment; the diff of the commit touches exactly those five and nothing else.",
+      "verdict": "pass"
+    }
+  },
+  "justifications": {
+    "durability": "tests/test_a_plan_state_lock_holds_on_every_node.py:131 and :179 assert a separate process is refused the POSIX record lock, and logs/negative-control.log records both reddening at the base revision with exactly those assertions.",
+    "evidence": "logs/negative-control.log shows both guarded ids failing against the base tree and logs/head-probe.log and logs/base-probe.log show differing hostnames with refused versus acquired; the importer arms run in logs/importers-base.log and logs/importers-head.log with head failures a strict subset of base's.",
+    "fit": "reckon/node_exclusive_lock.py follows the contextmanager shape and module-docstring idiom of the lock it replaces at reckon/_store.py:395, and no added name carries a plan label.",
+    "goal_fidelity": "reckon/project_state.py:308 now takes reckon/node_exclusive_lock.exclusive_lock, which holds a POSIX record lock beside the flock, so the sprint locks that reckon/project_state.py:2134 and :2200 take before a restore or a move exclude a holder on another node.",
+    "reuse": "no module owned a cross-node exclusive lock before this change; reckon/_store.py:395 _serialized_path_lock is the nearer owner and stays node-local, which plan section 4 accounts for rather than this node.",
+    "scope_discipline": "all five paths in git diff 945e52f9..d900333f (reckon/project_state.py, reckon/node_exclusive_lock.py, scripts/plan_state_lock_probe.py, tests/test_a_plan_state_lock_holds_on_every_node.py, docs/evidence/fragments/a-plan-state-lock-holds-on-every-node/plan-state-lock-excludes-across-nodes.html) are inside the node's declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is a plan-state lock that excludes a holder on every node; reckon/node_exclusive_lock.py:60 is the POSIX record lock that does it and reckon/project_state.py:308 is where the plan-state lock takes it.\nVERDICT done_when: the done_when names a two-node probe with differing hostnames, its base negative control, thread and recovery tests, and the importer arms; logs/head-probe.log, logs/base-probe.log, logs/negative-control.log and logs/head-arm.log carry each of them.\nVERDICT write_paths: the declared paths are project_state.py, one new module under reckon/, the probe under scripts/, the named test file and the evidence fragment; git diff 945e52f92b..d900333f10 touches exactly those five.\nVERDICT manifest: read; it records the head arm at 53 passed, the base arm at 51 with the two new cases absent from that tree, the importer arms at 10 failed / 555 passed and 8 failed / 559 passed, and every log path.\nVERDICT diff: read commit by commit against 945e52f92b; one commit adds the lock module, swaps the inline flock in project_state._resource_lock for it, adds the probe and two test cases, and adds an evidence fragment, changing nothing the goal does not imply.\nCALL_SITES: reckon/project_state.py:_resource_lock, reckon/project_state.py:_resource_locks, reckon/project_state.py:write_resource, reckon/project_state.py:create_project_state, reckon/project_state.py:recover_project_state_transactions, reckon/project_state.py:move_sprint_item\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/project_state.py:308 now takes reckon/node_exclusive_lock.exclusive_lock, which holds a POSIX record lock beside the flock, so the sprint locks that reckon/project_state.py:2134 and :2200 take before a restore or a move exclude a holder on another node.\nSCORE evidence: 18\nJUSTIFICATION evidence: logs/negative-control.log shows both guarded ids failing against the base tree and logs/head-probe.log and logs/base-probe.log show differing hostnames with refused versus acquired; the importer arms run in logs/importers-base.log and logs/importers-head.log with head failures a strict subset of base's.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: all five paths in git diff 945e52f9..d900333f (reckon/project_state.py, reckon/node_exclusive_lock.py, scripts/plan_state_lock_probe.py, tests/test_a_plan_state_lock_holds_on_every_node.py, docs/evidence/fragments/a-plan-state-lock-holds-on-every-node/plan-state-lock-excludes-across-nodes.html) are inside the node's declared write paths.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_a_plan_state_lock_holds_on_every_node.py:131 and :179 assert a separate process is refused the POSIX record lock, and logs/negative-control.log records both reddening at the base revision with exactly those assertions.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/node_exclusive_lock.py follows the contextmanager shape and module-docstring idiom of the lock it replaces at reckon/_store.py:395, and no added name carries a plan label.\nSCORE reuse: 16\nJUSTIFICATION reuse: no module owned a cross-node exclusive lock before this change; reckon/_store.py:395 _serialized_path_lock is the nearer owner and stays node-local, which plan section 4 accounts for rather than this node.\nFINDING tests/test_a_plan_state_lock_holds_on_every_node.py:161 non-blocking: observed['source'] and observed['target'] are captured inside while_held and never asserted, so the before-bytes snapshot the case reads guards nothing; a restore that fixed one sprint would be caught only by the final item assertions and recovered == [], not by the capture the comment implies is checked.\nFINDING docs/evidence/fragments/a-plan-state-lock-holds-on-every-node/plan-state-lock-excludes-across-nodes.html:7 non-blocking: the fragment ships a stray placeholder meta element, <meta name=\"nothing\">, which carries no content and reads as leftover wiring in a served evidence page.\n",
+  "review_run_id": "r-20261113T135237082089-review-of-plan-state-lock-excludes-across-nodes-d900333f10eb",
+  "reviewed_base_sha": "945e52f92b6452f1a17458d579ff4faca130288b",
+  "reviewed_head_sha": "d900333f10eb254df09697716c82c3e9e360cbb6",
+  "reviewed_run_id": "r-20261113T122205596186-plan-state-lock-excludes-across-nodes",
+  "scores": {
+    "durability": 18,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 16,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-13T14:11:32.823290+00:00",
+  "total": 108
+}

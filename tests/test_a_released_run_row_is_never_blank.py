@@ -102,7 +102,7 @@ def test_a_block_the_pane_already_shows_prints_its_duty() -> None:
     released += pane.flush(now=1090.0)
 
     assert all(text for text in _texts(released)), released
-    assert "halted" in released[-1][1], released[-1][1]
+    assert "needs you" in released[-1][1], released[-1][1]
     assert released[-1][0]["to_state"] == "blocked", released[-1][0]
 
 

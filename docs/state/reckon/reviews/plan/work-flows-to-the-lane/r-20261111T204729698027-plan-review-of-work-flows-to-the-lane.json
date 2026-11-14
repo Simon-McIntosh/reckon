@@ -1,0 +1,182 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-11T20:58:56.911Z",
+  "dispatched_at": "2026-11-11T20:50:25Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/work-flows-to-the-lane.html:130",
+      "id": "done_when-1",
+      "reason": "the missing-arm case is the most likely one at landing (a run whose manifest records no arm at all) and nothing else in the plan requires it.",
+      "text": "\u00a717's deliverable names three conditions under which the landing measures the arm itself (a recorded arm that is missing, recorded at another revision, or ran another command), but its done-when plants only a superseded head, a differing command and a matching arm, so a node that measures for the revision and command mismatches and still refuses on a missing arm passes the whole gate with one third of its deliverable unimplemented",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/work-flows-to-the-lane.html:134",
+      "id": "done_when-2",
+      "reason": "without a measured lock-held case the retry is optional work, and without a stated bound the worker has to invent the budget the gate will accept.",
+      "text": "\u00a718's deliverable requires that when `extensions.worktreeConfig` must be written and the configuration lock is held, creation \"retries for a bounded time before refusing\", but the done-when exercises only the already-true case, the absent-setting case with no lock, and `core.checkStat`, so a node that keeps the present single attempt and refuses immediately passes; the deliverable also states no bound, so even a test written for it could assert nothing about the wait",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/work-flows-to-the-lane.html:23",
+      "id": "done_when-3",
+      "reason": "either the clause moves to \u00a79 in s2's text or s2 stays implementable until the counts are recorded; as written, a reader computing impl from the declarations believes the sweep was measured when no count exists anywhere.",
+      "text": "`plan-section-declarations` now marks s2 `done`, while s2's own done-when (plan.html:57) still requires that \"the coordinator runs the sweep on the live crew home and records the count of identity files before and after in this plan's evidence record\", and the s2 landing comment (plan.html:163-165) says that sweep is deferred to \u00a79; `docs/evidence/archive/work-flows-to-the-lane-landed.html` carries no before/after count, so the section is declared complete over an unperformed clause of its own gate",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/work-flows-to-the-lane.html:146",
+      "id": "wiring-1",
+      "reason": "the followup is the coordinator's next action, and this is the same gap that was raised for f-wftl-001 and answered by a followup naming every unbuilt section.",
+      "text": "f-wftl-002's title and body read \"Build \u00a77, \u00a78 and \u00a710 to \u00a716\" and name only those waits, while s17 and s18 have been added as implementable and are unbuilt; nothing in the plan's followups names them, so a coordinator driving the plan from its open followup would never dispatch them",
+      "type": "wiring",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "30bb1869cb34185f1162c0238bc30ba35bb3768c",
+  "plan_fingerprint": "85ae6092d5e5276d3290abb916c21b0bcc01bba9cda842d503be79518fcc3f6a",
+  "plan_slug": "work-flows-to-the-lane",
+  "plan_version": 22,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "2c513628ad526af0f3a56108a51d4e5f739cb0f5",
+      "commit_basis": "edit",
+      "finding": "done_when-1",
+      "note": "s17's done-when now plants a missing after arm as a third measured case",
+      "reason": "",
+      "when": "2026-11-11T21:32:21.094519+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "2c513628ad526af0f3a56108a51d4e5f739cb0f5",
+      "commit_basis": "edit",
+      "finding": "done_when-1",
+      "note": "s17's done-when now plants a missing after arm as a third measured case",
+      "reason": "",
+      "when": "2026-11-11T21:32:40.247346+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "2c513628ad526af0f3a56108a51d4e5f739cb0f5",
+      "commit_basis": "edit",
+      "finding": "done_when-2",
+      "note": "s18's done-when now plants an absent setting with the configuration lock held and asserts creation retries and succeeds once the lock is released",
+      "reason": "",
+      "when": "2026-11-11T21:32:53.775824+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "2c513628ad526af0f3a56108a51d4e5f739cb0f5",
+      "commit_basis": "edit",
+      "finding": "done_when-2",
+      "note": "s18's done-when now plants an absent setting with the configuration lock held and asserts creation retries and succeeds once the lock is released",
+      "reason": "",
+      "when": "2026-11-11T21:33:14.358046+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "2c513628ad526af0f3a56108a51d4e5f739cb0f5",
+      "commit_basis": "edit",
+      "finding": "done_when-3",
+      "note": "the coordinator runs the landed sweep on the live crew home, restricted to identity files older than 48 hours because the sweep's liveness test is host-local, and records the counts in the s2 evidence; the cross-node liveness defect becomes s19",
+      "reason": "",
+      "when": "2026-11-11T21:33:30.555015+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "2c513628ad526af0f3a56108a51d4e5f739cb0f5",
+      "commit_basis": "edit",
+      "finding": "wiring-1",
+      "note": "f-wftl-002 is resolved as superseded and f-wftl-003 names every unbuilt section, s17, s18 and s19 included",
+      "reason": "",
+      "when": "2026-11-11T21:33:42.399805+00:00"
+    }
+  ],
+  "responses": {
+    "done_when-1": {
+      "action": "acted",
+      "by": "",
+      "commit": "2c513628ad526af0f3a56108a51d4e5f739cb0f5",
+      "commit_basis": "edit",
+      "note": "s17's done-when now plants a missing after arm as a third measured case",
+      "reason": "",
+      "when": "2026-11-11T21:32:40.247346+00:00"
+    },
+    "done_when-2": {
+      "action": "acted",
+      "by": "",
+      "commit": "2c513628ad526af0f3a56108a51d4e5f739cb0f5",
+      "commit_basis": "edit",
+      "note": "s18's done-when now plants an absent setting with the configuration lock held and asserts creation retries and succeeds once the lock is released",
+      "reason": "",
+      "when": "2026-11-11T21:33:14.358046+00:00"
+    },
+    "done_when-3": {
+      "action": "acted",
+      "by": "",
+      "commit": "2c513628ad526af0f3a56108a51d4e5f739cb0f5",
+      "commit_basis": "edit",
+      "note": "the coordinator runs the landed sweep on the live crew home, restricted to identity files older than 48 hours because the sweep's liveness test is host-local, and records the counts in the s2 evidence; the cross-node liveness defect becomes s19",
+      "reason": "",
+      "when": "2026-11-11T21:33:30.555015+00:00"
+    },
+    "wiring-1": {
+      "action": "acted",
+      "by": "",
+      "commit": "2c513628ad526af0f3a56108a51d4e5f739cb0f5",
+      "commit_basis": "edit",
+      "note": "f-wftl-002 is resolved as superseded and f-wftl-003 names every unbuilt section, s17, s18 and s19 included",
+      "reason": "",
+      "when": "2026-11-11T21:33:42.399805+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/Code/reckon/docs/state/reckon/reviews/plan/work-flows-to-the-lane/r-20261111T204729698027-plan-review-of-work-flows-to-the-lane.json",
+  "review_run_id": "r-20261111T204729698027-plan-review-of-work-flows-to-the-lane",
+  "reviewed_blob_sha": "f7c5fca803ce80ece06d87c86f66dfa1578cdc25",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `reckon/crew/dispatch_batch.py`, `reckon/crew/dispatch.py`, `reckon/crew/promotion_evidence.py`, `reckon/crew/queue_landing.py` and `reckon/crew/routing.py` all exist; `routing.py:2380` writes `extensions.worktreeConfig true` unconditionally on every creation, so s18's cited root cause resolves; s12's premise holds, since `dispatch_batch.py` carries no `allow_unreviewed_plan` field while `dispatch.py` does (line 1244).",
+    "done_when": "a finding \u2014 s17's gate never plants a missing arm and s18's gate never exercises the bounded retry, so each leaves half of its own deliverable unmeasured; s12's done-when, as revised, does hold its certificate against the batch path.",
+    "evidence_paths": "pass \u2014 every gate writes a repository test and a log on disk, \u00a79's record lives at `docs/evidence/archive/work-flows-to-the-lane-landed.html`, and that file exists with the `s2-identity-published-with-its-claim` anchor the s2 landing comment cites.",
+    "naming": "pass \u2014 no plan labels, stage names or ticket numbers reach code; the new test filenames are behavioural.",
+    "reasoning": "pass \u2014 each stated root cause matches the cited evidence, and each endpoint is reachable and checkable; s2's declaration-versus-done-when mismatch is raised under done_when rather than as a reasoning defect.",
+    "single_goal": "pass \u2014 s12 (batch waiver), s17 (landing measures a mismatched arm) and s18 (worktree creation leaves the shared config alone) each name one deliverable; s18's retry is the same goal's contention case, not a second one.",
+    "wiring": "a finding \u2014 the open driving followup f-wftl-002 still reads \"Build \u00a77, \u00a78 and \u00a710 to \u00a716\" while s17 and s18 are now declared implementable and are named by no followup; every declared depends-on resolves, including s3's cross-plan wait on `a-gate-halts-only-on-substance#s7`."
+  },
+  "section_digests": {
+    "_document": "83bb72e7d122364a1e83b39ff219a3dc006e755d97211bbaf1d088b0d5e4bf88",
+    "s1": "1176d881373dcfc183430925a9be7bda1d724f734d02210efa9a7406d8e1fa71",
+    "s10": "b65d0fb4159bfb41836b0ad8f574cf832084834e89db286572f537377eb3eb6d",
+    "s11": "c91dc2f2b4a4a7ba600f8a8f62cb23d0a923515ca21d7e7769645146e4db7427",
+    "s12": "6b87a65f56033f720b634f56c22424f9243d93aa09b8d223f9256a45a62b8401",
+    "s13": "bad1450236608d548873bc0831709655753d5f32c522514cd8a8267e16cc24cb",
+    "s14": "2f8f373cb0aea17e906875fcfee5e31675e99c3770486edcd5ca6381e7c45682",
+    "s15": "e29e1d3a49e752b7bdfe588aa034f386201d10af208f3aa59e29a2f24fe1bd5f",
+    "s16": "3b7f7832ad95bba2eafed9e9cf857961510c04511e9e0ec71438cbce6a583913",
+    "s17": "018b87dc0f92bd192910c98fb8d48a1a873075b26fe36e783aae8abfa682f9aa",
+    "s18": "0e2e8ed6db822b95a416ed07f9aeb05fea4e96a37bdac581c4ce3c8c0a23c6be",
+    "s2": "bd3d223462ee3b0fb515f2472d9397d8e27ca44c184bf71b42367fd7a9db1054",
+    "s3": "2a060c7a5415553f71ca05b752499669f3209379066f0ffca3eb658079698d29",
+    "s4": "73dd573a24e53462f06ce2ee81f9ce01d788caba75663d34802e585ffa9af368",
+    "s5": "71c63f4fe2ec953ac5f7ddb2a246f167602f4978f9480d7bc81453507d1aa8cc",
+    "s6": "3d8f3682cd21a9f9205ae37acce45450d89ee9d1a0a061c46509dea8c5c1bc86",
+    "s7": "8411a4b87a6d941e69b74aa81c380f024a398cf80490125819b718f524deb5fd",
+    "s8": "a66c3212fab5497e7274bfa5e8eaadaea067a414aa6eb26fe1317dff343c2654",
+    "s9": "22b677c7bb355bdeb12944385e3d77bc965d6b2749b0a01789a6c5b8bc805e56"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-11T21:29:08.668635+00:00",
+  "total": null
+}

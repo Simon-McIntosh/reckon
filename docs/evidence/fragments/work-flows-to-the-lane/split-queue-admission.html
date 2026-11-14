@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="work-flows-to-the-lane">
+  <meta name="plan-title" content="Queue admission responsibilities retain their import and patch surface">
+  <meta name="plan-evidence-for" content="reckon:work-flows-to-the-lane">
+  <meta name="plan-verifies" content="reckon:work-flows-to-the-lane#s23">
+  <meta name="plan-recorded-at" content="2026-11-12">
+  <meta name="plan-verdict" content="passed">
+  <title>Queue admission compatibility evidence</title>
+</head>
+<body>
+<article id="split-queue-admission-record" data-node="split-queue-admission" data-reckon="landed">
+  <h2 id="split-queue-admission-heading">Queue admission responsibilities retain their import and patch surface</h2>
+  <p id="split-queue-admission-reproduction">At base <code>af0c29f3b7e8856b078aee1f9fcbdaaa75ba9670</code>,
+  <code>reckon/crew/queue_admission.py</code> has 6,867 lines. Applying the 2,000-line bound
+  to its byte-identical saved source fails with <code>module exceeds the worker window</code>.
+  Implementation <code>98a04ee3eaab82f7b2f4ffbd64a1aa7cbedd9d1e</code> moves its responsibilities
+  into the modules below and leaves a 437-line compatibility facade. The largest new module
+  is 1,195 lines; the package initializer is 6 lines.</p>
+  <table id="split-queue-admission-homes">
+    <thead><tr><th>Home under reckon/crew/</th><th>Responsibility</th><th>Lines</th></tr></thead>
+    <tbody>
+    <tr><td><code>admission/holds.py</code></td><td>Decide and name request holds, claim collisions and retry refusals.</td><td>1189</td></tr>
+    <tr><td><code>admission/landing.py</code></td><td>Run landing actions beside admission without blocking launches.</td><td>95</td></tr>
+    <tr><td><code>admission/launching.py</code></td><td>Rebuild, launch and record queued requests without losing their identity.</td><td>902</td></tr>
+    <tr><td><code>admission/ordering.py</code></td><td>Order queued requests fairly and report their placement.</td><td>276</td></tr>
+    <tr><td><code>admission/readiness.py</code></td><td>Read section readiness and classify declared dependency states.</td><td>1195</td></tr>
+    <tr><td><code>admission/release.py</code></td><td>Release waiters and advance requests whose upstream work has landed.</td><td>570</td></tr>
+    <tr><td><code>admission/reviews.py</code></td><td>Hold and release requests against the review contract they read.</td><td>730</td></tr>
+    <tr><td><code>admission/selection.py</code></td><td>Choose and admit the requests each lane and session can launch.</td><td>737</td></tr>
+    <tr><td><code>admission/service.py</code></td><td>Admission service lifetime, locking and code reload.</td><td>298</td></tr>
+    <tr><td><code>admission/shared.py</code></td><td>Shared admission vocabulary, imported dependencies and pass state.</td><td>400</td></tr>
+    <tr><td><code>admission/verdicts.py</code></td><td>Record admission decisions, stage timings and queue stalls.</td><td>432</td></tr>
+    <tr><td><code>admission/wait_refs.py</code></td><td>Resolve wait identities and validate batch dependency declarations.</td><td>513</td></tr>
+    </tbody>
+  </table>
+  <p id="split-queue-admission-bindings">Representative bindings are <code>admit_once</code>
+  to <code>admission.selection</code>, <code>_launch_queued</code> to <code>admission.launching</code>,
+  <code>dispatch_waits</code> to <code>admission.readiness</code>, <code>_release_waiters</code>
+  to <code>admission.release</code>, <code>_LandingWorker</code> to <code>admission.landing</code>
+  and <code>_record_pass_verdicts</code> to <code>admission.verdicts</code>. Attribute reads
+  through the facade return each owner's object. Replacement and deletion through the facade
+  update the owning module and its imported dependency bindings, including restoration after
+  a patch ends. Calls across responsibilities use owner-qualified references.</p>
+  <p id="split-queue-admission-surface">The independent inventory in
+  <code>tests/test_queue_admission_split_keeps_its_surface.py</code> checks all 275 names exposed
+  by the base module, including imported dependencies and private patch targets. Its 29 tests
+  cover identities, replacement and restoration, cross-responsibility calls, star imports and
+  the size bound. All 177 moved function and class declarations mechanically match their base
+  syntax trees after normalizing owner-qualified references and one qualified docstring anchor.</p>
+  <table id="split-queue-admission-gates">
+    <thead><tr><th>Measurement on all_debug</th><th>Base</th><th>Head</th></tr></thead>
+    <tbody>
+      <tr><td>Existing importer population plus the added surface test at head</td><td>97 files; 517 passed, 128 failed</td><td>98 files; 546 passed, 128 failed</td></tr>
+      <tr><td>Armed node and staged-write inventory gate</td><td>51 passed</td><td>80 passed</td></tr>
+    </tbody>
+  </table>
+  <p id="split-queue-admission-delta">The importer failure sets match exactly: zero added
+  and zero removed IDs. Existing tests were not edited. The first exploratory extraction lacked
+  Git metadata and could not initialize two inventory cases; the final base and head arms both
+  carry isolated Git metadata and printed their imported module path and resolved working
+  directory. All arms ran sequentially on a separate <code>all_debug</code> allocation.</p>
+  <p id="split-queue-admission-control">Declared mutation: drop one re-export from the facade.
+  Removing <code>admit_once</code> from the facade export map makes the surface run fail:
+  <strong>4 failed, 25 passed</strong>, <code>EXIT=1</code>. The identity, patch, cross-call and
+  star-import cases fail, naming <code>admit_once</code>; those four IDs pass at head. The
+  mutation was made only in a disposable extraction and its original bytes were restored.</p>
+  <p id="split-queue-admission-receipts">Ruff check and format pass for all 15 changed Python
+  files. Detailed commands, revisions, imported paths, summaries, failure IDs, the red mutation
+  log and the mechanical comparison are retained with the run
+  <code>r-20261112T062445761221-split-queue-admission</code>. The coordinator owns promotion,
+  independent review and merged-head verification.</p>
+</article>
+</body>
+</html>

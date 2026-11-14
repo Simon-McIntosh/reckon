@@ -1,0 +1,124 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "Derived from the source run own completed baseline_suite and after_suite gate logs and cross-checked with their receipts; both arms exercise test_staged_write_inventory.py at the same unchanged revision, not an importer-wide cohort.",
+  "assertion_audit": {
+    "added_assertions": [],
+    "existing_assertions": [
+      {
+        "fails_if": "The discarded run claim file remains after discard; skip-release.log records exactly this failure.",
+        "path": "tests/test_a_discard_releases_its_dispatch_claim.py:71"
+      },
+      {
+        "fails_if": "The next claim succeeds only by reclaiming an old claim rather than taking an unclaimed path.",
+        "path": "tests/test_a_discard_releases_its_dispatch_claim.py:73"
+      },
+      {
+        "fails_if": "The newly persisted claim names a run other than next-run.",
+        "path": "tests/test_a_discard_releases_its_dispatch_claim.py:74"
+      },
+      {
+        "fails_if": "The discard receipt omits the actual released claim path or reports an incorrect path list.",
+        "path": "tests/test_a_discard_releases_its_dispatch_claim.py:75"
+      },
+      {
+        "fails_if": "Discard removes another run claim; release-other.log records exactly this failure.",
+        "path": "tests/test_a_discard_releases_its_dispatch_claim.py:86"
+      },
+      {
+        "fails_if": "Discard changes another run persisted claim identity.",
+        "path": "tests/test_a_discard_releases_its_dispatch_claim.py:87"
+      },
+      {
+        "fails_if": "A competing same-node claim succeeds or refuses without naming the actual other-run owner.",
+        "path": "tests/test_a_discard_releases_its_dispatch_claim.py:88-89"
+      },
+      {
+        "fails_if": "The refused competing claim changed the persisted owner.",
+        "path": "tests/test_a_discard_releases_its_dispatch_claim.py:90"
+      }
+    ],
+    "note": "No added assertions or new tests in this run; the existing assertions were read because this is verification of already present behavior. No same-input tautological assertion was introduced."
+  },
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew_run_commands.py:2619 crew_discard",
+    "reckon/crew/queue_edit.py:542 drop",
+    "reckon/crew/promotion.py:2152 discard"
+  ],
+  "completed_at": "2026-11-11T10:11:17Z",
+  "diff_evidence": {
+    "base_source": "live pointer base_sha independently read; source HEAD independently resolved with git rev-parse",
+    "changed_paths": [],
+    "commit_count": 0,
+    "positive_control": "The same git diff --name-only on reviewed head parent..head reports the two existing docs/state ledger files; absence on source base..head is not a broken diff instrument.",
+    "tracked_status": "clean"
+  },
+  "dispatched_at": "2026-11-11T10:04:28Z",
+  "findings": [],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "source worktree HEAD resolves to its live pointer base 1c50f8651d2f0f98f48f3fab45030df10a318a33, tracked status is clean, and base..head has no commits, changed files, added definitions or added assertions; the cited commit itself is an existing ledger landing, not this worker's change.",
+    "done_when": "tests/test_a_discard_releases_its_dispatch_claim.py:64-91 covers both required outcomes, behavior.log records 2 passed, both mutation logs record 1 failed and 1 passed, and the recorded 51/51 inventory arms establish zero added inventory failures without measuring the full promotion-importer cohort.",
+    "goal": "the source live pointer's node.goal delegates to live plan section s3; reckon/crew/promotion.py:2152 and :2175-2178 already implement its required run-specific claim release at the reviewed revision.",
+    "manifest": "manifest.md:10-26 accurately reports unchanged behavior at 1c50f8651d2f0f98f48f3fab45030df10a318a33, the two passing cases, two discriminating controls, and the limited inventory-suite pair; its commits field explicitly identifies an existing revision rather than an authored commit.",
+    "write_paths": "the source live pointer node.write_paths and manifest.md:3 grant promotion.py plus evidence-fragment and figure paths; the observed base-to-head diff has zero changed paths and stays inside that scope."
+  },
+  "justifications": {
+    "durability": "tests/test_a_discard_releases_its_dispatch_claim.py:71 fails if release is skipped and :86 fails if the run filter is removed, as the respective recorded mutation logs demonstrate, with :88-89 independently requiring refusal of a competing claim.",
+    "evidence": "behavior.log and the two mutation logs substantiate the required outcomes and explicit refusal, while baseline-suite.log and after-suite.log each record 51 passed at the identical revision and support only the inventory delta rather than an importer-wide result.",
+    "fit": "no definitions or names are added, and reckon/crew/promotion.py:2178 uses the claim object's existing release lifecycle rather than introducing a separate deletion mechanism.",
+    "goal_fidelity": "reckon/crew/promotion.py:2175-2178 filters on the discarded run_id and invokes the existing claim release method, satisfying the goal without changing behavior already present.",
+    "reuse": "the diff adds no definitions, and a capability search for dispatch-claim release identifies reckon/crew/dispatch_claims.py:774-776 as the existing owner called by promotion.py:2178; the run correctly retains it.",
+    "scope_discipline": "manifest.md:12 declares changed_paths empty and independent git diff against the live pointer base confirms no repository paths changed."
+  },
+  "negative_control_evidence": {
+    "refusal_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261111T074545391837-ab-codex-anchored-a-reexec-never-orphans-a-dis-s3/skip-release-refusal.log",
+    "refusal_quote": "EXPECTED REFUSAL: a dispatch of node 'discard-claim-node' for project 'discard-claim-fixture' under worktree identity 'discard-claim-worktree' is already in flight as run 'abandoned-run'",
+    "release_other": "release-other.log: 1 failed, 1 passed in 5.27s; EXIT=1",
+    "skip_release": "skip-release.log: 1 failed, 1 passed in 2.81s; EXIT=1"
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the source live pointer's node.goal delegates to live plan section s3; reckon/crew/promotion.py:2152 and :2175-2178 already implement its required run-specific claim release at the reviewed revision.\nVERDICT done_when: tests/test_a_discard_releases_its_dispatch_claim.py:64-91 covers both required outcomes, behavior.log records 2 passed, both mutation logs record 1 failed and 1 passed, and the recorded 51/51 inventory arms establish zero added inventory failures without measuring the full promotion-importer cohort.\nVERDICT write_paths: the source live pointer node.write_paths and manifest.md:3 grant promotion.py plus evidence-fragment and figure paths; the observed base-to-head diff has zero changed paths and stays inside that scope.\nVERDICT manifest: manifest.md:10-26 accurately reports unchanged behavior at 1c50f8651d2f0f98f48f3fab45030df10a318a33, the two passing cases, two discriminating controls, and the limited inventory-suite pair; its commits field explicitly identifies an existing revision rather than an authored commit.\nVERDICT diff: source worktree HEAD resolves to its live pointer base 1c50f8651d2f0f98f48f3fab45030df10a318a33, tracked status is clean, and base..head has no commits, changed files, added definitions or added assertions; the cited commit itself is an existing ledger landing, not this worker's change.\nCALL_SITES: reckon/crew_run_commands.py:2619 crew_discard, reckon/crew/queue_edit.py:542 drop, reckon/crew/promotion.py:2152 discard\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/promotion.py:2175-2178 filters on the discarded run_id and invokes the existing claim release method, satisfying the goal without changing behavior already present.\nSCORE evidence: 19\nJUSTIFICATION evidence: behavior.log and the two mutation logs substantiate the required outcomes and explicit refusal, while baseline-suite.log and after-suite.log each record 51 passed at the identical revision and support only the inventory delta rather than an importer-wide result.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: manifest.md:12 declares changed_paths empty and independent git diff against the live pointer base confirms no repository paths changed.\nSCORE durability: 20\nJUSTIFICATION durability: tests/test_a_discard_releases_its_dispatch_claim.py:71 fails if release is skipped and :86 fails if the run filter is removed, as the respective recorded mutation logs demonstrate, with :88-89 independently requiring refusal of a competing claim.\nSCORE fit: 20\nJUSTIFICATION fit: no definitions or names are added, and reckon/crew/promotion.py:2178 uses the claim object's existing release lifecycle rather than introducing a separate deletion mechanism.\nSCORE reuse: 20\nJUSTIFICATION reuse: the diff adds no definitions, and a capability search for dispatch-claim release identifies reckon/crew/dispatch_claims.py:774-776 as the existing owner called by promotion.py:2178; the run correctly retains it.\n",
+  "review_run_id": "r-20261111T095609244612-review-of-ab-codex-anchored-a-reexec-never-orphans-a-dis-s3-1c50f8651d2f",
+  "reviewed_base_sha": "1c50f8651d2f0f98f48f3fab45030df10a318a33",
+  "reviewed_head_sha": "1c50f8651d2f0f98f48f3fab45030df10a318a33",
+  "reviewed_run_id": "r-20261111T074545391837-ab-codex-anchored-a-reexec-never-orphans-a-dis-s3",
+  "scores": {
+    "durability": 20,
+    "evidence": 19,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "suite_evidence": {
+    "after": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261111T074545391837-ab-codex-anchored-a-reexec-never-orphans-a-dis-s3/after-suite.log",
+      "revision": "1c50f8651d2f0f98f48f3fab45030df10a318a33",
+      "summary": "51 passed in 24.78s"
+    },
+    "baseline": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261111T074545391837-ab-codex-anchored-a-reexec-never-orphans-a-dis-s3/baseline-suite.log",
+      "revision": "1c50f8651d2f0f98f48f3fab45030df10a318a33",
+      "summary": "51 passed in 24.07s"
+    }
+  },
+  "times_source": "run-record",
+  "timestamp": "2026-11-11T11:36:55.795896+00:00",
+  "total": 119
+}

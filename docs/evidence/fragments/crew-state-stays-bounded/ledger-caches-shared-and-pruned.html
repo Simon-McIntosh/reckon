@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="artifact-kind" content="evidence">
+  <meta name="plan-slug" content="ledger-caches-shared-and-pruned">
+  <meta name="plan-evidence-for" content="reckon:crew-state-stays-bounded">
+  <meta name="plan-verifies" content="reckon:crew-state-stays-bounded#s11">
+  <meta name="evidence-verdict" content="pass">
+  <meta name="evidence-date" content="2026-11-11">
+  <title>Shared ledger caches and scheduled pruning | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<main class="plan-doc">
+<section id="ledger-caches-shared-and-pruned-implementation">
+  <h2>One persistent cache per repository and projection</h2>
+  <p>The cache key combines the repository's common git directory, the ledger's
+  tree-relative path and the projection version. Identical worktree ledgers
+  read the main checkout's index; a differing aggregate or per-run document
+  reads through without publishing another full index. Git pointer discovery
+  reuses <code>reckon.git_head</code>, and unchanged content digests reuse
+  <code>reckon.file_memo</code>. Process-region keys retain the caller's root
+  spelling; only the persistent source is normalized, preserving the existing
+  derivation contract.</p>
+  <p>The existing <code>gc.retention_sweep</code> calls
+  <code>_orphan_ledger_indexes</code> and <code>_expired_picker_views</code>.
+  It prunes missing-source indexes and picker budget views older than seven
+  days, prints each removal, and records it in the existing rotating retention
+  log. The configured and fence-fallback cache roots are covered while private
+  homes remain isolated. Local open descriptors and SQLite write locks protect
+  active files; an index backed only by per-run documents remains valid when
+  no aggregate exists. Scheduled diagnostics preserve the existing on-demand
+  garbage-collection JSON response.</p>
+</section>
+<section id="ledger-caches-shared-and-pruned-release">
+  <h2>A worktree release owns only its private legacy index</h2>
+  <p><code>ledger._checkout_index_path</code> resolves the legacy path-keyed
+  cache. <code>promotion_release._released_tree_index</code> selects that
+  private identity before deleting a worktree and never selects its
+  repository-shared index. A ledger resolving outside the released tree is
+  withheld. The existing SQLite lock guard retains a held private index.</p>
+  <p>Temporary-repository cases prove that releasing one worktree leaves the
+  shared cache byte-identical, removes a private legacy file, keeps a peer's
+  private file, and keeps a locked private file. Selecting the shared identity
+  again makes three release cases fail. Nine promotion cases had parsed an
+  unlink diagnostic as JSON; selecting only private legacy files removes that
+  diagnostic from ordinary releases. The two private-cache fixtures now seed
+  the legacy identity explicitly. All eleven previously added test ids pass
+  in the verbose proof, whose per-id observations are retained.</p>
+</section>
+<section id="ledger-caches-shared-and-pruned-measure">
+  <h2>Measured results</h2>
+  <table>
+    <thead><tr><th>Measure</th><th>Base</th><th>Head</th></tr></thead>
+    <tbody>
+      <tr><td>Armed scope gate</td><td>55 passed in 9.94s</td><td>64 passed in 15.17s</td></tr>
+      <tr><td>Shared-path and sweep negative control</td><td>2 failed, 5 deselected in 0.62s</td><td>Both cases pass</td></tr>
+      <tr><td>Release selection mutation</td><td>Shared index selected deliberately</td><td>3 failed, 2 passed in 1.01s</td></tr>
+      <tr><td>Eleven prior added ids</td><td>Captured failure causes</td><td>11 passed in 14.46s</td></tr>
+      <tr><td>Root-reuse and shared-cache focused gate</td><td>Explicit-route counter reproduced at one build instead of two</td><td>11 passed in 29.30s</td></tr>
+      <tr><td>Ruff findings</td><td>One inherited PERF403 in promotion release</td><td>Same finding; zero added</td></tr>
+      <tr><td>Formatting</td><td>Scoped paths clean</td><td>Scoped paths clean</td></tr>
+      <tr><td>Matched importer population</td><td>306 files; 90 failed, 3113 passed, 4 skipped, 4 warnings in 447.10s</td><td>88 failed, 3116 passed, 4 skipped, 4 warnings in 443.47s; zero added ids, two resolved</td></tr>
+    </tbody>
+  </table>
+  <p>The shared-cache cases use a temporary repository, two linked worktrees
+  and an isolated cache root. All three roots resolve one cache path. A first
+  read parses one aggregate and one run document; the second worktree parses
+  neither. Aggregate edits, document edits, added documents and removed
+  documents each return their own source view without changing the shared
+  cache. Repository and projection identities remain distinct.</p>
+  <p>The retention case leaves candidates during a dry run and removes an
+  orphan index and an eight-day-old picker view on application. It keeps a
+  current-source index, a fresh view, an unrelated picker file and two files a
+  child holds open. A positive control first sees that child's pid; after the
+  child closes its descriptors, the next pass removes those files. Both
+  removal paths appear in stderr and the retention log.</p>
+  <p>The importer files are selected by
+  <code>reckon.crew.landing_measure.importer_population</code> for ledger, GC
+  and promotion release. Both arms name the same 306 paths, including every
+  prior importer. Three isolated readings per revision follow
+  <code>landing_measure.REPEATS</code>: the root-reuse case fails zero of three
+  at each revision, and the cadence case fails three of three at base and zero
+  of three at head. The final full importer arm also has zero raw added
+  failure ids; no stability exemption is needed. Two baseline ids are absent
+  at head. The canonical rule additionally classifies an added regression only
+  when its head failure count exceeds its base count.</p>
+  <p>Source evidence is measured through
+  <code>09e52de1e4c999b651df557500f8c1b2ab93af03</code>, including release repair
+  <code>2984ce9247a6e3616777fd454b515757d4f2744d</code>. All partition logs,
+  literal commands, imported module paths and receipts are under
+  <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261111T035550813418-ledger-caches-shared-and-pruned/</code>.
+  The principal files are <code>release-base-armed.log</code>,
+  <code>release-final-head-armed.log</code>, <code>negative-control.log</code>,
+  <code>release-negative.log</code>, <code>release-previous-ids.log</code>,
+  <code>release-failure-resolution.json</code>, <code>release-stability.json</code>,
+  <code>release-final-importer-delta.json</code>, and the paired
+  <code>release-base-importers.log</code> /
+  <code>release-final-head-importers.log</code>. Every job removes its node-local scratch.</p>
+</section>
+</main>
+</body>
+</html>

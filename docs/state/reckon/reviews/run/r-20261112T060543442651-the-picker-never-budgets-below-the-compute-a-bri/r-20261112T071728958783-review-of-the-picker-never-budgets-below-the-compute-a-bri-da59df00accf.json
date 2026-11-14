@@ -1,0 +1,63 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew/picker/lane_context.py:441 return_times -> node_budget",
+    "reckon/crew/picker/lane_context.py:1153 build -> node_budget"
+  ],
+  "completed_at": "2026-11-12T07:37:00.418Z",
+  "dispatched_at": "2026-11-12T07:20:12Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/a-gate-halts-only-on-substance/the-picker-never-budgets-below-the-compute-a-bri.html",
+      "line": "64",
+      "severity": "non-blocking",
+      "text": "non-blocking: the negative-control row cites `negative-control.log` where each sibling row in the same table cites `logs/<name>.log`, and the file lives at logs/negative-control.log, so the pointer as printed resolves to nothing under the run directory it names two lines later."
+    },
+    {
+      "file": "docs/evidence/fragments/a-gate-halts-only-on-substance/the-picker-never-budgets-below-the-compute-a-bri.html",
+      "line": "71",
+      "severity": "non-blocking",
+      "text": "non-blocking: the sentence 'Ruff check and ruff format --check add no findings on the staged paths' is a claimed result with no receipt, because no ruff log sits in the run's logs/ and neither the manifest's tests line nor test_logs names such a run."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read commit da59df00ac against c4eff77070: one file, 88 insertions, an evidence fragment carrying the behaviour, reproduction, gate table and negative-control sections and no product change.",
+    "done_when": "the done_when asks for a new tests/test_a_heavy_gate_gets_a_full_budget.py showing an H200 brief taking the resolved fence while a plain node keeps its sized budget, with a negative control removing the floor; the file exists at base (landed by 1d6855ed0e) and does assert those cases (tests/test_a_heavy_gate_gets_a_full_budget.py:73-98), and the negative control at logs/negative-control.log reddens exactly the two fence cases at EXIT=1, so the measure is met although no test is new in this node.",
+    "goal": "the node's goal is that the picker never budgets below the compute a brief names; reckon/crew/picker/lane_context.py:205-214 is the floor, and the landed fragment at docs/evidence/fragments/a-gate-halts-only-on-substance/the-picker-never-budgets-below-the-compute-a-bri.html:19-24 states plainly that it already existed and was verified rather than reimplemented.",
+    "manifest": "read; status complete, commits da59df00ac, changed_paths the fragment alone, tests the two-file pytest gate, test_logs naming gate-base, gate-head, importer-cohort and negative-control, baseline_suite and after_suite both 0 failures at their recorded revisions, and a completion note stating the H200 brief returns '' and up_to_30m once the floor is removed.",
+    "write_paths": "the declared fence was reckon/crew/picker/lane_context.py, tests/test_a_heavy_gate_gets_a_full_budget.py and docs/evidence/fragments/a-gate-halts-only-on-substance/the-picker-never-budgets-below-the-compute-a-bri.html; the diff touches only the third, which is inside the fence."
+  },
+  "justifications": {
+    "durability": "logs/negative-control.log shows removing the floor reddens tests/test_a_heavy_gate_gets_a_full_budget.py:76 and :85, so the guard it certifies is load-bearing, while the node's own change adds no assertion.",
+    "evidence": "logs/gate-base.log (c4eff77070, 56 passed, EXIT=0), logs/gate-head.log (da59df00ac, 56 passed, EXIT=0), logs/importer-cohort.log (178 passed, EXIT=0) and logs/negative-control.log (2 failed, 3 passed, EXIT=1) carry the measure, but tests/test_a_heavy_gate_gets_a_full_budget.py already existed at the base revision, so nothing it measures is new here.",
+    "fit": "the fragment follows its siblings under docs/evidence/fragments/a-gate-halts-only-on-substance/ and prefixes every section id with its node id, adding no symbol.",
+    "goal_fidelity": "the goal is that the picker never budgets below the compute a brief names; the fragment at docs/evidence/fragments/a-gate-halts-only-on-substance/the-picker-never-budgets-below-the-compute-a-bri.html:19-24 records reckon/crew/picker/lane_context.py:204-214 returning the resolved fence for a node whose text names it.",
+    "reuse": "no code is added; the node verified the existing owner reckon/crew/picker/lane_context.py:192 node_budget and reused tests/test_a_heavy_gate_gets_a_full_budget.py rather than forking a second guard.",
+    "scope_discipline": "git diff --stat c4eff77070..da59df00ac lists exactly one file, docs/evidence/fragments/a-gate-halts-only-on-substance/the-picker-never-budgets-below-the-compute-a-bri.html, inside the node's declared fence and touching no product source or test."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that the picker never budgets below the compute a brief names; reckon/crew/picker/lane_context.py:205-214 is the floor, and the landed fragment at docs/evidence/fragments/a-gate-halts-only-on-substance/the-picker-never-budgets-below-the-compute-a-bri.html:19-24 states plainly that it already existed and was verified rather than reimplemented.\nVERDICT done_when: the done_when asks for a new tests/test_a_heavy_gate_gets_a_full_budget.py showing an H200 brief taking the resolved fence while a plain node keeps its sized budget, with a negative control removing the floor; the file exists at base (landed by 1d6855ed0e) and does assert those cases (tests/test_a_heavy_gate_gets_a_full_budget.py:73-98), and the negative control at logs/negative-control.log reddens exactly the two fence cases at EXIT=1, so the measure is met although no test is new in this node.\nVERDICT write_paths: the declared fence was reckon/crew/picker/lane_context.py, tests/test_a_heavy_gate_gets_a_full_budget.py and docs/evidence/fragments/a-gate-halts-only-on-substance/the-picker-never-budgets-below-the-compute-a-bri.html; the diff touches only the third, which is inside the fence.\nVERDICT manifest: read; status complete, commits da59df00ac, changed_paths the fragment alone, tests the two-file pytest gate, test_logs naming gate-base, gate-head, importer-cohort and negative-control, baseline_suite and after_suite both 0 failures at their recorded revisions, and a completion note stating the H200 brief returns '' and up_to_30m once the floor is removed.\nVERDICT diff: read commit da59df00ac against c4eff77070: one file, 88 insertions, an evidence fragment carrying the behaviour, reproduction, gate table and negative-control sections and no product change.\nCALL_SITES: reckon/crew/picker/lane_context.py:441 return_times -> node_budget, reckon/crew/picker/lane_context.py:1153 build -> node_budget\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: the goal is that the picker never budgets below the compute a brief names; the fragment at docs/evidence/fragments/a-gate-halts-only-on-substance/the-picker-never-budgets-below-the-compute-a-bri.html:19-24 records reckon/crew/picker/lane_context.py:204-214 returning the resolved fence for a node whose text names it.\nSCORE evidence: 16\nJUSTIFICATION evidence: logs/gate-base.log (c4eff77070, 56 passed, EXIT=0), logs/gate-head.log (da59df00ac, 56 passed, EXIT=0), logs/importer-cohort.log (178 passed, EXIT=0) and logs/negative-control.log (2 failed, 3 passed, EXIT=1) carry the measure, but tests/test_a_heavy_gate_gets_a_full_budget.py already existed at the base revision, so nothing it measures is new here.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat c4eff77070..da59df00ac lists exactly one file, docs/evidence/fragments/a-gate-halts-only-on-substance/the-picker-never-budgets-below-the-compute-a-bri.html, inside the node's declared fence and touching no product source or test.\nSCORE durability: 15\nJUSTIFICATION durability: logs/negative-control.log shows removing the floor reddens tests/test_a_heavy_gate_gets_a_full_budget.py:76 and :85, so the guard it certifies is load-bearing, while the node's own change adds no assertion.\nSCORE fit: 18\nJUSTIFICATION fit: the fragment follows its siblings under docs/evidence/fragments/a-gate-halts-only-on-substance/ and prefixes every section id with its node id, adding no symbol.\nSCORE reuse: 20\nJUSTIFICATION reuse: no code is added; the node verified the existing owner reckon/crew/picker/lane_context.py:192 node_budget and reused tests/test_a_heavy_gate_gets_a_full_budget.py rather than forking a second guard.\nFINDING docs/evidence/fragments/a-gate-halts-only-on-substance/the-picker-never-budgets-below-the-compute-a-bri.html:64 non-blocking: the negative-control row cites `negative-control.log` where each sibling row in the same table cites `logs/<name>.log`, and the file lives at logs/negative-control.log, so the pointer as printed resolves to nothing under the run directory it names two lines later.\nFINDING docs/evidence/fragments/a-gate-halts-only-on-substance/the-picker-never-budgets-below-the-compute-a-bri.html:71 non-blocking: the sentence 'Ruff check and ruff format --check add no findings on the staged paths' is a claimed result with no receipt, because no ruff log sits in the run's logs/ and neither the manifest's tests line nor test_logs names such a run.\n",
+  "review_run_id": "r-20261112T071728958783-review-of-the-picker-never-budgets-below-the-compute-a-bri-da59df00accf",
+  "reviewed_base_sha": "c4eff7707068362553dc49173df280fd5cbdf254",
+  "reviewed_head_sha": "da59df00accf05dd7a3a7688b10e4f73321a679a",
+  "reviewed_run_id": "r-20261112T060543442651-the-picker-never-budgets-below-the-compute-a-bri",
+  "reviewer_run_id": "r-20261112T071728958783-review-of-the-picker-never-budgets-below-the-compute-a-bri-da59df00accf",
+  "scores": {
+    "durability": 15,
+    "evidence": 16,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-12T10:54:04.787930+00:00",
+  "total": 107
+}

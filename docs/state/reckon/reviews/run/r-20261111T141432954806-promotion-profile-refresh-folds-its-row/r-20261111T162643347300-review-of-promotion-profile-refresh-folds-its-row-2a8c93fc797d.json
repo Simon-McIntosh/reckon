@@ -1,0 +1,164 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_analysis": [
+    {
+      "fails_if": "Removing the refused-index authoritative scan changes the independently counted use_index=False calls from one to zero; an added redundant scan makes it exceed one.",
+      "lines": "118-120"
+    },
+    {
+      "fails_if": "Keeping samples embedded prevents a separate file; the explicit direct sidecar read must increment the decode counter before its zero result is trusted.",
+      "lines": "212,224-225"
+    },
+    {
+      "fails_if": "Rebuilding during a pick yields 51 rather than the persisted 50 rows, a wrong persisted timestamp changes age=0, decoding the sidecar records a hit, and embedding samples exposes fold_inputs.",
+      "lines": "230-233"
+    },
+    {
+      "fails_if": "Omitting history rebuild leaves fewer than 550 rows; embedding per-run samples expands the served entry beyond 64 bytes; missing sample retention leaves the separate file below the independently generated megabyte population.",
+      "lines": "249-252"
+    },
+    {
+      "fails_if": "Failing to write a valid paired entry loses it or mismatches its key; retaining expired or far-future rows changes the literal count 51 or expected run-51 identity; dropping the one-hour future sample removes that identity.",
+      "lines": "265-272"
+    },
+    {
+      "fails_if": "An unusable cache that loses historical rows fails rows=50, and restoring unconditional authoritative scans produces a nonempty raw-call list.",
+      "lines": "289-291"
+    },
+    {
+      "fails_if": "A supplied-row implementation that reads ledger.runs raises the installed refusal; omitting window filtering changes the result relative to the separately read ledger profile, including the deliberately added expired and future rows.",
+      "lines": "305-306"
+    },
+    {
+      "fails_if": "The current assertions fail on a missing output row or on zero/multiple owner calls, but DO NOT fail if the stamp/date guards are removed because both valid folds and full rebuilds invoke the owner once with the same fixture rows; finding recorded.",
+      "lines": "324-325"
+    },
+    {
+      "fails_if": "Removing the leading dot in the internal filename overwrites the independently seeded other-project entry, changing its saved bytes.",
+      "lines": "340"
+    },
+    {
+      "fails_if": "Bypassing recovery fails the independently counted second index attempt or returns stale rows=50; restoring authoritative scanning makes the raw-scan predicate true.",
+      "lines": "363-367"
+    }
+  ],
+  "assertion_independence": "No added assertion simply compares output against the same supplied input; literal populations, saved bytes, decode positive controls and independently ledger-derived expectations are present. The stamp/date test instead has a nondiscriminating call-count assertion, recorded as a non-blocking finding.",
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/crew/promotion.py:1887 (_complete_locked after ledger append)",
+    "reckon/crew/picker/lane_context.py:793 (_cached_run_time_profile serves the persisted entry)",
+    "reckon/crew/picker/lane_context.py:906 (refresh supplies rows to run_time_profile)",
+    "reckon/crew/picker/lane_context.py:1037 (_expected_wait consumes served profiles)",
+    "reckon/crew/picker/lane_context.py:1167 (build consumes served profiles)"
+  ],
+  "completed_at": "2026-11-11T16:37:32Z",
+  "dispatched_at": "2026-11-11T16:31:01Z",
+  "failure_delta_evidence": {
+    "after_log_failure_ids": [],
+    "after_suite": {
+      "command": "PYTHONPATH=/tmp/profile-arms-1310628-a8vg/head-bn1noky0 /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q /tmp/profile-arms-1310628-a8vg/head-bn1noky0/tests/test_a_promotion_profile_refresh_costs_its_row.py /tmp/profile-arms-1310628-a8vg/head-bn1noky0/tests/test_staged_write_inventory.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261111T141432954806-promotion-profile-refresh-folds-its-row/armed-head-final.log",
+      "revision": "e90a244db54d5206d24062dc98b930403bf6bbfc"
+    },
+    "baseline_log_failure_ids": [],
+    "baseline_suite": {
+      "command": "PYTHONPATH=/tmp/profile-arms-1310619-Rm0b/base-2tpiek0j /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q /tmp/profile-arms-1310619-Rm0b/base-2tpiek0j/tests/test_staged_write_inventory.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261111T141432954806-promotion-profile-refresh-folds-its-row/armed-base.log",
+      "revision": "b5801e8feb89a3caf0a513dfc8204fa6cd4e0a84"
+    }
+  },
+  "finding_dispositions": {
+    "0": {
+      "kind": "exempted",
+      "reason": "non-blocking test-strength gap in test_fold_inputs_must_match_the_served_stamp_and_date; the run landed at b0720d03e4 under the lead's critical-work directive, and the stronger assertion (a ledger-backed rebuild on a stamp or date mismatch) is carried as an open followup on a-read-costs-what-changed",
+      "recorded_at": "2026-11-11T16:56:42.699231+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "tests/test_a_promotion_profile_refresh_costs_its_row.py",
+      "line": "325",
+      "severity": "non-blocking",
+      "text": "non-blocking: test_fold_inputs_must_match_the_served_stamp_and_date asserts only rows=50 and build.call_count=1; removing either the stamp or date comparison at lane_context.py:900-901 still folds the same 50 rows through run_time_profile exactly once, so the named regression stays green; assert a ledger-backed rebuild (for example no rows keyword or an observed ledger read), or use distinguishable stale samples."
+    }
+  ],
+  "importer_delta_evidence": {
+    "added_failure_ids": [],
+    "baseline_failure_ids": [
+      "tests/test_orchestrator_assessment_reaches_jev.py::test_assessment_renders_beside_the_declared_capability",
+      "tests/test_orchestrator_assessment_reaches_jev.py::test_rendered_state_is_build_states_mapping_encoded_once"
+    ],
+    "baseline_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261111T141432954806-promotion-profile-refresh-folds-its-row/repair-importers-base.log",
+    "head_failure_ids": [
+      "tests/test_orchestrator_assessment_reaches_jev.py::test_assessment_renders_beside_the_declared_capability",
+      "tests/test_orchestrator_assessment_reaches_jev.py::test_rendered_state_is_build_states_mapping_encoded_once"
+    ],
+    "head_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261111T141432954806-promotion-profile-refresh-folds-its-row/final-repair-importers-head.log"
+  },
+  "item_verdicts": {
+    "call_sites": "Verified 5 production call sites",
+    "diff": "Read the four new commits 5f49d0b, 3c83fe53, 7ce18fbe and 2a8c93fc against e90a244d; the delta splits and bounds samples, extends the statistical owner, isolates filenames, repairs transient index recovery and updates the evidence fragment.",
+    "done_when": "Read live plan version 81 s18, prompt.txt:125 and resume-1-advice.txt:1; final-repair-armed-head.log records 74 passed and the all_debug importer logs retain the same two failure identities, while negative controls record refusals and stale-row reproductions.",
+    "goal": "Read source prompt.txt:38 and resume-1-advice.txt:1; lane_context.py:892-962 separates bounded fold inputs from served tables and extends the shared profile owner as requested.",
+    "manifest": "Read source manifest.md including baseline_suite/after_suite and artifacts; the canonical after_suite still names the earlier e90 revision, and artifacts.repaired_head_suite explicitly records the tested 7ce18f revision with 74 passed and readable receipts.",
+    "write_paths": "Read prompt.txt:80-84, resume-1-advice.txt:1 and manifest.md orientation_write_paths; all four delta paths are authorized, including the explicitly added reckon/crew/run_time_profile.py."
+  },
+  "justifications": {
+    "durability": "tests/test_a_promotion_profile_refresh_costs_its_row.py:209-306 and :328-367 guard decoding, size, sample bounds, reuse, namespace collision and recovery, but :325 cannot detect removal of the stamp/date validity checks because folds and rebuilds each call the same owner once.",
+    "evidence": "final-repair-armed-head.log records 74 passed at 7ce18fbe, repair-importers-base.log and final-repair-importers-head.log have identical two failure identities, and the cost/namespace/recovery negative controls end EXIT=1 with named failing tests.",
+    "fit": "reckon/crew/picker/lane_context.py:892-962 uses existing cache entry readers/writers and descriptive names, while reckon/crew/run_time_profile.py:339-393 extends the existing typed statistical interface.",
+    "goal_fidelity": "reckon/crew/picker/lane_context.py:892-962 keeps samples out of served entries, bounds retained rows and refreshes recovered projections while preserving the appended-row fold.",
+    "reuse": "The capability search opened reckon/crew/run_time_profile.py:339-393 and reckon/capabilities.py:1361-1388; the delta removes the duplicate constructor, extends the existing statistical owner and reuses the cache I/O owner rather than duplicating either.",
+    "scope_discipline": "The four changed paths in e90a244d..2a8c93fc match prompt.txt:80-84 plus the run_time_profile.py scope extension in resume-1-advice.txt:1."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: Read source prompt.txt:38 and resume-1-advice.txt:1; lane_context.py:892-962 separates bounded fold inputs from served tables and extends the shared profile owner as requested.\nVERDICT done_when: Read live plan version 81 s18, prompt.txt:125 and resume-1-advice.txt:1; final-repair-armed-head.log records 74 passed and the all_debug importer logs retain the same two failure identities, while negative controls record refusals and stale-row reproductions.\nVERDICT write_paths: Read prompt.txt:80-84, resume-1-advice.txt:1 and manifest.md orientation_write_paths; all four delta paths are authorized, including the explicitly added reckon/crew/run_time_profile.py.\nVERDICT manifest: Read source manifest.md including baseline_suite/after_suite and artifacts; the canonical after_suite still names the earlier e90 revision, and artifacts.repaired_head_suite explicitly records the tested 7ce18f revision with 74 passed and readable receipts.\nVERDICT diff: Read the four new commits 5f49d0b, 3c83fe53, 7ce18fbe and 2a8c93fc against e90a244d; the delta splits and bounds samples, extends the statistical owner, isolates filenames, repairs transient index recovery and updates the evidence fragment.\nCALL_SITES: reckon/crew/promotion.py:1887 (_complete_locked after ledger append), reckon/crew/picker/lane_context.py:793 (_cached_run_time_profile serves the persisted entry), reckon/crew/picker/lane_context.py:906 (refresh supplies rows to run_time_profile), reckon/crew/picker/lane_context.py:1037 (_expected_wait consumes served profiles), reckon/crew/picker/lane_context.py:1167 (build consumes served profiles)\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/picker/lane_context.py:892-962 keeps samples out of served entries, bounds retained rows and refreshes recovered projections while preserving the appended-row fold.\nSCORE evidence: 20\nJUSTIFICATION evidence: final-repair-armed-head.log records 74 passed at 7ce18fbe, repair-importers-base.log and final-repair-importers-head.log have identical two failure identities, and the cost/namespace/recovery negative controls end EXIT=1 with named failing tests.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: The four changed paths in e90a244d..2a8c93fc match prompt.txt:80-84 plus the run_time_profile.py scope extension in resume-1-advice.txt:1.\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_a_promotion_profile_refresh_costs_its_row.py:209-306 and :328-367 guard decoding, size, sample bounds, reuse, namespace collision and recovery, but :325 cannot detect removal of the stamp/date validity checks because folds and rebuilds each call the same owner once.\nSCORE fit: 20\nJUSTIFICATION fit: reckon/crew/picker/lane_context.py:892-962 uses existing cache entry readers/writers and descriptive names, while reckon/crew/run_time_profile.py:339-393 extends the existing typed statistical interface.\nSCORE reuse: 20\nJUSTIFICATION reuse: The capability search opened reckon/crew/run_time_profile.py:339-393 and reckon/capabilities.py:1361-1388; the delta removes the duplicate constructor, extends the existing statistical owner and reuses the cache I/O owner rather than duplicating either.\nFINDING tests/test_a_promotion_profile_refresh_costs_its_row.py:325 non-blocking: test_fold_inputs_must_match_the_served_stamp_and_date asserts only rows=50 and build.call_count=1; removing either the stamp or date comparison at lane_context.py:900-901 still folds the same 50 rows through run_time_profile exactly once, so the named regression stays green; assert a ledger-backed rebuild (for example no rows keyword or an observed ledger read), or use distinguishable stale samples.\n",
+  "repaired_head_evidence": {
+    "command": "PYTHONPATH=/tmp/profile-arms-1310678-ByqK/head-badbm5q2:/home/ITER/mcintos/.config/reckon/crew/runs/r-20261111T141432954806-promotion-profile-refresh-folds-its-row /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q /tmp/profile-arms-1310678-ByqK/head-badbm5q2/tests/test_a_promotion_profile_refresh_costs_its_row.py /tmp/profile-arms-1310678-ByqK/head-badbm5q2/tests/test_staged_write_inventory.py",
+    "completed": true,
+    "exit_status": 0,
+    "failure_count": 0,
+    "failure_ids": [],
+    "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261111T141432954806-promotion-profile-refresh-folds-its-row/final-repair-armed-head.log",
+    "revision": "7ce18fbe28ca12f3e5eab09d0f51e3aeeda49065"
+  },
+  "reuse_search": {
+    "added_definitions": "No new production function/class/module; rows parameter extends the profile owner; test-local _fold_path, counted and briefly_refused provide path calculation and instrumentation without a duplicate production mechanism.",
+    "capabilities": [
+      "trailing-window profile calculation from supplied rows",
+      "persistent pick-cache entry read/write",
+      "test fixtures and instrumentation"
+    ],
+    "owners_opened": [
+      "reckon/crew/run_time_profile.py:run_time_profile",
+      "reckon/capabilities.py:_read_pick_entry",
+      "reckon/capabilities.py:_write_pick_entry"
+    ]
+  },
+  "review_run_id": "r-20261111T162643347300-review-of-promotion-profile-refresh-folds-its-row-2a8c93fc797d",
+  "review_scope": "Incremental review only: commits gained since e90a244db54d5206d24062dc98b930403bf6bbfc; 2a8c93fc differs from the tested 7ce18fbe only in its evidence fragment.",
+  "reviewed_base_sha": "e90a244db54d5206d24062dc98b930403bf6bbfc",
+  "reviewed_head_sha": "2a8c93fc797d942c1582ace11e77fba45e3a5fd5",
+  "reviewed_run_id": "r-20261111T141432954806-promotion-profile-refresh-folds-its-row",
+  "scores": {
+    "durability": 17,
+    "evidence": 20,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-11T16:47:18.556563+00:00",
+  "total": 117
+}

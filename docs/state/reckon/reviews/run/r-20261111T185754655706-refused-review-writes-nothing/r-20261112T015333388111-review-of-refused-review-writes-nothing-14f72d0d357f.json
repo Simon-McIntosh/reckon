@@ -1,0 +1,39 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failure_note": "0 added is derived from the reviewed run's baseline_suite and after_suite, whose failure_ids are both empty (baseline 0 failures with 2 scaffolding errors, after arm 57 passed); the manifest's importer arms agree, 159 failed on both sides at 1222 vs 1227 passed.",
+  "completed_at": "2026-11-12T02:15:48.775Z",
+  "dispatched_at": "2026-11-12T01:55:57Z",
+  "findings": [
+    {
+      "file": "reckon/crew/plan_review.py",
+      "line": 3755,
+      "severity": "non-blocking",
+      "text": "The guard resolves the review role without the arguments the dispatch resolves it with: `routing.resolve_role(config, \"review\")` leaves spec_level at its empty default, while the dispatch resolves the same role at spec_level=\"exact\" (reckon/crew/recovery_review_dispatch.py:2949, reckon/crew/plan_review.py:5794). A `roles.review.by_spec_level.exact` overlay carrying a `launch` (or a backend with a different `launch`) is therefore skipped here and the guard judges a launch the dispatch never asks for. The live ~/.config/reckon/flight.yaml sets only `effort` under review.by_spec_level, so no divergence occurs today, but the commit's own claim that one resolver decides the launch for both is true of the helper and not of its arguments."
+    },
+    {
+      "file": "reckon/crew/plan_review.py",
+      "line": 3755,
+      "severity": "non-blocking",
+      "text": "The section's done_when requires the test files importing the modified modules to add no failure against the base revision, but the recorded importer arms (logs/importer-base.log and logs/importer-head.log) were measured at f0506fe0162a, one commit before the reviewed head, and the reviewed head changes this production module. The head arm (logs/after-arm.log) covers only tests/test_a_refused_plan_review_writes_nothing.py and tests/test_staged_write_inventory.py, so the importer clause is not measured at the revision this review reads."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that a plan review is refused for its session before it composes or writes, and the gained commit at reckon/crew/plan_review.py:3755 resolves the review role through routing.resolve_role, the helper the dispatch calls, so the guard's launch lookup carries the role's overlays.\nVERDICT done_when: the section's done_when names the follower-refusal test, an unchanged report directory, an uncalled brief composer, importer arms adding no failure, a negative control and ruff clean on the staged paths; the manifest records 57 passed at 14f72d0d35 in logs/after-arm.log, the ruff and routing negative controls red on reversion in logs/negative-control-round2.log, and importer arms measured at f0506fe016.\nVERDICT write_paths: the node's declared paths are reckon/crew/plan_review.py, reckon/crew_run_commands.py, tests/test_a_refused_plan_review_writes_nothing.py and the evidence fragment; the gained diff touches only plan_review.py and the test file.\nVERDICT manifest: read in full; it reads complete, records the second repair at 14f72d0d35, 57 passed at head, both negative controls failing when their change is reverted, and ruff check/format exit 0 at head.\nVERDICT diff: read commit by commit against bd99c3d11e; 14f72d0d35 replaces the hand-rolled backend lookup at reckon/crew/plan_review.py:3749-3757 with routing.resolve_role(config, \"review\") and unwraps the monkeypatch.setattr call at tests/test_a_refused_plan_review_writes_nothing.py:106, 33 added and 15 deleted lines.\nCALL_SITES: reckon/crew_run_commands.py:199 (_install_carried_answer callback), reckon/crew_run_commands.py:127 (_session_delivery_refusal), reckon/crew/plan_review.py:3796 (session_delivery_refusal), reckon/crew/routing.py:202 (resolve_role owner)\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/plan_review.py:3755 now resolves the review role through routing.resolve_role, so a role-level launch overlay reaches the guard, though the spec level the dispatch passes is still omitted.\nSCORE evidence: 15\nJUSTIFICATION evidence: logs/after-arm.log records 57 passed at 14f72d0d35 and logs/negative-control-round2.log records the routing and format controls red on reversion, but the done_when's importer-arm clause is recorded only at f0506fe016, one commit before the reviewed head.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: `git diff --stat bd99c3d11e..14f72d0d35` lists only reckon/crew/plan_review.py and tests/test_a_refused_plan_review_writes_nothing.py, both declared write paths.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_a_refused_plan_review_writes_nothing.py:244 fails with 'cli' == 'in-harness' when the parent revision's lookup is installed, as logs/negative-control-round2.log records.\nSCORE fit: 18\nJUSTIFICATION fit: the local imports and the narrowed `# the verb reports` comment at reckon/crew/plan_review.py:3749-3757 follow the module's lazy-import idiom, and no name the naming rules forbid is introduced.\nSCORE reuse: 20\nJUSTIFICATION reuse: reckon/crew/plan_review.py:3755 now calls routing.resolve_role at reckon/crew/routing.py:202, extending the owner of role resolution rather than duplicating it as the previous revision did.\nFINDING reckon/crew/plan_review.py:3755 non-blocking: the guard resolves the role with spec_level left at its empty default while the dispatch resolves it at \"exact\", so a by_spec_level overlay carrying a launch would be skipped; no live config sets one today.\nFINDING reckon/crew/plan_review.py:3755 non-blocking: the importer arms required by the done_when were measured at f0506fe016, one commit before the reviewed head, and the head changes this module.\n",
+  "review_run_id": "r-20261112T015333388111-review-of-refused-review-writes-nothing-14f72d0d357f",
+  "reviewed_base_sha": "bd99c3d11ef5fb6bd6f592568010a4fda44f229f",
+  "reviewed_head_sha": "14f72d0d357fa2df841f747f9cb3cbbc2439ad74",
+  "reviewed_run_id": "r-20261111T185754655706-refused-review-writes-nothing",
+  "scores": {
+    "durability": 19,
+    "evidence": 15,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-12T03:36:07.495378+00:00",
+  "total": 110
+}

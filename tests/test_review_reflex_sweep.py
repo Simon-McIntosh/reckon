@@ -14,8 +14,9 @@ sweep that re-dispatches what it already dispatched manufactures reviews. A
 refusal on one run must leave the rest dispatched, because a sweep that stops
 at the first refusal makes one refused dispatch look like a quiet fleet. A run
 awaiting review is itself an unreconciled run, so the composed command carries
-the unreconciled-runs waiver — without it the fence refuses the very dispatch
-that clears the backlog. A review run is never its own source run, keyed on
+the unreconciled-runs waiver and the review's own record says the waiver was
+requested, where a dispatch without it records the same run as backlog it ran
+over. A review run is never its own source run, keyed on
 the role it carried and on the node id it was minted with, so no sweep
 composes a review of a review.
 
@@ -337,10 +338,14 @@ def test_the_review_dispatch_waives_the_unreconciled_fence(
     assert [row["run_id"] for row in waiver["waived_runs"]] == ["r-work"]
 
 
-def test_the_fence_refuses_the_same_run_without_the_waiver(
+def test_the_dispatch_without_the_waiver_records_the_run_it_ran_over(
     isolated_project: tuple[Path, Path],
 ) -> None:
-    """The positive control: the fence is genuinely armed, so the waiver is doing work."""
+    """The control: the same run dispatched without the waiver still records it.
+
+    The fence is armed either way; the waiver only decides what the record says
+    about it, so the case that names the run as its own backlog is this one.
+    """
     config_home, repo = isolated_project
     source = _completed_pointer(config_home, repo, "r-work")
     _backdate_manifest(source, 3600)
@@ -351,10 +356,14 @@ def test_the_fence_refuses_the_same_run_without_the_waiver(
             launcher=_launcher_recording([]),
             allow_unreconciled_runs=False,
         )
-    assert report["dispatched"] is False
-    assert report["refused"] is True
-    assert "r-work" in report["reason"]
-    assert "10m" in report["reason"]
+    assert report["dispatched"] is True
+    review_run_id = str(runs.read_pointer("r-work")["review_dispatch"]["run_id"])
+    backlog = runs.dispatch_field(
+        runs.read_pointer(review_run_id), "unreconciled_override"
+    )
+    assert backlog["requested"] is False
+    assert backlog["grace"] == "10m"
+    assert [row["run_id"] for row in backlog["waived_runs"]] == ["r-work"]
 
 
 def test_a_recorded_refusal_is_the_report_and_not_a_generator(

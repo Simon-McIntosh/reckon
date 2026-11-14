@@ -1,0 +1,219 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="work-flows-to-the-lane-landed">
+  <meta name="plan-title" content="Work Flows To The Lane — landed record">
+  <meta name="plan-summary" content="Landing record for Work Flows To The Lane: evidence appended by section.">
+  <meta name="plan-evidence-for" content="work-flows-to-the-lane">
+  <title>Work Flows To The Lane — landed record | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+ <main class="plan-doc">
+  <h1>Work Flows To The Lane — landed record</h1>
+  <p>Landing record for Work Flows To The Lane: evidence appended by section.</p>
+
+
+   <section id="s2-identity-published-with-its-claim" data-evidence-origin="append">
+    <h2>§2 — an execution identity is published with its claim</h2>
+    <p>§2 landed at merge <code>20da47addf</code> (reviewed head <code>232f77ed</code>, run <code>r-20261111T154129120140-identity-published-with-its-claim</code>). Importing <code>reckon.crew.dispatch_claims</code> no longer writes an <code>exec-&lt;pid&gt;.identity</code> file: a process publishes one only when it takes a node dispatch claim, and it is removed with that process's last claim. <code>reckon.crew.gc</code> gained a sweep that removes identity files whose pid is gone or reused and prints each removal. The armed arms read 6 failed and 53 passed at base <code>d5df5102</code>, and 61 passed at the head. The declared mutation, restoring the import-time publish, failed <code>test_importing_the_module_publishes_no_identity</code> and <code>test_changed_exec_identity_reclaims_claim_and_allows_new_dispatch</code> (<code>logs/negative-control.log</code>); the repair round's re-run kept only its exit line, so the landing recorded a negative-control waiver citing that log. The superseded import-time assertion in <code>tests/test_a_reexec_never_orphans_a_dispatch.py</code> now asserts the new rule.</p>
+  </section>
+
+  <section id="s4-non-blocking-deferred-at-landing" data-evidence-origin="append">
+    <h2>§4 — a finding that does not block is deferred at landing</h2>
+    <p>§4 landed at <code>921bc3d492</code> (reviewed head <code>469de496</code>, run <code>r-20261111T154328431125-non-blocking-deferred-at-landing</code>). A run whose review holds no undisposed blocking finding now lands. Each other open finding gets a <code>deferred</code> disposition naming the landed run and the rule, and stays listed as open work in the findings view. A finding with no stated severity, or a blocking one, still holds the run, and <code>crew dispose</code> refuses <code>deferred</code> by name. The queue landing path and the recovery acceptance path defer through one writer, and the tests that asserted the old hold were rewritten. Its re-review raised two non-blocking findings, both exempted: the now-uncalled <code>record_landed_exemptions</code>, reported to the lead as a cleanup, and one store commit per deferred finding.</p>
+  </section>
+
+  <section id="s5-session-told-of-submission" data-evidence-origin="append">
+    <h2>§5 — a session is told when its queued work is submitted</h2>
+    <p>§5 landed at <code>0147697ad8</code> (reviewed head <code>b6ef5ddc</code>, run <code>r-20261111T154613158051-session-told-of-submission</code>). When the admit service submits a session's queued request to a worker, that session's watch stream gains one row of its own kind in the same pass. The row names the run, plan section, lane, model, launch advice and the <code>crew tell</code> command that reaches the worker, and the session's pane draws it as one submitted line. The armed arms read 77 passed at base <code>8ed04a01</code> and 82 passed at the head, with no added failures. The declared mutation, removing the row write, failed three tests (<code>negative-control.log</code>).</p>
+  </section>
+
+  <section id="s2-live-sweep" data-evidence-origin="append">
+    <h2>§2 — the live claims directory swept</h2>
+    <p>On 11 November at about 21:50 UTC the coordinator swept the live claims directory <code>~/.config/reckon/crew/claims</code> as SLURM job 1311094 on <code>all_debug</code>. Before: 120,468 identity files, of which 53 were under one hour old, 16,894 between one and 24 hours, 10,820 between 24 and 48 hours, and 92,701 older than 48 hours. The landed sweep judges liveness from the local <code>/proc</code>, while the directory is shared by every node (§19), so this run removed only files older than 48 hours, which no claim-holding execution outlives. It removed 92,701, printing each removal to <code>~/.cache/reckon-identity-sweep/apply-20261111.log</code>. After: 27,771 identity files, all younger than 48 hours. The script is <code>~/.cache/reckon-identity-sweep/sweep.py</code>, and its dry run is <code>dry-run-20261111.log</code> beside it.</p>
+  </section>
+
+  <section id="s7-re-review-reads-what-changed" data-evidence-origin="append">
+    <h2>§7 — a re-review reads what changed since the review before it</h2>
+    <p>§7 landed at <code>f238d113fa</code> (reviewed head <code>2160ffdd</code>, run <code>r-20261111T185408798633-re-review-reads-what-changed</code>). A run's second or later code-review brief names the head the previous review read, the commits since it, and each finding that review raised with its disposition. It asks the reviewer to judge those commits and to say whether each earlier blocking finding is resolved; a first review's brief is unchanged. Its review raised one non-blocking finding, deferred at landing under §4: a stored finding with no claim is skipped, so the brief can call such a review empty.</p>
+  </section>
+
+  <section id="s16-launched-run-owes-no-queued-duty" data-evidence-origin="append">
+    <h2>§16 — a launched run owes no queued duty</h2>
+    <p>§16 landed at <code>5426731d0f</code> (reviewed head <code>b99ca93f</code>, run <code>r-20261111T185852834144-launched-run-owes-no-queued-duty</code>). The obligations snapshot now compares each queued duty with the run's current pointer, so the obligations view, the stop hook and the follower no longer list a queued duty for a run that has launched, even when they read a snapshot taken before the launch. A request still queued keeps its duty. Its review raised three non-blocking findings, deferred at landing under §4. The <code>run-stalled</code> kind is not in the settled set. A pointer that parses with no phase settles its duty. The arms ran on the fleet node rather than <code>all_debug</code>.</p>
+  </section>
+
+  <section id="s11-held-request-names-its-hold" data-evidence-origin="append">
+    <h2>§11 — a held request names the hold it is under</h2>
+    <p>§11 landed at <code>c433d5f434</code> (reviewed head <code>946e6d8f</code>, run <code>r-20261111T185654778148-held-request-names-its-hold</code>). A request held on its section's readiness now names its blocker by kind and id: an open decision's key or a closed gate's id. The name appears in the dispatch result, the queued pointer's recorded hold and the admission verdict. A hold on a declared section wait keeps its own verdict and names the wait's ref. The first review's two blocking findings were repaired: an evidence fragment written one directory too deep, and suite arms recorded as prose. The landing accepted the transient fragment path, and the coordinator added the missing <code>negative_control_log</code> pointer to the manifest, keeping the delivered copy beside it. The control log shows the declared mutation failing both decision and gate cases. The re-review's two non-blocking findings were deferred at landing: one classification copied three times in <code>queue_admission.py</code>, and the admission-pass verdict line left unasserted.</p>
+  </section>
+
+  <section id="s8-re-review-need-in-shadow" data-evidence-origin="append">
+    <h2>§8 — Jev&#x27;s re-review call is recorded beside its outcome</h2>
+    <p>§8 landed at <code>ff797f0c45</code>. Each second or later code review now records the existing <code>review_need.judge</code> verdict and its inputs on the review run's ledger row, and records the review's outcome (blocking finding or not) beside it once stored. An unresolvable prior head or a failed diff is recorded as unavailable, so it never counts as a confident skip. A registered crew view reports what each threshold would have skipped, and the tests exercise both production call sites. Reviewed clean at <code>35cd5151</code> after a repair round.</p>
+  </section>
+
+  <section id="s17-landing-measures-mismatched-arm" data-evidence-origin="append">
+    <h2>§17 — a landing measures a mismatched arm instead of refusing</h2>
+    <p>§17 landed at <code>05c8f2d152</code>. A landing whose recorded baseline or after arm is missing, recorded at another revision, or ran another command now runs the armed command itself at the revision it needs, on a compute partition, and records the arm as measured by the landing. Its own landing met the defect it fixes: its after arm was one evidence-only commit behind its head, so the coordinator ran the armed command at head <code>82010770</code> on <code>all_debug</code> (job 1311265, 57 passed) and recorded that arm, keeping the delivered manifest beside it.</p>
+  </section>
+
+  <section id="s19-identity-judged-on-its-host" data-evidence-origin="append">
+    <h2>§19 — an execution identity is judged on its own host</h2>
+    <p>§19 landed at <code>3fe4dd04ec</code>. An execution identity now records the host that published it. The sweep and the claim reclaim judge its liveness only on that host, and keep another host's identity until an age bound. Reviewed clean at <code>2254607a</code>.</p>
+  </section>
+
+  <section id="s10-decision-holds-named-sections" data-evidence-origin="append">
+    <h2>§10 — a decision can hold only the sections it names</h2>
+    <p>§10 landed at <code>7a544fd631</code>. A decision can now name the sections it holds. A decision that names sections holds only those, at dispatch and at admission, and the hold names the decision's key; a decision naming no section holds the plan as before. Its first landing conflicted with main in <code>dispatch.py</code> and <code>queue_admission.py</code> after §11 landed, so the landing sent it back for a merge repair. The repaired head <code>c00cf4e0</code> keeps both the scoped hold and §11's named verdicts in one hold function. The lander finished the landing after its promotion.</p>
+  </section>
+
+  <section id="s13-refused-review-writes-nothing" data-evidence-origin="append">
+    <h2>§13 — a plan review refused for its session writes nothing</h2>
+    <p>§13 landed at <code>8b2d0043a4</code>. <code>crew review</code> now checks each session refusal it can raise before it composes a brief, so a refused review leaves no report directory. A review launched in-harness, which has no follower, is not refused for one. Its first review found the new guard ran ahead of argument validation, and a repair round fixed that along with a formatting finding. The re-review at <code>14f72d0d</code> raised only non-blocking findings, which were deferred at landing.</p>
+  </section>
+
+  <section id="s15-plan-commit-releases-backoff" data-evidence-origin="append">
+    <h2>§15 — a plan commit releases the requests backing off on it</h2>
+    <p>§15 landed at <code>f8d7cfd3c2</code>. A request backing off after a launch refused for an uncommitted plan is now retried at the first admit pass after the plan's committed content changes, whatever its <code>retry_at</code>. Its review was deleted as a stranded launch four times overnight (traces under <code>refusal-traces/</code>; the fix is <code>work-is-never-stuck-behind-the-admission-loop</code> §52), and the fifth review was clean. The admit service's lander promoted and landed it unaided, once the station sweep fixes were live. Reviewed head: <code>5740f22d</code>.</p>
+  </section>
+
+  <section id="s14-decision-can-be-withdrawn" data-evidence-origin="append">
+    <h2>§14 — a decision can be withdrawn through edit_plan</h2>
+    <p>§14 landed at <code>145f513002</code> (reviewed head <code>19147e9e</code>, run <code>r-20261112T053149645420-decision-can-be-withdrawn</code>). An <code>edit_plan</code> op now withdraws an unlocked decision in one versioned write. The withdrawal is kept with its reason and date, the decision stops holding any section, and withdrawing a locked decision is refused. Its review was clean. The coordinator promoted and landed it by hand, because the session's sweep was busy promoting other reviews (§25).</p>
+  </section>
+
+  <section id="s20-finding-on-own-file-opens-repair" data-evidence-origin="append">
+    <h2>§20 — a finding on a run&#x27;s own file opens its repair</h2>
+    <p>§20 landed at <code>9eb2ccf2aa</code> (reviewed head <code>a5590032</code>, run <code>r-20261112T053157549848-finding-on-own-file-opens-repair</code>). A blocking finding that cites a file the run created in its worktree, or the run's own manifest or logs, now opens a repair round instead of being declined as citing no repository path. Its first review raised a blocking finding that went through a repair round. The re-review at the new head was refused on the previous review's claim and never retried (filed as <code>the-monitor-reads-each-fact-once</code> §37); the coordinator dispatched it directly. The first landing was refused because the after arm was recorded before the repair commit; the worker re-ran both arms at the head on <code>all_debug</code>. The coordinator promoted and landed it by hand: the automatic lander had landed nothing in the session for several hours.</p>
+  </section>
+
+  <section id="s21-landing-reads-recorded-control" data-evidence-origin="append">
+    <h2>§21 — a landing reads the control the run recorded</h2>
+    <p>§21 landed at <code>db7f5f0b82</code> (reviewed head <code>61624f0583</code>, run <code>r-20261112T053204533907-landing-reads-recorded-control</code>). The negative-control gate reads the log the manifest names. If that log is missing or unusable, it reads a log of the declared mutation in the run's own directory, and failing that it runs the mutation itself over the base tree. It records <code>control_log_source</code> and <code>resolved_log</code> on the verdict row. The armed command read 6 failed and 51 passed at the base, with the head's new test copied into a base-revision tree, and 57 passed at the head. The declared mutation failed 6 tests. The change also touched <code>reckon/crew/promotion_checks.py</code>, which the done-when requires and the live plan names; the path was accepted at landing. The first landing attempt was refused because the base arm had not completed: pytest collected no tests when the new test file was absent at the base. The worker re-ran the base arm with the test copied into a base-revision tree. The coordinator landed it by hand.</p>
+  </section>
+
+  <section id="s12-batch-entry-carries-review-waiver" data-evidence-origin="append">
+    <h2>§12 — a batch entry carries the waivers a single dispatch accepts</h2>
+    <p>§12 landed at <code>18b67c33cd</code> (reviewed head <code>ad8f34b7d0</code>, run <code>r-20261112T053103325903-batch-entry-carries-review-waiver</code>). A batch entry may set <code>allow_unreviewed_plan</code>. The waiver rides the stored request's dispatch options, so admission admits the entry instead of holding it on the review gate. An entry without the waiver is held, and a misspelt field is refused by name. The armed command passed 55 tests at the head. At the base it read 2 failures from the new tests and 2 scaffolding errors, which came from a measurement tree with no git metadata; no failure was added. The negative control, which drops the field from the accepted entry fields, was refused as unknown. The review's three findings were disposed as exempted: they cite the run directory, and the arm logs they asked for were copied there. The coordinator landed it by hand.</p>
+  </section>
+
+  <section id="s18-worktree-leaves-shared-config" data-evidence-origin="append">
+    <h2>§18 — a worktree leaves the shared configuration alone</h2>
+    <p>§18 landed at <code>7694b2c500</code> (reviewed head <code>bf1e69b520</code>, run <code>r-20261111T213729775225-worktree-leaves-shared-config</code>). A worktree no longer writes the shared configuration. The review at the head raised no blocking finding and found no added failure. The run waited about 18 hours: the automatic lander never landed it. The first hand landing was refused because the after arm had been recorded one commit before the head, and that commit touched only the evidence fragment. The worker re-ran the armed command at the head, where it passed. The coordinator then landed it by hand.</p>
+  </section>
+
+  <section id="s6-shared-root-claim-never-holds" data-evidence-origin="append">
+    <h2>§6 — a claim under a shared root never holds a queued request</h2>
+    <p>§6 landed at <code>7d4e4dd28d</code> (reviewed head <code>bb32611df2</code>, run <code>r-20261111T154857625015-shared-root-claim-never-holds</code>). A claim under a shared root no longer holds a queued request. The review at the head raised no blocking finding and found no added failure. The run sat promotable for about 11 hours without the automatic lander picking it up. Its base arm had first run a command without the new test file, which a landing refuses. The worker re-ran the armed command over a base-revision tree with the head's new test copied in: the new tests fail at the base and pass at the head. The coordinator then landed it by hand. §9's measurement window waits on this section and on §3.</p>
+  </section>
+
+  <section id="s25-sweep-never-waits-on-a-promotion" data-evidence-origin="append">
+    <h2>§25 — a session&#x27;s sweep never waits on a promotion</h2>
+    <p>§25 landed at <code>097aa2fd02</code> (reviewed head <code>69c254beac</code>, run <code>r-20261112T122615079791-sweep-never-waits-on-a-promotion</code>). A session's sweep now runs its promotions beside it and never waits on one. The first review was never started: the station reserved it under its own pid, wrote the prompt and spawned no worker, so it sat at <code>starting</code> for 1h50m. That is filed as <code>a-dispatch-returns-without-its-worker</code> §28. The coordinator discarded the pointer and dispatched the review directly. That review found one blocking problem: a fixture encoded serial promotion order, and with promotions running in parallel one of its cases failed 2 runs in 3. A repair round kept that case to a serial sweep, and the re-review at the new head raised no blocking finding and found no added failure. Three non-blocking findings stay open. The one with substance: the same guard is not yet applied when an acceptance job's run pointer vanishes mid-sweep, and promotion rebuilds a missing pointer instead of refusing. The after arm was re-recorded at the head before the coordinator landed the run by hand.</p>
+  </section>
+
+  <section id="s23-split-queue-admission" data-evidence-origin="append">
+    <h2>§23 — queue_admission splits along its responsibilities</h2>
+    <p>§23 landed at <code>dac80c30d2</code> (reviewed head <code>94d44a6671</code>, run <code>r-20261112T062445761221-split-queue-admission</code>). <code>queue_admission</code> is split along its responsibilities, and a surface test pins that every name it exported is still reachable. The review scored 20 on every dimension, with no findings and no added failure; the importer arms share their failure ids exactly. The run waited on the codex lane's budget fence until the lane served again in the afternoon. The first landing was refused because both suite arms recorded the armed command with absolute paths, which the landing compares as text. The worker re-ran both arms with the exact armed text from each tree's root, and the coordinator then landed it by hand.</p>
+  </section>
+
+  <section id="s3-dispatch-over-the-backlog" data-evidence-origin="append">
+    <h2>§3 — a coordinator&#x27;s own dispatch is not refused on its landing backlog</h2>
+    <p>§3 landed at <code>7c0246e1cc</code> (reviewed head <code>cc5e7cfe84</code>, run <code>r-20261112T160215702275-dispatch-over-the-backlog</code>). A direct dispatch and a batch entry from a session with overdue unreconciled runs now succeed, and the run, the held request and the ledger row record that backlog. The overdue runs stay in the session's obligations. Seven existing tests across five files asserted the retired refusal and were rewritten to assert the recorded backlog. They were granted in two rounds as review and importer arms found them, because the first dispatch had narrowed the write paths to fit the local context window. Both arms read the same ten failures at the base and at the head. The final review's one blocking finding cited a commit sha with two characters transposed. The real commit, <code>85df5f3562b7d20bf3de720be4f416b9971c1639</code>, is in the object store, so the finding was disposed as refuted. The run moved off codex to the local lane once a-gate-halts-only-on-substance §7 was recorded done, and it was landed by hand.</p>
+  </section>
+
+  <section id="s24-split-dispatch" data-evidence-origin="append">
+    <h2>§24 — dispatch splits along its responsibilities</h2>
+    <p>§24 landed at <code>6f4c45605d</code> (reviewed head <code>27e092194d</code>, run <code>r-20261112T062614544790-split-dispatch</code>). <code>reckon/crew/dispatch.py</code> is now a 660-line facade over a <code>reckon/crew/dispatching/</code> package, and a surface test pins every exported and patched name. Three tests that read <code>dispatch.py</code>'s source were moved to follow the code to its new home. A reuse repair round made the facade's runtime-override forwarding extend <code>_CrewFacade</code> in <code>reckon/crew.py</code> instead of duplicating it, and the re-review scored 20 on every dimension. Two importer failures that first read as added, a killed worker's signal name and a duplicate session row, also reproduce at the base and are flaky there. The landing met a conflict in <code>dispatch.py</code> with §3, which had landed first. Its merge-repair round carried §3's recorded backlog into <code>dispatching/preparation.py</code>, and the pending landing finished it. On main, no dispatch path raises the retired refusal.</p>
+  </section>
+
+  <section id="s27-lander-never-waits-on-a-measurement" data-evidence-origin="append">
+    <h2>§27 — the lander never waits on a measurement</h2>
+    <p>§27 landed at <code>b2f102aadc</code> (reviewed head <code>37a6b3f109</code>, run <code>r-20261112T211438912655-lander-never-waits-on-a-measurement</code>). The lander now submits a landing's measurement job and returns, and takes the next ready landing in the same pass. A later pass reads each job's result once the job has ended and resumes that landing. Jobs in flight are bounded by a width, and a failed, over-bound, cancelled or out-of-memory job refuses only its own run, naming the job id and log. A restarted lander adopts recorded jobs instead of submitting them again. In a live <code>admit --once</code> at the head, the pass returned in 13.6 s while real SLURM job 1312494 was still running; that job later completed with <code>EXIT=0</code>. The importer arms show the same nine failures at base and head. Negative control: restoring <code>--wait</code> fails the progress case at its three-second bound, by name. The review scored 20 on five dimensions and 17 on durability, with one non-blocking note on how strictly the stub checks the revisions it pins. The section was dispatched on codex under the lead's critical-work lift, with its content review answered in parallel. The admit service restarted onto this code at 22:16:44Z, and its first landing pass completed in 84 s.</p>
+  </section>
+
+  <section id="s26-measured-arm-reads-its-receipt" data-evidence-origin="append">
+    <h2>§26 — a landing reads the arms it measures itself</h2>
+    <p>§26 landed at <code>ec87744c09</code> (reviewed head <code>4940fea0ef</code>, run <code>r-20261112T202220671098-measured-arm-reads-its-receipt</code>). A landing-measured arm is now read by its <code>EXIT=</code> receipt even when <code>srun</code> prints its error line after it. A red base arm therefore yields its exit status and failure ids, and the run lands or is refused on the measured pair. An arm with no receipt, or whose receipt disagrees with the job's return code, yields no pair, and the refusal names the arm and the real reason, never that it did not run. Negative control: matching the receipt only as the last line fails three cases by name. The first review's one blocking finding was a negative-control log holding only its header; a repair round re-recorded it. The re-review raised no blocking finding and found no added failure. Before this landed, the landing discarded its own measurement for every node that adds a test; that is why §18 and §23 were refused on 12 November despite green heads.</p>
+  </section>
+
+  <section id="s28-acceptance-check-holds-no-lease" data-evidence-origin="append">
+    <h2>§28 — an acceptance sweep holds a run&#x27;s promotion lease only while it promotes</h2>
+    <p>§28 landed at <code>d3eef3d59e</code> (reviewed head <code>3e900454ea</code>, run <code>r-20261112T211024663068-acceptance-check-holds-no-lease</code>). A sweep's acceptance job now judges a run without holding its promotion lease, and takes the lease only once it has decided to promote, re-checking under the lease that the run is still the one it judged. A refused acceptance is not tried again while the run's head, its stored review and the refusal's own inputs are unchanged, and it is judged again when any of them moves. A coordinator's completion is never refused because a sweep is judging the run. This repairs a regression from §25, which held the lease through the judgement and retried on every sweep. That regression refused nova's coordinator's <code>crew complete --gate failed</code> on <code>icm-west-62751-solve</code> five times over more than an hour, until the run was completed between sweeps. All three mutation controls fail as intended. The added importer failure first reported, <code>test_resume_reaps_its_child.py</code>, passed 5 of 5 at both base and head on re-measurement. The review scored 20 on every dimension with no findings.</p>
+  </section>
+
+  <section id="s29-finished-pending-landing-retires-its-run" data-evidence-origin="append">
+    <h2>§29 — a landing finished from its pending record retires the run</h2>
+    <p>§29 landed at <code>69ffd69fb9</code> (reviewed head <code>d8769b9a6e</code>, run <code>r-20261112T230644567766-finished-pending-landing-retires-its-run</code>). By the time it ran, the defect no longer reproduced at main: the pending-landing pass's attempt-aware release, landed beside the-monitor-reads-each-fact-once §39, already retired the finished attempt's pointer and worktree. The section therefore lands as a regression test, <code>tests/test_a_finished_pending_landing_retires_its_run.py</code>. It covers retirement after a pushed merge, a refused push that keeps everything, an already-discarded pointer, and a newer attempt's pointer that is kept. Two negative controls fail by name. Both reviews scored 20 on every dimension. A related order defect remains with the-monitor-reads-each-fact-once §41: the unfinished-promotion path clears the pending record before it retires the attempt.</p>
+  </section>
+
+  <section id="s33-only-unmergeable-paths-are-claimed" data-evidence-origin="append">
+    <h2>§33 — only a path git cannot merge is ever claimed</h2>
+    <p>§33 landed at <code>71fac2fe84</code> (run <code>r-20261113T020053676895-only-unmergeable-paths-are-claimed</code>). Dispatch, admission, widening, resume and promotion no longer hold, refuse or fence a node because another live run declares the same source or test path, or a directory containing it. Claims remain only on plans, generated state, cumulative evidence records, figure topic directories and dependency lockfiles, and a worker's brief names other runs' paths only as information. Until it landed, the old peer fence stopped §22, §32, §34 and §35 on one another's <code>reckon/crew</code> claims, and each was resumed under the lead's ruling that concurrent edits meet at the merge. The review scored 20 on every dimension, with no finding and no added failure.</p>
+  </section>
+
+  <section id="s36-admission-pass-reads-ledger-once" data-evidence-origin="append">
+    <h2>§36 — an admission pass reads the ledger at most once</h2>
+    <p>§36 landed at <code>ae49564353</code> (run <code>r-20261113T032923501296-admission-pass-reads-ledger-once</code>). An admission pass now answers every waiting request's section waits from one indexed ledger read, where it had read and deep-copied all of about 8,360 run documents once per wait; that stage had kept the admit service from completing a pass from 01:25Z. The review scored 20 on every dimension with no findings. The first landing was refused because the manifest's gate command named a temporary interpreter that no longer existed, and the worker corrected the record. Once the service ran it, its passes reached the launch stage, where §39's regression was then found.</p>
+  </section>
+
+  <section id="s34-run-leaves-nothing-behind" data-evidence-origin="append">
+    <h2>§34 — a run leaves nothing behind when it ends</h2>
+    <p>§34 landed at <code>b31dd85d52</code> (run <code>r-20261113T023226263467-run-leaves-nothing-behind</code>). Landing, discarding, or promoting a run with nothing to merge now removes its worktree and scratch and archives its run directory out of the walked tree, as part of the operation that ends it; the sweep is a crash backstop. Its review raised no finding and found no added failure, scoring 19 on durability and 20 elsewhere. The live-fleet measurement of worktree and run-directory counts is recorded in the run's evidence fragment.</p>
+  </section>
+
+  <section id="s38-stopped-run-resumes-with-advice" data-evidence-origin="append">
+    <h2>§38 — a stopped run can be resumed with advice</h2>
+    <p>§38 landed at <code>e0e44c0ca6</code> (run <code>r-20261113T044627048212-stopped-run-resumes-with-advice</code>). <code>crew stop</code> now records the attempt's exit when it ends the run's processes, so a stopped run whose processes are gone resumes with advice; a run stopped before the change, with a dead recorded pid, resumes too. This restores stop-then-resume as the way to steer a worker, which nova had found dead-ended on 13 November. The review raised one non-blocking note on a duplicated test helper, exempted.</p>
+  </section>
+
+  <section id="s31-coordinator-holds-a-delivered-run" data-evidence-origin="append">
+    <h2>§31 — a coordinator can hold a delivered run, and a resume never vanishes</h2>
+    <p>§31 landed at <code>ab0ad1589f</code> (run <code>r-20261113T011510453024-coordinator-holds-a-delivered-run</code>). A coordinator can hold a delivered run from automatic promotion and landing and release it, the lander and acceptance sweep skip a held run, a resume of a promoted or promoting run refuses with the promotion named, and a resume of a delivered run takes a hold first. Two repair rounds closed the review's blocking findings: a promotion in flight is now refused before the resume holds, and a hold now matches an abbreviated commit spelling. The final re-review raised one non-blocking note on a test guard.</p>
+  </section>
+
+  <section id="s30-scheduler-wait-is-not-abandoned" data-evidence-origin="append">
+    <h2>§30 — a wait on scheduler jobs is never read as abandoned while a job is alive</h2>
+    <p>§30 landed at <code>60662c0436</code> (run <code>r-20261113T003754418594-scheduler-wait-is-not-abandoned</code>). A wait whose probe passes scheduler job ids, under a job flag or as a comma-separated list, is read as a wait on those jobs, and the run is not read as abandoned while the scheduler lists any of them alive. Whether a numeric list names jobs or ports is decided by the command, so <code>nc -z host 80,443</code> names no job, and a <code>--jobs=a,b</code> list is read whole. A row says no job is alive only when the scheduler was asked and listed none; it says the scheduler was not consulted, or could not be asked, otherwise, and it names the run's own process rather than “the producer”. This is the misread that had nova restarting a healthy watch producer all day. Two repair rounds closed the review's findings. The landing was refused twice on records that omitted two pre-existing scaffolding errors before the arms were corrected.</p>
+  </section>
+
+  <section id="s37-service-reloads-between-passes" data-evidence-origin="append">
+    <h2>§37 — a service reloads onto new code only between passes</h2>
+    <p>§37 landed at <code>3085087130</code> (run <code>r-20261113T033507849520-service-reloads-between-passes</code>). A declared service that must move to new code finishes its pass and moves at the boundary; a pass that overruns its bound is still restarted, with the bound named in the log. A worker no longer inherits its parent service's pass-boundary variable. On 13 November the supervisor had restarted the admit service on every landing, killing each pass before it ended. The review's one blocking finding, a race on the first pass record, was closed in a repair round, and the re-review scored 19 to 20 with no findings.</p>
+  </section>
+
+  <section id="s39-queued-launch-never-classifies-the-fleet" data-evidence-origin="append">
+    <h2>§39 — a queued launch never classifies the fleet</h2>
+    <p>§39 landed at <code>5cdffb591f</code> (run <code>r-20261113T060010212800-queued-launch-never-classifies-the-fleet</code>). A launch made by the admission service now records no session backlog and classifies no run but its own, while a coordinator's direct dispatch still records the backlog as §3 requires. Measured in its test: zero classifier calls for a queued launch, and ten backlog runs recorded on a direct dispatch. This removes the regression §3 had introduced on the admission path, where every queued launch classified every live run on loaded GPFS and the local lane stood at 0 to 2 running. The first review's blocking finding, two assertions still expecting a backlog on queued launches, was closed in a repair round, and the re-review scored 20 on every dimension.</p>
+  </section>
+
+  <section id="s35-hot-path-reads-only-live-runs" data-evidence-origin="append">
+    <h2>§35 — a hot path reads only live runs</h2>
+    <p>§35 landed at <code>8ce22b9d88</code> (run <code>r-20261113T022704207140-hot-path-reads-only-live-runs</code>). The station's tick, promotion, landing and the obligations view now consult an index of open runs, kept current as runs start and end, and finished history is read only by the verbs that ask for it. The first attempt broke 82 existing tests by replacing the full readers. It was re-scoped to add the index as a fast path beside the existing readers, keeping every reader's contract, and reached zero added importer failures. Its review then found that a lookup index first created by a single write was served as complete, so older reviews would disappear. A repair round fixed that, and the re-review scored 20 on every dimension. The-monitor-reads-each-fact-once §45's writer-maintained review index will replace this section's review lookup index when it lands, by the rule recorded on that section.</p>
+  </section>
+
+  <section id="s40-merge-repaired-run-judged-on-own-changes" data-evidence-origin="append">
+    <h2>§40 — a landing after a merge repair judges only the run&#x27;s own changes</h2>
+    <p>§40 landed at <code>72ab4c1057</code> (run <code>r-20261113T074659623033-merge-repaired-run-judged-on-own-changes</code>). A landing now judges a run's scope, its declared paths and the cleanliness of those paths in the main checkout on the run's own changes since its merge base with the primary branch. Whatever a merge-repair merge brought in from main is not counted. §32 had been refused on 154 such files, then on other sessions' uncommitted review records among them; it can now land on its own 25. The review scored 20 on every dimension with no findings. The first landing was refused because the manifest's gate command named a temporary interpreter that no longer existed, and the worker corrected the record.</p>
+  </section>
+
+  <section id="s41-retention-retires-a-review-run" data-evidence-origin="append">
+    <h2>§41 — Retention retires a review run without asking for its review</h2>
+    <p>Landed at <code>5d90c63b7a</code> (merge of run <code>r-20261113T084815947556-retention-retires-a-review-run</code>, head <code>8b9d0fbbb9</code>). A review run is now judged on whether its own review record is stored, resolved through the review store's own path resolver (including figure-review records named <code>figure.&lt;run&gt;.at-&lt;head&gt;.json</code>), rather than on a review of itself that no review run is ever given. Two review rounds: the second scored 111/120 with no blocking findings and 0 added failures; its one non-blocking finding (a path assertion whose two sides move together) was exempted because the behavioural guards that fail on reversal are already in the test. The worker's gate fragment is <code>docs/evidence/fragments/work-flows-to-the-lane/retention-retires-a-review-run.html</code>.</p><p>Correction to the section's Why, raised by the content review at plan v175: the hourly retention timer already ran the bounded retention sweep (<code>gc.main()</code> calls <code>retention_sweep</code> with its 500-directory limit), so the timer clause in the done-when measured nothing and no timer change was made.</p>
+  </section>
+
+  <section id="s32-no-caller-waits-on-a-promotion" data-evidence-origin="append">
+    <h2>§32 — No coordinator turn or sweep pass waits on a promotion</h2>
+    <p>Landed at <code>116d122e4a</code> (pending-landing finish of run <code>r-20261113T011043749121-no-caller-waits-on-a-promotion</code>; delivery head <code>98f558e30d</code>, merge-repaired head <code>32cfa3c73d</code>). A coordinator turn or a sweep pass hands a promotion to a request record and returns; the promotion is drained off the caller's path. Three review rounds; the last scored 118/120 with no blocking findings and 0 added failures, and its one non-blocking finding (a ledger-row assertion that echoes the fixture's own commit) was exempted because the negative control covers the regression. The landing met a merge conflict on <code>reckon/crew/admission/service.py</code> against main <code>b39f7760e2</code>; the worker merged promotion draining into the supervised admission passes, its own gate passed 73 tests, and the landing finished from its pending record. The worker's gate fragment is <code>docs/evidence/fragments/work-flows-to-the-lane/no-caller-waits-on-a-promotion.html</code>.</p>
+  </section>
+
+</main>
+</body>
+</html>

@@ -1,0 +1,117 @@
+<section class="landed-node" id="a-plan-review-judges-the-endpoint">
+<h3>a-plan-review-judges-the-endpoint</h3>
+
+<p id="a-plan-review-judges-the-endpoint-what">The composed plan-review briefs now
+judge a section's endpoint and never its implementation. In the content rubric,
+<code>reasoning</code> drops the two checks that judged a stated method — whether
+a section's mechanism produced its done-when, and whether the mechanism ran on a
+named production caller — and asks instead whether the endpoint is reachable and
+checkable and whether the section prescribes implementation, which is a finding.
+<code>anchors_resolve</code> no longer requires claims to be cited: a reference is
+judged on resolution alone. In the design rubric, the reuse map is produced for
+the node brief and no finding asks the plan to name a module, function or file to
+extend. <code>skills/reckon-build/SKILL.md</code> and
+<code>skills/reckon-review/SKILL.md</code> state that the reuse map stays out of
+the plan.</p>
+
+<p id="a-plan-review-judges-the-endpoint-measure">The measure is
+<code>tests/test_a_plan_review_judges_the_endpoint.py</code>: it composes both
+briefs through the production composer for a temporary plan and asserts the
+clauses above, including that the base rubric's method checks are absent. Gate at
+<code>fbcdaf87</code>: 86 passed, <code>EXIT=0</code> (<code>gate-head.log</code>);
+base arm over the same resolved files, the new test absent from that tree: 79
+passed, <code>EXIT=0</code> (<code>gate-base.log</code>), both on
+<code>all_debug</code> with <code>-n 4</code>, one arm at a time.
+<code>tests/test_skill_contracts.py</code> adds no failure: 4 failed and 77 passed
+on both arms, with the same four ids at each (<code>skill-contracts-base.log</code>,
+<code>skill-contracts-head.log</code>), so
+<code>tests/test_plan_review_prompt.py</code> passes at head. Ruff check and ruff
+format --check are clean on the staged Python paths.</p>
+
+<p id="a-plan-review-judges-the-endpoint-population">The importer population — the
+222 test files that import <code>reckon.crew.review</code> — ran on
+<code>all_debug</code>, one arm at a time at <code>-n 4</code>: 58 failed and 1846
+passed at the repaired head <code>0aa99a19</code> against 57 failed and 1840
+passed at base <code>e0e37167</code> (<code>importers-head-fixed.log</code>,
+<code>importers-base.log</code>). Compared with the pre-fix head arm at
+<code>09e74ff7</code> (also 58 failed and 1846 passed,
+<code>importers-head.log</code>),
+<code>tests/test_crew.py::test_no_watch_dispatch_records_the_override_on_pointer_and_ledger</code>
+no longer appears among the failures. The id present in this run and in neither
+the base arm nor the pre-fix head arm,
+<code>tests/test_the_station_reads_only_what_changed.py::test_a_cleared_memo_yields_the_same_payload</code>,
+is not reproducible at either revision: as an isolated case it failed 0 of 10
+runs at head and 0 of 10 at base (<code>station-head.log</code>,
+<code>station-base.log</code>), and the whole file under the population's own
+<code>-n 4</code> failed 0 of 5 repeats at head and 0 of 5 at base
+(<code>station-parallel-head.log</code>,
+<code>station-parallel-base.log</code>). It is a cross-file parallel
+interference, not a regression this change introduces. The original flake was a promotion-time <q>pointer changed
+while promotion ran</q> race, and a crossover measurement placed it on this
+node's rubric text rather than on its code: head trees failed intermittently
+(7 of 21 runs), while base (<code>e0e37167</code>, 15 runs),
+<code>origin/main</code> (6 runs) and a head tree carrying the base revision's
+two rubric prompts (6 runs) did not fail once, and a base tree carrying only the
+head prompts failed twice in six.</p>
+
+<p id="a-plan-review-judges-the-endpoint-repair">That race is now removed at its
+source. The case stubbed <code>crew._spawn</code>, which the dispatch path never
+reaches because <code>dispatch()</code> runs with no launcher and its launch step
+calls <code>_start_supervisor</code>; the stub now patches that seam, so no
+supervisor process is started, and the case ends by asserting that the dispatch
+added no child. The child list comes from
+<code>dispatch_launch._inherited_child_pids</code>, which the launch path already
+reads through the kernel, and the children present before the call are recorded
+so only what this dispatch started is checked. Twenty isolated runs at
+<code>0aa99a19</code> on <code>all_debug</code> passed with zero failures
+(<code>crew-fixed20.log</code>), against the seven failures in 21 runs measured at
+<code>09e74ff7</code> and none in 15 at base (<code>e0e37167</code>), and ten more
+passed after the assertion was rewritten to reuse the helper
+(<code>1b521bc9da</code>, <code>crew-helper10.log</code>).</p>
+
+<p id="a-plan-review-judges-the-endpoint-mechanism">The mechanism is identified, and
+it is a defect in that test rather than in this node's change. The test means to
+substitute a launcher (<code>monkeypatch.setattr(crew, "_spawn", …)</code>,
+<code>tests/test_crew.py:1992</code>) but the stub is unreachable: <code>dispatch()</code>
+takes <code>launcher=None</code> and its launch step then calls
+<code>_start_supervisor</code>, which spawns a real detached
+<code>python -m reckon.crew.supervisor_main</code> process with parent pid 1. That
+supervisor is handed the composed brief as the worker's stdin and records
+<code>phase: starting → working</code> in the live pointer; promotion snapshots the
+pointer before landing and refuses when a compared field moves, so the
+supervisor's write lands inside the <code>dispatch</code> → <code>complete</code>
+window. The rubric's size moves the window because the brief is the worker's
+stdin. A three-second delay before the promotion check makes the collision
+certain and shows the single field that moves:
+<code>{"phase": ["starting", "working"]}</code>. Recorded in
+<code>mechanism.log</code> with <code>diag.log</code> beside it.</p>
+
+<p id="a-plan-review-judges-the-endpoint-control">Negative control: restoring the
+base revision's rubric text makes the content and design assertions fail — 4
+failed, incl. <code>test_content_brief_raises_prescribed_implementation_as_a_finding</code>
+and <code>test_design_brief_*</code>, <code>EXIT=1</code>
+(<code>negative-control-base-rubric.log</code>); the mutation was reverted and the
+file digests re-checked identical.</p>
+
+<p id="a-plan-review-judges-the-endpoint-evidence">Recorded evidence, not a gate:
+one content review of each of two fixture plans, composed by the production
+composer and run on the local lane (local release
+<code>deepseek-v4.1-flash</code> at the site router). The prescribing fixture — a
+function to extend, a call order and a helper to write — drew the implementation
+finding on <code>reasoning</code> (<q>the deliverable prescribes a code path, a
+step sequence and functions to extend and add</q>). The endpoint fixture — records,
+quantity, tolerance, independent reference and negative control — drew
+<code>RUBRIC reasoning: pass</code>; its one finding is that the negative control
+does not name the rule to restore. Logs:
+<code>fixture-review-prescribing-fixture.log</code> and
+<code>fixture-review-endpoint-fixture.log</code> under the run directory, each
+headed by its revision and command and ending in <code>EXIT=</code>.</p>
+
+<p id="a-plan-review-judges-the-endpoint-prompt-contract">The prompt-contract case
+that asserted the removed reasoning clauses is rewritten rather than dropped:
+<code>test_reasoning_check_asks_about_the_endpoint</code> asserts the three checks
+the content rubric now carries — the root cause matches the cited evidence, the
+endpoint is reachable and checkable, and a section prescribing implementation is
+a finding — and asserts the three method clauses absent. No other case in
+<code>tests/test_plan_review_prompt.py</code> changed.</p>
+</section>

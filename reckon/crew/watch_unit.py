@@ -5,6 +5,7 @@ import contextlib
 import fcntl
 import os
 import re
+import signal
 import shlex
 import shutil
 import socket
@@ -442,6 +443,95 @@ def announce_seat_moved(project: str, verdict: Mapping[str, Any]) -> None:
         return
 
 
+#: The event name a submission row carries. Its own kind, so a reader never
+#: mistakes a session being told its request started for a run's state change:
+#: the run's states come from the producer's fold, and this row is the admit
+#: pass speaking about the request it just submitted.
+SUBMISSION_EVENT = "submission"
+
+
+def submission_row(
+    pointer: Mapping[str, Any],
+    launched: Mapping[str, Any],
+    *,
+    advice: str = "",
+) -> dict[str, Any]:
+    """One watch row telling a session its queued request was submitted.
+
+    A coordinator queues many sections in one beat and the admit service
+    submits them as slots free, so the moment a request starts is news the
+    coordinator cannot see from the dispatch it made hours earlier. The row
+    names the run, the plan section, the lane and model it started on, the
+    advice it carried and the ``crew tell`` command that reaches the worker, so
+    the steering the coordinator has learned since queueing can be sent at
+    once rather than waiting for the next tick to announce the start.
+
+    The row is addressed to the request's own session, so a pane scoped to
+    another session never reads it. It states facts only: the sentence a person
+    reads is composed from them by whoever renders the row.
+    """
+    node = pointer.get("node")
+    node = node if isinstance(node, Mapping) else {}
+    launched_node = launched.get("node")
+    launched_node = launched_node if isinstance(launched_node, Mapping) else {}
+    agent = launched.get("agent")
+    agent = agent if isinstance(agent, Mapping) else {}
+    run_id = str(launched.get("run_id") or pointer.get("run_id") or "")
+    project = str(pointer.get("project") or launched.get("project") or "")
+    session = str(pointer.get("session") or launched.get("session") or "")
+    plan = str(node.get("plan") or launched_node.get("plan") or "")
+    section = str(node.get("section") or launched_node.get("section") or "")
+    lane = str(launched.get("lane") or pointer.get("backend") or "")
+    model = str(agent.get("model") or launched.get("model_key") or "")
+    effort = str(agent.get("effort") or "")
+    tell_command = f"reckon crew tell --run {run_id} '<message>'"
+    return {
+        "project": project,
+        "event": SUBMISSION_EVENT,
+        "kind": SUBMISSION_EVENT,
+        "observed_at": _utc_now(),
+        "run_id": run_id,
+        "node": str(node.get("id") or launched_node.get("id") or ""),
+        "session": session,
+        "plan": plan,
+        "section": section,
+        "lane": lane,
+        "model": model,
+        "effort": effort,
+        "advice": str(advice),
+        "tell_command": tell_command,
+        "detail": (
+            f"queued request submitted: run {run_id} "
+            f"({plan} §{section}) on lane {lane} model {model}; "
+            f"steer it with {tell_command}"
+        ),
+    }
+
+
+def announce_submission(
+    pointer: Mapping[str, Any],
+    launched: Mapping[str, Any],
+    *,
+    advice: str = "",
+) -> None:
+    """Append the submission row to the project's watch stream.
+
+    The launch has already happened by the time this is called, so a stream
+    that cannot be written costs the announcement rather than the launch. A
+    request whose pointer names no session has no reader to address, so it
+    writes no row; the launch itself is unaffected.
+    """
+    from reckon.crew import runs
+
+    try:
+        row = submission_row(pointer, launched, advice=advice)
+        if not row["project"] or not row["run_id"] or not row["session"]:
+            return
+        runs._append_watch_lines(watch_stream_path(row["project"]), [row])
+    except Exception:  # noqa: BLE001 - a row that cannot be written never blocks a launch
+        return
+
+
 def release_seat_when_misplaced(
     project: str,
     *,
@@ -750,6 +840,210 @@ def _unit_restart_readings(
     return rising, before, after
 
 
+# ── A seat whose holder produces nothing ────────────────────────────────────
+
+
+@dataclass(frozen=True)
+class SeatLockHolder:
+    """One process whose flock holds a watch lock, as the kernel reports it."""
+
+    pid: int
+    command: str
+
+
+def _lock_identity(path: Path) -> tuple[int, int, int] | None:
+    """The (device major, device minor, inode) a lock entry would name."""
+    try:
+        status = path.stat()
+    except OSError:
+        return None
+    return os.major(status.st_dev), os.minor(status.st_dev), status.st_ino
+
+
+def _command_line(pid: int) -> str:
+    """A process's command line, for the sentence a coordinator acts on.
+
+    Read through the fleet supervisor's own collector rather than a second copy
+    of the ``/proc/<pid>/cmdline`` parse, so a holder is described exactly as a
+    supervised process is, and there is one place that knows the format.
+    """
+    from reckon.crew.fleet_supervisor import process_cmdline
+
+    return " ".join(process_cmdline(pid) or ())
+
+
+def _lock_entry_pids(text: str, identity: tuple[int, int, int]) -> list[int]:
+    """Pids whose FLOCK entry names this device and inode.
+
+    ``/proc/locks`` carries one line per held lock, as ``<id>: FLOCK ADVISORY
+    WRITE <pid> <major>:<minor>:<inode> <start> <end>`` with the device in hex.
+    Only the kernel's lock table says who *holds* a lock, so a holder is chosen
+    from this and nothing else: an open descriptor says the file is reachable
+    by a process, not that the process took the lock.
+    """
+    major, minor, inode = identity
+    pids: list[int] = []
+    for line in text.splitlines():
+        fields = line.split()
+        if len(fields) < 6 or fields[1] != "FLOCK":
+            continue
+        target = fields[5].split(":")
+        if len(target) != 3:
+            continue
+        try:
+            entry = (int(target[0], 16), int(target[1], 16), int(target[2]))
+            pid = int(fields[4])
+        except ValueError:
+            continue
+        if entry == (major, minor, inode) and pid > 0 and pid not in pids:
+            pids.append(pid)
+    return pids
+
+
+def seat_lock_holders(
+    project: str, *, locks_path: Path | str = "/proc/locks"
+) -> list[SeatLockHolder]:
+    """The processes whose flock holds a project's watch lock.
+
+    Read from the kernel's lock table, never from ``/proc/<pid>/fd``: a process
+    that has the lock file open and released its flock, or never took one,
+    lists there exactly like the producer that holds the seat, and choosing a
+    pid to stop from that list would signal a reader.
+    """
+    identity = _lock_identity(watch_lock_path(project))
+    if identity is None:
+        return []
+    try:
+        text = Path(locks_path).read_text(encoding="utf-8", errors="replace")
+    except OSError:
+        return []
+    return [
+        SeatLockHolder(pid, _command_line(pid))
+        for pid in _lock_entry_pids(text, identity)
+    ]
+
+
+def _seat_is_held(project: str) -> bool:
+    """Whether another process holds the project's watch lock right now."""
+    path = watch_lock_path(project)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("a+b") as handle:
+        try:
+            fcntl.flock(handle.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except BlockingIOError:
+            return True
+    return False
+
+
+def _producer_snapshot_stale(project: str, registration: Mapping[str, Any]) -> bool:
+    """Whether a project's producer snapshot is stale past its bound.
+
+    A registration naming no producer is the absence a stale snapshot leaves
+    behind, so it reads stale. A registration naming a producer on another host
+    answers nothing from this one — its pid belongs to another kernel and its
+    lease lies on the shared home, judged there — so it is left to the reader
+    that can see it. Locally the
+    bound is the producer's own lease: its poll loop exits once the lease
+    lapses, so a lease a full interval behind its renewal names a producer that
+    should already have given the seat up.
+    """
+    from reckon.crew import runs
+
+    if not registration or not registration.get("pid"):
+        return True
+    host = str(registration.get("host") or "")
+    if host and host != socket.gethostname():
+        return False
+    return runs.watch_lease_lapsed(project)
+
+
+def _stop_seat_holder(holder: SeatLockHolder, *, project: str) -> list[str]:
+    """Stop one stale producer: SIGTERM, then SIGKILL once the window passes.
+
+    The contention window is the claim's own: it is how long a producer waits
+    for a seat another process is releasing, so a holder that has not let go
+    within it is not on its way out and is killed. The signals sent are
+    returned rather than only logged, so the caller reports what it did.
+
+    Delivery goes through ``signal_worker``, the crew's one home for
+    ``os.kill``: a holder named from the lock table is a pid from a scan, which
+    is exactly the target whose group membership that function refuses to
+    assume, and a second signalling path here would be a kill the attribution
+    scan could not see.
+    """
+    from reckon.crew import runs
+    from reckon.crew.process_signal import signal_worker
+
+    sent: list[str] = []
+    if not signal_worker(
+        holder.pid, signal.SIGTERM, reason="watch-seat-reclaim", project=project
+    ):
+        return sent
+    sent.append("SIGTERM")
+    deadline = time.monotonic() + runs._CLAIM_CONTENTION_SECONDS
+    while time.monotonic() < deadline:
+        if process_alive(holder.pid) is False:
+            return sent
+        time.sleep(0.05)
+    if signal_worker(
+        holder.pid, signal.SIGKILL, reason="watch-seat-reclaim", project=project
+    ):
+        sent.append("SIGKILL")
+    return sent
+
+
+def _reclaim_stale_seat(project: str) -> dict[str, Any] | None:
+    """Resolve a held seat whose producer is producing nothing.
+
+    ``None`` when there is nothing to act on: the seat is free, its producer
+    snapshot is fresh, or no holder could be resolved from the kernel's lock
+    table — the last because a stop chosen without an identified holder is a
+    guess about somebody else's process.
+
+    A holder that is this project's producer is reported stuck and stopped, so
+    the arming that follows takes a free seat. Any other holder is reported
+    under ``seat-held-by-non-producer`` and left alive: a process that is not
+    this project's producer is not this command's to kill.
+    """
+    from reckon.crew import runs
+
+    if not _seat_is_held(project):
+        return None
+    registration = runs.read_watch_registration(project)
+    if not _producer_snapshot_stale(project, registration):
+        return None
+    holders = seat_lock_holders(project)
+    if not holders:
+        return None
+    host = str(registration.get("host") or "")
+    local = not host or host == socket.gethostname()
+    try:
+        producer_pid = int(registration.get("pid") or 0)
+    except (TypeError, ValueError):
+        producer_pid = 0
+    producers = [h for h in holders if local and producer_pid and h.pid == producer_pid]
+    named = [{"pid": holder.pid, "command": holder.command} for holder in holders]
+    if not producers:
+        return {
+            "reason": "seat-held-by-non-producer",
+            "holders": named,
+            "stopped": [],
+        }
+    stopped = [
+        {
+            "pid": holder.pid,
+            "command": holder.command,
+            "signals": _stop_seat_holder(holder, project=project),
+        }
+        for holder in producers
+    ]
+    return {
+        "reason": "seat-held-by-stuck-producer",
+        "holders": named,
+        "stopped": stopped,
+    }
+
+
 def ensure_watcher_service(
     project: str,
     *,
@@ -820,6 +1114,43 @@ def ensure_watcher_service(
     content = render_watch_unit(project, environment=environment)
     path, changed = service_manager.write_unit(project, content)
 
+    # A held seat whose holder produces nothing is resolved before the unit is
+    # started, so the producer the start launches takes a free seat instead of
+    # colliding with the process it exists to replace.
+    seat = _reclaim_stale_seat(project)
+    if seat is not None and seat["reason"] == "seat-held-by-non-producer":
+        return {
+            "project": project,
+            "unit": watch_unit_name(project),
+            "unit_path": str(path),
+            "unit_changed": bool(changed),
+            "service_active": False,
+            "started": False,
+            "cycling": False,
+            "restart_count_before": None,
+            "restart_count_after": None,
+            "detail": (
+                f"the seat for {project} is held by a process that is not its "
+                "producer, so nothing was started and nothing was stopped: "
+                + ", ".join(
+                    f"pid {row['pid']} ({row['command'] or 'command line unreadable'})"
+                    for row in seat["holders"]
+                )
+            ),
+            "environment": environment,
+            "lingering": None,
+            "registration": {
+                "registered": False,
+                "reason": "seat-held-by-non-producer",
+                "holders": seat["holders"],
+            },
+            "watcher_live": watch_state(project)["watcher_live"],
+            "path": "none",
+            "fallback_reason": None,
+            "seat": seat,
+            "ensure_line": watcher_ensure_line(project),
+        }
+
     try:
         was_active = service_manager.active(project)
         # Lingering is settled before the unit starts, not after: a manager that
@@ -852,6 +1183,7 @@ def ensure_watcher_service(
                 environment=environment,
                 producer=producer or _arm_watcher_as_process,
                 cause=_LINGER_FALLBACK_CAUSE,
+                seat=seat,
             )
         if not _service_manager_unreachable(error):
             raise
@@ -862,6 +1194,7 @@ def ensure_watcher_service(
             unit_changed=bool(changed),
             environment=environment,
             producer=producer or _arm_watcher_as_process,
+            seat=seat,
         )
 
     cycling = False
@@ -893,6 +1226,15 @@ def ensure_watcher_service(
             f"{watch_unit_name(project)} is already active on an unchanged unit; "
             "started nothing"
         )
+    if seat is not None and seat["reason"] == "seat-held-by-stuck-producer":
+        detail += (
+            "; reclaimed the seat from a producer that was producing nothing: "
+            + ", ".join(
+                f"pid {row['pid']} ({row['command'] or 'command line unreadable'}"
+                f", {' then '.join(row['signals']) or 'already gone'})"
+                for row in seat["stopped"]
+            )
+        )
     return {
         "project": project,
         "unit": watch_unit_name(project),
@@ -912,6 +1254,7 @@ def ensure_watcher_service(
         # acts on a value instead of parsing a sentence out of ``detail``.
         "path": "service",
         "fallback_reason": None,
+        "seat": seat,
         "ensure_line": watcher_ensure_line(project),
     }
 
@@ -935,6 +1278,7 @@ def _watcher_armed_as_process(
     environment: Mapping[str, str],
     producer: Callable[[str], Mapping[str, Any]],
     cause: str = _SERVICE_UNREACHABLE_CAUSE,
+    seat: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Arm the watcher as a plain process after the service path was refused.
 
@@ -978,6 +1322,7 @@ def _watcher_armed_as_process(
         "watcher_live": live,
         "path": "fallback",
         "fallback_reason": reason,
+        "seat": seat,
         "ensure_line": watcher_ensure_line(project),
     }
 

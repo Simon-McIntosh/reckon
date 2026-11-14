@@ -1,0 +1,169 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_analysis": [
+    {
+      "assertions": "a reservation keyed on attempt 3 beside a worker record naming attempt 2 is still held, and a second reserve raises CrewError",
+      "fails_if": "the guard call at reckon/crew/recovery_liveness.py:1168 is removed: the run then reads as parked, held_launch_reservation returns None through dispatch_launch.py:2602, and both assertions redden. The comparison is against the production read, not against a value the test supplied, so it is independent of its input.",
+      "path": "tests/test_a_terminal_wait_probe_wakes_its_worker.py:253-257"
+    },
+    {
+      "assertions": "the station's own refresh stage really entered the monkeypatched publish, so the tick is blocking",
+      "fails_if": "run_station stops routing its per-project refresh through station_obligations.publish, or stops being driven; it is a harness-fidelity assertion rather than a guard on the landed behaviour.",
+      "path": "tests/test_a_terminal_wait_probe_wakes_its_worker.py:345"
+    },
+    {
+      "assertions": "the tick had not returned at the moment of the wake",
+      "fails_if": "ticker.is_alive() is False, that is run_station returned before the wake. The gate.is_set() operand cannot fail, because gate is set only in the finally at line 375.",
+      "path": "tests/test_a_terminal_wait_probe_wakes_its_worker.py:353"
+    },
+    {
+      "assertions": "the sweep offered a resume while the tick was held",
+      "fails_if": "no resume is recorded within the 30-second wall-clock drain; at the base revision this is the line that fails, as test-logs/negative-control.log records.",
+      "path": "tests/test_a_terminal_wait_probe_wakes_its_worker.py:356"
+    },
+    {
+      "assertions": "the wake arrived within 300 seconds of the run's injected clock after the probe turned terminal",
+      "fails_if": "the code under test needs more than thirty clock reads between the terminal write and the resume, which a tick-paced wake would. Both sides read the same counter, but their distance is set by how often the station's own threads call clock(), so the assertion tracks the code, though it measures latency in reads rather than in asserted run-clock minutes.",
+      "path": "tests/test_a_terminal_wait_probe_wakes_its_worker.py:361-362"
+    },
+    {
+      "assertions": "no station sweep raised during the case",
+      "fails_if": "resumption.sweep raises for any reason, which the wrapper records before re-raising.",
+      "path": "tests/test_a_terminal_wait_probe_wakes_its_worker.py:369"
+    }
+  ],
+  "call_sites": [
+    "reckon/crew/dispatch_launch.py:2540",
+    "reckon/crew/dispatch_launch.py:2602",
+    "reckon/crew/dispatch_launch.py:2742",
+    "reckon/crew/dispatch_launch.py:3821",
+    "reckon/crew/resumption.py:1370",
+    "reckon/crew/resumption.py:1525",
+    "reckon/crew/resumption.py:1920",
+    "reckon/crew/dispatching/launch.py:246"
+  ],
+  "completed_at": "2026-11-13T14:36:55.633Z",
+  "dimension_dispositions": {
+    "reuse": {
+      "kind": "folded",
+      "node": "repair-of-a-terminal-wait-probe-wakes-its-worker-within-minutes-3dc3f09f137a",
+      "recorded_at": "2026-11-13T15:00:16.975918+00:00"
+    }
+  },
+  "dispatched_at": "2026-11-13T14:14:42Z",
+  "findings": [
+    {
+      "file": "reckon/crew/recovery_liveness.py",
+      "line": "1173",
+      "severity": "non-blocking",
+      "summary": "`_latest_reservation` and `_attempt_number` re-implement the reservation-file enumeration, name parse and safe read that reckon/crew/dispatch_launch.py already owns.",
+      "text": "non-blocking: the new pair globs `attempt-*.reservation`, pulls the attempt out of the file name with a manual split, and reads each payload with its own json.loads plus Mapping check. dispatch_launch owns those three steps for the same file family, at `_reservation_taken_by_this_process` (dispatch_launch.py:2376), `_RESERVATION_PATTERN` (:2262) and `_read_reservation` (:2416), and recovery_liveness already imports dispatch_launch lazily in the other direction (recovery_liveness.py:659), so the owner was reachable. The addition duplicates rather than extends the owner, so two name parsers now have to agree on what an `attempt-N.reservation` file is."
+    },
+    {
+      "file": "reckon/crew/recovery_liveness.py",
+      "line": "1237",
+      "severity": "non-blocking",
+      "summary": "`_seconds_from_stamp` re-implements `reckon._timestamps.parse_utc`, which this module already imports at recovery_liveness.py:12 and uses at :506.",
+      "text": "non-blocking: the new helper parses an ISO timestamp with `datetime.fromisoformat` and returns epoch seconds, which is what `parse_utc` does for this module (reckon/_timestamps.py:36), including a Z suffix, a numeric offset and a bare ISO string. The module imports it at line 12 and calls it at :506, so the owner is in hand and this forks it; the two also disagree on breadth, since parse_utc accepts a numeric epoch and `_seconds_from_stamp` refuses every non-string."
+    },
+    {
+      "file": "tests/test_a_terminal_wait_probe_wakes_its_worker.py",
+      "line": "353",
+      "severity": "non-blocking",
+      "summary": "The `gate.is_set() is False` operand is inert, because nothing sets `gate` before the finally block, so it cannot fail and cannot detect a tick that already returned.",
+      "text": "non-blocking: `gate` is set only by the case's own finally at line 375, so at line 353 that operand is False whatever the station does, and the claim that the tick was still held when the wake happened rests on `ticker.is_alive()` alone. The shape was recorded for `held_tick` at line 272 in the earlier review of this file and is now half-repaired: `gate` is genuinely read by the monkeypatched `station_obligations.publish`, so the tick really does block, but the operand that names the hold is still vacuous and would pass a tick that `gate.wait(timeout=60)` had already released."
+    },
+    {
+      "file": "tests/test_a_terminal_wait_probe_wakes_its_worker.py",
+      "line": "333",
+      "severity": "non-blocking",
+      "summary": "The half-hour length of the tick hold is asserted nowhere in run-clock terms, although the manifest and the fragment both state it; the injected clock advances only when read, so CLOCK_STEP_SECONDS alone fixes no span.",
+      "text": "non-blocking: `clock()` and `now_of_run_clock()` both advance one itertools.count, so a virtual second passes only when some thread reads the clock, and the total virtual span of the hold is a function of how often the station happens to read it. The case does prove the fact that matters, that the tick had not returned while the wake happened, but the manifest's 'the station's clock is injected so the case can hold the tick for thirty minutes of the run's own time' and the fragment's 'half an hour of the run's own time' are claims no assertion in the case measures."
+    }
+  ],
+  "gate_evidence": {
+    "after_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_terminal_wait_probe_wakes_its_worker.py tests/test_staged_write_inventory.py",
+      "exit_status": 0,
+      "failures": 0,
+      "log_path": "test-logs/after-arm.log",
+      "passed": 55,
+      "revision": "35b74118419c21de1a1dd80f0e3a8863f602afdb"
+    },
+    "baseline_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py",
+      "exit_status": 0,
+      "failures": 0,
+      "log_path": "test-logs/base-arm.log",
+      "passed": 51,
+      "revision": "d788950ae4bb450757b59c56b4d5cb6524edcc2f"
+    },
+    "negative_control": {
+      "exit_status": 1,
+      "failure_ids": [
+        "tests/test_a_terminal_wait_probe_wakes_its_worker.py::test_a_parked_worker_frees_the_reservation_its_idle_supervisor_holds",
+        "tests/test_a_terminal_wait_probe_wakes_its_worker.py::test_a_terminal_probe_wakes_its_worker_while_the_tick_is_held"
+      ],
+      "failures": 2,
+      "log_path": "test-logs/negative-control.log",
+      "passed": 2,
+      "revision": "d788950ae4bb450757b59c56b4d5cb6524edcc2f"
+    },
+    "related_arms": {
+      "base": {
+        "exit_status": 1,
+        "failures": 2,
+        "log_path": "test-logs/related-base-arm.log",
+        "passed": 39
+      },
+      "head": {
+        "exit_status": 1,
+        "failures": 2,
+        "log_path": "test-logs/related-arm.log",
+        "passed": 39
+      }
+    }
+  },
+  "importer_delta": "none: the changed modules add private readers in recovery_liveness and no public surface, and no importer outside the reviewed diff changes.",
+  "item_verdicts": [
+    "VERDICT goal: the source node's goal is that a worker parked on a wait probe reporting a declared terminal state is resumed within five minutes, and that an idle supervisor beside it does not refuse that resume; the landed diff protects that reading rather than narrowing it, because reckon/crew/recovery_liveness.py:1168 now refuses the parked reading while a reservation outruns the run's worker record, so the wake the goal names stays open against a second door taking the run in the gap between a resume being admitted and its worker record landing.",
+    "VERDICT done_when: the done_when names tests/test_a_terminal_wait_probe_wakes_its_worker.py, a five-minute bound on the run's own clock under a held station tick, a resume admitted while the worker is parked, a running worker still refused, and a base-revision negative control; the manifest records four cases and five gate logs, test-logs/after-arm.log closes '55 passed in 14.19s' then 'EXIT=0', and test-logs/negative-control.log closes '2 failed, 2 passed in 31.45s' then 'EXIT=1', so the measure is recorded rather than claimed. The fence pair (test-logs/base-arm.log, test-logs/after-arm.log) runs tests/test_staged_write_inventory.py, which asserts nothing about the changed modules, so the done_when's 'test files importing the changed modules add no failure against base' clause rests on test-logs/related-base-arm.log and test-logs/related-arm.log instead, which carry the same 2 failures and 39 passes on both sides.",
+    "VERDICT write_paths: the node declared reckon/crew/recovery_wait.py, reckon/crew/resumption.py, reckon/crew/recovery_liveness.py, reckon/crew/dispatch_launch.py, tests/test_a_terminal_wait_probe_wakes_its_worker.py, the run's fragment and a figures directory; the reviewed diff touches only reckon/crew/recovery_liveness.py, reckon/crew/dispatch_launch.py, the test file and the fragment, all inside that set, with the two unused waiting paths left untouched.",
+    "VERDICT manifest: read in full at the reviewed run's directory; it reports status complete, three commits, four cases, five log paths, base d788950a and the code head at 35b74118, names the declared negative control with its two failing ids, records the archive-tree retry under retry_failures, and its 51-passed base arm against 55-passed head arm reconcile with the two logs cited.",
+    "VERDICT diff: read commit by commit from reviewed_base_sha f6afb5ab1c7e to reviewed_head_sha 3dc3f09f137a; 35b7411841 adds the reservation window at recovery_liveness.py:1158 and :1168 with its helpers at :1173-1245 and rewrites the dispatch_launch.py:2517-2527 comment from incident prose to mechanism, and 3dc3f09f137a updates the fragment's what-changed, gate, negative-control and commits sections. Four files, +278/-96, nothing outside the declared scope and nothing the goal does not imply."
+  ],
+  "justifications": [
+    "SCORE goal_fidelity: 18",
+    "JUSTIFICATION goal_fidelity: reckon/crew/recovery_liveness.py:1168 returns parked only while the newest reservation does not outrun the worker record, and dispatch_launch.py:2540 consumes that reading, which is the wake the goal names with the pre-landing window closed.",
+    "SCORE evidence: 14",
+    "JUSTIFICATION evidence: test-logs/after-arm.log and test-logs/negative-control.log record their counts and bare EXIT lines, but the fence base arm at test-logs/base-arm.log runs only tests/test_staged_write_inventory.py and so measures the inventory rather than the changed modules.",
+    "SCORE scope_discipline: 19",
+    "JUSTIFICATION scope_discipline: the four files in the diff, including the fragment at docs/evidence/fragments/a-dispatch-returns-without-its-worker/, are all inside the manifest's declared write paths.",
+    "SCORE durability: 16",
+    "JUSTIFICATION durability: tests/test_a_terminal_wait_probe_wakes_its_worker.py:253-257 reddens if the guard call at recovery_liveness.py:1168 is removed, because the run then reads as parked and held_launch_reservation returns None, but the second operand of the assertion at :353 cannot fail and the stamp fallback at recovery_liveness.py:1229-1245 is exercised by no case.",
+    "SCORE fit: 17",
+    "JUSTIFICATION fit: the new helpers follow the module's private-helper idiom and docstring style at recovery_liveness.py:1173-1245 and carry no plan, sprint or ticket identifier.",
+    "SCORE reuse: 5",
+    "JUSTIFICATION reuse: recovery_liveness.py:1237 duplicates reckon._timestamps.parse_utc, imported at recovery_liveness.py:12, and recovery_liveness.py:1173 and :1193 duplicate dispatch_launch.py:2262, :2376 and :2416, so two added definitions re-implement capabilities the repository already owns."
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the source node's goal is that a worker parked on a wait probe reporting a declared terminal state is resumed within five minutes, and that an idle supervisor beside it does not refuse that resume; the landed diff protects that reading rather than narrowing it, because reckon/crew/recovery_liveness.py:1168 now refuses the parked reading while a reservation outruns the run's worker record, so the wake the goal names stays open against a second door taking the run in the gap between a resume being admitted and its worker record landing.\nVERDICT done_when: the done_when names tests/test_a_terminal_wait_probe_wakes_its_worker.py, a five-minute bound on the run's own clock under a held station tick, a resume admitted while the worker is parked, a running worker still refused, and a base-revision negative control; the manifest records four cases and five gate logs, test-logs/after-arm.log closes '55 passed in 14.19s' then 'EXIT=0', and test-logs/negative-control.log closes '2 failed, 2 passed in 31.45s' then 'EXIT=1', so the measure is recorded rather than claimed. The fence pair (test-logs/base-arm.log, test-logs/after-arm.log) runs tests/test_staged_write_inventory.py, which asserts nothing about the changed modules, so the done_when's 'test files importing the changed modules add no failure against base' clause rests on test-logs/related-base-arm.log and test-logs/related-arm.log instead, which carry the same 2 failures and 39 passes on both sides.\nVERDICT write_paths: the node declared reckon/crew/recovery_wait.py, reckon/crew/resumption.py, reckon/crew/recovery_liveness.py, reckon/crew/dispatch_launch.py, tests/test_a_terminal_wait_probe_wakes_its_worker.py, the run's fragment and a figures directory; the reviewed diff touches only reckon/crew/recovery_liveness.py, reckon/crew/dispatch_launch.py, the test file and the fragment, all inside that set, with the two unused waiting paths left untouched.\nVERDICT manifest: read in full at the reviewed run's directory; it reports status complete, three commits, four cases, five log paths, base d788950a and the code head at 35b74118, names the declared negative control with its two failing ids, records the archive-tree retry under retry_failures, and its 51-passed base arm against 55-passed head arm reconcile with the two logs cited.\nVERDICT diff: read commit by commit from reviewed_base_sha f6afb5ab1c7e to reviewed_head_sha 3dc3f09f137a; 35b7411841 adds the reservation window at recovery_liveness.py:1158 and :1168 with its helpers at :1173-1245 and rewrites the dispatch_launch.py:2517-2527 comment from incident prose to mechanism, and 3dc3f09f137a updates the fragment's what-changed, gate, negative-control and commits sections. Four files, +278/-96, nothing outside the declared scope and nothing the goal does not imply.\nCALL_SITES: reckon/crew/dispatch_launch.py:2540, reckon/crew/dispatch_launch.py:2602, reckon/crew/dispatch_launch.py:2742, reckon/crew/dispatch_launch.py:3821, reckon/crew/resumption.py:1370, reckon/crew/resumption.py:1525, reckon/crew/resumption.py:1920, reckon/crew/dispatching/launch.py:246\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/recovery_liveness.py:1168 returns parked only while the newest reservation does not outrun the worker record, and dispatch_launch.py:2540 consumes that reading, which is the wake the goal names with the pre-landing window closed.\nSCORE evidence: 14\nJUSTIFICATION evidence: test-logs/after-arm.log and test-logs/negative-control.log record their counts and bare EXIT lines, but the fence base arm at test-logs/base-arm.log runs only tests/test_staged_write_inventory.py and so measures the inventory rather than the changed modules.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: the four files in the diff, including the fragment at docs/evidence/fragments/a-dispatch-returns-without-its-worker/, are all inside the manifest's declared write paths.\nSCORE durability: 16\nJUSTIFICATION durability: tests/test_a_terminal_wait_probe_wakes_its_worker.py:253-257 reddens if the guard call at recovery_liveness.py:1168 is removed, because the run then reads as parked and held_launch_reservation returns None, but the second operand of the assertion at :353 cannot fail and the stamp fallback at recovery_liveness.py:1229-1245 is exercised by no case.\nSCORE fit: 17\nJUSTIFICATION fit: the new helpers follow the module's private-helper idiom and docstring style at recovery_liveness.py:1173-1245 and carry no plan, sprint or ticket identifier.\nSCORE reuse: 5\nJUSTIFICATION reuse: recovery_liveness.py:1237 duplicates reckon._timestamps.parse_utc, imported at recovery_liveness.py:12, and recovery_liveness.py:1173 and :1193 duplicate dispatch_launch.py:2262, :2376 and :2416, so two added definitions re-implement capabilities the repository already owns.\nFINDING reckon/crew/recovery_liveness.py:1173 non-blocking: the new pair globs `attempt-*.reservation`, pulls the attempt out of the file name with a manual split, and reads each payload with its own json.loads plus Mapping check. dispatch_launch owns those three steps for the same file family, at `_reservation_taken_by_this_process` (dispatch_launch.py:2376), `_RESERVATION_PATTERN` (:2262) and `_read_reservation` (:2416), and recovery_liveness already imports dispatch_launch lazily in the other direction (recovery_liveness.py:659), so the owner was reachable. The addition duplicates rather than extends the owner, so two name parsers now have to agree on what an `attempt-N.reservation` file is.\nFINDING reckon/crew/recovery_liveness.py:1237 non-blocking: the new helper parses an ISO timestamp with `datetime.fromisoformat` and returns epoch seconds, which is what `parse_utc` does for this module (reckon/_timestamps.py:36), including a Z suffix, a numeric offset and a bare ISO string. The module imports it at line 12 and calls it at :506, so the owner is in hand and this forks it; the two also disagree on breadth, since parse_utc accepts a numeric epoch and `_seconds_from_stamp` refuses every non-string.\nFINDING tests/test_a_terminal_wait_probe_wakes_its_worker.py:353 non-blocking: `gate` is set only by the case's own finally at line 375, so at line 353 that operand is False whatever the station does, and the claim that the tick was still held when the wake happened rests on `ticker.is_alive()` alone. The shape was recorded for `held_tick` at line 272 in the earlier review of this file and is now half-repaired: `gate` is genuinely read by the monkeypatched `station_obligations.publish`, so the tick really does block, but the operand that names the hold is still vacuous and would pass a tick that `gate.wait(timeout=60)` had already released.\nFINDING tests/test_a_terminal_wait_probe_wakes_its_worker.py:333 non-blocking: `clock()` and `now_of_run_clock()` both advance one itertools.count, so a virtual second passes only when some thread reads the clock, and the total virtual span of the hold is a function of how often the station happens to read it. The case does prove the fact that matters, that the tick had not returned while the wake happened, but the manifest's 'the station's clock is injected so the case can hold the tick for thirty minutes of the run's own time' and the fragment's 'half an hour of the run's own time' are claims no assertion in the case measures.",
+  "reproduction_quote": "AssertionError: a parked worker's idle supervisor still held the reservation (test-logs/negative-control.log, base d788950a)",
+  "review_run_id": "r-20261113T141225345121-review-of-a-terminal-wait-probe-wakes-its-worker-within-minutes-3dc3f09f137a",
+  "reviewed_base_sha": "f6afb5ab1c7e356a41b79a802852edd770a78cb4",
+  "reviewed_head_sha": "3dc3f09f137a721f27a128301c590b42a6361843",
+  "reviewed_run_id": "r-20261113T120248596761-a-terminal-wait-probe-wakes-its-worker-within-minutes",
+  "scores": {
+    "durability": 16,
+    "evidence": 14,
+    "fit": 17,
+    "goal_fidelity": 18,
+    "reuse": 5,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-13T14:41:59.369972+00:00",
+  "total": 89
+}

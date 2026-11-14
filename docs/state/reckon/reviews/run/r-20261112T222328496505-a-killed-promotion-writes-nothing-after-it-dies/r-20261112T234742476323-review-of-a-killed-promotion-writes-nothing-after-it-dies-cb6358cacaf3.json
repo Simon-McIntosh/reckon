@@ -1,0 +1,80 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own arms: baseline_suite (rev ec87744c, tests/test_staged_write_inventory.py) records failure_count 0 with failure_ids [], and after_suite (rev 3c9c4195, same file) records failure_count 0 with failure_ids []; the set difference is empty.",
+  "base_log_revision": "ec87744c0977eea94f4d463fb65c9481bc71e7ef",
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/crew_run_commands.py:3642 (crew complete calls promotion.complete)",
+    "reckon/crew/recovery_review_acceptance.py:606 (review acceptance calls promotion.complete)",
+    "reckon/crew/recovery_review_acceptance.py:764 (review acceptance calls promotion.complete)",
+    "reckon/crew/promotion.py:821 (complete calls _complete_locked inside _promotion_host_lease)",
+    "reckon/crew/queue_landing.py:1882 (the queue's landing sweep runs pending_landing.finish_pending_landings)"
+  ],
+  "completed_at": "2026-11-13T00:02:53.523Z",
+  "dimension_dispositions": {
+    "reuse": {
+      "kind": "folded",
+      "node": "a-killed-promotion-writes-nothing-after-it-dies",
+      "recorded_at": "2026-11-13T00:41:10.268360+00:00"
+    }
+  },
+  "dispatched_at": "2026-11-12T23:50:13Z",
+  "findings": [
+    {
+      "file": "reckon/crew/promotion.py",
+      "line": "180",
+      "severity": "non-blocking",
+      "text": "non-blocking: _install_stop_handler and _restore_stop_handler duplicate reckon/serve.py:4233-4259, which already owns installing a SIGTERM handler and restoring the one it displaced, with the same main-thread and hasattr(signal, 'SIGTERM') guards, the same suppress(ValueError, TypeError) and near-identical docstrings; only the handler body differs, so the install/restore scaffolding should be one shared helper taking the handler or serve.py's pair should be generalised rather than a second copy added pending a clone check."
+    },
+    {
+      "file": "manifest.md",
+      "line": "24",
+      "severity": "non-blocking",
+      "text": "non-blocking: the manifest's artifacts line and negative_control_note cite gate/base-arm.log as the red base measurement (6 failed / 3 passed, EXIT=1), and no such file exists under the run's gate directory (that directory holds only node-gate.log, after-suite.log, baseline-suite.log and the two scripts); the section requires every log under the run directory starting with its revision and literal command and ending in EXIT=, so the node's own negative control is the one measurement a reader cannot open. I reproduced 6 failed / 3 passed, EXIT=1 against base ec87744c with the lease named at all three boundaries, so the fact holds and only the record is missing."
+    },
+    {
+      "file": "manifest.md",
+      "line": "20",
+      "severity": "non-blocking",
+      "text": "non-blocking: the armed suite pair runs tests/test_staged_write_inventory.py in both arms, and that file imports only reckon.interface_counts (tests/test_staged_write_inventory.py:11), reaching neither reckon.crew.promotion nor anything the change adds, so the 51-passed pair answers the done-when's 'test files importing the changed modules add no failure' with a file that does not import the changed module; the fence instanced that command, so this is an arming defect rather than the worker's substitution, but the clause is still unmet, and zero added failures is reported from an arm that could not have failed."
+    },
+    {
+      "file": "reckon/crew/promotion.py",
+      "line": "163",
+      "severity": "non-blocking",
+      "text": "non-blocking: plan section 8 makes product change conditional \u2014 'If the base shows no write after exit at any of them, the node records that measurement and changes no product code' \u2014 and the node's own measurement is that the base writes nothing after exit at all three boundaries; the fragment restates this as 'no process-reaping code was added' and then adds _PromotionStopped, the stop handler and three boundary checks, which is a real measured defect repaired (a killed promotion refusing its own retry for the 30 s stale window) but is a deviation from the section's explicit conditional that the manifest neither records under outside_scope nor flags as a decision for the coordinator."
+    }
+  ],
+  "head_log_revision": "cb6358cacaf3138b23bf53d688ab80835f47e625",
+  "justifications": {
+    "durability": "At the base revision the same test file is 6 failed / 3 passed (reproduced here), five of the six naming the surviving lease, so reverting the release or the boundary stop reddens tests/test_a_killed_promotion_writes_nothing_after_it_dies.py:443; the 3 cases that pass either side are disclosed as boundary-reached controls rather than guards.",
+    "evidence": "The head arm gate/node-gate.log reads 9 passed EXIT=0 at 3c9c4195 and I reproduced it (9 passed, EXIT=0); the base arm the landing relies on is cited as gate/base-arm.log but no such file exists in the run directory, so the 6-failed/3-passed figure is a claim in the manifest until reproduced; ruff check and ruff format --check on reckon/crew/promotion.py and the new test at cb6358ca return CHECK=0 and FMT=0, which no log in the run records.",
+    "fit": "reckon/crew/promotion.py:163-212 follows the module's private-helper and docstring idiom and carries no plan, ticket or version identifier in any added name or comment.",
+    "goal_fidelity": "reckon/crew/promotion.py:2067, :2090 and :2100 place a stop check before the promotion commit, the release and the release record, so a SIGTERM'd promotion finishes its stage and exits; but plan section 8 makes the product change conditional on the base showing a write after exit, and the base showed none (docs/evidence/fragments/a-landing-never-waits-on-a-shared-index/a-killed-promotion-writes-nothing-after-it-dies.html, 'it does not'), so 65 lines of product code land where the section said to land none.",
+    "reuse": "reckon/crew/promotion.py:180-199 re-implements reckon/serve.py:4233-4259 (_install_termination_unwind / _remove_termination_unwind) with identical guard clauses, the same contextlib.suppress(ValueError, TypeError) and near-identical docstrings, without extending or wrapping the owner.",
+    "scope_discipline": "The diff touches only reckon/crew/promotion.py, tests/test_a_killed_promotion_writes_nothing_after_it_dies.py and the section's fragment, all inside the declared write paths; reckon/crew/runs.py and the figures path granted are untouched."
+  },
+  "project": "reckon",
+  "review_node": "review-of-a-killed-promotion-writes-nothing-after-it-dies-cb6358cacaf3",
+  "review_run_id": "r-20261112T234742476323-review-of-a-killed-promotion-writes-nothing-after-it-dies-cb6358cacaf3",
+  "review_text": "VERDICT goal: the node's goal is that a killed promotion writes nothing after it dies, at reckon/crew/promotion.py:2067-2100 the promotion now stops at its next stage boundary and releases its claim, so the goal holds and additionally fixes the lease that refused the retry.\nVERDICT done_when: the done_when names three boundaries, the base measurement first, the importing-test arm, and ruff; gate/node-gate.log records 9 passed EXIT=0, the base figure is cited to a gate/base-arm.log that does not exist, the suite pair runs a file that does not import the changed module, and no log records ruff (I ran it: CHECK=0, FMT=0).\nVERDICT write_paths: read the manifest's declared paths reckon/crew/promotion.py, reckon/crew/runs.py, tests/ and the section's fragment; every path in the diff is inside them and reckon/crew/runs.py is untouched.\nVERDICT manifest: read; it records status complete, the head gate as 9 passed, the suite pair as 51 passed either side, and cites gate/base-arm.log for the red arm, which is not on disk.\nVERDICT diff: read both commits against ec87744c; 3c9c4195 adds 65 lines to reckon/crew/promotion.py and a 448-line test, cb6358ca adds the 31-line evidence fragment, and nothing else changed.\nCALL_SITES: reckon/crew_run_commands.py:3642, reckon/crew/recovery_review_acceptance.py:606, reckon/crew/recovery_review_acceptance.py:764, reckon/crew/promotion.py:821, reckon/crew/queue_landing.py:1882\nSCORE goal_fidelity: 15\nJUSTIFICATION goal_fidelity: reckon/crew/promotion.py:2067 stops the promotion before the commit, the release and the release record, which delivers the stop-and-release behaviour; but plan section 8 conditions any product change on the base showing a write after exit and the base showed none, so the change departs from the section's instruction while fixing a real adjacent defect.\nSCORE evidence: 12\nJUSTIFICATION evidence: gate/node-gate.log records 9 passed EXIT=0 and I reproduced it, while the base arm rests on a cited gate/base-arm.log that is absent from disk (I reproduced 6 failed / 3 passed independently) and no log records the ruff check the done-when names.\nSCORE scope_discipline: 18\nJUSTIFICATION scope_discipline: the test file the node adds is the one real fixture, the production edit is confined to reckon/crew/promotion.py, and reckon/crew/runs.py and docs/figures/ were granted but not touched.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_a_killed_promotion_writes_nothing_after_it_dies.py:443 asserts the lease is gone after each boundary kill, which reddens whenever the boundary stop or the lease release is reverted, and at base the same file is 6 failed / 3 passed.\nSCORE fit: 17\nJUSTIFICATION fit: reckon/crew/promotion.py:163-212 matches the module's private-helper and docstring idiom and adds no plan, ticket or version identifier.\nSCORE reuse: 5\nJUSTIFICATION reuse: reckon/crew/promotion.py:180-199 duplicates the SIGTERM install/restore pair reckon/serve.py:4233-4259 already owns, copying its guards, its suppress call and its docstring wording rather than extending the owner.\nFINDING reckon/crew/promotion.py:180 non-blocking: _install_stop_handler and _restore_stop_handler duplicate the SIGTERM install/restore pair at reckon/serve.py:4233-4259 without extending it.\nFINDING manifest.md:24 non-blocking: the cited red base log gate/base-arm.log does not exist under the run directory.\nFINDING manifest.md:20 non-blocking: the armed suite pair runs tests/test_staged_write_inventory.py, which imports only reckon.interface_counts and reaches nothing the change adds.\nFINDING reckon/crew/promotion.py:163 non-blocking: the section conditions product change on the base showing a write after exit, and the base showed none, so the added stop machinery is an undisclosed deviation.\n",
+  "reviewed_base_sha": "ec87744c0977eea94f4d463fb65c9481bc71e7ef",
+  "reviewed_head_sha": "cb6358cacaf3138b23bf53d688ab80835f47e625",
+  "reviewed_run_id": "r-20261112T222328496505-a-killed-promotion-writes-nothing-after-it-dies",
+  "reviewer_run_id": "r-20261112T234742476323-review-of-a-killed-promotion-writes-nothing-after-it-dies-cb6358cacaf3",
+  "scores": {
+    "durability": 19,
+    "evidence": 12,
+    "fit": 17,
+    "goal_fidelity": 15,
+    "reuse": 5,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-13T01:31:39.944456+00:00",
+  "total": 86
+}

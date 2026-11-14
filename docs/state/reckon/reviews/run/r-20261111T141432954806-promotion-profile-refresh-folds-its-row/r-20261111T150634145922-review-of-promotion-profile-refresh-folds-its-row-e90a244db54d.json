@@ -1,0 +1,146 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_analysis": [
+    {
+      "fails_if": "The initial full build omits a historical row or the decode instrument misses known full payloads; row count 50 and at least 50 decodes are independent constants.",
+      "lines": "87-88"
+    },
+    {
+      "fails_if": "Restoring the base rebuild decodes 51 full payloads; omitting the append yields fewer than 51 returned/persisted/group rows; corrupt sample aggregation changes the independently known median of 26.",
+      "lines": "97-100"
+    },
+    {
+      "fails_if": "Removing the authoritative fallback restores base rows=50; failure to reach the refused-index last-good path produces a zero call count.",
+      "lines": "115-116"
+    },
+    {
+      "fails_if": "Removing missing/corrupt/mismatched entry fallback skips the required single full build, misses at least 51 observed full decodes or omits the new row.",
+      "lines": "135-137"
+    },
+    {
+      "fails_if": "Dropping future samples prematurely, retaining expired samples or miscomputing fold statistics diverges from an independent full run_time_profile read of the authoritative ledger at the same time.",
+      "lines": "153,157"
+    },
+    {
+      "fails_if": "Accepting rewritten/deleted/aggregate-moved history skips the single rebuild or disagrees with a subsequent full ledger-derived profile.",
+      "lines": "178,180"
+    },
+    {
+      "fails_if": "The fold omits the append or publishes after a generation change; removing the generation publication check changes cache bytes saved before the append.",
+      "lines": "197-198"
+    }
+  ],
+  "assertion_independence": "No added assertion compares output solely with a value supplied by that same output; literal counts/median, known positive decoding, full ledger rebuilds, mock call counts and pre-operation cache bytes supply independent expectations.",
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew/promotion.py:1887 (_complete_locked)",
+    "reckon/crew/picker/lane_context.py:794 (_cached_run_time_profile consuming the persisted profile)"
+  ],
+  "completed_at": "2026-11-11T15:26:16Z",
+  "dimension_dispositions": {
+    "reuse": {
+      "kind": "folded",
+      "node": "promotion-profile-refresh-folds-its-row",
+      "recorded_at": "2026-11-11T15:49:32.205245+00:00"
+    }
+  },
+  "dispatched_at": "2026-11-11T15:12:02Z",
+  "failure_delta_evidence": {
+    "after_log_failure_ids": [],
+    "after_suite": {
+      "command": "PYTHONPATH=/tmp/profile-arms-1310628-a8vg/head-bn1noky0 /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q /tmp/profile-arms-1310628-a8vg/head-bn1noky0/tests/test_a_promotion_profile_refresh_costs_its_row.py /tmp/profile-arms-1310628-a8vg/head-bn1noky0/tests/test_staged_write_inventory.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261111T141432954806-promotion-profile-refresh-folds-its-row/armed-head-final.log",
+      "revision": "e90a244db54d5206d24062dc98b930403bf6bbfc"
+    },
+    "baseline_log_failure_ids": [],
+    "baseline_suite": {
+      "command": "PYTHONPATH=/tmp/profile-arms-1310619-Rm0b/base-2tpiek0j /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q /tmp/profile-arms-1310619-Rm0b/base-2tpiek0j/tests/test_staged_write_inventory.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261111T141432954806-promotion-profile-refresh-folds-its-row/armed-base.log",
+      "revision": "b5801e8feb89a3caf0a513dfc8204fa6cd4e0a84"
+    }
+  },
+  "finding_dispositions": {
+    "0": {
+      "kind": "folded",
+      "node": "promotion-profile-refresh-folds-its-row",
+      "recorded_at": "2026-11-11T15:49:47.146894+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "reckon/crew/picker/lane_context.py",
+      "line": "867",
+      "severity": "non-blocking",
+      "text": "non-blocking: _profile_from_inputs duplicates the trailing-window filtering and profile result structure owned by reckon/crew/run_time_profile.py:339-377 rather than extending that owner; the equality tests establish current agreement, but later changes to the window or result fields must now update both implementations."
+    }
+  ],
+  "importer_delta_evidence": {
+    "added_failure_ids": [],
+    "baseline_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261111T141432954806-promotion-profile-refresh-folds-its-row/importers-base.log",
+    "head_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261111T141432954806-promotion-profile-refresh-folds-its-row/importers-head-repaired.log",
+    "head_revision": "7313b107abafb3cdc612b25f92bd4e02043044dc",
+    "head_to_reviewed_head": "Only the evidence fragment changes after the importer head; no runtime or test delta."
+  },
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "Read 13815627d731579de31e969c793bf305ea172b4b, e9e7e6b97945aa25ac2005fda7ed9a7dc11f57ca, 7313b107abafb3cdc612b25f92bd4e02043044dc and e90a244db54d5206d24062dc98b930403bf6bbfc against b5801e8feb89a3caf0a513dfc8204fa6cd4e0a84; the test, incremental refresh, partial-builder repair and evidence fragment match the deliverable.",
+    "done_when": "prompt.txt:125 requires zero full payload decodes, 51 persisted rows and fallback builds; negative-control.log records 51 decodes and the stale 50-row case, armed-head-final.log records 62 passed, and matched all_debug importer logs record no added failure.",
+    "goal": "The source goal in prompt.txt:38 is to fold the promoted row into the stored run-time profile; reckon/crew/picker/lane_context.py:921-942 implements the fold and authoritative fallback.",
+    "manifest": "manifest.md:19-23 names readable base/head receipts, the reproduction and importer results, which agree with armed-base.log, armed-head-final.log and importers-head-repaired.log.",
+    "write_paths": "prompt.txt:81-84 declares lane_context.py, the new test and the evidence/figure paths; all three changed files stay within that scope."
+  },
+  "justifications": {
+    "durability": "tests/test_a_promotion_profile_refresh_costs_its_row.py:97-100 fails on full rebuilding or omission of the append, :115-116 fails on stale snapshot output, and :178-198 guards rewritten history and generation-moved publication with independent expected data and saved bytes.",
+    "evidence": "tests/test_a_promotion_profile_refresh_costs_its_row.py:87-100 uses a 50-row positive decode control and independently asserts 51 persisted rows and zero decodes, corroborated by negative-control.log and armed-head-final.log with matched importer receipts.",
+    "fit": "reckon/crew/picker/lane_context.py:801-887 follows local naming and typing and reuses shared statistical reducers, but places ledger-table queries and a second window/envelope constructor in the picker context module.",
+    "goal_fidelity": "reckon/crew/picker/lane_context.py:921-942 folds current appended projections and rebuilds unusable bases while repairing the refused-index stale-row path.",
+    "reuse": "The capability search found reckon/crew/run_time_profile.py:339-377 already owns trailing-window selection and the profile result structure; lane_context.py:867-887 duplicates that capability instead of extending its owner, although its incremental index reader reuses ledger._open_current_index and its tables reuse the shared reducers.",
+    "scope_discipline": "The three paths changed between b5801e8feb89a3caf0a513dfc8204fa6cd4e0a84 and e90a244db54d5206d24062dc98b930403bf6bbfc are exactly the source, test and evidence fragment declared in prompt.txt:81-84."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The source goal in prompt.txt:38 is to fold the promoted row into the stored run-time profile; reckon/crew/picker/lane_context.py:921-942 implements the fold and authoritative fallback.\nVERDICT done_when: prompt.txt:125 requires zero full payload decodes, 51 persisted rows and fallback builds; negative-control.log records 51 decodes and the stale 50-row case, armed-head-final.log records 62 passed, and matched all_debug importer logs record no added failure.\nVERDICT write_paths: prompt.txt:81-84 declares lane_context.py, the new test and the evidence/figure paths; all three changed files stay within that scope.\nVERDICT manifest: manifest.md:19-23 names readable base/head receipts, the reproduction and importer results, which agree with armed-base.log, armed-head-final.log and importers-head-repaired.log.\nVERDICT diff: Read 13815627d731579de31e969c793bf305ea172b4b, e9e7e6b97945aa25ac2005fda7ed9a7dc11f57ca, 7313b107abafb3cdc612b25f92bd4e02043044dc and e90a244db54d5206d24062dc98b930403bf6bbfc against b5801e8feb89a3caf0a513dfc8204fa6cd4e0a84; the test, incremental refresh, partial-builder repair and evidence fragment match the deliverable.\nCALL_SITES: reckon/crew/promotion.py:1887 (_complete_locked), reckon/crew/picker/lane_context.py:794 (_cached_run_time_profile consuming the persisted profile)\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/picker/lane_context.py:921-942 folds current appended projections and rebuilds unusable bases while repairing the refused-index stale-row path.\nSCORE evidence: 20\nJUSTIFICATION evidence: tests/test_a_promotion_profile_refresh_costs_its_row.py:87-100 uses a 50-row positive decode control and independently asserts 51 persisted rows and zero decodes, corroborated by negative-control.log and armed-head-final.log with matched importer receipts.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: The three paths changed between b5801e8feb89a3caf0a513dfc8204fa6cd4e0a84 and e90a244db54d5206d24062dc98b930403bf6bbfc are exactly the source, test and evidence fragment declared in prompt.txt:81-84.\nSCORE durability: 20\nJUSTIFICATION durability: tests/test_a_promotion_profile_refresh_costs_its_row.py:97-100 fails on full rebuilding or omission of the append, :115-116 fails on stale snapshot output, and :178-198 guards rewritten history and generation-moved publication with independent expected data and saved bytes.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/crew/picker/lane_context.py:801-887 follows local naming and typing and reuses shared statistical reducers, but places ledger-table queries and a second window/envelope constructor in the picker context module.\nSCORE reuse: 5\nJUSTIFICATION reuse: The capability search found reckon/crew/run_time_profile.py:339-377 already owns trailing-window selection and the profile result structure; lane_context.py:867-887 duplicates that capability instead of extending its owner, although its incremental index reader reuses ledger._open_current_index and its tables reuse the shared reducers.\nFINDING reckon/crew/picker/lane_context.py:867 non-blocking: _profile_from_inputs duplicates the trailing-window filtering and profile result structure owned by reckon/crew/run_time_profile.py:339-377 rather than extending that owner; the equality tests establish current agreement, but later changes to the window or result fields must now update both implementations.\n",
+  "reuse_search": {
+    "added_definitions": "_indexed_profile_inputs adds incremental projection reads using the existing index; _profile_from_inputs duplicates the existing profile constructor; new test helpers provide local fixtures, counting and refusal controls.",
+    "capabilities": [
+      "current indexed picker history",
+      "appended projection reads",
+      "trailing-window profile construction",
+      "group and size statistics"
+    ],
+    "owners_opened": [
+      "reckon/ledger.py:_open_current_index",
+      "reckon/ledger.py:picker_runs",
+      "reckon/ledger.py:_index_payload",
+      "reckon/crew/run_time_profile.py:run_time_profile"
+    ],
+    "scope": "Reviewed-head reckon/crew/picker, reckon/crew/run_time_profile.py and reckon/ledger.py"
+  },
+  "review_run_id": "r-20261111T150634145922-review-of-promotion-profile-refresh-folds-its-row-e90a244db54d",
+  "reviewed_base_sha": "b5801e8feb89a3caf0a513dfc8204fa6cd4e0a84",
+  "reviewed_head_sha": "e90a244db54d5206d24062dc98b930403bf6bbfc",
+  "reviewed_run_id": "r-20261111T141432954806-promotion-profile-refresh-folds-its-row",
+  "scores": {
+    "durability": 20,
+    "evidence": 20,
+    "fit": 18,
+    "goal_fidelity": 20,
+    "reuse": 5,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-11T15:46:05.434994+00:00",
+  "total": 103
+}

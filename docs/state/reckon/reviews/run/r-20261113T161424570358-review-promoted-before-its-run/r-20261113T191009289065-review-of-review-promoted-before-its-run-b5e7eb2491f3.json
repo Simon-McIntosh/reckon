@@ -1,0 +1,56 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-11-13T19:23:45.666Z",
+  "dispatched_at": "2026-11-13T19:16:16Z",
+  "findings": [
+    {
+      "file": "reckon/crew/promotion_requests.py",
+      "line": 371,
+      "severity": "non-blocking",
+      "text": "_defer_to_a_queued_review requires the review's own request to be in PENDING, but _mark_waiting writes that request at promotion-waiting (line 177), so a run refused only for a review whose review-self request is parked is refused terminally instead of requeued: a run refused for the absent review while the reviewer is still writing matches the aggregate text, sets no other reason, and the earlier-is-queued branch at line 371 sees no PENDING request reviewing it. The requeue the node exists to provide is therefore lost in exactly the window the merged primary-branch wait opens, and no test composes the park with the requeue. The merged commit b5e7eb24's fragment states the two behaviours are kept in one loop, but this composition case is not covered. Remedy: treat WAITING as queued for this predicate."
+    },
+    {
+      "file": "reckon/crew/promotion_requests.py",
+      "line": 433,
+      "severity": "non-blocking",
+      "text": "PromotionService.wait_for_in_flight repeats the deadline-join loop PromotionService.settle already owns at line 594 in the same class: both walk self._threads joining each within a monotonic deadline. The two differ only in that one prunes and returns the survivors. One should build on the other so the join policy has one owner."
+    },
+    {
+      "file": "docs/evidence/fragments/work-flows-to-the-lane/review-promoted-before-its-run.html",
+      "line": 52,
+      "severity": "non-blocking",
+      "text": "The 'Gate, head arm ... final head f5568d40' row (55 passed in 12.45 s) cites gate-sbatch.log, which records the job id, cwd, counts and EXIT= but no revision and no command line, so the head that row names cannot be checked from the artefact. The rows this node added (merged head 9b88b8b4 and 62-passed composition) are checkable: gate-head.log:1 and merge-precheck.log:1 name their revisions and commands. This is the finding the prior review of this run raised at this line and the gained commits did not repair."
+    },
+    {
+      "file": "docs/evidence/fragments/work-flows-to-the-lane/review-promoted-before-its-run.html",
+      "line": 47,
+      "severity": "non-blocking",
+      "text": "The table caption claims every gate log names its revision, tree, literal command, 'the module actually imported and its working directory'; gate-head.log and gate-base.log carry revision, tree and command but no module.__file__ or resolved-cwd line, and gate-sbatch.log carries none of the four. The caption overstates what the retained logs hold."
+    },
+    {
+      "file": "docs/evidence/fragments/work-flows-to-the-lane/review-promoted-before-its-run.html",
+      "line": 1,
+      "severity": "non-blocking",
+      "text": "The node declares docs/figures/work-flows-to-the-lane/review-promoted-before-its-run and shipped no figure; the four-way ordering (review queued, run queued, refusal, requeue) the fragment now also describes as composed with the primary branch's park is a diagram the graphics mandate expects. Carried from the prior review; the gained docs commits added prose about the merged loop without the figure."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: read the source node's goal (prompt.txt:38), 'a run's review is promoted before the run, and a run waiting on its queued review is not refused'; the gained range is the merge of primary main at 9b88b8b4 and the evidence commit b5e7eb24, and reckon/crew/promotion_requests.py:319 orders a review ahead of its run while :348 requeues a run refused only for a queued review.\nVERDICT done_when: read the source node's FENCE EVIDENCE; it names tests/test_review_promoted_before_its_run.py, a no-review refusal case and the plain-name-order negative control on all_debug; the manifest records gate-head-final.log at b5e7eb24 (55 passed, EXIT=0), gate-head.log at 9b88b8b4 (55 passed, EXIT=0), gate-base.log at 5057bfac (51 passed, EXIT=0) and negative-control.log at the merged head (2 failed, 2 passed, EXIT=1), and I re-ran the named file at b5e7eb24 in a scratch extraction: 4 passed in 7.83 s.\nVERDICT write_paths: read the declared scope (reckon/crew/promotion_requests.py, reckon/crew/promotion_checks.py, tests/test_review_promoted_before_its_run.py, the evidence fragment, a figures directory); the gained authored changes are the fragment and the merge's two source files, all inside it, and the figures directory carries no entry for this node.\nVERDICT manifest: read; it names commits bcdf3965/f5568d40/d61c0ba/aa99f154/9b88b8b4/b5e7eb24, the after arm at b5e7eb24 and the base arm at 5057bfac with their log paths, the declared name-order mutation, the 62-passed composition precheck, and a 22-passed service regression.\nVERDICT diff: read the gained range aa99f154..b5e7eb24 commit by commit; 9b88b8b4 is a merge whose first parent is aa99f154 and whose resolution keeps both intents (reckon/crew/promotion_requests.py:484 tick iterates the ordered _pending_requests and judges _review_self_waits before claiming a slot, while :348 keeps the requeue), and b5e7eb24 records the merged head and its gate in the fragment with 30 added lines and no other change; the rest of the range is primary main's own advance.\nCALL_SITES: reckon/crew/admission/service.py:239, reckon/crew/admission/service.py:259, reckon/crew/admission/service.py:286, reckon/crew/admission/service.py:287, reckon/crew/admission/service.py:296\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/promotion_requests.py:484 keeps _pending_requests' review-first order and the primary branch's _review_self_waits in one tick loop, and :348 keeps the requeue, so the merged head does both halves although the park at :177 is not treated as queued by the requeue test at :371.\nSCORE evidence: 17\nJUSTIFICATION evidence: gate-head.log:1-3 name revision 9b88b8b4, tree and command and end EXIT=0 at 55 passed, gate-head-final.log names b5e7eb24 with 55 passed, merge-precheck.log names the resolved tree with 62 passed, and negative-control.log names 9b88b8b4 with 2 failed EXIT=1; the fragment's f5568d40 row at :52 still cites a log with no revision.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: the only authored paths in the gained range are docs/evidence/fragments/work-flows-to-the-lane/review-promoted-before-its-run.html and the merge resolution inside reckon/crew/promotion_requests.py and promotion_checks.py, all inside the declared write paths.\nSCORE durability: 16\nJUSTIFICATION durability: reinstating plain name order at the merged head reddens test_a_review_is_promoted_before_the_run_it_reviews and test_a_run_refused_only_for_its_queued_review_stays_queued (negative-control.log:14-17), but no test composes the primary branch's promotion-waiting park with the requeue, which is where the merged predicate at promotion_requests.py:371 no longer treats the review as queued.\nSCORE fit: 18\nJUSTIFICATION fit: the merge keeps the module's private-helper idiom and its existing vocabulary (REQUESTED/PENDING/WAITING) at reckon/crew/promotion_requests.py:34-38 and introduces no plan, ticket or version label.\nSCORE reuse: 17\nJUSTIFICATION reuse: _review_self_waits at promotion_requests.py:148 delegates to recovery_review_acceptance.review_self_state rather than re-deriving the reviewer's state, but wait_for_in_flight at :433 repeats the join loop settle already owns at :594 in the same class.\nFINDING reckon/crew/promotion_requests.py:371 non-blocking: the requeue requires the reviewing request to be in PENDING while _mark_waiting parks it at promotion-waiting, so a run refused only for a review whose review-self request is parked is refused instead of requeued, and no test composes the two.\nFINDING reckon/crew/promotion_requests.py:433 non-blocking: wait_for_in_flight repeats settle's deadline-join loop in the same class; one should build on the other.\nFINDING docs/evidence/fragments/work-flows-to-the-lane/review-promoted-before-its-run.html:52 non-blocking: the final head f5568d40 row cites gate-sbatch.log, which carries no revision or command, so that row's head is uncheckable from the artefact.\nFINDING docs/evidence/fragments/work-flows-to-the-lane/review-promoted-before-its-run.html:47 non-blocking: the caption claims every gate log names the imported module and resolved cwd, which no retained gate log does.\nFINDING docs/evidence/fragments/work-flows-to-the-lane/review-promoted-before-its-run.html:1 non-blocking: the declared figure for this fragment was not shipped, and the four-way ordering is still described in prose only.\n",
+  "review_run_id": "r-20261113T191009289065-review-of-review-promoted-before-its-run-b5e7eb2491f3",
+  "reviewed_base_sha": "aa99f15412f11c3336a80b5a74df451432bf5808",
+  "reviewed_head_sha": "b5e7eb2491f3aa0e1628fe71fb1bcfc04e143293",
+  "reviewed_run_id": "r-20261113T161424570358-review-promoted-before-its-run",
+  "scores": {
+    "durability": 16,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 17,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-13T19:30:41.491439+00:00",
+  "total": 105
+}

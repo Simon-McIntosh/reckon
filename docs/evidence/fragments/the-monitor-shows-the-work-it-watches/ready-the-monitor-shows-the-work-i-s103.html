@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="the-monitor-shows-the-work-it-watches">
+  <meta name="plan-evidence-for" content="reckon:the-monitor-shows-the-work-it-watches">
+  <meta name="plan-verifies" content="reckon:the-monitor-shows-the-work-it-watches#s103">
+  <meta name="plan-recorded-at" content="2026-11-13">
+  <meta name="plan-verdict" content="passed">
+  <title>A repair round in flight reads as its own obligation | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" id="ready-the-monitor-shows-the-work-i-s103-landing" data-node="ready-the-monitor-shows-the-work-i-s103" data-reckon="landed" data-when="2026-11-13">
+  <h2>An automatic repair round is named while it runs, and hands back the review duty when it delivers</h2>
+
+  <p><strong>Where the gap was.</strong> A review that files a blocking finding resumes the reviewed run's own worker with the findings as advice (<code>reckon/crew/recovery_repair_dispatch.py</code>), and records the round on that run's pointer under <code>repair_dispatch</code> with <code>round_id</code> = <code>&lt;reviewed run&gt;@&lt;head&gt;</code>. The resumed worker reopens work the run had already delivered, so the pointer carries an alive pid and its classifying row reads <code>running</code>: <code>reckon/crew/obligations.py</code> derived no duty at all for it. The coordinator's list therefore showed nothing for a run mid-repair, which is the same silence it had for a delivery whose promotion it still owed — the two states the plan's report could not tell apart.</p>
+
+  <p><strong>What changed.</strong> <code>_repair_round_in_flight</code> reads the pointer's own round record and accepts it only under an opening status, so a round the reflex held, declined, refused or exhausted names nothing in flight. <code>_repair_round_item</code> builds the row while that record is open, the round names a head, and the run's classified row reads a live process: the kind is <code>repair-round</code>, and the row carries <code>round_id</code>, the worker <code>pid</code>, the finding text and the <code>review_run_id</code>. The last two are read from the stored review for the head the round is keyed to, through <code>recovery.select_review_for_head</code> reached via the view's own memoised <code>_selected_review</code>; the finding is the first blocking finding that states a claim, so a record with none names none rather than inventing one. The row carries no command, because the reflex owns the round and re-fires when it ends. It is listed ahead of the classifier's other readings and joins <code>NON_BLOCKING_DUTY_KINDS</code> in the derivation and the stop hook's mirror <code>_NON_BLOCKING_KINDS</code>, so it prints and never holds the turn open. Once the round delivers, the run's head moves past the reviewed revision and the ordinary review duty for the new head stands again unchanged.</p>
+
+  <p><strong>Gate.</strong> The new <code>tests/test_a_repair_round_shows_on_the_obligations.py</code> builds a real checkout, stores a review carrying a blocking finding, and writes the round's record on a pointer whose pid is this process alive on this host, so the liveness read is a real one rather than a stubbed answer. Four cases: the single <code>repair-round</code> row names the review run, the finding text, the pid and the round id and carries no command; the stop hook lists the kind and <code>_blocking_items</code> returns empty for the payload; the same live worker with the round record removed derives no round row, which is the record being the evidence rather than liveness alone; and after the round delivers a new head and its worker exits, the row reads <code>review-missing</code> against the new head. <strong>4 passed.</strong></p>
+
+  <p><strong>Population.</strong> The suite command, resolved over this node's write scope, is <code>env PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py</code> at the base revision <code>95d7c8ce</code> — the arm measured with both changed source files restored to their base content — and the same command plus the new test at head <code>023493cc</code>: base <code>51 passed</code>, <code>EXIT=0</code>; head <code>55 passed</code>, <code>EXIT=0</code>. Logs <code>base-suite.log</code> and <code>after-suite.log</code> under the run directory, each opening with its revision, tree, cwd and literal command and ending in a bare <code>EXIT=</code> line. The wider arm is every test file importing <code>reckon.crew.obligations</code> or <code>reckon.crew.recovery_repair_dispatch</code> — the 80 files listed in <code>related-tests.txt</code>, which predates the new test and so measures only the pre-existing population — run on <code>all_debug</code> as one job per arm: base <code>17 failed, 480 passed</code>, head <code>17 failed, 480 passed</code>, and the failing-id sets are <strong>identical</strong>, so the change adds <strong>0 failures</strong> to that population. Those 17 are red at the base revision too (a queue fixture refused for naming no manifest path, and the review-carries-forward cases); they are reported under outside scope, not repaired here. <code>ruff check</code> adds no finding on the three staged paths: the only two findings there are pre-existing <code>S105</code> hits at <code>reckon/hooks/coordinator_obligations.py:616</code> and <code>:619</code>, untouched by this change, and <code>ruff format --check</code> is clean on all three.</p>
+
+  <p><strong>Negative control.</strong> The round's stored review is not read — the row is derived from the pointer alone, as if the round record carried no review to name. The first case fails (<code>1 failed, 3 passed, EXIT=1</code>), because the row then carries neither <code>review_run_id</code> nor <code>finding</code>; the other three pass because none of them rests on that read. Log <code>negative-control.log</code> under the run directory, ending in a bare <code>EXIT=1</code>. The mutation was restored before the suite arms ran.</p>
+
+  <p><strong>Left outside this node.</strong> <code>obligation_snapshot.payload_for</code> composes its slice per classification and has no branch for a running row, so a published snapshot does not carry the repair-round row; the stop hook and the view derive it, a fresh snapshot omits it. That file is another node's write scope, so it is reported rather than edited.</p>
+</article>
+</body>
+</html>

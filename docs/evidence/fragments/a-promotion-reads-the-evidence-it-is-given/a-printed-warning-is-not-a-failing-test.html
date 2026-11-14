@@ -1,0 +1,19 @@
+<article class="landed-node" data-node="a-printed-warning-is-not-a-failing-test">
+  <h3>A printed warning is not a failing test</h3>
+  <p id="a-printed-warning-is-not-a-failing-test-why">The landing check read a failure from a gate log by the word a line opens with. A test's captured logging output reaches the same short-summary region as <code>ERROR package.module:file.py:3553 message</code>, so two arms carrying identical failing ids compared unequal whenever one of them merely printed something. Measured on run <code>r-20261111T033929508961</code>'s own archive arms: 15 failing ids at base and 14 at head, and the check reported <strong>2 added failures</strong>, both of them printed records.</p>
+
+  <p id="a-printed-warning-is-not-a-failing-test-rule">A failure line now counts only where its id is one pytest names: a node id carrying the <code>::</code> separator, the <code>.py</code> path a collection error reports, or the bare test name the shared matching rule lets stand for a qualified id. The captured-record shape — logger, filename and line number separated by single colons, then a message — is what excludes an id.</p>
+
+  <table id="a-printed-warning-is-not-a-failing-test-before-after">
+    <thead><tr><th>Evidence</th><th>Before</th><th>After</th></tr></thead>
+    <tbody>
+      <tr><td>incident arms, added failures</td><td>2 (both printed records)</td><td>0</td></tr>
+      <tr><td>incident arms, failing ids</td><td>17 base / 16 head</td><td>15 base / 14 head</td></tr>
+      <tr><td>armed pair (base → after)</td><td>—</td><td>51 passed → 54 passed, 0 added</td></tr>
+      <tr><td>importer population, 250 files, all_debug, <code>-n 4</code></td><td>224 failing ids</td><td>224 failing ids, 0 added, 0 removed</td></tr>
+      <tr><td>negative control (base parser restored)</td><td>—</td><td>3 failed; first case reports the 2 records as added</td></tr>
+    </tbody>
+  </table>
+
+  <p id="a-printed-warning-is-not-a-failing-test-reuse">One reader (<code>reckon/crew/review.py</code>'s <code>_pytest_failure_ids</code>) serves the review's suite delta, the promotion receipt comparison and the standing suite's arm reader, so the three cannot disagree about what failed. The lander's own <code>failing_ids</code> in <code>reckon/crew/landing_measure.py</code> keeps its broad parse; it is outside this node's fence and is reported as outside scope.</p>
+</article>

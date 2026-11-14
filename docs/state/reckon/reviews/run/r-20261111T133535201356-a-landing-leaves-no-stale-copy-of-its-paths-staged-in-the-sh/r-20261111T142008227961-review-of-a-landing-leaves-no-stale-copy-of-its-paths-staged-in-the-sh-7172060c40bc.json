@@ -1,0 +1,69 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/crew_run_commands.py:329 (crew land)",
+    "reckon/crew_run_commands.py:1523",
+    "reckon/crew/promotion_release.py:817",
+    "reckon/crew/promotion_gate.py:1057",
+    "reckon/crew/promotion.py:1294",
+    "reckon/crew/promotion.py:1951"
+  ],
+  "completed_at": "2026-11-11T14:34:27.349Z",
+  "dimension_dispositions": {
+    "reuse": {
+      "kind": "exempted",
+      "reason": "One finding: landed_paths lists a head's changed paths beside _changed_paths in the same module; a consolidation the endpoint does not need.",
+      "recorded_at": "2026-11-11T15:09:53.170935+00:00"
+    }
+  },
+  "dispatched_at": "2026-11-11T14:22:22Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "exempted",
+      "reason": "landed_paths beside _changed_paths in one module is a consolidation the endpoint does not need; both list the same diff today.",
+      "recorded_at": "2026-11-11T15:17:23.403599+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "reckon/crew/merge.py",
+      "line": 435,
+      "severity": "non-blocking",
+      "text": "landed_paths repeats the capability _changed_paths already owns at reckon/crew/merge.py:421 in the same module; the owner already returns every path a head changed against a base, so the addition could be [path for _, path in _changed_paths(repo, base, landed)] rather than a second git diff, and two listings of one change can drift apart."
+    }
+  ],
+  "justifications": {
+    "durability": "negative-control.log shows RECKON_MERGE_INDEX_RECONCILIATION=removed turns tests/test_a_landing_leaves_no_stale_staged_copy.py::test_a_landing_leaves_no_landed_path_staged red with set() != {'ledger.py','test_ledger.py','tracked.txt'}.",
+    "evidence": "reproduction-baseline.log shows the defect (\"VERDICT: STALE COPY SURVIVED\") and after-suite.log records \"33 passed\" against baseline-suite.log's \"29 passed\", but the manifest records no ruff check or ruff format --check result the done_when also requires; the reviewer measured that delta itself (ruff-delta.log) and found the same three pre-existing I001 findings at base 4cae3c76 and head 7172060, so the change adds none.",
+    "fit": "reckon/crew/merge.py:435 names the paths it lists and reckon/crew/merge.py:446 documents the mechanism, matching the module's naming and docstring idiom with no plan identifiers.",
+    "goal_fidelity": "reckon/crew/merge.py:999 evaluates clear_stale_landed_copies(repo, landed_paths(repo, base, landed)) into report[\"unstaged\"] in land_merge, so every landing reconciles the index it moved.",
+    "reuse": "reckon/crew/merge.py:435 landed_paths re-implements the path listing _changed_paths already owns at reckon/crew/merge.py:421, differing only in --name-only versus --name-status.",
+    "scope_discipline": "git diff --stat 4cae3c76..7172060 lists only reckon/crew/merge.py, reckon/crew/promotion_scope.py, the new test and the evidence fragment, all inside the declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The node goal is that a landing leaves no stale copy of its paths staged in the shared index; reckon/crew/merge.py:999 reconciles the index inside land_merge and reckon/crew/promotion_scope.py:2601 does the same after the promotion's own landing commit.\nVERDICT done_when: The done_when names a base-revision reproduction log, the new test with its negative control, and the importing test files adding no failure; the manifest records the reproduction pair, gate-head 4 passed, negative-control 2 failed and arms 29 -> 33 passed with 0 added failures, but records no ruff check or ruff format --check result the done_when also requires.\nVERDICT write_paths: The declared write paths are reckon/crew/merge.py, reckon/crew/promotion_scope.py, tests/test_a_landing_leaves_no_stale_staged_copy.py and the evidence fragment; the diff touches exactly those four files and nothing else.\nVERDICT manifest: Read the source manifest; it records status complete, commit 7172060c40, four changed paths, retry_failures none, the reproduction pair, gate-head 4 passed, after-suite 33 passed against baseline 29 passed, and negative-control 2 failed; it omits the ruff result.\nVERDICT diff: Read the single commit 7172060c40 against base 4cae3c76; merge.py adds landed_paths and clear_stale_landed_copies and calls it in land_merge, promotion_scope commits then reconciles the paths that commit moved, the new test drives a temporary repository and crew home through both paths, and the evidence fragment records the reproduction pair.\nCALL_SITES: reckon/crew_run_commands.py:329, reckon/crew_run_commands.py:1523, reckon/crew/promotion_release.py:817, reckon/crew/promotion_gate.py:1057, reckon/crew/promotion.py:1294, reckon/crew/promotion.py:1951\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/merge.py:999 evaluates clear_stale_landed_copies(repo, landed_paths(repo, base, landed)) into report[\"unstaged\"] in land_merge, so every landing reconciles the index it moved.\nSCORE evidence: 14\nJUSTIFICATION evidence: reproduction-baseline.log shows the defect and after-suite.log records 33 passed against baseline-suite.log's 29 passed, but the manifest records no ruff result the done_when also requires.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat 4cae3c76..7172060 lists only the four declared files.\nSCORE durability: 18\nJUSTIFICATION durability: negative-control.log shows the mutation turns test_a_landing_leaves_no_landed_path_staged red with set() != the three landed paths.\nSCORE fit: 16\nJUSTIFICATION fit: reckon/crew/merge.py:435 and 446 match the module's naming and docstring idiom with no plan identifiers.\nSCORE reuse: 5\nJUSTIFICATION reuse: reckon/crew/merge.py:435 landed_paths re-implements _changed_paths at reckon/crew/merge.py:421.\nFINDING reckon/crew/merge.py:435 non-blocking: landed_paths repeats the capability of _changed_paths (merge.py:421) in the same module; the owner already returns every path a head changed against a base.\n",
+  "review_run_id": "r-20261111T142008227961-review-of-a-landing-leaves-no-stale-copy-of-its-paths-staged-in-the-sh-7172060c40bc",
+  "reviewed_base_sha": "4cae3c76ca95c97b77aa38db22dd086775ef2d18",
+  "reviewed_head_sha": "7172060c40bcbfed44668a4c5eff88f5e50b6a95",
+  "reviewed_run_id": "r-20261111T133535201356-a-landing-leaves-no-stale-copy-of-its-paths-staged-in-the-sh",
+  "scores": {
+    "durability": 18,
+    "evidence": 14,
+    "fit": 16,
+    "goal_fidelity": 18,
+    "reuse": 5,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-11T15:12:53.665157+00:00",
+  "total": 91,
+  "verdicts": {
+    "diff": "Read the single commit 7172060c40 against base 4cae3c76; merge.py adds landed_paths and clear_stale_landed_copies and calls it in land_merge, promotion_scope commits then reconciles the paths that commit moved, the new test drives a temporary repository and crew home through both paths, and the evidence fragment records the reproduction pair.",
+    "done_when": "The done_when names a base-revision reproduction log, the new test with its negative control, and the importing test files adding no failure; the manifest records reproduction-baseline.log (VERDICT: STALE COPY SURVIVED), gate-head.log (4 passed), negative-control.log (2 failed, 2 passed) and arms 29 -> 33 passed with 0 added failures, but records no ruff check or ruff format --check result the done_when also requires.",
+    "goal": "The node goal is that a landing leaves no stale copy of its paths staged in the shared index; reckon/crew/merge.py:999 reconciles the index inside land_merge and reckon/crew/promotion_scope.py:2601 does the same after the promotion's own landing commit.",
+    "manifest": "Read the source manifest at .../r-20261111T133535201356-.../manifest.md; it records status complete, commit 7172060c40, four changed paths, retry_failures none, the reproduction pair, gate-head 4 passed, after-suite 33 passed against baseline 29 passed, and negative-control 2 failed; it omits the ruff result.",
+    "write_paths": "The declared write paths are reckon/crew/merge.py, reckon/crew/promotion_scope.py, tests/test_a_landing_leaves_no_stale_staged_copy.py and the evidence fragment; the diff touches exactly those four files and nothing else."
+  }
+}

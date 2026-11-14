@@ -20,6 +20,7 @@ from __future__ import annotations
 import getpass
 import json
 import os
+import shlex
 import subprocess
 from collections.abc import Callable, Iterable, Mapping, Sequence
 from dataclasses import dataclass
@@ -151,6 +152,52 @@ def fleet_size(environ: Mapping[str, str] | None = None) -> FleetSize:
     )
 
 
+def declared_backend_directories(
+    backends: Mapping[str, Mapping[str, Any]] | None = None,
+) -> list[str]:
+    """Every directory the flight's backends declare for finding their commands.
+
+    The hold's batch step inherits the environment of whatever shell submitted
+    it, and a non-interactive shell never runs the startup files that add a
+    backend's installation directory, so a directory the flight declares is the
+    only reliable statement that it exists. Entries are home-expanded and
+    de-duplicated in declaration order.
+    """
+    if backends is None:
+        from reckon import flight
+
+        backends = flight.resolve().config.get("backends") or {}
+    from reckon._backends import backend_search_directories
+
+    directories: list[str] = []
+    for entry in backends.values():
+        for directory in backend_search_directories(entry):
+            if directory not in directories:
+                directories.append(directory)
+    return directories
+
+
+def hold_path(environ: Mapping[str, str] | None = None) -> str:
+    """The PATH the hold's sessions and services start with.
+
+    The batch step's environment is the submitting shell's, so a hold submitted
+    from a non-interactive shell starts every agent session without the
+    directories its startup files would have added. Every directory the flight
+    declares is appended, after the inherited entries so an explicit entry the
+    submitter already holds still wins.
+    """
+    environ = os.environ if environ is None else environ
+    entries = [
+        entry
+        for entry in str(environ.get("PATH") or os.defpath).split(os.pathsep)
+        if entry
+    ]
+    for directory in declared_backend_directories():
+        if directory not in entries:
+            entries.append(directory)
+    return os.pathsep.join(entries)
+
+
 def batch_log_path(environ: Mapping[str, str] | None = None) -> Path:
     """Where the batch step's own output goes, beside the fleet's record.
 
@@ -166,6 +213,7 @@ def generate_hold_script(
     log_path: str | os.PathLike[str],
     standby: bool = False,
     fleet: str | None = None,
+    environ: Mapping[str, str] | None = None,
 ) -> str:
     """The whole-node allocation that hosts the interactive sessions.
 
@@ -173,7 +221,10 @@ def generate_hold_script(
     per-user runtime directory, and the batch step runs the installed
     supervisor when there is one and otherwise only holds the node. A named
     fleet's allocation carries its name in its comment and exports it, so its
-    supervisor publishes into that fleet's own state.
+    supervisor publishes into that fleet's own state. ``PATH`` is composed from
+    the submitting environment plus every directory the flight declares for a
+    backend, so the sessions and services the hold starts resolve the commands
+    the flight names whatever shell submitted the hold.
     """
     comment = fleet_comment(fleet)
     headers = [
@@ -200,6 +251,7 @@ def generate_hold_script(
         set -euo pipefail
 
         export TMPDIR=/tmp
+        export PATH={hold_path}
         {fleet_exports}
         # Cap each compute-library thread pool at the declared width, keeping a
         # value the submitting environment already set. A heavy process
@@ -222,6 +274,7 @@ def generate_hold_script(
         )
         .strip()
         .format(
+            hold_path=shlex.quote(hold_path(environ)),
             thread_caps=thread_caps,
             supervisor_args=supervisor_args,
             fleet_exports="".join(

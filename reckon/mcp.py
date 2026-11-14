@@ -74,6 +74,7 @@ from reckon._schema import (
 from reckon._store import (
     _docs_dir_for_project,
     _mounts_path as _mounts_path,
+    _resolve_html_file,
     list_followups_across,
     list_questions_across,
     read_plan,
@@ -1095,9 +1096,12 @@ def _read_plan(
         "data": data,
     }
     deps = data.get("depends_on") if isinstance(data, dict) else None
+    # One referenced-plan index shared by the whole-plan and the section-scoped
+    # refs, so a plan named by both is indexed once for the read.
+    state_cache: dict[Any, dict[str, dict[str, Any]]] = {}
     if deps:
         result["deps"] = [
-            _resolve_plan_ref(ref, project, checkout_path) for ref in deps
+            _resolve_plan_ref(ref, project, checkout_path, state_cache) for ref in deps
         ]
     if data and canonical_type(data.get("type")) == "plan":
         # Section-scoped refs resolve through the same read, so a caller sees
@@ -1106,6 +1110,7 @@ def _read_plan(
             _plan_html_text(project, slug, checkout_path, doc_type),
             project,
             checkout_path,
+            state_cache,
         )
         if section_rows:
             result["deps"] = [*result.get("deps", []), *section_rows]
@@ -1916,6 +1921,7 @@ def _section_dependency_rows(
     html_text: str,
     owning_project: str,
     checkout_path: str | None = None,
+    state_cache: dict[Any, dict[str, dict[str, Any]]] | None = None,
 ) -> list[dict[str, Any]]:
     """Resolve a plan's section-scoped refs, naming the section that waits.
 
@@ -1935,14 +1941,103 @@ def _section_dependency_rows(
         if not isinstance(refs, list):
             continue
         for ref in refs:
-            row = _resolve_plan_ref(str(ref), owning_project, checkout_path)
+            row = _resolve_plan_ref(
+                str(ref), owning_project, checkout_path, state_cache
+            )
             row["source_section"] = waiting
             rows.append(row)
     return rows
 
 
+def _indexed_plan_states(
+    project: str, checkout_path: str | None
+) -> dict[str, dict[str, Any]]:
+    """Return each live plan's parsed state, keyed by slug, from the index.
+
+    A referenced plan's row needs only what its parse carries — its status,
+    impl, title, section declarations and followups — and the metadata index
+    already holds that per covered file. One lookup here answers every ref that
+    names any plan in the project, so a read that resolves many refs pays for
+    the project's index once rather than for one full plan read per ref. A
+    slug that a live and an archived document share keeps the live document,
+    matching the live-first resolution a full read takes.
+
+    A project with no docs dir answers empty, so every ref into it resolves as
+    absent rather than raising.
+    """
+
+    docs_dir = _docs_dir_for_project(project, checkout_path)
+    if docs_dir is None:
+        return {}
+    from reckon import metadata_index
+
+    live: dict[str, dict[str, Any]] = {}
+    archived: dict[str, dict[str, Any]] = {}
+    for entry in metadata_index.discovery_state(docs_dir, project).values():
+        if not isinstance(entry, Mapping):
+            continue
+        state = entry.get("state")
+        meta = entry.get("meta")
+        if not isinstance(state, Mapping) or not isinstance(meta, Mapping):
+            continue
+        slug = str(meta.get("slug") or state.get("slug") or "")
+        if not slug:
+            continue
+        bucket = archived if meta.get("archived") else live
+        bucket.setdefault(slug, dict(state))
+    return {**archived, **live}
+
+
+def _indexed_plan_state(
+    project: str,
+    slug: str,
+    checkout_path: str | None,
+    state_cache: dict[Any, dict[str, dict[str, Any]]] | None = None,
+) -> dict[str, Any] | None:
+    """Return one referenced plan's state from the metadata index.
+
+    Never a full plan read: the index holds the parse a ref's row is built
+    from, and ``state_cache`` shares one project's lookup across every ref a
+    single read resolves, so each referenced plan is indexed at most once.
+    """
+
+    key = (project, checkout_path)
+    states = state_cache.get(key) if state_cache is not None else None
+    if states is None:
+        states = _indexed_plan_states(project, checkout_path)
+        if state_cache is not None:
+            state_cache[key] = states
+    state = states.get(slug)
+    if state is None:
+        # The index answers every plan it holds; a plan it cannot answer for —
+        # a project whose stored index predates the file — is parsed once from
+        # its own document rather than read in full, so the ref is never a
+        # second full read and the answer still comes from one pass.
+        state = _parsed_plan_state(project, slug, checkout_path)
+        if state is not None:
+            states[slug] = state
+    return state
+
+
+def _parsed_plan_state(
+    project: str, slug: str, checkout_path: str | None
+) -> dict[str, Any] | None:
+    """Return one plan's parsed state from its own file, or ``None``."""
+
+    path = _resolve_html_file(project, slug, checkout_path)
+    if path is None or not path.is_file():
+        return None
+    try:
+        return dict(_plan_html.read_state_file(path))
+    except (OSError, ValueError):
+        return None
+
+
 def _resolve_plan_ref(
-    ref: str, owning_project: str, checkout_path: str | None = None
+    ref: str,
+    owning_project: str,
+    checkout_path: str | None = None,
+    state_cache: dict[Any, dict[str, dict[str, Any]]] | None = None,
 ) -> dict[str, Any]:
     """Resolve one link-list ref (``[project:]slug[#stage]``) to live status.
 
@@ -1967,8 +2062,11 @@ def _resolve_plan_ref(
     if parsed.stage:
         row["stage"] = parsed.stage
     try:
-        data, _dep_version = read_plan(
-            target_project, parsed.slug, None if external else checkout_path
+        data = _indexed_plan_state(
+            target_project,
+            parsed.slug,
+            None if external else checkout_path,
+            state_cache,
         )
     except Exception:  # noqa: BLE001 — resolution must degrade, not raise
         return row
@@ -2022,6 +2120,7 @@ _OP_VOCAB = {
     "resolve": "{op:'resolve', target:'followups'|'questions'|'findings', id, by, outcome|resolution} — sets resolved_at/by + outcome/resolution; finding status derives from resolved_at.",
     "lock": "{op:'lock', key, choice, rationale, by} — merges the lock into decisions[key], preserving authored title/context/choices.",
     "accept": "{op:'accept', key, by} — sets decisions[key].choice from its stored recommendation (recommended/recommended_by) in one action, recording when and by whom; refused when the decision carries no recommendation.",
+    "withdraw": "{op:'withdraw', key, reason, by} — withdraws an unlocked decision in one versioned write, keeping its reason and date in the plan and taking it out of the roadmap's blockers; a locked decision, an absent decision or a withdrawal with no reason is refused naming the decision.",
     "gate": "{op:'gate', id, section, gated_sections:[...], measure, required_evidence} — declares one open evidence gate.",
     "pass": "{op:'pass', id, evidence} — closes a declared gate as passed; evidence is required when gates.require_evidence is enabled.",
     "fail": "{op:'fail', id, evidence} — closes a declared gate as failed while preserving negative evidence.",
@@ -3557,13 +3656,14 @@ def _audit_read(
         _LOGGER.warning("link audit unavailable: %s", exc)
     # External (cross-project) refs: doccheck's per-file pass is corpus-local
     # by design, so qualified refs are resolved here, where mounts are known.
+    ref_state_cache: dict[Any, dict[str, dict[str, Any]]] = {}
     for artifact in plans:
         for field in ("depends_on", "blocks"):
             for ref in artifact.get(field) or []:
                 parsed = parse_plan_ref(ref)
                 if parsed is None or not parsed.is_external(project):
                     continue
-                resolved = _resolve_plan_ref(ref, project)
+                resolved = _resolve_plan_ref(ref, project, None, ref_state_cache)
                 if resolved.get("found"):
                     continue
                 mounted = _docs_dir_for_project(parsed.project) is not None

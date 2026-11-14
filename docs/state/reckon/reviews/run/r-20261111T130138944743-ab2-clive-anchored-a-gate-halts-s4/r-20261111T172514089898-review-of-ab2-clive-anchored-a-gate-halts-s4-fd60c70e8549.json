@@ -1,0 +1,61 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/cli.py:488",
+    "reckon/crew_run_commands.py:2303",
+    "reckon/crew_run_commands.py:2181",
+    "reckon/crew_run_commands.py:2208",
+    "reckon/crew/dispatch_sessions.py:1661"
+  ],
+  "completed_at": "2026-11-11T17:39:35.573Z",
+  "dispatched_at": "2026-11-11T17:28:25Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/a-gate-halts-only-on-substance/ab2-clive-anchored-a-gate-halts-s4.html",
+      "line": 1,
+      "severity": "non-blocking",
+      "text": "The fragment restates the evidence already held for the same section at docs/evidence/fragments/a-gate-halts-only-on-substance/resume-changes-run-budget.html:23-25, which carries the same three-case measurement and the importer-arm figure (377 passed head, 374 base) this record omits; the gathered commit adds a fourth paragraph to the duplicate rather than folding it into the existing record. Carried from the previous review at d8262e4a and unchanged by this delta."
+    },
+    {
+      "file": "r-20261111T130138944743-ab2-clive-anchored-a-gate-halts-s4/manifest.md",
+      "line": 12,
+      "severity": "non-blocking",
+      "text": "The done_when at prompt.txt:130 asks that 'the test files importing reckon.crew_run_commands add no failure against the base revision', and both recorded suite arms run tests/test_staged_write_inventory.py (manifest.md:12-13), which imports only reckon.interface_counts and reckon, so that clause is measured by neither arm; the corrected paragraph at fragment:25 now says so plainly instead of asserting the failures it does not carry. Carried from the previous review and unchanged by this delta."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "Read the diff d8262e4a..fd60c70e commit by commit: one commit, one file, one insertion and one deletion at fragment:25, replacing the claim that both gate arms carry the same two failures with the sentence that both arms read 51 passed and EXIT=0 and naming logs/resume-budget-unstubbed.log for the two red cases.",
+    "done_when": "Read the done_when (prompt.txt:130): a new tests/test_a_resume_can_change_its_budget.py resuming a stubbed run at --time-budget 45m, a refusal above the fence without --over-fence, a negative control, and an importer arm at -n 4; the gained commit measures none of these and only restates them, and every figure it restates matches the log it names.",
+    "goal": "Read the reviewed dispatch goal, 'Build a-gate-halts-only-on-substance s4 as the section specifies' (prompt.txt:38), against the single commit gained since the reviewed head: fd60c70e85 rewrites one paragraph of the evidence fragment so it states what the recorded arms show, which is exactly the blocking finding the previous review filed at d8262e4a.",
+    "manifest": "Read the reviewed manifest: its checkpoint records that the review's finding is answered, its after_suite records exit_status 0, completed true, failure_count 0 at revision fd60c70e85 with log logs/after-arm.log, and its baseline_suite records the same at f44b15b0 with logs/base-arm.log.",
+    "write_paths": "Read the declared scope (prompt.txt:80-83: reckon/crew_run_commands.py, docs/evidence/fragments/a-gate-halts-only-on-substance/ab2-clive-anchored-a-gate-halts-s4.html, docs/figures/a-gate-halts-only-on-substance/ab2-clive-anchored-a-gate-halts-s4); the change gained since the reviewed head is one line inside the change to the fragment, so it stays inside the declared scope."
+  },
+  "justifications": {
+    "durability": "The corrected paragraph at docs/evidence/fragments/a-gate-halts-only-on-substance/ab2-clive-anchored-a-gate-halts-s4.html:25 is prose that no assertion reads, so nothing would redden if it drifted from the arms again \u2014 the guard this commit restores is the reviewer's own reading, not a test.",
+    "evidence": "Each figure the corrected paragraph states is what its own log records: logs/resume-budget-unstubbed.log ends '2 failed, 1 passed' with EXIT=1, and logs/base-arm.log and logs/after-arm.log each end '51 passed' with EXIT=0 at their own revision headers.",
+    "fit": "The corrected paragraph keeps the surrounding form of docs/evidence/fragments/a-gate-halts-only-on-substance/ab2-clive-anchored-a-gate-halts-s4.html:22-24, using <code> for the log name and figures exactly as its siblings do, and the logs/ citation is the house idiom across docs/evidence/fragments.",
+    "goal_fidelity": "docs/evidence/fragments/a-gate-halts-only-on-substance/ab2-clive-anchored-a-gate-halts-s4.html:25 now states what the arms show, which is the one thing the blocking finding asked for, and it names the log holding the two red cases.",
+    "reuse": "The delta adds no definition and re-implements nothing, but the record it corrects still duplicates the capability-named sibling docs/evidence/fragments/a-gate-halts-only-on-substance/resume-changes-run-budget.html for the same section rather than extending it.",
+    "scope_discipline": "The whole delta is one line of docs/evidence/fragments/a-gate-halts-only-on-substance/ab2-clive-anchored-a-gate-halts-s4.html, inside the fragment path declared at prompt.txt:82, with no product source and no test touched."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: read the reviewed dispatch goal 'Build a-gate-halts-only-on-substance s4 as the section specifies' (prompt.txt:38) against the one commit gained since the reviewed head, and fd60c70e85 rewrites the paragraph the previous review found misstating its own arms at docs/evidence/fragments/a-gate-halts-only-on-substance/ab2-clive-anchored-a-gate-halts-s4.html:25.\nVERDICT done_when: read the done_when at prompt.txt:130 (a stubbed resume at 45m, a refusal above the fence without --over-fence, a negative control, and an importer arm at -n 4); the delta measures none of it and only restates it, and each figure it restates is the figure its named log carries.\nVERDICT write_paths: read the declared scope at prompt.txt:80-83; the change gained since the reviewed head is one line of the declared fragment and nothing else.\nVERDICT manifest: read; its checkpoint says the review's finding is answered, and its baseline_suite and after_suite record exit_status 0, completed true, failure_count 0 at f44b15b0 (logs/base-arm.log) and fd60c70e85 (logs/after-arm.log).\nVERDICT diff: read d8262e4a..fd60c70e commit by commit; one commit changes one file by one insertion and one deletion at fragment:25.\nCALL_SITES: reckon/cli.py:488, reckon/crew_run_commands.py:2303, reckon/crew_run_commands.py:2181, reckon/crew_run_commands.py:2208, reckon/crew/dispatch_sessions.py:1661\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: docs/evidence/fragments/a-gate-halts-only-on-substance/ab2-clive-anchored-a-gate-halts-s4.html:25 now states what the arms show and names logs/resume-budget-unstubbed.log for the two red cases, which is the repair the blocking finding asked for.\nSCORE evidence: 18\nJUSTIFICATION evidence: logs/resume-budget-unstubbed.log ends '2 failed, 1 passed' EXIT=1 and logs/base-arm.log and logs/after-arm.log each end '51 passed' EXIT=0 at their own revision headers, so every figure in the corrected paragraph is what its own log records.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the delta is one line of docs/evidence/fragments/a-gate-halts-only-on-substance/ab2-clive-anchored-a-gate-halts-s4.html, inside the fragment path declared at prompt.txt:82.\nSCORE durability: 11\nJUSTIFICATION durability: the corrected prose at docs/evidence/fragments/a-gate-halts-only-on-substance/ab2-clive-anchored-a-gate-halts-s4.html:25 is read by no assertion, so nothing reddens if it drifts from the arms again.\nSCORE fit: 18\nJUSTIFICATION fit: the corrected sentence keeps the <code>-and-figures form of docs/evidence/fragments/a-gate-halts-only-on-substance/ab2-clive-anchored-a-gate-halts-s4.html:22-24 and cites logs/ the way the sibling fragments do.\nSCORE reuse: 14\nJUSTIFICATION reuse: the delta adds no definition, but the record it corrects still duplicates docs/evidence/fragments/a-gate-halts-only-on-substance/resume-changes-run-budget.html:23-25 rather than extending it.\nFINDING docs/evidence/fragments/a-gate-halts-only-on-substance/ab2-clive-anchored-a-gate-halts-s4.html:1 non-blocking: the fragment duplicates the evidence already held at docs/evidence/fragments/a-gate-halts-only-on-substance/resume-changes-run-budget.html for the same section and omits the importer-arm figure (377 head, 374 base) that record carries; carried from the previous review and unchanged by this delta.\nFINDING r-20261111T130138944743-ab2-clive-anchored-a-gate-halts-s4/manifest.md:12 non-blocking: both recorded arms run tests/test_staged_write_inventory.py, which imports only reckon.interface_counts, so the done_when's importer-arm clause at prompt.txt:130 is measured by neither arm; the corrected paragraph now says so plainly rather than asserting a failure the arms do not carry.\n",
+  "review_run_id": "r-20261111T172514089898-review-of-ab2-clive-anchored-a-gate-halts-s4-fd60c70e8549",
+  "reviewed_base_sha": "d8262e4aff420774a4b2dbfab95bcbfda99b50a6",
+  "reviewed_head_sha": "fd60c70e8549330f72613d0871c05abffc792c9f",
+  "reviewed_run_id": "r-20261111T130138944743-ab2-clive-anchored-a-gate-halts-s4",
+  "scores": {
+    "durability": 11,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 14,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-11T17:51:16.978759+00:00",
+  "total": 100
+}

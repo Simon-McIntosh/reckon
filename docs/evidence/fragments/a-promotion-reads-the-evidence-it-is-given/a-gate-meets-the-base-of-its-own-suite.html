@@ -1,0 +1,79 @@
+<section id="a-gate-meets-the-base-of-its-own-suite-landing">
+  <h2>A gate meets the base of its own suite</h2>
+
+  <p><strong>What changed.</strong> A run that measured more than one suite
+  could record only the default pair
+  (<code>baseline_suite</code>/<code>after_suite</code>), so
+  <code>_red_base_uncovered_ids</code> compared every gate with that one base.
+  A gate on a second suite was therefore measured against the wrong suite's
+  inherited failures: every id the second suite inherits read as a failure the
+  head added, and the zero-added path was unreachable for that gate however red
+  the head's own suite was.
+
+  <p>A manifest may now record further pairs under <code>suite_pairs</code>, a
+  mapping from a pair name to its <code>base</code> and <code>head</code> arms,
+  each shaped like <code>baseline_suite</code>'s arm.
+  <code>_suite_pair_for_gate</code> selects the pair whose head arm cites the
+  gate's own log, comparing the two citations by resolved path so a relative
+  spelling on one side and an absolute one on the other still match one file.
+  The default pair stays the fallback: a gate that names no log, or whose log
+  matches no recorded head, is measured as before, and a manifest recording no
+  <code>suite_pairs</code> field is unchanged. The refusal beside a nonzero
+  exit now quotes the selected pair's own arm names
+  (<code>suite_pairs.UNIT.base</code>, <code>suite_pairs.UNIT.head</code>)
+  rather than the default pair's, so a reader is sent to the field the base
+  sits in.</p>
+
+  <p>Matching a recorded pair's head arm to the gate's log is not a second
+  rule: it goes through <code>_arm_describes_the_cited_log</code>, the function
+  the receipt comparison already owns, which matches by resolved path or by
+  digest. An arm that names its log by digest alone therefore selects its own
+  pair instead of falling back to the default one, and a digest leg is skipped
+  only when the cited log cannot be read, so an unread log is never compared
+  with the digest of empty text. The receipt comparison, too, is made against
+  the selected pair's head arm — not the default <code>after_suite</code>, which
+  describes another suite's run — and its refusal names that arm.</p>
+
+  <p><strong>The guard.</strong> A new test,
+  <code>tests/test_a_gate_meets_the_base_of_its_own_suite.py</code>, drives the
+  admission and the receipt comparison through a temporary run record. Case one
+  records a red default pair and a second pair whose base and head both carry
+  the same three ids; a gate on the second pair's head log is measured zero
+  added and the passing verdict is admitted. Case two keeps the same gate and
+  drops one id from the second pair's base, and the comparison reports exactly
+  that id, refusing the verdict. Case three records no <code>suite_pairs</code>
+  and shows the default pair still measured as before. Case four records the
+  second pair's head arm by <code>log_digest</code> alone, and it is still the
+  pair the gate is measured against. Case five gives that head a
+  <code>failure_count</code> of zero beside a log naming three failures, and the
+  receipt refusal names <code>suite_pairs.UNIT.head</code>.</p>
+
+  <h3 id="a-gate-meets-the-base-of-its-own-suite-measured">Measured</h3>
+
+  <p>Arms resolved over each tree's own contents, one arm at a time with
+  <code>-n 4</code> on the <code>all_debug</code> partition. Base arm at
+  <code>bfbef86cc3</code> (<code>tests/test_staged_write_inventory.py</code>
+  alone, the new test absent there):
+  <code>51 passed</code>, <code>EXIT=0</code>. Head arm at
+  <code>96d0f89a9b</code> (the same file plus the new test):
+  <code>56 passed</code>, <code>EXIT=0</code> — zero added against the base.</p>
+
+  <p>The nine further test files importing <code>promotion_evidence</code> were
+  measured the same way: base <code>53 passed</code>,
+  <code>EXIT=0</code>; head <code>58 passed</code> (the same 53 plus the new
+  test's 5), <code>EXIT=0</code>.</p>
+
+  <p><strong>Negative controls.</strong> Dropping the pair selection so the
+  comparison always reads <code>baseline_suite</code> makes case one report the
+  three inherited second-suite ids as added —
+  <code>tests/test_charge.py::test_charge</code>,
+  <code>tests/test_charge.py::test_discharge</code>,
+  <code>tests/test_charge.py::test_hold</code> — and the run fails
+  <code>3 failed, 2 passed</code>, <code>EXIT=1</code>. Dropping only the digest
+  leg of the match fails case four and nothing else
+  (<code>1 failed, 4 passed</code>, <code>EXIT=1</code>). Reading the default
+  <code>after_suite</code> for the receipt fails case five and nothing else
+  (<code>1 failed, 4 passed</code>, <code>EXIT=1</code>). Each control fails the
+  case its repair exists for, and each log ends in its own <code>EXIT=1</code>
+  line.</p>
+</section>

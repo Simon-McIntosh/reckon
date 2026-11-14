@@ -1,0 +1,39 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-11-13T16:53:26.186Z",
+  "dispatched_at": "2026-11-13T16:41:15Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "exempted",
+      "reason": "test-strength: the base arm's subprocess sets PYTHONPATH to the extracted tree; asserting the imported module's __file__ there is a hardening follow-up, and the parity arm passed against that tree",
+      "recorded_at": "2026-11-14T07:42:39.890463+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "tests/test_a_batch_decodes_the_ledger_index_once.py",
+      "line": "371",
+      "severity": "non-blocking",
+      "text": "non-blocking: _run_over_tree runs the base arm through a subprocess that only sets PYTHONPATH to the extracted tree and never asserts the imported module's __file__, so if resolution resolved reckon from the installed editable path both arms would run head code and the parity assertion at :430 would hold trivially."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is that every ledger read inside one batch dispatch be answered from a single index decode; the gained commits give the payload region one key owner (reckon/ledger.py:1675 _payload_slot), so the refreshing read and the read-pass reader cannot disagree about the key.\nVERDICT done_when: the done_when names tests/test_a_batch_decodes_the_ledger_index_once.py with a 200-row home, ten entries over three plans, at-most-once counters on _index_payload and _last_good_index_data, and a parity arm against the base revision; commit 37626ae38a adds that arm (tests/test_a_batch_decodes_the_ledger_index_once.py:414 _extract_revision, :430 the comparison) and the manifest records 55 passed at 37626ae38a.\nVERDICT write_paths: the declared paths are reckon/crew_dispatch_commands.py, reckon/ledger.py, tests/test_a_batch_decodes_the_ledger_index_once.py and the node fragment; the gained commits touch only reckon/ledger.py, the test file and the fragment, all inside that set.\nVERDICT manifest: read at the run directory; it records commits a5ea48f256, 37626ae38a and 9af0947d38, both suite arms at their own revisions, the negative-control log naming 11 decodes over 10 entries, the all_debug measurement at 0.060 s against 0.095 s per entry, and ruff clean on the staged paths; crew check --manifest on it returned ok with no findings.\nVERDICT diff: read commit by commit from a5ea48f256 to 9af0947d38b3; 37626ae38a replaces the two copied region-key lookups in reckon/ledger.py with _payload_slot and adds the base-revision parity arm plus the fragment corrections, and 9af0947d38 is a one-line evidence correction, 3 files and 162 insertions in total.\nCALL_SITES: reckon/ledger.py:2155, reckon/ledger.py:1871, reckon/crew_dispatch_commands.py:1136\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/ledger.py:1675 gives the payload region one key owner and both readers at :1728 and :1792 take it, so a batch still costs one decode and no reader can construct a second key.\nSCORE evidence: 16\nJUSTIFICATION evidence: the base-revision parity arm at tests/test_a_batch_decodes_the_ledger_index_once.py:430 compares against the code the change replaces, but the manifest's base arm ran 1 of the 93 test files that import reckon/crew_dispatch_commands.py, so the done_when's plural file set is under-measured for a ledger hot-path change.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff a5ea48f256..9af0947d38 changes only reckon/ledger.py, tests/test_a_batch_decodes_the_ledger_index_once.py and the node fragment, every one of them a declared path.\nSCORE durability: 18\nJUSTIFICATION durability: the at-most-once counters at tests/test_a_batch_decodes_the_ledger_index_once.py:277 redden under the recorded negative control (11 decodes, logs/negative-control.log), but the parity arm at :430 does not assert which tree its subprocess imported.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/ledger.py:1675 follows the docstring-and-private-helper idiom of the surrounding readers and introduces no plan, ticket or version label.\nSCORE reuse: 18\nJUSTIFICATION reuse: _payload_slot consolidates two existing copies rather than adding a third; a capability search over reckon/ for materialising a revision found only reckon/crew/routing.py:606, which recognises git-archive trees rather than extracting one.\nFINDING tests/test_a_batch_decodes_the_ledger_index_once.py:371 non-blocking: _run_over_tree runs the base arm through a subprocess that only sets PYTHONPATH to the extracted tree and never asserts the imported module's __file__, so if resolution resolved reckon from the installed editable path both arms would run head code and the parity assertion at :430 would hold trivially.\n",
+  "review_run_id": "r-20261113T163019965606-review-of-a-batch-decodes-the-ledger-index-once-9af0947d38b3",
+  "reviewed_base_sha": "a5ea48f256f5c04300f1e05e7c35e6ddfae5682b",
+  "reviewed_head_sha": "9af0947d38b31086f896f528233c7c7894bc471b",
+  "reviewed_run_id": "r-20261113T131132182840-a-batch-decodes-the-ledger-index-once",
+  "scores": {
+    "durability": 18,
+    "evidence": 16,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 18,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-13T17:31:58.785860+00:00",
+  "total": 110
+}

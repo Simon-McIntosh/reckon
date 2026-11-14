@@ -1,0 +1,54 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/crew/dispatch.py:2912",
+    "reckon/crew/dispatch_claims.py:819"
+  ],
+  "completed_at": "2026-11-11T17:57:29.214Z",
+  "dispatched_at": "2026-11-11T17:37:35Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "folded",
+      "node": "identity-published-with-its-claim",
+      "recorded_at": "2026-11-11T19:06:17.702051+00:00"
+    },
+    "1": {
+      "kind": "folded",
+      "node": "identity-published-with-its-claim",
+      "recorded_at": "2026-11-11T19:06:42.081195+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/work-flows-to-the-lane/identity-published-with-its-claim.html",
+      "line": "52",
+      "severity": "blocking",
+      "text": "blocking: the closing paragraph states the base arm's 'six failures are the behaviours this node creates', but the base arm recorded in the same fragment and in logs/base-arm.log has zero failures (52 passed, 2 setup errors); the sentence is the superseded arm's wording left behind, so the landed evidence record misstates the gate it cites."
+    },
+    {
+      "file": "docs/evidence/fragments/work-flows-to-the-lane/identity-published-with-its-claim.html",
+      "line": "41",
+      "severity": "non-blocking",
+      "text": "non-blocking: the base row says the new test was 'copied in', but the recorded base command collects only tests/test_a_reexec_never_orphans_a_dispatch.py and tests/test_staged_write_inventory.py, so the copied identity test was never collected and this arm cannot show the new test red at base."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: section 2's goal is an identity file published only when a claim is taken, removed with the last claim and swept for a dead pid; the delta makes that removal truthful per crew home at reckon/crew/dispatch_claims.py:632-660.\nVERDICT done_when: the done_when names tests/test_an_execution_identity_is_published_with_its_claim.py and both suite arms; the manifest records the after arm as 61 passed, EXIT=0 at 443958da80 and the base arm as 52 passed with 2 attributed setup errors.\nVERDICT write_paths: the declared fence is the five paths in the dispatch prompt plus tests/test_a_reexec_never_orphans_a_dispatch.py granted in resume-1-advice.txt; all three paths in the delta are inside that set.\nVERDICT manifest: read MANIFEST.md at the run root; it records status complete, the 61-passed head arm, the 52-passed base arm, the negative control, and the widened test in changed_paths with the scope grant.\nVERDICT diff: read 90617f00b9..fbfa4152f1 commit by commit (3 commits, 3 files, +34/-20): per-path claim counting in dispatch_claims.py, the import-publish assertion inverted in test_a_reexec_never_orphans_a_dispatch.py, and the arm table re-recorded in the evidence fragment.\nCALL_SITES: reckon/crew/dispatch.py:2912, reckon/crew/dispatch_claims.py:819\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/dispatch_claims.py:653-660 counts per identity path, so a claim released under one crew home no longer keeps another home's identity file alive.\nSCORE evidence: 13\nJUSTIFICATION evidence: logs/head-arm.log ends \"61 passed\" and logs/base-arm.log ends \"52 passed, 2 errors\", but docs/evidence/fragments/work-flows-to-the-lane/identity-published-with-its-claim.html:52 claims six base failures the log does not contain.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the delta touches only reckon/crew/dispatch_claims.py, tests/test_a_reexec_never_orphans_a_dispatch.py and the fragment, and the test file is expressly granted by resume-1-advice.txt.\nSCORE durability: 18\nJUSTIFICATION durability: reverting the count at reckon/crew/dispatch_claims.py:606 to a process-wide total reddens tests/test_an_execution_identity_is_published_with_its_claim.py:97, and the import assertion at tests/test_a_reexec_never_orphans_a_dispatch.py:53 is shown red by logs/negative-control.log.\nSCORE fit: 20\nJUSTIFICATION fit: reckon/crew/dispatch_claims.py:601-605 keeps the module's comment-before-constant idiom, explains the mechanism as the key's reason, and carries no plan or ticket identifier.\nSCORE reuse: 20\nJUSTIFICATION reuse: the delta adds no definition; it changes the key of the existing _EXEC_IDENTITY_CLAIMS in the module that already owns execution identities, and a search of reckon/crew found no other per-path claim counter.\nFINDING docs/evidence/fragments/work-flows-to-the-lane/identity-published-with-its-claim.html:52 blocking: the closing paragraph states the base arm's \"six failures are the behaviours this node creates\", but the base arm recorded in the same fragment and in logs/base-arm.log has zero failures (52 passed, 2 setup errors); the sentence is the superseded arm's wording left behind, so the landed evidence record misstates the gate it cites.\nFINDING docs/evidence/fragments/work-flows-to-the-lane/identity-published-with-its-claim.html:41 non-blocking: the base row says the new test was \"copied in\", but the recorded base command collects only tests/test_a_reexec_never_orphans_a_dispatch.py and tests/test_staged_write_inventory.py, so the copied identity test was never collected and this arm cannot show the new test red at base.\n",
+  "review_run_id": "r-20261111T173055170203-review-of-identity-published-with-its-claim-fbfa4152f1f9",
+  "reviewed_base_sha": "90617f00b961190a92ee7dc64dc8c37dac625461",
+  "reviewed_head_sha": "fbfa4152f1f9ee93c721685d756aa05f495333b1",
+  "reviewed_run_id": "r-20261111T154129120140-identity-published-with-its-claim",
+  "scores": {
+    "durability": 18,
+    "evidence": 13,
+    "fit": 20,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-11T18:28:51.968922+00:00",
+  "total": 110
+}

@@ -1,0 +1,100 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-11T16:04:38.274Z",
+  "dispatched_at": "2026-11-11T15:58:08Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/workers-spend-fewer-tokens-per-landed-node.html:117",
+      "id": "reasoning-1",
+      "reason": "a worker reading item (2) literally lands the instruction in the wrong place under the wrong condition, telling runs with no anchored server to use a tool they do not have, so the author must restate item (2) at the launch layer.",
+      "text": "\u00a710's deliverable says both changes are made in the launch step that seeds the anchored server, \"so they follow what the launch actually did rather than the flight key\", and that the instruction \"moves to the launch step rather than being keyed on the flight key\"; item (2) three sentences later nevertheless states that \"`compose_prompt` names the tools for a Claude-dialect run with the key on, as \u00a75 does for codex\". Those cannot both be implemented: the prompt is composed in dispatch before the launch plan exists (`launch_plan(*, prompt=...)` receives it, `reckon/_backends.py:2912`), so a `compose_prompt` keyed on the flight key necessarily fires for an unfenced, operator-settings or resumed Claude run whose launch seeds no server \u2014 the exact defect the preamble was added to prevent, and one \u00a75 had explicitly ruled out for codex only because \"the key and the launch cannot disagree\" there. The launch step can carry it (it holds both the prompt and the seeded-treatment fact, `reckon/_backends.py:3025`), so the endpoint is reachable and only the wording is wrong.",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/workers-spend-fewer-tokens-per-landed-node.html:117",
+      "id": "done_when-1",
+      "reason": "the node is sent to a report-only dead end on a measure that speaks to one of two causes, and the section's own closing gate becomes unreachable without an amendment.",
+      "text": "the done-when's branch \"if it passes, the tools were already offered, and the node reports what else kept the cited run from calling them instead of shipping a fix\" cancels every change on evidence about only one of them: whether the tools were offered. \u00a710's own Why records two independent causes (\"its session-start record lists `reckon-anchored-edit` with status `pending` \u2026 And unlike the codex arm (\u00a75), the Claude-dialect prompt never names the tool\"), and deliverable (2) exists to fix the second. An unfixed session that passes \u2014 including one that passes because a hand-built `clive` session is not the fenced, seeded launch that failed \u2014 therefore does not establish that nothing needs shipping, yet the section ships nothing and then cannot close, since closure requires a live `clive-anchored` run whose stream shows `edit_anchored` calls.",
+      "type": "done_when",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "de0c31ca8b550c54c9407441147109088cf59e6f",
+  "plan_fingerprint": "526104986702079bf921a890b28b100b774346e4c4fd371fd807c662997a9c58",
+  "plan_slug": "workers-spend-fewer-tokens-per-landed-node",
+  "plan_version": 44,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "de0c31ca8b550c54c9407441147109088cf59e6f",
+      "commit_basis": "edit",
+      "finding": "reasoning-1",
+      "note": "item (2) now says the launch step that seeds the server adds the instruction to the prompt; compose_prompt and the flight key are no longer named as its condition",
+      "reason": "",
+      "when": "2026-11-11T16:12:41.779128+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "de0c31ca8b550c54c9407441147109088cf59e6f",
+      "commit_basis": "edit",
+      "finding": "done_when-1",
+      "note": "a passing unfixed session now withholds only the startup change; the prompt instruction ships either way, since the Why records the missing instruction as an independent cause",
+      "reason": "",
+      "when": "2026-11-11T16:13:09.172545+00:00"
+    }
+  ],
+  "responses": {
+    "done_when-1": {
+      "action": "acted",
+      "by": "",
+      "commit": "de0c31ca8b550c54c9407441147109088cf59e6f",
+      "commit_basis": "edit",
+      "note": "a passing unfixed session now withholds only the startup change; the prompt instruction ships either way, since the Why records the missing instruction as an independent cause",
+      "reason": "",
+      "when": "2026-11-11T16:13:09.172545+00:00"
+    },
+    "reasoning-1": {
+      "action": "acted",
+      "by": "",
+      "commit": "de0c31ca8b550c54c9407441147109088cf59e6f",
+      "commit_basis": "edit",
+      "note": "item (2) now says the launch step that seeds the server adds the instruction to the prompt; compose_prompt and the flight key are no longer named as its condition",
+      "reason": "",
+      "when": "2026-11-11T16:12:41.779128+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/Code/reckon/docs/state/reckon/reviews/plan/workers-spend-fewer-tokens-per-landed-node/r-20261111T155556398520-plan-review-of-workers-spend-fewer-tokens-per-landed-node.json",
+  "review_run_id": "r-20261111T155556398520-plan-review-of-workers-spend-fewer-tokens-per-landed-node",
+  "reviewed_blob_sha": "00a3e2a5b77f59c317cbd9829b6e1030b6471659",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 \u00a74 and \u00a75 headings exist in the plan; `compose_prompt` resolves at `reckon/crew/prompts.py:648`, the `clive` dialect at `reckon/_backends.py:2755`, `read_anchored` and `edit_anchored` at `reckon/anchored_edit.py`, the cited run directory `r-20261111T130138944743-ab2-clive-anchored-a-gate-halts-s4` exists and its `attempt-1-worker.json` carries `anchored_edit: true` and its `stream.jsonl` carries `total_deferred_tools: 39`, and `clive-anchored` resolves as the arm label \u00a78's routing comment declares.",
+    "done_when": "a finding \u2014 \u00a710's done-when lets a passing unfixed session cancel both changes, including the prompt instruction the section's own evidence shows is missing.",
+    "evidence_paths": "pass \u2014 the experiment's records are kept as gate logs and the transcript \"beside the record\", which are the crew run-directory records a later reader opens; no session scratchpad or node-local temporary path is named as the store.",
+    "naming": "pass \u2014 the section names mechanisms and an arm label, and carries no plan labels, ticket numbers, version tags or changelog prose into code.",
+    "reasoning": "a finding \u2014 deliverable item (2) names `compose_prompt` and the flight key as the condition for the prompt instruction, contradicting the same deliverable's requirement that the instruction follow what the launch did rather than the flight key. The section prescribes implementation (`compose_prompt`, `MCP_TIMEOUT`) throughout; that alone is not filed as a finding because the plan's landed sections are named the same way and the node builds against the live code, but the contradiction below is a defect the worker cannot resolve from the text.",
+    "single_goal": "pass \u2014 the section has one goal (a Claude-dialect anchored worker is offered the tool and told to use it); the two changes are two parts of that one endpoint, not two deliverables.",
+    "wiring": "pass \u2014 \u00a78's `plan-section-depends-on` entry names s10, and \u00a710's own upstreams (\u00a74's seeding step, \u00a75's prompt seam) are both `done`, so no ordering edge is missing; the absent s10 entry in the depends-on map was declined earlier and orders nothing today."
+  },
+  "section_digests": {
+    "_document": "8d9aad505e7936579e5e4d355f26468dc70508e02815f52d9cd1e07e6b0f49e9",
+    "s1": "27efb946331b363cf3b48ca57f6009092461d2d586c980ec04683af290acb176",
+    "s10": "d1e4ee3c267a6f18815b763ebbc682d506fecb8d8b13fd08d77b28d7cd42f260",
+    "s2": "18a630a087c36f00788ca9ae4eba2d68e6b53ce5b7125f0da1af4e80b79bdf11",
+    "s3": "27f3ab4633055716703b5c5dc0489fd76b40de28c824267138496901afdd6ab4",
+    "s4": "cfaa23bf173d4d6871264740465b4cfe8419b64a4f662678500d625d859bc62d",
+    "s5": "c9183ce2a232ac782857e41634ee80387efd76e2fdd6a54bb8d09a4daed96e21",
+    "s6": "f3f3ac6fa716bf7bfc694dc026651c7f5e8c3c995720f26ec8e52dadcf7dee82",
+    "s7": "ad03def51d9b50982dddda60fabd711d849eb149f7c7aedc838f37c64f572076",
+    "s8": "10538eab034fdd52bc7935fcce8b1472ca6742b4f998d60e331d0c3b1813f85a",
+    "s9": "2b2876c321e5725696c3622c225b7a81b3403379688687af5b7f98042c6c79a5"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-11T16:10:39.966413+00:00",
+  "total": null
+}

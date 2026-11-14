@@ -1,0 +1,70 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "1ba76a7053eb0475cd44a89847c3ea76feebe73c",
+  "call_site_count": 6,
+  "call_sites": [
+    "reckon/crew/obligation_snapshot.py:1369",
+    "reckon/crew/obligation_snapshot.py:1517",
+    "reckon/crew/station_subscriber.py:155",
+    "reckon/crew/obligations.py:1152",
+    "reckon/crew/obligations.py:3490",
+    "reckon/hooks/coordinator_obligations.py:214"
+  ],
+  "completed_at": "2026-11-12T15:34:34.676Z",
+  "dimension_dispositions": {},
+  "dispatched_at": "2026-11-12T15:26:40Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "exempted",
+      "reason": "the superseded-head case asserts no awaiting-promotion duty and no promotion of the old review; tightening it to the exact review-missing kind is a test refinement, and the core case fails at base",
+      "recorded_at": "2026-11-12T15:54:48.616722+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "tests/test_a_delivered_review_reads_as_awaiting_promotion.py",
+      "line": "287",
+      "severity": "non-blocking",
+      "text": "non-blocking: the superseded-head case was weakened from an exact `duty[\"kind\"] == \"review-missing\"` to `\"review-awaiting-promotion\" not in kinds` plus `REVIEW_RUN_ID not in str(duties)`. A regression that yields no review duty at all for a superseded head now passes both assertions, so the test no longer holds the reading its docstring states \u2014 that the run is owed a review of its new head."
+    }
+  ],
+  "head_log_revision": "1ba76a7053eb0475cd44a89847c3ea76feebe73c",
+  "item_verdicts": {
+    "diff": "Read the five gained commits c70233841c, d4837739e4, 76f45691cf, 5da28b6437, 1ba76a7053 against a3bffb83: they add _stored_review_recorded and gate _delivered_review on it, rework the three test cases, and rewrite the fragment's change, gate and logs paragraphs; nothing else changed.",
+    "done_when": "The done_when names tests/test_a_delivered_review_reads_as_awaiting_promotion.py, its negative control, matched importer arms on all_debug and ruff; the test asserts kind == review-awaiting-promotion and names the review run (lines 207-212), the arms ran the selector's whole population (117 files at base, 118 at head) with 64/64 identical failure ids, and the negative control reddens at base \u2014 though base yields no duty at all rather than the review-missing the done_when states.",
+    "goal": "Plan section 34's goal is that a run whose recorded review dispatch names a delivered, unpromoted review reads review-awaiting-promotion and names that review run and its promotion command; reckon/crew/obligations.py:687-691 gates that reading on the store holding a record for the run's head, and obligations.py:2215-2223 sets the kind, review_run_id, reason and promotion command.",
+    "manifest": "Read; status complete, commits c70233841c through 1ba76a7053, after arm 56 passed EXIT=0, importer arms 64 failed/837 passed and 64 failed/842 passed with zero added and zero gone, negative control 1 failed/4 passed EXIT=1, every log headed with its revision and ending in a bare EXIT= line.",
+    "write_paths": "The granted fence at prompt.txt:80-84 names reckon/crew/obligations.py, tests/test_a_delivered_review_reads_as_awaiting_promotion.py, the fragment and a figures directory; the gained diff touches exactly the first three, all inside that set."
+  },
+  "justifications": {
+    "durability": "tests/test_a_delivered_review_reads_as_awaiting_promotion.py:257 reddens if the _stored_review_recorded call at obligations.py:687 is removed (the no-record case would read awaiting-promotion), but the superseded-head case at :286-288 no longer asserts review-missing exactly, so a regression yielding no duty there passes.",
+    "evidence": "importer-base.log reads '64 failed, 837 passed' and importer-head.log '64 failed, 842 passed' over the 117/118-file population the selector names, with identical failure sets, though the done_when's stated base reading, review-missing, does not reproduce \u2014 base yields no duty row at all, which the fragment records.",
+    "fit": "The helper at obligations.py:630 follows the module's private-helper idiom and reuses recovery.same_revision and the classifier's delivered-phase vocabulary rather than restating them.",
+    "goal_fidelity": "reckon/crew/obligations.py:2215-2223 sets REVIEW_AWAITING_PROMOTION_DUTY_KIND with review_run_id, a reason naming it and the promotion command, and obligations.py:687-691 confines it to a head the store holds a record for.",
+    "reuse": "_stored_review_recorded wraps the store's own reader review_records.stored_records_for_run; no owner answers 'any rubric at a head' because recovery_review_subject.select_review_for_head deliberately excludes the figure rubric, so the addition extends rather than forks.",
+    "scope_discipline": "The diff touches only reckon/crew/obligations.py, tests/test_a_delivered_review_reads_as_awaiting_promotion.py and docs/evidence/fragments/the-monitor-reads-each-fact-once/delivered-review-reads-as-awaiting-promotion.html, all inside prompt.txt:80-84."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: Plan section 34's goal is that a run whose recorded review dispatch names a delivered, unpromoted review reads review-awaiting-promotion and names that review run and its promotion command; reckon/crew/obligations.py:687-691 gates that reading on the store holding a record for the run's head, and obligations.py:2215-2223 sets the kind, review_run_id, reason and promotion command.\nVERDICT done_when: The done_when names tests/test_a_delivered_review_reads_as_awaiting_promotion.py, its negative control, matched importer arms on all_debug and ruff; the test asserts kind == review-awaiting-promotion and names the review run (lines 207-212), the arms ran the selector's whole population (117 files at base, 118 at head) with 64/64 identical failure ids, and the negative control reddens at base \u2014 though base yields no duty at all rather than the review-missing the done_when states.\nVERDICT write_paths: The granted fence at prompt.txt:80-84 names reckon/crew/obligations.py, tests/test_a_delivered_review_reads_as_awaiting_promotion.py, the fragment and a figures directory; the gained diff touches exactly the first three, all inside that set.\nVERDICT manifest: Read; status complete, commits c70233841c through 1ba76a7053, after arm 56 passed EXIT=0, importer arms 64 failed/837 passed and 64 failed/842 passed with zero added and zero gone, negative control 1 failed/4 passed EXIT=1, every log headed with its revision and ending in a bare EXIT= line.\nVERDICT diff: Read the five gained commits c70233841c, d4837739e4, 76f45691cf, 5da28b6437, 1ba76a7053 against a3bffb83: they add _stored_review_recorded and gate _delivered_review on it, rework the three test cases, and rewrite the fragment's change, gate and logs paragraphs; nothing else changed.\nCALL_SITES: reckon/crew/obligation_snapshot.py:1369, reckon/crew/obligation_snapshot.py:1517, reckon/crew/station_subscriber.py:155, reckon/crew/obligations.py:1152, reckon/crew/obligations.py:3490, reckon/hooks/coordinator_obligations.py:214\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/obligations.py:2215-2223 sets REVIEW_AWAITING_PROMOTION_DUTY_KIND with review_run_id, a reason naming it and the promotion command, and obligations.py:687-691 confines it to a head the store holds a record for.\nSCORE evidence: 17\nJUSTIFICATION evidence: importer-base.log reads '64 failed, 837 passed' and importer-head.log '64 failed, 842 passed' over the 117/118-file population the selector names, with identical failure sets, though the done_when's stated base reading, review-missing, does not reproduce \u2014 base yields no duty row at all, which the fragment records.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: The diff touches only reckon/crew/obligations.py, tests/test_a_delivered_review_reads_as_awaiting_promotion.py and docs/evidence/fragments/the-monitor-reads-each-fact-once/delivered-review-reads-as-awaiting-promotion.html, all inside prompt.txt:80-84.\nSCORE durability: 16\nJUSTIFICATION durability: tests/test_a_delivered_review_reads_as_awaiting_promotion.py:257 reddens if the _stored_review_recorded call at obligations.py:687 is removed (the no-record case would read awaiting-promotion), but the superseded-head case at :286-288 no longer asserts review-missing exactly, so a regression yielding no duty there passes.\nSCORE fit: 18\nJUSTIFICATION fit: The helper at obligations.py:630 follows the module's private-helper idiom and reuses recovery.same_revision and the classifier's delivered-phase vocabulary rather than restating them.\nSCORE reuse: 20\nJUSTIFICATION reuse: _stored_review_recorded wraps the store's own reader review_records.stored_records_for_run; no owner answers 'any rubric at a head' because recovery_review_subject.select_review_for_head deliberately excludes the figure rubric, so the addition extends rather than forks.\nFINDING tests/test_a_delivered_review_reads_as_awaiting_promotion.py:287 non-blocking: the superseded-head case was weakened from an exact `duty[\"kind\"] == \"review-missing\"` to `\"review-awaiting-promotion\" not in kinds` plus `REVIEW_RUN_ID not in str(duties)`. A regression that yields no review duty at all for a superseded head now passes both assertions, so the test no longer holds the reading its docstring states \u2014 that the run is owed a review of its new head.",
+  "review_run_id": "r-20261112T152442768638-review-of-delivered-review-reads-as-awaiting-promotion-1ba76a7053eb",
+  "reviewed_base_sha": "a3bffb83451a07824c52792cb2ea1cb2d782175c",
+  "reviewed_head_sha": "1ba76a7053eb0475cd44a89847c3ea76feebe73c",
+  "reviewed_run_id": "r-20261112T110221445514-delivered-review-reads-as-awaiting-promotion",
+  "reviewer": "deepseek-v4.1-flash",
+  "reviewer_run_id": "r-20261112T152442768638-review-of-delivered-review-reads-as-awaiting-promotion-1ba76a7053eb",
+  "scores": {
+    "durability": 16,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-12T15:38:02.878269+00:00",
+  "total": 109
+}

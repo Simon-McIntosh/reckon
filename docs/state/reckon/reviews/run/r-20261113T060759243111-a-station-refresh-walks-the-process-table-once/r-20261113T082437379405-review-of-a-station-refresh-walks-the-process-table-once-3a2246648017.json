@@ -1,0 +1,49 @@
+{
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew/obligation_snapshot.py:1370-1376 fleet_state opens the process-table region",
+    "reckon/crew/obligation_snapshot.py:1712 the sweep's fleet_state call",
+    "reckon/crew/station_obligations.py:249 station_obligations.refresh",
+    "reckon/crew/recovery_liveness.py:1366 the from_beat_map read inside the region"
+  ],
+  "completed_at": "2026-11-13T08:54:45.918Z",
+  "dispatched_at": "2026-11-13T08:29:07Z",
+  "findings": [],
+  "item_verdicts": {
+    "diff": "read commit by commit; 6490665a5d replaces the module-global pin with a ContextVar at reckon/crew/process_signal.py:303-305 and takes the walk on the region's first read at lines 409-413, adding the thread-isolation and no-scan tests; 3a22466480 corrects the change paragraph at docs/evidence/fragments/crew-observability-truth/a-station-refresh-walks-the-process-table-once.html:10.",
+    "done_when": "the measured claim is one refresh over 30 live pointers with every pointer reaching the environment scan, at most one walk, and each pointer's liveness equal to its per-pointer answer; tests/test_a_station_refresh_walks_the_process_table_once.py:316-359 asserts that count and :362-398 the equality, and suite-after.log records 55 passed, EXIT=0 over that file and the inventory file.",
+    "goal": "the node's goal is that a station refresh walks the process table once, and reckon/crew/obligation_snapshot.py:1370-1376 opens processes_module.process_table_walk_once() around the whole _derive_fleet_state() call so every liveness read inside the derivation answers from one /proc walk; the commits under review change how that region is held, not the goal it serves.",
+    "manifest": "read; it records commits 92b8064db3, 7d0b2be51a, 6490665a5d and 3a22466480, both suite arms with their log paths, the regenerated negative control at 8b5c440f and the two mutant logs, and every commit it names is one the diff carries.",
+    "write_paths": "the manifest declares five paths, and git diff 7d0b2be51a..3a22466480 touches exactly the three paths this review names; all three sit inside the declaration: reckon/crew/process_signal.py, tests/test_a_station_refresh_walks_the_process_table_once.py and docs/evidence/fragments/crew-observability-truth/a-station-refresh-walks-the-process-table-once.html."
+  },
+  "justifications": {
+    "durability": "reinstating the shared pin reddens tests/test_a_station_refresh_walks_the_process_table_once.py:512 and reinstating the eager walk reddens line 433, both recorded in the mutant logs; the no-scan test leans on the sibling count test to catch the region being removed from fleet_state.",
+    "evidence": "tests/test_a_station_refresh_walks_the_process_table_once.py:352 measures the done-when's walk count and suite-after.log records 55 passed with EXIT=0, while negative-control.log at 8b5c440f prints 30 walks against the head arm's 1; the one shortfall is that the suite pair's base arm covers only the inventory file.",
+    "fit": "the pin is now a ContextVar at reckon/crew/process_signal.py:303-305, matching the sibling regions at reckon/crew/admission/shared.py:340 and reckon/crew/obligations.py:597, and no added symbol, comment or filename carries a plan, ticket or version identifier.",
+    "goal_fidelity": "reckon/crew/obligation_snapshot.py:1370-1376 still opens the region around the whole derivation and reckon/crew/process_signal.py:409-413 still answers every read inside it from one walk, so the landed commits keep the single-walk goal.",
+    "reuse": "no owner of a process-table pin exists; the search over reckon/ found reckon/ledger.py:1814 index_reuse, reckon/crew/recovery_review_dispatch.py:902 review_heads_resolve_once and reckon/crew/obligations.py:597 _VIEW_LIVE_POINTERS, each pin a different read, and the change extends the owning module reckon/crew/process_signal.py in place.",
+    "scope_discipline": "every path in git diff 7d0b2be51a..3a22466480 is one of the manifest's five declared write paths, and only the three this review was scoped to."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that a station refresh walks the process table once, and reckon/crew/obligation_snapshot.py:1370-1376 opens processes_module.process_table_walk_once() around the whole _derive_fleet_state() call so every liveness read inside the derivation answers from one /proc walk; the commits under review change how that region is held, not the goal it serves.\nVERDICT done_when: the measured claim is one refresh over 30 live pointers with every pointer reaching the environment scan, at most one walk, and each pointer's liveness equal to its per-pointer answer; tests/test_a_station_refresh_walks_the_process_table_once.py:316-359 asserts that count and :362-398 the equality, and suite-after.log records 55 passed, EXIT=0 over that file and the inventory file.\nVERDICT write_paths: the manifest declares five paths, and git diff 7d0b2be51a..3a22466480 touches exactly the three paths this review names; all three sit inside the declaration: reckon/crew/process_signal.py, tests/test_a_station_refresh_walks_the_process_table_once.py and docs/evidence/fragments/crew-observability-truth/a-station-refresh-walks-the-process-table-once.html.\nVERDICT manifest: read; it records commits 92b8064db3, 7d0b2be51a, 6490665a5d and 3a22466480, both suite arms with their log paths, the regenerated negative control at 8b5c440f and the two mutant logs, and every commit it names is one the diff carries.\nVERDICT diff: read commit by commit; 6490665a5d replaces the module-global pin with a ContextVar at reckon/crew/process_signal.py:303-305 and takes the walk on the region's first read at lines 409-413, adding the thread-isolation and no-scan tests; 3a22466480 corrects the change paragraph at docs/evidence/fragments/crew-observability-truth/a-station-refresh-walks-the-process-table-once.html:10.\nCALL_SITES: reckon/crew/obligation_snapshot.py:1370-1376 fleet_state opens the process-table region, reckon/crew/obligation_snapshot.py:1712 the sweep's fleet_state call, reckon/crew/station_obligations.py:249 station_obligations.refresh, reckon/crew/recovery_liveness.py:1366 the from_beat_map liveness read inside the region\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: goal: reckon/crew/obligation_snapshot.py:1370-1376 still opens the region around the whole derivation and reckon/crew/process_signal.py:409-413 still answers every read inside it from one walk, so the landed commits keep the single-walk goal.\nSCORE evidence: 18\nJUSTIFICATION evidence: evidence: tests/test_a_station_refresh_walks_the_process_table_once.py:352 measures the done-when's walk count and suite-after.log records 55 passed with EXIT=0, while negative-control.log at 8b5c440f prints 30 walks against the head arm's 1; the one shortfall is that the suite pair's base arm covers only the inventory file.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: scope: every path in git diff 7d0b2be51a..3a22466480 is one of the manifest's five declared write paths, and only the three this review was scoped to.\nSCORE durability: 19\nJUSTIFICATION durability: durability: reinstating the shared pin reddens tests/test_a_station_refresh_walks_the_process_table_once.py:512 and reinstating the eager walk reddens line 433, both recorded in the mutant logs; the no-scan test leans on the sibling count test to catch the region being removed from fleet_state.\nSCORE fit: 19\nJUSTIFICATION fit: fit: the pin is now a ContextVar at reckon/crew/process_signal.py:303-305, matching the sibling regions at reckon/crew/admission/shared.py:340 and reckon/crew/obligations.py:597, and no added symbol, comment or filename carries a plan, ticket or version identifier.\nSCORE reuse: 20\nJUSTIFICATION reuse: reuse: no owner of a process-table pin exists; the search over reckon/ found reckon/ledger.py:1814 index_reuse, reckon/crew/recovery_review_dispatch.py:902 review_heads_resolve_once and reckon/crew/obligations.py:597 _VIEW_LIVE_POINTERS, each pin a different read, and the change extends the owning module reckon/crew/process_signal.py in place.\n",
+  "review_run_id": "r-20261113T082437379405-review-of-a-station-refresh-walks-the-process-table-once-3a2246648017",
+  "reviewed_base_sha": "7d0b2be51a9e6b98c2c8bf0712b740fbed2517a9",
+  "reviewed_head_sha": "3a2246648017569a0a1c3548bfa2dd2e42428f55",
+  "reviewed_run_id": "r-20261113T060759243111-a-station-refresh-walks-the-process-table-once",
+  "revision_note": "The diff read is 7d0b2be51a..3a22466480, the two commits this node gained since the review stored at .at-7d0b2be5; the node's own dispatch base is 8b5c440f1d04c8871f56314700a16d84184ff59c and the earlier record covers 8b5c440f..7d0b2be5.",
+  "scores": {
+    "durability": 19,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-13T09:06:48.964748+00:00",
+  "total": 116
+}

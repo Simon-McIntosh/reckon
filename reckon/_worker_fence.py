@@ -302,6 +302,8 @@ def seed_harness_home(
         if not source.exists():
             continue
         _merge_harness_entry(source, home / relative, entry.get("keys"))
+    if dialect_name == "claude":
+        _seed_worker_inbox_hook(home)
     if resume_session:
         _seed_harness_session(home, source_home, str(resume_session))
     if (
@@ -356,6 +358,22 @@ def _declared_worker_mcp_servers(config: Mapping[str, Any] | None) -> list[str]:
         if name and name not in names:
             names.append(name)
     return names
+
+
+def _seed_worker_inbox_hook(home: Path) -> None:
+    """Register the inbox hook in a run home's settings, whatever it holds.
+
+    A run's own settings file is otherwise never rewritten, because the harness
+    writes state into it. This entry is the exception, and it is merged rather
+    than skipped: the hook is what gives the run a delivery channel, and a home
+    seeded before the hook existed carries a settings file this seed would
+    otherwise never touch, so the run would read as reachable while holding no
+    hook. Every key and hook group already in the file is preserved and an entry
+    already present is not duplicated.
+    """
+    from reckon.hooks import install
+
+    install.merge_worker_inbox_hook(home / "settings.json")
 
 
 def _seed_worker_mcp_settings(home: Path, worker_mcp_servers: Iterable[str]) -> None:

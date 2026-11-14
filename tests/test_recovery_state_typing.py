@@ -67,7 +67,11 @@ def _typed_examples(tmp_path: Path, monkeypatch) -> dict[str, dict]:
             }
         return original_stream_budget(record)
 
-    (monkeypatch.setattr(recovery_stream, "_stream_budget", stream_budget), monkeypatch.setattr(recovery_wait, "_stream_budget", stream_budget), monkeypatch.setattr(recovery_classification, "_stream_budget", stream_budget))
+    (
+        monkeypatch.setattr(recovery_stream, "_stream_budget", stream_budget),
+        monkeypatch.setattr(recovery_wait, "_stream_budget", stream_budget),
+        monkeypatch.setattr(recovery_classification, "_stream_budget", stream_budget),
+    )
 
     answer_pointer = _pointer(tmp_path, "answer")
     _manifest(
@@ -88,7 +92,9 @@ def _typed_examples(tmp_path: Path, monkeypatch) -> dict[str, dict]:
 
     stalled_pointer = _pointer(tmp_path, "stalled", alive=True)
     Path(stalled_pointer["log_path"]).write_text("{}\n", encoding="utf-8")
-    monkeypatch.setattr(recovery_liveness, "_stream_quiet_seconds", lambda *_a, **_k: 901)
+    monkeypatch.setattr(
+        recovery_liveness, "_stream_quiet_seconds", lambda *_a, **_k: 901
+    )
     monkeypatch.setattr(recovery_watch, "_stall_wait_reason", lambda _record: None)
 
     return {
@@ -122,31 +128,35 @@ def test_a_lane_hold_always_states_its_reset(
     tmp_path: Path, monkeypatch, reset: str | None
 ) -> None:
     pointer = _pointer(tmp_path, "held-reset")
-    (monkeypatch.setattr(
-        recovery_stream,
-        "_stream_budget",
-        lambda _record: {
-            "refusal": True,
-            "rate_limit_type": "quota",
-            "resets_at": reset,
-        },
-    ), monkeypatch.setattr(
-        recovery_wait,
-        "_stream_budget",
-        lambda _record: {
-            "refusal": True,
-            "rate_limit_type": "quota",
-            "resets_at": reset,
-        },
-    ), monkeypatch.setattr(
-        recovery_classification,
-        "_stream_budget",
-        lambda _record: {
-            "refusal": True,
-            "rate_limit_type": "quota",
-            "resets_at": reset,
-        },
-    ))
+    (
+        monkeypatch.setattr(
+            recovery_stream,
+            "_stream_budget",
+            lambda _record: {
+                "refusal": True,
+                "rate_limit_type": "quota",
+                "resets_at": reset,
+            },
+        ),
+        monkeypatch.setattr(
+            recovery_wait,
+            "_stream_budget",
+            lambda _record: {
+                "refusal": True,
+                "rate_limit_type": "quota",
+                "resets_at": reset,
+            },
+        ),
+        monkeypatch.setattr(
+            recovery_classification,
+            "_stream_budget",
+            lambda _record: {
+                "refusal": True,
+                "rate_limit_type": "quota",
+                "resets_at": reset,
+            },
+        ),
+    )
 
     row = recovery.classify_pointer(pointer)
 
@@ -433,4 +443,4 @@ def test_ticker_carries_the_recovery_verb_in_an_actionable_row() -> None:
     assert recovery.RECOVERY_VERBS["blocked"]  # the row's own remedy
     assert "decide:" not in line
     assert "a storage policy is required" not in line
-    assert "halted" in line
+    assert "needs you" in line

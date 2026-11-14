@@ -1,0 +1,72 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-13T04:23:51.838Z",
+  "dispatched_at": "2026-11-13T04:16:02Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-review-dies-where-nobody-is-looking.html:506",
+      "id": "reasoning-1",
+      "reason": "a worker fenced to the two named paths cannot reach the decision point, so it either blocks on scope or edits an out-of-scope module, and the endpoint is never delivered.",
+      "text": "\u00a716 declares write paths reckon/crew/recovery_review_dispatch.py and reckon/crew/runs.py, but the refusal it must relax is raised in reckon/crew/dispatch_claims.py, whose own comment states \"a dispatch onto those same paths still refuses as it always has; only the acceptance that names the path is allowed to walk past the claim\" (dispatch_claims.py:2496-2501), with the sole existing exemption applied in reckon/crew/claims.py:156 via `_set_aside_on_acceptance`; runs.py only delegates to that check through `_raise_live_scope_conflict` (runs.py:1894), which has no callers, and recovery_review_dispatch.py contains no scope-refusal logic at all",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-review-dies-where-nobody-is-looking.html:506",
+      "id": "done_when-1",
+      "reason": "the state the test must construct is the run ending with a terminal manifest status while its pointer stays live, and a done-when that names the wrong route makes the declared negative control unable to fail.",
+      "text": "\"a test completes a review run without promoting it\" describes a state this tree cannot produce through its own verb: `complete()` is the promotion verb (\"Promote a run, or finish cleanup when its record already landed\", promotion.py:426; the same call promotion.py:1285 locks as `_complete_locked`), so a test that calls the completion path retires the pointer and its claim, and the negative control would come back green at the base revision because no claim is left to refuse the second dispatch",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-review-dies-where-nobody-is-looking.html:536",
+      "id": "reasoning-2",
+      "reason": "the followup is what a coordinator reads to size the remaining queue, and it under-reports three open sections as one.",
+      "text": "the open followup f-ardwnil-005 states \"\u00a79 \u2026 is the plan's last open section\", while the document's own declarations at plan.html:28 carry s14, s15 and s16 as implementable and f-ardwnil-006/007/008 queue all three",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "41b6e4c683a91c9d0659744ca9cd30edb1620709",
+  "plan_fingerprint": "3c333face5d4b061ffe833e7606f3de175355361b69b547e20221178495c8f96",
+  "plan_slug": "a-review-dies-where-nobody-is-looking",
+  "plan_version": 118,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261113T040001855951-plan-review-of-a-review-dies-where-nobody-is-looking",
+  "reviewed_blob_sha": "39dd98c7d70f835bd0bccf4dcf53e816731418cd",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 reckon/crew/recovery_review_dispatch.py, reckon/crew/runs.py, tests/ and the review-records/<run>.json path shape (RUN_REVIEW_RECORD_DIRNAME, reckon/crew/review.py:3254) all resolve, and `--gate not-run` is a declared ledger verdict.",
+    "done_when": "a finding \u2014 \u00a716's done-when requires \"a test completes a review run without promoting it\", and in this tree `crew complete` is the promotion verb, so the state the test must build is not reachable through the verb the clause names (plan.html:506).",
+    "evidence_paths": "pass \u2014 the gate runs on all_debug with logs under the run directory (~/.config/reckon/crew/runs/<run>/), a durable GPFS path, and names no scratchpad or node-local temporary path.",
+    "naming": "pass \u2014 \u00a716 introduces no symbols, and its prose carries no plan labels, ticket numbers or changelog references (the run names booking-cost, read-tie-break and the rest are field identifiers, not stage labels).",
+    "reasoning": "a finding \u2014 the endpoint \u00a716 asks for is decided in reckon/crew/dispatch_claims.py, which the section's declared write paths omit, so a worker inside the named scope cannot deliver it.",
+    "single_goal": "pass \u2014 \u00a716 names one deliverable (a completed review stops blocking a later review's claim on the same record path), and its \"still working\" clause is that deliverable's guard rather than a second deliverable.",
+    "wiring": "pass \u2014 `plan-depends-on worker-death-is-recorded` and `plan-informs scoring-should-stop-a-promotion` both resolve under docs/plans/, and the new followup f-ardwnil-008 recommends the \u00a716 that exists at plan.html:504."
+  },
+  "section_digests": {
+    "_document": "685c4c6977a96a0a5f1868e22c183a4141f71f8947bc1acbde6fa5da119c42ca",
+    "s1": "b13bacdd3dd40a8e3cb226066b6660b6aebf8a50b7f0d135972dce72a067ff10",
+    "s10": "a5c034b4157c2223c785f33e695ea65b6b5a8d2715cc7920e0089851b40ee94d",
+    "s11": "ee506b104842ed50a3cea08abe395e6e43918cff0f3239ce091415fe2e98fe39",
+    "s12": "f34aff9875ad00ad0d781d7805d52889b986efe74f16afeb8b465b4b29ef6615",
+    "s13": "0d8216edfe080ceb87b3d564a43e360fb4b061ce5301280c96ee1588cf3ebe34",
+    "s14": "f7cbf09908798bffbe78ff528c6dca6d71a8d9a29dcb31f415b287e6b169486b",
+    "s15": "00e76cf5044cf8a22fe2c34cd12af55dc9df115075c2d599dc91d8174cf33ec5",
+    "s16": "12f05c4cfb57c8842040fcbe5271c4fc65d31a6dd7fe9dd6a7b84dbf4b848e0a",
+    "s2": "06b36b451d3e1f9cc4f3c7c8c54bc8f4a1c93efe0eab5a9d7dccde893ace0c54",
+    "s3": "017097c61e4fa1d5d2dc8f168b9f71610c2ae361ff0f2c1d5cffb2b68c7df410",
+    "s4": "dfa3413c15b5496e8adbcf0232faeb0066257492e10fbd4fa9aefccc0fb09e77",
+    "s5": "2a352f8bf478dcdf4e8b5b0125205012974807a199c4b04c43b93d0b94534685",
+    "s6": "a9509e66f17fcf2ce1a5c6f73f1bf69c9b8e9f0a5fc2c8828b680e6e533c8a89",
+    "s7": "7132004ffea77391601b22ef619715e5e1b92d1f216e8fa177ee601bd9d6b7dd",
+    "s8": "8b258458e56f488bec3ad12a01ff14bb102096e78b20d9099bb99ca2911f2964",
+    "s9": "059f92c7b3786222a361ca3a5049648fd0cccb17f00ec762e7bdfba6ee02e958"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-13T05:43:31.651391+00:00",
+  "total": null
+}

@@ -1,0 +1,80 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "81250b3e98d19f94f02cb035eac29f9d57a8e135",
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew/queue_admission.py:5568 admission pass consults _retry_backoff_hold",
+    "reckon/crew/dispatch.py:577 dispatch consults queue_admission._retry_backoff_hold",
+    "reckon/crew/queue_admission.py:6028 _record_queued_failure stamps the failure",
+    "reckon/crew_run_commands.py:4890 crew admit -> admit_until_stopped -> admit_once"
+  ],
+  "completed_at": "2026-11-12T02:20:15.112Z",
+  "dispatched_at": "2026-11-12T02:01:42Z",
+  "findings": [
+    {
+      "file": "tests/test_a_plan_commit_releases_its_backed_off_requests.py",
+      "line": "198",
+      "severity": "non-blocking",
+      "text": "non-blocking: the only assertion covering the stale-stamp branch reads a record that never carried a stamp, so deleting `record.pop(\"failure_plan_commit\", None)` at reckon/crew/queue_admission.py:1896 reddens nothing; the case that branch exists for, a plan refusal followed by a refusal of another kind, is untested despite the comment at :1893-1896 naming it."
+    },
+    {
+      "file": "reckon/crew/queue_admission.py",
+      "line": "1053",
+      "severity": "non-blocking",
+      "text": "non-blocking: `_plan_committed_stamp` calls `subprocess.run` with no `OSError`/`SubprocessError` guard and no timeout, where the module's own sibling idiom at reckon/crew/queue_admission.py:3117 guards both, so a git that is missing or does not return a hung `rev-parse` raises out of the admission pass at :5568 instead of reading `absent` and leaving the request backing off."
+    },
+    {
+      "file": "docs/evidence/fragments/work-flows-to-the-lane/plan-commit-releases-backoff.html",
+      "line": "73",
+      "severity": "non-blocking",
+      "text": "non-blocking: the done_when's population arm measured on all_debug was replaced by a serial five-file run, and only that run's base arm is on disk (base-central.log: 19 failed / 30 passed, EXIT=1); the head arm's figure is recorded in the manifest and the session rather than in a log, so the zero-added-failures claim rests on a substitute population with one arm unreadable."
+    },
+    {
+      "file": "tests/test_a_plan_commit_releases_its_backed_off_requests.py",
+      "line": "175",
+      "severity": "non-blocking",
+      "text": "non-blocking: `assert blob != \"\"` cannot name a condition under which it fails \u2014 `_commit_plan` returns the output of a `_git` call that raises on a nonzero exit, so no change to the code under test moves it and it guards nothing."
+    }
+  ],
+  "head_log_revision": "5740f22d074062f0be15d1f642f05b9f7a7b299f",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified four production call sites: the admission pass at reckon/crew/queue_admission.py:5568, dispatch's own hold check at reckon/crew/dispatch.py:577, the failure recorder at reckon/crew/queue_admission.py:6028, and the fleet admit entry reckon/crew_run_commands.py:4890.",
+    "diff": "read commit by commit: b7a4fe7a5 adds _plan_document_path, _plan_committed_stamp and _is_plan_visibility_refusal, releases the back-off on a moved plan blob at :1853, stamps and clears failure_plan_commit at :1891-1896, registers the key in QUEUED_LIFE_KEYS at :5924 and adds the 240-line test; 5740f22d0 adds the evidence fragment.",
+    "done_when": "the done_when names three cases in tests/test_a_plan_commit_releases_its_backed_off_requests.py and a negative control; the file asserts all three (:167-177, :179-202, :204-232), the control reddens the release case, and I re-ran the file at the reviewed head myself: 3 passed. The done_when's population arm is the part not met as written.",
+    "goal": "the goal is to retry a request backing off on an uncommitted-plan refusal at the first admit pass after the plan's committed content changes; reckon/crew/queue_admission.py:1853-1858 does exactly that by comparing the plan's HEAD blob against the one stamped at failure time.",
+    "manifest": "read; status complete, commits b7a4fe7a5 and 5740f22d0, changed_paths the three files, the gate command recorded literally, both suite arms with revisions and zero failures, the negative-control log path, and an honest outside_scope entry about the population arm.",
+    "write_paths": "the fence was reckon/crew/queue_admission.py, the new test, the evidence fragment and a figures directory; the diff touches the first three and creates no figure, so every path is inside it."
+  },
+  "justifications": {
+    "durability": "the release assertion at tests/test_a_plan_commit_releases_its_backed_off_requests.py:165 is proven by mutation (negative-control.log) and the stamp assertion at :230 compares the pointer's field against an independent `git rev-parse` rather than against the value the test handed in, but the stale-stamp pop at reckon/crew/queue_admission.py:1896 and the vacuous assertion at :175 are unguarded.",
+    "evidence": "the three conditions of the done_when are asserted in tests/test_a_plan_commit_releases_its_backed_off_requests.py:143-232 and I re-ran that file at 5740f22d in a scratch tree: 3 passed; the negative control at negative-control.log reddens exactly the release assertion (165: ['r-plan'] == ['r-plan','r-plan']), EXIT=1; the declared baseline_suite and after_suite arms are 51 and 54 passed, EXIT=0, but the done_when's all_debug population arm was replaced and base-central.log:3 records a description rather than the command that ran.",
+    "fit": "the helpers at reckon/crew/queue_admission.py:1027-1067 follow the module's private-helper form with mechanism docstrings beside _file_stamp at :1017, and no added name carries a plan, stage or ticket identifier, though the subprocess call I cite under evidence departs from the module's own guarded idiom.",
+    "goal_fidelity": "reckon/crew/queue_admission.py:1853-1858 attempts a request whose recorded failure is a PlanVisibilityError as soon as the plan's blob at HEAD differs from the one stamped at failure time, before retry_at is consulted, which is the goal exactly.",
+    "reuse": "no owner exists for the committed blob of a repository path \u2014 a search of reckon/ for rev-parse found only unrelated HEAD lookups (reckon/checkout_trust.py:244 --verify HEAD:reckon) \u2014 and _plan_document_path consolidates the path expression _dependency_guard already built inline, though reckon/crew/queue_admission.py:4522,4651,4992 still build it locally.",
+    "scope_discipline": "git diff --stat 81250b3e9..5740f22d0 lists reckon/crew/queue_admission.py, the new test file and the evidence fragment, all three inside the four paths the node was fenced to, and nothing else."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to retry a request backing off on an uncommitted-plan launch refusal at the first pass after the plan's committed content changes; reckon/crew/queue_admission.py:1853-1858 compares the plan's blob at HEAD with the one stamped at failure time and releases the back-off before retry_at, which is that goal exactly.\nVERDICT done_when: the done_when names three cases in tests/test_a_plan_commit_releases_its_backed_off_requests.py; the file asserts all three and the declared negative control reddens the release assertion at :165, and I re-ran that file at 5740f22d in a scratch tree and got 3 passed \u2014 though the done_when's all_debug population arm was replaced by a narrow serial run.\nVERDICT write_paths: the node was fenced to reckon/crew/queue_admission.py, the new test, the evidence fragment and a figures directory; git diff --stat 81250b3e9..5740f22d0 touches the first three only and creates no figure.\nVERDICT manifest: read; status complete, the literal gate command, both suite arms at 51 and 54 passed EXIT=0 with their revisions, the negative-control log path, and an outside_scope entry that discloses the population arm's failure rather than hiding it.\nVERDICT diff: read both commits against 81250b3e9 \u2014 b7a4fe7a5 adds three helpers, the release branch at :1853, the stamp and its removal at :1891-1896, the QUEUED_LIFE_KEYS entry at :5924 and the 240-line test; 5740f22d0 adds the 89-line evidence fragment.\nCALL_SITES: reckon/crew/queue_admission.py:5568, reckon/crew/dispatch.py:577, reckon/crew/queue_admission.py:6028, reckon/crew_run_commands.py:4890\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/queue_admission.py:1853-1858 releases a PlanVisibilityError back-off when the plan's HEAD blob differs from the stamped one, before retry_at is read, which is the plan's deliverable in full.\nSCORE evidence: 15\nJUSTIFICATION evidence: the gate asserts all three done_when cases and I re-ran it at 5740f22d to 3 passed, and negative-control.log:165 reddens exactly the release assertion, but base-central.log records a description instead of a command and the population arm's head figure is in no log.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in git diff --stat 81250b3e9..5740f22d0 is inside the node's fence, and the fragment is the landing record the contract permits at its scope path.\nSCORE durability: 16\nJUSTIFICATION durability: the release assertion at tests/test_a_plan_commit_releases_its_backed_off_requests.py:165 is proven by the recorded mutation, but the stale-stamp branch at reckon/crew/queue_admission.py:1896 and the vacuous assertion at :175 would survive their own regressions.\nSCORE fit: 17\nJUSTIFICATION fit: the helpers at reckon/crew/queue_admission.py:1027-1067 follow the private-helper idiom beside _file_stamp at :1017, but :1053 departs from the module's own guarded subprocess idiom at :3117.\nSCORE reuse: 18\nJUSTIFICATION reuse: a search of reckon/ for a committed-blob reader found no owner, only unrelated HEAD lookups at reckon/checkout_trust.py:244, and _plan_document_path consolidates the path expression _dependency_guard already built inline.\nFINDING tests/test_a_plan_commit_releases_its_backed_off_requests.py:198 non-blocking: the only assertion covering the stale-stamp branch reads a record that never carried a stamp, so deleting `record.pop(\"failure_plan_commit\", None)` at reckon/crew/queue_admission.py:1896 reddens nothing; the case that branch exists for, a plan refusal followed by a refusal of another kind, is untested despite the comment at :1893-1896 naming it.\nFINDING reckon/crew/queue_admission.py:1053 non-blocking: `_plan_committed_stamp` calls `subprocess.run` with no `OSError`/`SubprocessError` guard and no timeout, where the module's own sibling idiom at reckon/crew/queue_admission.py:3117 guards both, so a git that is missing or does not return raises out of the admission pass at :5568 instead of reading `absent`.\nFINDING docs/evidence/fragments/work-flows-to-the-lane/plan-commit-releases-backoff.html:73 non-blocking: the done_when's population arm measured on all_debug was replaced by a serial five-file run and only its base arm is on disk (base-central.log: 19 failed / 30 passed, EXIT=1), so the zero-added-failures claim rests on a substitute population with its head arm unreadable.\nFINDING tests/test_a_plan_commit_releases_its_backed_off_requests.py:175 non-blocking: `assert blob != \"\"` cannot name a condition under which it fails, since `_commit_plan` returns the output of a `_git` call that raises on a nonzero exit, so it guards nothing.\n",
+  "review_run_id": "r-20261112T014720661916-review-of-plan-commit-releases-backoff-5740f22d0740",
+  "reviewed_base_sha": "81250b3e98d19f94f02cb035eac29f9d57a8e135",
+  "reviewed_head_sha": "5740f22d074062f0be15d1f642f05b9f7a7b299f",
+  "reviewed_run_id": "r-20261111T185831299202-plan-commit-releases-backoff",
+  "reviewer": "deepseek-v4.1-flash",
+  "reviewer_run_id": "r-20261112T014720661916-review-of-plan-commit-releases-backoff-5740f22d0740",
+  "scores": {
+    "durability": 16,
+    "evidence": 15,
+    "fit": 17,
+    "goal_fidelity": 19,
+    "reuse": 18,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-12T03:27:40.621600+00:00",
+  "total": 105
+}

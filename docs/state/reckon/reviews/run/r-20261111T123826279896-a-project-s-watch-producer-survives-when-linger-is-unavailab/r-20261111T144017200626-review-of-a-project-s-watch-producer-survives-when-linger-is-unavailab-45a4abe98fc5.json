@@ -1,0 +1,56 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-11-11T14:59:30.067Z",
+  "dispatched_at": "2026-11-11T14:47:48Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "exempted",
+      "reason": "recovery_watch.py was named by the review and the coordinator's advice; the run is widened to it.",
+      "recorded_at": "2026-11-11T15:52:07.589955+00:00"
+    },
+    "1": {
+      "kind": "exempted",
+      "reason": "The local liveness probe beside _record_producer_running is a consolidation; the endpoint's cases pass through the supervised launch.",
+      "recorded_at": "2026-11-11T15:52:27.278634+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "reckon/crew/recovery_watch.py",
+      "line": 3219,
+      "severity": "non-blocking",
+      "text": "the increment writes a production module outside the source node's fenced paths; the manifest discloses it under scope_extension, but the coordinator must widen the run's scope or the promotion gate will read the change as out of scope"
+    },
+    {
+      "file": "reckon/crew/dispatch_watch.py",
+      "line": 359,
+      "severity": "non-blocking",
+      "text": "the added local liveness probe re-derives the process-table check reckon/crew/watch_unit.py:109 _record_producer_running already performs for watcher_live, and no test exercises the new branch, so reverting it and trusting watcher_live as before leaves every test green"
+    },
+    {
+      "file": "reckon/crew/runs.py",
+      "line": 3899,
+      "severity": "non-blocking",
+      "text": "watch_work_is_live counts any pointer in the live directory as work, including a completed run awaiting promotion, so a project with no live follower and an outstanding pointer still exits 75 and is restarted once per lease interval"
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the source node's goal is that a project's watch producer survives when linger is unavailable; the increment reads a lapsed lease against live work (reckon/crew/runs.py:3921 end_lapsed_watch_seat) and makes every lapse site in the wait ask that one verdict (reckon/crew/recovery_watch.py:3223), so a genuine lost seat still leaves WATCH_SEAT_LOST_EXIT for the supervisor at reckon/crew/dispatch_watch.py:311 to restart while an idle project drains.\nVERDICT done_when: the section's done-when names tests/test_a_producer_survives_without_linger.py with its negative control and no added failure for the test files importing the changed modules; the manifest's tests line is the literal command and arm-base.log records 59 passed at a5764282 with arm-after.log 65 passed at 45a4abe98f, both EXIT=0, while negative-control.log is red at 1 failed.\nVERDICT write_paths: the source node's fence names reckon/crew/dispatch_watch.py, reckon/crew/runs.py, tests/test_a_crashed_producer_is_restarted.py, tests/test_a_producer_survives_without_linger.py, the evidence fragment and a figures directory; the increment touches the first five and adds reckon/crew/recovery_watch.py, which is outside the fence and disclosed in the manifest's scope_extension.\nVERDICT manifest: read; it records commits 20f749a4c1, 7707166cdf and 45a4abe98f, the two arms, the red negative control with its mutation, the measurement module and cwd, and a scope_extension for recovery_watch.py.\nVERDICT diff: read the single gained commit 45a4abe98f against 7707166cdfd1e53f58ccd0b0d0470c0f5cf4a3d0 commit by commit over six files, 183 insertions and 50 deletions; it routes the wait's lapse through one predicate, adds the drain branch, and hardens the supervisor's seat probe.\nCALL_SITES: reckon/crew/dispatch_watch.py:289, reckon/crew/recovery_watch.py:3223, reckon/crew/recovery_watch.py:3338, reckon/crew/runs.py:4576, reckon/crew/runs.py:4597\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/runs.py:3921 ends the seat as a lost seat only when a live run remains and as a drain otherwise, which is the distinction the goal and the prior review's first finding required.\nSCORE evidence: 15\nJUSTIFICATION evidence: arm-base.log and arm-after.log carry revision, tree, command, module and cwd headers and a bare EXIT=0, and negative-control.log fails test_a_lapsed_lease_is_restarted_without_a_unit, but the arms run only three files where the fence asks for the test files importing the changed modules.\nSCORE scope_discipline: 11\nJUSTIFICATION scope_discipline: reckon/crew/recovery_watch.py:3219 is outside the source node's fenced paths, so the increment wrote a production module the dispatch did not grant, even though the change is one the prior review named.\nSCORE durability: 15\nJUSTIFICATION durability: tests/test_a_producer_survives_without_linger.py:247 fails if the drain branch is removed (the producer exits 75 and is restarted, so the start count reaches two) and :262 fails if the wait returns on a lapse, while the added seat-probe line at reckon/crew/dispatch_watch.py:359 can be reverted with every test still green.\nSCORE fit: 17\nJUSTIFICATION fit: the new names and docstrings at reckon/crew/runs.py:3870-3936 state their mechanism in the module's own idiom and no plan, ticket, phase or person identifier appears in the diff.\nSCORE reuse: 13\nJUSTIFICATION reuse: reckon/crew/runs.py:3870 consolidates the lease predicate the wait used to re-derive, answering the prior review's reuse finding, but reckon/crew/dispatch_watch.py:359 re-probes process liveness that reckon/crew/watch_unit.py:109 already applies through watcher_live.\nFINDING reckon/crew/recovery_watch.py:3219 non-blocking: the increment writes a production module outside the source node's fenced paths; the manifest discloses it under scope_extension, but the coordinator must widen the run's scope or the promotion gate will read the change as out of scope.\nFINDING reckon/crew/dispatch_watch.py:359 non-blocking: the added local liveness probe re-derives the process-table check reckon/crew/watch_unit.py:109 already performs for watcher_live, and no test exercises it, so reverting it leaves every test green.\nFINDING reckon/crew/runs.py:3899 non-blocking: watch_work_is_live counts any pointer in the live directory as work, including a completed run awaiting promotion, so a project with no live follower and an outstanding pointer still exits 75 and is restarted once per lease interval.\n",
+  "review_run_id": "r-20261111T144017200626-review-of-a-project-s-watch-producer-survives-when-linger-is-unavailab-45a4abe98fc5",
+  "reviewed_base_sha": "7707166cdfd1e53f58ccd0b0d0470c0f5cf4a3d0",
+  "reviewed_head_sha": "45a4abe98fc5e566e8a540322f5cd4259e5a44e8",
+  "reviewed_run_id": "r-20261111T123826279896-a-project-s-watch-producer-survives-when-linger-is-unavailab",
+  "scores": {
+    "durability": 15,
+    "evidence": 15,
+    "fit": 17,
+    "goal_fidelity": 18,
+    "reuse": 13,
+    "scope_discipline": 11
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-11T15:49:50.442363+00:00",
+  "total": 89
+}

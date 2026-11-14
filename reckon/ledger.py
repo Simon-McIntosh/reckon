@@ -51,7 +51,6 @@ from collections.abc import Callable, Iterable, Mapping, Sequence
 from concurrent.futures import ThreadPoolExecutor
 from contextvars import ContextVar
 from datetime import UTC, datetime
-from functools import lru_cache
 from pathlib import Path
 from typing import Any
 
@@ -61,6 +60,7 @@ from typing import Any
 from reckon import _store, file_memo
 from reckon._plan_html import SECTION_NUMBER_PATTERN
 from reckon._timestamps import parse_utc
+from reckon.git_head import _common_git_directory, _git_directory
 
 _LOG = logging.getLogger(__name__)
 _DAMAGED_RUN_RECORDS: ContextVar[tuple[str, tuple[Path, ...]]] = ContextVar(
@@ -244,14 +244,6 @@ class SuiteDeltaError(LedgerError):
         super().__init__(detail)
 
 
-@lru_cache(maxsize=8)
-def _identity_catalogue(path: str, stamp: tuple | None) -> Mapping[str, Any]:
-    """Cache only while the catalogue's file identity remains unchanged."""
-    from reckon import flight
-
-    return flight.read_layer_file(path)
-
-
 def resolve_name(
     name: str, *, lane: str | None = None
 ) -> tuple[str | None, str | None]:
@@ -267,7 +259,7 @@ def resolve_name(
     if not name:
         return None, None
     path = flight.model_catalogue_path()
-    catalogue = _identity_catalogue(str(path), _file_identity(path))
+    catalogue = flight.read_layer_file(path)
     lanes = catalogue.get("lanes") or {}
     aliases = catalogue.get("aliases") or {}
     matches: set[tuple[str, str]] = set()
@@ -952,6 +944,11 @@ def write_run_file(
         mode=mode,
         fsync=fsync,
     )
+    from reckon.crew import open_run_index
+
+    _bump_generation(project)
+    open_run_index.record_written(project, row, root)
+    _index_record_written_document(project, root, row, target)
     return target
 
 
@@ -1078,6 +1075,10 @@ def _open_current_index(
     membership read decide that here, from one stat, so an index trusted by one
     is trusted by the other. The caller owns the returned connection.
     """
+    try:
+        root = _shared_index_root(project, root)
+    except (OSError, subprocess.SubprocessError):
+        return None
     path = _run_index_path(project, root)
     if not path.is_file():
         return None
@@ -1111,6 +1112,10 @@ def _indexed_run_ids(project: str, root: str | Path | None) -> set[str] | None:
     more than the membership, and ``load`` rebuilds the index and decodes the
     rows a caller did not ask for.
     """
+    try:
+        root = _shared_index_root(project, root)
+    except (OSError, subprocess.SubprocessError):
+        return None
     opened = _open_current_index(project, root)
     if opened is None:
         return None
@@ -1173,6 +1178,147 @@ def _file_identity(path: Path) -> tuple[int, int, int, int] | None:
     except OSError:
         return None
     return info.st_mtime_ns, info.st_ctime_ns, info.st_size, info.st_ino
+
+
+# The write generation, and the two index metadata members that stand in for
+# the per-document stat walk. The generation is owned by the store, which keeps
+# one file per project under the crew home, keyed by the project alone. A path
+# keyed on the index directory would not do: a writer whose cache directory
+# falls back to the user cache and a reader using the configured directory
+# would then hold different files, and the write would never reach the reader.
+# Keying on the project alone also keeps the token out of the checkout, where a
+# marker no write commits would leave every session's tree dirty.
+_GENERATION_MEMBER = "generation"
+_RUNS_DIRECTORY_MEMBER = "runs_directory"
+# The store reads an absent counter as this value. The ledger reads it as "no
+# key": a project no ledger write has touched has nothing to compare, so its
+# index must go back to the documents rather than trust stamps it cannot check.
+_ABSENT_GENERATION = "none"
+
+
+def ledger_generation_path(project: str) -> Path:
+    """The file the store keeps one project's write generation in."""
+    return _store.write_generation_path(project)
+
+
+def ledger_generation(project: str) -> str | None:
+    """The project's write generation, or ``None`` when no write recorded one.
+
+    The store reads an absent counter as ``"none"``. That value must not key a
+    reuse: a ledger whose documents were all written by something that never
+    bumped — a project this code has not written since the key existed, or a
+    writer outside every ledger write path — has no generation to compare, and
+    the only safe reading of that is to walk the documents as before. ``None``
+    is the "read the documents" case, so absence keeps its old meaning while a
+    counter that exists is compared by equality.
+    """
+    generation = _store.read_write_generation(project)
+    return None if generation == _ABSENT_GENERATION else generation
+
+
+def _bump_generation(project: str) -> None:
+    """Advance the project's write generation after a ledger write.
+
+    Every ledger write path calls this once its own files are in place. A
+    reader compares the value it finds with the one its index recorded; an
+    unequal value sends it back to the documents, which is the only thing a
+    write has to signal. The advance is the store's own, so a write made by one
+    process is visible to every reader of the project on every node.
+
+    The store suppresses a failed advance so a plan write is never failed by its
+    cache key. A ledger write cannot afford that indifference: an unchanged
+    counter is indistinguishable from a write that never happened, and the next
+    read would reuse stamps for a document it no longer matches. So the advance
+    is verified here, and a counter that did not move is removed — an absent
+    counter reads as no key, which sends every reader back to the documents.
+
+    Removal is attempted, never required. A crew home that refuses writes is the
+    ordinary state of a fenced worker, and there the counter it protects is
+    absent anyway, so readers walk. Failing the write instead would break every
+    ledger write in such a process to defend against a stale counter it does not
+    have. The store keeps its own lenient behaviour for its other callers, which
+    is why the verification lives here and not in the owner.
+    """
+    before = _store.read_write_generation(project)
+    _store.advance_write_generation(project)
+    if _store.read_write_generation(project) != before:
+        return
+    with contextlib.suppress(OSError):
+        ledger_generation_path(project).unlink()
+
+
+def _index_record_written_document(
+    project: str,
+    root: str | Path | None,
+    record: Mapping[str, Any],
+    target: Path,
+) -> None:
+    """Publish one document this write touched into the index the next read reuses.
+
+    Completing a run appends its row and then amends it, and each of those
+    advances the write generation. Without this the read that follows cannot
+    match the generation its index recorded and falls back to walking every
+    document the project ever recorded — one remote stat per run, which is what
+    a completion was measured spending its minutes on.
+
+    The document this write touched is the only one it changes, so its row is
+    written here and the two stamps the reuse compares are recorded beside it.
+    Writes that touch no document, or that write many at once, still leave the
+    recorded stamps behind and send the next read back to the documents exactly
+    as before; so does a generation that could not be advanced, which reads as
+    absent here and is therefore never recorded.
+
+    The run directory's own identity is recorded only after checking that its
+    entries are the ones the index already holds plus this document. A peer that
+    wrote in between makes that check fail, and the stamps are then left alone,
+    so the next read walks and sees the peer's document.
+
+    Any failure is a miss, never an error: the read that follows walks, which is
+    the behaviour it had before this existed.
+    """
+    try:
+        path = _run_index_path(project, root)
+        if not path.exists():
+            return
+        runs_directory = ledger_path(project, root).parent / "runs"
+        stamp = _file_identity(target)
+        if stamp is None:
+            return
+        names = {
+            entry.name[: -len(".json")]
+            for entry in os.scandir(runs_directory)
+            if entry.name.endswith(".json")
+        }
+        with contextlib.closing(sqlite3.connect(path, timeout=0.2)) as connection:
+            indexed = {
+                name for (name,) in connection.execute("SELECT name FROM records")
+            }
+            if names != indexed | {target.stem}:
+                return
+            generation = ledger_generation(project)
+            runs_stamp = json.dumps(_file_identity(runs_directory))
+            with connection:
+                connection.execute(
+                    "INSERT OR REPLACE INTO records VALUES (?, ?, ?, ?, ?)",
+                    (
+                        target.stem,
+                        json.dumps(stamp),
+                        run_activity_seconds(record),
+                        json.dumps(dict(record), sort_keys=True, separators=(",", ":")),
+                        json.dumps(picker_record(record), separators=(",", ":")),
+                    ),
+                )
+                if generation is not None:
+                    connection.execute(
+                        "INSERT OR REPLACE INTO metadata VALUES (?, ?)",
+                        (_GENERATION_MEMBER, generation),
+                    )
+                connection.execute(
+                    "INSERT OR REPLACE INTO metadata VALUES (?, ?)",
+                    (_RUNS_DIRECTORY_MEMBER, runs_stamp),
+                )
+    except (sqlite3.Error, OSError, ValueError, TypeError):
+        return
 
 
 def _run_snapshot(project: str, root: str | Path | None) -> list[tuple[Path, Any]]:
@@ -1243,8 +1389,81 @@ def _index_directory() -> Path:
     return configured
 
 
+def _ledger_repository(
+    project: str, root: str | Path | None
+) -> tuple[Path, Path, Path] | None:
+    """The common git directory, checkout and tree-relative ledger path.
+
+    A checkout claims the ledger only when its own state path for the project
+    is this same file. A resolution from the configured home can sit beneath a
+    checkout that does not own it — a home inside a repository, a temporary
+    directory a test's fixture builds inside one — and re-homing that ledger to
+    ``<checkout>/docs/state`` would read an index of a history nobody wrote.
+    """
+    source = ledger_path(project, root).resolve()
+    for checkout in source.parents:
+        if not (checkout / ".git").exists():
+            continue
+        if ledger_path(project, checkout).resolve() != source:
+            continue
+        git_dir = _git_directory(checkout)
+        if git_dir is not None:
+            return (
+                _common_git_directory(git_dir).resolve(),
+                checkout,
+                source.relative_to(checkout),
+            )
+    return None
+
+
+def _ledger_content(project: str, root: Path) -> tuple[Any, ...]:
+    """Compare ledger bytes across trees, memoising unchanged file digests."""
+    aggregate = ledger_path(project, root)
+    snapshot = _run_snapshot(project, root)
+    stamp = _file_identity(aggregate)
+    content = (
+        file_memo.content_digest(aggregate) if stamp is not None else None,
+        tuple((path.name, file_memo.content_digest(path)) for path, _ in snapshot),
+    )
+    if stamp != _file_identity(aggregate) or snapshot != _run_snapshot(project, root):
+        raise OSError("ledger changed while comparing worktrees")
+    return content
+
+
+def _shared_index_root(project: str, root: str | Path | None) -> str | Path | None:
+    """Use the main tree's index only for byte-identical worktree ledgers.
+
+    A differing worktree reads through the source files instead of replacing a
+    shared index with its private history. Resolving git's pointer files avoids
+    a subprocess for ordinary checkouts and linked worktrees.
+    """
+    repository = _ledger_repository(project, root)
+    if repository is None:
+        return root
+    common, checkout, _relative = repository
+    if common.name == ".git":
+        shared = common.parent
+    else:
+        # A separate git directory need not sit beneath its main checkout.
+        # Git's worktree registry names that checkout first, including when its
+        # .git marker points outside the tree.
+        result = subprocess.run(
+            ["git", "--git-dir", str(common), "worktree", "list", "--porcelain"],
+            check=True,
+            capture_output=True,
+            text=True,
+            timeout=5,
+        )
+        shared = Path(result.stdout.splitlines()[0].removeprefix("worktree "))
+    if checkout != shared and _ledger_content(project, checkout) != _ledger_content(
+        project, shared
+    ):
+        raise OSError("worktree ledger differs from repository ledger")
+    return shared
+
+
 def _run_index_path(project: str, root: str | Path | None) -> Path:
-    """The index file one checkout's ledger is published into.
+    """The index shared by one repository and tree-relative ledger path.
 
     The name carries the projection version, so a reader built at a different
     version keeps its own file. Many processes on a host run older code — a
@@ -1254,6 +1473,18 @@ def _run_index_path(project: str, root: str | Path | None) -> Path:
     restarted. A version-named file lets both read a complete index, and the
     drop-on-mismatch guard inside a file still refuses a stale one.
     """
+    repository = _ledger_repository(project, root)
+    source = (
+        json.dumps([str(repository[0]), str(repository[2])])
+        if repository is not None
+        else str(ledger_path(project, root).resolve())
+    )
+    identity = hashlib.sha256(source.encode()).hexdigest()
+    return _index_directory() / f"ledger-{identity}-v{_RUN_INDEX_VERSION}.sqlite"
+
+
+def _checkout_index_path(project: str, root: str | Path | None) -> Path:
+    """The path-keyed private cache a checkout's release may remove."""
     source = str(ledger_path(project, root).resolve())
     identity = hashlib.sha256(source.encode()).hexdigest()
     return _index_directory() / f"ledger-{identity}-v{_RUN_INDEX_VERSION}.sqlite"
@@ -1441,6 +1672,30 @@ def _active_records(records: Iterable[Any], boundary: float) -> list[dict[str, A
     ]
 
 
+def _payload_slot(
+    connection: sqlite3.Connection,
+    *,
+    headers_only: bool,
+    activity_since: float | None,
+) -> tuple[
+    dict[tuple[str, bool, float | None], tuple[dict[str, Any], int]] | None,
+    tuple[str, bool, float | None] | None,
+    tuple[dict[str, Any], int] | None,
+]:
+    """The read pass's slot for this read, and what it already holds.
+
+    One owner for the key, so the refreshing read and the read-pass reader
+    cannot disagree about what counts as the same payload. Outside a region
+    there is no slot and every read decodes the index for itself.
+    """
+    region = _PAYLOAD_REGION.get()
+    if region is None:
+        return None, None, None
+    database = connection.execute("PRAGMA database_list").fetchone()[2]
+    key = (str(database), bool(headers_only), activity_since)
+    return region, key, region.get(key)
+
+
 def _index_payload(
     connection: sqlite3.Connection,
     meta: Mapping[str, str],
@@ -1453,6 +1708,13 @@ def _index_payload(
 
     Shared by the refreshing read and the last-good read, so a mtime-moved
     index is decoded by exactly the same rules as a freshly refreshed one.
+
+    Inside :func:`index_reuse` the decode is held in the read pass: a reader
+    asking for the picker projection is answered from a payload an earlier
+    reader already decoded, so one batch that reads history through the picker
+    and again in full pays for a single decode rather than one per projection.
+    The full payload carries every field the picker keeps, so the projection is
+    derived from it with :func:`picker_record` rather than read again.
     """
     data = json.loads(meta["header"])
     if not isinstance(data, dict) or not all(
@@ -1463,7 +1725,12 @@ def _index_payload(
     if headers_only and activity_since is None:
         data["runs"] = [{"run_id": run_id} for run_id in _index_membership(connection)]
         return data, version
-    column = "picker" if picker_only else "payload"
+    region, key, held = _payload_slot(
+        connection, headers_only=headers_only, activity_since=activity_since
+    )
+    if held is not None:
+        return _project_payload(held, picker_only=picker_only)
+    column = "payload" if region is not None or not picker_only else "picker"
     # Select by an indexed scalar before fetching payload overflow pages.
     parameters = () if activity_since is None else (activity_since,)
     aggregate_filter = "" if activity_since is None else " WHERE activity >= ?"
@@ -1500,7 +1767,58 @@ def _index_payload(
         data["runs"].sort(key=promotion_order_key)
     if headers_only:
         data["runs"] = [{"run_id": row["run_id"]} for row in data["runs"]]
+    if region is not None and key is not None:
+        region[key] = (data, version)
+        if picker_only:
+            return _project_payload((data, version), picker_only=True)
     return data, version
+
+
+def _decode_payload(
+    connection: sqlite3.Connection,
+    meta: Mapping[str, str],
+    *,
+    headers_only: bool,
+    picker_only: bool,
+    activity_since: float | None = None,
+) -> tuple[dict[str, Any], int]:
+    """Decode an index payload once per read pass, however it is projected.
+
+    A read pass that asks for the same index twice — once through the picker
+    projection and once in full — is answered by one decode. A held full
+    payload already carries every field the picker keeps, so the projection is
+    derived from it instead of decoding the index again.
+    """
+    _, _, held = _payload_slot(
+        connection, headers_only=headers_only, activity_since=activity_since
+    )
+    if held is not None:
+        return _project_payload(held, picker_only=picker_only)
+    return _index_payload(
+        connection,
+        meta,
+        headers_only=headers_only,
+        picker_only=picker_only,
+        **({"activity_since": activity_since} if activity_since is not None else {}),
+    )
+
+
+def _project_payload(
+    held: tuple[dict[str, Any], int], *, picker_only: bool
+) -> tuple[dict[str, Any], int]:
+    """Answer one read from a payload another read in the region decoded.
+
+    A full decode answers both projections: the picker keeps a subset of the
+    fields a full row carries, so the projection is derived rather than read
+    from the index again. The projected result is rebuilt here rather than
+    mutating the held payload, because the same decode answers later readers.
+    """
+    data, version = held
+    if not picker_only:
+        return data, version
+    projected = {name: value for name, value in data.items() if name != "runs"}
+    projected["runs"] = [picker_record(row) for row in data["runs"]]
+    return projected, version
 
 
 def _indexed_damaged_paths(
@@ -1565,7 +1883,10 @@ def _last_good_index_data(
     except (sqlite3.Error, OSError, ValueError, KeyError, TypeError):
         return None
     _report_damaged_run_records(project, damaged)
-    return data, version, max(0.0, time.time() - refreshed_at)
+    # Copied before the caller stamps its age on the result: inside a reuse
+    # region the payload is shared with every other reader of the pass, and a
+    # key one caller adds must not reach the next.
+    return dict(data), version, max(0.0, time.time() - refreshed_at)
 
 
 # A derivation reads the ledger from several of its steps, and each read rebuilt
@@ -1581,6 +1902,13 @@ _INDEX_REGION: ContextVar[
     | None
 ] = ContextVar("ledger_index_region", default=None)
 
+#: One read pass's decoded payloads, keyed by the index database, the header
+#: projection and the activity bound. The picker projection is not in the key:
+#: it is a subset of a full payload, so one full decode answers both.
+_PAYLOAD_REGION: ContextVar[
+    dict[tuple[str, bool, float | None], tuple[dict[str, Any], int]] | None
+] = ContextVar("ledger_payload_region", default=None)
+
 
 @contextlib.contextmanager
 def index_reuse() -> Iterable[
@@ -1594,6 +1922,11 @@ def index_reuse() -> Iterable[
     A nested region joins the cache already open rather than starting a fresh
     one, so a read made while slicing a session's payload is served the index
     the derivation built.
+
+    The pass also shares the pass's decoded payload, so a batch that reads
+    history through the picker projection and again in full decodes the index
+    once rather than once per projection. The payload cache is dropped with the
+    region, so a read afterwards sees the index as it then stands.
     """
     active = _INDEX_REGION.get()
     if active is not None:
@@ -1603,9 +1936,11 @@ def index_reuse() -> Iterable[
         tuple[str, str, bool, bool, float | None], tuple[dict[str, Any], int]
     ] = {}
     token = _INDEX_REGION.set(cache)
+    payload_token = _PAYLOAD_REGION.set({})
     try:
         yield cache
     finally:
+        _PAYLOAD_REGION.reset(payload_token)
         _INDEX_REGION.reset(token)
 
 
@@ -1629,9 +1964,20 @@ def _indexed_data(
         data, version, damaged = reuse[index_key]
         _report_damaged_run_records(project, damaged)
         return data, version
+    try:
+        root = _shared_index_root(project, root)
+    except subprocess.SubprocessError as exc:
+        raise OSError("cannot resolve repository ledger") from exc
     aggregate = ledger_path(project, root)
     aggregate_stamp = json.dumps(_file_identity(aggregate))
-    snapshot = _run_snapshot(project, root)
+    # The per-document stat walk is the index's cache key, and it costs one
+    # remote stat per run the project ever recorded. These two constant-cost
+    # facts stand in for it: the write generation, which every ledger write
+    # path bumps, and the run directory's own identity, which moves when a
+    # document is added or removed by any writer. A read that matches both
+    # reuses the stamps the index already holds.
+    generation = ledger_generation(project)
+    runs_stamp = json.dumps(_file_identity(aggregate.parent / "runs"))
     path = _run_index_path(project, root)
     index_source = str(ledger_path(project, root).resolve())
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -1670,6 +2016,17 @@ def _indexed_data(
                 "CREATE INDEX IF NOT EXISTS aggregate_activity ON aggregate_rows(activity)"
             )
             meta = dict(connection.execute("SELECT name, payload FROM metadata"))
+            recorded = dict(meta)
+            # A read whose generation and run directory still match the ones
+            # the index recorded reuses the stamps it holds, so it never walks
+            # the documents. Anything else — a bump, an addition or removal,
+            # or an index that recorded no generation — reads them as it
+            # always has.
+            reuse_documents = (
+                generation is not None
+                and recorded.get(_GENERATION_MEMBER) == generation
+                and recorded.get(_RUNS_DIRECTORY_MEMBER) == runs_stamp
+            )
             # The index records the ledger path it indexes, so a sweep can tell
             # an index whose checkout is gone from one merely stale: the path is
             # an identity, while a filename hash is opaque. Written here so any
@@ -1716,7 +2073,8 @@ def _indexed_data(
                 )
             stored = dict(connection.execute("SELECT name, stamp FROM records"))
             changed = []
-            for source, stamp in snapshot:
+            documents = [] if reuse_documents else _run_snapshot(project, root)
+            for source, stamp in documents:
                 if stamp is None:
                     raise OSError(f"cannot stat run: {source}")
                 encoded = json.dumps(stamp)
@@ -1749,9 +2107,10 @@ def _indexed_data(
                             json.dumps(picker_record(record), separators=(",", ":")),
                         ),
                     )
-            connection.executemany(
-                "DELETE FROM records WHERE name=?", [(name,) for name in stored]
-            )
+            if not reuse_documents:
+                connection.executemany(
+                    "DELETE FROM records WHERE name=?", [(name,) for name in stored]
+                )
             conflict = None
             conflict_sql = (
                 "SELECT r.name FROM records r JOIN aggregate_rows a ON a.run_id=r.name "
@@ -1780,7 +2139,20 @@ def _indexed_data(
                     "INSERT OR REPLACE INTO metadata VALUES ('refreshed_at', ?)",
                     (str(time.time()),),
                 )
-            result = _index_payload(
+            # Record what this read observed, so the next read reuses the stamps
+            # rather than walking every document again. Written only when it
+            # moved, so a read that changed nothing writes nothing.
+            observed = (
+                (_GENERATION_MEMBER, generation),
+                (_RUNS_DIRECTORY_MEMBER, runs_stamp),
+            )
+            for member, value in observed:
+                if value is not None and recorded.get(member) != value:
+                    connection.execute(
+                        "INSERT OR REPLACE INTO metadata VALUES (?, ?)",
+                        (member, value),
+                    )
+            result = _decode_payload(
                 connection,
                 meta,
                 headers_only=headers_only,
@@ -2135,7 +2507,9 @@ def _run_store_location() -> str:
     return str(run_store.store_path())
 
 
-def _restore_run_files(snapshots: Sequence[tuple[Path, str]]) -> None:
+def _restore_run_files(
+    snapshots: Sequence[tuple[Path, str]], project: str, root: str | Path | None
+) -> None:
     """Put each captured revision back, undoing a partly applied rewrite.
 
     Called when a later part of the same :func:`write` call fails, so the
@@ -2149,6 +2523,8 @@ def _restore_run_files(snapshots: Sequence[tuple[Path, str]]) -> None:
             _store.write_atomically(
                 target, lambda handle, text=text: handle.write(text), fsync=False
             )
+    if snapshots:
+        _bump_generation(project)
 
 
 def _keep_run_files_identical(
@@ -2195,7 +2571,7 @@ def _keep_run_files_identical(
                 continue
             write_run_file(project, row, root, fsync=False, mode=None)
         except OSError as exc:
-            _restore_run_files(snapshots)
+            _restore_run_files(snapshots, project, root)
             raise LedgerError(
                 f"cannot keep run {run_id!r} readable for {project!r}: "
                 f"{target} could not be made identical to its ledger row, so "
@@ -2468,7 +2844,7 @@ def _write_state(
                 path, project, LEDGER_SLUG, payload, expected_version
             )
         except _store.VersionConflict as exc:
-            _restore_run_files(snapshots)
+            _restore_run_files(snapshots, project, root)
             raise LedgerError(
                 f"ledger for {project!r} moved from version {exc.expected} to "
                 f"{exc.current} while this write was being prepared; re-read and retry"
@@ -2478,8 +2854,15 @@ def _write_state(
             # revision it read, so the files already brought forward must go back
             # with it; otherwise this write would hand the reader exactly the
             # disagreement the order above exists to avoid.
-            _restore_run_files(snapshots)
+            _restore_run_files(snapshots, project, root)
             raise
+        from reckon.crew import open_run_index
+
+        _bump_generation(project)
+        open_run_index.aggregate_written(
+            project, payload["runs"], root, version=version
+        )
+        open_run_index.bootstrap_complete(project, root)
         rewritten = [path, *(target for target, _prior in snapshots)]
         if commit and obstruction is None:
             _commit_state_write(
@@ -3130,6 +3513,11 @@ def append_run(
             stream.write(encoded)
     except FileExistsError as exc:
         raise LedgerError(refusal) from exc
+    from reckon.crew import open_run_index
+
+    _bump_generation(project)
+    open_run_index.record_written(project, stored_record, ledger_root)
+    _index_record_written_document(project, root, stored_record, target)
     store_outcome = _index_append(project, stored_record)
     return {
         "path": str(target),
@@ -3217,6 +3605,8 @@ def _split_project_runs(project: str, docs: Path, *, dry_run: bool) -> dict[str,
         target.parent.mkdir(parents=True, exist_ok=True)
         target.write_text(serialize_run(row), encoding="utf-8")
         entry["written"] += 1
+    if entry["written"]:
+        _bump_generation(project)
 
     remaining = {key: value for key, value in data.items() if key != "runs"}
     try:
@@ -4176,3 +4566,27 @@ from reckon.run_record import (  # noqa: E402, F401
     underivable_duration,
     unmeasured_clone_report,
 )
+
+
+def open_runs(project: str, root: str | Path | None = None) -> list[dict[str, Any]]:
+    """Operational rows selected by the live and retained-run indexes."""
+    from reckon.crew import open_run_index
+
+    with open_run_index.read_scope():
+        return open_run_index.read_rows(project, root)
+
+
+def open_run_ids(project: str, root: str | Path | None = None) -> set[str]:
+    """Promoted identities still named by open work, without reading history."""
+    return {str(row["run_id"]) for row in open_runs(project, root)}
+
+
+def load_open(
+    project: str, root: str | Path | None = None
+) -> tuple[dict[str, Any], int]:
+    """The operational ledger projection, independent of finished history."""
+    from reckon.crew import open_run_index
+
+    return {"runs": open_runs(project, root)}, open_run_index.ledger_version(
+        project, root
+    )

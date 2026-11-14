@@ -1,0 +1,64 @@
+<section id="ready-a-reexec-never-orphans-a-dis-s5-landing">
+  <h2>Reload waits exercised through real dispatch claims</h2>
+  <p>The shared bounded wait and its three service call sites already exist at
+  <code>4c4cf234390f5326b995cee7ad6bda55fe01b5c0</code>. The test change at
+  <code>74a05816122294a2851d3392d5554f07a3e78c76</code> exercises claim acquisition
+  through <code>dispatch_claims._claim_node_dispatch</code>, releases through
+  <code>_NodeDispatchClaim.release</code>, and dispatches the station case through
+  <code>station.SweepBeat</code> on its actual sweep thread. A condition-wait
+  handshake holds the claim until the reload blocks; each test uses a temporary
+  crew home. This removes the timing-only release and detects missing registration.</p>
+  <p>The scoped gate includes <code>tests/test_a_reexec_waits_for_its_dispatches.py</code>
+  and <code>tests/test_staged_write_inventory.py</code>. Both importer arms cover the
+  same 166 directly importing test files. All arms and controls ran sequentially
+  on <code>all_debug</code>, with importer parallelism limited to four workers.
+  Each receipt records the source revision, command, imported module path,
+  working directory and exit status. Both temporary measurement worktrees and
+  the job's own scratch were removed.</p>
+  <table>
+    <thead><tr><th>Measure</th><th>Recorded summary</th><th>Run-directory log</th></tr></thead>
+    <tbody>
+    <tr><td>Scoped baseline</td><td>56 passed in 13.35s</td><td><code>resume-baseline-suite.log</code></td></tr>
+    <tr><td>Scoped current head</td><td>56 passed in 9.76s</td><td><code>recheck-after-suite.log</code></td></tr>
+    <tr><td>Importer baseline</td><td>155 failed, 1267 passed, 12 warnings in 466.37s (0:07:46)</td><td><code>resume-baseline-importers.log</code></td></tr>
+    <tr><td>Importer head</td><td>156 failed, 1266 passed, 8 warnings in 392.24s (0:06:32)</td><td><code>resume-after-importers.log</code></td></tr>
+    <tr><td>Station wait bypassed</td><td>1 failed in 0.54s</td><td><code>resume-negative-station.log</code></td></tr>
+    <tr><td>Follower wait bypassed</td><td>1 failed in 0.28s</td><td><code>resume-negative-follower.log</code></td></tr>
+    <tr><td>Admit wait bypassed</td><td>1 failed in 0.24s</td><td><code>resume-negative-admit.log</code></td></tr>
+    <tr><td>Bound log suppressed</td><td>1 failed in 0.30s</td><td><code>resume-negative-bound-log.log</code></td></tr>
+    <tr><td>Claim registration removed</td><td>1 failed in 0.30s</td><td><code>resume-negative-claim-entry.log</code></td></tr>
+    </tbody>
+  </table>
+  <p>The scoped arms add zero failures. The original full importer comparison
+  retains its measured one-failure difference. Three serial repetitions of
+  <code>tests/test_spawn_retries_a_vanished_bind.py</code> at each revision classify
+  the intermittent result as <strong>environment-sensitive</strong>: the original
+  case also leaves an unexpected <code>launch_failures</code> record at the base
+  revision. Two of three repetitions pass at each revision. The exact original
+  failure remains in the manifest's <code>outside_scope</code> field.</p>
+  <p>The recheck uses base <code>4c4cf234390f5326b995cee7ad6bda55fe01b5c0</code>
+  and head <code>99da6734d1ef0334cea393cb2ad78a550c82233e</code>. The latter differs
+  from the importer head only in this evidence fragment. The refreshed scoped
+  head gate uses that same revision. All six repetitions ran serially on
+  <code>all_debug</code>, with a separate temporary directory for each pytest run.</p>
+  <table>
+    <thead><tr><th>Recheck</th><th>Recorded summary</th><th>Run-directory log</th></tr></thead>
+    <tbody>
+    <tr><td>Base repetition 1</td><td>7 passed in 94.96s (0:01:34)</td><td><code>recheck-baseline-spawn-1.log</code></td></tr>
+    <tr><td>Base repetition 2</td><td>7 passed in 94.83s (0:01:34)</td><td><code>recheck-baseline-spawn-2.log</code></td></tr>
+    <tr><td>Base repetition 3</td><td>1 failed, 6 passed in 97.72s (0:01:37)</td><td><code>recheck-baseline-spawn-3.log</code></td></tr>
+    <tr><td>Head repetition 1</td><td>1 failed, 6 passed in 94.98s (0:01:34)</td><td><code>recheck-after-spawn-1.log</code></td></tr>
+    <tr><td>Head repetition 2</td><td>7 passed in 94.79s (0:01:34)</td><td><code>recheck-after-spawn-2.log</code></td></tr>
+    <tr><td>Head repetition 3</td><td>7 passed in 94.79s (0:01:34)</td><td><code>recheck-after-spawn-3.log</code></td></tr>
+    </tbody>
+  </table>
+  <p>Each skipped-wait control fails on the recorded execution state:
+  <code>[{'r-in-flight': 'node-waiting'}]</code> is still present at
+  <code>os.execve</code>. Suppressing the bound log fails on
+  <code>assert 'node-stuck' in ''</code>. Removing claim registration fails the
+  assertion that the real claim entered the register. The unmodified scoped
+  head passes every case, including the quiet empty-register case.</p>
+  <p>Logs and machine-readable measurements are retained under run
+  <code>r-20261113T032606972809-ready-a-reexec-never-orphans-a-dis-s5</code>.
+  Ruff check and format check both passed for the changed Python file.</p>
+</section>

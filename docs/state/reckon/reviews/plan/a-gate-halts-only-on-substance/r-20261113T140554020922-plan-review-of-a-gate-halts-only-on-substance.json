@@ -1,0 +1,163 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-13T14:15:02.984Z",
+  "dispatched_at": "2026-11-13T14:07:45Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-gate-halts-only-on-substance.html:47",
+      "id": "reasoning-1",
+      "reason": "any node dispatched for \u00a72 would re-derive and re-land work that already exists, and the plan's derived impl understates what shipped.",
+      "text": "\u00a72 is already built and its own comment says so: `_control_run_shows_a_failure` sits at `reckon/crew/promotion_evidence.py:1194` and the \u00a72 test file runs `5 passed in 1.28s` at head a0ad40b9a0, while comment `c-run-r-20261108T022523786266` (2026-11-08) records the run reviewed with no blocking findings \u2014 but `plan-section-declarations` still reads `\"s2\":\"implementable\"` at line 23",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-gate-halts-only-on-substance.html:80",
+      "id": "wiring-1",
+      "reason": "the followup is the plan's chain-of-work record, and a coordinator reading it is told the remaining work is where it no longer is, while \u00a78 has no invocation that names it.",
+      "text": "the only open followup's body says \"\u00a72 waits on the promotion-evidence plan's \u00a78; \u00a74 waits on \u00a73; the rest are independent\", which was true when \u00a72\u2013\u00a76 were the whole plan; \u00a73\u2013\u00a77 have since landed and \u00a78 was added on 13 November, so the plan's dispatch route names a range that is nearly all done and never names the one section still to build",
+      "type": "wiring",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-gate-halts-only-on-substance.html:75",
+      "id": "done_when-1",
+      "reason": "a done-when naming the deliverable's own path is what lets promotion and review agree on one artifact, and an unnamed new test is the one thing this node cannot check.",
+      "text": "\u00a78 is the only section whose write paths name no test path (\"the new test\") and whose done-when names no test file, while every other section names `tests/test_<capability>.py`; its fixture (\"a record carrying its own review run id without the suffix\") is cheap in one module and expensive in the other, so the gate's shape is left to the worker to choose",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-gate-halts-only-on-substance.html:36",
+      "id": "anchors_resolve-1",
+      "reason": "the file resolves and the reader is found on a first read, so the cost is one lookup, though it is also the wrong pointer to offer a reader checking whether \u00a72 already landed.",
+      "text": "\u00a71 cites `reckon/crew/promotion_evidence.py` \"near lines 1021\u20131092\" as the control-evidence reader, but that range holds the presented-commits check and the base-sha guard; the control reader is `_control_run_shows_a_failure` at line 1194 and `_runner_reports_a_failed_run` at 1167\u20131191",
+      "type": "anchors_resolve",
+      "would_change": false
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-gate-halts-only-on-substance.html:51",
+      "id": "anchors_resolve-2",
+      "reason": "\u00a73 is already done and its recorded evidence cites the correct line, so only a reader re-checking the anchor is misdirected.",
+      "text": "\u00a73 says \"the bounded check near `reckon/crew/node.py` line 1363 reads the recorded reason\", but line 1363 is inside the fully-specified plan/section check; the bounded budget fence is at 1495\u20131508, and the plan's own comment `c-run-r-20261111T080412277167` names 1508",
+      "type": "anchors_resolve",
+      "would_change": false
+    }
+  ],
+  "plan_commit": "5e16371f4fde8e92df41c373bc52b0248da0537a",
+  "plan_fingerprint": "ffb6f8f3397482de7a0db61d445a274167194deaeaed0acccfd0adbcb782adae",
+  "plan_slug": "a-gate-halts-only-on-substance",
+  "plan_version": 37,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "6bed5b18e0b3f15a6f02daba8afe3d6b044b7e95",
+      "commit_basis": "edit",
+      "finding": "reasoning-1",
+      "note": "\u00a72 is now declared done: _control_run_shows_a_failure is at promotion_evidence.py:1194 and tests/test_a_negative_control_is_read_from_the_runner.py exists",
+      "reason": "",
+      "when": "2026-11-13T16:47:22.147672+00:00"
+    },
+    {
+      "action": "carried",
+      "by": "",
+      "finding": "wiring-1",
+      "reason": "",
+      "section": "_document",
+      "sections": [
+        "_document"
+      ],
+      "when": "2026-11-13T16:47:36.034308+00:00"
+    },
+    {
+      "action": "declined",
+      "by": "",
+      "finding": "done_when-1",
+      "reason": "\u00a78 was dispatched with the explicit test path tests/test_a_review_named_by_node_promotes.py, which it delivered and its review read",
+      "when": "2026-11-13T16:47:44.107537+00:00"
+    },
+    {
+      "action": "declined",
+      "by": "",
+      "finding": "anchors_resolve-1",
+      "reason": "would_change is false: the reader is named in the same paragraph's mechanism",
+      "when": "2026-11-13T16:47:53.491287+00:00"
+    },
+    {
+      "action": "declined",
+      "by": "",
+      "finding": "anchors_resolve-2",
+      "reason": "would_change is false: \u00a73 has landed and its comment names the correct line",
+      "when": "2026-11-13T16:48:01.514394+00:00"
+    }
+  ],
+  "responses": {
+    "anchors_resolve-1": {
+      "action": "declined",
+      "by": "",
+      "reason": "would_change is false: the reader is named in the same paragraph's mechanism",
+      "when": "2026-11-13T16:47:53.491287+00:00"
+    },
+    "anchors_resolve-2": {
+      "action": "declined",
+      "by": "",
+      "reason": "would_change is false: \u00a73 has landed and its comment names the correct line",
+      "when": "2026-11-13T16:48:01.514394+00:00"
+    },
+    "done_when-1": {
+      "action": "declined",
+      "by": "",
+      "reason": "\u00a78 was dispatched with the explicit test path tests/test_a_review_named_by_node_promotes.py, which it delivered and its review read",
+      "when": "2026-11-13T16:47:44.107537+00:00"
+    },
+    "reasoning-1": {
+      "action": "acted",
+      "by": "",
+      "commit": "6bed5b18e0b3f15a6f02daba8afe3d6b044b7e95",
+      "commit_basis": "edit",
+      "note": "\u00a72 is now declared done: _control_run_shows_a_failure is at promotion_evidence.py:1194 and tests/test_a_negative_control_is_read_from_the_runner.py exists",
+      "reason": "",
+      "when": "2026-11-13T16:47:22.147672+00:00"
+    },
+    "wiring-1": {
+      "action": "carried",
+      "by": "",
+      "reason": "",
+      "section": "_document",
+      "sections": [
+        "_document"
+      ],
+      "when": "2026-11-13T16:47:36.034308+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/Code/reckon/docs/state/reckon/reviews/plan/a-gate-halts-only-on-substance/r-20261113T140554020922-plan-review-of-a-gate-halts-only-on-substance.json",
+  "review_run_id": "r-20261113T140554020922-plan-review-of-a-gate-halts-only-on-substance",
+  "reviewed_blob_sha": "cdf10bbd58e7e5e7a6998ffe5c5c4462e720ab8b",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "a finding \u2014 \u00a72's cited range in `promotion_evidence.py` points at unrelated code, and \u00a73's line 1363 is not the bounded check it describes.",
+    "done_when": "a finding \u2014 \u00a78 alone specifies no test path among its write paths, so its done-when cannot be closed on a named deliverable.",
+    "evidence_paths": "pass \u2014 \u00a72\u2013\u00a77's arm logs and \u00a78's \"every log under the run directory, starting with its revision and the literal command, ending in `EXIT=`\" all name durable crew-run paths, never a scratchpad.",
+    "naming": "pass \u2014 the test paths the plan names are mechanism descriptions (`test_a_negative_control_is_read_from_the_runner.py`, `test_a_queued_launch_ignores_the_coordinator_backlog.py`), with no plan, stage or ticket label in any path, symbol or comment.",
+    "reasoning": "a finding \u2014 \u00a72's deliverable is already landed and its own comment records it, yet the plan still declares s2 `implementable`.",
+    "single_goal": "pass \u2014 every section names one deliverable; \u00a72's contract sentence and its reader change share one outcome and are gated together by \u00a72's fourth case.",
+    "wiring": "a finding \u2014 the only open followup (`f-aghoos-001`) names \"Build \u00a72 to \u00a76\", a range in which five of six sections are already `done`, and no followup or dependency names \u00a78, the one remaining `implementable` section."
+  },
+  "section_digests": {
+    "_document": "0b5286dcb3a7f1ded71e71be60ed4bdd2734a48719b0dab49298fc8d39b2c312",
+    "s1": "da96e9775c5ac3c922e7c9262b6c95659f8a63dd7ecaefbf9c9ea72c3d506b61",
+    "s2": "34659f8a9f7d766af00602047920116071d6c4a45beb59504f09c79856fe4449",
+    "s3": "7d5900898dccbca711f2ba5f009a9d77a8106e6c95850afa29ea353bee133ea1",
+    "s4": "0e123dd962d8cd12c2e71ad44abb85e97ccaf736d952b19140641c3426beab23",
+    "s5": "8693ffa47dece4b7d7becaed1cc17e2eae2192270529686416237848fcfe3d7d",
+    "s6": "c1a4e9a4b81527a7a273e421018eb3a5b58b491f8eb6afe57798b77df653c903",
+    "s7": "02f674f3ab07d57d2a9a4a13805c075967cd59e063bf39eb470a940c1e9e9897",
+    "s8": "6a840e82c44d918c74c527bb0bc07eed5fa4efdfb5dc69fc1e3b7dfbe1ff477f"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-13T16:43:48.317670+00:00",
+  "total": null
+}

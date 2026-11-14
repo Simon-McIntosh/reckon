@@ -1,0 +1,67 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/hooks/coordinator_obligations.py:1749 (main dispatch to _stop)",
+    "reckon/hooks/install.py:61 (COORDINATOR_HOOK_SCRIPT_NAME registers the hook script)"
+  ],
+  "completed_at": "2026-11-13T01:37:08.407Z",
+  "dispatched_at": "2026-11-13T01:25:42Z",
+  "finding_dispositions": {},
+  "findings": [
+    {
+      "file": "tests/test_coordinator_obligations_hook.py",
+      "line": 1103,
+      "severity": "non-blocking",
+      "text": "`assert deferred.returncode == 0` (and the same shape at line 1119) cannot fail, because _stop returns 0 both when it emits a block and when it stays silent, so it counts as coverage without guarding the behaviour it names; only the stdout assertions at lines 1104 and 1120 can redden."
+    },
+    {
+      "file": "tests/test_coordinator_obligations_hook.py",
+      "line": 1104,
+      "severity": "non-blocking",
+      "text": "`assert deferred.stdout == \"\"` passes both when the acknowledgement defers the duty and when reapply_acknowledgements fails to defer it, because a failed deferral leaves the first stop's digest matching the unchanged blocking set and the stop is silent for the wrong reason, so this assertion survives the regression it claims to cover."
+    },
+    {
+      "file": "docs/evidence/fragments/crew-observability-truth/the-stop-hook-blocks-once-per-unchanged-duty-list.html",
+      "line": 23,
+      "severity": "non-blocking",
+      "text": "the repair's base and after arms re-run only tests/test_staged_write_inventory.py, while the done_when's arm over the five test files importing the changed module was not re-established at the repair's own base c6dba3af, so that part of the gate is inherited from the pre-repair round rather than measured against this change."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "Read all four commits against base c6dba3af: abb61baa08 adds the clear in reckon/hooks/coordinator_obligations.py:1694-1703, 4880c3d332 and b6964b1e59 build the case, 26f5d613b0 records it in the fragment; 78 insertions and 3 deletions over three files, all inside the declared scope.",
+    "done_when": "The section's done_when asks for three stops over one growing list with at most one block, a gained or returned duty blocking again, and the base revision as negative control; tests/test_coordinator_obligations_hook.py:1068-1124 drives block, deferred allowance and post-lapse refusal, the negative control at c6dba3af is recorded EXIT=1, and the head file is logged 20 passed.",
+    "goal": "The node's goal is that the Stop hook blocks once per unchanged duty list, so that a duty returning after its deferral lapses is refused again; reckon/hooks/coordinator_obligations.py:1703 clears the stop record whenever no duty holds the turn open and tests/test_coordinator_obligations_hook.py:1115-1124 shows the lapsed duty refused.",
+    "manifest": "Read; status complete, both arms name revision, literal command, log path and completed flag (base b30f1e13 2 errors EXIT=1, head 26f5d613b0 0 failures EXIT=0), and the negative-control log, failure attribution and rubric lines are filled.",
+    "write_paths": "The node declared reckon/hooks/coordinator_obligations.py, reckon/crew/obligations.py, tests/, the landing fragment and the figures directory; the four commits touch only the hook, tests/test_coordinator_obligations_hook.py and the fragment, all inside them."
+  },
+  "justifications": {
+    "durability": "tests/test_coordinator_obligations_hook.py:1120 fails when the _clear_digest call at reckon/hooks/coordinator_obligations.py:1703 is removed, as repair-negative-control.log shows, though the returncode assertions at lines 1103 and 1119 cannot fail.",
+    "evidence": "the head arm at 26f5d613b0 (repair-after-arm.log, 51 passed, EXIT=0) and the negative control at c6dba3af (repair-negative-control.log, 1 failed, EXIT=1) are recorded, but the importing-files arm the done_when names re-ran only tests/test_staged_write_inventory.py.",
+    "fit": "the fix calls the module's existing _clear_digest at reckon/hooks/coordinator_obligations.py:1703 in the same shape as the empty-list branch at lines 1681-1682, and adds no plan, stage or ticket label.",
+    "goal_fidelity": "reckon/hooks/coordinator_obligations.py:1703 clears the stop record on the no-blocking branch after reapply_acknowledgements, so a lapsed deferral returns the duty as an unrefused set while an unchanged list still blocks once.",
+    "reuse": "the evidence change reuses _clear_digest and stop_digest_path (reckon/hooks/coordinator_obligations.py:523-535 and 1289) and forks no second record mechanism.",
+    "scope_discipline": "every changed path -- reckon/hooks/coordinator_obligations.py, tests/test_coordinator_obligations_hook.py:1068 and the fragment at line 23 -- is inside the declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The node's goal is that the Stop hook blocks once per unchanged duty list, so that a duty returning after its deferral lapses is refused again; reckon/hooks/coordinator_obligations.py:1703 clears the stop record whenever no duty holds the turn open and tests/test_coordinator_obligations_hook.py:1115-1124 shows the lapsed duty refused.\nVERDICT done_when: The section's done_when asks for three stops over one growing list with at most one block, a gained or returned duty blocking again, and the base revision as negative control; tests/test_coordinator_obligations_hook.py:1068-1124 drives block, deferred allowance and post-lapse refusal, the negative control at c6dba3af is recorded EXIT=1, and the head file is logged 20 passed.\nVERDICT write_paths: The node declared reckon/hooks/coordinator_obligations.py, reckon/crew/obligations.py, tests/, the landing fragment and the figures directory; the four commits touch only the hook, tests/test_coordinator_obligations_hook.py and the fragment, all inside them.\nVERDICT manifest: Read; status complete, both arms name revision, literal command, log path and completed flag (base b30f1e13 2 errors EXIT=1, head 26f5d613b0 0 failures EXIT=0), and the negative-control log, failure attribution and rubric lines are filled.\nVERDICT diff: Read all four commits against base c6dba3af: abb61baa08 adds the clear in reckon/hooks/coordinator_obligations.py:1694-1703, 4880c3d332 and b6964b1e59 build the case, 26f5d613b0 records it in the fragment; 78 insertions and 3 deletions over three files, all inside the declared scope.\nCALL_SITES: reckon/hooks/coordinator_obligations.py:1749 (main dispatch to _stop), reckon/hooks/install.py:61 (COORDINATOR_HOOK_SCRIPT_NAME registers the hook script)\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/hooks/coordinator_obligations.py:1703 clears the stop record on the no-blocking branch after reapply_acknowledgements, so a lapsed deferral returns the duty as an unrefused set while an unchanged list still blocks once.\nSCORE evidence: 16\nJUSTIFICATION evidence: the head arm at 26f5d613b0 (repair-after-arm.log, 51 passed, EXIT=0) and the negative control at c6dba3af (repair-negative-control.log, 1 failed, EXIT=1) are recorded, but the importing-files arm the done_when names re-ran only tests/test_staged_write_inventory.py.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every changed path -- reckon/hooks/coordinator_obligations.py, tests/test_coordinator_obligations_hook.py:1068 and the fragment at line 23 -- is inside the declared write paths.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_coordinator_obligations_hook.py:1120 fails when the _clear_digest call at reckon/hooks/coordinator_obligations.py:1703 is removed, as repair-negative-control.log shows, though the returncode assertions at lines 1103 and 1119 cannot fail.\nSCORE fit: 19\nJUSTIFICATION fit: the fix calls the module's existing _clear_digest at reckon/hooks/coordinator_obligations.py:1703 in the same shape as the empty-list branch at lines 1681-1682, and adds no plan, stage or ticket label.\nSCORE reuse: 20\nJUSTIFICATION reuse: the change reuses _clear_digest and stop_digest_path (reckon/hooks/coordinator_obligations.py:523-535 and 1289) and forks no second record mechanism.\nFINDING tests/test_coordinator_obligations_hook.py:1103 non-blocking: `assert deferred.returncode == 0` (and the same shape at line 1119) cannot fail, because _stop returns 0 both when it emits a block and when it stays silent, so it counts as coverage without guarding the behaviour it names; only the stdout assertions at lines 1104 and 1120 can redden.\nFINDING tests/test_coordinator_obligations_hook.py:1104 non-blocking: `assert deferred.stdout == \"\"` passes both when the acknowledgement defers the duty and when reapply_acknowledgements fails to defer it, because a failed deferral leaves the first stop's digest matching the unchanged blocking set and the stop is silent for the wrong reason, so this assertion survives the regression it claims to cover.\nFINDING docs/evidence/fragments/crew-observability-truth/the-stop-hook-blocks-once-per-unchanged-duty-list.html:23 non-blocking: the repair's base and after arms re-run only tests/test_staged_write_inventory.py, while the done_when's arm over the five test files importing the changed module was not re-established at the repair's own base c6dba3af, so that part of the gate is inherited from the pre-repair round rather than measured against this change.",
+  "review_run_id": "r-20261113T012224947637-review-of-the-stop-hook-blocks-once-per-unchanged-duty-list-26f5d613b0f8",
+  "reviewed_base_sha": "c6dba3af657ba5603f95f82a8de359c6506f630d",
+  "reviewed_head_sha": "26f5d613b0f89aa6636e48ebf575f59ddc47d1d0",
+  "reviewed_run_id": "r-20261112T220918968738-the-stop-hook-blocks-once-per-unchanged-duty-list",
+  "scores": {
+    "durability": 18,
+    "evidence": 16,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-13T01:48:39.575236+00:00",
+  "total": 112
+}

@@ -1,0 +1,32 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-11-11T08:47:51.415Z",
+  "dispatched_at": "2026-11-11T08:39:06Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261111T074825860750-the-queued-launch-record-is-read-through-the-accessor/manifest.md",
+      "line": 20,
+      "severity": "blocking",
+      "text": "baseline_suite/after_suite record `PYTHONPATH=<abs tree> <abs>/.venv/bin/python -m pytest -p no:cacheprovider -q <abs>/tests/test_a_queued_launch_keeps_the_run_record.py`, but the run's own pointer records suite_command `PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q {node_test_files}` with suite_gate `armed` and census_tests `tests/test_staged_write_inventory.py`, so promotion_records._scoped_suite_command resolves both arms to a command naming that test file AND tests/test_staged_write_inventory.py; promotion_records.py:722-725 compares the recorded arm command literally (whitespace-normalised only) and will report baseline_suite.command_matches_suite_command and after_suite.command_matches_suite_command, so the pair this node offers as its armed suite evidence is not the pair the done_when specifies and the run cannot be promoted on it."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is that the queued-launch record tests compare what each dispatch door stored through runs.read_dispatch_detail rather than a direct dispatch's in-memory return, and tests/test_a_queued_launch_keeps_the_run_record.py:255-267 adds _stored_record (runs.read_pointer plus runs.read_dispatch_detail) with both cases reading through it and argv through runs.dispatch_field.\nVERDICT done_when: the done_when requires the armed suite command resolved per revision and run literally, and manifest.md:20-21 record arms naming only tests/test_a_queued_launch_keeps_the_run_record.py while the run's recorded suite_command resolves over the declared scope to that file plus the census test tests/test_staged_write_inventory.py.\nVERDICT write_paths: the declared scope is four paths (tests/test_a_queued_launch_keeps_the_run_record.py, reckon/crew/queue_admission.py as declared, the evidence fragment and the figures directory), and the diff touches only the test file and the fragment, both inside it.\nVERDICT manifest: read; it records status complete, 7 passed EXIT=0 at the head, 7 passed EXIT=0 for the base arm and 2 failed EXIT=1 for the negative control, naming four logs that all exist on disk.\nVERDICT diff: read commit d756ba125f against base 53dfb92b9a; two files changed (the test file 81 insertions and 12 deletions, plus a new 7-line evidence fragment), both inside the declared scope, and reckon/crew/queue_admission.py is untouched as the manifest states.\nCALL_SITES: reckon/crew/runs.py:201, reckon/crew/runs.py:217, reckon/crew/queue_admission.py:421, reckon/serve.py:658, reckon/run_record.py:187, reckon/crew/dispatch_launch.py:274\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: tests/test_a_queued_launch_keeps_the_run_record.py:255-267 makes both cases read the stored pointer and the dispatch detail rather than the in-memory return, which is the goal exactly.\nSCORE evidence: 11\nJUSTIFICATION evidence: the arms at manifest.md:20-21 are green and their logs exist, but they run against a command different from the armed command resolved for this run, so the done_when's suite measure is recorded as something it is not.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: the diff touches only tests/test_a_queued_launch_keeps_the_run_record.py and docs/evidence/fragments/crew-state-stays-bounded/the-queued-launch-record-is-read-through-the-accessor.html, both declared write paths.\nSCORE durability: 19\nJUSTIFICATION durability: the negative control at logs/negative_control.log reddens test_a_refused_then_launched_request_carries_the_launch_record and test_the_launched_record_carries_every_key_a_direct_dispatch_writes when the queued launch drops argv, and the added assert \"argv\" not in stored at tests/test_a_queued_launch_keeps_the_run_record.py:272 fails if the pointer store stops splitting argv.\nSCORE fit: 18\nJUSTIFICATION fit: the new fixture and helper at tests/test_a_queued_launch_keeps_the_run_record.py:59-89 and 255-267 follow the module's existing module-level fixtures and underscore helpers, and carry no plan or ticket identifiers.\nSCORE reuse: 18\nJUSTIFICATION reuse: _stored_record composes the production owner reckon/crew/runs.py:201 (read_dispatch_detail) rather than reimplementing it, and the harness stub matches tests/test_codex_inbox_trust.py:29-34 where no shared fixture exists.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261111T074825860750-the-queued-launch-record-is-read-through-the-accessor/manifest.md:20 blocking: both armed arms record a command naming only tests/test_a_queued_launch_keeps_the_run_record.py, while the run's recorded suite_command resolves to that file plus the census test tests/test_staged_write_inventory.py, so promotion_records.py:722-725 reports command_matches_suite_command for both arms and the pair is not the evidence the done_when specifies.\n",
+  "review_run_id": "r-20261111T083558262834-review-of-the-queued-launch-record-is-read-through-the-accessor-d756ba125f91",
+  "reviewed_base_sha": "53dfb92b9a19f3a28d9b61c1c1c18f3b53629060",
+  "reviewed_head_sha": "d756ba125f9164239a55191253346d3eb1e291be",
+  "reviewed_run_id": "r-20261111T074825860750-the-queued-launch-record-is-read-through-the-accessor",
+  "scores": {
+    "durability": 19,
+    "evidence": 11,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 18,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-11T08:50:08.951379+00:00",
+  "total": 104
+}

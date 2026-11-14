@@ -1,0 +1,203 @@
+{
+  "absent_items": [],
+  "accepted_edits": [
+    {
+      "by": "1fb615a0-2801-4418-bbb4-c2914719e520",
+      "digests": {
+        "s46": "15bf3fae7afcff6c9b316fb4d28bd070c2190192e9b9b5c3711b26f9dbc4895f"
+      },
+      "reason": "the s46 rewrite answers the four findings of the review composed at 08:26Z: the s45 wait, the arm and ruff obligations, a behavioural writer test with a disabling control, and the narrower claim in place of mtime and inode",
+      "units": [
+        "s46"
+      ],
+      "when": "2026-11-14T09:02:49.850448+00:00"
+    }
+  ],
+  "completed_at": "2026-11-14T08:46:53.420Z",
+  "dispatched_at": "2026-11-14T08:30:47Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/the-monitor-reads-each-fact-once.html:665",
+      "id": "wiring-1",
+      "reason": "without the declared wait the node either rebuilds \u00a745's index or blocks, and every one of its four checks names a symbol that does not exist at its base.",
+      "text": "s46 is declared `implementable` but its whole body repairs \u00a745's review-store index, and none of that exists on the tree it would be built on: `plan-section-depends-on` carries no `s46` key at all \u2014 `\"s46\": [\"the-monitor-reads-each-fact-once#s45\"]` is missing \u2014 while `git merge-base --is-ancestor 6cd3459136 HEAD` fails and `reckon/crew/` on the primary tree defines none of `record_written`, `store_index_run_digest`, `reconcile_foreign_write`, `_entry_facts` or `tests/test_the_review_store_is_indexed_by_its_writers.py`, so a dispatcher may launch s46 first and its negative control (\"at the base revision, the in-place rewrite leaves the digest unchanged\") cannot run because there is no digest to leave unchanged",
+      "type": "wiring",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/the-monitor-reads-each-fact-once.html:666",
+      "id": "evidence_paths-1",
+      "reason": "the section as written lets the node deliver one test run whose log the plan never places, which is exactly what the sibling sections' arm obligations exist to prevent.",
+      "text": "s46's done-when ends at its negative control and drops the three obligations its sibling sections each carry \u2014 \"The test files importing the changed modules add no failure against base in matched arms run as an `all_debug` partition job \u2026\", \"Each arm's log sits under the run directory, opens with its revision and literal command, and ends in `EXIT=`\", and the ruff clause \u2014 so the node is asked for a head result only, with no arm pair and no stated log location, and its promotion has no durable evidence to read",
+      "type": "evidence_paths",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/the-monitor-reads-each-fact-once.html:666",
+      "id": "done_when-1",
+      "reason": "the guard s46 adds to stop a bypass would pass on a bypass it cannot see, in the same shape as the assertion \u00a746 quotes the earlier review as finding unfalsifiable.",
+      "text": "the first done-when item lists every call in `reckon/` that writes a file under a `review-records` directory \"by parsing the source\" and asserts each one reaches `record_written`, a call-graph claim a source parse cannot settle: a write whose directory is computed from a variable, or reached through a helper one frame away, is neither enumerated nor resolved, and the only stated control covers the second item, so nothing shows the enumerator would fail on a new bypass",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/the-monitor-reads-each-fact-once.html:665",
+      "id": "reasoning-1",
+      "reason": "the section closes the bypass only for the code paths it is given scope to edit, leaving a stated defect unfixed without saying so or reducing the claim.",
+      "text": "the Why's second finding is \"an in-place write leaves the directory mtime unchanged, so the index never sees the rewrite\", and its stated remedy pairs closing the in-`reckon/` bypasses with recording mtime and inode in every entry, but no endpoint consumes those fields: \u00a745's readers \"never list or stat the store on a read\" and the store-directory mtime is the only reconcile probe, so the rewrite remains invisible while its gate asserts only that the fields are present",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "e3771e6fb54acb3d754aa0d45b11e0662154f434",
+  "plan_fingerprint": "6179b4f4744c899259586641613e0b1dbc1174bd4d0c7466b37ef7832761e883",
+  "plan_slug": "the-monitor-reads-each-fact-once",
+  "plan_version": 260,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "e3771e6fb54acb3d754aa0d45b11e0662154f434",
+      "commit_basis": "edit",
+      "finding": "wiring-1",
+      "note": "s46 now declares section_depends_on on the-monitor-reads-each-fact-once#s45, so it is held until \u00a745 lands",
+      "reason": "",
+      "when": "2026-11-14T09:01:12.083407+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "e3771e6fb54acb3d754aa0d45b11e0662154f434",
+      "commit_basis": "edit",
+      "finding": "evidence_paths-1",
+      "note": "s46's done-when now carries the matched all_debug arms, the arm-log placement under the run directory with revision, command and EXIT= lines, and the ruff clause its siblings carry",
+      "reason": "",
+      "when": "2026-11-14T09:01:27.999199+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "e3771e6fb54acb3d754aa0d45b11e0662154f434",
+      "commit_basis": "edit",
+      "finding": "done_when-1",
+      "note": "the source-parse census is replaced by a behavioural test that exercises each named writer entry point and asserts the run digest and store version move, with a control that turns record_written into a no-op and requires every check to fail",
+      "reason": "",
+      "when": "2026-11-14T09:01:42.995060+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "e3771e6fb54acb3d754aa0d45b11e0662154f434",
+      "commit_basis": "edit",
+      "finding": "reasoning-1",
+      "note": "the mtime and inode requirement is dropped because no read path consumes them; the section now states the narrower claim that the index is exact for writes made through reckon's writers and sees a hand edit only at the next rebuild",
+      "reason": "",
+      "when": "2026-11-14T09:01:56.095231+00:00"
+    }
+  ],
+  "responses": {
+    "done_when-1": {
+      "action": "acted",
+      "by": "",
+      "commit": "e3771e6fb54acb3d754aa0d45b11e0662154f434",
+      "commit_basis": "edit",
+      "note": "the source-parse census is replaced by a behavioural test that exercises each named writer entry point and asserts the run digest and store version move, with a control that turns record_written into a no-op and requires every check to fail",
+      "reason": "",
+      "when": "2026-11-14T09:01:42.995060+00:00"
+    },
+    "evidence_paths-1": {
+      "action": "acted",
+      "by": "",
+      "commit": "e3771e6fb54acb3d754aa0d45b11e0662154f434",
+      "commit_basis": "edit",
+      "note": "s46's done-when now carries the matched all_debug arms, the arm-log placement under the run directory with revision, command and EXIT= lines, and the ruff clause its siblings carry",
+      "reason": "",
+      "when": "2026-11-14T09:01:27.999199+00:00"
+    },
+    "reasoning-1": {
+      "action": "acted",
+      "by": "",
+      "commit": "e3771e6fb54acb3d754aa0d45b11e0662154f434",
+      "commit_basis": "edit",
+      "note": "the mtime and inode requirement is dropped because no read path consumes them; the section now states the narrower claim that the index is exact for writes made through reckon's writers and sees a hand edit only at the next rebuild",
+      "reason": "",
+      "when": "2026-11-14T09:01:56.095231+00:00"
+    },
+    "wiring-1": {
+      "action": "acted",
+      "by": "",
+      "commit": "e3771e6fb54acb3d754aa0d45b11e0662154f434",
+      "commit_basis": "edit",
+      "note": "s46 now declares section_depends_on on the-monitor-reads-each-fact-once#s45, so it is held until \u00a745 lands",
+      "reason": "",
+      "when": "2026-11-14T09:01:12.083407+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/Code/reckon/docs/state/reckon/reviews/plan/the-monitor-reads-each-fact-once/r-20261114T082636617720-plan-review-of-the-monitor-reads-each-fact-once.json",
+  "review_run_id": "r-20261114T082636617720-plan-review-of-the-monitor-reads-each-fact-once",
+  "reviewed_blob_sha": "66c3b29a9d195d37986ceb128aed91d80459948e",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 the files, sections and commits s46 cites resolve, judged against the tree its work depends on: `reckon/crew/review_records.py`, `review.py` and `plan_review.py` are on the primary tree, the reviewed head 6cd3459136 resolves in the indexed run's branch (`reviewed_head_sha` on the stored record at `~/.config/reckon/crew/runs/r-20261113T082959041438-the-review-store-is-indexed-by-its-writers/review-records/`), and `tests/test_the_review_store_is_indexed_by_its_writers.py` exists on that branch \u2014 its absence from the primary tree is the wiring defect below, not a dangling pointer.",
+    "done_when": "a finding \u2014 the write-site enumerator in the enumerator item of s46's done-when can pass without ever showing it would catch a new bypass.",
+    "evidence_paths": "a finding \u2014 s46's done-when drops the matched base arms, the arm-log path and the ruff clause that \u00a743, \u00a744 and \u00a745 each carry, so no gate evidence lands on a durable path.",
+    "naming": "pass \u2014 \"Every review-record write moves the index\" and the write paths `tests/test_every_review_record_write_moves_the_index.py` and `record_written`/`mtime_ns`/`store_index_run_digest` name the mechanism, with no plan label, stage name or ticket number.",
+    "reasoning": "a finding \u2014 s46 requires each index entry to carry the record's mtime and inode while every read path it and \u00a745 define is forbidden to stat a record, so the added fields have no consumer and the in-place rewrite the Why describes as invisible from outside the writer path stays invisible.",
+    "single_goal": "pass \u2014 s46 carries one deliverable, that the review store's index is the sole record of what the store holds, with the mtime/inode entry shape and the docstring as parts of the same claim.",
+    "wiring": "a finding \u2014 s46 repairs \u00a745's index yet declares no `depends-on` on s45 and is marked implementable while every symbol it names exists only on \u00a745's unlanded branch."
+  },
+  "section_digests": {
+    "_document": "2e6c5f6681454cc3caa30c8c54bbf6aa459b995614d64b9cdff62fac3f688c28",
+    "s1": "bd759b66b2b75254305e473bf6b8af6218ef25d95b0db1638ed2668f0cdd9441",
+    "s10": "d21f2adf110c82d39fa9834752ac3f47dba7ac886c59cfd85feb23c1e8d1003f",
+    "s11": "9e8b94316ed45fc2103d1edc216fbb0dd3862f559824ad1c43299b305a3af6bd",
+    "s12": "21fc271f915167db3cca4f7d0eee1f4553b5dec7b96127d71d294e5ae242bc02",
+    "s13": "3b11fe0cd53015121e6d566c554c6c77b13236b3700a90279e77a6bc755ea0a3",
+    "s14": "5f6675ba84aab4ad594b121e888aace2d69e497390559d38f0c220e5894ac588",
+    "s15": "efa38c205c7332a7867b6d87358cd9f89fe1568beaa9f9e5eee96862dd70b6f0",
+    "s16": "65cd8e559a7a5ebf018bc9fe50a07bb0954f67405ab6f17c7377c38ccd363aa7",
+    "s17": "1dee50822a308fa4eeea0a45fd3cdaf6de52d9a1d74a91c2b9c7605d179da2ad",
+    "s18": "ba63c0b1b83ec93cc99d92a3c1f67dcf92d700e20f4f9acd88362705d6b4d123",
+    "s19": "16239e5fae49e56b170433557a77981816880756e3ae545a741ca9ec70feae63",
+    "s2": "e0f306f01b1530661ef28be3f19592348c45f24e7826567d58a2f0a4f79dd284",
+    "s20": "d14d2b70bb40dd552f306726f24f5e3c79bc5efcd7f9b74bcb7d3de8f16f5e8e",
+    "s21": "9ff7b29b83f9c8ab95a0a469c997950ef226fc3d99d8dcffdbf0683df7a1f26c",
+    "s22": "1bdc9ac90396c56bcbcc8c3c4f44aa6b30cbd59c4da001825159a7b8245e054c",
+    "s23": "a810ffe181d2787722d8f9538a4348592269fe163ba23cc59939376cb13edcbb",
+    "s24": "e861dcc5044a0a1fb36c4a374ca71717aeb97054e5a3ff1aef57c9779c7147f5",
+    "s25": "a0939bd3d8ab0fa4b5c0c88de3cb9cdab3531338fe35d0c12b4338fc3c4d1563",
+    "s26": "a8fb9d8585830b87ed826347ff724ddecc8fb9a43ad9ac1540d6499e3689d03e",
+    "s27": "3c9e47dc777eeadabbe3898d4b8f69d91defbaff009d050f2906732cb87e50c8",
+    "s28": "982b473728d61b81a3d37050384bee85f3f1fb5366aad0668c5370a51367e82c",
+    "s29": "159b45ee319dc13bffea961474eb544e5a26d161bf686ebe5b7fabf95f5266c7",
+    "s3": "f42c4644817feac0c199cd8510d2e284079b1c8fb777c7b79ced63531a8d983f",
+    "s30": "2d8c9efccd4f8eeede43f5fabe6f6b9cacc2207ce97ca700584bfedd0e512dd2",
+    "s31": "27817d420beefc15258f2f52ea8c616f3e04b4035773fe437f6cfe7f31506100",
+    "s32": "836f1473b1691ab0150f1e32791c295f7511abd66cb29f93b48dc0d347998d51",
+    "s33": "39a7d7a43bc6e97cd0c11235cfbe6c06a5b6968dab69e8147978bd164bbfef4e",
+    "s34": "16da5de7a5c4ee31ac2d9a43b888bed8fb1ec1138a2194a35c9b8eacbf03a2b1",
+    "s35": "4a0acdec0fa4d9eaa1066ee46c8a4aec8079db0452d014a442005e104c03c2cc",
+    "s36": "2a4a0d6ab4a994e2d7542482f7b44d106ab0920143bf39d14b292c7c2ec02e8a",
+    "s37": "4d92cdfe9ba1661dc549241d07f5134250aedec9d46757600f427fc52c4741dd",
+    "s38": "2cd435157dcdf14e39d4dbcd90e98b171feba9df13c5e142e0edf0d8fd4a3bf5",
+    "s39": "8808ed4531ebe4589c1b5bb7c7b0e5644b141d532a6dcc3fef92ae640e08d57c",
+    "s4": "c98e197194f43124e5a982992370bf1c08593aa17fb304787a4d7b87f42a0107",
+    "s40": "444368fd31b2649852412e7533de8628a94071d7942154f1a75921b923006779",
+    "s41": "b1092da2f507a79ce2706ec4aa2660d53c3b5250d4790b92d2dcd190f4387e17",
+    "s42": "ef98f2534552feb3a2ebf8768c6fcb43355940cef2804ddc7c77c6917785de19",
+    "s43": "0ca81d067129f3af34ec2d359c605e716be1488a1545039d936cdb1c7bbee2ec",
+    "s44": "2f0b0e686cace2db876cf00fcfaf9bb695e130bf88094a901ff7e7808b059cfc",
+    "s45": "d69c6ab4c51eb99b6262547a934d3cadb8896d272251707771027d8dacb77bcb",
+    "s46": "55c4eda8b63ae9278c064326b403573e8c71f6128b177395d4521a08afa73981",
+    "s5": "0329936ec702c07e4a2ef8c756961740635d0dd8c7a1d14646983f1c32f09790",
+    "s6": "1f19e9f8c46bc0674347ba5a3c97588b846d125a5fbcf9533e8a5a3f9ec00bb6",
+    "s7": "dff81fd58ae3afef69063faed237df9bb4056bdb98556a1e5a053e6807ae3d16",
+    "s8": "4a70cad80d8613feb4b30861587298ff1109616ba9a35992821009274f17ae3f",
+    "s9": "8597fbe3fc93694e846c364272c698acf84b09466b4798491eb74279d62cef1d"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-14T08:58:08.514173+00:00",
+  "total": null
+}

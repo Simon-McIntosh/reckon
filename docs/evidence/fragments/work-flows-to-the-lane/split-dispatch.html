@@ -1,0 +1,158 @@
+<section id="split-dispatch">
+  <h3>Dispatch concern extraction with compatibility facade</h3>
+  <p>The base revision <code>af0c29f3b7e8856b078aee1f9fcbdaaa75ba9670</code>
+    reproduced the size problem: <code>wc -l reckon/crew/dispatch.py</code>
+    returned <strong>4405</strong>. The product split is committed at
+    <code>2bad2244f503ae6f7cb22ea0e299f93b3ce088b9</code>. The initial facade had
+    <strong>662 lines</strong>; the shared-owner repair reduces it to
+    <strong>657 lines</strong>. Integrating primary gives the facade
+    <strong>660 lines</strong>; every new module is below 2000 lines.</p>
+  <p>The frozen surface inventory covers all <strong>603 original bindings</strong>.
+    Each resolves to its concern's identical object; facade patches and their
+    restoration reach each concern that reads the binding. The implementation
+    follows the existing crew facade's override forwarding. Request storage,
+    previews and context refusals, comparison arms, suite instructions, claim
+    restoration, preflight and launch composition have separate source homes.
+    The main dispatch crosses the preflight/launch boundary through explicit
+    keyword arguments.</p>
+  <table id="split-dispatch-modules">
+    <thead><tr><th>Module</th><th>Lines</th></tr></thead>
+    <tbody>
+      <tr><td><code>reckon/crew/dispatching/__init__.py</code></td><td>6</td></tr>
+      <tr><td><code>reckon/crew/dispatching/_imports.py</code></td><td>754</td></tr>
+      <tr><td><code>reckon/crew/dispatching/claims.py</code></td><td>41</td></tr>
+      <tr><td><code>reckon/crew/dispatching/comparisons.py</code></td><td>636</td></tr>
+      <tr><td><code>reckon/crew/dispatching/fences.py</code></td><td>337</td></tr>
+      <tr><td><code>reckon/crew/dispatching/launch.py</code></td><td>1139</td></tr>
+      <tr><td><code>reckon/crew/dispatching/preparation.py</code></td><td>1475</td></tr>
+      <tr><td><code>reckon/crew/dispatching/requests.py</code></td><td>399</td></tr>
+      <tr><td><code>reckon/crew/dispatching/suite.py</code></td><td>183</td></tr>
+    </tbody>
+  </table>
+  <p>A mechanical source comparison found all <strong>28 helper bodies</strong>
+    unchanged after normalizing import grouping and order. The public dispatch
+    signature is unchanged, and concatenating the preflight and launch bodies
+    reproduces the original body under the same normalization.</p>
+  <p>The following table records the initial extraction measurements, before the source-inventory test migration.</p>
+  <table id="split-dispatch-measurements">
+    <thead><tr><th>Measure</th><th>Base</th><th>Head</th></tr></thead>
+    <tbody>
+      <tr><td>Armed inventory and surface gate, all_debug</td><td>51 passed</td><td>56 passed</td></tr>
+      <tr><td>284 existing dispatch test importers, all_debug, sequential arms, at most four workers</td><td>130 failed, 2538 passed, 2 skipped</td><td>132 failed, 2536 passed, 2 skipped</td></tr>
+      <tr><td>Importer failure-ID comparison</td><td colspan="2">129 shared; 3 added; 1 removed</td></tr>
+      <tr><td>Missing-export negative control</td><td colspan="2">2 failed, 3 passed; EXIT=1</td></tr>
+    </tbody>
+  </table>
+  <p>Removing <code>queue_requests</code> from the facade's export table produced
+    <code>AssertionError: missing dispatch re-export: queue_requests</code>.
+    Both the original-binding check and the patch-forwarding check failed.
+    The scratch mutation was restored before the importer measurement.
+    A focused existing watcher-arming dispatch test also passed.</p>
+  <p>The initial delivery stopped on the three source-inventory checks tied to
+    the former physical implementation location. An explicit scope extension
+    authorized migrating those tests. Hold discovery now reads the facade and
+    every Python source in <code>dispatching/</code>, while still requiring
+    exactly three recorder calls with no <code>docs</code> keyword. Refusal
+    discovery includes the same package while retaining complete formatter-family
+    equality. Launch discovery retains every gate assertion and follows
+    <code>dispatching/launch.py</code>'s <code>_launch_dispatch</code>.</p>
+  <p id="split-dispatch-migration-receipts">The resumed verification records
+    both armed commands exactly as relative shell commands from each tree's
+    root, with <code>.venv</code> linked to the shared project environment.
+    The final importer comparison, exact full head revision and completion
+    verdict are recorded in the run's <code>manifest.md</code> and
+    <code>resumed-importer-comparison.json</code>. The initial three added
+    failure IDs are tracked explicitly in that comparison; no product source
+    changed during the test migration.</p>
+  <h4 id="split-dispatch-runtime-diagnosis">Repeated runtime diagnosis</h4>
+  <p>Before any product or test edit, both formerly added runtime cases were
+    executed three times at the base and three times at the test-migration head,
+    on a separate <code>all_debug</code> allocation. The follower case passed
+    3/3 at each revision. The killed-worker case passed 3/3 at the base and
+    2/3 at the head, so two additional bounded capture samples were taken.</p>
+  <table id="split-dispatch-runtime-counts">
+    <thead><tr><th>Case and observations</th><th>Base</th><th>Head</th></tr></thead>
+    <tbody>
+      <tr><td>Killed worker, requested three repetitions</td><td>3 passed</td><td>2 passed, 1 failed</td></tr>
+      <tr><td>Killed worker, five capture repetitions</td><td>5 passed</td><td>5 passed</td></tr>
+      <tr><td>Killed worker, ten capture repetitions</td><td>8 passed, 2 failed</td><td>10 passed</td></tr>
+      <tr><td>Own-session follower, requested three repetitions</td><td>3 passed</td><td>3 passed</td></tr>
+      <tr><td>Own-session follower, fixed twenty repetitions</td><td>20 passed</td><td>19 passed, 1 failed</td></tr>
+      <tr><td>Own-session follower, base reproduction search, stopping on matching failure</td><td>1 failed on first invocation; maximum 100</td><td>Not sampled</td></tr>
+    </tbody>
+  </table>
+  <p>The base failure receipts contain a real worker PID, one emitted worker
+    stream record, empty stderr, and <code>exit_code=null</code>,
+    <code>signal=null</code> and <code>signal_name=null</code>. They reproduce
+    the head's failed signal assertion. This missing wait-status receipt is
+    therefore pre-existing intermittent behavior. The supervisor implementation
+    is unchanged between the measured revisions. No product repair or test
+    patch-target migration was indicated, and no assertion was changed.</p>
+  <p>The follower symptom also reproduced at the base. Both captured failures
+    contain a <code>working → blocked</code> transition followed by a
+    <code>blocked → working</code> reconciliation for the same run. The base
+    log quotes <code>AssertionError: the owning session's row is delivered
+    exactly once</code> and <code>assert 2 == 1</code>. This is a pre-existing
+    intermittent extra transition; the follower implementation is unchanged.
+    The base-only reproduction search stopped at its first invocation and is
+    not a frequency estimate.</p>
+  <p>The requested two-ID comparison has no head-only failure after including
+    these baseline reproductions. No product or test repair was indicated,
+    and no assertion changed. <code>diagnosis-comparison.json</code> retains
+    the requested and supplemental observations, including every head failure.
+    Its base receipts include <code>capture-detail-base-1.json</code>,
+    <code>capture-detail-base-10.json</code> and
+    <code>follower-base-repro-base-1.json</code>. The final expanded exact-command
+    arm receipts and full revisions are recorded in the run manifest.</p>
+  <h4 id="split-dispatch-shared-forwarding">One runtime assignment owner</h4>
+  <p>The reuse review identified a duplicate assignment-forwarding implementation
+    in the dispatch facade. Before repair, the owner-observation regression
+    check failed with <code>dispatch assignment bypassed the crew facade's
+    forwarding owner</code>. Its independent full armed run recorded
+    <strong>1 failed, 135 passed</strong>; the repair-base arm recorded
+    <strong>135 passed</strong>.</p>
+  <p>The existing <code>reckon/crew.py::_CrewFacade</code> is now defined before
+    concern imports so dispatch can inherit it. Its setter reads the target
+    facade's <code>_CONCERN_MODULES</code> tuple. Dispatch therefore inherits
+    the existing assignment owner and selects its own readers without a second
+    setter implementation. Dispatch retains its existing deletion behavior.
+    The focused surface gate passes all <strong>6 tests</strong>, including
+    actual owner delegation, moved-function behavior and restoration.</p>
+  <p>The final exact armed head receipt, the base/head population of tests that
+    patch through the crew facade, and the control that reverses the answering
+    product commit are recorded in the run manifest. The population inventory
+    retains its patch sites and positive controls. Lint comparison on the owner
+    records <strong>30 baseline and 30 head findings</strong>, with none added;
+    dispatch and the surface test are clean, and all three files pass format
+    checking.</p>
+  <h4 id="split-dispatch-merge-preservation">Primary behavior in the split homes</h4>
+  <p>The landing conflict was reported against primary
+    <code>5cb302bb9443d2be1c2ee211a0cb61ab73e95dd1</code>. At repair start,
+    primary resolved to <code>abd62aeb9565e76861e73eb0bd08a9036272a545</code>;
+    its dispatch source is identical to the reported revision. The merge keeps
+    the shared facade owner and transfers primary's backlog recording and
+    superseded-launch checks into the responsibility modules.</p>
+  <p>A structural comparison confirms the recombined dispatch signature and
+    body match primary after normalizing import grouping. The queued-record
+    builder, queue entry point, backlog recorder, supersession error and
+    pre-spawn helper also match primary. The removed session-refusal callable
+    remains available through the legacy dispatch export, with its original
+    body retained in the fence module. The focused surface gate passes all
+    <strong>6 tests</strong>. The merged facade has <strong>660 lines</strong>;
+    the largest concern has <strong>1464 lines</strong>, below 2000.</p>
+  <p>The merge head and both parent revisions, the exact armed gate receipt,
+    backlog and supersession regression receipts, and missing-export control
+    are recorded in the run manifest. Original delivery commits remain cited;
+    this repair finishes through the pending landing and does not promote the
+    run again.</p>
+  <p>Durable receipts are under
+    <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261112T062614544790-split-dispatch</code>:
+    <code>baseline-armed.log</code>, <code>head-armed.log</code>,
+    <code>baseline-importers-exact-git.log</code>,
+    <code>head-importers-absolute-git.log</code>,
+    <code>negative-control.log</code>, <code>importer-comparison.json</code>
+    and <code>mechanical-equivalence.log</code>. The extracted Python sources pass
+    ruff check and format. The three migrated test files retain seven baseline
+    lint findings and their existing formatting backlog, with no added findings. The interrupted initial runner logs are retained
+    separately and are excluded from the comparison.</p>
+</section>

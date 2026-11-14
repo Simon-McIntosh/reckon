@@ -1,0 +1,67 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own baseline_suite (4d5c4389b7, gate-base-arm.log: 51 passed, 0 failed, EXIT=0) and after_suite (15cbd88ddc, gate-after-arm.log: 51 passed, 0 failed, EXIT=0); the diff is docs-only, so the head arm and the base arm exercise byte-identical source, and the added set is empty.",
+  "call_sites": [
+    "reckon/mcp_views.py:4641",
+    "reckon/hooks/coordinator_obligations.py:201",
+    "reckon/crew/obligation_snapshot.py:1107"
+  ],
+  "completed_at": "2026-11-13T11:29:56.375Z",
+  "dispatched_at": "2026-11-13T11:24:03Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "exempted",
+      "reason": "non-blocking; carried to the plan's next health review",
+      "recorded_at": "2026-11-13T12:29:01.591997+00:00"
+    },
+    "1": {
+      "kind": "exempted",
+      "reason": "non-blocking; carried to the plan's next health review",
+      "recorded_at": "2026-11-13T12:29:04.129891+00:00"
+    },
+    "2": {
+      "kind": "exempted",
+      "reason": "non-blocking; carried to the plan's next health review",
+      "recorded_at": "2026-11-13T12:29:06.619860+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/a-queued-request-is-checked-when-queued/ready-a-queued-request-is-checked-s8.html",
+      "line": 1,
+      "severity": "non-blocking",
+      "text": "the filename carries the plan section label `-s8`, unlike all fourteen sibling fragments in docs/evidence/fragments/a-queued-request-is-checked-when-queued/ which name the deliverable, so a plan-stage identifier leaks into an artifact path; the path was assigned by the dispatch's write-path fence, so this records the naming rather than a worker deviation."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261113T034208853104-ready-a-queued-request-is-checked-s8/manifest.md",
+      "line": 15,
+      "severity": "non-blocking",
+      "text": "baseline_suite and after_suite both name tests/test_staged_write_inventory.py, which imports reckon.interface_counts and not reckon.crew.obligations, so neither arm measures the done-when's obligations-importing population; that population's 55 pre-existing failures (population-arm.log) have no head arm, leaving the `adds no failure` clause inferred from a docs-only diff rather than measured."
+    },
+    {
+      "file": "docs/evidence/fragments/a-queued-request-is-checked-when-queued/ready-a-queued-request-is-checked-s8.html",
+      "line": 45,
+      "severity": "non-blocking",
+      "text": "the fragment states that `ruff check` and `ruff format --check` report no finding on the staged paths, but no ruff log appears among the run's test_logs and the staged paths include an .html file ruff does not check, so the claim carries no recorded receipt."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is that a request admission-refused names the refusal in its obligation, and the landed change is one evidence fragment, docs/evidence/fragments/a-queued-request-is-checked-when-queued/ready-a-queued-request-is-checked-s8.html:1, because the reading already sits at base in reckon/crew/obligations.py:238 (QUEUED_CONTRACT_REFUSED_DUTY_KIND) and :1340-1347 (_queued_contract_refusal), so the node verified rather than reimplemented it.\nVERDICT done_when: section 8's done_when names tests/test_a_refused_request_names_its_refusal.py, and the run's gate-head.log records `5 passed` with `EXIT=0` for exactly that file while negative-control.log records `2 failed, 3 passed` `EXIT=1`; the done-when's second clause, that obligations-importing tests add no failure against base, is measured only at base (population-arm.log, 55 failed) and has no head arm.\nVERDICT write_paths: the node declared reckon/crew/obligations.py, docs/evidence/fragments/a-queued-request-is-checked-when-queued/ready-a-queued-request-is-checked-s8.html and a figures directory, and `git diff --stat 4d5c4389b7cffd9462a79412ccd472e3bce0589a 15cbd88ddcc334520f8217566a426b2cb909f2f3` lists only the fragment, so every landed path is inside the declared set and obligations.py is byte-identical to base.\nVERDICT manifest: read at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261113T034208853104-ready-a-queued-request-is-checked-s8/manifest.md; status is `complete`, commits names 15cbd88ddc, changed_paths names the single fragment, both suite arms are filled and end `EXIT=0`, and the `tests:` line matches gate-head.log's `# command:` header verbatim.\nVERDICT diff: read 15cbd88ddc against 4d5c4389b7 commit by commit; the only change is a new 48-line evidence fragment, and the implementation commits it cites, 77129c667f and c5ccda2605, are both ancestors of the base.\nCALL_SITES: reckon/mcp_views.py:4641, reckon/hooks/coordinator_obligations.py:201, reckon/crew/obligation_snapshot.py:1107\nSCORE goal_fidelity: 16\nJUSTIFICATION goal_fidelity: the deliverable holds at head (reckon/crew/obligations.py:1340-1347 attaches the refusal and tests/test_a_refused_request_names_its_refusal.py passes), and the node's contribution is the verification record at the fragment rather than a source change.\nSCORE evidence: 14\nJUSTIFICATION evidence: the named gate ran and its result is in gate-head.log, but the declared baseline_suite and after_suite both ran tests/test_staged_write_inventory.py, which imports reckon.interface_counts, not reckon.crew.obligations, so the done-when's obligations-population clause is inferred from a docs-only diff rather than measured at head.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: `git diff --stat 4d5c4389b7 15cbd88ddc` touches only the declared fragment path, and reckon/crew/obligations.py was examined and left untouched.\nSCORE durability: 16\nJUSTIFICATION durability: no new test was added because no code changed, but the deliverable is guarded by tests/test_a_refused_request_names_its_refusal.py:180-199, whose stubbed-reading arm reddens with negative-control.log's `2 failed`, so the row cannot be produced without the failure it reads.\nSCORE fit: 14\nJUSTIFICATION fit: the fragment follows the sibling evidence-fragment shape (docs/evidence/fragments/a-queued-request-is-checked-when-queued/admission-refusal-named-in-obligation.html), but its filename carries the section label `-s8` while every other fragment in that directory names the deliverable.\nSCORE reuse: 20\nJUSTIFICATION reuse: the node added no mechanism; the capability is owned by reckon/crew/obligations.py:1347 `_queued_contract_refusal`, and a search over reckon/ for a second queued-refusal reading found only the landed one.\nFINDING docs/evidence/fragments/a-queued-request-is-checked-when-queued/ready-a-queued-request-is-checked-s8.html:1 non-blocking: the filename carries the plan section label `-s8`, unlike all fourteen sibling fragments in that directory which name the deliverable, so a plan-stage identifier leaks into an artifact path; the path was assigned by the dispatch's write-path fence, so this records the naming rather than a worker deviation.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261113T034208853104-ready-a-queued-request-is-checked-s8/manifest.md:15 non-blocking: baseline_suite and after_suite both name tests/test_staged_write_inventory.py, which does not import reckon.crew.obligations, so neither arm measures the done-when's obligations-importing population and its 55 pre-existing failures (population-arm.log) have no head arm to take a delta against.\nFINDING docs/evidence/fragments/a-queued-request-is-checked-when-queued/ready-a-queued-request-is-checked-s8.html:45 non-blocking: the fragment states that `ruff check` and `ruff format --check` report no finding on the staged paths, but no ruff log is among the run's test_logs and the staged paths include an .html file ruff does not check, so the claim is not backed by a recorded receipt.\nFINDING docs/evidence/fragments/a-queued-request-is-checked-when-queued/ready-a-queued-request-is-checked-s8.html:1 non-blocking: the filename carries the plan section label `-s8`, unlike all fourteen sibling fragments in docs/evidence/fragments/a-queued-request-is-checked-when-queued/ which name the deliverable, so a plan-stage identifier leaks into an artifact path; the path was assigned by the dispatch's write-path fence, so this records the naming rather than a worker deviation.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261113T034208853104-ready-a-queued-request-is-checked-s8/manifest.md:15 non-blocking: baseline_suite and after_suite both name tests/test_staged_write_inventory.py, which imports reckon.interface_counts and not reckon.crew.obligations, so neither arm measures the done-when's obligations-importing population; that population's 55 pre-existing failures (population-arm.log) have no head arm, leaving the `adds no failure` clause inferred from a docs-only diff rather than measured.\nFINDING docs/evidence/fragments/a-queued-request-is-checked-when-queued/ready-a-queued-request-is-checked-s8.html:45 non-blocking: the fragment states that `ruff check` and `ruff format --check` report no finding on the staged paths, but no ruff log appears among the run's test_logs and the staged paths include an .html file ruff does not check, so the claim carries no recorded receipt.",
+  "review_run_id": "r-20261113T104903517088-review-of-ready-a-queued-request-is-checked-s8-15cbd88ddcc3",
+  "reviewed_base_sha": "4d5c4389b7cffd9462a79412ccd472e3bce0589a",
+  "reviewed_head_sha": "15cbd88ddcc334520f8217566a426b2cb909f2f3",
+  "reviewed_run_id": "r-20261113T034208853104-ready-a-queued-request-is-checked-s8",
+  "scores": {
+    "durability": 16,
+    "evidence": 14,
+    "fit": 14,
+    "goal_fidelity": 16,
+    "reuse": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-13T12:26:37.914702+00:00",
+  "total": 99
+}

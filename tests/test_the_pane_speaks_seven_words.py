@@ -17,7 +17,7 @@ WORDS = frozenset(
         "queued",
         "working",
         "waiting",
-        "halted",
+        "needs you",
         "delivered",
         "landed",
         "dropped",
@@ -68,9 +68,9 @@ def test_rows_use_the_pane_words_and_first_row_says_new() -> None:
 
 def test_counter_labels_and_hues_share_the_pane_words() -> None:
     assert set(ticker._MAX_CELLS) <= WORDS
-    assert ticker._MAX_CELLS == ("working", "halted", "delivered", "waiting")
+    assert ticker._MAX_CELLS == ("working", "needs you", "delivered", "waiting")
     assert ticker._COUNT_FIELD == {
-        "halted": "blocked",
+        "needs you": "blocked",
         "delivered": "unpromoted",
         "waiting": "waiting",
     }
@@ -90,4 +90,4 @@ def test_counter_labels_and_hues_share_the_pane_words() -> None:
             }
         )
     )
-    assert re.search(r"1w\s+2h\s+3d\s+4q", text)
+    assert re.search(r"1w\s+2n\s+3d\s+4q", text)

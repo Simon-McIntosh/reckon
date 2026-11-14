@@ -467,9 +467,7 @@ def _process_reading(
 
 def _record_newest_stream(record: Mapping[str, Any]) -> tuple[Path, float] | None:
     """A record's newest stream, through the shared reader."""
-    return newest_stream(
-        _run_directory(record), include=(record.get("log_path"),)
-    )
+    return newest_stream(_run_directory(record), include=(record.get("log_path"),))
 
 
 def _run_stream_mtime(record: Mapping[str, Any]) -> float | None:
@@ -690,16 +688,38 @@ def _stranded_launch_age_seconds(
     """Seconds since the launch clock began, or None when the run holds no clock.
 
     The clock is the current attempt's own start where a caller recorded one.
-    A cli pointer that recorded no attempt start is dated from its claim or its
-    creation, because a launch with nothing to spawn would otherwise never age
-    and would be held as in flight for as long as its pointer lives.
+    A launch cut off before it composed that record holds only the claim its
+    dispatch published, and a station launch composes its pointer through the
+    same path a cli launch does, so the fallback cannot be the launch kind's:
+    every launch that recorded no attempt start is dated from its claim or its
+    creation. Without it such a launch never ages, and a run that stopped at
+    ``claim-published`` with the claim holder gone is held as in flight for as
+    long as its pointer lives, which is what leaves nothing to redispatch it.
     """
     started = _attempt_started_seconds(record)
-    if started is None and str(record.get("launch") or "") == "cli":
+    if started is None:
         started = _claim_or_creation_seconds(record)
     if started is None:
         return None
     return now_seconds - started
+
+
+def _launch_claim_holder_is_alive(record: Mapping[str, Any]) -> bool:
+    """Whether this host can prove the claim still belongs to a live process."""
+    from reckon.crew.dispatch_claims import read_claim
+    from reckon.crew.gc import _process_start_epoch
+
+    claim = read_claim(_run_directory(record), str(record.get("run_id") or ""))
+    if claim.get("holder_host") != _reading_host():
+        return False
+    pid = claim.get("holder_pid")
+    launched = parse_utc(str(claim.get("launched_at") or ""))
+    if not isinstance(pid, int) or pid <= 0 or launched is None:
+        return False
+    if process_alive(pid) is not True:
+        return False
+    started = _process_start_epoch(pid)
+    return started is not None and started <= launched.timestamp()
 
 
 def _stranded_launch(record: Mapping[str, Any], *, now_seconds: float) -> bool:
@@ -710,15 +730,15 @@ def _stranded_launch(record: Mapping[str, Any], *, now_seconds: float) -> bool:
     what separates the two is evidence. A spawned worker leaves a worker record,
     a stream, or a launch log in the run directory, so a pointer whose session
     wrote any of them is somewhere in flight whatever its phase says. With none
-    of them written and the clock past the bound, there is nothing to wait for:
-    the launch was cut off between composing the record and spawning the
-    worker, and a pointer that holds a phase as though something were coming
-    holds it forever.
+    of them written and the clock past the bound, the claim holder decides:
+    a live local process that began no later than the claim is still composing
+    the launch. A newer process with the same pid does not own that claim.
+    A holder on another host supplies no local liveness evidence.
 
     The clock is the current attempt's own start, which the launch composes on
     the pointer before spawning anything, and failing that the claim or creation
-    instant a cli launch leaves behind. A pointer holding no clock at all has
-    nothing to age it and is left as one in flight.
+    instant the launch leaves behind. A pointer holding neither has nothing to
+    age it and is left as one in flight.
     """
     if str(record.get("phase") or "") not in _PRE_SPAWN_PHASES:
         return False
@@ -734,12 +754,12 @@ def _stranded_launch(record: Mapping[str, Any], *, now_seconds: float) -> bool:
     age = _stranded_launch_age_seconds(record, now_seconds=now_seconds)
     if age is None:
         return False
-    return age > STRANDED_LAUNCH_BOUND_SECONDS
+    return age > STRANDED_LAUNCH_BOUND_SECONDS and not _launch_claim_holder_is_alive(
+        record
+    )
 
 
-def _run_stream_quiet_seconds(
-    record: Mapping[str, Any], *, now_seconds: float
-) -> int:
+def _run_stream_quiet_seconds(record: Mapping[str, Any], *, now_seconds: float) -> int:
     """Quiet time for a run, from its current attempt's own log and launch.
 
     Two clocks bound the reading, and the later of them decides. One is the
@@ -966,9 +986,7 @@ def _manifest_wait(
         if reason
     )
     if files and declared_probe:
-        missing.append(
-            "either wait_probe or wait_file, not both: a wait has one shape"
-        )
+        missing.append("either wait_probe or wait_file, not both: a wait has one shape")
     if declared_probe and _wait_probe_cannot_fail(declared_probe):
         # A probe that runs but cannot differ is satisfied unconditionally, so
         # a wait resting on it reads the same however the awaited work is
@@ -1109,6 +1127,105 @@ def external_wait(
     )
 
 
+def parked_on_declared_wait(
+    record: Mapping[str, Any],
+    *,
+    now_seconds: float | None = None,
+) -> dict[str, Any] | None:
+    """The wait a run's worker is parked on, or None when it is not parked.
+
+    A parked run has ended its turn: its manifest declares a wait the fleet's
+    reader honours, and no worker this host can observe is still running it.
+    The declaration is not enough on its own — a manifest keeps a wait block
+    after the worker has been resumed — so a worker that is still running is
+    not parked, whatever the stale declaration beside it says.
+
+    A declaration the reader refuses is no park either: its probe cannot lift
+    it, so the run waits on a repair rather than on its condition, and treating
+    it as parked would admit a resume against work that never ended.
+
+    A reservation newer than the worker record is no park either. Between a
+    resume being admitted and its worker writing the run's worker record, the
+    record still describes the attempt that parked, so a reading taken from the
+    record alone would free the reservation the resume had just taken and admit
+    a second launch beside a worker that is on disk nowhere yet. The reservation
+    names the attempt it took, so a reservation for a later attempt than the
+    record's — or one written after the record was — is held.
+
+    Both the reservation door and the resume doors read this, so a parked run
+    is refused by none of them for looking alive and by all of them once its
+    worker is.
+    """
+    wait = external_wait(record, now_seconds=now_seconds)
+    if wait is None or not wait.get("valid"):
+        return None
+    reservation = _latest_reservation(record)
+    # The pointer's pid names the supervisor for a supervised launch, and an
+    # idle supervisor is exactly what a parked run has beside it. The worker is
+    # the process the declaration speaks for, so its liveness is read from the
+    # run's own worker record instead.
+    worker = dict(record)
+    worker.pop("pid", None)
+    worker.pop("pid_start_time", None)
+    if live_worker_reading(worker).alive is True:
+        return None
+    if reservation is not None and _reservation_outruns_worker(record, reservation):
+        return None
+    return wait
+
+
+def _latest_reservation(record: Mapping[str, Any]) -> Mapping[str, Any] | None:
+    """The highest-numbered launch reservation in the run's own directory.
+
+    The file family, its name pattern and its payload reader all belong to
+    ``reckon.crew.dispatch_launch``, which writes them. This module asks that
+    owner rather than parsing the names again, so a reservation is one thing
+    to both the launch that takes it and the parked reading that weighs it.
+    """
+    from reckon.crew.dispatch_launch import latest_reservation
+
+    try:
+        directory = _run_directory(record)
+    except (OSError, ValueError):
+        return None
+    found = latest_reservation(directory)
+    return None if found is None else found[2]
+
+
+def _reservation_outruns_worker(
+    record: Mapping[str, Any], reservation: Mapping[str, Any]
+) -> bool:
+    """Whether a reservation was taken after the run's worker record landed.
+
+    The attempt number is the primary key: a resume reserves the attempt after
+    the one whose worker record stands, so a reservation naming a later attempt
+    is a launch whose worker has not written itself down yet. Where either side
+    names no attempt, the reservation's own stamp is compared with the worker
+    record's write time, which answers the same question one layer lower.
+    """
+    worker = _worker_record(record)
+    if worker is None:
+        return True
+    reserved_attempt = _int_or_none(reservation.get("attempt"))
+    worker_attempt = _int_or_none(worker.get("attempt"))
+    if reserved_attempt is not None and worker_attempt is not None:
+        return reserved_attempt > worker_attempt
+    reserved_stamp = parse_utc(reservation.get("at"))
+    reserved_at = reserved_stamp.timestamp() if reserved_stamp is not None else None
+    written_at = _worker_record_mtime(record)
+    if reserved_at is None or written_at is None:
+        return False
+    return reserved_at > written_at
+
+
+def _worker_record_mtime(record: Mapping[str, Any]) -> float | None:
+    """When the run's worker record was last written, or None when it is absent."""
+    try:
+        return (_run_directory(record) / WORKER_RECORD_NAME).stat().st_mtime
+    except (OSError, ValueError):
+        return None
+
+
 def _reading_host() -> str:
     """The host this reader runs on, for gating process-table lookups."""
     return socket.gethostname()
@@ -1229,6 +1346,23 @@ def local_liveness(record: Mapping[str, Any]) -> tuple[bool | None, bool]:
         # as ended and is classified from its manifest as complete or scoring.
         alive = True
         proven = True
+    if (
+        launched_here
+        and alive is None
+        and record.get("phase") == "stopped"
+        and record.get("stopped_at")
+        and "stop_exit_recorded" not in record
+        and record.get("alive_after") == []
+        and record.get("pid")
+        and not record.get("job_id")
+        and process_alive(record["pid"]) is False
+    ):
+        # A stop predating exit receipts can carry a scheduler placement with
+        # no job identifier. On its launch host the stopped tree and dead pid
+        # settle that end; a real scheduler job or a living worker outranks it.
+        # A stop that attempted to file a receipt must supply that receipt,
+        # rather than letting a failed write masquerade as a legacy stop.
+        alive = False
     if alive is True and proven and _recorded_end_of_the_current_attempt(record):
         # The pid this host answered alive for is the supervisor's, and the
         # record says the worker it held has left. Both halves are observed
@@ -1337,7 +1471,10 @@ def _env_scan_run_pid(record: Mapping[str, Any]) -> int | None:
     meaningful only on the machine that issued it. The walk is taken from the
     beat's own reading of the table, so the first run scanned in a beat walks
     it once and every other run scanned in the same beat is answered from that
-    map, without a listing of ``/proc`` of its own.
+    map, without a listing of ``/proc`` of its own. Inside a sweep, whose pass
+    can outlast many beats, the same answer comes from the region the sweep
+    opened: one walk serves every scan it makes, so the cost of a refresh is
+    one listing rather than one per run.
     """
     run_id = str(record.get("run_id") or "")
     if not run_id or _record_is_known_foreign(record):

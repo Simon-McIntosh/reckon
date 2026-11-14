@@ -1,0 +1,245 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_analysis": {
+    "test_a_changed_ledger_keeps_archive_membership_and_updates_its_durable_fields": [
+      "Fail if changed tool_steps is not 19, updated detail is not preserved, durable row count is not the reduced fixture count, deleted final id remains readable, or refreshed rows become hot."
+    ],
+    "test_a_default_sweep_moves_exactly_its_batch_and_leaves_the_rest": [
+      "Independent literal population 2003 must yield 2000 retired and 3 hot, then 3 retired and zero hot; removing cap yields the recorded red 2003!=2000."
+    ],
+    "test_a_dry_sweep_and_a_recent_or_undated_run_stay_hot": [
+      "Fail if dry run removes any of the 26 rows, or applied sweep removes recent/undated rows or retains other rows."
+    ],
+    "test_a_failed_archive_copy_leaves_both_hot_tables_intact": [
+      "The explicit aborting detail trigger must raise IntegrityError; fail if archive runs commit, hot detail count drops, retired membership commits or any original hot id is lost. Removing copy/delete transactionality breaks rollback assertions."
+    ],
+    "test_a_run_something_can_still_need_stays_hot": [
+      "For each live/review/queue/review-owed case, fail if the protected id leaves or any unprotected id remains; review-owed also fails if a committed review does not release the row. Removing the corresponding protection reddens the membership assertion."
+    ],
+    "test_a_store_needing_conversion_is_not_rewritten_by_the_sweep": [
+      "Fail if unprepared store does not report maintenance, fails to retire its one old row, changes auto_vacuum from 0 or loses its freelist during sweep; explicit command must return mode 0->2 and rewritten true, repeat must return false, history must preserve tool_steps=7, and later sweep must report no maintenance."
+    ],
+    "test_an_import_racing_retirement_does_not_recreate_a_hot_run": [
+      "Events must reach membership inspection and release within their bounds; fail if preserved tool_steps is lost or any run is hot after serialized retirement. Restoring membership selection before BEGIN IMMEDIATE allows the documented recreated-hot-row race."
+    ],
+    "test_an_unneeded_run_leaves_hot_tables_and_history_stays_readable": [
+      "Fail if retirement leaves any hot run or detail, fails to shrink total hot-file page_count, loses tool_steps=7 or fixture detail, exposes archived runs through records(), loses durable row count, loses ledger rows or derived wall_seconds=60, or rehydrates on read. Disabling retirement reproduces the recorded base failure."
+    ],
+    "test_import_and_membership_checks_do_not_repopulate_retired_history": [
+      "Fail if import is not unchanged for all fixture records, recreates any hot run/detail, reports index lag, loses the node-keyed tool_steps=7, reports file-only membership, attaches the archive for warm records(), exposes hot records, or accepts appending an archived key. Removing retired membership routing makes these fail."
+    ],
+    "test_incremental_compaction_continues_after_the_retirement_backlog_is_empty": [
+      "Fail if first pass does not retire 24, second retires anything, or either pass has page reduction outside 1..3; requiring candidates for compaction fails the second page-delta assertion."
+    ],
+    "test_the_command_configures_both_row_and_page_budgets": [
+      "Fail if CLI fails, reported row/page budgets differ from 7/3, actual retirement differs from 7 with 17 hot, or measured page reduction is outside 1..3. Budget echoes alone are weak, but independent SQL population counts and page deltas make this a behavioral guard."
+    ],
+    "test_the_hourly_sweep_uses_incremental_compaction_without_a_full_rewrite": [
+      "SQL trace must contain incremental_vacuum and no VACUUM statement; restoring VACUUM main produces the recorded failure."
+    ],
+    "test_unbounded_store_budgets_are_refused": [
+      "Zero row budget and zero page budget must raise ValueError with positive-limit message and leave all rows hot; allowing SQLite zero-page vacuum or unlimited row selection breaks the refusal assertion."
+    ]
+  },
+  "assertion_independence": "No assertion compares a returned value with itself. Detail round trips compare persisted reads against fixture content and fail on a dropped or corrupted copy; budget metadata assertions are corroborated by independent SQLite counts and page measurements. Ledger and velocity checks read committed ledger data, while separate get_run/get_detail/durable_rows checks directly exercise archive reads.",
+  "call_site_count": 6,
+  "call_sites": [
+    "reckon/crew_run_commands.py:crew_retention_sweep",
+    "reckon/crew/gc.py:main",
+    "reckon/crew/gc.py:render_retention_service_unit",
+    "reckon/run_store.py:import_ledger",
+    "reckon/run_store.py:compare",
+    "reckon/crew/summary.py:run_rows"
+  ],
+  "completed_at": "2026-11-11T08:49:20Z",
+  "dispatched_at": "2026-11-11T08:41:23Z",
+  "failure_evidence": {
+    "importers_base": {
+      "completed": true,
+      "exit_status": 1,
+      "failure_count": 49,
+      "failure_ids": [
+        "tests/test_a_worktree_release_is_whole.py::test_no_removal_site_still_deletes_with_git_worktree_remove",
+        "tests/test_budget.py::test_a_stuck_worker_check_does_not_claim_a_scheduled_resumption",
+        "tests/test_budget.py::test_budget_history_failure_warns_without_aborting_dispatch",
+        "tests/test_budget.py::test_unknown_headroom_on_a_fallback_declaring_backend_neither_holds_nor_falls_back",
+        "tests/test_crew_promotion.py::test_a_failing_store_write_is_reported_on_the_ordinary_success_payload",
+        "tests/test_crew_promotion.py::test_a_successful_store_write_is_reported_written_on_the_command_payload",
+        "tests/test_ledger.py::test_a_completed_record_carries_every_calibration_input",
+        "tests/test_ledger.py::test_a_dead_run_that_delivered_nothing_is_interrupted",
+        "tests/test_ledger.py::test_a_killed_run_that_delivered_is_scoring_pending_review",
+        "tests/test_ledger.py::test_a_later_session_is_not_written_over_the_captured_one",
+        "tests/test_ledger.py::test_a_live_process_is_running",
+        "tests/test_ledger.py::test_a_member_with_a_null_session_captures_one_from_its_first_run",
+        "tests/test_ledger.py::test_a_promoted_record_names_the_member_and_its_session",
+        "tests/test_ledger.py::test_a_run_in_flight_leaves_the_working_tree_clean",
+        "tests/test_ledger.py::test_a_run_that_measured_no_rate_omits_the_keys_it_could_not_measure",
+        "tests/test_ledger.py::test_a_run_that_was_never_handed_over_omits_the_fallback_key",
+        "tests/test_ledger.py::test_a_run_with_no_terminal_observation_carries_no_throughput_at_all",
+        "tests/test_ledger.py::test_a_second_node_reaches_the_members_captured_session",
+        "tests/test_ledger.py::test_an_unknown_gate_verdict_is_refused",
+        "tests/test_ledger.py::test_changed_lines_are_measured_from_the_scoped_diff",
+        "tests/test_ledger.py::test_complete_command_assumes_utc_for_a_naive_completion_stamp",
+        "tests/test_ledger.py::test_completing_a_record_whose_pid_is_the_releasing_process_never_signals_it",
+        "tests/test_ledger.py::test_completing_a_record_with_a_genuine_foreign_pid_still_signals_and_releases_it",
+        "tests/test_ledger.py::test_completion_promotes_the_pointer_into_the_repositorys_ledger",
+        "tests/test_ledger.py::test_dispatch_records_how_its_backend_was_chosen",
+        "tests/test_ledger.py::test_explicit_promotion_stamp_reaches_every_duration_consumer",
+        "tests/test_ledger.py::test_hold_check_backs_off_after_a_version_conflict",
+        "tests/test_ledger.py::test_local_selection_survives_pointer_promotion",
+        "tests/test_ledger.py::test_no_live_pointer_path_resolves_inside_a_working_tree",
+        "tests/test_ledger.py::test_promotion_falls_back_when_no_stream_survives",
+        "tests/test_ledger.py::test_promotion_prefers_event_time_over_stream_mtime",
+        "tests/test_ledger.py::test_promotion_reads_terminal_time_and_usage_without_observe",
+        "tests/test_ledger.py::test_promotion_refuses_a_merge_conflicted_ledger",
+        "tests/test_ledger.py::test_promotion_uses_newest_resume_stream_mtime",
+        "tests/test_ledger.py::test_promotion_uses_original_stream_when_it_has_newest_mtime",
+        "tests/test_ledger.py::test_promotion_uses_stream_mtime_for_untimestamped_stream",
+        "tests/test_ledger.py::test_recovery_counts_running_scoring_and_interrupted",
+        "tests/test_ledger.py::test_recovery_never_removes_a_worktree",
+        "tests/test_ledger.py::test_resumed_promotion_keeps_the_original_stream_and_orders_turns",
+        "tests/test_ledger.py::test_session_cumulative_tokens_become_summable_run_deltas",
+        "tests/test_ledger.py::test_stalled_untimestamped_stream_records_typed_duration_absence",
+        "tests/test_ledger.py::test_stream_duration_is_separate_from_stalled_wall_time",
+        "tests/test_ledger.py::test_the_crew_tool_reads_the_ledger_and_the_live_pointers",
+        "tests/test_ledger.py::test_the_outside_state_guard_ignores_a_peer_and_catches_only_its_own",
+        "tests/test_ledger.py::test_the_scope_changed_flag_defaults_false_and_is_settable",
+        "tests/test_skill_contracts.py::test_each_skills_documented_examples_apply",
+        "tests/test_skill_contracts.py::test_each_skills_documented_landing_links_a_record_section",
+        "tests/test_skill_contracts.py::test_every_registered_crew_verb_is_documented_or_exempt",
+        "tests/test_skill_contracts.py::test_no_routing_identifier_leaks_into_skills_or_source"
+      ],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261111T042124785821-run-store-retires-old-runs-after-cache/bounded-importers-base.log",
+      "revision": "0b4fa450c2029cb3b948fffcb587422402f00dac",
+      "summary": "49 failed, 534 passed, 4 warnings in 55.24s"
+    },
+    "importers_head": {
+      "completed": true,
+      "exit_status": 1,
+      "failure_count": 49,
+      "failure_ids": [
+        "tests/test_a_worktree_release_is_whole.py::test_no_removal_site_still_deletes_with_git_worktree_remove",
+        "tests/test_budget.py::test_a_stuck_worker_check_does_not_claim_a_scheduled_resumption",
+        "tests/test_budget.py::test_budget_history_failure_warns_without_aborting_dispatch",
+        "tests/test_budget.py::test_unknown_headroom_on_a_fallback_declaring_backend_neither_holds_nor_falls_back",
+        "tests/test_crew_promotion.py::test_a_failing_store_write_is_reported_on_the_ordinary_success_payload",
+        "tests/test_crew_promotion.py::test_a_successful_store_write_is_reported_written_on_the_command_payload",
+        "tests/test_ledger.py::test_a_completed_record_carries_every_calibration_input",
+        "tests/test_ledger.py::test_a_dead_run_that_delivered_nothing_is_interrupted",
+        "tests/test_ledger.py::test_a_killed_run_that_delivered_is_scoring_pending_review",
+        "tests/test_ledger.py::test_a_later_session_is_not_written_over_the_captured_one",
+        "tests/test_ledger.py::test_a_live_process_is_running",
+        "tests/test_ledger.py::test_a_member_with_a_null_session_captures_one_from_its_first_run",
+        "tests/test_ledger.py::test_a_promoted_record_names_the_member_and_its_session",
+        "tests/test_ledger.py::test_a_run_in_flight_leaves_the_working_tree_clean",
+        "tests/test_ledger.py::test_a_run_that_measured_no_rate_omits_the_keys_it_could_not_measure",
+        "tests/test_ledger.py::test_a_run_that_was_never_handed_over_omits_the_fallback_key",
+        "tests/test_ledger.py::test_a_run_with_no_terminal_observation_carries_no_throughput_at_all",
+        "tests/test_ledger.py::test_a_second_node_reaches_the_members_captured_session",
+        "tests/test_ledger.py::test_an_unknown_gate_verdict_is_refused",
+        "tests/test_ledger.py::test_changed_lines_are_measured_from_the_scoped_diff",
+        "tests/test_ledger.py::test_complete_command_assumes_utc_for_a_naive_completion_stamp",
+        "tests/test_ledger.py::test_completing_a_record_whose_pid_is_the_releasing_process_never_signals_it",
+        "tests/test_ledger.py::test_completing_a_record_with_a_genuine_foreign_pid_still_signals_and_releases_it",
+        "tests/test_ledger.py::test_completion_promotes_the_pointer_into_the_repositorys_ledger",
+        "tests/test_ledger.py::test_dispatch_records_how_its_backend_was_chosen",
+        "tests/test_ledger.py::test_explicit_promotion_stamp_reaches_every_duration_consumer",
+        "tests/test_ledger.py::test_hold_check_backs_off_after_a_version_conflict",
+        "tests/test_ledger.py::test_local_selection_survives_pointer_promotion",
+        "tests/test_ledger.py::test_no_live_pointer_path_resolves_inside_a_working_tree",
+        "tests/test_ledger.py::test_promotion_falls_back_when_no_stream_survives",
+        "tests/test_ledger.py::test_promotion_prefers_event_time_over_stream_mtime",
+        "tests/test_ledger.py::test_promotion_reads_terminal_time_and_usage_without_observe",
+        "tests/test_ledger.py::test_promotion_refuses_a_merge_conflicted_ledger",
+        "tests/test_ledger.py::test_promotion_uses_newest_resume_stream_mtime",
+        "tests/test_ledger.py::test_promotion_uses_original_stream_when_it_has_newest_mtime",
+        "tests/test_ledger.py::test_promotion_uses_stream_mtime_for_untimestamped_stream",
+        "tests/test_ledger.py::test_recovery_counts_running_scoring_and_interrupted",
+        "tests/test_ledger.py::test_recovery_never_removes_a_worktree",
+        "tests/test_ledger.py::test_resumed_promotion_keeps_the_original_stream_and_orders_turns",
+        "tests/test_ledger.py::test_session_cumulative_tokens_become_summable_run_deltas",
+        "tests/test_ledger.py::test_stalled_untimestamped_stream_records_typed_duration_absence",
+        "tests/test_ledger.py::test_stream_duration_is_separate_from_stalled_wall_time",
+        "tests/test_ledger.py::test_the_crew_tool_reads_the_ledger_and_the_live_pointers",
+        "tests/test_ledger.py::test_the_outside_state_guard_ignores_a_peer_and_catches_only_its_own",
+        "tests/test_ledger.py::test_the_scope_changed_flag_defaults_false_and_is_settable",
+        "tests/test_skill_contracts.py::test_each_skills_documented_examples_apply",
+        "tests/test_skill_contracts.py::test_each_skills_documented_landing_links_a_record_section",
+        "tests/test_skill_contracts.py::test_every_registered_crew_verb_is_documented_or_exempt",
+        "tests/test_skill_contracts.py::test_no_routing_identifier_leaks_into_skills_or_source"
+      ],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261111T042124785821-run-store-retires-old-runs-after-cache/bounded-importers-head.log",
+      "revision": "3ce645d7bb9838679843d58a22c3b5a723821f09",
+      "summary": "49 failed, 534 passed, 4 warnings in 58.96s"
+    },
+    "suite_base": {
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261111T042124785821-run-store-retires-old-runs-after-cache/bounded-suite-base.log",
+      "revision": "0b4fa450c2029cb3b948fffcb587422402f00dac",
+      "summary": "51 passed in 8.96s"
+    },
+    "suite_head": {
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261111T042124785821-run-store-retires-old-runs-after-cache/bounded-suite-head.log",
+      "revision": "3ce645d7bb9838679843d58a22c3b5a723821f09",
+      "summary": "68 passed in 11.28s"
+    }
+  },
+  "findings": [],
+  "head_gate_equivalence": "Measured head 3ce645d7bb9838679843d58a22c3b5a723821f09 differs from reviewed head only by the evidence HTML commit bf0b2642a6a9edb52355b1f087bd8f9d1c56ba98.",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 6 production call site(s)",
+    "diff": "read all five commits from 9013cc4254ccfebef99b9f7cb5c1adaf1bfc47cf through bf0b2642a6a9edb52355b1f087bd8f9d1c56ba98; only reckon/run_store.py, reckon/crew/gc.py, the retirement test and its evidence fragment change.",
+    "done_when": "dispatch-detail.json requires temporary-store retirement, preserved history, guards, smaller page count and matched importer arms; bounded-suite-head.log records 68 passed and bounded-importers-base.log and bounded-importers-head.log contain the same 49 failure ids.",
+    "goal": "dispatch-detail.json names moving completed history out of hot tables; reckon/run_store.py:491 and reckon/crew/gc.py:1661 implement age-based archival with live-consumer protection.",
+    "manifest": "manifest.md names five commits and durable gate logs; the logs independently confirm 51 base tests, 68 head tests, the failing base control and zero added importer failures.",
+    "write_paths": "dispatch-detail.json admit_request.node.write_paths allows all four paths changed between the recorded base and head, including the added evidence fragment."
+  },
+  "justifications": {
+    "durability": "tests/test_the_run_store_retires_old_runs.py independently queries hot SQLite tables and asserts preserved values, guard retention, rollback, import races, exact batch overflow and bounded page reclamation; reinstating no retirement, unlimited retirement or full VACUUM makes the recorded controls fail.",
+    "evidence": "bounded-suite-head.log records 68 passed, bounded-negative-control-base.log fails on the old run remaining hot, and both bounded-importers logs contain the identical 49 failure ids with completed summaries and exit receipts.",
+    "fit": "reckon/run_store.py:491 extends the existing SQLite owner and reckon/crew/gc.py:1626 reuses its review and queue helpers, with descriptive names and a clean bounded-ruff.log.",
+    "goal_fidelity": "reckon/run_store.py:491 archives eligible runs and preserves keyed history while reckon/crew/gc.py:1640 protects live pointers, review subjects and queued dependencies.",
+    "reuse": "capability search across reckon found no existing run-history archive or incremental compaction owner; reckon/run_store.py gains that capability in place, gc.py reuses _live_review_targets and _committed_review_exists, and station_store.py:record_tick owns separate event-day storage.",
+    "scope_discipline": "the four changed paths in git diff 0b4fa450c2029cb3b948fffcb587422402f00dac..bf0b2642a6a9edb52355b1f087bd8f9d1c56ba98 are all granted by dispatch-detail.json admit_request.node.write_paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: dispatch-detail.json names moving completed history out of hot tables; reckon/run_store.py:491 and reckon/crew/gc.py:1661 implement age-based archival with live-consumer protection.\nVERDICT done_when: dispatch-detail.json requires temporary-store retirement, preserved history, guards, smaller page count and matched importer arms; bounded-suite-head.log records 68 passed and bounded-importers-base.log and bounded-importers-head.log contain the same 49 failure ids.\nVERDICT write_paths: dispatch-detail.json admit_request.node.write_paths allows all four paths changed between the recorded base and head, including the added evidence fragment.\nVERDICT manifest: manifest.md names five commits and durable gate logs; the logs independently confirm 51 base tests, 68 head tests, the failing base control and zero added importer failures.\nVERDICT diff: read all five commits from 9013cc4254ccfebef99b9f7cb5c1adaf1bfc47cf through bf0b2642a6a9edb52355b1f087bd8f9d1c56ba98; only reckon/run_store.py, reckon/crew/gc.py, the retirement test and its evidence fragment change.\nCALL_SITES: reckon/crew_run_commands.py:crew_retention_sweep, reckon/crew/gc.py:main, reckon/crew/gc.py:render_retention_service_unit, reckon/run_store.py:import_ledger, reckon/run_store.py:compare, reckon/crew/summary.py:run_rows\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/run_store.py:491 archives eligible runs and preserves keyed history while reckon/crew/gc.py:1640 protects live pointers, review subjects and queued dependencies.\nSCORE evidence: 20\nJUSTIFICATION evidence: bounded-suite-head.log records 68 passed, bounded-negative-control-base.log fails on the old run remaining hot, and both bounded-importers logs contain the identical 49 failure ids with completed summaries and exit receipts.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the four changed paths in git diff 0b4fa450c2029cb3b948fffcb587422402f00dac..bf0b2642a6a9edb52355b1f087bd8f9d1c56ba98 are all granted by dispatch-detail.json admit_request.node.write_paths.\nSCORE durability: 20\nJUSTIFICATION durability: tests/test_the_run_store_retires_old_runs.py independently queries hot SQLite tables and asserts preserved values, guard retention, rollback, import races, exact batch overflow and bounded page reclamation; reinstating no retirement, unlimited retirement or full VACUUM makes the recorded controls fail.\nSCORE fit: 20\nJUSTIFICATION fit: reckon/run_store.py:491 extends the existing SQLite owner and reckon/crew/gc.py:1626 reuses its review and queue helpers, with descriptive names and a clean bounded-ruff.log.\nSCORE reuse: 20\nJUSTIFICATION reuse: capability search across reckon found no existing run-history archive or incremental compaction owner; reckon/run_store.py gains that capability in place, gc.py reuses _live_review_targets and _committed_review_exists, and station_store.py:record_tick owns separate event-day storage.\n",
+  "remaining": "Coordinator-owned production conversion if required and live-store before/after measurement after integration; no production sweep was executed by this review.",
+  "reuse_analysis": {
+    "definitions": "archive_path, _attach_archive, _archived_ids, _is_archived, retire and enable_incremental_vacuum extend RunStore storage; main wraps its explicit maintenance operation; _retire_run_store orchestrates existing review/queue owners and the store, with released as its predicate; test fixture/helpers are local test scaffolding.",
+    "owners_opened": [
+      "reckon/run_store.py",
+      "reckon/crew/gc.py:_live_review_targets and _committed_review_exists",
+      "reckon/crew/queue_admission.py:section_waits_for",
+      "reckon/crew/station_store.py:record_tick"
+    ],
+    "search": "git grep at reviewed head for incremental_vacuum, retire/compact capabilities, ATTACH DATABASE and RunStore users under reckon"
+  },
+  "review_run_id": "r-20261111T083802684024-review-of-run-store-retires-old-runs-after-cache-bf0b2642a6a9",
+  "reviewed_base_sha": "0b4fa450c2029cb3b948fffcb587422402f00dac",
+  "reviewed_head_sha": "bf0b2642a6a9edb52355b1f087bd8f9d1c56ba98",
+  "reviewed_run_id": "r-20261111T042124785821-run-store-retires-old-runs-after-cache",
+  "scores": {
+    "durability": 20,
+    "evidence": 20,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-11T09:00:41.467782+00:00",
+  "total": 120
+}

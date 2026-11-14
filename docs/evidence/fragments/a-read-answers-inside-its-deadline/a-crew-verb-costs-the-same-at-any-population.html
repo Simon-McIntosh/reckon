@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>a-crew-verb-costs-the-same-at-any-population</title>
+</head>
+<body>
+<article data-reckon="evidence" data-node="a-crew-verb-costs-the-same-at-any-population">
+
+  <h3 id="a-crew-verb-costs-the-same-at-any-population-what">What this node did</h3>
+  <p>It adds one guard module over whole crew verbs rather than over single
+  functions. <code>tests/test_a_crew_verb_costs_the_same_at_any_population.py</code>
+  drives a <code>crew complete --gate not-run</code> of a review run, a
+  plan-review compose, and a <code>crew complete --land</code> of an implement
+  run, each against a temporary crew home and ledger holding 20 and then 200
+  other runs, and counts the stat, scandir, listdir and glob calls each verb
+  makes. Each other run is written to all three places a stage grew over: a
+  ledger aggregate row, a per-run document under the ledger's
+  <code>runs/</code>, and a crew run directory carrying a client harness home.
+  Each measurement runs in its own interpreter, and within an arm the verb runs
+  once before the counter is armed, so one-time costs are outside the count.</p>
+
+  <h3 id="a-crew-verb-costs-the-same-at-any-population-verdict">The guard found one walk per completion, and it is now gone</h3>
+  <p>At the base revision the two verbs that write a ledger row grew by 2
+  <code>stat</code> calls for every other run in the population, while the
+  compose was equal. That growth was a <code>ledger._run_snapshot</code> walk of
+  every <code>runs/*.json</code>, made twice per completion: once after the run's
+  row was appended and once after it was amended. Both writes advance the
+  project's write generation, so the read that follows each could not match the
+  generation its index recorded and rebuilt from the documents.</p>
+  <table>
+    <thead><tr><th>case</th><th>base: 20 runs</th><th>base: 200 runs</th><th>now: 20 and 200</th></tr></thead>
+    <tbody>
+      <tr><td>review-promotion</td><td>2278</td><td>2638</td><td>1386, equal</td></tr>
+      <tr><td>implement-landing</td><td>2464</td><td>2824</td><td>2182, equal</td></tr>
+      <tr><td>plan-review-compose</td><td>99</td><td>99</td><td>85, equal</td></tr>
+    </tbody>
+  </table>
+  <p><code>scandir</code> and <code>glob</code> were equal at the base too and
+  stay equal now (review-promotion 17 and 13, implement-landing 32 and 22,
+  compose 2 and 2). The remedy is that each of those two writes touches exactly
+  one document, so it now publishes that document's row into the index beside
+  the generation and the run directory's identity the reuse compares. The
+  directory identity is recorded only after checking that the directory holds
+  the entries the index already has plus this document, so a peer writing in
+  between leaves the stamps alone and the next read walks.</p>
+
+  <h3 id="a-crew-verb-costs-the-same-at-any-population-guarantees">The guarantees the ledger keeps</h3>
+  <p>The ledger's own suite passes at the same revision, including the cases this
+  change could have weakened: a read after an appended, amended, rolled back or
+  aggregate write returns the new row; a generation advance that failed removes
+  the counter and the next read walks the documents; a ledger no write has
+  touched records no generation and never reuses a stale index; a document added
+  without a bump still moves the directory's identity and is seen; and a write
+  published through one index directory is seen by a reader configured with
+  another. A write that touches no document, that touches many at once, or that
+  could not advance the generation records nothing, so a read after it goes back
+  to the documents exactly as it did.</p>
+  <p>The counter's positive control still grows with the population, so an equal
+  count is an absence of growth rather than an absence of observation.</p>
+
+</article>
+</body>
+</html>

@@ -1,0 +1,90 @@
+{
+  "added_failure_count": 2,
+  "added_failure_ids": [
+    "tests/test_one_run_cannot_stop_a_sweep.py::test_ledger_failure_and_vanished_pointer_leave_the_third_promoted[True]",
+    "tests/test_the_pane_carries_counts_not_names.py::test_a_settle_with_outstanding_runs_prints_no_line_and_still_emits"
+  ],
+  "added_failures_note": "derived from the reviewed run's own arms: baseline_suite lists 9 ids at fe9af3ca and after_suite 11 at the head, and the difference is these two with none fixed. The first is the serial-order fixture at tests/test_one_run_cannot_stop_a_sweep.py:97; the second is recorded in the reviewed manifest's failure_attribution as load-sensitive scaffolding (passes 6/6 in isolation).",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/station.py:354",
+    "reckon/crew/runs.py:4680",
+    "reckon/crew/resumption.py:2538"
+  ],
+  "completed_at": "2026-11-12T15:29:29.896Z",
+  "dispatched_at": "2026-11-12T15:20:12Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "folded",
+      "node": "repair-of-sweep-never-waits-on-a-promotion-5bc11377cbc0",
+      "recorded_at": "2026-11-12T16:07:38.520581+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "tests/test_one_run_cannot_stop_a_sweep.py",
+      "line": "97",
+      "severity": "blocking",
+      "text": "with promotions running beside the sweep, the fixture's fail_first unlinks r-review-second's pointer during r-review-first's promotion but that run's promotion has already started, so the sweep reports self_promoted ['r-review-second', 'r-review-third'] and this assertion fails; logs/head-arm.log lines 349-380 record exactly that failure for the [True] case, and it fails 2 runs in 3 on its own. The done_when requires no added failure against the base revision, so the node cannot land with this arm red: the fixture must accept the run as promoted-or-vanished or set the width to 1 for that case, which needs a scope extension outside this node's write paths."
+    },
+    {
+      "file": "reckon/crew/resumption.py",
+      "line": "2115",
+      "severity": "non-blocking",
+      "text": "PromotionWorkers re-implements a bounded worker pool (semaphore, thread list, outcome map, in-flight set) that the repository already owns twice over: reckon/crew/findings.py:458 runs bounded work through ThreadPoolExecutor(max_workers=...), and reckon/crew/station.py:66 with :319 starts tracked workers and refuses a duplicate key through _start_thread and _in_flight. Building it on futures and concurrent.futures.wait(timeout=...) would have left one concurrency idiom rather than three, so a later change to any of them has three places to land."
+    },
+    {
+      "file": "reckon/crew/resumption.py",
+      "line": "2180",
+      "severity": "non-blocking",
+      "text": "the worker wraps each job in promotion._promotion_host_lease, the same lease promotion.complete already takes at reckon/crew/promotion.py:400. HostLease.claim reattaches on an identical host/pid/job, so the inner claim succeeds, and its release at host_lease.py:151 unlinks the claim file while the outer context still believes it holds the run: the outer claim protects only the pre-promotion phase the docstring names (the gate replay) and its own release is then a no-op returning False, which nothing reads."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261112T122615079791-sweep-never-waits-on-a-promotion/manifest.md",
+      "line": "16",
+      "severity": "non-blocking",
+      "text": "after_suite names revision 082b213e8f, but logs/head-arm.log:1 records the head arm as '082b213e8f + uncommitted node changes', so the receipt claims a clean revision for a tree that carried uncommitted changes; the same manifest also leaves measurement_module and measurement_cwd unset although the base arm ran in an extracted tree at /tmp/arms-KoJHeo/base, and those are required for a scratch-tree arm."
+    },
+    {
+      "file": "reckon/crew/resumption.py",
+      "line": "2218",
+      "severity": "non-blocking",
+      "text": "the deliverable's first clause is that the sweep records what it finds within a bounded time, but no case in tests/test_a_sweep_never_waits_on_a_promotion.py exercises wait() expiring: every sweep it runs passes wait_seconds 60, longer than the 0.4 s stub, so a change that joined each thread with no timeout, or that dropped outcomes from a promotion still running, would leave all six assertions true."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "reckon/crew/station.py:354 is the station's per-session sweep entry, reckon/crew/runs.py:4680 is the watch sweep that passes config, and reckon/crew/resumption.py:2538 is the single call into dispatch_awaiting_reviews with the workers.",
+    "diff": "read both commits against fe9af3ca from the base: 082b213e8f adds _promotion_settings and PromotionWorkers to reckon/crew/resumption.py, two-phases the review pass in reckon/crew/recovery_review_acceptance.py and adds the six-case test file; 5bc11377cb adds the landing fragment recording both arms and the mutation.",
+    "done_when": "the done_when names four behaviours in tests/test_a_sweep_never_waits_on_a_promotion.py plus a no-added-failure arm pair on a compute partition; the four behaviours pass (logs/head-gate.log 57 passed EXIT=0) and the declared mutation reddens the ordering assertion (logs/negative-control.log EXIT=1), but logs/head-arm.log adds two failure ids against logs/base-arm.log, so the no-added-failure clause is unmet.",
+    "goal": "the node goal is that a sweep runs its promotions beside itself up to a configured width; reckon/crew/recovery_review_acceptance.py:896 hands each promotion and acceptance to PromotionWorkers after the pass that dispatches reviews, and reckon/crew/resumption.py:2115 bounds them at the configured width.",
+    "manifest": "read the reviewed run's manifest.md: status complete, one code commit plus the evidence commit, baseline_suite and after_suite each carrying revision, literal command, exit_status 1 and completed true with 9 and 11 failure ids, a negative_control_log path whose log ends in a bare EXIT=1, and the added fixture failure recorded under outside_scope.",
+    "write_paths": "the declared scope is reckon/crew/resumption.py, reckon/crew/recovery_review_acceptance.py, tests/test_a_sweep_never_waits_on_a_promotion.py and the evidence fragment plus a figures directory; 082b213e8f and 5bc11377cb touch exactly the first three and docs/evidence/fragments/work-flows-to-the-lane/sweep-never-waits-on-a-promotion.html, all inside it."
+  },
+  "justifications": {
+    "durability": "the ordering assertion at tests/test_a_sweep_never_waits_on_a_promotion.py:224 reddens when promotions run inline (logs/negative-control.log shows dispatched_at 8716840.09 after first_completion 8716838.84), and the claim and width assertions at :250 and :278 redden if either guard is removed, but no case asserts the wait_seconds bound at reckon/crew/resumption.py:2218.",
+    "evidence": "logs/base-arm.log records 6 failed / 483 passed and logs/head-arm.log records 8 failed / 487 passed over the same 60 files on all_debug, so the delta is two added ids where the done_when requires none.",
+    "fit": "reckon/crew/resumption.py:2115 follows the module's thread-and-claim idiom and carries no plan label, though reckon/crew/resumption.py:2180 reaches promotion.py's private _promotion_host_lease across the module boundary.",
+    "goal_fidelity": "reckon/crew/recovery_review_acceptance.py:896 defers every promotion to the workers handed over at the end of the same pass, so the review a sweep owes is dispatched before any promotion runs.",
+    "reuse": "PromotionWorkers at reckon/crew/resumption.py:2115 hand-rolls a bounded worker pool and an in-flight set that reckon/crew/findings.py:458 already expresses with ThreadPoolExecutor and reckon/crew/station.py:66 and :319 already express with _start_thread and _in_flight, while it does reuse the lease at promotion.py:292 and the pass's existing reports/failed/vanished vocabulary.",
+    "scope_discipline": "the two commits touch only declare write paths in the reviewed run's manifest.md and no module outside them, adding one class and one config block."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is that a sweep runs its promotions beside itself up to a configured width; reckon/crew/recovery_review_acceptance.py:896 hands each promotion and acceptance to PromotionWorkers after the pass that dispatches reviews, and reckon/crew/resumption.py:2115 bounds them at the configured width.\nVERDICT done_when: the done_when names four behaviours in tests/test_a_sweep_never_waits_on_a_promotion.py plus a no-added-failure arm pair on a compute partition; the four behaviours pass (logs/head-gate.log 57 passed EXIT=0) and the declared mutation reddens the ordering assertion (logs/negative-control.log EXIT=1), but logs/head-arm.log adds two failure ids against logs/base-arm.log, so the no-added-failure clause is unmet.\nVERDICT write_paths: the declared scope is reckon/crew/resumption.py, reckon/crew/recovery_review_acceptance.py, tests/test_a_sweep_never_waits_on_a_promotion.py and the evidence fragment plus a figures directory; 082b213e8f and 5bc11377cb touch exactly the first three and docs/evidence/fragments/work-flows-to-the-lane/sweep-never-waits-on-a-promotion.html, all inside it.\nVERDICT manifest: read the reviewed run's manifest.md: status complete, one code commit plus the evidence commit, baseline_suite and after_suite each carrying revision, literal command, exit_status 1 and completed true with 9 and 11 failure ids, a negative_control_log path whose log ends in a bare EXIT=1, and the added fixture failure recorded under outside_scope.\nVERDICT diff: read both commits against fe9af3ca from the base: 082b213e8f adds _promotion_settings and PromotionWorkers to reckon/crew/resumption.py, two-phases the review pass in reckon/crew/recovery_review_acceptance.py and adds the six-case test file; 5bc11377cb adds the landing fragment recording both arms and the mutation.\nCALL_SITES: reckon/crew/station.py:354, reckon/crew/runs.py:4680, reckon/crew/resumption.py:2538\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: reckon/crew/recovery_review_acceptance.py:896 defers every promotion to the workers handed over at the end of the same pass, so the review a sweep owes is dispatched before any promotion runs.\nSCORE evidence: 11\nJUSTIFICATION evidence: logs/base-arm.log records 6 failed / 483 passed and logs/head-arm.log records 8 failed / 487 passed over the same 60 files on all_debug, so the delta is two added ids where the done_when requires none.\nSCORE scope_discipline: 18\nJUSTIFICATION scope_discipline: the two commits touch only declare write paths in the reviewed run's manifest.md and no module outside them, adding one class and one config block.\nSCORE durability: 15\nJUSTIFICATION durability: the ordering assertion at tests/test_a_sweep_never_waits_on_a_promotion.py:224 reddens when promotions run inline (logs/negative-control.log shows dispatched_at 8716840.09 after first_completion 8716838.84), and the claim and width assertions at :250 and :278 redden if either guard is removed, but no case asserts the wait_seconds bound at reckon/crew/resumption.py:2218.\nSCORE fit: 15\nJUSTIFICATION fit: reckon/crew/resumption.py:2115 follows the module's thread-and-claim idiom and carries no plan label, though reckon/crew/resumption.py:2180 reaches promotion.py's private _promotion_host_lease across the module boundary.\nSCORE reuse: 11\nJUSTIFICATION reuse: PromotionWorkers at reckon/crew/resumption.py:2115 hand-rolls a bounded worker pool and an in-flight set that reckon/crew/findings.py:458 already expresses with ThreadPoolExecutor and reckon/crew/station.py:66 and :319 already express with _start_thread and _in_flight, while it does reuse the lease at promotion.py:292 and the pass's existing reports/failed/vanished vocabulary.\nFINDING tests/test_one_run_cannot_stop_a_sweep.py:97 blocking: with promotions running beside the sweep, the fixture's fail_first unlinks r-review-second's pointer during r-review-first's promotion but that run's promotion has already started, so the sweep reports self_promoted ['r-review-second', 'r-review-third'] and this assertion fails; logs/head-arm.log lines 349-380 record exactly that failure for the [True] case, and it fails 2 runs in 3 on its own. The done_when requires no added failure against the base revision, so the node cannot land with this arm red: the fixture must accept the run as promoted-or-vanished or set the width to 1 for that case, which needs a scope extension outside this node's write paths.\nFINDING reckon/crew/resumption.py:2115 non-blocking: PromotionWorkers re-implements a bounded worker pool (semaphore, thread list, outcome map, in-flight set) that the repository already owns twice over: reckon/crew/findings.py:458 runs bounded work through ThreadPoolExecutor(max_workers=...), and reckon/crew/station.py:66 with :319 starts tracked workers and refuses a duplicate key through _start_thread and _in_flight. Building it on futures and concurrent.futures.wait(timeout=...) would have left one concurrency idiom rather than three, so a later change to any of them has three places to land.\nFINDING reckon/crew/resumption.py:2180 non-blocking: the worker wraps each job in promotion._promotion_host_lease, the same lease promotion.complete already takes at reckon/crew/promotion.py:400. HostLease.claim reattaches on an identical host/pid/job, so the inner claim succeeds, and its release at host_lease.py:151 unlinks the claim file while the outer context still believes it holds the run: the outer claim protects only the pre-promotion phase the docstring names (the gate replay) and its own release is then a no-op returning False, which nothing reads.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261112T122615079791-sweep-never-waits-on-a-promotion/manifest.md:16 non-blocking: after_suite names revision 082b213e8f, but logs/head-arm.log:1 records the head arm as '082b213e8f + uncommitted node changes', so the receipt claims a clean revision for a tree that carried uncommitted changes; the same manifest also leaves measurement_module and measurement_cwd unset although the base arm ran in an extracted tree at /tmp/arms-KoJHeo/base, and those are required for a scratch-tree arm.\nFINDING reckon/crew/resumption.py:2218 non-blocking: the deliverable's first clause is that the sweep records what it finds within a bounded time, but no case in tests/test_a_sweep_never_waits_on_a_promotion.py exercises wait() expiring: every sweep it runs passes wait_seconds 60, longer than the 0.4 s stub, so a change that joined each thread with no timeout, or that dropped outcomes from a promotion still running, would leave all six assertions true.",
+  "review_checks": [],
+  "review_run_id": "r-20261112T151649535176-review-of-sweep-never-waits-on-a-promotion-5bc11377cbc0",
+  "reviewed_base_sha": "fe9af3caa98c11d9fed1c9215a25ce570d3294d8",
+  "reviewed_head_sha": "5bc11377cbc06e6aabd7d19a4da02ff534a75547",
+  "reviewed_run_id": "r-20261112T122615079791-sweep-never-waits-on-a-promotion",
+  "scores": {
+    "durability": 15,
+    "evidence": 11,
+    "fit": 15,
+    "goal_fidelity": 17,
+    "reuse": 11,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-12T15:38:02.875054+00:00",
+  "total": 87
+}

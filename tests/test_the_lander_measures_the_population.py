@@ -12,6 +12,7 @@ from reckon.crew import (
     landing_measure,
     merge,
     queue_landing,
+    review_dispositions,
     runs,
 )
 from tests import test_queue_landing as cli_checks
@@ -90,7 +91,7 @@ def delivery(tmp_path, monkeypatch):
         )
         monkeypatch.setattr(queue_landing, "_review_tier_is_complete", lambda *_a: True)
         monkeypatch.setattr(
-            queue_landing, "record_landed_exemptions", lambda *_a, **_k: None
+            review_dispositions, "record_landed_deferrals", lambda *_a, **_k: None
         )
         monkeypatch.setattr(queue_landing, "_landing_beat", lambda *_a: "")
         monkeypatch.setattr(queue_landing, "_measure_timeout", lambda _p: 30.0)

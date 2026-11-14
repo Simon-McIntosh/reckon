@@ -1,0 +1,74 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew/promotion.py:793 (_require_executable_gate_command in the promotion check list)",
+    "reckon/crew/promotion.py:2820 (re-export of that name)"
+  ],
+  "completed_at": "2026-11-13T17:10:46.528Z",
+  "dispatched_at": "2026-11-13T16:57:50Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "exempted",
+      "reason": "the refusal wording for a missing absolute program is imprecise but harmless; it still names the missing path",
+      "recorded_at": "2026-11-13T17:17:51.732185+00:00"
+    },
+    "1": {
+      "kind": "exempted",
+      "reason": "the live case has the worktree inside the repository; the released-worktree fallback is exercised by the landing measure",
+      "recorded_at": "2026-11-13T17:17:57.710420+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "reckon/crew/promotion_gate.py",
+      "line": "383",
+      "severity": "non-blocking",
+      "text": "non-blocking: an absolute program that does not exist is refused with \"names no executable under the run's checkout and repository (/opt/nope/python)\", which states a resolution that never happened \u2014 an absolute path is candidates=(expanded,) and is never joined to a root \u2014 so the refusal misinforms the coordinator about where the program was looked for."
+    },
+    {
+      "file": "reckon/crew/promotion_gate.py",
+      "line": "415",
+      "severity": "non-blocking",
+      "text": "non-blocking: the \"or failing that the repository\" half of the deliverable has no test \u2014 all four cases record worktree == repo, so dropping the repo root from this tuple would leave every test green while a run whose worktree was released could no longer resolve its program."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read commit by commit; b398ab7478 changes one production function plus three private helpers and adds the test, and a782501f11 adds only the evidence fragment.",
+    "done_when": "the done_when names a temporary repository with an executable .venv/bin/python and a run whose recorded command is PYTHONPATH=. .venv/bin/python -m pytest -q tests/x.py, called with the process cwd elsewhere, plus a refusal case naming the directory and a negative control; tests/test_deferred_promotion_resolves_relative_program.py:100-122 asserts exactly that, though under a different filename than the done_when text names.",
+    "goal": "the node's goal is that a deferred promotion resolves a relative gate program against the run's checkout; reckon/crew/promotion_gate.py:415 builds the candidate roots from the run pointer's worktree and repo, and the relative program at reckon/crew/promotion_gate.py:377 is resolved against them rather than the promoting process's cwd.",
+    "manifest": "read; it records 4 passed for the new test file, both arms' exit status, the failure ids, the negative control and the logs on disk, and its base/after entries reconcile with head-arm.log and base-arm.log.",
+    "write_paths": "the declared paths are reckon/crew/promotion_gate.py, the new test file and the node's evidence fragment; git diff 1f81316d..a782501f11 touches only those three and nothing else."
+  },
+  "justifications": {
+    "durability": "tests/test_deferred_promotion_resolves_relative_program.py:100 fails if cwd resolution is restored (negative-control.log shows it reddening under exactly that mutation), but no test exercises the repository-fallback root at reckon/crew/promotion_gate.py:415, so half the deliverable is unguarded.",
+    "evidence": "head-arm.log records \"1 failed, 103 passed\" with the same single failure id base-arm.log carries, negative-control.log records \"2 failed, 2 passed\" with EXIT=1, and red-reproduction.log quotes the pre-fix refusal, though no log records the all_debug partition the manifest claims.",
+    "fit": "the three additions at reckon/crew/promotion_gate.py:394-435 follow the module's private-helper idiom with a docstring stating the reason, and introduce no plan, stage or ticket identifier.",
+    "goal_fidelity": "reckon/crew/promotion_gate.py:415-421 resolves a relative program against the run's recorded worktree and repo, and the probe against the landed tree shows the checkout case passing with the process cwd elsewhere and the repository fallback working.",
+    "reuse": "no repository function owns \"the run's trees from its pointer\" \u2014 the closest are inline one-liners at reckon/crew/promotion_scope.py:169 and reckon/crew/promotion_records.py:737 with the opposite field order \u2014 and reckon/crew/promotion_gate.py:400 adds a helper rather than duplicating one.",
+    "scope_discipline": "git diff --stat 1f81316d..a782501f11 lists exactly the three declared paths, with no collateral edit to promotion.py or any sibling module."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that a deferred promotion resolves a relative gate program against the run's checkout; reckon/crew/promotion_gate.py:415 builds the candidate roots from the run pointer's worktree and repo, and the relative program at reckon/crew/promotion_gate.py:377 is resolved against them rather than the promoting process's cwd.\nVERDICT done_when: the done_when names a temporary repository with an executable .venv/bin/python and a run whose recorded command is PYTHONPATH=. .venv/bin/python -m pytest -q tests/x.py, called with the process cwd elsewhere, plus a refusal case naming the directory and a negative control; tests/test_deferred_promotion_resolves_relative_program.py:100-122 asserts exactly that, though under a different filename than the done_when text names.\nVERDICT write_paths: the declared paths are reckon/crew/promotion_gate.py, the new test file and the node's evidence fragment; git diff 1f81316d..a782501f11 touches only those three and nothing else.\nVERDICT manifest: read; it records 4 passed for the new test file, both arms' exit status, the failure ids, the negative control and the logs on disk, and its base/after entries reconcile with head-arm.log and base-arm.log.\nVERDICT diff: read commit by commit; b398ab7478 changes one production function plus three private helpers and adds the test, and a782501f11 adds only the evidence fragment.\nCALL_SITES: reckon/crew/promotion.py:793 (_require_executable_gate_command in the promotion check list), reckon/crew/promotion.py:2820 (re-export of that name)\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/promotion_gate.py:415-421 resolves a relative program against the run's recorded worktree and repo, and the probe against the landed tree shows the checkout case passing with the process cwd elsewhere and the repository fallback working.\nSCORE evidence: 16\nJUSTIFICATION evidence: head-arm.log records \"1 failed, 103 passed\" with the same single failure id base-arm.log carries, negative-control.log records \"2 failed, 2 passed\" with EXIT=1, and red-reproduction.log quotes the pre-fix refusal, though no log records the all_debug partition the manifest claims.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat 1f81316d..a782501f11 lists exactly the three declared paths, with no collateral edit to promotion.py or any sibling module.\nSCORE durability: 15\nJUSTIFICATION durability: tests/test_deferred_promotion_resolves_relative_program.py:100 fails if cwd resolution is restored (negative-control.log shows it reddening under exactly that mutation), but no test exercises the repository-fallback root at reckon/crew/promotion_gate.py:415, so half the deliverable is unguarded.\nSCORE fit: 18\nJUSTIFICATION fit: the three additions at reckon/crew/promotion_gate.py:394-435 follow the module's private-helper idiom with a docstring stating the reason, and introduce no plan, stage or ticket identifier.\nSCORE reuse: 18\nJUSTIFICATION reuse: no repository function owns \"the run's trees from its pointer\" \u2014 the closest are inline one-liners at reckon/crew/promotion_scope.py:169 and reckon/crew/promotion_records.py:737 with the opposite field order \u2014 and reckon/crew/promotion_gate.py:400 adds a helper rather than duplicating one.\nFINDING reckon/crew/promotion_gate.py:383 non-blocking: an absolute program that does not exist is refused with \"names no executable under the run's checkout and repository (/opt/nope/python)\", which states a resolution that never happened \u2014 an absolute path is candidates=(expanded,) and is never joined to a root \u2014 so the refusal misinforms the coordinator about where the program was looked for.\nFINDING reckon/crew/promotion_gate.py:415 non-blocking: the \"or failing that the repository\" half of the deliverable has no test \u2014 all four cases record worktree == repo, so dropping the repo root from this tuple would leave every test green while a run whose worktree was released could no longer resolve its program.",
+  "review_run_id": "r-20261113T164551493960-review-of-deferred-promotion-resolves-relative-program-a782501f11aa",
+  "reviewed_base_sha": "1f81316d74a9ac860e5ee01cc98e6ebfaee9248d",
+  "reviewed_head_sha": "a782501f11aa6c6f9e8de99d4571df531b89467b",
+  "reviewed_run_id": "r-20261113T161309836615-deferred-promotion-resolves-relative-program",
+  "scores": {
+    "durability": 15,
+    "evidence": 16,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 18,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-13T17:12:42.843847+00:00",
+  "total": 106
+}

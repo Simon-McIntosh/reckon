@@ -2,9 +2,11 @@ from __future__ import annotations
 
 # Imports below the definitions resolve sibling cycles after names are bound.
 # ruff: noqa: E402
+import contextlib
 import json
 import shlex
 import subprocess
+import time
 from collections.abc import Mapping, Sequence
 from pathlib import Path
 from typing import Any
@@ -18,7 +20,7 @@ from reckon.crew.dispatch import (
 )
 from reckon.crew.node import (
     CrewError,
-    is_test_path,
+    is_collectible_test_path,
 )
 from reckon.crew.reports import (
     parse_manifest,
@@ -306,6 +308,57 @@ def _review_record_check(evidence: Mapping[str, Any]) -> dict[str, Any]:
     }
 
 
+def _default_gate_log_from_manifest(
+    manifest: Mapping[str, Any], *, manifest_path: str
+) -> str:
+    """The log a passing gate defaults to when the caller names none, or "".
+
+    A run's own manifest already states which log carries its passing suite
+    evidence, so the default is read from there rather than guessed. The
+    ``after_suite`` arm's own log wins when the arm names one: that arm is the
+    run's statement of what it measured at its head. Otherwise the first
+    ``test_logs`` entry stands in, which is the order the worker wrote them in.
+
+    The manifest's ``negative_control_log`` is never taken as a default under
+    either rule. A negative control is a deliberately failing run kept to prove
+    the check can fail, so its failing ids are by construction ones the head
+    arm does not carry, and a gate read from it refuses every sound run. A
+    manifest that offers no log but its negative control therefore has no
+    default at all, and its refusal names the flag that supplies one.
+    """
+    negative = str(manifest.get("negative_control_log") or "").strip()
+    negative_path = (
+        _manifest_relative_path(negative, manifest_path=manifest_path).resolve()
+        if negative
+        else None
+    )
+    after = manifest.get("after_suite")
+    if isinstance(after, Mapping):
+        after_log = str(after.get("log_path") or "").strip()
+        if after_log:
+            resolved = _manifest_relative_path(after_log, manifest_path=manifest_path)
+            if negative_path is None or resolved.resolve() != negative_path:
+                return str(resolved)
+    logs = [
+        str(entry).strip()
+        for entry in (manifest.get("test_logs") or [])
+        if str(entry).strip()
+    ]
+    for entry in logs:
+        resolved = _manifest_relative_path(entry, manifest_path=manifest_path)
+        if negative_path is not None and resolved.resolve() == negative_path:
+            continue
+        return str(resolved)
+    if logs and negative_path is not None:
+        raise CrewError(
+            "the manifest's only test log is its negative_control_log "
+            f"({negative}), a deliberately failing run that cannot stand as a "
+            "gate; pass --gate-log-path naming the log holding the run's "
+            "passing gate evidence"
+        )
+    return ""
+
+
 def _default_gate_evidence_from_manifest(
     record: Mapping[str, Any],
     *,
@@ -353,15 +406,11 @@ def _default_gate_evidence_from_manifest(
         return resolved_gate, resolved_commits
     manifest_path = str(record.get("manifest_path") or "")
     if not str(resolved_gate.get("log_path") or "").strip():
-        logs = [
-            str(entry).strip()
-            for entry in (manifest.get("test_logs") or [])
-            if str(entry).strip()
-        ]
-        if logs:
-            resolved_gate["log_path"] = str(
-                _manifest_relative_path(logs[0], manifest_path=manifest_path)
-            )
+        default_log = _default_gate_log_from_manifest(
+            manifest, manifest_path=manifest_path
+        )
+        if default_log:
+            resolved_gate["log_path"] = default_log
     log_path = str(resolved_gate.get("log_path") or "").strip()
     log_text = ""
     if log_path:
@@ -433,6 +482,121 @@ def _normalized_command(value: Any) -> str:
     return " ".join(str(value or "").split())
 
 
+def _command_words(value: Any) -> list[str]:
+    """Split a recorded command into words, best-effort.
+
+    A worker records a command as the shell string it ran, so quoting has to be
+    honoured for two spellings of one command to meet. An unparsable string is
+    split on whitespace rather than refused: the comparison that follows still
+    distinguishes it from a command that parses.
+    """
+    text = str(value or "")
+    try:
+        return shlex.split(text)
+    except ValueError:
+        return text.split()
+
+
+def _is_environment_assignment(word: str) -> bool:
+    """Whether a word is a leading ``NAME=value`` environment assignment."""
+    name, separator, _ = word.partition("=")
+    return bool(separator) and name.isidentifier()
+
+
+def _leading_cd_tree(words: Sequence[str]) -> tuple[list[str], str | None]:
+    """Drop a leading ``cd <tree> &&`` and name the tree it changed into.
+
+    A worker commonly runs its arm from the arm's own tree, recording the
+    ``cd`` it used. The tree itself does not change what the arm runs, so it is
+    removed from the comparison and returned, because a relative interpreter or
+    test path is resolved against it.
+    """
+    if len(words) >= 3 and words[0] == "cd" and words[2] == "&&":
+        return list(words[3:]), words[1]
+    return list(words), None
+
+
+def _resolved_interpreter(word: str, tree: Path | None) -> str:
+    """One spelling for one interpreter, whether relative or absolute.
+
+    ``.venv/bin/python`` is the spelling the armed template carries and a
+    worker commonly records the absolute path of the same executable. Resolved
+    against the arm's own tree, both reach the one file the environment's
+    interpreter is, so they compare equal. Two different environments stay two
+    different paths and still refuse.
+    """
+    path = Path(word).expanduser()
+    if not path.is_absolute():
+        if tree is None:
+            return word
+        path = Path(tree) / path
+    try:
+        return str(path.resolve())
+    except OSError:
+        return str(path)
+
+
+def _canonical_suite_command(value: Any, tree: Path | None) -> tuple[str, ...]:
+    """The words a command runs, in a form two spellings of it share.
+
+    A suite arm matches when it runs the same thing, not when it prints the
+    same string. Three differences change the spelling without changing the
+    run: the test files may be named in another order, the interpreter may be
+    absolute where the template is relative, and the arm may change into its
+    own tree first. Test files are compared as a set and the interpreter as one
+    resolved path; every other word, including each flag, is compared in place.
+    """
+    words, changed_into = _leading_cd_tree(_command_words(value))
+    interpreter = next(
+        (
+            index
+            for index, word in enumerate(words)
+            if not _is_environment_assignment(word)
+            and Path(word).name.startswith("python")
+        ),
+        None,
+    )
+    if interpreter is not None:
+        anchor = Path(changed_into).expanduser() if changed_into is not None else tree
+        words[interpreter] = _resolved_interpreter(words[interpreter], anchor)
+    test_files = sorted(
+        word
+        for word in words
+        if not word.startswith("-") and is_collectible_test_path(word)
+    )
+    others = [
+        word
+        for word in words
+        if word.startswith("-") or not is_collectible_test_path(word)
+    ]
+    return tuple(others + test_files)
+
+
+def _same_tree(first: str | Path | None, second: str | Path | None) -> bool:
+    """Whether two spellings name one tree, ignoring a symlinked home."""
+    if first is None or second is None:
+        return True
+    try:
+        return Path(first).expanduser().resolve() == Path(second).expanduser().resolve()
+    except OSError:
+        return str(first) == str(second)
+
+
+def _arm_command_matches(
+    arm_command: str, armed_commands: Sequence[str], tree: Path | None
+) -> bool:
+    """Whether an arm's command runs what one of the armed commands runs.
+
+    The one tree difference that is accepted is a ``cd`` into the arm's own
+    tree; a ``cd`` anywhere else runs another tree's tests, so it refuses.
+    """
+    _, changed_into = _leading_cd_tree(_command_words(arm_command))
+    if changed_into is not None and not _same_tree(changed_into, tree):
+        return False
+    registered = {_canonical_suite_command(armed, tree) for armed in armed_commands}
+    return _canonical_suite_command(arm_command, tree or changed_into) in registered
+
+
 SCOPED_SUITE_PLACEHOLDER = "{node_test_files}"
 
 
@@ -443,6 +607,66 @@ def _scope_tree(record: Mapping[str, Any]) -> Path | None:
         if text:
             return Path(text).expanduser()
     return None
+
+
+def _run_head(record: Mapping[str, Any]) -> str:
+    """The revision the run's work is delivered at, or empty when unreadable.
+
+    An after arm is evidence about the tree the run delivers, so the revision it
+    must record is the run's head. While the worktree is readable its ``HEAD``
+    is that answer, and ``_run_head_for_review`` reads it. Once the worktree has
+    been reclaimed the manifest's citations are the only evidence left, and
+    ``_record_carried_head`` resolves them by ancestry — the same reader a
+    review uses, so a review and a promotion of one run name one head whichever
+    order the citations were written in. An empty answer means no head could be
+    read, and the caller then holds no revision to compare against rather than
+    refusing on one.
+    """
+    # Deferred: the review modules import this package's siblings, so the
+    # import is made where it is used rather than at load.
+    from reckon.crew.recovery_review_dispatch import (
+        _record_carried_head,
+        _run_head_for_review,
+        _worktree_reclaimed,
+    )
+
+    if not _worktree_reclaimed(record):
+        return _run_head_for_review(record)
+    return _record_carried_head(record)
+
+
+def _arm_revision_mismatch(
+    record: Mapping[str, Any],
+    arm_name: str,
+    observation: Mapping[str, Any],
+    head: str,
+) -> list[str]:
+    """Name an after arm recorded at a revision other than the run's head.
+
+    An arm compares against the head only when both revisions answer: ``head``
+    is read by the caller, and the revision the arm records must name a commit
+    in the run's tree. A head that could not be read and a citation that names
+    no commit are unreadable instruments rather than defects in the arm, so
+    neither is named here and the arm's other fields still decide the pair.
+
+    A citation that does resolve and differs from the head is the case this
+    check exists for: the arm measured a tree the run no longer delivers.
+    """
+    if arm_name != "after_suite" or not head:
+        return []
+    recorded = str(observation.get("revision") or "").strip()
+    if not recorded:
+        return []
+    # Deferred for the same reason as the head resolver above.
+    from reckon.crew.recovery_review_subject import _resolve_commit, _review_tree
+
+    tree = _review_tree(record)
+    if tree is None:
+        return []
+    resolved = _resolve_commit(tree, recorded, cached=True)
+    if not resolved or resolved == _resolve_commit(tree, head, cached=True):
+        return []
+    return [f"{arm_name}.revision_matches_head"]
 
 
 def _paths_present_in_tree(
@@ -524,17 +748,21 @@ def _repository_write_paths(record: Mapping[str, Any]) -> list[str]:
 
 
 def _node_test_files(record: Mapping[str, Any]) -> list[str]:
-    """The node's fenced write paths that are tests, sorted and repo-relative.
+    """The node's fenced write paths pytest collects as tests, sorted.
 
     A scoped suite command names the tests a node's own change can reach rather
     than the whole suite, so the files it runs come from the fenced write scope
-    the node was dispatched with. Which paths count as tests is the dispatcher's
-    own rule rather than a second one written here: a node scoped to
-    ``tests/body_test.py`` is a node writing a check under ``is_test_path``, so
-    the scoped command has to measure it, which a narrower rule would not.
+    the node was dispatched with. The command hands each path to pytest, so the
+    rule here is pytest's collection rule rather than the dispatcher's broader
+    trigger: a node scoped to a fixture under ``tests/`` is still writing part
+    of a fenced check, and the fixture is not something pytest can run.
     """
     return sorted(
-        {path for path in _repository_write_paths(record) if is_test_path(path)}
+        {
+            path
+            for path in _repository_write_paths(record)
+            if is_collectible_test_path(path)
+        }
     )
 
 
@@ -684,7 +912,11 @@ def _arm_measured_nothing(
 
 
 def _arm_missing_fields(
-    record: Mapping[str, Any], arm_name: str, observation: Mapping[str, Any]
+    record: Mapping[str, Any],
+    arm_name: str,
+    observation: Mapping[str, Any],
+    *,
+    head: str = "",
 ) -> list[str]:
     """Name what an arm lacks to be evidence that it measured a suite.
 
@@ -693,6 +925,17 @@ def _arm_missing_fields(
     template over the node's whole declared scope is accepted too, because a
     run dispatched before that rule recorded that spelling and its pair is
     still evidence about the files its tree holds.
+
+    The comparison is by what the command runs rather than by how it is
+    spelled: the test files as a set in either order, the interpreter resolved
+    to one path whether written relative or absolute, and a leading ``cd`` into
+    the arm's own tree allowed. A different test file, flag or interpreter is
+    still a different suite.
+
+    The after arm is also held to the revision the run delivers: an arm recorded
+    at a revision behind the run's head measured a tree the run no longer ships,
+    so ``head`` — read by the caller — is compared with the revision the arm
+    records.
     """
     declared = " ".join(str(record.get("suite_command") or "").split())
     if SCOPED_SUITE_PLACEHOLDER not in declared:
@@ -700,27 +943,117 @@ def _arm_missing_fields(
         # the one command as written.
         missing: list[str] = []
         arm_command = str(observation.get("command") or "").strip()
-        if arm_command and _normalized_command(arm_command) != _normalized_command(
-            declared
+        if arm_command and not _arm_command_matches(
+            arm_command, [declared], _scope_tree(record)
         ):
             missing.append(f"{arm_name}.command_matches_suite_command")
         missing.extend(_arm_collected_nothing(observation, arm_name))
+        missing.extend(_arm_revision_mismatch(record, arm_name, observation, head))
         return missing
     if _arm_measured_nothing(record, observation):
         if arm_name == "after_suite":
             return [f"{arm_name}.command_names_no_file"]
         return []
     revision = str(observation.get("revision") or "").strip()
-    accepted = {
-        _normalized_command(_scoped_suite_command(record, revision=revision or None))
-    }
-    accepted.add(_normalized_command(_scoped_suite_command(record)))
+    accepted = [
+        _scoped_suite_command(record, revision=revision or None),
+        _scoped_suite_command(record),
+    ]
     arm_command = str(observation.get("command") or "").strip()
     missing: list[str] = []
-    if arm_command and _normalized_command(arm_command) not in accepted:
+    if arm_command and not _arm_command_matches(
+        arm_command, accepted, _scope_tree(record)
+    ):
         missing.append(f"{arm_name}.command_matches_suite_command")
     missing.extend(_arm_collected_nothing(observation, arm_name))
+    missing.extend(_arm_revision_mismatch(record, arm_name, observation, head))
     return missing
+
+
+def _measured_arm_tree(
+    record: Mapping[str, Any],
+) -> tuple[Path, Path, str, str] | None:
+    """The trees and revisions a measured arm pair runs over, or ``None``.
+
+    The head tree is the run's own worktree — the tree its delivery ships — and
+    the base tree is checked out at the run's base revision, so the pair the
+    landing measures is the pair the run's own armed command was meant to
+    measure. A record that names no worktree, no base revision, or no readable
+    repository cannot be measured and the caller keeps the refusal it had.
+    """
+    worktree = str(record.get("worktree") or "").strip()
+    repository = str(record.get("repo") or "").strip()
+    base_sha = str(record.get("base_sha") or "").strip()
+    tree = Path(worktree) if worktree else Path(repository)
+    repo = Path(repository) if repository else tree
+    if not (worktree and base_sha and tree.is_dir() and repo.is_dir()):
+        return None
+    return repo, tree, base_sha, str(worktree)
+
+
+def _measure_missing_arms(
+    run_id: str, record: Mapping[str, Any], head: str, command: str
+) -> dict[str, Any] | None:
+    """Run the armed command at both revisions for a run whose arms cannot be used.
+
+    A missing arm, an arm recorded at another revision and an arm naming another
+    command all leave the run without the pair its own landing needs, and the
+    refusal that used to follow cost the worker a resume over evidence the
+    landing can take itself. The reading is the armed command at the base and at
+    the head, submitted to the configured measurement partition, and it is
+    recorded on the run as measured by the landing rather than replacing the
+    run's own manifest.
+    """
+    from reckon.crew import landing_measure, queue_landing
+
+    trees = _measured_arm_tree(record)
+    if trees is None or not head:
+        return None
+    repo, tree, base_sha, _worktree = trees
+    try:
+        timeout = queue_landing._measure_timeout(record)
+        config = queue_landing._measure_config(record)
+        with landing_measure.base_checkout(repo, base_sha, timeout) as base_tree:
+            return landing_measure.armed_observations(
+                command=command,
+                tree=tree,
+                base_tree=base_tree,
+                base_sha=base_sha,
+                head_sha=head,
+                logs_dir=run_dir(run_id) / "landing-measure" / "armed",
+                test_files=_node_test_files(record),
+                timeout=timeout,
+                project=str(record.get("project") or ""),
+                config=config,
+            )
+    except (OSError, ValueError, landing_measure.BaseCheckoutError):
+        return None
+
+
+def _record_measured_arms(run_id: str, head: str, measured: Mapping[str, Any]) -> None:
+    """Keep a landing-measured arm pair where a later reader can open it.
+
+    The pair is written beside the run's other landing evidence and onto the
+    live pointer, so a promotion, a retry and a retry's coordinator all read one
+    record of what the landing measured and at which head.
+    """
+    record = {"head": head, "measured_at": time.time(), **dict(measured)}
+
+    def write(directory: Path) -> None:
+        directory.mkdir(parents=True, exist_ok=True)
+        (directory / "measured-arms.json").write_text(
+            json.dumps(record, indent=2, sort_keys=True), encoding="utf-8"
+        )
+
+    with contextlib.suppress(OSError):
+        write(run_dir(run_id) / "landing-measure")
+
+    def amend(pointer: dict[str, Any]) -> dict[str, Any]:
+        pointer["suite_measured_arms"] = record
+        return pointer
+
+    with contextlib.suppress(CrewError, OSError, ValueError):
+        _mutate_pointer(run_id, amend)
 
 
 def _evaluate_suite_delta(
@@ -776,6 +1109,8 @@ def _evaluate_suite_delta(
             manifest = {}
     baseline = manifest.get("baseline_suite")
     after = manifest.get("after_suite")
+    head = _run_head(record)
+    measured_by_landing = False
     missing: list[str] = []
     if not manifest_present:
         missing.append("manifest")
@@ -791,7 +1126,7 @@ def _evaluate_suite_delta(
     ):
         if not isinstance(observation, Mapping):
             continue
-        for field in _arm_missing_fields(record, arm_name, observation):
+        for field in _arm_missing_fields(record, arm_name, observation, head=head):
             if field not in missing:
                 missing.append(field)
     base_sha = str(record.get("base_sha") or "").strip()
@@ -819,16 +1154,45 @@ def _evaluate_suite_delta(
                     "so no baseline and after suite pair is required"
                 ),
             }
+        measured_arms = _measure_missing_arms(run_id, record, head, suite_command)
+        if measured_arms and not measured_arms.get("unreadable"):
+            _record_measured_arms(run_id, head, measured_arms)
+            baseline = measured_arms["baseline_suite"]
+            after = measured_arms["after_suite"]
+            measured_by_landing = True
+            missing = []
+    if missing:
         refusal = {
             "status": "refused",
             "suite_command": suite_command,
             "missing_fields": missing,
             "added_failure_ids": [],
         }
+        detail = (
+            "armed promotion requires complete baseline and after suite evidence; "
+            "missing " + ", ".join(missing)
+        )
+        if "after_suite.revision_matches_head" in missing and isinstance(
+            after, Mapping
+        ):
+            recorded = str(after.get("revision") or "").strip()
+            head_command = _scoped_suite_command(
+                record, revision=head
+            ) or _scoped_suite_command(record)
+            refusal["after_suite_recorded_revision"] = recorded
+            refusal["run_head"] = head
+            if head_command:
+                refusal["head_suite_command"] = head_command
+            detail += (
+                f". The after arm was recorded at {recorded}, which is "
+                f"not the run's head {head}: re-run the armed command at that "
+                "head and record the after arm at the head's revision"
+            )
+            if head_command:
+                detail += f": {head_command}"
         _record_refusal(refusal)
         raise ledger.SuiteDeltaError(
-            "armed promotion requires complete baseline and after suite evidence; "
-            "missing " + ", ".join(missing),
+            detail,
             missing_fields=missing,
         )
     normalized_baseline = ledger.normalized_suite_observation(baseline)
@@ -890,6 +1254,10 @@ def _evaluate_suite_delta(
         "added_failure_ids": added,
         "failure_attribution": attribution,
         "waiver_reason": waiver or None,
+        # Whether these arms are the landing's own measurement rather than the
+        # ones the run recorded. A reader comparing this pair with the run's
+        # manifest needs to know which of the two it is looking at.
+        "measured_by": "landing" if measured_by_landing else "run",
         # Whether the base tree held none of this scope's test files. The
         # delta is then measured against the empty set, which is the honest
         # baseline for a change that creates the tests it is measured by, and

@@ -1,0 +1,89 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "Derived from the reviewed manifest's completed baseline_suite and after_suite logs; both contain no FAILED or ERROR IDs and end EXIT=0 (51/58 passed).",
+  "assertion_audit_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261113T054446457163-review-of-stopped-run-resumes-with-advice-643ea32dd7fb/assertion-audit.md",
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/crew_run_commands.py:crew_stop",
+    "reckon/crew/dispatch_sessions.py:terminate",
+    "reckon/crew_run_commands.py:crew_resume",
+    "reckon/crew/resumption.py:_observed_process_reading",
+    "reckon/crew/resumption.py:_observed_end_refusal"
+  ],
+  "completed_at": "2026-11-13T06:03:39Z",
+  "dispatched_at": "2026-11-13T05:51:41Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "exempted",
+      "reason": "a small local poll helper in one new test file; consolidating test helpers is not this section's deliverable",
+      "recorded_at": "2026-11-13T06:36:58.409807+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "tests/test_a_stopped_run_resumes_with_advice.py",
+      "line": "46",
+      "severity": "non-blocking",
+      "text": "non-blocking: _wait duplicates the bounded predicate-polling mechanism in tests/test_a_stopped_run_ends_its_supervisor.py:154 (_wait_until); it neither wraps nor extends that owner, leaving another timeout/poll implementation to maintain, so consolidate through a shared test helper or explicitly exempt this small local duplication when disposing the finding."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 5 production call site(s)",
+    "diff": "Read the implementation commit 59a8fc57210bf004cf4b62b676c01cbb4ae422c7, fixture correction dc4c57ab4cc7d74047cacba9d26175617c28437a and evidence commit 643ea32dd7fbd4b67f86abe3c36ed747b71ded11 against 18385bba31f0292b7514a36666ccdfea1a906624; the four-file delta contains only the stop receipt, legacy reading, seven tests and their evidence.",
+    "done_when": "The source prompt.txt:161 requires successful advice delivery, surviving-worker refusal, legacy recovery and a no-exit-write control; tests/test_a_stopped_run_resumes_with_advice.py:232-361 and the recorded head, importer, negative-control and lint logs measure those requirements.",
+    "goal": "The source prompt.txt:38 asks to resume a stopped run with advice, and reckon/crew/dispatch_sessions.py:2229 plus recovery_liveness.py:1246 implement modern exit receipts and the legacy local-stop recovery.",
+    "manifest": "The source manifest.md names all three commits and completed baseline_suite/after_suite receipts, whose opened logs report 51 passed and 58 passed with EXIT=0 and no failing IDs.",
+    "write_paths": "The source prompt.txt:80-84 grants reckon/crew, the named regression test and evidence fragment, and all four paths in the base-to-head diff lie within those grants."
+  },
+  "justifications": {
+    "durability": "tests/test_a_stopped_run_resumes_with_advice.py:211 fails when the exit writer is suppressed as negative-control.log demonstrates, and lines 266-335 independently fail if a living worker is licensed or legacy local death remains unknown.",
+    "evidence": "The source baseline-armed-compatible.log and head-armed-compatible.log identify the exact base and reviewed head with 51/58 passing tests, while reproduction.log, negative-control.log, baseline-importers.log, after-importers.log and lint.log record the remaining done-when measures.",
+    "fit": "reckon/crew/dispatch_sessions.py:2246 composes existing supervisor receipt and atomic-write helpers, recovery_liveness.py:1246 extends its existing three-way reading, and the changed names describe mechanisms without forbidden release or plan labels.",
+    "goal_fidelity": "reckon/crew/dispatch_sessions.py:2232 records an exit only after the process tree drains, and recovery_liveness.py:1246 recovers a legacy stopped local run while preserving the earlier living-worker probes.",
+    "reuse": "reckon/crew/dispatch_sessions.py:2246 wraps the existing supervisor receipt owners appropriately, but tests/test_a_stopped_run_resumes_with_advice.py:46 duplicates the bounded predicate-polling capability already implemented by tests/test_a_stopped_run_ends_its_supervisor.py:154 rather than extending its owner.",
+    "scope_discipline": "The four changed paths in the 18385bba31f0292b7514a36666ccdfea1a906624-to-643ea32dd7fbd4b67f86abe3c36ed747b71ded11 diff all match the grants in the source prompt.txt:80-84 and directly support its goal."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The source prompt.txt:38 asks to resume a stopped run with advice, and reckon/crew/dispatch_sessions.py:2229 plus recovery_liveness.py:1246 implement modern exit receipts and the legacy local-stop recovery.\nVERDICT done_when: The source prompt.txt:161 requires successful advice delivery, surviving-worker refusal, legacy recovery and a no-exit-write control; tests/test_a_stopped_run_resumes_with_advice.py:232-361 and the recorded head, importer, negative-control and lint logs measure those requirements.\nVERDICT write_paths: The source prompt.txt:80-84 grants reckon/crew, the named regression test and evidence fragment, and all four paths in the base-to-head diff lie within those grants.\nVERDICT manifest: The source manifest.md names all three commits and completed baseline_suite/after_suite receipts, whose opened logs report 51 passed and 58 passed with EXIT=0 and no failing IDs.\nVERDICT diff: Read the implementation commit 59a8fc57210bf004cf4b62b676c01cbb4ae422c7, fixture correction dc4c57ab4cc7d74047cacba9d26175617c28437a and evidence commit 643ea32dd7fbd4b67f86abe3c36ed747b71ded11 against 18385bba31f0292b7514a36666ccdfea1a906624; the four-file delta contains only the stop receipt, legacy reading, seven tests and their evidence.\nCALL_SITES: reckon/crew_run_commands.py:crew_stop, reckon/crew/dispatch_sessions.py:terminate, reckon/crew_run_commands.py:crew_resume, reckon/crew/resumption.py:_observed_process_reading, reckon/crew/resumption.py:_observed_end_refusal\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/dispatch_sessions.py:2232 records an exit only after the process tree drains, and recovery_liveness.py:1246 recovers a legacy stopped local run while preserving the earlier living-worker probes.\nSCORE evidence: 20\nJUSTIFICATION evidence: The source baseline-armed-compatible.log and head-armed-compatible.log identify the exact base and reviewed head with 51/58 passing tests, while reproduction.log, negative-control.log, baseline-importers.log, after-importers.log and lint.log record the remaining done-when measures.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: The four changed paths in the 18385bba31f0292b7514a36666ccdfea1a906624-to-643ea32dd7fbd4b67f86abe3c36ed747b71ded11 diff all match the grants in the source prompt.txt:80-84 and directly support its goal.\nSCORE durability: 20\nJUSTIFICATION durability: tests/test_a_stopped_run_resumes_with_advice.py:211 fails when the exit writer is suppressed as negative-control.log demonstrates, and lines 266-335 independently fail if a living worker is licensed or legacy local death remains unknown.\nSCORE fit: 20\nJUSTIFICATION fit: reckon/crew/dispatch_sessions.py:2246 composes existing supervisor receipt and atomic-write helpers, recovery_liveness.py:1246 extends its existing three-way reading, and the changed names describe mechanisms without forbidden release or plan labels.\nSCORE reuse: 5\nJUSTIFICATION reuse: reckon/crew/dispatch_sessions.py:2246 wraps the existing supervisor receipt owners appropriately, but tests/test_a_stopped_run_resumes_with_advice.py:46 duplicates the bounded predicate-polling capability already implemented by tests/test_a_stopped_run_ends_its_supervisor.py:154 rather than extending its owner.\nFINDING tests/test_a_stopped_run_resumes_with_advice.py:46 non-blocking: _wait duplicates the bounded predicate-polling mechanism in tests/test_a_stopped_run_ends_its_supervisor.py:154 (_wait_until); it neither wraps nor extends that owner, leaving another timeout/poll implementation to maintain, so consolidate through a shared test helper or explicitly exempt this small local duplication when disposing the finding.\n",
+  "review_run_id": "r-20261113T054446457163-review-of-stopped-run-resumes-with-advice-643ea32dd7fb",
+  "review_source": "Committed objects read with git show at the recorded revision pair; assigned review worktree HEAD is earlier and was not treated as the reviewed revision.",
+  "reviewed_base_sha": "18385bba31f0292b7514a36666ccdfea1a906624",
+  "reviewed_gate_receipts": {
+    "after_suite": {
+      "command": "PYTHONPATH=. /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_stopped_run_resumes_with_advice.py tests/test_staged_write_inventory.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261113T044627048212-stopped-run-resumes-with-advice/head-armed-compatible.log",
+      "revision": "643ea32dd7fbd4b67f86abe3c36ed747b71ded11"
+    },
+    "baseline_suite": {
+      "command": "PYTHONPATH=. /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261113T044627048212-stopped-run-resumes-with-advice/baseline-armed-compatible.log",
+      "revision": "18385bba31f0292b7514a36666ccdfea1a906624"
+    }
+  },
+  "reviewed_head_sha": "643ea32dd7fbd4b67f86abe3c36ed747b71ded11",
+  "reviewed_run_id": "r-20261113T044627048212-stopped-run-resumes-with-advice",
+  "scores": {
+    "durability": 20,
+    "evidence": 20,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "reuse": 5,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-13T06:25:19.979891+00:00",
+  "total": 105
+}

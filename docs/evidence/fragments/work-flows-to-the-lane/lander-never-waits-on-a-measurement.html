@@ -1,0 +1,58 @@
+<section id="lander-never-waits-on-a-measurement-landing">
+  <h2>Measurements leave the landing pass free to advance other deliveries</h2>
+  <p>The scheduler path submits a whole comparison as one bounded batch job,
+  records its job id, request, pinned primary and delivered revisions, result
+  path and log on the run, and returns. Later passes read scheduler state and
+  require a terminal <code>EXIT=0</code> receipt plus a result matching those
+  identities before attaching the measurement and landing. The job runs the
+  existing suite pair, importer pair and isolated comparisons on its compute
+  allocation, with its checkouts in node-local scratch. It does not submit a
+  second allocation for each arm.</p>
+  <p><code>RECKON_LANDING_MEASUREMENT_WIDTH</code> configures the global number
+  of measurements in flight; its default is two. A cross-host landing-pass lock
+  prevents concurrent passes from submitting the same delivery. Unknown job
+  state retains its slot. Finished jobs release width even if their delivery
+  now waits for review. Pending and completed job records survive a fresh
+  lander, including an interruption before suite evidence was attached.</p>
+  <p>Failed, timed-out, cancelled and out-of-memory jobs refuse their own
+  delivery with the job id and log path. A scheduler completion without a
+  successful terminal receipt is refused too. Publication records that leave
+  the measured product unchanged reuse the completed comparison and rebuild
+  its candidate, avoiding another synchronous measurement after promotion.
+  Explicit in-place measurement callers retain their existing behavior when
+  no measurement partition is configured.</p>
+  <table id="lander-never-waits-on-a-measurement-measures">
+    <caption>Scheduler-controlled tests use a temporary repository and crew
+    home. Suite and importer arms ran separately on all_debug, with at most
+    four test workers.</caption>
+    <thead><tr><th>Measure</th><th>Observed result</th></tr></thead>
+    <tbody>
+      <tr><td>One pass, two measurements and a delivery with reusable evidence</td>
+        <td>Two jobs submitted and still running; the third delivery lands in that pass.</td></tr>
+      <tr><td>Later pass with one completed receipt</td>
+        <td>One measured delivery lands; the other job remains pending.</td></tr>
+      <tr><td>Width two, three deliveries needing measurements</td>
+        <td>Exactly two submissions; no job is submitted for the third delivery.</td></tr>
+      <tr><td>Fresh lander and recorded jobs</td>
+        <td>No duplicate submission; completion resumes the recorded delivery.</td></tr>
+      <tr><td>Armed base at <code>56a51a776c678ed3efb1af7ca4c7733189c5fa43</code></td>
+        <td>51 passed, EXIT=0; the added test file is absent from the base arm.</td></tr>
+      <tr><td>Armed code head at <code>1116bd3ebba672132c21e7e6e3a13ab86259cc27</code></td>
+        <td>68 passed, EXIT=0: 17 scheduler cases and 51 inventory cases.</td></tr>
+      <tr><td>Importer population, base and code head</td>
+        <td>The same nine failure ids; no added failure. Exact results and ids are in the run manifest and arm logs.</td></tr>
+      <tr><td>Declared control: restore submission waiting for its job</td>
+        <td>The first-pass progress test fails because the third delivery remains unlanded; EXIT=1.</td></tr>
+      <tr><td>Live admit service, <code>crew admit --once</code>, 98dci4-clu-2023</td>
+        <td>The pass returns in 5.398 s with real all_debug job 1312489 still PENDING.
+        The job later completes in 69 s with EXIT=0 and a readable result.</td></tr>
+    </tbody>
+  </table>
+  <p>The implementation commits are <code>828c95489a4f3852de625d58e4726cdfaeebf5db</code>
+  and <code>1116bd3ebba672132c21e7e6e3a13ab86259cc27</code>.
+  The durable logs, real job receipt, exact importer failure identities and
+  final-head gate are recorded in the manifest under the run directory
+  <code>r-20261112T211438912655-lander-never-waits-on-a-measurement</code>.
+  This fragment records the worker's delivery; the coordinator owns integration
+  and the shared section state.</p>
+</section>

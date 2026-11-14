@@ -42,7 +42,7 @@ from pathlib import Path
 from types import UnionType
 from typing import Any, Union, get_args, get_origin
 
-from reckon import capability
+from reckon import capability, file_memo
 from reckon._store import _config_home
 from reckon._timestamps import parse_utc
 
@@ -96,6 +96,14 @@ DEFAULT_SPRINT_RECENT_DAYS = 14
 # shown a copy without it. A launch reads it to seed the run home's harness
 # whether the project's own ``.mcp.json`` servers start at all.
 WORKER_MCP_SERVERS_KEY = "worker_mcp_servers"
+
+# The per-project report store. A project persists a report item into a root it
+# names itself. Reckon ships no default: a project that has not declared one
+# persists nothing, which is the refusal its own caller reports rather than a
+# path reckon invents.
+REPORTS_KEY = "reports"
+PERSIST_ROOT_KEY = "persist_root"
+REPORTS_PATH_KEYS = (PERSIST_ROOT_KEY,)
 
 # The lanes a pick may reach only on the terms a policy states, keyed by lane
 # name and read from the host layer and the project layer like any other key. A
@@ -172,6 +180,8 @@ DEFAULT_PROJECT_WEIGHT = 1.0
 # it, and a resolved config that never did falls back here.
 QUEUE_MAX_REQUESTS_KEY = "max_requests"
 DEFAULT_QUEUE_MAX_REQUESTS = 500
+QUEUE_REPICK_AFTER_SECONDS_KEY = "repick_after_seconds"
+DEFAULT_QUEUE_REPICK_AFTER_SECONDS = 60
 
 # The unit each budget suffix is worth in seconds. A budget is written as an
 # integer followed by one of these letters, and the reader converts it once so
@@ -436,6 +446,7 @@ def _schema_view(data: Mapping[str, Any]) -> dict[str, Any]:
     cleaned.pop(SPRINT_RECENT_DAYS_KEY, None)
     cleaned.pop(WORKER_MCP_SERVERS_KEY, None)
     cleaned.pop(PICKER_RESERVED_LANES_KEY, None)
+    cleaned.pop(REPORTS_KEY, None)
     cleaned.pop("landing", None)
     review = cleaned.get(REVIEW_KEY)
     if isinstance(review, Mapping):
@@ -626,23 +637,29 @@ def read_layer_file(path: str | Path) -> dict[str, Any]:
     """Parse one YAML layer, returning {} when the file does not exist.
 
     An absent layer is normal — most installs have no project layer. A file that
-    exists but does not parse, or does not hold a mapping, is an error.
+    exists but does not parse, or does not hold a mapping, is an error. Unchanged
+    layers share one parse; callers get mutable copies outside a read-only
+    region and the memo's read-only view inside one.
     """
-    yaml = _require_yaml()
     path = Path(path)
-    if not path.exists():
-        return {}
-    text = _read_text(path)
-    raw = _load_yaml_unique_keys(text, path, yaml)
-    if raw is None:
-        return {}
-    if not isinstance(raw, Mapping):
-        raise FlightConfigError(
-            path,
-            "",
-            f"must hold a mapping at the top level, found {type(raw).__name__}",
-        )
-    return dict(raw)
+
+    def read() -> dict[str, Any]:
+        yaml = _require_yaml()
+        if not path.exists():
+            return {}
+        text = _read_text(path)
+        raw = _load_yaml_unique_keys(text, path, yaml)
+        if raw is None:
+            return {}
+        if not isinstance(raw, Mapping):
+            raise FlightConfigError(
+                path,
+                "",
+                f"must hold a mapping at the top level, found {type(raw).__name__}",
+            )
+        return dict(raw)
+
+    return file_memo.memoized("flight_layer", path, read)
 
 
 def _read_text(path: Path) -> str:
@@ -757,6 +774,57 @@ def _ignore_removed_backend_keys(
             "the crew roster is the concurrency authority"
         )
     return migrated, warnings
+
+
+def _validate_reports(data: Mapping[str, Any], source: str | Path) -> None:
+    """Check the per-project report-store roots, which the schema omits.
+
+    Each declared root is an absolute path: a relative one would resolve
+    against whichever working directory happened to run the persist, so the
+    same project would copy into two places. An unknown key is refused by name
+    rather than silently ignored, and absence is legal — it is the refusal the
+    caller raises when it needs the root.
+    """
+    if REPORTS_KEY not in data:
+        return
+    reports = data[REPORTS_KEY]
+    if not isinstance(reports, Mapping):
+        raise FlightConfigError(source, REPORTS_KEY, "must be a mapping")
+    for key, value in reports.items():
+        if key not in REPORTS_PATH_KEYS:
+            raise FlightConfigError(
+                source, f"{REPORTS_KEY}.{key}", UNKNOWN_KEY_CONSTRAINT
+            )
+        if not isinstance(value, str) or not value.strip():
+            raise FlightConfigError(
+                source,
+                f"{REPORTS_KEY}.{key}",
+                "must name a directory with a non-empty string path",
+            )
+        if not Path(value).expanduser().is_absolute():
+            raise FlightConfigError(
+                source,
+                f"{REPORTS_KEY}.{key}",
+                "must be an absolute path",
+            )
+
+
+def reports_setting(config: Mapping[str, Any] | None, key: str) -> str | None:
+    """Return one declared report-store path, or None when the project has none.
+
+    The caller that needs the path says so in its own refusal, naming the
+    setting; a project that declares no root is not misconfigured, it just does
+    not persist anything.
+    """
+    if key not in REPORTS_PATH_KEYS:
+        raise ValueError(f"unknown reports setting {key!r}")
+    reports = (config or {}).get(REPORTS_KEY)
+    if not isinstance(reports, Mapping):
+        return None
+    value = reports.get(key)
+    if not isinstance(value, str) or not value.strip():
+        return None
+    return value
 
 
 def _validate_plan_review_gate(data: Mapping[str, Any], source: str | Path) -> None:
@@ -1187,6 +1255,28 @@ def queue_max_requests(config: Mapping[str, Any] | None) -> int:
     return int(value)
 
 
+def queue_repick_after_seconds(config: Mapping[str, Any] | None) -> int:
+    """How long a router-chosen route may stand before launch picks again.
+
+    A queued request waits on its upstream, and the lanes move while it waits:
+    a lane reserved at dispatch can be open by the time the request launches.
+    This is the age at which the stored route stops being evidence of what the
+    router would answer now. Read from the resolved config's ``queue``
+    namespace, with the same fallbacks as :func:`queue_max_requests`, except
+    that zero is a legitimate value — it says every request is picked again at
+    launch — so only a negative or non-integer value falls back.
+    """
+    queue = (config or {}).get(QUEUE_KEY)
+    value = (
+        queue.get(QUEUE_REPICK_AFTER_SECONDS_KEY, DEFAULT_QUEUE_REPICK_AFTER_SECONDS)
+        if isinstance(queue, Mapping)
+        else DEFAULT_QUEUE_REPICK_AFTER_SECONDS
+    )
+    if not isinstance(value, int) or isinstance(value, bool) or value < 0:
+        return DEFAULT_QUEUE_REPICK_AFTER_SECONDS
+    return int(value)
+
+
 def _review_owned_key_shape_is_valid(shape: str, value: Any) -> bool:
     """Whether ``value`` holds the shape a reckon-owned review key declares."""
     if shape == "non_negative_integer":
@@ -1470,6 +1560,7 @@ def validate_layer(
     _validate_project_weights(data, source)
     _validate_harness_home_files(data, source)
     _validate_plan_review_gate(data, source)
+    _validate_reports(data, source)
     review = data.get(REVIEW_KEY)
     if isinstance(review, Mapping):
         for key, shape in REVIEW_OWNED_KEYS.items():

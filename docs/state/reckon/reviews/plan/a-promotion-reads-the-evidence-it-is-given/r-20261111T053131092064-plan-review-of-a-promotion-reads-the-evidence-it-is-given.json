@@ -1,0 +1,106 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-11T05:41:39.214Z",
+  "dispatched_at": "2026-11-11T05:36:43Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-promotion-reads-the-evidence-it-is-given.html:126",
+      "id": "reasoning-1",
+      "reason": "",
+      "text": "\u2014 s16's Why and done-when rest on the quoted line `missing baseline_suite.command_matches_suite_command, after_suite.command_matches_suite_command` being what a trailing after-suite revision produces today, but `_arm_matches`-side comparison (`reckon/crew/promotion_records.py:715-720`) accepts the command resolved at the arm's own recorded revision \u2014 `_scoped_suite_command(record, revision=revision)` \u2014 so a revision alone does not raise `command_matches_suite_command`; the baseline arm's revision is separately compared to `base_sha` at `:797-803` as `baseline_suite.revision_matches_base_sha`, and no after-side revision check exists. The defect is real and worth landing, but the evidence quoted for it is \u00a714's (ordering and interpreter spelling), and s16's done-when claim that at the base revision such a manifest \"is refused only with the bare line\" is therefore likely false \u2014 it is probably accepted outright. WOULD_CHANGE_THE_PLAN: yes \u2014 REASON: the worker would run the base reproduction, find no refusal, and either report a blocker or write a test asserting a behaviour the plan mis-describes; correcting the Why to \"today an after arm at a trailing revision is accepted when its command matches at that revision\" and the done-when's first line to show the acceptance makes the reproduction showable.",
+      "type": "reasoning",
+      "would_change": null
+    },
+    {
+      "anchor": "docs/plans/a-promotion-reads-the-evidence-it-is-given.html:122",
+      "id": "done_when-1",
+      "reason": "",
+      "text": "\u2014 s15 declares one negative control, \"drops the revisions from the brief\", which reddens only case one; case two asserts that a composed resume `advice` names both revisions with two different resolved commands, and no control makes the advice composer fail. WOULD_CHANGE_THE_PLAN: yes \u2014 REASON: the advice composer is a second surface in a different module (`reckon/crew/resumption.py`), and without a control the node's only evidence for it is a test that passes on any implementation; adding a second control that drops the revisions from the advice, which must redden case two, is what makes that half of the section falsifiable.",
+      "type": "done_when",
+      "would_change": null
+    }
+  ],
+  "plan_commit": "bec27f20cd626dc7d37305c371506498cacb2c93",
+  "plan_fingerprint": "19db4f067da92dbde985caa54a653648d899c826ca6843058ca39f736188077c",
+  "plan_slug": "a-promotion-reads-the-evidence-it-is-given",
+  "plan_version": 85,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "2de2fc85066587fbee9c1e90f3171c89a259d7cc",
+      "commit_basis": "edit",
+      "finding": "reasoning-1",
+      "note": "\u00a716's reproduction now records verbatim what the base revision does with a trailing after-suite arm, refusal or acceptance, instead of asserting the quoted line.",
+      "reason": "",
+      "when": "2026-11-11T06:12:52.425327+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "2de2fc85066587fbee9c1e90f3171c89a259d7cc",
+      "commit_basis": "edit",
+      "finding": "done_when-1",
+      "note": "\u00a715 now has a second negative control that drops the revisions from the resume advice, which reddens the advice case.",
+      "reason": "",
+      "when": "2026-11-11T06:13:31.845591+00:00"
+    }
+  ],
+  "responses": {
+    "done_when-1": {
+      "action": "acted",
+      "by": "",
+      "commit": "2de2fc85066587fbee9c1e90f3171c89a259d7cc",
+      "commit_basis": "edit",
+      "note": "\u00a715 now has a second negative control that drops the revisions from the resume advice, which reddens the advice case.",
+      "reason": "",
+      "when": "2026-11-11T06:13:31.845591+00:00"
+    },
+    "reasoning-1": {
+      "action": "acted",
+      "by": "",
+      "commit": "2de2fc85066587fbee9c1e90f3171c89a259d7cc",
+      "commit_basis": "edit",
+      "note": "\u00a716's reproduction now records verbatim what the base revision does with a trailing after-suite arm, refusal or acceptance, instead of asserting the quoted line.",
+      "reason": "",
+      "when": "2026-11-11T06:12:52.425327+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/Code/reckon/docs/state/reckon/reviews/plan/a-promotion-reads-the-evidence-it-is-given/r-20261111T053131092064-plan-review-of-a-promotion-reads-the-evidence-it-is-given.json",
+  "review_run_id": "r-20261111T053131092064-plan-review-of-a-promotion-reads-the-evidence-it-is-given",
+  "reviewed_blob_sha": "430f793494358449ba0692a8056358d8f6df9723",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `_compose_dispatch_prompt` is defined at `reckon/crew/dispatch_claims.py:1245` and called at `reckon/crew/dispatch.py:2953`; `_suite_gate_prompt_body` is at `dispatch.py:1490`; `_arm_missing_fields` is at `reckon/crew/promotion_records.py:686` with `(record, arm_name, observation)`; the record built at `:109\u2013121` carries `base_sha` and no head.",
+    "done_when": "a finding \u2014 s15's case two (composed resume advice names two revisions) carries no negative control; the only control drops revisions from the brief, which reddens case one alone.",
+    "evidence_paths": "pass \u2014 both units route every gate log under the run directory and require a bare `EXIT=` last line.",
+    "naming": "pass \u2014 the new symbols the units name are mechanism names (`_arm_missing_fields`, `revision_matches_head`) and no plan label reaches code.",
+    "reasoning": "a finding \u2014 s16 attributes a `command_matches_suite_command` refusal to arms recorded at mid-run revisions, but the comparison accepts the template resolved at the arm's own recorded revision, so a trailing revision cannot produce that line.",
+    "single_goal": "pass \u2014 s15 now names one mechanism family (the brief and the advice both name the two revisions and their commands), and s16 names one refusal.",
+    "wiring": "pass \u2014 the cross-plan wait s15 declares resolves to a section that exists (`workers-spend-fewer-tokens-per-landed-node` s9, data-status=\"implementable\"), s16's wait on s14 is declared, and the earlier wiring-1 is answered by the removal of `plan-standalone`, whose \"waits on none\" clause no longer contradicts that wait."
+  },
+  "section_digests": {
+    "_document": "bbd814c3f3f7bbcafdc1274385488eac996533259174374bc59e79f0f6a7e8f8",
+    "s1": "5eac0eb57fbf9fccaeee6fb2da59c42ca24c4433f0cffcb4b7de1b6b04324b6c",
+    "s10": "6eded2e6a5570026a61a372a16d3db3742c440d6e2301a8cbc745329a0aa00f9",
+    "s11": "660a4e592122dacd85dcf8340cbd8617de596dccebc87e8fa42f837393d9fc36",
+    "s12": "550cf547388f373020c35c77420464f06ed4636f9d95b52fcd3266cac0bf0e11",
+    "s13": "2a128b5aaa7df7a064e132b982fa9c92c8ed7a03cc656ba0d1d9e87174336e0e",
+    "s14": "75ff492347584a3997696dd59937811debb6ac4159d034205ec33ffb54807e9d",
+    "s15": "7fd095150f318d450b1f507f8cfbe46659c27eacb6ca6162b799a948a2250d11",
+    "s16": "1dfacbf8b4f133c9b8cbb14f8c22656d81c2e3853992241bc447d252b5931b38",
+    "s2": "259d093654ecf00609d51d02f39bb21a9feda5af8b5626a64e881f7e85d5abe4",
+    "s3": "479c8ebc617467c2744513e850433e87af52a3d22110620dcfdfb48f9975d081",
+    "s4": "bc5eebc33cf8175dd508f65245c7126745fc3e87a3e75e6229c55004ae265f62",
+    "s5": "f597850868c537fd163cabb422a3322df0e81659a7ceda007a561f633c75c9bf",
+    "s6": "2e81c0cbe61ef60fc16acb159e81912b5b6263e9d12b8059efbd9482d722976c",
+    "s7": "a015e1ea2396b50fe1763afc13f7b9ab2e452b85287b48a63a06e3503c3f2674",
+    "s8": "f0d1ed6febbf8f9ad2c9d36e204cfd29684121da43f557cf62b470c78f3de6b4",
+    "s9": "08ec740250081eecbaeb8dd5092c4149694553aa4b674594f5236d37c1560127"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-11T06:05:47.919027+00:00",
+  "total": null
+}

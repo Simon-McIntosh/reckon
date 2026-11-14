@@ -209,6 +209,7 @@ class FlightConfig(ConfiguredBaseModel):
     unprotected_paths: list[str] | None = Field(default=None, description="""Defaults the fence's protected set carries that a host or project layer leaves writable. A layer removes a default only by naming it here, so a reduction of the protected set is a deliberate, named act rather than a side effect of editing `protected_paths`. Each entry names a default as the fence would resolve it — home-relative or absolute — and an entry that names no default is ignored. Every run whose fence leaves out a named default carries the list on its run record.""")
     backends: dict[str, BackendConfig] | None = Field(default=None, description="""Available worker backends, keyed by a name chosen by whoever writes the configuration. The schema fixes no backend names.""")
     lanes: dict[str, LaneConfig] | None = Field(default=None, description="""A lane is a subscription or host, and the models chosen inside it. Declaring a lane is an alternative to writing one backend block per model: resolution expands each lane back into the backend entries today's callers read, so a lane that declares its models and an equivalent set of backend blocks resolve to the same config. Absent means no lane is declared and resolution is unchanged.""")
+    model_windows: dict[str, Union[int, ModelWindow]] | None = Field(default=None, description="""The context window each harness model runs in, keyed by model-id prefix and valued in tokens. Routing configuration rather than source: the crew directory divides a coordinator's measured context use by its model's window, so the figures live beside the models they describe. A checkout carrying no catalogue declares none, and a session reads its window unmeasured rather than against a guessed figure.""")
     model_catalogue: ModelCatalogueConfig | None = Field(default=None, description="""Public model list and watched id prefixes for model notices.""")
     aliases: dict[str, ModelAlias] | None = Field(default=None, description="""Old backend names, mapped to the lane and model key they name. A stored ledger row, run record, review or `review_excluded_backends` entry is never rewritten, so a name whose backend block has retired still has to resolve to a pair; this table is what a reader resolves it through. Declared for history rather than routing: nothing here creates a backend or changes a resolved value.""")
     roles: dict[str, RoleConfig] | None = Field(default=None, description="""Per-role routing overlays, keyed by role name. A role overrides only the keys it names; everything else falls through to its backend.""")
@@ -271,6 +272,7 @@ class QueueConfig(ConfiguredBaseModel):
     """
     max_requests: int | None = Field(default=None, description="""Maximum queued non-review requests in one project. The runtime default is 500 when no layer sets this value.""", ge=1)
     project_weights: dict[str, Union[float, ProjectWeight]] | None = Field(default=None, description="""Positive fair-use weight for each project sharing the local queue. Projects without a declared weight have equal weight of one.""")
+    repick_after_seconds: int | None = Field(default=None, description="""How long a route the router chose may stand before the request is picked again at launch. A request released sooner keeps the route it was given, so a brief wait costs no second pick. The runtime default is 60 when no layer sets this value.""", ge=0)
 
 
 class ProjectWeight(ConfiguredBaseModel):
@@ -481,6 +483,14 @@ class LaneConfig(BackendConfig):
             err_msg = f"Invalid time_budget format: {v}"
             raise ValueError(err_msg)
         return v
+
+
+class ModelWindow(ConfiguredBaseModel):
+    """
+    One model-id prefix and the context window that model runs in, in tokens. The prefix is the map key, so a specific model id and its family can each be declared without this table naming a provider.
+    """
+    name: str = Field(default=..., description="""Map key for an inlined entry.""")
+    tokens: int | None = Field(default=None, description="""A size in tokens, such as the context window a model runs in. Declared as a positive integer: a window of zero would make every session read as overflowing, so the schema refuses one.""", ge=1)
 
 
 class ModelCatalogueConfig(ConfiguredBaseModel):
@@ -800,6 +810,7 @@ ReviewTiers.model_rebuild()
 BackendConfig.model_rebuild()
 LaneModelConfig.model_rebuild()
 LaneConfig.model_rebuild()
+ModelWindow.model_rebuild()
 ModelCatalogueConfig.model_rebuild()
 ModelWatchConfig.model_rebuild()
 ModelAlias.model_rebuild()

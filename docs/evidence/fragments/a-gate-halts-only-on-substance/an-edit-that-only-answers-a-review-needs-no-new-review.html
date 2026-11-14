@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-gate-halts-only-on-substance">
+  <meta name="plan-title" content="An edit that only answers a review needs no new review">
+  <meta name="plan-summary" content="Verified at the base revision: crew review --accept-edits records the units the plan's edits since the newest review changed, review_coverage covers them until a later edit moves one, the refusal holds while a finding is unanswered, and the guard fires — ignoring the acceptance record leaves the section uncovered again.">
+  <meta name="plan-evidence-for" content="reckon:a-gate-halts-only-on-substance">
+  <meta name="plan-verifies" content="reckon:a-gate-halts-only-on-substance#s6">
+  <meta name="plan-recorded-at" content="2026-11-11">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-tags" content="crew,plan-review,review-coverage,accept-edits,gate">
+  <title>An edit that only answers a review needs no new review — evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" data-node="an-edit-that-only-answers-a-review-needs-no-new-review" data-reckon="landed" data-when="2026-11-11">
+  <h2 id="an-edit-that-only-answers-a-review-needs-no-new-review-title">An edit that only answers a review needs no new review</h2>
+  <p id="an-edit-that-only-answers-a-review-needs-no-new-review-landing">landing: <code>crew review --plan &lt;slug&gt; --accept-edits "&lt;reason&gt;"</code> records, against the newest stored review, the units the plan's edits since it changed with the digest each held at acceptance; <code>review_coverage</code> then covers those units as that review's until a later edit moves one, and refuses the acceptance while any finding of that review is unanswered. The capability is present and verified at base <code>36a0d1a162</code>: <code>reckon/crew/plan_review.py</code> carries <code>accept_edits</code>, <code>acceptable_edit_units</code>, <code>_accepted_edit_units</code> and the acceptance-aware branch of <code>review_coverage</code>; <code>reckon/crew_dispatch_commands.py</code> declares <code>--accept-edits</code> and emits the stored acceptance beside the review's answers. Verified against <code>tests/test_an_edit_that_answers_a_review_is_covered.py</code>, nine cases, which reads <code>9 passed</code>.</p>
+  <p id="an-edit-that-only-answers-a-review-needs-no-new-review-refusal">The refusal holds: <code>accept_edits</code> raises <code>ValueError</code> naming the unanswered findings, and the verb exits non-zero with that text, leaving no <code>accepted_edits</code> key on the stored record. A review marked <code>incomplete</code> is refused for the same reason — it covers nothing, so an acceptance on it would store a verdict that can never take effect. A <code>--dry-run</code> reports the units an acceptance would cover and writes nothing, and the same verb run without the flag is shown writing, so the guard is measured rather than assumed.</p>
+  <p id="an-edit-that-only-answers-a-review-needs-no-new-review-control">The negative control the plan names — ignoring the acceptance record leaves the section uncovered — fires two ways. The delivered test carries it in-process: with <code>_accepted_edit_units</code> monkeypatched to return an empty set the accepted section reads uncovered again. Measured against the tree, the same mutation applied to the module reads <code>2 failed, 7 deselected</code>, <code>EXIT=1</code>: exactly the covering case and the later-edit case redden, so the acceptance reader is the thing carrying the coverage. The module was restored and its digest verified identical before any further measurement.</p>
+  <p id="an-edit-that-only-answers-a-review-needs-no-new-review-measure">The declared suite pair — this node's test plus <code>tests/test_staged_write_inventory.py</code> — reads <code>60 passed</code>, <code>EXIT=0</code> in both arms: <code>60 passed in 42.27s</code> at base <code>36a0d1a162</code> and <code>60 passed in 35.84s</code> at head <code>cfccd6e272</code>. The importer cohort is the 117 test files that import <code>reckon.crew.plan_review</code>, run one arm at a time on <code>all_debug</code> with <code>-n 4</code>: base reads <code>74 failed, 876 passed, 3 errors in 341.71s</code> (<code>EXIT=1</code>) and head reads <code>74 failed, 876 passed, 3 errors in 324.26s</code> (<code>EXIT=1</code>), with the 77 failing ids identical by set difference between the arms. The head therefore adds no failure against the base revision; the pre-existing failures sit in queue, dispatch-guard, plan-edit and request-stamping modules that this node does not touch, and they reproduce identically at base. <code>ruff check</code> and <code>ruff format --check</code> read <code>All checks passed!</code> and <code>2 files already formatted</code> on the two staged source paths.</p>
+  <p id="an-edit-that-only-answers-a-review-needs-no-new-review-scope">This node changes no product source and no test: the deliverable was already landed and reviewed, so the work is verification and evidence. Ruff check and <code>ruff format --check</code> add no findings on the two staged source paths; the only committed paths are this fragment.</p>
+</article>
+</body>
+</html>

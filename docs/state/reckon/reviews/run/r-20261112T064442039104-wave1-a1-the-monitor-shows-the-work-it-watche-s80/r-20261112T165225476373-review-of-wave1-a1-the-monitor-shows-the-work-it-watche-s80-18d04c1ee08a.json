@@ -1,0 +1,88 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "8e200ea58cb1c0774997710a8808a7747ffeb5f2",
+  "call_site_count": 5,
+  "call_sites": "reckon/crew_follow_commands.py:1115, reckon/crew/station_subscriber.py:515, reckon/crew/ticker.py:2820, reckon/crew/recovery_watch.py:fleet_transitions, reckon/crew/recovery_classification.py:_queued_failure_remedy",
+  "completed_at": "2026-11-12T17:24:18.771Z",
+  "dimension_dispositions": {
+    "reuse": {
+      "kind": "folded",
+      "node": "repair-of-wave1-a1-the-monitor-shows-the-work-it-watche-s80-18d04c1ee08a",
+      "recorded_at": "2026-11-12T19:04:15.096934+00:00"
+    }
+  },
+  "dispatched_at": "2026-11-12T17:11:48Z",
+  "findings": [
+    {
+      "file": "reckon/crew/ticker.py",
+      "line": "636",
+      "severity": "non-blocking",
+      "text": "request_key reads a `section` key that the transition rows never carry \u2014 the classified snapshot emits project, session, plan and node and nothing else at reckon/crew/recovery_classification.py:2333-2346 \u2014 so all(parts) is always false on the rows that reach the refusal branch and the key falls back to run_id, making the request-keyed branch dead; behaviour stays correct only because reckon/crew/queue_admission.py:2008 re-queues under the same run id, so the docstring's claim that the four fields plus session name a request is untrue of the rows it reads."
+    },
+    {
+      "file": "tests/test_a_requeued_refusal_draws_no_dropped_row.py",
+      "line": "43",
+      "severity": "non-blocking",
+      "text": "the fixture adds `section` to every row, a field the real fleet-transition row does not carry, so test_a_requeue_under_a_fresh_pointer_id_is_the_same_request passes on a row shape production never emits and does not guard the path it names; an assertion added to prevent a regression must be checked by reinstating that regression against a production-shaped row."
+    },
+    {
+      "file": "reckon/crew/ticker.py",
+      "line": "623",
+      "severity": "non-blocking",
+      "text": "request_key duplicates the request-identity capability the repository already owns in reckon/crew/runs.py:545 and reckon/crew/dispatch_refusals.py:84, and contradicts runs.py's deliberate exclusion of the session, so two definitions of the same request now disagree in one codebase."
+    },
+    {
+      "file": "docs/evidence/fragments/the-monitor-shows-the-work-it-watches/wave1-a1-the-monitor-shows-the-work-it-watche-s80.html",
+      "line": "25",
+      "severity": "non-blocking",
+      "text": "the landing record says what changed is all in reckon/crew/ticker.py, omitting the recovery_classification.py edit in the same diff, and says the memory is remembered per run two clauses before describing it as keyed on the request."
+    },
+    {
+      "file": "docs/evidence/fragments/the-monitor-shows-the-work-it-watches/wave1-a1-the-monitor-shows-the-work-it-watche-s80.html",
+      "line": "27",
+      "severity": "non-blocking",
+      "text": "the population claim of a 63-file arm (base 787 passed, head 792) has no log under the run directory, while the done-when requires every log to sit there and start with its revision and literal command, so the claim rests on the worker's account rather than an artefact a reviewer can open."
+    }
+  ],
+  "head_log_revision": "18d04c1ee08ad53affb77ec8bc8e984d0e5b7bf7",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "reckon/crew_follow_commands.py:1115, reckon/crew/station_subscriber.py:515, reckon/crew/ticker.py:2820, reckon/crew/recovery_watch.py:fleet_transitions, reckon/crew/recovery_classification.py:_queued_failure_remedy",
+    "diff": "read commit by commit; five commits add the request-keyed refusal row, share the classifier's prefixes, refactor the clause rows onto _clause_line, and record the landing.",
+    "done_when": "the done_when names a follower-driven test, a negative control, a base arm and pytest -n 8; the test (8 passed), both suite logs and both red controls are recorded, but the importing-files arm is prose-only and no arm used -n 8.",
+    "goal": "the goal is that a refused queued launch is not drawn as a drop; reckon/crew/ticker.py:2131-2150 suppresses the withdrawal row and ticker.py:2292 names the refusal on the request's own row.",
+    "manifest": "read; it states 8 passed, both suite logs, the negative-control log, the scope_note and 0 added failures, though its tests: line is prose rather than a literal command.",
+    "write_paths": "the diff edits reckon/crew/recovery_classification.py outside the declared fence, recorded in the manifest's scope_note as a prior-review-directed extension; the other three changed paths are inside."
+  },
+  "justifications": {
+    "durability": "tests/test_a_requeued_refusal_draws_no_dropped_row.py:219-237 guards the fresh-pointer case only because its fixture passes `section` at line 43, a key the production row never carries, so reverting request_key to run_id at ticker.py:2299 would still pass; the both-clauses case at line 253 does redden if ticker.py:606 stops accepting the session prefix.",
+    "evidence": "the recorded arms at suite-base.log and suite-after.log reconcile (0 added failures) but run tests/test_staged_write_inventory.py, which imports neither changed module, while the done-when's importing-files arm and its 787/792 figures are claimed at fragment:27 with no log on disk.",
+    "fit": "the added names (queued_refusal, request_key, _clause_line, QUEUED_REFUSED_FIELD, REFUSAL_STAGE) follow the mechanism-naming and module-constant idiom already used by SUBMISSION_STAGE and LIFT_STAGE at reckon/crew/ticker.py:279-281, with no plan label or ticket reference.",
+    "goal_fidelity": "reckon/crew/ticker.py:2292-2320 recognises a refused queued launch and prints it once on the request's own row while keeping the word queued, which is the goal the incident drew a drop for.",
+    "reuse": "reckon/crew/ticker.py:623 request_key re-implements the request identity already owned by reckon/crew/runs.py:545 _node_identity and reckon/crew/dispatch_refusals.py:84 rather than extending either, and includes session where runs.py deliberately excludes it; the _clause_line helper at ticker.py:3563 does correctly extend the shared clause-row layout.",
+    "scope_discipline": "reckon/crew/recovery_classification.py:130-140 is edited outside the fence declared at prompt.txt:80-86, disclosed in the manifest's scope_note and limited to hoisting the two prefixes its own composer already wrote."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is that a refused queued launch is not drawn as a drop; reckon/crew/ticker.py:2131-2150 suppresses the withdrawal row and ticker.py:2292 recognises the classifier's refusal clause and names it on the request's own row, so the observed incident no longer reads as a drop.\nVERDICT done_when: the done_when names a follower-driven test, a negative control, a base arm and `pytest -n 8`; the manifest records the test (8 passed), the negative control (two red arms with EXIT=1) and two suite logs (base 49 passed/2 errors, head 57 passed/2 errors, identical failure ids), but the done-when's separate \"test files importing the modules changed\" arm appears only as prose (787/792 passed, identical failure set) with no log under the run directory, and the recorded arms carry no `-n 8`.\nVERDICT write_paths: the declared fence is reckon/crew/queue_admission.py, reckon/crew/ticker.py, reckon/crew_follow_commands.py, the new test, the evidence fragment and a figures directory; the diff also edits reckon/crew/recovery_classification.py, which the manifest records in a scope_note as a prior-review-directed extension and flags for `crew complete --accept-path`.\nVERDICT manifest: read; it states 8 passed in the new test file, both suite logs, the negative-control log, a scope_note for the classifier edit, and 0 added failures with the two base errors reported under outside_scope; its `tests:` line is prose rather than the literal command, which the logs' own `command:` headers supply instead.\nVERDICT diff: read commit by commit against the base: 88201db names the refusal on the request's row and suppresses shipments, ab46acd documents the withdrawal suppression, 00e6584 records the first evidence, ff2204b shares the refusal prefixes with the classifier, keys the once-only memory on request_key, recognises both clauses and folds the three clause rows onto _clause_line, and 18d04c1 updates the landing record.\nCALL_SITES: reckon/crew_follow_commands.py:1115, reckon/crew/station_subscriber.py:515, reckon/crew/ticker.py:2820, reckon/crew/recovery_watch.py:fleet_transitions, reckon/crew/recovery_classification.py:_queued_failure_remedy\nSCORE goal_fidelity: 16\nJUSTIFICATION goal_fidelity: reckon/crew/ticker.py:2292-2320 recognises a refused queued launch and prints it once on the request's own row while keeping the word queued, which is the goal the incident drew a drop for.\nSCORE evidence: 11\nJUSTIFICATION evidence: the recorded arms at suite-base.log and suite-after.log reconcile (0 added failures) but run tests/test_staged_write_inventory.py, which imports neither changed module, while the done-when's importing-files arm and its 787/792 figures are claimed at fragment:27 with no log on disk.\nSCORE scope_discipline: 13\nJUSTIFICATION scope_discipline: reckon/crew/recovery_classification.py:130-140 is edited outside the fence declared at prompt.txt:80-86, disclosed in the manifest's scope_note and limited to hoisting the two prefixes its own composer already wrote.\nSCORE durability: 10\nJUSTIFICATION durability: tests/test_a_requeued_refusal_draws_no_dropped_row.py:219-237 guards the fresh-pointer case only because its fixture passes `section` at line 43, a key the production row never carries, so reverting request_key to run_id at ticker.py:2299 would still pass; the both-clauses case at line 253 does redden if ticker.py:606 stops accepting the session prefix.\nSCORE fit: 17\nJUSTIFICATION fit: the added names (queued_refusal, request_key, _clause_line, QUEUED_REFUSED_FIELD, REFUSAL_STAGE) follow the mechanism-naming and module-constant idiom already used by SUBMISSION_STAGE and LIFT_STAGE at reckon/crew/ticker.py:279-281, with no plan label or ticket reference.\nSCORE reuse: 6\nJUSTIFICATION reuse: reckon/crew/ticker.py:623 request_key re-implements the request identity already owned by reckon/crew/runs.py:545 _node_identity and reckon/crew/dispatch_refusals.py:84 rather than extending either, and includes session where runs.py deliberately excludes it; the _clause_line helper at ticker.py:3563 does correctly extend the shared clause-row layout.\nFINDING reckon/crew/ticker.py:636 non-blocking: request_key reads a `section` key that the transition rows never carry \u2014 the classified snapshot emits project, session, plan and node and nothing else at reckon/crew/recovery_classification.py:2333-2346 \u2014 so `all(parts)` is always false on the rows that reach the refusal branch and the key falls back to run_id, making the request-keyed branch dead; behaviour stays correct only because reckon/crew/queue_admission.py:2008 re-queues under the same run id, so the docstring's claim that the four fields plus session name a request is untrue of the rows it reads.\nFINDING tests/test_a_requeued_refusal_draws_no_dropped_row.py:43 non-blocking: the fixture adds `section` to every row, a field the real fleet-transition row does not carry, so test_a_requeue_under_a_fresh_pointer_id_is_the_same_request passes on a row shape production never emits and does not guard the path it names; an assertion added to prevent a regression must be checked by reinstating that regression against a production-shaped row.\nFINDING reckon/crew/ticker.py:623 non-blocking: request_key duplicates the request-identity capability the repository already owns in reckon/crew/runs.py:545 and reckon/crew/dispatch_refusals.py:84, and contradicts runs.py's deliberate exclusion of the session, so two definitions of \"the same request\" now disagree in one codebase.\nFINDING docs/evidence/fragments/the-monitor-shows-the-work-it-watches/wave1-a1-the-monitor-shows-the-work-it-watche-s80.html:25 non-blocking: the landing record says \"What changed, all in reckon/crew/ticker.py\", omitting the recovery_classification.py edit in the same diff, and says the memory is \"remembered per run\" two clauses before describing it as keyed on the request.\nFINDING docs/evidence/fragments/the-monitor-shows-the-work-it-watches/wave1-a1-the-monitor-shows-the-work-it-watche-s80.html:27 non-blocking: the population claim of a 63-file arm (base 787 passed, head 792) has no log under the run directory, while the done-when requires every log to sit there and start with its revision and literal command, so the claim rests on the worker's account rather than an artefact a reviewer can open.\n",
+  "review_run_id": "r-20261112T165225476373-review-of-wave1-a1-the-monitor-shows-the-work-it-watche-s80-18d04c1ee08a",
+  "reviewed_base_sha": "00e65843b250b46a279289b7679f0018828a2e4c",
+  "reviewed_head_sha": "18d04c1ee08ad53affb77ec8bc8e984d0e5b7bf7",
+  "reviewed_run_id": "r-20261112T064442039104-wave1-a1-the-monitor-shows-the-work-it-watche-s80",
+  "reviewer": "deepseek-v4.1-flash",
+  "reviewer_run_id": "r-20261112T165225476373-review-of-wave1-a1-the-monitor-shows-the-work-it-watche-s80-18d04c1ee08a",
+  "scores": {
+    "durability": 10,
+    "evidence": 11,
+    "fit": 17,
+    "goal_fidelity": 16,
+    "reuse": 6,
+    "scope_discipline": 13
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-12T17:30:56.820459+00:00",
+  "total": 73
+}

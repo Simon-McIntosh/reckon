@@ -104,7 +104,7 @@ def test_a_halted_run_reaches_the_stream_and_its_recovery_does_not():
             _row(RUN, "blocked", "working"),
         ]
     )
-    assert _words(printed) == ["halted", "working"], _words(printed)
+    assert _words(printed) == ["needs you", "working"], _words(printed)
 
 
 def test_a_delivered_run_prints_its_row_once_and_no_summary_line():
@@ -139,7 +139,7 @@ def test_a_limit_reset_reaches_the_stream_once():
 
 def test_the_rule_names_the_words_the_stream_carries():
     """The policy and the summaries read one rule, stated in ``ticker``."""
-    assert frozenset({"delivered", "halted", "in review", "seat moved"}) == (
+    assert frozenset({"delivered", "needs you", "in review", "seat moved"}) == (
         ticker.CARRIED_PANE_WORDS
     )
     assert ticker.stream_carries({"to_state": "completed_unpromoted"})

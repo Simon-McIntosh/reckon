@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-queued-request-is-checked-when-queued">
+  <meta name="plan-title" content="A refused request names its refusal in its obligation — verified at head">
+  <meta name="plan-summary" content="The contract-refusal reading of a queued request is already implemented and evidenced in the tree; this node verifies the section's done-when at head and adds no product change.">
+  <meta name="plan-evidence-for" content="reckon:a-queued-request-is-checked-when-queued">
+  <meta name="plan-verifies" content="reckon:a-queued-request-is-checked-when-queued#s8">
+  <meta name="plan-recorded-at" content="2026-11-13">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-tags" content="crew,reckon-tooling,obligations">
+  <title>A refused request names its refusal in its obligation — verified at head | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article id="ready-a-queued-request-is-checked-s8-note" class="r-note" data-node="ready-a-queued-request-is-checked-s8" data-reckon="landed" data-when="2026-11-13">
+  <h2 id="ready-a-queued-request-is-checked-s8-head">A refused request names its refusal in its obligation — verified at head</h2>
+
+  <p id="ready-a-queued-request-is-checked-s8-found"><strong>What this node found.</strong> §8's deliverable is already in the tree at this node's base <code>4d5c4389b7</code>, and so is the test file the section names. Commit <code>77129c667f</code> added <code>QUEUED_CONTRACT_REFUSED_DUTY_KIND</code> and <code>_queued_contract_refusal</code> to <code>reckon/crew/obligations.py</code>; commit <code>c5ccda2605</code> added the editable-refusal and capacity-refusal arms. Both are ancestors of head. The plan section still reads <code>implementable</code>, so the section has landed work recorded on it without having been closed.</p>
+
+  <p id="ready-a-queued-request-is-checked-s8-reproduce"><strong>The defect the section names still reproduces when the reading is removed.</strong> With <code>_queued_contract_refusal</code> replaced by a stub that returns immediately, the same queued pointer reads <code>run-queued</code> with the "waiting for a lane slot" command — the reading a coordinator saw while a project's sections sat dead. That is the mutation this node ran, and it is what the two refusal arms go red on.</p>
+
+  <p id="ready-a-queued-request-is-checked-s8-changed"><strong>What changed here.</strong> No product source and no test. The behaviour the section asks for is present and its arms pass at head, so this node verifies rather than reimplements: a node-contract refusal in a queued pointer's <code>failure</code> yields <code>queued-contract-refused</code>, with the refusal's own property names in the row's reason and either <code>reckon crew queue edit --run &lt;id&gt;</code> or <code>reckon crew queue drop --run &lt;id&gt;</code> as its next command, chosen by whether every named property sits behind a field the edit can set.</p>
+
+  <h3 id="ready-a-queued-request-is-checked-s8-measured">Measured</h3>
+
+  <table id="ready-a-queued-request-is-checked-s8-arms">
+    <caption>Every log's header names its revision, tree and literal command; its last line is <code>EXIT=&lt;code&gt;</code>.</caption>
+    <thead><tr><th>arm</th><th>result</th></tr></thead>
+    <tbody>
+      <tr><td>gate (<code>tests/test_a_refused_request_names_its_refusal.py</code>)</td><td>5 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>negative control (reading stubbed out)</td><td>2 failed, 3 passed, <code>EXIT=1</code></td></tr>
+      <tr><td>base arm (<code>tests/test_staged_write_inventory.py</code>)</td><td>51 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>after arm (same command, head with this fragment)</td><td>51 passed, <code>EXIT=0</code></td></tr>
+    </tbody>
+  </table>
+
+  <p id="ready-a-queued-request-is-checked-s8-control">The mutation reddens exactly the two arms that assert a refusal is named — <code>test_a_contract_refusal_is_named_in_its_row</code> and <code>test_an_editable_refusal_names_the_queue_edit</code> — and leaves the no-failure arm and the capacity-refusal arm green. The row the gate asserts therefore cannot be produced without the failure it reads.</p>
+
+  <p id="ready-a-queued-request-is-checked-s8-logs">Logs in the run directory: <code>gate-head.log</code>, <code>negative-control.log</code>, <code>gate-base-arm.log</code>, <code>gate-after-arm.log</code>, <code>population-arm.log</code>. Ruff check and ruff format --check report no finding on the staged paths.</p>
+</article>
+</body>
+</html>

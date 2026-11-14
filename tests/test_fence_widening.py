@@ -182,6 +182,9 @@ def test_a_free_path_reaches_the_promoted_ledger(
 ) -> None:
     repo = tmp_path / "repo"
     (repo / "docs" / "state" / "sample").mkdir(parents=True)
+    (repo / "docs" / "state" / "sample" / "shared-write-paths.json").write_text(
+        json.dumps({"shared_roots": []}) + "\n"
+    )
     (repo / "docs" / "state" / "sample" / "index.json").write_text(
         json.dumps({"project": "sample", "data": {"_version": 0}}) + "\n"
     )
@@ -250,6 +253,11 @@ def test_a_peer_held_path_refuses_without_changing_pointer_bytes(
         cwd=tmp_path / "repo",
         check=True,
         capture_output=True,
+    )
+    declaration = tmp_path / "repo" / "docs" / "state" / "sample"
+    declaration.mkdir(parents=True)
+    (declaration / "shared-write-paths.json").write_text(
+        json.dumps({"shared_roots": []}), encoding="utf-8"
     )
     holder_id = "r-20260921T000000000000-holder"
     holder = _blocked_pointer(tmp_path, holder_id, phase="working")

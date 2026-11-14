@@ -1,0 +1,50 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-11-13T17:29:12.913Z",
+  "dispatched_at": "2026-11-13T17:17:04Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "exempted",
+      "reason": "the delta the fragment reports holds either way (one finding fewer at head, the move-path S112 gone); the absolute counts include ruff's summary line, a wording defect in an evidence fragment with no effect on the code",
+      "recorded_at": "2026-11-14T07:41:17.160445+00:00"
+    },
+    "1": {
+      "kind": "exempted",
+      "reason": "the landing measure re-ran both arms on slurm itself (measurement.json execution: slurm, real failures: none), which is the partition receipt the fragment lacked",
+      "recorded_at": "2026-11-14T07:41:24.457677+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/a-plan-state-lock-holds-on-every-node/move-reply-keeps-its-verdict-on-a-failed-read.html",
+      "line": 86,
+      "severity": "non-blocking",
+      "text": "the lint paragraph quotes 18 findings at head against 19 at the base revision, but no ruff log is stored under the run's logs/ and a direct recount of both module blobs at the two revisions reports 17 against 18 \u2014 both quoted figures include ruff's trailing 'Found N errors.' summary line, so the recorded figure is not reproducible from a delivered receipt"
+    },
+    {
+      "file": "docs/evidence/fragments/a-plan-state-lock-holds-on-every-node/move-reply-keeps-its-verdict-on-a-failed-read.html",
+      "line": 103,
+      "severity": "non-blocking",
+      "text": "the fragment states both suite arms and the evidence gate ran on all_debug submitted as jobs of their own, but every delivered log's header names the worktree or the ~/.cache extraction path as cwd and none records a scheduler submission, so the done-when's partition requirement is asserted without a receipt"
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to repair three review findings on the sprint-move reply; reckon/mcp_edit_plan.py:1758-1771 now sets applied whenever a move op is present and names each failed version read in warnings, reckon/project_state.py:2174 drops the duplicate JSONDecodeError clause, and the S112 at the old continue is gone.\nVERDICT done_when: the done-when names a new test, a ruff non-regression with S112 absent, the except-clause removal, and two test files passing with zero added failures; the manifest records suite-base 57 passed and suite-after 58 passed (both EXIT=0), gate.log 42 passed EXIT=0 and negative-control.log 1 failed EXIT=1, but the ruff arm has no stored log.\nVERDICT write_paths: the manifest declares reckon/mcp_edit_plan.py, reckon/project_state.py, tests/test_a_sprint_move_replies_with_what_landed.py and the evidence fragment; the diff over 22c3fbda..616f01e709 touches exactly those four paths and nothing else.\nVERDICT manifest: read; it reports status complete, the three commits, both suite arms with failure_count 0, a negative control, and a measurement_module/cwd pair naming the extracted base tree at /home/ITER/mcintos/.cache/reckon-move-reply-base.\nVERDICT diff: read commit by commit against 22c3fbda; 1c79bab552 changes _move_sprint_versions to return (versions, failed) and sets applied on either, b43cb7ceb4 adds the fault-injection test, 616f01e709 adds the 110-line evidence fragment: 180 insertions, 12 deletions, all inside the declared scope.\nCALL_SITES: reckon/mcp.py:224 (_edit_plan re-exported onto the MCP tool surface), reckon/mcp_edit_plan.py:2337 (_edit_plan_tool calling _edit_plan), reckon/project_state.py:2371 (_restore_move_journal in the sprint-move recovery path)\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/mcp_edit_plan.py:1761 sets applied when sprint_versions or failed_reads is non-empty, so a move whose every read fails still reports what landed, which the negative control shows failing at base.\nSCORE evidence: 13\nJUSTIFICATION evidence: the suite arms and the negative control are recorded with revision, cwd, imported module and EXIT in logs/suite-base.log and logs/negative-control.log, but the done-when's ruff arm has no log and the fragment's count of 18 against 19 does not reproduce (17 against 18 on recount) because the summary line is included.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in the diff from 22c3fbda to 616f01e709 is one of the four the manifest declares as write paths.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_a_sprint_move_replies_with_what_landed.py:264 asserts reply.get(\"applied\") is True and :271 requires a sprint_version_read_failed= warning, and reinstating the old continue leaves both false, which the negative control at base reproduces.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/mcp_edit_plan.py:1768-1772 appends to the warnings list the surrounding code already assigns to result[\"warnings\"], and introduces no plan or ticket identifiers.\nSCORE reuse: 19\nJUSTIFICATION reuse: the failed-read report reuses the reply's existing warnings channel and _move_sprint_versions' existing loop; a search over reckon/ for another sprint-version read-back found none to extend, only the callers at reckon/mcp_edit_plan.py:894 and :1758.\nFINDING docs/evidence/fragments/a-plan-state-lock-holds-on-every-node/move-reply-keeps-its-verdict-on-a-failed-read.html:86 non-blocking: the lint figures 18 against 19 are not reproducible from a stored log and include ruff's summary line (recount: 17 at head, 18 at base), so the done-when's ruff arm rests on a claim rather than a receipt.\nFINDING docs/evidence/fragments/a-plan-state-lock-holds-on-every-node/move-reply-keeps-its-verdict-on-a-failed-read.html:103 non-blocking: the fragment states both arms and the gate ran on all_debug as separate jobs, but no delivered log records a scheduler submission and every log header names the worktree as cwd.",
+  "review_run_id": "r-20261113T170733419931-review-of-move-reply-keeps-its-verdict-on-a-failed-read-616f01e709ec",
+  "reviewed_base_sha": "22c3fbda4352ac7b05fe0d433cfca9138349171c",
+  "reviewed_head_sha": "616f01e709ec39aa0b7163a7903d72d7164395f4",
+  "reviewed_run_id": "r-20261113T154236531991-move-reply-keeps-its-verdict-on-a-failed-read",
+  "scores": {
+    "durability": 19,
+    "evidence": 13,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-13T18:05:57.333681+00:00",
+  "total": 108
+}

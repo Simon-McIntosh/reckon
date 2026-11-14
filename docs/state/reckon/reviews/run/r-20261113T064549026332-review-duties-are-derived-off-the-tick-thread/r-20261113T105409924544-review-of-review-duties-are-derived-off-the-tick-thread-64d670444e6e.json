@@ -1,0 +1,57 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own arms. baseline_suite at 4d5c4389 (baseline-arm.log) ran tests/test_a_phase_transition_is_published_before_review_duties.py and tests/test_staged_write_inventory.py from an extracted tree: 50 passed, 2 errors, EXIT=1, the two errors being the staged-write cases whose setup shells out to git in a tree that is not a repository. after_suite at 645623c5 (after-arm.log, real worktree) ran the same two files plus the new test: 53 passed, 0 failures, EXIT=0. The matched extraction arm (after-arm-extraction.log) reproduces the same two setup errors with 51 passed, so the base-to-head delta is exactly the node's own new passing case; the head failure set is empty and the added set is therefore empty, with the two base errors attributed to scaffolding rather than to code under test.",
+  "call_sites": [
+    "reckon/crew_follow_commands.py:52",
+    "reckon/crew/station.py:892",
+    "reckon/crew/station.py:1036",
+    "reckon/crew/station_obligations.py:457"
+  ],
+  "completed_at": "2026-11-13T12:04:10.029Z",
+  "dispatched_at": "2026-11-13T11:34:51Z",
+  "findings": [
+    {
+      "file": "tests/test_review_duties_are_derived_off_the_tick_thread.py",
+      "line": 79,
+      "severity": "non-blocking",
+      "text": "`_Sweeps.__call__(self)` takes no parameters, but `SweepBeat._run` at reckon/crew/station.py:354 calls the sweep with `(project, session=..., now=..., writer=...)`, so every sweep this test's station requests raises TypeError and is caught and logged as `station-sweep-failure`; reproduced by running the file with `-s`, which prints that line twice per run. The test still passes because its guard reads `moved` from the transition rows rather than from the sweep, so the broken stub is invisible in a green run and any future assertion about the sweep arm of this station would silently measure a stub that never runs. The stub needs the keyword signature SweepBeat passes."
+    },
+    {
+      "file": "tests/test_review_duties_are_derived_off_the_tick_thread.py",
+      "line": 188,
+      "severity": "non-blocking",
+      "text": "`assert not release.is_set()` cannot fail: `release` is the case's own Event and the only `release.set()` in the file is in the `finally` that runs after this line, so the assertion is true whatever the code under test did. The claim it is written to make \u2014 the derivation was still blocked while the later tick published its transition \u2014 is carried by the `moved` assertion at line 184 being reached before the finally, and this line adds nothing to it; an assertion that cannot name a condition under which it reddens is not coverage of the claim it names."
+    },
+    {
+      "file": "reckon/crew/station.py",
+      "line": 480,
+      "severity": "non-blocking",
+      "text": "the comment justifies the worker's own store connection with 'a store handle is bound to the thread that opened it', but the store opens its connection with `sqlite3.connect(self.database, check_same_thread=False, timeout=30.0)` at reckon/crew/station_store.py:379, so no such binding exists and the tick's handle could legally be shared. A separate connection per worker is still the right choice \u2014 it keeps the derivation's writes off the tick's connection and its transaction state \u2014 but the stated reason is false, and a future reader taking it at face value will either trust a constraint the store does not have or delete the connection as unnecessary."
+    },
+    {
+      "file": "reckon/crew/station.py",
+      "line": 468,
+      "severity": "non-blocking",
+      "text": "`DutyBeat.drain` applies `timeout` to each worker in turn (`for worker in workers: worker.join(timeout)`), so a station with N projects in flight can spend up to N x DUTY_DRAIN_SECONDS at shutdown rather than the single 'bounded moment' the constant's comment at line 391 and the `run_station` comment at line 1034 describe. With a handful of mounted projects the overrun is seconds, but the bound is stated as one figure and is not one; a shared deadline computed once before the loop states what the comment already claims."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to derive each project's review duties off the station's tick thread; reckon/crew/station.py:397 adds `DutyBeat`, whose `request` at line 426 starts one worker per project, and reckon/crew/station.py:892 hands the tick's publish call to it through `submit=self.duties.request`, so the derivation no longer runs on the tick path.\nVERDICT done_when: the done-when asks for a gate proving a later tick's phase transition is published while a derivation is still blocked; tests/test_review_duties_are_derived_off_the_tick_thread.py drives `run_station` across tick intervals, holds the first derivation open at line 129, moves a run's phase, and asserts at line 184 that the transition (`working` -> `blocked-upstream`) is in the store before the derivation is released. That is the measure, and the manifest records the run (53 passed, EXIT=0) plus the matched extraction pair.\nVERDICT write_paths: the source node declared reckon/crew/station.py, reckon/crew/station_obligations.py, the two test files and the evidence fragment; `git diff --stat 4d5c4389 64d670444e` lists exactly those five paths and no other.\nVERDICT manifest: read; it states status complete, records the gate command with all three test files, the after arm at 53 passed EXIT=0, the matched extraction arms (base 50 passed + 2 git-setup errors, head 51 passed + the same 2 errors), the negative control at 1 failed EXIT=1 naming the node's own case, and the measurement module path and cwd.\nVERDICT diff: read commit by commit against 4d5c4389. 645623c5 adds `DutyBeat` and the `DUTY_DRAIN_SECONDS` constant to station.py, adds the `submit` argument to `publish` in station_obligations.py, changes the existing phase-transition test's docstring only, and adds the new 202-line test; 64d670444e adds the 30-line evidence fragment. There is no change to the tick's stage recording, to `refresh`/`export_snapshot`, or to any reader of the obligations snapshot.\nCALL_SITES: reckon/crew_follow_commands.py:52, reckon/crew/station.py:892, reckon/crew/station.py:1036, reckon/crew/station_obligations.py:457\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/station.py:892 passes `submit=self.duties.request` and station.py:484 is the worker's own publish call, so every project's refresh and export runs on the station's worker rather than on the tick.\nSCORE evidence: 17\nJUSTIFICATION evidence: baseline-arm.log and after-arm.log each open with revision, tree, literal command, imported module path and cwd and end in a bare `EXIT=` line, and negative-control.log shows the declared mutation failing the node's own case by name at tests/test_review_duties_are_derived_off_the_tick_thread.py:184.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every path in `git diff --stat 4d5c4389 64d670444e` is one of the node's five declared write paths, and the one edit to a pre-existing test (tests/test_a_phase_transition_is_published_before_review_duties.py:1-11) rewrites only its docstring.\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_review_duties_are_derived_off_the_tick_thread.py:184 reddens if the tick derives on its own thread (recorded in negative-control.log as `published=[] ticks=1`) and line 193 reddens if the single-flight guard is dropped, but line 188 is vacuous and the file's sweep stub at line 79 never runs, so the test's non-duty arm measures nothing.\nSCORE fit: 18\nJUSTIFICATION fit: `DutyBeat` follows the per-beat class idiom of reckon/crew/station.py:70-347 (own thread, own lock, request/stop surface) and its docstrings at lines 397-411 state the mechanism rather than a plan label, though line 480's stated reason for the separate connection is contradicted by reckon/crew/station_store.py:379.\nSCORE reuse: 18\nJUSTIFICATION reuse: searched reckon/crew for an owner of off-tick keyed work and found none generic \u2014 StationBeat, CensusBeat and LeaseBeat each own a single thread and `_start_thread` at station.py:66 only spawns; SweepBeat at station.py:298 is the nearest neighbour and `DutyBeat` repeats its small keyed in-flight scaffold rather than extending it, which is the idiom this file already uses five times, so the addition is a new owner is absent rather than a fork of one.\nFINDING tests/test_review_duties_are_derived_off_the_tick_thread.py:79 non-blocking: `_Sweeps.__call__(self)` cannot accept the keyword arguments `SweepBeat._run` passes at reckon/crew/station.py:354, so every sweep this station requests raises TypeError and logs `station-sweep-failure` (reproduced with `-s`: two lines per run) while the test still passes.\nFINDING tests/test_review_duties_are_derived_off_the_tick_thread.py:188 non-blocking: `assert not release.is_set()` cannot fail, because the only `release.set()` in the case is in the `finally` after this line.\nFINDING reckon/crew/station.py:480 non-blocking: the comment's claim that a store handle is bound to the thread that opened it is false \u2014 reckon/crew/station_store.py:379 opens with `check_same_thread=False` \u2014 so the stated reason for the worker's own connection does not hold.\nFINDING reckon/crew/station.py:468 non-blocking: `drain` joins each worker with the full timeout in sequence, so the shutdown bound is N x DUTY_DRAIN_SECONDS rather than the single figure the comment at line 391 states.",
+  "review_run_id": "r-20261113T105409924544-review-of-review-duties-are-derived-off-the-tick-thread-64d670444e6e",
+  "reviewed_base_sha": "4d5c4389b7cffd9462a79412ccd472e3bce0589a",
+  "reviewed_head_sha": "64d670444e6e5bf6974963ad272eb56e31a69a7a",
+  "reviewed_run_id": "r-20261113T064549026332-review-duties-are-derived-off-the-tick-thread",
+  "scores": {
+    "durability": 17,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 18,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-13T14:27:44.945845+00:00",
+  "total": 108
+}

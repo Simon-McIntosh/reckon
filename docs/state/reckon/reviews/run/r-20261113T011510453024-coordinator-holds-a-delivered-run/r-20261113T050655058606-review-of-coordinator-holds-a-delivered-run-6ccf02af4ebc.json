@@ -1,0 +1,81 @@
+{
+  "absent": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/cli.py:670",
+    "reckon/crew/queue_landing.py:1953",
+    "reckon/crew/recovery_review_acceptance.py:507",
+    "reckon/crew_dispatch_commands.py:2597",
+    "reckon/mcp.py:3096"
+  ],
+  "completed_at": "2026-11-13T05:25:32.491Z",
+  "dispatched_at": "2026-11-13T05:10:00Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "folded",
+      "node": "repair-of-coordinator-holds-a-delivered-run-6ccf02af4ebc",
+      "recorded_at": "2026-11-13T06:16:55.328431+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "reckon/crew/queue_landing.py",
+      "line": 1953,
+      "severity": "blocking",
+      "text": "the lander hands delivery_hold_reason the manifest's delivered token, which _delivered_revision returns verbatim at 7-40 hex characters, while a resume-taken hold records the full worktree head; covers_delivery compares them by exact equality, so a run whose manifest spells its commit abbreviated (as this run's own manifest does with c536fe6d9b) has its hold silently stop covering and is landed anyway. Demonstrated read-only at the reviewed head: covers_delivery(full, full[:10]) is False while recovery.same_revision(full, full[:10]) is True. Pass head, as recovery_review_acceptance.py:507 already does, or compare with recovery.same_revision."
+    },
+    {
+      "file": "reckon/crew/resume.py",
+      "line": 66,
+      "severity": "non-blocking",
+      "text": "covers_delivery re-implements the revision-equivalence capability already owned by reckon/crew/recovery_review_subject.py:105 (same_revision) with a stricter exact-equality rule rather than extending it, which is what lets the lander and the hold disagree on spelling."
+    },
+    {
+      "file": "tests/test_a_coordinator_holds_a_delivered_run.py",
+      "line": 429,
+      "severity": "non-blocking",
+      "text": "the only case that passes head= exercises hold_delivery directly, so removing head=head from prepare_resume at reckon/crew/resume.py:281 leaves the new delivery-scoped behaviour unguarded and every case still green."
+    },
+    {
+      "file": "reckon/crew/queue_landing.py",
+      "line": 1946,
+      "severity": "non-blocking",
+      "text": "moving the hold check below the same_revision guard means a held run that has not delivered no longer reaches skipped with status held, so a coordinator's hold on an undelivered run is invisible in the pass's report."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "read commit by commit from f9eab85d420b to 6ccf02af4ebc; 262661feaa reads the promotion lease before the pointer, adds revision-scoped holds and two cases, 2930d441b3 extends the evidence fragment, and 6ccf02af4e wraps one stub, five paths in all.",
+    "done_when": "the source done_when names four cases plus a lander negative control; tests/test_a_coordinator_holds_a_delivered_run.py now carries seven cases and after-arm.log records 58 passed EXIT=0 at 6ccf02af, with the landed repair adding the in-flight case the prior review found missing.",
+    "goal": "the node goal is a coordinator hold over a delivered run plus a resume that never vanishes; reckon/crew/resume.py:249 now reads promotion_in_flight before the pointer, so a resume issued anywhere in the promotion window is refused, closing the prior blocking finding.",
+    "manifest": "read; it records commits f39a6fa1e2 to 6ccf02af4e, the 58-passed head arm, the two-error base arm attributed to scaffolding, the importer arms and the promotion-lease negative control.",
+    "write_paths": "read the source manifest's orientation paths; the three commits touch exactly five paths, all inside the granted set (queue_landing.py, recovery_review_acceptance.py, resume.py, the test, the evidence fragment)."
+  },
+  "justifications": {
+    "durability": "the in-flight case is proven red by reverting the guard (negative-control-repair.log: 1 failed, 6 passed EXIT=1), but no test fails if prepare_resume stops passing head=head at reckon/crew/resume.py:281.",
+    "evidence": "after-arm.log records 58 passed EXIT=0 at 6ccf02af4e and negative-control-repair.log records 1 failed 6 passed EXIT=1 with the guard reverted, but no arm measures the abbreviated-revision case.",
+    "fit": "the new functions follow the module's docstring idiom, but reckon/crew/resume.py imports recovery inline twice (:271 and :274) and reaches the private recovery._review_head_and_tree across modules.",
+    "goal_fidelity": "reckon/crew/resume.py:249 closes the prior finding by reading the lease first, but the revision-scoped hold added at reckon/crew/resume.py:66 fails to defer a delivery whose manifest spells its commit abbreviated.",
+    "reuse": "covers_delivery at reckon/crew/resume.py:66 re-implements the abbreviation-tolerant equality owned by recovery_review_subject.py:105 rather than extending it, and that divergence is the blocking defect.",
+    "scope_discipline": "all three commits touch only reckon/crew/queue_landing.py, reckon/crew/recovery_review_acceptance.py, reckon/crew/resume.py, tests/test_a_coordinator_holds_a_delivered_run.py and the section's evidence fragment."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is a coordinator hold over a delivered run plus a resume that never vanishes; reckon/crew/resume.py:249 now reads promotion_in_flight before the pointer, so a resume issued anywhere in the promotion window is refused, closing the prior blocking finding.\nVERDICT done_when: the source done_when names four cases plus a lander negative control; tests/test_a_coordinator_holds_a_delivered_run.py now carries seven cases and after-arm.log records 58 passed EXIT=0 at 6ccf02af, with the landed repair adding the in-flight case the prior review found missing.\nVERDICT write_paths: read the source manifest's orientation paths; the three commits touch exactly five paths, all inside the granted set (reckon/crew/queue_landing.py, reckon/crew/recovery_review_acceptance.py, reckon/crew/resume.py, the test, the evidence fragment).\nVERDICT manifest: read; it records commits f39a6fa1e2 to 6ccf02af4e, the 58-passed head arm, the two-error base arm attributed to scaffolding, the importer arms and the promotion-lease negative control.\nVERDICT diff: read commit by commit from f9eab85d420b to 6ccf02af4ebc; 262661feaa reads the promotion lease before the pointer, adds revision-scoped holds and two cases, 2930d441b3 extends the evidence fragment, and 6ccf02af4e wraps one stub, five paths in all.\nCALL_SITES: reckon/cli.py:670, reckon/crew/queue_landing.py:1953, reckon/crew/recovery_review_acceptance.py:507, reckon/crew_dispatch_commands.py:2597, reckon/mcp.py:3096\nSCORE goal_fidelity: 13\nJUSTIFICATION goal_fidelity: reckon/crew/resume.py:249 closes the prior finding by reading the lease first, but the revision-scoped hold added at reckon/crew/resume.py:66 fails to defer a delivery whose manifest spells its commit abbreviated.\nSCORE evidence: 17\nJUSTIFICATION evidence: after-arm.log records 58 passed EXIT=0 at 6ccf02af4e and negative-control-repair.log records 1 failed 6 passed EXIT=1 with the guard reverted, but no arm measures the abbreviated-revision case.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: all three commits touch only reckon/crew/queue_landing.py, reckon/crew/recovery_review_acceptance.py, reckon/crew/resume.py, tests/test_a_coordinator_holds_a_delivered_run.py and the section's evidence fragment.\nSCORE durability: 12\nJUSTIFICATION durability: the in-flight case is proven red by reverting the guard (negative-control-repair.log: 1 failed, 6 passed EXIT=1), but no test fails if prepare_resume stops passing head=head at reckon/crew/resume.py:281.\nSCORE fit: 15\nJUSTIFICATION fit: the new functions follow the module's docstring idiom, but reckon/crew/resume.py imports recovery inline twice (:271 and :274) and reaches the private recovery._review_head_and_tree across modules.\nSCORE reuse: 12\nJUSTIFICATION reuse: covers_delivery at reckon/crew/resume.py:66 re-implements the abbreviation-tolerant equality owned by recovery_review_subject.py:105 rather than extending it, and that divergence is the blocking defect.\nFINDING reckon/crew/queue_landing.py:1953 blocking: the lander hands delivery_hold_reason the manifest's delivered token, which _delivered_revision returns verbatim at 7-40 hex characters, while a resume-taken hold records the full worktree head; covers_delivery compares them by exact equality, so a run whose manifest spells its commit abbreviated (as this run's own manifest does with c536fe6d9b) has its hold silently stop covering and is landed anyway. Demonstrated read-only at the reviewed head: covers_delivery(full, full[:10]) is False while recovery.same_revision(full, full[:10]) is True. Pass head, as recovery_review_acceptance.py:507 already does, or compare with recovery.same_revision.\nFINDING reckon/crew/resume.py:66 non-blocking: covers_delivery re-implements the revision-equivalence capability already owned by reckon/crew/recovery_review_subject.py:105 (same_revision) with a stricter exact-equality rule rather than extending it, which is what lets the lander and the hold disagree on spelling.\nFINDING tests/test_a_coordinator_holds_a_delivered_run.py:429 non-blocking: the only case that passes head= exercises hold_delivery directly, so removing head=head from prepare_resume at reckon/crew/resume.py:281 leaves the new delivery-scoped behaviour unguarded and every case still green.\nFINDING reckon/crew/queue_landing.py:1946 non-blocking: moving the hold check below the same_revision guard means a held run that has not delivered no longer reaches skipped with status held, so a coordinator's hold on an undelivered run is invisible in the pass's report.\n",
+  "review_run_id": "r-20261113T050655058606-review-of-coordinator-holds-a-delivered-run-6ccf02af4ebc",
+  "reviewed_base_sha": "f9eab85d420bb23e03a3a30df0de4697b804d998",
+  "reviewed_head_sha": "6ccf02af4ebc914d9085d488dfb6e8273c459408",
+  "reviewed_run_id": "r-20261113T011510453024-coordinator-holds-a-delivered-run",
+  "scores": {
+    "durability": 12,
+    "evidence": 17,
+    "fit": 15,
+    "goal_fidelity": 13,
+    "reuse": 12,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-13T05:20:36.212898+00:00",
+  "total": 89
+}

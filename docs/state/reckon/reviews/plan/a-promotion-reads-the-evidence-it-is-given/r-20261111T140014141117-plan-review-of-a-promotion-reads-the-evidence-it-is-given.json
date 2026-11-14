@@ -1,0 +1,107 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-11T14:11:27.590Z",
+  "dispatched_at": "2026-11-11T14:05:05Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-promotion-reads-the-evidence-it-is-given.html:158",
+      "id": "wiring-1",
+      "reason": "the followups are the dispatch chain, so a coordinator following the plan queues \u00a712\u2013\u00a716 a second time against work already merged, the same stale-followup defect this document repaired for f-aprteig-010/011.",
+      "text": "f-aprteig-013 (Build \u00a712 and \u00a713) and f-aprteig-014 (Build \u00a714 to \u00a716, line 163) are open while `plan-section-declarations` now record s12, s13, s14, s15 and s16 as done, so the plan instructs a coordinator to build five already-landed sections \u2014 and f-aprteig-014's body still asserts \"\u00a715 waits on workers-spend-fewer-tokens-per-landed-node \u00a79\" for a landed section",
+      "type": "wiring",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-promotion-reads-the-evidence-it-is-given.html:163",
+      "id": "wiring-2",
+      "reason": "the plan's own chain invariant is an open followup carrying the next one-line invocation, and without one \u00a717 is never dispatched while the document reads as though the only remaining work is the already-landed \u00a712\u2013\u00a716.",
+      "text": "the only implementable section, s17, appears nowhere in the followups: neither open followup names building it, and f-aprteig-010's outcome reads \"The chain ends here: done \u2014 no followup\", so the plan declares work with no invocation to dispatch it",
+      "type": "wiring",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "4cae3c76ca95c97b77aa38db22dd086775ef2d18",
+  "plan_fingerprint": "5f0884be61b1c28dfe9d179ad1375777ef0137c1856b5c8904fe08c3bbc90478",
+  "plan_slug": "a-promotion-reads-the-evidence-it-is-given",
+  "plan_version": 110,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "4cae3c76ca95c97b77aa38db22dd086775ef2d18",
+      "commit_basis": "edit",
+      "finding": "wiring-1",
+      "note": "f-aprteig-013 and f-aprteig-014 are resolved as landed, and an open followup carries the \u00a717 build invocation",
+      "reason": "",
+      "when": "2026-11-11T14:35:11.062193+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "4cae3c76ca95c97b77aa38db22dd086775ef2d18",
+      "commit_basis": "edit",
+      "finding": "wiring-2",
+      "note": "f-aprteig-013 and f-aprteig-014 are resolved as landed, and an open followup carries the \u00a717 build invocation",
+      "reason": "",
+      "when": "2026-11-11T14:35:47.487649+00:00"
+    }
+  ],
+  "responses": {
+    "wiring-1": {
+      "action": "acted",
+      "by": "",
+      "commit": "4cae3c76ca95c97b77aa38db22dd086775ef2d18",
+      "commit_basis": "edit",
+      "note": "f-aprteig-013 and f-aprteig-014 are resolved as landed, and an open followup carries the \u00a717 build invocation",
+      "reason": "",
+      "when": "2026-11-11T14:35:11.062193+00:00"
+    },
+    "wiring-2": {
+      "action": "acted",
+      "by": "",
+      "commit": "4cae3c76ca95c97b77aa38db22dd086775ef2d18",
+      "commit_basis": "edit",
+      "note": "f-aprteig-013 and f-aprteig-014 are resolved as landed, and an open followup carries the \u00a717 build invocation",
+      "reason": "",
+      "when": "2026-11-11T14:35:47.487649+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/Code/reckon/docs/state/reckon/reviews/plan/a-promotion-reads-the-evidence-it-is-given/r-20261111T140014141117-plan-review-of-a-promotion-reads-the-evidence-it-is-given.json",
+  "review_run_id": "r-20261111T140014141117-plan-review-of-a-promotion-reads-the-evidence-it-is-given",
+  "reviewed_blob_sha": "4e40dc7d2111df801c6ca1b093421ea2e140ef42",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `_record_carried_head` resolves at `reckon/crew/recovery_review_dispatch.py:789`, \u00a716 resolves, and the cited review run `r-20261111T130044875644` is present as an s16 comment in the same document.",
+    "done_when": "pass \u2014 \u00a717's done-when is measurable (the review subject and the promotion's head are both the newest of three chained commits, in each citation order) and declares a negative control (`takes the last listed commit`) that makes the newest-first case name the oldest, so it can fail.",
+    "evidence_paths": "pass \u2014 \u00a717's logs sit under the run directory, which survives the run; no scratchpad or node-local temporary path is named.",
+    "naming": "pass \u2014 \u00a717 introduces no symbol, file or comment carrying a plan label, stage name or ticket number.",
+    "reasoning": "pass \u2014 the stated root cause matches the code and the cited review: `_record_carried_head` reads `reversed(entries)` (last listed) while the promotion side's `_run_head` prefers `_newest_cited_commit` by ancestry (`reckon/crew/promotion_records.py:689`), so on a newest-first manifest the two name different heads; the endpoint is reachable and checkable, and the section prescribes no code path, step sequence or formula.",
+    "single_goal": "pass \u2014 \u00a717 carries one deliverable: one head for a reclaimed run across review and promotion.",
+    "wiring": "a finding \u2014 the section table is now consistent (s17 is the only implementable section), but the followup chain was not moved with it: f-aprteig-013 and f-aprteig-014 remain open recommending builds of \u00a712\u2013\u00a716, which `plan-section-declarations` now record as done, and no open followup carries \u00a717."
+  },
+  "section_digests": {
+    "_document": "e2e8115179d8762080bf33b64ac74d6796aa8ab4dc431905c489a55f60bf75da",
+    "s1": "5eac0eb57fbf9fccaeee6fb2da59c42ca24c4433f0cffcb4b7de1b6b04324b6c",
+    "s10": "6eded2e6a5570026a61a372a16d3db3742c440d6e2301a8cbc745329a0aa00f9",
+    "s11": "660a4e592122dacd85dcf8340cbd8617de596dccebc87e8fa42f837393d9fc36",
+    "s12": "550cf547388f373020c35c77420464f06ed4636f9d95b52fcd3266cac0bf0e11",
+    "s13": "2a128b5aaa7df7a064e132b982fa9c92c8ed7a03cc656ba0d1d9e87174336e0e",
+    "s14": "75ff492347584a3997696dd59937811debb6ac4159d034205ec33ffb54807e9d",
+    "s15": "620380b3d79c245d6219424330ab9d9ed11e7ee01e3bc84d6609ee062bbe9303",
+    "s16": "9072354fb4ba67955dd864c1f84a0e417cfa37b331a0ba91b8ec8b7314ee5187",
+    "s17": "274b68593a4f49641d108691f928e09bc43c31ced9a66516c1ff1687253c4ad2",
+    "s2": "259d093654ecf00609d51d02f39bb21a9feda5af8b5626a64e881f7e85d5abe4",
+    "s3": "479c8ebc617467c2744513e850433e87af52a3d22110620dcfdfb48f9975d081",
+    "s4": "bc5eebc33cf8175dd508f65245c7126745fc3e87a3e75e6229c55004ae265f62",
+    "s5": "f597850868c537fd163cabb422a3322df0e81659a7ceda007a561f633c75c9bf",
+    "s6": "2e81c0cbe61ef60fc16acb159e81912b5b6263e9d12b8059efbd9482d722976c",
+    "s7": "a015e1ea2396b50fe1763afc13f7b9ab2e452b85287b48a63a06e3503c3f2674",
+    "s8": "f0d1ed6febbf8f9ad2c9d36e204cfd29684121da43f557cf62b470c78f3de6b4",
+    "s9": "08ec740250081eecbaeb8dd5092c4149694553aa4b674594f5236d37c1560127"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-11T14:31:44.972785+00:00",
+  "total": null
+}

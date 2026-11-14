@@ -1,0 +1,82 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew/recovery_review_acceptance.py:812 dispatch_repair_for_run",
+    "reckon/crew/recovery_repair_dispatch.py:1568 opening_reach and scope_reach partials",
+    "reckon/crew/recovery_repair_dispatch.py:1582 _repairable_scope (round-opens decision)",
+    "reckon/crew/recovery_repair_dispatch.py:1609 _repairable_scope (granted write scope)"
+  ],
+  "completed_at": "2026-11-12T07:13:25.496Z",
+  "dispatched_at": "2026-11-12T06:58:38Z",
+  "findings": [
+    {
+      "file": "reckon/crew/repair.py",
+      "line": "498",
+      "severity": "non-blocking",
+      "text": "_within_tree duplicates reckon/crew/findings.py:1011 _within, a resolved containment test the same package already owns and reckon/_worker_fence.py:_within_any holds a third copy of; it neither wraps nor extends either owner, so a fourth copy of one predicate now has to be kept in step."
+    },
+    {
+      "file": "reckon/crew/repair.py",
+      "line": "576",
+      "severity": "non-blocking",
+      "text": "the docstring states history rather than the rule (\"the case that used to be read as the fleet's own record\"); the same shape is at tests/test_a_finding_on_a_runs_own_file_opens_its_repair.py:6 (\"The reflex used to read any path...\"), which is the changelog prose the repository's staged-path naming check bans."
+    },
+    {
+      "file": "tests/test_a_finding_on_a_runs_own_file_opens_its_repair.py",
+      "line": "251",
+      "severity": "non-blocking",
+      "text": "assert WORKTREE_ONLY in calls[0][\"advice\"] (also :279 and :345) compares a path the test itself supplied against text the code echoes it into, so it holds under any implementation that opens a round for any reason; the independent guard is the len(calls) == 1 and status assertion beside it."
+    },
+    {
+      "file": "reckon/crew/recovery_repair_dispatch.py",
+      "line": "426",
+      "severity": "non-blocking",
+      "text": "the inserted clause leaves the _repairable_scope docstring ungrammatical (\"not one of the fleet's records, so the repair is never granted a record outside its run's fence\"), so the stated rule reads as a non sequitur and the dash-list that follows loses its antecedent."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "four production call sites verified: recovery_review_acceptance.py:812 enters dispatch_repair_for_run, which builds opening_reach and scope_reach at recovery_repair_dispatch.py:1568 and spends them on the two _repairable_scope calls at :1582 and :1609.",
+    "diff": "read both commits against 38301b5: c4ac026f2 adds _within_tree, _run_worktree, _run_record_files, _cites_tree_or_file and the two reach predicates in reckon/crew/repair.py, threads a reach callable through _is_record_path, _repairable_scope, _non_blocking_repository_paths and _decline_only_reason, and builds the two partials at dispatch_repair_for_run; e82aa6b adds only the evidence fragment.",
+    "done_when": "the done_when names a new four-case test file with a declared negative control, a zero-delta importer arm and clean ruff on the staged paths; the manifest records base 51 passed (baseline-fence-run.log, 38301b5) and head 55 passed (after-fence.log, c4ac026), importers 266 passed on each side, and the negative control 2 failed 2 passed at EXIT=1, but records no ruff arm.",
+    "goal": "the goal is that a blocking finding citing a file the run created in its worktree, or the run's own manifest or logs, opens a repair round; reckon/crew/repair.py:585 finding_cites_run_own_file resolves a cited path against the worktree, the manifest the record names and the run directory, and reckon/crew/recovery_repair_dispatch.py:1568 wires it into the decline decision.",
+    "manifest": "read; status complete, commits c4ac026f2 and e82aa6b, five gate and negative-control logs named, baseline_suite and after_suite both exit 0 with empty failure_ids, and the two-reach design stated under evidence_inputs.",
+    "write_paths": "the fence was reckon/crew/recovery_repair_dispatch.py, reckon/crew/repair.py, tests/test_a_finding_on_a_runs_own_file_opens_its_repair.py, the evidence fragment and a figures directory; git diff --stat 38301b5..e82aa6b lists exactly those four files, every one inside the fence, with the figures directory unused."
+  },
+  "justifications": {
+    "durability": "tests/test_a_finding_on_a_runs_own_file_opens_its_repair.py:251 and :279 redden on the pre-change rule because docs/evidence/ is a record prefix and an absolute path is a record, which the recorded negative control confirms at EXIT=1, but no case covers the run-directory branch of finding_cites_run_own_file, so its removal would go unnoticed.",
+    "evidence": "the arms reconcile with their logs (after-fence.log reads 55 passed, negative-control.log reads 2 failed 2 passed followed by EXIT=1), but the done_when's ruff clause has no arm recorded in the manifest, though I measured ruff check and ruff format --check clean on the four changed files.",
+    "fit": "reckon/crew/repair.py:576 and tests/test_a_finding_on_a_runs_own_file_opens_its_repair.py:6 write history rather than mechanism, which the repository's staged-path naming check greps for; every added symbol name is mechanism-named with no plan, sprint or ticket identifier.",
+    "goal_fidelity": "reckon/crew/repair.py:585 finding_cites_run_own_file reaches the worktree, the manifest the record names and the run directory, but no test exercises a citation into the run's own logs, which the goal names and the two other reaches are pinned by a case.",
+    "reuse": "reckon/crew/repair.py:498 _within_tree re-implements the resolved-containment test already owned by reckon/crew/findings.py:1011 _within, without extending either that owner or reckon/_worker_fence.py:_within_any.",
+    "scope_discipline": "git diff --stat 38301b5..e82aa6b names exactly the four fenced files and nothing outside them, and neither commit touches a plan file."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is that a blocking finding citing a file the run created in its worktree, or the run's own manifest or logs, opens a repair round; reckon/crew/repair.py:585 finding_cites_run_own_file resolves a cited path against the worktree, the manifest the record names and the run directory, and reckon/crew/recovery_repair_dispatch.py:1568 wires it into the decline decision.\nVERDICT done_when: the done_when names a new four-case test file with a declared negative control, a zero-delta importer arm and clean ruff on the staged paths; the manifest records base 51 passed (baseline-fence-run.log, 38301b5) and head 55 passed (after-fence.log, c4ac026), importers 266 passed on each side, and the negative control 2 failed 2 passed at EXIT=1, but records no ruff arm.\nVERDICT write_paths: the fence was reckon/crew/recovery_repair_dispatch.py, reckon/crew/repair.py, tests/test_a_finding_on_a_runs_own_file_opens_its_repair.py, the evidence fragment and a figures directory; git diff --stat 38301b5..e82aa6b lists exactly those four files, every one inside the fence, with the figures directory unused.\nVERDICT manifest: read; status complete, commits c4ac026f2 and e82aa6b, five gate and negative-control logs named, baseline_suite and after_suite both exit 0 with empty failure_ids, and the two-reach design stated under evidence_inputs.\nVERDICT diff: read both commits against 38301b5: c4ac026f2 adds _within_tree, _run_worktree, _run_record_files, _cites_tree_or_file and the two reach predicates in reckon/crew/repair.py, threads a reach callable through _is_record_path, _repairable_scope, _non_blocking_repository_paths and _decline_only_reason, and builds the two partials at dispatch_repair_for_run; e82aa6b adds only the evidence fragment.\nCALL_SITES: reckon/crew/recovery_review_acceptance.py:812 dispatch_repair_for_run, reckon/crew/recovery_repair_dispatch.py:1568 opening_reach and scope_reach partials, reckon/crew/recovery_repair_dispatch.py:1582 _repairable_scope (round-opens decision), reckon/crew/recovery_repair_dispatch.py:1609 _repairable_scope (granted write scope)\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/repair.py:585 finding_cites_run_own_file reaches the worktree, the manifest the record names and the run directory, but no test exercises a citation into the run's own logs, which the goal names and the other two reaches are pinned by a case.\nSCORE evidence: 16\nJUSTIFICATION evidence: the arms reconcile with their logs (after-fence.log reads 55 passed, negative-control.log reads 2 failed 2 passed followed by EXIT=1), but the done_when's ruff clause has no arm recorded in the manifest, though I measured ruff check and ruff format --check clean on the four changed files.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat 38301b5..e82aa6b names exactly the four fenced files and nothing outside them, and neither commit touches a plan file.\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_a_finding_on_a_runs_own_file_opens_its_repair.py:251 and :279 redden on the pre-change rule because docs/evidence/ is a record prefix and an absolute path is a record, which the recorded negative control confirms at EXIT=1, but no case covers the run-directory branch of finding_cites_run_own_file, so its removal would go unnoticed.\nSCORE fit: 14\nJUSTIFICATION fit: reckon/crew/repair.py:576 and tests/test_a_finding_on_a_runs_own_file_opens_its_repair.py:6 write history rather than mechanism, which the repository's staged-path naming check greps for; every added symbol name is mechanism-named with no plan, sprint or ticket identifier.\nSCORE reuse: 5\nJUSTIFICATION reuse: reckon/crew/repair.py:498 _within_tree re-implements the resolved-containment test already owned by reckon/crew/findings.py:1011 _within, without extending either that owner or reckon/_worker_fence.py:_within_any.\nFINDING reckon/crew/repair.py:498 non-blocking: _within_tree duplicates reckon/crew/findings.py:1011 _within, a resolved containment test the same package already owns and reckon/_worker_fence.py:_within_any holds a third copy of; it neither wraps nor extends either owner, so a fourth copy of one predicate now has to be kept in step.\nFINDING reckon/crew/repair.py:576 non-blocking: the docstring states history rather than the rule (\"the case that used to be read as the fleet's own record\"); the same shape is at tests/test_a_finding_on_a_runs_own_file_opens_its_repair.py:6 (\"The reflex used to read any path...\"), which is the changelog prose the repository's staged-path naming check bans.\nFINDING tests/test_a_finding_on_a_runs_own_file_opens_its_repair.py:251 non-blocking: assert WORKTREE_ONLY in calls[0][\"advice\"] (also :279 and :345) compares a path the test itself supplied against text the code echoes it into, so it holds under any implementation that opens a round for any reason; the independent guard is the len(calls) == 1 and status assertion beside it.\nFINDING reckon/crew/recovery_repair_dispatch.py:426 non-blocking: the inserted clause leaves the _repairable_scope docstring ungrammatical (\"not one of the fleet's records, so the repair is never granted a record outside its run's fence\"), so the stated rule reads as a non sequitur and the dash-list that follows loses its antecedent.",
+  "review_run_id": "r-20261112T063050980180-review-of-finding-on-own-file-opens-repair-e82aa6bb9769",
+  "reviewed_base_sha": "38301b5cedd8c09f89d95a9272e2995ca69dcb5e",
+  "reviewed_head_sha": "e82aa6bb9769615fecb7bf8ee34ca3589579f1e5",
+  "reviewed_run_id": "r-20261112T053157549848-finding-on-own-file-opens-repair",
+  "reviewer": {
+    "backend": "local",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash",
+    "raw_text": "",
+    "reviewer_run_id": "r-20261112T063050980180-review-of-finding-on-own-file-opens-repair-e82aa6bb9769"
+  },
+  "reviewer_run_id": "r-20261112T063050980180-review-of-finding-on-own-file-opens-repair-e82aa6bb9769",
+  "scores": {
+    "durability": 17,
+    "evidence": 16,
+    "fit": 14,
+    "goal_fidelity": 18,
+    "reuse": 5,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-12T09:11:23.889179+00:00",
+  "total": 90
+}

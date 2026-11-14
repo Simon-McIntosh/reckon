@@ -1,0 +1,61 @@
+{
+  "added_failure_count": 1,
+  "added_failure_ids": [
+    "tests/test_dispatch_returns_without_worker.py::test_a_discarded_run_is_not_recreated"
+  ],
+  "added_failure_note": "the one delta between gate-base.log and gate-after.log; the reviewed run measured it failing at base in gate-base-discard.log, so it is pre-existing rather than added by this change.",
+  "call_sites": [
+    "reckon/crew/dispatch.py:2864 _claim_node_dispatch",
+    "reckon/crew/dispatch.py:2616 _claim_released_on_refusal",
+    "reckon/crew/dispatch.py:3779 node_claim.release()",
+    "reckon/crew/dispatch.py:3579 _start_supervisor",
+    "reckon/crew/station.py:399 StationReloader.poll",
+    "reckon/crew/follower_reload.py:511 _FollowerReloader reload",
+    "reckon/crew/queue_admission.py:1003 _reexec_into_current_code",
+    "reckon/crew/promotion.py:2178 _NodeDispatchClaim.release"
+  ],
+  "completed_at": "2026-11-11T11:08:44.529Z",
+  "dispatched_at": "2026-11-11T10:59:44Z",
+  "findings": [
+    {
+      "file": "reckon/crew/dispatch_claims.py",
+      "line": "944",
+      "severity": "non-blocking",
+      "text": "non-blocking: no test reaches this line, because every case seeds the register through the private helper at tests/test_a_reexec_waits_for_its_dispatches.py:80, so deleting the enter call leaves the whole gate green while every re-exec waits on a register that is permanently empty."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "verified 8 production call site(s)",
+    "diff": "read commit by commit from 29a435db15 to 9365c52e30; f53d0a8f25 adds the register and its four leave points plus three call sites, 176a60990c hardens the follower case after it passed with the wait removed, and 9365c52e30 corrects the evidence table; no plan file is edited.",
+    "done_when": "tests/test_a_reexec_waits_for_its_dispatches.py carries the three stubbed-execve cases and the bound-log case; I re-ran it at head (5 passed, exit 0, 5.96s), and the base/after arms plus four mutation logs each record their revision, command and EXIT line, though the base arm's command omits tests/test_dispatch_returns_without_worker.py and closes that one failure only with a separate single-file base log.",
+    "goal": "the node's goal is that a service waits for its in-flight dispatches before it re-executes; reckon/crew/station.py:399, reckon/crew/follower_reload.py:511 and reckon/crew/queue_admission.py:1003 each call the one bounded wait immediately before os.execve, and queue_admission._launch_queued launches in process through reckon.crew.dispatch, so the register is populated in the same process that waits.",
+    "manifest": "read; it records gate 5/5, the base and after arms with revisions and failure ids, the four mutation logs, the third failing id attributed to a base-arm measurement, and one rubric line per dimension.",
+    "write_paths": "the diff touches the five declared source files, the done-when's named test, and docs/evidence/fragments/a-reexec-never-orphans-a-dispatch/ab-clive-anchored-a-reexec-never-orphans-s5.html, which reckon/crew/dispatch_claims.py:1134 _landing_fragment_paths grants as landing scope automatically."
+  },
+  "justifications": {
+    "durability": "the three service cases redden when their own wait is removed (negative-control-station.log, -follower.log, -admit.log), but nothing exercises the register's entry at dispatch_claims.py:944, so deleting that line leaves all five cases green.",
+    "evidence": "the gate at tests/test_a_reexec_waits_for_its_dispatches.py passes 5/5 at head and its arms are logged with EXIT lines, but the done-when's ruff clause has no recorded receipt and the two arms do not cover the same file set.",
+    "fit": "the register, its Condition and REEXEC_DISPATCH_WAIT_SECONDS at dispatch_claims.py:805 sit beside the claim lifecycle in the same section-comment idiom, and no name carries a plan, stage or ticket label.",
+    "goal_fidelity": "reckon/crew/dispatch_claims.py:803 keeps one process-wide register entered at the node claim (line 944) and left at every claim-released and worker-started path, and the three named services reach it at station.py:399, follower_reload.py:511 and queue_admission.py:1003.",
+    "reuse": "a search of reckon/crew for an in-flight dispatch register or a pre-exec wait found none, and the wait is one definition at dispatch_claims.py:835 extended by three call sites rather than one per service.",
+    "scope_discipline": "every path in the diff is one of the five declared write paths, the done-when's named test, or the landing fragment auto-granted by dispatch_claims.py:1134, and no plan state was mutated."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that a service waits for its in-flight dispatches before it re-executes; reckon/crew/station.py:399, reckon/crew/follower_reload.py:511 and reckon/crew/queue_admission.py:1003 each call the one bounded wait immediately before os.execve, and queue_admission._launch_queued launches in process through reckon.crew.dispatch, so the register is populated in the same process that waits.\nVERDICT done_when: tests/test_a_reexec_waits_for_its_dispatches.py carries the three stubbed-execve cases and the bound-log case; I re-ran it at head (5 passed, exit 0, 5.96s), and the base/after arms plus four mutation logs each record their revision, command and EXIT line, though the base arm's command omits tests/test_dispatch_returns_without_worker.py and closes that one failure only with a separate single-file base log.\nVERDICT write_paths: the diff touches the five declared source files, the done-when's named test, and docs/evidence/fragments/a-reexec-never-orphans-a-dispatch/ab-clive-anchored-a-reexec-never-orphans-s5.html, which reckon/crew/dispatch_claims.py:1134 _landing_fragment_paths grants as landing scope automatically.\nVERDICT manifest: read; it records gate 5/5, the base and after arms with revisions and failure ids, the four mutation logs, the third failing id attributed to a base-arm measurement, and one rubric line per dimension.\nVERDICT diff: read commit by commit from 29a435db15 to 9365c52e30; f53d0a8f25 adds the register and its four leave points plus three call sites, 176a60990c hardens the follower case after it passed with the wait removed, and 9365c52e30 corrects the evidence table; no plan file is edited.\nCALL_SITES: reckon/crew/dispatch.py:2864 _claim_node_dispatch, reckon/crew/dispatch.py:2616 _claim_released_on_refusal, reckon/crew/dispatch.py:3779 node_claim.release(), reckon/crew/dispatch.py:3579 _start_supervisor, reckon/crew/station.py:399 StationReloader.poll, reckon/crew/follower_reload.py:511 _FollowerReloader reload, reckon/crew/queue_admission.py:1003 _reexec_into_current_code, reckon/crew/promotion.py:2178 _NodeDispatchClaim.release\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/dispatch_claims.py:803 keeps one process-wide register entered at the node claim (line 944) and left at every claim-released and worker-started path, and the three named services reach it at station.py:399, follower_reload.py:511 and queue_admission.py:1003.\nSCORE evidence: 17\nJUSTIFICATION evidence: the gate at tests/test_a_reexec_waits_for_its_dispatches.py passes 5/5 at head and its arms are logged with EXIT lines, but the done-when's ruff clause has no recorded receipt and the two arms do not cover the same file set.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every path in the diff is one of the five declared write paths, the done-when's named test, or the landing fragment auto-granted by dispatch_claims.py:1134, and no plan state was mutated.\nSCORE durability: 15\nJUSTIFICATION durability: the three service cases redden when their own wait is removed (negative-control-station.log, -follower.log, -admit.log), but nothing exercises the register's entry at dispatch_claims.py:944, so deleting that line leaves all five cases green.\nSCORE fit: 18\nJUSTIFICATION fit: the register, its Condition and REEXEC_DISPATCH_WAIT_SECONDS at dispatch_claims.py:805 sit beside the claim lifecycle in the same section-comment idiom, and no name carries a plan, stage or ticket label.\nSCORE reuse: 20\nJUSTIFICATION reuse: a search of reckon/crew for an in-flight dispatch register or a pre-exec wait found none, and the wait is one definition at dispatch_claims.py:835 extended by three call sites rather than one per service.\nFINDING reckon/crew/dispatch_claims.py:944 non-blocking: no test reaches this line, because every case seeds the register through the private helper at tests/test_a_reexec_waits_for_its_dispatches.py:80, so deleting the enter call leaves the whole gate green while every re-exec waits on a register that is permanently empty.\n",
+  "review_run_id": "r-20261111T105739668666-review-of-ab-clive-anchored-a-reexec-never-orphans-s5-9365c52e30f4",
+  "reviewed_base_sha": "29a435db15d19b94438c48fbededa7bdc6ffd556",
+  "reviewed_head_sha": "9365c52e30f4c15ce906c0b479573eba88d8ecbc",
+  "reviewed_run_id": "r-20261111T075900526642-ab-clive-anchored-a-reexec-never-orphans-s5",
+  "scores": {
+    "durability": 15,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-11T11:38:46.809408+00:00",
+  "total": 108
+}

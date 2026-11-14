@@ -1,0 +1,43 @@
+<section id="ready-work-is-never-stuck-behind-t-s4-landing">
+  <h2>A pass reads each plan's review evidence once, and the check that says so is green again</h2>
+
+  <p><strong>What was wrong.</strong> §4's per-pass record and its wait stage
+  landed earlier, but the gate that pins them was red at
+  <code>45aec99caa</code>: the record derived the plan's parsed state from the
+  document text it had already captured, so
+  <code>plan_html.read_state_file</code> &mdash; the third of the four reads the
+  section names &mdash; was taken zero times for a plan. Three queued requests
+  over one plan therefore failed
+  <code>tests/test_a_pass_computes_coverage_once.py::test_a_pass_reads_one_plans_evidence_once_for_three_requests</code>
+  on <code>assert counts.state == 1</code> with <code>state == 0</code>; the
+  other four cases passed.</p>
+
+  <p><strong>What changed.</strong> <code>_build_plan_review_record</code> in
+  <code>reckon/crew/admission/reviews.py</code> builds the record's state
+  through <code>plan_html.read_state_file(path)</code>. That read is memoized on
+  the file identity and shares one parse with the text read, so restoring it
+  costs no second parse per plan per pass, and the record still derives
+  coverage, digests and state from one captured document. The reachable module
+  moved under <code>reckon/crew/admission/</code> when admission was split
+  behind the <code>reckon/crew/queue_admission.py</code> facade; that facade
+  file is the section's declared write path and now carries none of this
+  code.</p>
+
+  <p><strong>The measure.</strong> Five cases pass on the head arm and one
+  failed on the base arm. Four mutants each fail exactly their own case: no
+  per-pass cache fails the once-per-plan read case (3 coverage reads for three
+  requests); an unmemoized gate fallback fails the once-per-section case (3 gate
+  reads); a record key without the stored reviews fails the recompute case; and
+  charging the wait stage to launch fails the timing case
+  (<code>0.504 &lt; 0.1</code> false).</p>
+
+  <p><strong>The live timing arm does not meet its figure, and the reason is
+  named.</strong> In fresh processes over the five live queued requests across
+  four plans, the pass's review decisions build five plan records before and
+  four after, as designed, and take 13.5&nbsp;s and 10.6&nbsp;s. The residual is
+  one plan's <code>plan_review.review_coverage</code> call at 10.1&nbsp;s for a
+  plan holding 88 review records. That is the store-level read
+  <a href="/reckon/plans/a-read-costs-what-changed">a-read-costs-what-changed</a>
+  §2–§6 owns, so the after figure stays above five seconds until that repair
+  lands &mdash; the caching §4 adds is visible, and is not where the time is.</p>
+</section>

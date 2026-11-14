@@ -59,6 +59,7 @@ import os
 import queue
 import re
 import subprocess
+import sys
 import tempfile
 import threading
 import urllib.request
@@ -367,6 +368,11 @@ class Observation:
     events: int = 0
     malformed_lines: int = 0
     detail: str = ""
+    # What the stream says the worker called. An anchored-edit arm is only
+    # measurable if the edits it routed through the tool are counted apart from
+    # the harness's own file-change items, so the counts are part of the
+    # observation a reader consumes rather than private fold state.
+    tools: dict[str, Any] = field(default_factory=dict)
     # The fold's own resumable state, so a later read of the same stream can be
     # extended from where this one stopped instead of re-read whole. It is a
     # cache's private business rather than part of the observation a reader
@@ -389,6 +395,7 @@ class Observation:
             "session_id": self.session_id,
             "terminal": self.terminal,
             "throughput": dict(sorted(self.throughput.items())),
+            "tools": copy.deepcopy(self.tools),
         }
 
 
@@ -1340,6 +1347,38 @@ def budget_from_rate_limit_info(info: Any) -> dict[str, Any]:
     return budget
 
 
+# The name the anchored edit server is declared under in a codex launch, and
+# the two tools it serves. A stream reports a call as an ``mcp_tool_call`` item
+# carrying this server name, so the same string is what the argv declares and
+# what the fold counts.
+ANCHORED_EDIT_SERVER = "anchored"
+ANCHORED_EDIT_TOOLS = ("read_anchored", "edit_anchored")
+
+
+def _count_anchored_tool_items(counts: dict[str, int], item: Mapping[str, Any]) -> None:
+    """Fold one codex stream item into the anchored-edit tool counters.
+
+    Two shapes are counted: the harness's own ``file_change`` items, and calls
+    to the anchored server. Everything else moves nothing. A call is counted
+    from its completed record only — codex emits a ``started`` record for the
+    same call before it runs, and counting both would double every call.
+    """
+    item_type = item.get("type")
+    if item_type == "file_change":
+        counts["file_change_items"] = counts.get("file_change_items", 0) + 1
+        return
+    if item_type != "mcp_tool_call":
+        return
+    if str(item.get("server") or "") != ANCHORED_EDIT_SERVER:
+        return
+    counts["anchored_calls"] = counts.get("anchored_calls", 0) + 1
+    tool = str(item.get("tool") or "")
+    if tool in ANCHORED_EDIT_TOOLS:
+        counts[tool] = counts.get(tool, 0) + 1
+    if str(item.get("status") or "") == "failed" or item.get("error"):
+        counts["anchored_failed"] = counts.get("anchored_failed", 0) + 1
+
+
 class _CodexDialect(Dialect):
     """codex-cli: `exec --json`, thread ids, token usage without headroom."""
 
@@ -1361,6 +1400,12 @@ class _CodexDialect(Dialect):
         run_directory: str | None = None,
     ) -> list[str]:
         argv = [command, "exec", "--json", "-C", working_directory]
+        if (
+            run_directory
+            and Path(run_directory).is_absolute()
+            and Path(run_directory).is_dir()
+        ):
+            argv += self._inbox_hook_flags(command, working_directory)
         argv += self._sandbox_flags(backend.get("sandbox"))
         if backend.get("sandbox") in (READ_ONLY, WORKSPACE_WRITE):
             working_root = Path(working_directory).resolve()
@@ -1375,6 +1420,8 @@ class _CodexDialect(Dialect):
         effort = backend.get("effort")
         if effort:
             argv += ["-c", f"model_reasoning_effort={effort}"]
+        if backend.get("anchored_edit") is True:
+            argv += self._anchored_edit_flags(backend.get("anchored_edit_roots") or ())
         if final_message_path:
             argv += ["-o", final_message_path]
         # `codex exec` reads attached figures as `-i <path>`, one flag per
@@ -1392,6 +1439,71 @@ class _CodexDialect(Dialect):
         # Trailing "-" is how this harness is told the prompt arrives on stdin.
         argv.append("-")
         return argv
+
+    def _inbox_hook_flags(self, command: str, working_directory: str) -> list[str]:
+        """Trust only the inbox command, using the harness's own identity/hash.
+
+        The app server lists the exact session-flag definition that exec will
+        load. Its key and currentHash are authoritative: reproducing their
+        derivation here would silently lose trust when the harness changes it.
+        Neither the discovery request nor these overrides writes config.
+        """
+        from reckon.hooks.install import worker_inbox_group
+
+        group = worker_inbox_group()
+        hook_command = group["hooks"][0]["command"]
+        definition = (
+            'hooks.PostToolUse=[{hooks=[{type="command", command='
+            + json.dumps(hook_command)
+            + "}]}]"
+        )
+        handshake = self.budget_probe(command).requests[0]
+        response = run_probe(
+            BudgetProbe(
+                argv=[command, "app-server", "-c", definition],
+                requests=[
+                    handshake,
+                    {
+                        "id": 2,
+                        "method": "hooks/list",
+                        "params": {"cwds": [working_directory]},
+                    },
+                ],
+                answer_id=2,
+            )
+        )
+        entries = (response or {}).get("result", {}).get("data", [])
+        hooks = [
+            hook
+            for entry in entries
+            if not entry.get("errors")
+            for hook in entry.get("hooks", [])
+            if hook.get("source") == "sessionFlags"
+            and hook.get("eventName") == "postToolUse"
+            and hook.get("handlerType") == "command"
+            and hook.get("command") == hook_command
+        ]
+        if (
+            len(hooks) != 1
+            or not hooks[0].get("key")
+            or not re.fullmatch(
+                r"sha256:[0-9a-f]{64}", str(hooks[0].get("currentHash", ""))
+            )
+        ):
+            raise BackendError(
+                "codex inbox hook trust could not be established by hooks/list"
+            )
+        hook = hooks[0]
+        # CLI override paths split at every dot, including dots inside quoted
+        # hook keys. An inline table keeps the entire identity as one TOML key.
+        trust = (
+            "hooks.state={"
+            + json.dumps(hook["key"])
+            + "={trusted_hash="
+            + json.dumps(hook["currentHash"])
+            + "}}"
+        )
+        return ["-c", definition, "-c", trust]
 
     def working_directory(
         self,
@@ -1414,6 +1526,37 @@ class _CodexDialect(Dialect):
                 f"got {manifest_path!r}"
             )
         return str(delivery.parent)
+
+    def _anchored_edit_flags(self, roots: Iterable[str]) -> list[str]:
+        """Declare the anchored edit server on the command line.
+
+        Codex has no config-file route worth taking here: the fence copies a
+        codex home's ``config.toml`` verbatim and reckon carries no TOML writer,
+        so a merge seam would buy nothing the argv does not already do. These
+        ``-c`` overrides are arguments to this one process and write no file.
+
+        ``approve`` is not a convenience. A headless codex refuses every MCP
+        tool call under any other approval mode, which reads as a worker that
+        declined the tool; the prototype found ``approve`` is the only setting
+        under which a call is made at all.
+
+        The server's command is this interpreter with ``-m reckon.anchored_edit``,
+        matching what the Claude arm registers, so the server starts from the
+        same install the worker does. Each root is passed as its own ``--root``
+        argument, which is the server's whole confinement.
+        """
+        words = ["-m", "reckon.anchored_edit"]
+        for root in roots:
+            words += ["--root", str(root)]
+        server = f"mcp_servers.{ANCHORED_EDIT_SERVER}"
+        return [
+            "-c",
+            f"{server}.command={json.dumps(sys.executable)}",
+            "-c",
+            f"{server}.args=[{', '.join(json.dumps(word) for word in words)}]",
+            "-c",
+            f'{server}.default_tools_approval_mode="approve"',
+        ]
 
     def _sandbox_flags(self, tier: str | None) -> list[str]:
         if tier == WORKTREE_FULL:
@@ -1472,6 +1615,16 @@ class _CodexDialect(Dialect):
         obs.detail = str(carried.get("detail") or "")
         if carried.get("budget") is not None:
             obs.budget = dict(carried["budget"])
+        # An anchored-edit arm is measured by what share of its edits went
+        # through the tool, which is only visible if tool calls and the
+        # harness's own file-change items are counted apart. The totals are
+        # carried across an incremental read of the same stream so a resumed
+        # observation reports the run's counts rather than its tail's.
+        counts = {
+            str(key): int(value)
+            for key, value in (carried.get("tools") or {}).items()
+            if isinstance(value, int) and not isinstance(value, bool)
+        }
         for event in events:
             obs.events += 1
             kind = event.get("type")
@@ -1479,8 +1632,10 @@ class _CodexDialect(Dialect):
                 obs.session_id = event.get("thread_id") or obs.session_id
             elif kind == "item.completed":
                 item = event.get("item")
-                if isinstance(item, Mapping) and item.get("type") == "agent_message":
-                    message = item.get("text") or message
+                if isinstance(item, Mapping):
+                    if item.get("type") == "agent_message":
+                        message = item.get("text") or message
+                    _count_anchored_tool_items(counts, item)
             elif kind == "rate_limit_event":
                 # A stream that reports its quota position has that position
                 # recorded; the completion path below must not replace it.
@@ -1501,6 +1656,15 @@ class _CodexDialect(Dialect):
                 refused = refusal_budget(obs.detail)
                 if refused is not None:
                     obs.budget = refused
+        obs.tools = {
+            "anchored": {
+                "calls": counts.get("anchored_calls", 0),
+                "read_anchored": counts.get("read_anchored", 0),
+                "edit_anchored": counts.get("edit_anchored", 0),
+                "failed": counts.get("anchored_failed", 0),
+            },
+            "file_change": {"items": counts.get("file_change_items", 0)},
+        }
         obs.stream_state["fold"] = {
             "events": obs.events,
             "session_id": obs.session_id,
@@ -1511,6 +1675,7 @@ class _CodexDialect(Dialect):
             "budget": obs.budget,
             "usage": usage,
             "completed_turn": completed_turn,
+            "tools": counts,
         }
         measured_usage = usage or None
         if completed_turn:
@@ -2835,7 +3000,14 @@ def launch_plan(
     anchored_edit = False
     anchored_edit_reason = "disabled"
     if backend.get("anchored_edit") is True:
-        if dialect.name != "claude":
+        if dialect.name == "codex":
+            # The overrides are arguments to this one process: they need no
+            # harness home, write no config file, and a resume carries them
+            # too, so the key and the launch cannot disagree. Codex cannot be
+            # told to stop using its own apply_patch, so this offers the tool
+            # rather than forcing it and the prompt does the steering.
+            anchored_edit = True
+        elif dialect.name != "claude":
             anchored_edit_reason = "unsupported-dialect"
         elif not fence:
             anchored_edit_reason = "unfenced"
@@ -2850,7 +3022,7 @@ def launch_plan(
     if harness is not None and adopts_harness_home:
         from reckon.flight import harness_home_adjacent_files, harness_home_files
 
-        anchored_edit = seed_harness_home(
+        seeded_treatment = seed_harness_home(
             harness,
             dialect_name=dialect.name,
             operator_home=fence_home if fence_home is not None else Path.home(),
@@ -2876,6 +3048,12 @@ def launch_plan(
                 else None
             ),
         )
+        # Only the claude arm's treatment is decided by the seeding step: it
+        # does the work by editing the run home. A codex launch carries its
+        # server on the argv, which this step neither writes nor removes, so
+        # its recorded fact must not be replaced by the seeder's answer.
+        if dialect.name == "claude":
+            anchored_edit = seeded_treatment
         environment[_HARNESS_HOME[dialect.name][0]] = str(harness)
         # A harness that keeps its agent store below its home needs the store
         # variable too: the seed mirrors the operator's files relative to the
@@ -2927,8 +3105,28 @@ def launch_plan(
     if named_in_prompt:
         prompt = _prompt_naming_images(prompt, attached)
     launch_backend = dict(backend)
-    if dialect.name == "claude":
+    if dialect.name in ("claude", "codex"):
         launch_backend["anchored_edit"] = anchored_edit
+    # A launch that seeded the anchored server names its tools in the worker's
+    # prompt. The launch step is the one place that knows what this launch
+    # actually seeded — an unfenced, resumed or operator-settings launch
+    # registers no server — so the instruction is composed here, from the
+    # resolved fact, rather than at dispatch where only the flight key is
+    # known. A prompt already carrying one keeps exactly one, and a launch that
+    # seeds none drops it: a lane change composes from the run's prompt file,
+    # which the anchored launch before it wrote.
+    from reckon.crew.prompts import with_anchored_edit_instruction
+
+    prompt = with_anchored_edit_instruction(prompt, launch_backend, at_launch=True)
+    if anchored_edit and dialect.name == "codex":
+        # The server confines every path to its own ``--root`` set, so it is
+        # handed the same roots the worker is: the delivery roots that survive
+        # the fence plus the worktree, which the fence grants separately and no
+        # declared delivery root covers.
+        launch_backend["anchored_edit_roots"] = [
+            str(root)
+            for root in fence_writable_roots((*writable_directories, worktree_path))
+        ]
     if anchored_edit:
         anchored_edit_reason = None
     argv = dialect.argv(

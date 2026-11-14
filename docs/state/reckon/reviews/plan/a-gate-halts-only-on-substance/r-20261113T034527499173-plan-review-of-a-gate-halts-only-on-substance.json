@@ -1,0 +1,132 @@
+{
+  "absent_items": [],
+  "accepted_edits": [
+    {
+      "by": "829e5a4a-6870-4aec-876d-ba2efb1b5ecf",
+      "digests": {
+        "s8": "6a840e82c44d918c74c527bb0bc07eed5fa4efdfb5dc69fc1e3b7dfbe1ff477f"
+      },
+      "reason": "the s8 edit makes exactly the change single_goal-1 and reasoning-1 asked for",
+      "units": [
+        "s8"
+      ],
+      "when": "2026-11-13T14:04:20.945011+00:00"
+    }
+  ],
+  "completed_at": "2026-11-13T04:04:50.303Z",
+  "dispatched_at": "2026-11-13T03:58:58Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-gate-halts-only-on-substance.html:75",
+      "id": "single_goal-1",
+      "reason": "a worker cannot satisfy both readings and the gate cannot decide which name it relaxed.",
+      "text": "the \u00a78 title says the record \"names its run by node\" while the Deliverable says it \"names the reviewed run by its node\", and those are two different identifiers, so the node's one deliverable is stated against two targets",
+      "type": "single_goal",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-gate-halts-only-on-substance.html:75",
+      "id": "reasoning-1",
+      "reason": "a repair written against the reviewed-run name resolves a field that is already exact, leaves the cited run still refused, and the plan would need a second round to say which identifier the relaxation applies to.",
+      "text": "the cited record `crew/reviews/nova/r-20261111T131359627137-read-tie-break.at-3d58ba4688d8774aa7f4f810f1216bb670dddb2e.json` carries `reviewed_run_id = r-20261111T131359627137-read-tie-break` exactly right and `review_run_id = r-20261111T144447685918-review-of-read-tie-break` without the run's `-3d58ba4688d8` suffix, so the failing name is the review run's own id \u2014 which is what `review_records.py:1833-1844` indexes by and what `recovery_review_delivery.py:471-483` compares to `record[\"run_id\"]` \u2014 whereas \u00a78 says the record names \"the reviewed run\" without the suffix",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-gate-halts-only-on-substance.html:23",
+      "id": "evidence_paths-1",
+      "reason": "\u00a76's landing comment records the head `bd842b0aba` and the verified property, so the declaration is supported and no node's work changes; the gap is a record-keeping omission the author can close without altering the plan.",
+      "text": "`_document` moves \u00a76 to `done` while its comments carry no landed-at commit and no evidence fragment link, unlike \u00a73 (`c85e8d9c5c`), \u00a74 (`e8e2ae6c61`), \u00a75 (`bcb869ca79`) and \u00a77 (`2c057f64f4`), each with an `a-gate-halts-only-on-substance-landed.html` anchor",
+      "type": "evidence_paths",
+      "would_change": false
+    }
+  ],
+  "plan_commit": "7f24c4390cd39e6d77e9dde91de062eadc4f9658",
+  "plan_fingerprint": "c824d081c5af1a003fb3e44e0cfcdcdd7e846f4df5746e56a6e106cd09311535",
+  "plan_slug": "a-gate-halts-only-on-substance",
+  "plan_version": 36,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "5e16371f4fde8e92df41c373bc52b0248da0537a",
+      "commit_basis": "edit",
+      "finding": "single_goal-1",
+      "note": "\u00a78's title, Why, Deliverable and done-when now all name one target: the record's own review_run_id without its suffix",
+      "reason": "",
+      "when": "2026-11-13T14:03:56.978829+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "5e16371f4fde8e92df41c373bc52b0248da0537a",
+      "commit_basis": "edit",
+      "finding": "reasoning-1",
+      "note": "\u00a78 now says the cited record carries reviewed_run_id exactly and review_run_id without its suffix, and names review_records.py and recovery_review_delivery.py as where that field is compared",
+      "reason": "",
+      "when": "2026-11-13T14:04:07.571332+00:00"
+    },
+    {
+      "action": "declined",
+      "by": "",
+      "finding": "evidence_paths-1",
+      "reason": "would_change is false: \u00a76's landing comment records its head and verified property; the missing landed-record anchor changes no node's work",
+      "when": "2026-11-13T14:04:12.288561+00:00"
+    }
+  ],
+  "responses": {
+    "evidence_paths-1": {
+      "action": "declined",
+      "by": "",
+      "reason": "would_change is false: \u00a76's landing comment records its head and verified property; the missing landed-record anchor changes no node's work",
+      "when": "2026-11-13T14:04:12.288561+00:00"
+    },
+    "reasoning-1": {
+      "action": "acted",
+      "by": "",
+      "commit": "5e16371f4fde8e92df41c373bc52b0248da0537a",
+      "commit_basis": "edit",
+      "note": "\u00a78 now says the cited record carries reviewed_run_id exactly and review_run_id without its suffix, and names review_records.py and recovery_review_delivery.py as where that field is compared",
+      "reason": "",
+      "when": "2026-11-13T14:04:07.571332+00:00"
+    },
+    "single_goal-1": {
+      "action": "acted",
+      "by": "",
+      "commit": "5e16371f4fde8e92df41c373bc52b0248da0537a",
+      "commit_basis": "edit",
+      "note": "\u00a78's title, Why, Deliverable and done-when now all name one target: the record's own review_run_id without its suffix",
+      "reason": "",
+      "when": "2026-11-13T14:03:56.978829+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/Code/reckon/docs/state/reckon/reviews/plan/a-gate-halts-only-on-substance/r-20261113T034527499173-plan-review-of-a-gate-halts-only-on-substance.json",
+  "review_run_id": "r-20261113T034527499173-plan-review-of-a-gate-halts-only-on-substance",
+  "reviewed_blob_sha": "f2f41de9d9f2db942d7fdc148b976774568fc40f",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 the cited plan `a-promotion-reads-the-evidence-it-is-given` exists, run `r-20261111T144447685918-review-of-read-tie-break-3d58ba4688d8` exists with its `review-record-check.log` reading `ok: true` / `EXIT=0`, and the extensionless evidence hrefs in the close comments resolve as `<path>.html`.",
+    "done_when": "pass \u2014 \u00a78's done-when is measurable and carries a declared negative control (\"restores the exact-id match, and the first case is then refused again\"), with a base-revision arm that must refuse and an ambiguity case that must name both run ids.",
+    "evidence_paths": "a finding \u2014 `_document` declares \u00a76 done with no landed-at record and no evidence link, where \u00a73, \u00a74, \u00a75 and \u00a77 each carry one.",
+    "naming": "pass \u2014 \u00a78 carries no plan label, stage name, ticket number or version tag into code; the test and the refusal module are named by capability and the module path is deferred to the manifest.",
+    "reasoning": "a finding \u2014 \u00a78's root cause names the reviewed run's name, but the one unsuffixed name in the cited record is the review run's own id (`review_run_id`), so the stated endpoint points a worker at the wrong lookup.",
+    "single_goal": "a finding \u2014 \u00a78 carries one deliverable but its deliverable names two different resolution targets for it, so the node cannot be closed on one verdict.",
+    "wiring": "pass \u2014 \u00a78 declares no dependency and needs none; its write path is deferred to the manifest exactly as \u00a72, \u00a73, \u00a74 and \u00a76 defer theirs, and the earlier relationship question (\u00a72/\u00a74 ordering) is settled by write-path claims."
+  },
+  "section_digests": {
+    "_document": "0b5286dcb3a7f1ded71e71be60ed4bdd2734a48719b0dab49298fc8d39b2c312",
+    "s1": "da96e9775c5ac3c922e7c9262b6c95659f8a63dd7ecaefbf9c9ea72c3d506b61",
+    "s2": "34659f8a9f7d766af00602047920116071d6c4a45beb59504f09c79856fe4449",
+    "s3": "7d5900898dccbca711f2ba5f009a9d77a8106e6c95850afa29ea353bee133ea1",
+    "s4": "0e123dd962d8cd12c2e71ad44abb85e97ccaf736d952b19140641c3426beab23",
+    "s5": "8693ffa47dece4b7d7becaed1cc17e2eae2192270529686416237848fcfe3d7d",
+    "s6": "c1a4e9a4b81527a7a273e421018eb3a5b58b491f8eb6afe57798b77df653c903",
+    "s7": "02f674f3ab07d57d2a9a4a13805c075967cd59e063bf39eb470a940c1e9e9897",
+    "s8": "af71beb4e66cd35f0e03953014803d4218f44860c722b5bf111cf551125e9ab7"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-13T06:05:16.115770+00:00",
+  "total": null
+}

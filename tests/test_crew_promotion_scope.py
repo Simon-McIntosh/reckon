@@ -26,6 +26,9 @@ def repository(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     monkeypatch.setenv("RECKON_HOME", str(config_home))
     root = tmp_path / "repo"
     (root / "docs" / "state" / PROJECT).mkdir(parents=True)
+    (root / "docs" / "state" / PROJECT / "shared-write-paths.json").write_text(
+        json.dumps({"shared_roots": []}), encoding="utf-8"
+    )
     (root / "allowed.txt").write_text("seed\n", encoding="utf-8")
     for arguments in (
         ("init", "-q", "-b", "main"),
@@ -78,6 +81,7 @@ def _declare_shared_write_paths(repository: Path, *paths: str) -> None:
         json.dumps(
             {
                 "project": PROJECT,
+                "shared_roots": [],
                 "paths": [
                     {"path": path, "reason": "concurrent editors touch one file"}
                     for path in paths
@@ -320,6 +324,7 @@ def test_complete_command_accepts_reasoned_companion_path(
     arguments = [
         "crew",
         "complete",
+        "--wait",
         "--run",
         run_id,
         "--gate",
@@ -415,6 +420,7 @@ def test_complete_command_refuses_companion_path_without_a_reason(
         [
             "crew",
             "complete",
+            "--wait",
             "--run",
             run_id,
             "--gate",
@@ -471,6 +477,7 @@ def _complete_arguments(run_id: str, commit: str) -> list[str]:
     return [
         "crew",
         "complete",
+        "--wait",
         "--run",
         run_id,
         "--gate",

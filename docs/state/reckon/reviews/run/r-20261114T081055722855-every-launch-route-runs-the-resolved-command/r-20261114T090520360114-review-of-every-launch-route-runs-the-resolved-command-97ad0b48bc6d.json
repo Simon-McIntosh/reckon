@@ -1,0 +1,110 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/crew/picker/snapshot.py:1482",
+    "reckon/budget.py:2210",
+    "reckon/crew/dispatching/launch.py:717",
+    "reckon/crew/dispatch_sessions.py:1342",
+    "reckon/crew/dispatch_sessions.py:1865"
+  ],
+  "completed_at": "2026-11-14T09:18:16.716Z",
+  "dispatched_at": "2026-11-14T09:06:38Z",
+  "failure_after": {
+    "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_every_launch_route_runs_the_resolved_command.py tests/test_staged_write_inventory.py",
+    "completed": true,
+    "exit_status": 0,
+    "failure_ids": [],
+    "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261114T081055722855-every-launch-route-runs-the-resolved-command/logs/after-suite.log",
+    "revision": "e7abc43618f170b47253d73edb85e454a28872bd"
+  },
+  "failure_baseline": {
+    "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_every_launch_route_runs_the_resolved_command.py",
+    "completed": true,
+    "exit_status": 1,
+    "failure_ids": [
+      "test_a_lane_probe_runs_the_backend_command_it_resolved"
+    ],
+    "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261114T081055722855-every-launch-route-runs-the-resolved-command/logs/probe-baseline-before.log",
+    "revision": "6ff4f572a2f9c924c8ead49acb0483323fe2f8d2"
+  },
+  "findings": [
+    {
+      "file": "tests/test_every_launch_route_runs_the_resolved_command.py",
+      "line": 25,
+      "severity": "non-blocking",
+      "summary": "the new test file imports reckon.flight but never uses it; ruff reports F401, so the commit adds a lint finding to a tree whose rule is that a commit adds none"
+    },
+    {
+      "file": "tests/test_every_launch_route_runs_the_resolved_command.py",
+      "line": 165,
+      "severity": "non-blocking",
+      "summary": "PROBE_REPORT is written immediately after the preceding function with no blank separation, so ruff format --check reports the file would be reformatted"
+    },
+    {
+      "file": "tests/test_every_launch_route_runs_the_resolved_command.py",
+      "line": 161,
+      "severity": "non-blocking",
+      "summary": "a leftover debug print(output) sits in the end-to-end dispatch test, writing the CLI's output into the captured test log for no assertion"
+    },
+    {
+      "file": "logs/probe-negative-control.log",
+      "line": 1,
+      "severity": "non-blocking",
+      "summary": "the file named by negative_control_log is byte-identical to probe-baseline-before.log (same md5, same tmp dir pytest-145, same 4.16 s) while the evidence fragment quotes the negative control at 4.53 s, so the named log evidences the unchanged-source baseline run rather than a separately performed restoration of the bare command name"
+    },
+    {
+      "file": "docs/evidence/fragments/work-flows-to-the-lane/every-launch-route-runs-the-resolved-command.html",
+      "line": 74,
+      "severity": "non-blocking",
+      "summary": "the plan's done-when requires the gate to run on all_debug and its log in the fragment; the gate ran on the fleet node and the fragment says so, leaving a stated done-when unmet even though the run's 53-passed result is recorded"
+    },
+    {
+      "file": "tests/test_every_launch_route_runs_the_resolved_command.py",
+      "line": 149,
+      "severity": "non-blocking",
+      "summary": "the done-when's named measure is this end-to-end dispatch test, but the manifest records it passing on unchanged code, so it is a guard for the composition route and not the reproduction the done-when asked for; the reproducing test is the probe test at line 176"
+    }
+  ],
+  "justifications": {
+    "durability": "tests/test_every_launch_route_runs_the_resolved_command.py:201 fails on the unchanged source with 'lane probe could not run: [Errno 2] No such file or directory: codex', as the recorded baseline arm shows, so reverting the resolution reddens it.",
+    "evidence": "the reproduction at tests/test_every_launch_route_runs_the_resolved_command.py:201 and the 53-passed gate are recorded, but the done_when's named end-to-end measure passes on unchanged code and the gate did not run on all_debug as the done_when requires.",
+    "fit": "the function-local import at reckon/crew/resumption.py:630 matches the module's existing idiom, but the added test file leaves an unused reckon.flight import (F401) and ruff format would reformat it.",
+    "goal_fidelity": "reckon/crew/resumption.py:637 resolves the probe's argv through the same rewrite the dispatch, resume and lane-change routes apply, so no launch_plan call site is left running a bare name.",
+    "reuse": "the change extends the repository's existing owner, resolve_launch_executable at reckon/crew/dispatch_launch.py:1213, rather than adding a second resolver.",
+    "scope_discipline": "the diff touches only reckon/crew/resumption.py, its test file and the evidence fragment, all inside the declared write paths."
+  },
+  "plan": "work-flows-to-the-lane",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is 'Every dispatch route runs the backend command it resolved'; reckon/crew/resumption.py:637 passes the composed launch plan through resolve_launch_executable, and every _backends.launch_plan call site (resumption.py:638, dispatch_sessions.py:1343, dispatch_sessions.py:1866, dispatching/launch.py:718) now resolves its argv.\nVERDICT done_when: the done_when asks for a full crew dispatch --backend --no-watch test that fails on unchanged code and a gate on all_debug; the manifest records that the end-to-end dispatch test passes on both sides, that the failing reproduction is the probe test at tests/test_every_launch_route_runs_the_resolved_command.py:176, and that the gate ran on the fleet node rather than all_debug.\nVERDICT write_paths: the declared paths are reckon, tests/test_every_launch_route_runs_the_resolved_command.py and docs/evidence/fragments/work-flows-to-the-lane/every-launch-route-runs-the-resolved-command.html; the diff's three files are all inside them.\nVERDICT manifest: read; it records the probe reproduction with its exception text, 53 passed over the two test files, and discloses that the end-to-end test does not reproduce the defect and the gate was not run on all_debug.\nVERDICT diff: read commit by commit against base 6ff4f572a2f9; e7abc43618 wraps the probe's composed plan in resolve_launch_executable at reckon/crew/resumption.py:637 and adds 202 test lines, and 97ad0b48bc adds the 81-line evidence fragment.\nCALL_SITES: reckon/crew/picker/snapshot.py:1482, reckon/budget.py:2210, reckon/crew/dispatching/launch.py:717, reckon/crew/dispatch_sessions.py:1342, reckon/crew/dispatch_sessions.py:1865\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/resumption.py:637 resolves the probe's argv through the same rewrite the dispatch, resume and lane-change routes apply, so no launch_plan call site is left running a bare name.\nSCORE evidence: 13\nJUSTIFICATION evidence: the reproduction at tests/test_every_launch_route_runs_the_resolved_command.py:201 and the 53-passed gate are recorded, but the done_when's named end-to-end measure passes on unchanged code and the gate did not run on all_debug as the done_when requires.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: the diff touches only reckon/crew/resumption.py, its test file and the evidence fragment, all inside the declared write paths.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_every_launch_route_runs_the_resolved_command.py:201 fails on the unchanged source with 'lane probe could not run: [Errno 2] No such file or directory: codex', as the recorded baseline arm shows, so reverting the resolution reddens it.\nSCORE fit: 14\nJUSTIFICATION fit: the function-local import at reckon/crew/resumption.py:630 matches the module's existing idiom, but the added test file leaves an unused reckon.flight import (F401) and ruff format would reformat it.\nSCORE reuse: 20\nJUSTIFICATION reuse: the change extends the repository's existing owner, resolve_launch_executable at reckon/crew/dispatch_launch.py:1213, rather than adding a second resolver.\nFINDING tests/test_every_launch_route_runs_the_resolved_command.py:25 non-blocking: the new test file imports reckon.flight but never uses it; ruff reports F401, so the commit adds a lint finding to a tree whose rule is that a commit adds none.\nFINDING tests/test_every_launch_route_runs_the_resolved_command.py:165 non-blocking: PROBE_REPORT is written immediately after the preceding function with no blank separation, so ruff format --check reports the file would be reformatted.\nFINDING tests/test_every_launch_route_runs_the_resolved_command.py:161 non-blocking: a leftover debug print(output) sits in the end-to-end dispatch test for no assertion.\nFINDING logs/probe-negative-control.log:1 non-blocking: the named negative-control log is byte-identical to the baseline log (same md5, tmp dir and 4.16 s) while the evidence fragment quotes 4.53 s, so it evidences the unchanged-source baseline rather than a separately performed restoration.\nFINDING docs/evidence/fragments/work-flows-to-the-lane/every-launch-route-runs-the-resolved-command.html:74 non-blocking: the plan's done-when requires the gate on all_debug and the gate ran on the fleet node, leaving that requirement unmet though the result is recorded.\nFINDING tests/test_every_launch_route_runs_the_resolved_command.py:149 non-blocking: the done-when's named end-to-end measure passes on unchanged code, so the reproduction is the probe test at line 176 rather than the dispatch test the done_when names.\n",
+  "review_run_id": "r-20261114T090520360114-review-of-every-launch-route-runs-the-resolved-command-97ad0b48bc6d",
+  "reviewed_base_sha": "6ff4f572a2f9c924c8ead49acb0483323fe2f8d2",
+  "reviewed_commits": [
+    "e7abc43618f170b47253d73edb85e454a28872bd",
+    "97ad0b48bc6d927bf75432ccc459d479dff732e5"
+  ],
+  "reviewed_head_sha": "97ad0b48bc6d927bf75432ccc459d479dff732e5",
+  "reviewed_node": "every-launch-route-runs-the-resolved-command",
+  "reviewed_run_id": "r-20261114T081055722855-every-launch-route-runs-the-resolved-command",
+  "rubric": "review",
+  "scores": {
+    "durability": 18,
+    "evidence": 13,
+    "fit": 14,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 19
+  },
+  "section": "s49",
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-14T09:49:50.382516+00:00",
+  "total": 102,
+  "verdicts": {
+    "diff": "read commit by commit against base 6ff4f572a2f9: e7abc43618 wraps the probe's composed plan in resolve_launch_executable at resumption.py:637 and adds 202 test lines; 97ad0b48bc adds the 81-line evidence fragment",
+    "done_when": "the done_when asks for a full crew dispatch --backend --no-watch test that fails on unchanged code, and a gate on all_debug; the manifest records that the end-to-end dispatch test passes on both sides, that the failing reproduction is the probe test at tests/test_every_launch_route_runs_the_resolved_command.py:176, and that the gate ran on the fleet node rather than all_debug",
+    "goal": "the goal is 'Every dispatch route runs the backend command it resolved'; reckon/crew/resumption.py:637 passes the composed launch plan through resolve_launch_executable, and every _backends.launch_plan call site (resumption.py:638, dispatch_sessions.py:1343, dispatch_sessions.py:1866, dispatching/launch.py:718) now resolves its argv",
+    "manifest": "read; it records the probe reproduction with its exception text, 53 passed over the two test files, and discloses that the end-to-end test does not reproduce the defect and the gate was not run on all_debug",
+    "write_paths": "declared paths are reckon, tests/test_every_launch_route_runs_the_resolved_command.py and docs/evidence/fragments/work-flows-to-the-lane/every-launch-route-runs-the-resolved-command.html; the diff's three files are all inside them"
+  }
+}

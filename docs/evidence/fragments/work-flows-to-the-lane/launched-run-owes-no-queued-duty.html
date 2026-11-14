@@ -1,0 +1,46 @@
+<section id="launched-run-owes-no-queued-duty" class="evidence-fragment">
+  <h2>§16 — A launched run owes no queued duty</h2>
+  <p>
+    A session's obligations are derived once per station tick and served from
+    the published snapshot while that tick is current: the station answer is
+    replaced only when the derived payload's identity moves, and both readers
+    serve it while its heartbeat is under the 120 s
+    <code>STATION_STALE_SECONDS</code> window. A tick held in the per-project
+    refresh stage for minutes therefore serves an answer computed before a
+    launch, and a request the admission pass launched in that interval kept its
+    <code>queued-awaiting-session</code> row whose published next command is
+    <code>reckon crew dispatch</code> — the action that would put a second
+    worker on a run already working. The read-time settlement
+    (<code>without_departed_run_duties</code>, used by the obligations view, the
+    prompt and stop hook, and the station answer the follower relays) dropped
+    such a row only when the run's pointer file had been removed, which a
+    launched run never does: launching moves the pointer's <code>phase</code>
+    from <code>queued</code> to <code>starting</code> and then
+    <code>working</code>.
+  </p>
+  <p>
+    The settlement now also compares a queued duty against the phase its run's
+    pointer carries at serve time. <code>QUEUED_POINTER_DUTY_KINDS</code>
+    (<code>run-queued</code>, <code>queued-awaiting-session</code>,
+    <code>queued-contract-refused</code>) are owed only while the pointer reads
+    <code>queued</code>; an absent pointer still settles the row, and a pointer
+    present but unreadable keeps it, because an unreadable file is not evidence
+    that the run moved. One read per run per served answer, cached within the
+    call, so a snapshot served minutes late answers from the fleet as it reads
+    now. A request still queued keeps its duty through the same snapshot, and
+    every kind outside the queued family is untouched.
+  </p>
+  <p id="launched-run-owes-no-queued-duty-measure">
+    Measure: the focused gate
+    <code>PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_launched_run_owes_no_queued_duty.py</code>
+    reports <strong>3 passed</strong>. The suite template over this node's write
+    scope, resolved at head, reports <strong>59 passed</strong>; the same set
+    minus the new file, resolved at base <code>2e4cf597da</code> in a scratch
+    checkout, reports <strong>56 passed</strong> — no added failures. The
+    negative control returns the stored rows uncompared from
+    <code>without_departed_run_duties</code>, and
+    <code>test_a_launched_run_owes_no_queued_duty_through_the_held_snapshot</code>
+    then fails on the launched run still being listed
+    (<code>'r-launched-request' != 'r-still-queued-request'</code>).
+  </p>
+</section>

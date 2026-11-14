@@ -1,0 +1,63 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "8e200ea58cb1c0774997710a8808a7747ffeb5f2",
+  "call_site_count": 7,
+  "call_sites": "reckon/crew/ticker.py:2760, reckon/crew/ticker.py:2822, reckon/crew_follow_commands.py:1318, reckon/crew_follow_commands.py:2394, reckon/crew_follow_commands.py:2479, reckon/crew/station_subscriber.py:749, reckon/crew/queue_admission.py:5879",
+  "completed_at": "2026-11-12T18:22:27.140Z",
+  "dispatched_at": "2026-11-12T18:16:46Z",
+  "findings": [
+    {
+      "file": "tests/test_a_requeued_refusal_draws_no_dropped_row.py",
+      "line": "196",
+      "severity": "non-blocking",
+      "text": "test_a_requeued_request_under_the_id_it_keeps_is_one_refusal is body-identical to test_a_second_identical_refusal_draws_nothing at :157 apart from the id literal, so the file's 9 passed counts one case twice and the re-queued-request name promises a distinct guard the assertions do not provide; a regression that made a re-queue present as a new id would be caught at :212, not here."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261112T064442039104-wave1-a1-the-monitor-shows-the-work-it-watche-s80/suite-reuse-base.log",
+      "line": "2",
+      "severity": "non-blocking",
+      "text": "the source done_when requires both arms to run on the fleet node with pytest -n 8, and the command line of this arm and of suite-reuse-head.log carries no -n, so the recorded pair measures the change serially; the delta verdict (0 added failures) is unaffected, but the arm is not the one the measure names and the deviation is stated nowhere in the manifest."
+    }
+  ],
+  "head_log_revision": "8a572c678c5d6f600bbba96ccbcf7e3d2989adcd",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "reckon/crew/ticker.py:2760, reckon/crew/ticker.py:2822, reckon/crew_follow_commands.py:1318, reckon/crew_follow_commands.py:2394, reckon/crew_follow_commands.py:2479, reckon/crew/station_subscriber.py:749, reckon/crew/queue_admission.py:5879",
+    "diff": "read both gained commits against 18d04c1e: 8a572c67 replaces request_key with refusal_key, extracts _requeued_request, drops the fabricated section key from the fixture and adds one test pinning the id-preserving write; 1651c3b0 is the evidence fragment alone.",
+    "done_when": "the done_when names a follower-driven test, a negative control, base and head arms with pytest -n 8 and logs under the run directory; both arms are logged with revision, literal command and EXIT=, and the control is logged, but no arm carries -n 8.",
+    "goal": "the goal is that a refused queued launch is not drawn as a drop; the gained commits make the refusal memory's key the run id the admission pass keeps, at reckon/crew/ticker.py:623 and reckon/crew/queue_admission.py:1985.",
+    "manifest": "read; status complete, seven commits, scope_note for the earlier classifier extension, baseline_suite and after_suite both completed true with literal commands, 0 added failures from suite-reuse-base.log and suite-reuse-head.log.",
+    "write_paths": "the declared fence is reckon/crew/queue_admission.py, reckon/crew/ticker.py, reckon/crew_follow_commands.py, the new test, the evidence fragment and a figures directory; the gained diff changes four of those and nothing outside."
+  },
+  "justifications": {
+    "durability": "tests/test_a_requeued_refusal_draws_no_dropped_row.py:212 reddens if _requeued_request mints a fresh id (negative-control-reuse.log, 1 failed/8 passed EXIT=1) and :232 reddens if refusal_key keys on project/plan/node/session, which all four fixture rows share, but :196 is body-identical to :157 and adds no independent guard.",
+    "evidence": "suite-reuse-base.log and suite-reuse-head.log open with their revision and literal command and end EXIT=1 with completed summaries (9 failed/49 passed/2 errors at 8e200ea58c; 58 passed/2 errors at 8a572c67), and negative-control-reuse.log records 1 failed/8 passed EXIT=1, but neither arm runs the pytest -n 8 the source done_when names.",
+    "fit": "the added names refusal_key and _requeued_request state mechanism with no plan, sprint or ticket label, and follow the module-constant and docstring idiom already used by QUEUED_REFUSED_FIELD at reckon/crew/ticker.py:588.",
+    "goal_fidelity": "reckon/crew/ticker.py:623 refusal_key now returns the run id, the id the admission pass preserves across a re-queue at reckon/crew/queue_admission.py:1985 _requeued_request, so the once-only refusal memory at ticker.py:2293 is keyed on an identity that survives the attempt rather than on a row field production never emits.",
+    "reuse": "the prior duplication is removed \u2014 request_key is gone from reckon/crew/ticker.py and refusal_key:623 defers to the queue's own identity in its docstring rather than restating runs._node_identity \u2014 while _requeued_request is an extraction inside the owning module reckon/crew/queue_admission.py:1985, not a second definition of the re-queue.",
+    "scope_discipline": "the four paths in the gained diff \u2014 reckon/crew/queue_admission.py, reckon/crew/ticker.py, tests/test_a_requeued_refusal_draws_no_dropped_row.py and the evidence fragment \u2014 are all inside the fence declared at prompt.txt:78-84."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that a refused queued launch is not drawn as a drop; reckon/crew/ticker.py:623 refusal_key returns the run id and reckon/crew/queue_admission.py:1985 _requeued_request is the write that keeps that id across a re-queue, so the once-only refusal memory at ticker.py:2293 is keyed on an identity that survives the attempt rather than on a row field production never emits.\nVERDICT done_when: the source done_when names a follower-driven test, a negative control, base and head arms run with pytest -n 8, and logs under the run directory; suite-reuse-base.log and suite-reuse-head.log each open with their revision and the literal command and end EXIT=1 with a completed summary, negative-control-reuse.log records 1 failed / 8 passed EXIT=1, and 0 failures are added between the arms, but neither arm carries the -n 8 the done_when names.\nVERDICT write_paths: the fence declared at prompt.txt:78-84 is reckon/crew/queue_admission.py, reckon/crew/ticker.py, reckon/crew_follow_commands.py, tests/test_a_requeued_refusal_draws_no_dropped_row.py, the evidence fragment and a figures directory; the gained diff touches the first, second, fourth and fifth of those and nothing outside.\nVERDICT manifest: read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261112T064442039104-wave1-a1-the-monitor-shows-the-work-it-watche-s80/manifest.md; status complete, seven commits with the reuse repair marked acted at 8a572c67, baseline_suite and after_suite both completed true carrying the literal command, 0 added failures reconciled against suite-reuse-base.log (9 failed, 49 passed, 2 errors at 8e200ea58c) and suite-reuse-head.log (58 passed, 2 errors at 8a572c67), and negative_control_log naming negative-control-reuse.log.\nVERDICT diff: read both gained commits against 18d04c1e; 8a572c678c replaces request_key with refusal_key at ticker.py:623, extracts _requeued_request at queue_admission.py:1985 with unchanged behaviour, removes the fabricated `section` key from the test fixture so its rows match the fields recovery_classification emits, and adds one case pinning the id-preserving write; 1651c3b0f0 is the evidence fragment alone, 6 lines changed.\nCALL_SITES: reckon/crew/ticker.py:2760, reckon/crew/ticker.py:2822, reckon/crew_follow_commands.py:1318, reckon/crew_follow_commands.py:2394, reckon/crew_follow_commands.py:2479, reckon/crew/station_subscriber.py:749, reckon/crew/queue_admission.py:5879\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/ticker.py:623 refusal_key now returns the run id, the id the admission pass preserves across a re-queue at reckon/crew/queue_admission.py:1985, so the once-only refusal memory at ticker.py:2293 is keyed on an identity that survives the attempt.\nSCORE evidence: 14\nJUSTIFICATION evidence: suite-reuse-base.log and suite-reuse-head.log open with their revision and literal command and end EXIT=1 with completed summaries (9 failed/49 passed/2 errors at 8e200ea58c; 58 passed/2 errors at 8a572c67), and negative-control-reuse.log records 1 failed/8 passed EXIT=1, but neither arm runs the pytest -n 8 the source done_when names.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the four paths in the gained diff are all inside the fence declared at prompt.txt:78-84, with no out-of-scope file and no collateral edit.\nSCORE durability: 15\nJUSTIFICATION durability: tests/test_a_requeued_refusal_draws_no_dropped_row.py:212 reddens if _requeued_request mints a fresh id (negative-control-reuse.log, 1 failed/8 passed EXIT=1) and :232 reddens if refusal_key keys on project/plan/node/session, which all four fixture rows share, but :196 is body-identical to :157 and adds no independent guard.\nSCORE fit: 18\nJUSTIFICATION fit: refusal_key and _requeued_request state mechanism with no plan, sprint or ticket label, and follow the module-constant and docstring idiom already used by QUEUED_REFUSED_FIELD at reckon/crew/ticker.py:588.\nSCORE reuse: 19\nJUSTIFICATION reuse: the prior duplication is removed \u2014 request_key is gone from reckon/crew/ticker.py and refusal_key:623 defers in its docstring to the queue's own identity rather than restating runs._node_identity \u2014 while _requeued_request is an extraction inside the owning module reckon/crew/queue_admission.py:1985, not a second definition of the re-queue.\nFINDING tests/test_a_requeued_refusal_draws_no_dropped_row.py:196 non-blocking: test_a_requeued_request_under_the_id_it_keeps_is_one_refusal is body-identical to test_a_second_identical_refusal_draws_nothing at :157 apart from the id literal, so the file's 9 passed counts one case twice and the re-queued-request name promises a distinct guard the assertions do not provide; a regression that made a re-queue present as a new id would be caught at :212, not here.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261112T064442039104-wave1-a1-the-monitor-shows-the-work-it-watche-s80/suite-reuse-base.log:2 non-blocking: the source done_when requires both arms to run on the fleet node with pytest -n 8, and the command line of this arm and of suite-reuse-head.log carries no -n, so the recorded pair measures the change serially; the delta verdict (0 added failures) is unaffected, but the arm is not the one the measure names and the deviation is stated nowhere in the manifest.\n",
+  "review_run_id": "r-20261112T181047037671-review-of-wave1-a1-the-monitor-shows-the-work-it-watche-s80-1651c3b0f04e",
+  "reviewed_base_sha": "18d04c1ee08ad53affb77ec8bc8e984d0e5b7bf7",
+  "reviewed_head_sha": "1651c3b0f04e47f323fc4db8bcef55069dfbf937",
+  "reviewed_run_id": "r-20261112T064442039104-wave1-a1-the-monitor-shows-the-work-it-watche-s80",
+  "reviewer": "deepseek-v4.1-flash",
+  "reviewer_run_id": "r-20261112T181047037671-review-of-wave1-a1-the-monitor-shows-the-work-it-watche-s80-1651c3b0f04e",
+  "scores": {
+    "durability": 15,
+    "evidence": 14,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-12T18:39:24.190753+00:00",
+  "total": 84
+}

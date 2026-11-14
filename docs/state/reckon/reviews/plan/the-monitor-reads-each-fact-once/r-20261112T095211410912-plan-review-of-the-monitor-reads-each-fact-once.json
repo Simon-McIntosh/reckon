@@ -1,0 +1,111 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-12T10:07:09.947Z",
+  "dispatched_at": "2026-11-12T09:59:18Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/the-monitor-reads-each-fact-once.html:605",
+      "id": "wiring-1",
+      "reason": "without a followup the new section is invisible to the build loop, which is the same gap earlier reviews closed for \u00a725, \u00a726, \u00a728, \u00a731 and \u00a732.",
+      "text": "`s33` is declared `implementable` but the plan's followup chain carries no `/reckon-build the-monitor-reads-each-fact-once \u00a733` prompt: the only open followup is `f-tmref-004` (\u00a77) and `f-tmref-013` is resolved, so a coordinator reading the plan finds no entry point for the section this edit just added",
+      "type": "wiring",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/the-monitor-reads-each-fact-once.html:606",
+      "id": "evidence_paths-1",
+      "reason": "the impact claim of reviews sitting unpromoted for one to two hours rests on a cadence no later reader can check, and this plan's settled remedy for the same shape in \u00a725 and \u00a726 is to name the measurement's saved path or restate the claim.",
+      "text": "the Why states the station \"was restarted every minute or two (pid 3581254 was 90 s old at 08:49Z)\", but the cited `~/.local/state/fleet/services/station.log` holds 5 MB of bare tracebacks with zero timestamped lines, so neither the restart interval nor the pid age can be read back from any saved artifact",
+      "type": "evidence_paths",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "8f00956ae50bc953348749fc077c968f5f90d6b2",
+  "plan_fingerprint": "c578ece3a7759aaf5cb154314e332ceb455a242f8a0f1cdc9f926c544ca60b5c",
+  "plan_slug": "the-monitor-reads-each-fact-once",
+  "plan_version": 204,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "declined",
+      "by": "1fb615a0-2801-4418-bbb4-c2914719e520",
+      "finding": "wiring-1",
+      "reason": "s33 was dispatched directly as critical work and landed at 6d1e39b578 before this review returned, so no build entry point is owed",
+      "when": "2026-11-12T10:33:29.502163+00:00"
+    },
+    {
+      "action": "declined",
+      "by": "1fb615a0-2801-4418-bbb4-c2914719e520",
+      "finding": "evidence_paths-1",
+      "reason": "the restart cadence and pid age were read with ps by two sessions at the time and were never saved; station.log carries no timestamps, which is the gap. What the log does carry is one traceback per crash, each naming a different review run. That count is the evidence the section rests on, and the landed test reproduces the cause",
+      "when": "2026-11-12T10:33:44.884294+00:00"
+    }
+  ],
+  "responses": {
+    "evidence_paths-1": {
+      "action": "declined",
+      "by": "1fb615a0-2801-4418-bbb4-c2914719e520",
+      "reason": "the restart cadence and pid age were read with ps by two sessions at the time and were never saved; station.log carries no timestamps, which is the gap. What the log does carry is one traceback per crash, each naming a different review run. That count is the evidence the section rests on, and the landed test reproduces the cause",
+      "when": "2026-11-12T10:33:44.884294+00:00"
+    },
+    "wiring-1": {
+      "action": "declined",
+      "by": "1fb615a0-2801-4418-bbb4-c2914719e520",
+      "reason": "s33 was dispatched directly as critical work and landed at 6d1e39b578 before this review returned, so no build entry point is owed",
+      "when": "2026-11-12T10:33:29.502163+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/Code/reckon/docs/state/reckon/reviews/plan/the-monitor-reads-each-fact-once/r-20261112T095211410912-plan-review-of-the-monitor-reads-each-fact-once.json",
+  "review_run_id": "r-20261112T095211410912-plan-review-of-the-monitor-reads-each-fact-once",
+  "reviewed_blob_sha": "3f7f8e47085ff4bd26ab29199c14c3992651e3e5",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every symbol, file, commit and run id s33 and the new `_document` comments cite resolves: `runs.read_pointer` raises on a missing pointer (`reckon/crew/runs.py:1072`), `_refused_delivered_review` catches it (`reckon/crew/obligations.py:961-964`), the traceback in station.log reproduces the named path line for line, `bcaded8fc4`, `34b1ece1b0` and `1fac8d89c0` are commits, the three review runs named in the new comments have run directories, and the test file s33 names is a deliverable that does not yet exist.",
+    "done_when": "pass \u2014 s33's two cases are measurable on a temporary crew home and its negative control states base behaviour the code confirms: the read at `reckon/crew/obligations.py:936` is unguarded and `run_station` catches only `StationLeaseLostError` around `station.tick()` (`reckon/crew/station.py:800-805`), so the base arm can fail for the stated reasons.",
+    "evidence_paths": "a finding \u2014 the Why's restart cadence and the 08:49Z pid age rest on an instrument whose cited log carries no timestamps.",
+    "naming": "pass \u2014 s33 names the mechanism (the unguarded pointer read, the tick loop's exception handling) and carries no plan label, ticket number or version tag into a symbol, comment or filename.",
+    "reasoning": "pass \u2014 the stated root cause is the one the evidence shows. 110 `CrewError: no live run` tracebacks in `~/.local/state/fleet/services/station.log` follow exactly `station.tick` (`reckon/crew/station.py:681`) \u2192 `station_subscriber.live_work_populations` (`reckon/crew/station_subscriber.py:355`) \u2192 `obligations._live_review_runs` (`:1037`) \u2192 `_current_review_in_flight` (`:936`), and `live_work_populations` has no `except` around that call, so the exception reaches `run_station` and ends the process; the sibling `_refused_delivered_review` does catch `CrewError` around the same read, and the view does publish one pointer snapshot per derivation, so both the diagnosis and the fix's endpoint are reachable and checkable.",
+    "single_goal": "pass \u2014 s33's two clauses serve one goal, that a single unreadable fact never costs the station its tick, and its gate proves both halves of that one verdict.",
+    "wiring": "a finding \u2014 `s33` is declared `implementable` at docs/plans/the-monitor-reads-each-fact-once.html:605 and no followup carries its build prompt, where \u00a731 and \u00a732 each gained one before they landed."
+  },
+  "section_digests": {
+    "_document": "7e9c289f3bf42c86ab4ff207a3bf7f63eddae004ec0860d80618d15d31452cb1",
+    "s1": "bd759b66b2b75254305e473bf6b8af6218ef25d95b0db1638ed2668f0cdd9441",
+    "s10": "d21f2adf110c82d39fa9834752ac3f47dba7ac886c59cfd85feb23c1e8d1003f",
+    "s11": "9e8b94316ed45fc2103d1edc216fbb0dd3862f559824ad1c43299b305a3af6bd",
+    "s12": "21fc271f915167db3cca4f7d0eee1f4553b5dec7b96127d71d294e5ae242bc02",
+    "s13": "3b11fe0cd53015121e6d566c554c6c77b13236b3700a90279e77a6bc755ea0a3",
+    "s14": "5f6675ba84aab4ad594b121e888aace2d69e497390559d38f0c220e5894ac588",
+    "s15": "efa38c205c7332a7867b6d87358cd9f89fe1568beaa9f9e5eee96862dd70b6f0",
+    "s16": "65cd8e559a7a5ebf018bc9fe50a07bb0954f67405ab6f17c7377c38ccd363aa7",
+    "s17": "1dee50822a308fa4eeea0a45fd3cdaf6de52d9a1d74a91c2b9c7605d179da2ad",
+    "s18": "ba63c0b1b83ec93cc99d92a3c1f67dcf92d700e20f4f9acd88362705d6b4d123",
+    "s19": "16239e5fae49e56b170433557a77981816880756e3ae545a741ca9ec70feae63",
+    "s2": "e0f306f01b1530661ef28be3f19592348c45f24e7826567d58a2f0a4f79dd284",
+    "s20": "d14d2b70bb40dd552f306726f24f5e3c79bc5efcd7f9b74bcb7d3de8f16f5e8e",
+    "s21": "9ff7b29b83f9c8ab95a0a469c997950ef226fc3d99d8dcffdbf0683df7a1f26c",
+    "s22": "1bdc9ac90396c56bcbcc8c3c4f44aa6b30cbd59c4da001825159a7b8245e054c",
+    "s23": "a810ffe181d2787722d8f9538a4348592269fe163ba23cc59939376cb13edcbb",
+    "s24": "e861dcc5044a0a1fb36c4a374ca71717aeb97054e5a3ff1aef57c9779c7147f5",
+    "s25": "a0939bd3d8ab0fa4b5c0c88de3cb9cdab3531338fe35d0c12b4338fc3c4d1563",
+    "s26": "a8fb9d8585830b87ed826347ff724ddecc8fb9a43ad9ac1540d6499e3689d03e",
+    "s27": "3c9e47dc777eeadabbe3898d4b8f69d91defbaff009d050f2906732cb87e50c8",
+    "s28": "982b473728d61b81a3d37050384bee85f3f1fb5366aad0668c5370a51367e82c",
+    "s29": "159b45ee319dc13bffea961474eb544e5a26d161bf686ebe5b7fabf95f5266c7",
+    "s3": "f42c4644817feac0c199cd8510d2e284079b1c8fb777c7b79ced63531a8d983f",
+    "s30": "2d8c9efccd4f8eeede43f5fabe6f6b9cacc2207ce97ca700584bfedd0e512dd2",
+    "s31": "27817d420beefc15258f2f52ea8c616f3e04b4035773fe437f6cfe7f31506100",
+    "s32": "836f1473b1691ab0150f1e32791c295f7511abd66cb29f93b48dc0d347998d51",
+    "s33": "39a7d7a43bc6e97cd0c11235cfbe6c06a5b6968dab69e8147978bd164bbfef4e",
+    "s4": "c98e197194f43124e5a982992370bf1c08593aa17fb304787a4d7b87f42a0107",
+    "s5": "0329936ec702c07e4a2ef8c756961740635d0dd8c7a1d14646983f1c32f09790",
+    "s6": "1f19e9f8c46bc0674347ba5a3c97588b846d125a5fbcf9533e8a5a3f9ec00bb6",
+    "s7": "dff81fd58ae3afef69063faed237df9bb4056bdb98556a1e5a053e6807ae3d16",
+    "s8": "4a70cad80d8613feb4b30861587298ff1109616ba9a35992821009274f17ae3f",
+    "s9": "8597fbe3fc93694e846c364272c698acf84b09466b4798491eb74279d62cef1d"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-12T10:29:36.528061+00:00",
+  "total": null
+}

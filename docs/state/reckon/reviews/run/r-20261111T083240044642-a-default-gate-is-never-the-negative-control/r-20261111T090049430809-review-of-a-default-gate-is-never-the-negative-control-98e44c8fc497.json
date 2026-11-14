@@ -1,0 +1,80 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/crew/promotion.py:438 promote_run fills a passthrough gate from the manifest",
+    "reckon/crew/promotion.py:962 the hand-promotion fill reads the same default",
+    "reckon/crew/pending_landing.py:205 the pending-landing check reads the default gate",
+    "reckon/crew/queue_landing.py:522 the queue lander reads the promotion's own selection",
+    "reckon/crew/recovery_review_acceptance.py:199 review acceptance reads the default gate"
+  ],
+  "completed_at": "2026-11-11T09:13:08.225Z",
+  "dispatched_at": "2026-11-11T09:02:55Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "exempted",
+      "reason": "a prose quote in the fragment; the negative-control log is the receipt and records the actual mismatch",
+      "recorded_at": "2026-11-11T09:24:19.595193+00:00"
+    },
+    "1": {
+      "kind": "exempted",
+      "reason": "the commit between the recorded head arm and the promoted head touches only the fragment, so the measured code is the promoted code; the landing re-records both arms at the promoted head",
+      "recorded_at": "2026-11-11T09:24:37.480421+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/a-promotion-reads-the-evidence-it-is-given/a-default-gate-is-never-the-negative-control.html:49",
+      "line": "49",
+      "severity": "non-blocking",
+      "text": "non-blocking: the negative-control paragraph says the first case reports '/\u2026/unit.log' where it expects '/\u2026/after/unit.log', but logs/negative-control.log:28-32 records the actual mismatch as 'negative-final.log' against 'after/unit.log'; the prose's observed value is not what the log recorded, so a reader checking the claim against the log finds a different string."
+    },
+    {
+      "file": "docs/evidence/fragments/a-promotion-reads-the-evidence-it-is-given/a-default-gate-is-never-the-negative-control.html:37",
+      "line": "37",
+      "severity": "non-blocking",
+      "text": "non-blocking: the head arm is recorded at 53d2a3776b while the promoted head is 98e44c8fc4; the intervening commit touches only this fragment, so the code measured is identical, but the recorded after_suite revision does not name the head a promotion reads, and that equivalence has to be re-established by hand."
+    }
+  ],
+  "gate_sources": {
+    "after_suite": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261111T083240044642-a-default-gate-is-never-the-negative-control/logs/arm-template-head.log",
+    "baseline_suite": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261111T083240044642-a-default-gate-is-never-the-negative-control/logs/arm-template-base.log"
+  },
+  "item_verdicts": {
+    "call_sites": "verified five production call sites of _default_gate_evidence_from_manifest, all of which now reach the new selection.",
+    "diff": "read commit by commit from 0adda649f4 to 98e44c8fc4; d1d74874e6 adds _default_gate_log_from_manifest and its fill, 53d2a3776b lands the evidence fragment, and 98e44c8fc4 rewrites only the fragment, so the last commit changes no code under test.",
+    "done_when": "tests/test_a_default_gate_is_never_the_negative_control.py passes (re-run: 3 passed, EXIT=0); logs/arm-importers-{base,head}.log carry the same six FAILED ids and 137 passed on both sides, and logs/arm-template-{base,head}.log show 49 passed plus 2 scaffolding errors against 54 passed, run under sbatch --partition=all_debug.",
+    "goal": "The node's goal is that a merge's default gate never picks the negative-control log; reckon/crew/promotion_records.py:309 now selects the after_suite arm's log first and otherwise the first non-negative test_logs entry, refusing when only the negative control remains.",
+    "manifest": "read; it states status complete, commits d1d74874e6 53d2a3776b 98e44c8fc4, the three cases, the two-arm measurements and the red negative control, and its after_suite names arm-template-head.log at revision 53d2a3776b.",
+    "write_paths": "the manifest declares reckon/crew/promotion_records.py, tests/test_a_default_gate_is_never_the_negative_control.py and the evidence fragment; every path in git diff 0adda649f4..98e44c8fc4 is one of those three."
+  },
+  "justifications": {
+    "durability": "tests/test_a_default_gate_is_never_the_negative_control.py:68 asserts the after-arm path and :89 the non-negative fallback, both of which redden on the restored test_logs[0] default (logs/negative-control.log records 3 failed), though no case covers an after_suite log that is itself the negative control.",
+    "evidence": "the named test passes (re-run: 3 passed), the importers arm's six FAILED ids are identical at base and head in logs/arm-importers-{base,head}.log, and ruff check and ruff format --check pass on both staged paths, but logs/arm-template-head.log records revision 53d2a3776b rather than the promoted head 98e44c8fc4.",
+    "fit": "reckon/crew/promotion_records.py:309 follows the module's helper-and-docstring idiom and builds on the existing _manifest_relative_path at :214, with no plan label, ticket id or author attribution in either staged path.",
+    "goal_fidelity": "reckon/crew/promotion_records.py:333-349 returns the after_suite log or the first non-negative test_logs entry and raises at :350 rather than ever returning the negative control.",
+    "reuse": "the helper composes the existing _manifest_relative_path resolver and reads log_path from an already-parsed arm as promotion_evidence.py:1172 already does, while review.py:2335 _gate_log_path reads the same field from raw manifest text, a different representation at another layer, so no mechanism is forked.",
+    "scope_discipline": "git diff 0adda649f4..98e44c8fc4 changes only reckon/crew/promotion_records.py, tests/test_a_default_gate_is_never_the_negative_control.py and the evidence fragment the fence names."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The node's goal is that a merge's default gate never picks the negative-control log; reckon/crew/promotion_records.py:309 now selects the after_suite arm's log first and otherwise the first non-negative test_logs entry, refusing when only the negative control remains.\nVERDICT done_when: tests/test_a_default_gate_is_never_the_negative_control.py passes (re-run: 3 passed, EXIT=0); logs/arm-importers-{base,head}.log carry the same six FAILED ids and 137 passed on both sides, and logs/arm-template-{base,head}.log show 49 passed plus 2 scaffolding errors against 54 passed, run under sbatch --partition=all_debug.\nVERDICT write_paths: the manifest declares reckon/crew/promotion_records.py, tests/test_a_default_gate_is_never_the_negative_control.py and the evidence fragment; every path in git diff 0adda649f4..98e44c8fc4 is one of those three.\nVERDICT manifest: read; it states status complete, commits d1d74874e6 53d2a3776b 98e44c8fc4, the three cases, the two-arm measurements and the red negative control, and its after_suite names arm-template-head.log at revision 53d2a3776b.\nVERDICT diff: read commit by commit from 0adda649f4 to 98e44c8fc4; d1d74874e6 adds _default_gate_log_from_manifest and its fill, 53d2a3776b lands the evidence fragment, and 98e44c8fc4 rewrites only the fragment, so the last commit changes no code under test.\nCALL_SITES: reckon/crew/promotion.py:438, reckon/crew/promotion.py:962, reckon/crew/pending_landing.py:205, reckon/crew/queue_landing.py:522, reckon/crew/recovery_review_acceptance.py:199\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/promotion_records.py:333-349 returns the after_suite log or the first non-negative test_logs entry and raises at :350 rather than ever returning the negative control.\nSCORE evidence: 17\nJUSTIFICATION evidence: the named test passes (re-run: 3 passed), the importers arm's six FAILED ids are identical at base and head in logs/arm-importers-{base,head}.log, and ruff check and ruff format --check pass on both staged paths, but logs/arm-template-head.log records revision 53d2a3776b rather than the promoted head 98e44c8fc4.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff 0adda649f4..98e44c8fc4 changes only reckon/crew/promotion_records.py, tests/test_a_default_gate_is_never_the_negative_control.py and the evidence fragment the fence names.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_a_default_gate_is_never_the_negative_control.py:68 asserts the after-arm path and :89 the non-negative fallback, both of which redden on the restored test_logs[0] default (logs/negative-control.log records 3 failed), though no case covers an after_suite log that is itself the negative control.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/crew/promotion_records.py:309 follows the module's helper-and-docstring idiom and builds on the existing _manifest_relative_path at :214, with no plan label, ticket id or author attribution in either staged path.\nSCORE reuse: 18\nJUSTIFICATION reuse: the helper composes the existing _manifest_relative_path resolver and reads log_path from an already-parsed arm as promotion_evidence.py:1172 already does, while review.py:2335 _gate_log_path reads the same field from raw manifest text, a different representation at another layer, so no mechanism is forked.\nFINDING docs/evidence/fragments/a-promotion-reads-the-evidence-it-is-given/a-default-gate-is-never-the-negative-control.html:49 non-blocking: the negative-control paragraph says the first case reports '/\u2026/unit.log' where it expects '/\u2026/after/unit.log', but logs/negative-control.log records the actual mismatch as 'negative-final.log' against 'after/unit.log'.\nFINDING docs/evidence/fragments/a-promotion-reads-the-evidence-it-is-given/a-default-gate-is-never-the-negative-control.html:37 non-blocking: the head arm is recorded at 53d2a3776b while the promoted head is 98e44c8fc4; the intervening commit touches only this fragment, so the code measured is identical, but the recorded revision does not name the head a promotion reads.\n",
+  "review_run_id": "r-20261111T090049430809-review-of-a-default-gate-is-never-the-negative-control-98e44c8fc497",
+  "reviewed_base_sha": "0adda649f421ce01832d0311d4261b68b70e866e",
+  "reviewed_head_sha": "98e44c8fc497cc499a6e45757459440ba56a8eca",
+  "reviewed_run_id": "r-20261111T083240044642-a-default-gate-is-never-the-negative-control",
+  "scores": {
+    "durability": 18,
+    "evidence": 17,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "reuse": 18,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-11T09:15:00.000000+00:00",
+  "total": 112
+}

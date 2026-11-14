@@ -1,0 +1,75 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/cli.py:488",
+    "reckon/crew_run_commands.py:2303",
+    "reckon/crew_run_commands.py:2181",
+    "reckon/crew_run_commands.py:2208",
+    "reckon/crew/dispatch_sessions.py:1661"
+  ],
+  "completed_at": "2026-11-11T14:44:38.194Z",
+  "dispatched_at": "2026-11-11T14:31:27Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "folded",
+      "node": "repair-of-ab2-clive-anchored-a-gate-halts-s4-d8262e4aff42",
+      "recorded_at": "2026-11-11T15:41:09.745019+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/a-gate-halts-only-on-substance/ab2-clive-anchored-a-gate-halts-s4.html",
+      "line": 25,
+      "severity": "blocking",
+      "text": "The record claims 'The gate arms below therefore carry the same two failures at both revisions', but nothing follows that paragraph and the arms actually recorded (logs/base-arm.log, logs/after-arm.log) each read '51 passed ... EXIT=0' with zero failures, so the record misstates its own evidence."
+    },
+    {
+      "file": "r-20261111T130138944743-ab2-clive-anchored-a-gate-halts-s4/manifest.md",
+      "line": 12,
+      "severity": "non-blocking",
+      "text": "The tests: line and both suite arms name tests/test_staged_write_inventory.py, which does not import reckon.crew_run_commands, so the done_when's clause 'the test files importing reckon.crew_run_commands add no failure against the base revision' is asserted nowhere in this record."
+    },
+    {
+      "file": "docs/evidence/fragments/a-gate-halts-only-on-substance/ab2-clive-anchored-a-gate-halts-s4.html",
+      "line": 1,
+      "severity": "non-blocking",
+      "text": "The record restates the evidence already held at docs/evidence/fragments/a-gate-halts-only-on-substance/resume-changes-run-budget.html for the same section and omits the importer-arm figure (377 passed head, 374 base) that record already carries."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "Examined the production path the record verifies: reckon/cli.py:488 registers crew_resume, reckon/crew_run_commands.py:2303 defines it, and reckon/crew/dispatch_sessions.py:1661 composes the resumed fence from the node budget.",
+    "diff": "Read commit by commit (9630b0a38c, d8262e4aff) against f44b15b0: one new file, 28 insertions, 0 deletions, no product code and no test.",
+    "done_when": "The done_when names tests/test_a_resume_can_change_its_budget.py and an importer arm over the test files importing reckon.crew_run_commands; the subject test was run (3 passed, logs/resume-budget-head.log) with its declared mutation red at logs/resume-budget-negative-control.log, but the importer arm was never run (manifest.md:12 records tests/test_staged_write_inventory.py instead).",
+    "goal": "The dispatch goal is to build a-gate-halts-only-on-substance s4; the section's deliverable (--time-budget, the fence refusal, the recorded budget change) is present at base in reckon/crew_run_commands.py:2281 and :2287 and the node verified it end to end instead of rebuilding it.",
+    "manifest": "Read; it records the subject measurement, the declared mutation, both 51-passed arms, and an outside_scope entry for the codex hook-trust probe that makes the named test red at base.",
+    "write_paths": "The manifest declares crew_run_commands.py, the evidence fragment and the figures directory; the diff adds only the fragment file, so every changed path is inside the declared scope."
+  },
+  "justifications": {
+    "durability": "tests/test_a_resume_can_change_its_budget.py at base asserts a literal deadline (2031-01-01T01:45:00Z from the pinned instant plus 45m) and literal stored budgets rather than echoing a call, and logs/resume-budget-negative-control.log shows it reddening when _record_resumed_time_budget is replaced, so the guard fires; it runs here only behind probe/noprobe.py, which stubs _CodexDialect._inbox_hook_flags.",
+    "evidence": "logs/resume-budget-head.log records 3 passed and logs/resume-budget-negative-control.log records the two named cases reddening at EXIT=1, but the recorded suite arm at manifest.md:12 is tests/test_staged_write_inventory.py, which does not import reckon.crew_run_commands and so asserts none of the done_when's suite clause.",
+    "fit": "The fragment follows the sibling record's form at docs/evidence/fragments/a-gate-halts-only-on-substance/resume-changes-run-budget.html but omits its plan-verdict meta and ends without a trailing newline.",
+    "goal_fidelity": "The section's deliverable is present at f44b15b0 in reckon/crew_run_commands.py:2181 (_refuse_a_budget_above_the_resume_fence) and :2208 (_record_resumed_time_budget), with the pointer re-read after recording so the resumed fence composes from the new figure; the node verified it rather than building it.",
+    "reuse": "The diff adds no code definition and cites the existing owners reckon/crew_run_commands.py:2181 and :2208 rather than re-implementing them, but the record itself duplicates the capability already held by docs/evidence/fragments/a-gate-halts-only-on-substance/resume-changes-run-budget.html.",
+    "scope_discipline": "The whole diff is two commits adding one file, docs/evidence/fragments/a-gate-halts-only-on-substance/ab2-clive-anchored-a-gate-halts-s4.html, which is inside the fragment path granted at prompt.txt:82; no product file changed."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the dispatch goal is to build a-gate-halts-only-on-substance s4, and the section's deliverable is present at base in reckon/crew_run_commands.py:2281 (:2208 records the allowance) with the fence composed from it at reckon/crew/dispatch_sessions.py:1661.\nVERDICT done_when: the done_when names tests/test_a_resume_can_change_its_budget.py plus an importer arm; the test was run (3 passed, logs/resume-budget-head.log) and reddened under its mutation (2 failed, logs/resume-budget-negative-control.log), but the importer arm was replaced by tests/test_staged_write_inventory.py at manifest.md:12.\nVERDICT write_paths: the manifest declares three paths and the diff adds one file, docs/evidence/fragments/a-gate-halts-only-on-substance/ab2-clive-anchored-a-gate-halts-s4.html, inside the fragment path granted at prompt.txt:82.\nVERDICT manifest: read; it records 3 passed for the subject, 2 failed for the declared mutation, 51 passed for both suite arms, and an outside_scope entry for the codex hook-trust probe.\nVERDICT diff: read commit by commit against f44b15b0; two commits add one 28-line evidence fragment and change nothing else.\nCALL_SITES: reckon/cli.py:488, reckon/crew_run_commands.py:2303, reckon/crew_run_commands.py:2181, reckon/crew_run_commands.py:2208, reckon/crew/dispatch_sessions.py:1661\nSCORE goal_fidelity: 16\nJUSTIFICATION goal_fidelity: reckon/crew_run_commands.py:2208 records the new allowance and the pointer is re-read so the resumed fence composes from it, which is what the section asks.\nSCORE evidence: 11\nJUSTIFICATION evidence: manifest.md:12 records tests/test_staged_write_inventory.py as the suite arm, a file that does not import reckon.crew_run_commands, so the done_when's importer clause is unmeasured.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every changed path in the diff is the single declared fragment under docs/evidence/fragments/a-gate-halts-only-on-substance/.\nSCORE durability: 13\nJUSTIFICATION durability: tests/test_a_resume_can_change_its_budget.py asserts a literal deadline and is shown reddening at logs/resume-budget-negative-control.log, but runs here only behind probe/noprobe.py.\nSCORE fit: 17\nJUSTIFICATION fit: the fragment matches the sibling form at docs/evidence/fragments/a-gate-halts-only-on-substance/resume-changes-run-budget.html but drops its plan-verdict meta and trailing newline.\nSCORE reuse: 14\nJUSTIFICATION reuse: the diff adds no definition and cites the existing owners reckon/crew_run_commands.py:2181 and :2208, but the record duplicates docs/evidence/fragments/a-gate-halts-only-on-substance/resume-changes-run-budget.html.\nFINDING docs/evidence/fragments/a-gate-halts-only-on-substance/ab2-clive-anchored-a-gate-halts-s4.html:25 blocking: the record claims the gate arms carry the same two failures at both revisions, but logs/base-arm.log and logs/after-arm.log each read 51 passed EXIT=0, so the record misstates its own evidence.\nFINDING r-20261111T130138944743-ab2-clive-anchored-a-gate-halts-s4/manifest.md:12 non-blocking: the recorded suite arm is tests/test_staged_write_inventory.py, which does not import reckon.crew_run_commands, so the done_when's importer clause is asserted nowhere.\nFINDING docs/evidence/fragments/a-gate-halts-only-on-substance/ab2-clive-anchored-a-gate-halts-s4.html:1 non-blocking: the record restates the evidence already held at docs/evidence/fragments/a-gate-halts-only-on-substance/resume-changes-run-budget.html and omits the importer-arm figure that record carries.\n",
+  "review_run_id": "r-20261111T142647902172-review-of-ab2-clive-anchored-a-gate-halts-s4-d8262e4aff42",
+  "reviewed_base_sha": "f44b15b02818b73c61e741f122d4967999954287",
+  "reviewed_head_sha": "d8262e4aff420774a4b2dbfab95bcbfda99b50a6",
+  "reviewed_run_id": "r-20261111T130138944743-ab2-clive-anchored-a-gate-halts-s4",
+  "scores": {
+    "durability": 13,
+    "evidence": 11,
+    "fit": 17,
+    "goal_fidelity": 16,
+    "reuse": 14,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-11T15:00:54.502877+00:00",
+  "total": 90
+}

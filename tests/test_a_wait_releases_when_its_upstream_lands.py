@@ -1,0 +1,513 @@
+"""A section wait releases when its upstream lands, not when it is declared done.
+
+A coordinator marks a section done in the plan and commits that immediately
+before landing its run, so for a while the plan says done while the revision is
+still off the registered checkout's HEAD. A request waiting on that section is
+released only once the upstream's revision is an ancestor of HEAD -- the landed
+test the queue already applies to a run ref, extended to cover a run that has
+delivered and is not yet promoted. A discarded run will never land, so it holds
+nothing, and a section completed with no run at all releases its waiter at
+once.
+"""
+
+from __future__ import annotations
+
+import json
+import os
+import re
+import subprocess
+import tempfile
+from pathlib import Path
+
+import pytest
+
+from reckon import ledger
+from reckon.crew import promotion, queue_admission, runs
+from reckon.crew.node import TaskNode
+
+PROJECT = "proj"
+SESSION = "coordinator-a"
+PLAN = "plan-a"
+UPSTREAM = "s1"
+WAITER = "s2"
+UPSTREAM_RUN = "r-upstream"
+WAITER_RUN = "r-waiter"
+DELIVERY_BRANCH = "run-branch"
+
+CONFIG = {
+    "default_backend": "clive",
+    "local_backend": "clive",
+    "backends": {
+        "clive": {
+            "launch": "cli",
+            "command": "codex",
+            "model": "local-model",
+            "effort": "medium",
+            "sandbox": "worktree-full",
+            "time_budget": "25m",
+        }
+    },
+    "roles": {"implement": {}},
+    "fences": {"time_budget": "25m", "needs_help_after_failures": 2},
+}
+
+
+def _git(repository: Path, *arguments: str) -> str:
+    return subprocess.run(
+        ["git", *arguments],
+        cwd=repository,
+        check=True,
+        capture_output=True,
+        text=True,
+    ).stdout.strip()
+
+
+def _plan_html(declarations: dict[str, str], waits: dict[str, list[str]]) -> str:
+    quote = '"'
+    return (
+        "<!doctype html>\n"
+        f"<meta name={quote}docs-project{quote} content={quote}{PROJECT}{quote}>\n"
+        f"<meta name={quote}reckon-type{quote} content={quote}plan{quote}>\n"
+        f"<meta name={quote}plan-slug{quote} content={quote}{PLAN}{quote}>\n"
+        f"<meta name={quote}plan-status{quote} content={quote}active{quote}>\n"
+        f"<meta name={quote}plan-section-declarations{quote} content={quote}"
+        f"{json.dumps(declarations).replace(quote, '&quot;')}{quote}>\n"
+        f"<meta name={quote}plan-section-depends-on{quote} content={quote}"
+        f"{json.dumps(waits).replace(quote, '&quot;')}{quote}>\n"
+        f"<h2 id={quote}{UPSTREAM}{quote}>§1</h2>\n"
+        f"<h2 id={quote}{WAITER}{quote}>§2</h2>\n"
+    )
+
+
+def _write_plan(repository: Path, declarations: dict[str, str]) -> None:
+    path = repository / "docs" / "plans" / f"{PLAN}.html"
+    path.write_text(
+        _plan_html(declarations, {WAITER: [f"{PLAN}#{UPSTREAM}"]}),
+        encoding="utf-8",
+    )
+
+
+def _rewrite_declarations(repository: Path, change: dict[str, str]) -> None:
+    path = repository / "docs" / "plans" / f"{PLAN}.html"
+    text = path.read_text(encoding="utf-8")
+    match = re.search(r'name="plan-section-declarations" content="([^"]*)"', text)
+    assert match is not None, "the fixture always writes a declarations meta"
+    raw = match.group(1)
+    declarations = json.loads(raw.replace("&quot;", '"').replace("&amp;", "&"))
+    declarations.update(change)
+    path.write_text(
+        text.replace(raw, json.dumps(declarations).replace('"', "&quot;"), 1),
+        encoding="utf-8",
+    )
+    # A landing commits the plan it ticks: a dispatch refuses to run against a
+    # plan that differs from the base it reads.
+    _git(repository, "add", "--", str(path.relative_to(repository)))
+    _git(repository, "commit", "-q", "-m", "chore: declare the section done")
+
+
+def _outside_any_work_tree(path: Path) -> bool:
+    """Whether no git work tree contains ``path``."""
+    resolved = path.resolve()
+    return not any(
+        (parent / ".git").exists() for parent in (resolved, *resolved.parents)
+    )
+
+
+@pytest.fixture()
+def queue_repo(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
+    """A checkout, a config home and a ledger, all this fixture's own.
+
+    The ledger resolves the work tree above its own path and reads a project's
+    runs through that tree's checkout, so a fixture laid out beneath another
+    tree has its reads answered from that tree while its writes still land
+    here: a suite whose temp path sits inside the tree under test -- a basetemp
+    beneath the checkout, which a run from a freshly extracted tree produces --
+    is exactly that case. Two things keep the read local wherever the temp path
+    sits. The state root is the fixture checkout's own ``docs/state``, which is
+    the path the resolution re-roots to once it finds the checkout, and the
+    checkout is made a repository itself, so the nearest marker the walk finds
+    is the fixture's rather than an enclosing checkout's.
+    """
+    root = tmp_path
+    home = tmp_path / "home"
+    home.mkdir()
+    # Nothing the ledger, the queue or the mounts registry resolves may reach the
+    # invoking user's home: a live configuration there would answer for a fixture
+    # checkout it knows nothing about.
+    monkeypatch.setenv("HOME", str(home))
+    for variable, leaf in (
+        ("XDG_CONFIG_HOME", "config"),
+        ("XDG_DATA_HOME", "data"),
+        ("XDG_STATE_HOME", "state"),
+    ):
+        (home / leaf).mkdir()
+        monkeypatch.setenv(variable, str(home / leaf))
+    # The cache keeps its own directory inside the suite's temp path, which is
+    # where the session fixture requires every cache resolution to stay.
+    cache = tmp_path / "cache"
+    cache.mkdir()
+    monkeypatch.setenv("XDG_CACHE_HOME", str(cache))
+    monkeypatch.setenv("RECKON_PICK_CACHE", str(cache / "pick-input"))
+    config_home = root / "config"
+    config_home.mkdir()
+    monkeypatch.setenv("RECKON_HOME", str(config_home))
+    # Git discovery is bounded at the fixture's own temp path, so no git
+    # subprocess this fixture or the code under test starts can walk up into an
+    # enclosing checkout when the temp path sits inside one.
+    monkeypatch.setenv("GIT_CEILING_DIRECTORIES", str(root))
+
+    repository = root / "checkout"
+    (repository / "docs").mkdir(parents=True)
+    # The ledger's state root is the checkout's own state directory: the walk
+    # that locates the work tree above the ledger re-roots to exactly this path,
+    # so the file written and the file read are one file wherever the fixture
+    # sits. A state root outside the checkout would be written here and read
+    # through the enclosing tree.
+    monkeypatch.setenv("RECKON_STATE_ROOT", str(repository / "docs" / "state"))
+    state = repository / "docs" / "state" / PROJECT
+    state.mkdir(parents=True)
+    (state / "index.json").write_text(
+        json.dumps({"project": PROJECT, "data": {"_version": 0}}) + "\n",
+        encoding="utf-8",
+    )
+    (repository / "docs" / "plans").mkdir(parents=True)
+    _write_plan(
+        repository,
+        {UPSTREAM: "implementable", WAITER: "implementable"},
+    )
+    _git(repository, "init", "-q", "-b", "main")
+    _git(repository, "config", "user.email", "worker@example.invalid")
+    _git(repository, "config", "user.name", "Worker")
+    _git(repository, "add", "--", "docs")
+    _git(repository, "commit", "-q", "-m", "chore: seed checkout")
+    (config_home / "mounts.json").write_text(
+        json.dumps({PROJECT: str(repository / "docs")}), encoding="utf-8"
+    )
+    # The mounts registry wins over the config home wherever both are consulted,
+    # and a host that exports it would otherwise leave this fixture's checkout
+    # unnamed: the guard would read the host repository's HEAD instead of the
+    # one built here.
+    monkeypatch.setenv("RECKON_MOUNTS_PATH", str(config_home / "mounts.json"))
+    from reckon.crew.dispatch_sections import project_mount_repository
+
+    resolved = project_mount_repository(PROJECT)
+    assert resolved is not None, "the fixture registers its own checkout"
+    assert Path(resolved).resolve() == repository.resolve(), (
+        f"the guard resolves {resolved}, not the fixture checkout {repository}"
+    )
+    assert (
+        Path(ledger.ledger_path(PROJECT)).resolve().is_relative_to(repository.resolve())
+    ), (
+        f"the ledger the fixture writes and the guard reads is "
+        f"{ledger.ledger_path(PROJECT)}, outside the fixture's checkout; a "
+        "cached index or a stale home would answer from another tree"
+    )
+    assert Path(ledger._shared_index_root(PROJECT, None)).resolve() == (
+        repository.resolve()
+    ), (
+        "the ledger resolves its work tree somewhere other than the fixture's "
+        "checkout, so its reads are answered from another tree"
+    )
+    # A ledger write and the read that follows it must land on the same file.
+    # The assertion above names the write path only; this round trip proves the
+    # read path too, on a project name of its own so the probe row cannot stand
+    # in for one of the test's own.
+    probe = "fixture-probe"
+    ledger.run_path(probe, "probe").parent.mkdir(parents=True, exist_ok=True)
+    ledger.write_run_file(probe, {"run_id": "probe", "project": probe})
+    assert [row["run_id"] for row in ledger.load(probe)[0]["runs"]] == ["probe"], (
+        "the ledger read back is not the ledger just written; a read that "
+        "resolves through another work tree answers empty"
+    )
+    return repository
+
+
+def _config_for():
+    config = json.loads(json.dumps(CONFIG))
+
+    def resolve(pointer):
+        return config
+
+    return resolve
+
+
+def _no_launch(recorded: list):
+    def launch(plan, *, log_path, stderr_path, prompt_path):
+        recorded.append(Path(str(prompt_path)).name)
+        return os.getpid()
+
+    return launch
+
+
+def _phase_of(section: str) -> str:
+    for pointer in runs.list_live(project=PROJECT):
+        node = dict(pointer.get("node") or {})
+        if str(node.get("section")) == section:
+            return str(pointer.get("phase") or "")
+    return ""
+
+
+def _declare(repository: Path, section: str) -> None:
+    _rewrite_declarations(repository, {section: "done"})
+
+
+def _queue_waiter(repository: Path) -> dict:
+    """Queue one request on ``s2``, which declares a wait on ``s1``."""
+    return queue_admission.queue_requests(
+        [
+            TaskNode(
+                id="n-waiter",
+                goal=f"build {WAITER}",
+                plan=PLAN,
+                section=WAITER,
+                done_when=f"pytest reports passed for {WAITER}",
+                write_paths=[f"{WAITER}.txt"],
+                manifest_path=str(repository / "manifest.md"),
+                time_budget="20m",
+                spec_level="exact",
+            )
+        ],
+        project=PROJECT,
+        session=SESSION,
+        repo_root=repository,
+        config=CONFIG,
+        run_ids={"n-waiter": WAITER_RUN},
+    )
+
+
+def _deliver(repository: Path) -> str:
+    """Record an upstream run that has delivered and whose head is off HEAD."""
+    _git(repository, "checkout", "-q", "-b", DELIVERY_BRANCH)
+    (repository / "upstream.txt").write_text("upstream\n", encoding="utf-8")
+    _git(repository, "add", "--", "upstream.txt")
+    _git(repository, "commit", "-q", "-m", "feat: the upstream section")
+    delivered = _git(repository, "rev-parse", "HEAD")
+    _git(repository, "checkout", "-q", "main")
+    assert delivered != _git(repository, "rev-parse", "HEAD")
+
+    manifest = runs.run_dir(UPSTREAM_RUN) / runs.DEFAULT_MANIFEST_NAME
+    manifest.parent.mkdir(parents=True, exist_ok=True)
+    manifest.write_text(
+        f"status: complete\ncommits: {delivered}\nmanifest-version: 1\n",
+        encoding="utf-8",
+    )
+    runs._write_json(
+        runs.pointer_path(UPSTREAM_RUN),
+        {
+            "run_id": UPSTREAM_RUN,
+            "project": PROJECT,
+            "session": SESSION,
+            "phase": "working",
+            "repo": str(repository),
+            "node": {"id": "n-upstream", "plan": PLAN, "section": UPSTREAM},
+        },
+    )
+    return delivered
+
+
+def _promote(delivered: str) -> None:
+    """Promote the run as the real promotion does, without merging its head.
+
+    Promotion removes the live pointer and then records the revision, so from
+    then on the project ledger is the only record of the run's landing.
+    """
+    runs.pointer_path(UPSTREAM_RUN).unlink()
+    ledger.run_path(PROJECT, UPSTREAM_RUN).parent.mkdir(parents=True, exist_ok=True)
+    ledger.write_run_file(
+        PROJECT,
+        {
+            "run_id": UPSTREAM_RUN,
+            "project": PROJECT,
+            "plan": PLAN,
+            "node": {"id": "n-upstream", "plan": PLAN, "section": UPSTREAM},
+            "promoted_revision": delivered,
+            "commits": [delivered],
+        },
+    )
+
+
+def _release() -> dict:
+    """Run the release a promotion of ``s1`` performs for its waiters."""
+    return queue_admission._release_waiters([f"{PLAN}#{UPSTREAM}"], project=PROJECT)
+
+
+def _admit(recorded: list) -> None:
+    queue_admission.admit_once(config_for=_config_for(), launcher=_no_launch(recorded))
+
+
+def test_a_delivered_unlanded_run_holds_the_wait_until_merged_into_head(
+    queue_repo: Path,
+) -> None:
+    """The declaration alone does not release the waiter; the landing does."""
+    stored = _queue_waiter(queue_repo)
+    assert stored[WAITER_RUN]["phase"] == queue_admission.AWAITING_UPSTREAM_PHASE
+
+    # The coordinator marks the section done, as a landing does, and the run has
+    # delivered -- but its head is not in the registered checkout's HEAD.
+    _declare(queue_repo, UPSTREAM)
+    delivered = _deliver(queue_repo)
+
+    launched: list[str] = []
+    _admit(launched)
+    assert launched == [], "a done declaration alone launches nothing"
+    assert _phase_of(WAITER) == queue_admission.AWAITING_UPSTREAM_PHASE, (
+        "the waiter stays waiting while its upstream code is off HEAD"
+    )
+
+    # Promotion records the revision, and the promotion's own release re-derives
+    # the wait: the head is still unmerged, so the waiter keeps waiting.
+    _promote(delivered)
+    # The ledger is now the only record of the run, so name it: a tree where
+    # this read resolves somewhere else fails here, at the component that
+    # decides, rather than as a phase further down.
+    rows, _version = ledger.load(PROJECT)
+    assert rows["runs"], "the promotion wrote a row the guard can read"
+    assert queue_admission._section_run_unlanded(PROJECT, PLAN, UPSTREAM, live=[]), (
+        "the guard holds the wait from the ledger alone"
+    )
+    _release()
+    assert _phase_of(WAITER) == queue_admission.AWAITING_UPSTREAM_PHASE, (
+        "a promotion without the merge leaves the waiter waiting"
+    )
+
+    # Merging the delivered head into HEAD lands the section and releases it.
+    _git(
+        queue_repo,
+        "merge",
+        "--no-ff",
+        "-q",
+        "-m",
+        "merge the upstream run",
+        "run-branch",
+    )
+    assert _git(queue_repo, "merge-base", "--is-ancestor", delivered, "HEAD") == ""
+    _release()
+    assert _phase_of(WAITER) == queue_admission.QUEUED_PHASE, (
+        "the waiter is released once the upstream's head is in HEAD"
+    )
+
+
+def test_a_ledger_index_built_before_the_promotion_still_holds_the_wait(
+    queue_repo: Path,
+) -> None:
+    """A warm index is refreshed by the write, so it cannot outvote the ledger."""
+    _queue_waiter(queue_repo)
+    _declare(queue_repo, UPSTREAM)
+    delivered = _deliver(queue_repo)
+
+    # Warm the index while it holds no promotion for this section, so the read
+    # the guard makes after the promotion is answered from an index that was
+    # built while the section was still unlanded.
+    before, _version = ledger.load(PROJECT, use_index=True)
+    assert not [row for row in before["runs"] if row.get("promoted_revision")], (
+        "the warm index carries no promotion yet"
+    )
+
+    _promote(delivered)
+
+    after, _version = ledger.load(PROJECT, use_index=True)
+    assert [
+        row["promoted_revision"]
+        for row in after["runs"]
+        if row.get("promoted_revision")
+    ], "the promotion is visible through the index it warmed"
+    assert queue_admission._section_run_unlanded(PROJECT, PLAN, UPSTREAM, live=[]), (
+        "a warm index built before the promotion does not release the wait"
+    )
+    _release()
+    assert _phase_of(WAITER) == queue_admission.AWAITING_UPSTREAM_PHASE
+
+
+def test_a_discarded_delivered_run_releases_the_wait(queue_repo: Path) -> None:
+    """A run that will never land is not a landing that is still to come."""
+    _queue_waiter(queue_repo)
+    _declare(queue_repo, UPSTREAM)
+    _deliver(queue_repo)
+    _release()
+    assert _phase_of(WAITER) == queue_admission.AWAITING_UPSTREAM_PHASE
+
+    promotion.discard(UPSTREAM_RUN)
+
+    _release()
+    assert _phase_of(WAITER) == queue_admission.QUEUED_PHASE, (
+        "a discarded run no longer holds the section's waiters"
+    )
+
+
+def test_an_unreadable_ledger_holds_the_wait(
+    queue_repo: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A promotion that cannot be read is unknown, not absent."""
+    _queue_waiter(queue_repo)
+    _declare(queue_repo, UPSTREAM)
+    _deliver(queue_repo)
+
+    def unreadable(*arguments, **keywords):
+        raise OSError("the ledger cannot be read")
+
+    monkeypatch.setattr(ledger, "load", unreadable)
+
+    _release()
+    assert _phase_of(WAITER) == queue_admission.AWAITING_UPSTREAM_PHASE, (
+        "an unreadable ledger holds the waiter rather than releasing it"
+    )
+
+
+def test_a_run_with_no_registered_checkout_holds_the_wait(
+    queue_repo: Path,
+) -> None:
+    """A landing that cannot be read is unknown, not absent."""
+    _queue_waiter(queue_repo)
+    _declare(queue_repo, UPSTREAM)
+    _deliver(queue_repo)
+
+    mounts = Path(os.environ["RECKON_MOUNTS_PATH"])
+    mounts.write_text("{}", encoding="utf-8")
+
+    _release()
+    assert _phase_of(WAITER) == queue_admission.AWAITING_UPSTREAM_PHASE, (
+        "an unreadable landing holds the waiter rather than releasing it"
+    )
+
+
+def test_the_wait_still_holds_with_the_temp_path_inside_a_checkout(
+    queue_repo: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A temp path inside a work tree does not send the ledger's reads elsewhere.
+
+    A run from a freshly extracted tree puts the suite's basetemp inside the
+    tree under test, and the ledger resolves the work tree above its own path.
+    The fixture is pointed at that layout here and must still read the rows it
+    wrote, which is what the two cases above failed on when it was not.
+    """
+    _queue_waiter(queue_repo)
+    _declare(queue_repo, UPSTREAM)
+    delivered = _deliver(queue_repo)
+    _promote(delivered)
+
+    inside = queue_repo / ".tmp"
+    inside.mkdir()
+    monkeypatch.setenv("TMPDIR", str(inside))
+    scratch = Path(tempfile.mkdtemp(prefix="pytest-inside-", dir=inside))
+    assert not _outside_any_work_tree(scratch), (
+        "the case must exercise a temp path inside a work tree"
+    )
+    assert Path(ledger._shared_index_root(PROJECT, None)).resolve() == (
+        queue_repo.resolve()
+    ), "the ledger reads through the enclosing checkout rather than the fixture"
+
+    rows, _version = ledger.load(PROJECT)
+    assert [row["run_id"] for row in rows["runs"]] == [UPSTREAM_RUN], (
+        "the promotion is readable with the suite's temp path inside a work tree"
+    )
+    _release()
+    assert _phase_of(WAITER) == queue_admission.AWAITING_UPSTREAM_PHASE
+
+
+def test_a_section_declared_done_with_no_run_releases_at_once(queue_repo: Path) -> None:
+    """A section completed by hand has no run to wait for."""
+    _queue_waiter(queue_repo)
+    _declare(queue_repo, UPSTREAM)
+
+    _release()
+    assert _phase_of(WAITER) == queue_admission.QUEUED_PHASE

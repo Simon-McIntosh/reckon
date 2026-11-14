@@ -16,6 +16,7 @@ default is suppression, so arming is opted into rather than out of.
 from __future__ import annotations
 
 import contextlib
+import hashlib
 import importlib
 import json
 import os
@@ -487,6 +488,48 @@ def unguarded_account_surface_read(monkeypatch):
     )
 
 
+_HOOK_TRUST_KEY = "/<session-flags>/config.toml:post_tool_use:0:0"
+
+
+def _isolated_probe_answer(probe):
+    """Answer the one probe whose question is where trust comes from, unspawned.
+
+    A codex launch asks its app server to list the inbox hook so the argv can
+    carry the harness's own trust key and hash; refusing to answer therefore
+    reads as untrusted and refuses every dispatch. The answer below echoes the
+    hook command the probe is itself loading, with a key and hash of this
+    stub's own making, so it stands in for the harness's reply without
+    reproducing the harness's derivation and without spawning anything.
+    """
+    if not any(
+        isinstance(request, dict) and request.get("method") == "hooks/list"
+        for request in probe.requests
+    ):
+        return None
+    from reckon.hooks.install import worker_inbox_group
+
+    command = worker_inbox_group()["hooks"][0]["command"]
+    return {
+        "result": {
+            "data": [
+                {
+                    "hooks": [
+                        {
+                            "source": "sessionFlags",
+                            "eventName": "postToolUse",
+                            "handlerType": "command",
+                            "command": command,
+                            "key": _HOOK_TRUST_KEY,
+                            "currentHash": "sha256:"
+                            + hashlib.sha256(command.encode("utf-8")).hexdigest(),
+                        }
+                    ]
+                }
+            ]
+        }
+    }
+
+
 @pytest.fixture(autouse=True)
 def no_live_account_probe(monkeypatch):
     """No test spawns a provider probe or reads the login's live account."""
@@ -494,7 +537,7 @@ def no_live_account_probe(monkeypatch):
         return
     from reckon import _backends
 
-    monkeypatch.setattr(_backends, "run_probe", lambda probe: None)
+    monkeypatch.setattr(_backends, "run_probe", _isolated_probe_answer)
     surface = type(_backends.dialect_for({"command": "claude"}))
     monkeypatch.setattr(
         surface,

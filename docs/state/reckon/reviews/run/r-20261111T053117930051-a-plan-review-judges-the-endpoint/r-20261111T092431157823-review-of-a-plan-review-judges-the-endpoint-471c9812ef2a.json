@@ -1,0 +1,110 @@
+{
+  "added_failure_count": 1,
+  "added_failure_ids": [
+    "tests/test_the_station_reads_only_what_changed.py::test_a_cleared_memo_yields_the_same_payload"
+  ],
+  "added_failures_note": "Derived from the reviewed run's own two gate arms, because its manifest carries no baseline_suite/after_suite fields (grep for either key in .../r-20261111T053117930051-a-plan-review-judges-the-endpoint/manifest.md returns nothing). importers-base.log records 'revision: e0e37167f6...' then '57 failed, 1840 passed, 8 warnings in 484.41s' then a bare 'EXIT=1'; importers-head-fixed.log records 'revision: 0aa99a19ee...' then '58 failed, 1846 passed, 8 warnings in 486.81s' then 'EXIT=1'. Comparing the run's own ids-base.txt (57 ids) with ids-head-fixed.txt (58 ids): nothing the base failed is gone, and the one added id is tests/test_the_station_reads_only_what_changed.py::test_a_cleared_memo_yields_the_same_payload. The failure the previous review recorded, tests/test_crew.py::test_no_watch_dispatch_records_the_override_on_pointer_and_ledger, is absent from the repaired head arm -- comm over ids-head.txt and ids-head-fixed.txt shows exactly that exchange, so the repair landed and the population gained a different id in the same run.",
+  "assertion_analysis": [
+    {
+      "condition_to_fail": "Reinstate the old stub (monkeypatch.setattr(crew, '_spawn', ...)) or route the dispatch launch through any seam other than _start_supervisor: 'launches' stays empty and the assertion reddens.",
+      "file": "tests/test_crew.py",
+      "line": 2084
+    },
+    {
+      "condition_to_fail": "Remove the _start_supervisor patch: a real detached supervisor is forked as a child of the test process and _child_pids(os.getpid()) is non-empty when the assertion runs.",
+      "file": "tests/test_crew.py",
+      "line": 2085
+    }
+  ],
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-11-11T09:35:19.900Z",
+  "dimension_dispositions": {
+    "reuse": {
+      "kind": "folded",
+      "node": "a-plan-review-judges-the-endpoint",
+      "recorded_at": "2026-11-11T09:46:19.592793+00:00"
+    }
+  },
+  "dispatched_at": "2026-11-11T09:26:54Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "folded",
+      "node": "a-plan-review-judges-the-endpoint",
+      "recorded_at": "2026-11-11T09:45:42.175930+00:00"
+    },
+    "1": {
+      "kind": "folded",
+      "node": "a-plan-review-judges-the-endpoint",
+      "recorded_at": "2026-11-11T09:45:51.198388+00:00"
+    },
+    "2": {
+      "kind": "folded",
+      "node": "a-plan-review-judges-the-endpoint",
+      "recorded_at": "2026-11-11T09:45:59.807855+00:00"
+    },
+    "3": {
+      "kind": "folded",
+      "node": "a-plan-review-judges-the-endpoint",
+      "recorded_at": "2026-11-11T09:46:07.608604+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "tests/test_crew.py",
+      "line": 1988,
+      "severity": "non-blocking",
+      "text": "non-blocking: the added _child_pids re-implements reckon/crew/recovery_liveness.py:394 _process_children, which reckon/crew/dispatch_launch.py:468 already wraps as _inherited_child_pids() for exactly this check; the new copy is also the more expensive form, scanning /proc/<pid>/stat for every process on the node where the owner reads one process's /proc/<pid>/task/*/children."
+    },
+    {
+      "file": "docs/evidence/fragments/a-plan-is-reviewed-before-it-is-built/a-plan-review-judges-the-endpoint.html",
+      "line": 50,
+      "severity": "non-blocking",
+      "text": "non-blocking: the paragraph opened at line 31 (id a-plan-review-judges-the-endpoint-population) loses its closing </p> when its text is replaced, so the fragment carries an unclosed block where every sibling paragraph is closed; browsers auto-close it, so the defect is in the record's markup rather than in its rendering."
+    },
+    {
+      "file": "docs/evidence/fragments/a-plan-is-reviewed-before-it-is-built/a-plan-review-judges-the-endpoint.html",
+      "line": 43,
+      "severity": "non-blocking",
+      "text": "non-blocking: the claim that the replacement failure 'passes 11 of 11 five times in isolation' names no log, and no file in the run directory records those five runs, so the flake attribution this node uses to discount its one added failure rests on a claim rather than a receipt; the count itself is consistent -- the module collects 11 tests."
+    },
+    {
+      "file": "tests/test_crew.py",
+      "line": 2085,
+      "severity": "non-blocking",
+      "text": "non-blocking: the assertion that the test process has no child holds for the whole pytest worker, not for this test, so any child another case in the same worker leaves behind reddens it for a reason unrelated to the dispatch it guards; the population arm at 0aa99a19 passed, so the risk is latent rather than observed."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "Read commit by commit from eb375b90d0ca to 471c9812ef2a: e9818124 corrects one docstring sentence in tests/test_plan_review_prompt.py, 9a89ec67 adds the mechanism paragraph, 0aa99a19 rewrites the crew test's stub and adds two assertions, 471c9812 replaces the population paragraph and adds the repair paragraph; 92 insertions and 23 deletions across three files, no production code.",
+    "done_when": "The done_when's population clause -- the test files importing reckon.crew.review add no failure against the base revision -- is still not met by count: importers-head-fixed.log closes '58 failed, 1846 passed' EXIT=1 against importers-base.log's '57 failed, 1840 passed'. The named regression is gone and the remaining added id is recorded as a parallel-run flake, so the clause is recorded rather than satisfied.",
+    "goal": "The reviewed node's goal is that the composed plan-review briefs judge each section against the endpoint-only rule; the gained span does not restate that goal, it repairs the case guarding it (tests/test_crew.py:2020-2044 now stubs the seam dispatch actually takes) and corrects the evidence fragment that records it.",
+    "manifest": "Read; it reports status complete, names the repaired case, records importers-head-fixed.log's arm, and states the 20 isolated runs at 0aa99a19 with zero failures. It names no log for the '11 of 11 five times' claim it makes about the replacement flake.",
+    "write_paths": "The served manifest declares the node's paths, and the gained span touches docs/evidence/fragments/a-plan-is-reviewed-before-it-is-built/a-plan-review-judges-the-endpoint.html (declared), plus tests/test_crew.py and tests/test_plan_review_prompt.py, which are not in the original fence but were granted to the run in resume-1-advice.txt and resume-3-advice.txt respectively; both grants are on disk in the run directory."
+  },
+  "justifications": {
+    "durability": "tests/test_crew.py:2084 fails when the stub is put back on crew._spawn, because the launch then reaches _start_supervisor and launches is empty, and tests/test_crew.py:2085 fails when a real supervisor child survives the call.",
+    "evidence": "importers-base.log and importers-head-fixed.log both carry a revision header and a bare EXIT=1, and crew-fixed20.log holds 20 '1 passed' lines at 0aa99a19, but the reviewed manifest names no baseline_suite or after_suite field and the '11 of 11 five times' claim at docs/evidence/fragments/a-plan-is-reviewed-before-it-is-built/a-plan-review-judges-the-endpoint.html:43 has no log behind it.",
+    "fit": "The new helper at tests/test_crew.py:1988 follows the file's test-helper style, but it reads /proc/<pid>/stat for every process where the repository's own sibling helpers read one process's task children.",
+    "goal_fidelity": "tests/test_crew.py:2020-2044 now stubs reckon.crew.dispatch._start_supervisor, the seam reckon/crew/dispatch.py:3578 actually calls, so the gained span repairs the flake that blocked the node's own endpoint-judging evidence from being clean.",
+    "reuse": "tests/test_crew.py:1988 re-implements reckon/crew/recovery_liveness.py:394 _process_children, which reckon/crew/dispatch_launch.py:468 already wraps as _inherited_child_pids for exactly this purpose; the addition duplicates the owner rather than extending or wrapping it.",
+    "scope_discipline": "Every path in git diff --stat eb375b90d0ca 471c9812ef2a is inside the fence as extended by resume-1-advice.txt and resume-3-advice.txt, and the reviewed worktree is clean at 471c9812ef2a."
+  },
+  "project": "reckon",
+  "review_run_id": "r-20261111T092431157823-review-of-a-plan-review-judges-the-endpoint-471c9812ef2a",
+  "reviewed_base_sha": "eb375b90d0ca6efe1dd7b88101915dcf889f2393",
+  "reviewed_head_sha": "471c9812ef2a648cea86a3403a7aee34d6f85038",
+  "reviewed_run_id": "r-20261111T053117930051-a-plan-review-judges-the-endpoint",
+  "scores": {
+    "durability": 17,
+    "evidence": 14,
+    "fit": 15,
+    "goal_fidelity": 18,
+    "reuse": 5,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-11T09:44:07.524414+00:00",
+  "total": 88
+}

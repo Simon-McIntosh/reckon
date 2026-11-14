@@ -1,0 +1,89 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own arms: baseline_suite at 5fa38a0392 (logs/suite-base.log) records completed true, 62 passed and two setup errors, both in tests/test_staged_write_inventory.py, both attributed to the git-less extraction ('scaffolding: the extracted base tree carries no .git, so the test's git ls-tree exits 128 before reaching code under test'); after_suite at 28b27757f0 (logs/suite-head.log) records completed true, 68 passed, 0 failures, EXIT=0. No failing id in the head arm is absent from the baseline, so zero failures were added.",
+  "call_site_count": 1,
+  "call_sites": [
+    "reckon/crew_run_commands.py:2673"
+  ],
+  "completed_at": "2026-11-11T15:12:31.892Z",
+  "dimension_dispositions": {},
+  "dispatched_at": "2026-11-11T15:01:32Z",
+  "durability_note": "logs/negative-control.log reddens the new canonical-wins case (test_the_canonical_record_wins_over_a_retired_attempt) and the two older codex cases when the pointer read is restored, so the new assertion names a code change that fails it and compares an exit status and an inbox count rather than anything the test handed in; the untested attempt-less canonical branch is recorded as a finding.",
+  "finding_dispositions": {
+    "0": {
+      "kind": "exempted",
+      "reason": "pointers written by current dispatch carry attempt; the 8 without it predate resumption's attempt field and run attempt 1, where the attempt-1 receipt is the right record; a codex resume carries the same hook and trust overrides in every attempt",
+      "recorded_at": "2026-11-11T16:06:18.706384+00:00"
+    },
+    "1": {
+      "kind": "exempted",
+      "reason": "the canonical-record fallback is exercised by the live crew tell check that closes the section, which reads a real run directory",
+      "recorded_at": "2026-11-11T16:07:28.339433+00:00"
+    },
+    "2": {
+      "kind": "exempted",
+      "reason": "the reviewer re-ran ruff check and format --check on the landed revision and both were clean, so the evidence stands",
+      "recorded_at": "2026-11-11T16:07:05.711606+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "reckon/crew_run_commands.py",
+      "line": 2549,
+      "severity": "non-blocking",
+      "text": "a live pointer that names no attempt falls back to attempt 1 at :2549-2551, so for a resumed run whose pointer lacks the field (8 of 52 live pointers on this workstation carry no top-level 'attempt') attempts.get(1) returns the retired attempt-1 receipt, reintroducing the retired-attempt read this commit repairs. It is latent today because both attempts' argv carry the same overrides, so the reachability verdict is unchanged; the right default would be the canonical record's own attempt number when the pointer names none."
+    },
+    {
+      "file": "tests/test_crew_tell_codex.py",
+      "line": 108,
+      "severity": "non-blocking",
+      "text": "_worker_record always writes an 'attempt' key, so no test exercises the fallback at reckon/crew_run_commands.py:2557-2560 that reads the canonical worker.json when it names no attempt number; deleting that branch passes the whole gate."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261111T132445209820-crew-tell-reads-the-recorded-argv/logs/ruff.log",
+      "line": 1,
+      "severity": "non-blocking",
+      "text": "the log is stamped '6180f91d86+working-tree', so the done_when's ruff arm is evidenced on an uncommitted working tree rather than the landed revision; I re-ran ruff check and ruff format --check on the two staged Python paths at 5fb58b1f9e (EXIT=0), so the code meets the arm and only the receipt is loose."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "crew tell is the only runtime path that reaches _run_recorded_argv, at reckon/crew_run_commands.py:2673; reckon/hooks/worker_message_guard.py:57 only names the invocation shape and reckon/mcp_views.py:4328 describes it, neither calls it.",
+    "diff": "read all three commits against 6180f91d86: 7adcfaa282 replaces the hand-rolled receipt glob with _attempt_worker_records and keys the read on the pointer's attempt, 28b27757f0 rewrites the fragment's argv-source and gate paragraphs, and 5fb58b1f9e corrects the head-gate revision and figure to the log's own summary line.",
+    "done_when": "the source node's measure is crew tell writing to a codex run whose recorded argv carries both overrides, refusing one without trust, leaving Claude-dialect cases unchanged, and ruff clean on the staged paths; tests/test_crew_tell_codex.py:176 adds the canonical-wins case beside :163's retired-receipt case, logs/suite-head.log records 68 passed EXIT=0 at 28b27757f0, logs/negative-control.log records 4 failed EXIT=1, and logs/ruff.log records clean checks (I re-ran ruff at 5fb58b1f myself: EXIT=0).",
+    "goal": "the reviewed delta is the repair of the prior review's findings on the crew tell argv read; reckon/crew_run_commands.py:2524 takes the attempt the pointer names from the run directory's records and :2546 discovers them through resumption's _attempt_worker_records, so the canonical worker.json for the running attempt answers and receipts stand only for retired attempts.",
+    "manifest": "read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261111T132445209820-crew-tell-reads-the-recorded-argv/manifest.md; status complete, commits 7adcfaa282, 28b27757f0 and 5fb58b1f9e, baseline_suite 62 passed with 2 scaffolding setup errors at 5fa38a0392 and after_suite 68 passed 0 failures at 28b27757f0, the two later commits docs-only.",
+    "write_paths": "the source node declared reckon/crew_run_commands.py, tests/test_crew_tell_codex.py, the evidence fragment and a figures directory; git diff --stat 6180f91d86..5fb58b1f9e changes exactly the first three, all inside them, with the figures directory unused."
+  },
+  "justifications": {
+    "durability": "tests/test_crew_tell_codex.py:176 fails under the pre-commit ranking the previous review described (canonical rank 0, receipt 1 winning) and under the pointer read, as logs/negative-control.log shows, but no test writes a canonical worker.json without an 'attempt' key, so the fallback at reckon/crew_run_commands.py:2557-2560 is unguarded.",
+    "evidence": "logs/suite-head.log records 68 passed EXIT=0 at 28b27757f0 and logs/negative-control.log 4 failed EXIT=1, and I re-ran ruff at the reviewed head (EXIT=0), but logs/ruff.log itself is stamped '6180f91d86+working-tree), so the ruff arm is evidenced on a working tree rather than a committed revision.",
+    "fit": "reckon/crew_run_commands.py:2524-2560 follows the module's private-helper idiom with a docstring stating the failure it prevents, and its private imports from reckon/crew/resumption.py match the established pattern at reckon/crew/dispatch_sessions.py:1941; no plan, ticket or version label appears.",
+    "goal_fidelity": "reckon/crew_run_commands.py:2546-2554 now takes the attempt the pointer names from _attempt_worker_records, so the canonical worker.json for the running attempt wins over a retired receipt, which is exactly the defect the previous review recorded at :2554.",
+    "reuse": "reckon/crew_run_commands.py:2546 calls _attempt_worker_records (reckon/crew/resumption.py:968) instead of keeping its own glob and receipt-number parse, so the capability now has one owner and the duplicated constants are gone.",
+    "scope_discipline": "git diff --stat 6180f91d86 5fb58b1f9e lists exactly reckon/crew_run_commands.py, tests/test_crew_tell_codex.py and docs/evidence/fragments/a-live-worker-can-be-reached/crew-tell-reads-the-recorded-argv.html, all inside the declared write paths."
+  },
+  "node": "review-of-crew-tell-reads-the-recorded-argv-5fb58b1f9e40",
+  "node:reviewed": "crew-tell-reads-the-recorded-argv",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the reviewed delta is the repair of the prior review's findings on the crew tell argv read; reckon/crew_run_commands.py:2524 takes the attempt the pointer names from the run directory's records and :2546 discovers them through resumption's _attempt_worker_records, so the canonical worker.json for the running attempt answers and receipts stand only for retired attempts.\nVERDICT done_when: the source node's measure is crew tell writing to a codex run whose recorded argv carries both overrides, refusing one without trust, leaving Claude-dialect cases unchanged, and ruff clean on the staged paths; tests/test_crew_tell_codex.py:176 adds the canonical-wins case beside :163's retired-receipt case, logs/suite-head.log records 68 passed EXIT=0 at 28b27757f0, logs/negative-control.log records 4 failed EXIT=1, and logs/ruff.log records clean checks (I re-ran ruff at 5fb58b1f myself: EXIT=0).\nVERDICT write_paths: the source node declared reckon/crew_run_commands.py, tests/test_crew_tell_codex.py, the evidence fragment and a figures directory; git diff --stat 6180f91d86..5fb58b1f9e changes exactly the first three, all inside them, with the figures directory unused.\nVERDICT manifest: read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261111T132445209820-crew-tell-reads-the-recorded-argv/manifest.md; status complete, commits 7adcfaa282, 28b27757f0 and 5fb58b1f9e, baseline_suite 62 passed with 2 scaffolding setup errors at 5fa38a0392 and after_suite 68 passed 0 failures at 28b27757f0, the two later commits docs-only.\nVERDICT diff: read all three commits against 6180f91d86: 7adcfaa282 replaces the hand-rolled receipt glob with _attempt_worker_records and keys the read on the pointer's attempt, 28b27757f0 rewrites the fragment's argv-source and gate paragraphs, and 5fb58b1f9e corrects the head-gate revision and figure to the log's own summary line.\nCALL_SITES: reckon/crew_run_commands.py:2673",
+  "review_run_id": "r-20261111T145540757915-review-of-crew-tell-reads-the-recorded-argv-5fb58b1f9e40",
+  "reviewed_base_sha": "6180f91d86c44916f3fb49b019f05805f624e5f2",
+  "reviewed_head_sha": "5fb58b1f9e408dac61e2936838f95e48c3cfc11c",
+  "reviewed_run_id": "r-20261111T132445209820-crew-tell-reads-the-recorded-argv",
+  "scores": {
+    "durability": 17,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-11T15:09:23.377300+00:00",
+  "total": 111
+}

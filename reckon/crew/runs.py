@@ -5,6 +5,7 @@ import fnmatch as fnmatch
 import hashlib as hashlib
 import inspect as inspect
 import json as json
+import math as math
 import os as os
 import re as re
 import shlex as shlex
@@ -18,6 +19,7 @@ import time as time
 from collections.abc import (
     Callable as Callable,
     Iterable as Iterable,
+    Iterator as Iterator,
     Mapping as Mapping,
 )
 from contextlib import contextmanager as contextmanager, suppress as suppress
@@ -25,7 +27,7 @@ from contextvars import ContextVar as ContextVar
 from dataclasses import dataclass as dataclass, field as field
 from datetime import UTC as UTC, datetime as datetime, timedelta as timedelta
 from pathlib import Path as Path
-from typing import Any as Any, Self as Self
+from typing import Any as Any, NoReturn as NoReturn, Self as Self
 from reckon import __version__ as __version__
 from reckon._store import (
     _config_home as _config_home,
@@ -101,7 +103,21 @@ def delivery_roots() -> tuple[Path, ...]:
 
 def run_dir(run_id: str) -> Path:
     """Directory holding one run's prompt, event log and default manifest."""
-    return runs_dir() / run_id
+    live = runs_dir() / run_id
+    archived = crew_home() / "archive" / "runs" / run_id
+    return archived if not live.exists() and archived.is_dir() else live
+
+
+def resolve_run_path(path: str | Path) -> Path:
+    """Resolve a stored artifact citation through a run's archived home."""
+    original = Path(path)
+    try:
+        relative = original.relative_to(runs_dir())
+    except ValueError:
+        return original
+    if not relative.parts:
+        return original
+    return run_dir(relative.parts[0]).joinpath(*relative.parts[1:])
 
 
 #: The authority text a queued request is launched from. It lives in the
@@ -1615,9 +1631,58 @@ def _project_derivations(project: str, repo: Path) -> dict[str, list[str]]:
 
 SHARED_WRITE_PATHS_FILENAME = "shared-write-paths.json"
 
+# The paths a textual merge cannot reconcile, listed once. The undeclared
+# default and every declared project read this one list. Sharing declarations
+# cannot turn these artifacts into concurrent textual edits.
+DEFAULT_EXCLUSIVE_PATHS = (
+    "docs/plans/*.html",  # a plan document
+    "docs/evidence/archive/",  # a cumulative evidence record
+    "docs/state/",  # generated state
+    "docs/figures/",  # a figure topic directory
+    "pyproject.toml",  # dependency manifest
+    "uv.lock",  # dependency lock
+    "*.receipt",  # a generated receipt
+)
+
+# A binary file is exclusive whoever claims it: git cannot merge two versions
+# of one, so a claim on it is refused rather than shared.
+BINARY_RECEIPT_CLASS = "binary or generated receipt"
+BINARY_SUFFIXES = frozenset(
+    {
+        ".bin",
+        ".gif",
+        ".h5",
+        ".jpeg",
+        ".jpg",
+        ".npz",
+        ".o",
+        ".pdf",
+        ".png",
+        ".pt",
+        ".pyc",
+        ".so",
+        ".webp",
+        ".whl",
+        ".zip",
+    }
+)
+BINARY_HEAD_PROBE_BYTES = 8192
+
+
+def _is_binary_receipt(path: Path) -> bool:
+    """Whether a claimed path carries binary content a textual merge cannot reconcile."""
+    if path.suffix.lower() in BINARY_SUFFIXES:
+        return True
+    try:
+        with path.open("rb") as handle:
+            head = handle.read(BINARY_HEAD_PROBE_BYTES)
+    except OSError:
+        return False
+    return b"\x00" in head
+
 
 class _SharedWritePaths(frozenset[str]):
-    """Exact shared files plus file membership under declared repository roots."""
+    """Exact shared files, declared roots, and the undeclared sharing default."""
 
     def __new__(
         cls,
@@ -1626,15 +1691,26 @@ class _SharedWritePaths(frozenset[str]):
         repo: Path,
         roots: Iterable[str] = (),
         exclusive_patterns: Iterable[str] = (),
+        default_share: bool = False,
+        unreadable_declaration: str = "",
     ) -> Self:
         policy = super().__new__(cls, paths)
         policy.repo = repo
         policy.roots = tuple(roots)
         policy.exclusive_patterns = tuple(exclusive_patterns)
+        policy.default_share = default_share
+        policy.unreadable_declaration = unreadable_declaration
+        policy._binary_cache = {}
         return policy
 
-    def exclusive_pattern(self, path: str) -> str:
-        """The declared pattern that keeps this repository-relative path exclusive."""
+    def _is_binary_member(self, path: str) -> bool:
+        cached = self._binary_cache.get(path)
+        if cached is None:
+            cached = _is_binary_receipt(self.repo / path)
+            self._binary_cache[path] = cached
+        return cached
+
+    def _declared_pattern(self, path: str) -> str:
         for pattern in self.exclusive_patterns:
             if (
                 pattern.endswith("/") and _scope_contains(pattern.rstrip("/"), path)
@@ -1642,25 +1718,104 @@ class _SharedWritePaths(frozenset[str]):
                 return pattern
         return ""
 
+    def _default_class(self, path: str) -> str:
+        for pattern in DEFAULT_EXCLUSIVE_PATHS:
+            if (
+                pattern.endswith("/") and _scope_contains(pattern.rstrip("/"), path)
+            ) or fnmatch.fnmatchcase(path, pattern):
+                return pattern
+        return BINARY_RECEIPT_CLASS if self._is_binary_member(path) else ""
+
+    def exclusive_pattern(self, path: str) -> str:
+        """The class or declared pattern that keeps this repository-relative path exclusive.
+
+        Declared exclusive patterns and the default artifact classes apply even
+        when a sharing declaration names the same path.
+        """
+        if os.path.isabs(path):
+            path = _repository_relative_scope(path, self.repo) or path
+        declared = self._declared_pattern(path)
+        if declared:
+            return declared
+        return self._default_class(path) or self.unreadable_declaration
+
     def __contains__(self, path: object) -> bool:
         if not isinstance(path, str):
             return False
         normalized = _repository_relative_scope(path, self.repo)
         if normalized is None or self.exclusive_pattern(normalized):
             return False
-        absolute = self.repo / normalized
-        if absolute.is_dir():
-            return False
         if super().__contains__(normalized):
             return True
-        if not any(_scope_contains(root, normalized) for root in self.roots):
+        absolute = self.repo / normalized
+        under_root = any(_scope_contains(root, normalized) for root in self.roots)
+        if not (under_root or self.default_share):
             return False
+        if absolute.is_dir():
+            # A directory claim under a shared root shares as the files beneath
+            # it do: the worktree isolates the edits and the merge reconciles
+            # them. An exclusive region was refused above.
+            return True
         # An absent suffixless path names a directory, matching dispatch's
         # directory-claim interpretation; existing extensionless files are files.
         return absolute.is_file() or (
             not absolute.exists()
             and any(character.isalpha() for character in absolute.suffix)
         )
+
+    def shares_region(self, path: str) -> bool:
+        """Whether a directory here shares as the files beneath it do.
+
+        A directory that is, contains, or sits under an exclusive pattern does
+        not: its files are the ones a merge cannot reconcile, so a broad claim
+        over them fences a peer however deep the file it names. The default
+        classes are exclusive too where the project shares by default.
+        """
+        normalized = _repository_relative_scope(path, self.repo)
+        if normalized is None:
+            return False
+        absolute = self.repo / normalized
+        if absolute.is_file() or (
+            not absolute.exists()
+            and any(character.isalpha() for character in absolute.suffix)
+        ):
+            return not self._default_class(normalized)
+        patterns = DEFAULT_EXCLUSIVE_PATHS
+        return not any(
+            _scopes_overlap(normalized, _pattern_root(pattern)) for pattern in patterns
+        )
+
+
+def _pattern_root(pattern: str) -> str:
+    """The directory a declared pattern is declared under.
+
+    ``docs/plans/*.html`` is a rule about files in ``docs/plans``, so a claim on
+    ``docs`` or on ``docs/plans`` covers paths the pattern keeps exclusive.
+    """
+    for index, character in enumerate(pattern):
+        if character in "*?[":
+            return pattern[:index].rstrip("/") or pattern
+    return pattern.rstrip("/") or pattern
+
+
+def _claim_paths_share(shared: frozenset[str], path: str, claim: str) -> bool:
+    """Share an overlap unless the region where the paths meet is exclusive.
+
+    Declarations grant writes; a missing shared root or a directory spelling
+    cannot serialize source edits in isolated worktrees. The narrower path is
+    the region both runs can write, so an exclusive sibling under the broader
+    directory does not fence an unrelated source file.
+    """
+    if not isinstance(shared, _SharedWritePaths):
+        return False
+    path = _repository_relative_scope(path, shared.repo)
+    claim = _repository_relative_scope(claim, shared.repo)
+    if path is None or claim is None:
+        return False
+    narrower, broader = (claim, path) if _scope_contains(path, claim) else (path, claim)
+    if not _scope_contains(broader, narrower):
+        return False
+    return not shared._default_class(narrower) and shared.shares_region(narrower)
 
 
 def _exclusive_write_pattern(shared: frozenset[str], path: str) -> str:
@@ -1671,53 +1826,74 @@ def _exclusive_write_pattern(shared: frozenset[str], path: str) -> str:
 
 
 def _shared_write_paths(project: str | None, repo: Path) -> frozenset[str]:
-    """Read the project's one file-sharing policy for every claim comparison.
+    """Read the repository's exclusive artifact policy for claim comparisons.
 
-    ``paths`` retains explicit file sharing. ``shared_roots`` makes files below
-    repository-relative roots shareable, with ``exclusive_patterns`` taking
-    precedence over both declarations. Directory claims remain exclusive.
-    Missing or malformed declarations share nothing.
+    Exact paths and shared roots remain available to callers inspecting a
+    declaration. Claim comparisons share all other repository paths, including
+    absent directories, without requiring an entry in that declaration.
+    The built-in artifact classes and binary content determine exclusivity;
+    a sharing declaration cannot introduce a source-path hold.
     """
+    resolved = repo.resolve()
     if not project:
-        return frozenset()
-    manifest = repo / "docs" / "state" / str(project) / SHARED_WRITE_PATHS_FILENAME
+        return _SharedWritePaths((), repo=resolved, default_share=True)
+    manifest = resolved / "docs" / "state" / str(project) / SHARED_WRITE_PATHS_FILENAME
     try:
         raw = json.loads(manifest.read_text())
+    except FileNotFoundError:
+        return _SharedWritePaths((), repo=resolved, default_share=True)
     except (OSError, json.JSONDecodeError):
-        return frozenset()
-    entries = raw.get("paths", []) if isinstance(raw, Mapping) else raw
-    if not isinstance(entries, list):
-        return frozenset()
+        return _unreadable_declaration(manifest, resolved)
 
-    def normalized_paths(values: Any) -> list[str]:
-        if not isinstance(values, list):
-            return []
+    if isinstance(raw, Mapping):
+        entries = raw.get("paths", [])
+        names_roots = "shared_roots" in raw
+        declared_roots = raw.get("shared_roots") or []
+        declared_patterns = raw.get("exclusive_patterns", [])
+    elif isinstance(raw, list):
+        entries = raw
+        names_roots = False
+        declared_roots = []
+        declared_patterns = []
+    else:
+        return _unreadable_declaration(manifest, resolved)
+    if not (
+        isinstance(entries, list)
+        and isinstance(declared_roots, list)
+        and isinstance(declared_patterns, list)
+    ):
+        return _unreadable_declaration(manifest, resolved)
+
+    def normalized_paths(values: list[Any]) -> list[str]:
         normalized = []
         for entry in values:
             path = entry.get("path") if isinstance(entry, Mapping) else entry
             if isinstance(path, str) and path.strip():
-                relative = _repository_relative_scope(path, repo)
+                relative = _repository_relative_scope(path, resolved)
                 if relative is not None:
                     normalized.append(relative)
         return normalized
 
-    roots = (
-        normalized_paths(raw.get("shared_roots", []))
-        if isinstance(raw, Mapping)
-        else []
-    )
-    patterns = raw.get("exclusive_patterns", []) if isinstance(raw, Mapping) else []
-    if not isinstance(patterns, list):
-        patterns = []
     return _SharedWritePaths(
         normalized_paths(entries),
-        repo=repo.resolve(),
-        roots=roots,
-        exclusive_patterns=(
+        repo=resolved,
+        roots=normalized_paths(declared_roots),
+        exclusive_patterns=tuple(
             pattern
-            for pattern in patterns
+            for pattern in declared_patterns
             if isinstance(pattern, str) and pattern.strip()
         ),
+        default_share=not names_roots,
+    )
+
+
+def _unreadable_declaration(manifest: Path, repo: Path) -> _SharedWritePaths:
+    """A declaration present but unreadable shares nothing, and names itself."""
+    name = _repository_relative_scope(str(manifest), repo) or str(manifest)
+    return _SharedWritePaths(
+        (),
+        repo=repo,
+        unreadable_declaration=f"unreadable declaration {name!r}",
     )
 
 
@@ -2187,6 +2363,15 @@ def repair_manifest_status(run_id: str, status: str, reason: str) -> dict[str, A
     kept beside it under ``manifest.md.asdelivered``, and the reason is recorded
     in the run directory. A manifest with no top-level status line, or a status
     outside the terminal vocabulary, is refused rather than half-repaired.
+
+    The live pointer's phase moves with the status. The phase is what the live
+    view reads to say where a run stands, and the manifest is what the
+    classifier reads to say what it produced; a repair that rewrote one and left
+    the other named a run the two readers disagreed about — the view read the
+    replaced word while the reflex read the verdict. The phase is set to the
+    verdict rather than reconciled with the phase it replaced, because the
+    verdict is the run's state now and the word it held described the record the
+    coordinator has just corrected.
     """
     verdict = str(status).strip().lower()
     if verdict not in REPAIRABLE_STATUSES:
@@ -2208,6 +2393,12 @@ def repair_manifest_status(run_id: str, status: str, reason: str) -> dict[str, A
         raise CrewError(
             f"the manifest at {manifest} carries no top-level status line to repair"
         )
+    # The pointer is read before anything is written, so a pointer this repair
+    # cannot read refuses while both records still say what they said rather
+    # than leaving the manifest corrected and the pointer stale.
+    pointer_present = pointer_path(run_id).is_file()
+    if pointer_present:
+        previous_phase = str(read_pointer(run_id).get("phase") or "")
     # The as-delivered copy is written before the rewrite and never overwritten,
     # so it always holds the worker's own file and a repair that repeats or
     # fails still leaves the delivery recoverable beside it.
@@ -2215,6 +2406,10 @@ def repair_manifest_status(run_id: str, status: str, reason: str) -> dict[str, A
     if not as_delivered.exists():
         as_delivered.write_text(original, encoding="utf-8")
     write_atomically(manifest, lambda handle: handle.write(rewritten), fsync=False)
+    moved_phase: str | None = None
+    if pointer_present:
+        pointer = _mutate_pointer(run_id, lambda record: {**record, "phase": verdict})
+        moved_phase = str(pointer.get("phase") or "")
     record = {
         "run_id": run_id,
         "status": verdict,
@@ -2222,6 +2417,8 @@ def repair_manifest_status(run_id: str, status: str, reason: str) -> dict[str, A
         "previous_status": previous,
         "previous_manifest": str(as_delivered),
         "manifest": str(manifest),
+        "previous_phase": previous_phase if pointer_present else None,
+        "pointer_phase": moved_phase,
         "repaired_at": _utc_now(),
     }
     _write_json(run_dir(run_id) / STATUS_REPAIR_RECORD_NAME, record)
@@ -2322,26 +2519,59 @@ def _drain_executable_remainder(
     )
 
 
-def _drain_row(pointer: Mapping[str, Any]) -> dict[str, Any]:
-    """One live pointer's closure row, the drain's own classification."""
+def _drain_row(
+    pointer: Mapping[str, Any], *, classification: str | None = None
+) -> dict[str, Any]:
+    """One live pointer's closure row, the drain's own classification.
+
+    ``classification`` is the word an already-made classification of this run
+    reached, for a caller reading a verdict some producer holds rather than
+    taking its own: the disposition's validity is the only part of the row that
+    turns on that word, so a caller that has one puts it here instead of
+    re-reading the run's stream, manifest and review records. A caller with no
+    such word passes none and the pointer is classified here, host-gated
+    liveness and all.
+
+    The row also decides whether this run's own review or repair is working,
+    which leaves it out of the count. It reads that from the project's live
+    pointers, so the drain's count and a promotion's fleet reading — which counts
+    pointer by pointer through this same function — excuse the same runs.
+    """
     from reckon.crew.recovery import (
         classify_pointer,
         closure_disposition_valid,
         local_liveness,
     )
 
-    alive, proven = local_liveness(pointer)
-    row = classify_pointer({**pointer, "process_alive": alive if proven else None})
+    snapshot: list[dict[str, Any]] | None = None
+    if classification is None:
+        snapshot = _row_snapshot(pointer)
+        alive, proven = local_liveness(pointer)
+        row = classify_pointer(
+            {**pointer, "process_alive": alive if proven else None},
+            pointers=snapshot,
+        )
+        classification = str(row["classification"])
+    else:
+        row = {"classification": str(classification)}
     recorded = pointer.get("closure_disposition")
     disposition = (
         str(recorded.get("kind") or "") if isinstance(recorded, Mapping) else ""
     )
-    valid = closure_disposition_valid(disposition, row["classification"])
+    valid = closure_disposition_valid(disposition, classification)
+    run_id = str(pointer.get("run_id") or "")
+    excused = _ROW_EXCUSED.get()
+    if excused is None:
+        excused = _in_flight_round_ids(
+            snapshot if snapshot is not None else _row_snapshot(pointer)
+        )
+    in_flight = bool(run_id) and run_id in excused
     return {
         **row,
         "disposition": dict(recorded) if isinstance(recorded, Mapping) else None,
         "disposition_valid": valid,
-        "unreconciled": not valid,
+        "unreconciled": not valid and not in_flight,
+        **({"in_flight": True} if in_flight else {}),
     }
 
 
@@ -2349,8 +2579,14 @@ def _unloaded_sections(
     project: str,
     pointers: Iterable[Mapping[str, Any]],
     plans: list[tuple[str, dict[str, Any]]] | None,
+    *,
+    ledger_rows: Iterable[Mapping[str, Any]] | None = None,
 ) -> dict[str, list[str]]:
-    """Name declared work with neither a request nor a reachable promotion."""
+    """Name declared work with neither a request nor a reachable promotion.
+
+    A caller resolving multiple sections supplies its ledger snapshot so every
+    verdict uses the same history without reopening the per-run documents.
+    """
     from reckon import _plan_html, ledger
     from reckon._schema import is_implementable_section
     from reckon.crew.dispatch_sections import project_mount_repository
@@ -2380,8 +2616,10 @@ def _unloaded_sections(
 
     checkout = project_mount_repository(project) if pending else None
     if checkout is not None:
-        landed, _version = ledger.load(project, use_index=False)
-        for record in landed["runs"]:
+        if ledger_rows is None:
+            landed, _version = ledger.load(project, use_index=False)
+            ledger_rows = landed["runs"]
+        for record in ledger_rows:
             key = identity(record)
             if key not in pending:
                 continue
@@ -2597,6 +2835,138 @@ def _drain_week_view(project: str, pointers: list[dict[str, Any]]) -> dict[str, 
     return {"project": project_view, "plans": plans}
 
 
+_ROW_SNAPSHOT: ContextVar[list[dict[str, Any]] | None] = ContextVar(
+    "reckon_closure_row_snapshot", default=None
+)
+_ROW_EXCUSED: ContextVar[set[str] | None] = ContextVar(
+    "reckon_closure_row_excused", default=None
+)
+
+
+def _row_snapshot(pointer: Mapping[str, Any]) -> list[dict[str, Any]]:
+    """The live pointers one run is counted among.
+
+    A reader counting rows over a snapshot enters :func:`row_scope`, so a view
+    over many pointers reads the directory once instead of once per row. A
+    caller deriving a single row leaves the scope unset and the row reads the
+    pointers itself, through the quiet reader: a watcher transition is a public
+    event, and deriving one run's row is not a reason to publish one.
+    """
+    snapshot = _ROW_SNAPSHOT.get()
+    if snapshot is not None:
+        return snapshot
+    project = str(pointer.get("project") or "")
+    return _list_live_records(project=project or None)
+
+
+@contextmanager
+def row_scope(pointers: Iterable[Mapping[str, Any]]) -> Iterator[list[dict[str, Any]]]:
+    """Derive closure rows for one pointer snapshot, reading the excuse once.
+
+    Every reader that counts rows over a snapshot enters this scope, so the
+    pointer directory and each round's manifest are read once for the whole
+    reading rather than once per pointer. The two context variables carry the
+    snapshot and the excuse set to :func:`_drain_row`, which keeps its
+    per-pointer signature for the callers that reach it directly.
+    """
+    points = list(pointers)
+    snapshot_token = _ROW_SNAPSHOT.set(points)
+    excused_token = _ROW_EXCUSED.set(_in_flight_round_ids(points))
+    try:
+        yield points
+    finally:
+        _ROW_EXCUSED.reset(excused_token)
+        _ROW_SNAPSHOT.reset(snapshot_token)
+
+
+def _round_has_delivered(pointer: Mapping[str, Any]) -> bool:
+    """Whether a review or repair round has already written a terminal manifest.
+
+    A round still working is the work its subject waits on, so neither the
+    subject nor the round is a duty yet. A round that has delivered is itself
+    the coordinator's next action — completing it is the duty — so its own
+    pointer stays counted, which is what a plan-review round holding a live
+    pointer shows.
+    """
+    from reckon.crew.recovery_stream import manifest_status_is_terminal
+    from reckon.crew.reports import ManifestParseError, parse_manifest
+
+    path = str(pointer.get("manifest_path") or "")
+    if not path:
+        return False
+    try:
+        text = Path(path).read_text(encoding="utf-8", errors="replace")
+    except OSError:
+        return False
+    try:
+        status = parse_manifest(text, path=path).get("status") or ""
+    except ManifestParseError:
+        return False
+    return manifest_status_is_terminal(status)
+
+
+def _in_flight_round_ids(pointers: Iterable[Mapping[str, Any]]) -> set[str]:
+    """Run ids the closure count leaves out because a review or repair is working.
+
+    A delivered run whose own review or repair is under way owes its coordinator
+    nothing until that work ends: the reflex owns the next step, so counting the
+    run reports a duty no coordinator can act on. The working review or repair
+    run is left out for the same reason — it is the work, not a verdict awaiting
+    reconciliation. A request the lane has only queued is not working yet, so it
+    is not excused and keeps the count a parked request always has.
+    """
+    from reckon.crew import recovery
+    from reckon.crew import repair as repair_module
+
+    live = list(pointers)
+    launched = [
+        pointer for pointer in live if str(pointer.get("phase") or "") != "queued"
+    ]
+    excused: set[str] = set()
+    rounds: set[str] = set()
+    repair_sources: set[str] = set()
+    for pointer in launched:
+        run_id = str(pointer.get("run_id") or "")
+        is_review = recovery._is_review_run(pointer)
+        is_repair = recovery._is_repair_node(pointer)
+        if not run_id or not (is_review or is_repair):
+            continue
+        rounds.add(run_id)
+        if _round_has_delivered(pointer):
+            continue
+        excused.add(run_id)
+        if is_repair:
+            node_id = str((pointer.get("node") or {}).get("id") or "")
+            source = repair_module.round_node_source(
+                node_id, repair_module.REPAIR_NODE_PREFIX
+            )
+            if source:
+                repair_sources.add(source)
+    for pointer in live:
+        run_id = str(pointer.get("run_id") or "")
+        if not run_id or run_id in excused or run_id in rounds:
+            continue
+        node_id = str((pointer.get("node") or {}).get("id") or "")
+        if run_id in repair_sources or (node_id and node_id in repair_sources):
+            excused.add(run_id)
+            continue
+        standing = recovery._review_in_flight(pointer, pointers=launched)
+        if standing and standing in excused:
+            excused.add(run_id)
+    return excused
+
+
+def _closure_rows(pointers: Iterable[Mapping[str, Any]]) -> list[dict[str, Any]]:
+    """The drain rows for one snapshot, with in-flight rounds not counted.
+
+    The rows of a subject run are left in place — a reader can still see the run
+    and why it is not counted — so the count and the list cannot disagree about
+    how many runs the counted set holds.
+    """
+    with row_scope(pointers) as points:
+        return [_drain_row(pointer) for pointer in points]
+
+
 def drain(project: str, *, session: str | None = None) -> dict[str, Any]:
     """Return the closure drain derived from one project's live pointers.
 
@@ -2624,7 +2994,7 @@ def drain(project: str, *, session: str | None = None) -> dict[str, Any]:
     # closure fence turns on whether the worker lives now rather than on
     # what a pointer's writer recorded at launch.
     pointers = list_live(project=project)
-    rows = [_drain_row(pointer) for pointer in pointers]
+    rows = _closure_rows(pointers)
 
     counted, peers = _partition_session_rows(rows, session)
     unreconciled = sum(1 for row in counted if row["unreconciled"])
@@ -2666,7 +3036,7 @@ def drain_unreconciled_by_session(project: str) -> dict[str, int]:
     """
     from reckon.crew.recovery import _partition_session_rows
 
-    rows = [_drain_row(pointer) for pointer in list_live(project=project)]
+    rows = _closure_rows(list_live(project=project))
     counts: dict[str, int] = {}
     for session in {str(row.get("session") or "") for row in rows} | {""}:
         counted, _peers = _partition_session_rows(rows, session)
@@ -3859,17 +4229,126 @@ def drop_watch_seat(project: str, handle: Any) -> None:
         fcntl.flock(handle.fileno(), fcntl.LOCK_UN)
 
 
+# The status a producer leaves with when it lost its seat rather than giving it
+# up. Exit 0 is the arming supervisor's signal that a stop was deliberate, and
+# a crash status is one it counts against the restart limit, so a seat lost to
+# a failed renewal or to a lapsed registration needs a third value of its own:
+# the supervisor restarts it, without reading it as either.
+WATCH_SEAT_LOST_EXIT = 75
+
+
+def watch_lease_remaining_from_record(
+    record: Mapping[str, Any],
+    *,
+    now: float | None = None,
+    lease_seconds: float | None = None,
+) -> float | None:
+    """Seconds left from a captured producer registration and an epoch clock.
+
+    Missing or non-finite renewal timestamps establish no expiry. Supplying
+    ``now`` judges an already captured snapshot without another clock or file
+    read. ``lease_seconds`` preserves an interval captured when taking a seat.
+    """
+    value = record.get("lease_renewed_at")
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        return None
+    try:
+        renewed = float(value)
+    except OverflowError:
+        return None
+    if not math.isfinite(renewed):
+        return None
+    interval = producer_lease_seconds() if lease_seconds is None else lease_seconds
+    instant = _utc_epoch_seconds() if now is None else now
+    return interval - (instant - renewed)
+
+
+def watch_lease_remaining(
+    project: str, *, lease_seconds: float | None = None
+) -> float | None:
+    """Read seconds left on a producer lease, or None without a known renewal.
+
+    The producer's tick, wait and renewal share the snapshot calculation with
+    readers of captured registrations. Only a recorded instant that has fallen
+    a full interval behind establishes expiry.
+    """
+    return watch_lease_remaining_from_record(
+        read_watch_registration(project), lease_seconds=lease_seconds
+    )
+
+
+def watch_lease_lapsed(project: str) -> bool:
+    """Whether nobody renewed the producer's own lease for a full interval."""
+    remaining = watch_lease_remaining(project)
+    return remaining is not None and remaining <= 0
+
+
+def watch_work_is_live(project: str) -> bool:
+    """Whether the project still has a live run to serve.
+
+    Only a live follower renews the registration, so a lapse means one of two
+    opposite things: the work is still there and its renewal stopped, or the
+    work ended and nothing was left to renew. This reads the pointers rather
+    than the watch stream, because a burst of transitions is not work.
+    """
+    return bool(_list_live_records(project=project))
+
+
+def exit_lost_watch_seat(project: str) -> NoReturn:
+    """Leave the process reporting a seat this producer lost, not gave up.
+
+    The line lands in the project's watch log, which the producer's stdout is
+    adopted into once it takes the seat, so a reader finds the reason beside the
+    seat rather than a process that simply vanished.
+    """
+    print(f"reckon crew watch stopped: seat lost for {project}", flush=True)
+    raise SystemExit(WATCH_SEAT_LOST_EXIT)
+
+
+def end_lapsed_watch_seat(project: str) -> bool:
+    """End the seat if its lease has lapsed, as a lost seat or as a drain.
+
+    Returns False while the lease stands. When it has lapsed with a live run
+    behind it, the work is still there and its renewal stopped, so this leaves
+    the process with :data:`WATCH_SEAT_LOST_EXIT` and the supervisor knows it
+    may start the producer again. With no live run nothing was renewing the
+    lease, so True lets the caller end the seat deliberately: exit 0 is the
+    supervisor's signal not to start it again, which is what keeps a quiet
+    project from being restarted once per interval.
+    """
+    if not watch_lease_lapsed(project):
+        return False
+    if watch_work_is_live(project):
+        exit_lost_watch_seat(project)
+    return True
+
+
 def renew_watch_host_lease(project: str) -> bool:
-    """Keep the producer's claim fresh; stop when another host owns it.
+    """Keep the producer's claim fresh; leave when the seat is no longer ours.
 
     The seat owner's verdict on this producer is re-taken here. A producer can
     be reloaded onto a host that is not the fleet record's node after it took
     the seat, so the start-up answer alone leaves that one renewing a seat whose
     runs it cannot probe; the release gives the seat up and ends the process.
+
+    A producer that still holds its lease but can no longer renew it, or whose
+    own registration nobody renewed for a full interval while runs are live,
+    has lost the seat rather than chosen to leave it, so it exits with
+    :data:`WATCH_SEAT_LOST_EXIT` and the supervisor knows it may start the
+    producer again. The same lapse behind no live run is the ordinary drain:
+    nothing was renewing the lease because nothing was running, so the seat ends
+    deliberately and exit 0 keeps the supervisor from restarting it each
+    interval.
     """
     release_seat_when_misplaced(project)
     lease = _WATCH_HOST_LEASES.get(project)
-    return lease is not None and lease.renew()
+    if lease is None:
+        return False
+    if not lease.renew() or watch_lease_lapsed(project):
+        if not watch_work_is_live(project):
+            return False
+        exit_lost_watch_seat(project)
+    return True
 
 
 def prepare_watch_seat_reexec(project: str) -> int | None:

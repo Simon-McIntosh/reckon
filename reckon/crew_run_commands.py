@@ -13,8 +13,6 @@ from reckon.crew_dispatch_commands import (
     _accept_a_matching_project,
     _budget_check_report,
     _crew_modules,
-    _emit,
-    _emit_crew_result,
     _lane_paused_detail,
     _resolved_flight,
     _resolved_gc_repo,
@@ -22,6 +20,39 @@ from reckon.crew_dispatch_commands import (
     crew,
     crew_review,
 )
+from reckon.crew_dispatch_commands import (
+    _emit as _publish,
+)
+from reckon.crew_dispatch_commands import (
+    _emit_crew_result as _publish_crew_result,
+)
+
+
+def _emit(payload, pretty: bool) -> None:
+    from reckon.crew.promotion_requests import COMMAND_REPLY
+
+    reply = COMMAND_REPLY.get()
+    if reply is not None:
+        reply.append(dict(payload))
+        return
+    _publish(payload, pretty)
+
+
+def _emit_crew_result(result, pretty: bool, **kwargs) -> None:
+    from reckon.crew.promotion_requests import COMMAND_REPLY
+    from reckon.crew_dispatch_commands import _crew_result_ok
+
+    if COMMAND_REPLY.get() is None:
+        _publish_crew_result(result, pretty, **kwargs)
+        return
+    payload = dict(result)
+    payload["ok"] = _crew_result_ok(
+        payload, observation=kwargs.get("observation", False)
+    )
+    _emit(payload, pretty)
+    if not payload["ok"]:
+        raise click.exceptions.Exit(kwargs.get("failure_exit", 1))
+
 
 # Preserve the CLI re-export while the retired name resolves through the
 # crew group's tombstone lookup.
@@ -29,6 +60,32 @@ crew_unwatch = tombstone_command("unwatch")
 
 
 crew_resume_ready = tombstone_command("resume-ready")
+
+
+@crew.command(name="census")
+@click.option(
+    "--apply",
+    is_flag=True,
+    help="Stop exactly the listed ownerless pids, printing each result.",
+)
+@click.option("--pretty", is_flag=True, help="Indent the JSON for reading.")
+def crew_census(apply, pretty) -> None:
+    """List local processes whose recorded owner is dead, and duplicate followers.
+
+    Ownership comes from follower registrations, producer leases, live run
+    pointers or explicit environment stamps. Unrecorded and live-owned
+    processes are spared. The first report names the signal targets and the
+    spared processes before --apply prints one result per target. Live run
+    pointers remain available for completion with a failure classification.
+    """
+    from reckon.crew.census import apply_census, census
+
+    report = census()
+    _emit(report, pretty)
+    if apply:
+        results = apply_census(report, emit=lambda result: _emit(result, pretty))
+        if any(result["action"] == "refused" for result in results):
+            raise click.exceptions.Exit(1)
 
 
 def _answer_carried_finding(pretty, **params):
@@ -124,6 +181,42 @@ def _compose_burst_refusal(params: Mapping[str, Any]) -> str | None:
     return plan_review.compose_burst_refusal(project, plan_slug)
 
 
+def _session_delivery_refusal(params: Mapping[str, Any]) -> str | None:
+    """The delivery refusal a review dispatch would meet, answered before it writes.
+
+    A review composes its brief and its report directory before the dispatch
+    that carries it away, and the dispatch is the first place a session's
+    delivery is judged. A session that would hear nothing is therefore refused
+    over a directory already composed, which is how a refused review left one
+    behind. Every condition is answered here, from the same source the dispatch
+    reads, so the refusal arrives before anything is written.
+
+    An answer or an accepted edit stores a record and launches nothing, and a
+    preview writes nothing at all, so neither is judged: the refusal is about a
+    composition that would be written. So is a command carrying an answer's own
+    flags without an answer to attach them to — the verb refuses that command
+    by naming the flag, and a delivery refusal here would replace that answer.
+    """
+    from reckon.crew import plan_review
+
+    if params.get("dry_run"):
+        return None
+    if str(params.get("answer") or "").strip():
+        return None
+    if str(params.get("accept_edits") or "").strip():
+        return None
+    if params.get("acted") or params.get("declined") is not None:
+        return None
+    if any(str(params.get(key) or "").strip() for key in ("note", "review_run")):
+        return None
+    project = str(params.get("project") or "").strip()
+    if not project:
+        return None
+    return plan_review.session_delivery_refusal(
+        project, str(params.get("session") or "").strip()
+    )
+
+
 def _install_carried_answer() -> None:
     """Add the ``--carried`` answer flag to the review verb.
 
@@ -155,6 +248,12 @@ def _install_carried_answer() -> None:
             params.pop("pretty", None)
             return _answer_carried_finding(pretty, **params)
         refusal = _compose_burst_refusal(kwargs)
+        if refusal:
+            _emit(
+                {"error": "crew_error", "detail": refusal}, kwargs.get("pretty", False)
+            )
+            raise click.exceptions.Exit(1)
+        refusal = _session_delivery_refusal(kwargs)
         if refusal:
             _emit(
                 {"error": "crew_error", "detail": refusal}, kwargs.get("pretty", False)
@@ -681,6 +780,66 @@ def crew_path(kind, project, run_id):
     click.echo(str(path))
 
 
+def _no_named_review_record_refusal(
+    project: str,
+    reviewed_run_id: str,
+    named_review: str,
+    rubric: str | None,
+) -> str:
+    """Why a named review run's record was not selected, and how to reach it.
+
+    A review run's record is stored under one rubric family, and the selection
+    is text by default, so a figure review named with ``--review`` alone
+    resolves to nothing. The refusal then has two cases that read the same to a
+    reader who cannot see the store: the review run produced no record at all,
+    or it produced one this selection never looked in. Naming the family and
+    the flag value that selects it is the difference between an operator
+    guessing and an operator answering the finding.
+
+    A family a disposition does not select is named as such rather than handed
+    over as a flag, because a command carrying a rubric the verb refuses is a
+    worse answer than none.
+    """
+    from reckon.crew import review as review_module
+    from reckon.crew import review_records as review_records_module
+
+    selected = f"--rubric {rubric}" if rubric else "the text review (no --rubric)"
+    families = [
+        family
+        for family in review_records_module.review_run_record_rubrics(
+            project, reviewed_run_id, named_review
+        )
+        if family != (rubric or "")
+    ]
+    if families:
+        family = families[0]
+        if not family:
+            held = (
+                "its record is the text review, which this verb selects by "
+                "omitting --rubric"
+            )
+        elif family == review_module.FIGURE_REVIEW_RUBRIC:
+            held = (
+                f"its record is the {family} review, which this verb selects "
+                f"with --rubric {family}"
+            )
+        else:
+            held = (
+                f"its record is held under the {family!r} rubric, which a "
+                "disposition does not select"
+            )
+        return (
+            f"run {reviewed_run_id!r} carries no record from review run "
+            f"{named_review!r} in project {project!r} under {selected}; "
+            f"{held}"
+        )
+    return (
+        f"run {reviewed_run_id!r} carries no record from review run "
+        f"{named_review!r} in project {project!r}; --review names the "
+        "review run whose record the disposition answers"
+    )
+
+
 def _reviewed_head_from_run_records(project: str, reviewed_run_id: str) -> str:
     """The revision a run with no live pointer was reviewed at, from its records.
 
@@ -929,9 +1088,9 @@ def crew_dispose(
         )
         if named_record is None:
             raise click.ClickException(
-                f"run {reviewed_run_id!r} carries no record from review run "
-                f"{named_review!r} in project {project!r}; --review names the "
-                "review run whose record the disposition answers"
+                _no_named_review_record_refusal(
+                    project, reviewed_run_id, named_review, rubric
+                )
             )
         stored = named_record
         described = ""
@@ -1189,6 +1348,18 @@ def crew_check_manifest(run_id, pretty):
                     text, node, worktree=worktree, repository=repository
                 )["findings"]
             )
+            # A message a coordinator wrote is only delivered if the run's own
+            # inbox says so, and the worker's report is what reconciles the two:
+            # a receipt with no quoted message is a model that ignored its
+            # inbox, and no receipt with no statement is a channel nobody can
+            # tell from silence. Read here, where the writer can still fix it.
+            from reckon.hooks import worker_inbox
+
+            delivered_finding = worker_inbox.manifest_message_finding(
+                text, Path(manifest_path).expanduser().parent
+            )
+            if delivered_finding:
+                findings.append(delivered_finding)
     _emit(
         {
             "ok": not findings,
@@ -1203,7 +1374,7 @@ def crew_check_manifest(run_id, pretty):
         raise click.exceptions.Exit(1)
 
 
-def crew_check_review(record_path, pretty):
+def crew_check_review(record_path, pretty, expected_run_id=""):
     """Check whether a delivered run review can be filed, without writing it."""
     import json
 
@@ -1219,6 +1390,17 @@ def crew_check_review(record_path, pretty):
             if isinstance(body, dict)
             else ["record is not an object"]
         )
+        # The record's own id is checkable only when the writing run is named,
+        # which the ``--run`` form does and the ``--record`` form does not: a
+        # record that dropped a suffix from its own run id names a review that
+        # never ran, and nothing in the record alone says so.
+        if expected_run_id and isinstance(body, dict):
+            named = str(body.get("review_run_id") or "").strip()
+            if named != expected_run_id:
+                findings.append(
+                    f"review_run_id {named or '(missing)'!r} is not this run's own "
+                    f"id {expected_run_id!r}"
+                )
     _emit(
         {"ok": not findings, "record": str(record_path), "findings": findings}, pretty
     )
@@ -1273,10 +1455,15 @@ def crew_check(manifest, review, run_id, record_path, pretty, project=None):
         return crew_check_manifest(run_id, pretty)
     if bool(run_id) == bool(record_path):
         raise click.UsageError("--review needs exactly one of --run or --record")
+    expected_run_id = ""
     if run_id:
         from reckon.crew import review as review_module
         from reckon.crew import runs as runs_module
         from reckon.crew.node import CrewError
+        from reckon.crew.recovery_review_delivery import (
+            _declared_head_keyed_record,
+            _is_review_run,
+        )
 
         try:
             pointer = runs_module.read_pointer(run_id)
@@ -1285,10 +1472,23 @@ def crew_check(manifest, review, run_id, record_path, pretty, project=None):
             raise click.ClickException(
                 f"run {run_id} could not be resolved: {exc}"
             ) from exc
+        # Only a review run's record owes that run's own id; a check run
+        # against the reviewed run judges the record delivered to it, not the
+        # reviewer's identity.
+        expected_run_id = run_id if _is_review_run(pointer) else ""
         record_path, _ = review_module.stored_record(project, run_id)
         if record_path is None:
+            # A review run's record is filed under the run it reviewed, at the
+            # head-keyed path its own dispatch declared, so the store answers
+            # for the reviewed run and not for the writer. Read the declared
+            # path, which is where ``crew complete`` reads this run's verdict
+            # from, so the check judges the record that run actually wrote.
+            declared = _declared_head_keyed_record(pointer, project)
+            if declared is not None and declared[0].is_file():
+                record_path = declared[0]
+        if record_path is None:
             raise click.ClickException(f"run {run_id} has no stored review")
-    return crew_check_review(record_path, pretty)
+    return crew_check_review(record_path, pretty, expected_run_id=expected_run_id)
 
 
 @crew.command(name="repair")
@@ -1512,40 +1712,6 @@ WIDEN_RULE = (
     "worker granting itself a path no live run claims, because any other "
     "widening would move the boundary a live worker is writing against"
 )
-
-#: Where a reopen records what it granted, beside the run's other records.
-REOPEN_RECORD_NAME = "reopened.json"
-
-
-def _record_reopening(
-    run_id: str,
-    *,
-    granted_paths: list[str],
-    reason: str,
-    delivered: Path | None,
-) -> dict[str, Any]:
-    """Record that a run was reopened, and what the reopen granted.
-
-    A reopen is not a verdict, so it is not written as one: the run is still
-    working towards a status of its own, and a status word here would be an
-    outcome no attempt reached — exactly what left a resumed worker classified
-    from its predecessor's delivery. What a reopen does owe a reader is the
-    fact itself, its reason, the paths it granted and the delivered text it set
-    aside, and those are recorded in the run's own directory where the attempt
-    records live.
-    """
-    from reckon.crew import runs as runs_module
-
-    record = {
-        "run_id": run_id,
-        "reason": reason,
-        "granted_paths": list(granted_paths),
-        "reopened_at": datetime.now(UTC).isoformat().replace("+00:00", "Z"),
-    }
-    if delivered is not None:
-        record["delivered"] = str(delivered)
-    runs_module._write_json(runs_module.run_dir(run_id) / REOPEN_RECORD_NAME, record)
-    return record
 
 
 def _manifest_reported_status(record: Mapping[str, Any]) -> str:
@@ -2324,8 +2490,15 @@ def crew_resume(
         raise click.UsageError(
             "--reopen needs --write-path and cannot combine with --backend or --print-only"
         )
-    if not advice:
-        if reopen or backend:
+    if reopen and advice:
+        # The reopen starts nothing, so there is no turn for advice to enter.
+        # Accepting it would look like it had been delivered.
+        raise click.UsageError(
+            "--advice starts a resume; --reopen only widens a completed run. "
+            "Reopen first, then resume with the advice in a separate call"
+        )
+    if not advice and not reopen:
+        if backend:
             advice = "continue"
         else:
             raise click.UsageError("--advice is required for a single-run resume")
@@ -2336,31 +2509,21 @@ def crew_resume(
     try:
         record = crew_module.read_pointer(run_id)
         if reopen:
-            from reckon.crew.claims import widen_claim
-            from reckon.crew.resumption import _reset_delivered_manifest_status
+            from reckon.crew.resumption import reopen_run
 
             if str(record.get("phase") or "") != "complete" and (
                 _manifest_reported_status(record) != "complete"
             ):
                 raise click.ClickException("--reopen requires a completed run")
-            widen_claim(run_id, write_paths)
-            # Reopening continues the run, so the delivered verdict has to go
-            # before the resumed worker writes anything, exactly as a resume
-            # clears it: left as it is, a live attempt is classified from the
-            # delivery it is continuing and the run reads delivered while its
-            # worker streams. The clearing is the resume path's own step, and it
-            # is done here through that same owner rather than by writing a
-            # status word of the reopen's own, which would be a verdict no
-            # attempt reached. The delivered text is kept beside the manifest
-            # under an attempt-named copy by that call.
-            delivered = _reset_delivered_manifest_status(run_id, record)
-            _record_reopening(
-                run_id,
-                granted_paths=list(write_paths),
-                reason=reason or "reopening the completed run",
-                delivered=delivered,
+            # A reopen answers a caller asking for a wider boundary, not one
+            # asking for work. Launching here spent an attempt on advice
+            # composed for a state the run had left. The grant is made and
+            # reported, and any advice a refused resume left waiting is named
+            # for the resume the caller starts next.
+            _emit_crew_result(
+                reopen_run(run_id, list(write_paths), reason=reason), pretty
             )
-            record = crew_module.read_pointer(run_id)
+            return
         project = str(record.get("project") or "")
         config = (
             _resolved_flight(
@@ -2475,6 +2638,218 @@ def crew_resume(
 
 
 crew_redispatch = tombstone_command("redispatch")
+
+
+_CODEX_CONFIG_FLAGS = ("-c", "--config")
+
+
+def _run_recorded_argv(record: Mapping[str, Any]) -> Any:
+    """The launch argv the run directory records for the attempt running now.
+
+    A launch writes its argv to the run directory, not to the live pointer: the
+    pointer is rewritten on every state change and carries no argv field at all,
+    so a read from there answers ``None`` for every real run. The record a run's
+    own directory holds for the attempt running now answers: the canonical
+    ``worker.json``, keyed by the attempt number it names, is that attempt, and
+    the ``attempt-<n>-worker.json`` receipts beside it describe attempts since
+    retired. A resume retires the canonical record into a receipt before its
+    replacement writes a new one, so the pointer's attempt number names the
+    record even when only the receipt is on disk yet. A run directory holding no
+    readable record answers ``None``: nothing is known about the launch, which
+    the caller reports as an unreachable run rather than as a reachable one.
+    """
+    from reckon.crew.resumption import (
+        WORKER_RECORD_NAME,
+        _attempt_worker_records,
+        _read_record,
+    )
+    from reckon.crew.runs import run_dir
+
+    attempts = _attempt_worker_records(record)
+    # A record naming no attempt belongs to the run's first attempt, which is how
+    # every other reader of those records takes one.
+    number = record.get("attempt")
+    if not isinstance(number, int):
+        number = 1
+    payload = attempts.get(number)
+    if payload is None and attempts:
+        payload = attempts[max(attempts)]
+    if payload is None:
+        # The canonical record names no attempt number, so the mapping above
+        # cannot key it; it is still the record of the attempt running now.
+        payload = _read_record(
+            run_dir(str(record.get("run_id") or "")) / WORKER_RECORD_NAME
+        )
+    return None if payload is None else payload.get("argv")
+
+
+def _codex_config_overrides(argv: Any) -> list[str]:
+    """The ``-c`` values carried by a recorded launch argv, in order."""
+    words = [str(word) for word in (argv or ())]
+    return [
+        words[index + 1]
+        for index, word in enumerate(words[:-1])
+        if word in _CODEX_CONFIG_FLAGS
+    ]
+
+
+def _codex_inbox_override_gap(argv: Any) -> str | None:
+    """Name the inbox override a recorded codex argv lacks, or None if it has both.
+
+    A codex run receives the inbox hook as ``-c hooks.PostToolUse=...`` and the
+    trust record for exactly that hook as ``-c hooks.state={...trusted_hash...}``,
+    both composed onto its launch argv. Delivery needs both, and the argv the
+    run directory recorded is the only evidence of what a live run was launched
+    with: a run launched before the overrides existed carries neither, whatever
+    the flight layer composes for a run dispatched today.
+    """
+    from reckon.hooks.install import WORKER_INBOX_SCRIPT_NAME
+
+    overrides = _codex_config_overrides(argv)
+    # The override names an interpreter and a script path from the checkout that
+    # composed it, so an equality test against this checkout's own composition
+    # would refuse every run launched from anywhere else. The script is the part
+    # that reads the inbox, and its name is checkout-independent.
+    has_hook = any(
+        override.lstrip().startswith("hooks.PostToolUse")
+        and WORKER_INBOX_SCRIPT_NAME in override
+        for override in overrides
+    )
+    has_trust = any(
+        override.lstrip().startswith("hooks.state") and "trusted_hash" in override
+        for override in overrides
+    )
+    if has_hook and has_trust:
+        return None
+    if has_hook:
+        return "no trust override"
+    if has_trust:
+        return "no inbox hook override"
+    return "neither the inbox hook override nor its trust override"
+
+
+@crew.command(name="tell")
+@click.option(
+    "--run",
+    "run_id",
+    required=True,
+    help="Live run that receives the message.",
+)
+@click.argument("message")
+@click.option("--pretty", is_flag=True, help="Indent the JSON for reading.")
+def crew_tell(run_id, message, pretty):
+    """Write one message into a live run's inbox, delivered at its next tool call.
+
+    The write is a queue, not a delivery: the run's inbox hook hands the message
+    to the model after its next tool call and records a receipt, and only that
+    receipt proves it arrived. So this reports ``queued_for_next_tool_call`` and
+    never a delivery.
+
+    A run that has ended is refused, naming the channel that reaches a stopped
+    worker. A live run is refused too when nothing it was launched with would
+    read the inbox, rather than reported queued: a message written where nothing
+    reads it is exactly the false clearance this channel exists to remove.
+
+    Reachability is decided per dialect, and each dialect's test is the artifact
+    that dialect's harness actually reads. A Claude-dialect run is reached
+    through the inbox hook in its own run home's settings file, and nothing
+    re-seeds the home of a run already launched. A codex run is reached through
+    the hook and trust overrides composed onto its launch argv, so the argv its
+    run directory recorded for the attempt running now is the test: the live
+    pointer carries no argv field at all, and a run launched before those
+    overrides existed carries none of them whatever the flight layer composes
+    now. Every other dialect is refused, naming why.
+    """
+    import json as _json
+
+    from reckon._worker_fence import harness_home
+    from reckon.crew import recovery_liveness
+    from reckon.crew.runs import read_pointer
+    from reckon.hooks import install, worker_inbox
+
+    if not message.strip():
+        raise click.UsageError("the message is empty; nothing would be delivered")
+    crew_module, _ = _crew_modules()
+    try:
+        record = read_pointer(run_id)
+    except crew_module.CrewError as exc:
+        raise click.ClickException(str(exc)) from exc
+    alive, _ = recovery_liveness.local_liveness(record)
+    if alive is False:
+        raise click.ClickException(
+            f"run {run_id} has ended, so nothing is running to read an inbox. "
+            "Continue the same session on the channel that reaches a stopped "
+            "worker:\n"
+            f"  reckon crew resume --run {run_id} --advice "
+            f"{_json.dumps(message)}"
+        )
+    dialect = str(record.get("dialect") or "")
+    manifest_path = str(record.get("manifest_path") or "")
+    if not manifest_path:
+        raise click.ClickException(
+            f"run {run_id} records no manifest path, so it names no run "
+            "directory to write an inbox into"
+        )
+    run_directory = Path(manifest_path).expanduser().parent
+    if dialect == "codex":
+        gap = _codex_inbox_override_gap(_run_recorded_argv(record))
+        if gap is not None:
+            raise click.ClickException(
+                f"run {run_id} is a codex-dialect run. The inbox hook is "
+                "registered in Claude-dialect run homes only; a codex run is "
+                "reached through the hook override and its trust override on "
+                "the argv its run directory records for the attempt running "
+                f"now, and that argv carries {gap}. Such a run was launched "
+                "before the overrides existed, and a live run's argv is never "
+                "recomposed; queue the message "
+                "for a run dispatched from now on, or steer this one on its "
+                "next turn"
+            )
+    elif dialect == "claude":
+        if record.get("fenced") is not True:
+            raise click.ClickException(
+                f"run {run_id} is not fenced (its record says fenced: "
+                f"{record.get('fenced')!r}), so it runs from the operator's own "
+                "harness home, which carries no inbox hook for this run; a "
+                "message written there would be read as queued and delivered "
+                "to nobody"
+            )
+        home = harness_home(dialect, run_directory)
+        settings = None if home is None else home / "settings.json"
+        if settings is None or not install.settings_carry_worker_inbox(settings):
+            where = "no run home" if home is None else f"the run home {home}"
+            raise click.ClickException(
+                f"run {run_id} is live but {where} carries no PostToolUse entry "
+                f"for reckon's inbox hook ({install.WORKER_INBOX_SCRIPT_NAME}), "
+                "so nothing would deliver this message. Such a run was launched "
+                "before the hook was seeded, and a live run's home is never "
+                "re-seeded; queue the message for a run dispatched from now on, "
+                "or steer this one on its next turn"
+            )
+    else:
+        raise click.ClickException(
+            f"run {run_id} is a {dialect or 'unknown'}-dialect run, and this "
+            "channel reaches only Claude-dialect runs, through their run home's "
+            "inbox hook, and codex runs, through the hook and trust overrides "
+            "on their launch argv; there is no hook to deliver a message here, "
+            "so write nothing and steer the run another way"
+        )
+    written = worker_inbox.write_message(message, run_directory)
+    _emit(
+        {
+            "ok": True,
+            "run_id": run_id,
+            "status": "queued_for_next_tool_call",
+            "message_file": str(written),
+            "inbox": str(written.parent),
+            "receipts": str(written.parent / worker_inbox.RECEIPTS_NAME),
+            "delivery_proof": (
+                "the run's inbox hook appends a receipt after the tool call that "
+                "delivered this message; nothing else proves delivery"
+            ),
+        },
+        pretty,
+    )
 
 
 @crew.command(name="stop")
@@ -3062,6 +3437,12 @@ def _refuse_a_flag_as_a_reason(
     ),
 )
 @click.option("--pretty", is_flag=True, help="Indent the JSON for reading.")
+@click.option(
+    "--wait",
+    is_flag=True,
+    default=False,
+    help="Carry out promotion in this call and return its completed outcome.",
+)
 def crew_complete(
     run_id,
     gate,
@@ -3093,23 +3474,34 @@ def crew_complete(
     pretty,
     project=None,
     candidate="",
+    wait=True,
 ):
-    """Promote one finished run into the owning repository's committed ledger.
+    """Request promotion and return the run's durable promotion-requested receipt.
 
-    The ledger append happens before the pointer is deleted, so an interruption
-    between them leaves a recoverable pointer rather than a lost record. A
-    passing gate is refused unless it carries the check that produced it —
-    this is the sole route by which a run is promoted, so the requirement is
-    unconditional here even though the underlying ledger call remains
-    permissive for internal callers assembling records from other evidence.
-
-    With ``--land`` the promotion is followed by three reported steps: the
-    reviewed head is merged onto the project's primary branch without touching
-    the shared index, the merged tree is refused unless it carries a marker the
-    change introduced and lacks any marker it removed, and the branch is pushed
-    before the worktree is released. A step that fails stops the call and the
-    report names the command that resumes from it.
+    The fleet service checks the recorded gate and review, writes the ledger,
+    and retains the outcome on the run. With --land it also merges, verifies,
+    pushes and releases the worktree. A refusal or failure becomes an obligation
+    for the run's session. Repeating a pending request creates no second job.
+    --wait carries out promotion in this call and returns its outcome.
+    --dry-run reports the current guards without recording a request. Internal
+    callback callers retain synchronous execution unless they request otherwise.
     """
+    from reckon.crew.promotion_requests import COMMAND_REPLY, request_promotion
+
+    if not wait and not dry_run and COMMAND_REPLY.get() is None:
+        parameters = dict(locals())
+        for name in ("COMMAND_REPLY", "request_promotion"):
+            parameters.pop(name, None)
+        from reckon.crew.node import CrewError
+
+        try:
+            result = request_promotion(
+                run_id, kind="command", options=parameters, retry=True
+            )
+        except CrewError as exc:
+            raise click.ClickException(str(exc)) from exc
+        _emit_crew_result(result, pretty)
+        return
     _accept_a_matching_project(run_id, project)
     if candidate and not land:
         raise click.UsageError("--candidate requires --land")
@@ -3251,11 +3643,18 @@ def crew_complete(
     if land:
         # Written before the promotion pushes anything, so a process killed
         # between the promotion and its merge leaves a record the landing pass
-        # finds and finishes, instead of a run that reads as landed.
-        from reckon.crew import pending_landing
+        # finds and finishes, instead of a run that reads as landed. The head
+        # the landing cites is read here, from the run's own tree, because the
+        # ledger row and the live pointer both move afterwards: a resume or a
+        # repair round can take the run to a head no review read, and the pass
+        # must finish this landing at the revision this call meant to merge.
+        from reckon.crew import pending_landing, promotion_release
 
         pending_landing.write_pending(
-            run_id, str(pointer.get("project") or project or ""), pointer=pointer
+            run_id,
+            str(pointer.get("project") or project or ""),
+            pointer=pointer,
+            head=promotion_release._run_promoted_revision(pointer, list(commits or ())),
         )
     try:
         result = crew_module.complete(
@@ -4613,8 +5012,14 @@ def crew_repair_completion(project, write_changes, checkout_path, pretty):
     is_flag=True,
     help="Run a single admission pass and return instead of looping on a cadence.",
 )
+@click.option(
+    "--run",
+    "run_id",
+    default="",
+    help="Decide and launch only this queued request, without release or landing.",
+)
 @click.option("--pretty", is_flag=True, help="Indent the JSON for reading.")
-def crew_admit(lane, once, pretty):
+def crew_admit(lane, once, run_id, pretty):
     """Launch queued dispatches while the lane grants a slot.
 
     One pass reads the fleet gate, then the queued run pointers, and launches
@@ -4628,13 +5033,19 @@ def crew_admit(lane, once, pretty):
     runs one pass and returns instead of looping. One pass is bounded by the
     lane and fleet gate reads it makes, each under a five-second deadline, so a
     caller that needs it to return asks for ``--once`` rather than wrapping the
-    loop in a timeout of its own.
+    loop in a timeout of its own. ``--run`` returns after deciding only the
+    named queued request under the admit lock; it runs no release tick or
+    landing action and leaves unrelated requests untouched.
     """
     from reckon.crew import queue_admission
     from reckon.crew.node import CrewError
 
     try:
-        result = queue_admission.admit_until_stopped(lane=lane, once=once)
+        result = (
+            queue_admission.admit_once(lane=lane, run_id=run_id)
+            if run_id
+            else queue_admission.admit_until_stopped(lane=lane, once=once)
+        )
     except CrewError as exc:
         raise click.ClickException(str(exc)) from exc
     # A pass that could not launch a queued request, or could not read the

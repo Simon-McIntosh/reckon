@@ -1,0 +1,107 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_analysis": [
+    {
+      "assertions": "report['removed'] equals [directory.name] for a committed-only figure result",
+      "fails_if": "Restoring the bare path.stem index leaves the figure-prefixed file unkeyed, the reviewer is withheld, and the removal list is empty; figure-result-negative.log records exactly that failure.",
+      "path": "tests/test_retention_retires_a_review_run.py:247"
+    },
+    {
+      "assertions": "the committed figure record survives the retirement",
+      "fails_if": "Deleting the whole subject directory instead of only the run directory removes the stored record and makes is_file false.",
+      "path": "tests/test_retention_retires_a_review_run.py:249"
+    },
+    {
+      "assertions": "an absent committed result withholds the directory naming missing-review-result",
+      "fails_if": "Restoring the pre-guard gc.py from b5361735 makes the run retire, as figure-result-own-result-negative.log records in 7 failures.",
+      "path": "tests/test_retention_retires_a_review_run.py:251-253"
+    },
+    {
+      "assertions": "an unreadable sibling does not hide the valid committed figure result",
+      "fails_if": "Removing the ValueError widening in review_records.py:1346 makes the invalid UTF-8 sibling abort the subject index, so the valid record goes unseen and the [True] case withholds.",
+      "path": "tests/test_retention_retires_a_review_run.py:241-242"
+    }
+  ],
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/crew/gc.py:_run_directory_retention_report",
+    "reckon/crew/gc.py:garbage_collect",
+    "reckon/crew/gc.py:retention_sweep",
+    "reckon/crew/gc.py:main",
+    "reckon/crew_run_commands.py:crew_retention_sweep"
+  ],
+  "completed_at": "2026-11-13T13:38:55.365Z",
+  "dispatched_at": "2026-11-13T13:28:36Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "exempted",
+      "reason": "non-blocking: the behavioural guards that fail on reversal are already in the test; the tautological path assertion is redundant, not wrong",
+      "recorded_at": "2026-11-13T13:47:03.033376+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "tests/test_retention_retires_a_review_run.py",
+      "line": "230",
+      "severity": "non-blocking",
+      "text": "non-blocking: the assertion compares store_committed_review's returned path against the store's own review_path resolver using the head sha the test itself passed in, so both sides move together; the behavioural guards at lines 247-253 are the ones that fail on reversal."
+    }
+  ],
+  "gate_evidence": {
+    "after_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_retention_retires_a_review_run.py tests/test_staged_write_inventory.py",
+      "exit_status": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261113T084815947556-retention-retires-a-review-run/figure-result-final-after.log",
+      "revision": "8b9d0fbbb9195c3266d920f93cfc890013ed2c25",
+      "summary": "67 passed in 12.38s"
+    },
+    "baseline_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py",
+      "exit_status": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261113T084815947556-retention-retires-a-review-run/repair-original-baseline.log",
+      "revision": "4c4cf234390f5326b995cee7ad6bda55fe01b5c0",
+      "summary": "51 passed in 9.85s"
+    }
+  },
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 5 production call site(s)",
+    "diff": "Read 3fd0f0f966 and 8b9d0fbb commit by commit against base 5852df8c: the first replaces gc's bare path.stem committed index with the store's content-keyed reviewer index and widens one ValueError catch in review_records.py:1346, the second only appends the evidence section; four files, 113 insertions and 9 deletions.",
+    "done_when": "The source done_when names tests/test_retention_retires_a_review_run.py plus one live dry run at the head; the manifest records 67 passed EXIT=0 in figure-result-final-after.log at 8b9d0fbb and the live dry run job 1313890 offering 346 removals against the base's zero, and the new parametrized case exercises the committed-only figure path the done_when implies.",
+    "goal": "The node goal is that retention judges a review run on its own stored review record and its own window, never a review of itself; the two commits gained since the last review make committed figure-review results resolve through the store's reviewer index at reckon/crew/gc.py:357-360 and reckon/crew/review_records.py:1812-1840, which is exactly the retention lookup the goal names.",
+    "manifest": "Read the source manifest.md and the baseline_suite and after_suite logs it names: repair-original-baseline.log records 51 passed EXIT=0 at 4c4cf234 and figure-result-final-after.log records 67 passed EXIT=0 at 8b9d0fbb, with failure ids empty on both so the added-failure pair is empty.",
+    "write_paths": "The source manifest declares reckon/crew, tests/test_retention_retires_a_review_run.py, docs/evidence/fragments/work-flows-to-the-lane/retention-retires-a-review-run.html and the figure topic directory; every path in the diff sits inside those four."
+  },
+  "justifications": {
+    "durability": "tests/test_retention_retires_a_review_run.py:247-249 fails when the bare-filename index is reinstated (figure-result-negative.log: 1 failed, test_a_committed_only_figure_result_controls_reviewer_retention[True]).",
+    "evidence": "figure-result-final-after.log records 67 passed EXIT=0 at the reviewed head and figure-result-negative.log records the [True] case failing when the old path.stem lookup is restored.",
+    "fit": "reckon/crew/review_records.py:1812-1840 follows the surrounding index idiom and mechanism-based naming, but its docstring omits the OSError/ValueError skip contract its loop depends on.",
+    "goal_fidelity": "reckon/crew/gc.py:357-360 now resolves committed reviewer identity through review_records.committed_record_paths_by_review_run, so a committed-only figure result permits retirement as the goal requires.",
+    "reuse": "reckon/crew/review_records.py:1812 delegates to the owning _review_run_index and review.committed_review_root rather than restating a naming rule; searches of review_records.py and review.py found no existing cross-run committed enumerator.",
+    "scope_discipline": "git diff --stat 5852df8c..8b9d0fbb names only reckon/crew/gc.py, reckon/crew/review_records.py, tests/test_retention_retires_a_review_run.py and the declared evidence fragment."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The node goal is that retention judges a review run on its own stored review record and its own window, never a review of itself; the two commits gained since the last review make committed figure-review results resolve through the store's reviewer index at reckon/crew/gc.py:357-360 and reckon/crew/review_records.py:1812-1840, which is exactly the retention lookup the goal names.\nVERDICT done_when: The source done_when names tests/test_retention_retires_a_review_run.py plus one live dry run at the head; the manifest records 67 passed EXIT=0 in figure-result-final-after.log at 8b9d0fbb and the live dry run job 1313890 offering 346 removals against the base's zero, and the new parametrized case exercises the committed-only figure path the done_when implies.\nVERDICT write_paths: The source manifest declares reckon/crew, tests/test_retention_retires_a_review_run.py, docs/evidence/fragments/work-flows-to-the-lane/retention-retires-a-review-run.html and the figure topic directory; every path in the diff sits inside those four.\nVERDICT manifest: Read the source manifest.md and the baseline_suite and after_suite logs it names: repair-original-baseline.log records 51 passed EXIT=0 at 4c4cf234 and figure-result-final-after.log records 67 passed EXIT=0 at 8b9d0fbb, with failure ids empty on both so the added-failure pair is empty.\nVERDICT diff: Read 3fd0f0f966 and 8b9d0fbb commit by commit against base 5852df8c: the first replaces gc's bare path.stem committed index with the store's content-keyed reviewer index and widens one ValueError catch in review_records.py:1346, the second only appends the evidence section; four files, 113 insertions and 9 deletions.\nCALL_SITES: reckon/crew/gc.py:_run_directory_retention_report, reckon/crew/gc.py:garbage_collect, reckon/crew/gc.py:retention_sweep, reckon/crew/gc.py:main, reckon/crew_run_commands.py:crew_retention_sweep\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/gc.py:357-360 now resolves committed reviewer identity through review_records.committed_record_paths_by_review_run, so a committed-only figure result permits retirement as the goal requires.\nSCORE evidence: 19\nJUSTIFICATION evidence: figure-result-final-after.log records 67 passed EXIT=0 at the reviewed head and figure-result-negative.log records the [True] case failing when the old path.stem lookup is restored.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat 5852df8c..8b9d0fbb names only reckon/crew/gc.py, reckon/crew/review_records.py, tests/test_retention_retires_a_review_run.py and the declared evidence fragment.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_retention_retires_a_review_run.py:247-249 fails when the bare-filename index is reinstated (figure-result-negative.log: 1 failed, test_a_committed_only_figure_result_controls_reviewer_retention[True]).\nSCORE fit: 16\nJUSTIFICATION fit: reckon/crew/review_records.py:1812-1840 follows the surrounding index idiom and mechanism-based naming, but its docstring omits the OSError/ValueError skip contract its loop depends on.\nSCORE reuse: 20\nJUSTIFICATION reuse: reckon/crew/review_records.py:1812 delegates to the owning _review_run_index and review.committed_review_root rather than restating a naming rule; searches of review_records.py and review.py found no existing cross-run committed enumerator.\nFINDING tests/test_retention_retires_a_review_run.py:230 non-blocking: the assertion compares store_committed_review's returned path against the store's own review_path resolver using the head sha the test itself passed in, so both sides move together; the behavioural guards at lines 247-253 are the ones that fail on reversal.\n",
+  "review_run_id": "r-20261113T132718204661-review-of-retention-retires-a-review-run-8b9d0fbbb919",
+  "reviewed_at": "2026-11-13T13:36:53.988644+00:00",
+  "reviewed_base_sha": "5852df8c3e6fe54e820ecdf7c949aac782f5621f",
+  "reviewed_head_sha": "8b9d0fbbb9195c3266d920f93cfc890013ed2c25",
+  "reviewed_run_id": "r-20261113T084815947556-retention-retires-a-review-run",
+  "scores": {
+    "durability": 18,
+    "evidence": 19,
+    "fit": 16,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-13T13:46:35.532391+00:00",
+  "total": 111
+}

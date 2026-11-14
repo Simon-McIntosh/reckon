@@ -58,6 +58,7 @@ from reckon.project_state import (
     ProjectStateError,
     accepted_op_verbs,
     apply_resource_ops,
+    read_resource,
     resource_path,
 )
 from reckon.resources import (
@@ -871,6 +872,67 @@ def _resume_partial_plan_writes(
     return base
 
 
+def _refused_resource_edit(
+    exc: Exception,
+    *,
+    docs_dir: Path,
+    project: str,
+    doc_type: str,
+    slug: str,
+    ops: Any,
+    error: str,
+    fields: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    """A refused edit, naming the sprint versions the tree holds now."""
+    reply: dict[str, Any] = {
+        "ok": False,
+        "applied": False,
+        "error": error,
+        **(fields or {}),
+        "detail": str(exc),
+    }
+    versions, _failed = _move_sprint_versions(docs_dir, project, doc_type, slug, ops)
+    if versions:
+        reply["sprint_versions"] = versions
+    return reply
+
+
+def _move_sprint_versions(
+    docs_dir: Path,
+    project: str,
+    doc_type: str,
+    slug: str,
+    ops: Any,
+) -> tuple[dict[str, int], list[str]]:
+    """Both sprint versions a move touches, read fresh from disk.
+
+    Returns the versions that could be read beside the ids whose read failed.
+    A reply names what the sprints hold now, whether the move settled or was
+    refused, so a caller can compare the answer with its own read. A failed
+    read is reported by the caller rather than failing a reply whose write
+    already landed.
+    """
+    move_ops = [
+        op for op in (ops or []) if isinstance(op, dict) and op.get("op") == "move"
+    ]
+    if not move_ops:
+        return {}, []
+    identifiers = {str(slug)}
+    identifiers.update(str(op.get("to") or "") for op in move_ops)
+    versions: dict[str, int] = {}
+    failed: list[str] = []
+    for sprint_id in sorted(identifiers):
+        if not sprint_id:
+            continue
+        try:
+            _, version = read_resource(docs_dir, project, doc_type, sprint_id)
+        except Exception:  # noqa: BLE001 — a version read must not fail the reply
+            failed.append(sprint_id)
+        else:
+            versions[sprint_id] = version
+    return versions, failed
+
+
 def _move_sprint_item(
     project: str,
     slug: str,
@@ -1326,7 +1388,7 @@ def _op_target_path(op: dict[str, Any]) -> str | None:
             return None
         ident = op.get("id")
         return f"{target}.{ident}" if ident else target
-    if verb in ("lock", "accept"):
+    if verb in ("lock", "accept", "withdraw"):
         key = op.get("key")
         return f"decisions.{key}" if key else "decisions"
     if verb in ("gate", "pass", "fail"):
@@ -1502,8 +1564,8 @@ def _edit_plan(
     ``doc_type`` (version = state.version). Untyped edits retain compatibility
     only when the leaf slug identifies one live artifact unambiguously.
 
-    Verbs (the "op" key): set | append | resolve | lock | accept | gate | pass |
-    fail | retire_prose | move. See read_plan(
+    Verbs (the "op" key): set | append | resolve | lock | accept | withdraw |
+    gate | pass | fail | retire_prose | move. See read_plan(
     ..., with_schema=True)["op_vocab"] for the full op grammar.
 
     Create: edit_plan(..., expected_version=0, create=True) on a NON-existent
@@ -1693,6 +1755,20 @@ def _edit_plan(
                 new_version=new_version,
                 created=create,
             )
+            sprint_versions, failed_reads = _move_sprint_versions(
+                docs_dir, project, canonical_doc_type, slug, ops
+            )
+            if sprint_versions or failed_reads:
+                # The reply names what settled, with both versions read back
+                # from disk rather than assumed from the write that returned.
+                result["applied"] = True
+            if sprint_versions:
+                result["sprint_versions"] = sprint_versions
+            if failed_reads:
+                warnings = [
+                    *(warnings or []),
+                    *(f"sprint_version_read_failed={sid}" for sid in failed_reads),
+                ]
             result["doc_type"] = canonical_doc_type
             result["path"] = str(
                 resource_path(docs_dir, project, canonical_doc_type, slug)
@@ -1726,20 +1802,30 @@ def _edit_plan(
                 ops,
             )
         except ProjectStateError as exc:
-            return {
-                "ok": False,
-                "error": "project_state_error",
-                "project": project,
-                "slug": slug,
-                "doc_type": canonical_doc_type,
-                "detail": str(exc),
-            }
+            return _refused_resource_edit(
+                exc,
+                docs_dir=docs_dir,
+                project=project,
+                doc_type=canonical_doc_type,
+                slug=slug,
+                ops=ops,
+                error="project_state_error",
+                fields={
+                    "project": project,
+                    "slug": slug,
+                    "doc_type": canonical_doc_type,
+                },
+            )
         except (TypeError, ValueError, FileNotFoundError) as exc:
-            return {
-                "ok": False,
-                "error": "resource_edit_error",
-                "detail": str(exc),
-            }
+            return _refused_resource_edit(
+                exc,
+                docs_dir=docs_dir,
+                project=project,
+                doc_type=canonical_doc_type,
+                slug=slug,
+                ops=ops,
+                error="resource_edit_error",
+            )
     if is_index and canonical_doc_type is not None:
         return {"ok": False, "error": "doc_type is not valid for index/project"}
     if create and canonical_doc_type not in {None, "plan"}:

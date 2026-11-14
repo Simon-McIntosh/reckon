@@ -373,18 +373,19 @@ def test_a_damaged_aggregate_leaves_the_run_documents_readable(
 
 
 def _retain_after_publication(root: Path, run_id: str, tree: Path) -> None:
-    """Give one published run's file a retention, in place, as a later write does.
+    """Give one published run's file a retention, as a later write does.
 
-    The rewrite is in place rather than an atomic replacement, which is the
-    shape a reader keyed on its directory's identity cannot see.
+    The rewrite goes through the ledger's own write path, so the generation the
+    published index is keyed on moves and a warm reader must answer from the
+    new record rather than from its snapshot.
     """
-    path = ledger.ledger_path(PROJECT, root).parent / "runs" / f"{run_id}.json"
+    path = ledger.run_path(PROJECT, run_id, root)
     record = json.loads(path.read_text(encoding="utf-8"))
     record["worktree_retention"] = {
         "worktree": str(tree),
         "retained_at": str(record.get("completed_at") or ""),
     }
-    path.write_text(json.dumps(record, sort_keys=True), encoding="utf-8")
+    ledger.write_run_file(PROJECT, record, root, mode=None)
 
 
 def test_a_run_retaining_a_tree_after_the_index_is_published_is_read(

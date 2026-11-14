@@ -1,0 +1,86 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/_backends.py:_inbox_hook_flags",
+    "reckon/_backends.py:run_probe",
+    "reckon/hooks/install.py:worker_inbox_group"
+  ],
+  "completed_at": "2026-11-12T02:44:35.826Z",
+  "dispatched_at": "2026-11-12T02:35:01Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "exempted",
+      "reason": "The command-in-definition assertion shares its source; the key-and-hash assertions pin the listing.",
+      "recorded_at": "2026-11-12T02:59:38.628676+00:00"
+    },
+    "1": {
+      "kind": "exempted",
+      "reason": "The trusted-listing stub is copied once more; consolidating the copies is a test-suite tidy.",
+      "recorded_at": "2026-11-12T02:59:53.670486+00:00"
+    },
+    "2": {
+      "kind": "exempted",
+      "reason": "Ruff on staged paths is re-checked by the armed arms' tree at landing.",
+      "recorded_at": "2026-11-12T03:00:06.798819+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "tests/test_a_dispatch_test_runs_no_codex.py",
+      "line": "82",
+      "severity": "non-blocking",
+      "text": "non-blocking: `assert command in definition` is not independent of the value under test \u2014 `command` comes from worker_inbox_group() on the assert side and the product builds `definition` from the same call \u2014 so changing the stub's listing leaves it true, and only lines 84-85 actually pin the listing's key and hash reaching the argv."
+    },
+    {
+      "file": "tests/conftest.py",
+      "line": "494",
+      "severity": "non-blocking",
+      "text": "non-blocking: the new probe-answer helper is the sixth copy of the trusted hook-listing stub in the test suite, and the node's own new test repeats it again at tests/test_a_dispatch_test_runs_no_codex.py:57 instead of deriving from the conftest helper it runs under."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261112T013350355752-a-dispatch-test-runs-no-codex-process/manifest.md",
+      "line": "27",
+      "severity": "non-blocking",
+      "text": "non-blocking: the done-when's ruff clause is answered only by a rubric line quoting a 6-vs-4 finding delta that no log in the run directory carries and that the staged paths do not reproduce, so the promotion receipt cannot cite it."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read commit by commit against 7fea78cb1526, f641874506 adds the isolated probe answer and the new test, 41778d3896 and 71fe986cfa write and then reword the evidence fragment, and reckon/_backends.py is untouched so a live launch still takes its trust from the harness's own listing.",
+    "done_when": "the done-when's three clauses are exercised by tests/test_a_dispatch_test_runs_no_codex.py (head-gate.log, 53 passed, EXIT=0), its guard-removed negative control (negative-control.log, 1 failed, EXIT=1), and the importers arm (base-backends.log 257 failed, head-backends.log 38 failed, 0 added ids); the ruff clause is claimed in the manifest's rubric.lint line with no log of its own.",
+    "goal": "the plan's \u00a770 deliverable (docs/plans/the-suite-is-green-at-head.html:913) is that a dispatch test runs no codex process, and the landed conftest stub at tests/conftest.py:494 answers the hooks/list probe itself so tests/test_a_source_file_is_shared_by_default.py passes 14 at head (head-dispatch.log, EXIT=0) where the prompt records it failing at base with the trust BackendError.",
+    "manifest": "the manifest records status complete, three commits, five arm logs with revisions and commands, and a scaffolding attribution for the base arm's two census errors; its rubric.lint line states a 6-to-4 finding delta that the staged paths do not reproduce (measured 1 pre-existing F841 at base and head, 0 added).",
+    "write_paths": "the node's declared paths (prompt.txt:81-85) are reckon/_backends.py, tests/conftest.py, tests/test_a_dispatch_test_runs_no_codex.py, docs/evidence/fragments/the-suite-is-green-at-head/a-dispatch-test-runs-no-codex-process.html and a figure directory; the diff touches the conftest, the new test and the fragment, and no path outside them."
+  },
+  "justifications": {
+    "durability": "the no-spawn assertion at tests/test_a_dispatch_test_runs_no_codex.py:46 is proven to fail by the guard-removed run in negative-control.log, while the assertion at line 82 compares a value derived from worker_inbox_group() on both sides and cannot detect a regression in the listing it claims to pin.",
+    "evidence": "base-gate.log, head-gate.log, base-backends.log, head-backends.log and negative-control.log each open with their revision and literal command and close with a bare EXIT= line, but the done-when's ruff clause has no log anywhere in the run directory.",
+    "fit": "the helper at tests/conftest.py:494 follows the sibling `unguarded_account_surface_read` idiom in the same file, and no name or comment in the diff carries a plan label, ticket number or author attribution.",
+    "goal_fidelity": "tests/conftest.py:494 answers only the probe carrying a hooks/list request and returns None otherwise, so the isolation gains one answer and every other probe path is unchanged.",
+    "reuse": "tests/conftest.py:494 adds a sixth copy of the trusted hook-listing shape that already exists in tests/test_codex_inbox_trust.py:12, tests/test_a_source_file_is_shared_by_default.py:45, tests/test_a_queued_launch_keeps_the_run_record.py:77, tests/test_an_undeclared_project_shares_its_source_files.py:63 and tests/test_anchored_edit_claude_arm.py:275 rather than consolidating them.",
+    "scope_discipline": "git diff 7fea78cb1526..71fe986cfa touches only tests/conftest.py, tests/test_a_dispatch_test_runs_no_codex.py and the declared fragment path, with reckon/_backends.py declared and untouched."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the plan's \u00a770 deliverable (docs/plans/the-suite-is-green-at-head.html:913) is that a dispatch test runs no codex process, and the landed conftest stub at tests/conftest.py:494 answers the hooks/list probe itself so tests/test_a_source_file_is_shared_by_default.py passes 14 at head (head-dispatch.log, EXIT=0) where the prompt records it failing at base with the trust BackendError.\nVERDICT done_when: the done-when's three clauses are exercised by tests/test_a_dispatch_test_runs_no_codex.py (head-gate.log, 53 passed, EXIT=0), its guard-removed negative control (negative-control.log, 1 failed, EXIT=1), and the importers arm (base-backends.log 257 failed, head-backends.log 38 failed, 0 added ids); the ruff clause is claimed in the manifest's rubric.lint line with no log of its own.\nVERDICT write_paths: the node's declared paths (prompt.txt:81-85) are reckon/_backends.py, tests/conftest.py, tests/test_a_dispatch_test_runs_no_codex.py, docs/evidence/fragments/the-suite-is-green-at-head/a-dispatch-test-runs-no-codex-process.html and a figure directory; the diff touches the conftest, the new test and the fragment, and no path outside them.\nVERDICT manifest: the manifest records status complete, three commits, five arm logs with revisions and commands, and a scaffolding attribution for the base arm's two census errors; its rubric.lint line states a 6-to-4 finding delta that the staged paths do not reproduce (measured 1 pre-existing F841 at base and head, 0 added).\nVERDICT diff: read commit by commit against 7fea78cb1526, f641874506 adds the isolated probe answer and the new test, 41778d3896 and 71fe986cfa write and then reword the evidence fragment, and reckon/_backends.py is untouched so a live launch still takes its trust from the harness's own listing.\nCALL_SITES: reckon/_backends.py:_inbox_hook_flags, reckon/_backends.py:run_probe, reckon/hooks/install.py:worker_inbox_group\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: tests/conftest.py:494 answers only the probe carrying a hooks/list request and returns None otherwise, so the isolation gains one answer and every other probe path is unchanged.\nSCORE evidence: 15\nJUSTIFICATION evidence: base-gate.log, head-gate.log, base-backends.log, head-backends.log and negative-control.log each open with their revision and literal command and close with a bare EXIT= line, but the done-when's ruff clause has no log anywhere in the run directory.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: git diff 7fea78cb1526..71fe986cfa touches only tests/conftest.py, tests/test_a_dispatch_test_runs_no_codex.py and the declared fragment path, with reckon/_backends.py declared and untouched.\nSCORE durability: 16\nJUSTIFICATION durability: the no-spawn assertion at tests/test_a_dispatch_test_runs_no_codex.py:46 is proven to fail by the guard-removed run in negative-control.log, while the assertion at line 82 compares a value derived from worker_inbox_group() on both sides and cannot detect a regression in the listing it claims to pin.\nSCORE fit: 18\nJUSTIFICATION fit: the helper at tests/conftest.py:494 follows the sibling `unguarded_account_surface_read` idiom in the same file, and no name or comment in the diff carries a plan label, ticket number or author attribution.\nSCORE reuse: 13\nJUSTIFICATION reuse: tests/conftest.py:494 adds a sixth copy of the trusted hook-listing shape that already exists in tests/test_codex_inbox_trust.py:12, tests/test_a_source_file_is_shared_by_default.py:45, tests/test_a_queued_launch_keeps_the_run_record.py:77, tests/test_an_undeclared_project_shares_its_source_files.py:63 and tests/test_anchored_edit_claude_arm.py:275 rather than consolidating them.\nFINDING tests/test_a_dispatch_test_runs_no_codex.py:82 non-blocking: `assert command in definition` is not independent of the value under test \u2014 `command` comes from worker_inbox_group() on the assert side and the product builds `definition` from the same call \u2014 so changing the stub's listing leaves it true, and only lines 84-85 actually pin the listing's key and hash reaching the argv.\nFINDING tests/conftest.py:494 non-blocking: the new probe-answer helper is the sixth copy of the trusted hook-listing stub in the test suite, and the node's own new test repeats it again at tests/test_a_dispatch_test_runs_no_codex.py:57 instead of deriving from the conftest helper it runs under.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261112T013350355752-a-dispatch-test-runs-no-codex-process/manifest.md:27 non-blocking: the done-when's ruff clause is answered only by a rubric line quoting a 6-vs-4 finding delta that no log in the run directory carries and that the staged paths do not reproduce, so the promotion receipt cannot cite it.",
+  "review_run_id": "r-20261112T023254449440-review-of-a-dispatch-test-runs-no-codex-process-71fe986cfaee",
+  "reviewed_base_sha": "7fea78cb1526c29c43824747230cffbd308290cf",
+  "reviewed_head_sha": "71fe986cfaeecb1bb67349e88c6ae6e1bdc8070a",
+  "reviewed_run_id": "r-20261112T013350355752-a-dispatch-test-runs-no-codex-process",
+  "scores": {
+    "durability": 16,
+    "evidence": 15,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 13,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-12T02:57:11.782471+00:00",
+  "total": 99
+}

@@ -39,7 +39,6 @@ from reckon.crew.runs import (
     list_live,
     producer_lease_seconds,
     update_watch_registration,
-    watch_lease_renewed_at,
     watch_lock_path,
     watch_stream_path,
 )
@@ -104,8 +103,9 @@ def _remember_commits(key: tuple[str, str], head: str, count: int) -> None:
 
 # A fresh process asks git again about answers it cannot change, so the answers
 # that are functions of immutable object ids are kept under the crew home. The
-# count between two revisions never changes, and a full revision resolves to
-# the same commit forever, so an entry keyed on those ids cannot go stale.
+# count between two revisions never changes, a full revision resolves to the
+# same commit forever, and the reachability of one commit from three others
+# never changes with time, so an entry keyed on those ids cannot go stale.
 _GIT_ANSWER_STORE_FILENAME = "git-object-answers.json"
 _GIT_ANSWER_STORE_VERSION = 1
 _GIT_ANSWER_STORE_WORKTREES = 256
@@ -118,7 +118,38 @@ def _git_answer_store_path() -> Path:
 
 
 def _empty_git_answer_store() -> dict[str, Any]:
-    return {"version": _GIT_ANSWER_STORE_VERSION, "commits": {}, "counts": {}}
+    return {
+        "version": _GIT_ANSWER_STORE_VERSION,
+        "commits": {},
+        "counts": {},
+        "unreachable": {},
+    }
+
+
+# The store's buckets all hold one answer per (worktree, question) pair, so the
+# readers below share one shape. A bucket added to the store must be named here
+# rather than read by hand, so a corrupt or absent bucket is emptied in one
+# place and cannot be mistaken for an answer.
+_GIT_ANSWER_BUCKETS = ("commits", "counts", "unreachable")
+
+
+def _git_answer_pairs(bucket: str, answers: Mapping[str, Any]) -> dict[str, Any]:
+    """The entries of one bucket that are shaped like an answer."""
+    if bucket == "counts":
+        return {
+            str(key): value
+            for key, value in answers.items()
+            if isinstance(key, str)
+            and isinstance(value, int)
+            and not isinstance(value, bool)
+        }
+    return {
+        str(key): value
+        for key, value in answers.items()
+        if isinstance(key, str)
+        and isinstance(value, str)
+        and (bucket == "unreachable" or value)
+    }
 
 
 def _read_git_answer_store() -> dict[str, Any]:
@@ -139,33 +170,22 @@ def _read_git_answer_store() -> dict[str, Any]:
         or payload.get("version") != _GIT_ANSWER_STORE_VERSION
     ):
         return _empty_git_answer_store()
-    raw_commits = payload.get("commits")
-    raw_counts = payload.get("counts")
-    if not isinstance(raw_commits, dict) or not isinstance(raw_counts, dict):
-        return _empty_git_answer_store()
+    raw: dict[str, Mapping[str, Any]] = {}
+    for bucket in _GIT_ANSWER_BUCKETS:
+        answers = payload.get(bucket)
+        if not isinstance(answers, dict):
+            if bucket in ("commits", "counts"):
+                return _empty_git_answer_store()
+            continue
+        raw[bucket] = answers
     store = _empty_git_answer_store()
-    for tree, answers in raw_commits.items():
-        if not isinstance(tree, str) or not isinstance(answers, dict):
-            continue
-        kept = {
-            str(candidate): str(sha)
-            for candidate, sha in answers.items()
-            if isinstance(candidate, str) and isinstance(sha, str) and sha
-        }
-        if kept:
-            store["commits"][tree] = kept
-    for tree, answers in raw_counts.items():
-        if not isinstance(tree, str) or not isinstance(answers, dict):
-            continue
-        kept_counts = {
-            str(key): value
-            for key, value in answers.items()
-            if isinstance(key, str)
-            and isinstance(value, int)
-            and not isinstance(value, bool)
-        }
-        if kept_counts:
-            store["counts"][tree] = kept_counts
+    for bucket, answers in raw.items():
+        for tree, entries in answers.items():
+            if not isinstance(tree, str) or not isinstance(entries, dict):
+                continue
+            kept = _git_answer_pairs(bucket, entries)
+            if kept:
+                store[bucket][tree] = kept
     return store
 
 
@@ -189,16 +209,17 @@ def _bound_git_answer_store(store: dict[str, Any]) -> None:
     producer carries a store bounded by the fleet rather than by every worktree
     it has ever classified.
     """
-    for bucket in ("commits", "counts"):
+    for bucket in _GIT_ANSWER_BUCKETS:
         for tree in [tree for tree in store[bucket] if not Path(tree).is_dir()]:
             del store[bucket][tree]
-    if max(len(store["commits"]), len(store["counts"])) > _GIT_ANSWER_STORE_WORKTREES:
+    largest = max(len(store[bucket]) for bucket in _GIT_ANSWER_BUCKETS)
+    if largest > _GIT_ANSWER_STORE_WORKTREES:
         live = _live_pointer_worktrees()
         if live is not None:
-            for bucket in ("commits", "counts"):
+            for bucket in _GIT_ANSWER_BUCKETS:
                 for tree in [tree for tree in store[bucket] if tree not in live]:
                     del store[bucket][tree]
-    for bucket in ("commits", "counts"):
+    for bucket in _GIT_ANSWER_BUCKETS:
         entries = store[bucket]
         while len(entries) > _GIT_ANSWER_STORE_WORKTREES:
             entries.pop(next(iter(entries)), None)
@@ -280,6 +301,38 @@ def _remember_count_answer(tree: Path, head: str, base: str, count: int) -> None
 def _count_answer_key(head: str, base: str) -> str:
     """One store key for the pair of object ids the count is a function of."""
     return f"{head}\x00{base}"
+
+
+def _stored_unreachable_answer(
+    tree: Path, head: str, merged: str, base: str
+) -> str | None:
+    """The stored reachability answer for these three object ids, or None.
+
+    ``None`` means no answer is stored, which is different from a stored empty
+    answer: the empty string says git ran and found no commit the two refs
+    cannot reach, and that answer is as reusable as any other.
+    """
+    key = _unreachable_answer_key(head, merged, base)
+    answers = _read_git_answer_store()["unreachable"].get(str(tree)) or {}
+    answer = answers.get(key)
+    return answer if isinstance(answer, str) else None
+
+
+def _remember_unreachable_answer(
+    tree: Path, head: str, merged: str, base: str, answer: str
+) -> None:
+    """Record which commits in this worktree the two other ids cannot reach."""
+    key = _unreachable_answer_key(head, merged, base)
+
+    def mutate(store: dict[str, Any]) -> None:
+        store["unreachable"].setdefault(str(tree), {})[key] = answer
+
+    _update_git_answer_store(mutate)
+
+
+def _unreachable_answer_key(head: str, merged: str, base: str) -> str:
+    """One store key for the three object ids the answer is a function of."""
+    return f"{head}\x00{merged}\x00{base}"
 
 
 def _commits_beyond_base(record: Mapping[str, Any]) -> int:
@@ -490,10 +543,13 @@ def overdue_unreconciled_runs(
     by a recorded closure disposition: the same predicate the closure drain
     uses, so a past-grace pointer that carries no valid disposition is still
     refused here (the forgotten-work case) while one the drain counts as
-    reconciled is never refused.
+    reconciled is never refused. A scoring run inside its armed reflex's review
+    window awaits that reflex rather than coordinator reconciliation.
     """
     if not grace:
         return []
+    from reckon.crew import obligations
+
     grace_seconds = parse_duration(grace)
     rows = []
     for pointer in list_live(project=project):
@@ -505,6 +561,14 @@ def overdue_unreconciled_runs(
             and isinstance(age, int)
             and age > grace_seconds
         ):
+            # A review inside the armed reflex's sweep window is its work;
+            # an expired wait or a run without an owner remains actionable.
+            if (
+                row["classification"] == "scoring"
+                and age <= obligations._reflex_review_window_seconds()
+                and obligations._reflex_owns_review(project, pointer)
+            ):
+                continue
             recorded = pointer.get("closure_disposition")
             disposition = (
                 str(recorded.get("kind") or "") if isinstance(recorded, Mapping) else ""
@@ -1884,7 +1948,18 @@ class _LedgerRunWordReader:
 
     def for_runs(self, departures: Iterable[str] | None = None) -> Mapping[str, str]:
         from reckon import ledger as ledger_module
+        from reckon.crew.open_run_index import row_for_run
 
+        if departures is not None:
+            words = {}
+            for run_id in departures:
+                try:
+                    row = row_for_run(self.project, run_id)
+                except (OSError, ValueError, ledger_module.LedgerError):
+                    continue
+                if row is not None:
+                    words[run_id] = "promoted" if row.get("commits") else "recorded"
+            return words
         try:
             recorded = ledger_module.run_ids(self.project)
         except (OSError, ValueError, ledger_module.LedgerError):
@@ -3206,16 +3281,13 @@ def watch_ticker(
     lease_seconds = producer_lease_seconds()
 
     def _lease_remaining() -> float | None:
-        renewed = watch_lease_renewed_at(project)
-        if renewed is None:
-            return None
-        return lease_seconds - (_utc_seconds() - renewed)
+        return runs.watch_lease_remaining(project, lease_seconds=lease_seconds)
 
     def _wait(interval: float) -> bool:
-        """Sleep, bounded by the lease; report whether the seat has lapsed."""
-        remaining = _lease_remaining()
-        if remaining is not None and remaining <= 0:
+        """Sleep, bounded by the lease; report whether the seat has ended."""
+        if runs.end_lapsed_watch_seat(project):
             return True
+        remaining = _lease_remaining()
         if sleeper is not time.sleep:
             # A supplied sleeper may advance a simulated clock or return
             # immediately. Give it one bounded call per poll interval so a
@@ -3230,13 +3302,12 @@ def watch_ticker(
             )
             if not runs.renew_watch_host_lease(project):
                 return True
-            remaining = _lease_remaining()
-            return remaining is not None and remaining <= 0
+            return runs.end_lapsed_watch_seat(project)
         left = interval
         while True:
-            remaining = _lease_remaining()
-            if remaining is not None and remaining <= 0:
+            if runs.end_lapsed_watch_seat(project):
                 return True
+            remaining = _lease_remaining()
             step = min(left, LEASE_RENEW_SECONDS)
             if remaining is not None:
                 step = min(step, remaining)
@@ -3246,8 +3317,7 @@ def watch_ticker(
             left -= step
             if left <= 0:
                 break
-        remaining = _lease_remaining()
-        return remaining is not None and remaining <= 0
+        return runs.end_lapsed_watch_seat(project)
 
     with _watch_registration(project, stall_window, sleeper=sleeper) as (
         acquired,
@@ -3330,8 +3400,7 @@ def watch_ticker(
                     # one superseded by a replacement producer ends here.
                     if not _recreate_unlinked_registration(project, watcher):
                         return
-                    remaining = _lease_remaining()
-                    if remaining is not None and remaining <= 0:
+                    if runs.end_lapsed_watch_seat(project):
                         return
                     # Every stream the tick reads is counted, so the registration
                     # carries what this poll actually parsed. An unchanged fleet

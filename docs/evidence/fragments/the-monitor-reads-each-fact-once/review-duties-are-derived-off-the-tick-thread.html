@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="the-monitor-reads-each-fact-once">
+  <meta name="plan-evidence-for" content="reckon:the-monitor-reads-each-fact-once">
+  <title>Review duties are derived off the tick thread</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+
+<article class="r-note" id="review-duties-are-derived-off-the-tick-thread-landing" data-node="review-duties-are-derived-off-the-tick-thread" data-reckon="landing" data-when="2026-11-13">
+  <h2>A long derivation no longer holds a later tick's phase transitions</h2>
+
+  <p id="review-duties-are-derived-off-the-tick-thread-defect"><strong>The defect.</strong> Phase transitions for every project were committed before any session's duties were derived, but both passes still ran on the tick's own thread. A project's derivation reads the review store once per run and can outlast a tick many times over, so a tick that began deriving duties held every later tick back: a run whose state changed during that derivation was not published until it returned, and its session was told nothing until the following tick.</p>
+
+  <p id="review-duties-are-derived-off-the-tick-thread-change"><strong>What landed.</strong> <code>reckon/crew/station.py</code> gains <code>DutyBeat</code>, a worker the station owns. The tick still calls <code>station_obligations.publish</code> for each project and still records the <code>per-project-refresh</code> stage around that call, so the stage a reader sees keeps naming the work. <code>publish</code> now takes a <code>submit</code> callable: given one, it hands the derivation to the station's worker and returns at once; without one it derives in the caller's thread exactly as before. The worker opens its own store connection, because a store handle is bound to the thread that opened it, and it discards its in-flight mark only after the derivation returns.</p>
+
+  <p id="review-duties-are-derived-off-the-tick-thread-inflight"><strong>One at a time.</strong> A project already being derived is never started a second time; the tick's request is refused and the duties the last finished derivation published stand until it completes. A change the tick saw while a derivation ran is carried into the next one, so a busy project is not left publishing duties read before its own transition. <code>run_station</code> drains the worker on exit, bounded by <code>DUTY_DRAIN_SECONDS</code>.</p>
+
+  <p id="review-duties-are-derived-off-the-tick-thread-barrier"><strong>The ordering is the class's, not the caller's.</strong> A worker holds at its first step while a tick is committing transitions, so no derivation reaches the review store until every project's transitions for that tick are written. The wait is one-sided: the tick never waits for a derivation, so a slow derivation still cannot delay the pass that gates it. Committing transitions ahead of derivations was already the tick's call order; the barrier makes it a property of <code>DutyBeat</code>, which a later refactor cannot silently undo.</p>
+
+  <p id="review-duties-are-derived-off-the-tick-thread-ordering"><strong>Why the ordering case read wrong.</strong> The case that guards this ordering blocks the first project's derivation and then reads the store. With the derivation on its own thread, the inventory tick's derivation could still be entering when the case armed its block, so the event the case waited on belonged to that derivation rather than to the tick under test, and the read landed while the next tick was between two projects' commits. The case now waits for that derivation to finish before it arms the block, so the read can only happen inside the tick it asserts about.</p>
+
+  <p id="review-duties-are-derived-off-the-tick-thread-gate"><strong>Gate.</strong> <code>tests/test_review_duties_are_derived_off_the_tick_thread.py</code> drives <code>run_station</code> itself on a temporary crew home across two tick intervals. The first tick's derivation is held open inside the worker; the run's phase then changes between ticks; a second tick's transition for that run is read from the store while the derivation is still held. The case also asserts the worker saw exactly one derivation at a time and that the blocked project is the one in flight.</p>
+
+  <p id="review-duties-are-derived-off-the-tick-thread-negative"><strong>Negative control.</strong> The declared mutation restores the base tick so the second tick's transition waits for the blocked derivation: <code>submit</code> is dropped from the tick's <code>publish</code> call, putting the derivation back on the tick thread. The case then never sees the transition and fails by name.</p>
+</article>
+</body>
+</html>

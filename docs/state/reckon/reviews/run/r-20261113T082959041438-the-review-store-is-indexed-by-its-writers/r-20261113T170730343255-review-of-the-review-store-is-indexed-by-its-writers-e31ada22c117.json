@@ -1,0 +1,119 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-11-13T17:31:31.882Z",
+  "dispatched_at": "2026-11-13T17:19:03Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "exempted",
+      "reason": "refuted: the repository's autouse isolated_reckon_home fixture sets RECKON_HOME and XDG_CONFIG_HOME to a per-test tmp directory, and crew_home() resolves under RECKON_HOME (checked: /tmp/.../home/crew); the real ~/.config/reckon/crew/reviews holds no fixture store",
+      "recorded_at": "2026-11-14T07:41:19.998637+00:00"
+    },
+    "1": {
+      "kind": "folded",
+      "node": "repair-of-the-review-store-is-indexed-by-its-writers-e31ada22c117",
+      "recorded_at": "2026-11-14T07:41:29.378097+00:00"
+    },
+    "2": {
+      "kind": "folded",
+      "node": "repair-of-the-review-store-is-indexed-by-its-writers-e31ada22c117",
+      "recorded_at": "2026-11-14T07:41:40.605682+00:00"
+    },
+    "3": {
+      "kind": "folded",
+      "node": "repair-of-the-review-store-is-indexed-by-its-writers-e31ada22c117",
+      "recorded_at": "2026-11-14T07:41:50.304822+00:00"
+    },
+    "4": {
+      "kind": "folded",
+      "node": "repair-of-the-review-store-is-indexed-by-its-writers-e31ada22c117",
+      "recorded_at": "2026-11-14T07:41:59.381354+00:00"
+    },
+    "5": {
+      "kind": "folded",
+      "node": "repair-of-the-review-store-is-indexed-by-its-writers-e31ada22c117",
+      "recorded_at": "2026-11-14T07:42:08.102556+00:00"
+    },
+    "6": {
+      "kind": "folded",
+      "node": "repair-of-the-review-store-is-indexed-by-its-writers-e31ada22c117",
+      "recorded_at": "2026-11-14T07:42:31.392246+00:00"
+    }
+  },
+  "findings": [
+    {
+      "category": "correctness",
+      "file": "tests/test_the_review_store_is_indexed_by_its_writers.py",
+      "line": 153,
+      "severity": "blocking",
+      "summary": "The stored fixture takes tmp_path and monkeypatch and uses neither; it builds the store from crew_home(), so a plain `uv run pytest` writes 500 fixture records into the developer's real ~/.config/reckon/crew/reviews/fixture. That is state outside the repository under test, which the repo's AGENTS.md bans in both directions, and two concurrent runs of this file collide in one directory."
+    },
+    {
+      "category": "correctness",
+      "file": "reckon/crew/review_records.py",
+      "line": 2093,
+      "severity": "blocking",
+      "summary": "reconcile_foreign_write has no production caller: at the reviewed head it appears only in its own definition, in the re-export list at review.py:4028 and the test at line 247; store_index_document:2163 returns a usable document without comparing the directory mtime, so a record written outside record_written is never seen by review_records_index_names, store_index_run_digest or review_entries_signature. The done_when's requirement that such a record be found on the next read is met only by the test calling the helper directly."
+    },
+    {
+      "category": "correctness",
+      "file": "reckon/crew/review_records.py",
+      "line": 2277,
+      "severity": "non-blocking",
+      "summary": "review_entries_signature now answers from the run digest with no reconciliation, so an in-place rewrite of an already-indexed record by a writer that bypassed the module no longer moves the obligations signature; the base stat'ed each record through file_memo.file_signature and did catch it, and the same change keeps that revalidation for the tick store in commit dae4f938 while dropping it here."
+    },
+    {
+      "category": "correctness",
+      "file": "reckon/crew/review_records.py",
+      "line": 2064,
+      "severity": "non-blocking",
+      "summary": "dir_mtime_ns is measured before _persist_index_document writes the document, and both the record write and the index write rename a temp file into the store directory, so the persisted stamp is always one write stale; once the reconciler is wired its early return can never fire and every read lists the store, which is the cost the change exists to remove."
+    },
+    {
+      "category": "correctness",
+      "file": "reckon/crew/review_records.py",
+      "line": 1963,
+      "severity": "non-blocking",
+      "summary": "_entry_facts carries neither mtime nor inode, which the plan's per-record entry specifies; that omission is what leaves the per-record revalidation in place and keeps _store_indexes and the non-tick _tick_store on the old whole-store path."
+    },
+    {
+      "category": "reuse",
+      "file": "reckon/crew/open_run_index.py",
+      "line": 438,
+      "severity": "non-blocking",
+      "summary": "The section 35 sqlite review-lookup index (~/.config/reckon/crew/reviews sibling review-lookup/*.sqlite) still exists and is still written for every record through open_run_index.review_written at review.py:4012, so the store now keeps two indexes; the plan's 'One index' paragraph requires the older one be replaced when it landed first, and the manifest records this under outside_scope."
+    },
+    {
+      "category": "docs",
+      "file": "reckon/crew/review_records.py",
+      "line": 2267,
+      "severity": "non-blocking",
+      "summary": "review_entries_signature's docstring still states that each indexed file is stat'ed without reading its contents, which the new digest branch no longer does, so the one place a reader looks to learn the freshness rule now describes the code it replaced."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "pass \u2014 three commits read commit by commit; the second fixes the index document leaking into the store's own listings, and the third is the evidence fragment.",
+    "done_when": "fail \u2014 five of the six named demonstrations are asserted by tests/test_the_review_store_is_indexed_by_its_writers.py, but the foreign-write one is met by calling review_records.reconcile_foreign_write at line 247 rather than by a read, and no production reader invokes it.",
+    "goal": "pass \u2014 the goal is to index the review store from its writers; review_records.py:1975-2068 writes one document per store under a lock and routes both writers through it, though the plan's per-record mtime/inode and foreign-write read path are not delivered.",
+    "manifest": "pass \u2014 the manifest names the two gated arms, their logs and the negative control, and records the unfenced section 35 work under outside_scope.",
+    "write_paths": "pass \u2014 the diff at eb36ed61..e31ada22 touches exactly review_records.py, review.py, plan_review.py, the node's test and the evidence fragment."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is to index the review store from its writers; reckon/crew/review_records.py:1975-2068 writes one document per store under a lock and routes both writers through it.\nVERDICT done_when: tests/test_the_review_store_is_indexed_by_its_writers.py asserts five of the six named demonstrations, but the foreign-write one is met by calling reconcile_foreign_write directly at line 247, not by a read.\nVERDICT write_paths: the diff at eb36ed61..e31ada22 touches only the declared paths \u2014 review_records.py, review.py, plan_review.py, the node's test and the evidence fragment.\nVERDICT manifest: read; it names the two matched arms, their logs and the negative control, and records the unfenced section 35 work under outside_scope.\nVERDICT diff: read commit by commit; 990dcd93 adds the index and writer path, dae4f938 excludes the document from listings, e31ada22 records the evidence fragment.\nCALL_SITES: reckon/crew/plan_review.py:store_plan_review, reckon/crew/review.py:_write_record (store_review, store_committed_review, review_dispositions), reckon/crew/obligations.py:2082,3239,3270,3322 (review_entries_signature), reckon/crew/review_records.py:_tick_store\nSCORE goal_fidelity: 12\nJUSTIFICATION goal_fidelity: reckon/crew/review_records.py:2069 record_written is the one writer path and both writers route through it, but the plan's foreign-write reader (:2093 has no caller) and its per-record mtime/inode (:1963) are absent.\nSCORE evidence: 13\nJUSTIFICATION evidence: tests/test_the_review_store_is_indexed_by_its_writers.py builds 500 records across 50 runs and the negative control at arms/negative_control.log is genuinely red, but its foreign-write case calls the helper instead of reading.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in eb36ed61..e31ada22 is inside the manifest's declared write paths, and the unfenced section 35 work is recorded rather than attempted.\nSCORE durability: 13\nJUSTIFICATION durability: tests/test_the_review_store_is_indexed_by_its_writers.py:198 asserts no store read against a recording stand-in and would redden if the document path regressed, but its line 247 foreign-write assertion passes even with no reader wired.\nSCORE fit: 15\nJUSTIFICATION fit: the document, lock and hashing follow the module's existing idioms, but review_records.py:2267 still documents the stat-per-file rule the digest branch replaced.\nSCORE reuse: 5\nJUSTIFICATION reuse: reckon/crew/open_run_index.py:438 already owns a review-store index and is still written per record, so the store keeps two rather than the one index the plan requires.\nFINDING tests/test_the_review_store_is_indexed_by_its_writers.py:153 blocking: the fixture ignores tmp_path and monkeypatch and writes 500 records into the environment-resolved crew home, outside the repository under test.\nFINDING reckon/crew/review_records.py:2093 blocking: reconcile_foreign_write has no production caller and store_index_document never compares the directory mtime, so a record written outside the writer path is never found by a reader.\nFINDING reckon/crew/review_records.py:2277 non-blocking: review_entries_signature answers from the run digest with no reconciliation, so a bypass writer's in-place rewrite no longer moves the obligations signature.\nFINDING reckon/crew/review_records.py:2064 non-blocking: dir_mtime_ns is recorded before the document is persisted, leaving it one write stale so the reconciler's fast path can never fire.\nFINDING reckon/crew/review_records.py:1963 non-blocking: entries carry no mtime or inode, which the plan's per-record entry specifies and which is why the remaining readers stay on the old whole-store pass.\nFINDING reckon/crew/open_run_index.py:438 non-blocking: the section 35 sqlite review index is still written for every record, so the store keeps two indexes against the plan's one-index requirement.\nFINDING reckon/crew/review_records.py:2267 non-blocking: review_entries_signature's docstring still states that each indexed file is stat'ed, which the digest branch no longer does.\n",
+  "review_run_id": "r-20261113T170730343255-review-of-the-review-store-is-indexed-by-its-writers-e31ada22c117",
+  "reviewed_base_sha": "eb36ed6177e612210f6a4e66b77ac098e997e212",
+  "reviewed_head_sha": "e31ada22c1172bb3bc3099c6122636eba1e60b1e",
+  "reviewed_run_id": "r-20261113T082959041438-the-review-store-is-indexed-by-its-writers",
+  "scores": {
+    "durability": 13,
+    "evidence": 13,
+    "fit": 15,
+    "goal_fidelity": 12,
+    "reuse": 5,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-13T18:05:57.663994+00:00",
+  "total": 78
+}

@@ -1,10 +1,9 @@
-"""A stopped run's claim does not block another run's landing.
+"""Source peers share writes while stopped artifact claims retain their safeguards.
 
-A claim protects a file from a second concurrent editor. Once its holder's
-process has ended and its manifest is terminal, that holder edits nothing, so a
-promotion that accepts the same path is admitted and records the claim it walked
-past. A peer that is still running, or that ended without delivering a terminal
-manifest, keeps refusing exactly as before, and so does a dispatch.
+Acceptance of a source path is independent of a peer's liveness or manifest.
+An artifact held by a live or undelivered peer still refuses; a stopped,
+terminal holder is recorded on an artifact acceptance. Every case runs in a
+temporary repository and crew home.
 """
 
 from __future__ import annotations
@@ -20,15 +19,28 @@ from click.testing import CliRunner
 
 from reckon import ledger
 from reckon.cli import main as cli_main
+from reckon.crew import promotion_scope
 from reckon.crew.dispatch_claims import refuse_widen_scope_conflicts
-from reckon.crew.node import ScopeConflict
-from reckon.crew.runs import _write_json, pointer_path
+from reckon.crew.node import CrewError, ScopeConflict
+from reckon.crew.runs import _write_json, pointer_path, read_pointer
 
 PROJECT = "sample"
 OURS = "r-landing-run"
 PEER = "r-stopped-peer"
 ACCEPTED = "declared-b.txt"
 DECLARED = "declared-a.txt"
+
+
+@pytest.fixture(params=[False, True], autouse=True)
+def exclusive_claim(
+    request: pytest.FixtureRequest, monkeypatch: pytest.MonkeyPatch
+) -> bool:
+    """Keep artifact refusals beside source-admission controls."""
+    exclusive = bool(request.param)
+    suffix = "receipt" if exclusive else "txt"
+    monkeypatch.setitem(globals(), "ACCEPTED", f"declared-b.{suffix}")
+    monkeypatch.setitem(globals(), "DECLARED", f"declared-a.{suffix}")
+    return exclusive
 
 
 def git(repository: Path, *arguments: str) -> str:
@@ -53,6 +65,9 @@ def repository(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     monkeypatch.setenv("RECKON_HOME", str(config_home))
     root = tmp_path / "repo"
     (root / "docs" / "state" / PROJECT).mkdir(parents=True)
+    (root / "docs" / "state" / PROJECT / "shared-write-paths.json").write_text(
+        json.dumps({"shared_roots": []}), encoding="utf-8"
+    )
     (root / "seed.txt").write_text("seed\n", encoding="utf-8")
     for arguments in (
         ("init", "-q", "-b", "main"),
@@ -191,8 +206,20 @@ def peer_record() -> str:
     return pointer_path(PEER).read_text(encoding="utf-8")
 
 
-def test_stopped_peer_claim_is_recorded_on_the_acceptance(
-    repository: Path, tmp_path: Path
+def _accept(head: str) -> list[dict]:
+    record = read_pointer(OURS)
+    return promotion_scope._accepted_scope_exceptions(
+        OURS,
+        [ACCEPTED],
+        {ACCEPTED: "companion source or artifact edit"},
+        record=record,
+        tree=Path(record["worktree"]),
+        commits=[head],
+    )
+
+
+def test_stopped_artifact_peer_is_recorded_on_the_acceptance(
+    repository: Path, tmp_path: Path, exclusive_claim: bool
 ) -> None:
     _, ours_head = build_pair(
         repository, tmp_path, peer_pid=dead_pid(), peer_status="complete"
@@ -212,71 +239,61 @@ def test_stopped_peer_claim_is_recorded_on_the_acceptance(
 
     assert result.exit_code == 0, result.output
     stored = json.loads(result.output)["record"]
-    assert stored["scope_acceptances"] == [
-        {
-            "path": ACCEPTED,
-            "reason": "companion of the stopped peer's declared path",
-            "stopped_peer_claims": [{"run_id": PEER, "claim": ACCEPTED}],
-        }
-    ]
+    expected = {
+        "path": ACCEPTED,
+        "reason": "companion of the stopped peer's declared path",
+    }
+    if exclusive_claim:
+        expected["stopped_peer_claims"] = [{"run_id": PEER, "claim": ACCEPTED}]
+    assert stored["scope_acceptances"] == [expected]
     assert not pointer_path(OURS).exists()
     assert peer_record() == peer_before
     assert ledger.runs(PROJECT, root=repository)
 
 
-def test_live_peer_claim_still_refuses_the_acceptance(
-    repository: Path, tmp_path: Path
+def test_live_peer_acceptance_follows_claim_exclusivity(
+    repository: Path, tmp_path: Path, exclusive_claim: bool
 ) -> None:
     _, ours_head = build_pair(
         repository, tmp_path, peer_pid=os.getpid(), peer_status="complete"
     )
     peer_before = peer_record()
 
-    result = CliRunner().invoke(
-        cli_main,
-        [
-            *complete_arguments(ours_head),
-            "--accept-path",
-            ACCEPTED,
-            "companion of a peer still editing",
-        ],
-    )
-
-    assert result.exit_code == 1
-    assert PEER in result.output
-    assert ACCEPTED in result.output
+    if exclusive_claim:
+        with pytest.raises(CrewError, match=PEER) as refused:
+            _accept(ours_head)
+        assert ACCEPTED in str(refused.value)
+    else:
+        assert _accept(ours_head) == [
+            {"path": ACCEPTED, "reason": "companion source or artifact edit"}
+        ]
     assert ledger.runs(PROJECT, root=repository) == []
     assert pointer_path(OURS).is_file()
     assert peer_record() == peer_before
 
 
-def test_ended_peer_without_a_terminal_manifest_still_refuses(
-    repository: Path, tmp_path: Path
+def test_an_undelivered_peer_only_refuses_an_artifact(
+    repository: Path, tmp_path: Path, exclusive_claim: bool
 ) -> None:
     _, ours_head = build_pair(
         repository, tmp_path, peer_pid=dead_pid(), peer_status="in-progress"
     )
     peer_before = peer_record()
 
-    result = CliRunner().invoke(
-        cli_main,
-        [
-            *complete_arguments(ours_head),
-            "--accept-path",
-            ACCEPTED,
-            "companion of a crashed peer",
-        ],
-    )
-
-    assert result.exit_code == 1
-    assert PEER in result.output
+    if exclusive_claim:
+        with pytest.raises(CrewError, match=PEER):
+            _accept(ours_head)
+    else:
+        assert _accept(ours_head) == [
+            {"path": ACCEPTED, "reason": "companion source or artifact edit"}
+        ]
     assert ledger.runs(PROJECT, root=repository) == []
     assert pointer_path(OURS).is_file()
     assert peer_record() == peer_before
 
 
-def test_manifest_from_a_previous_attempt_still_refuses(
-    repository: Path, tmp_path: Path
+def test_a_stale_manifest_only_refuses_an_artifact(
+    repository: Path, tmp_path: Path, exclusive_claim: bool
 ) -> None:
     _, ours_head = build_pair(
         repository, tmp_path, peer_pid=dead_pid(), peer_status="complete"
@@ -290,25 +307,20 @@ def test_manifest_from_a_previous_attempt_still_refuses(
     _write_json(pointer_path(PEER), stale)
     peer_before = peer_record()
 
-    result = CliRunner().invoke(
-        cli_main,
-        [
-            *complete_arguments(ours_head),
-            "--accept-path",
-            ACCEPTED,
-            "companion of a peer whose manifest predates its attempt",
-        ],
-    )
-
-    assert result.exit_code == 1
-    assert PEER in result.output
+    if exclusive_claim:
+        with pytest.raises(CrewError, match=PEER):
+            _accept(ours_head)
+    else:
+        assert _accept(ours_head) == [
+            {"path": ACCEPTED, "reason": "companion source or artifact edit"}
+        ]
     assert ledger.runs(PROJECT, root=repository) == []
     assert pointer_path(OURS).is_file()
     assert peer_record() == peer_before
 
 
-def test_a_dispatch_over_the_stopped_peers_path_still_refuses(
-    repository: Path, tmp_path: Path
+def test_a_dispatch_over_a_stopped_peer_follows_claim_exclusivity(
+    repository: Path, tmp_path: Path, exclusive_claim: bool
 ) -> None:
     base, _ = build_pair(
         repository, tmp_path, peer_pid=dead_pid(), peer_status="complete"
@@ -328,7 +340,10 @@ def test_a_dispatch_over_the_stopped_peers_path_still_refuses(
         },
     }
 
-    with pytest.raises(ScopeConflict, match=PEER):
+    if exclusive_claim:
+        with pytest.raises(ScopeConflict, match=PEER):
+            refuse_widen_scope_conflicts(candidate, [ACCEPTED])
+    else:
         refuse_widen_scope_conflicts(candidate, [ACCEPTED])
 
     assert peer_record() == peer_before

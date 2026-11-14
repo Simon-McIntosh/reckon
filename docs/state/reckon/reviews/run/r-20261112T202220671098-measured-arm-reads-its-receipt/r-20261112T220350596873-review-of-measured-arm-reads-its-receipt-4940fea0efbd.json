@@ -1,0 +1,40 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-11-12T22:19:55.117Z",
+  "dispatched_at": "2026-11-12T22:09:07Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/work-flows-to-the-lane/measured-arm-reads-its-receipt.html",
+      "line": 64,
+      "severity": "non-blocking",
+      "text": "the fragment's suite-arm paragraph still attributes '56 passed' to head cadd0db0, while the manifest's after_suite and gate/after-arm.log now both record that run at revision 4940fea0ef; the run's own regenerated arm log never records cadd0db0, so the figure is cited at a revision that produced neither the log nor the manifest entry. This line predates the commit under review and persists from the earlier review's third finding."
+    }
+  ],
+  "justifications": {
+    "durability": "tests/test_a_measured_arm_reads_its_receipt_past_scheduler_lines.py:296 re-applies the declared mutation and asserts its effect, so the behaviour the fragment records cannot regress silently.",
+    "evidence": "the added figures '3 failed, 2 passed' and 'EXIT=1' reconcile exactly with gate/negative-control.log, but the same file at line 64 still cites a suite-arm figure at revision cadd0db0 that gate/after-arm.log does not record.",
+    "fit": "the added prose at measured-arm-reads-its-receipt.html:55-59 uses the same <p>/<code> mechanism wording as the surrounding paragraphs and introduces no plan, ticket or stage label.",
+    "goal_fidelity": "docs/evidence/fragments/work-flows-to-the-lane/measured-arm-reads-its-receipt.html:56-58 now states what the declared mutation produced, so the fragment records the receipt reader's measured negative control rather than only claiming it.",
+    "reuse": "no new definition is added by the gained commit; it extends the existing evidence fragment that reckon/evidence.py:697 already composes.",
+    "scope_discipline": "the only changed file since the prior review is the declared fragment path; commit 4940fea0ef changes 4 lines in it and nothing else."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: read the source node's goal (read a landing-measured arm by its exit receipt when the scheduler prints lines after it) and the only commit gained since the prior review, 4940fea0ef, which adds the negative-control's measured result to docs/evidence/fragments/work-flows-to-the-lane/measured-arm-reads-its-receipt.html:55-59.\nVERDICT done_when: read the done_when in the dispatch prompt and the run manifest and compared it with gate/negative-control.log, which records `3 failed, 2 passed in 5.43s` and `EXIT=1` over exactly the red-base, run and disagreeing-receipt cases; the gained commit states those figures, and the arms named in the done_when are recorded at gate/baseline-arm.log (51 passed EXIT=0) and gate/after-arm.log (56 passed EXIT=0).\nVERDICT write_paths: read the dispatch's declared write paths (reckon/crew/landing_measure.py, tests/test_a_measured_arm_reads_its_receipt_past_scheduler_lines.py, docs/evidence/fragments/work-flows-to-the-lane/measured-arm-reads-its-receipt.html); the gained diff touches only the fragment.\nVERDICT manifest: read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261112T202220671098-measured-arm-reads-its-receipt/manifest.md; it records baseline 51 passed EXIT=0, after 56 passed EXIT=0 at head 4940fea0ef, zero added failures, and a negative-control log that now carries its own pytest output and EXIT=1, repairing the earlier review's blocking finding.\nVERDICT diff: read 33331794a6..4940fea0ef commit by commit; one commit (4940fea0ef) changes 4 added lines in the evidence fragment, all inside the declared write paths, and no source or test file.\nCALL_SITES: reckon/evidence.py:697, reckon/crew/reports.py:2550\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: docs/evidence/fragments/work-flows-to-the-lane/measured-arm-reads-its-receipt.html:56-58 records what the declared mutation produced, which is the evidence the node's goal implies.\nSCORE evidence: 18\nJUSTIFICATION evidence: the added figures reconcile exactly with gate/negative-control.log's summary line, though the file's line 64 still cites a suite figure at cadd0db0 that gate/after-arm.log does not record.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the gained commit changes only docs/evidence/fragments/work-flows-to-the-lane/measured-arm-reads-its-receipt.html, one of the declared write paths.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_a_measured_arm_reads_its_receipt_past_scheduler_lines.py:296 re-applies the declared mutation and asserts its effect, so the behaviour this documentation records cannot regress silently; the fragment itself carries no test of its own prose.\nSCORE fit: 20\nJUSTIFICATION fit: measured-arm-reads-its-receipt.html:55-59 matches the mechanism prose and <code> marking of the paragraphs above it and carries no forbidden label.\nSCORE reuse: 20\nJUSTIFICATION reuse: the commit adds no definition; it extends the fragment reckon/evidence.py:697 already composes.\nFINDING docs/evidence/fragments/work-flows-to-the-lane/measured-arm-reads-its-receipt.html:64 non-blocking: the fragment still attributes '56 passed' to head cadd0db0 while the manifest's after_suite and gate/after-arm.log record the run at 4940fea0ef; the arm log never records cadd0db0, so the figure is cited at a revision that produced neither.\n",
+  "review_run_id": "r-20261112T220350596873-review-of-measured-arm-reads-its-receipt-4940fea0efbd",
+  "reviewed_base_sha": "33331794a63a08fac5ea111ac0dfe66ec1350a4a",
+  "reviewed_head_sha": "4940fea0efbd653ccb2f942274326d4c05fb536a",
+  "reviewed_run_id": "r-20261112T202220671098-measured-arm-reads-its-receipt",
+  "scores": {
+    "durability": 18,
+    "evidence": 18,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-12T22:22:33.501001+00:00",
+  "total": 116
+}

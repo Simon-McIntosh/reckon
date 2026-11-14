@@ -29,7 +29,7 @@ ESCAPES = re.compile(r"\x1b\[[0-9;]*m")
 # shape rather than by searching from an edge. Each cell is two right-aligned
 # digits and one letter, and the cells abut with the second digit's own leading
 # space as the gap; the trailing rate, model and effort cells follow the block.
-COUNTERS = re.compile(r"(\s?\d{1,2})w( \s?\d{1,2})h( \s?\d{1,2})d")
+COUNTERS = re.compile(r"(\s?\d{1,2})w( \s?\d{1,2})n( \s?\d{1,2})d")
 
 # The roles a fleet node carries as its ordinary work, and the longest of them.
 # The role column is sized from these, so the two rare roles wider than the cell
@@ -53,7 +53,7 @@ def counters(line: str) -> re.Match[str]:
 def letter_columns(line: str) -> dict[str, int]:
     """Each counter suffix's screen column on this row."""
     found = counters(line)
-    return {letter: found.end(index) for index, letter in enumerate(("w", "h", "d"), 1)}
+    return {letter: found.end(index) for index, letter in enumerate(("w", "n", "d"), 1)}
 
 
 def _event(**overrides):
@@ -117,7 +117,7 @@ def test_a_row_with_no_clause_ends_at_its_last_glyph(grid):
     # Column alignment is unchanged: every fixed column starts on the same
     # screen column as the row whose clause reaches into the margin.
     assert counters(empty).start() == counters(with_clause).start()
-    assert empty.index("halted") == with_clause.index("halted")
+    assert empty.index("needs you") == with_clause.index("needs you")
 
 
 def test_columns_start_on_the_same_screen_column(grid):
@@ -131,18 +131,18 @@ def test_columns_start_on_the_same_screen_column(grid):
             plain(grid.render(_event(from_state="complete", to_state="promoted"))),
             "landed",
         ),
-        (plain(grid.render(_event(working=12, blocked=0, unpromoted=3))), "halted"),
+        (plain(grid.render(_event(working=12, blocked=0, unpromoted=3))), "needs you"),
     ]
     # The state cell begins on one column whether the row had a source or not.
     assert len({row.index(state) - ticker_module.MARKER for row, state in rows}) == 1
     # A transition carries both states around the arrow; a first sighting keeps
     # the same geometry with its left half blank.
     assert "delivered → landed" in rows[1][0]
-    assert "working → halted" in rows[2][0]
+    assert "working → needs you" in rows[2][0]
     assert "new → working" in rows[0][0]
     # Located by the counter block's own shape: the reason is the trailing
     # column, so a `w` at the end of a row is free text rather than a suffix.
-    for letter in ("w", "h", "d"):
+    for letter in ("w", "n", "d"):
         assert len({letter_columns(row)[letter] for row, _ in rows}) == 1, letter
 
 
@@ -156,14 +156,14 @@ def test_stat_digits_align_across_one_and_two_digit_counts(grid):
 def test_the_fleet_counters_render_as_digits_followed_by_one_letter(grid):
     """Each counter is its number followed by the state's single letter.
 
-    `2 working · 4 blocked · 1 unpromoted` becomes `2w  4h  1d`: the word is
+    `2 working · 4 blocked · 1 unpromoted` becomes `2w  4n  1d`: the word is
     gone from the count column, and a zero still shows rather than vanishing.
     Each cell is two right-aligned digits followed by its letter, and one space
     separates each cell from the next, so two counts never touch and the block
     still measures the same whatever the counts.
     """
     line = plain(grid.render(_event(working=2, blocked=4, unpromoted=1)))
-    assert " 2w  4h  1d" in line
+    assert " 2w  4n  1d" in line
 
 
 def test_the_counter_block_carries_one_space_between_cells(grid):
@@ -176,8 +176,8 @@ def test_the_counter_block_carries_one_space_between_cells(grid):
     than running together.
     """
     line = plain(grid.render(_event(working=2, blocked=4, unpromoted=1)))
-    assert "w  4h" in line
-    assert "h  1d" in line
+    assert "w  4n" in line
+    assert "n  1d" in line
     assert "·" not in line
 
 
@@ -195,7 +195,7 @@ def test_the_counter_block_holds_one_width_across_counts(grid):
         count: letter_columns(plain(grid.render(_event(working=count))))
         for count in (0, 9, 10, 99)
     }
-    for letter in ("w", "h", "d"):
+    for letter in ("w", "n", "d"):
         assert len({rows[count][letter] for count in rows}) == 1, letter
 
 
@@ -208,7 +208,7 @@ def test_stat_letters_align_at_a_fixed_column_across_one_and_two_digits(grid):
     """
     one = plain(grid.render(_event(working=1, blocked=3, unpromoted=2)))
     twelve = plain(grid.render(_event(working=12, blocked=3, unpromoted=2)))
-    for letter in ("w", "h", "d"):
+    for letter in ("w", "n", "d"):
         assert letter_columns(one)[letter] == letter_columns(twelve)[letter], letter
 
 
@@ -303,10 +303,10 @@ def test_the_retired_baseline_marker_never_marks_a_row(grid):
     # The state cell lands on one screen column whether the record is inventory
     # or news, so a reader scanning the state column finds it wherever the word
     # once sat ahead of it.
-    assert row.rindex("working") == transition.rindex("halted")
+    assert row.rindex("working") == transition.rindex("needs you")
     # The first row has an explicit arrival word.
     assert "new → working" in row
-    assert "working → halted" in transition
+    assert "working → needs you" in transition
     assert "\N{BULLET}" not in row
 
 
@@ -338,7 +338,6 @@ def test_a_node_name_past_the_column_is_elided_not_wrapped(grid):
     assert node[:10] in line
     assert "…" in line
     assert len(line) <= 180
-
 
 
 def test_colour_is_off_by_default_so_callers_get_a_plain_string():
@@ -486,7 +485,7 @@ def test_each_side_of_the_transition_is_painted_as_its_own_state(monkeypatch):
 
     recovered = painter.render(_event(from_state="blocked", to_state="promoted"))
     assert f"\x1b[38;5;{hues['landed']}m" in recovered
-    assert f"\x1b[38;5;{hues['halted']}m" in recovered
+    assert f"\x1b[38;5;{hues['needs you']}m" in recovered
 
     routine = ticker_module.Ticker(theme="light", color=True).render(
         _event(from_state="complete", to_state="promoted")
@@ -674,7 +673,7 @@ def test_a_role_column_still_leaves_every_other_column_on_its_own_position():
     assert all(len(row) <= 180 for row in rows)
     assert all("→" in row for row in rows)
     assert len({row.index("→") for row in rows}) == 1
-    for letter in ("w", "h", "d"):
+    for letter in ("w", "n", "d"):
         assert len({letter_columns(row)[letter] for row in rows}) == 1, letter
 
 
@@ -1188,7 +1187,7 @@ def test_a_crowded_line_stays_within_the_resolved_width(monkeypatch):
     # The counters sit ahead of the reason, at the same column a one-digit row
     # puts them, so a pane clipping its own right edge takes free text and
     # never a count.
-    assert "12w  9h  7d" in line
+    assert "12w  9n  7d" in line
     narrow = plain(grid.render(_event(working=1, blocked=2, unpromoted=3)))
     assert letter_columns(line) == letter_columns(narrow)
     assert counters(line).end() < len(line)
@@ -1456,4 +1455,4 @@ def test_a_follower_opened_at_a_pane_width_emits_a_grid_at_that_width(
     for row in rows:
         assert len(row) <= 208
         assert ("n-west-review-pr8-cut" in row) or ("second-node" in row)
-        assert "working → halted" in row
+        assert "working → needs you" in row

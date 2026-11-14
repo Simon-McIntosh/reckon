@@ -30,6 +30,7 @@ from reckon import (
 from reckon.crew.dispatch_claims import (
     CLAIM_GRACE_OBSERVATIONS_NAME,
     CLAIM_GRACE_OBSERVATION_LIMIT,
+    _leave_dispatch_in_flight,
     read_claim,
 )
 from reckon._timestamps import (
@@ -133,6 +134,20 @@ def _launched_worker_record(
         "argv": list(plan.argv),
         "backend": plan.backend,
     }
+
+
+def _release_in_flight_dispatch(log_path: Path) -> None:
+    """Mark the dispatch whose stream this is as having reached its worker.
+
+    The stream path is ``<run dir>/<turn>.jsonl``, so the run it belongs to is
+    the directory's name. A launch outside a run directory — a lane probe —
+    names no dispatch and releases nothing. A service re-executing after this
+    point no longer has this dispatch to wait for: the worker exists, so
+    replacing the image orphans nothing.
+    """
+    run_id = Path(log_path).parent.name
+    if run_id and Path(log_path).parent == run_dir(run_id):
+        _leave_dispatch_in_flight(run_id)
 
 
 def _placement_job_state(
@@ -1098,8 +1113,9 @@ def _worker_runtime_plan(
 def _worker_process_environment(
     environment: Mapping[str, str] | None, *, dialect: str
 ) -> dict[str, str]:
-    """Merge inherited launch state while withholding Claude headers from Codex."""
+    """Merge worker launch state without inheriting service pass ownership."""
     merged = {**os.environ, **(environment or {})}
+    merged.pop("RECKON_SERVICE_PASS_PATH", None)
     if dialect != "claude":
         merged.pop("ANTHROPIC_CUSTOM_HEADERS", None)
     return merged
@@ -1910,7 +1926,9 @@ def _spawn_detached_worker(
     if exit_status is not None:
         if launched is not None:
             _record_launch_failure(launched, exit_status=exit_status)
+        _release_in_flight_dispatch(log_path)
         return process.pid
+    _release_in_flight_dispatch(log_path)
     with _LAUNCHED_WORKERS_LOCK:
         _LAUNCHED_WORKERS.add(process.pid)
         if launched is not None:
@@ -2355,6 +2373,44 @@ def launch_reservation_path(run_directory: Path, attempt: int) -> Path:
     return run_directory / f"attempt-{attempt}{RESERVATION_SUFFIX}"
 
 
+def reservations_in(
+    run_directory: Path,
+) -> list[tuple[int, Path, Mapping[str, Any]]]:
+    """Every reservation the run directory holds, ascending by attempt.
+
+    The attempt is read from the file name by this module's own pattern and
+    the payload by its own reader, so every caller that has to answer a
+    question about an ``attempt-N.reservation`` file — the launch taking one,
+    the parked reading deciding whether one outruns the worker record — gets
+    the same answer about the same file. A reservation whose payload cannot
+    be read as a mapping carries no attempt anyone can act on and is skipped.
+    """
+    try:
+        names = [path.name for path in run_directory.iterdir()]
+    except OSError:
+        return []
+    found: list[tuple[int, Path, Mapping[str, Any]]] = []
+    for name in names:
+        match = _RESERVATION_PATTERN.match(name)
+        if match is None:
+            continue
+        path = run_directory / name
+        payload = _read_reservation(path)
+        if payload is None:
+            continue
+        found.append((int(match.group(1)), path, payload))
+    found.sort(key=lambda item: item[0])
+    return found
+
+
+def latest_reservation(
+    run_directory: Path,
+) -> tuple[int, Path, Mapping[str, Any]] | None:
+    """The highest-numbered reservation the run directory holds, with its attempt."""
+    found = reservations_in(run_directory)
+    return found[-1] if found else None
+
+
 def _reservation_taken_by_this_process(
     run_directory: Path, *, at_least: int = 1
 ) -> LaunchReservation | None:
@@ -2367,28 +2423,17 @@ def _reservation_taken_by_this_process(
     launch's attempt or a later one, is adopted; another process's hold is never
     taken over, and neither is an earlier attempt's.
     """
-    try:
-        names = [path.name for path in run_directory.iterdir()]
-    except OSError:
-        return None
     pid = os.getpid()
-    for name in sorted(names):
-        match = _RESERVATION_PATTERN.match(name)
-        if match is None:
-            continue
-        path = run_directory / name
-        payload = _read_reservation(path)
-        if not isinstance(payload, Mapping):
-            continue
+    for attempt, path, payload in reservations_in(run_directory):
         if payload.get("supervisor_pid") is not None:
             continue
         if payload.get("pid") != pid:
             continue
-        if int(match.group(1)) < at_least:
+        if attempt < at_least:
             continue
         return LaunchReservation(
             run_id=str(payload.get("run_id") or run_directory.name),
-            attempt=int(match.group(1)),
+            attempt=attempt,
             path=path,
             kind=str(payload.get("kind") or ""),
         )
@@ -2403,14 +2448,90 @@ def _read_reservation(path: Path) -> Mapping[str, Any] | None:
     return payload if isinstance(payload, Mapping) else None
 
 
-def reservation_in_flight(payload: Mapping[str, Any] | None) -> bool:
+def _reservation_age_seconds(path: Path) -> float | None:
+    """How long ago the reservation was written, from the file's own mtime.
+
+    The file's write time is what the release measures, not the ``at`` field it
+    carries: the mtime is set by the filesystem when the reservation is taken
+    and cannot be inherited from a template, so a reservation copied or rewritten
+    is dated by when it landed rather than by a stamp someone else composed.
+    """
+    try:
+        written = path.stat().st_mtime
+    except OSError:
+        return None
+    return time.time() - written
+
+
+def _attempt_leaves_a_worker_record(run_directory: Path, attempt: int) -> bool:
+    """Whether an attempt left a record that a worker was started for it.
+
+    The canonical ``worker.json`` is the supervisor's own account of the worker
+    it spawned, and a retired attempt leaves the same payload as an
+    ``attempt-N-worker.json`` receipt. Either one means the launch reached its
+    supervisor, so the reservation must keep holding however old it is.
+    """
+    if _attempt_artifact_path(run_directory, WORKER_RECORD_NAME, attempt).exists():
+        return True
+    payload = _read_reservation(run_directory / WORKER_RECORD_NAME)
+    if payload is None:
+        return False
+    return _attempt_number(payload) == attempt
+
+
+def _unreached_launch(
+    payload: Mapping[str, Any], run_directory: Path | None, attempt: int | None
+) -> bool:
+    """Whether this reservation's launch never reached a worker, and is stale.
+
+    A launch that dies between taking its reservation and recording a
+    supervisor leaves the reservation naming the process that reserved it. When
+    that process is a long-lived door — the admit service, a station — the
+    reservation reads as in flight for the door's whole life, nothing retries
+    the run, and a relaunch is refused on a hold no worker stands behind.
+
+    So a reservation is treated as unreached once it names no supervisor, its
+    attempt left no worker record, and it is older than
+    :data:`UNREACHED_LAUNCH_BOUND_SECONDS`. The bound keeps a launch slowed by
+    storage from being reclaimed mid-flight; the fence in
+    :func:`_refuse_superseded_launch` is what makes the release safe, because a
+    launch that was released and relaunched abandons rather than starting a
+    second supervisor.
+    """
+    if run_directory is None or attempt is None:
+        return False
+    if payload.get("supervisor_pid") is not None:
+        return False
+    if _attempt_leaves_a_worker_record(run_directory, attempt):
+        return False
+    age = _reservation_age_seconds(launch_reservation_path(run_directory, attempt))
+    return age is not None and age >= UNREACHED_LAUNCH_BOUND_SECONDS
+
+
+def reservation_in_flight(
+    payload: Mapping[str, Any] | None,
+    *,
+    run_directory: Path | None = None,
+    attempt: int | None = None,
+) -> bool:
     """Whether a reservation still holds its attempt.
 
     Once a supervisor is recorded the reservation is freed by that supervisor's
     exit, whatever the reserving process is doing — the admit service outlives
-    every run it launches. Before one is recorded, the reserving process itself
-    is the launch: while it lives the launch is in flight, including a launch
-    still waiting for a scheduler slot, so age is never a reason to free it.
+    every run it launches. The one exception is a run parked on a declared
+    wait: its worker has ended its turn, the supervisor beside it is idle, and
+    the reservation holds nothing a resume could collide with, so the hold
+    lifts while the park stands and returns the moment a worker is running.
+
+    Before one is recorded, the reserving process itself is the launch, and
+    while it lives the launch is in flight, including a launch still waiting for
+    a scheduler slot. A live reserving process is not by itself enough to hold
+    the attempt forever, though: an attempt that recorded no supervisor and
+    left no worker record and is older than
+    :data:`UNREACHED_LAUNCH_BOUND_SECONDS` never reached its worker, and its
+    reservation stops holding the run so a relaunch can be admitted. Age frees
+    only that shape — a reservation naming a supervisor, or one whose attempt
+    left a worker record, is held on its liveness alone.
     """
     if not isinstance(payload, Mapping):
         return False
@@ -2419,8 +2540,31 @@ def reservation_in_flight(payload: Mapping[str, Any] | None) -> bool:
             "pid": payload.get("supervisor_pid"),
             "pid_start_time": payload.get("supervisor_pid_start_time"),
         }
-        return record_process_alive(supervisor, process_alive) is True
-    return record_process_alive(payload, process_alive) is True
+        if record_process_alive(supervisor, process_alive) is not True:
+            return False
+        # An idle supervisor holds nothing. A run whose worker has parked on a
+        # declared wait has ended its turn, and the supervisor beside it is
+        # waiting on a worker that is doing no work, so a reservation held on
+        # that supervisor's liveness refuses a resume for as long as the park
+        # stands. A worker that is still running is not parked, and its
+        # reservation still holds.
+        return not _run_is_parked_on_a_declared_wait(run_directory)
+    if record_process_alive(payload, process_alive) is not True:
+        return False
+    return not _unreached_launch(payload, run_directory, attempt)
+
+
+def _run_is_parked_on_a_declared_wait(run_directory: Path | None) -> bool:
+    """Whether the run this reservation holds has parked on a declared wait."""
+    if run_directory is None:
+        return False
+    from reckon.crew.recovery_liveness import parked_on_declared_wait
+
+    try:
+        record = read_pointer(run_directory.name)
+    except CrewError:
+        return False
+    return parked_on_declared_wait(record) is not None
 
 
 def _reserved_attempt_ended(run_directory: Path, attempt: int) -> bool:
@@ -2482,7 +2626,7 @@ def held_launch_reservation(
         if _reserved_attempt_ended(run_directory, attempt):
             continue
         payload = _read_reservation(run_directory / name)
-        if reservation_in_flight(payload):
+        if reservation_in_flight(payload, run_directory=run_directory, attempt=attempt):
             return payload
     return None
 
@@ -2525,7 +2669,17 @@ def reserve_launch_attempt(
     The key is computed from the run's own receipts on every pass, so a door
     that loses a reclaim reads the same number the winner took rather than a
     stale one of its own.
+
+    The claim is read again here, before the reservation is written: an
+    admission pass releases a launch span that overran its bound and records
+    the release, and a launch merely slowed by storage reaches this point after
+    that release. Writing the reservation then would put a second worker
+    beside the redispatch the release earned, so the release refuses this
+    launch before it takes anything.
     """
+    from reckon.crew.dispatch_refusals import refuse_a_released_launch
+
+    refuse_a_released_launch(run_id)
     held = held_launch_reservation(run_directory)
     if held is not None:
         raise _reservation_refusal(run_id, held)
@@ -2547,7 +2701,9 @@ def reserve_launch_attempt(
                 run_id=run_id, attempt=attempt, path=path, kind=kind
             )
         existing = _read_reservation(path)
-        if reservation_in_flight(existing):
+        if reservation_in_flight(
+            existing, run_directory=run_directory, attempt=attempt
+        ):
             raise _reservation_refusal(run_id, existing or payload)
         _set_reservation_aside(path)
     raise CrewError(
@@ -2637,6 +2793,81 @@ def release_launch_reservation(
             return
     with contextlib.suppress(OSError):
         reservation.path.unlink(missing_ok=True)
+
+
+def _record_unreached_launch(
+    run_directory: Path,
+    reservation: LaunchReservation | None,
+    failure: BaseException,
+) -> None:
+    """File the attempt's exit receipt for a launch that never reached a worker.
+
+    A launch that ends between taking its reservation and recording a
+    supervisor leaves nothing on disk saying it ended, so its reservation keeps
+    holding the run for as long as the process that reserved it lives. The
+    attempt's own exit receipt is the account that frees it, written here on
+    every such path and naming the cause.
+
+    Nothing is written once a supervisor is recorded: from then on the
+    supervisor's exit is the attempt's end, and a receipt written beside a
+    running worker would free a hold that still has one behind it.
+    """
+    if reservation is None:
+        return
+    payload = _read_reservation(reservation.path)
+    if isinstance(payload, Mapping) and payload.get("supervisor_pid") is not None:
+        return
+    cause = f"{type(failure).__name__}: {failure}"
+    _write_attempt_artifact(
+        run_directory,
+        EXIT_RECORD_NAME,
+        {
+            "run_id": reservation.run_id,
+            "exit_code": None,
+            "detail": "the launch ended before it recorded a supervisor",
+            "cause": cause,
+            "recorded_at": _utc_now(),
+        },
+        attempt=reservation.attempt,
+    )
+
+
+def _refuse_superseded_launch(
+    run_directory: Path, reservation: LaunchReservation | None, run_id: str
+) -> None:
+    """Abandon a launch whose attempt another launch has already taken.
+
+    A reservation released as unreached is free for a relaunch, and that
+    relaunch takes the next attempt for the run. The original launch may still
+    be alive — stalled on storage, not dead — so immediately before it starts
+    its supervisor it re-reads the reservation it took. A reservation that has
+    gone (removed, or set aside as reclaimed), or a newer attempt reserved for
+    the run, means another launch owns the run now; starting a second supervisor
+    would put two workers in one worktree.
+    """
+    if reservation is None:
+        return
+    payload = _read_reservation(reservation.path)
+    if payload is None:
+        raise CrewError(
+            f"run {run_id!r} attempt {reservation.attempt}: this launch's "
+            "reservation is no longer on disk, so another launch has taken the "
+            "run; it abandons without starting a supervisor"
+        )
+    if payload.get("pid") != os.getpid():
+        raise CrewError(
+            f"run {run_id!r} attempt {reservation.attempt}: the reservation now "
+            f"names pid {payload.get('pid')} rather than this launch, so another "
+            "launch has taken the run; it abandons without starting a supervisor"
+        )
+    for name in sorted(p.name for p in run_directory.iterdir()):
+        match = _RESERVATION_PATTERN.match(name)
+        if match is not None and int(match.group(1)) > reservation.attempt:
+            raise CrewError(
+                f"run {run_id!r} attempt {reservation.attempt}: attempt "
+                f"{match.group(1)} has been reserved since this launch took its "
+                "own, so this launch abandons without starting a supervisor"
+            )
 
 
 def _prepare_attempt_records(
@@ -3194,28 +3425,34 @@ def supervised_launch(
             attempt_kind=attempt_kind,
             attempt_started_at=attempt_started_at,
         )
-    except BaseException:
+    except BaseException as failure:
+        _record_unreached_launch(run_directory, reservation, failure)
         release_launch_reservation(reservation, only_when_unspawned=True)
         raise
     spec_path = run_directory / SUPERVISOR_SPEC_NAME
-    _write_json(
-        spec_path,
-        _supervisor_spec(
-            run_id=run_directory.name,
-            run_directory=run_directory,
-            repo_root=repo_root,
-            worktree=worktree,
-            plan=plan,
-            fenced=bool(record.get("fenced")),
-            prompt_path=prompt_path,
-            log_path=log_path,
-            stderr_path=stderr_path,
-            attempt=attempt,
-            attempt_kind=attempt_kind,
-            attempt_started_at=attempt_started_at,
-        ),
-    )
-    pid = _start_supervisor(spec_path, run_directory, run_directory.name)
+    try:
+        _write_json(
+            spec_path,
+            _supervisor_spec(
+                run_id=run_directory.name,
+                run_directory=run_directory,
+                repo_root=repo_root,
+                worktree=worktree,
+                plan=plan,
+                fenced=bool(record.get("fenced")),
+                prompt_path=prompt_path,
+                log_path=log_path,
+                stderr_path=stderr_path,
+                attempt=attempt,
+                attempt_kind=attempt_kind,
+                attempt_started_at=attempt_started_at,
+            ),
+        )
+        _refuse_superseded_launch(run_directory, reservation, run_directory.name)
+        pid = _start_supervisor(spec_path, run_directory, run_directory.name)
+    except BaseException as failure:
+        _record_unreached_launch(run_directory, reservation, failure)
+        raise
     if reservation is not None:
         record_supervisor(reservation, pid)
     return pid
@@ -3261,6 +3498,7 @@ def _start_supervisor(
             if reservation is not None:
                 record_supervisor(reservation, pid)
             _confirm_supervisor_survived(pid, run_directory, run_id)
+            _leave_dispatch_in_flight(run_id)
             return pid
     argv = _supervisor_argv(spec_path=spec_path)
     try:
@@ -3271,6 +3509,7 @@ def _start_supervisor(
     if reservation is not None:
         record_supervisor(reservation, pid)
     _confirm_supervisor_survived(pid, run_directory, run_id)
+    _leave_dispatch_in_flight(run_id)
     return pid
 
 
@@ -4247,6 +4486,16 @@ def _record_ended(accumulator: list[int] | None, ended: list[int]) -> None:
 
 
 STEP_WAIT_CEILING_SECONDS = 600.0
+
+# How old a reservation naming a live process, with no supervisor recorded and
+# no worker record for its attempt, must be before it stops holding the run.
+# Below the bound the reserving process is taken at its word: a launch slowed by
+# storage is never reclaimed mid-flight, and a door waiting for a scheduler slot
+# is still a launch. Above it the launch never reached its worker — the admitted
+# case here sat in that state for 1 h 50 min with nothing retried — so the run
+# becomes launchable again and the fence in the supervisor start keeps the two
+# from sharing one worktree.
+UNREACHED_LAUNCH_BOUND_SECONDS = 1800.0
 STEP_WAIT_RECORD_NAME = "step-wait.json"
 
 

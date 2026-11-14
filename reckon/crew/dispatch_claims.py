@@ -10,6 +10,8 @@ import secrets
 import shutil
 import socket
 import sqlite3
+import sys
+import threading
 import time
 from dataclasses import (
     dataclass,
@@ -59,6 +61,7 @@ from reckon.crew.routing import (
     resolve_scope_repository,
 )
 from reckon.crew.runs import (
+    _claim_paths_share,
     _exclusive_write_pattern,
     _expanded_scope_paths,
     _pointer_lock,
@@ -592,34 +595,105 @@ LAUNCH_IDENTITY_STEP = "identity-published"
 
 # This value changes when an interpreter starts after exec, even when the
 # kernel keeps its pid and process start time. Publishing by pid lets a later
-# dispatch judge the holder using only the record it is trying to reclaim.
+# dispatch judge the holder using only the record it is already reclaiming.
 _EXEC_IDENTITY = secrets.token_hex(16)
 _PUBLISHED_EXEC_IDENTITY_PATHS: set[Path] = set()
+
+# How many claims each identity file of this execution exists for, keyed by
+# which file. Every importing process would otherwise leave one behind, whether
+# or not it ever dispatches anything, and nothing ever removed them. The key is
+# the path rather than the pid because one process can resolve more than one
+# crew home, and a claim of one home says nothing about another's file.
+_EXEC_IDENTITY_CLAIMS: dict[Path, int] = {}
+_EXEC_IDENTITY_LOCK = threading.Lock()
 
 
 def _exec_identity_path(pid: int) -> Path:
     return crew_home() / NODE_DISPATCH_CLAIM_DIRECTORY / f"exec-{pid}.identity"
 
 
+def parse_exec_identity(text: str) -> tuple[str | None, str]:
+    """The host that published an identity file and the token it wrote.
+
+    A pid is meaningful only on the node that issued it, while the claims
+    directory sits under a crew home every node shares, so the file records
+    the host beside the token. A file written before the host was recorded
+    carries the token alone; its host reads as unknown, which leaves the
+    reader's own kernel as the only evidence there is.
+    """
+    host, separator, token = text.partition("\n")
+    if not separator:
+        return None, text.strip()
+    return host.strip(), token.strip()
+
+
+def read_exec_identity(path: Path) -> tuple[str | None, str] | None:
+    """Read an identity file, or ``None`` when it cannot be read at all."""
+    try:
+        return parse_exec_identity(path.read_text(encoding="utf-8"))
+    except OSError:
+        return None
+
+
+def _local_host() -> str:
+    """The host whose kernel may judge a pid in this process's crew home."""
+    return socket.gethostname()
+
+
+def _exec_identity_text() -> str:
+    """This execution's identity file: the publishing host, then the token."""
+    return f"{_local_host()}\n{_EXEC_IDENTITY}"
+
+
 def _publish_exec_identity() -> str | None:
-    """Publish this execution's identity before its claims can be judged."""
+    """Publish this execution's identity so its claims can be judged."""
     path = _exec_identity_path(os.getpid())
+    content = _exec_identity_text()
     if path in _PUBLISHED_EXEC_IDENTITY_PATHS:
-        return _EXEC_IDENTITY
+        return content
     temporary = path.with_name(f"{path.name}.{_EXEC_IDENTITY}.tmp")
     try:
         path.parent.mkdir(parents=True, exist_ok=True)
-        temporary.write_text(_EXEC_IDENTITY, encoding="utf-8")
+        temporary.write_text(content, encoding="utf-8")
         os.replace(temporary, path)
     except OSError:
         with contextlib.suppress(OSError):
             temporary.unlink(missing_ok=True)
         return None
     _PUBLISHED_EXEC_IDENTITY_PATHS.add(path)
-    return _EXEC_IDENTITY
+    return content
 
 
-_publish_exec_identity()
+def _retain_exec_identity() -> str | None:
+    """Publish this execution's identity for a claim this process is taking."""
+    path = _exec_identity_path(os.getpid())
+    with _EXEC_IDENTITY_LOCK:
+        _EXEC_IDENTITY_CLAIMS[path] = _EXEC_IDENTITY_CLAIMS.get(path, 0) + 1
+    identity = _publish_exec_identity()
+    if identity is None:
+        _retire_exec_identity()
+    return identity
+
+
+def _retire_exec_identity() -> None:
+    """Remove this execution's identity file once no claim of it remains.
+
+    The file answers one question — which execution of a pid holds a claim —
+    so it is meaningful only while this process still holds one. Removing it
+    with the last claim means a process that took and released a claim leaves
+    the crew home exactly as it found it.
+    """
+    path = _exec_identity_path(os.getpid())
+    with _EXEC_IDENTITY_LOCK:
+        remaining = max(0, _EXEC_IDENTITY_CLAIMS.get(path, 0) - 1)
+        if remaining:
+            _EXEC_IDENTITY_CLAIMS[path] = remaining
+            return
+        _EXEC_IDENTITY_CLAIMS.pop(path, None)
+        with contextlib.suppress(OSError):
+            path.unlink(missing_ok=True)
+            _PUBLISHED_EXEC_IDENTITY_PATHS.discard(path)
+
 
 # How long a refused dispatch re-reads the holder's record before naming it
 # without a run id. The holder writes its record immediately after the
@@ -676,12 +750,22 @@ def _claim_holder_is_alive(holder: Mapping[str, Any]) -> bool:
     start time recorded, no kernel start times to read, or a pid beyond the
     range the kernel takes — gets the conservative answer: the holder counts
     as present, because displacing a live dispatch whose record is still being
-    written would leave two.
+    written would leave two. An identity file naming another host counts as
+    present for the same reason: the recorded pid belongs to that host's
+    kernel, so this one cannot find it gone.
     """
     holder_pid = holder.get("pid")
     recorded_start = holder.get("process_start_time")
     if not isinstance(holder_pid, int) or not isinstance(recorded_start, str):
         return True
+    published = read_exec_identity(_exec_identity_path(holder_pid))
+    if published is not None:
+        published_host, published_token = published
+        # A holder on another host is live as far as this one can tell: the
+        # pid in the record was issued by a kernel this process cannot ask,
+        # so a missing pid here says nothing about the holder.
+        if published_host is not None and published_host != _local_host():
+            return True
     if not Path("/proc").is_dir():
         return True
     try:
@@ -698,11 +782,11 @@ def _claim_holder_is_alive(holder: Mapping[str, Any]) -> bool:
     recorded_exec = holder.get("exec_identity")
     if not isinstance(recorded_exec, str) or not recorded_exec:
         return True
-    try:
-        published_exec = _exec_identity_path(holder_pid).read_text(encoding="utf-8")
-    except OSError:
+    if published is None:
         return True
-    return not published_exec or published_exec == recorded_exec
+    return (
+        not published_token or published_token == parse_exec_identity(recorded_exec)[1]
+    )
 
 
 def _empty_claim_is_stale(path: Path, holder: Mapping[str, Any]) -> bool:
@@ -774,6 +858,93 @@ class _NodeDispatchClaim:
     def release(self) -> None:
         """Give the path up, so the node can be dispatched again."""
         self.path.unlink(missing_ok=True)
+        # A claim this process has given back is no longer a dispatch it owes a
+        # worker, so a service re-executing afterwards has nothing to wait for.
+        _leave_dispatch_in_flight(self.run_id)
+        _retire_exec_identity()
+
+
+# ── Dispatches between their claim and their worker ─────────────────────────
+#
+# A service that replaces its own image with ``os.execve`` ends every thread at
+# once, and a dispatch thread found between taking the node claim and starting
+# the worker leaves that claim behind with no worker to justify it. The span is
+# short but it is not instantaneous — the worktree is cut and the prompt
+# composed inside it — so the services wait it out before replacing themselves.
+#
+# The wait is bounded rather than indefinite: a dispatch that never reaches its
+# worker must not be able to hold a service's reload open for ever. Whatever is
+# still in flight at the bound is left behind deliberately, and logged by node
+# so the claim a later dispatch reclaims can be traced to the reload that
+# abandoned it.
+#
+# This register is process-wide and does not cross an exec, which is the point:
+# after the replacement starts, nothing is in flight from this image, because
+# the image that held the dispatches has gone.
+
+#: How long a service about to replace its image waits for its dispatches.
+#: A test patches this to a small value rather than waiting out a bound that
+#: exists for a stuck dispatch, not for a healthy one.
+REEXEC_DISPATCH_WAIT_SECONDS = 60.0
+
+_DISPATCHES_IN_FLIGHT: dict[str, str] = {}
+_DISPATCHES_IN_FLIGHT_LOCK = threading.Lock()
+_DISPATCHES_IN_FLIGHT_IDLE = threading.Condition(_DISPATCHES_IN_FLIGHT_LOCK)
+
+
+def _enter_dispatch_in_flight(run_id: str, node_id: str) -> None:
+    """Record that this process owes one run a worker.
+
+    Entered once the node dispatch claim is this process's, so the register
+    names exactly the dispatches a re-exec would orphan.
+    """
+    with _DISPATCHES_IN_FLIGHT_LOCK:
+        _DISPATCHES_IN_FLIGHT[run_id] = node_id
+
+
+def _leave_dispatch_in_flight(run_id: str) -> None:
+    """Record that the run's worker has been started, or its launch given up."""
+    with _DISPATCHES_IN_FLIGHT_LOCK:
+        if _DISPATCHES_IN_FLIGHT.pop(run_id, None) is not None:
+            _DISPATCHES_IN_FLIGHT_IDLE.notify_all()
+
+
+def dispatches_in_flight() -> dict[str, str]:
+    """The dispatches this process still owes a worker, keyed by run id."""
+    with _DISPATCHES_IN_FLIGHT_LOCK:
+        return dict(_DISPATCHES_IN_FLIGHT)
+
+
+def wait_for_dispatches_in_flight() -> tuple[tuple[str, str], ...]:
+    """Wait, bounded, until no dispatch is between its claim and its worker.
+
+    Every service that replaces its own image calls this immediately before
+    ``os.execve``, so the one wait serves the station, a follower and the admit
+    service alike. The bound is :data:`REEXEC_DISPATCH_WAIT_SECONDS`; anything
+    still in flight when it expires is logged by node and returned, so the
+    caller can re-exec knowing exactly which dispatches it left half-launched.
+    The register is deliberately left standing: a dispatch abandoned here is
+    still in flight for the next attempt, and a later wait should wait for it
+    rather than read the image's own forgetfulness as progress.
+    """
+    with _DISPATCHES_IN_FLIGHT_LOCK:
+        deadline = time.monotonic() + REEXEC_DISPATCH_WAIT_SECONDS
+        while _DISPATCHES_IN_FLIGHT:
+            remaining = deadline - time.monotonic()
+            if remaining <= 0:
+                break
+            _DISPATCHES_IN_FLIGHT_IDLE.wait(remaining)
+        abandoned = tuple(sorted(_DISPATCHES_IN_FLIGHT.items()))
+    for run_id, node_id in abandoned:
+        print(
+            "reckon: re-executing with the dispatch of node "
+            f"{node_id!r} for run {run_id!r} still in flight after "
+            f"{REEXEC_DISPATCH_WAIT_SECONDS:g}s; its claim is left for the "
+            "next dispatch to reclaim",
+            file=sys.stderr,
+            flush=True,
+        )
+    return abandoned
 
 
 def _claim_node_dispatch(
@@ -808,7 +979,7 @@ def _claim_node_dispatch(
         "process_start_time": _process_start_time(os.getpid()),
         "created_at": _utc_now(),
     }
-    exec_identity = _publish_exec_identity()
+    exec_identity = _retain_exec_identity()
     if exec_identity is not None:
         record["exec_identity"] = exec_identity
     reclaimed: dict[str, Any] | None = None
@@ -820,6 +991,7 @@ def _claim_node_dispatch(
             if _claim_holder_is_alive(holder) and not _empty_claim_is_stale(
                 path, holder
             ):
+                _retire_exec_identity()
                 raise CrewError(
                     format_refusal(
                         "D12",
@@ -852,8 +1024,11 @@ def _claim_node_dispatch(
                 json.dump(record, handle)
         except BaseException:
             path.unlink(missing_ok=True)
+            _retire_exec_identity()
             raise
+        _enter_dispatch_in_flight(run_id, node_id)
         return _NodeDispatchClaim(path, run_id, reclaimed=reclaimed)
+    _retire_exec_identity()
     raise CrewError(
         format_refusal(
             "D12",
@@ -1048,6 +1223,10 @@ def _claim_released_on_refusal(run_id: str, published: bool) -> Iterator[None]:
     except Exception:
         if published:
             _release_launch_claim(run_id)
+        # A refusal means no worker will be started for this run, so the
+        # dispatch this process was holding open has ended rather than been
+        # abandoned; a re-exec from here leaves nothing behind to wait for.
+        _leave_dispatch_in_flight(run_id)
         raise
 
 
@@ -1084,21 +1263,12 @@ def _shared_landing_paths(
     project: str,
     authority: Mapping[str, Any],
 ) -> set[Path]:
-    """Return the plan file, evidence record and figure topic shared by every node.
+    """Return the plan-wide landing paths for explicit-declaration warnings.
 
-    These three repository paths are landing files every node on a plan would
-    otherwise hold: the plan file, the plan's cumulative evidence record, and the
-    plan-wide figure topic. They are no longer granted by default, because a
-    grant every node holds is exactly the merge conflict the per-node fragment
-    default removes. The set is still computed so a coordinator that declares one
-    of them explicitly keeps it as a non-exclusive claim and is warned, and so
-    the peer-disclosure and conflict machinery keep treating it as shared. Files
-    within the figure topic remain exclusive claims, so two nodes cannot replace
-    the same rendered artifact.
-    Resolved absolutely so the exclusive-claim machinery recognises them in
-    whichever repository carries the plan. The grant is advisory: a plan that
-    cannot be resolved contributes no plan-file path, and the evidence record
-    path is deterministic and survives regardless.
+    Each node receives its own fragment by default. A coordinator can still
+    declare the plan, cumulative evidence record or plan-wide figure topic,
+    but those paths retain their exclusive claim checks when declared.
+    Paths resolve absolutely against the repository carrying the plan.
     """
     plan = authority.get("plan")
     if not isinstance(plan, Mapping) or not node.plan:
@@ -1331,13 +1501,10 @@ def _granted_landing_paths(
     repo: Path,
     authority: Mapping[str, Any],
 ) -> set[Path]:
-    """The plan's landing files this node's own resolved scope holds.
+    """The plan-wide landing files explicitly granted to this node.
 
-    A plan file, its cumulative evidence record or its figures topic declared in
-    a node's write paths is granted as written, so the node does hold a claim on
-    it. The refusal exempts these paths because every node on the plan may hold
-    them so their appends can merge, but a live holder of one is still a run the
-    new dispatch shares a file with, and the report names it.
+    These declarations retain their exclusive checks and are included in scope
+    reports so an operator can see the artifact overlap.
     """
     shared = _shared_landing_paths(node, project=project, authority=authority)
     if not shared:
@@ -1360,19 +1527,11 @@ def _candidate_scope_entries(
     repo: Path,
     authority: Mapping[str, Any],
 ) -> list[tuple[Path | None, str, Path, str, str | None]]:
-    entries = _resolved_node_scope_entries(
+    # Explicit landing declarations keep the same exclusive checks as any
+    # other plan, evidence record or figure topic.
+    return _resolved_node_scope_entries(
         node, project=project, repo=repo, authority=authority
     )
-    shared = _shared_landing_paths(node, project=project, authority=authority)
-    if not shared:
-        return entries
-    # The plan file, cumulative evidence record and plan-owned figure topic are
-    # write claims every node on the plan holds, so they cannot be exclusive to
-    # one of them: exclusivity would admit only the first of two concurrent nodes
-    # and the merge that reconciles their appends would never be reached. Files
-    # inside the figure topic stay exclusive. The shared paths are exempted from
-    # the exclusive-claim machinery, never from the declared write scope.
-    return [entry for entry in entries if entry[2].resolve() not in shared]
 
 
 def _peer_scopes_without_shared_landing_paths(
@@ -1383,39 +1542,10 @@ def _peer_scopes_without_shared_landing_paths(
     repo: Path,
     authority: Mapping[str, Any],
 ) -> dict[str, list[str]]:
-    """Keep peer disclosure limited to paths that are exclusive claims."""
-    shared = _shared_landing_paths(node, project=project, authority=authority)
-    if not shared:
-        return {
-            name: sorted(str(path) for path in paths)
-            for name, paths in peer_scopes.items()
-        }
-    repositories = tuple(
-        repository_identity(root) or Path(str(root)).expanduser().resolve()
-        for root in authority.get("repositories") or (repo,)
-    )
-    write = authority.get("write")
-    write = write if isinstance(write, Mapping) else {}
-    filtered: dict[str, list[str]] = {}
-    for name, paths in peer_scopes.items():
-        kept = []
-        for path in paths:
-            declared = str(path)
-            entries = _resolved_scope_entries(
-                [declared],
-                base_repository=repository_identity(repo) or Path(repo).resolve(),
-                repositories=repositories,
-                project=project,
-                preferred_projects=tuple(
-                    str(item) for item in write.get("projects") or ()
-                ),
-            )
-            if any(absolute.resolve() in shared for _, _, absolute, _, _ in entries):
-                continue
-            kept.append(declared)
-        if kept:
-            filtered[name] = sorted(kept)
-    return filtered
+    """Disclose every peer declaration as information for isolated workers."""
+    return {
+        name: sorted(str(path) for path in paths) for name, paths in peer_scopes.items()
+    }
 
 
 def _live_conflict_rows(
@@ -1437,12 +1567,6 @@ def _live_conflict_rows(
             node, project=project, repo=repo, authority=authority
         )
     )
-    shared = _shared_landing_paths(node, project=project, authority=authority)
-    landing = (
-        _granted_landing_paths(node, project=project, repo=repo, authority=authority)
-        if include_granted_landing
-        else set()
-    )
     shared_files = _shared_write_paths(project, repo)
     candidates, claims = _fragment_comparison_scopes(candidates, claims, node.id)
     conflicts: list[dict[str, Any]] = []
@@ -1452,19 +1576,12 @@ def _live_conflict_rows(
             # meet this node's, so there is no collision to report and no
             # verdict to read.
             continue
-        claim_absolute = claim.absolute_path.resolve()
-        if claim_absolute in shared and claim_absolute not in landing:
-            # A live claim on a landing file this node does not itself hold is
-            # not a conflict: the node writing its own fragment is the whole
-            # point of the fragment default. One the node does hold is a
-            # collision like any other, and is reported below.
-            continue
         overlapping = [
             (path, absolute)
             for repository, path, absolute, _declared, _derived_from in candidates
             if repository == claim.repository
             and _scopes_overlap(absolute.as_posix(), claim.absolute_path.as_posix())
-            and not (path in shared_files and path == claim.path)
+            and not _claim_paths_share(shared_files, path, claim.path)
         ]
         if not overlapping:
             continue
@@ -2072,7 +2189,6 @@ def _raise_repository_scope_conflict(
     candidates = _candidate_scope_entries(
         node, project=project, repo=repo, authority=authority
     )
-    shared = _shared_landing_paths(node, project=project, authority=authority)
     shared_files = _shared_write_paths(project, repo)
     landing_fragments = _landing_fragment_paths(node, authority=authority)
     candidates, claims = _fragment_comparison_scopes(candidates, claims, node.id)
@@ -2093,24 +2209,9 @@ def _raise_repository_scope_conflict(
                 # never judged and carries no verdict for the arbitration to
                 # read.
                 continue
-            if claim.absolute_path.resolve() in shared:
-                continue
             if _repository != claim.repository or not _scopes_overlap(
                 absolute.as_posix(), claim.absolute_path.as_posix()
             ):
-                continue
-            # Worktrees isolate concurrent edits to one shared file. A
-            # containing directory claim remains a different, exclusive path.
-            if candidate in shared_files and candidate == claim.path:
-                continue
-            if not claim.binding:
-                # Named on the record rather than passed over quietly: an
-                # admission a reader cannot see is one nobody can check.
-                if (
-                    disregarded is not None
-                    and claim.disposition_reason not in disregarded
-                ):
-                    disregarded.append(claim.disposition_reason)
                 continue
             if _claim_holds_the_dispatch_base(claim, base_revision=base_revision):
                 # A stopped holder whose chain tip this dispatch is built on
@@ -2123,6 +2224,21 @@ def _raise_repository_scope_conflict(
                     str(row.get("run_id") or "") for row in stacked
                 }:
                     stacked.append({"run_id": claim.run_id, "node_id": claim.node_id})
+                continue
+            # Worktrees isolate concurrent edits to one shared file, and a
+            # directory claim under a shared root shares as the files beneath
+            # it do, so a peer naming one of those files passes. A claim that is
+            # or contains an exclusive pattern still fences below.
+            if _claim_paths_share(shared_files, candidate, claim.path):
+                continue
+            if not claim.binding:
+                # Named on the record rather than passed over quietly: an
+                # admission a reader cannot see is one nobody can check.
+                if (
+                    disregarded is not None
+                    and claim.disposition_reason not in disregarded
+                ):
+                    disregarded.append(claim.disposition_reason)
                 continue
             if _peer_claim_is_a_later_racing_arrival(
                 claim,

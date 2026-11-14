@@ -1,0 +1,59 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/hooks/coordinator_obligations.py",
+    "reckon/crew/obligations.py"
+  ],
+  "completed_at": "2026-11-13T11:13:42.916Z",
+  "dispatched_at": "2026-11-13T11:04:02Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "exempted",
+      "reason": "non-blocking; carried to the plan's next health review",
+      "recorded_at": "2026-11-13T12:02:35.139265+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261113T020452779395-ready-a-limit-reset-reaches-every-s3/logs/negative-control-s3.log",
+      "line": 3,
+      "severity": "non-blocking",
+      "text": "the recorded mutation command drops the test target and sends stderr to /dev/null ('... -m pytest -p no:cacheprovider 2>/dev/null') yet the body shows only the 4 cases of the gate file, so a reader re-running the recorded command verbatim would collect the whole suite and any collection error would be hidden; the evidence itself (F..., the an-older-window row, '1 failed, 3 passed', EXIT=1) is intact, so this is a reproducibility defect in the record and not in the control."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "read commit by commit against 3ddc28c7: fb41259d66 'docs(evidence): name the promotion suite arms without a placeholder', 07f5c510b9 'docs(evidence): measure both arms of the pane-less reset prompt', fee7ebfc17 'docs(evidence): record the pane-less reset prompt verified at base' -- one 41-line added file and no product or test change.",
+    "done_when": "the plan's done_when names the four cases, a horizon-dropped negative control and an importing-files arm against a base revision; the manifest records 4 passed EXIT=0 for tests/test_a_session_without_a_pane_learns_of_a_reset.py, 1 failed/3 passed EXIT=1 for the control, identical 47 failed/434 passed FAILED id sets across the two importing arms, and 51 passed on both promotion arms, and I re-read each log's header, summary and EXIT line.",
+    "goal": "the goal is that a session without a pane learns of a reset on its next prompt; I read the delivered fragment and confirmed against reckon/hooks/coordinator_obligations.py:726-800,932-933,1256 and reckon/crew/obligations.py:3239,3848 that the line is rendered from the store by file with no obligations snapshot, duty_digest carries the event ids, and the view carries the same events.",
+    "manifest": "read; it records status complete, the three commits, each arm's log path, gate 4 passed EXIT=0, control 1 failed/3 passed EXIT=1, importers 47 failed/434 passed with 0 added, promotion suite 51 passed on both arms, and baseline_suite/after_suite both exit 0 with empty failure ids.",
+    "write_paths": "the manifest declares the four granted paths; the diff adds only the fragment under docs/evidence/fragments/a-limit-reset-reaches-every-session/ and touches neither of the two granted source modules nor any test file."
+  },
+  "justifications": {
+    "durability": "the diff adds no assertion, so this node contributes no guard of its own; the capability it certifies is guarded by the pre-existing tests/test_a_session_without_a_pane_learns_of_a_reset.py (committed df58276bf5, an ancestor of base) and the run's negative control shows that gate reddens (1 failed / 3 passed, EXIT=1) when the horizon is widened, which is the mutation an added guard would have had to fail on.",
+    "evidence": "gate-s3-base.log:1-3 carries revision/tree/literal command and its last two lines are '4 passed in 12.68s' and 'EXIT=0'; negative-control-s3.log shows F... with the 90-minute an-older-window row printed under the dropped horizon, which is the case the control exists for -- but it records a command with no test target (see FINDING), so it is not reproducible verbatim.",
+    "fit": "the fragment uses the same <article class=\"r-evidence\" data-node=...> shape and -what/-state section ids as the sibling fragments in docs/evidence/fragments/a-limit-reset-reaches-every-session/, and it names node ids only where the evidence format requires them.",
+    "goal_fidelity": "reckon/hooks/coordinator_obligations.py:932-933 draws one limit-reset line per due event beside the duty list and :1256 puts the event ids in duty_digest, while reckon/crew/obligations.py:3848 writes the same events under limit_resets, so the section's deliverable exists at base 3ddc28c7 and the node's own landed artifact is the verification record.",
+    "reuse": "the fragment adds no code definition, so nothing can be forked; it cites the owner of each capability it describes (reckon/hooks/coordinator_obligations.py and reckon/crew/budget_reset.recent_resets via reckon/crew/obligations.py:3239) rather than restating an implementation, and it reuses the section's own gate test rather than adding a parallel one.",
+    "scope_discipline": "the three reviewed commits (fee7ebfc17, 07f5c510b9, fb41259d66) add exactly one file, docs/evidence/fragments/a-limit-reset-reaches-every-session/ready-a-limit-reset-reaches-every-s3.html, and leave reckon/hooks/coordinator_obligations.py, reckon/crew/obligations.py and tests/ untouched, all inside the four declared write paths."
+  },
+  "node": "review-of-ready-a-limit-reset-reaches-every-s3-fb41259d6666",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is that a session without a pane learns of a reset on its next prompt; reckon/hooks/coordinator_obligations.py:932-933 renders one line per due reset beside the duty list and :1256 puts the event ids in duty_digest while reckon/crew/obligations.py:3848 carries the same events under limit_resets, all present at base 3ddc28c7, and the node's landed artifact is the verification record for exactly that behaviour.\nVERDICT done_when: the plan's done_when names four cases, a horizon-dropped negative control and an importing-files base arm; gate-s3-base.log records 4 passed EXIT=0, negative-control-s3.log records 1 failed/3 passed EXIT=1 printing the 90-minute an-older-window row, importers-base/head logs record 47 failed/434 passed with identical FAILED ids, and both promotion arms record 51 passed.\nVERDICT write_paths: the manifest declares four granted paths and the diff adds only docs/evidence/fragments/a-limit-reset-reaches-every-session/ready-a-limit-reset-reaches-every-s3.html, leaving both granted source modules and every test file untouched.\nVERDICT manifest: read; it records status complete, the three commits, six named log paths, and each arm's counts and EXIT status, including baseline_suite and after_suite both exit 0 with empty failure ids.\nVERDICT diff: read commit by commit against 3ddc28c71f; the three commits add one 41-line evidence fragment and no product or test change, so no runtime path reaches the diff and the two call sites below are the capability the fragment certifies.\nCALL_SITES: reckon/hooks/coordinator_obligations.py, reckon/crew/obligations.py\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/hooks/coordinator_obligations.py:932-933 and :1256 with reckon/crew/obligations.py:3848 deliver every clause of the goal at base and the fragment reports them accurately.\nSCORE evidence: 17\nJUSTIFICATION evidence: gate-s3-base.log:1-3 names revision, tree and literal command with EXIT=0 and the importing arms' FAILED sets compare identical, but negative-control-s3.log:3 records a command carrying no test target.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: the diff's single added file is inside docs/evidence/fragments/a-limit-reset-reaches-every-session/ and no path under reckon/ or tests/ changed.\nSCORE durability: 16\nJUSTIFICATION durability: the diff adds no assertion; the guard is the pre-existing tests/test_a_session_without_a_pane_learns_of_a_reset.py at df58276bf5, which the run's control shows reddens (1 failed/3 passed, EXIT=1) when the horizon is widened.\nSCORE fit: 18\nJUSTIFICATION fit: the fragment matches the <article class=\"r-evidence\" data-node=...> shape of docs/evidence/fragments/a-limit-reset-reaches-every-session/a-limit-reset-is-one-record.html:1 and carries no version or ticket identifier.\nSCORE reuse: 20\nJUSTIFICATION reuse: the fragment adds no definition to fork; it points at the owners reckon/hooks/coordinator_obligations.py:726 and reckon/crew/obligations.py:3239 rather than restating them.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261113T020452779395-ready-a-limit-reset-reaches-every-s3/logs/negative-control-s3.log:3 non-blocking: the recorded mutation command omits the test target and discards stderr, so re-running it verbatim collects the whole suite rather than the four cases shown and hides collection errors; the evidence itself is intact.",
+  "review_run_id": "r-20261113T103403352239-review-of-ready-a-limit-reset-reaches-every-s3-fb41259d6666",
+  "reviewed_base_sha": "3ddc28c71fb85bc078298b8e27d8d74a8a095551",
+  "reviewed_head_sha": "fb41259d6666b9286443066109e135c756cafd81",
+  "reviewed_run_id": "r-20261113T020452779395-ready-a-limit-reset-reaches-every-s3",
+  "scores": {
+    "durability": 16,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-13T11:25:00+00:00",
+  "total": 109
+}

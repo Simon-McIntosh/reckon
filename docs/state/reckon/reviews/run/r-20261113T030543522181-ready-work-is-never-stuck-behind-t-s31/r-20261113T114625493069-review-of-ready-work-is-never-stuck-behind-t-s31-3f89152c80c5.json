@@ -1,0 +1,61 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_revision": "4d5c4389b7cffd9462a79412ccd472e3bce0589a",
+  "completed_at": "2026-11-13T12:18:26.908Z",
+  "dispatched_at": "2026-11-13T12:03:36Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "exempted",
+      "reason": "non-blocking; carried to the plan next health review",
+      "recorded_at": "2026-11-13T14:17:14.625856+00:00"
+    },
+    "1": {
+      "kind": "exempted",
+      "reason": "non-blocking; carried to the plan next health review",
+      "recorded_at": "2026-11-13T14:17:21.160145+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/work-is-never-stuck-behind-the-admission-loop/ready-work-is-never-stuck-behind-t-s31.html",
+      "line": 6,
+      "severity": "non-blocking",
+      "text": "Non-blocking: the fragment states that both admission write-backs, _restore_queued and the failed-launch requeue, 'write through _writeback_pointer'. _restore_queued does not: it acquires runs._pointer_lock, calls _require_live_writeback and _write_pointer inline (reckon/crew/admission/launching.py:743-749). The substantive claim holds - both routes call the same guard under the lock, and the negative control proves it - but a reader following the fragment's pointer to _writeback_pointer will not find the restore path there."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261113T030543522181-ready-work-is-never-stuck-behind-t-s31/manifest.md",
+      "line": 24,
+      "severity": "non-blocking",
+      "text": "Non-blocking: the manifest's after_suite.revision is recorded as 3f89152c80c50f94deed6a6585384a90b1752d5e, while the log it cites (logs/after_suite.txt) carries '# revision: 7b7e13875166a5e31001adce99d998bab0eeada8'. The result is unaffected because the only change between the two revisions is the evidence fragment, but the record names a revision its own gate log does not evidence."
+    }
+  ],
+  "head_revision": "3f89152c80c50f94deed6a6585384a90b1752d5e",
+  "item_verdicts": {
+    "call_sites": "Read the production code the evidence concerns: reckon/crew/admission/launching.py _restore_queued (702-749), _requeue_admitted_failures",
+    "call_sites_detail": "reckon/crew/admission/launching.py:_restore_queued, reckon/crew/admission/launching.py:_requeue_admitted_failures, reckon/crew/admission/launching.py:_record_queued_failure (annotate closure), reckon/crew/admission/launching.py:_writeback_pointer, reckon/crew/queue_admission.py (re-export of _require_live_writeback)",
+    "diff": "Read both commits against base 4d5c4389b7 (7b7e138751 adds 86 lines, 3f89152c80 adds 6, one file, 92 insertions total): the diff is an evidence record only and carries no source or test change.",
+    "done_when": "Read the done_when and the reviewed run's logs; base.txt and after_node_test.txt run tests/test_a_promoted_run_never_reenters_the_queue.py to 5 passed EXIT=0, negative_control.txt shows the promotion-reading removal failing 3 and passing 2 at EXIT=1, base_suite/after_suite show tests/test_staged_write_inventory.py 51 passed at both arms, and ruff.txt shows EXIT=0; the done_when forecloses the 'new' test file, which is a pre-existing file added by commit 521f97b6a7, and its importer-population clause was not directly measured.",
+    "goal": "Read the node goal ('Deliver the section so that a promoted run never re-enters the queue') against the landed diff: the two commits add only docs/evidence/fragments/.../ready-work-is-never-stuck-behind-t-s31.html and no source or test; the behaviour the goal names is provided by _require_live_writeback (reckon/crew/admission/launching.py:651), which exists at the base revision, so the goal is met by the tree but not by the landed change.",
+    "manifest": "Read the reviewed run's manifest at its run directory: status complete, commits 7b7e138751 and 3f89152c80, changed_paths naming only the evidence fragment, test logs and baseline/after suite records present, and the importer sweep recorded as EXIT=124 under outside_scope.",
+    "write_paths": "Read the reviewed node's write paths (competence.context.inputs.repository_files.write_paths: reckon/crew/queue_admission.py declared, the evidence fragment and the figures directory granted); the single path changed by the diff, docs/evidence/fragments/work-is-never-stuck-behind-the-admission-loop/ready-work-is-never-stuck-behind-t-s31.html, is inside them."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is 'Deliver the section so that a promoted run never re-enters the queue'; reckon/crew/admission/launching.py:651 holds the guard that provides it, and it exists at the base revision, so the tree satisfies the goal while the landed diff adds no runtime change.\nVERDICT done_when: the done_when's four measures are recorded across logs/base.txt, logs/after_node_test.txt, logs/negative_control.txt, logs/base_suite.txt, logs/after_suite.txt and logs/ruff.txt, but the test file it calls new predates the run and the importer-population clause was carried structurally rather than measured.\nVERDICT write_paths: read the node's granted write paths; the only path in the diff, docs/evidence/fragments/work-is-never-stuck-behind-the-admission-loop/ready-work-is-never-stuck-behind-t-s31.html, is inside them.\nVERDICT manifest: read; it is status complete with commits 7b7e138751 and 3f89152c80 and records both suite arms and the negative control, with one revision field misstating the log it cites.\nVERDICT diff: read both commits against base 4d5c4389b7 commit by commit; one evidence fragment, 92 insertions, no source or test change.\nCALL_SITES: reckon/crew/admission/launching.py:_restore_queued, reckon/crew/admission/launching.py:_requeue_admitted_failures, reckon/crew/admission/launching.py:_record_queued_failure, reckon/crew/admission/launching.py:_writeback_pointer, reckon/crew/queue_admission.py:_require_live_writeback\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: reckon/crew/admission/launching.py:651 refuses the write-back when runs._promoted_record_project reads a promotion, and the landed fragment at line 4 documents it rather than adding it.\nSCORE evidence: 14\nJUSTIFICATION evidence: logs/base_suite.txt and logs/after_suite.txt record 51 passed EXIT=0 on both arms, but the done_when's importer-population clause has no summary line and the manifest at line 24 names a revision its log does not carry.\nSCORE scope_discipline: 18\nJUSTIFICATION scope_discipline: the diff is the single granted fragment at docs/evidence/fragments/work-is-never-stuck-behind-the-admission-loop/ready-work-is-never-stuck-behind-t-s31.html and touches nothing outside it.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_a_promoted_run_never_reenters_the_queue.py:58 fails when the promotion reading is removed, as logs/negative_control.txt records with negative_control.txt:3 failing and 2 passing.\nSCORE fit: 17\nJUSTIFICATION fit: the fragment follows the data-reckon=\"evidence\" idiom used by 12 other fragments in docs/evidence/fragments/work-is-never-stuck-behind-the-admission-loop/, but line 6 misnames the mechanism the restore path uses.\nSCORE reuse: 20\nJUSTIFICATION reuse: the node added no definition; it reused _require_live_writeback (reckon/crew/admission/launching.py:651) and the existing regression file, so no capability is forked.\nFINDING docs/evidence/fragments/work-is-never-stuck-behind-the-admission-loop/ready-work-is-never-stuck-behind-t-s31.html:6 non-blocking: the fragment says both write-backs write through _writeback_pointer, but _restore_queued inlines the lock, guard and _write_pointer (reckon/crew/admission/launching.py:743-749).\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261113T030543522181-ready-work-is-never-stuck-behind-t-s31/manifest.md:24 non-blocking: after_suite.revision is recorded as 3f89152c80 while the cited logs/after_suite.txt header names 7b7e1387, so the record names a revision its gate log does not evidence.",
+  "review_run_id": "r-20261113T114625493069-review-of-ready-work-is-never-stuck-behind-t-s31-3f89152c80c5",
+  "reviewed_base_sha": "4d5c4389b7cffd9462a79412ccd472e3bce0589a",
+  "reviewed_head_sha": "3f89152c80c50f94deed6a6585384a90b1752d5e",
+  "reviewed_run_id": "r-20261113T030543522181-ready-work-is-never-stuck-behind-t-s31",
+  "scores": {
+    "durability": 19,
+    "evidence": 14,
+    "fit": 17,
+    "goal_fidelity": 17,
+    "reuse": 20,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-13T14:11:59.079963+00:00",
+  "total": 105
+}

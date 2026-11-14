@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="work-flows-to-the-lane">
+  <meta name="plan-title" content="A decision can be withdrawn through edit_plan">
+  <meta name="plan-summary" content="An edit_plan withdraw op takes an unlocked decision out of the wait in one versioned write, keeping the reason and the date in the plan's own record and recording no choice; the roadmap stops reporting it as a blocker, and a locked decision or a withdrawal stating no reason is refused naming the decision.">
+  <meta name="plan-evidence-for" content="work-flows-to-the-lane">
+  <meta name="plan-verifies" content="work-flows-to-the-lane#s14">
+  <meta name="plan-verdict" content="pass">
+  <title>A decision can be withdrawn &mdash; evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<main class="plan-doc">
+  <h1 id="decision-can-be-withdrawn-title">A decision can be withdrawn</h1>
+  <p id="decision-can-be-withdrawn-defect">Taking a decision out of a plan had no tool path. <code>lock</code> records an answer, and text mode refuses a replacement overlapping the decisions region, so a decision that no longer applied was removed with a direct hand edit &mdash; a write no version, no reason and no date survived, and one the next caller could not see had happened.</p>
+
+  <p id="decision-can-be-withdrawn-change"><code>edit_plan</code> now dispatches a <code>withdraw</code> op. It refuses an index, a missing decision, a locked decision (naming it, because a lock is someone's answer) and a withdrawal carrying no reason. Otherwise it writes once, at the expected version, storing the decision with no choice, the reason in <code>rationale</code> and the date in <code>when</code>, and clearing the sections it governed and the recommendation it carried &mdash; a recommendation left behind would let a later <code>accept</code> read the withdrawal back as a choice. The decision therefore stops being an open decision and stops appearing among the roadmap's blockers, while the record of why it went stays in the plan.</p>
+
+  <section id="decision-can-be-withdrawn-cases">
+    <h2>The cases the node pins</h2>
+    <ul>
+      <li id="decision-can-be-withdrawn-case-unlocked">Withdrawing an unlocked decision on a temporary plan moves the version 0 &rarr; 1 and the plan's open-decision count 1 &rarr; 0; the roadmap row that read <code>blocked</code> with <code>decision_blockers</code> naming <code>transport</code> reads <code>ready</code> with no decision blocker, and the withdrawal is reported under the row's deferred decisions with its reason.</li>
+      <li id="decision-can-be-withdrawn-case-record">The kept record: the stored decision's <code>rationale</code> is the reason verbatim, <code>by</code> is the caller, <code>choice</code> and <code>sections</code> are empty, and <code>when</code> parses as a timestamp written during the call.</li>
+      <li id="decision-can-be-withdrawn-case-locked">Withdrawing a locked decision is refused with <code>op_error</code> naming the decision and the word locked, and the plan is left at its version with the lock intact.</li>
+      <li id="decision-can-be-withdrawn-case-noreason">A withdrawal with no reason is refused naming the decision, the plan stays at its version, and the decision is still counted open.</li>
+      <li id="decision-can-be-withdrawn-case-accept">A withdrawn decision cannot be accepted back: an <code>accept</code> over it is refused for the absent recommendation it used to carry.</li>
+    </ul>
+  </section>
+
+  <section id="decision-can-be-withdrawn-measure">
+    <h2>Measure</h2>
+    <p id="decision-can-be-withdrawn-measure-arms">Both arms ran on <code>all_debug</code>, one at a time. At base <code>832c18bd</code> the armed command resolved to <code>tests/test_staged_write_inventory.py</code> alone &mdash; the node's test does not exist there &mdash; and read 51 passed, exit 0. At the run's head the same command with the node's test file read 57 passed, exit 0, so nothing in the imported modules regressed and the six new cases pass. The declared negative control removed the line that records the withdrawal date: <code>test_a_withdrawal_keeps_its_reason_and_date</code> failed on <code>assert recorded</code> with 5 passed, exit 1, which is the kept-record assertion the control targets. Ruff check and <code>ruff format --check</code> add no finding on the four staged paths.</p>
+  </section>
+</main>
+</body>
+</html>

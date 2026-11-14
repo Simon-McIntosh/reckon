@@ -1,0 +1,61 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew/dispatch_batch.py:_entry_node (:597)",
+    "reckon/crew/admission/reviews.py:_section_rederivation (:591)"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-13T13:14:33Z",
+  "finding_dispositions": {},
+  "findings": [
+    {
+      "file": "reckon/crew/dispatch_batch.py",
+      "id": "f9df90fcc45",
+      "line": "396",
+      "severity": "non-blocking",
+      "text": "_described_test_path duplicates the tests/-path extraction the repository already owns as _TEST_PATH_PATTERN at reckon/crew/recovery_repair_dispatch.py:687 rather than extending it, so the two accept different file sets (any suffixed path versus *.py) and a later change to one will not reach the other."
+    },
+    {
+      "file": "tests/test_a_batch_entry_carries_its_done_when_test.py",
+      "id": "fb6d55c6652",
+      "line": "101",
+      "severity": "non-blocking",
+      "text": "_batch() gives no entry a write_paths field, so the queue-time exemption at reckon/crew/dispatch_batch.py:597 (derive_write_paths=not write_paths) is reached by no test; deleting that argument would leave the suite green while refusing a batch whose entries supply their own paths."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "read commit by commit from 81274f7aad back to base 9049dfcc75: c7088c12a0 adds the described-test rule, f4fb19dbae exempts a release when the request supplied its own write paths, 2b19de28a9 and 81274f7aad add and amend the evidence fragment \u2014 344 insertions and 9 deletions over three files.",
+    "done_when": "the done-when's five entries, its two refusals quoting \"the new test\" and the sentence, its \"its regression test\" variant, its literal-path case and its base-revision negative control are each asserted at tests/test_a_batch_entry_carries_its_done_when_test.py:172-205, with logs/repair-base-suite.log (51 passed, EXIT=0) and logs/repair-head-final.log (53 passed, EXIT=0) recorded; the all_debug placement the done-when also names appears in no log header.",
+    "goal": "the goal is that a batch entry carry the test path its done-when names when its write-paths sentence names that file only by description; reckon/crew/dispatch_batch.py:396 defines _described_test_path, which takes the single tests/ path from the done-when, and the five-entry fixture stores entry s1 as [\"one.py\", \"tests/test_one.py\"].",
+    "manifest": "read; it records status complete, four commits, baseline_suite 51 passed and after_suite 53 passed both with exit_status 0 and empty failure_ids, the reverted-hunk negative control, and identical seven-id importer failures at base and head.",
+    "write_paths": "the reviewed manifest's orientation names reckon/crew/dispatch_batch.py, tests/test_a_batch_entry_carries_its_done_when_test.py, the evidence fragment and a figure directory; the diff touches exactly the first three and nothing else."
+  },
+  "justifications": {
+    "durability": "tests/test_a_batch_entry_carries_its_done_when_test.py:232 fails when f4fb19dbae's hunk is reverted (logs/repair-negative-reverted.log: 1 failed, 1 passed, EXIT=1) and the main rule fails at the base revision, but the queue-time exemption at reckon/crew/dispatch_batch.py:597 is reached by no test.",
+    "evidence": "logs/repair-head-final.log records 53 passed EXIT=0 at 81274f7aad and logs/negative-control-base.log records the base revision failing at assert ['one.py'] == ['one.py', 'tests/test_one.py'], but the importer arm logs/head-importers.log ran at c7088c12a0 rather than the final head and no log header records the all_debug placement the done-when names.",
+    "fit": "reckon/crew/dispatch_batch.py:119 follows the module's compiled-pattern convention beside _SENTENCE_END at :113 and reuses _PATH_TOKEN and plan_review._done_when_paragraph; no added name carries a plan, ticket or version label.",
+    "goal_fidelity": "reckon/crew/dispatch_batch.py:396-424 resolves a described test from the done-when and refuses zero or two by name, and the guard at reckon/crew/dispatch_batch.py:539 keeps an entry-supplied write path out of the release derivation, so the plan's \"entry that gives its own write paths is unchanged\" clause holds.",
+    "reuse": "reckon/crew/dispatch_batch.py:396 rebuilds a tests/-path extractor that reckon/crew/recovery_repair_dispatch.py:687 already owns as _TEST_PATH_PATTERN, with a different acceptance rule and no shared owner.",
+    "scope_discipline": "the diff changes only reckon/crew/dispatch_batch.py, tests/test_a_batch_entry_carries_its_done_when_test.py and the granted docs/evidence/fragments/a-queue-holds-the-whole-plan/a-batch-entry-carries-its-done-when-test.html, with no unrelated cleanup."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is that a batch entry carry the test path its done-when names when its write-paths sentence names that file only by description; reckon/crew/dispatch_batch.py:396 defines _described_test_path, which takes the single tests/ path from the done-when, and the five-entry fixture stores entry s1 as [\"one.py\", \"tests/test_one.py\"].\nVERDICT done_when: the done-when's five entries, its two refusals quoting \"the new test\" and the sentence, its \"its regression test\" variant, its literal-path case and its base-revision negative control are each asserted at tests/test_a_batch_entry_carries_its_done_when_test.py:172-205, with logs/repair-base-suite.log (51 passed, EXIT=0) and logs/repair-head-final.log (53 passed, EXIT=0) recorded; the all_debug placement the done-when also names appears in no log header.\nVERDICT write_paths: the reviewed manifest's orientation names reckon/crew/dispatch_batch.py, tests/test_a_batch_entry_carries_its_done_when_test.py, the evidence fragment and a figure directory; the diff touches exactly the first three and nothing else.\nVERDICT manifest: read; it records status complete, four commits, baseline_suite 51 passed and after_suite 53 passed both with exit_status 0 and empty failure_ids, the reverted-hunk negative control, and identical seven-id importer failures at base and head.\nVERDICT diff: read commit by commit from 81274f7aad back to base 9049dfcc75: c7088c12a0 adds the described-test rule, f4fb19dbae exempts a release when the request supplied its own write paths, 2b19de28a9 and 81274f7aad add and amend the evidence fragment \u2014 344 insertions and 9 deletions over three files.\nCALL_SITES: reckon/crew/dispatch_batch.py:_entry_node (:597), reckon/crew/admission/reviews.py:_section_rederivation (:591)\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/dispatch_batch.py:396-424 resolves a described test from the done-when and refuses zero or two by name, and the guard at reckon/crew/dispatch_batch.py:539 keeps an entry-supplied write path out of the release derivation, so the plan's \"entry that gives its own write paths is unchanged\" clause holds.\nSCORE evidence: 16\nJUSTIFICATION evidence: logs/repair-head-final.log records 53 passed EXIT=0 at 81274f7aad and logs/negative-control-base.log records the base revision failing at assert ['one.py'] == ['one.py', 'tests/test_one.py'], but the importer arm logs/head-importers.log ran at c7088c12a0 rather than the final head and no log header records the all_debug placement the done-when names.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: the diff changes only reckon/crew/dispatch_batch.py, tests/test_a_batch_entry_carries_its_done_when_test.py and the granted docs/evidence/fragments/a-queue-holds-the-whole-plan/a-batch-entry-carries-its-done-when-test.html, with no unrelated cleanup.\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_a_batch_entry_carries_its_done_when_test.py:232 fails when f4fb19dbae's hunk is reverted (logs/repair-negative-reverted.log: 1 failed, 1 passed, EXIT=1) and the main rule fails at the base revision, but the queue-time exemption at reckon/crew/dispatch_batch.py:597 is reached by no test.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/crew/dispatch_batch.py:119 follows the module's compiled-pattern convention beside _SENTENCE_END at :113 and reuses _PATH_TOKEN and plan_review._done_when_paragraph; no added name carries a plan, ticket or version label.\nSCORE reuse: 5\nJUSTIFICATION reuse: reckon/crew/dispatch_batch.py:396 rebuilds a tests/-path extractor that reckon/crew/recovery_repair_dispatch.py:687 already owns as _TEST_PATH_PATTERN, with a different acceptance rule and no shared owner.\nFINDING reckon/crew/dispatch_batch.py:396 non-blocking: _described_test_path duplicates the tests/-path extraction the repository already owns as _TEST_PATH_PATTERN at reckon/crew/recovery_repair_dispatch.py:687 rather than extending it, so the two accept different file sets (any suffixed path versus *.py) and a later change to one will not reach the other.\nFINDING tests/test_a_batch_entry_carries_its_done_when_test.py:101 non-blocking: _batch() gives no entry a write_paths field, so the queue-time exemption at reckon/crew/dispatch_batch.py:597 (derive_write_paths=not write_paths) is reached by no test; deleting that argument would leave the suite green while refusing a batch whose entries supply their own paths.\n",
+  "review_run_id": "r-20261113T133325070584-review-of-a-batch-entry-carries-its-done-when-test-2b19de28a9c1",
+  "reviewed_base_sha": "9049dfcc759bda85fcb56236a03726ebf791346d",
+  "reviewed_head_sha": "81274f7aad38ee23533b45d5c5987941ddc2a0a7",
+  "reviewed_run_id": "r-20261113T130945823094-a-batch-entry-carries-its-done-when-test",
+  "scores": {
+    "durability": 17,
+    "evidence": 16,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 5,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-13T16:19:58.155840+00:00",
+  "total": 93
+}

@@ -1,0 +1,85 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own arms: baseline_suite at 5fa38a0392 (logs/suite-base.log) records completed true, 62 passed and two setup errors in tests/test_staged_write_inventory.py, both attributed to the git-less extraction ('scaffolding: the extracted base tree carries no .git, so the test's git ls-tree exits 128 before reaching code under test'); after_suite at 6180f91d86 (logs/suite-head.log) records completed true, 67 passed, 0 failures, EXIT=0. No failing id in the head arm is absent from the baseline, so zero failures were added.",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew_run_commands.py:2612",
+    "reckon/hooks/worker_message_guard.py:57",
+    "reckon/mcp_views.py:4328"
+  ],
+  "completed_at": "2026-11-11T14:18:37.355Z",
+  "dimension_dispositions": {
+    "reuse": {
+      "kind": "folded",
+      "node": "crew-tell-reads-the-recorded-argv",
+      "recorded_at": "2026-11-11T14:38:17.175906+00:00"
+    }
+  },
+  "dispatched_at": "2026-11-11T14:02:56Z",
+  "findings": [
+    {
+      "file": "reckon/crew_run_commands.py",
+      "line": 2554,
+      "severity": "non-blocking",
+      "text": "the canonical worker.json is ranked 0 at :2543 so any retired attempt-N-worker.json receipt outranks it (:2554), contradicting the function's own docstring that canonical is the attempt running now; a probe against this revision (canonical worker.json for attempt 2 carrying both overrides, plus a retired attempt-1-worker.json without trust) returns the retired argv and refuses with 'no trust override'. It is latent only because a launch also writes its own receipt at canonical's number, so today the two agree; the ordering guard is not the one the docstring states and would read a retired attempt if a canonical write were ever lost while a receipt landed."
+    },
+    {
+      "file": "reckon/crew/resumption.py",
+      "line": 968,
+      "severity": "non-blocking",
+      "text": "_attempt_worker_records already owns record discovery (attempt-*-worker.json receipts plus the canonical worker.json keyed by its attempt number) and is callable with the {run_id} the verb holds, but reckon/crew_run_commands.py:2527 re-implements the glob, the receipt-number parse and the JSON read instead of extending it; the duplicated resolution is what makes the rank-0 ordering above possible, and the constants at :2523-2525 are the third copy of names owned by reckon/crew/dispatch_launch.py:1942."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261111T132445209820-crew-tell-reads-the-recorded-argv/manifest.md",
+      "line": 1,
+      "severity": "non-blocking",
+      "text": "the done_when requires that ruff check and ruff format --check add no findings on the staged paths, but neither the manifest nor any log under logs/ records a ruff run, so that arm of the measure is claimed rather than evidenced; I ran both at 6180f91 on the two staged Python paths and they are clean, so the code meets it and only the record is short."
+    },
+    {
+      "file": "docs/evidence/fragments/a-live-worker-can-be-reached/crew-tell-reads-the-recorded-argv.html",
+      "line": 52,
+      "severity": "non-blocking",
+      "text": "the fragment quotes the head gate as '67 passed in 28.94s' while logs/suite-head.log's own summary line reads '67 passed in 35.43s', so the evidence document's figure does not reconcile with the log it cites."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "crew tell is a CLI command registered at reckon/crew_run_commands.py:2612, invoked in the shape reckon/hooks/worker_message_guard.py:57 documents and described in reckon/mcp_views.py:4328; no other runtime caller reaches the changed path.",
+    "diff": "read 2be5e33abc and 6180f91d86 against 5fa38a0392: the first adds _run_recorded_argv, switches the hook match to WORKER_INBOX_SCRIPT_NAME and rewrites the codex tests; the second adds only the evidence fragment; three files, 206 insertions and 47 deletions, nothing else.",
+    "done_when": "the measure names a live-shape test with no argv on the pointer and the argv in worker.json plus a refusal without the trust override, the cited live check's reproduction, green existing tests and clean ruff; tests/test_crew_tell_codex.py:135 and :189 implement the two test halves, logs/suite-head.log records 67 passed EXIT=0 at 6180f91 and logs/real-record-check.log reproduces the original pointer refusal on r-20261111T132025827799, but no ruff result is recorded in the manifest or its logs.",
+    "goal": "the node goal is that crew tell read a codex run's launch argv where a launch records it rather than from the argv-less live pointer; reckon/crew_run_commands.py:2527 adds _run_recorded_argv (canonical worker.json, newest attempt-N-worker.json receipt as fallback) and :2676 converts the reachability read to it.",
+    "manifest": "read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261111T132445209820-crew-tell-reads-the-recorded-argv/manifest.md; status complete, commits 2be5e33abc and 6180f91d86, tests line the pytest command, baseline_suite 62 passed 2 scaffolding errors at 5fa38a0 and after_suite 67 passed 0 failures at 6180f91.",
+    "write_paths": "read the source node's declared paths (reckon/crew_run_commands.py, tests/test_crew_tell_codex.py, the evidence fragment and a figures directory)."
+  },
+  "justifications": {
+    "durability": "logs/negative-control.log reddens exactly the three guarded behaviours when the pointer read is restored (test_crew_tell_writes_to_a_live_codex_run_carrying_both_overrides, test_crew_tell_reads_the_latest_attempts_record, test_crew_tell_accepts_a_hook_another_checkout_composed), so each added assertion names a code change that fails it and none compares a value to what the test handed in.",
+    "evidence": "tests/test_crew_tell_codex.py:135-149 writes the live-launch shape (assert 'argv' not in record, argv in worker.json) and :189-210 asserts the refusal without the trust override, and logs/suite-head.log records 67 passed EXIT=0 at 6180f91, but the done_when's ruff arm is recorded nowhere in the manifest (I ran ruff check and ruff format --check on both staged paths at head myself: clean).",
+    "fit": "reckon/crew_run_commands.py:2523-2571 follows the module's private-helper idiom (docstring stating the failure it prevents, Mapping guard, None for unreadable) and introduces no plan, ticket or version label, though it declares its own _WORKER_RECORD_NAME at :2523 where reckon/crew/dispatch_launch.py:1942 and reckon/crew/promotion_evidence.py:42 already own that literal.",
+    "goal_fidelity": "reckon/crew_run_commands.py:2527 adds _run_recorded_argv and :2676 feeds it to _codex_inbox_override_gap, so a codex run's reachability is decided by the argv its run directory recorded rather than the live pointer that carries none, which is the stated goal.",
+    "reuse": "reckon/crew/resumption.py:968 _attempt_worker_records already discovers exactly this set of records (attempt-*-worker.json plus the canonical worker.json keyed by its own attempt number) and is importable with a {run_id} mapping the verb already holds, so _run_recorded_argv re-implements an owned capability instead of extending it and copies the record-name constants too.",
+    "scope_discipline": "git diff --stat 5fa38a0392 6180f91d86 lists exactly reckon/crew_run_commands.py, tests/test_crew_tell_codex.py and docs/evidence/fragments/a-live-worker-can-be-reached/crew-tell-reads-the-recorded-argv.html, all inside the declared write paths, with the declared figures directory simply unused."
+  },
+  "node": "review-of-crew-tell-reads-the-recorded-argv-6180f91d86c4",
+  "node:reviewed": "crew-tell-reads-the-recorded-argv",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is that crew tell read a codex run's launch argv where a launch records it rather than from the argv-less live pointer; reckon/crew_run_commands.py:2527 adds _run_recorded_argv and :2676 feeds it to _codex_inbox_override_gap, so reachability now comes from the run directory's worker.json or its newest attempt receipt.\nVERDICT done_when: the measure names a live-shape test (no argv on the pointer, argv in worker.json) plus a refusal without the trust override; tests/test_crew_tell_codex.py:135-149 and :189-210 implement both, logs/suite-head.log records 67 passed EXIT=0 at 6180f91, logs/real-record-check.log reproduces the original pointer refusal on r-20261111T132025827799, but the measure's ruff arm is recorded nowhere in the manifest.\nVERDICT write_paths: the source node declared reckon/crew_run_commands.py, tests/test_crew_tell_codex.py, the evidence fragment and a figures directory; git diff --stat 5fa38a0392 6180f91d86 changes exactly the first three, all inside them, with the figures directory unused.\nVERDICT manifest: read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261111T132445209820-crew-tell-reads-the-recorded-argv/manifest.md; status complete, commits 2be5e33abc and 6180f91d86, after_suite 67 passed 0 failures at 6180f91 EXIT=0, baseline_suite 62 passed with 2 scaffolding errors at 5fa38a0.\nVERDICT diff: read both commits against base 5fa38a0392; 2be5e33abc adds _run_recorded_argv (:2527), switches the inbox-hook match to WORKER_INBOX_SCRIPT_NAME (:2587-2596) and rewrites the codex tests, and 6180f91d86 adds only the evidence fragment; three files, 206 insertions, 47 deletions.\nCALL_SITES: reckon/crew_run_commands.py:2612, reckon/hooks/worker_message_guard.py:57, reckon/mcp_views.py:4328\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew_run_commands.py:2527 adds _run_recorded_argv and :2676 feeds it to _codex_inbox_override_gap, so a codex run's reachability is decided by the argv its run directory recorded rather than the live pointer that carries none, which is the stated goal.\nSCORE evidence: 14\nJUSTIFICATION evidence: tests/test_crew_tell_codex.py:135-149 writes the live-launch shape and :189-210 asserts the refusal without the trust override, and logs/suite-head.log records 67 passed EXIT=0 at 6180f91, but the done_when's ruff arm is recorded nowhere in the manifest (I ran ruff check and ruff format --check on both staged paths at head myself: clean).\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat 5fa38a0392 6180f91d86 lists exactly reckon/crew_run_commands.py, tests/test_crew_tell_codex.py and docs/evidence/fragments/a-live-worker-can-be-reached/crew-tell-reads-the-recorded-argv.html, all inside the declared write paths, with the declared figures directory simply unused.\nSCORE durability: 18\nJUSTIFICATION durability: logs/negative-control.log reddens exactly the three guarded behaviours when the pointer read is restored (test_crew_tell_writes_to_a_live_codex_run_carrying_both_overrides, test_crew_tell_reads_the_latest_attempts_record, test_crew_tell_accepts_a_hook_another_checkout_composed), so each added assertion names a code change that fails it and none compares a value to what the test handed in.\nSCORE fit: 17\nJUSTIFICATION fit: reckon/crew_run_commands.py:2523-2571 follows the module's private-helper idiom (docstring stating the failure it prevents, Mapping guard, None for unreadable) and introduces no plan, ticket or version label, though it declares its own _WORKER_RECORD_NAME at :2523 where reckon/crew/dispatch_launch.py:1942 and reckon/crew/promotion_evidence.py:42 already own that literal.\nSCORE reuse: 5\nJUSTIFICATION reuse: reckon/crew/resumption.py:968 _attempt_worker_records already discovers exactly this record set (attempt-*-worker.json receipts plus the canonical worker.json keyed by its own attempt number) and is importable with the {run_id} the verb holds, so _run_recorded_argv re-implements an owned capability instead of extending it.\nFINDING reckon/crew_run_commands.py:2554 non-blocking: the canonical worker.json is ranked 0 at :2543 so any retired attempt-N-worker.json receipt outranks it (:2554), contradicting the function's own docstring that canonical is the attempt running now; a probe against this revision (canonical worker.json for attempt 2 carrying both overrides, plus a retired attempt-1-worker.json without trust) returns the retired argv and refuses with 'no trust override'. It is latent only because a launch also writes its own receipt at canonical's number, so today the two agree; the ordering guard is not the one the docstring states and would read a retired attempt if a canonical write were ever lost while a receipt landed.\nFINDING reckon/crew/resumption.py:968 non-blocking: _attempt_worker_records already owns record discovery (attempt-*-worker.json receipts plus the canonical worker.json) and is callable with the {run_id} the verb holds, but reckon/crew_run_commands.py:2527 re-implements the glob, the receipt-number parse and the JSON read instead of extending it; the duplicated resolution is what makes the rank-0 ordering above possible, and the constants at :2523-2525 are the third copy of names owned by reckon/crew/dispatch_launch.py:1942.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261111T132445209820-crew-tell-reads-the-recorded-argv/manifest.md:1 non-blocking: the done_when requires that ruff check and ruff format --check add no findings on the staged paths, but neither the manifest nor any log under logs/ records a ruff run, so that arm of the measure is claimed rather than evidenced; I ran both at 6180f91 on the two staged Python paths and they are clean, so the code meets it and only the record is short.\nFINDING docs/evidence/fragments/a-live-worker-can-be-reached/crew-tell-reads-the-recorded-argv.html:52 non-blocking: the fragment quotes the head gate as '67 passed in 28.94s' while logs/suite-head.log's own summary line reads '67 passed in 35.43s', so the evidence document's figure does not reconcile with the log it cites.",
+  "review_run_id": "r-20261111T140003520177-review-of-crew-tell-reads-the-recorded-argv-6180f91d86c4",
+  "reviewed_base_sha": "5fa38a0392f984b21049b6df88912f4d90470c55",
+  "reviewed_head_sha": "6180f91d86c44916f3fb49b019f05805f624e5f2",
+  "reviewed_run_id": "r-20261111T132445209820-crew-tell-reads-the-recorded-argv",
+  "scores": {
+    "durability": 18,
+    "evidence": 14,
+    "fit": 17,
+    "goal_fidelity": 18,
+    "reuse": 5,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-11T14:30:00+00:00",
+  "total": 92
+}

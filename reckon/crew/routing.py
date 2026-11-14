@@ -11,6 +11,9 @@ import subprocess
 import sys
 import tarfile
 import tempfile
+import time
+from collections.abc import Callable, Iterator
+from contextlib import contextmanager
 from contextvars import ContextVar
 from datetime import UTC, datetime, timedelta, timezone
 from pathlib import Path
@@ -469,7 +472,6 @@ def _budget_verdict(
     block. A group no lift covers is handed the configuration unchanged.
     """
     from reckon import budget as budget_module
-
     from reckon.crew import budget_group as budget_group_module
 
     wallet = group or budget_group_module.declared_group_for(config, backend_name)
@@ -658,12 +660,24 @@ def _extraction_report(path: Path) -> dict[str, Any]:
     }
 
 
-def _tree_state(path: Path) -> dict[str, Any]:
+def _tree_state(
+    path: Path, *, untracked_roots: Iterable[Path] | None = None
+) -> dict[str, Any]:
     """Return the commit and working-tree state needed for a boundary check.
 
     Harness scratch is left out of both the entries and the digest, so the
     bookkeeping the harness writes into every worktree never reads as a run's
     uncommitted work.
+
+    ``untracked_roots`` narrows the status read to the repository-relative
+    roots a caller can charge a change to. ``--untracked-files=all`` lists every
+    file under every untracked directory, and a shared checkout carries
+    worktree, cache and tool trees that no run declares, so the unrestricted
+    read spends one directory walk per untracked file on the filesystem. Naming
+    the roots as literal pathspecs keeps the entries inside them — including a
+    file at a declared path under an untracked directory — while a directory
+    outside every root is never opened. ``None`` keeps the unrestricted read,
+    which is what a caller that reports a whole tree needs.
     """
     if not path.is_dir():
         return {
@@ -678,19 +692,35 @@ def _tree_state(path: Path) -> dict[str, Any]:
         capture_output=True,
         check=False,
     )
-    status = subprocess.run(
-        [
+    pathspecs = (
+        None
+        if untracked_roots is None
+        else [f":(literal){Path(root).as_posix()}" for root in untracked_roots]
+    )
+    if pathspecs == []:
+        # A run that declares no root can have no change charged to it, so the
+        # walk would answer nothing. Reading it anyway is what costs the walk,
+        # so the empty root set answers the empty state.
+        status = subprocess.CompletedProcess(
+            args=[], returncode=0, stdout=b"", stderr=b""
+        )
+    else:
+        command = [
             "git",
             "status",
             "--porcelain=v1",
             "-z",
             "--untracked-files=all",
             "--no-renames",
-        ],
-        cwd=path,
-        capture_output=True,
-        check=False,
-    )
+        ]
+        if pathspecs is not None:
+            command += ["--", *pathspecs]
+        status = subprocess.run(
+            command,
+            cwd=path,
+            capture_output=True,
+            check=False,
+        )
     if head.returncode or status.returncode:
         detail = (
             os.fsdecode(head.stderr or b"").strip()
@@ -736,13 +766,21 @@ def _boundary_tree_roots(repository: str | Path, worktree: str | Path) -> list[P
 
 
 def _repository_tree_snapshot(
-    repo: Path, *, roots: Iterable[str | Path] | None = None
+    repo: Path,
+    *,
+    roots: Iterable[str | Path] | None = None,
+    untracked_roots: Iterable[Path] | None = None,
 ) -> dict[str, Any]:
     """Capture one deterministic snapshot of the repository's selected trees.
 
     With no explicit roots, the worktree registry is enumerated exactly once.
     Promotion supplies the persisted root set, so worktrees registered after
     dispatch cannot be charged to an earlier run.
+
+    ``untracked_roots`` is passed to every tree and bounds the untracked read to
+    the repository-relative roots a caller charges a change to; see
+    :func:`_tree_state`. Every selected tree is still read, so the number of
+    status calls is unchanged.
     """
     selected = (
         _registered_worktrees(repo) if roots is None else [Path(p) for p in roots]
@@ -751,7 +789,9 @@ def _repository_tree_snapshot(
     return {
         "version": 1,
         "status_digest": "sha256",
-        "trees": [_tree_state(path) for path in resolved],
+        "trees": [
+            _tree_state(path, untracked_roots=untracked_roots) for path in resolved
+        ],
     }
 
 
@@ -854,13 +894,18 @@ def _inspect_workspace(
     )
     claims = sorted(claimed_by)
     commits: list[dict[str, str]] | None = None
-    if release_residue and not reachable:
+    if release_residue and not reachable and not claims:
         commits = _commits_beyond_merge_base(repo, path, integrated_into)
     if commits is None:
         if not release_residue:
             unmeasured_reason = (
                 "release_residue is false: this caller did not ask for the "
                 "commits beyond the integration head to be measured"
+            )
+        elif claims:
+            unmeasured_reason = (
+                "a live pointer retains this worktree; "
+                "its history cannot change the refusal"
             )
         elif reachable:
             unmeasured_reason = (
@@ -918,9 +963,14 @@ def _inspect_workspace(
 
 
 def _ledgered_records(repo: Path, project: str | None) -> list[dict[str, Any]]:
+    from reckon.crew import open_run_index
+
     result: list[dict[str, Any]] = []
     for name in _gc_projects(repo, project):
-        result.extend(ledger.runs(str(name), root=repo))
+        reader = (
+            ledger.open_runs if open_run_index.pointers() is not None else ledger.runs
+        )
+        result.extend(reader(str(name), root=repo))
     return result
 
 
@@ -1179,73 +1229,116 @@ def record_names_worktree(record: Mapping[str, Any], worktree: Path) -> bool:
     session the node id alone would resolve to whichever same-named tree
     registers first, which may be a peer session's.
     """
-    retained = _retained_worktree(record)
-    if retained is not None and retained == worktree:
-        return True
-    node_id, session = _node_worktree_identity(record)
-    if not node_id or worktree.name != node_id:
-        return False
-    return not session or worktree.parent.name == session
+    return bool(
+        set(WorktreeRecordIndex.record_keys(record))
+        & set(WorktreeRecordIndex.worktree_keys(worktree))
+    )
+
+
+_UNRESOLVED_RETAINED_WORKTREE = object()
 
 
 class WorktreeRecordIndex:
-    """Run records filed by the trees they name, so each tree is one lookup.
+    """Records indexed by retained path and session-qualified node identity.
 
-    ``record_names_worktree`` is the one rule for what names a tree, and this
-    index is built from the same key derivation rather than restating it, so an
-    index answer and the rule cannot disagree. Each record is filed once under
-    the retained path it carries and once under the node id it names, and a
-    tree is matched by consulting those buckets instead of comparing every
-    record against it: the work is proportional to records plus trees rather
-    than to their product. A retained path is resolved once, when its record is
-    filed.
+    Replacement returns the naming keys it changed, allowing a caller to
+    rematch only affected trees. Retained paths are resolved once per filing.
     """
 
     def __init__(self) -> None:
-        self._by_path: dict[Path, list[tuple[int, Mapping[str, Any]]]] = {}
-        self._by_session_node: dict[
-            tuple[str, str], list[tuple[int, Mapping[str, Any]]]
-        ] = {}
-        self._by_node: dict[str, list[tuple[int, Mapping[str, Any]]]] = {}
+        self._rows: dict[Any, Mapping[str, Any]] = {}
+        self._keys: dict[Any, tuple[Any, ...]] = {}
+        self._buckets: dict[Any, set[Any]] = {}
+        self._positions: dict[Any, tuple[Any, int]] = {}
         self._filed = 0
+        self.order_key: Callable[[Mapping[str, Any]], Any] | None = None
+
+    @staticmethod
+    def record_keys(
+        record: Mapping[str, Any], *, retained: Any = _UNRESOLVED_RETAINED_WORKTREE
+    ) -> tuple[Any, ...]:
+        """The naming rule's keys, optionally reusing an already resolved path."""
+        if retained is _UNRESOLVED_RETAINED_WORKTREE:
+            retained = _retained_worktree(record)
+        keys: list[Any] = []
+        if retained is not None:
+            keys.append(("path", retained))
+        node_id, session = _node_worktree_identity(record)
+        if node_id:
+            keys.append(("node", session, node_id))
+        return tuple(keys)
+
+    @staticmethod
+    def worktree_keys(worktree: Path) -> tuple[Any, ...]:
+        """The retained-path, session-node and sessionless-node lookup keys."""
+        return tuple(
+            dict.fromkeys(
+                (
+                    ("path", worktree),
+                    ("node", worktree.parent.name, worktree.name),
+                    ("node", "", worktree.name),
+                )
+            )
+        )
 
     def add(self, record: Mapping[str, Any]) -> None:
-        """File one record under every key by which it names a tree."""
-        position = self._filed
-        self._filed += 1
-        retained = _retained_worktree(record)
-        if retained is not None:
-            self._by_path.setdefault(retained, []).append((position, record))
-        node_id, session = _node_worktree_identity(record)
-        if not node_id:
-            return
-        if session:
-            self._by_session_node.setdefault((session, node_id), []).append(
-                (position, record)
-            )
+        """Append a record, preserving distinct filings of the same object."""
+        self.replace(object(), record)
+
+    def remove(self, key: Any) -> tuple[Any, ...]:
+        """Remove a filing and return the naming keys that lost it."""
+        names = self._keys.pop(key, ())
+        for name in names:
+            bucket = self._buckets[name]
+            bucket.remove(key)
+            if not bucket:
+                del self._buckets[name]
+        self._rows.pop(key, None)
+        self._positions.pop(key, None)
+        return names
+
+    def replace(
+        self,
+        key: Any,
+        record: Mapping[str, Any],
+        *,
+        retained: Any = _UNRESOLVED_RETAINED_WORKTREE,
+        position: Any = None,
+    ) -> tuple[Any, ...]:
+        """Replace one filing and return its previous and current naming keys.
+
+        Replacements keep their filing order. A caller reconstructing source
+        order may supply mutually comparable positions; ``order_key`` applies
+        a stable ordering to the matched records when configured.
+        """
+        previous_position = self._positions.get(key)
+        previous_names = self.remove(key)
+        if position is not None:
+            filing_position = (position, self._filed)
+        elif previous_position is not None:
+            filing_position = previous_position
         else:
-            self._by_node.setdefault(node_id, []).append((position, record))
+            filing_position = (self._filed, self._filed)
+        self._filed += 1
+        names = self.record_keys(record, retained=retained)
+        self._rows[key] = record
+        self._keys[key] = names
+        self._positions[key] = filing_position
+        for name in names:
+            self._buckets.setdefault(name, set()).add(key)
+        return tuple(dict.fromkeys((*previous_names, *names)))
 
     def records_naming(self, worktree: Path) -> list[Mapping[str, Any]]:
-        """The filed records that name ``worktree``, each once, in filing order.
-
-        ``worktree`` is the resolved path, as every caller resolves one; a path
-        the record retained is compared resolved, and the node id is matched
-        against the tree's own directories. A record naming a tree by both keys
-        is filed under both, so the buckets are merged on each record's filing
-        position: a tree two records name is attributed to the one filed later,
-        which is the order the reader that gathered the records would give.
-        """
-        buckets = (
-            self._by_path.get(worktree),
-            self._by_session_node.get((worktree.parent.name, worktree.name)),
-            self._by_node.get(worktree.name),
-        )
-        found: dict[int, Mapping[str, Any]] = {}
-        for bucket in buckets:
-            for position, record in bucket or ():
-                found.setdefault(position, record)
-        return [found[position] for position in sorted(found)]
+        """Return matching records once each, in filing then optional key order."""
+        found: set[Any] = set()
+        for name in self.worktree_keys(worktree):
+            found.update(self._buckets.get(name, ()))
+        records = [
+            self._rows[key] for key in sorted(found, key=self._positions.__getitem__)
+        ]
+        if self.order_key is not None:
+            records.sort(key=self.order_key)
+        return records
 
     def names(self, record: Mapping[str, Any], worktree: Path) -> bool:
         """Whether ``record`` names ``worktree``, by the rule's own keys."""
@@ -1397,6 +1490,33 @@ def _delete_worktree_copy(trash: Path) -> None:
     shutil.rmtree(trash, ignore_errors=True)
 
 
+#: Whether a release leaves its moved-aside copy for the trash sweep.
+#:
+#: A promotion holds its run's lock from its first write to its last, so a copy
+#: deleted there keeps a serial review sweep waiting on the filesystem. Inside
+#: :func:`deferring_worktree_copy_deletion` the rename still vacates the
+#: registered path and deregisters the tree in one step, and only the copy's
+#: deletion is handed to the pass that reclaims trash.
+_DEFER_COPY_DELETION: ContextVar[bool] = ContextVar(
+    "reckon_defer_worktree_copy_deletion", default=False
+)
+
+
+@contextmanager
+def deferring_worktree_copy_deletion() -> Iterator[None]:
+    """Leave released trees' moved-aside copies in the trash root.
+
+    The pass that reclaims trash prints every directory it removes, and it
+    decides by the tree's own registration rather than by age, so a deferred
+    copy is reclaimed on the next sweep rather than growing without bound.
+    """
+    token = _DEFER_COPY_DELETION.set(True)
+    try:
+        yield
+    finally:
+        _DEFER_COPY_DELETION.reset(token)
+
+
 def _release_worktree_whole(
     repo: Path,
     path: str | Path,
@@ -1440,6 +1560,10 @@ def _release_worktree_whole(
         "trash": str(trash),
         "trash_removed": False,
     }
+    if _DEFER_COPY_DELETION.get():
+        # The registered path is empty and the tree is deregistered, so the
+        # release is whole; the copy's deletion is the trash sweep's work.
+        return result
     try:
         _delete_worktree_copy(trash)
     except Exception as exc:  # noqa: BLE001 - any failure leaves trash, not a husk
@@ -2317,6 +2441,61 @@ def _create_worktree(
     return payload
 
 
+# A held shared-configuration lock is almost always another dispatch finishing
+# its own write, so a brief wait recovers the write instead of refusing.
+_WORKTREE_CONFIG_LOCK_TIMEOUT_SECONDS = 5.0
+_WORKTREE_CONFIG_LOCK_POLL_SECONDS = 0.05
+
+
+def _shared_worktree_config_enabled(repo: Path) -> bool:
+    """Whether the shared configuration already enables per-worktree config."""
+    result = _git(
+        repo, "config", "--bool", "--get", "extensions.worktreeConfig", check=False
+    )
+    return result.returncode == 0 and result.stdout.strip() == "true"
+
+
+def _shared_config_lock(repo: Path) -> Path:
+    """The lock git takes to write the shared configuration."""
+    result = _git(repo, "rev-parse", "--git-common-dir", check=False)
+    common = Path(result.stdout.strip()) if result.returncode == 0 else Path(".git")
+    if not common.is_absolute():
+        common = repo / common
+    return common / "config.lock"
+
+
+def _enable_shared_worktree_config(repo: Path) -> bool:
+    """Enable ``extensions.worktreeConfig`` on the shared configuration once.
+
+    Returns whether this call wrote it. The setting is a property of the shared
+    checkout, not of the worktree being created, so it reads ``true`` on every
+    checkout that has dispatched before. Writing it again anyway contends for
+    the shared configuration lock with every concurrent dispatch, and one of
+    them is refused outright while another holds it.
+
+    When the write is needed, a lock another git process holds for a moment is
+    waited out for a bounded time. A lock still held at the bound is named in
+    the refusal, because a dispatch that failed at this step otherwise reports
+    only that the worktree could not be created.
+    """
+    if _shared_worktree_config_enabled(repo):
+        return False
+    lock = _shared_config_lock(repo)
+    deadline = time.monotonic() + _WORKTREE_CONFIG_LOCK_TIMEOUT_SECONDS
+    while True:
+        result = _git(repo, "config", "extensions.worktreeConfig", "true", check=False)
+        if not result.returncode:
+            return True
+        detail = result.stderr.strip() or result.stdout.strip()
+        if "could not lock config file" in detail and time.monotonic() < deadline:
+            time.sleep(_WORKTREE_CONFIG_LOCK_POLL_SECONDS)
+            continue
+        raise CrewError(
+            f"worktree creation failed: git config extensions.worktreeConfig true at "
+            f"{repo}: {detail} (waited for the configuration lock {lock})"
+        )
+
+
 def _give_worktree_minimal_stat(repo: Path, path: Path) -> None:
     """Have a new worktree compare whole-second mtime, ctime and size only.
 
@@ -2332,23 +2511,16 @@ def _give_worktree_minimal_stat(repo: Path, path: Path) -> None:
     once ``extensions.worktreeConfig`` is enabled on the shared configuration.
     Enabling it there leaves the main checkout at the default comparison.
     """
-    for arguments in (
-        ("config", "extensions.worktreeConfig", "true"),
-        ("config", "--worktree", "core.checkStat", "minimal"),
-    ):
-        where = repo if arguments[1] != "--worktree" else path
-        result = subprocess.run(
-            ["git", "-C", str(where), *arguments],
-            capture_output=True,
-            text=True,
-            check=False,
+    _enable_shared_worktree_config(repo)
+    result = _git(
+        path, "config", "--worktree", "core.checkStat", "minimal", check=False
+    )
+    if result.returncode:
+        detail = result.stderr.strip() or result.stdout.strip()
+        raise CrewError(
+            f"worktree creation failed: git config --worktree core.checkStat minimal "
+            f"at {path}: {detail}"
         )
-        if result.returncode:
-            detail = result.stderr.strip() or result.stdout.strip()
-            raise CrewError(
-                f"worktree creation failed: git {' '.join(arguments)} at {where}: "
-                f"{detail}"
-            )
 
 
 def _remove_worktree(repo: Path, path: str) -> None:

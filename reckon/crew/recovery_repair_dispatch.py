@@ -6,6 +6,7 @@ import os
 import re
 import time
 from datetime import UTC, datetime
+from functools import partial
 from pathlib import Path
 from typing import Any, Callable, Iterable, Mapping, Sequence
 
@@ -46,12 +47,31 @@ def dispatch_merge_repair(
     second worker, while a later delivery or primary creates a distinct round.
     The receipt is durable before launch, including when the lane refuses it.
     """
-    from reckon.crew import merge, resumption
+    from reckon.crew import merge, pending_landing, resumption
     from reckon.crew.dispatch import BudgetHold, LanePaused
 
     run_id = str(record.get("run_id") or "")
-    branch = merge._current_branch(Path(str(record.get("repo") or "")))
     round_id = f"{run_id}:merge:{primary}@{head}"
+    receipt: dict[str, Any] = {
+        "outcome": "merge-conflict",
+        "paths": list(paths),
+        "main_revision": primary,
+        "head": head,
+        "round_id": round_id,
+        "status": "opened",
+    }
+    settled = pending_landing._settled_landing(
+        run_id, head, repository=Path(str(record.get("repo") or ""))
+    )
+    if settled:
+        receipt.update(
+            status="refused",
+            reason=settled,
+            advice=f"Merge repair refused: {settled}. Do not resume this delivery.",
+        )
+        runs._write_json(runs.run_dir(run_id) / "merge-repair.json", receipt)
+        return receipt
+    branch = merge._current_branch(Path(str(record.get("repo") or "")))
     advice = (
         _repair_round_token(round_id) + "\n"
         f"Landing met a merge conflict against primary {branch} at {primary}.\n"
@@ -64,15 +84,7 @@ def dispatch_merge_repair(
         "the manifest citations. Already promoted runs finish through their "
         "pending landing by merge alone; do not promote them again.\n"
     )
-    receipt: dict[str, Any] = {
-        "outcome": "merge-conflict",
-        "paths": list(paths),
-        "main_revision": primary,
-        "head": head,
-        "round_id": round_id,
-        "advice": advice,
-        "status": "opened",
-    }
+    receipt["advice"] = advice
     receipt_path = runs.run_dir(run_id) / "merge-repair.json"
     fresh = _live_pointer_or_absent(run_id)
     if fresh is None and promoted:
@@ -331,12 +343,17 @@ def _reviewed_run_is_busy(record: Mapping[str, Any]) -> str:
     holds an assistant record only while that turn is producing work. A resumed
     turn has ended once its stream's last record is the result line a finished
     turn writes, so a finished resume no longer reads as a turn in progress and
-    does not hold the round busy forever. A run recording no process and
-    carrying no unfinished resumed turn is left free to be repaired.
+    does not hold the round busy forever. An unfinished stream is only evidence
+    about a turn whose process is still there: a recorded process proved gone
+    leaves the stream behind it, so an unfinished resume is read as a turn in
+    progress only while no recorded process is proved dead. A run recording no
+    process and carrying no unfinished resumed turn is left free to be repaired.
     """
-    if runs.record_process_alive(record, process_alive) is True:
+    pointer_alive = runs.record_process_alive(record, process_alive)
+    if pointer_alive is True:
         return "the reviewed run's worker is live"
-    if _worker_record_liveness(record) is True:
+    worker_alive = _worker_record_liveness(record)
+    if worker_alive is True:
         return "the reviewed run's worker is live"
     found = _record_newest_stream(record)
     if (
@@ -345,6 +362,8 @@ def _reviewed_run_is_busy(record: Mapping[str, Any]) -> str:
         and _stream_holds_assistant_record(found[0])
         and _newest_stream_last_record_type(record) != STREAM_RESULT_RECORD_TYPE
     ):
+        if pointer_alive is False or worker_alive is False:
+            return ""
         return "the reviewed run has a resumed turn in progress"
     return ""
 
@@ -370,22 +389,31 @@ def _within_fence(path: str, fence: Sequence[str] | None) -> bool:
     return False
 
 
-def _is_record_path(path: str, *, fence: Sequence[str] | None = None) -> bool:
+def _is_record_path(
+    path: str,
+    *,
+    fence: Sequence[str] | None = None,
+    reach: Callable[[str], bool] | None = None,
+) -> bool:
     """Whether a finding's path names the fleet's own record, not a source file.
 
     Run directories, manifests, gate logs and the review store all live outside
     the repository under review — an absolute path or a home-relative one is a
     record for that reason — and the evidence fragments and figures live inside
-    it under their own subtrees. A path inside the reviewed run's own declared
-    fence is the exception: that run was granted the subtree, so a finding under
-    it is work however it is spelled and the record prefixes apply only outside
-    the fence. Everything else is a repository source or test path a repair may
-    be granted.
+    it under their own subtrees. Two exceptions are read before the record rule,
+    because in each the run itself is where the file lives rather than the fleet:
+    a path inside the reviewed run's own declared fence, which that run was
+    granted whatever its spelling, and a path the caller's ``reach`` says the
+    reviewed run itself holds — a file in its own worktree, or its manifest and
+    logs under its own run directory. Everything else is a repository source or
+    test path a repair may be granted.
     """
     text = str(path or "").strip()
     if not text:
         return True
     if _within_fence(text, fence):
+        return False
+    if reach is not None and reach(text):
         return False
     if text.startswith("~") or Path(text).is_absolute():
         return True
@@ -393,26 +421,35 @@ def _is_record_path(path: str, *, fence: Sequence[str] | None = None) -> bool:
 
 
 def _repairable_scope(
-    paths: Iterable[str], *, fence: Sequence[str] | None = None
+    paths: Iterable[str],
+    *,
+    fence: Sequence[str] | None = None,
+    reach: Callable[[str], bool] | None = None,
 ) -> list[str]:
     """The repository source and test paths among a repair's finding paths.
 
-    Duplicates collapse to their first occurrence and record paths are dropped,
-    so the repair is never granted a record outside its run's fence — a run
-    directory, a manifest, a gate log or a review-store path. A path inside the
-    reviewed run's own fence is kept whatever its spelling, so a finding under
-    the run's granted ``docs/figures/`` or ``docs/evidence/`` subtree is
-    repairable rather than mistaken for the fleet's own record. Empty answers
-    "every finding cites only run records or evidence documents", which the
-    caller reads as no repair to dispatch. The population is the caller's: the
-    decline decision passes the blocking findings' own cited paths, and the
-    composed scope passes the node's write paths, so the two can never disagree
-    about which paths are records.
+    Duplicates collapse to their first occurrence, and a record path is dropped
+    so the repair is never granted the fleet's own bookkeeping outside its run's
+    fence — a run directory, a manifest, a gate log or a review-store path. Two
+    exceptions are kept: a path the caller's ``reach`` holds that the reviewed
+    run itself has, which makes a citation into its own worktree repository work
+    rather than a record, and a path inside the reviewed run's own fence, which
+    is kept whatever its spelling so a finding under the run's granted
+    ``docs/figures/`` or ``docs/evidence/`` subtree is repairable rather than
+    mistaken for the fleet's own record. Empty answers "every finding cites only
+    run records or evidence documents", which the caller reads as no repair to
+    dispatch. The population is the caller's: the decline decision passes the
+    blocking findings' own cited paths, and the composed scope passes the node's
+    write paths, so the two can never disagree about which paths are records.
     """
     scope: list[str] = []
     for path in paths:
         text = str(path or "").strip()
-        if text and text not in scope and not _is_record_path(text, fence=fence):
+        if (
+            text
+            and text not in scope
+            and not _is_record_path(text, fence=fence, reach=reach)
+        ):
             scope.append(text)
     return scope
 
@@ -442,7 +479,9 @@ def _sub_floor_dimensions_named(
 
 
 def _non_blocking_repository_paths(
-    review: Mapping[str, Any], fence: Sequence[str] | None
+    review: Mapping[str, Any],
+    fence: Sequence[str] | None,
+    reach: Callable[[str], bool] | None = None,
 ) -> list[str]:
     """The repository paths the round's non-blocking findings cite.
 
@@ -459,7 +498,52 @@ def _non_blocking_repository_paths(
             for finding in repair_module.non_blocking_findings(review)
         ),
         fence=fence,
+        reach=reach,
     )
+
+
+def _naming_spelling(path: str) -> str:
+    """How a decline reason spells a path it names.
+
+    A path under the crew home's run root is named relative to it — a run's own
+    manifest and logs are ``runs/<run-id>/...`` everywhere else in the crew's own
+    record — so the reason stays readable and does not carry one host's home
+    directory. Anything else is named as the review cited it.
+    """
+    text = str(path or "").strip()
+    if not text:
+        return ""
+    try:
+        root = runs.runs_dir().resolve()
+        return "runs/" + str(Path(text).expanduser().resolve().relative_to(root))
+    except (OSError, ValueError):
+        return text
+
+
+def _blocking_out_of_reach_named(
+    blocking: Sequence[Mapping[str, Any]],
+    *,
+    fence: Sequence[str] | None,
+    reach: Callable[[str], bool] | None = None,
+) -> list[str]:
+    """Each blocking finding the round cannot reach, as ``id (path)``.
+
+    A round is declined only when no blocking finding cites anything the run's
+    worker can change, so the reason names every blocking finding that was left:
+    its stable id, which is how the review record and a repair brief name it, and
+    the path it cites. A finding carrying no file cites nothing and is named by
+    its id alone rather than dropped, because it is still part of the population
+    the decision was taken from.
+    """
+    named: list[str] = []
+    for finding in blocking:
+        identifier = str(finding.get("id") or "").strip()
+        cited = str(finding.get("file") or "").strip()
+        if not _is_record_path(cited, fence=fence, reach=reach):
+            continue
+        location = _naming_spelling(cited)
+        named.append(f"{identifier} ({location})" if location else identifier)
+    return named
 
 
 def _decline_only_reason(
@@ -469,6 +553,7 @@ def _decline_only_reason(
     fence: Sequence[str] | None,
     project: str,
     config: Mapping[str, Any] | None,
+    reach: Callable[[str], bool] | None = None,
 ) -> str:
     """The reason a round whose blocking findings cite no repairable path declines.
 
@@ -486,14 +571,20 @@ def _decline_only_reason(
         "no blocking finding cites a repairable path, so the round is decline-only",
         f"no finding cites a repository path among the {count} blocking finding(s)",
     ]
+    out_of_reach = _blocking_out_of_reach_named(blocking, fence=fence, reach=reach)
+    if out_of_reach:
+        parts.append(
+            "blocking finding(s) out of reach, citing neither a repository path "
+            "nor a file the run holds: " + ", ".join(out_of_reach)
+        )
     sub_floor = _sub_floor_dimensions_named(review, project, config)
     if sub_floor:
         parts.append("sub-floor dimension(s): " + ", ".join(sub_floor))
-    non_blocking = _non_blocking_repository_paths(review, fence)
+    non_blocking = _non_blocking_repository_paths(review, fence, reach=reach)
     if non_blocking:
         parts.append(
             "non-blocking finding(s) cite repository path(s): "
-            + ", ".join(non_blocking)
+            + ", ".join(_naming_spelling(path) for path in non_blocking)
         )
     return "; ".join(parts)
 
@@ -747,12 +838,45 @@ def _grant_reason(path: str, findings: Sequence[Mapping[str, Any]]) -> str:
     return str(findings[0].get("id") or "") if findings else ""
 
 
+def _dimension_evidence_block(
+    dimensions: Sequence[Mapping[str, Any]],
+) -> str:
+    """Render each sub-floor dimension with the review's account of its score.
+
+    The brief names a sub-floor dimension by the sentence its score and floor
+    compose, which says which standard was missed and nothing about why. The
+    reviewer's justification for that dimension, and the findings the same
+    record raised, are the account a repair can act on, and they are written
+    here rather than in the brief so the advice carries them whichever composer
+    built the round.
+    """
+    lines = ["The review's own account of each dimension below its floor:"]
+    for row in dimensions:
+        dimension = str(row.get("dimension") or "")
+        score = row.get("score")
+        floor = row.get("floor")
+        heading = f"- {dimension} {score}/{floor}"
+        justification = str(row.get("justification") or "").strip()
+        lines.append(heading + (f": {justification}" if justification else ""))
+        for finding in row.get("findings") or ():
+            text = str(finding.get("text") or "").strip()
+            if not text:
+                continue
+            location = str(finding.get("file") or "").strip()
+            line = str(finding.get("line") or "").strip()
+            if location and line:
+                location = f"{location}:{line}"
+            lines.append(f"  finding: {location + ' ' if location else ''}{text}")
+    return "\n".join(lines)
+
+
 def _repair_resume_advice(
     composed: Mapping[str, Any],
     scope: Sequence[str],
     round_id: str,
     *,
     conflicts: Sequence[Mapping[str, str]] = (),
+    dimensions: Sequence[Mapping[str, Any]] = (),
 ) -> str:
     """The advice a resume of the reviewed run carries for its composed round.
 
@@ -773,6 +897,12 @@ def _repair_resume_advice(
     The advice opens with the round id, so a worker's refusal that quotes the
     advice names the round it refused and a retry can tell it from a manifest
     quoting an earlier round's advice.
+
+    ``dimensions`` names each dimension the review scored below its floor
+    together with the record's own justification for it and the findings it
+    raised. A repair dispatched for such a dimension otherwise reads only the
+    score and the floor, which tells the worker which standard was missed and
+    nothing about what missed it.
 
     The opening count is of the findings the record classified as blocking. A
     finding that states neither a severity nor a prefix is repaired as blocking
@@ -820,6 +950,10 @@ def _repair_resume_advice(
     parts += [
         "",
         str(composed.get("brief") or ""),
+    ]
+    if dimensions:
+        parts += ["", _dimension_evidence_block(dimensions)]
+    parts += [
         "",
         REPAIR_ADVICE_SCOPE_LINE + (", ".join(scope) if scope else "none"),
         "",
@@ -1103,7 +1237,9 @@ def _repair_in_flight(record: Mapping[str, Any], *, node_id: str, project: str) 
         if standing:
             if runs.pointer_path(standing).exists() and read_pointer(standing):
                 return standing
-            if project and standing in _promoted_run_ids(project):
+            from reckon.crew.open_run_index import has_row
+
+            if project and has_row(project, standing):
                 return standing
     for pointer in list_live(project=project or None):
         node = pointer.get("node") or {}
@@ -1129,7 +1265,9 @@ def _repair_launch_refusal(run_id: str, project: str) -> str:
         return "the reviewed run's live pointer is gone"
     if str(fresh.get("promoted_revision") or "").strip():
         return "the reviewed run is promoted"
-    if project and run_id in _promoted_run_ids(project):
+    from reckon.crew.open_run_index import has_row
+
+    if project and has_row(project, run_id):
         return "the reviewed run is promoted"
     return ""
 
@@ -1209,9 +1347,11 @@ def dispatch_repair_for_run(
     Four guards keep the reflex off a run it must not touch, each measured
     against a live fleet failure: only an implement run's findings open a
     repair, and a repair's own findings open none; a run whose worker is live or
-    resumed is left to its own worker; a round whose findings name only the
-    reflex's own record — a manifest, a gate log, a review-store path — cites no
-    repository path, so it composes no repair and is recorded decline-only; and
+    resumed is left to its own worker; a round whose findings name nothing the
+    reviewed run itself holds — a path outside the repository, its own worktree
+    and its own run directory — cites nothing its worker can change, so it
+    composes no repair and is recorded decline-only with each such finding named;
+    and
     the reviewed run's pointer is re-read before the repair is offered, so a run
     promoted in that window, or one whose pointer has gone, is refused.
 
@@ -1472,6 +1612,14 @@ def dispatch_repair_for_run(
     node_id = str(composed["node_id"])
     round_id = str(composed["round_id"])
     run_fence = repair_module._run_fence(record)
+    # Two reaches are read here and they are deliberately different. Whether the
+    # round *opens* is decided on everything the reviewed run itself holds — its
+    # worktree, its manifest and its own logs — because a finding citing any of
+    # them is work its worker can do. What the round may be granted is narrower:
+    # a path in the run's worktree is repository work a claim can cover, while
+    # the run's record directory under the crew home is written without one.
+    opening_reach = partial(repair_module.finding_cites_run_own_file, run_record=record)
+    scope_reach = partial(repair_module.finding_cites_run_worktree, run_record=record)
     blocking = [*repair_module.blocking_findings(review), *dimension_findings]
     # The round is decline-only when no *blocking finding cites a repairable
     # path. The decision must read the blocking findings, the same population the
@@ -1485,10 +1633,17 @@ def dispatch_repair_for_run(
     # is repairable whatever its spelling, so an in-fence figure or evidence
     # finding is not mistaken for the fleet's own record.
     if not dimension_findings and not _repairable_scope(
-        (str(finding.get("file") or "") for finding in blocking), fence=run_fence
+        (str(finding.get("file") or "") for finding in blocking),
+        fence=run_fence,
+        reach=opening_reach,
     ):
         reason = _decline_only_reason(
-            review, blocking, fence=run_fence, project=project, config=config
+            review,
+            blocking,
+            fence=run_fence,
+            project=project,
+            config=config,
+            reach=opening_reach,
         )
         _record_repair_dispatch(
             run_id,
@@ -1504,7 +1659,9 @@ def dispatch_repair_for_run(
             "round_id": round_id,
             "reason": reason,
         }
-    scope = _repairable_scope(composed["write_paths"], fence=run_fence)
+    scope = _repairable_scope(
+        composed["write_paths"], fence=run_fence, reach=scope_reach
+    )
     # A composed scope that filters to empty while blocking findings exist is a
     # dead end: the round would otherwise resume with the advice line "Write
     # scope for this round: none", which is no scope for work the review's
@@ -1710,7 +1867,15 @@ def dispatch_repair_for_run(
                 "reason": "repair is held for coordinator advice before resume",
             }
         scope, granted, conflicts = _grant_round_scope(run_id, scope, blocking)
-        advice = _repair_resume_advice(composed, scope, round_id, conflicts=conflicts)
+        from reckon.crew import review_dispositions
+
+        advice = _repair_resume_advice(
+            composed,
+            scope,
+            round_id,
+            conflicts=conflicts,
+            dimensions=review_dispositions.sub_floor_evidence(review, floors),
+        )
         if coordinator_advice:
             advice += (
                 "\nCoordinator advice added during the repair hold:\n"

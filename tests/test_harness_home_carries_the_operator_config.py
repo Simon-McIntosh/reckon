@@ -31,6 +31,7 @@ from pathlib import Path
 import pytest
 
 from reckon import _backends, flight
+from reckon.hooks import install as installer
 
 NEGATIVE_CONTROL_MUTATION = (
     "seed_harness_home ignores the declaration and only creates the directory "
@@ -51,6 +52,21 @@ CLAUDE_SETTINGS = {
     "permissions": {"allow": ["Bash(rm:*)"]},
     "model": "operator-model",
 }
+
+
+def _operator_hooks(settings: dict) -> dict:
+    """A seeded settings document's hook groups, less the run-home inbox entry.
+
+    Seeding adds exactly one group the operator's own file cannot hold — the
+    inbox hook that gives the run its delivery channel — so a case comparing the
+    carried hooks with the operator's compares the rest of them exactly and
+    names that one addition beside the comparison, rather than accepting
+    whatever difference a looser assertion would hide.
+    """
+    groups = dict(settings.get("hooks") or {})
+    groups.pop(installer.INBOX_EVENT, None)
+    return groups
+
 
 CLAUDE_BACKEND = {"launch": "cli", "command": "claude"}
 CLIVE_BACKEND = {"launch": "cli", "command": "clive"}
@@ -187,7 +203,8 @@ def test_a_claude_run_home_carries_the_operator_settings_and_instructions(
 
     seeded = json.loads((harness / "settings.json").read_text())
     assert set(seeded) == {"hooks", "attribution", "includeCoAuthoredBy"}
-    assert seeded["hooks"] == CLAUDE_SETTINGS["hooks"]
+    assert _operator_hooks(seeded) == CLAUDE_SETTINGS["hooks"]
+    assert seeded["hooks"][installer.INBOX_EVENT] == [installer.worker_inbox_group()]
     assert STOP_COMMAND in json.dumps(seeded["hooks"])
     # The operator's attribution choice reaches the worker, so a worker commit
     # carries no co-author trailer the operator turned off.
@@ -285,8 +302,14 @@ def test_a_fresh_launch_copies_no_transcript(tmp_path: Path):
     assert not (harness / "projects").exists()
 
 
-def test_an_existing_run_home_file_is_never_overwritten(tmp_path: Path):
-    """A resumed run keeps the state it already wrote in its own home."""
+def test_an_existing_run_home_file_keeps_its_own_state(tmp_path: Path):
+    """A resumed run keeps the state it already wrote in its own home.
+
+    Seeding adds the run's inbox delivery hook to a settings file the run itself
+    wrote, because nothing re-seeds a live home and a run without that entry has
+    no way to receive a message. Every other key the run wrote survives
+    untouched, and the instruction file and transcript are not rewritten at all.
+    """
     home = _operator_home(tmp_path)
     run = tmp_path / "run"
     run.mkdir()
@@ -301,7 +324,10 @@ def test_an_existing_run_home_file_is_never_overwritten(tmp_path: Path):
 
     _launch(home, run, CLAUDE_BACKEND, fence=True, resume_session=CLAUDE_SESSION)
 
-    assert (harness / "settings.json").read_text() == own_settings
+    expected = {
+        "hooks": {"mine": True, installer.INBOX_EVENT: [installer.worker_inbox_group()]}
+    }
+    assert json.loads((harness / "settings.json").read_text()) == expected
     assert (harness / "CLAUDE.md").read_text() == "# run's own\n"
     assert transcript.read_bytes() == own_transcript
 
@@ -362,7 +388,8 @@ def test_the_operator_home_is_never_read_or_written(tmp_path: Path, monkeypatch)
     assert _metadata_snapshot(home) == synthetic_before
     # The seeded hooks are the given operator home's, never the decoy's.
     seeded = json.loads((run / "harness" / "settings.json").read_text())
-    assert seeded["hooks"] == CLAUDE_SETTINGS["hooks"]
+    assert _operator_hooks(seeded) == CLAUDE_SETTINGS["hooks"]
+    assert seeded["hooks"][installer.INBOX_EVENT] == [installer.worker_inbox_group()]
     assert STOP_COMMAND in json.dumps(seeded)
     # Nothing was written into the real harness homes for this run: neither
     # session's transcript appears under the real projects or sessions tree.
@@ -397,7 +424,10 @@ def test_a_fenced_clive_composition_carries_the_operator_stop_hook(tmp_path: Pat
         "harness_home": str(harness),
         "settings": json.loads((harness / "settings.json").read_text()),
     }
-    assert composition["settings"]["hooks"] == CLAUDE_SETTINGS["hooks"]
+    assert _operator_hooks(composition["settings"]) == CLAUDE_SETTINGS["hooks"]
+    assert composition["settings"]["hooks"][installer.INBOX_EVENT] == [
+        installer.worker_inbox_group()
+    ]
     assert STOP_COMMAND in json.dumps(composition["settings"])
     # The fence wraps the launch, so a live worker starts inside it.
     assert plan.argv[0] == _backends.FENCE_BINARY

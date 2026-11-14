@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="every-review-is-kept-as-a-committed-record">
+  <meta name="plan-title" content="A review record without a subject is refused at delivery">
+  <meta name="plan-summary" content="The delivery-side check refuses a scored review record naming neither a reviewed run nor a plan, and the refusal fires at both the pre-flight manifest check and the delivery gate that files the record. The guard already existed and was untested against the current delivery contract: the case's fixture manifest predated the messages_received requirement and failed for that reason alone. The case is repaired and extended to run crew complete --dry-run, so the gate that files the record is measured rather than the pre-flight check alone. Negative control removes the delivery-side subject clauses, the subjectless record then passes delivery and is refused only at promotion.">
+  <meta name="plan-evidence-for" content="every-review-is-kept-as-a-committed-record">
+  <meta name="plan-recorded-at" content="2026-11-13">
+  <meta name="plan-verdict" content="passed">
+  <title>A review record without a subject is refused at delivery | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <h1 id="ready-every-review-is-kept-as-a-co-s22-title">A review record without a subject is refused at delivery</h1>
+    <section id="ready-every-review-is-kept-as-a-co-s22-landing">
+      <h2>Landing</h2>
+      <p id="ready-every-review-is-kept-as-a-co-s22-body">The delivery-time subject
+        guard in <code>reckon/crew/review.py</code> was already present and fires from
+        two callers: <code>review_record_refusals</code> behind
+        <code>crew check --manifest</code>, and <code>store_review_refusals</code>
+        behind the review-filing block in <code>crew complete</code>. Its only
+        test, <code>tests/test_a_subjectless_review_record_is_refused_at_delivery.py</code>,
+        failed at the base revision because its fixture manifest predated the
+        <code>messages_received</code> delivery requirement — three cases red for a
+        reason unrelated to the subject. The fixture is repaired, and two cases are
+        added that invoke <code>crew complete --dry-run</code>, which is the gate that
+        files or refuses the record rather than the pre-flight check alone. Five
+        cases pass at head. Negative control: with the delivery-side subject clauses
+        removed in a scratch tree, the subjectless record passes delivery (its
+        dry-run report carries no <code>review_filed</code> refusal) while
+        <code>store_review</code> still refuses it at promotion, EXIT=1. Gate logs
+        and the control are under the run directory.</p>
+    </section>
+  </main>
+</body>
+</html>

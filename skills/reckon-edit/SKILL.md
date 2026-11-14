@@ -167,6 +167,16 @@ real continuation.
    release, before anything else edits the plan. `reckon-create` states the same
    step for a new plan and references this definition rather than restating it.
 
+   **Answer first, then edit once.** Promote the review run and answer every
+   finding before the plan changes at all: an answer is refused once the plan
+   has moved past the stored review ("the newest stored review … no longer
+   covers the plan"). Then make every edit the findings call for in one burst,
+   commit it, and compose one review of the result. Interleaving answer, edit
+   and compose turns each fix into two rounds; measured 2026-11-11 on one plan,
+   five content rounds in a day, most spent re-answering findings the edits had
+   already met. A prose edit outside the done-when usually owes no new round, so
+   put a clarification there when the done-when already holds.
+
 ```html
 <!-- ❌ WRONG — stub body -->
 <h2 id="s3">§3 · Implementation</h2>
@@ -505,13 +515,13 @@ Copyable landing-beat examples, one per op:
 <!-- landing-beat-examples -->
 ```json
 [
-  {"op": "append_evidence", "plan": "my-plan", "anchor": "s2",
+  {"op": "append_evidence", "plan": "my-plan", "anchor": "s2-data-prep",
    "title": "§2 — data prep pipeline landed",
    "body": "<p>Built <code>src/data_prep.py</code>; 11,237 shots in 3h12m; eval MAE 0.04.</p>"},
   {"op": "set", "path": "section_declarations.s2", "value": "done"},
   {"op": "append", "target": "comments", "section": "s2",
    "item": {"id": "c-close-s2", "who": "reckon-build", "when": "2026-06-24T00:00:00Z",
-     "body": "<p>§2 landed: built <code>src/data_prep.py</code> (commit <code>abc1234</code>); 11,237 shots encoded in 3h12m; eval MAE 0.04. <a href=\"/my-project/evidence/archive/my-plan-landed.html#s2\">evidence</a></p>"}}
+     "body": "<p>§2 landed: built <code>src/data_prep.py</code> (commit <code>abc1234</code>); 11,237 shots encoded in 3h12m; eval MAE 0.04. <a href=\"/my-project/evidence/archive/my-plan-landed.html#s2-data-prep\">evidence</a></p>"}}
 ]
 ```
 

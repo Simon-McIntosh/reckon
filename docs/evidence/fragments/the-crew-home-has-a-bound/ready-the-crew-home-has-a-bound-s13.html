@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="the-crew-home-has-a-bound">
+  <meta name="plan-title" content="The persisted memo store has a bound">
+  <meta name="plan-summary" content="crew gc sweeps reckon's persisted-memo directories, removing entries whose last write is older than a named age threshold and printing each removal; a read does not refresh an entry, so one still in use is rewritten on its next miss.">
+  <meta name="plan-evidence-for" content="reckon:the-crew-home-has-a-bound">
+  <meta name="plan-verifies" content="reckon:the-crew-home-has-a-bound#s13">
+  <meta name="plan-recorded-at" content="2026-11-13">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-tags" content="crew,gc,persisted-memo,cache,snapshot">
+  <title>The persisted memo store has a bound — evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" id="ready-the-crew-home-has-a-bound-s13" data-node="ready-the-crew-home-has-a-bound-s13" data-reckon="landed" data-when="2026-11-13">
+  <h2>crew gc bounds the persisted memo store</h2>
+  <section id="ready-the-crew-home-has-a-bound-s13-measure">
+    <h3>The sweep and its measure</h3>
+    <p>The persisted-memo store writes one file per memo identity under
+    <code>&lt;config home&gt;/cache/&lt;kind&gt;/&lt;digest&gt;-v&lt;version&gt;.json</code>
+    through <code>metadata_index.persisted_memo</code>, and nothing removed them,
+    so every plan edit whose review persists a snapshot digest added a file
+    holding whole prose. <code>reckon/crew/gc.py</code> now declares
+    <code>PERSISTED_MEMO_MAX_AGE_DAYS = 7</code> beside
+    <code>LEDGER_INDEX_UNRECORDED_MAX_AGE_*</code> and sweeps
+    <code>metadata-index</code>, <code>plan-review-coverage</code> and
+    <code>plan-review-snapshot-evidence</code> in both the retention pass and the
+    retention sweep. An entry is judged on its mtime, the last write
+    <code>_write_persisted_memo</code> makes; a read never refreshes it, and a
+    file a process holds or whose stat moved is left alone. Each removal is
+    announced on stderr as
+    <code>removing persisted memo &lt;path&gt; (&lt;n&gt; bytes)</code>, the
+    channel the ledger-cache and picker-view sweeps beside it use, so the pass's
+    JSON report stays the only thing on stdout, and it is recorded in the pass report under <code>persisted_memos</code>.</p>
+    <p>The new test drives the real pass with a temporary config home. It writes
+    one entry older than the threshold and one inside it: an applied pass leaves
+    the recent entry, removes the aged one, and prints its path; a dry pass
+    leaves both. The gc-importing test files show no added failure against base
+    <code>3ddc28c71f</code> — the base arm reports 4 failed, 356 passed, 2 errors
+    and the head arm the same 4 failed ids, 360 passed, so the delta is zero. The
+    two base-arm errors are the staged-write-inventory tests refusing an
+    extracted tree with no git repository, and they do not occur in the head arm.</p>
+    <p><strong>Negative control.</strong> With the removal announcement reverted
+    to <code>print()</code> on stdout, the test fails on
+    <code>assert str(stale) in captured.err</code> (<code>1 failed</code>); with
+    the sweep's memo roots replaced by an empty
+    list, the same pass leaves the aged entry in place and the removal assertion
+    fails. The red log is <code>negative-control.log</code> in the run
+    directory.</p>
+  </section>
+</article>
+</body>
+</html>

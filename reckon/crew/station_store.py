@@ -802,20 +802,26 @@ class StationStore:
                 continue
             parsed_rows.append((path, record))
         records = [record for _, record in parsed_rows]
-        for path, record in parsed_rows:
-            run_id = str(record["run_id"])
-            present.add(run_id)
-            verdict = recovery._watch_snapshot(
-                record,
-                moment=moment,
-                stall_seconds=stall_seconds,
-                cache=cache,
-                pointers=records,
-            )
-            verdicts[run_id] = verdict
-            served = cache.get(run_id)
-            if served is not None:
-                self._write_classification(run_id, path, served[0], served[1])
+        # Every run classified here reads the review store, so the pass shares
+        # one enumeration of each store directory across all of them, as the
+        # producer's pass does; per run, the tick grew with runs times store.
+        from reckon.crew.recovery_memo import _classification_input_tick
+
+        with _classification_input_tick():
+            for path, record in parsed_rows:
+                run_id = str(record["run_id"])
+                present.add(run_id)
+                verdict = recovery._watch_snapshot(
+                    record,
+                    moment=moment,
+                    stall_seconds=stall_seconds,
+                    cache=cache,
+                    pointers=records,
+                )
+                verdicts[run_id] = verdict
+                served = cache.get(run_id)
+                if served is not None:
+                    self._write_classification(run_id, path, served[0], served[1])
         self._drop_absent_classifications(present)
         return verdicts
 

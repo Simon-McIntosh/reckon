@@ -90,6 +90,50 @@ class _CumulativeDiff:
     changed_lines: dict[str, Any]
 
 
+def _merge_repair_scope(
+    record: Mapping[str, Any], *, tree: Path, head: str
+) -> _CumulativeDiff | None:
+    """Measure a repaired head from its common ancestor with primary.
+
+    Only a run that merged primary beyond its dispatch base takes this path.
+    Other runs retain the cited-commit measurement, including its accounting
+    for paths rewritten across commits. Once primary already contains the head,
+    the citations remain the evidence of what the run delivered.
+    """
+    from reckon.crew import merge
+
+    base = str(record.get("base_sha") or "").strip()
+    repository = str(record.get("repo") or "").strip()
+    if not base or not repository or tree.resolve() == Path(repository).resolve():
+        return None
+    primary = merge._run(Path(repository), "rev-parse", "HEAD")
+    if primary.returncode:
+        raise CrewError("cannot read primary for merge-repaired run scope")
+    common = merge._run(tree, "merge-base", primary.stdout.strip(), head)
+    if common.returncode or not common.stdout.strip():
+        raise CrewError("cannot read the merge-repaired run's common ancestor")
+    common_base = common.stdout.strip()
+    if common_base in {head, base}:
+        return None
+    history = merge._run(
+        tree, "rev-list", "--merges", "--first-parent", f"{base}..{head}"
+    )
+    if history.returncode:
+        raise CrewError("cannot read the merge-repaired run's merge history")
+    if not history.stdout.strip():
+        return None
+    try:
+        paths = tuple(
+            path for _status, path in merge._changed_paths(tree, common_base, head)
+        )
+    except merge.MergeError as exc:
+        raise CrewError(f"cannot measure merge-repaired run scope: {exc}") from exc
+    counts = scoped_diff_stat(cwd=tree, base=common_base, head=head, paths=paths)
+    if not counts.get("available", True):
+        raise CrewError("cannot measure merge-repaired run line counts")
+    return _CumulativeDiff(paths, counts)
+
+
 def _committed_scope(
     *, cwd: Path, commits: Sequence[str], run_id: str = ""
 ) -> _CumulativeDiff:
@@ -704,8 +748,12 @@ def _commits_field_declares_absence(
 
 def _manifest_text(record: Mapping[str, Any]) -> str:
     """The run's manifest bytes, or the empty string when it cannot be read."""
+    from reckon.crew.runs import resolve_run_path
+
     try:
-        return Path(str(record["manifest_path"])).read_text(encoding="utf-8")
+        return resolve_run_path(str(record["manifest_path"])).read_text(
+            encoding="utf-8"
+        )
     except (OSError, KeyError):
         return ""
 
@@ -1159,8 +1207,132 @@ def _control_run_shows_a_failure(log_text: str, recorded: int | None) -> bool:
     return _runner_reports_a_failed_run(log_text)
 
 
+#: The largest file the control-log search will read. A run's directory carries
+#: session JSON and stream captures beside its logs; a candidate is a text log,
+#: so a file past this bound is not one and is skipped unread.
+_CONTROL_LOG_READ_LIMIT_BYTES = 8 * 1024 * 1024
+
+
+def _control_log_added_failure_ids(
+    log_text: str, reference_ids: set[str] | None
+) -> set[str]:
+    """The failing ids a control log adds to the arm it is compared against.
+
+    Admission rests on the facts the log's run recorded, never on its wording:
+    the run failed and the log names at least one failing test id the reference
+    arm passes. ``None`` for the reference means no arm was readable, so no
+    comparison can be made and nothing is added.
+    """
+    if reference_ids is None:
+        return set()
+    recorded = _recorded_exit_status(log_text)
+    if not _control_run_shows_a_failure(log_text, recorded):
+        return set()
+    ids = review_module.gate_log_failure_ids(log_text) or set()
+    return set(review_module.failure_ids_covered(reference_ids, ids))
+
+
+def _run_directory_control_log(
+    directory: Path | None,
+    *,
+    reference_ids: set[str] | None,
+    skip: Sequence[Path] = (),
+) -> tuple[str, str] | None:
+    """The first readable log beside the run's manifest that admits its control.
+
+    A worker commonly keeps the red log in its run directory without naming it
+    on the manifest line, and the declaration is discharged by the run it
+    recorded rather than by the field's spelling. Every text file beside the
+    manifest is offered to the same test the named log is held to — the run
+    failed and it adds a failing id to the reference arm — so a log of the
+    wrong mutation, or one whose run passed, is passed over rather than used.
+
+    Files whose name carries ``control`` are offered first, then the rest in
+    name order, so the choice among several admissible logs is deterministic
+    and prefers the one a worker named for the purpose. ``skip`` holds paths
+    already read, so a log that was offered and refused is not read twice.
+    """
+    if directory is None:
+        return None
+    try:
+        if not directory.is_dir():
+            return None
+        entries = list(directory.iterdir())
+    except OSError:
+        return None
+    skipped = {os.path.realpath(str(path)) for path in skip if str(path)}
+    candidates: list[Path] = []
+    for path in entries:
+        try:
+            if not path.is_file():
+                continue
+            if path.stat().st_size > _CONTROL_LOG_READ_LIMIT_BYTES:
+                continue
+        except OSError:
+            continue
+        if os.path.realpath(str(path)) in skipped:
+            continue
+        candidates.append(path)
+    candidates.sort(
+        key=lambda path: (0 if "control" in path.name.lower() else 1, path.name)
+    )
+    for path in candidates:
+        try:
+            text = path.read_text(encoding="utf-8")
+        except (OSError, UnicodeError):
+            continue
+        if _control_log_added_failure_ids(text, reference_ids):
+            return text, str(path)
+    return None
+
+
+def _measured_control(
+    run_id: str, record: Mapping[str, Any], test_files: Sequence[str]
+) -> dict[str, Any] | None:
+    """Run the declared mutation on the landing's measurement partition.
+
+    A run that kept no log of its declared mutation has not produced the
+    evidence its own landing needs, so the landing takes the reading itself:
+    the node's tests are run over a checkout of the run's base revision, where
+    the repair is absent, and the failure they report there is the control the
+    log would have recorded. The reading is submitted to the configured
+    measurement partition, the way an armed arm is.
+
+    ``None`` means the run cannot be measured here — it names no worktree, base
+    revision or armed command, or the base checkout fails — so the caller keeps
+    the refusal it had.
+    """
+    from reckon.crew import landing_measure, queue_landing
+
+    worktree = str(record.get("worktree") or "").strip()
+    repository = str(record.get("repo") or "").strip()
+    base_sha = str(record.get("base_sha") or "").strip()
+    command = str(record.get("suite_command") or "").strip()
+    tree = Path(worktree) if worktree else Path(repository)
+    repo = Path(repository) if repository else tree
+    if not (worktree and base_sha and command and tree.is_dir() and repo.is_dir()):
+        return None
+    try:
+        timeout = queue_landing._measure_timeout(record)
+        config = queue_landing._measure_config(record)
+        with landing_measure.base_checkout(repo, base_sha, timeout) as base_tree:
+            return landing_measure.control_mutation_observation(
+                command=command,
+                tree=tree,
+                base_tree=base_tree,
+                base_sha=base_sha,
+                logs_dir=run_dir(run_id) / "landing-measure" / "control",
+                test_files=test_files,
+                timeout=timeout,
+                project=str(record.get("project") or ""),
+                config=config,
+            )
+    except (OSError, ValueError, landing_measure.BaseCheckoutError):
+        return None
+
+
 def _arm_describes_the_cited_log(
-    arm: Mapping[str, Any], log_path: str, log_text: str
+    arm: Mapping[str, Any], log_path: str, log_text: str | None
 ) -> bool:
     """Whether a suite arm names the log the gate cites.
 
@@ -1168,14 +1340,24 @@ def _arm_describes_the_cited_log(
     names this log is compared with it: an arm describing another run's log
     answers about that run, and holding it to this log's figures would refuse a
     receipt for a fact it never claimed.
+
+    The two paths are compared by their resolved form, because the manifest and
+    the gate citation are written by different hands: one may spell a log
+    relatively and the other absolutely, and compared as text those are two
+    files. ``log_text`` is the cited log's own content, needed for the digest
+    comparison; ``None`` means the text could not be read here, so only the
+    path can match — an unread log must not be compared against the digest of
+    the empty string, which would name a log that has none of its content.
     """
     recorded_path = str(arm.get("log_path") or "").strip()
-    if recorded_path and (
-        Path(recorded_path).expanduser() == Path(log_path).expanduser()
-    ):
-        return True
+    if recorded_path and log_path:
+        same_file = os.path.realpath(
+            os.path.expanduser(recorded_path)
+        ) == os.path.realpath(os.path.expanduser(log_path))
+        if same_file:
+            return True
     recorded_digest = str(arm.get("log_digest") or "").strip()
-    if recorded_digest:
+    if recorded_digest and log_text is not None:
         digest = hashlib.sha256(log_text.encode("utf-8")).hexdigest()
         if recorded_digest == digest:
             return True
@@ -1190,9 +1372,10 @@ def _log_failure_count(log_text: str) -> int | None:
     carries a percentage, and its test programs print counts of their own
     (``0 failed`` among them), so the pytest reader matched a program's line
     and reported zero for a suite with failures. ctest's own count is the
-    number of entries in its ``The following tests FAILED:`` block, which is
-    the same set the ids comparison reads, so the two figures cannot disagree
-    about which tests failed.
+    number of entries across its ``The following tests FAILED:`` blocks — one
+    block per ctest invocation, so a multi-label gate contributes every label's
+    failures — which is the same set the ids comparison reads, so the two
+    figures cannot disagree about which tests failed.
 
     ``None`` means the log is in neither format and so states no count at all.
     The caller leaves the count uncompared rather than reading the absence as
@@ -1207,17 +1390,39 @@ def _log_failure_count(log_text: str) -> int | None:
     return review_module.pytest_summary_failure_count(log_text)
 
 
+def _text_the_receipt_describes(log_text: str) -> str:
+    """The part of a gate log one receipt's figures describe.
+
+    A receipt states the figures of the gate it ran. How much of the log those
+    figures span is the log's own convention. A pytest log holds one run per
+    attempt at the same suite, so the receipt describes the last of them, the
+    one whose exit status the capture records at the tail. A ctest gate may
+    invoke ctest once per label, appending one run per label into the same log,
+    and there the labels are one gate rather than successive attempts:
+    inherited failures in an earlier label belong to the receipt even when the
+    final label is clean, so the whole log is what the receipt describes.
+    """
+    if review_module._gate_log_format(log_text) == "ctest":
+        return log_text
+    return review_module.last_run_text(log_text)
+
+
 def _receipt_mismatches(
     arm: Mapping[str, Any] | None, log_path: str, log_text: str
 ) -> list[str]:
     """Name every figure in a suite arm the cited log does not agree with.
 
     The arm is the receipt: the exit status, the failure count and the failure
-    ids a worker asserted for one gate. The log is the evidence. A log holding
-    two runs makes the comparison worth making — a receipt copied from the first
+    ids a worker asserted for one gate. The log is the evidence. What the
+    receipt describes depends on how its runner writes a log. A pytest log
+    holding two runs holds two attempts at one suite, so its figures are the
+    last run's, the one the status comes from: a receipt copied from the first
     run's figures beside the second run's status passes every check that reads
-    only the tail — so each figure is read from the log's last run, the one the
-    status comes from.
+    only the tail. A ctest gate runs ctest once per label into one log, so its
+    labels are one gate rather than successive attempts, and a receipt states
+    the gate's figures whole — every label's failures together. Reading only the
+    last label refuses an honest receipt whose gate inherited failures in an
+    earlier label and ran clean in its final one.
 
     The failure count is read in the log's own format (``_log_failure_count``),
     so a ctest receipt is counted by its FAILED block rather than by a pytest
@@ -1233,33 +1438,33 @@ def _receipt_mismatches(
         return []
     if not _arm_describes_the_cited_log(arm, log_path, log_text):
         return []
-    last_run = review_module.last_run_text(log_text)
+    read_text = _text_the_receipt_describes(log_text)
     mismatches: list[str] = []
     recorded_count = arm.get("failure_count")
     if isinstance(recorded_count, int) and not isinstance(recorded_count, bool):
-        measured = _log_failure_count(last_run)
+        measured = _log_failure_count(read_text)
         if measured is not None and measured != recorded_count:
             mismatches.append(
-                f"its failure_count records {recorded_count} and the log's last "
-                f"run names {measured} failed or errored test(s)"
+                f"its failure_count records {recorded_count} and the log names "
+                f"{measured} failed or errored test(s)"
             )
     recorded_ids = arm.get("failure_ids")
     if isinstance(recorded_ids, list) and all(
         isinstance(test_id, str) for test_id in recorded_ids
     ):
-        log_ids = review_module.gate_log_failure_ids(log_text, last_run=True)
+        log_ids = review_module.gate_log_failure_ids(read_text)
         if log_ids is not None:
             matched = review_module.failure_ids_match(recorded_ids, log_ids)
             if matched.unmatched_head:
                 mismatches.append(
-                    "the log's last run reports "
+                    "the log reports "
                     f"{sorted(matched.unmatched_head)!r}, which its failure_ids "
                     "do not cover"
                 )
             if matched.unmatched_base:
                 mismatches.append(
                     f"its failure_ids name {sorted(matched.unmatched_base)!r}, "
-                    "which the log's last run does not report"
+                    "which the log does not report"
                 )
     return mismatches
 
@@ -1279,11 +1484,14 @@ def _require_gate_log_agrees(
     routing would otherwise treat as evidence.
 
     The record is read for the one arm that carries the run's own figures for
-    that gate, its manifest's ``after_suite``. Those figures — the exit status,
-    the failure count and the failure ids — are the receipt, and the log is the
-    evidence they claim: a receipt copied from the first of two runs in one log
-    agrees with the tail's status while naming the other run's failures, which
-    every check that reads only the tail would accept.
+    that gate: the head arm of the suite pair the gate belongs to, selected by
+    :func:`_suite_pair_for_gate`, so a gate on a further recorded pair is
+    compared with that pair's head and not with the default pair's
+    ``after_suite``, which describes another suite's run. Those figures — the
+    exit status, the failure count and the failure ids — are the receipt, and
+    the log is the evidence they claim: a receipt copied from the first of two
+    runs in one log agrees with the tail's status while naming the other run's
+    failures, which every check that reads only the tail would accept.
 
     It refuses on the following observable shapes and names which it found:
 
@@ -1377,17 +1585,19 @@ def _require_gate_log_agrees(
             "or re-promote with the verdict the evidence actually shows"
         )
     manifest = _fresh_manifest(record)
-    arm = manifest.get("after_suite") if isinstance(manifest, Mapping) else None
+    selected = _suite_pair_for_gate(manifest, gate_check)
+    arm = selected[1] if selected is not None else None
     mismatches = _receipt_mismatches(arm, log_path, log_text)
     if mismatches:
+        arm_name = selected[3] if selected is not None else "after_suite"
         raise CrewError(
             f"run {run_id!r} asserts gate 'passed' and its cited log "
-            f"{log_path!r} does not agree with the after_suite arm that "
+            f"{log_path!r} does not agree with the {arm_name} arm that "
             f"describes it: {'; '.join(mismatches)}. Found: a receipt figure "
             "that disagrees with its log. The arm and the log are two records "
-            "of one run, so a figure only the first of two runs in the log "
-            "could produce is a receipt copied from that run. Correct the arm "
-            "to the last run's figures, or re-run the gate into its own log"
+            "of one gate, and a figure only one part of the log could produce "
+            "is a receipt copied from another. Correct the arm to the figures "
+            "the log reports, or re-run the gate into its own log"
         )
     command = str(gate_check.get("command") or "").strip()
     if _PYTEST_COMMAND.search(command):
@@ -1402,6 +1612,30 @@ def _require_gate_log_agrees(
                 "reached no pytest summary. Finish the run and cite its log, "
                 "or cite the command that produced the run the log records"
             )
+
+
+_SUITE_ARM_NAMES = ("baseline_suite", "after_suite")
+
+
+def _gate_cited_log_text(gate_check: Mapping[str, Any] | None) -> str | None:
+    """The text of the log a gate cites, or ``None`` when it cannot be read here.
+
+    The pair selector and the failure-id reader both need the log the gate
+    cites: one to compare a digest against, the other to read its failing ids.
+    An absent citation and an unreadable one are the same absence of text, and
+    each caller decides what that means for its own comparison.
+    """
+    raw = (
+        str(gate_check.get("log_path") or "").strip()
+        if isinstance(gate_check, Mapping)
+        else ""
+    )
+    if not raw:
+        return None
+    try:
+        return Path(raw).expanduser().read_text(encoding="utf-8", errors="replace")
+    except OSError:
+        return None
 
 
 def _head_arm_log_failure_ids(gate_check: Mapping[str, Any] | None) -> set[str] | None:
@@ -1419,16 +1653,97 @@ def _head_arm_log_failure_ids(gate_check: Mapping[str, Any] | None) -> set[str] 
     format-aware reader directly: the two need the same ids but not the same
     reading of an unreadable log.
     """
-    if not isinstance(gate_check, Mapping):
-        return None
-    raw = str(gate_check.get("log_path") or "").strip()
-    if not raw:
-        return None
-    try:
-        log_text = Path(raw).expanduser().read_text(encoding="utf-8", errors="replace")
-    except OSError:
+    log_text = _gate_cited_log_text(gate_check)
+    if log_text is None:
         return None
     return review_module.gate_log_failure_ids(log_text)
+
+
+def _head_arm_cites_gate(head: Any, gate_check: Mapping[str, Any] | None) -> bool:
+    """Whether a pair's head arm is the observation the gate's log records.
+
+    The arm names its log by path or by digest, and the gate cites its log the
+    same two ways, so the match is asked on whichever the gate carries: a gate
+    that names a path is matched through :func:`_arm_describes_the_cited_log`,
+    which reads the log once for the digest leg, and a gate that cites only a
+    digest is matched against the arm's digest. An arm with neither, and a gate
+    citing neither, match nothing.
+    """
+    if not isinstance(head, Mapping) or not isinstance(gate_check, Mapping):
+        return False
+    gate_log = str(gate_check.get("log_path") or "").strip()
+    if gate_log:
+        return _arm_describes_the_cited_log(
+            head, gate_log, _gate_cited_log_text(gate_check)
+        )
+    gate_digest = str(gate_check.get("log_digest") or "").strip()
+    recorded = str(head.get("log_digest") or "").strip()
+    return bool(gate_digest) and recorded == gate_digest
+
+
+def _recorded_suite_pairs(
+    manifest: Mapping[str, Any] | None,
+) -> list[tuple[str, Any, Any]]:
+    """The further suite pairs a manifest records, as ``(name, base, head)``.
+
+    A run that measures more than one suite records each further pair under the
+    manifest's ``suite_pairs`` mapping from a pair name to its ``base`` and
+    ``head`` arms. An entry that is not a mapping carries no arms and is not a
+    pair, so it is skipped rather than read as one; a manifest recording no such
+    field yields no pairs at all.
+    """
+    if not isinstance(manifest, Mapping):
+        return []
+    recorded = manifest.get("suite_pairs")
+    if not isinstance(recorded, Mapping):
+        return []
+    pairs: list[tuple[str, Any, Any]] = []
+    for name, pair in recorded.items():
+        if not isinstance(pair, Mapping):
+            continue
+        pairs.append((str(name), pair.get("base"), pair.get("head")))
+    return pairs
+
+
+def _suite_pair_for_gate(
+    manifest: Mapping[str, Any] | None, gate_check: Mapping[str, Any] | None
+) -> tuple[Any, Any, str, str] | None:
+    """The suite pair a gate is measured against.
+
+    Returns ``(base_arm, head_arm, base_name, head_name)``, and ``None`` when
+    there is no manifest to read. The two names are the fields the arms were
+    found in, quoted by the refusal so a reader is sent to the field the base
+    sits in rather than to a default pair the run never recorded — a further
+    pair's arm is named ``suite_pairs.<pair>.base`` or ``.head``.
+
+    A gate belongs to the pair whose head arm cites the gate's own log: a run
+    may measure several suites, each with its own inherited failures, and
+    judging a second suite's gate against the default pair's base reads every
+    one of those inherited ids as added. The arm is matched by the rule
+    :func:`_arm_describes_the_cited_log` already owns — by path, resolved so a
+    relative and an absolute spelling of one file agree, or by digest — so an
+    arm naming its log by digest alone is matched rather than silently falling
+    back to the default pair.
+
+    The default ``baseline_suite``/``after_suite`` pair is asked first and stays
+    the fallback, so a manifest that records no further pairs — and one whose
+    head arms cite other logs — is measured exactly as it was before the field
+    existed. A gate that cites neither a log path nor a digest selects the
+    default pair, because there is nothing to match a recorded pair's head
+    against.
+    """
+    if not isinstance(manifest, Mapping):
+        return None
+    base_name, head_name = _SUITE_ARM_NAMES
+    for name, base, head in [
+        (base_name, manifest.get(base_name), manifest.get(head_name)),
+        *_recorded_suite_pairs(manifest),
+    ]:
+        if _head_arm_cites_gate(head, gate_check):
+            if name in _SUITE_ARM_NAMES:
+                return base, head, base_name, head_name
+            return base, head, f"suite_pairs.{name}.base", f"suite_pairs.{name}.head"
+    return manifest.get(base_name), manifest.get(head_name), base_name, head_name
 
 
 def _red_base_uncovered_ids(
@@ -1458,12 +1773,22 @@ def _red_base_uncovered_ids(
     that cannot be read each leave the delta unmeasured and report ``None``.
     The empty set means the comparison was made and found nothing uncovered,
     which is a different fact from a comparison that could not be made.
+
+    The pair compared with is the one the gate belongs to, read by
+    ``_suite_pair_for_gate``: a run that measured more than one suite records
+    each further pair under ``suite_pairs``, and a gate on a second suite judged
+    against the default pair's base reads that suite's inherited failures as
+    added. A gate whose log matches no recorded pair's head falls back to the
+    default pair, which is the behaviour a manifest recording no further pairs
+    keeps unchanged.
     """
     manifest = _fresh_manifest(record)
     if manifest is None:
         return None
-    baseline = manifest.get("baseline_suite")
-    after = manifest.get("after_suite")
+    selected = _suite_pair_for_gate(manifest, gate_check)
+    if selected is None:
+        return None
+    baseline, after, _base_name, _head_name = selected
     if not isinstance(baseline, Mapping) or not isinstance(after, Mapping):
         return None
     for arm in (baseline, after):
@@ -1499,7 +1824,10 @@ def _zero_added_against_a_red_base(
     return _red_base_uncovered_ids(record, gate_check) == set()
 
 
-def _arm_without_completion(manifest: Mapping[str, Any] | None) -> str | None:
+def _arm_without_completion(
+    manifest: Mapping[str, Any] | None,
+    gate_check: Mapping[str, Any] | None = None,
+) -> str | None:
     """Name the first recorded suite arm that does not declare its run complete.
 
     The refusal beside a nonzero exit status names the arm whose withheld
@@ -1507,11 +1835,18 @@ def _arm_without_completion(manifest: Mapping[str, Any] | None) -> str | None:
     observation to finish and record. Only an arm the manifest actually
     records can be named: an arm that is absent is not an arm that omitted the
     key, and calling it uncompleted would state a fact its absence does not.
+
+    The arms named are those of the pair the gate is measured against, so a gate
+    on a further recorded pair names that pair's own arm rather than the
+    default pair's, which the run may have completed and left alone.
     """
     if manifest is None:
         return None
-    for name in ("baseline_suite", "after_suite"):
-        observation = manifest.get(name)
+    selected = _suite_pair_for_gate(manifest, gate_check)
+    if selected is None:
+        return None
+    base, head, base_name, head_name = selected
+    for name, observation in ((base_name, base), (head_name, head)):
         if not isinstance(observation, Mapping):
             continue
         if observation.get("completed") is not True:
@@ -1519,23 +1854,39 @@ def _arm_without_completion(manifest: Mapping[str, Any] | None) -> str | None:
     return None
 
 
-_SUITE_ARM_NAMES = ("baseline_suite", "after_suite")
-
-
-def _missing_suite_arms_clause(manifest: Mapping[str, Any] | None) -> str:
-    """Name the arm shapes a manifest recording no suite observation lacks.
+def _missing_suite_arms_clause(
+    manifest: Mapping[str, Any] | None,
+    gate_check: Mapping[str, Any] | None = None,
+) -> str:
+    """Name the arm shapes the pair a gate is measured against lacks.
 
     A passing verdict beside a nonzero exit can only be the delta verdict when
-    the run records both arms, and a manifest recording neither has no delta to
-    read: the refusal says so rather than leaving the reader to infer it from a
-    rule about arms that are not there. The shape each arm takes is read from
+    the run records both arms of the pair the gate belongs to, and a manifest
+    recording neither has no delta to read: the refusal says so rather than
+    leaving the reader to infer it from a rule about arms that are not there.
+    The shape each arm takes is read from
     ``ledger.suite_observation_missing_fields`` rather than restated, so a field
     added to the arm's contract is named here without a second edit.
+
+    A manifest that records further pairs whose head arms cite other logs is
+    named as such: the gate matched none of them, so the default pair is what it
+    would have been compared with, and saying only that the default arms are
+    absent would leave the recorded pairs looking unread.
     """
     if isinstance(manifest, Mapping) and any(
         manifest.get(name) is not None for name in _SUITE_ARM_NAMES
     ):
         return ""
+    recorded = _recorded_suite_pairs(manifest)
+    if recorded:
+        names = ", ".join(repr(name) for name, _base, _head in recorded)
+        return (
+            ", and the manifest records further suite pairs "
+            f"({names}) whose head arms cite no log this gate names, so the "
+            "default pair is the one this gate falls back to and the manifest "
+            "records neither a 'baseline_suite' nor an 'after_suite' arm to "
+            "read a delta against"
+        )
     shapes = "; then ".join(
         ", ".join(ledger_module.suite_observation_missing_fields({}, name=name))
         for name in _SUITE_ARM_NAMES
@@ -1610,8 +1961,8 @@ def _require_verdict_matches_exit_status(
     if uncovered == set():
         return
     fresh_manifest = _fresh_manifest(record)
-    incomplete = _arm_without_completion(fresh_manifest)
-    missing_arms = _missing_suite_arms_clause(fresh_manifest)
+    incomplete = _arm_without_completion(fresh_manifest, gate_check)
+    missing_arms = _missing_suite_arms_clause(fresh_manifest, gate_check)
     withheld = (
         ""
         if incomplete is None

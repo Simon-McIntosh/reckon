@@ -71,6 +71,7 @@ from collections.abc import Callable, Mapping, Sequence
 from contextlib import ExitStack, contextmanager, suppress
 from contextvars import ContextVar
 from datetime import UTC, date, datetime
+from html.parser import HTMLParser
 from pathlib import Path
 from typing import IO, Any, TextIO
 
@@ -678,6 +679,92 @@ def write_json_atomically(
 # ── HTML-state helpers ────────────────────────────────────────────────────
 
 
+class _AuthoredChildCounter(HTMLParser):
+    """Count each section's authored direct children in one raw pass.
+
+    The read-time diagnostic must answer "does this empty-parsed section hold
+    authored children, and how many?" for every section id in the document.
+    A soup build per section answers the same question at the price of a soup
+    build per section, and a read whose state came from a persisted parse has
+    already paid for the document once — this counter is the diagnostic's own
+    read of the raw text, so that read answers without a second tree.
+
+    The count matches what the soup walk reports: the first ``section``
+    carrying a given ``data-reckon`` value, its direct element children, and
+    none of the structural children the renderers regenerate.
+    """
+
+    def __init__(
+        self,
+        wanted: Sequence[str],
+        *,
+        structural: Sequence[str],
+        void: Sequence[str],
+    ) -> None:
+        super().__init__(convert_charrefs=False)
+        self._wanted = frozenset(wanted)
+        self._structural = frozenset(structural)
+        self._void = frozenset(void)
+        self._open: list[tuple[str, str | None]] = []
+        self.counts: dict[str, int] = {}
+
+    def _claim(self, attrs) -> str | None:
+        """Record the section id this element opens, when it opens a wanted one.
+
+        Only the first section carrying a given ``data-reckon`` value is the
+        one the diagnostic names, so a repeat of the same value opens no second
+        count.
+        """
+
+        values = dict(attrs)
+        reckon_id = values.get("data-reckon")
+        if reckon_id not in self._wanted or reckon_id in self.counts:
+            return None
+        self.counts[reckon_id] = 0
+        return reckon_id
+
+    def _count_child(self, tag: str) -> None:
+        parent = self._open[-1][1] if self._open else None
+        if parent is not None and tag not in self._structural:
+            self.counts[parent] += 1
+
+    def handle_starttag(self, tag: str, attrs) -> None:
+        self._count_child(tag)
+        claimed = self._claim(attrs)
+        if claimed is not None:
+            self._open.append((tag, claimed))
+        elif tag not in self._void:
+            self._open.append((tag, None))
+
+    def handle_startendtag(self, tag: str, attrs) -> None:
+        self._count_child(tag)
+        self._claim(attrs)
+
+    def handle_endtag(self, tag: str) -> None:
+        # The innermost open element with this name closes, and everything it
+        # encloses closes with it; a stray end tag opens nothing to close.
+        for index in range(len(self._open) - 1, -1, -1):
+            if self._open[index][0] == tag:
+                del self._open[index:]
+                return
+
+
+def _authored_child_counts(
+    html_text: str, section_ids: Sequence[str]
+) -> dict[str, int]:
+    """Each section's authored direct-child count, from one raw pass."""
+    from reckon import _plan_html
+
+    counter = _AuthoredChildCounter(
+        section_ids,
+        structural=_plan_html._STRUCTURAL_SECTION_CHILDREN,
+        void=_plan_html._VOID_TAGS,
+    )
+    counter.feed(html_text or "")
+    counter.close()
+    return counter.counts
+
+
 def _unparsed_section_warnings(html_text: str, state: dict[str, Any]) -> list[str]:
     """Warn about data-reckon sections holding authored children the parser
     did not recognise.
@@ -690,14 +777,23 @@ def _unparsed_section_warnings(html_text: str, state: dict[str, Any]) -> list[st
     state it already gets back instead of meeting it only as a write refusal.
     Sections absent from ``state`` are covered too: an absent section has no
     authored children either, so nothing is warned about.
+
+    The counts come from one raw pass over the text, not from a soup per
+    section: a read answered by the persisted parse has already paid to know
+    the document, and this diagnostic only has to look at the bytes. The
+    counts are computed on the first section that needs one, so a document
+    whose every section parsed pays nothing.
     """
     from reckon import _plan_html
 
     out: list[str] = []
+    counts: dict[str, int] | None = None
     for reckon_id in _plan_html.SECTION_IDS:
         if state.get(reckon_id):
             continue  # parsed content is present — nothing unrecognised
-        count = _plan_html._authored_child_count(html_text, reckon_id)
+        if counts is None:
+            counts = _authored_child_counts(html_text, _plan_html.SECTION_IDS)
+        count = counts.get(reckon_id, 0)
         if count == 0:
             continue  # missing or genuinely empty section — nothing at risk
         spelling = _plan_html._SECTION_RECOGNISED_SPELLING.get(reckon_id)
@@ -905,6 +1001,7 @@ _WRITE_EFFECT_KINDS = (
     "evidence_appends",
     "section_field_edits",
     "section_dependency_edits",
+    "descope_reason_edits",
     "plan_meta_removals",
     "declaration_removals",
     "section_moves",
@@ -1590,6 +1687,7 @@ def _write_state_locked(
     evidence_appends = _consume_write_effects("evidence_appends", data)
     section_field_edits = _consume_write_effects("section_field_edits", data)
     section_dependency_edits = _consume_write_effects("section_dependency_edits", data)
+    descope_reason_edits = _consume_write_effects("descope_reason_edits", data)
     meta_removals = _consume_write_effects("plan_meta_removals", data)
     declaration_removals = _consume_write_effects("declaration_removals", data)
     section_moves = _consume_write_effects("section_moves", data)
@@ -1682,6 +1780,13 @@ def _write_state_locked(
             # already on the page rather than through the state dict.
             source_text = _store_section_ops.apply_section_dependency_edits(
                 source_text, section_dependency_edits
+            )
+        if descope_reason_edits:
+            # The reasons map is a head meta too, rewritten from the mapping
+            # already on the page so a write lands its own sections and leaves
+            # its siblings' reasons alone.
+            source_text = _apply_descope_reason_edits(
+                source_text, descope_reason_edits
             )
         if meta_removals:
             source_text = _store_section_ops.apply_meta_removals(
@@ -2969,12 +3074,20 @@ def _carry_descope_reason(
     declaration: Any,
     reason: str | None,
 ) -> None:
-    """Put the reason on the section's typed record.
+    """Put the reason on the section's typed record, or in the reasons map.
 
-    The record is what the page carries and what a read parses, so the reason
-    lives there rather than in a map beside the declarations. A declaration that
-    is not ``descoped`` carries no reason, so any reason the section held before
-    is cleared rather than left behind contradicting the declaration.
+    The record is what the page carries and what a read parses, so a section
+    that has one keeps its reason there. A plan can declare a section it
+    carries no record for — a plan whose headings are bare ``<h2>`` elements
+    and whose work is a declarations map — and there is no record to hold the
+    reason, so it goes in the ``plan-descope-reasons`` map the read parses out
+    beside the declarations. Without that store no descope could be written on
+    such a plan at all, which is what left the refusal naming a remedy that
+    could not run.
+
+    A declaration that is not ``descoped`` carries no reason, so any reason the
+    section held before is cleared from whichever store held it rather than
+    left behind contradicting the declaration.
 
     A move records its successor on the record as a link, but only once the
     write knows which checkout it is resolving against — the successor is a
@@ -2989,16 +3102,58 @@ def _carry_descope_reason(
             )
     else:
         reason = None
+    carried = False
     sections = working.get("sections")
-    if not isinstance(sections, list):
-        return
-    for section in sections:
-        if isinstance(section, dict) and section.get("id") == section_id:
-            if reason is None:
-                section.pop("descope_reason", None)
-            else:
-                section["descope_reason"] = reason
-            break
+    if isinstance(sections, list):
+        for section in sections:
+            if isinstance(section, dict) and section.get("id") == section_id:
+                if reason is None:
+                    section.pop("descope_reason", None)
+                else:
+                    section["descope_reason"] = reason
+                carried = True
+                break
+    existing = working.get("descope_reasons")
+    reasons = dict(existing) if isinstance(existing, Mapping) else {}
+    if reason is None or carried:
+        reasons.pop(section_id, None)
+    else:
+        reasons[section_id] = reason
+    if reasons or isinstance(existing, Mapping):
+        working["descope_reasons"] = reasons
+    # The map is also queued as a document edit: the write path schema-validates
+    # the state dict and drops any key the typed contract does not carry, so a
+    # map held only in the dict would guard the batch and then be lost on the
+    # way to disk.
+    _queue_write_effect(
+        "descope_reason_edits",
+        working,
+        {"section": section_id, "reason": reasons.get(section_id) or ""},
+    )
+
+
+def _apply_descope_reason_edits(
+    source_text: str, requests: list[dict[str, str]]
+) -> str:
+    """Rewrite the ``plan-descope-reasons`` meta from queued edits.
+
+    Each request sets one section's reason, or removes the section's entry when
+    the reason is empty. The mapping is read back from the document, so an edit
+    lands on the reasons already on the page rather than replacing its
+    siblings. An empty mapping removes the meta entirely, which the read parses
+    as no descope reasons at all.
+    """
+    from reckon import _plan_html
+
+    if not requests:
+        return source_text
+    edits = []
+    for request in requests:
+        reason = str(request.get("reason") or "").strip()
+        edits.append((str(request["section"]), reason or None))
+    return _plan_html.edit_keyed_meta(
+        source_text, _plan_html.DESCOPE_REASONS_META, edits
+    )
 
 
 def _require_descope_reasons(state: Mapping[str, Any]) -> None:
@@ -3016,6 +3171,13 @@ def _require_descope_reasons(state: Mapping[str, Any]) -> None:
         for record in state.get("sections") or []
         if isinstance(record, Mapping)
     }
+    # The record is consulted first and the reasons map second: a plan without
+    # section records has no other store, and a plan with them keeps the reason
+    # where it has always lived.
+    stored_reasons = state.get("descope_reasons")
+    if isinstance(stored_reasons, Mapping):
+        for section, reason in stored_reasons.items():
+            reasons.setdefault(str(section), str(reason or "").strip())
     missing = sorted(
         str(section)
         for section, classification in declarations.items()
@@ -3558,23 +3720,47 @@ def _apply_set(working: dict, op: dict, is_index: bool, warnings: list[str]) -> 
         # the map alone left the records contradicting it, and the plan refused
         # the file that write produced on the way back in.
         if isinstance(value, dict):
-            # A reason is part of the descoped declaration, and the whole map
-            # carries no place for one, so a descoped entry is written through
-            # the dotted form that does rather than stored unreasoned.
-            unreasoned = sorted(
-                str(section)
-                for section, declaration in value.items()
-                if isinstance(declaration, str) and declaration == "descoped"
-            )
-            if unreasoned:
-                raise OpError(
-                    "a descoped section must state why it was dropped; the whole "
-                    f"map carries no reason for {', '.join(unreasoned)} — set "
-                    "section_declarations.<id> to "
-                    '{"status": "descoped", "reason": "<why>"} instead'
+            # Each entry is normalised through the same split the dotted form
+            # uses, so a reasoned value is accepted here and the stored map
+            # stays a map of strings. A plain string entry carries no reason,
+            # and ``_carry_descope_reason`` refuses a descoped one — naming the
+            # reasoned form the dotted write accepts.
+            from reckon._schema import SECTION_DECLARATION_ENUM
+
+            normalised: dict[str, Any] = {}
+            for declared_id, declared_value in value.items():
+                declared_section = str(declared_id)
+                declaration, reason, moved_to = _descoped_declaration_value(
+                    declared_section, declared_value
                 )
-            for declared_id, declared_status in value.items():
-                _move_section_record(working, declared_id, declared_status)
+                if declaration not in SECTION_DECLARATION_ENUM:
+                    raise OpError(
+                        "section declaration must be one of "
+                        f"{SECTION_DECLARATION_ENUM}; got {declared_value!r}"
+                    )
+                normalised[declared_section] = declaration
+                _move_section_record(working, declared_section, declaration)
+                _carry_descope_reason(working, declared_section, declaration, reason)
+                if moved_to is not None:
+                    from reckon._schema import parse_plan_ref
+
+                    ref = parse_plan_ref(moved_to)
+                    if ref is None or not ref.stage:
+                        raise OpError(
+                            f"section_declarations.{declared_section}.moved_to: "
+                            f"{moved_to!r} does not name a section; expected "
+                            "[project:]slug#section"
+                        )
+                    _queue_write_effect(
+                        "section_moves",
+                        working,
+                        {
+                            "section": declared_section,
+                            "moved_to": moved_to,
+                            "reason": reason or "",
+                        },
+                    )
+            value = normalised
         working[head] = value
         return
     if head == "decisions" and len(parts) >= 3:
@@ -4066,6 +4252,57 @@ def _apply_accept(working: dict, op: dict, is_index: bool, warnings: list[str]) 
     }
 
 
+def _apply_withdraw(working: dict, op: dict, is_index: bool, warnings: list[str]) -> None:
+    """Withdraw an unlocked decision, keeping its reason and date in the plan.
+
+    A withdrawal takes a decision out of the wait without pretending anyone
+    chose: the entry stays in the plan's record with its reason in
+    ``rationale`` and the date in ``when``, which are the fields the plan
+    reader renders and the roadmap already reads as holding no section. No
+    choice is recorded, so nothing reads a withdrawal as a decision that was
+    made.
+
+    A locked decision carries someone's answer, so withdrawing it is refused
+    naming the decision rather than silently discarding that answer, and a
+    withdrawal that states no reason is refused the way a descope without one
+    is: a record that says only "withdrawn" leaves the next reader unable to
+    tell why the block went.
+    """
+    if is_index:
+        raise OpError("withdraw op is plan-only")
+    key = op.get("key")
+    if not key:
+        raise OpError("withdraw op requires a 'key'")
+    reason = str(op.get("reason") or "").strip()
+    if not reason:
+        raise OpError(
+            f"withdrawing decision {key!r} requires a 'reason' saying why it goes"
+        )
+    decisions = working.setdefault("decisions", {})
+    if not isinstance(decisions, dict):
+        raise OpError("plan has no decisions map")
+    existing = decisions.get(key)
+    if not isinstance(existing, dict):
+        raise OpError(f"decision {key!r} does not exist")
+    if str(existing.get("choice") or "").strip():
+        raise OpError(
+            f"decision {key!r} is locked and cannot be withdrawn; only an "
+            "unlocked decision can be withdrawn"
+        )
+    decisions[key] = {
+        **existing,
+        "choice": "",
+        "rationale": reason,
+        "when": _utc_ts(),
+        "by": op.get("by", ""),
+        # A withdrawn decision governs nothing, and a recommendation left on it
+        # would let an ``accept`` op read the withdrawal back as a choice.
+        "sections": [],
+        "recommended": "",
+        "recommended_by": "",
+    }
+
+
 def _apply_gate(working: dict, op: dict, is_index: bool, warnings: list[str]) -> None:
     """Declare one evidence gate with a stable identity."""
     if is_index:
@@ -4316,6 +4553,7 @@ _OP_DISPATCH = {
     "resolve": _apply_resolve,
     "lock": _apply_lock,
     "accept": _apply_accept,
+    "withdraw": _apply_withdraw,
     "gate": _apply_gate,
     "pass": _apply_gate_verdict,
     "fail": _apply_gate_verdict,

@@ -1,0 +1,81 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "01e38f1509b7c97728da9f6d2a613988de6b35dc",
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/crew/obligations.py:3482",
+    "reckon/crew/obligations.py:1128",
+    "reckon/crew/obligation_snapshot.py:1364",
+    "reckon/crew/obligation_snapshot.py:1512",
+    "reckon/crew/station_subscriber.py:155"
+  ],
+  "completed_at": "2026-11-12T14:22:39.087Z",
+  "dimension_dispositions": {
+    "evidence": {
+      "kind": "folded",
+      "node": "repair-of-delivered-review-reads-as-awaiting-promotion-a3bffb83451a",
+      "recorded_at": "2026-11-12T14:48:22.199320+00:00"
+    }
+  },
+  "dispatched_at": "2026-11-12T14:14:39Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "folded",
+      "node": "repair-of-delivered-review-reads-as-awaiting-promotion-a3bffb83451a",
+      "recorded_at": "2026-11-12T14:48:19.085374+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/the-monitor-reads-each-fact-once/delivered-review-reads-as-awaiting-promotion.html",
+      "line": "26",
+      "severity": "blocking",
+      "text": "blocking: the matched importer arms are not the done_when's population. The gate ran tests/test_crew_obligations.py (an importer) plus tests/test_staged_write_inventory.py (not an importer, it only names obligations.py as a path string), while the repository's own selector reckon/crew/landing_measure.py:235 importer_population returns 119 test files for the two changed modules reconcile/crew/obligations.py and reckon/crew/recovery_classification.py. So 1 of 119 importing files ran at either revision, and the run's manifest evidence_inputs claim that the arms 'run the population that imports reckon.crew.obligations' is false. The all_debug partition requirement is met (sacct: jobs 1311838 and 1311854 COMPLETED on all_debug), so this is the population half only, but the done_when asserts the importer population and it is unmeasured."
+    },
+    {
+      "file": "reckon/crew/recovery_classification.py",
+      "line": "669",
+      "severity": "non-blocking",
+      "text": "non-blocking: recovery_classification.py is modified (DELIVERED_REVIEW_PHASES and _review_pointer_delivered added) although the node's declared write_paths in dispatch-detail.json list only reckon/crew/obligations.py and tests/test_a_delivered_review_reads_as_awaiting_promotion.py; the coordinator's repair advice directed the reuse fix here, so the change is authorised in substance, but the run's declared scope and the manifest's orientation_write_paths do not include the file, so the record understates what the gained commits touch."
+    }
+  ],
+  "head_log_revision": "a3bffb83451a07824c52792cb2ea1cb2d782175c",
+  "item_verdicts": {
+    "diff": "Read the three gained commits (56b5451c, 49e82a69, a3bffb83) against 01e38f15: they move DELIVERED_REVIEW_PHASES and add _review_pointer_delivered in recovery_classification.py, add the head comparison in _delivered_review and hand the once-read pointer to _delivered_review_promotion_command, add the superseded-head test case, and update the fragment.",
+    "done_when": "The done_when names tests/test_a_delivered_review_reads_as_awaiting_promotion.py plus matched importer arms of the changed modules on all_debug; the node test and its negative control are sound, but the matched arms ran 1 importer of the 119 files reckon/crew/landing_measure.py:235 selects, so the importer population the done_when asserts is unmeasured.",
+    "goal": "Plan section 34's goal is that a run whose recorded review dispatch names a delivered, unpromoted review reads as review-awaiting-promotion naming that review and its promotion command; reckon/crew/obligations.py:2156-2185 builds that duty and now guards it to the head the run carries.",
+    "manifest": "Read; status complete, commits 01e38f15, 56b5451c, 49e82a69, a3bffb83; after arm 55 passed EXIT=0 at a3bffb83; matched arms 1 failed, 59 passed at both revisions with the same pre-existing id; negative control 2 failed, 2 passed EXIT=1; its evidence_inputs claim that the arms run the obligations-importing population is false (119 files, not 2).",
+    "write_paths": "The node declared reckon/crew/obligations.py and tests/test_a_delivered_review_reads_as_awaiting_promotion.py, with the fragment and a figures directory granted; the gained diff also modifies reckon/crew/recovery_classification.py, outside that declared set though directed by the repair advice."
+  },
+  "justifications": {
+    "durability": "tests/test_a_delivered_review_reads_as_awaiting_promotion.py:251-252 is an independent assertion that reddens if the head comparison in _delivered_review is removed, as negative-control.log shows 2 failed at base; the withdrawn and unreadable-pointer branches of _recorded_review_dispatch remain unasserted.",
+    "evidence": "the matched arms ran tests/test_crew_obligations.py and tests/test_staged_write_inventory.py while reckon/crew/landing_measure.py:235 importer_population selects 119 importing test files for the two changed modules, so 1 of 119 was measured.",
+    "fit": "the additions follow the module idiom and move the delivered-phase vocabulary to its owner at reckon/crew/recovery_classification.py:669.",
+    "goal_fidelity": "reckon/crew/obligations.py:2156-2185 builds the awaiting-promotion duty with the review run id, the promotion command, and the head guard the goal requires.",
+    "reuse": "_delivered_review at reckon/crew/obligations.py:630-657 calls recovery_review_dispatch._readable_standing_review, recovery_classification._review_pointer_delivered and recovery.same_revision, and reads the review pointer once rather than twice.",
+    "scope_discipline": "reckon/crew/recovery_classification.py:669-682 is changed though the node's declared write_paths are only obligations.py and the test."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: Plan section 34's goal is that a run whose recorded review dispatch names a delivered, unpromoted review reads as review-awaiting-promotion naming that review and its promotion command; reckon/crew/obligations.py:2156-2185 builds that duty and now guards it to the head the run carries.\nVERDICT done_when: The done_when names tests/test_a_delivered_review_reads_as_awaiting_promotion.py plus matched importer arms of the changed modules on all_debug; the node test and its negative control are sound, but the matched arms ran 1 importer of the 119 files reckon/crew/landing_measure.py:235 selects, so the importer population the done_when asserts is unmeasured.\nVERDICT write_paths: The node declared reckon/crew/obligations.py and tests/test_a_delivered_review_reads_as_awaiting_promotion.py, with the fragment and a figures directory granted; the gained diff also modifies reckon/crew/recovery_classification.py, outside that declared set though directed by the repair advice.\nVERDICT manifest: Read; status complete, commits 01e38f15, 56b5451c, 49e82a69, a3bffb83; after arm 55 passed EXIT=0 at a3bffb83; matched arms 1 failed, 59 passed at both revisions with the same pre-existing id; negative control 2 failed, 2 passed EXIT=1; its evidence_inputs claim that the arms run the population that imports reckon.crew.obligations is false (119 files, not 2).\nVERDICT diff: Read the three gained commits (56b5451c, 49e82a69, a3bffb83) against 01e38f15: they move DELIVERED_REVIEW_PHASES and add _review_pointer_delivered in recovery_classification.py, add the head comparison in _delivered_review and hand the once-read pointer to _delivered_review_promotion_command, add the superseded-head test case, and update the fragment.\nCALL_SITES: reckon/crew/obligations.py:3482, reckon/crew/obligations.py:1128, reckon/crew/obligation_snapshot.py:1364, reckon/crew/obligation_snapshot.py:1512, reckon/crew/station_subscriber.py:155\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/obligations.py:2156-2185 builds the awaiting-promotion duty with the review run id, the promotion command, and the head guard the goal requires.\nSCORE evidence: 8\nJUSTIFICATION evidence: the matched arms ran tests/test_crew_obligations.py and tests/test_staged_write_inventory.py while reckon/crew/landing_measure.py:235 importer_population selects 119 importing test files for the two changed modules, so 1 of 119 was measured.\nSCORE scope_discipline: 14\nJUSTIFICATION scope_discipline: reckon/crew/recovery_classification.py:669-682 is changed though the node's declared write_paths are only obligations.py and the test.\nSCORE durability: 16\nJUSTIFICATION durability: tests/test_a_delivered_review_reads_as_awaiting_promotion.py:251-252 is an independent assertion that reddens if the head comparison in _delivered_review is removed, as negative-control.log shows 2 failed at base.\nSCORE fit: 17\nJUSTIFICATION fit: the additions follow the module idiom and move the delivered-phase vocabulary to its owner at reckon/crew/recovery_classification.py:669.\nSCORE reuse: 18\nJUSTIFICATION reuse: _delivered_review at reckon/crew/obligations.py:630-657 calls recovery_review_dispatch._readable_standing_review, recovery_classification._review_pointer_delivered and recovery.same_revision, and reads the review pointer once rather than twice.\nFINDING docs/evidence/fragments/the-monitor-reads-each-fact-once/delivered-review-reads-as-awaiting-promotion.html:26 blocking: the matched importer arms are not the done_when's population. The gate ran tests/test_crew_obligations.py (an importer) plus tests/test_staged_write_inventory.py (not an importer, it only names obligations.py as a path string), while the repository's own selector reckon/crew/landing_measure.py:235 importer_population returns 119 test files for the two changed modules reckon/crew/obligations.py and reckon/crew/recovery_classification.py. So 1 of 119 importing files ran at either revision, and the run's manifest evidence_inputs claim that the arms 'run the population that imports reckon.crew.obligations' is false. The all_debug partition requirement is met (sacct: jobs 1311838 and 1311854 COMPLETED on all_debug), so this is the population half only, but the done_when asserts the importer population and it is unmeasured.\nFINDING reckon/crew/recovery_classification.py:669 non-blocking: recovery_classification.py is modified (DELIVERED_REVIEW_PHASES and _review_pointer_delivered added) although the node's declared write_paths in dispatch-detail.json list only reckon/crew/obligations.py and tests/test_a_delivered_review_reads_as_awaiting_promotion.py; the coordinator's repair advice directed the reuse fix here, so the change is authorised in substance, but the run's declared scope and the manifest's orientation_write_paths do not include the file, so the record understates what the gained commits touch.\n",
+  "review_run_id": "r-20261112T141026989299-review-of-delivered-review-reads-as-awaiting-promotion-a3bffb83451a",
+  "reviewed_base_sha": "01e38f1509b7c97728da9f6d2a613988de6b35dc",
+  "reviewed_head_sha": "a3bffb83451a07824c52792cb2ea1cb2d782175c",
+  "reviewed_run_id": "r-20261112T110221445514-delivered-review-reads-as-awaiting-promotion",
+  "reviewer": "deepseek-v4.1-flash",
+  "reviewer_run_id": "r-20261112T141026989299-review-of-delivered-review-reads-as-awaiting-promotion-a3bffb83451a",
+  "scores": {
+    "durability": 16,
+    "evidence": 8,
+    "fit": 17,
+    "goal_fidelity": 19,
+    "reuse": 18,
+    "scope_discipline": 14
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-12T14:26:29.102918+00:00",
+  "total": 92
+}

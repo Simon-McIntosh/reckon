@@ -1,0 +1,104 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "measured: baseline_suite in the reviewed manifest records revision e2a9a5cbec with failure_count 0 and gate-base.log closes `51 passed in 14.97s` then `EXIT=0`; after_suite records revision e9469ef6bf with failure_count 0 and gate-head.log closes `55 passed in 24.57s` then `EXIT=0`, so the head adds no failure and adds the four new cases.",
+  "assertion_analysis": [
+    {
+      "condition_to_fail": "The filter stops excluding observation ids, so s21 joins the mapping and the assertion sees two keys instead of one.",
+      "file": "tests/test_a_rereview_gates_only_the_units_it_covers.py",
+      "line": 106
+    },
+    {
+      "condition_to_fail": "_observation_ids inverts its sense or names the in-scope finding, so observation_findings no longer answers exactly [done_when-1].",
+      "file": "tests/test_a_rereview_gates_only_the_units_it_covers.py",
+      "line": 118
+    },
+    {
+      "condition_to_fail": "The whole-plan path counts the observation, so the refusal reads 2 finding(s) unanswered and names done_when-1.",
+      "file": "tests/test_a_rereview_gates_only_the_units_it_covers.py",
+      "line": 147
+    },
+    {
+      "condition_to_fail": "A record with no traced units is treated as all-observation, so observation_findings is no longer empty and the two per-unit gates stop refusing.",
+      "file": "tests/test_a_rereview_gates_only_the_units_it_covers.py",
+      "line": 156
+    }
+  ],
+  "base_log_revision": "e2a9a5cbec635540420e0bbe7ac3b71644cb86a9",
+  "call_site_count": 1,
+  "call_sites": [
+    "reckon/crew/routing.py:2851"
+  ],
+  "completed_at": "2026-11-11T06:08:38.839Z",
+  "dispatched_at": "2026-11-11T05:58:40Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "exempted",
+      "reason": "the head-arm revision label in the fragment is a receipt nit; the gate log's own header names the revision it ran",
+      "recorded_at": "2026-11-11T06:30:37.583916+00:00"
+    },
+    "1": {
+      "kind": "exempted",
+      "reason": "the tests line carries the armed template; the arms record the literal commands they ran, and the landing re-records both arms",
+      "recorded_at": "2026-11-11T06:30:50.369152+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/a-plan-is-reviewed-before-it-is-built/a-rereview-gates-only-the-units-it-covers.html",
+      "line": "25",
+      "severity": "non-blocking",
+      "text": "non-blocking: The head-arm row attributes gate-head.log to revision 35fe42361b while that log's own header line reads `# revision: e9469ef6bf`; 35fe42361b is the wider arm's revision and the fragment never records the wider arm, so a reader following the receipt meets a different revision than the one named."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261111T043410358327-a-rereview-gates-only-the-units-it-covers/manifest.md",
+      "line": "11",
+      "severity": "non-blocking",
+      "text": "non-blocking: The `tests:` line carries the project's armed template rather than the literal command each arm ran, which was an absolute scratch-tree invocation recorded under baseline_suite and after_suite, so a gate receipt built from this line would name a command that never executed."
+    }
+  ],
+  "head_log_revision": "e9469ef6bf",
+  "item_aggregate": 5,
+  "item_verdicts": {
+    "diff": "The four commits from e2a9a5cbec to e9469ef6bf add 60 lines to reckon/crew/plan_review.py (_observation_ids, observation_findings and the filter inside unanswered_findings_by_unit), a 161-line test file, and a 40-line evidence fragment, for 259 insertions and 2 deletions in total.",
+    "done_when": "The done-when names tests/test_a_rereview_gates_only_the_units_it_covers.py showing one unanswered finding for the in-scope section, the out-of-scope finding listed as an observation, a first review gating on every finding and a negative control reporting two; the file carries four cases at lines 103-161 and the manifest's gate-head.log records 55 passed EXIT=0 with negative-control.log recording 3 failed, 1 passed EXIT=1.",
+    "goal": "The node goal is that a re-review gates dispatch only on findings in the units it was composed to cover; reckon/crew/plan_review.py:3266 adds _observation_ids and reckon/crew/plan_review.py:3325 drops those ids from unanswered_findings_by_unit, the one mapping the dispatch gate reads at reckon/crew/routing.py:2851.",
+    "manifest": "The manifest at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261111T043410358327-a-rereview-gates-only-the-units-it-covers/manifest.md:1-30 names four commits, three changed paths, both gate arms with revisions and EXIT lines, the wider all_debug job, the negative control and an outside_scope entry, and I re-diffed the wider arm's FAILED id sets and got 59 base against 57 head with zero added and two cleared.",
+    "write_paths": "The declared write paths are reckon/crew/plan_review.py, tests/test_a_rereview_gates_only_the_units_it_covers.py and the evidence fragment; the base-to-head diff touches exactly those three files and nothing under docs/figures."
+  },
+  "justifications": {
+    "durability": "tests/test_a_rereview_gates_only_the_units_it_covers.py:106 asserts unanswered_findings_by_unit answers {\"s4\": [\"reasoning-1\"]} and :147 asserts the whole-plan refusal reads 1 finding(s) unanswered, both of which redden if the filter at reckon/crew/plan_review.py:3335 is removed, and the recorded negative control shows three of the four cases failing under the declared mutation.",
+    "evidence": "The gate measures the done-when exactly (tests/test_a_rereview_gates_only_the_units_it_covers.py:103-161) and every arm's log opens with its revision and closes with a bare EXIT line, but docs/evidence/fragments/a-plan-is-reviewed-before-it-is-built/a-rereview-gates-only-the-units-it-covers.html:25 cites revision 35fe42361b for gate-head.log, whose own header reads e9469ef6bf.",
+    "fit": "The two new functions at reckon/crew/plan_review.py:3266 and :3300 follow the module's existing idiom of a Mapping record plus a memoised reviewed-text callable and private-helper-then-public-reader layering, and their names describe a mechanism rather than a plan item.",
+    "goal_fidelity": "reckon/crew/plan_review.py:3325 skips an unanswered finding whose every blocked unit lies outside the record's traced units, so the gate at reckon/crew/routing.py:2851 now counts only findings on the units the round was composed to cover, which is the goal verbatim.",
+    "reuse": "reckon/crew/plan_review.py:3283 builds on the existing _traced_units (line 1856) and _finding_units (line 3108) rather than re-deriving unit resolution, and a search of reckon for an existing observation concept found none in the review code, so the reader is the owner rather than a second implementation.",
+    "scope_discipline": "Every path in the diff from e2a9a5cbec to e9469ef6bf is one of the three declared write paths, no figure directory was written because the done-when names no artifact, and the plan itself is untouched."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The node goal is that a re-review gates dispatch only on findings in the units it was composed to cover; reckon/crew/plan_review.py:3266 adds _observation_ids and reckon/crew/plan_review.py:3325 drops those ids from unanswered_findings_by_unit, the one mapping the dispatch gate reads at reckon/crew/routing.py:2851.\nVERDICT done_when: The done-when names tests/test_a_rereview_gates_only_the_units_it_covers.py showing one unanswered finding for the in-scope section, the out-of-scope finding listed as an observation, a first review gating on every finding and a negative control reporting two; the file carries four cases at lines 103-161 and the manifest's gate-head.log records 55 passed EXIT=0 with negative-control.log recording 3 failed, 1 passed EXIT=1.\nVERDICT write_paths: The declared write paths are reckon/crew/plan_review.py, tests/test_a_rereview_gates_only_the_units_it_covers.py and the evidence fragment; the base-to-head diff touches exactly those three files and nothing under docs/figures.\nVERDICT manifest: The manifest at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261111T043410358327-a-rereview-gates-only-the-units-it-covers/manifest.md:1-30 names four commits, three changed paths, both gate arms with revisions and EXIT lines, the wider all_debug job, the negative control and an outside_scope entry, and I re-diffed the wider arm's FAILED id sets and got 59 base against 57 head with zero added and two cleared.\nVERDICT diff: The four commits from e2a9a5cbec to e9469ef6bf add 60 lines to reckon/crew/plan_review.py (_observation_ids, observation_findings and the filter inside unanswered_findings_by_unit), a 161-line test file, and a 40-line evidence fragment, for 259 insertions and 2 deletions in total.\nCALL_SITES: reckon/crew/routing.py:2851\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/plan_review.py:3325 skips an unanswered finding whose every blocked unit lies outside the record's traced units, so the gate at reckon/crew/routing.py:2851 now counts only findings on the units the round was composed to cover, which is the goal verbatim.\nSCORE evidence: 16\nJUSTIFICATION evidence: The gate measures the done-when exactly (tests/test_a_rereview_gates_only_the_units_it_covers.py:103-161) and every arm's log opens with its revision and closes with a bare EXIT line, but docs/evidence/fragments/a-plan-is-reviewed-before-it-is-built/a-rereview-gates-only-the-units-it-covers.html:25 cites revision 35fe42361b for gate-head.log, whose own header reads e9469ef6bf.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: Every path in the diff from e2a9a5cbec to e9469ef6bf is one of the three declared write paths, no figure directory was written because the done-when names no artifact, and the plan itself is untouched.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_a_rereview_gates_only_the_units_it_covers.py:106 asserts unanswered_findings_by_unit answers {\"s4\": [\"reasoning-1\"]} and :147 asserts the whole-plan refusal reads 1 finding(s) unanswered, both of which redden if the filter at reckon/crew/plan_review.py:3335 is removed, and the recorded negative control shows three of the four cases failing under the declared mutation.\nSCORE fit: 19\nJUSTIFICATION fit: The two new functions at reckon/crew/plan_review.py:3266 and :3300 follow the module's existing idiom of a Mapping record plus a memoised reviewed-text callable and private-helper-then-public-reader layering, and their names describe a mechanism rather than a plan item.\nSCORE reuse: 20\nJUSTIFICATION reuse: reckon/crew/plan_review.py:3283 builds on the existing _traced_units (line 1856) and _finding_units (line 3108) rather than re-deriving unit resolution, and a search of reckon for an existing observation concept found none in the review code, so the reader is the owner rather than a second implementation.\nFINDING docs/evidence/fragments/a-plan-is-reviewed-before-it-is-built/a-rereview-gates-only-the-units-it-covers.html:25 non-blocking: The head-arm row attributes gate-head.log to revision 35fe42361b while that log's own header line reads `# revision: e9469ef6bf`; 35fe42361b is the wider arm's revision and the fragment never records the wider arm, so a reader following the receipt meets a different revision than the one named.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261111T043410358327-a-rereview-gates-only-the-units-it-covers/manifest.md:11 non-blocking: The `tests:` line carries the project's armed template rather than the literal command each arm ran, which was an absolute scratch-tree invocation recorded under baseline_suite and after_suite, so a gate receipt built from this line would name a command that never executed.\n",
+  "review_run_id": "r-20261111T055528908042-review-of-a-rereview-gates-only-the-units-it-covers-e9469ef6bf7e",
+  "reviewed_base_sha": "e2a9a5cbec635540420e0bbe7ac3b71644cb86a9",
+  "reviewed_commits": [
+    "f3856c21ed",
+    "35fe42361b",
+    "3974825c7e",
+    "e9469ef6bf"
+  ],
+  "reviewed_head_sha": "e9469ef6bf7e5fa81fe57740639a7454912567a5",
+  "reviewed_run_id": "r-20261111T043410358327-a-rereview-gates-only-the-units-it-covers",
+  "scores": {
+    "durability": 19,
+    "evidence": 16,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "self_comparison_assertions": [],
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-11T06:10:00Z",
+  "total": 114
+}

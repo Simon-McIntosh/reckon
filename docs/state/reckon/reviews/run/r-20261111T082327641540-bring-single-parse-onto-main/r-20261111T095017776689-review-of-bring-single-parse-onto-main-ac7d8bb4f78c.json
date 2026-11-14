@@ -1,0 +1,90 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "Derived from source manifest baseline_suite arm-base-scope.log (51 passed, EXIT=0) and after_suite arm-head-scope.log (54 passed, EXIT=0); neither has FAILED/ERROR IDs.",
+  "assertion_review": [
+    {
+      "fails_if": "Restore independent BeautifulSoup creation in writer passes; observer records six entries rather than exactly one; the recorded mutation demonstrates this.",
+      "independent": true,
+      "path": "tests/test_a_plan_write_parses_its_plan_once.py:136"
+    },
+    {
+      "fails_if": "Change serialized metadata ordering, section rendering or comment output; literal EXPECTED does not change with the writer.",
+      "independent": true,
+      "path": "tests/test_a_plan_write_parses_its_plan_once.py:143"
+    },
+    {
+      "fails_if": "Drop, duplicate or reorder an existing or appended comment while rendering or reading the resulting document.",
+      "independent": true,
+      "path": "tests/test_a_plan_write_parses_its_plan_once.py:149"
+    },
+    {
+      "fails_if": "Alter or lose the appended comment body during write/read; matching the fixed intended input is meaningful round-trip verification, not two assertions over a shared mutable variable.",
+      "independent": true,
+      "path": "tests/test_a_plan_write_parses_its_plan_once.py:150"
+    }
+  ],
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/_store.py:1726 (_write_state_locked)",
+    "reckon/_store.py:2459 (_replace_plan_text)"
+  ],
+  "completed_at": "2026-11-11T09:57:33Z",
+  "dispatched_at": "2026-11-11T09:52:07Z",
+  "findings": [],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "Read the single commit ac7d8bb4f78cccc447d4e0f53fa3d555f4de2529 against its actual parent 5084a31998ab063d2cd965de5494402b0b15eed1; its two-file diff shares lazy parse state and moves record splicing before meta edits to preserve source offsets.",
+    "done_when": "Read brief.md's quantitative gate against arm-head-scope.log (54 passed), arm-base-importers.log and arm-head-importers.log (zero added failure IDs), negative-control.log (one parse-count failure), descope-byte-identity-retry3.log (1416 identical bytes), and stream.jsonl's matching Ruff counts and passing format check.",
+    "goal": "Read brief.md and live docs/plans/a-read-answers-inside-its-deadline.html:388-390; reckon/_plan_html.py:2390 shares the writer parse and :2480 preserves descope-reason metadata.",
+    "manifest": "Read manifest.md and verified its source revision pair, 51/54 scoped passes, six-parse negative control and zero added importer failures against the named logs; its baseline_suite/after_suite logs each report EXIT=0 and no failure IDs.",
+    "write_paths": "brief.md permits reckon/_plan_html.py, reckon/_store.py, the new test and evidence; the commit changes only reckon/_plan_html.py and tests/test_a_plan_write_parses_its_plan_once.py."
+  },
+  "justifications": {
+    "durability": "tests/test_a_plan_write_parses_its_plan_once.py:136 rejects restored per-pass soup creation, :143 rejects changed output bytes against a literal golden document, and :149-150 reject a dropped, duplicated, reordered or altered landing comment; the observed output sides are independent of their expected values.",
+    "evidence": "tests/test_a_plan_write_parses_its_plan_once.py:136 fails with six observed document parses in defect-reproduction.log and negative-control.log while arm-head-scope.log records 54 passes at the reviewed head, with descope-byte-identity-retry3.log recording equal independent base/head digests.",
+    "fit": "reckon/_plan_html.py:402 wraps the existing BeautifulSoup and _StructuredSectionSpanParser mechanisms in a private lazy object, keeps optional parse arguments compatible with existing callers, and uses capability names without forbidden plan labels.",
+    "goal_fidelity": "reckon/_plan_html.py:2390-2404 constructs one shared parse before record splicing, passes it to the later writer censuses at :2493-2500, and retains the descope writer at :2480-2489.",
+    "reuse": "Capability searches for shared parsing and landing-write fixtures found reckon/_plan_html.py:1768's file-state memoization, which returns state rather than writer soup/source spans; :402 wraps the existing parser owner at :179 instead of duplicating it, and the new test helpers supply a distinct landing fixture rather than forking a production capability.",
+    "scope_discipline": "The commit changes only reckon/_plan_html.py and tests/test_a_plan_write_parses_its_plan_once.py, both explicitly allowed by brief.md, and leaves reckon/_store.py unchanged because its existing callers already reach write_state."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: Read brief.md and live docs/plans/a-read-answers-inside-its-deadline.html:388-390; reckon/_plan_html.py:2390 shares the writer parse and :2480 preserves descope-reason metadata.\nVERDICT done_when: Read brief.md's quantitative gate against arm-head-scope.log (54 passed), arm-base-importers.log and arm-head-importers.log (zero added failure IDs), negative-control.log (one parse-count failure), descope-byte-identity-retry3.log (1416 identical bytes), and stream.jsonl's matching Ruff counts and passing format check.\nVERDICT write_paths: brief.md permits reckon/_plan_html.py, reckon/_store.py, the new test and evidence; the commit changes only reckon/_plan_html.py and tests/test_a_plan_write_parses_its_plan_once.py.\nVERDICT manifest: Read manifest.md and verified its source revision pair, 51/54 scoped passes, six-parse negative control and zero added importer failures against the named logs; its baseline_suite/after_suite logs each report EXIT=0 and no failure IDs.\nVERDICT diff: Read the single commit ac7d8bb4f78cccc447d4e0f53fa3d555f4de2529 against its actual parent 5084a31998ab063d2cd965de5494402b0b15eed1; its two-file diff shares lazy parse state and moves record splicing before meta edits to preserve source offsets.\nCALL_SITES: reckon/_store.py:1726 (_write_state_locked), reckon/_store.py:2459 (_replace_plan_text)\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/_plan_html.py:2390-2404 constructs one shared parse before record splicing, passes it to the later writer censuses at :2493-2500, and retains the descope writer at :2480-2489.\nSCORE evidence: 20\nJUSTIFICATION evidence: tests/test_a_plan_write_parses_its_plan_once.py:136 fails with six observed document parses in defect-reproduction.log and negative-control.log while arm-head-scope.log records 54 passes at the reviewed head, with descope-byte-identity-retry3.log recording equal independent base/head digests.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: The commit changes only reckon/_plan_html.py and tests/test_a_plan_write_parses_its_plan_once.py, both explicitly allowed by brief.md, and leaves reckon/_store.py unchanged because its existing callers already reach write_state.\nSCORE durability: 20\nJUSTIFICATION durability: tests/test_a_plan_write_parses_its_plan_once.py:136 rejects restored per-pass soup creation, :143 rejects changed output bytes against a literal golden document, and :149-150 reject a dropped, duplicated, reordered or altered landing comment; the observed output sides are independent of their expected values.\nSCORE fit: 20\nJUSTIFICATION fit: reckon/_plan_html.py:402 wraps the existing BeautifulSoup and _StructuredSectionSpanParser mechanisms in a private lazy object, keeps optional parse arguments compatible with existing callers, and uses capability names without forbidden plan labels.\nSCORE reuse: 20\nJUSTIFICATION reuse: Capability searches for shared parsing and landing-write fixtures found reckon/_plan_html.py:1768's file-state memoization, which returns state rather than writer soup/source spans; :402 wraps the existing parser owner at :179 instead of duplicating it, and the new test helpers supply a distinct landing fixture rather than forking a production capability.\n",
+  "review_notes": [
+    "Live MCP plan read timed out; canonical live plan HTML section s68 was read directly without mutation.",
+    "Orientation worktree HEAD differs from reviewed head; all code and production call-site review used git show/git grep at the recorded reviewed head.",
+    "No tests rerun and no source files modified.",
+    "The test module docstring contains a measurement explaining repeated parsing; the naming reference explicitly permits measurements that prevent undoing an optimization."
+  ],
+  "review_run_id": "r-20261111T095017776689-review-of-bring-single-parse-onto-main-ac7d8bb4f78c",
+  "reviewed_base_sha": "5084a31998ab063d2cd965de5494402b0b15eed1",
+  "reviewed_head_sha": "ac7d8bb4f78cccc447d4e0f53fa3d555f4de2529",
+  "reviewed_run_id": "r-20261111T082327641540-bring-single-parse-onto-main",
+  "scores": {
+    "durability": 20,
+    "evidence": 20,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "supplemental_importer_delta": {
+    "added_failure_ids": [],
+    "after_failure_ids_count": 119,
+    "baseline_failure_ids_count": 120,
+    "logs": [
+      "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261111T082327641540-bring-single-parse-onto-main/arm-base-importers.log",
+      "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261111T082327641540-bring-single-parse-onto-main/arm-head-importers.log"
+    ],
+    "removed_failure_ids": [
+      "tests/test_skill_contracts.py::test_the_op_reference_set_row_documents_supported_paths"
+    ]
+  },
+  "times_source": "run-record",
+  "timestamp": "2026-11-11T10:23:17.649569+00:00",
+  "total": 120
+}

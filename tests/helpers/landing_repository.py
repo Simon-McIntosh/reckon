@@ -67,6 +67,7 @@ def _complete_land(run: dict, *extra: str):
         [
             "crew",
             "complete",
+            "--wait",
             "--run",
             run["run_id"],
             "--gate",

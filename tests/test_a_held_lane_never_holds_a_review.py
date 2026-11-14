@@ -17,6 +17,7 @@ justify it, and a caller-named route on the same held lane does not move.
 from __future__ import annotations
 
 import importlib
+import os
 
 import pytest
 
@@ -111,6 +112,7 @@ def isolated_project(tmp_path, monkeypatch):
     return reflex_tests.isolated_project.__wrapped__(tmp_path, monkeypatch)
 
 
+@pytest.mark.arms_watch_producer
 def test_a_run_review_records_the_lane_it_followed(
     isolated_project, monkeypatch
 ) -> None:
@@ -119,19 +121,46 @@ def test_a_run_review_records_the_lane_it_followed(
     This is the write side of the rebind above: without it the queue cannot
     tell a lane the reflex followed from one a coordinator named, and a review
     sitting on a held lane waits for the reset it was never bound to.
+
+    The assertion reads the review's own pointer rather than the arguments the
+    composer handed dispatch. What admission reads is the written
+    ``named_route``, so a composer that passed the origin and a dispatch that
+    dropped it would still satisfy a capture of the call and leave the queue
+    unable to tell the two routes apart.
     """
     config_home, repo = isolated_project
     record = reflex_tests._scoring_pointer(config_home, repo, "r-followed")
     record["backend"] = reflex_tests.OTHER_BACKEND
-    captured: dict = {}
 
-    def capture(**kwargs):
-        captured.update(kwargs)
-        return {"run_id": "r-review-stub", "dispatched": True}
+    def budget(**kwargs):
+        held = kwargs["backend_name"] == reflex_tests.OTHER_BACKEND
+        return {
+            "held": held,
+            "backend": kwargs["backend_name"],
+            "reason": "beta pace window is held",
+            "state": {"resets_at": "2026-11-18T09:00:00Z"},
+            "warnings": [],
+        }
 
-    monkeypatch.setattr(dispatch_module, "dispatch", capture)
-    recovery.dispatch_review_for_run(
-        record, config=reflex_tests.CONFIG, launcher=lambda *a, **k: 1
-    )
-    assert captured["backend_override"] == reflex_tests.OTHER_BACKEND
-    assert captured["lane_origin"] == REVIEW_FOLLOWS_RUN
+    monkeypatch.setattr(dispatch_module, "_budget_verdict", budget)
+    try:
+        with runs.follower_claim("sample", "session-orchestrating", delivery="stream"):
+            recovery.dispatch_review_for_run(
+                record,
+                config=reflex_tests.CONFIG,
+                launcher=lambda *a, **k: os.getpid(),
+            )
+        queued = [
+            pointer
+            for pointer in runs.list_live(project="sample", phase="queued")
+            if str(pointer.get("node", {}).get("id", "")).startswith(
+                recovery.REVIEW_NODE_PREFIX
+            )
+        ]
+        assert len(queued) == 1, queued
+        assert queued[0]["named_route"] == {
+            "backend": reflex_tests.OTHER_BACKEND,
+            "set_by": REVIEW_FOLLOWS_RUN,
+        }
+    finally:
+        reflex_tests._release_watcher()

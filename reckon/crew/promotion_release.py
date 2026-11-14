@@ -19,6 +19,7 @@ from reckon.crew.dispatch import (
     worker_scratch_root,
 )
 from reckon.crew.node import (
+    INTERRUPTED_RUN_PHASE,
     CrewError,
 )
 from reckon.crew.reports import (
@@ -41,6 +42,7 @@ from reckon.crew.runs import (
     list_live,
     process_alive,
     record_process_alive,
+    row_scope,
 )
 
 _CITED_ABSOLUTE_PATH = re.compile(r"/(?:[^\s\"'`()\[\]{}<>,;]+)")
@@ -338,14 +340,12 @@ def remove_cited_arms(record: Mapping[str, Any], *, gate: str = "") -> dict[str,
 def _released_tree_index(
     record: Mapping[str, Any], worktree: Path
 ) -> tuple[Path | None, str]:
-    """The ledger index the worktree published, and why it is withheld.
+    """The private path-keyed index owned only by this worktree.
 
-    A worktree resolves its own ledger path, so its reader publishes an index
-    keyed to a checkout that the release is about to remove and nothing
-    resolves again. The path is computed here, while the tree still exists, so
-    the key matches the one its reader built. No index is named when the
-    ledger resolves outside the tree — a checkout whose state is shared through
-    a link publishes the shared index, which the release must not take.
+    Repository-shared indexes outlive every linked worktree and are never
+    selected here. The checkout path identifies only a legacy private cache;
+    resolve it before releasing the tree so symlink identity is preserved.
+    A ledger resolving outside the tree has no private index this release owns.
     """
     project = str(record.get("project") or "").strip()
     if not project:
@@ -356,11 +356,11 @@ def _released_tree_index(
         return None, f"project {project!r} does not resolve a ledger"
     if Path(worktree).resolve() not in source.parents:
         return None, "the ledger resolves outside the released tree"
-    return ledger._run_index_path(project, worktree), ""
+    return ledger._checkout_index_path(project, worktree), ""
 
 
 def _unlink_released_tree_index(index: Path | None, withheld: str) -> dict[str, Any]:
-    """Remove a released worktree's index, keeping one a process holds open.
+    """Remove a released worktree's private index, keeping a locked one.
 
     The unlink is O(1): the index file is named by a hash of the ledger path
     alone, so no scan of the cache is involved and no other checkout's index
@@ -390,12 +390,13 @@ def _release_run_workspace(
     gate: str = "",
     integration_repo: Path | None = None,
     integration_commit: str = "",
+    report_removals: bool = False,
 ) -> dict[str, Any]:
     """Release a promoted run's own worktree, process, and scratch directory.
 
-    Scratch is removed unconditionally, because it is node-local and ephemeral
-    and must not outlive the run that owns it; a worktree, by contrast, is only
-    released when it is safe to remove. Reuses the classification `crew gc`
+    A recoverable run keeps its workspace and scratch. An ended run's scratch
+    is ephemeral and leaves with it; a worktree is released only when it is
+    safe to remove. Reuses the classification `crew gc`
     already applies rather than writing a
     second policy: a worktree is released only when it is clean and its HEAD
     is an ancestor of the repository's integration branch, or when it is a
@@ -414,6 +415,13 @@ def _release_run_workspace(
     repo_value = str(record.get("repo") or "")
     worktree = Path(worktree_value) if worktree_value else None
     repo = Path(repo_value) if repo_value else None
+    recoverable = str(_declared_manifest(record).get("status") or "").lower() in {
+        "blocked",
+        "waiting",
+    }
+    if gate.strip().lower() == "passed" and recoverable:
+        release_worktree = False
+        keep_process = True
     if not release_worktree:
         result["worktree_withheld"] = worktree_withheld or (
             "promotion did not pass; worktree retained for recovery"
@@ -458,8 +466,8 @@ def _release_run_workspace(
                 classification, "unrecognised classification"
             )
         else:
-            # The index path is resolved while the tree still exists, so it is
-            # the key the tree's own reader published under.
+            # Resolve the private cache identity before releasing the checkout;
+            # repository-shared caches are never candidates for this removal.
             index, index_withheld = _released_tree_index(record, worktree)
             released = _release_worktree_whole(repo, worktree, run_id=run_id)
             if not released.get("released", True):
@@ -519,6 +527,9 @@ def _release_run_workspace(
         else record
     )
     result["worktree_audit"] = _worktree_audit(audit_record, retention)
+    if recoverable and (not release_worktree or retention is not None):
+        result["scratch_withheld"] = "run retained for recovery"
+        return result
     # The scratch directory a run owned dies with it. Both promotion and
     # discard funnel through this release step, so the removal is wired once
     # here and the two cannot disagree about whether it happens. It is removed
@@ -539,6 +550,9 @@ def _release_run_workspace(
     # a reviewer reads, and the scratch removal above still runs, because
     # scratch is node-local space rather than evidence.
     result.update(remove_cited_arms(record, gate=gate))
+    from reckon.crew.terminal_cleanup import archive_ended_run
+
+    result.update(archive_ended_run(record, result, report_removals=report_removals))
     return result
 
 
@@ -1004,21 +1018,100 @@ def _harvest_lane_receipt(
     return result
 
 
-def _unreconciled_live_runs(pointers: Iterable[Mapping[str, Any]]) -> int:
+def _unreconciled_live_runs(
+    pointers: Iterable[Mapping[str, Any]],
+    served: Mapping[str, str] | None = None,
+) -> int:
     """Count the live pointers no closure disposition excuses.
 
     Each pointer is classified by the closure drain's own per-pointer step,
     :func:`reckon.crew.runs._drain_row`, so this agrees with the drain's
-    ``unreconciled_runs`` by construction: the drain builds its rows with the
-    same function, and a change to the composition reaches both. Nothing is
-    recomputed here, and the drain's plan inventory is not read — a promotion
-    stamps a reading on its row and never consumes the drain's closure count or
-    plan remainder.
+    involvement: the drain builds its rows with the same function, and a change
+    to the composition reaches both. The whole reading enters
+    :func:`reckon.crew.runs.row_scope`, so the pointer directory and each
+    round's manifest are read once for the count rather than once per pointer.
+    Nothing is recomputed here, and the drain's plan inventory is not read — a
+    promotion stamps a reading on its row and never consumes the drain's closure
+    count or plan remainder.
+
+    ``served`` maps a run id to the classification word that run already
+    holds, so a run whose verdict was read from the station's store is not read
+    again — see :func:`_served_fleet_classifications`. A run it does not name
+    is classified here, host-gated liveness and all.
     """
-    return sum(1 for pointer in pointers if _drain_row(pointer)["unreconciled"])
+    words = served or {}
+    counted = 0
+    with row_scope(pointers) as points:
+        for pointer in points:
+            run_id = str(pointer.get("run_id") or "")
+            row = (
+                _drain_row(pointer, classification=words[run_id])
+                if run_id in words
+                else _drain_row(pointer)
+            )
+            if row["unreconciled"]:
+                counted += 1
+    return counted
 
 
 _FLEET_UNMEASURED_CAUSE_LIMIT = 200
+
+
+#: Words the fleet reducer substitutes for the run's own recovery word: a
+#: stalled stream, a launch its attempt never backed, a worker that died
+#: mid-turn, and a turn that concluded without a manifest. A stored verdict
+#: carrying one of these is the reducer's reading of the run rather than the
+#: run's classification, so such a run is classified afresh instead of served.
+_FLEET_REFINED_WORDS = frozenset(
+    {"stalled", "launch-failed", "ended-without-manifest", INTERRUPTED_RUN_PHASE}
+)
+
+
+def _served_fleet_classifications(
+    project: str, pointers: Iterable[Mapping[str, Any]]
+) -> dict[str, dict[str, Any]]:
+    """Each live run's stored classification, from the station's own store.
+
+    One read answers the whole fleet, so a promotion's reading costs what that
+    read costs however many runs are live. The store is the node's station,
+    which classifies each live run on its own tick and keeps the verdict; a run
+    dispatched since that tick has no stored verdict yet and is left out, so
+    the reading classifies exactly that run and no other.
+
+    A store that cannot be opened, that was built from another crew home, or
+    that holds no readable verdict answers empty: the reading then classifies
+    afresh, which is correct and merely costs what it always did.
+    """
+    from reckon.crew import station_store
+    from reckon.crew.run_paths import crew_home
+
+    try:
+        store = station_store.StationStore.at_runtime_root()
+    except (station_store.StationStoreError, OSError):
+        return {}
+    if not store.database.exists():
+        return {}
+    try:
+        if store.station_value(station_store.CREW_HOME_KEY) != str(crew_home()):
+            return {}
+        stored = store.classifications()
+    except Exception:  # noqa: BLE001 - an unreadable store is no stored verdict
+        return {}
+    finally:
+        store.close()
+    wanted = {str(pointer.get("run_id") or "") for pointer in pointers}
+    served: dict[str, dict[str, Any]] = {}
+    for run_id, snapshot in stored.items():
+        if run_id not in wanted or not isinstance(snapshot, Mapping):
+            continue
+        if str(snapshot.get("project") or "") not in {"", project}:
+            continue
+        if str(snapshot.get("recovery_classification") or "") in _FLEET_REFINED_WORDS:
+            continue
+        if not snapshot.get("classification"):
+            continue
+        served[run_id] = dict(snapshot)
+    return served
 
 
 def _fleet_state_reading(project: str) -> dict[str, Any]:
@@ -1026,38 +1119,60 @@ def _fleet_state_reading(project: str) -> dict[str, Any]:
 
     The live-pointer projection owns the pointer classification, and the
     unreconciled count is derived from those pointers alone; promotion composes
-    the already-derived facts into the result that an orchestrator is about to
-    read. The reading deliberately stays outside the ledger because it describes
-    the fleet at this moment, not this run.
+    the already-derived facts into the result an orchestrator is about to read.
+    It reads them from the station's stored verdicts, so a promotion's cost is
+    the cost of that one store read however many runs are live: promotion never
+    reaches into another run's stream, manifest or review records on its own
+    path. A stored verdict is written on the station's tick, so a field here may
+    lag that tick and never lags the run — the station classifies a run whose
+    inputs moved. A run with no stored verdict, or one whose stored word is the
+    fleet reducer's reading rather than the run's classification, is classified
+    here, which is the only per-run cost the reading has left.
 
-    When the reading cannot be composed, at the per-pointer step that derives the
-    unreconciled count or earlier when the pointers cannot be listed at all, the
-    result is an unmeasured reading that still states the exception type and
-    message under one named key, bounded in length; the exception never blocks
-    landing, but it leaves a cause a reader can act on instead of a bare absence.
-    Every unmeasured reading names the exception that produced it, whatever step
-    failed, so a stale fixture and a real composition break are distinguishable
-    from the promotion result alone.
+    The reading deliberately stays outside the ledger: it describes the fleet
+    at this moment, not this run.
+
+    When the reading cannot be composed, at the per-pointer step that derives
+    the unreconciled count or earlier when the pointers cannot be listed at
+    all, the result is an unmeasured reading that still states the exception
+    type and message under one named key, bounded in length; the per-run step's
+    exception never blocks landing, but it leaves a cause a reader can act on
+    instead of a bare absence. Every unmeasured reading names the exception
+    that produced it, whatever step failed, so a stale fixture and a real
+    composition break are distinguishable from the promotion result alone.
     """
     observed_at = _utc_now()
     try:
         from reckon.crew import recovery
 
         pointers = list_live(project=project)
-        classified = [recovery.classify_pointer(pointer) for pointer in pointers]
-        actionable = [
-            str(row.get("recovery_classification") or "")
-            for row in classified
-            if str(row.get("recovery_classification") or "")
-            in recovery.ACTIONABLE_RECOVERY_CLASSIFICATIONS
-        ]
+        served = _served_fleet_classifications(project, pointers)
+        words: list[str] = []
+        for pointer in pointers:
+            snapshot = served.get(str(pointer.get("run_id") or ""))
+            word = (
+                str(snapshot.get("recovery_classification") or "")
+                if snapshot is not None
+                else str(
+                    recovery.classify_pointer(pointer).get("recovery_classification")
+                    or ""
+                )
+            )
+            if word in recovery.ACTIONABLE_RECOVERY_CLASSIFICATIONS:
+                words.append(word)
         lanes = {
             str(pointer.get("backend") or "").strip()
             for pointer in pointers
             if str(pointer.get("backend") or "").strip()
         }
         try:
-            unreconciled = _unreconciled_live_runs(pointers)
+            unreconciled = _unreconciled_live_runs(
+                pointers,
+                {
+                    run_id: str(snapshot.get("classification") or "")
+                    for run_id, snapshot in served.items()
+                },
+            )
         except Exception as exc:  # noqa: BLE001 - a named cause never blocks landing
             return _unavailable_fleet_reading(observed_at, cause=exc)
         return {
@@ -1065,8 +1180,8 @@ def _fleet_state_reading(project: str) -> dict[str, Any]:
             "observed_at": observed_at,
             "live_runs": len(pointers),
             "unreconciled_runs": unreconciled,
-            "actionable_runs": len(actionable),
-            "actionable_classifications": sorted(set(actionable)),
+            "actionable_runs": len(words),
+            "actionable_classifications": sorted(set(words)),
             "occupied_lanes": len(lanes),
         }
     except Exception as exc:  # noqa: BLE001 - a named cause never blocks landing

@@ -129,3 +129,12 @@ gates:
   # inventory red at its own head rather than at the next node that runs it.
   census_tests:
     - tests/test_staged_write_inventory.py
+
+# A landing measures the test files that import a node's changed modules. A node
+# that touches the station or its obligations reaches more than a hundred files,
+# and on a loaded all_debug node that population runs past the 600 s default
+# floor, so both arms were cut off and the landing read unreadable rather than
+# measured. The floor rises for this project only; an arm with a history is
+# still bounded by that history when it is longer.
+landing:
+  measure_timeout_seconds: 1800

@@ -1,0 +1,64 @@
+<article class="r-evidence" data-node="queued-write-path-edit-reaches-the-fence">
+  <h3 id="queued-write-path-edit-reaches-the-fence-title">A queued write-path edit reaches the landing fence</h3>
+
+  <p><strong>What was wrong.</strong> A request held for plan review carries
+  <code>section_derived</code> marks naming the fields its section supplied. The
+  admission pass releasing it re-derived those fields from its own in-memory
+  snapshot of the live pointers — taken at the start of the pass — and wrote the
+  result onto the pointer it was releasing regardless of what the pointer itself
+  said. A coordinator who had run <code>crew queue edit --write-path</code>
+  between the snapshot and the release lost the path: the section's list
+  replaced it and the field was re-marked as the section's, so every later
+  release repeated the loss. The landing scope check then refused a path the
+  coordinator had declared before the run ever started, which is the refusal the
+  reported run met.
+
+  <p><strong>The repair.</strong> The release re-derives inside the pointer's
+  own lock from the record it is about to write, so the pass reads the request
+  fresh rather than through its snapshot, and it adopts the written node onto
+  its in-memory record so the launch carries the released contract. It lives in
+  <code>reckon/crew/admission/reviews.py</code>, which the module split left
+  owning the plan-review release; <code>queue_admission.py</code> is the
+  facade and is unchanged from the split, and this node's test reads the names
+  through it. Re-deriving
+  a field now also requires the pointer being written to still mark it: a mark
+  the queue writer cleared is what makes the field the coordinator's, so it is
+  never re-derived, while a field the section still supplies is re-derived and
+  stays marked. A section that cannot be read raises the release's own refusal,
+  which keeps the request held and records the reason in its hold exactly as
+  before.
+
+  <p><strong>The measure.</strong>
+  <code>tests/test_a_queued_write_path_edit_reaches_the_landing_fence.py</code>
+  holds three cases. The first queues a request, widens it with
+  <code>queue_edit.edit</code>, launches it through
+  <code>queue_admission.admit_once</code> with a stub worker that commits the
+  added path, and asserts the added path is in the launched record's declared
+  scope, that <code>promotion_scope._outside_declared_scope</code> names nothing
+  outside the fence, and that <code>declared_write_grants</code> holds it as a
+  claim. The second snapshots a held request as the pass does, edits its write
+  paths, releases it from that stale snapshot, and asserts the added path
+  survives, the field stays unmarked, and the pass's in-memory record carries
+  the written node. The third releases an unedited held request and asserts the
+  section's field is still re-derived and still marked, so the fix does not
+  disable the re-derivation it repairs.
+
+  <p><strong>Evidence at two revisions.</strong> The displayed test file copied
+  into the base revision tree fails exactly the release case with
+  <code>assert {'reckon/crew…partition.py'} == {'reckon/crew…partition.py'}</code>
+  — the coordinator's path gone — while the other two cases pass there
+  (<code>negative-control.log</code>, EXIT=1). At the head all three pass. The
+  armed suite arms ran as one compute job:
+  <code>tests/test_staged_write_inventory.py</code> at
+  <code>babfff30dc</code> passed 51, and the same file plus this test at
+  <code>23510030</code> passed 54, both EXIT=0, so the change adds no failure
+  against the base revision.
+
+  <p><strong>The reproduction.</strong> Before any repair,
+  <code>reproduction-stale-release.log</code> drove the real
+  <code>_release_plan_review_holds</code> over a held request and showed the
+  edit surviving the queue edit — three write paths, <code>write_paths</code>
+  unmarked — and gone again after the release, with the mark restored. That is
+  the mechanism this node's brief only suspected, and it is what the second case
+  now fences.</p>
+</article>

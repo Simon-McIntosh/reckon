@@ -2,13 +2,14 @@
 
 The landing pass used to accept a review only when it carried no finding of any
 severity, so a review that raised two non-blocking observations left the run
-waiting for a coordinator who had nothing to add. The pass accepts a
-non-blocking finding only once somebody has answered it: an exemption the pass
-recorded itself was its own judgement rather than the reviewer's, so an
-undisposed finding now leaves the run to its coordinator. These cases drive the
-pass itself: the review is stored, the run is delivered, and the assertions are
-about what the pass did — whether it landed, and what it wrote down when it
-refused.
+waiting for a coordinator who had nothing to add. The pass makes no judgement
+about such a finding: it lands the run and records each one still open as
+deferred, naming the run and the rule, which leaves the finding open work
+rather than a decision nobody took. A blocking finding, and one whose severity
+the reviewer left unstated, still hold the run. These cases drive the pass
+itself: the review is stored, the run is delivered, and the assertions are
+about what the pass did — whether it landed, and what it wrote down either
+way.
 
 Every repository, store and live pointer resolves inside a temporary
 configuration home, so nothing here reads or writes the operator's own fleet.
@@ -25,6 +26,7 @@ from pathlib import Path
 import pytest
 
 from reckon import _plan_html
+from reckon.crew import findings as findings_module
 from reckon.crew import landing_measure, queue_landing, review_dispositions, runs
 from reckon.crew import review as review_module
 
@@ -349,7 +351,7 @@ def _stub(calls: list[dict], *, suite_head: tuple[int, str], isolated):
     return run
 
 
-# ── arm 1: an undisposed finding leaves the run to its coordinator ──────────
+# ── arm 1: an undisposed non-blocking finding is deferred at landing ────────
 
 
 def _dispose(head: str, indexes: tuple[int, ...]) -> None:
@@ -365,9 +367,16 @@ def _dispose(head: str, indexes: tuple[int, ...]) -> None:
         )
 
 
-def test_two_undisposed_non_blocking_findings_leave_the_run_to_its_coordinator(
+def test_two_undisposed_non_blocking_findings_land_and_are_deferred(
     delivery, monkeypatch: pytest.MonkeyPatch
 ) -> None:
+    """The pass lands the run and records both findings as deferred.
+
+    A non-blocking finding withholds nothing, so the pass no longer waits for a
+    coordinator to answer it. It makes no judgement either: the entry it writes
+    names the run it was deferred over and the rule that deferred it, and the
+    finding stays open work for whoever reads the backlog.
+    """
     _accept(
         base=str(delivery["base"]),
         head=str(delivery["head"]),
@@ -376,21 +385,22 @@ def test_two_undisposed_non_blocking_findings_leave_the_run_to_its_coordinator(
             "non-blocking: the docstring names two dimensions of three",
         ),
     )
-    before = _stored_record(str(delivery["head"]))
-    monkeypatch.setattr(
-        queue_landing,
-        "_land",
-        lambda run_id: pytest.fail("a run with undisposed findings was landed"),
-    )
+    landed = _land(monkeypatch)
 
     result = queue_landing.land_once()
 
-    assert result["landed"] == [], result
-    assert len(result["obligations"]) == 1, result
-    guard = result["obligations"][0]["guard"]
-    assert guard.startswith("red-suite:"), guard
-    assert "no disposition" in guard, guard
-    assert _stored_record(str(delivery["head"])) == before
+    assert result["landed"] == [RUN], result
+    assert result["obligations"] == []
+    assert landed == [RUN]
+    record = _stored_record(str(delivery["head"]))
+    assert set(record["finding_dispositions"]) == {"0", "1"}
+    for index in (0, 1):
+        assert (
+            findings_module.finding_disposition(record, index) == f"deferred:{RUN}"
+        ), record["finding_dispositions"]
+        entry = record["finding_dispositions"][str(index)]
+        assert entry["rule"] == review_dispositions.DEFERRED_AT_LANDING_RULE, entry
+        assert entry["run"] == RUN, entry
 
 
 # ── the score sets no floor ─────────────────────────────────────────────────

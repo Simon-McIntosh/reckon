@@ -1,0 +1,46 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-11-13T14:07:51.868Z",
+  "dispatched_at": "2026-11-13T13:54:29Z",
+  "findings": [
+    {
+      "file": "reckon/crew/dispatching/requests.py",
+      "line": 302,
+      "severity": "non-blocking",
+      "text": "dispatch_watch[\"host_handoff\"] is written and never read: launch.py composes record[\"watch\"] from scratch and take_session_hand_off() is the carrier the payload uses, so this is a dead second copy of the same fact."
+    },
+    {
+      "file": "reckon/crew/dispatch_watch.py",
+      "line": 870,
+      "severity": "non-blocking",
+      "text": "the mismatched resume branch returns True as soon as _deliver_request wrote the request, whereas every other path in _rearm_session_follower returns True only after observing a live host child; reckon/crew_run_commands.py:2602 reports that value as follower_rearmed, so a resume can claim a follower is following when the host has only been asked."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "reckon/crew/dispatching/requests.py:_arrange_dispatch_follower reached from six call sites in reckon/crew/dispatching/preparation.py, reckon/crew/dispatching/launch.py:_launch_dispatch, and reckon/crew/resumption.py:2007 via _rearm_session_follower.",
+    "diff": "read commit by commit against 64415afa: 8f8ab73a1c adds the hand-off wiring in requests.py and launch.py, 34da715ada gates the printed line behind a TTY so the JSON payload stays parseable, and ed148b0549 rewrites the evidence fragment; 296 insertions across the five declared paths.",
+    "done_when": "the reviewed run's done_when names tests/test_a_session_mismatch_never_skips_the_host_silently.py with five cases plus a negative control; head-suite.log records 54 passed and 2 scaffolding errors against base-suite.log's 49 passed and 2 errors with the same ids, and negative-control.log records 3 failed and 2 passed at EXIT=1, the exact split the promise describes.",
+    "goal": "the source goal is that a dispatch whose --session differs from the caller never skips the session host silently; the gained commits wire reckon/crew/dispatching/requests.py:300 into _arrange_dispatch_follower and reckon/crew/dispatching/launch.py:676 into the launch payload, so the hand-off now reaches a real dispatch instead of sitting unused as the earlier review found.",
+    "manifest": "read; status complete, it records both suite arms with log paths, both importer arms, the negative control at negative-control.log with the mutation named, the fragment, and the commits 8f8ab73a1c/34da715ada/ed148b0549.",
+    "write_paths": "the manifest declares the five files the diff touches; git diff --stat 64415afa..ed148b0549 changes exactly those five paths and no other file."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the source goal is that a dispatch whose --session differs from the caller never skips the session host silently; the gained commits wire reckon/crew/dispatching/requests.py:300 into _arrange_dispatch_follower and reckon/crew/dispatching/launch.py:676 into the launch payload, so the hand-off now reaches a real dispatch instead of sitting unused as the earlier review found.\nVERDICT done_when: the reviewed run's done_when names tests/test_a_session_mismatch_never_skips_the_host_silently.py with five cases plus a negative control; head-suite.log records 54 passed and 2 scaffolding errors against base-suite.log's 49 passed and 2 errors with the same ids, and negative-control.log records 3 failed and 2 passed at EXIT=1, the exact split the promise describes.\nVERDICT write_paths: the manifest declares the five files the diff touches; git diff --stat 64415afa..ed148b0549 changes exactly those five paths and no other file.\nVERDICT manifest: read; status complete, it records both suite arms with log paths, both importer arms, the negative control at negative-control.log with the mutation named, the fragment, and the commits 8f8ab73a1c/34da715ada/ed148b0549.\nVERDICT diff: read commit by commit against 64415afa: 8f8ab73a1c adds the hand-off wiring in requests.py and launch.py, 34da715ada gates the printed line behind a TTY so the JSON payload stays parseable, and ed148b0549 rewrites the evidence fragment; 296 insertions across the five declared paths.\nCALL_SITES: reckon/crew/dispatching/requests.py:_arrange_dispatch_follower (reached from reckon/crew/dispatching/preparation.py:614,878,919,989,1053,1354), reckon/crew/dispatching/launch.py:_launch_dispatch, reckon/crew/resumption.py:2007 _rearm_session_follower\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: the hand-off is now reached by real dispatches at reckon/crew/dispatching/requests.py:300 and lands on the payload at reckon/crew/dispatching/launch.py:678, so the silent skip the goal names is closed for the cli/session case it describes.\nSCORE evidence: 17\nJUSTIFICATION evidence: head-suite.log and base-suite.log record 54 passed/2 errors and 49 passed/2 errors with identical error ids, the importer arms are 68 passed/1 failed at both revisions, and negative-control.log reddens the three mismatched cases at EXIT=1; the ruff claim has no log beside it.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat 64415afa..ed148b0549 changes exactly the five declared write paths and no other file.\nSCORE durability: 16\nJUSTIFICATION durability: the real-entry-point case at tests/test_a_session_mismatch_never_skips_the_host_silently.py:314 compares record[\"host_handoff\"] to a literal and reddens under the recorded negative control, but the resume branch at reckon/crew/dispatch_watch.py:866 and the stale-hand-off clear at reckon/crew/dispatching/requests.py:274 have no assertion, and the TTY gate at reckon/crew/dispatch_watch.py:950 is monkeypatched away so it never runs.\nSCORE fit: 18\nJUSTIFICATION fit: the new entry point and helpers follow reckon/crew/dispatch_watch.py:936's module idiom and the ContextVar carrier mirrors reckon/crew/resumption.py:320, and the docstrings now describe the mechanism rather than the superseded behaviour.\nSCORE reuse: 17\nJUSTIFICATION reuse: hand_off_mismatched_session reuses _deliver_request and _request_line at reckon/crew/dispatch_watch.py:1012 rather than respelling the FIFO write, but the same hand-off is also stored at reckon/crew/dispatching/requests.py:302 where nothing reads it, a second carrier for a fact launch.py:678 already reads.\nFINDING reckon/crew/dispatching/requests.py:302 non-blocking: dispatch_watch[\"host_handoff\"] is written and never read -- launch.py composes record[\"watch\"] from scratch and take_session_hand_off() is the carrier the payload uses -- so it is a dead second copy of the same fact.\nFINDING reckon/crew/dispatch_watch.py:870 non-blocking: the mismatched resume branch returns True as soon as _deliver_request wrote the request, whereas every other path in _rearm_session_follower:864 returns True only after observing a live host child; reckon/crew_run_commands.py:2602 reports that value as follower_rearmed, so a resume can claim a follower is following when the host has only been asked.\n",
+  "review_run_id": "r-20261113T131926348768-review-of-a-session-mismatch-never-skips-the-host-ed148b0549a2",
+  "reviewed_base_sha": "64415afa6023d655e36846ada374681e4e125e50",
+  "reviewed_head_sha": "ed148b0549a21f8da51af1e8567d39001750f0a1",
+  "reviewed_run_id": "r-20261113T033912382390-a-session-mismatch-never-skips-the-host",
+  "scores": {
+    "durability": 16,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 17,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-13T15:10:19.473330+00:00",
+  "total": 106
+}

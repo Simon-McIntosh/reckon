@@ -27,6 +27,7 @@ import pytest
 from click.testing import CliRunner
 
 from reckon import cli as cli_module
+from reckon.crew import queue_admission
 from reckon.crew.node import TaskNode, validate_node
 
 FENCE = "60m"
@@ -270,3 +271,78 @@ def test_dispatch_leaves_a_budget_inside_the_fence_alone(
     assert document["validation"]["ok"] is True, document["validation"]
     assert _bounded_findings(document) == []
     assert document["node"]["over_fence_reason"] == ""
+
+
+def test_a_blank_reason_admits_nothing(tmp_path: Path) -> None:
+    """Whitespace is not a reason: the check reads the stripped text."""
+    node = TaskNode(
+        id="a-fenced-node",
+        goal=GOAL,
+        plan="a-fenced-plan",
+        section="s1",
+        spec_level="guided",
+        done_when=DONE_WHEN,
+        write_paths=["result.json"],
+        time_budget=OVER_BUDGET,
+        over_fence_reason="   ",
+        manifest_path=str(tmp_path / "manifest.md"),
+    )
+
+    verdict = validate_node(node, budget_ceiling=FENCE)
+
+    assert not verdict.ok
+    details = [f["detail"] for f in verdict.findings if f["property"] == "bounded"]
+    assert details, verdict.findings
+    assert "--over-fence" in details[0]
+
+
+def test_a_reason_padded_with_whitespace_still_admits(tmp_path: Path) -> None:
+    """The stripped text is what is read, so surrounding whitespace is harmless."""
+    node = TaskNode(
+        id="a-fenced-node",
+        goal=GOAL,
+        plan="a-fenced-plan",
+        section="s1",
+        spec_level="guided",
+        done_when=DONE_WHEN,
+        write_paths=["result.json"],
+        time_budget=OVER_BUDGET,
+        over_fence_reason=f"  {REASON}  ",
+        manifest_path=str(tmp_path / "manifest.md"),
+    )
+
+    verdict = validate_node(node, budget_ceiling=FENCE)
+
+    assert verdict.ok, verdict.findings
+
+
+def test_a_queued_request_keeps_the_reason_it_recorded(crew_home: Path) -> None:
+    """A request that queues and is later launched is judged on its own reason.
+
+    A queued request stores its node as data and rebuilds it at launch, so the
+    reason admits the over-fence budget only if the rebuild carries it. The
+    second half states the arm's sensitivity: the field travels through the
+    rebuild rather than arriving from a default.
+    """
+    node = TaskNode(
+        id="a-fenced-node",
+        goal=GOAL,
+        plan="a-fenced-plan",
+        section="s1",
+        spec_level="guided",
+        done_when=DONE_WHEN,
+        write_paths=["result.json"],
+        time_budget=OVER_BUDGET,
+        over_fence_reason=REASON,
+        manifest_path="/elsewhere/manifest.md",
+    )
+
+    pointer = {"run_id": "r-a-fenced-node", "node": node.as_dict()}
+    rebuilt = queue_admission._node_from_pointer(pointer)
+
+    assert rebuilt.over_fence_reason == REASON
+
+    without_the_field = dict(pointer)
+    without_the_field["node"] = dict(pointer["node"])
+    del without_the_field["node"]["over_fence_reason"]
+    assert queue_admission._node_from_pointer(without_the_field).over_fence_reason == ""

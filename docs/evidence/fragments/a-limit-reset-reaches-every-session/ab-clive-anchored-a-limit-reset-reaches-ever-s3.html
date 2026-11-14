@@ -1,0 +1,33 @@
+<article class="r-evidence" data-node="ab-clive-anchored-a-limit-reset-reaches-ever-s3">
+<h3 id="ab-clive-anchored-a-limit-reset-reaches-ever-s3-what">A session without a pane learns of a reset on its next prompt — verified at head, no change needed</h3>
+<p id="ab-clive-anchored-a-limit-reset-reaches-ever-s3-state">The deliverable this node was dispatched to build is
+already on the tree at <code>aa40821475</code>. The prompt hook
+(<code>reckon/hooks/coordinator_obligations.py</code>) renders one line per reset due to the session beside the
+duty list, reading <code>&lt;crew-home&gt;/budget-resets.json</code> itself so the line appears with no
+obligations snapshot published; <code>duty_digest</code> carries the reset ids so a repeat stays quiet; and
+<code>reckon/crew/obligations.py:recent_limit_resets</code> puts the same events under <code>limit_resets</code>
+through <code>budget_reset.recent_resets</code> at the producer's own horizon. The implementation landed in
+<code>ac0958d9ae</code> and its gate in <code>df58276bf5</code>; a landing record for the earlier node is already
+composed under this plan. This node found nothing to implement and changed no product source or test, so an arm
+comparison would measure an identity: base and head are the same tree.</p>
+<h3 id="ab-clive-anchored-a-limit-reset-reaches-ever-s3-measure">Measure</h3>
+<p id="ab-clive-anchored-a-limit-reset-reaches-ever-s3-gate">The gate runs the hook as the harness runs it — a
+subprocess with hook JSON on stdin — under a temporary crew home whose store path is asserted to be outside the
+real one, with no obligations snapshot published, over a store holding a 20-minute global event, a 90-minute one,
+and one scoped to another session. At <code>aa40821475</code> it is <strong>4 passed</strong> in 12.20 s,
+<code>EXIT=0</code>: the prompt names exactly one reset line, carrying the 20-minute event and neither excluded
+one; a second prompt with the same reading writes no context at all; the obligations view lists the 20-minute
+event under <code>limit_resets</code> with its group; and the hook's fast reader equals
+<code>budget_reset.recent_resets</code> for the asking session and for no session.</p>
+<p id="ab-clive-anchored-a-limit-reset-reaches-ever-s3-control">The declared negative control drops the 60-minute
+horizon (<code>RECKON_LIMIT_RESET_HORIZON_SECONDS=7200</code>), and the same file then reports
+<strong>1 failed, 3 passed</strong>, <code>EXIT=1</code>, the single failure being the first case's one-line
+assertion, with both events printed — the 20-minute one and the 90-minute <code>an-older-window</code> row. The
+bound is the horizon's, not the store's, which is what the section asks this control to show.</p>
+<p id="ab-clive-anchored-a-limit-reset-reaches-ever-s3-suite">The promotion suite arm over this tree
+(<code>tests/test_staged_write_inventory.py</code>, resolved from this node's write scope) is <strong>51
+passed</strong>, <code>EXIT=0</code>, run twice — once per arm — with identical results. The 104 test files
+importing either module were not re-run: this node changes neither, so the base and head arms are the same bytes
+and the delta is zero by construction; the earlier node's arm measurement stands as the record of that
+comparison.</p>
+</article>

@@ -1,0 +1,130 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-11T09:08:08.360Z",
+  "dispatched_at": "2026-11-11T09:02:18Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-queue-holds-the-whole-plan.html:208",
+      "id": "reasoning-1",
+      "reason": "without naming the shared readiness read and the promotion-time caller, a node can guard only the admission pass, pass its gate, and leave the production release path running before the merge.",
+      "text": "\u00a740's deliverable is a release that happens only once the upstream's head is on the primary branch, but the release route it does not name fires earlier: `complete()` calls `_release_waiters_of_the_landed_section` (`reckon/crew/promotion.py:775`) inside the promotion, and `--land` merges only \"after the promotion\" (`reckon/crew_run_commands.py:3156`), so a coordinator declaring the section done and landing its run releases the waiters at the declaration commit \u2014 the exact incident \u00a740 reports \u2014 while the section's own done-when, driving the admission pass, stays green; the fix is to name the shared readiness read that both `admit_once` and `_release_waiters` (`reckon/crew/queue_admission.py:3916`) consult as the enforcement point and to add a case releasing through the promotion route",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-queue-holds-the-whole-plan.html:22",
+      "id": "wiring-1",
+      "reason": "adding s40 to \u00a714's declared waits is one line and prevents the whole-plan drain from running on an unlanded admission path, the failure the earlier waits on s35\u2013s38 were added to avoid.",
+      "text": "\u00a714 is `implementable`, declares no wait on `s40`, and its text says the drain starts \"Once every other section has landed\", while s40 rewrites `reckon/crew/queue_admission.py`, the admission pass the drain runs on; the same wait was added for s35, s36, s37 and s38, so a queue that admits \u00a714 can launch it alongside \u00a740 onto that module",
+      "type": "wiring",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "eb10519ebb5fdee4c8d8f91c0c1c27a235666ca4",
+  "plan_fingerprint": "8c1d2cefbed64c916fbcf1d77b7a18a436ffa4a70a9a6ca877c0c479cb50997d",
+  "plan_slug": "a-queue-holds-the-whole-plan",
+  "plan_version": 333,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "90ac872e95fe95bd74f16ce8a98c55e747e30839",
+      "commit_basis": "edit",
+      "finding": "reasoning-1",
+      "note": "Settled in the read-back commit on this plan: see the section's Why, Deliverable, Done when or its descope reason.",
+      "reason": "",
+      "when": "2026-11-11T09:48:28.639540+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "90ac872e95fe95bd74f16ce8a98c55e747e30839",
+      "commit_basis": "edit",
+      "finding": "wiring-1",
+      "note": "Settled in the read-back commit on this plan: see the section's Why, Deliverable, Done when or its descope reason.",
+      "reason": "",
+      "when": "2026-11-11T09:48:46.731377+00:00"
+    }
+  ],
+  "responses": {
+    "reasoning-1": {
+      "action": "acted",
+      "by": "",
+      "commit": "90ac872e95fe95bd74f16ce8a98c55e747e30839",
+      "commit_basis": "edit",
+      "note": "Settled in the read-back commit on this plan: see the section's Why, Deliverable, Done when or its descope reason.",
+      "reason": "",
+      "when": "2026-11-11T09:48:28.639540+00:00"
+    },
+    "wiring-1": {
+      "action": "acted",
+      "by": "",
+      "commit": "90ac872e95fe95bd74f16ce8a98c55e747e30839",
+      "commit_basis": "edit",
+      "note": "Settled in the read-back commit on this plan: see the section's Why, Deliverable, Done when or its descope reason.",
+      "reason": "",
+      "when": "2026-11-11T09:48:46.731377+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/Code/reckon/docs/state/reckon/reviews/plan/a-queue-holds-the-whole-plan/r-20261111T085927510564-plan-review-of-a-queue-holds-the-whole-plan.json",
+  "review_run_id": "r-20261111T085927510564-plan-review-of-a-queue-holds-the-whole-plan",
+  "reviewed_blob_sha": "03c38fc725321c83ee4b863e29b93882c6eb279d",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `e0b2a6abb` resolves in power_convertor as \"docs(plans): mark ripple-inception section 2 done\", `a10d921b2` resolves there, the cited plan `ripple-inception-risk` carries \u00a72 and \u00a74, and `reckon/crew/queue_admission.py` exists.",
+    "done_when": "pass \u2014 \u00a740's done-when is measurable (a waiter held while the promoted section head is off the primary branch, released on the pass after the merge) and declares a negative control that releases on the declaration alone, which fails the first case.",
+    "evidence_paths": "pass \u2014 every log is named under the run directory, a durable path that outlives the run.",
+    "naming": "pass \u2014 \u00a740's file name and terminology are mechanism-named, with no plan labels, stage names or ticket numbers.",
+    "reasoning": "a finding \u2014 \u00a740 states its guarantee over \"a queued request that waits on a section is released only when\u2026\", but names only the admission pass and scopes the change to `queue_admission.py`; the promotion route already releases those waiters before the merge (`reckon/crew/promotion.py:775`), and the done-when exercises only the admission pass.",
+    "single_goal": "pass \u2014 \u00a740 carries one deliverable: a section wait releases only when the section's runs have landed, with the hand-completed no-run case named as the deliberate exception.",
+    "wiring": "a finding \u2014 `plan-section-depends-on` (line 22) gives `s14` waits through `s38` but not `s40`, while \u00a714's first sentence says the drain begins once every other section has landed and \u00a740 rewrites `reckon/crew/queue_admission.py`, the module \u00a714's admission pass runs on."
+  },
+  "section_digests": {
+    "_document": "b352a818628a39c87f6cc732a8434ef21f2ef02bc678b930019be72a808b5dc0",
+    "s1": "fb24c0e002fa9969e0ca173681e8f1dcea04b4f039e33a0fa1dd5ea373f593de",
+    "s10": "16609a44238dbb7645a90d45c150d317a07b1793b4cd9dfa9bb33f1b4e086a0c",
+    "s11": "5cf5ffce08aa5567c1bacc4682131c122ab49241a6b6867d3f8a859b9aeb336e",
+    "s12": "0d1d902926dbea2c5a6d51db22d9d538d2d1d08c571f68cfd85e7dfedbf2cf8e",
+    "s13": "b2f3a4dc4441527ebac138fcd2583e79959e677a2bb235937905ef5260c68abe",
+    "s14": "48fefdd9daf0a510f622d4efc2c33c5a3105e8f4dc9b719521fcd69460bd490a",
+    "s15": "088f32a17914862634f01581550d494a75aeccecd6f4b1ad7529c606614cd8f1",
+    "s16": "3baae65f9838c420131b091c23c8e0495b371ceb323b379111c27677117bfa36",
+    "s17": "e8d19190fe8ad7ac0ada9570da1e1403020d996fade35345888d232283a712f3",
+    "s18": "c41a5f40b44fad7c9170e75afe458887ecf383dfbdfbd87f44b1aba18db385ce",
+    "s19": "3bd989d1975e3410388984d6b187e73537eb6741a9325640197d88ec68579fac",
+    "s2": "6f40396130f7ded32c5a1af11477c8349c23419b986be7ea455def69278413e9",
+    "s20": "1650ed742b05d1b8454fbb0792d83df930c357b4929ce75b0b82b8574b007375",
+    "s21": "92ae2c978f0293fbe8f09066288ab258d7d810c4bedc3ce5fe964f064ca7310e",
+    "s22": "47e2cfd2937f003b333a5627f777e7bc72cb16eaf677da44f2683b7c2cbe138b",
+    "s23": "8b0cff55659bab7a4f30061f3adc4d4e822c8679c7c659a592a131c825a356a8",
+    "s24": "e41f5feee9ab0bd1cb7371a93fa8f654ccd277325b302e34421d3b0ea907d869",
+    "s25": "d156187078ac0ab4d87d1398fe13f74eee443a0f2e48ed45f963ef238d8737d9",
+    "s26": "abf23ffa47584798ae7c0303cda18d5e3ded7f690e2e692a13f35b2c021f2813",
+    "s27": "272f482e0766b56080b610bdbf7ac48bc9ddfa2ed1cfb8c8a85cd9ecd5b32d93",
+    "s28": "cd767c148ee02023bec11cd941361b5cc37e14d542a4c6a132a48261b3b2497b",
+    "s29": "e7851807f93e49d39fd9789aa3dd5638ecc35016f60f53bc0c4fe3413a6bcf20",
+    "s3": "afea9aff41cb2215f28079810dcc13a5df1c6eb744cbd74c37b09ed3114da92a",
+    "s30": "b3148b61a2b1805ec38f8705fedffdb786ccee3a47f4a8bebcd794ce6b0983cf",
+    "s31": "23ef7a8f162555218fc698e3569bcef26b43435845dbb6c5af88193a0e76166e",
+    "s32": "04cecab62796d354c65abbea09c54c3d37a9155ab0d83b7da53e5c481a8cf8c6",
+    "s33": "9db5479d0d5cb815819bdb4c45cebe9064b8b2b85c07514b9bd6689e07590ac3",
+    "s34": "28ec67c9ff9af2e77a8ceca28cfe58dda22acf33e78752ecdc0c93437ec47ddd",
+    "s35": "53659cabcb1f264ddcdacc4c1d9271f132812f7e63527176f2a850f9317197fb",
+    "s36": "3c14bcaafca65d0775675f39af63a2199a057de32633294444dc446aab5a1fba",
+    "s37": "6889a6da568c36055f4606baa4ab3e17b94fa4a9d1fd14faa24909c0fa9e3243",
+    "s38": "0c15038b408405c23aad25c08b3c665a64c029cc83dfe975274581f85a2359a7",
+    "s39": "2d4849df481c1704d8a10e424069f9a5fb6de9a853f0284cf2ba5bd7246d929e",
+    "s4": "903a94096df2ca117b8f5060f5de2c87e89549a4efa774b1fbbec134d7a46b63",
+    "s40": "982fd5d3520f1f3385daa2b175632a766f70670d907aca1a659c1ba2637aa9ca",
+    "s5": "a00c22d22d70c8a2ed3e7b08d58ef99957f2613d76b12181c91bcbb2a3517ade",
+    "s6": "a81480c94db3372e03fb8862f58fcb5017c6a0d5c4471ceecbf3c71a6850ce93",
+    "s7": "dbc7a6a07a37d3070088479d5385db177893a680c91d69feeea5aa537d0217d2",
+    "s8": "0baa02deb68c4c0f5702a20bc5b40684841e6b87295760a1f835f27d114094ef",
+    "s9": "4e5362394123fc5c53f2d2c0702fd5df85854d91227c9782171176d0fbe23314"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-11T09:29:09.631402+00:00",
+  "total": null
+}

@@ -1,0 +1,205 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-11T16:32:54.337Z",
+  "dispatched_at": "2026-11-11T16:22:20Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/work-flows-to-the-lane.html:110",
+      "id": "wiring-1",
+      "reason": "whichever section lands second, \u00a712's test fails on `main` and \u00a73's write paths grant nobody the right to repair it, so \u00a712 must wait on \u00a73 and gate only the recorded waiver, or \u00a73 must grant the \u00a712 test.",
+      "text": "\u00a712's done-when asserts that `allow_unreconciled_runs` \"behaves likewise for a session with an overdue run\", meaning the entry queues with the waiver and is refused without it, but \u00a73's deliverable makes a direct dispatch and a queue-time check succeed for exactly that session with `--allow-unreconciled-runs` changing nothing, so after \u00a73 lands the refusal \u00a712's gate depends on no longer exists",
+      "type": "wiring",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/work-flows-to-the-lane.html:124",
+      "id": "wiring-2",
+      "reason": "a coordinator taking the plan's own chain closes the followup having built \u00a72\u2013\u00a79 and leaves \u00a710\u2013\u00a714 unbuilt, and the body misstates which sections \u00a79 waits on.",
+      "text": "the driving followup f-wftl-001 still reads \"Build \u00a72 to \u00a79\" and \"\u00a79 waits on \u00a72 to \u00a75\", while `plan-section-declarations` now carries s10\u2013s14 as implementable and `plan-section-depends-on` gives s9 the waits s2, s3, s4, s5 and s6",
+      "type": "wiring",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/work-flows-to-the-lane.html:102",
+      "id": "done_when-1",
+      "reason": "the roadmap is how a coordinator learns which sections of a plan are held, and a passing node could leave it reading the plan as wholly held or wholly ready.",
+      "text": "\u00a710's deliverable requires that plan readers, the roadmap and the plan schema report the sections a decision names, but its done-when asserts only dispatch and admission behaviour, so a node that scopes the hold correctly and exposes the named sections nowhere still passes",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/work-flows-to-the-lane.html:106",
+      "id": "done_when-2",
+      "reason": "the verdict row is the surface \u00a71's own evidence is drawn from, so a node can pass while that row still omits the decision key.",
+      "text": "\u00a711's deliverable names three surfaces that must carry the blocker (the dispatch result, the queued pointer's recorded hold, the admission verdict) but its done-when asserts only the first two, so the admission verdict a coordinator reads in `admission-verdicts.jsonl` can go unchanged",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/work-flows-to-the-lane.html:92",
+      "id": "done_when-3",
+      "reason": "the node must either implement an unstated ordering guard or fail its own gate, so the deliverable should state the refusal or the control should become a mutation that drops the prediction write.",
+      "text": "\u00a78's negative control is \"a prediction recorded after the review was stored is refused by the view\", a refusal no part of its deliverable states: the deliverable asks only that the prediction is recorded before dispatch and the outcome recorded beside it when the review is stored, and a view that reports the recorded rows satisfies every stated requirement and fails the control",
+      "type": "done_when",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "8ed04a011d0c1d3b10ab32efb4e500982beda480",
+  "plan_fingerprint": "ffa29ef4b4fbbf7ac2e0dbecf21bc08c4141e18e7cf3708464a3d347b16bd0fd",
+  "plan_slug": "work-flows-to-the-lane",
+  "plan_version": 4,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "4a4bb0f17beb1c0e0644e5e4d4fa3786d858a0b4",
+      "commit_basis": "edit",
+      "finding": "wiring-1",
+      "note": "s12 now covers allow_unreviewed_plan only and asserts allow_unreconciled_runs is accepted and changes nothing, so it no longer depends on the refusal s3 removes",
+      "reason": "",
+      "when": "2026-11-11T16:46:39.818170+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "4a4bb0f17beb1c0e0644e5e4d4fa3786d858a0b4",
+      "commit_basis": "edit",
+      "finding": "wiring-2",
+      "note": "f-wftl-001 resolved as superseded; f-wftl-002 names every unbuilt section and states s3 and s9's waits as declared",
+      "reason": "",
+      "when": "2026-11-11T16:46:57.624376+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "4a4bb0f17beb1c0e0644e5e4d4fa3786d858a0b4",
+      "commit_basis": "edit",
+      "finding": "done_when-1",
+      "note": "s10's done-when now asserts the roadmap reports s3 held naming the decision and s2 ready, and the plan reader reports the decision's named sections",
+      "reason": "",
+      "when": "2026-11-11T16:47:19.621000+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "4a4bb0f17beb1c0e0644e5e4d4fa3786d858a0b4",
+      "commit_basis": "edit",
+      "finding": "done_when-2",
+      "note": "s11's done-when now asserts the admission verdict row names the decision key",
+      "reason": "",
+      "when": "2026-11-11T16:47:52.718961+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "4a4bb0f17beb1c0e0644e5e4d4fa3786d858a0b4",
+      "commit_basis": "edit",
+      "finding": "done_when-3",
+      "note": "s8's negative control is now a mutation: dropping the prediction write fails the ledger-row assertion",
+      "reason": "",
+      "when": "2026-11-11T16:48:19.566146+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "4a4bb0f17beb1c0e0644e5e4d4fa3786d858a0b4",
+      "commit_basis": "edit",
+      "finding": "wiring-1",
+      "note": "s12 now covers allow_unreviewed_plan only and asserts allow_unreconciled_runs is accepted and changes nothing, so it no longer depends on the refusal s3 removes",
+      "reason": "",
+      "when": "2026-11-11T16:49:24.634075+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "4a4bb0f17beb1c0e0644e5e4d4fa3786d858a0b4",
+      "commit_basis": "edit",
+      "finding": "done_when-3",
+      "note": "s8's negative control is now a mutation: dropping the prediction write fails the ledger-row assertion",
+      "reason": "",
+      "when": "2026-11-11T16:50:05.706533+00:00"
+    }
+  ],
+  "responses": {
+    "done_when-1": {
+      "action": "acted",
+      "by": "",
+      "commit": "4a4bb0f17beb1c0e0644e5e4d4fa3786d858a0b4",
+      "commit_basis": "edit",
+      "note": "s10's done-when now asserts the roadmap reports s3 held naming the decision and s2 ready, and the plan reader reports the decision's named sections",
+      "reason": "",
+      "when": "2026-11-11T16:47:19.621000+00:00"
+    },
+    "done_when-2": {
+      "action": "acted",
+      "by": "",
+      "commit": "4a4bb0f17beb1c0e0644e5e4d4fa3786d858a0b4",
+      "commit_basis": "edit",
+      "note": "s11's done-when now asserts the admission verdict row names the decision key",
+      "reason": "",
+      "when": "2026-11-11T16:47:52.718961+00:00"
+    },
+    "done_when-3": {
+      "action": "acted",
+      "by": "",
+      "commit": "4a4bb0f17beb1c0e0644e5e4d4fa3786d858a0b4",
+      "commit_basis": "edit",
+      "note": "s8's negative control is now a mutation: dropping the prediction write fails the ledger-row assertion",
+      "reason": "",
+      "when": "2026-11-11T16:50:05.706533+00:00"
+    },
+    "wiring-1": {
+      "action": "acted",
+      "by": "",
+      "commit": "4a4bb0f17beb1c0e0644e5e4d4fa3786d858a0b4",
+      "commit_basis": "edit",
+      "note": "s12 now covers allow_unreviewed_plan only and asserts allow_unreconciled_runs is accepted and changes nothing, so it no longer depends on the refusal s3 removes",
+      "reason": "",
+      "when": "2026-11-11T16:49:24.634075+00:00"
+    },
+    "wiring-2": {
+      "action": "acted",
+      "by": "",
+      "commit": "4a4bb0f17beb1c0e0644e5e4d4fa3786d858a0b4",
+      "commit_basis": "edit",
+      "note": "f-wftl-001 resolved as superseded; f-wftl-002 names every unbuilt section and states s3 and s9's waits as declared",
+      "reason": "",
+      "when": "2026-11-11T16:46:57.624376+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/Code/reckon/docs/state/reckon/reviews/plan/work-flows-to-the-lane/r-20261111T161608416187-plan-review-of-work-flows-to-the-lane.json",
+  "review_run_id": "r-20261111T161608416187-plan-review-of-work-flows-to-the-lane",
+  "reviewed_blob_sha": "1bb9626e271c9b8d9d753d85e2c2b451bbd55b95",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every code path a changed unit cites exists in the tree (`reckon/crew/queue_admission.py`, `reckon/crew/dispatch.py`, `reckon/crew/dispatch_batch.py`, `reckon/crew/plan_review.py`, `reckon/_store.py`, `reckon/mcp.py`, `reckon/roadmap.py`), the batch `BATCH_ENTRY_FIELDS` set confirms \u00a712's premise, \u00a713's leaked directory `r-20261111T152900149303-plan-review-of-work-flows-to-the-lane` exists holding `brief.md`, `plan.html` and `plan-review.json`, and the `_document` wait `a-gate-halts-only-on-substance#s7` resolves to an `id=\"s7\"` heading.",
+    "done_when": "a finding \u2014 \u00a710's gate never exercises the roadmap and plan-schema reporting its deliverable names, \u00a711's gate never exercises the admission verdict its deliverable names, and \u00a78's negative control asserts a view refusal its deliverable never requires.",
+    "evidence_paths": "pass \u2014 \u00a75, \u00a78 and \u00a710\u2013\u00a714 name gate logs on disk and \u00a79's record sits under `docs/evidence/archive/work-flows-to-the-lane-landed.html`; no changed section sends evidence to a scratchpad or a node-local temporary directory.",
+    "naming": "pass \u2014 the new test names and the changed prose describe behaviour; no plan label, stage name, ticket number or version tag reaches a symbol, filename or comment, and the \u00a7-references are plan-internal.",
+    "reasoning": "pass \u2014 \u00a710's and \u00a711's root causes match their cited evidence (the leaked report directory and the batch entry field set were both opened), each changed section states records and a tolerance rather than a code path, and \u00a78's shadow design skips nothing.",
+    "single_goal": "pass \u2014 each changed section names one deliverable: \u00a75 the watch row, \u00a78 the shadow prediction, \u00a710 scoped decision holds, \u00a711 the hold's name, \u00a712 the batch waivers, \u00a713 the refusal before composition, \u00a714 the withdrawal op.",
+    "wiring": "a finding \u2014 \u00a712's done-when requires an unreconciled-run refusal that \u00a73 removes, and \u00a712 declares no wait on \u00a73 while \u00a73's grant excludes \u00a712's test; the driving followup f-wftl-001 still scopes the build to \u00a72\u2013\u00a79 while \u00a710\u2013\u00a714 are declared implementable."
+  },
+  "section_digests": {
+    "_document": "d3a3899ebedd8fcb63873e56faa47d17ba8394ffccdc0cb46ce5d7e51e4c4135",
+    "s1": "1176d881373dcfc183430925a9be7bda1d724f734d02210efa9a7406d8e1fa71",
+    "s10": "700171d0523fc2151286872f3ec0b22f2084bdf5b70abd2b4a51057778ba4217",
+    "s11": "bbbd97ae89fefab54447bc56845c4c2896256b68b96bc665c1ff5fdb3a23c33a",
+    "s12": "19c9eecdaabc1ac3fc743163567a30028d1d60155b3fe45a4da7a21fb6851d0e",
+    "s13": "bad1450236608d548873bc0831709655753d5f32c522514cd8a8267e16cc24cb",
+    "s14": "6d2e063d7be900a87f2e35838933c4be318b30a3d3dd9ac63554ff8b49e2a0c7",
+    "s2": "bd3d223462ee3b0fb515f2472d9397d8e27ca44c184bf71b42367fd7a9db1054",
+    "s3": "2a060c7a5415553f71ca05b752499669f3209379066f0ffca3eb658079698d29",
+    "s4": "73dd573a24e53462f06ce2ee81f9ce01d788caba75663d34802e585ffa9af368",
+    "s5": "71c63f4fe2ec953ac5f7ddb2a246f167602f4978f9480d7bc81453507d1aa8cc",
+    "s6": "e3c7bc0d0096a6c0a8c522054cd48a1cd1c56da6259377c3e1f880aec6d01923",
+    "s7": "8411a4b87a6d941e69b74aa81c380f024a398cf80490125819b718f524deb5fd",
+    "s8": "913bdbf23b4009bc3bfeda47ac2960dfee3a16c3109c0cbfb233d94b14c9cbd3",
+    "s9": "22b677c7bb355bdeb12944385e3d77bc965d6b2749b0a01789a6c5b8bc805e56"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-11T16:44:04.677292+00:00",
+  "total": null
+}

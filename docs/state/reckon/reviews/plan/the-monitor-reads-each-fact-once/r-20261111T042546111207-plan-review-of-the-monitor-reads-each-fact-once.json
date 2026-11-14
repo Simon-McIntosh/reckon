@@ -1,0 +1,164 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-11T04:41:29.812Z",
+  "dispatched_at": "2026-11-11T04:31:47Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/the-monitor-reads-each-fact-once.html:573",
+      "id": "wiring-1",
+      "reason": "without a followup carrying its build line a section can be neither dispatched nor closed, which is the same defect this plan's last review raised for \u00a723 and \u00a724 and had repaired.",
+      "text": "`plan-section-declarations` now declares `s25` and `s26` `implementable`, but the plan contains no `/reckon-build the-monitor-reads-each-fact-once \u00a725` or `\u00a726` anywhere: the open followups are f-tmref-004 (\u00a77), f-tmref-008 (\u00a722), f-tmref-009 (\u00a723) and f-tmref-010 (\u00a724), so the invocation chain stops at the two sections that have already landed and neither new section has an entry point a coordinator can dispatch",
+      "type": "wiring",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/the-monitor-reads-each-fact-once.html:578",
+      "id": "done_when-1",
+      "reason": "an unmeasured deliverable clause is invisible to both the node's gate and its review, and this one changes termination behaviour (a pane that should have ended keeps running), which is the direction a worker has no reason to touch and no way to prove.",
+      "text": "\u00a726's Deliverable carries three clauses but its done-when measures two: the bounded-interval verdict cache and the `_review_in_flight`-free phase-only liveness, while \"A stale reading also extends the settle grace instead of ending a pane over work it cannot see\" has no assertion, so a worker can satisfy every stated measure and never change when a pane is ended",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/the-monitor-reads-each-fact-once.html:578",
+      "id": "evidence_paths-1",
+      "reason": "the section's whole case is that the fallback is expensive and the station is stale, and neither the load sample nor the strace can be opened, re-checked against a later tree, or re-measured after landing, so the post-landing comparison the section asks for has no base figure to compare with.",
+      "text": "\u00a726's Why states 586% CPU over nine followers, about 25 GB/min together (2.1 GB/min per reckon follower and 4.4 GB/min per nova follower), and a strace of follower 3516938 showing 7,239 SQLite page reads in 15 s, and names no path for any of them, where \u00a722 names its profile at `logs/post-landing-profile-75s.raw` and \u00a725 names both its station log and its 45 s profile",
+      "type": "evidence_paths",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/the-monitor-reads-each-fact-once.html:574",
+      "id": "reasoning-1",
+      "reason": "the two caches the Deliverable names come from the 45 s profile, not the byte split, and I measured those shares in `station-profile-0331Z-45s.raw` (134 of 444 samples, 30.2%, in `_held_worktree_records` reached through `memoized > _held_records_read_uncached`, and 87 of 444, 19.6%, in `read_records > load (ledger.py:1893) > _indexed_data > update`), so the mechanism is aimed correctly and only the supporting sentence needs correcting.",
+      "text": "\u00a725 attributes the byte split of its 11 November sample (\"two ledger-cache SQLite files took 65% of its bytes, and run streams took about 26%\") to `logs/station-io-after-landing.log`, but that log carries one line for the 11 November reading (`03:31:43Z station: 1654 MiB/min, cpu 65% of one core`) and no census for it; the only census in the file is the 10 November one for pid 3622219, where the two ledger files are 53.0% + 12.0% and the streams are 1.6% + 0.4%, so the streams figure is off by an order of magnitude and neither share is evidence about the newer sample",
+      "type": "reasoning",
+      "would_change": false
+    }
+  ],
+  "plan_commit": "",
+  "plan_fingerprint": "a4a177f1eafc9607aa1097f635979e0dd1cabbec2196ee9bc447bd2444466455",
+  "plan_slug": "the-monitor-reads-each-fact-once",
+  "plan_version": 165,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "1fb615a0-2801-4418-bbb4-c2914719e520",
+      "commit": "c5fa7c87ab54556ff333397404c901436f38a07e",
+      "commit_basis": "edit",
+      "finding": "wiring-1",
+      "note": "Followups now carry the \u00a725 and \u00a726 build lines.",
+      "reason": "",
+      "when": "2026-11-11T05:19:21.038862+00:00"
+    },
+    {
+      "action": "declined",
+      "by": "1fb615a0-2801-4418-bbb4-c2914719e520",
+      "finding": "done_when-1",
+      "reason": "\u00a726 delivered with the settle-grace clause replaced by a stronger requirement its review found missing: a pane stays while a review is owed, judged cheaply, which the delivered tests assert; extending the grace was a weaker stand-in for that.",
+      "when": "2026-11-11T05:19:45.922900+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "1fb615a0-2801-4418-bbb4-c2914719e520",
+      "commit": "c5fa7c87ab54556ff333397404c901436f38a07e",
+      "commit_basis": "edit",
+      "finding": "evidence_paths-1",
+      "note": "The 03:41Z follower measurement, with its instruments, is now logged in the \u00a726 run's logs/pre-landing-follower-load.log, and a comment on \u00a726 cites it.",
+      "reason": "",
+      "when": "2026-11-11T05:20:01.162863+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "1fb615a0-2801-4418-bbb4-c2914719e520",
+      "commit": "c5fa7c87ab54556ff333397404c901436f38a07e",
+      "commit_basis": "edit",
+      "finding": "reasoning-1",
+      "note": "Correct: the io log holds one line, and the 65% and 26% byte split came from a strace census that was not saved. A comment on \u00a725 says so and points to the saved profile instead.",
+      "reason": "",
+      "when": "2026-11-11T05:20:22.671246+00:00"
+    }
+  ],
+  "responses": {
+    "done_when-1": {
+      "action": "declined",
+      "by": "1fb615a0-2801-4418-bbb4-c2914719e520",
+      "reason": "\u00a726 delivered with the settle-grace clause replaced by a stronger requirement its review found missing: a pane stays while a review is owed, judged cheaply, which the delivered tests assert; extending the grace was a weaker stand-in for that.",
+      "when": "2026-11-11T05:19:45.922900+00:00"
+    },
+    "evidence_paths-1": {
+      "action": "acted",
+      "by": "1fb615a0-2801-4418-bbb4-c2914719e520",
+      "commit": "c5fa7c87ab54556ff333397404c901436f38a07e",
+      "commit_basis": "edit",
+      "note": "The 03:41Z follower measurement, with its instruments, is now logged in the \u00a726 run's logs/pre-landing-follower-load.log, and a comment on \u00a726 cites it.",
+      "reason": "",
+      "when": "2026-11-11T05:20:01.162863+00:00"
+    },
+    "reasoning-1": {
+      "action": "acted",
+      "by": "1fb615a0-2801-4418-bbb4-c2914719e520",
+      "commit": "c5fa7c87ab54556ff333397404c901436f38a07e",
+      "commit_basis": "edit",
+      "note": "Correct: the io log holds one line, and the 65% and 26% byte split came from a strace census that was not saved. A comment on \u00a725 says so and points to the saved profile instead.",
+      "reason": "",
+      "when": "2026-11-11T05:20:22.671246+00:00"
+    },
+    "wiring-1": {
+      "action": "acted",
+      "by": "1fb615a0-2801-4418-bbb4-c2914719e520",
+      "commit": "c5fa7c87ab54556ff333397404c901436f38a07e",
+      "commit_basis": "edit",
+      "note": "Followups now carry the \u00a725 and \u00a726 build lines.",
+      "reason": "",
+      "when": "2026-11-11T05:19:21.038862+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/Code/reckon/docs/state/reckon/reviews/plan/the-monitor-reads-each-fact-once/r-20261111T042546111207-plan-review-of-the-monitor-reads-each-fact-once.json",
+  "review_run_id": "r-20261111T042546111207-plan-review-of-the-monitor-reads-each-fact-once",
+  "reviewed_blob_sha": "3a4ed0442afe3133db5f31301e6b61f9b6e90f10",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `_held_worktree_records` (`reckon/crew/obligations.py:2157`), `_population_has_live_work` (`reckon/crew_follow_commands.py:590`), `population_has_live_work` (`reckon/crew/station_subscriber.py:346`), `live_work_populations` (`reckon/crew/station_subscriber.py:246`), `_live_review_runs` (`reckon/crew/obligations.py:970`), `_in_flight_review` (`reckon/crew/obligations.py:826`), `_review_in_flight` (`reckon/crew/recovery_review_dispatch.py:532`), `_derive_fleet_state` (`reckon/crew/obligation_snapshot.py:1290`) and `_is_live` (`reckon/crew_follow_commands.py:1572`) all resolve, and both \u00a725 log anchors exist and carry the cited lines.",
+    "done_when": "a finding \u2014 \u00a726's done-when asserts nothing about its third deliverable clause, the settle grace extension, so the node passes without it.",
+    "evidence_paths": "a finding \u2014 \u00a726's CPU, read-rate and strace figures name no path a later reader can open, where \u00a722 and \u00a725 name theirs.",
+    "naming": "pass \u2014 the two new test filenames name the mechanism (`reuses_its_reads_between_ticks`, `falls_back_cheaply_when_the_station_is_stale`), and no plan or stage label reaches a symbol.",
+    "reasoning": "a finding \u2014 \u00a725's byte split of the 11 November sample (65% ledger, 26% streams) is not carried by the log it cites, whose only census is the older one and puts streams near 2%.",
+    "single_goal": "pass \u2014 each of \u00a725 and \u00a726 carries one behaviour: one tick's reads reused (\u00a725), one stale-reading fallback (\u00a726).",
+    "wiring": "a finding \u2014 `s25` and `s26` are declared `implementable` but no followup carries `/reckon-build the-monitor-reads-each-fact-once \u00a725` or `\u00a726`."
+  },
+  "section_digests": {
+    "_document": "baf6c6fd8197245b1d876623ae92e834a01490d935a79a71f83109ed999f8bf7",
+    "s1": "bd759b66b2b75254305e473bf6b8af6218ef25d95b0db1638ed2668f0cdd9441",
+    "s10": "d21f2adf110c82d39fa9834752ac3f47dba7ac886c59cfd85feb23c1e8d1003f",
+    "s11": "9e8b94316ed45fc2103d1edc216fbb0dd3862f559824ad1c43299b305a3af6bd",
+    "s12": "21fc271f915167db3cca4f7d0eee1f4553b5dec7b96127d71d294e5ae242bc02",
+    "s13": "3b11fe0cd53015121e6d566c554c6c77b13236b3700a90279e77a6bc755ea0a3",
+    "s14": "5f6675ba84aab4ad594b121e888aace2d69e497390559d38f0c220e5894ac588",
+    "s15": "efa38c205c7332a7867b6d87358cd9f89fe1568beaa9f9e5eee96862dd70b6f0",
+    "s16": "65cd8e559a7a5ebf018bc9fe50a07bb0954f67405ab6f17c7377c38ccd363aa7",
+    "s17": "1dee50822a308fa4eeea0a45fd3cdaf6de52d9a1d74a91c2b9c7605d179da2ad",
+    "s18": "ba63c0b1b83ec93cc99d92a3c1f67dcf92d700e20f4f9acd88362705d6b4d123",
+    "s19": "16239e5fae49e56b170433557a77981816880756e3ae545a741ca9ec70feae63",
+    "s2": "e0f306f01b1530661ef28be3f19592348c45f24e7826567d58a2f0a4f79dd284",
+    "s20": "d14d2b70bb40dd552f306726f24f5e3c79bc5efcd7f9b74bcb7d3de8f16f5e8e",
+    "s21": "9ff7b29b83f9c8ab95a0a469c997950ef226fc3d99d8dcffdbf0683df7a1f26c",
+    "s22": "1bdc9ac90396c56bcbcc8c3c4f44aa6b30cbd59c4da001825159a7b8245e054c",
+    "s23": "a810ffe181d2787722d8f9538a4348592269fe163ba23cc59939376cb13edcbb",
+    "s24": "e861dcc5044a0a1fb36c4a374ca71717aeb97054e5a3ff1aef57c9779c7147f5",
+    "s25": "a0939bd3d8ab0fa4b5c0c88de3cb9cdab3531338fe35d0c12b4338fc3c4d1563",
+    "s26": "a8fb9d8585830b87ed826347ff724ddecc8fb9a43ad9ac1540d6499e3689d03e",
+    "s3": "f42c4644817feac0c199cd8510d2e284079b1c8fb777c7b79ced63531a8d983f",
+    "s4": "c98e197194f43124e5a982992370bf1c08593aa17fb304787a4d7b87f42a0107",
+    "s5": "0329936ec702c07e4a2ef8c756961740635d0dd8c7a1d14646983f1c32f09790",
+    "s6": "1f19e9f8c46bc0674347ba5a3c97588b846d125a5fbcf9533e8a5a3f9ec00bb6",
+    "s7": "dff81fd58ae3afef69063faed237df9bb4056bdb98556a1e5a053e6807ae3d16",
+    "s8": "4a70cad80d8613feb4b30861587298ff1109616ba9a35992821009274f17ae3f",
+    "s9": "8597fbe3fc93694e846c364272c698acf84b09466b4798491eb74279d62cef1d"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-11T05:13:50.292357+00:00",
+  "total": null
+}

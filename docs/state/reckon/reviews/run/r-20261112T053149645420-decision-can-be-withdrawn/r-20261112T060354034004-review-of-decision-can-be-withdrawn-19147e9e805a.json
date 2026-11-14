@@ -1,0 +1,84 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_analysis": {
+    "138,139,140,141": "Removing the version bump or the open-decision effect leaves new_version at 0 and dec_open at 1; the assertions read the persisted plan through parse_plan, not the call result alone.",
+    "144,145,149": "The roadmap assertions read the written plan through build_roadmap; leaving the decision in the open set leaves it in decision_blockers and readiness blocked, and dropping the reason from the stored entry empties deferred_decisions[*].rationale.",
+    "167,168,169,170,173": "The stored values are read back from the plan file, not echoed from the call, so an op that stored nothing leaves rationale and by empty and reddens; the date assertion at 173 is the one the declared negative control reddens by deleting the `when` line (1 failed, 5 passed, EXIT=1 in logs/negative-control.log).",
+    "175": "The timestamp window is anchored on a clock reading the test takes, not on any value the code returns, so it fails if the op writes a constant or a stale date.",
+    "184,185,186,187,189,190,191": "Removing the locked-decision refusal makes ok true and the plan advance to version 1, and dropping the key from the message reddens the naming and locked assertions.",
+    "202,203,204,205,207,209": "Removing the reason requirement lets the write through, so version becomes 1 and dec_open 0; the refusal's detail must name both the decision and the reason, and the version assertion also guards that nothing was written.",
+    "218,219,220,221": "Removing the missing-decision refusal turns ok true; the version assertion also guards against a refusal that wrote anyway.",
+    "238,239,241": "Not clearing recommended/recommended_by would let accept succeed, so the refusal assertion and the empty choice after it redden, which is the guard on the clearing at reckon/_store.py:4160-4162."
+  },
+  "call_sites": [
+    "reckon/mcp.py:556",
+    "reckon/mcp_edit_plan.py:2251",
+    "reckon/crew/queue_landing.py:1409"
+  ],
+  "completed_at": "2026-11-12T06:36:48.877Z",
+  "dispatched_at": "2026-11-12T06:23:19Z",
+  "findings": [
+    {
+      "file": "reckon/mcp_edit_plan.py",
+      "line": "1384",
+      "severity": "non-blocking",
+      "text": "non-blocking: _changed_targets' docstring enumerates the decision verbs whose existing record carries `current` as lock and accept, but the added op addresses decisions.<key> through _op_target_path and usually has an existing record, so the enumeration is now inaccurate about the function's own output for withdraw; name it there."
+    },
+    {
+      "file": "reckon/_store.py",
+      "line": "4151",
+      "severity": "non-blocking",
+      "text": "non-blocking: _apply_withdraw overwrites the stored entry unconditionally, so withdrawing a decision that already carries a withdrawal reason and date silently replaces that earlier reason and date with the new ones, losing the first account the op exists to keep; refuse a second withdrawal naming the recorded one, or preserve the prior record."
+    }
+  ],
+  "gate_evidence": {
+    "after_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_decision_can_be_withdrawn.py tests/test_staged_write_inventory.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261112T053149645420-decision-can-be-withdrawn/logs/after-suite.log",
+      "note": "log header names the worktree and module under it; summary line 57 passed in 13.35s; last line EXIT=0",
+      "revision": "19147e9e805abbcc9e5bb6e8cdd88671c5fcb0c2"
+    },
+    "baseline_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261112T053149645420-decision-can-be-withdrawn/logs/baseline-suite.log",
+      "note": "log header names tree /tmp/dcbw-linked-baseline, module /tmp/dcbw-linked-baseline/reckon/__init__.py and cwd /tmp/dcbw-linked-baseline; last line EXIT=0",
+      "revision": "832c18bd8aa0709fab884dc029498d067b126140"
+    },
+    "negative_control": {
+      "exit_status": 1,
+      "failure_ids": [
+        "tests/test_a_decision_can_be_withdrawn.py::test_a_withdrawal_keeps_its_reason_and_date"
+      ],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261112T053149645420-decision-can-be-withdrawn/logs/negative-control.log",
+      "mutation": "the `when` line removed from _apply_withdraw",
+      "revision": "031c72352efba5479afc40a972fe3b5a46be6b7f"
+    }
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is an edit_plan op that withdraws an unlocked decision with a recorded reason in one versioned write, keeping the reason and date in the plan; reckon/_store.py:4159 _apply_withdraw is registered at reckon/_store.py:4415 and advertised at reckon/mcp.py:2025, and it writes exactly that.\nVERDICT done_when: the done_when names tests/test_a_decision_can_be_withdrawn.py and states the version bump, removal from the open decisions and the roadmap blockers, the kept reason and date, a locked refusal naming the decision, a no-reason refusal and a no-date negative control; that file asserts each at lines 138-149, 166-175, 184-193 and 202-209, and logs/negative-control.log reddens the no-date case.\nVERDICT write_paths: the manifest declares reckon/_store.py, reckon/mcp.py, reckon/mcp_edit_plan.py, tests/test_a_decision_can_be_withdrawn.py, the evidence fragment and the figure directory; the diff touches the first four plus the fragment and nothing else.\nVERDICT manifest: read; it records the gate command, both arms' revisions and counts, the control log and the ruff deltas, and each claim reconciles with the log it names.\nVERDICT diff: read both commits against 832c18bd8a: 031c72352e adds _apply_withdraw, its dispatch entry, the vocabulary entry, the target path and the verb list, and the six-case test; 19147e9e80 adds only the evidence fragment.\nCALL_SITES: reckon/mcp.py:556, reckon/mcp_edit_plan.py:2251, reckon/crew/queue_landing.py:1409\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/_store.py:4159 _apply_withdraw performs exactly the one-write withdrawal the goal states, and reckon/mcp.py:2025 advertises it on the published surface.\nSCORE evidence: 19\nJUSTIFICATION evidence: logs/after-suite.log reads 57 passed with EXIT=0 at 19147e9e80 against logs/baseline-suite.log's 51 passed at 832c18bd8a, and logs/negative-control.log reads 1 failed with EXIT=1.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff 832c18bd8a..19147e9e80 touches only reckon/_store.py, reckon/mcp.py, reckon/mcp_edit_plan.py, the new test and the declared evidence fragment.\nSCORE durability: 19\nJUSTIFICATION durability: deleting the `when` assignment in reckon/_store.py reddens tests/test_a_decision_can_be_withdrawn.py:173, recorded in logs/negative-control.log.\nSCORE fit: 17\nJUSTIFICATION fit: reckon/_store.py:4159 follows the _apply_lock and _apply_accept idiom, but the verb enumeration at reckon/mcp_edit_plan.py:1384 was not extended with withdraw.\nSCORE reuse: 20\nJUSTIFICATION reuse: a search over reckon/ for a decision-removal path found none, since lock and accept only add a choice and text mode refuses a decisions-region replacement, so _apply_withdraw at reckon/_store.py:4159 is the first owner of the capability.\nFINDING reckon/mcp_edit_plan.py:1384 non-blocking: _changed_targets' docstring omits withdraw from the decision verbs whose existing record carries `current`.\nFINDING reckon/_store.py:4151 non-blocking: a second withdrawal overwrites the earlier reason and date, losing the account the op exists to keep.",
+  "review_run_id": "r-20261112T060354034004-review-of-decision-can-be-withdrawn-19147e9e805a",
+  "reviewed_base_sha": "832c18bd8aa0709fab884dc029498d067b126140",
+  "reviewed_head_sha": "19147e9e805abbcc9e5bb6e8cdd88671c5fcb0c2",
+  "reviewed_run_id": "r-20261112T053149645420-decision-can-be-withdrawn",
+  "scores": {
+    "durability": 19,
+    "evidence": 19,
+    "fit": 17,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-12T07:19:38.879352+00:00",
+  "total": 114
+}

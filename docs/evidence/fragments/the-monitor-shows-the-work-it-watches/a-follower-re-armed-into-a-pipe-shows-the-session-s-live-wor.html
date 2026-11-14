@@ -1,0 +1,41 @@
+<section id="a-follower-re-armed-into-a-pipe-shows-the-session-s-live-wor-landing">
+  <h2 id="a-follower-re-armed-into-a-pipe-shows-the-session-s-live-wor-title">A follower re-armed into a pipe shows the session's live work</h2>
+  <p id="a-follower-re-armed-into-a-pipe-shows-the-session-s-live-wor-what">
+    The resume branch of <code>reckon/crew_follow_commands.py</code> hands a
+    pipe the rows for the runs its session still owns and the pane has not
+    drawn: it derives those runs in the row shape
+    <code>_follow_gap_rows</code> reads and replays them against the delivered
+    record, which is the same question the re-attach diff asks of the fleet's
+    rows. A run the record does not hold, or one that moved since the pane drew
+    it, is named once at the word the pane draws now; a run already drawn at
+    that word is not repeated, so a re-arm adds no second row for what the pane
+    carries. The history burst stays terminal-only, and a session owning nothing
+    draws nothing.
+  </p>
+  <p id="a-follower-re-armed-into-a-pipe-shows-the-session-s-live-wor-measure">
+    Measure: <code>tests/test_a_rearmed_pipe_follower_shows_its_live_work.py</code>
+    — 6 cases pass, and with the re-arm guard file
+    <code>tests/test_follower_rearm_shows_nothing_twice.py</code> 15 cases pass.
+    The after arm ran 57 tests with 0 failures at the head revision against a
+    base arm of 51 with 0 failures. The declared negative control (the delivered
+    word mapped through <code>ticker._bucket_of</code> before comparison) fails
+    3 of the 6 cases.
+  </p>
+  <ul id="a-follower-re-armed-into-a-pipe-shows-the-session-s-live-wor-evidence">
+    <li id="a-follower-re-armed-into-a-pipe-shows-the-session-s-live-wor-evidence-rows">
+      The two halves are read on the pane's own word. A live row carries the
+      producer's state and the delivered record carries what the pane drew, so
+      both are mapped through <code>ticker._display_state</code> before they are
+      compared — a record holding <code>complete</code> matches a pane drawing
+      <code>delivered</code>, while a run recorded at <code>working</code> and
+      standing at <code>queued</code> is drawn.
+    </li>
+    <li id="a-follower-re-armed-into-a-pipe-shows-the-session-s-live-wor-evidence-parity">
+      The test writes the delivered record with literal strings as production
+      receives them — never through a function under test — and carries a queued
+      and a stalled run, whose counter buckets differ from the words they are
+      drawn at, so the declared control reddens the cases that hide a wrong
+      comparison.
+    </li>
+  </ul>
+</section>

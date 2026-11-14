@@ -1,0 +1,144 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_analysis": [
+    {
+      "condition_to_fail": "Recorded run or spool discard becomes unreadable to promotion.discard_recorded; this is a fixture precondition using the existing owner.",
+      "lines": "tests/test_a_discarded_run_stays_discarded.py:90"
+    },
+    {
+      "condition_to_fail": "Removing settled checks from either route recreates a live pointer and resumes the worker for a discarded delivery; the base capture shows the pointer assertion fail.",
+      "lines": "tests/test_a_discarded_run_stays_discarded.py:94-95"
+    },
+    {
+      "condition_to_fail": "Returning an unrelated refusal drops the discarded disposition, or the new code deletes the discard marker.",
+      "lines": "tests/test_a_discarded_run_stays_discarded.py:96-97"
+    },
+    {
+      "condition_to_fail": "Fixture merge does not actually integrate the reviewed head; precondition is checked independently by Git ancestry.",
+      "lines": "tests/test_a_discarded_run_stays_discarded.py:126"
+    },
+    {
+      "condition_to_fail": "Reinstating base behavior recreates the pointer, leaves the stale pending record, resumes the worker, or omits the already-landed disposition.",
+      "lines": "tests/test_a_discarded_run_stays_discarded.py:131-134"
+    },
+    {
+      "condition_to_fail": "Fixture local merge is absent or the fixture accidentally pushes that merge; independent local and remote Git ancestry establish the outstanding-push control.",
+      "lines": "tests/test_a_discarded_run_stays_discarded.py:149-150"
+    },
+    {
+      "condition_to_fail": "Restoring the first commit local-only ancestry check returns already-landed and deletes the pending record; resumed==[] alone is weak because the helper itself never resumes, but the disposition and file-existence assertions detect this regression.",
+      "lines": "tests/test_a_discarded_run_stays_discarded.py:152-155"
+    },
+    {
+      "condition_to_fail": "Fixture lacks an actual result.txt conflict, the head is already integrated, or a discard exists; these are independently verified route preconditions.",
+      "lines": "tests/test_a_discarded_run_stays_discarded.py:162-165"
+    },
+    {
+      "condition_to_fail": "The guard incorrectly settles a genuine conflict, pointer marking omits pending_landing_repair, the receipt fails to reach resumed, or the worker is resumed zero or multiple times.",
+      "lines": "tests/test_a_discarded_run_stays_discarded.py:170-172"
+    },
+    {
+      "condition_to_fail": "The advice omits the actual head or primary, or the repair wrongly removes its pending record; head and primary are input-propagation assertions and do fail if the advice stops carrying either value, while conflict correctness is established separately by merge-tree.",
+      "lines": "tests/test_a_discarded_run_stays_discarded.py:173-175"
+    }
+  ],
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/crew/pending_landing.py:336",
+    "reckon/crew/pending_landing.py:363",
+    "reckon/crew/queue_landing.py:1579",
+    "reckon/crew/queue_landing.py:1714",
+    "reckon/crew/queue_landing.py:1935"
+  ],
+  "completed_at": "2026-11-11T18:41:06Z",
+  "dispatched_at": "2026-11-11T18:33:50Z",
+  "failure_evidence": {
+    "after_suite": {
+      "command": "PYTHONPATH=/tmp/landing-measure-0_gsfl88/tree /tmp/landing-measure-0_gsfl88/tree/.venv/bin/python -m pytest -p no:cacheprovider -q /tmp/landing-measure-0_gsfl88/tree/tests/test_a_discarded_run_stays_discarded.py /tmp/landing-measure-0_gsfl88/tree/tests/test_staged_write_inventory.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261111T172117418875-a-discarded-run-stays-discarded/final-armed.log",
+      "revision": "6848e56f38156f5361c089414d3f6ebf9d544b06"
+    },
+    "baseline_suite": {
+      "command": "PYTHONPATH=/tmp/landing-measure-1ywynyos/tree /tmp/landing-measure-1ywynyos/tree/.venv/bin/python -m pytest -p no:cacheprovider -q /tmp/landing-measure-1ywynyos/tree/tests/test_staged_write_inventory.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261111T172117418875-a-discarded-run-stays-discarded/base-armed.log",
+      "measurement_cwd": "/tmp/landing-measure-1ywynyos/tree",
+      "measurement_module": "/tmp/landing-measure-1ywynyos/tree/reckon/crew/pending_landing.py",
+      "revision": "75d29d701cf46aa19ff26734793c777b419f8ebc",
+      "summary": "51 passed in 11.06s"
+    },
+    "derivation": "Read completed gate logs, verified EXIT and revision, and subtracted baseline FAILED ids from head FAILED ids; both sets empty. Independently checked importer logs carry the same one failing ID."
+  },
+  "finding_dispositions": {
+    "0": {
+      "kind": "folded",
+      "node": "a-discarded-run-stays-discarded",
+      "recorded_at": "2026-11-11T18:52:30.041210+00:00"
+    },
+    "1": {
+      "kind": "folded",
+      "node": "a-discarded-run-stays-discarded",
+      "recorded_at": "2026-11-11T18:52:40.917349+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "reckon/crew/recovery_repair_dispatch.py",
+      "line": "57",
+      "severity": "blocking",
+      "text": "blocking: The new settled receipt contains status, reason and head but no advice; queue_landing.py:1935 passes its result to repair[\"advice\"] at :1950, so a discarded live run with a conflicting head raises KeyError and aborts the landing pass instead of producing a refusal; preserve the receipt contract or teach the caller to handle settled results and cover that production path."
+    },
+    {
+      "file": "reckon/crew/pending_landing.py",
+      "line": "285",
+      "severity": "blocking",
+      "text": "blocking: For a pending record whose head is already remote-landed and whose original marked pointer still exists, _settled_landing clears the pending record and this branch returns before _release_marked_pointer and release_landed_worktrees at :390-397; queue_landing.py:1735 then skips the surviving pending_landing_repair pointer every pass and no pending record remains to finish it; retain attempt-aware cleanup for a settled original pointer while preserving any newer attempt."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 5 production call site(s)",
+    "diff": "Read commits 54a5556de751cdf51ad542ffc3a11a4b99265969 and 6848e56f38156f5361c089414d3f6ebf9d544b06 against base 75d29d701cf46aa19ff26734793c777b419f8ebc; the shared guard reuses existing owners but adds two unsafe early-return interactions.",
+    "done_when": "Read prompt.txt:125-126 against base-armed.log, final-armed.log, negative-control.log and importer logs; the specified cases pass at head, eight fail at base, and importer failure IDs add none.",
+    "goal": "Read prompt.txt:38 and live plan s10; pending_landing.py:84 and recovery_repair_dispatch.py:53 stop absent-pointer resurrection, but the settled return strands existing marked pointers.",
+    "manifest": "Read manifest.md and its linked receipts; the 62-pass focused gate, zero-added importer failures and three coordinator reconciliation actions agree with the recorded artifacts.",
+    "write_paths": "Read prompt.txt:80-85; all four paths in the base-to-head diff are declared, and the worker made no operational pending-record changes."
+  },
+  "justifications": {
+    "durability": "tests/test_a_discarded_run_stays_discarded.py:94 and :132 fail when settled guards are removed, but its absent-pointer fixture at :45-72 never covers an existing marked pointer or queue_landing.py:1950 consuming the refusal receipt.",
+    "evidence": "final-armed.log records 62 passed and EXIT=0 at the reviewed head, negative-control.log records eight base failures, and base-importers.log/final-importers.log record the same single failure.",
+    "fit": "reckon/crew/recovery_repair_dispatch.py:57 breaks the advice-bearing receipt consumed at queue_landing.py:1950, and pending_landing.py:285 skips the module's attempt-aware cleanup at :390-397.",
+    "goal_fidelity": "reckon/crew/recovery_repair_dispatch.py:53 prevents both recorded forms of resurrection, while reckon/crew/pending_landing.py:285 abandons completion of an existing marked attempt.",
+    "reuse": "Capability searches for discard detection, remote ancestry and pending repair found promotion.py:2104 and merge.py:747, which pending_landing.py:84 wraps in the existing pending-landing owner; new test helpers reuse tests/helpers/git.py rather than duplicating Git execution.",
+    "scope_discipline": "The four changed paths from git diff are all listed in prompt.txt:80-85 and the evidence fragment records the requested inventory without changing live state."
+  },
+  "project": "reckon",
+  "raw_review": "VERDICT goal: Read prompt.txt:38 and live plan s10; pending_landing.py:84 and recovery_repair_dispatch.py:53 stop absent-pointer resurrection, but the settled return strands existing marked pointers.\nVERDICT done_when: Read prompt.txt:125-126 against base-armed.log, final-armed.log, negative-control.log and importer logs; the specified cases pass at head, eight fail at base, and importer failure IDs add none.\nVERDICT write_paths: Read prompt.txt:80-85; all four paths in the base-to-head diff are declared, and the worker made no operational pending-record changes.\nVERDICT manifest: Read manifest.md and its linked receipts; the 62-pass focused gate, zero-added importer failures and three coordinator reconciliation actions agree with the recorded artifacts.\nVERDICT diff: Read commits 54a5556de751cdf51ad542ffc3a11a4b99265969 and 6848e56f38156f5361c089414d3f6ebf9d544b06 against base 75d29d701cf46aa19ff26734793c777b419f8ebc; the shared guard reuses existing owners but adds two unsafe early-return interactions.\nCALL_SITES: reckon/crew/pending_landing.py:336, reckon/crew/pending_landing.py:363, reckon/crew/queue_landing.py:1579, reckon/crew/queue_landing.py:1714, reckon/crew/queue_landing.py:1935\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/recovery_repair_dispatch.py:53 prevents both recorded forms of resurrection, while reckon/crew/pending_landing.py:285 abandons completion of an existing marked attempt.\nSCORE evidence: 20\nJUSTIFICATION evidence: final-armed.log records 62 passed and EXIT=0 at the reviewed head, negative-control.log records eight base failures, and base-importers.log/final-importers.log record the same single failure.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: The four changed paths from git diff are all listed in prompt.txt:80-85 and the evidence fragment records the requested inventory without changing live state.\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_a_discarded_run_stays_discarded.py:94 and :132 fail when settled guards are removed, but its absent-pointer fixture at :45-72 never covers an existing marked pointer or queue_landing.py:1950 consuming the refusal receipt.\nSCORE fit: 15\nJUSTIFICATION fit: reckon/crew/recovery_repair_dispatch.py:57 breaks the advice-bearing receipt consumed at queue_landing.py:1950, and pending_landing.py:285 skips the module's attempt-aware cleanup at :390-397.\nSCORE reuse: 20\nJUSTIFICATION reuse: Capability searches for discard detection, remote ancestry and pending repair found promotion.py:2104 and merge.py:747, which pending_landing.py:84 wraps in the existing pending-landing owner; new test helpers reuse tests/helpers/git.py rather than duplicating Git execution.\nFINDING reckon/crew/recovery_repair_dispatch.py:57 blocking: The new settled receipt contains status, reason and head but no advice; queue_landing.py:1935 passes its result to repair[\"advice\"] at :1950, so a discarded live run with a conflicting head raises KeyError and aborts the landing pass instead of producing a refusal; preserve the receipt contract or teach the caller to handle settled results and cover that production path.\nFINDING reckon/crew/pending_landing.py:285 blocking: For a pending record whose head is already remote-landed and whose original marked pointer still exists, _settled_landing clears the pending record and this branch returns before _release_marked_pointer and release_landed_worktrees at :390-397; queue_landing.py:1735 then skips the surviving pending_landing_repair pointer every pass and no pending record remains to finish it; retain attempt-aware cleanup for a settled original pointer while preserving any newer attempt.\n",
+  "raw_text": "VERDICT goal: Read prompt.txt:38 and live plan s10; pending_landing.py:84 and recovery_repair_dispatch.py:53 stop absent-pointer resurrection, but the settled return strands existing marked pointers.\nVERDICT done_when: Read prompt.txt:125-126 against base-armed.log, final-armed.log, negative-control.log and importer logs; the specified cases pass at head, eight fail at base, and importer failure IDs add none.\nVERDICT write_paths: Read prompt.txt:80-85; all four paths in the base-to-head diff are declared, and the worker made no operational pending-record changes.\nVERDICT manifest: Read manifest.md and its linked receipts; the 62-pass focused gate, zero-added importer failures and three coordinator reconciliation actions agree with the recorded artifacts.\nVERDICT diff: Read commits 54a5556de751cdf51ad542ffc3a11a4b99265969 and 6848e56f38156f5361c089414d3f6ebf9d544b06 against base 75d29d701cf46aa19ff26734793c777b419f8ebc; the shared guard reuses existing owners but adds two unsafe early-return interactions.\nCALL_SITES: reckon/crew/pending_landing.py:336, reckon/crew/pending_landing.py:363, reckon/crew/queue_landing.py:1579, reckon/crew/queue_landing.py:1714, reckon/crew/queue_landing.py:1935\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/recovery_repair_dispatch.py:53 prevents both recorded forms of resurrection, while reckon/crew/pending_landing.py:285 abandons completion of an existing marked attempt.\nSCORE evidence: 20\nJUSTIFICATION evidence: final-armed.log records 62 passed and EXIT=0 at the reviewed head, negative-control.log records eight base failures, and base-importers.log/final-importers.log record the same single failure.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: The four changed paths from git diff are all listed in prompt.txt:80-85 and the evidence fragment records the requested inventory without changing live state.\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_a_discarded_run_stays_discarded.py:94 and :132 fail when settled guards are removed, but its absent-pointer fixture at :45-72 never covers an existing marked pointer or queue_landing.py:1950 consuming the refusal receipt.\nSCORE fit: 15\nJUSTIFICATION fit: reckon/crew/recovery_repair_dispatch.py:57 breaks the advice-bearing receipt consumed at queue_landing.py:1950, and pending_landing.py:285 skips the module's attempt-aware cleanup at :390-397.\nSCORE reuse: 20\nJUSTIFICATION reuse: Capability searches for discard detection, remote ancestry and pending repair found promotion.py:2104 and merge.py:747, which pending_landing.py:84 wraps in the existing pending-landing owner; new test helpers reuse tests/helpers/git.py rather than duplicating Git execution.\nFINDING reckon/crew/recovery_repair_dispatch.py:57 blocking: The new settled receipt contains status, reason and head but no advice; queue_landing.py:1935 passes its result to repair[\"advice\"] at :1950, so a discarded live run with a conflicting head raises KeyError and aborts the landing pass instead of producing a refusal; preserve the receipt contract or teach the caller to handle settled results and cover that production path.\nFINDING reckon/crew/pending_landing.py:285 blocking: For a pending record whose head is already remote-landed and whose original marked pointer still exists, _settled_landing clears the pending record and this branch returns before _release_marked_pointer and release_landed_worktrees at :390-397; queue_landing.py:1735 then skips the surviving pending_landing_repair pointer every pass and no pending record remains to finish it; retain attempt-aware cleanup for a settled original pointer while preserving any newer attempt.\n",
+  "review_run_id": "r-20261111T182926797071-review-of-a-discarded-run-stays-discarded-6848e56f3815",
+  "reviewed_base_sha": "75d29d701cf46aa19ff26734793c777b419f8ebc",
+  "reviewed_head_sha": "6848e56f38156f5361c089414d3f6ebf9d544b06",
+  "reviewed_run_id": "r-20261111T172117418875-a-discarded-run-stays-discarded",
+  "scores": {
+    "durability": 17,
+    "evidence": 20,
+    "fit": 15,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-11T18:48:54.324491+00:00",
+  "total": 110
+}

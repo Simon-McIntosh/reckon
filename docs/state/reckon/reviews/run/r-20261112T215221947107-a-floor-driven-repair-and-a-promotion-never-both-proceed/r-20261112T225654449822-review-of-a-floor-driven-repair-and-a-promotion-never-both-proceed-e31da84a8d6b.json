@@ -1,0 +1,81 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-11-12T23:14:57.652Z",
+  "dimension_dispositions": {
+    "evidence": {
+      "kind": "folded",
+      "node": "a-floor-driven-repair-and-a-promotion-never-both-proceed",
+      "recorded_at": "2026-11-13T00:33:02.596104+00:00"
+    },
+    "reuse": {
+      "kind": "folded",
+      "node": "a-floor-driven-repair-and-a-promotion-never-both-proceed",
+      "recorded_at": "2026-11-13T00:33:16.249488+00:00"
+    }
+  },
+  "dispatched_at": "2026-11-12T23:00:20Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "folded",
+      "node": "a-floor-driven-repair-and-a-promotion-never-both-proceed",
+      "recorded_at": "2026-11-13T01:21:23.643703+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "tests/test_a_floor_repair_and_a_promotion_are_exclusive.py",
+      "line": 265,
+      "severity": "blocking",
+      "summary": "the negative control does not reproduce the defect: the base arm reports repaired == [] so it never opens the round the node claims to prevent"
+    },
+    {
+      "file": "manifest.md",
+      "line": 15,
+      "severity": "blocking",
+      "summary": "tests line is prose and the arm commands carry placeholder paths, so promotion cannot re-run the gate from the record"
+    },
+    {
+      "file": "reckon/crew/promotion.py",
+      "line": 268,
+      "severity": "non-blocking",
+      "summary": "promotion_in_flight duplicates the lease reader at reckon/crew/pending_landing.py:231"
+    },
+    {
+      "file": "reckon/crew/promotion_checks.py",
+      "line": 787,
+      "severity": "non-blocking",
+      "summary": "_declared_dimension_floors duplicates reckon/crew/recovery_repair_dispatch.py:141 with a different resolution"
+    },
+    {
+      "file": "reckon/crew/recovery_review_acceptance.py",
+      "line": 895,
+      "severity": "non-blocking",
+      "summary": "repair_held is reported for runs that owe no repair round, reading as a prevention that did not happen"
+    },
+    {
+      "file": "reckon/crew/promotion_checks.py",
+      "line": 1278,
+      "severity": "non-blocking",
+      "summary": "reformat-only hunks landed in the change commit despite the manifest saying they were reverted"
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that a floor-driven repair and a promotion never both proceed; reckon/crew/recovery_review_acceptance.py:890 now reads promotion's cross-host claim before composing a round, and reckon/crew/promotion.py:268 is the reader it asks.\nVERDICT done_when: the done_when asks three cases driven on a seeded run whose review leaves one dimension below its floor, with the base revision as the control that starts a round; tests/test_a_floor_repair_and_a_promotion_are_exclusive.py:236-288 drives the first two and the base arm reddens, but it reddens on the reported holder and not on a started round.\nVERDICT write_paths: the manifest declares four source modules, the new test file and an evidence fragment; every path in the diff is inside them (git diff --stat 415ac3c9..e31da84a names exactly those six).\nVERDICT manifest: read; it reports the head arm 2 passed and the base arm 1 failed 1 passed, names /home/ITER/mcintos/.cache/reckon-floor-repair/logs/gate-head.txt and gate-base.txt, and both logs exist with a bare EXIT= line.\nVERDICT diff: read commit by commit (one commit, e31da84a8d); it adds promotion_in_flight, owed_floor_repair, the repair-door hold, the resume lease read, the receipt field and the two-case test, plus four unrelated reformat hunks in promotion_checks.py.\nCALL_SITES: reckon/crew/recovery_review_acceptance.py:dispatch_awaiting_reviews (reflex sweep, reached from reckon/crew/recovery.py:192 and reckon/crew/resumption.py:2678), reckon/crew/promotion.py:_complete_locked (crew complete), reckon/crew/resumption.py:hold_against_promotion (reckon/crew/dispatch_sessions.py:1445 and reckon/crew/resumption.py:290), reckon/crew/promotion_checks.py:owed_floor_repair (reckon/crew/promotion.py:2100)\nSCORE goal_fidelity: 16\nJUSTIFICATION goal_fidelity: reckon/crew/recovery_review_acceptance.py:890-908 holds the round and reports the holder.\nSCORE evidence: 8\nJUSTIFICATION evidence: the base arm at gate-base.txt opens no round (report[\"repaired\"] is empty), so no assertion in tests/test_a_floor_repair_and_a_promotion_are_exclusive.py:265 measures a started round being prevented, and the done-when's importer arm has no log.\nSCORE scope_discipline: 14\nJUSTIFICATION scope_discipline: every path is inside the declared write paths but reckon/crew/promotion_checks.py:1278-1400 and :3159 carry reformat hunks unrelated to the change, which the manifest says were reverted.\nSCORE durability: 12\nJUSTIFICATION durability: tests/test_a_floor_repair_and_a_promotion_are_exclusive.py:267 reddens if promotion_in_flight is removed, but no assertion reddens if the claimed prevention is lost, because the base arm never starts a round either.\nSCORE fit: 17\nJUSTIFICATION fit: promotion.py:268 and promotion_checks.py:787 follow the surrounding docstring-first style and carry no name the naming rules forbid.\nSCORE reuse: 5\nJUSTIFICATION reuse: promotion.py:268 duplicates the lease reader at reckon/crew/pending_landing.py:231, and promotion_checks.py:787 duplicates the floor resolver at reckon/crew/recovery_repair_dispatch.py:141 with a different resolution.\nFINDING tests/test_a_floor_repair_and_a_promotion_are_exclusive.py:265 blocking: the negative control does not reproduce the defect the node repairs; gate-base.txt shows the base pass reporting repaired == [] and reports == [], so the base never opens a round and the assertion report[\"repaired\"] == [] passes on both arms, leaving the plan's declared control (the first case's reflex pass starts a round) unmet.\nFINDING manifest.md:15 blocking: the tests line is a prose sentence rather than the literal command, and baseline_suite/after_suite carry base-tree and worktree placeholders, so promotion cannot fill its gate receipt from a command it can re-run.\nFINDING reckon/crew/promotion.py:268 non-blocking: promotion_in_flight re-implements the promotion-lease read that reckon/crew/pending_landing.py:231 already owns for the same lease name, so a second reader of one claim now exists.\nFINDING reckon/crew/promotion_checks.py:787 non-blocking: _declared_dimension_floors duplicates reckon/crew/recovery_repair_dispatch.py:141, resolving the same floors by checkout_path where the owner resolves them by project config, so the two can disagree about one standard.\nFINDING reckon/crew/recovery_review_acceptance.py:895 non-blocking: repair_held is reported for every run whose promotion claim is held, including runs whose review owes no floor repair, so the report reads as a prevented round where none would have been opened.\nFINDING reckon/crew/promotion_checks.py:1278 non-blocking: reformat-only hunks (also :1290, :1395, :3159) landed in the change commit although the manifest states they were reverted, which hides what the commit did.\n",
+  "review_run_id": "r-20261112T225654449822-review-of-a-floor-driven-repair-and-a-promotion-never-both-proceed-e31da84a8d6b",
+  "reviewed_base_sha": "415ac3c9c8cf04101d2d01593706e84405e4403a",
+  "reviewed_head_sha": "e31da84a8d6bcf2c6870fce0cf2c21304c4fda7d",
+  "reviewed_run_id": "r-20261112T215221947107-a-floor-driven-repair-and-a-promotion-never-both-proceed",
+  "scores": {
+    "durability": 12,
+    "evidence": 8,
+    "fit": 17,
+    "goal_fidelity": 16,
+    "reuse": 5,
+    "scope_discipline": 14
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-13T00:23:38.426104+00:00",
+  "total": 72
+}

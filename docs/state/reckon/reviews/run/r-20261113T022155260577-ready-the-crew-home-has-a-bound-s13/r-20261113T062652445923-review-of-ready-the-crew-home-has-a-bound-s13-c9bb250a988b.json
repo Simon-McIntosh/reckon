@@ -1,0 +1,172 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_audit": [
+    {
+      "failure_condition": "A dry pass reporting itself as an applied one.",
+      "file": "tests/test_the_persisted_memo_store_has_a_bound.py",
+      "line": 63
+    },
+    {
+      "failure_condition": "The dry arm removing an aged entry.",
+      "file": "tests/test_the_persisted_memo_store_has_a_bound.py",
+      "line": 64
+    },
+    {
+      "failure_condition": "The applied pass no longer unlinking an entry past the age threshold; the recorded mutation of _expired_persisted_memos reproduces exactly this red.",
+      "file": "tests/test_the_persisted_memo_store_has_a_bound.py",
+      "line": 68
+    },
+    {
+      "failure_condition": "Inverting or dropping the mtime comparison so an entry inside the window is removed.",
+      "file": "tests/test_the_persisted_memo_store_has_a_bound.py",
+      "line": 69
+    },
+    {
+      "failure_condition": "Removing a different file, or reporting an unremoved row as removed.",
+      "file": "tests/test_the_persisted_memo_store_has_a_bound.py",
+      "line": 71
+    },
+    {
+      "failure_condition": "Dropping the announcement, or writing it to a channel the test does not read.",
+      "file": "tests/test_the_persisted_memo_store_has_a_bound.py",
+      "line": 72
+    },
+    {
+      "failure_condition": "The sweep reaching memo entries through a path other than _persisted_memo_roots.",
+      "file": "tests/test_the_persisted_memo_store_has_a_bound.py",
+      "line": 86
+    },
+    {
+      "failure_condition": "A pass that reports memo rows it did not derive from the memo roots.",
+      "file": "tests/test_the_persisted_memo_store_has_a_bound.py",
+      "line": 87
+    }
+  ],
+  "assertion_independence": "No input-echo assertion was found: each added assertion compares the filesystem or the pass report against a path the test created before the call, so none holds whatever the code does; the one channel assertion at tests/test_the_persisted_memo_store_has_a_bound.py:72 checks where the announcement went, which is the property under review, not a round-tripped value.",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew_run_commands.py:crew_retention_sweep",
+    "reckon/crew_run_commands.py:crew_gc",
+    "reckon/crew/gc.py:main"
+  ],
+  "completed_at": "2026-11-13T08:53:33.005Z",
+  "dispatched_at": "2026-11-13T08:27:30Z",
+  "failure_delta_evidence": {
+    "after_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q -n 4 tests/test_a_landed_run_leaves_the_held_obligations.py tests/test_a_released_worktree_takes_its_index.py tests/test_a_retention_pass_is_bounded.py tests/test_a_runs_scratch_ends_with_the_run.py tests/test_a_runs_scratch_is_removed_on_the_host_that_made_it.py tests/test_a_worktree_held_row_is_rechecked_at_read.py tests/test_a_worktree_release_is_whole.py tests/test_an_execution_identity_is_published_with_its_claim.py tests/test_an_identity_is_judged_on_its_own_host.py tests/test_coordinator_obligations_hook.py tests/test_crew_gc.py tests/test_crew_obligations.py tests/test_crew_routes.py tests/test_crew_shadow_contamination.py tests/test_dispatch_refuses_without_tmp_headroom.py tests/test_every_removal_path_reads_the_wide_claim.py tests/test_gate_log_is_preserved.py tests/test_gc_pin_flag.py tests/test_gc_reaches_every_tree_its_obligation_names.py tests/test_gc_spares_a_live_pointers_worktree.py tests/test_gc_sweeps_orphan_scratch.py tests/test_gc_vanished_mid_sweep.py tests/test_ledger_caches_are_shared_and_pruned.py tests/test_only_a_run_something_can_still_need_keeps_its_directory.py tests/test_promotion_keeps_the_worker_exit.py tests/test_scratch_housekeeping_is_not_printed.py tests/test_skill_contracts.py tests/test_staged_write_inventory.py tests/test_the_persisted_memo_store_has_a_bound.py tests/test_the_retention_sweep_runs_on_its_own.py tests/test_the_run_store_retires_old_runs.py tests/test_watcher_unit_restart.py tests/test_worktree_held_names_an_existing_tree.py",
+      "completed": true,
+      "exit_status": 1,
+      "failure_count": 4,
+      "failure_ids": [
+        "tests/test_a_worktree_release_is_whole.py::test_no_removal_site_still_deletes_with_git_worktree_remove",
+        "tests/test_crew_obligations.py::test_obligations_reads_scoring_without_observing_or_dispatching",
+        "tests/test_every_removal_path_reads_the_wide_claim.py::test_no_removal_path_decides_liveness_from_the_phase_gated_claim",
+        "tests/test_skill_contracts.py::test_ship_crew_views_match_the_typed_mcp_surface"
+      ],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261113T022155260577-ready-the-crew-home-has-a-bound-s13/after-arm.log",
+      "revision": "c9bb250a988be60517c21291ce687efeb8f630e9",
+      "summary": "4 failed, 360 passed in 245.14s (0:04:05)"
+    },
+    "baseline_suite": {
+      "command": "env -C /tmp/reckon-crew-scratch/r-20261113T022155260577-ready-the-crew-home-has-a-bound-s13/s13-base-xcMs PYTHONPATH=/tmp/reckon-crew-scratch/r-20261113T022155260577-ready-the-crew-home-has-a-bound-s13/s13-base-xcMs /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q -n 4 tests/test_a_landed_run_leaves_the_held_obligations.py tests/test_a_released_worktree_takes_its_index.py tests/test_a_retention_pass_is_bounded.py tests/test_a_runs_scratch_ends_with_the_run.py tests/test_a_runs_scratch_is_removed_on_the_host_that_made_it.py tests/test_a_worktree_held_row_is_rechecked_at_read.py tests/test_a_worktree_release_is_whole.py tests/test_an_execution_identity_is_published_with_its_claim.py tests/test_an_identity_is_judged_on_its_own_host.py tests/test_coordinator_obligations_hook.py tests/test_crew_gc.py tests/test_crew_obligations.py tests/test_crew_routes.py tests/test_crew_shadow_contamination.py tests/test_dispatch_refuses_without_tmp_headroom.py tests/test_every_removal_path_reads_the_wide_claim.py tests/test_gate_log_is_preserved.py tests/test_gc_pin_flag.py tests/test_gc_reaches_every_tree_its_obligation_names.py tests/test_gc_spares_a_live_pointers_worktree.py tests/test_gc_sweeps_orphan_scratch.py tests/test_gc_vanished_mid_sweep.py tests/test_ledger_caches_are_shared_and_pruned.py tests/test_only_a_run_something_can_still_need_keeps_its_directory.py tests/test_promotion_keeps_the_worker_exit.py tests/test_scratch_housekeeping_is_not_printed.py tests/test_skill_contracts.py tests/test_staged_write_inventory.py tests/test_the_retention_sweep_runs_on_its_own.py tests/test_the_run_store_retires_old_runs.py tests/test_watcher_unit_restart.py tests/test_worktree_held_names_an_existing_tree.py",
+      "completed": true,
+      "exit_status": 1,
+      "failure_count": 4,
+      "failure_ids": [
+        "tests/test_a_worktree_release_is_whole.py::test_no_removal_site_still_deletes_with_git_worktree_remove",
+        "tests/test_crew_obligations.py::test_obligations_reads_scoring_without_observing_or_dispatching",
+        "tests/test_every_removal_path_reads_the_wide_claim.py::test_no_removal_path_decides_liveness_from_the_phase_gated_claim",
+        "tests/test_skill_contracts.py::test_ship_crew_views_match_the_typed_mcp_surface"
+      ],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261113T022155260577-ready-the-crew-home-has-a-bound-s13/base-arm.log",
+      "observed_error_ids": [
+        "tests/test_staged_write_inventory.py::test_every_staged_write_reaches_the_owner",
+        "tests/test_staged_write_inventory.py::test_claim_move_aside_is_not_a_staged_write"
+      ],
+      "revision": "3ddc28c71fb85bc078298b8e27d8d74a8a095551",
+      "summary": "4 failed, 356 passed, 2 errors in 193.03s (0:03:13)"
+    },
+    "method": "The added set was computed as the sorted FAILED/ERROR ids of after-arm.log minus those of base-arm.log with comm; it is empty. The two base-only ids are ERRORs attributed in the manifest to the git-archive extraction having no .git, and neither occurs in the head arm."
+  },
+  "finding_dispositions": {
+    "0": {
+      "kind": "folded",
+      "node": "repair-of-ready-the-crew-home-has-a-bound-s13-c9bb250a988b",
+      "recorded_at": "2026-11-13T10:55:39.800122+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "reckon/crew/gc.py",
+      "line": "276",
+      "severity": "blocking",
+      "text": "blocking: `_expired_persisted_memos` announces each removal with print() to stdout, but both callers emit their report as a JSON document on stdout \u2014 reckon/crew/gc.py:2230 is the `python -m reckon.crew.gc --apply` entry the retention service runs, and the crew gc and crew retention-sweep commands emit through _emit \u2014 so any applied pass that removes one aged memo leaves stdout that json.loads cannot parse, while the two sibling sweeps in the same file announce on sys.stderr (gc.py:484 ledger caches, gc.py:548 picker views); write the line to sys.stderr and read capsys.readouterr().err at tests/test_the_persisted_memo_store_has_a_bound.py:72."
+    },
+    {
+      "file": "reckon/crew/gc.py",
+      "line": "234",
+      "severity": "non-blocking",
+      "text": "non-blocking: PERSISTED_MEMO_KINDS enumerates three of the cache kinds written through metadata_index._persisted_cache_path (reckon/metadata_index.py:1863), so route-result (reckon/route_results.py:94), git-creation (reckon/git_dates.py:59), git-last-modified (reckon/git_dates.py:412) and compliance (reckon/compliance.py:139) entries still accumulate with every distinct key, and the store is bounded only for the three swept families."
+    },
+    {
+      "file": "reckon/crew/gc.py",
+      "line": "1109",
+      "severity": "non-blocking",
+      "text": "non-blocking: the sweep wired into the run-less gc pass has no test \u2014 tests/test_the_persisted_memo_store_has_a_bound.py drives retention_sweep only \u2014 so deleting the garbage_collect call or its run_id-is-None guard leaves the suite green while `crew gc --apply` stops bounding the store."
+    }
+  ],
+  "item_aggregate": 5,
+  "item_verdicts": {
+    "diff": "Read commit c9bb250a9 against 3ddc28c71: three files and 223 insertions, being the memo sweep and its two wirings in reckon/crew/gc.py, the 87-line test, and the 54-line evidence fragment, with no unrelated change.",
+    "done_when": "The gate recorded at gate.log ran tests/test_the_persisted_memo_store_has_a_bound.py at c9bb250a9 and printed 2 passed, EXIT=0; its assertions at :68, :69 and :72 cover the three claims \u00a713 names (aged removed, recent kept, removal printed) and the negative control at :82 makes the removal assertion fail.",
+    "goal": "\u00a713 asks for a bound on the persisted-memo store; the landed change declares PERSISTED_MEMO_MAX_AGE_DAYS = 7 beside the ledger-index window and sweeps three kinds through _expired_persisted_memos (reckon/crew/gc.py:250), reporting them under persisted_memos in both the run-less gc pass and the retention sweep.",
+    "manifest": "Read; status is complete, it names the gate result and both arms, and recomputing the id difference over base-arm.log and after-arm.log gives an empty added set (the two base-only ids are the attributed staged-write errors), so its added_failure_count of 0 is derived from the logs rather than claimed.",
+    "write_paths": "\u00a713 grants reckon/crew/gc.py and the new test; the manifest's orientation_write_paths lists gc.py plus the evidence fragment and figures directory, and every path in the diff is inside those grants, though the orientation list itself omits tests/test_the_persisted_memo_store_has_a_bound.py that changed_paths names and the plan grants."
+  },
+  "justifications": {
+    "durability": "tests/test_the_persisted_memo_store_has_a_bound.py:68 fails when removal stops (the recorded mutation of _expired_persisted_memos reproduces it), but nothing exercises the garbage_collect wiring at reckon/crew/gc.py:1109 or its run_id-is-None guard.",
+    "evidence": "tests/test_the_persisted_memo_store_has_a_bound.py:66-72 drives the real retention pass and asserts removal, retention and printing, and the recorded arms confirm the delta is zero: 4 failed/356 passed/2 errors at 3ddc28c71 versus the same 4 failed ids and 360 passed at c9bb250a9.",
+    "fit": "The added names and docstrings follow reckon/crew/gc.py's family-per-cache-sweep idiom, but the announcement at gc.py:276-278 uses print() to stdout where both sibling sweeps at gc.py:484 and gc.py:548 announce on sys.stderr.",
+    "goal_fidelity": "reckon/crew/gc.py:250 bounds the persisted-memo store by mtime and is wired into both callers (gc.py:1109, gc.py:2024), but PERSISTED_MEMO_KINDS at gc.py:234 covers three of the seven cache kinds metadata_index._persisted_cache_path writes, so four families remain unbounded.",
+    "reuse": "Searched for an owner of an age-bounded cache sweep; reckon/crew/gc.py owns one sweep per cache family (_orphan_ledger_indexes at gc.py:484, _expired_picker_views at gc.py:548) and the addition extends that module's structure while duplicating their cutoff/holder/stat-recheck skeleton, and its roots reuse _persisted_cache_path's own config-home rule (reckon/metadata_index.py:1863).",
+    "scope_discipline": "The one-commit diff c9bb250a9 against 3ddc28c71 touches only reckon/crew/gc.py, tests/test_the_persisted_memo_store_has_a_bound.py and the landing fragment, which \u00a713 grants and changed_paths names."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: Read \u00a713; the landed change declares PERSISTED_MEMO_MAX_AGE_DAYS at reckon/crew/gc.py:227 and sweeps three persisted-memo kinds through _expired_persisted_memos (gc.py:250), wired into the run-less gc pass (gc.py:1109) and the retention sweep (gc.py:2024), so the snapshot store that grew with every reviewed plan edit now has a 7-day bound.\nVERDICT done_when: The gate log for tests/test_the_persisted_memo_store_has_a_bound.py records 2 passed, EXIT=0 at c9bb250a9, and lines :68, :69 and :72 assert the aged entry is removed, the recent one kept and the removal printed, which are exactly the three claims \u00a713's done-when names.\nVERDICT write_paths: \u00a713 grants reckon/crew/gc.py and the new test; the manifest lists gc.py plus the evidence fragment directory in orientation_write_paths and names the test in changed_paths, and every diff path is inside those grants.\nVERDICT manifest: Read; status complete with gate 2 passed, base arm 4 failed/356 passed/2 errors and head arm 4 failed/360 passed, and recomputing the id difference over base-arm.log and after-arm.log gives an empty added set.\nVERDICT diff: Read c9bb250a9 against 3ddc28c71 commit by commit: one commit, three files, 223 insertions \u2014 the gc.py sweep and its two wirings, the new test, and the landing fragment \u2014 with nothing unrelated.\nCALL_SITES: reckon/crew_run_commands.py:crew_retention_sweep, reckon/crew_run_commands.py:crew_gc, reckon/crew/gc.py:main\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: reckon/crew/gc.py:250 bounds the store by mtime and both callers are wired, but PERSISTED_MEMO_KINDS at gc.py:234 covers three of the seven kinds written through metadata_index._persisted_cache_path.\nSCORE evidence: 18\nJUSTIFICATION evidence: tests/test_the_persisted_memo_store_has_a_bound.py:66-72 drives the real pass and the recorded arms show the same four failure ids at 3ddc28c71 and c9bb250a9 with 356 to 360 passes.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every path in the c9bb250a9 diff is inside \u00a713's grant and the manifest's changed_paths, with no unrelated edit.\nSCORE durability: 14\nJUSTIFICATION durability: tests/test_the_persisted_memo_store_has_a_bound.py:68 fails when removal stops, but no test covers the garbage_collect wiring at reckon/crew/gc.py:1109 or its run_id guard.\nSCORE fit: 15\nJUSTIFICATION fit: reckon/crew/gc.py:276-278 prints to stdout where the sibling sweeps at gc.py:484 and gc.py:548 announce on sys.stderr, and the rest follows the module's conventions.\nSCORE reuse: 15\nJUSTIFICATION reuse: reckon/crew/gc.py:548 is the nearest owner of an aged-cache sweep and the addition duplicates its skeleton rather than sharing it, while reusing _persisted_cache_path's root rule (reckon/metadata_index.py:1863).\nFINDING reckon/crew/gc.py:276 blocking: the removal announcement uses print() to stdout while both callers emit their report as JSON on stdout (reckon/crew/gc.py:2230 and the crew gc/retention-sweep _emit path), so an applied pass that removes a memo corrupts the machine-readable channel; the sibling sweeps at gc.py:484 and gc.py:548 use sys.stderr, which is the channel to use here and at the test's capsys read.\nFINDING reckon/crew/gc.py:234 non-blocking: PERSISTED_MEMO_KINDS names three of the cache kinds metadata_index._persisted_cache_path writes, leaving route-result (reckon/route_results.py:94), git-creation and git-last-modified (reckon/git_dates.py:59, :412) and compliance (reckon/compliance.py:139) unbounded.\nFINDING reckon/crew/gc.py:1109 non-blocking: the garbage_collect wiring has no test \u2014 only retention_sweep is driven \u2014 so removing it or its run_id-is-None guard fails nothing.\n",
+  "reuse_search": {
+    "assessment": "No general aged-cache-sweep helper exists; reckon/crew/gc.py owns one sweep per cache family and the addition is a third instance of that structure, duplicating the cutoff/holder/stat-recheck skeleton rather than sharing it, while the root rule reuses _persisted_cache_path's own config-home and kind directory.",
+    "capabilities": [
+      "age-bounded sweep of a cache directory, sparing files a live process holds",
+      "persisted-memo cache directory and file-name resolution"
+    ],
+    "owners_opened": [
+      "reckon/crew/gc.py:_expired_picker_views",
+      "reckon/crew/gc.py:_orphan_ledger_indexes",
+      "reckon/metadata_index.py:_persisted_cache_path"
+    ]
+  },
+  "review_limitations": [
+    "Read-only review: no mutation and no test re-run; the gate result is read from the recorded log.",
+    "The claim that the stdout announcement corrupts the JSON report is read from reckon/crew/gc.py:2230 and the _emit helper rather than observed on a live invocation.",
+    "The unbounded-kind finding rests on reading the four other writers of _persisted_cache_path, not on measuring their directory sizes."
+  ],
+  "review_run_id": "r-20261113T062652445923-review-of-ready-the-crew-home-has-a-bound-s13-c9bb250a988b",
+  "reviewed_base_sha": "3ddc28c71fb85bc078298b8e27d8d74a8a095551",
+  "reviewed_head_sha": "c9bb250a988be60517c21291ce687efeb8f630e9",
+  "reviewed_run_id": "r-20261113T022155260577-ready-the-crew-home-has-a-bound-s13",
+  "scores": {
+    "durability": 14,
+    "evidence": 18,
+    "fit": 15,
+    "goal_fidelity": 17,
+    "reuse": 15,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-13T10:09:42.242266+00:00",
+  "total": 98
+}

@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="work-flows-to-the-lane">
+  <meta name="plan-title" content="Work flows to the lane">
+  <meta name="plan-evidence-for" content="work-flows-to-the-lane">
+  <meta name="plan-node" content="re-review-reads-what-changed">
+  <meta name="plan-recorded-at" content="2026-11-11">
+  <meta name="plan-verdict" content="passed">
+  <title>A re-review reads only what changed since the review before it | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <h1>A re-review reads only what changed since the review before it</h1>
+
+    <section id="re-review-reads-what-changed-what-changed">
+      <h2>What changed</h2>
+      <p>A run that is reviewed, repaired and reviewed again was composed a brief
+        by the same reflex that composes its first: the whole run, its goal, its
+        gate and its declared checks. Nothing in it named the head the earlier
+        review stood on, the commits the repairs added, or what that review had
+        found. A second reviewer therefore re-read work already judged, and could
+        not say whether the repairs answered anything.</p>
+      <p><code>reckon/crew/recovery_review_subject.py</code> gains
+        <code>reviewed_commits</code>, which lists the revision and subject of
+        every commit in <code>older..newer</code> through git, and
+        <code>_re_review_block</code>, which composes four parts: the previously
+        reviewed head, the commits since it, each earlier finding with the
+        disposition recorded against it, and the ask that every earlier blocking
+        finding be answered against the new head. Findings are read from the
+        stored record of the head the earlier review read, enumerated in their
+        stored order so each index resolves through
+        <code>reckon.crew.findings.finding_disposition</code> — the shared
+        renderer, so a disposition kind another node adds flows through
+        unchanged. Two failures stay distinct from "nothing changed": git
+        failing to list the range and an unreadable record are each stated in
+        the brief rather than rendered as an empty section.</p>
+      <p>The block is composed only when the reflex passes the light
+        re-review's own head-move decision as <code>delta</code>, so a first
+        review's brief is byte-identical to the one it carried before. The
+        head-move decision is unchanged: a move that changes no runtime source
+        still carries the review forward, and only a move that does composes
+        this brief.</p>
+    </section>
+
+    <section id="re-review-reads-what-changed-measure">
+      <h2>Measure</h2>
+      <p><code>tests/test_a_re_review_reads_what_changed.py</code> builds a real
+        git repository holding a run reviewed once and repaired by two commits,
+        stores that review with two findings and one answer against each, and
+        composes the brief through the reflex's own head-move call and the
+        composer it dispatches with. It asserts the brief names the previously
+        reviewed head, exactly the two repair commits and no other, both
+        findings with their dispositions, and the ask; and that the same run
+        composed as a first review names none of them.</p>
+      <table>
+        <thead>
+          <tr><th>Arm</th><th>Revision</th><th>Tests</th><th>Result</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>node gate, after</td>
+            <td><code>f4b12ee2</code></td>
+            <td>this node's test, plus the staged-write inventory</td>
+            <td>55 passed, exit 0</td>
+          </tr>
+          <tr>
+            <td>node gate, base</td>
+            <td><code>3f096bce</code></td>
+            <td>the staged-write inventory, the only one of the pair present there</td>
+            <td>51 passed, exit 0</td>
+          </tr>
+        </tbody>
+      </table>
+      <p>The negative control composes the re-review as a first review: the
+        previously-reviewed-head assertion fails, and its log is
+        <code>negative-control-first-review.log</code> in the run directory.</p>
+    </section>
+
+    <section id="re-review-reads-what-changed-evidence">
+      <h2>Evidence</h2>
+      <ul>
+        <li>Gate logs: <code>after-suite.log</code>, <code>baseline-suite.log</code>
+          in the run directory.</li>
+        <li>Negative control: <code>negative-control-first-review.log</code>, whose
+          last line is a bare <code>EXIT=</code> receipt.</li>
+      </ul>
+    </section>
+  </main>
+</body>
+</html>

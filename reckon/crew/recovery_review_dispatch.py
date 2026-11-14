@@ -114,15 +114,16 @@ def _resumed_attempt_delivered(record: Mapping[str, Any]) -> bool:
     inside the second the resume was stamped in cannot be ordered against it.
 
     Every leg fails closed toward withholding — the direction the wait exists
-    for: no resume stamp, no readable manifest, a status outside the delivered
-    pair, or a manifest not written by this attempt all read as an attempt
-    still in flight, and the head stands superseded. The comparison is against
+    for: neither a generation nor a resume stamp, no readable manifest, a status
+    outside the delivered pair, or a manifest not written by this attempt all
+    read as an attempt still in flight, and the head stands superseded. The comparison is against
     the manifest's own write rather than anything a worker states about
     itself, because the status word alone cannot tell a fresh delivery from the
     head-reset copy the resume itself left behind.
     """
     resumed_at = resume_superseded_at(record)
-    if resumed_at is None:
+    baseline_known = record.get("manifest_baseline_mtime_ns") is not None
+    if resumed_at is None and not baseline_known:
         return False
     from reckon.crew.dispatch import _WORKER_DONE_MANIFEST_STATUSES
 
@@ -134,8 +135,11 @@ def _resumed_attempt_delivered(record: Mapping[str, Any]) -> bool:
     # anywhere inside the second the resume was stamped in cannot be told from
     # the one the resume itself rewrote: a delivery is read only once the write
     # is clear of that whole second.
-    baseline_known = record.get("manifest_baseline_mtime_ns") is not None
-    resumed_ns = int((resumed_at.timestamp() + RESUME_DELIVERY_SECONDS) * 1_000_000_000)
+    resumed_ns = (
+        int((resumed_at.timestamp() + RESUME_DELIVERY_SECONDS) * 1_000_000_000)
+        if resumed_at is not None
+        else 0
+    )
 
     node = record.get("node")
     candidates: list[Path] = []
@@ -172,7 +176,13 @@ def _resumed_attempt_delivered(record: Mapping[str, Any]) -> bool:
             present, fresh = runs._manifest_freshness(
                 {**record, "manifest_path": str(manifest)}
             )
-            return present and fresh
+            # A repair round rewrites the manifest while it runs, so its
+            # delivery can fail the baseline ordering while still being the
+            # attempt's own last word. The supervisor's exit record for that
+            # attempt settles it, and the classifier already reads the same
+            # delivery as the run's own; without this the two readers split and
+            # the delivery is never reviewed.
+            return present and (fresh or _attempt_ended_after(record, written_ns))
         return written_ns > resumed_ns
     return False
 
@@ -616,6 +626,7 @@ def _record_review_dispatch(
     backend: str = "",
     reviewed_head: str = "",
     asks: Sequence[Mapping[str, Any]] | None = None,
+    claim: Mapping[str, Any] | None = None,
     rubric: str | None = None,
 ) -> None:
     """Write the reflex's outcome onto the run it acted for.
@@ -653,6 +664,11 @@ def _record_review_dispatch(
             # reader sees the lane that refused the review and the lane the
             # second answer named rather than only the outcome it produced.
             entry["asks"] = [dict(ask) for ask in asks]
+        if claim:
+            # A refusal on a claim names the run that holds it, so a later
+            # sweep can tell a refusal whose cause still stands from one the
+            # release has already lifted: the holder's own pointer answers.
+            entry["claim"] = dict(claim)
         pointer[dispatch_field] = entry
         return pointer
 
@@ -721,22 +737,35 @@ def _queue_router_held_review(
     }
 
 
-def _composed_review_run_id(
+def _composed_review_directory(
     project: str, plan_slug: str, node: Mapping[str, Any]
-) -> str:
-    """The review run id a queued pointer's write paths name, or ``""``.
+) -> Path | None:
+    """The composed report directory a plan review's write paths name.
 
-    The composed report directory is the one the review's write paths sit under,
-    so its name is the review run id the delivered record and its store are
-    keyed by. A pointer whose paths name no such directory yields no id rather
-    than a guessed one.
+    The composer grants the review the directory it writes its brief, snapshot,
+    sidecar and report into, and that directory sits directly under the plan's
+    report root. A pointer whose paths name no such directory yields ``None``
+    rather than a guessed path.
     """
     root = plan_review._plan_review_report_root(project, plan_slug)
     for candidate in node.get("write_paths") or ():
         directory = Path(str(candidate))
         if directory.parent == root and directory.name:
-            return directory.name
-    return ""
+            return directory
+    return None
+
+
+def _composed_review_run_id(
+    project: str, plan_slug: str, node: Mapping[str, Any]
+) -> str:
+    """The review run id a queued pointer's write paths name, or ``""``.
+
+    The composed report directory's name is the review run id the delivered
+    record and its store are keyed by. A pointer whose paths name no such
+    directory yields no id rather than a guessed one.
+    """
+    directory = _composed_review_directory(project, plan_slug, node)
+    return "" if directory is None else directory.name
 
 
 def join_admitted_plan_review(pointer: Mapping[str, Any], launched_run_id: str) -> str:
@@ -796,18 +825,65 @@ def _resolve_abbreviated_commit(repository: Path | None, text: str) -> str:
     return _resolve_commit(repository, text)
 
 
+def _newest_cited_revision(tree: Path | None, revisions: Sequence[str]) -> str:
+    """The newest of ``revisions`` by ancestry in ``tree``, or empty.
+
+    A manifest's ``commits:`` field is a citation list, not an ordered history,
+    so its entries are compared by ancestry rather than read in the order they
+    were written. One citation needs no query. A tree that cannot answer leaves
+    the caller its other readers rather than guessing, and the query is bounded
+    so a repository on a stalled filesystem cannot hold a caller open.
+    """
+    if not revisions:
+        return ""
+    if len(revisions) == 1:
+        return revisions[0]
+    if tree is None:
+        return ""
+    try:
+        completed = subprocess.run(
+            [
+                "git",
+                "-C",
+                str(tree),
+                "rev-list",
+                "--topo-order",
+                "--max-count=1",
+                *revisions,
+            ],
+            check=False,
+            capture_output=True,
+            text=True,
+            timeout=30,
+        )
+    except (OSError, subprocess.SubprocessError):
+        return ""
+    lines = completed.stdout.split()
+    if completed.returncode != 0 or not lines:
+        return ""
+    return lines[0]
+
+
 def _record_carried_head(record: Mapping[str, Any]) -> str:
     """The head a run's own record names, for a worktree that has been reclaimed.
 
     A manifest's ``commits:`` field is a run's last word on the revisions it
-    landed, so its last resolvable entry is the head the run reached. An entry
-    that is already an object id stands as itself; a shorter citation is
-    resolved to its full id through the run's repository, whose object store it
-    wrote into while the worktree existed, because workers cite abbreviated
-    ids. An entry git cannot resolve unambiguously is skipped rather than
-    guessed, and the pointer's own recorded head is read after the manifest,
-    because a run that has not yet written one still names the revision it was
-    dispatched against.
+    landed, but it is a citation list and not an ordered history: a worker may
+    write it newest-first, oldest-first or in the order the work landed. The
+    entries are therefore compared by ancestry and the newest is the head the
+    run reached. Reading position instead picks the oldest commit of a
+    newest-first list, which is the defect this reader and the promotion's
+    head resolver exist to avoid — promotion reads its head through this same
+    function, so a review and a promotion of one run cannot name different
+    heads.
+
+    An entry that is already an object id stands as itself where no tree can
+    answer; otherwise it is resolved through the run's tree, whose object store
+    the worktree wrote into before it was reclaimed, because workers cite
+    abbreviated ids. An entry git cannot resolve unambiguously is skipped
+    rather than guessed, and the pointer's own recorded head is read after the
+    manifest, because a run that has not yet written one still names the
+    revision it was dispatched against.
     """
     manifest = Path(str(record.get("manifest_path") or ""))
     try:
@@ -817,17 +893,20 @@ def _record_carried_head(record: Mapping[str, Any]) -> str:
     entries = data.get("commits") or []
     if isinstance(entries, str):
         entries = [entries]
-    repo_raw = str(record.get("repo") or "").strip()
-    repository = Path(repo_raw) if repo_raw and Path(repo_raw).is_dir() else None
-    for entry in reversed(list(entries)):
+    tree = _review_tree(record)
+    revisions: list[str] = []
+    for entry in entries:
         text = str(entry).strip()
-        sha = _object_id(text)
-        if sha:
-            return sha
-        if re.fullmatch(r"[0-9A-Fa-f]{7,64}", text):
-            resolved = _resolve_abbreviated_commit(repository, text)
-            if resolved:
-                return resolved
+        resolved = (
+            _resolve_commit(tree, text, cached=True) if tree else _object_id(text)
+        )
+        if resolved and resolved not in revisions:
+            revisions.append(resolved)
+    newest = _newest_cited_revision(tree, revisions)
+    if newest:
+        return newest
+    if revisions:
+        return revisions[-1]
     return _object_id(str(record.get("head") or "").strip())
 
 
@@ -1237,6 +1316,163 @@ def _judge_head_move(
     return verdicts.get(run_id)
 
 
+def _blocking_findings(review: Mapping[str, Any]) -> int:
+    """How many findings a stored review declared as blocking its landing."""
+    return sum(
+        1
+        for finding in review_module.normalised_findings(review)
+        if review_module.declared_severity(finding)
+        == review_module.BLOCKING_FINDING_SEVERITY
+    )
+
+
+def _record_shadow_outcome(
+    record: Mapping[str, Any], review: Mapping[str, Any]
+) -> None:
+    """Record what a judged review found, beside the judgement it was given.
+
+    The judgement was written before the review was dispatched and the store
+    keeps it; this is the half that makes the row a measurement rather than a
+    guess. It is written when the review is read back, which is the first moment
+    the reflex can see the outcome, and a review the shadow never judged writes
+    nothing — a first review's outcome has no prediction to sit beside.
+    """
+    project = str(record.get("project") or "")
+    dispatched = record.get(_review_dispatch_field()) or {}
+    review_run_id = str(dispatched.get("run_id") or "") or str(
+        review.get("review_run_id") or ""
+    )
+    if not project or not review_run_id:
+        return
+    findings = review_module.normalised_findings(review)
+    blocking = _blocking_findings(review)
+    review_need.record_outcome(
+        project=project,
+        review_run_id=review_run_id,
+        outcome="blocking" if blocking else "clean",
+        findings={"blocking": blocking, "findings": len(findings)},
+    )
+
+
+def _prior_review(project: str, run_id: str) -> dict[str, Any] | None:
+    """The review a run already holds, or None when it holds none.
+
+    A stored review is what makes the review now being dispatched a further
+    review rather than a first one, so this read is the shadow's ordinal and not
+    a second reading of the store for its own sake.
+    """
+    try:
+        review = review_module.read_review(project, run_id)
+    except (OSError, ValueError):
+        return None
+    return review if isinstance(review, Mapping) else None
+
+
+def re_review_prediction(
+    record: Mapping[str, Any], fields: Mapping[str, Any]
+) -> dict[str, Any] | None:
+    """The judgement a further code review is dispatched on, and its inputs.
+
+    None is returned for a first review, for a plan review and for a review of a
+    review: the shadow measures re-reviews, and a row for a first review would
+    corrupt the population the view counts. An unanswerable judge is *not* None
+    — it is a prediction recorded as unavailable, so a service that is down is
+    visible in the tally rather than quietly missing from it.
+    """
+    if record.get("subject") == "plan" or _is_review_node(record):
+        return None
+    project = str(fields.get("project") or "")
+    run_id = str(record.get("run_id") or "")
+    head = str(fields.get("head") or "")
+    if not project or not run_id or not head:
+        return None
+    prior = _prior_review(project, run_id)
+    if prior is None:
+        return None
+    tree = _review_tree(record)
+    prior_head = review_described_head(prior, tree=tree)
+    # A re-review that cannot be read is recorded as unmeasured, never as a low
+    # probability: an empty diff here would reach the judge as "unchanged" and
+    # come back as a confident zero, which is the one value the tally must not
+    # invent. The reason travels with the row so the tally can say why.
+    unmeasured = ""
+    paths: list[str] | None = None
+    diff = ""
+    if not prior_head:
+        unmeasured = "the earlier review names no resolvable revision"
+    elif tree is None:
+        unmeasured = "the run's tree is not readable"
+    else:
+        measured = _diff_between(tree, prior_head, head)
+        if measured is None:
+            unmeasured = "git cannot diff the earlier review's revision from this head"
+        else:
+            diff = measured
+            paths = _changed_paths_between(tree, prior_head, head)
+    node = record.get("node") or {}
+    goal = str(node.get("goal") or "")
+    done_when = str(node.get("done_when") or "")
+    findings = review_module.normalised_findings(prior)
+    prior_summary = {
+        "review_run_id": str(prior.get("review_run_id") or ""),
+        "reviewed_head_sha": prior_head,
+        "status": str(prior.get("status") or ""),
+        "total": prior.get("total"),
+        "findings": findings,
+        "blocking_findings": _blocking_findings(prior),
+    }
+    verdict = (
+        review_need.Verdict(None, None, "unjudged", unmeasured)
+        if unmeasured
+        else review_need.predict_blocking(
+            goal=goal,
+            done_when=done_when,
+            diff=diff,
+            prior=prior_summary,
+        )
+    )
+    return {
+        "verdict": verdict,
+        "inputs": {
+            "goal": goal,
+            "done_when": done_when,
+            "reviewed_run_id": run_id,
+            "head": head,
+            "previous_reviewed_head": prior_summary["reviewed_head_sha"],
+            "paths": list(paths or ()),
+            "diff_chars": len(diff),
+            "prior_review": prior_summary,
+        },
+    }
+
+
+def record_re_review_prediction(
+    record: Mapping[str, Any],
+    fields: Mapping[str, Any],
+    review_run_id: str,
+) -> Path | None:
+    """Judge a further review of this run and record the judgement on its row.
+
+    The row is keyed by the review run, so the judgement is taken once that run
+    exists to be judged: a review the lane held was not dispatched, and a row
+    for it would put a guess in the tally with no review to answer it. Nothing
+    here decides anything — the review has already been dispatched — so an
+    unanswerable judge costs the row its probability and nothing else.
+    """
+    if not review_run_id:
+        return None
+    shadow = re_review_prediction(record, fields)
+    if shadow is None:
+        return None
+    return review_need.record_prediction(
+        project=str(fields.get("project") or ""),
+        review_run_id=review_run_id,
+        reviewed_run_id=str(record.get("run_id") or ""),
+        verdict=shadow["verdict"],
+        inputs=shadow["inputs"],
+    )
+
+
 def carry_review_forward(
     record: Mapping[str, Any], *, config: Mapping[str, Any] | None = None
 ) -> dict[str, Any] | None:
@@ -1400,8 +1636,12 @@ def withdraw_superseded_review(record: Mapping[str, Any]) -> dict[str, Any] | No
     speaks for a revision the run has finished with. The reflex records the
     attempt withdrawn rather than letting it stand, so the superseded attempt is
     visible and the run is free to be re-reviewed — or carried — at its new
-    head. A dispatch that already covers the current head, or a run not resumed
-    since the attempt was recorded, is left standing.
+    head. The attempt is ordered by the head it composed for, never by the
+    instant its dispatch record was written: that record is written after the
+    launch, so a review composed before a resume but recorded after it would
+    otherwise read as newer than the resume and be kept. A dispatch that speaks
+    for the head the run now carries, and one no resume has superseded, is left
+    standing.
 
     Only an attempt that never started is withdrawn. A review whose worker has
     launched is running, and a running review finishes: its verdict reaches the
@@ -1419,11 +1659,7 @@ def withdraw_superseded_review(record: Mapping[str, Any]) -> dict[str, Any] | No
         return None
     if str(recorded.get("status") or "") == "withdrawn":
         return None
-    resumed_at = _latest_resume_at(record)
-    if resumed_at is None:
-        return None
-    at = parse_utc(recorded.get("at"))
-    if at is not None and resumed_at <= at:
+    if _latest_resume_at(record) is None:
         return None
     review_run_id = str(recorded.get("run_id") or "")
     if _review_worker_launched(review_run_id):
@@ -2172,6 +2408,107 @@ def _delivered_plan_review(project: str, plan_slug: str, run_id: str) -> bool:
     return run_id in plan_review._stored_review_run_ids(project, plan_slug)
 
 
+def _plan_review_worker_finished(pointer: Mapping[str, Any]) -> bool:
+    """Whether a live review pointer's worker has ended.
+
+    A run whose phase is terminal has ended, and a run whose manifest carries a
+    terminal status has delivered even when its pointer still holds an earlier
+    phase: a reviewer writes its manifest before its last turn, and a promotion
+    requested from a delivered run can leave the pointer behind. Neither says
+    anything about the review's record — that is the store's answer — so a
+    finished review with its record not yet stored reads here as delivered work
+    rather than as a review still to come.
+    """
+    from reckon.crew.node import _TERMINAL_RUN_PHASES
+
+    if str(pointer.get("phase") or "") in _TERMINAL_RUN_PHASES:
+        return True
+    return runs._round_has_delivered(pointer)
+
+
+def _plan_review_reads_current(
+    pointer: Mapping[str, Any], project: str, plan_slug: str
+) -> bool:
+    """Whether a working review still reads what a fresh compose would cover.
+
+    The composed sidecar is the review's own account of what it composed for:
+    the plan version and the per-unit digests it read. A review stands when it
+    reads the plan's current version, or when every unit whose content changed
+    since it composed is inside the scope it traces — a whole-plan review,
+    which records no scope, reads every unit. Anything the reader cannot
+    resolve answers that the review still stands, because composing a second
+    review beside one nobody can account for is the wait this check exists to
+    avoid, and a plan or sidecar that cannot be read is exactly that.
+    """
+    node = pointer.get("node") or {}
+    directory = _composed_review_directory(project, plan_slug, node)
+    if directory is None:
+        return True
+    try:
+        sidecar = json.loads(
+            (directory / plan_review._REVIEW_SIDECAR_NAME).read_text(encoding="utf-8")
+        )
+    except (OSError, ValueError):
+        return True
+    if not isinstance(sidecar, Mapping):
+        return True
+    path = _plan_review_plan_path(pointer, project, plan_slug)
+    if path is None:
+        return True
+    try:
+        document = path.read_text(encoding="utf-8")
+    except OSError:
+        return True
+    from reckon import _plan_html
+
+    current = int((_plan_html.read_state(document) or {}).get("version") or 0)
+    if current and int(sidecar.get("plan_version") or 0) == current:
+        return True
+    digests = sidecar.get("section_digests")
+    if not isinstance(digests, Mapping):
+        return True
+    changed = {
+        unit
+        for unit, digest in plan_review._section_digests(document).items()
+        if digests.get(unit) != digest
+    }
+    if not changed:
+        return True
+    traced = sidecar.get(plan_review.TRACED_UNITS_KEY)
+    if not traced:
+        return True
+    return changed <= set(plan_review._normalise_sections(traced))
+
+
+def _plan_review_plan_path(
+    pointer: Mapping[str, Any], project: str, plan_slug: str
+) -> Path | None:
+    """The plan file a review of ``plan_slug`` reads, or ``None``.
+
+    The pointer's own recorded path answers first, because it is the file the
+    compose read, and the repository the run names answers next, because every
+    dispatched pointer carries it and its ``docs/plans`` tree is the mount's
+    own layout. The project's mount registry is read last, once the two cheap
+    answers failed, so the common read never parses it.
+    """
+    recorded = str(pointer.get("plan_path") or "").strip()
+    if recorded and Path(recorded).is_file():
+        return Path(recorded)
+    repo = str(pointer.get("repo") or "").strip()
+    if repo:
+        candidate = Path(repo) / "docs" / "plans" / f"{plan_slug}.html"
+        if candidate.is_file():
+            return candidate
+    from reckon import flight
+
+    docs = flight.mounted_project_docs().get(project)
+    if docs is not None:
+        candidate = Path(docs) / "plans" / f"{plan_slug}.html"
+        if candidate.is_file():
+            return candidate
+    return None
+
+
 def _standing_plan_review(
     project: str,
     plan_slug: str,
@@ -2191,22 +2528,29 @@ def _standing_plan_review(
     again, so the review a view names comes from the same reading as the row
     that names it.
 
-    ``rubric`` narrows the answer to reviews of that rubric, so a design review
+``rubric`` narrows the answer to reviews of that rubric, so a design review
     and a content review of one plan — which read it independently — can be in
     flight together, while a second review of a rubric already running is still
     found and refused. A pointer whose rubric cannot be read keeps standing for
     every rubric: the reader must not compose a duplicate because a record it
     could not classify left the answer unknown. A caller with no rubric to
     state (an obligation asking whether any review of the plan is running) is
-    answered by the plan alone, as it was before the rubric was named.
+    answered by the plan alone.
 
-    Only a review still composing or working stands. Once its record is stored
-    and readable the review has delivered, and what remains is its promotion,
-    which is owed and listed as it is today; it does not hold the next round's
-    compose. A review whose record is missing or unreadable is still working,
-    and keeps the gate. Both narrowings apply in turn: a delivered review of
-    the other rubric is skipped by the rubric first and by the delivery second,
-    and the answer is the same either way.
+    Only a review still working stands. Once its record is stored and readable
+    the review has delivered, and what remains is its promotion, which is
+    owed and listed as it is today; it does not hold the next round's compose.
+    A review whose worker has ended stands for nothing either, whatever its
+    record says: a review is stored only by its promotion, and only while it
+    reads the plan's current version, or already reads every unit changed past
+    the version it composed for. A review whose record is missing or
+    unreadable, and one whose scope cannot be read, is still working, and
+    keeps the gate.
+
+    The narrowings compose, and the answer is the same whichever fires first:
+    a review of the other rubric, one that has delivered, one whose worker has
+    ended and one reading an older plan version than it covers are each
+    skipped.
 
     A pointer whose ``node`` is not a mapping is skipped rather than read: this
     runs inside every session's obligations reading, and one malformed pointer
@@ -2228,6 +2572,10 @@ def _standing_plan_review(
                 continue
         run_id = str(pointer.get("run_id") or "")
         if _delivered_plan_review(project, plan_slug, run_id):
+            continue
+        if _plan_review_worker_finished(pointer):
+            continue
+        if not _plan_review_reads_current(pointer, project, plan_slug):
             continue
         return run_id
     return ""
@@ -2292,8 +2640,20 @@ def _dispatch_text_review_for_run(
         ).parent
         directory.mkdir(parents=True, exist_ok=True)
         # The lock spans the pointer check and launch across coordinator sessions.
+        # It is taken without waiting: a held lock means another sweep is
+        # composing this plan's review now, so this sweep has nothing to add and
+        # moves on. Waiting held each session's sweep behind the holder's whole
+        # dispatch, and a session whose sweep is held never reaches its own
+        # code reviews.
         with (directory / "dispatch.lock").open("a") as lock:
-            fcntl.flock(lock, fcntl.LOCK_EX)
+            try:
+                fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+            except BlockingIOError:
+                return {
+                    "dispatched": False,
+                    "review_run_id": None,
+                    "reason": "another sweep is composing this plan's review now",
+                }
             standing = _standing_plan_review(
                 record["project"], record["plan_slug"], rubric=rubric
             )
@@ -2339,6 +2699,11 @@ def _dispatch_text_review_for_run(
             "reason": f"the run is not awaiting review ({row['classification']})",
         }
     review, review_error = _stored_review(record)
+    if review:
+        # The review is stored, which is the moment its outcome becomes known:
+        # a row the shadow judged is completed here, and any other review
+        # writes nothing.
+        _record_shadow_outcome(record, review)
     if review is not None or review_error:
         # A stored review is evidence, readable or not. Regenerating over an
         # unparseable one would discard what the reviewer actually wrote, so
@@ -2625,7 +2990,9 @@ def _open_review_refusal(
         return None
     if not stored_reviews:
         return None
-    closed = run_id in ledger.run_ids(project)
+    from reckon.crew.open_run_index import has_row
+
+    closed = has_row(project, run_id)
     for stored in stored_reviews:
         if (
             review_lifecycle_module.lifecycle(
@@ -2670,6 +3037,159 @@ def _open_review_refusal(
     return None
 
 
+def _claim_the_refusal_names(exc: CrewError) -> dict[str, Any] | None:
+    """The run and path a write-scope refusal names, or None.
+
+    Only a refusal that names both a holder and the path it holds is stored:
+    the pair is what a later sweep asks the holder's own pointer about, so a
+    refusal recording neither would answer no question the sweep could put to
+    it.
+    """
+    run_id = str(getattr(exc, "run_id", "") or "")
+    path = str(getattr(exc, "claimed_path", "") or "")
+    if not run_id or not path:
+        return None
+    return {"run_id": run_id, "path": path}
+
+
+def claim_refusal_still_holds(claim: Mapping[str, Any]) -> bool:
+    """Whether the claim a refused review dispatch named still fences its paths.
+
+    The holder is asked through its own live pointer and the disposition every
+    other claim reader uses, so a holder that has been promoted, discarded or
+    stopped with an empty worktree releases the review exactly as it releases
+    any other dispatch. A holder whose pointer cannot be read names no run
+    anybody can observe, so it holds nothing.
+    """
+    from reckon.crew.node import claim_disposition
+
+    holder = str(claim.get("run_id") or "")
+    if not holder:
+        return False
+    try:
+        pointer = read_pointer(holder)
+    except (CrewError, OSError):
+        return False
+    if not pointer:
+        return False
+    return bool(claim_disposition(pointer).binding)
+
+
+def stored_claim_refusal(record: Mapping[str, Any]) -> dict[str, Any] | None:
+    """The hold a refused review dispatch still stands under, or None.
+
+    A refusal on a claim is the one refusal a later sweep can lift by itself:
+    the cause is another run's claim, and that run's own record says whether it
+    still stands. While it does, the reflex composes nothing rather than
+    re-asking the same question every sweep and recording the same refusal. On
+    the sweep after the holder releases, this returns None and the dispatch
+    composes again. A refusal recorded before the run's head moved speaks for a
+    revision the run has left behind, so it holds nothing.
+    """
+    recorded = record.get(REVIEW_DISPATCH_FIELD)
+    if not isinstance(recorded, Mapping):
+        return None
+    if str(recorded.get("status") or "") != "refused":
+        return None
+    claim = recorded.get("claim")
+    if not isinstance(claim, Mapping):
+        return None
+    if not claim_refusal_still_holds(claim):
+        return None
+    head = str(_review_dispatch_fields(record)["head"] or "")
+    if not _review_head_covers(str(recorded.get("head") or ""), head):
+        return None
+    holder = str(claim.get("run_id") or "")
+    held_path = str(claim.get("path") or "")
+    return {
+        "run_id": str(record.get("run_id") or ""),
+        "dispatched": False,
+        "held_claim": True,
+        "claim_run_id": holder,
+        "reason": (
+            f"the review is held: run {holder!r} still claims "
+            f"{held_path or 'the review record'}, so the reflex composes it "
+            "again on the sweep after that run releases the claim"
+        ),
+    }
+
+
+def _attempt_ended_after(record: Mapping[str, Any], written_ns: int) -> bool:
+    """Whether the attempt the pointer names ended and wrote this manifest.
+
+    A resumed attempt's delivery is normally ordered against the manifest
+    baseline the resume recorded. Repair tooling rewrites the manifest while an
+    attempt runs, so a delivery written after a rewrite can fail that ordering
+    while still being the attempt's own last word. The supervisor's exit record
+    for the attempt is independent evidence that the attempt is over, so it
+    settles the delivery when the manifest was written during or after the
+    attempt's own launch.
+    """
+    attempt = record.get("attempt")
+    if not isinstance(attempt, int) or isinstance(attempt, bool):
+        return False
+    data = _run_exit_record(record, f"attempt-{attempt}-exit.json", require_run_id=True)
+    if data is None:
+        return False
+    if int(data.get("attempt") or 0) != attempt:
+        return False
+    launched = parse_utc(data.get("launched_at"))
+    if launched is None:
+        return False
+    return written_ns >= int(launched.timestamp() * 1_000_000_000)
+
+
+def _settled_delivery_refusal(
+    record: Mapping[str, Any], *, dry_run: bool
+) -> dict[str, Any] | None:
+    """Why no review is composed because the run's delivery is not settled.
+
+    These guards sit before composition, so a reader holding only the open
+    review refusal could not see them: a duty then promised the reflex would
+    compose, while every sweep refused for a reason the duty never read. Both
+    the dispatch and the read-only predicate ask this one question, and the
+    dispatch records the refusal so a duty can name it.
+
+    Every leg fails toward withholding: a resume still launching, a process the
+    pointer says is running, a resumed attempt that has not delivered, or a
+    deferred obligation all leave the review undispatched until the state
+    clears.
+    """
+    if record.get("subject") == "plan" or _is_review_run(record):
+        return None
+    run_id = str(record.get("run_id") or "")
+    if not run_id:
+        return None
+    from reckon.crew import obligations, resumption
+
+    launching = record.get(resumption.RESUME_LAUNCH_IN_FLIGHT)
+    reason = ""
+    if isinstance(launching, Mapping):
+        reason = "the run has a resume launching; its delivery is not settled"
+    elif runs.record_process_alive(record) is True:
+        reason = (
+            "the run's recorded process is still running; its delivery is not settled"
+        )
+    elif record.get("attempt_kind") == "resume" and not _resumed_attempt_delivered(
+        record
+    ):
+        reason = "the resumed attempt has not delivered; no review is composed"
+    elif run_id in obligations._acknowledgements_in_force(
+        str(record.get("project") or ""), now=datetime.now(UTC)
+    ):
+        reason = "the run's obligations are deferred; no review is composed"
+    if not reason:
+        return None
+    if not dry_run:
+        _record_review_dispatch(run_id, status="refused", reason=reason)
+    return {
+        "run_id": run_id,
+        "dispatched": False,
+        "refused": True,
+        "reason": reason,
+    }
+
+
 def review_dispatch_refusal(record: Mapping[str, Any]) -> dict[str, Any] | None:
     """The refusal :func:`dispatch_review_for_run` would return, read without writing.
 
@@ -2679,6 +3199,9 @@ def review_dispatch_refusal(record: Mapping[str, Any]) -> dict[str, Any] | None:
     dispatch itself records a refusal on the run it acted for; a reader that
     only reports must not write, so this form leaves the record untouched.
     """
+    settled = _settled_delivery_refusal(record, dry_run=True)
+    if settled is not None:
+        return settled
     return _open_review_refusal(record, dry_run=True)
 
 
@@ -2731,12 +3254,29 @@ def dispatch_review_for_run(
     dry_run: bool = False,
 ) -> dict[str, Any]:
     """Dispatch the text review and, when needed, its separate figure review."""
-    refusal = _resume_superseded_refusal(record, dry_run=dry_run)
+    lifecycle = record
+    if record.get("subject") != "plan" and not _is_review_run(record):
+        run_id = str(record.get("run_id") or "")
+        # A sweep's snapshot can predate a resume begun during classification.
+        # Guards read the current attempt; composition keeps caller inputs.
+        try:
+            lifecycle = read_pointer(run_id)
+        except CrewError:
+            if runs.pointer_path(run_id).exists():
+                raise
+        record = {**lifecycle, **record}
+    refusal = _settled_delivery_refusal(lifecycle, dry_run=dry_run)
+    if refusal is not None:
+        return refusal
+    refusal = _resume_superseded_refusal(lifecycle, dry_run=dry_run)
     if refusal is not None:
         return refusal
     refusal = _open_review_refusal(record, dry_run=dry_run)
     if refusal is not None:
         return refusal
+    held = stored_claim_refusal(record)
+    if held is not None:
+        return held
     text_report = _dispatch_text_review_for_run(
         record,
         config=config,
@@ -3282,11 +3822,13 @@ def _dispatch_composed_review(
         # refusals all arrive here. The automatic path must not be the one place
         # they are skipped, so the refusal is recorded and reported rather than
         # caught and shrugged off.
+        claim = _claim_the_refusal_names(exc)
         record_dispatch(
             status="refused",
             reason=str(exc),
             backend=backend,
             reviewed_head=fields["head"],
+            claim=claim,
         )
         return {
             "run_id": run_id,
@@ -3297,6 +3839,7 @@ def _dispatch_composed_review(
         }
 
     review_run_id = str(launched.get("run_id") or "")
+    record_re_review_prediction(record, fields, review_run_id)
     record_dispatch(
         status="dispatched",
         reason=f"the review dispatched automatically as run {review_run_id}",

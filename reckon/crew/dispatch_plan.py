@@ -38,7 +38,6 @@ from reckon.crew.node import (
     NodeValidation,
     ScopeConflict,
     TaskNode,
-    UnreconciledRuns,
     done_when_warnings,
     normalize_section,
     parse_duration,
@@ -1288,26 +1287,6 @@ def plan_dispatch(
     return resolution
 
 
-def _session_unreconciled_refusal(
-    runs: Iterable[Mapping[str, Any]],
-    peer_runs: Iterable[Mapping[str, Any]],
-    grace: str,
-) -> UnreconciledRuns:
-    """Build an own-session refusal that keeps observed peer rows visible."""
-    refusal = UnreconciledRuns(runs, grace)
-    refusal.peer_runs = [dict(row) for row in peer_runs]
-    if refusal.peer_runs:
-        peer_lines = "\n".join(
-            f"- {row['run_id']} (session {(row.get('session') or '<unknown>')!s}): visible, not counted"
-            for row in refusal.peer_runs
-        )
-        peer_heading = (
-            f"{refusal!s}\nPeer-session unreconciled runs observed but not counted "
-        )
-        refusal.args = (peer_heading + f"toward this session's refusal:\n{peer_lines}",)
-    return refusal
-
-
 def _resolved_wave_id(project: str, session: str, requested: str) -> str:
     """Return an explicit wave or the newest non-empty wave in this session."""
     if requested:
@@ -1447,7 +1426,9 @@ def _require_repairs_target(
     root = _repairs_ledger_root(project, authority)
     if _SAFE_ID.fullmatch(target):
         try:
-            data, _version = ledger.load(project, root=root)
+            from reckon.crew.open_run_index import row_for_run
+
+            target_row = row_for_run(project, target, root)
         except (ledger.LedgerError, _store.CorruptEnvelopeError) as exc:
             raise CrewError(
                 f"--repairs {target!r} cannot be checked: the ledger at "
@@ -1456,10 +1437,7 @@ def _require_repairs_target(
                 "absent, so repair the ledger before dispatching a repair "
                 "against it"
             ) from exc
-        if any(
-            isinstance(row, Mapping) and str(row.get("run_id")) == target
-            for row in data.get("runs", [])
-        ):
+        if target_row is not None:
             return
         try:
             pointer = read_pointer(target)

@@ -10,25 +10,29 @@ import sys
 import threading
 import time
 import traceback
-from collections.abc import Callable, Mapping
+from collections.abc import Callable, Mapping, Sequence
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
 from reckon import checkout_trust, flight
 from reckon.crew import (
+    census,
+    dispatch_claims,
     follower_reload,
     obligation_snapshot,
     recovery,
     recovery_liveness,
     recovery_watch,
     resumption,
+    runs,
     station_obligations,
     station_store,
     station_subscriber,
     ticker,
 )
 from reckon.crew.host_lease import LEASE_RENEW_SECONDS, HostLease, local_host
+from reckon.crew.open_run_index import operational_read
 from reckon.crew.run_paths import crew_home
 from reckon.crew_follow_commands import (
     _FOLLOWER_IMAGE_COMMIT_ENV as IMAGE_IDENTITY_ENV,
@@ -144,6 +148,75 @@ class StationBeat:
             self._store = None
 
 
+# A census reads local processes and ownership records. One pass per minute
+# bounds that cost independently of the station's faster liveness heartbeat.
+CENSUS_BEAT_SECONDS = 60.0
+
+
+class CensusBeat:
+    """Apply the ownership census off the tick and heartbeat paths."""
+
+    def __init__(
+        self, *, home: Path, beat_seconds: float = CENSUS_BEAT_SECONDS
+    ) -> None:
+        self.home = home
+        self.beat_seconds = beat_seconds
+        self._next_due = 0.0
+        self._lock = threading.Lock()
+        self._stop = threading.Event()
+        self._thread: threading.Thread | None = None
+
+    def beat_once(self) -> bool:
+        """Stop proven orphans at most once per interval, printing each identity."""
+        with self._lock:
+            now = time.monotonic()
+            if now < self._next_due:
+                return False
+            self._next_due = now + self.beat_seconds
+            report = census.census(home=self.home)
+            owners = {row["pid"]: row["owner"] for row in report["orphaned"]}
+
+            def emit(result: dict) -> None:
+                print(
+                    "station-census: "
+                    + json.dumps({**result, "owner": owners[result["pid"]]}),
+                    file=sys.stderr,
+                    flush=True,
+                )
+
+            census.apply_census(report, emit=emit, before_signal=emit)
+            return True
+
+    def _run(self) -> None:
+        while not self._stop.is_set():
+            try:
+                self.beat_once()
+            except Exception:  # noqa: BLE001 - a failed census costs one beat
+                print(
+                    "station-census-failure: the ownership census could not complete",
+                    file=sys.stderr,
+                    flush=True,
+                )
+                traceback.print_exc(file=sys.stderr)
+            self._stop.wait(self.beat_seconds)
+
+    def start(self) -> None:
+        """Sweep immediately, then keep sweeping until the station stops."""
+        if self._thread is not None:
+            return
+        self._thread = threading.Thread(
+            target=self._run, name="station-census", daemon=True
+        )
+        self._thread.start()
+
+    def stop(self) -> None:
+        """Stop requesting census passes and wait for this pass to finish."""
+        self._stop.set()
+        if self._thread is not None:
+            self._thread.join(timeout=max(1.0, self.beat_seconds * 2))
+            self._thread = None
+
+
 class LeaseBeat:
     """Renew the station's writer lease from a thread of its own.
 
@@ -239,6 +312,7 @@ class SweepBeat:
         start: Callable[[Callable[[], None]], None] | None = None,
         beat_seconds: float = SWEEP_BEAT_SECONDS,
     ) -> None:
+        self.on_report: Callable[[str, str, Mapping[str, Any]], None] | None = None
         self.sweep = resumption.sweep if sweep is None else sweep
         self.beat_seconds = beat_seconds
         self._start = _start_thread if start is None else start
@@ -278,9 +352,20 @@ class SweepBeat:
     ) -> None:
         while True:
             try:
-                self.sweep(
+                report = self.sweep(
                     project, session=session, now=moment, writer=dict(SWEEP_WRITER)
                 )
+                if isinstance(report, Mapping) and self.on_report is not None:
+                    self.on_report(project, session, report)
+                reviews = report.get("reviews") if isinstance(report, Mapping) else None
+                if isinstance(reviews, Mapping):
+                    for failure in reviews.get("failed") or ():
+                        print(
+                            f"station-sweep-run-failure: {project}/{session}/"
+                            f"{failure['run_id']}: {failure['error']}",
+                            file=sys.stderr,
+                            flush=True,
+                        )
             except Exception:  # noqa: BLE001 - one session's sweep costs one pass
                 print(
                     f"station-sweep-failure: {project}/{session}: "
@@ -296,6 +381,285 @@ class SweepBeat:
                     return
                 moment = pending
                 self._last[key] = moment.timestamp()
+
+
+# How often the reflex's arm reads the live fleet on its own thread. The arm is
+# what decides a sweep is due, so this is the longest a delivery can wait for
+# one, and it is well inside the reflex's own window because a sweep takes time
+# of its own to reach the dispatch.
+REFLEX_BEAT_SECONDS = 30.0
+
+# How long a stopping station waits for a derivation it started to land. A
+# derivation can run far longer than a shutdown should, so the wait is bounded
+# and the duties it had not yet published are the next station's to derive.
+DUTY_DRAIN_SECONDS = 10.0
+
+
+class _CommitBarrier:
+    """Hold derivations out of the store while a tick writes transitions."""
+
+    def __init__(self, duties: DutyBeat) -> None:
+        self._duties = duties
+
+    def __enter__(self) -> None:
+        self._duties._begin_commit()
+
+    def __exit__(self, *_exc: object) -> None:
+        self._duties._end_commit()
+
+
+class DutyBeat:
+    """Derive each project's review duties on a worker of its own.
+
+    A derivation reads the review store once per run and may outlast a tick by
+    most of an hour. A run's phase transition is what wakes the session that
+    owns it, so deriving duties on the tick path held every later project's
+    transition behind it, and a run that finished during a long derivation woke
+    no one until the following tick.
+
+    One worker owns the derivation, so a project has at most one in flight: a
+    tick that finds one running starts no second pass and leaves the duties the
+    last finished derivation published in place. A change the tick saw while a
+    derivation ran is carried into the next one, so a project is never left
+    publishing duties read before its own transition.
+
+    A worker holds at its first step while a tick is committing transitions.
+    Committing a project's transitions only *after* an earlier project's
+    derivation had finished is what held a later project's wake back, so the
+    ordering is a property of this class rather than of the order a tick
+    happens to call it in: no derivation reaches the review store until every
+    project's transitions for that tick are written. The wait is one-sided —
+    the tick never waits for a derivation — so a slow derivation cannot delay
+    the pass that gates it.
+    """
+
+    def __init__(
+        self,
+        root: str | Path,
+        *,
+        guard: station_store.StoreWriteGuard | None = None,
+    ) -> None:
+        self.root = Path(root)
+        self.guard = guard
+        self._lock = threading.Lock()
+        self._in_flight: set[str] = set()
+        self._changed: set[str] = set()
+        self._workers: dict[str, threading.Thread] = {}
+        self._commit = threading.Condition()
+        self._committing = 0
+
+    def committing(self) -> _CommitBarrier:
+        """Hold every derivation at its first step until the block ends."""
+        return _CommitBarrier(self)
+
+    def _begin_commit(self) -> None:
+        with self._commit:
+            self._committing += 1
+
+    def _end_commit(self) -> None:
+        with self._commit:
+            self._committing -= 1
+            if not self._committing:
+                self._commit.notify_all()
+
+    def _await_committed(self) -> None:
+        with self._commit:
+            self._commit.wait_for(lambda: not self._committing)
+
+    def request(
+        self,
+        project: str,
+        *,
+        home: str | Path,
+        changed: bool,
+        moment: datetime | None,
+    ) -> bool:
+        """Start this project's derivation unless one is already in flight."""
+        with self._lock:
+            if project in self._in_flight:
+                if changed:
+                    self._changed.add(project)
+                return False
+            self._in_flight.add(project)
+            changed = changed or project in self._changed
+            self._changed.discard(project)
+            worker = threading.Thread(
+                target=self._run,
+                kwargs={
+                    "project": project,
+                    "home": home,
+                    "changed": changed,
+                    "moment": moment,
+                },
+                name=f"station-duties-{project}",
+                daemon=True,
+            )
+            self._workers[project] = worker
+        worker.start()
+        return True
+
+    def in_flight(self) -> set[str]:
+        """The projects whose derivation is running right now."""
+        with self._lock:
+            return set(self._in_flight)
+
+    def drain(self, timeout: float | None = None) -> None:
+        """Wait for the derivations this station started to finish."""
+        with self._lock:
+            workers = list(self._workers.values())
+        for worker in workers:
+            worker.join(timeout)
+        with self._lock:
+            self._workers.clear()
+
+    def _run(
+        self,
+        project: str,
+        *,
+        home: str | Path,
+        changed: bool,
+        moment: datetime | None,
+    ) -> None:
+        # No derivation reads the store while a tick is writing transitions: a
+        # derivation entered mid-pass would publish duties read before the
+        # transitions of the projects the pass had not reached yet.
+        self._await_committed()
+        # The worker owns its connection: a store handle is bound to the thread
+        # that opened it, and the tick keeps its own to the same database.
+        store = station_store.StationStore(self.root, guard=self.guard)
+        try:
+            station_obligations.publish(
+                store,
+                project=project,
+                home=home,
+                changed=changed,
+                now=moment,
+            )
+        except Exception:  # noqa: BLE001 - one project's duties cost one pass
+            print(
+                f"station-duty-failure: {project}: the derivation could not complete",
+                file=sys.stderr,
+                flush=True,
+            )
+            traceback.print_exc(file=sys.stderr)
+        finally:
+            store.close()
+            with self._lock:
+                self._in_flight.discard(project)
+
+
+def _pointer_file_stamp(path: str) -> tuple[int, int]:
+    """The identity a manifest or pointer file presents between two reads."""
+    try:
+        stat = os.stat(path)
+    except (OSError, ValueError):
+        return (-1, -1)
+    return (stat.st_mtime_ns, stat.st_size)
+
+
+def _fleet_signature(pointers: Sequence[Mapping[str, Any]]) -> tuple[Any, ...]:
+    """What moved in the fleet since the last read, cheaply enough to re-read.
+
+    A sweep walks every live run, so a read that moved in nothing must not ask
+    for one. What a delivery moves is the manifest the worker writes and the
+    phase its pointer records, so those identities are the signature: the rest
+    of a pointer's fields churn without changing whether a review is owed.
+    """
+    signature = []
+    for pointer in pointers:
+        run_id = str(pointer.get("run_id") or "")
+        if not run_id:
+            continue
+        signature.append(
+            (
+                run_id,
+                str(pointer.get("phase") or ""),
+                _pointer_file_stamp(str(pointer.get("manifest_path") or "")),
+            )
+        )
+    return tuple(sorted(signature))
+
+
+class ReflexBeat:
+    """Arm the review reflex from a thread of its own.
+
+    The reflex runs inside the station's tick, and the tick can spend minutes
+    in one per-project refresh. A run delivering during that stage waits for
+    the stage to finish before any sweep is asked for, which is how reviews
+    were dispatched six to ten minutes after delivery against a two-minute
+    window. So the arm runs here, on its own beat, reading the live fleet
+    rather than the tick's view: a session's sweep is requested when what the
+    fleet presents has moved since the last beat, and the sessions' own cadence
+    covers everything else. The tick keeps its own request, so a change the
+    tick reaches first is still armed at once; this thread is what keeps the
+    reflex beating while the tick is held.
+    """
+
+    def __init__(
+        self,
+        sweeps: SweepBeat,
+        *,
+        beat_seconds: float = REFLEX_BEAT_SECONDS,
+        clock: Callable[[], datetime] | None = None,
+        pointers: Callable[[], list[dict[str, Any]]] | None = None,
+        start: Callable[[Callable[[], None]], None] | None = None,
+    ) -> None:
+        self.sweeps = sweeps
+        self.beat_seconds = beat_seconds
+        self._clock = clock or (lambda: datetime.now(tz=UTC))
+        self._list = pointers if pointers is not None else runs.list_live
+        self._start = _start_thread if start is None else start
+        self._stop = threading.Event()
+        self._thread: threading.Thread | None = None
+        self._signature: tuple[Any, ...] | None = None
+
+    def arm_once(self) -> None:
+        """Ask for each session's sweep when what the fleet presents has moved."""
+        try:
+            pointers = self._list()
+        except (OSError, ValueError):
+            return
+        signature = _fleet_signature(pointers)
+        pending = signature != self._signature
+        self._signature = signature
+        moment = self._clock()
+        grouped: dict[str, list[Mapping[str, Any]]] = {}
+        for pointer in pointers:
+            project = str(pointer.get("project") or "")
+            if project and str(pointer.get("run_id") or ""):
+                grouped.setdefault(project, []).append(pointer)
+        for project, records in sorted(grouped.items()):
+            for session in _sessions_to_sweep(records):
+                self.sweeps.request(project, session, moment=moment, changed=pending)
+
+    def _run(self) -> None:
+        while not self._stop.is_set():
+            try:
+                self.arm_once()
+            except Exception:  # noqa: BLE001 - a missed arm is retried next beat
+                print(
+                    "station-reflex-failure: the reflex arm could not read the fleet",
+                    file=sys.stderr,
+                    flush=True,
+                )
+                traceback.print_exc(file=sys.stderr)
+            self._stop.wait(self.beat_seconds)
+
+    def start(self) -> None:
+        """Arm once, then keep arming on its own thread."""
+        if self._thread is not None:
+            return
+        self._thread = threading.Thread(
+            target=self._run, name="station-reflex", daemon=True
+        )
+        self._thread.start()
+
+    def stop(self) -> None:
+        """Stop arming."""
+        self._stop.set()
+        if self._thread is not None:
+            self._thread.join(timeout=max(1.0, self.beat_seconds * 2))
+            self._thread = None
 
 
 def _sessions_to_sweep(pointers: list[Mapping[str, Any]]) -> list[str]:
@@ -392,6 +756,10 @@ class StationReloader:
         environment = follower_reload.image_reexec_environment(
             self.source_root, current, pin
         )
+        # The sweep thread may be between taking a node's dispatch claim and
+        # starting its worker, and replacing the image would end that thread
+        # and leave the claim with no worker behind it. Wait for it, bounded.
+        dispatch_claims.wait_for_dispatches_in_flight()
         try:
             os.execve(  # noqa: S606 - replacement keeps this station's pid
                 sys.executable,
@@ -414,6 +782,8 @@ class Station:
         projects: Callable[[], Mapping[str, Path]] = flight.mounted_project_docs,
         stall_seconds: int = 900,
         sweeps: SweepBeat | None = None,
+        duties: DutyBeat | None = None,
+        reflex_beat_seconds: float = REFLEX_BEAT_SECONDS,
         clock: Callable[[], datetime] | None = None,
     ) -> None:
         self.store = store
@@ -421,13 +791,35 @@ class Station:
         self.projects = projects
         self.stall_seconds = stall_seconds
         self.clock = clock or (lambda: datetime.now(tz=UTC))
+        # Each project's duties are derived on a worker of its own, so a long
+        # derivation never holds the next tick's phase transitions back.
+        self.duties = (
+            DutyBeat(store.root, guard=store.guard) if duties is None else duties
+        )
         # The review reflex and settle detection run here, once for every
         # session on the node, rather than in each follower.
         self.sweeps = SweepBeat() if sweeps is None else sweeps
+        self.sweeps.on_report = self._record_sweep_report
+        # The arm that decides a sweep is due beats on a thread of its own, so a
+        # tick held in a slow stage cannot hold a delivered run's review.
+        self.reflex = ReflexBeat(
+            self.sweeps, beat_seconds=reflex_beat_seconds, clock=self.clock
+        )
         # The home this station's rows describe. A follower reads this store
         # only when its own home is the same one, because a store built from
         # another home holds another fleet's rows.
         self.store.set_station_value(station_store.CREW_HOME_KEY, str(self.home))
+
+    def _record_sweep_report(
+        self, project: str, session: str, report: Mapping[str, Any]
+    ) -> None:
+        # The sweep thread owns its connection; the tick and heartbeat keep
+        # their own handles to the same guarded store.
+        store = station_store.StationStore(self.store.root, guard=self.store.guard)
+        try:
+            station_obligations.record_sweep_report(store, project, session, report)
+        finally:
+            store.close()
 
     def _enter(self, stage: str, *, started: datetime | None = None) -> None:
         """Record the stage this tick has entered, and its start when it opens.
@@ -444,6 +836,7 @@ class Station:
             )
         self.store.set_station_value(obligation_snapshot.STATION_TICK_STAGE_KEY, stage)
 
+    @operational_read
     def tick(self, *, now: datetime | None = None) -> list[dict[str, Any]]:
         """Publish every new transition, then move the heartbeat."""
         moment = now or self.clock()
@@ -475,71 +868,83 @@ class Station:
         # it is the stage the night's slow ticks spent their time in: a reader
         # that names it says the station is walking a project, not that it died.
         self._enter(stages[3])
-        for project in sorted(project_names - {""}):
-            current = {
-                run_id: verdict
-                for run_id, verdict in verdicts.items()
-                if str(pointers.get(run_id, {}).get("project") or "") == project
-            }
-            known = self.store.recorded_fleet(project)
-            # A run first seen by this station is inventory. The producer's
-            # fold represents an unknown run as a dispatched arrival, then
-            # its actual verdict as a second row; the station records that
-            # verdict as its baseline before asking the same fold for changes.
-            for run_id, verdict in current.items():
-                if run_id not in known:
-                    known[run_id] = dict(verdict)
-            folded, next_known = recovery.fleet_transitions(
-                known,
-                current,
-                ledger_run_ids=recovery_watch._ledger_run_id_reader(project),
-                handovers=recovery_watch.handover_run_ids(project),
-            )
-            project_pointers = [
-                pointer
-                for pointer in pointers.values()
-                if str(pointer.get("project") or "") == project
-            ]
-            events: list[dict[str, Any]] = []
-            for snapshot, previous, state, counts in folded:
-                event = recovery._watch_transition(
-                    project,
-                    kind="transition",
-                    snapshot=snapshot,
-                    previous=previous,
-                    current=state,
-                    counts=counts,
-                    spend_runs=project_pointers,
-                    rate_statuses={},
+        # Phase transitions are committed for every project before any session's
+        # review duties are derived. A derivation can run for tens of minutes
+        # inside one project, and a run's transition is what wakes the session
+        # that owns it, so committing a project's transitions only after every
+        # earlier project's derivation had finished held the later projects'
+        # wakes behind work that has nothing to do with them.
+        derivations: list[tuple[str, list[Mapping[str, Any]], bool]] = []
+        with self.duties.committing():
+            for project in sorted(project_names - {""}):
+                current = {
+                    run_id: verdict
+                    for run_id, verdict in verdicts.items()
+                    if str(pointers.get(run_id, {}).get("project") or "") == project
+                }
+                known = self.store.recorded_fleet(project)
+                # A run first seen by this station is inventory. The producer's
+                # fold represents an unknown run as a dispatched arrival, then
+                # its actual verdict as a second row; the station records that
+                # verdict as its baseline before asking the same fold for changes.
+                for run_id, verdict in current.items():
+                    if run_id not in known:
+                        known[run_id] = dict(verdict)
+                folded, next_known = recovery.fleet_transitions(
+                    known,
+                    current,
+                    ledger_run_ids=recovery_watch._ledger_run_id_reader(project),
+                    handovers=recovery_watch.handover_run_ids(project),
                 )
-                event["audience"] = str(event.get("session") or "*")
-                event["duty"] = ticker.transition_class(previous, state)
-                events.append(event)
-            self.store.record_tick(project, events, next_known, at=moment)
-            published.extend(events)
-            # The reading a pane's settle is judged by, written on every tick
-            # rather than on change: a pane settles on emptiness, and a quiet
-            # fleet is exactly the case that publishes no transition.
-            project_live, unowned, live_sessions = (
-                station_subscriber.live_work_populations(project_pointers)
-            )
-            station_subscriber.record_live_work(
-                self.store,
-                project,
-                at=moment,
-                project_live=project_live,
-                unowned=unowned,
-                sessions=live_sessions,
-            )
-            # Each session's duties are derived from the same fleet reading
-            # this tick just committed, so a change the station published is a
-            # change the coordinator's obligations reflect on the same pass.
+                project_pointers = [
+                    pointer
+                    for pointer in pointers.values()
+                    if str(pointer.get("project") or "") == project
+                ]
+                events: list[dict[str, Any]] = []
+                for snapshot, previous, state, counts in folded:
+                    event = recovery._watch_transition(
+                        project,
+                        kind="transition",
+                        snapshot=snapshot,
+                        previous=previous,
+                        current=state,
+                        counts=counts,
+                        spend_runs=project_pointers,
+                        rate_statuses={},
+                    )
+                    event["audience"] = str(event.get("session") or "*")
+                    event["duty"] = ticker.transition_class(previous, state)
+                    events.append(event)
+                self.store.record_tick(project, events, next_known, at=moment)
+                published.extend(events)
+                # The reading a pane's settle is judged by, written on every tick
+                # rather than on change: a pane settles on emptiness, and a quiet
+                # fleet is exactly the case that publishes no transition.
+                project_live, unowned, live_sessions = (
+                    station_subscriber.live_work_populations(project_pointers)
+                )
+                station_subscriber.record_live_work(
+                    self.store,
+                    project,
+                    at=moment,
+                    project_live=project_live,
+                    unowned=unowned,
+                    sessions=live_sessions,
+                )
+                derivations.append((project, project_pointers, bool(events)))
+        # Each session's duties are derived from the same fleet reading this
+        # tick committed, and derived on the station's own worker: a derivation
+        # can run for tens of minutes, and a run that finishes during one still
+        # wakes its session on this tick rather than the next.
+        for project, project_pointers, changed in derivations:
             station_obligations.publish(
                 self.store,
                 project=project,
                 home=self.home,
-                changed=bool(events),
+                changed=changed,
                 now=moment,
+                submit=self.duties.request,
             )
             # The sweep's two passes run for every session this host owns, on
             # a change and on the beat, so a hold or a declared
@@ -550,7 +955,7 @@ class Station:
                     project,
                     session,
                     moment=moment,
-                    changed=bool(events),
+                    changed=changed,
                 )
         self._enter(stages[4])
         self.store.sweep_retention(now=moment)
@@ -572,8 +977,14 @@ def run_station(
     lease: HostLease | None = None,
     beat_seconds: float | None = None,
     renew_seconds: float | None = None,
+    census_sweep: bool = False,
 ) -> None:
-    """Run the node's single station until stopped or one requested tick ends."""
+    """Run the node's single station until stopped or one requested tick ends.
+
+    ``census_sweep`` opts this station into stopping proven orphans. It is off
+    unless a caller asks for it: signalling a process is a destructive act, so
+    no station run takes it as a side effect of starting.
+    """
     from reckon.crew.dispatch_launch import _adopt_launched_workers_from_reexec
 
     _adopt_launched_workers_from_reexec()
@@ -618,6 +1029,8 @@ def run_station(
         )
         beat: StationBeat | None = None
         renewal: LeaseBeat | None = None
+        census_beat: CensusBeat | None = None
+        station: Station | None = None
         try:
             station = Station(store) if station_instance is None else station_instance
             reloader = StationReloader(store.root)
@@ -633,6 +1046,12 @@ def run_station(
             beat.start()
             renewal = LeaseBeat(lease, guard=store.guard, renew_seconds=renew_seconds)
             renewal.start()
+            # The reflex's arm starts beside the beat, so a station whose first
+            # tick is slow still reviews a run delivered during it.
+            station.reflex.start()
+            if census_sweep:
+                census_beat = CensusBeat(home=station.home)
+                census_beat.start()
             while not stopping:
                 if renewal.lost():
                     break
@@ -642,6 +1061,13 @@ def run_station(
                     raise StationHeldError(
                         f"station lost its lease at {lease.path}: {lost}"
                     ) from None
+                except Exception as error:  # noqa: BLE001 - one tick costs one tick
+                    print(
+                        f"station-tick-failure: {error}",
+                        file=sys.stderr,
+                        flush=True,
+                    )
+                    traceback.print_exc(file=sys.stderr)
                 if renewal.lost():
                     break
                 if once:
@@ -651,6 +1077,13 @@ def run_station(
             if renewal.lost():
                 raise StationHeldError(f"station lost its lease at {lease.path}")
         finally:
+            if census_beat is not None:
+                census_beat.stop()
+            if station is not None:
+                # A derivation in flight writes the duties a reader sees next,
+                # so a stopping station gives it a bounded moment to land.
+                station.duties.drain(timeout=DUTY_DRAIN_SECONDS)
+                station.reflex.stop()
             if renewal is not None:
                 renewal.stop()
             if beat is not None:

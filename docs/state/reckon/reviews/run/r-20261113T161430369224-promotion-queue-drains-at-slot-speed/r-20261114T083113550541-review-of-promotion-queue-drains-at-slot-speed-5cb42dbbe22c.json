@@ -1,0 +1,100 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "The reviewed run's baseline_suite (fd2c43f7) ran tests/test_staged_write_inventory.py alone and its after_suite (5cb42db) ran that file plus the node's new tests/test_promotion_queue_drains_at_slot_speed.py, both EXIT=0 with failure_count 0; the shared file is green on both arms and the three additional passing tests are new rather than a delta, so added failures are 0 by the two recorded logs.",
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/crew/admission/service.py:281 start_refill in admit_until_stopped",
+    "reckon/crew/admission/service.py:290 begin_drain on a moved code stamp",
+    "reckon/crew/admission/service.py:303 promotions.tick()",
+    "reckon/crew/admission/service.py:326 stop_refill in the exit path",
+    "reckon/crew_run_commands.py:1955 crew promotions verb"
+  ],
+  "completed_at": "2026-11-14T08:54:25.115Z",
+  "dispatched_at": "2026-11-14T08:35:09Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "folded",
+      "node": "promotion-queue-drains-at-slot-speed",
+      "recorded_at": "2026-11-14T09:59:22.359317+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "reckon/crew/promotion_requests.py",
+      "line": 630,
+      "severity": "blocking",
+      "text": "The refill thread now calls tick() concurrently with the admission loop's own tick() at reckon/crew/admission/service.py:303, and nothing serializes them: tick() checks self._draining once at promotion_requests.py:695 and then claims slots and starts threads, so a tick that straddles begin_drain() (:634, set from the admission loop at service.py:290) starts a promotion after the reload decision, and wait_for_in_flight() at :637 joins only the snapshot list(self._threads) it took, so service.py:293's _reexec_into_current_code() replaces the image with that promotion running, cutting a promotion off mid-flight - the exact outcome the drain exists to prevent. The same list-rebuild race at :694 also lets a concurrently started tick drop a just-appended thread from self._threads, so wait_for_in_flight and settle never join it."
+    },
+    {
+      "file": "reckon/crew/promotion_requests.py",
+      "line": 618,
+      "severity": "non-blocking",
+      "text": "The refill loop calls self.tick() at :630 with no exception guard, so one OSError from _pending_requests or a lease claim ends the daemon thread for the life of the service and the queue silently reverts to pass-speed draining with nothing logged, which is the failure the change was written to remove."
+    },
+    {
+      "file": "reckon/crew/promotion_requests.py",
+      "line": 103,
+      "severity": "non-blocking",
+      "text": "_record_drained and _trim_drained_log (:90) re-implement the crew-home JSON row writer and bounder the repository already owns at reckon/crew/picker/__init__.py:76 (_append_crew_log_line, one O_APPEND write so a small row cannot interleave with a concurrent writer) and reckon/crew/fleet_supervisor.py:1091 (trim_service_log, in-place so an open descriptor stays valid); the local variant uses a buffered path.open('a') at :123, losing that atomicity for a file the service appends to while the CLI report reads it."
+    },
+    {
+      "file": "reckon/crew/promotion_requests.py",
+      "line": 40,
+      "severity": "non-blocking",
+      "text": "TERMINAL = frozenset({PROMOTED, FAILED, REFUSED, DEFERRED}) is defined and read nowhere in the module or the repository, so it is dead code added by this change."
+    },
+    {
+      "file": "reckon/crew/promotion_requests.py",
+      "line": 582,
+      "severity": "non-blocking",
+      "text": "The assignment self._refill_armed_stamp = None if self.code_stamp is None else self.code_stamp() is 87 characters, so uv run ruff format --check reports this file 'unformatted: File would be reformatted'; the base revision of this file was format-clean, so the commit adds the finding."
+    },
+    {
+      "file": "tests/test_promotion_queue_drains_at_slot_speed.py",
+      "line": 220,
+      "severity": "non-blocking",
+      "text": "The new test file ends with no trailing newline, so uv run ruff check adds W292 to a tree whose changed source files are otherwise clean, and the two-line comment at :121-122 carries its second line at column 0."
+    },
+    {
+      "file": "tests/test_promotion_queue_drains_at_slot_speed.py",
+      "line": 157,
+      "severity": "non-blocking",
+      "text": "The control's assert elapsed > PASS_SECONDS compares the elapsed time against the constant the loop itself sleeps at :155, so it is satisfied by the test's own structure rather than by the code under test and would still hold if the pass-only drain were made faster; the falsification of the head property rests on the manifest's manual mutation log, not on this assertion."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "Five production call sites reach the change: reckon/crew/admission/service.py:281 start_refill, :290 begin_drain on a moved stamp, :303 promotions.tick() in every pass, :326 stop_refill, and reckon/crew_run_commands.py:1955 the crew promotions verb, and the concurrent tick at :303 against the refill thread's own tick is where the one blocking finding lies.",
+    "diff": "Read commit by commit against fd2c43f7: a7db39467b adds the refill thread, the code-stamp gate, the drain log, the queue report and the crew promotions verb, and 5cb42dbbe22c adds the three-test file including the pass-only control; 491 insertions across five files with no change outside the declared scope.",
+    "done_when": "The gate at tests/test_promotion_queue_drains_at_slot_speed.py:95-128 measures the first clause (five requests at width 2 in 3.05 s against a 10.5 s pass-only control, both recorded in the manifest's two suite arms and in the evidence fragment's measure table), :166-212 measures the second (a moved code stamp starts nothing more), but the third clause's live one-hour drain rate reads 0 at docs/evidence/fragments/work-flows-to-the-lane/promotion-queue-drains-at-slot-speed.html:26 because the drain log did not exist before this change, so only its oldest-wait half (70 s) is a positive live measurement.",
+    "goal": "The node's goal is that a freed promotion slot takes the next waiting request without waiting for the admission pass; reckon/crew/promotion_requests.py:751 wake() and :618 _refill deliver that, reckon/crew/admission/service.py:281 starts the thread for the service, and the deliverable's second half - queue depth, oldest wait and drain rate in the crew views - landed only as a CLI verb at reckon/crew_run_commands.py:1955, with the view composer recorded under outside_scope.",
+    "manifest": "The manifest reports status complete with two commits, base and head arms of 51 and 54 passed, a negative control that names the drain test and its 2-of-5 result, and the live queue reading, and every one of those log paths exists on disk and its cited figure reconciles with the log it names.",
+    "write_paths": "The manifest declares reckon/crew/promotion_requests.py, reckon/crew/admission/service.py, reckon/crew_run_commands.py, tests/test_promotion_queue_drains_at_slot_speed.py, the evidence fragment and a figures directory; git diff fd2c43f7..5cb42db touches exactly the first five and the figures directory stays unused, so every landed path is inside the declared scope."
+  },
+  "justifications": {
+    "durability": "tests/test_promotion_queue_drains_at_slot_speed.py:123 and :157-160 fail if the refill stops starting requests, the mutation log proves the first reddens, but the control's assertion at :157 is satisfied by the loop's own sleep and nothing tests a drain that races an in-progress tick.",
+    "evidence": "The base and head arms and the negative control are all recorded at tests/test_promotion_queue_drains_at_slot_speed.py and in logs/, but the done-when's live hourly drain rate at promotion-queue-drains-at-slot-speed.html:26 reads 0 by the worker's own account; the oldest-wait half is measured at 70 s.",
+    "fit": "The module follows the surrounding style and its docstrings state mechanism, but promotion_requests.py:582 is a line ruff format rewrites and :40 defines a TERMINAL set nothing reads, so the commit adds findings to a file that was clean at the base revision.",
+    "goal_fidelity": "reckon/crew/promotion_requests.py:751 wakes the refill on every freed slot and :618-630 takes requests without a pass, but the plan's 'visible in the crew views' half lands only as the CLI verb at reckon/crew_run_commands.py:1955.",
+    "reuse": "reckon/crew/promotion_requests.py:103 and :90 re-implement the crew-home JSON row writer and service-log trim the repository already owns at reckon/crew/picker/__init__.py:76 and reckon/crew/fleet_supervisor.py:1091, and the local variant drops the atomic O_APPEND write the owner provides.",
+    "scope_discipline": "git diff fd2c43f7..5cb42db touches only the five declared paths, with docs/figures listed but unused."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that a freed promotion slot takes the next waiting request without waiting for the admission pass; reckon/crew/promotion_requests.py:751 wake() and :618 _refill deliver that, reckon/crew/admission/service.py:281 starts the thread for the service, and the deliverable's second half - queue depth, oldest wait and drain rate in the crew views - landed only as a CLI verb at reckon/crew_run_commands.py:1955, with the view composer recorded under outside_scope.\nVERDICT done_when: the gate at tests/test_promotion_queue_drains_at_slot_speed.py:95-128 measures the first clause (five requests at width 2 in 3.05 s against a 10.5 s pass-only control, both recorded in the manifest's two suite arms and in the evidence fragment's measure table), :166-212 measures the second (a moved code stamp starts nothing more), but the third clause's live one-hour drain rate reads 0 at docs/evidence/fragments/work-flows-to-the-lane/promotion-queue-drains-at-slot-speed.html:26 because the drain log did not exist before this change, so only its oldest-wait half (70 s) is a positive live measurement.\nVERDICT write_paths: the manifest declares reckon/crew/promotion_requests.py, reckon/crew/admission/service.py, reckon/crew_run_commands.py, tests/test_promotion_queue_drains_at_slot_speed.py, the evidence fragment and a figures directory; git diff fd2c43f7..5cb42db touches exactly the first five and the figures directory stays unused, so every landed path is inside the declared scope.\nVERDICT manifest: the manifest reports status complete with two commits, base and head arms of 51 and 54 passed, a negative control that names the drain test and its 2-of-5 result, and the live queue reading, and every one of those log paths exists on disk and its cited figure reconciles with the log it names.\nVERDICT diff: read commit by commit against fd2c43f7: a7db39467b adds the refill thread, the code-stamp gate, the drain log, the queue report and the crew promotions verb, and 5cb42dbbe22c adds the worktree test file including the pass-only control; 491 insertions across five files with no change outside the declared scope.\nCALL_SITES: reckon/crew/admission/service.py:281 start_refill in admit_until_stopped, reckon/crew/admission/service.py:290 begin_drain on a moved code stamp, reckon/crew/admission/service.py:303 promotions.tick(), reckon/crew/admission/service.py:326 stop_refill in the exit path, reckon/crew_run_commands.py:1955 crew promotions verb\nSCORE goal_fidelity: 15\nJUSTIFICATION goal_fidelity: reckon/crew/promotion_requests.py:751 wakes the refill on every freed slot and :618-630 takes requests without a pass, but the plan's 'visible in the crew views' half lands only as the CLI verb at reckon/crew_run_commands.py:1955.\nSCORE evidence: 14\nJUSTIFICATION evidence: the base and head arms and the negative control are all recorded at tests/test_promotion_queue_drains_at_slot_speed.py and in logs/, but the done-when's live hourly drain rate at promotion-queue-drains-at-slot-speed.html:26 reads 0 by the worker's own account; the oldest-wait half is measured at 70 s.\nSCORE scope_discipline: 18\nJUSTIFICATION scope_discipline: git diff fd2c43f7..5cb42db touches only the five declared paths, with docs/figures listed but unused.\nSCORE durability: 15\nJUSTIFICATION durability: tests/test_promotion_queue_drains_at_slot_speed.py:123 and :157-160 fail if the refill stops starting requests, the mutation log proves the first reddens, but the control's assertion at :157 is satisfied by the loop's own sleep and nothing tests a drain that races an in-progress tick.\nSCORE fit: 14\nJUSTIFICATION fit: the module follows the surrounding style and its docstrings state mechanism, but promotion_requests.py:582 is a line ruff format rewrites and :40 defines a TERMINAL set nothing reads, so the commit adds findings to a file that was clean at the base revision.\nSCORE reuse: 4\nJUSTIFICATION reuse: reckon/crew/promotion_requests.py:103 and :90 re-implement the crew-home JSON row writer and service-log trim the repository already owns at reckon/crew/picker/__init__.py:76 and reckon/crew/fleet_supervisor.py:1091, and the local variant drops the atomic O_APPEND write the owner provides.\nFINDING reckon/crew/promotion_requests.py:630 blocking: the refill thread calls tick() concurrently with the admission loop's tick() at reckon/crew/admission/service.py:303 and nothing serializes them - a tick straddling begin_drain leaves a promotion starting after the reload decision and outside wait_for_in_flight's snapshot, so service.py:293's reexec cuts it off mid-flight.\nFINDING reckon/crew/promotion_requests.py:618 non-blocking: the refill loop calls self.tick() with no exception guard, so one OSError ends the daemon thread for the life of the service and the queue silently reverts to pass-speed draining with nothing logged.\nFINDING reckon/crew/promotion_requests.py:103 non-blocking: _record_drained and _trim_drained_log re-implement the crew-home row writer and bounder owned at reckon/crew/picker/__init__.py:76 and reckon/crew/fleet_supervisor.py:1091, and the buffered path.open('a') at :123 loses the owner's O_APPEND atomicity.\nFINDING reckon/crew/promotion_requests.py:40 non-blocking: TERMINAL is defined and read nowhere in the module or the repository.\nFINDING reckon/crew/promotion_requests.py:582 non-blocking: an 87-character assignment makes ruff format report this base-clean file as unformatted, so the commit adds the finding.\nFINDING tests/test_promotion_queue_drains_at_slot_speed.py:220 non-blocking: the new test file has no trailing newline (ruff W292) and the two-line comment at :121-122 carries its second line at column 0.\nFINDING tests/test_promotion_queue_drains_at_slot_speed.py:157 non-blocking: the control compares elapsed against the constant the loop itself sleeps at :155, so the assertion holds whatever the pass-only drain does.\n",
+  "review_run_id": "r-20261114T083113550541-review-of-promotion-queue-drains-at-slot-speed-5cb42dbbe22c",
+  "reviewed_base_sha": "fd2c43f713ac0434de3d40b49f4742bb6eaec86b",
+  "reviewed_head_sha": "5cb42dbbe22c396914fbeaebf55631ee08e44285",
+  "reviewed_run_id": "r-20261113T161430369224-promotion-queue-drains-at-slot-speed",
+  "scores": {
+    "durability": 15,
+    "evidence": 14,
+    "fit": 14,
+    "goal_fidelity": 15,
+    "reuse": 4,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-14T09:10:00+00:00",
+  "total": 80
+}

@@ -363,10 +363,12 @@ def test_record_picker_hold_takes_no_docs_parameter():
 def test_every_dispatch_hold_is_recorded_without_docs():
     """Every hold-recording dispatch site calls the recorder, none with docs."""
     dispatch = importlib.import_module("reckon.crew.dispatch")
-    tree = ast.parse(Path(dispatch.__file__).read_text(encoding="utf-8"))
+    facade = Path(dispatch.__file__)
+    sources = [facade, *sorted(facade.with_name("dispatching").rglob("*.py"))]
     calls = [
         node
-        for node in ast.walk(tree)
+        for source in sources
+        for node in ast.walk(ast.parse(source.read_text(encoding="utf-8")))
         if isinstance(node, ast.Call)
         and isinstance(node.func, ast.Name)
         and node.func.id == "record_picker_hold"

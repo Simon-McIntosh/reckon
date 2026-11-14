@@ -47,6 +47,7 @@ import json
 import os
 import re
 import subprocess
+import threading
 import time
 from collections.abc import Callable, Mapping, Sequence
 from contextlib import contextmanager, suppress
@@ -55,7 +56,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
-from reckon import _backends, ledger
+from reckon import _backends
 from reckon import budget as budget_module
 from reckon._backends import _human_age
 from reckon._store import write_atomically, write_json_atomically
@@ -191,6 +192,95 @@ def consume_refused_advice(run_id: str) -> str:
     return text.strip()
 
 
+def waiting_refused_advice(run_id: str) -> tuple[str, str]:
+    """The advice a refused resume left for this run, and where it waits.
+
+    Read without consuming: a reopen only reports the slot, and the resume
+    that delivers the text is a separate call which empties it as it reads.
+    """
+    path = refused_advice_path(run_id)
+    try:
+        text = path.read_text(encoding="utf-8")
+    except OSError:
+        return "", ""
+    return text.strip(), str(path)
+
+
+#: Where a reopen records what it granted, beside the run's other records.
+REOPEN_RECORD_NAME = "reopened.json"
+
+
+def _record_reopening(
+    run_id: str,
+    *,
+    granted_paths: Sequence[str],
+    reason: str,
+    delivered: Path | None,
+) -> dict[str, Any]:
+    """Record that a run was reopened, and what the reopen granted.
+
+    A reopen is not a verdict, so it is not written as one: the run is still
+    working towards a status of its own, and a status word here would be an
+    outcome no attempt reached — exactly what left a resumed worker classified
+    from its predecessor's delivery. What a reopen does owe a reader is the
+    fact itself, its reason, the paths it granted and the delivered text it set
+    aside, and those are recorded in the run's own directory where the attempt
+    records live.
+    """
+    record = {
+        "run_id": run_id,
+        "reason": reason,
+        "granted_paths": list(granted_paths),
+        "reopened_at": _utc_now(),
+    }
+    if delivered is not None:
+        record["delivered"] = str(delivered)
+    _write_json(run_dir(run_id) / REOPEN_RECORD_NAME, record)
+    return record
+
+
+def reopen_run(
+    run_id: str,
+    write_paths: Sequence[str],
+    *,
+    reason: str = "",
+) -> dict[str, Any]:
+    """Widen a completed run's write scope and start nothing.
+
+    A reopen answers a caller who asked for a wider boundary, not one who asked
+    for work: the advice a launch would carry was composed for a state the run
+    has left, so launching it spends an attempt on instructions nobody wrote
+    for it. The grant is made and reported, and the resume that follows is the
+    caller's own separate call — which carries any advice a refused resume left
+    waiting, as it always has.
+    """
+    from reckon.crew.claims import widen_claim
+
+    record = read_pointer(run_id)
+    _, added = widen_claim(run_id, list(write_paths))
+    widened = read_pointer(run_id)
+    delivered = _reset_delivered_manifest_status(run_id, widened or record)
+    reopening = _record_reopening(
+        run_id,
+        granted_paths=list(write_paths),
+        reason=reason or "reopening the completed run",
+        delivered=delivered,
+    )
+    advice, advice_path = waiting_refused_advice(run_id)
+    return {
+        "run_id": run_id,
+        "reopened": True,
+        "launched": False,
+        "granted_paths": list(write_paths),
+        "added_paths": list(added),
+        "write_paths": list((widened.get("node") or {}).get("write_paths") or []),
+        "reason": reopening["reason"],
+        "reopened_at": reopening["reopened_at"],
+        "refused_advice": advice,
+        "refused_advice_path": advice_path,
+    }
+
+
 def launch_in_flight(record: Mapping[str, Any]) -> bool:
     """Whether a resume of this run has begun and not yet recorded an attempt.
 
@@ -260,6 +350,15 @@ def hold_against_promotion(run_id: str):
     if run_id in held:
         yield
         return
+    # The local lock below sees only a promotion on this host. A promotion on
+    # another host holds the same run through its cross-host lease, so the lease
+    # is read too: a repair round that rides a resume must not start for a run
+    # whose promotion has begun anywhere, because the promotion is about to
+    # settle the record the resumed worker would commit under.
+    from reckon.crew.promotion import promotion_in_flight
+
+    if promotion_in_flight(run_id):
+        raise PromotionInProgressError(run_id)
     try:
         with _pointer_lock(promotion_lock_name(run_id), blocking=False):
             token = _PROMOTION_HELD.set(held | {run_id})
@@ -781,8 +880,7 @@ def _ledger_session(
 
     A caller that already holds the run's committed row hands it in, so the
     ledger is not loaded again to find the row it just read. A caller holding
-    only a run id still pays that load, which is what every other ledger source
-    caller does.
+    only a run id reads that run's own record through its indexed identity.
 
     A caller that can find the row but would rather not unless it is needed
     hands in a nullary callable returning it or ``None``; it is called only
@@ -796,14 +894,13 @@ def _ledger_session(
         return str(row.get("session_id") or "").strip()
     if not project:
         return ""
+    from reckon.crew.open_run_index import row_for_run
+
     try:
-        data, _version = ledger.load(project, root=root)
+        candidate = row_for_run(project, run_id, root)
     except Exception:  # noqa: BLE001 - an unreadable ledger answers nothing
         return ""
-    for candidate in reversed(data.get("runs") or []):
-        if str(candidate.get("run_id") or "") == run_id:
-            return str(candidate.get("session_id") or "").strip()
-    return ""
+    return str(candidate.get("session_id") or "").strip() if candidate else ""
 
 
 def resolve_session(
@@ -826,8 +923,7 @@ def resolve_session(
     ``ledger_row`` is the committed row the caller already holds for this run,
     which the ledger source answers from directly instead of loading the ledger
     to find it again. A caller holding no row states only the run id and the
-    ledger source loads the ledger, so a view compacting every row of a project
-    does not make one load per row. A caller holding a nullary callable has the
+    ledger source reads that run's own indexed identity. A caller holding a nullary callable has the
     ledger source call it, so a run whose session the pointer or the stream
     answered never pays a ledger read it did not need.
 
@@ -1132,6 +1228,24 @@ def _repair_round_opened(record: Mapping[str, Any]) -> bool:
     return bool(str(opened.get("round_id") or ""))
 
 
+def live_repair_round(record: Mapping[str, Any]) -> bool:
+    """Whether the attempt running now is a repair round the reflex opened.
+
+    A repair round continues the reviewed run rather than composing a second
+    node, so a path granted while it runs belongs on the same claim the round's
+    next attempt is fenced from. The round is live only while the attempt the
+    run's records hold running is the resume the reflex launched: a run whose
+    opened round has ended and whose worker is running some other attempt keeps
+    its claim fixed, exactly as any other live worker does.
+    """
+    if not _repair_round_opened(record):
+        return False
+    attempt = _live_attempt_number(record)
+    if attempt is None:
+        attempt = _recorded_attempt_number(record)
+    return _attempt_kind(record, attempt) == "resume"
+
+
 def _attempt_detail(
     record: Mapping[str, Any],
     attempt: int | None,
@@ -1253,7 +1367,9 @@ def _launcher_refusal(
     run_id = str(record.get("run_id") or "")
     if record.get("launch") != "cli":
         return CrewError(f"run {run_id!r} is not a spawned run; resume it in-harness")
-    if record_process_alive(record, process_alive) is True:
+    if record_process_alive(record, process_alive) is True and not _parked_on_a_wait(
+        record
+    ):
         # This guard's message is the launcher's own, held word for word by the
         # prediction-parity test beside it, so it is not restated here: both
         # doors compose it through the one refusal below.
@@ -1286,6 +1402,20 @@ def _launcher_refusal(
     # restating the reading: a preview that skipped it would offer a lift the
     # real resume refuses, which is the whole claim `would_resume` makes.
     return _stream_reading_refusal(record, reading=_observed_process_reading(record))
+
+
+def _parked_on_a_wait(record: Mapping[str, Any]) -> bool:
+    """Whether the run's worker has parked on a declared wait.
+
+    A parked worker has ended its turn: the manifest declares a wait the
+    fleet's reader honours and no worker this host can observe is running it.
+    Every door that refuses a second worker over a live process reads this, so
+    a parked run is admitted while an idle supervisor sits beside it, and a
+    worker that is still running is refused exactly as before.
+    """
+    from reckon.crew.recovery_liveness import parked_on_declared_wait
+
+    return parked_on_declared_wait(record) is not None
 
 
 def _newest_stream_ended(record: Mapping[str, Any]) -> bool:
@@ -1392,6 +1522,13 @@ def _observed_end_refusal(record: Mapping[str, Any]) -> CrewError | None:
     act on a reading the reader was never shown, and the reason names the
     reading it is holding.
     """
+    if _parked_on_a_wait(record):
+        # A parked worker has ended its turn and declared what ends its park,
+        # so the end of the *work that matters* is observed on the declaration
+        # rather than on the process table. The live pid is the idle supervisor
+        # beside it, and refusing on that pid is what kept a parked run
+        # unwoken for as long as its supervisor lived.
+        return None
     reading = _observed_process_reading(record)
     if reading == "process gone":
         return None
@@ -1517,6 +1654,98 @@ def _spawn(
         attempt=attempt,
         reservation=reservation,
     )
+
+
+def _tree_head(worktree: str) -> str:
+    """The revision a tree's working checkout is at, or empty when unreadable.
+
+    Read through the repository's own commit resolver rather than a second
+    ``git rev-parse`` composed here: the resolver refuses a value that names no
+    commit, bounds the query so a tree on a stalled filesystem cannot hold the
+    caller open, and is what every other reader of a revision in this codebase
+    already goes through.
+    """
+    if not worktree:
+        return ""
+    tree = Path(worktree).expanduser()
+    if not tree.is_dir():
+        return ""
+    # Deferred: the resolver's module pulls in the review subject readers, which
+    # import this package's siblings, so the import is made where it is used.
+    from reckon.crew.recovery_review_subject import _resolve_commit
+
+    return _resolve_commit(tree, "HEAD")
+
+
+def _revision_suite_block(record: Mapping[str, Any]) -> str:
+    """The two revisions a resumed run's suite arms must record, and each command.
+
+    A resumed worker is handed the template its dispatch stated, but the tree it
+    stands in has moved since: the run's head now holds the work the first
+    attempt delivered, so the command resolved at the head is not the one the
+    dispatch resolved at the base. A worker that re-resolves once and records
+    both arms with that one command leaves an arm at a revision promotion never
+    asked for, and the landing is refused for it — measured on 10 November, when
+    two implement runs recorded their arms at mid-run revisions and cost a
+    resume round each.
+
+    So the advice names both revisions and resolves the declaration separately
+    over each revision's own tree. An unarmed run owes no pair and is told
+    nothing, because a run that measures no suite must not be handed a command
+    it was never armed with.
+    """
+    declared = " ".join(str(record.get("suite_command") or "").split())
+    if not declared:
+        return ""
+    # Deferred: promotion_records reads the run record through this module's
+    # siblings, so the import is made where it is used rather than at load.
+    from reckon.crew.promotion_records import _scoped_suite_command
+
+    base = str(record.get("base_sha") or record.get("base") or "").strip()
+    head = _tree_head(str(record.get("worktree") or ""))
+    base_command = _scoped_suite_command(record, revision=base) if base else ""
+    head_command = _scoped_suite_command(record, revision=head) if head else ""
+    if not base_command:
+        base_command = str(record.get("suite_command_resolved") or declared)
+    if not head_command:
+        head_command = str(record.get("suite_command_resolved") or declared)
+    base_line = (
+        f"  Base revision: {base}. Record the baseline arm at this revision,\n"
+        "  with the command resolved over that revision's own tree:\n"
+        f"    {base_command}\n"
+        if base
+        else "  Base revision: not recorded on this run.\n"
+    )
+    head_line = (
+        f"  Run head now: {head}. Record the after arm at this revision once\n"
+        "  your work is complete, with the command resolved over this head:\n"
+        f"    {head_command}\n"
+        if head
+        else "  Run head now: unreadable, so resolve the command from the tree\n"
+        "  you are standing in before recording the after arm.\n"
+    )
+    return (
+        "\nFENCE — SUITE REVISIONS (the two revisions your arms must record)\n"
+        + base_line
+        + head_line
+        + "  The two commands differ when a test file in your write scope exists\n"
+        "  at one revision and not the other. Record each arm with the command\n"
+        "  resolved at its own revision: promotion compares each arm's command\n"
+        "  with the template resolved over that arm's own tree.\n"
+    )
+
+
+def _with_revision_suite_block(advice: str, record: Mapping[str, Any]) -> str:
+    """The advice a resumed worker reads, with the suite revisions appended.
+
+    Appended rather than prepended so the advice's own opening — which carries
+    the repair round's token — stays the first line a worker sees, and a
+    manifest quoting it still names the round it answered.
+    """
+    block = _revision_suite_block(record)
+    if not block:
+        return advice
+    return advice.rstrip("\n") + "\n" + block
 
 
 def _write_resume_prompt(advice_path: Path, *, plan: Any, advice: str) -> None:
@@ -1707,6 +1936,12 @@ def _resume(
         try:
             _LAUNCHES_IN_THIS_PROCESS.add(run_id)
             mark_resume_launching(run_id)
+            # The tree the resumed worker stands in has moved since its
+            # dispatch, so the two revisions its suite arms record are stated
+            # here, with the command resolved separately over each. Appended
+            # before the plan is built so the prompt the worker reads carries
+            # them whether the backend feeds its prompt on stdin or on argv.
+            advice = _with_revision_suite_block(advice, record)
             plan = resume_plan(run_id, advice, config=config)
             directory = run_dir(run_id)
             turn = len(list(directory.glob("resume-*.jsonl"))) + 1
@@ -1944,6 +2179,144 @@ def _record_wait_probe_history(
         _write_json(pointer_path(run_id), current)
 
 
+# How many promotions one session's sweep runs beside itself. A promotion takes
+# minutes on a shared checkout, and a sweep that ran several of them one after
+# another held every newly delivered run's review for the sum of them.
+DEFAULT_PROMOTION_WIDTH = 2
+
+# How long a sweep waits for the promotions it handed to its workers. The wait
+# bounds the sweep rather than the promotion: a promotion still running when it
+# elapses keeps running in its own worker, and the claim below is what keeps a
+# later sweep from promoting the same run beside it.
+DEFAULT_PROMOTION_WAIT_SECONDS = 180.0
+
+# The runs this process is promoting right now. The cross-host lease excludes a
+# second host, but a lease taken by this host, pid and job reattaches rather
+# than refusing, so two sweeps in one process need a claim of their own.
+_PROMOTIONS_RUNNING: set[str] = set()
+_PROMOTION_CLAIM_LOCK = threading.Lock()
+
+
+def _promotion_settings(config: Mapping[str, Any] | None) -> tuple[int, float]:
+    """The width and the sweep's wait for it, read from the resolved config.
+
+    A caller that supplies no promotion block gets the defaults, which is what
+    a station's own sweep does: the width is a property of how many promotions
+    a session can usefully run beside itself, not something every layer must
+    repeat.
+    """
+    block: Any = None
+    if isinstance(config, Mapping):
+        block = config.get("promotion")
+        if not isinstance(block, Mapping):
+            review_block = config.get("review")
+            block = (
+                review_block.get("promotion")
+                if isinstance(review_block, Mapping)
+                else None
+            )
+
+    def _read(key: str, default: Any) -> Any:
+        return block.get(key, default) if isinstance(block, Mapping) else default
+
+    try:
+        width = int(_read("width", DEFAULT_PROMOTION_WIDTH))
+    except (TypeError, ValueError):
+        width = DEFAULT_PROMOTION_WIDTH
+    try:
+        wait_seconds = float(_read("wait_seconds", DEFAULT_PROMOTION_WAIT_SECONDS))
+    except (TypeError, ValueError):
+        wait_seconds = DEFAULT_PROMOTION_WAIT_SECONDS
+    return max(1, width), max(0.0, wait_seconds)
+
+
+class PromotionWorkers:
+    """Run a sweep's promotions and acceptances in bounded workers of its own.
+
+    A sweep hands the work off after the reviews it owed are dispatched, so one
+    promotion running for minutes delays no review and no other promotion. The
+    jobs run at most ``width`` at a time, each holding this process's claim on
+    the run. Promotion takes its own cross-host lease when it writes, leaving
+    coordinators free to complete a run while acceptance judges it.
+
+    ``wait`` waits up to ``wait_seconds`` for the workers this sweep started and
+    returns their outcomes in submission order, whether or not each finished.
+    """
+
+    def __init__(self, *, width: int, wait_seconds: float) -> None:
+        self.width = max(1, int(width))
+        self.wait_seconds = max(0.0, float(wait_seconds))
+        self._slots = threading.BoundedSemaphore(self.width)
+        self._lock = threading.Lock()
+        self._threads: list[threading.Thread] = []
+        self._outcomes: dict[int, dict[str, Any]] = {}
+        self._submitted = 0
+
+    def submit(self, run_id: str, job: Callable[[], dict[str, Any] | None]) -> bool:
+        """Start the job on a worker of its own, or report the run in flight.
+
+        The claim is taken here rather than in the worker, so a second sweep
+        reaching the same run reports it as being promoted instead of queueing
+        behind it and promoting it again once the first finishes.
+        """
+        key = str(run_id)
+        if not key:
+            return False
+        with _PROMOTION_CLAIM_LOCK:
+            if key in _PROMOTIONS_RUNNING:
+                return False
+            _PROMOTIONS_RUNNING.add(key)
+        with self._lock:
+            index = self._submitted
+            self._submitted += 1
+            thread = threading.Thread(
+                target=self._run,
+                args=(index, key, job),
+                name=f"promotion-{key} / {self._submitted}",
+                daemon=True,
+            )
+            self._threads.append(thread)
+        thread.start()
+        return True
+
+    def _run(
+        self,
+        index: int,
+        run_id: str,
+        job: Callable[[], dict[str, Any] | None],
+    ) -> None:
+        outcome: dict[str, Any]
+        try:
+            with self._slots:
+                ran = job()
+                outcome = (
+                    dict(ran)
+                    if isinstance(ran, Mapping)
+                    else {"run_id": run_id, "result": ran}
+                )
+        except Exception as exc:  # noqa: BLE001 - one job's failure is its own
+            outcome = {
+                "run_id": run_id,
+                "failed": {"run_id": run_id, "error": f"{type(exc).__name__}: {exc}"},
+            }
+        finally:
+            with _PROMOTION_CLAIM_LOCK:
+                _PROMOTIONS_RUNNING.discard(run_id)
+        with self._lock:
+            self._outcomes[index] = outcome
+
+    def wait(self) -> list[dict[str, Any]]:
+        """Wait up to this sweep's budget for the workers it started."""
+        deadline = time.monotonic() + self.wait_seconds
+        with self._lock:
+            threads = list(self._threads)
+        for thread in threads:
+            thread.join(max(0.0, deadline - time.monotonic()))
+        with self._lock:
+            outcomes, self._outcomes = self._outcomes, {}
+        return [outcomes[index] for index in sorted(outcomes)]
+
+
 def sweep_status_path(project: str) -> Path:
     """Where one project's sweep status accumulates, one entry per writer."""
     return recovery_log_path(project).with_suffix(".status.json")
@@ -2144,6 +2517,7 @@ def sweep(
     now: datetime | None = None,
     condition_test: Callable[[Mapping[str, Any], Mapping[str, Any]], Any] | None = None,
     writer: Any = None,
+    promotions: Any = None,
 ) -> dict[str, Any]:
     """Resume runs whose provider hold or declared external wait has ended.
 
@@ -2168,6 +2542,11 @@ def sweep(
     resumed for, so a second pass over the same fleet reports nothing to do.
     That is what makes it safe for something already running to call on a
     cadence.
+
+    ``promotions`` supplies an explicit hand-off sink for internal callers.
+    Without one, requests are persisted for the fleet service. A caller
+    supplying ``PromotionWorkers`` receives the bounded synchronous worker
+    report instead.
 
     ``writer`` names who is sweeping — a follower on its cadence, a hand-run
     sweep from the command line or the MCP surface, or anything else — so the
@@ -2419,14 +2798,19 @@ def sweep(
     reviews: dict[str, Any] = {}
     if not dry_run:
         try:
+            from reckon.crew.promotion_requests import PromotionRequests
+
             reviews = dispatch_awaiting_reviews(
                 project=project,
                 config=config,
                 launcher=launch,
                 session=session,
                 pointers=live,
+                promotions=promotions
+                if promotions is not None
+                else PromotionRequests(),
             )
-        except (CrewError, OSError) as exc:
+        except Exception as exc:  # noqa: BLE001 - preserve the other sweep passes
             # A review pass that cannot run must not take the resume pass's
             # record down with it: the recoveries it did perform are already
             # durable on each resumed run.
@@ -2451,7 +2835,7 @@ def sweep(
             dry_run=dry_run,
             pointers=live,
         )
-    except (CrewError, OSError) as exc:
+    except Exception as exc:  # noqa: BLE001 - preserve the other sweep passes
         plan_reviews = {"error": str(exc)}
 
     report = {

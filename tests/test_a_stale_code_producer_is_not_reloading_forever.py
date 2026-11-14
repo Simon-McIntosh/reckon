@@ -118,5 +118,6 @@ def test_hook_names_old_code_rather_than_a_reload_for_an_aged_stale_snapshot(
     assert run.returncode == 0, run.stderr
     assert not run.stderr, run.stderr
     line = json.loads(run.stdout)["hookSpecificOutput"]["additionalContext"]
-    assert "the producer is running older code than the checkout" in line, line
+    assert "this session's follower has stopped" in line, line
+    assert f"reckon crew follow --project {PROJECT} --session {SESSION}" in line, line
     assert "producer reloading" not in line, line

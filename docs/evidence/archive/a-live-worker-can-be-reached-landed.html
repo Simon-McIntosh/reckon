@@ -162,6 +162,26 @@
     <p>Follow-ons recorded for whoever lands after: the plan &sect;4 inbox, and the &sect;5
     document corrections that make the written recovery order name these mechanisms.</p>
   </section>
+  <section id="s8-worker-inbox-hook" data-evidence-origin="append">
+    <h2>§8 — a message reaches a live worker at its next tool call</h2>
+    <p>Run <code>r-20261111T012221589185-worker-inbox-hook</code> (local lane), landed at reviewed head <code>4ee08ef744f0</code>. A <code>PostToolUse</code> inbox hook is registered in <code>seed_harness_home</code> for every fenced Claude-dialect run home; an atomic rename into <code>inbox/claimed/</code> delivers each message exactly once (three concurrent hooks deliver one); an unreadable message moves to <code>inbox/failed/</code> with a receipt rather than being lost; <code>reckon crew tell</code> writes to a live run whose home carries the hook and refuses otherwise, naming why; the runs view lists unclaimed messages. Reviews 88 then 105 of 120; armed arms base one pre-existing failure, head 114 passed.</p><p><strong>Live check</strong> (run <code>r-20261111T055445137847-inbox-live-check</code>, local lane, DeepSeek V4.1 Flash): after the worker started, <code>crew tell</code> queued the codeword <code>HERON-TIDE-7</code> at 06:03:02Z and reported <code>queued_for_next_tool_call</code>; the hook claimed it at the worker's next <code>Read</code> call in the same second and wrote one receipt; the worker quoted the message verbatim in its manifest's <code>messages_received</code>. This is the first message delivered to a running reckon worker.</p>
+  </section>
+
+  <section id="s10-inbox-view-reports-failures" data-evidence-origin="append">
+    <h2>§10 — the run view reports a failed or unreadable message as such</h2>
+    <p>Run <code>r-20261111T072301959253-inbox-view-reports-failures</code> landed at <code>ea424d464852</code>: the coordinator's run view lists delivered and failed receipts under separate keys, tolerates only a message that vanishes mid-read, and reports any other unreadable queued message as present but unreadable; the race test runs through the hook's delivery path. Review 112/120 with two non-blocking findings; armed arms base 73, head 75 passed.</p>
+  </section>
+
+  <section id="s11-crew-tell-admits-codex" data-evidence-origin="append">
+    <h2>§11 — crew tell reaches a codex run that carries the trusted hook</h2>
+    <p>Run <code>r-20261111T072418312798-crew-tell-admits-codex</code> landed at <code>6c82e335f442</code>: <code>crew tell</code> admits a live codex run whose recorded launch argv carries both the inbox hook override and its trust override, refuses one missing the trust override or launched before the overrides existed, and leaves every Claude-dialect case unchanged. An unfenced codex run carrying both overrides is admitted, because codex delivery travels on the argv and needs no run home. Review 103/120: non-blocking findings that the predicate restates the override shapes <code>_backends.py</code> composes, so the two could drift. Armed arms base 51, head 64 passed.</p>
+  </section>
+
+  <section id="s9-codex-inbox-trust" data-evidence-origin="append">
+    <h2>§9 — codex workers receive the same delivery</h2>
+    <p>Node <code>codex-inbox-trust</code> landed at <code>8e7c6981e88e</code> (review 120/120): the codex argv carries the inbox hook and its exact trust record, discovered through the <code>BudgetProbe</code> app-server client, as an inline <code>hooks.state</code> table (a dotted override stayed untrusted).</p><p><strong>Live check</strong> (run <code>r-20261111T132025827799-codex-inbox-live-check</code>, codex, GPT-6.1 sol): a coordinator message was written into the running worker's inbox at 13:28:04Z; the trusted hook claimed it at the worker's next <code>Bash</code> call at 13:28:06Z with one receipt, and the worker quoted the codeword <code>OSPREY-LANTERN-3</code> verbatim in its manifest's <code>messages_received</code>. The message was written into the inbox directly rather than through <code>crew tell</code>, because the live check also exposed that <code>crew tell</code> reads the codex launch argv from a pointer field a real launch never writes; that gate is §11's, reopened under its own repair. The delivery this section owns is proved.</p>
+  </section>
+
 </main>
 </body>
 </html>

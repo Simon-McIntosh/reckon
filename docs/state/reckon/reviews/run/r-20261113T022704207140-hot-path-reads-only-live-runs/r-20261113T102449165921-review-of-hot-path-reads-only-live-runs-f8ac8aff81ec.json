@@ -1,0 +1,146 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "answered_prior_finding": {
+    "commit": "c1ccd0e40c36aee1d892bd21ccccf4230dda6d97",
+    "id": "fde8b3ac5de",
+    "introduced_marker": "metadata.get(\"complete\") != \"1\" in review_paths",
+    "negative_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261113T022704207140-hot-path-reads-only-live-runs/probe-review-index-revert-probe.log",
+    "observed_failure": "AssertionError: assert None == (older review path, stored record); 1 failed in 0.62s; EXIT=1"
+  },
+  "assertion_audit": [
+    {
+      "fails_if": "An index unexpectedly exists before the first shared write; setup independence check, not the regression guard.",
+      "line": 405
+    },
+    {
+      "fails_if": "The writer labels its first index complete despite pre-existing reviews; directly queries independent SQLite state.",
+      "line": 416
+    },
+    {
+      "fails_if": "The first indexed write does not contain exactly the newly written filename; proves the deliberately partial setup.",
+      "line": 420
+    },
+    {
+      "fails_if": "The earlier source file is absent, unreadable or its bytes differ from the independently constructed fixture; a presence control, not claimed as a repair guard.",
+      "line": 423
+    },
+    {
+      "fails_if": "Removing the complete=1 requirement accepts the partial index, so lookup returns None rather than the independently planted older file and record; reproduced in the recorded answering-commit control.",
+      "line": 433
+    },
+    {
+      "fails_if": "The first lookup bypasses the full-store reader or invokes it more than once.",
+      "line": 439
+    },
+    {
+      "fails_if": "The recovery does not publish complete=1 in SQLite.",
+      "line": 441
+    },
+    {
+      "fails_if": "The recovery omits a review or introduces extra rows instead of indexing the three independent fixture files.",
+      "line": 445
+    },
+    {
+      "fails_if": "The second older producer is missing or maps to a wrong path or content after rebuilding.",
+      "line": 447
+    },
+    {
+      "fails_if": "The second lookup repeats full-store recovery instead of using the complete index.",
+      "line": 453
+    }
+  ],
+  "assertion_independence": "No added regression assertion is self-referential. The lookup expectations come from older files planted without the indexed writer; removing the repair yields None. The file-read comparison at line 423 is only a fixture presence control, explicitly not credited as the regression guard. SQLite state and the recovery-call list are separately observed effects.",
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew/review_records.py:63:_tick_store",
+    "reckon/crew/review_records.py:1638:_store_indexes",
+    "reckon/crew/review_records.py:1815:_review_run_index",
+    "reckon/crew/review_records.py:1834:record_for_review_run"
+  ],
+  "completed_at": "2026-11-13T10:40:35Z",
+  "dispatched_at": "2026-11-13T10:31:35Z",
+  "failure_delta_evidence": {
+    "after_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_hot_path_reads_only_live_runs.py tests/test_staged_write_inventory.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261113T022704207140-hot-path-reads-only-live-runs/review-round-final-suite.log",
+      "revision": "f8ac8aff81ec85645168b581f20878a180963080"
+    },
+    "baseline_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261113T022704207140-hot-path-reads-only-live-runs/repair-base-reviewround-suite.log",
+      "revision": "f6b67f0a31c3540f6292a43ac37a41834da0ca6b"
+    },
+    "repair_baseline_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_hot_path_reads_only_live_runs.py tests/test_staged_write_inventory.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261113T022704207140-hot-path-reads-only-live-runs/review-repair-baseline-suite.log",
+      "revision": "d9b2e925b830ae133c7e8e8a608ea8074e7550f2"
+    }
+  },
+  "findings": [],
+  "importer_comparison": {
+    "added_failure_ids": [],
+    "baseline_failure_count": 148,
+    "baseline_log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261113T022704207140-hot-path-reads-only-live-runs/repair-base-reviewround-importers.log",
+    "head_failure_count": 147,
+    "head_log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261113T022704207140-hot-path-reads-only-live-runs/repair-head-reviewround-importers.log",
+    "removed_failure_ids": [
+      "tests/test_a_killed_worker_resumes_to_completion.py::test_a_killed_worker_is_classified_resumed_and_completed"
+    ]
+  },
+  "item_verdicts": {
+    "diff": "Read commits 414baa9fce090aee091fcfd1fb52e9b090b74ddd, c1ccd0e40c36aee1d892bd21ccccf4230dda6d97 and f8ac8aff81ec85645168b581f20878a180963080 individually against d9b2e925b830ae133c7e8e8a608ea8074e7550f2; they add the regression, the completeness condition and refreshed evidence within three paths.",
+    "done_when": "Read live section s35 and the source node measure; review-round-final-suite.log records 65 passed at the exact reviewed head, the repair-base same-command log records 64 passed, and the station mutation and importer logs retain the required negative and compatibility evidence.",
+    "goal": "Read the source goal in its live pointer and work-flows-to-the-lane section s35; reckon/crew/open_run_index.py:567 now rejects an incomplete review projection, preserving existing reviews during bounded operational lookup.",
+    "manifest": "Read source manifest.md including baseline_suite, repair_baseline_suite and after_suite; opened the named logs and confirmed complete summaries, revision headers and EXIT lines rather than relying on its claims.",
+    "write_paths": "Read the source live pointer node.write_paths and manifest.md; the incremental diff changes only the granted evidence fragment, reckon/crew/open_run_index.py and tests/test_hot_path_reads_only_live_runs.py."
+  },
+  "justifications": {
+    "durability": "tests/test_hot_path_reads_only_live_runs.py:433 fails if the completeness check is removed, and lines 439-453 separately require one recovery, all three indexed entries and warm-index reuse for a second older producer.",
+    "evidence": "The source review-round-final-suite.log names f8ac8aff81ec85645168b581f20878a180963080 and records 65 passed with EXIT=0, while probe-review-index-revert-probe.log records the older-producer assertion failing with EXIT=1 after removing the answering source commit.",
+    "fit": "reckon/crew/open_run_index.py:566-570 follows the existing metadata-dictionary completeness idiom used by review_rebuilt at lines 512-521 and introduces no forbidden source name.",
+    "goal_fidelity": "reckon/crew/open_run_index.py:567 requires complete=1 as well as a current stamp, so the existing fallback at reckon/crew/review_records.py:1643 recovers older producers rather than silently losing their reviews.",
+    "reuse": "Capability search for review_meta and complete review projections locates the existing owners reckon/crew/open_run_index.py:445,502 and reckon/crew/review_records.py:1648; the repair extends the existing reader and delegates recovery to those owners without adding a production definition.",
+    "scope_discipline": "The d9b2e925b830ae133c7e8e8a608ea8074e7550f2..f8ac8aff81ec85645168b581f20878a180963080 diff contains exactly the granted evidence fragment, reckon/crew/open_run_index.py and tests/test_hot_path_reads_only_live_runs.py."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: Read the source goal in its live pointer and work-flows-to-the-lane section s35; reckon/crew/open_run_index.py:567 now rejects an incomplete review projection, preserving existing reviews during bounded operational lookup.\nVERDICT done_when: Read live section s35 and the source node measure; review-round-final-suite.log records 65 passed at the exact reviewed head, the repair-base same-command log records 64 passed, and the station mutation and importer logs retain the required negative and compatibility evidence.\nVERDICT write_paths: Read the source live pointer node.write_paths and manifest.md; the incremental diff changes only the granted evidence fragment, reckon/crew/open_run_index.py and tests/test_hot_path_reads_only_live_runs.py.\nVERDICT manifest: Read source manifest.md including baseline_suite, repair_baseline_suite and after_suite; opened the named logs and confirmed complete summaries, revision headers and EXIT lines rather than relying on its claims.\nVERDICT diff: Read commits 414baa9fce090aee091fcfd1fb52e9b090b74ddd, c1ccd0e40c36aee1d892bd21ccccf4230dda6d97 and f8ac8aff81ec85645168b581f20878a180963080 individually against d9b2e925b830ae133c7e8e8a608ea8074e7550f2; they add the regression, the completeness condition and refreshed evidence within three paths.\nCALL_SITES: reckon/crew/review_records.py:63:_tick_store, reckon/crew/review_records.py:1638:_store_indexes, reckon/crew/review_records.py:1815:_review_run_index, reckon/crew/review_records.py:1834:record_for_review_run\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/open_run_index.py:567 requires complete=1 as well as a current stamp, so the existing fallback at reckon/crew/review_records.py:1643 recovers older producers rather than silently losing their reviews.\nSCORE evidence: 20\nJUSTIFICATION evidence: The source review-round-final-suite.log names f8ac8aff81ec85645168b581f20878a180963080 and records 65 passed with EXIT=0, while probe-review-index-revert-probe.log records the older-producer assertion failing with EXIT=1 after removing the answering source commit.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: The d9b2e925b830ae133c7e8e8a608ea8074e7550f2..f8ac8aff81ec85645168b581f20878a180963080 diff contains exactly the granted evidence fragment, reckon/crew/open_run_index.py and tests/test_hot_path_reads_only_live_runs.py.\nSCORE durability: 20\nJUSTIFICATION durability: tests/test_hot_path_reads_only_live_runs.py:433 fails if the completeness check is removed, and lines 439-453 separately require one recovery, all three indexed entries and warm-index reuse for a second older producer.\nSCORE fit: 20\nJUSTIFICATION fit: reckon/crew/open_run_index.py:566-570 follows the existing metadata-dictionary completeness idiom used by review_rebuilt at lines 512-521 and introduces no forbidden source name.\nSCORE reuse: 20\nJUSTIFICATION reuse: Capability search for review_meta and complete review projections locates the existing owners reckon/crew/open_run_index.py:445,502 and reckon/crew/review_records.py:1648; the repair extends the existing reader and delegates recovery to those owners without adding a production definition.\n",
+  "reuse_search": "At the reviewed head, git grep for review_meta, incomplete review index and complete review projection found the existing writer/rebuilder in open_run_index.py and the cached history reader _full_store_indexes in review_records.py. Opened both owners. No new production definition; the test-local full_store wrapper delegates to the real owner solely to count calls.",
+  "review_limitations": [
+    "Incremental review only; prior reviewed work is not rescored as a fresh whole-node review.",
+    "Assigned reviewer worktree HEAD is b6045ab33d1cbee2e9c41051623351442a098d18 and does not contain open_run_index.py; all subject code and capability searches used git objects at the explicit reviewed head.",
+    "No suite rerun; source complete receipts, reproduction and answering-commit control read directly.",
+    "Original baseline_suite uses the original f6 base and inventory-only command; repair_baseline_suite separately supplies the exact two-file command at the incremental d9 base. Both comparisons have zero added failure IDs.",
+    "MCP read timed out on storage; live plan section s35 read directly from canonical main-checkout HTML using the skill offline fallback."
+  ],
+  "review_run_id": "r-20261113T102449165921-review-of-hot-path-reads-only-live-runs-f8ac8aff81ec",
+  "reviewed_base_sha": "d9b2e925b830ae133c7e8e8a608ea8074e7550f2",
+  "reviewed_head_sha": "f8ac8aff81ec85645168b581f20878a180963080",
+  "reviewed_run_id": "r-20261113T022704207140-hot-path-reads-only-live-runs",
+  "scores": {
+    "durability": 20,
+    "evidence": 20,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-13T11:24:43.220026+00:00",
+  "total": 120
+}

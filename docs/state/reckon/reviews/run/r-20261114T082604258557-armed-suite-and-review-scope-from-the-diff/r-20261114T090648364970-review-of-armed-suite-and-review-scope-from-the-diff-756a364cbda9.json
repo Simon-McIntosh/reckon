@@ -1,0 +1,60 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-11-14T09:19:40.454Z",
+  "dispatched_at": "2026-11-14T09:07:42Z",
+  "findings": [
+    {
+      "file": "reckon/crew/queue_landing.py",
+      "line": 1136,
+      "severity": "non-blocking",
+      "text": "non-blocking: no test exercises the production wiring that passes derived[\"test_files\"] to measure_run and stores scope=derived, so reverting those two hunks leaves all three added tests green at tests/test_armed_suite_and_review_scope_from_the_diff.py:74-166."
+    },
+    {
+      "file": "tests/test_armed_suite_and_review_scope_from_the_diff.py",
+      "line": 118,
+      "severity": "non-blocking",
+      "text": "non-blocking: the second done_when case delivers runs that edit two different files (reckon/x.py and reckon/z.py) so the merge cannot conflict, leaving the one-file merge and merge-repair path the plan names unexercised."
+    },
+    {
+      "file": "reckon/crew/delivery_scope.py",
+      "line": 137,
+      "severity": "non-blocking",
+      "text": "non-blocking: the docstring claims the reported armed_command is the command promotion would run, but _scoped_suite_command appends census tests while landing_measure.armed_argv at reckon/crew/landing_measure.py:1004 receives only the derived test files, so a project declaring census_tests stores a command naming files the pair never ran."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "examined 3 production call sites",
+    "diff": "Read both commits against 9c8632ca0b; 404 insertions across five files, all inside the goal.",
+    "done_when": "The plan's cases are implemented, but the second names two runs editing one file meeting at the merge while the test edits two different files.",
+    "goal": "The node derives the armed command, importer population and review neighbourhood from a delivered run's diff; delivery_scope.py:34-157 adds the derivation and queue_landing.py:1136 arms the measured suite from it.",
+    "manifest": "Read; it records base 51 passed EXIT=0 and head 54 passed EXIT=0 with log paths and the declared negative control.",
+    "write_paths": "All five changed files lie inside the declared write roots."
+  },
+  "justifications": {
+    "durability": "Reverting the derivation reddens the added tests, but no test reaches reckon/crew/queue_landing.py:1123-1146, so reverting the wiring does not.",
+    "evidence": "The arms carry revision headers and EXIT lines, but the plan's one-file merge case is not exercised at tests/test_armed_suite_and_review_scope_from_the_diff.py:118-166.",
+    "fit": "reckon/crew/delivery_scope.py follows the surrounding lazy-import idiom and carries no forbidden name.",
+    "goal_fidelity": "reckon/crew/queue_landing.py:1136 arms the measured suite from the derived test files, while the population and neighbourhood are stored on Measurement.scope with no consumer yet.",
+    "reuse": "delivery_scope.py:47-105 delegates to promotion_records, landing_measure.importer_population and served_code.neighbourhood rather than re-deriving them.",
+    "scope_discipline": "Every path in git diff 9c8632ca0b..756a364cbda9 lies inside the declared write roots."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node derives a delivered run's armed command, importer population and review neighbourhood from its diff; reckon/crew/delivery_scope.py:34-157 adds effective_scope/changed_test_files/review_neighbourhood/derive, and reckon/crew/queue_landing.py:1136 arms the measured suite from the derived test files.\nVERDICT done_when: the plan's done_when names a no-write-paths run deriving what a declared run with the same diff does, a second test delivering two runs that edit one file and meet at the merge, a negative control, and a gate on all_debug; tests/test_armed_suite_and_review_scope_from_the_diff.py:74-166 implements all three but its second case edits two different files (reckon/x.py and reckon/z.py), so the one-file merge the plan names is not exercised.\nVERDICT write_paths: the manifest declares reckon, tests/test_armed_suite_and_review_scope_from_the_diff.py and the section's docs paths; all five changed files (delivery_scope.py, landing_measure.py, queue_landing.py, the new test, the evidence fragment) lie inside them.\nVERDICT manifest: read; it records base 51 passed EXIT=0 at 9c8632ca0b and head 54 passed EXIT=0 at 756a364cbda9 with both log paths, the declared negative control and the derived scope stored on Measurement.scope.\nVERDICT diff: read commit by commit against 9c8632ca0b (60a645fa9b derivation and wiring, 756a364cbda9 evidence fragment), 404 insertions across five files, no changes outside the goal.\nCALL_SITES: reckon/crew/queue_landing.py:1123 _measure_delivery -> delivery_scope.derive, reckon/crew/queue_landing.py:1019 _landing_test_files -> delivery_scope.changed_test_files, reckon/crew/landing_measure.py:336 Measurement.as_dict and :380 from_dict carry the new scope field\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: reckon/crew/queue_landing.py:1136 passes the derived test files into measure_run, so a no-write-paths run is genuinely armed from its diff, while the importer population and review neighbourhood are only stored on Measurement.scope (reckon/crew/landing_measure.py:311) with no consumer yet.\nSCORE evidence: 15\nJUSTIFICATION evidence: the arms are recorded with revision headers and EXIT lines in gate/base.log, and negative-control.log takes the required red form, but the plan's second done_when case is not exercised at tests/test_armed_suite_and_review_scope_from_the_diff.py:118-166.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every path in git diff 9c8632ca0b..756a364cbda9 lies inside the declared write roots, with no incidental edit.\nSCORE durability: 13\nJUSTIFICATION durability: the three added assertions in tests/test_armed_suite_and_review_scope_from_the_diff.py fail on a reverted derivation, but no test reaches reckon/crew/queue_landing.py:1123-1146, so reverting the production wiring leaves them green.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/crew/delivery_scope.py follows the module's existing lazy-import idiom and names nothing the repository naming rules forbid.\nSCORE reuse: 20\nJUSTIFICATION reuse: delivery_scope.py:47-105 delegates to promotion_records._repository_write_paths/_node_test_files/_scoped_suite_command, landing_measure.importer_population and served_code.neighbourhood instead of re-deriving any of them.\nFINDING reckon/crew/queue_landing.py:1136 non-blocking: no test exercises the production wiring that passes derived[\"test_files\"] to measure_run and stores scope=derived, so reverting those two hunks leaves all three added tests green at tests/test_armed_suite_and_review_scope_from_the_diff.py:74-166.\nFINDING tests/test_armed_suite_and_review_scope_from_the_diff.py:118 non-blocking: the second done_when case delivers runs that edit two different files (reckon/x.py and reckon/z.py) so the merge cannot conflict, leaving the one-file merge and merge-repair path the plan names unexercised.\nFINDING reckon/crew/delivery_scope.py:137 non-blocking: the docstring claims the reported armed_command is the command promotion would run, but _scoped_suite_command appends census tests while landing_measure.armed_argv at reckon/crew/landing_measure.py:1004 receives only the derived test files, so a project declaring census_tests stores a command naming files the pair never ran.",
+  "review_run_id": "r-20261114T090648364970-review-of-armed-suite-and-review-scope-from-the-diff-756a364cbda9",
+  "reviewed_base_sha": "9c8632ca0b992790566bc487862f2c9be6f8906d",
+  "reviewed_head_sha": "756a364cbda9352d29e7dd7dbf070d7482dcca8c",
+  "reviewed_run_id": "r-20261114T082604258557-armed-suite-and-review-scope-from-the-diff",
+  "scores": {
+    "durability": 13,
+    "evidence": 15,
+    "fit": 18,
+    "goal_fidelity": 17,
+    "reuse": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-14T09:18:26.525986+00:00",
+  "total": 102
+}

@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>A move reply keeps its verdict on a failed read</title>
+<style>
+  body { font-family: -apple-system, "Segoe UI", Roboto, sans-serif; line-height: 1.5; max-width: 60rem; margin: 2rem auto; padding: 0 1rem; color:  #1a1a1a; }
+  table { border-collapse: collapse; width: 100%; margin: 1rem 0; }
+  th, td { text-align: left; padding: .4rem .6rem; border-bottom: 1px solid #d8d8d8; vertical-align: top; }
+  code { font-size: .92em; }
+  pre { background: #f5f5f4; padding: .8rem; overflow-x: auto; }
+</style>
+</head>
+<body>
+<article class="evidence-fragment" data-reckon="evidence-fragment"
+         data-node="move-reply-keeps-its-verdict-on-a-failed-read"
+         data-plan="a-plan-state-lock-holds-on-every-node">
+
+<h1 id="move-reply-keeps-its-verdict-on-a-failed-read-title">A move reply keeps its verdict when a version read fails</h1>
+
+<p id="move-reply-keeps-its-verdict-on-a-failed-read-summary">
+  An independent review of the sprint-move reply found three defects. A settled
+  move read both sprint versions back from disk, but a failed read was skipped,
+  so when every read failed the reply omitted <code>applied</code> entirely and a
+  caller could not tell a successful move from a silent failure. The reply now
+  sets <code>applied</code> whenever the edit carries a move and names each failed
+  read in <code>warnings</code>, so the caller always learns what landed. The
+  same pass removes an unreachable parser branch and a lint finding the earlier
+  change introduced.
+</p>
+
+<h2 id="move-reply-keeps-its-verdict-on-a-failed-read-change">What changed</h2>
+
+<table id="move-reply-keeps-its-verdict-on-a-failed-read-changes">
+  <thead>
+    <tr><th>Path</th><th>Change</th></tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>reckon/mcp_edit_plan.py</code></td>
+      <td><code>_move_sprint_versions</code> returns the versions it could read
+          beside the sprint ids whose read failed, and no longer <code>continue</code>s
+          out of an exception handler. The success path sets <code>applied</code>
+          whenever a move op is present, attaches <code>sprint_versions</code> when
+          any read succeeded, and warns <code>sprint_version_read_failed=&lt;id&gt;</code>
+          for each failed id. The refusal path unpacks the same pair and still
+          names whatever could be read.</td>
+    </tr>
+    <tr>
+      <td><code>reckon/project_state.py</code></td>
+      <td><code>_restore_move_journal</code> drops the <code>except
+          json.JSONDecodeError</code> clause: <code>json.JSONDecodeError</code> is a
+          <code>ValueError</code> and the following clause already catches it, so the
+          branch was unreachable.</td>
+    </tr>
+    <tr>
+      <td><code>tests/test_a_sprint_move_replies_with_what_landed.py</code></td>
+      <td>A new test fails both post-write version reads and asserts the reply
+          still carries <code>applied: true</code>, names the failed ids in
+          <code>warnings</code>, and matches the disk, which holds the moved item
+          in the target sprint only.</td>
+    </tr>
+  </tbody>
+</table>
+
+<h2 id="move-reply-keeps-its-verdict-on-a-failed-read-evidence">Evidence</h2>
+
+<p id="move-reply-keeps-its-verdict-on-a-failed-read-move-reply">
+  <strong>Verdict kept, read failure named.</strong> The new test
+  <code>test_a_failed_post_write_version_read_keeps_the_applied_verdict</code> injects
+  an <code>OSError</code> into both reply version reads after the move settled. At
+  this head it passes; at the base revision the same test fails with
+  <code>AssertionError: a failed version read must not drop the verdict</code> and a
+  quoted reply carrying no <code>applied</code> key. The negative-control log is
+  <code>logs/negative-control.log</code> of run
+  <code>r-20261113T154236531991-move-reply-keeps-its-verdict-on-a-failed-read</code>.
+</p>
+
+<pre id="move-reply-keeps-its-verdict-on-a-failed-read-base-reply">AssertionError: a failed version read must not drop the verdict:
+{'ok': True, 'message': 'Updated sprint S3 to version 2.', ...,
+ 'warnings': ['source_version=2', 'destination_version=2']}</pre>
+
+<p id="move-reply-keeps-its-verdict-on-a-failed-read-lint">
+  <strong>No lint finding added; the introduced one is gone.</strong>
+  <code>ruff check</code> on <code>reckon/mcp_edit_plan.py</code> and
+  <code>reckon/project_state.py</code> reports 18 findings at this head against 19 at
+  the base revision, and the <code>S112</code> at the move refusal path is absent.
+</p>
+
+<table id="move-reply-keeps-its-verdict-on-a-failed-read-arms">
+  <thead>
+    <tr><th>Run</th><th>Result</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>Base arm, revision <code>22c3fbda</code>, log <code>logs/suite-base.log</code></td><td>57 passed, EXIT=0</td></tr>
+    <tr><td>After arm, head, log <code>logs/suite-after.log</code></td><td>58 passed, EXIT=0</td></tr>
+    <tr><td>Evidence gate (<code>tests/test_mcp_tools.py</code> included), log <code>logs/gate.log</code></td><td>42 passed, EXIT=0</td></tr>
+    <tr><td>Negative control on the base revision, log <code>logs/negative-control.log</code></td><td>1 failed (the new test), EXIT=1</td></tr>
+  </tbody>
+</table>
+
+<p id="move-reply-keeps-its-verdict-on-a-failed-read-arms-note">
+  Both arms and the gate ran on <code>all_debug</code>, submitted as jobs of their
+  own; each log's first lines name the revision, tree, working directory and the
+  absolute path of the imported <code>reckon.mcp_edit_plan</code>.
+</p>
+
+</article>
+</body>
+</html>

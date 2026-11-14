@@ -17,7 +17,6 @@ missing or malformed resources are errors.  There are no dual writes.
 from __future__ import annotations
 
 import base64
-import fcntl
 import hashlib
 import html
 import json
@@ -46,17 +45,27 @@ from reckon._schema import (
 from reckon._store import (
     _OP_DISPATCH,
     _fsync_directory,
+    sprint_item_slug,
     write_atomically,
     write_json_atomically,
 )
 from reckon._timestamps import parse_utc
 from reckon.lifecycle import COMPLETED_STATUSES, TERMINAL_STATUSES
+from reckon.node_exclusive_lock import exclusive_lock
 from reckon.sprint_liveness import sprint_liveness
 
 MARKER_RELATIVE = Path(".reckon/project-state-migration.json")
 RESOURCE_SCRIPT_ID = "reckon-resource-state"
 RESOURCE_TYPES = frozenset(
-    {"sprint", "milestone", "blocker", "timeline", "project", "review"}
+    {
+        "sprint",
+        "milestone",
+        "blocker",
+        "timeline",
+        "project",
+        "review",
+        "persisted_items",
+    }
 )
 LIFECYCLE_ITEM_FIELDS = frozenset({"status", "impl"})
 NORTH_STAR_ADVISORY_CAP = 5
@@ -279,6 +288,10 @@ def resource_path(
         if resource_id != "review":
             raise ValueError("review resource id must be 'review'")
         return docs_dir / "state" / project / "review.html"
+    if resource_type == "persisted_items":
+        if resource_id != "persisted-items":
+            raise ValueError("persisted_items resource id must be 'persisted-items'")
+        return docs_dir / "state" / project / "persisted-items.html"
     if resource_type == "project":
         if resource_id != "project":
             raise ValueError("project resource id must be 'project'")
@@ -287,20 +300,27 @@ def resource_path(
 
 
 @contextmanager
-def _resource_lock(docs_dir: Path, project: str, resource_type: str, resource_id: str):
-    """Serialise one resource's version check and atomic replacement."""
+def _resource_lock(
+    docs_dir: Path,
+    project: str,
+    resource_type: str,
+    resource_id: str,
+    *,
+    blocking: bool = True,
+):
+    """Serialise one resource's version check and atomic replacement.
+
+    The lock is POSIX record based, so it excludes a holder on another node.
+    ``blocking=False`` reports a held lock as
+    :class:`~reckon.node_exclusive_lock.LockHeld`.
+    """
     _safe_segment(project, "lock project")
     _safe_segment(resource_type, "lock resource type")
     _safe_segment(resource_id, "lock resource id")
     lock_name = f"{project}-{resource_type}-{resource_id}.lock"
     lock_path = docs_dir / ".reckon" / "locks" / lock_name
-    lock_path.parent.mkdir(parents=True, exist_ok=True)
-    with lock_path.open("a+b") as handle:
-        fcntl.flock(handle.fileno(), fcntl.LOCK_EX)
-        try:
-            yield
-        finally:
-            fcntl.flock(handle.fileno(), fcntl.LOCK_UN)
+    with exclusive_lock(lock_path, blocking=blocking):
+        yield
 
 
 @contextmanager
@@ -400,6 +420,19 @@ def _render_resource(
             )
             rows.append(
                 f'<li data-id="{finding_id}" data-finding="{payload}">{code}</li>'
+            )
+        rows.append("</ol>")
+    elif resource_type == "persisted_items":
+        rows.append('<ol data-reckon="persisted-items">')
+        for record in state.get("records", []):
+            source = html.escape(str(record.get("source", "")))
+            persisted = html.escape(str(record.get("persisted", "")), quote=True)
+            payload = html.escape(
+                json.dumps(record, ensure_ascii=False, sort_keys=True), quote=True
+            )
+            rows.append(
+                f'<li data-persisted="{persisted}" data-record="{payload}">'
+                f"{source}</li>"
             )
         rows.append("</ol>")
     else:
@@ -714,6 +747,95 @@ def _validate_review(data: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+PERSISTED_ITEM_KINDS = frozenset({"figure", "data"})
+PERSISTED_ITEM_FIELDS = frozenset(
+    {
+        "source",
+        "persisted",
+        "kind",
+        "figure",
+        "plan",
+        "section",
+        "persisted_by",
+        "persisted_at",
+        "bytes",
+        "sha256",
+    }
+)
+
+
+def _validate_persisted_items(data: dict[str, Any]) -> dict[str, Any]:
+    """Validate the records a persist appended, one per persisted copy.
+
+    A record is what a later reader uses to find the copy again and to tell
+    whether it is still the copy that was taken, so a record missing its hash
+    or naming an unknown kind is refused here rather than written and trusted.
+    """
+    records = data.get("records", [])
+    if not isinstance(records, list):
+        raise ValueError("persisted items records must be a list")
+    validated: list[dict[str, Any]] = []
+    for raw in records:
+        if not isinstance(raw, dict):
+            raise ValueError("a persisted item record must be a dictionary")
+        unknown = set(raw) - PERSISTED_ITEM_FIELDS
+        if unknown:
+            raise ValueError(
+                "persisted item record has unsupported keys: "
+                + ", ".join(sorted(str(key) for key in unknown))
+            )
+        for field in ("source", "persisted", "persisted_by", "persisted_at"):
+            value = raw.get(field)
+            if not isinstance(value, str) or not value.strip():
+                raise ValueError(
+                    f"persisted item record {field} must be non-empty text"
+                )
+        if raw.get("kind") not in PERSISTED_ITEM_KINDS:
+            raise ValueError(
+                "persisted item record kind must be one of "
+                + ", ".join(sorted(PERSISTED_ITEM_KINDS))
+            )
+        figure = raw.get("figure")
+        if figure is not None and (not isinstance(figure, str) or not figure.strip()):
+            raise ValueError("persisted item record figure must be a path or null")
+        if raw.get("kind") == "data" and not figure:
+            raise ValueError("a persisted data record must name its figure")
+        for field in ("plan", "section"):
+            value = raw.get(field)
+            if value is not None and (
+                not isinstance(value, str) or not value.strip()
+            ):
+                raise ValueError(f"persisted item record {field} must be text or null")
+        size = raw.get("bytes")
+        if isinstance(size, bool) or not isinstance(size, int) or size < 0:
+            raise ValueError("persisted item record bytes must be a whole count")
+        digest = raw.get("sha256")
+        if not isinstance(digest, str) or re.fullmatch(r"[0-9a-f]{64}", digest) is None:
+            raise ValueError("persisted item record sha256 must be a hex digest")
+        if parse_utc(str(raw.get("persisted_at"))) is None:
+            raise ValueError("persisted item record persisted_at must be a timestamp")
+        validated.append(
+            {
+                "source": raw["source"].strip(),
+                "persisted": raw["persisted"].strip(),
+                "kind": raw["kind"],
+                "figure": figure,
+                "plan": raw.get("plan"),
+                "section": raw.get("section"),
+                "persisted_by": raw["persisted_by"].strip(),
+                "persisted_at": raw["persisted_at"].strip(),
+                "bytes": size,
+                "sha256": digest,
+            }
+        )
+    return {
+        "id": "persisted-items",
+        "type": "persisted_items",
+        "records": validated,
+        "version": int(data.get("version", 0) or 0),
+    }
+
+
 def _validate_resource(resource_type: str, data: dict[str, Any]) -> dict[str, Any]:
     cleaned = deepcopy(data)
     if resource_type == "sprint":
@@ -807,6 +929,8 @@ def _validate_resource(resource_type: str, data: dict[str, Any]) -> dict[str, An
         }
     elif resource_type == "review":
         cleaned = _validate_review(cleaned)
+    elif resource_type == "persisted_items":
+        cleaned = _validate_persisted_items(cleaned)
     elif resource_type == "project":
         bad = PROJECT_DERIVED_FIELDS & set(cleaned) - {"type", "id", "version"}
         if bad:
@@ -1976,6 +2100,92 @@ def _mark_move_journal_committed(path: Path) -> None:
     )
 
 
+def _retire_move_journal(path: Path) -> list[str]:
+    """Retire a journal once both sprint writes have landed.
+
+    Retiring the journal is bookkeeping, not part of the move: its failure
+    cannot undo writes already on disk, so it is reported as a warning rather
+    than raised. Raising here would tell the caller nothing was applied.
+    """
+    warnings: list[str] = []
+    try:
+        _mark_move_journal_committed(path)
+    except FileNotFoundError:
+        # Another pass retired the journal first. The sprint writes stand
+        # either way, and the verdict is read from the resources below.
+        pass
+    except OSError as exc:
+        warnings.append(f"journal_commit_mark_failed={type(exc).__name__}")
+    try:
+        _durable_unlink(path)
+    except OSError as exc:
+        warnings.append(f"journal_unlink_failed={type(exc).__name__}")
+    return warnings
+
+
+def _sprint_holds_item(sprint: dict[str, Any], slug: str) -> bool:
+    return any(sprint_item_slug(row) == slug for row in sprint.get("items", []))
+
+
+def _journal_before_bytes(payload: dict, journal: Path) -> tuple[bytes, bytes]:
+    """Decode the before-bytes a prepared journal restores."""
+    try:
+        source_bytes = base64.b64decode(payload["source_before"], validate=True)
+        target_bytes = base64.b64decode(payload["target_before"], validate=True)
+    except (KeyError, ValueError) as exc:
+        raise ProjectStateError(f"malformed transaction journal: {journal}") from exc
+    return source_bytes, target_bytes
+
+
+def _restore_journal_sprints(
+    docs_dir: Path,
+    project: str,
+    source_id: str,
+    target_id: str,
+    source_bytes: bytes,
+    target_bytes: bytes,
+) -> None:
+    for resource_id, content in (
+        (source_id, source_bytes),
+        (target_id, target_bytes),
+    ):
+        path = resource_path(docs_dir, project, "sprint", resource_id)
+        path.parent.mkdir(parents=True, exist_ok=True)
+        write_atomically(
+            path,
+            lambda handle, data=content: handle.write(data),
+            mode=0o600,
+            fsync=True,
+            fsync_directory=True,
+            binary=True,
+        )
+
+
+def _restore_move_journal(docs_dir: Path, project: str, journal: Path) -> bool:
+    """Write both sprints back from a journal's before-bytes.
+
+    Returns False when the journal is already gone, so there is nothing left to
+    restore from.
+    """
+    try:
+        payload = json.loads(journal.read_text(encoding="utf-8"))
+    except FileNotFoundError:
+        return False
+    except (KeyError, ValueError) as exc:
+        # json.JSONDecodeError is a ValueError, so this clause covers it.
+        raise ProjectStateError(f"malformed transaction journal: {journal}") from exc
+    try:
+        source_id = _safe_segment(str(payload["source_id"]), "journal source id")
+        target_id = _safe_segment(str(payload["target_id"]), "journal target id")
+    except (KeyError, ValueError) as exc:
+        raise ProjectStateError(f"malformed transaction journal: {journal}") from exc
+    source_bytes, target_bytes = _journal_before_bytes(payload, journal)
+    _restore_journal_sprints(
+        docs_dir, project, source_id, target_id, source_bytes, target_bytes
+    )
+    return True
+
+
 def _pending_transaction_journals(docs_dir: Path) -> list[Path]:
     """List prepared transaction journals without taking a lock.
 
@@ -2035,32 +2245,10 @@ def recover_project_state_transactions(docs_dir: Path, project: str) -> list[Pat
                     continue
                 if status != "prepared":
                     raise ProjectStateError(f"malformed transaction journal: {journal}")
-                try:
-                    source_bytes = base64.b64decode(
-                        payload["source_before"], validate=True
-                    )
-                    target_bytes = base64.b64decode(
-                        payload["target_before"], validate=True
-                    )
-                except (KeyError, ValueError) as exc:
-                    raise ProjectStateError(
-                        f"malformed transaction journal: {journal}"
-                    ) from exc
-                source_path = resource_path(docs_dir, project, "sprint", source_id)
-                target_path = resource_path(docs_dir, project, "sprint", target_id)
-                for path, content in (
-                    (source_path, source_bytes),
-                    (target_path, target_bytes),
-                ):
-                    path.parent.mkdir(parents=True, exist_ok=True)
-                    write_atomically(
-                        path,
-                        lambda handle, data=content: handle.write(data),
-                        mode=0o600,
-                        fsync=True,
-                        fsync_directory=True,
-                        binary=True,
-                    )
+                source_bytes, target_bytes = _journal_before_bytes(payload, journal)
+                _restore_journal_sprints(
+                    docs_dir, project, source_id, target_id, source_bytes, target_bytes
+                )
                 _durable_unlink(journal)
                 recovered.append(journal)
     return recovered
@@ -2076,8 +2264,15 @@ def move_sprint_item(
     expected_to_version: int,
     *,
     after_first_write: Callable[[], None] | None = None,
-) -> dict[str, int]:
-    """Move one item with two-version validation and compensating recovery."""
+) -> dict[str, Any]:
+    """Move one item with two-version validation and compensating recovery.
+
+    The move settles in one of two states: both sprint writes applied, or
+    neither. A failure before both writes land restores both sprints from the
+    journal's before-bytes; a failure after they land is bookkeeping only, so
+    the applied verdict and both versions are read back from disk and
+    returned rather than raised.
+    """
     source_path = resource_path(docs_dir, project, "sprint", from_sprint)
     target_path = resource_path(docs_dir, project, "sprint", to_sprint)
     journal = _move_journal_path(docs_dir, project, from_sprint, to_sprint, slug)
@@ -2125,18 +2320,18 @@ def move_sprint_item(
             source_bytes,
             target_bytes,
         )
-        new_from = _write_resource_unlocked(
-            docs_dir,
-            project,
-            "sprint",
-            from_sprint,
-            {**source, "items": source_items},
-            source_version,
-        )
         try:
+            _write_resource_unlocked(
+                docs_dir,
+                project,
+                "sprint",
+                from_sprint,
+                {**source, "items": source_items},
+                source_version,
+            )
             if after_first_write:
                 after_first_write()
-            new_to = _write_resource_unlocked(
+            _write_resource_unlocked(
                 docs_dir,
                 project,
                 "sprint",
@@ -2159,9 +2354,33 @@ def move_sprint_item(
                 )
             _durable_unlink(journal)
             raise
-        _mark_move_journal_committed(journal)
-        _durable_unlink(journal)
-        return {"from_version": new_from, "to_version": new_to}
+        source_after, from_version = _read_resource_unchecked(
+            docs_dir, project, "sprint", from_sprint
+        )
+        target_after, to_version = _read_resource_unchecked(
+            docs_dir, project, "sprint", to_sprint
+        )
+        applied = _sprint_holds_item(target_after, slug) and not _sprint_holds_item(
+            source_after, slug
+        )
+        if not applied:
+            # A read-back that disagrees with both writes means something
+            # reverted a sprint under the move. Restore both sides from the
+            # journal so the pair agrees with its before-bytes again, and only
+            # then retire the journal and report the refusal.
+            _restore_move_journal(docs_dir, project, journal)
+            _retire_move_journal(journal)
+            raise ProjectStateError(
+                f"sprint move did not settle: {slug!r} is not in exactly "
+                f"{to_sprint!r} after both writes"
+            )
+        warnings = _retire_move_journal(journal)
+        return {
+            "applied": True,
+            "from_version": from_version,
+            "to_version": to_version,
+            "warnings": warnings,
+        }
 
 
 def push_sprint(
@@ -2210,9 +2429,10 @@ def push_sprint(
             {**target, "status": "active"},
             target_version,
         )
-        _mark_move_journal_committed(journal)
-        _durable_unlink(journal)
-        return {"new_version": new_version}
+        return {
+            "new_version": new_version,
+            "warnings": _retire_move_journal(journal),
+        }
 
 
 def _sprint_item_payload(row: Any) -> dict[str, Any]:
@@ -2366,9 +2586,11 @@ def _close_sprint_with_carry_forward(
                 )
             _durable_unlink(journal)
             raise
-        _mark_move_journal_committed(journal)
-        _durable_unlink(journal)
-    return new_closing, [f"carried {len(incomplete)} item(s) to sprint {advancing_id}"]
+        carried_warnings = _retire_move_journal(journal)
+    return new_closing, [
+        f"carried {len(incomplete)} item(s) to sprint {advancing_id}",
+        *carried_warnings,
+    ]
 
 
 #: Ops this dispatcher answers that the shared handler table in
@@ -2490,7 +2712,9 @@ def apply_resource_ops(
                 int(op.get("to_version", -1)),
             )
             return result["from_version"], [
-                f"destination_version={result['to_version']}"
+                f"source_version={result['from_version']}",
+                f"destination_version={result['to_version']}",
+                *result.get("warnings", []),
             ]
         elif verb == "push" and resource_type == "sprint":
             if len(ops) != 1:

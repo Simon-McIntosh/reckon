@@ -114,6 +114,28 @@ _GLOSSARY: dict[str, str] = {
         "lift is one whose window is meant to be spent, so its burn and pace do "
         "not press it while the lift stands."
     ),
+    "reserved": (
+        "True when a flight policy reserves this candidate's lane for the "
+        "orchestrators that share it. The reservation block beside it carries "
+        "the intent and the terms it was judged on; it excludes nothing, and "
+        "the routing instructions state how the lead intends the lane to be "
+        "used."
+    ),
+    "reservation": (
+        "The terms of a reserved lane: the tier floor, the attempt threshold, "
+        "the attempt count this node has, the window ceiling and the window's "
+        "use, any lift in force with its reason, the policy's own statement of "
+        "what the lane is for, and -- when the policy prefers another lane for "
+        "this node -- the policy's own words saying why. A reservation is "
+        "evidence to weigh, never a reason the lane was removed."
+    ),
+    "preferences": (
+        "The judgments that make a candidate less preferred than another without "
+        "making it unable to run the node: a competence horizon that does not "
+        "cover a node this size, a pacing ceiling the account would still serve, "
+        "and a reservation's own terms. Weigh them and choose; they exclude "
+        "nothing. Absent when the lane carries none."
+    ),
     "lift_preference": (
         "The lane a lift in force makes the preferred home for this node: its "
         "form and scope, the lift block itself, and the risk the node declared "
@@ -375,6 +397,21 @@ def _candidate_state(candidate: Any) -> dict[str, Any]:
         "resets_at": candidate.resets_at,
         "worker_slots": candidate.worker_slots,
         "congestion": candidate.congestion,
+        # The reservation and the preference judgments travel with the offered
+        # candidate so the router weighs them instead of never seeing the lane.
+        # Both are absent unless the lane carries them, so an ordinary lane
+        # renders exactly as it did before they existed.
+        **({"reserved": True} if getattr(candidate, "reserved", False) else {}),
+        **(
+            {"reservation": candidate.reservation}
+            if getattr(candidate, "reservation", None)
+            else {}
+        ),
+        **(
+            {"preferences": list(candidate.preferences)}
+            if getattr(candidate, "preferences", None)
+            else {}
+        ),
         "outcomes": candidate.outcomes,
         # The at-requirement block is rendered only when the request named a
         # requirement to read history at; a pick that named none carries no such

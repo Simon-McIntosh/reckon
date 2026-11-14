@@ -1,0 +1,135 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-11T10:20:48.161Z",
+  "dispatched_at": "2026-11-11T10:14:33Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-read-costs-what-changed.html:125",
+      "id": "reasoning-1",
+      "reason": "the section presents two interchangeable mechanisms where only the fold satisfies both clauses, so a worker is sent at a route its own gate is certain to red.",
+      "text": "s18 offers `ledger.load(..., picker_only=True)` as a mechanism that makes the refresh \"decode no full run payload\" while the published profile \"includes the promoted row\", but no such path exists: the promotion has just moved the ledger, so `_indexed_data` re-reads its source, and the aggregate fallback at reckon/ledger.py:2102 parses every row BEFORE projecting (`data[\"runs\"] = [picker_record(row) ...]` at :2106-2110), while the refused-refresh snapshot at :1662 is served only when `_open_current_index` (:1087) sees an unmoved aggregate \u2014 which is precisely the case in which the appended row is absent from it. A node taking the first branch fails the decode assertion; a node taking it and then adding a fold has taken the second branch",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-read-costs-what-changed.html:121",
+      "id": "reasoning-2",
+      "reason": "a worker implementing the memo exactly as written ships a config-blind cache that no fixture in the section's own four cases can detect, because every case uses one config.",
+      "text": "s17 keys the new in-process memo on \"the ledger's own change stamp\" alone, but every reading `_readings` builds carries `surface_opt_in=_surface_opt_in(backend_name, config)` (reckon/budget.py:658, :513-525), a config fact, and `latest_recorded` is called with `config=` from four caller sites (pace_report.py:1617, crew/dispatch_admission.py:388, crew/resumption.py:926, crew/routing.py:481); the first caller's config therefore freezes every later caller's opt-in until the ledger moves",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-read-costs-what-changed.html:117",
+      "id": "reasoning-3",
+      "reason": "the deliverable and its measure target both sites correctly, so the overstated share costs the node no wrong step; only the effort split reads higher than the profile supports.",
+      "text": "s16's Why retains \"plan_review._read_record reads and decodes a stored plan-review record from disk on every call, with no memo\", which the cited profile and the code both contradict: `_read_record` appears in 3 of the 08:10Z profile's 880 samples while `_read_persisted_memo` holds 111 of the chain's 124 JSON samples (verified from the cited raw), and the path the profile shows (`review_coverage` \u2192 `list_plan_reviews` \u2192 `_collect` \u2192 `_load`) already memoises per pass, keyed by path and mtime, handing out a deepcopy (reckon/crew/plan_review.py:1396-1418)",
+      "type": "reasoning",
+      "would_change": false
+    }
+  ],
+  "plan_commit": "6464a4858526217a1662e677ded00c95184e0dea",
+  "plan_fingerprint": "0939bfcaf4a0f11bb3e5e6564b33ac2425bfb5f649ca0e551612cec1198a1dd0",
+  "plan_slug": "a-read-costs-what-changed",
+  "plan_version": 74,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "83bac1c58ff5bb2d5f2cb287480c76e91858d74a",
+      "commit_basis": "edit",
+      "finding": "reasoning-2",
+      "note": "The landed \u00a717 (1f4d0fe396) keys the memo on the ledger generation, ledger.index_state_stamp and repr(config['backends']); _surface_opt_in and _stream_evidence_backend read config only through config['backends'], so a caller with different backend settings gets its own entry.",
+      "reason": "",
+      "when": "2026-11-11T10:30:14.500469+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "83bac1c58ff5bb2d5f2cb287480c76e91858d74a",
+      "commit_basis": "edit",
+      "finding": "reasoning-3",
+      "note": "Corrected \u00a716's Why: _read_record holds 3 of 880 samples, and _read_persisted_memo is the hot site; the plan-review _load path already memoises per pass.",
+      "reason": "",
+      "when": "2026-11-11T10:30:26.197835+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "83bac1c58ff5bb2d5f2cb287480c76e91858d74a",
+      "commit_basis": "edit",
+      "finding": "reasoning-1",
+      "note": "\u00a718 now names the fold as its only route: after the append the promotion folds the promoted row into the stored profile; the picker_only branch is removed because the aggregate fallback parses every row before projecting and the refused-refresh snapshot lacks the appended row.",
+      "reason": "",
+      "when": "2026-11-11T10:30:36.579919+00:00"
+    }
+  ],
+  "responses": {
+    "reasoning-1": {
+      "action": "acted",
+      "by": "",
+      "commit": "83bac1c58ff5bb2d5f2cb287480c76e91858d74a",
+      "commit_basis": "edit",
+      "note": "\u00a718 now names the fold as its only route: after the append the promotion folds the promoted row into the stored profile; the picker_only branch is removed because the aggregate fallback parses every row before projecting and the refused-refresh snapshot lacks the appended row.",
+      "reason": "",
+      "when": "2026-11-11T10:30:36.579919+00:00"
+    },
+    "reasoning-2": {
+      "action": "acted",
+      "by": "",
+      "commit": "83bac1c58ff5bb2d5f2cb287480c76e91858d74a",
+      "commit_basis": "edit",
+      "note": "The landed \u00a717 (1f4d0fe396) keys the memo on the ledger generation, ledger.index_state_stamp and repr(config['backends']); _surface_opt_in and _stream_evidence_backend read config only through config['backends'], so a caller with different backend settings gets its own entry.",
+      "reason": "",
+      "when": "2026-11-11T10:30:14.500469+00:00"
+    },
+    "reasoning-3": {
+      "action": "acted",
+      "by": "",
+      "commit": "83bac1c58ff5bb2d5f2cb287480c76e91858d74a",
+      "commit_basis": "edit",
+      "note": "Corrected \u00a716's Why: _read_record holds 3 of 880 samples, and _read_persisted_memo is the hot site; the plan-review _load path already memoises per pass.",
+      "reason": "",
+      "when": "2026-11-11T10:30:26.197835+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/Code/reckon/docs/state/reckon/reviews/plan/a-read-costs-what-changed/r-20261111T101304651933-plan-review-of-a-read-costs-what-changed.json",
+  "review_run_id": "r-20261111T101304651933-plan-review-of-a-read-costs-what-changed",
+  "reviewed_blob_sha": "8465b2f9f30d82fe6c04387e3af18ca3a05fb775",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 the two cited profiles exist at the named paths, and every symbol the sections name resolves at head: metadata_index._read_persisted_memo (:1986), file_memo.memoized (:358), plan_review._read_record (:1421), budget._readings (:584), ledger._indexed_data (:1756), ledger.load(..., picker_only=True) (:2029), ledger._last_good_index_data (:1662), lane_context.refresh_run_time_profile (:798).",
+    "done_when": "a finding \u2014 s18's two acceptable mechanisms are not interchangeable under its own measure: the picker_only branch still parses the changed ledger source, so it fails the \"decodes no full run payload\" assertion the same section sets.",
+    "evidence_paths": "pass \u2014 every gate log the three sections name is written under the crew run directory (~/.config/reckon/crew/runs/.../logs/ and this node's run directory), never a scratchpad or a node-local temporary path.",
+    "naming": "pass \u2014 the deliverable names (test_a_plan_review_record_is_decoded_once.py, test_budget_readings_decode_the_ledger_once.py, test_a_promotion_profile_refresh_costs_its_row.py) and every symbol they introduce describe the mechanism, with no plan label, stage name or ticket number reaching code.",
+    "reasoning": "two findings \u2014 s18's picker_only mechanism cannot produce its own done-when, and s17's memo key omits the one input that varies between two callers over an unchanged ledger.",
+    "single_goal": "pass \u2014 each new section names one outcome (a stored plan review decoded once, budget readings decoded once per change, a promotion's profile refresh costing its own row); s16's two call sites share one test and one verdict.",
+    "wiring": "pass \u2014 s16, s17 and s18 declare no depends-on and need none: their write paths (reckon/metadata_index.py, reckon/crew/plan_review.py, reckon/budget.py, reckon/crew/picker/lane_context.py) are disjoint from each other and from every landed section, and s18's refusal to widen reckon/ledger.py is supported by 17 live runs naming that path in their scope."
+  },
+  "section_digests": {
+    "_document": "ad547c33300ae66f1655fdeecc97964eb4ab1007ba3ad1466a4da4458108d21f",
+    "s1": "f8fb0fbbfbbc79977a59ec9d78c0d66f47803aa96db83e4d628a1dfb6b40e6c3",
+    "s10": "68fc6d75acf0741225ab448369611e4eda9f862b50d7907857c1abb24b4138e4",
+    "s11": "2a249381081ebbf2d99b7f9da3b09b1d3b87c6ada44952d6b665283e27021c40",
+    "s12": "c6c234ba14598d6a537e09000d8f5d406295ad40c3c124db34cb1b84868bb22e",
+    "s13": "5ad3b5418d98e6b0afe0d6762c6e34b89b31509e7e0c346c4b5757fc5f9bc443",
+    "s14": "3614708cc686b1aae04bdaa66c5ca55268305b0b9aa743e9b43fdfe333694c78",
+    "s15": "8ea78063ba6178b6ed86513ba9524097199475bbde30df76a27c561a07ae5cd8",
+    "s16": "b17596a19adfb90cfd3593154a9718cd67d5dc1f15fbb8b8a49ca677311505f1",
+    "s17": "dcb1e4207827e554da6f993942f652e42a11e274ac6c0445eb3ca51b1eeabab6",
+    "s18": "1c29b16cab861d80a95a3bafa80bd04653e6e92d277f498b8d1c682f4dfd5d2d",
+    "s2": "7de6c2e256fca5545163c6149c674fea249ddd1a72361b49c89ef5beaa22263d",
+    "s3": "d11cdceab942c4935f32d292e26f2111b011ca4571980a6c54ef6ae23894aadb",
+    "s4": "d14b5fa9a6b6ef26da6f95b50c43aa782fdbe679ca28020a3095af71cd579417",
+    "s5": "ba22eff9814ea16ac19404864f9a2d1ec8da449b3011fba623d0d1856b2c6ecf",
+    "s6": "b0053663cc25e5e7e15595ae342d21c4c467abe74f06c8c4db86982b276898cc",
+    "s7": "2c7c6fb207a002d2bb1e223ebf1f770570f6b06942edf9ac6647253b410a67b7",
+    "s8": "9a012c065cbd8db9e5e69070d20531b84a584582cc0bf8f45fff060b7f31f464",
+    "s9": "1404fbf63401ab3bd4204175d16adb89094eaa1f1b25160e73fd2bb9c625d0b1"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-11T10:28:05.178823+00:00",
+  "total": null
+}

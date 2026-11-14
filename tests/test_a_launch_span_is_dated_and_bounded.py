@@ -78,6 +78,11 @@ def _held_launch(repo: Path, config_home: Path) -> None:
     with pytest.raises(LaunchEnded):
         _launch(repo, config_home, "held", launcher=end, run_id=RUN_ID)
 
+    claim = dispatch_claims.read_launch_claim(RUN_ID)
+    # This pid began after the claim, so it cannot be the original holder.
+    claim["launched_at"] = "1970-01-01T00:00:00+00:00"
+    runs._write_json(runs.run_dir(RUN_ID) / "claim.json", claim)
+
 
 def _release(run_id: str) -> list[str]:
     live = runs.list_live()

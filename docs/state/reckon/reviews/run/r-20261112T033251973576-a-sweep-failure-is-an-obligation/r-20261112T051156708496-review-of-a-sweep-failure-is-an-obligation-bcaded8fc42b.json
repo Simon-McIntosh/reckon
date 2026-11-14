@@ -1,0 +1,119 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_analysis": {
+    "100": "Removing callback registration, failure storage, failure augmentation or changed-report refresh leaves zero matching duty rows; the base negative control records 0 == 1 for follower_live=True.",
+    "101": "Dropping or replacing the real promotion exception in the duty detail fails against the independently declared ERROR literal.",
+    "102": "Omitting the summary recomputation after appending a duty leaves the stub count at zero and fails.",
+    "104": "Non-independent ownership check: the payload_for stub supplies the constant SESSION regardless of its argument; see the non-blocking finding.",
+    "110": "Treating a whole-pass error as a completed clean pass removes the earlier duty and fails the comparison with the prior published row list.",
+    "121": "Leaving the promotion failure active or reporting it after the successful sweep fails the empty failure-list assertion.",
+    "124-127": "Retaining a stale failed-run duty or stale count in a readable cleared answer fails; deleting the answer altogether bypasses these assertions, as recorded in the second non-blocking finding.",
+    "95,109,120": "Each request assertion fails if SweepBeat stops accepting an idle changed session; synchronous execution ensures the following assertions see completed work.",
+    "96": "The real resumption.sweep must report the injected promotion exception with the fixture run ID and independently stated exception type/message; swallowing or misattributing it makes this fail.",
+    "98": "Removing the callback or publication for an absent follower makes the answer null; the base negative control fails here for follower_live=False."
+  },
+  "call_site_count": 6,
+  "call_sites": [
+    "reckon/crew/station.py:SweepBeat._run",
+    "reckon/crew/station.py:Station.__init__",
+    "reckon/crew/station.py:Station._record_sweep_report",
+    "reckon/crew/station.py:Station.tick",
+    "reckon/crew/station_obligations.py:publish",
+    "reckon/crew/station_obligations.py:refresh"
+  ],
+  "completed_at": "2026-11-12T05:21:25Z",
+  "dispatched_at": "2026-11-12T05:15:41Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "exempted",
+      "reason": "non-blocking test-strength gap; the run landed at adfe440b0c under the critical-work directive",
+      "recorded_at": "2026-11-12T05:46:15.583162+00:00"
+    },
+    "1": {
+      "kind": "exempted",
+      "reason": "non-blocking test-strength gap; the run landed at adfe440b0c under the critical-work directive",
+      "recorded_at": "2026-11-12T05:47:04.541580+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "tests/test_a_sweep_failure_is_an_obligation.py",
+      "line": "104",
+      "severity": "non-blocking",
+      "text": "non-blocking: the session assertion compares the exported value with SESSION after the payload_for stub at lines 68-76 unconditionally supplied that same SESSION, so it cannot detect refresh passing the wrong session to the derivation; make the stub report its session argument and independently assert the owner it received."
+    },
+    {
+      "file": "tests/test_a_sweep_failure_is_an_obligation.py",
+      "line": "123",
+      "severity": "non-blocking",
+      "text": "non-blocking: the clearing assertions are conditional on cleared being non-null even for follower_live=True, so a regression that removes the entire live-session answer after success passes this portion of the test; require a readable cleared answer in the live-follower case before checking its rows and count."
+    }
+  ],
+  "gate_evidence": {
+    "after_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_sweep_failure_is_an_obligation.py tests/test_staged_write_inventory.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "failure_ids_from_log": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261112T033251973576-a-sweep-failure-is-an-obligation/after-suite.log",
+      "revision": "bcaded8fc42bc31b22d68e469c83a0597ce9a343"
+    },
+    "baseline_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "failure_ids_from_log": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261112T033251973576-a-sweep-failure-is-an-obligation/baseline.log",
+      "revision": "53700e2c012fd47bfcf5be2ba77492df6d04c58e"
+    }
+  },
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 6 production call site(s)",
+    "diff": "read 8d6adceb4db5d3ecf679f559b87e50c9503b13f9, 216401ee290e09a18e51baabc3a94c7fe6e16dfd and bcaded8fc42bc31b22d68e469c83a0597ce9a343 individually; the implementation adds guarded report storage and publication, the follow-up moves store reading to publish, and the last commit adds only the evidence fragment.",
+    "done_when": "the live section and dispatch-detail.json require raising-run publication, clearing, zero added importer failures on all_debug and clean staged-path lint; negative-control-final.log records two failures on base, after-suite.log records 53 passes and EXIT=0, importer receipts show the same two failing IDs at base and head, and lint.log records clean checks.",
+    "goal": "dispatch-detail.json names publishing every failed sweep run as a session obligation; reckon/crew/station.py:287 and reckon/crew/station_obligations.py:86-134 connect sweep reports to published run-and-error rows and remove them on a completed error-free pass.",
+    "manifest": "manifest.md names all three actual commits, four changed paths and openable gate receipts; its baseline_suite and after_suite reconcile with baseline.log at 51 passed and after-suite.log at 53 passed, with no failed IDs in either.",
+    "write_paths": "dispatch-detail.json declares two runtime modules, the new test, an evidence fragment and its figure directory; all four changed paths in 53700e2c012fd47bfcf5be2ba77492df6d04c58e..bcaded8fc42bc31b22d68e469c83a0597ce9a343 lie inside that scope."
+  },
+  "justifications": {
+    "durability": "tests/test_a_sweep_failure_is_an_obligation.py:98-102 independently detects losing report-to-duty publication and its base-product negative control is red, but line 104 uses a session constant supplied by its own stub and lines 122-127 skip clearing assertions when the live session answer disappears.",
+    "evidence": "tests/test_a_sweep_failure_is_an_obligation.py:95-127 exercises the production sweep callback and exported answer, while baseline.log, after-suite.log, negative-control-final.log, importers-base.log, importers-repaired-head.log and lint.log record completed measurements matching the declared gate.",
+    "fit": "reckon/crew/station.py:578-588 follows the store-per-thread pattern and reckon/crew/station_obligations.py:86-134 extends the existing obligation publisher with mechanism-based names, guarded persistence and explicit action fields.",
+    "goal_fidelity": "reckon/crew/station.py:287-288 records real sweep outcomes and reckon/crew/station_obligations.py:99-134 retains whole-pass errors, publishes per-run failures for their owning session and clears a completed clean pass.",
+    "reuse": "capability searches over station and obligation modules found station_store.py:486-502 owning guarded key/value persistence and obligation_snapshot.py:1447 owning session duty derivation, both reused by the additions; the new report accumulator and row augmentation extend station_obligations rather than creating a second store or publisher.",
+    "scope_discipline": "the three reviewed commits touch only reckon/crew/station.py, reckon/crew/station_obligations.py, tests/test_a_sweep_failure_is_an_obligation.py and the explicitly granted evidence fragment."
+  },
+  "negative_control_reproduction": "negative-control-final.log: sweep reported ValueError: unreadable ledger row; live follower failed tests/test_a_sweep_failure_is_an_obligation.py:100 with assert 0 == 1; absent follower failed line 98 with assert None is not None; 2 failed in 0.43s; EXIT=1.",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: dispatch-detail.json names publishing every failed sweep run as a session obligation; reckon/crew/station.py:287 and reckon/crew/station_obligations.py:86-134 connect sweep reports to published run-and-error rows and remove them on a completed error-free pass.\nVERDICT done_when: the live section and dispatch-detail.json require raising-run publication, clearing, zero added importer failures on all_debug and clean staged-path lint; negative-control-final.log records two failures on base, after-suite.log records 53 passes and EXIT=0, importer receipts show the same two failing IDs at base and head, and lint.log records clean checks.\nVERDICT write_paths: dispatch-detail.json declares two runtime modules, the new test, an evidence fragment and its figure directory; all four changed paths in 53700e2c012fd47bfcf5be2ba77492df6d04c58e..bcaded8fc42bc31b22d68e469c83a0597ce9a343 lie inside that scope.\nVERDICT manifest: manifest.md names all three actual commits, four changed paths and openable gate receipts; its baseline_suite and after_suite reconcile with baseline.log at 51 passed and after-suite.log at 53 passed, with no failed IDs in either.\nVERDICT diff: read 8d6adceb4db5d3ecf679f559b87e50c9503b13f9, 216401ee290e09a18e51baabc3a94c7fe6e16dfd and bcaded8fc42bc31b22d68e469c83a0597ce9a343 individually; the implementation adds guarded report storage and publication, the follow-up moves store reading to publish, and the last commit adds only the evidence fragment.\nCALL_SITES: reckon/crew/station.py:SweepBeat._run, reckon/crew/station.py:Station.__init__, reckon/crew/station.py:Station._record_sweep_report, reckon/crew/station.py:Station.tick, reckon/crew/station_obligations.py:publish, reckon/crew/station_obligations.py:refresh\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/station.py:287-288 records real sweep outcomes and reckon/crew/station_obligations.py:99-134 retains whole-pass errors, publishes per-run failures for their owning session and clears a completed clean pass.\nSCORE evidence: 20\nJUSTIFICATION evidence: tests/test_a_sweep_failure_is_an_obligation.py:95-127 exercises the production sweep callback and exported answer, while baseline.log, after-suite.log, negative-control-final.log, importers-base.log, importers-repaired-head.log and lint.log record completed measurements matching the declared gate.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the three reviewed commits touch only reckon/crew/station.py, reckon/crew/station_obligations.py, tests/test_a_sweep_failure_is_an_obligation.py and the explicitly granted evidence fragment.\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_a_sweep_failure_is_an_obligation.py:98-102 independently detects losing report-to-duty publication and its base-product negative control is red, but line 104 uses a session constant supplied by its own stub and lines 122-127 skip clearing assertions when the live session answer disappears.\nSCORE fit: 20\nJUSTIFICATION fit: reckon/crew/station.py:578-588 follows the store-per-thread pattern and reckon/crew/station_obligations.py:86-134 extends the existing obligation publisher with mechanism-based names, guarded persistence and explicit action fields.\nSCORE reuse: 20\nJUSTIFICATION reuse: capability searches over station and obligation modules found station_store.py:486-502 owning guarded key/value persistence and obligation_snapshot.py:1447 owning session duty derivation, both reused by the additions; the new report accumulator and row augmentation extend station_obligations rather than creating a second store or publisher.\nFINDING tests/test_a_sweep_failure_is_an_obligation.py:104 non-blocking: the session assertion compares the exported value with SESSION after the payload_for stub at lines 68-76 unconditionally supplied that same SESSION, so it cannot detect refresh passing the wrong session to the derivation; make the stub report its session argument and independently assert the owner it received.\nFINDING tests/test_a_sweep_failure_is_an_obligation.py:123 non-blocking: the clearing assertions are conditional on cleared being non-null even for follower_live=True, so a regression that removes the entire live-session answer after success passes this portion of the test; require a readable cleared answer in the live-follower case before checking its rows and count.\n",
+  "reuse_search": "Searched sweep-failure storage, record/report helpers, station_value and obligation row augmentation over reckon/crew/station* and obligation*; opened station_store.station_value/set_station_value and obligation_snapshot.payload_for; the additions extend the existing owners. Test helpers compose existing repository/review_runs fixtures and the existing sweep/publish APIs.",
+  "review_run_id": "r-20261112T051156708496-review-of-a-sweep-failure-is-an-obligation-bcaded8fc42b",
+  "reviewed_base_sha": "53700e2c012fd47bfcf5be2ba77492df6d04c58e",
+  "reviewed_commits": [
+    "8d6adceb4db5d3ecf679f559b87e50c9503b13f9",
+    "216401ee290e09a18e51baabc3a94c7fe6e16dfd",
+    "bcaded8fc42bc31b22d68e469c83a0597ce9a343"
+  ],
+  "reviewed_head_sha": "bcaded8fc42bc31b22d68e469c83a0597ce9a343",
+  "reviewed_run_id": "r-20261112T033251973576-a-sweep-failure-is-an-obligation",
+  "scores": {
+    "durability": 17,
+    "evidence": 20,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-12T05:28:16.776469+00:00",
+  "total": 117
+}

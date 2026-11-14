@@ -34,11 +34,16 @@ def _git(root: Path, *arguments: str) -> str:
 
 def _seed_repository(root: Path) -> None:
     root.mkdir(parents=True)
+    declaration = root / "docs" / "state" / "blank-worktree-fixture"
+    declaration.mkdir(parents=True)
+    (declaration / "shared-write-paths.json").write_text(
+        json.dumps({"shared_roots": []}), encoding="utf-8"
+    )
     _git(root, "init", "-q", "-b", "main")
     _git(root, "config", "user.email", "worker@example.invalid")
     _git(root, "config", "user.name", "Worker")
     (root / "file.txt").write_text("seed\n", encoding="utf-8")
-    _git(root, "add", "file.txt")
+    _git(root, "add", "file.txt", "docs")
     _git(root, "commit", "-q", "-m", "seed")
 
 

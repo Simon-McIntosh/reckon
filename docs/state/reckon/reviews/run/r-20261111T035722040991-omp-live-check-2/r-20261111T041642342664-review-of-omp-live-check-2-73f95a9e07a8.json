@@ -1,0 +1,89 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "the reviewed run ran no gate suite and changed no code; the reviewer's re-run added no failures",
+  "claim_summary": {
+    "detail": "The report's summary line \"`_DIALECTS` is declared at `reckon/_backends.py:2583` and holds four keys\" matches the table beneath it: four rows (codex, claude, clive, omp), each naming a _HARNESS_HOME variable and none blank; `_DIALECTS` does begin at line 2583 at 73f95a9e and the rerun printed dialect_count: 4.",
+    "verdict": "agrees"
+  },
+  "claim_verdicts": {
+    "1": "reproduced",
+    "2": "reproduced",
+    "3": "reproduced",
+    "summary": "agrees"
+  },
+  "claims": [
+    {
+      "detail": "All four _DIALECTS keys reach a _HARNESS_HOME entry and none resolves to none: rerun of omp-live-check-probe.py at 73f95a9e printed dialect_count: 4 with harness_home ('CODEX_HOME','codex-home','.codex'), ('CLAUDE_CONFIG_DIR','harness','.claude'), ('CLAUDE_CONFIG_DIR','harness','.claude'), ('HOME','omp-home','.omp'), control-absent-key(no-such-dialect): None, EXIT=0 \u2014 matching the report's printed block line for line (module paths aside, since the reviewed worktree is gone).",
+      "rank": "1",
+      "verdict": "reproduced"
+    },
+    {
+      "detail": "clive inherits dialect.name 'claude' and so relocates CLAUDE_CONFIG_DIR while not being a _HARNESS_HOME key: rerun printed key='clive' dialect.name='claude' harness_home=('CLAUDE_CONFIG_DIR','harness','.claude') and clive_in_HARNESS_HOME: False; _CliveDialect(_ClaudeDialect) at reckon/_backends.py:2572 declares no name and _ClaudeDialect.name = \"claude\" at :2139; the env is keyed by dialect.name at reckon/_backends.py:2879.",
+      "rank": "2",
+      "verdict": "reproduced"
+    },
+    {
+      "detail": "omp relocates HOME (not a config-dir variable) with run folder omp-home and operator folder .omp, and its agent store variable is PI_CODING_AGENT_DIR: rerun printed key='omp' dialect.name='omp' harness_home=('HOME','omp-home','.omp'); _HARNESS_HOME{\"omp\"} at reckon/_worker_fence.py:45 and _HARNESS_AGENT_STORE{\"omp\": (\"PI_CODING_AGENT_DIR\", \"agent\")} at :57 both verified at 73f95a9e.",
+      "rank": "3",
+      "verdict": "reproduced"
+    }
+  ],
+  "completed_at": "2026-11-11T04:27:48.966Z",
+  "dispatched_at": "2026-11-11T04:25:35Z",
+  "evidence_logs": [
+    "/tmp/reckon-crew-scratch/r-20261111T041642342664-review-of-omp-live-check-2-73f95a9e07a8/review-omp-live-check/claim-probe.log"
+  ],
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/omp-live-check.md",
+      "line": "1",
+      "text": "CLAIM 1: reproduced: dialect_count 4, four resolvable harness homes, absence control None, EXIT=0 at 73f95a9e"
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/omp-live-check.md",
+      "line": "19",
+      "text": "CLAIM 2: reproduced: clive -> dialect.name 'claude' -> CLAUDE_CONFIG_DIR, clive_in_HARNESS_HOME False"
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/omp-live-check.md",
+      "line": "24",
+      "text": "CLAIM 3: reproduced: omp -> ('HOME','omp-home','.omp'), agent store PI_CODING_AGENT_DIR at _worker_fence.py:57"
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/omp-live-check.md",
+      "line": "5",
+      "text": "CLAIM_SUMMARY: agrees: summary's four keys equals the table's four rows, each carrying a variable"
+    },
+    {
+      "file": "reckon/crew/review.py",
+      "line": "938",
+      "text": "blocking: review_record_refusals has no claims-rubric exemption, so `crew check --review --record` refuses a rubric-compliant claims record for missing scores, added_failure_count and added_failure_ids \u2014 only the figure rubric is exempted; reported under outside_scope, not repaired (no repo write scope)"
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "CLAIM 1: reproduced: rerun at 73f95a9e printed dialect_count: 4 with four harness_home tuples and control-absent-key(no-such-dialect): None, EXIT=0\nCLAIM 2: reproduced: rerun printed key='clive' dialect.name='claude' harness_home=('CLAUDE_CONFIG_DIR','harness','.claude') and clive_in_HARNESS_HOME: False\nCLAIM 3: reproduced: rerun printed key='omp' dialect.name='omp' harness_home=('HOME','omp-home','.omp'); _HARNESS_AGENT_STORE['omp'] at _worker_fence.py:57\nCLAIM_SUMMARY: agrees: '`_DIALECTS` ... holds four keys' matches the table's four rows, each naming a variable",
+  "rerun_commands": [
+    "cd /home/ITER/mcintos/.config/reckon/crew/runs/r-20261111T035722040991-omp-live-check-2 && PYTHONPATH=$TMPDIR/review-omp-live-check/scratch /home/ITER/mcintos/Code/reckon/.venv/bin/python3 ./omp-live-check-probe.py"
+  ],
+  "review_run_id": "r-20261111T041642342664-review-of-omp-live-check-2-73f95a9e07a8",
+  "reviewed_base_sha": "73f95a9e07a830350d6866772e7a32b734407853",
+  "reviewed_head_sha": "73f95a9e07a830350d6866772e7a32b734407853",
+  "reviewed_report": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261111T035722040991-omp-live-check-2/../reports/reckon/omp-live-check.md",
+  "reviewed_report_resolved": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/omp-live-check.md",
+  "reviewed_run_id": "r-20261111T035722040991-omp-live-check-2",
+  "revision_note": "The reviewed run committed nothing past its base, so base and head are the same revision; 73f95a9e is the revision its report states it read, and the worktree it read (worktrees/.../omp-live-check-2) has since been removed, so the re-run imported an archive of 73f95a9e:reckon extracted under the run scratch.",
+  "rubric": "claims",
+  "scores": {
+    "durability": 4,
+    "evidence": 5,
+    "fit": 5,
+    "goal_fidelity": 5,
+    "reuse": 5,
+    "scope_discipline": 5
+  },
+  "scores_note": "The claims verdicts are this record's measure; the six scores are the reviewer's own assessment of the reviewed report as an artifact, present only because crew check --review --record and crew check --manifest both refuse a record without them at this revision. durability is 4 because the worktree the report names has since been removed, so its cited cwd no longer exists and the re-run needed an archive of the same revision.",
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-11T04:51:12.523159+00:00"
+}

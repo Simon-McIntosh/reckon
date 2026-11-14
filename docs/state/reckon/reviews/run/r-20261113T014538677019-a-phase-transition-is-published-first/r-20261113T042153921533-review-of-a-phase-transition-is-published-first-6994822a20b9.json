@@ -1,0 +1,124 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own arm logs on disk: logs/baseline.log names revision 720736d7f8 (51 passed, EXIT=0, no FAILED line) and logs/after.log names revision 9004a30e8d (52 passed, EXIT=0, no FAILED line), so the set difference is empty (0). The separate importer arm is not the armed suite pair; its single head failure (tests/test_a_slow_station_still_reads_as_alive.py::test_a_blocked_tick_keeps_a_fresh_beat_and_reads_slow, logs/importers-after.log, EXIT=1) cleared on both repeats at the same head (logs/importers-after-rerun.log, 64 passed, EXIT=0) and its base arm passed (logs/importers-base.log, 64 passed, EXIT=0); it is recorded as a non-blocking finding rather than counted as an added failure.",
+  "call_site_count": 1,
+  "call_sites": [
+    "reckon/crew/station.py:890 (run_forever's loop calls station.tick()); Station constructed at reckon/crew/station.py:866"
+  ],
+  "completed_at": "2026-11-13T05:54:15.156Z",
+  "dispatched_at": "2026-11-13T05:40:49Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "folded",
+      "node": "review-duties-are-derived-off-the-tick-thread",
+      "recorded_at": "2026-11-13T06:34:04.197189+00:00"
+    },
+    "1": {
+      "kind": "folded",
+      "node": "review-duties-are-derived-off-the-tick-thread",
+      "recorded_at": "2026-11-13T06:34:20.028828+00:00"
+    },
+    "2": {
+      "kind": "exempted",
+      "reason": "the reviewer ran ruff check and format check at head and both are clean",
+      "recorded_at": "2026-11-13T06:34:38.081101+00:00"
+    },
+    "3": {
+      "kind": "exempted",
+      "reason": "the coordinator's landing rewrote baseline_suite and after_suite in the contract shape before promotion",
+      "recorded_at": "2026-11-13T06:34:54.028445+00:00"
+    },
+    "4": {
+      "kind": "exempted",
+      "reason": "the landing measure re-ran the importer arms at the landed head with zero added failures; the worker's interim red rerun is superseded",
+      "recorded_at": "2026-11-13T06:35:31.143019+00:00"
+    },
+    "5": {
+      "kind": "exempted",
+      "reason": "the coordinator re-ran the negative control on base code and it failed (1 failed) as declared",
+      "recorded_at": "2026-11-13T06:35:48.941792+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "tests/test_a_phase_transition_is_published_before_review_duties.py",
+      "line": 4,
+      "severity": "non-blocking",
+      "text": "the module docstring carries incident dates (12-13 November) and changelog prose ('The tick used to commit a project's transitions ...' at :5), which the naming rules ban in source comments and docstrings; it should state the mechanism (a derivation held open must not delay another project's commit) and leave the incident narrative to the evidence fragment and commit message."
+    },
+    {
+      "file": "reckon/crew/station.py",
+      "line": 772,
+      "severity": "non-blocking",
+      "text": "the two passes both run in the tick's own thread, so a slow derivation still delays the NEXT tick's transitions by up to the derivation's duration; the deliverable's 'independently of it, so a slow derivation never delays a phase event' therefore holds within a tick but not across ticks, and the 44-58 minute derivation the plan describes would still delay transitions taken during it until the following tick starts."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261113T014538677019-a-phase-transition-is-published-first/manifest.md",
+      "line": 12,
+      "severity": "non-blocking",
+      "text": "test_logs records no ruff check or ruff format --check result although the done_when names both on the staged paths; I ran them at head and both are clean, but the worker's own record does not carry the fact it was told to produce."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261113T014538677019-a-phase-transition-is-published-first/manifest.md",
+      "line": 14,
+      "severity": "non-blocking",
+      "text": "baseline_suite and after_suite use the keys result/exit/log rather than the contract's exit_status/completed/failure_count/failure_ids/log_path, so the run's classification parsed every one of those fields as null and a promotion reader may read the arms as unreadable even though the logs themselves are complete."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261113T014538677019-a-phase-transition-is-published-first/manifest.md",
+      "line": 10,
+      "severity": "non-blocking",
+      "text": "retry_failures records only the new case's four red runs; the importer arm's head failure and its rerun to green are absent from that field, so a reader relying on retry_failures alone would not learn that a matched arm went red before the recorded green."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261113T014538677019-a-phase-transition-is-published-first/logs/negative-control.log",
+      "line": 1,
+      "severity": "non-blocking",
+      "text": "the log opens with the pytest progress line rather than the '# revision:' and '# command:' headers the done_when requires of each arm's log, so the mutation it records cannot be re-run from the log alone; it does end in a bare EXIT=1 with the expected FAILED id."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified one production call site: reckon/crew/station.py:890 in run_forever's loop calls station.tick(), with the Station constructed at reckon/crew/station.py:866.",
+    "diff": "read commit by commit against base 720736d7f8: 9004a30e8d changes only reckon/crew/station.py, splitting the tick's per-project loop into a commit pass and a derivation pass (19 lines changed); 6994822a20 adds the 32-line evidence fragment; the test file (222 lines) is new; 268 insertions and 5 deletions across three files, all inside the fence.",
+    "done_when": "the done_when names tests/test_a_phase_transition_is_published_before_review_duties.py driving a publish whose review-duty derivation blocks, with a base-revision negative control and matched importer arms; the case blocks obligations._review_duty_item for the first project and reads a second StationStore while it is held, logs/baseline.log records 51 passed EXIT=0, logs/after.log 52 passed EXIT=0, logs/importers-*.log the matched arms, and logs/negative-control.log fails at EXIT=1 with the stated assertion message, so the gate asserts the measure.",
+    "goal": "the node goal is to publish run-phase transitions before deriving review duties; reckon/crew/station.py:711-768 now folds and commits every project's transitions with store.record_tick in a first pass, and reckons/crew/station.py:772-790 derives duties with station_obligations.publish in a second pass, so a slow derivation no longer holds a later project's transition.",
+    "manifest": "read; it reports status complete, two commits (9004a30e8d, 6994822a20), the base and head arms, the importer arms and the negative control, and names five logs on disk, all of which I opened and found consistent with the record.",
+    "write_paths": "the node's declared paths are reckon/crew/station_obligations.py, reckon/crew/obligation_snapshot.py, reckon/crew/station.py, tests/test_a_phase_transition_is_published_before_review_duties.py, the evidence fragment and the figures directory; the diff touches only reckon/crew/station.py, that test file and the fragment, and every one is inside the fence."
+  },
+  "justifications": {
+    "durability": "tests/test_a_phase_transition_is_published_before_review_duties.py asserts the later project's committed transition while the earlier project's derivation is held, compares it against fixture-supplied constants (queued, blocked-upstream) rather than a value the code under test produced, and logs/negative-control.log shows that assertion failing when the base order is reinstated.",
+    "evidence": "logs/baseline.log (51 passed, EXIT=0) and logs/after.log (52 passed, EXIT=0) are recorded and reconcile with the manifest, and logs/negative-control.log shows the reinstated base order failing at EXIT=1 with the stated message, though the manifest records no ruff result and the importer arm went red once before its green rerun.",
+    "fit": "reckon/crew/station.py:702-711 and :769-771 follow the surrounding comment and naming style, but the module docstring at tests/test_a_phase_transition_is_published_before_review_duties.py:4-5 carries incident dates and 'used to' changelog prose the naming rules forbid in source.",
+    "goal_fidelity": "reckon/crew/station.py:711-768 commits every project's transitions before reckon/crew/station.py:772-790 derives any duties, which is the defect the plan describes, though both passes remain in one thread so the decoupling is within a tick rather than across ticks.",
+    "reuse": "the diff adds no function, class or module; it reorders existing calls to store.record_tick, station_subscriber.record_live_work, station_obligations.publish and sweeps.request, so there is no capability for a new definition to duplicate.",
+    "scope_discipline": "every path in the diff (reckon/crew/station.py, tests/test_a_phase_transition_is_published_before_review_duties.py, docs/evidence/fragments/the-monitor-reads-each-fact-once/a-phase-transition-is-published-first.html) is inside the node's declared write_paths, though the plan's Deliverable named station_obligations.py and obligation_snapshot.py instead of station.py."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to publish run-phase transitions before deriving review duties; reckon/crew/station.py:711-768 now folds and commits every project's transitions with store.record_tick in a first pass, and reckon/crew/station.py:772-790 derives duties with station_obligations.publish in a second pass, so a slow derivation no longer holds a later project's transition.\nVERDICT done_when: the done_when names tests/test_a_phase_transition_is_published_before_review_duties.py driving a publish whose review-duty derivation blocks, with a base-revision negative control and matched importer arms; the case blocks obligations._review_duty_item for the first project and reads a second StationStore while it is held, logs/baseline.log records 51 passed EXIT=0, logs/after.log 52 passed EXIT=0, logs/importers-*.log the matched arms, and logs/negative-control.log fails at EXIT=1 with the stated assertion message, so the gate asserts the measure.\nVERDICT write_paths: the node's declared paths include reckon/crew/station.py, tests/test_a_phase_transition_is_published_before_review_duties.py, the evidence fragment and the figures directory; the diff touches only station.py, that test file and the fragment, and every one is inside the fence.\nVERDICT manifest: read; it reports status complete, two commits (9004a30e8d, 6994822a20), the base and head arms, the importer arms and the negative control, and names five logs on disk, all of which I opened and found consistent with the record.\nVERDICT diff: read commit by commit against base 720736d7f8: 9004a30e8d changes only reckon/crew/station.py, splitting the tick's per-project loop into a commit pass and a derivation pass (19 lines changed); 6994822a20 adds the 32-line evidence fragment; the test file (222 lines) is new; 268 insertions and 5 deletions across three files, all inside the fence.\nCALL_SITES: reckon/crew/station.py:890 (run_forever's loop calls station.tick())\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/station.py:711-768 commits every project's transitions before reckon/crew/station.py:772-790 derives any duties, which is the defect the plan describes, though both passes remain in one thread so the decoupling is within a tick rather than across ticks.\nSCORE evidence: 16\nJUSTIFICATION evidence: logs/baseline.log (51 passed, EXIT=0) and logs/after.log (52 passed, EXIT=0) are recorded and reconcile with the manifest, and logs/negative-control.log shows the reinstated base order failing at EXIT=1 with the stated message, though the manifest records no ruff result and the importer arm went red once before its green rerun.\nSCORE scope_discipline: 18\nJUSTIFICATION scope_discipline: every path in the diff (reckon/crew/station.py, tests/test_a_phase_transition_is_published_before_review_duties.py, docs/evidence/fragments/the-monitor-reads-each-fact-once/a-phase-transition-is-published-first.html) is inside the node's declared write_paths, though the plan's Deliverable named station_obligations.py and obligation_snapshot.py instead of station.py.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_a_phase_transition_is_published_before_review_duties.py asserts the later project's committed transition while the earlier project's derivation is held, compares it against fixture-supplied constants (queued, blocked-upstream) rather than a value the code under test produced, and logs/negative-control.log shows that assertion failing when the base order is reinstated.\nSCORE fit: 15\nJUSTIFICATION fit: reckon/crew/station.py:702-711 and :769-771 follow the surrounding comment and naming style, but the module docstring at tests/test_a_phase_transition_is_published_before_review_duties.py:4-5 carries incident dates and 'used to' changelog prose the naming rules forbid in source.\nSCORE reuse: 20\nJUSTIFICATION reuse: the diff adds no function, class or module; it reorders existing calls to store.record_tick, station_subscriber.record_live_work, station_obligations.publish and sweeps.request, so there is no capability for a new definition to duplicate.\nFINDING tests/test_a_phase_transition_is_published_before_review_duties.py:4 non-blocking: the module docstring carries incident dates (12-13 November) and changelog prose ('The tick used to commit ...' at :5), which the naming rules ban in source comments and docstrings; it should state the mechanism and leave the incident narrative to the evidence fragment and commit message.\nFINDING reckon/crew/station.py:772 non-blocking: the two passes both run in the tick's own thread, so a slow derivation still delays the NEXT tick's transitions by up to the derivation's duration; 'independently of it, so a slow derivation never delays a phase event' therefore holds within a tick but not across ticks.\nFINDING manifest.md:12 non-blocking: test_logs records no ruff check or ruff format --check result although the done_when names both on the staged paths; both are clean at head but the worker's record does not carry the fact.\nFINDING manifest.md:14 non-blocking: baseline_suite and after_suite use result/exit/log rather than the contract's exit_status/completed/failure_count/failure_ids/log_path, so the run's classification parsed those fields as null and a reader may take the arms as unreadable.\nFINDING manifest.md:10 non-blocking: retry_failures records only the new case's four red runs; the importer arm's head failure and its rerun to green are absent, so a reader relying on that field would not learn a matched arm went red before the recorded green.\nFINDING logs/negative-control.log:1 non-blocking: the log opens with the pytest progress line rather than '# revision:' and '# command:' headers, so the mutation it records cannot be re-run from the log alone; it does end in a bare EXIT=1 with the expected FAILED id.\n",
+  "review_node": "review-of-a-phase-transition-is-published-first-6994822a20b9",
+  "review_run_id": "r-20261113T042153921533-review-of-a-phase-transition-is-published-first-6994822a20b9",
+  "reviewed_base_sha": "720736d7f8ac8ec78b42374c1028e5cc56b19fc0",
+  "reviewed_head_sha": "6994822a20b9a16f59f178c9069a0cfbc3fa7bec",
+  "reviewed_run_id": "r-20261113T014538677019-a-phase-transition-is-published-first",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash",
+    "reviewer_run_id": "r-20261113T042153921533-review-of-a-phase-transition-is-published-first-6994822a20b9"
+  },
+  "scores": {
+    "durability": 18,
+    "evidence": 16,
+    "fit": 15,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-13T06:15:15.810423+00:00",
+  "total": 105
+}

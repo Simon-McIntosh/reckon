@@ -1,0 +1,103 @@
+<section id="read-costs-referenced-plan-once-s22-landing">
+  <h2>A plan read answers its section waits from the index, not with a full read per ref</h2>
+
+  <p><strong>What changed.</strong> Resolving a section wait used to cost a full
+  plan read of the target. <code>_section_dependency_rows</code> walked each
+  section's <code>plan-section-depends-on</code> refs and called
+  <code>_resolve_plan_ref</code> once per ref, and <code>_resolve_plan_ref</code>
+  reached <code>_store.read_plan</code> for every one of them. A plan waiting on
+  six refs across two plans therefore read each target three times, and the
+  profile put 86.1% of a plan read's samples under that path.</p>
+
+  <p><code>reckon/mcp.py</code> now resolves a ref from the metadata index.
+  <code>_indexed_plan_states(project, checkout_path)</code> returns each live
+  plan's parsed state keyed by slug from
+  <code>metadata_index.discovery_state</code>, keeping the live document where a
+  live and an archived document share a slug, which is the live-first resolution
+  a full read takes. <code>_indexed_plan_state</code> answers one slug from it
+  and memoises the project's lookup in a cache that one <code>_read_plan</code>
+  creates before it resolves anything, so the whole-plan refs
+  (<code>depends_on</code>) and the section-scoped refs share one lookup per
+  referenced project. A plan the stored index cannot answer for is parsed once
+  from its own document through <code>_resolve_html_file</code> and
+  <code>_plan_html.read_state_file</code> rather than read in full, so no ref
+  reaches the full-read path and the answer still comes from one pass. The
+  cross-project refs in <code>_audit_read</code> pass a cache of their own.</p>
+
+  <p>The row a ref contributes is unchanged in shape and content: status, impl,
+  title, followups and section declarations are what the ref row is built from,
+  and those are what the index holds. External refs keep resolving without a
+  checkout path, exactly as before.</p>
+
+  <h3 id="read-costs-referenced-plan-once-s22-measured">Measured</h3>
+
+  <p>Two counts are taken on one read of a waiting plan whose six sections wait
+  on three refs each into two other plans. A wrapper on
+  <code>reckon.mcp.read_plan</code> — the full plan read path — records every
+  target read wherever it is made; a wrapper on
+  <code>_indexed_plan_states</code> records each index lookup by project. The
+  same fixture also rehearses the base revision's per-ref full read, so the rows
+  are compared rather than assumed equal.</p>
+
+  <table id="read-costs-referenced-plan-once-s22-counts">
+    <caption>One <code>read_plan</code> of a plan with six section waits across
+    two referenced plans. "Full reads" counts reads of the two referenced plans,
+    not of the plan being read.</caption>
+    <thead>
+      <tr><th>revision</th><th>full reads of referenced plans</th><th>index lookups</th><th>section rows</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>base, per-ref <code>_resolve_plan_ref</code></td><td>6</td><td>0</td><td>6</td></tr>
+      <tr><td>head, indexed resolution</td><td>0</td><td>2 (one per referenced plan)</td><td>6</td></tr>
+    </tbody>
+  </table>
+
+  <p>The index lookup is counted by project, so a lookup count that falls as
+  refs are added is the property the deliverable asks for: one project's index
+  answers every ref that names it. The head count is asserted
+  <code>0 &lt; lookups ≤ 2</code> — the lower bound proves the index is
+  consulted rather than skipped, and the upper bound proves the count does not
+  grow with the six refs.</p>
+
+  <h3 id="read-costs-referenced-plan-once-s22-rows">The rows do not move</h3>
+
+  <p>The same read is run twice in the head tree: once as implemented, and once
+  with <code>_indexed_plan_state</code> replaced by a per-ref full read, which is
+  the base revision's behaviour. The six rows must be identical, and the plan's
+  own <code>data</code> payload must be identical, so the change is a cost change
+  and not a state change.</p>
+
+  <table id="read-costs-referenced-plan-once-s22-arms">
+    <caption>Every arm is a log whose header names its revision, tree and the
+    literal command, and whose last line is <code>EXIT=</code>.</caption>
+    <thead><tr><th>arm</th><th>result</th></tr></thead>
+    <tbody>
+      <tr><td>node test, head tree</td><td>pass: 0 full reads of the two targets, ≤2 index lookups, 6 rows equal to the base rows</td></tr>
+      <tr><td>node test, per-ref full read restored (negative control)</td><td>fail: 6 full reads — three of each target — and the declared assertion fires</td></tr>
+      <tr><td>files importing <code>reckon/mcp.py</code>, base revision</td><td>2 failed, 186 passed</td></tr>
+      <tr><tr><td>files importing <code>reckon/mcp.py</code>, head revision</td><td>2 failed, 186 passed — the same two ids, so no failure is added</td></tr>
+      <tr><td>staged-write inventory + node test, head tree</td><td>52 passed</td></tr>
+    </tbody>
+  </table>
+
+  <p>The two failures in both batches are
+  <code>test_mcp_views.py::test_version_view_returns_only_identity_and_concurrency_token</code>
+  and <code>::test_raw_and_schema_are_explicit_layers</code>. Both fail at the
+  base revision with this change nowhere in the tree, so neither is attributed to
+  it.</p>
+
+  <h3 id="read-costs-referenced-plan-once-s22-outside">Found and not taken</h3>
+
+  <p>The metadata index is not always populated with parsed state. A store whose persisted
+  entries carry only a <code>path</code> makes <code>discovery_state</code>
+  return nothing and never rebuild, so the indexed lookup answers empty for that
+  project. That is why the per-plan parse fallback exists rather than the index
+  being assumed complete. Making the persisted store rebuild in that case is the
+  index's own repair, in <code>reckon/metadata_index.py</code>, which is outside
+  this node's write scope; the fallback keeps the ref path a single parse
+  meanwhile.</p>
+
+  <p><strong>Figures.</strong> None. The measure is a pair of integer counts and a
+  row comparison; a figure would add no reading a table does not already
+  carry.</p>
+</section>

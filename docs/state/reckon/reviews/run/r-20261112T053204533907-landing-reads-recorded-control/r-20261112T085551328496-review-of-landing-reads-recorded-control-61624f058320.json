@@ -1,0 +1,60 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/promotion.py:568",
+    "reckon/crew/promotion.py:1377",
+    "reckon/crew/promotion_checks.py:2567"
+  ],
+  "completed_at": "2026-11-12T09:13:15.116Z",
+  "dispatched_at": "2026-11-12T08:59:15Z",
+  "findings": [
+    {
+      "file": "reckon/crew/promotion_evidence.py",
+      "line": 1217,
+      "severity": "non-blocking",
+      "text": "_run_directory_control_log offers every file in the run directory to the control test, and both stream.jsonl and classification.json in a real run directory parse as pytest-format logs (measured on the reviewed run's own directory), so a transcript of an in-session red run, which is not a log of the declared mutation, can be admitted as the control; restricting candidates to capture-shaped files such as *.log would close it."
+    },
+    {
+      "file": "manifest.md",
+      "line": 21,
+      "severity": "non-blocking",
+      "text": "The recorded suite arms measure only the write-scope test files, not the test files that import the modified module, which the done-when names; I ran tests/test_control_gate_checks_facts.py, tests/test_control_is_compared_with_the_head_arm.py, tests/test_a_negative_control_is_read_from_the_runner.py and tests/test_every_failure_comparison_shares_one_rule.py at the head and got 55 passed, but the manifest carries no arm recording that and no base-revision comparison for them."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "reckon/crew/promotion.py:568 in complete(), reckon/crew/promotion.py:1377 in _complete_locked, and reckon/crew/promotion_checks.py:2567 inside _landing_preconditions reach the gate at runtime.",
+    "diff": "Read both commits against b8585860; e8e24cf551 adds the gate, the directory search and the mutation measurement across three modules plus 254 test lines, and 61624f0583 adds the 25-line evidence fragment, with every hunk on control-log admission or its evidence.",
+    "done_when": "The done-when names tests/test_a_landing_reads_the_control_the_run_recorded.py with five cases and a negative control; all six tests are present and the manifest records 6 passed at the head and 6 failed at the base, though the importing-test-file arm is not recorded.",
+    "goal": "The node goal is a landing that admits the negative control the run recorded rather than the manifest field's spelling; reckon/crew/promotion_checks.py:2155-2212 now reads the named log, searches the run directory, and measures the mutation, recording which log it used.",
+    "manifest": "Read at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261112T053204533907-landing-reads-recorded-control/manifest.md; it records status complete, 51-passed base and 57-passed head arms at EXIT=0, a 6-failed EXIT=1 negative control, the scope discrepancy and no blocker.",
+    "write_paths": "The node was fenced to promotion_evidence.py, landing_measure.py, the new test and the evidence fragment; the diff also changes promotion_checks.py, named in the dispatch's EVIDENCE write-path sentence but not its FENCE-SCOPE block, and nothing falls outside the plan's s21 paths."
+  },
+  "justifications": {
+    "durability": "tests/test_a_landing_reads_the_control_the_run_recorded.py:109-112 fails with CrewError if the run-directory fallback is removed, and the recorded base replay (negative-control.log) shows all six assertions red at EXIT=1.",
+    "evidence": "tests/test_a_landing_reads_the_control_the_run_recorded.py carries all five done-when cases plus the negative control and the manifest records 51-passed base and 57-passed head arms, but the recorded arm does not cover the importing test files the done-when names.",
+    "fit": "reckon/crew/promotion_evidence.py:1168-1214 follows the existing reader idiom in the same module, names mechanisms rather than plan items, and adds no ruff finding or format finding against the base copies of the changed files.",
+    "goal_fidelity": "reckon/crew/promotion_checks.py:2155-2212 reads the manifest-named log, then the run directory's logs, then measures the mutation, recording control_log_source and resolved_log as the section asks.",
+    "reuse": "reckon/crew/landing_measure.py:1035 calls the existing _arm, _partition_runner and _carry_missing_tests owners, but repeats about twenty lines of armed_observations' resolution preamble rather than extending it.",
+    "scope_discipline": "reckon/crew/promotion_checks.py:2141 is outside the dispatch's FENCE-SCOPE line but inside the dispatch's own EVIDENCE write-path sentence and inside the plan's s21 write paths, and every changed path sits in one of those lists with nothing extraneous."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is a landing that admits the negative control the run recorded rather than the manifest field's spelling; reckon/crew/promotion_checks.py:2155-2212 reads the named log, then the run directory, then measures the mutation, recording which log it used.\nVERDICT done_when: the done-when names tests/test_a_landing_reads_the_control_the_run_recorded.py with five cases and a negative control; all six tests are present, 6 passed at the head and 6 failed at the base, though the importing-test-file arm is not recorded.\nVERDICT write_paths: the node was fenced to promotion_evidence.py, landing_measure.py, the new test and the evidence fragment; the diff also changes promotion_checks.py, named in the dispatch's EVIDENCE write-path sentence but not its FENCE-SCOPE block, and nothing falls outside the plan's s21 paths.\nVERDICT manifest: read at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261112T053204533907-landing-reads-recorded-control/manifest.md; it records status complete, 51-passed base and 57-passed head arms at EXIT=0, a 6-failed EXIT=1 negative control, the scope discrepancy and no blocker.\nVERDICT diff: read both commits against b8585860; e8e24cf551 adds the gate, the directory search and the mutation measurement across three modules plus 254 test lines, and 61624f0583 adds the 25-line evidence fragment, with every hunk on control-log admission or its evidence.\nCALL_SITES: reckon/crew/promotion.py:568, reckon/crew/promotion.py:1377, reckon/crew/promotion_checks.py:2567\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/promotion_checks.py:2155-2212 reads the manifest-named log, then the run directory's logs, then measures the mutation, recording control_log_source and resolved_log as the section asks.\nSCORE evidence: 15\nJUSTIFICATION evidence: the done-when's six tests are present and the manifest records 51-passed base and 57-passed head arms, but the recorded arm does not cover the importing test files the done-when names.\nSCORE scope_discipline: 17\nJUSTIFICATION scope_discipline: reckon/crew/promotion_checks.py:2141 is outside the dispatch's FENCE-SCOPE line but inside its own EVIDENCE write-path sentence and the plan's s21 paths, and nothing extraneous is in the diff.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_a_landing_reads_the_control_the_run_recorded.py:109-112 fails with CrewError if the run-directory fallback is removed, and the base replay shows all six assertions red at EXIT=1.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/crew/promotion_evidence.py:1168-1214 follows the same reader idiom as its neighbours and adds no ruff finding or format finding against the base copies.\nSCORE reuse: 16\nJUSTIFICATION reuse: reckon/crew/landing_measure.py:1035 calls the existing _arm, _partition_runner and _carry_missing_tests owners but repeats about twenty lines of armed_observations' resolution preamble.\nFINDING reckon/crew/promotion_evidence.py:1217 non-blocking: _run_directory_control_log offers every file in the run directory to the control test, and stream.jsonl and classification.json in a real run directory parse as pytest-format logs, so an in-session transcript that is not a log of the declared mutation can be admitted.\nFINDING manifest.md:21 non-blocking: the recorded arms cover only the write-scope test files, not the test files importing the modified module that the done-when names; they pass at the head (55 passed, measured) but no arm records it.",
+  "review_run_id": "r-20261112T085551328496-review-of-landing-reads-recorded-control-61624f058320",
+  "reviewed_base_sha": "b8585860d52c021656003c57ae94a58a291cf087",
+  "reviewed_head_sha": "61624f058320cecf1d3381b5a5abd968212f4786",
+  "reviewed_run_id": "r-20261112T053204533907-landing-reads-recorded-control",
+  "scores": {
+    "durability": 18,
+    "evidence": 15,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 16,
+    "scope_discipline": 17
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-12T11:43:38.132962+00:00",
+  "total": 102
+}

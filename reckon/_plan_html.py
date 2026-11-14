@@ -32,6 +32,7 @@ from dataclasses import dataclass
 from html.parser import HTMLParser
 from itertools import pairwise
 from pathlib import Path
+from typing import Any
 
 from bs4 import BeautifulSoup
 
@@ -396,6 +397,38 @@ def _structural_spans(html_text: str):
     parser.feed(html_text)
     parser.close()
     return parser.records
+
+
+class _PlanDocumentParse:
+    """One read of a plan document, shared by every pass of one write.
+
+    A plan write asks three things of the document it rewrites: the soup the
+    collection splices and the comment-census read, the record elements the
+    section-record splice regenerates, and the structural scan that gives those
+    elements their source extents. Each arrives from this one parse instead of
+    rebuilding the document per pass. Both halves are built on first use, so a
+    write that needs neither pays for neither.
+    """
+
+    def __init__(self, html_text: str) -> None:
+        self.html_text = html_text
+        self._soup: BeautifulSoup | None = None
+        self._structural: _StructuredSectionSpanParser | None = None
+
+    @property
+    def soup(self) -> BeautifulSoup:
+        if self._soup is None:
+            self._soup = BeautifulSoup(self.html_text or "", "html.parser")
+        return self._soup
+
+    @property
+    def structural(self) -> _StructuredSectionSpanParser:
+        if self._structural is None:
+            parser = _StructuredSectionSpanParser(self.html_text)
+            parser.feed(self.html_text)
+            parser.close()
+            self._structural = parser
+        return self._structural
 
 
 def plan_headings(html_text: str):
@@ -845,6 +878,13 @@ OPEN_SECTION_DECLARATIONS = (
 
 #: The attribute a section record carries its descope reason in.
 DESCOPE_REASON_ATTRIBUTE = "data-descope-reason"
+
+#: The head meta a plan without section records carries its descope reasons in,
+#: as a JSON object mapping section identity to the reason it was dropped. A
+#: plan that carries no ``data-reckon="section"`` records has nowhere else to
+#: put the reason, and a descope without one is refused. Authored markup the
+#: state writer maintains, as ``plan-section-depends-on`` is.
+DESCOPE_REASONS_META = "plan-descope-reasons"
 
 #: The id prefix a section's closing record carries. The landing beat writes one
 #: comment per landed section under ``c-close-<section>`` in the same call as the
@@ -1297,15 +1337,109 @@ def _in_comments_section(element) -> bool:
     )
 
 
-def _body_resident_comment_counts(html_text: str) -> Counter:
+def _body_resident_comment_counts(
+    html_text: str, parse: _PlanDocumentParse | None = None
+) -> Counter:
     """Identity counts of the comment records a document holds outside its
     comments section — the records a write leaves exactly where they are."""
-    soup = BeautifulSoup(html_text or "", "html.parser")
+    soup = (parse or _PlanDocumentParse(html_text)).soup
     counts: Counter = Counter()
     for element in _comment_elements(soup):
         if not _in_comments_section(element):
             counts[_comment_identity(_comment_record(element))] += 1
     return counts
+
+
+def _parse_descope_reasons(raw: str) -> tuple[dict[str, str] | None, str | None]:
+    """Parse the reasons meta content into a mapping, or a defect message."""
+    try:
+        reasons = json.loads(raw)
+    except (TypeError, ValueError):
+        reasons = None
+    if isinstance(reasons, dict) and all(
+        isinstance(section, str) and isinstance(reason, str)
+        for section, reason in reasons.items()
+    ):
+        return {
+            section: reason for section, reason in reasons.items() if reason.strip()
+        }, None
+    return None, (
+        f"{DESCOPE_REASONS_META}: must be a JSON object mapping section "
+        "identities to their descope reasons as strings"
+    )
+
+
+def descope_reasons(html_text: str) -> dict[str, str]:
+    """Return the plan's stored descope reasons, keyed by section identity.
+
+    A plan that carries section records keeps each reason on its record; this
+    map is the store for a plan that carries none, so a descoped section with
+    no record still says why it was dropped. Empty when the plan carries no
+    such meta.
+    """
+    raw = _meta_content(html_text, DESCOPE_REASONS_META)
+    if raw is None:
+        return {}
+    reasons, _defect = _parse_descope_reasons(raw)
+    return dict(reasons or {})
+
+
+def _meta_content(html_text: str, meta_name: str) -> str | None:
+    """Return a head meta's content, or ``None`` when the document has none."""
+    soup = BeautifulSoup(html_text or "", "html.parser")
+    for meta in soup.find_all("meta"):
+        if (meta.get("name") or "").strip().lower() == meta_name:
+            return meta.get("content", "")
+    return None
+
+
+def _read_keyed_meta(html_text: str, meta_name: str) -> dict[str, Any]:
+    """Return a JSON-object head meta's content as a mapping.
+
+    An absent, malformed or non-object value reads as an empty mapping: this is
+    the meta the writer maintains, and a caller about to rewrite it has nothing
+    to preserve from a value it cannot use.
+    """
+    raw = _meta_content(html_text, meta_name)
+    if not raw:
+        return {}
+    try:
+        value = json.loads(raw)
+    except (TypeError, ValueError):
+        return {}
+    return dict(value) if isinstance(value, dict) else {}
+
+
+def edit_keyed_meta(
+    html_text: str,
+    meta_name: str,
+    edits: list[tuple[str, Any]],
+    *,
+    mapping: dict[str, Any] | None = None,
+) -> str:
+    """Apply keyed edits to a head meta whose content is a JSON object.
+
+    Each edit sets one key's value, or removes the key when the value is
+    ``None``. The mapping is read back from the document first, so an edit lands
+    on the entries already on the page rather than replacing its siblings; a
+    caller that has already judged the existing content passes the mapping it
+    read. An empty result removes the meta entirely, which a read parses as no
+    mapping at all.
+    """
+    if mapping is None:
+        mapping = _read_keyed_meta(html_text, meta_name)
+    for key, value in edits:
+        if value is None:
+            mapping.pop(key, None)
+        else:
+            mapping[key] = value
+    if not mapping:
+        return _remove_meta(html_text, meta_name)
+    return _set_meta(
+        html_text,
+        meta_name,
+        json.dumps(mapping, ensure_ascii=True, separators=(",", ":")),
+    )
 
 
 def read_state(html_text: str) -> dict:
@@ -1364,6 +1498,13 @@ def read_state(html_text: str) -> dict:
                 "section_declarations: plan-section-declarations must be a JSON "
                 "object mapping section identities to classifications"
             )
+    raw_reasons = meta_values.get(DESCOPE_REASONS_META)
+    if raw_reasons is not None:
+        reasons, reason_defect = _parse_descope_reasons(raw_reasons)
+        if reason_defect is not None:
+            warnings.append(reason_defect)
+        else:
+            st["descope_reasons"] = reasons
     st["sections"] = _read_section_records(soup, st.get("section_declarations", {}))
     derived, source = derive_impl_with_source(
         st["sections"], st.get("section_declarations")
@@ -1689,14 +1830,17 @@ _SECTION_RECORD_ATTRIBUTE_RE = re.compile(
 )
 
 
-def _splice_section_records(html_text: str, records: list[dict]) -> str:
+def _splice_section_records(
+    html_text: str,
+    records: list[dict],
+    parse: _PlanDocumentParse | None = None,
+) -> str:
     """Regenerate only record spans, preserving heading text and authored prose."""
     if not records and not _RECORD_MARKER_RE.search(html_text):
         return html_text
-    parser = _StructuredSectionSpanParser(html_text)
-    parser.feed(html_text)
-    parser.close()
-    soup = BeautifulSoup(html_text, "html.parser")
+    parse = parse or _PlanDocumentParse(html_text)
+    parser = parse.structural
+    soup = parse.soup
     _read_section_records(soup, {})
     spans = {
         record.start: record.open_end if record.heading else record.end
@@ -2026,7 +2170,11 @@ def _set_meta(html_text: str, name: str, content: str) -> str:
     tag = f'<meta name="{name}" content="{_esc(content)}">'
     pat = re.compile(rf'<meta\s+name="{re.escape(name)}"[^>]*>', re.IGNORECASE)
     if pat.search(html_text):
-        return pat.sub(tag, html_text, count=1)
+        # A callable replacement, never `tag` itself: `tag` carries the stored
+        # value, and re.sub reads a replacement string as a template, so a
+        # backslash in that value (`§` from JSON ASCII escaping, `\d`, a
+        # Windows path) is parsed as an escape — an error, or a silent rewrite.
+        return pat.sub(lambda _match: tag, html_text, count=1)
     # insert before </head>, else after <body>
     idx = html_text.lower().find("</head>")
     if idx != -1:
@@ -2136,10 +2284,12 @@ class UnparsedSectionWriteError(ValueError):
     never recognised — the parsed collection is empty but the section is not."""
 
 
-def _authored_child_count(html_text: str, reckon_id: str) -> int:
+def _authored_child_count(
+    html_text: str, reckon_id: str, parse: _PlanDocumentParse | None = None
+) -> int:
     """Count direct element children of section[data-reckon=ID] the renderers
     do not regenerate — the authored items a splice would remove."""
-    soup = BeautifulSoup(html_text, "html.parser")
+    soup = (parse or _PlanDocumentParse(html_text)).soup
     section = soup.select_one(f'section[data-reckon="{reckon_id}"]')
     if section is None:
         return 0
@@ -2151,12 +2301,17 @@ def _authored_child_count(html_text: str, reckon_id: str) -> int:
     )
 
 
-def _reject_emptying_unparsed_section(out: str, reckon_id: str, parsed: object) -> None:
+def _reject_emptying_unparsed_section(
+    out: str,
+    reckon_id: str,
+    parsed: object,
+    parse: _PlanDocumentParse | None = None,
+) -> None:
     """Raise if splicing `parsed` over section `reckon_id` would delete
     authored children the parser never recognised."""
     if parsed:
         return
-    count = _authored_child_count(out, reckon_id)
+    count = _authored_child_count(out, reckon_id, parse=parse)
     if count == 0:
         return
     spelling = _SECTION_RECOGNISED_SPELLING.get(reckon_id)
@@ -2190,7 +2345,9 @@ def _splice_section(html_text: str, reckon_id: str, rendered: str) -> str:
     return html_text + "\n" + rendered
 
 
-def _impl_is_carried_by_records(state: dict, html_text: str) -> bool:
+def _impl_is_carried_by_records(
+    state: dict, html_text: str, parse: _PlanDocumentParse | None = None
+) -> bool:
     """Whether this plan's records answer for its impl around this write.
 
     Records carry the figure exactly when the coverage rule answers: a plan
@@ -2213,7 +2370,8 @@ def _impl_is_carried_by_records(state: dict, html_text: str) -> bool:
         return True
     if state.get("sections"):
         return False
-    return bool(_section_record_elements(BeautifulSoup(html_text or "", "html.parser")))
+    soup = (parse or _PlanDocumentParse(html_text)).soup
+    return bool(_section_record_elements(soup))
 
 
 def write_state(
@@ -2233,13 +2391,26 @@ def write_state(
     is unchanged, so a round-trip or a reader-only serialise stays byte-identical.
     """
     out = html_text
+    parse = _PlanDocumentParse(html_text)
     artifact_type = _canonical_type(state.get("type", "plan"))
+    # The record splice runs before any meta edit: it indexes the document by
+    # the source offsets the one parse holds, so it must see the text that
+    # parse was built from.
+    if artifact_type != "plan":
+        out = _splice_section_records(out, [], parse=parse)
+    elif "sections" in state:
+        sections = PlanState.model_validate(
+            {
+                "sections": state["sections"],
+                "section_declarations": state.get("section_declarations", {}),
+            }
+        ).canonical_dump()["sections"]
+        out = _splice_section_records(out, sections, parse=parse)
     if state.get("type"):
         out = _set_meta(out, "reckon-type", artifact_type)
     if artifact_type != "plan":
         for meta_name in _PLAN_ONLY_METAS:
             out = _remove_meta(out, meta_name)
-        out = _splice_section_records(out, [])
     for f in _SCALARS:
         if f == "modified":
             # Emitted with impl and version as one block, below.
@@ -2295,7 +2466,7 @@ def write_state(
     if (
         "impl" in state
         and not impl_is_derived
-        and not _impl_is_carried_by_records(state, html_text)
+        and not _impl_is_carried_by_records(state, html_text, parse=parse)
     ):
         lifecycle_block.append(("plan-impl", state["impl"]))
     if "version" in state:
@@ -2310,25 +2481,27 @@ def write_state(
             "plan-section-declarations",
             json.dumps(declarations, ensure_ascii=True, separators=(",", ":")),
         )
-    if artifact_type == "plan" and "sections" in state:
-        sections = PlanState.model_validate(
-            {
-                "sections": state["sections"],
-                "section_declarations": state.get("section_declarations", {}),
-            }
-        ).canonical_dump()["sections"]
-        out = _splice_section_records(out, sections)
+    if artifact_type == "plan" and "descope_reasons" in state:
+        reasons = state.get("descope_reasons") or {}
+        if reasons:
+            out = _set_meta(
+                out,
+                DESCOPE_REASONS_META,
+                json.dumps(dict(reasons), ensure_ascii=True, separators=(",", ":")),
+            )
+        else:
+            out = _remove_meta(out, DESCOPE_REASONS_META)
     # Records the source holds in a section's own body are not rendered into
     # the comments section: the write would otherwise copy them there, and they
     # are already where they belong. Judged against the source rather than the
     # state so a writer that never carried them still cannot duplicate them.
-    body_resident_comments = _body_resident_comment_counts(html_text)
+    body_resident_comments = _body_resident_comment_counts(html_text, parse=parse)
     for sid in SECTION_IDS:
         if sid in state:
             collection = state[sid]
             if sid == "comments":
                 collection = _comments_in_section(collection, body_resident_comments)
-            _reject_emptying_unparsed_section(out, sid, collection)
+            _reject_emptying_unparsed_section(out, sid, collection, parse=parse)
             out = _splice_section(out, sid, _RENDERERS[sid](collection))
     return out
 

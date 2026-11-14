@@ -1,0 +1,150 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-12T21:05:54.718Z",
+  "dispatched_at": "2026-11-12T20:55:26Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/the-monitor-reads-each-fact-once.html:630",
+      "id": "evidence_paths-1",
+      "reason": "as written the node must either spend its budget on an unanswerable diagnosis or record a cause it cannot evidence, and naming the run's own records (the pending-landing record's `attempts: 0`, the manifest's `status: in-progress`, `merge-repair.json`) or dropping the cause clause makes the deliverable achievable.",
+      "text": "s39's deliverable tells the node to find \"from the station's stderr and that run's records\" why the promotion ended before its ledger row, but the station's stderr has no timestamps and never names that run (0 of 459 run-id lines; the newest names a 13:14 run), so the exception that ended the promotion cannot be attributed to it",
+      "type": "evidence_paths",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/the-monitor-reads-each-fact-once.html:629",
+      "id": "wiring-1",
+      "reason": "a coordinator reading the plan finds no entry point for \u00a739 and would have to invent one, which is the duplicate-or-nothing outcome a followup exists to prevent.",
+      "text": "`s39` is declared `implementable` and the plan's followup chain carries no `/reckon-build the-monitor-reads-each-fact-once \u00a739` prompt, and no dispatch record exists for it, while \u00a738 from the same edit is already dispatched",
+      "type": "wiring",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/the-monitor-reads-each-fact-once.html:626",
+      "id": "reasoning-1",
+      "reason": "the causal claim and both incidents hold without the clock, and the done-when has the node reproduce the defect from the base revision rather than from these readings; correcting the labels only stops a worker reconciling the text against the cited commit from reading a 2-hour mismatch as the wrong commit.",
+      "text": "s38's Why labels local CET readings as UTC: it says the merge `b535a73999` \"landed only at about 21:00Z\" and that the second run \"read `landed` at about 21:47Z\", but `b535a73999` is committed at `2026-11-12 20:03:52 +0100` (19:03Z) and the plan's own edit commit is 20:49Z, so a `Z` reading of 21:47Z post-dates the text that states it",
+      "type": "reasoning",
+      "would_change": false
+    }
+  ],
+  "plan_commit": "9f1cc9a72fab9b16fd263da31c0f41482db60148",
+  "plan_fingerprint": "aee8f17fd059d68ef1f7ad5edead971a56e68fe4fec7b1128193a5f6b7805110",
+  "plan_slug": "the-monitor-reads-each-fact-once",
+  "plan_version": 219,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "9f1cc9a72fab9b16fd263da31c0f41482db60148",
+      "commit_basis": "edit",
+      "finding": "evidence_paths-1",
+      "note": "\u00a739's diagnosis no longer cites the station's stderr; the node reproduces the stall from the run's own records (pending-landing record with attempts 0, live pointer, no promoted ledger row, released lease) and names the promotion step that can end between the record and the ledger row, without claiming an exception it cannot attribute.",
+      "reason": "",
+      "when": "2026-11-12T21:28:22.531339+00:00"
+    },
+    {
+      "action": "declined",
+      "by": "",
+      "finding": "wiring-1",
+      "reason": "\u00a739 is dispatched as r-20261112T210115593728-an-unfinished-promotion-is-retried, queued after this review's snapshot; a build followup would invite a duplicate dispatch.",
+      "when": "2026-11-12T21:28:44.196512+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "9f1cc9a72fab9b16fd263da31c0f41482db60148",
+      "commit_basis": "edit",
+      "finding": "reasoning-1",
+      "note": "\u00a738's Why now gives the times in UTC: the merge b535a73999 at 19:03Z and the second run read landed at about 20:47Z.",
+      "reason": "",
+      "when": "2026-11-12T21:28:54.787946+00:00"
+    }
+  ],
+  "responses": {
+    "evidence_paths-1": {
+      "action": "acted",
+      "by": "",
+      "commit": "9f1cc9a72fab9b16fd263da31c0f41482db60148",
+      "commit_basis": "edit",
+      "note": "\u00a739's diagnosis no longer cites the station's stderr; the node reproduces the stall from the run's own records (pending-landing record with attempts 0, live pointer, no promoted ledger row, released lease) and names the promotion step that can end between the record and the ledger row, without claiming an exception it cannot attribute.",
+      "reason": "",
+      "when": "2026-11-12T21:28:22.531339+00:00"
+    },
+    "reasoning-1": {
+      "action": "acted",
+      "by": "",
+      "commit": "9f1cc9a72fab9b16fd263da31c0f41482db60148",
+      "commit_basis": "edit",
+      "note": "\u00a738's Why now gives the times in UTC: the merge b535a73999 at 19:03Z and the second run read landed at about 20:47Z.",
+      "reason": "",
+      "when": "2026-11-12T21:28:54.787946+00:00"
+    },
+    "wiring-1": {
+      "action": "declined",
+      "by": "",
+      "reason": "\u00a739 is dispatched as r-20261112T210115593728-an-unfinished-promotion-is-retried, queued after this review's snapshot; a build followup would invite a duplicate dispatch.",
+      "when": "2026-11-12T21:28:44.196512+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/plan-the-monitor-reads-each-fact-once.v219.json",
+  "review_run_id": "r-20261112T204956113966-plan-review-of-the-monitor-reads-each-fact-once",
+  "reviewed_blob_sha": "88285a56566cbd4b5c1f1eaead1b89f34c2c3cbf",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 the cited commits `6dbfe7cee6`, `98a4fa3a06` and `b535a73999` all resolve in `/home/ITER/mcintos/Code/reckon`, both run directories exist under `~/.config/reckon/crew/runs`, `crew/pending-landing`'s directory and the record for `r-20261112T174606274600` exist, `awaiting-merge-repair` is emitted at `reckon/crew/pending_landing.py:358`, `finish_pending_landings` is at `pending_landing.py:269`, and all four write-path modules exist.",
+    "done_when": "pass \u2014 `s38` and `s39` each name a negative control whose base reading differs from the head reading (`s38`'s first case reads `landed` at base, `s39`'s first case is left with its record at base), and both gates run their arms as an `all_debug` `sbatch` job with per-arm logs under the run directory.",
+    "evidence_paths": "a finding \u2014 `s39` sends the node to \"the station's stderr\" for the cause, and that log carries no timestamp and no line naming the run it is about (`~/.local/state/fleet/services/station.log`: 0 of 459 run-id lines name `r-20261112T174606274600`, the latest naming `r-20261112T131432188244`), so the named source cannot yield the cause; `s38`'s paths are durable and its arms write under the run directory.",
+    "naming": "pass \u2014 both new sections' deliverables are stated as endpoint properties (\"a run reads `landed` only when its delivered head is an ancestor of the primary branch\", \"never left with a live pointer, a pending record and no lease\"); the function names that appear in the Why sections describe the evidence (`finish_pending_landings` behaving as observed) rather than prescribing an implementation, and no ticket, stage or version label reaches a code-facing surface.",
+    "reasoning": "a finding \u2014 both sections' root causes match their evidence (`finish_pending_landings` does nothing where `_promoted_row` returns no row and the pointer is live, `pending_landing.py:305-311`; the second run's manifest does read `status: in-progress` with a `merge-repair.json` conflict round), and both endpoints are checkable, but `s38`'s Why stamps local CET readings as `Z`, one of them into the future of the plan's own edit.",
+    "single_goal": "pass \u2014 `s38` carries one deliverable (the `landed` reading is gated on the merged head) and `s39` one (an unfinished promotion is retried), each closable on one verdict; `s39`'s required manifest cause-finding is evidence for that one deliverable rather than a second one.",
+    "wiring": "a finding \u2014 `s39` is declared `implementable` with no followup carrying its build prompt and no dispatch record, while `s38` from the same edit has a live pointer (`r-20261112T205554486989-a-promoted-run-is-not-landed-until-merged`); every `plan-section-depends-on` entry resolves and no dependency is missing between the two new sections."
+  },
+  "section_digests": {
+    "_document": "671f0794a8e7a87eec6e7ac1ae0770fd1e24a9be88b1ec115e23d93b20f98134",
+    "s1": "bd759b66b2b75254305e473bf6b8af6218ef25d95b0db1638ed2668f0cdd9441",
+    "s10": "d21f2adf110c82d39fa9834752ac3f47dba7ac886c59cfd85feb23c1e8d1003f",
+    "s11": "9e8b94316ed45fc2103d1edc216fbb0dd3862f559824ad1c43299b305a3af6bd",
+    "s12": "21fc271f915167db3cca4f7d0eee1f4553b5dec7b96127d71d294e5ae242bc02",
+    "s13": "3b11fe0cd53015121e6d566c554c6c77b13236b3700a90279e77a6bc755ea0a3",
+    "s14": "5f6675ba84aab4ad594b121e888aace2d69e497390559d38f0c220e5894ac588",
+    "s15": "efa38c205c7332a7867b6d87358cd9f89fe1568beaa9f9e5eee96862dd70b6f0",
+    "s16": "65cd8e559a7a5ebf018bc9fe50a07bb0954f67405ab6f17c7377c38ccd363aa7",
+    "s17": "1dee50822a308fa4eeea0a45fd3cdaf6de52d9a1d74a91c2b9c7605d179da2ad",
+    "s18": "ba63c0b1b83ec93cc99d92a3c1f67dcf92d700e20f4f9acd88362705d6b4d123",
+    "s19": "16239e5fae49e56b170433557a77981816880756e3ae545a741ca9ec70feae63",
+    "s2": "e0f306f01b1530661ef28be3f19592348c45f24e7826567d58a2f0a4f79dd284",
+    "s20": "d14d2b70bb40dd552f306726f24f5e3c79bc5efcd7f9b74bcb7d3de8f16f5e8e",
+    "s21": "9ff7b29b83f9c8ab95a0a469c997950ef226fc3d99d8dcffdbf0683df7a1f26c",
+    "s22": "1bdc9ac90396c56bcbcc8c3c4f44aa6b30cbd59c4da001825159a7b8245e054c",
+    "s23": "a810ffe181d2787722d8f9538a4348592269fe163ba23cc59939376cb13edcbb",
+    "s24": "e861dcc5044a0a1fb36c4a374ca71717aeb97054e5a3ff1aef57c9779c7147f5",
+    "s25": "a0939bd3d8ab0fa4b5c0c88de3cb9cdab3531338fe35d0c12b4338fc3c4d1563",
+    "s26": "a8fb9d8585830b87ed826347ff724ddecc8fb9a43ad9ac1540d6499e3689d03e",
+    "s27": "3c9e47dc777eeadabbe3898d4b8f69d91defbaff009d050f2906732cb87e50c8",
+    "s28": "982b473728d61b81a3d37050384bee85f3f1fb5366aad0668c5370a51367e82c",
+    "s29": "159b45ee319dc13bffea961474eb544e5a26d161bf686ebe5b7fabf95f5266c7",
+    "s3": "f42c4644817feac0c199cd8510d2e284079b1c8fb777c7b79ced63531a8d983f",
+    "s30": "2d8c9efccd4f8eeede43f5fabe6f6b9cacc2207ce97ca700584bfedd0e512dd2",
+    "s31": "27817d420beefc15258f2f52ea8c616f3e04b4035773fe437f6cfe7f31506100",
+    "s32": "836f1473b1691ab0150f1e32791c295f7511abd66cb29f93b48dc0d347998d51",
+    "s33": "39a7d7a43bc6e97cd0c11235cfbe6c06a5b6968dab69e8147978bd164bbfef4e",
+    "s34": "16da5de7a5c4ee31ac2d9a43b888bed8fb1ec1138a2194a35c9b8eacbf03a2b1",
+    "s35": "4a0acdec0fa4d9eaa1066ee46c8a4aec8079db0452d014a442005e104c03c2cc",
+    "s36": "2a4a0d6ab4a994e2d7542482f7b44d106ab0920143bf39d14b292c7c2ec02e8a",
+    "s37": "4d92cdfe9ba1661dc549241d07f5134250aedec9d46757600f427fc52c4741dd",
+    "s38": "838df42ae9c36d31988a53ca1230fe48aef2a923f0bea92f0baecf6fbc0e7b60",
+    "s39": "c5c77a622943a7db7a2315c247cf0f8cbf9e09fd655d49139b8658bae6a42e25",
+    "s4": "c98e197194f43124e5a982992370bf1c08593aa17fb304787a4d7b87f42a0107",
+    "s5": "0329936ec702c07e4a2ef8c756961740635d0dd8c7a1d14646983f1c32f09790",
+    "s6": "1f19e9f8c46bc0674347ba5a3c97588b846d125a5fbcf9533e8a5a3f9ec00bb6",
+    "s7": "dff81fd58ae3afef69063faed237df9bb4056bdb98556a1e5a053e6807ae3d16",
+    "s8": "4a70cad80d8613feb4b30861587298ff1109616ba9a35992821009274f17ae3f",
+    "s9": "8597fbe3fc93694e846c364272c698acf84b09466b4798491eb74279d62cef1d"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-12T21:08:00.651238+00:00",
+  "total": null
+}

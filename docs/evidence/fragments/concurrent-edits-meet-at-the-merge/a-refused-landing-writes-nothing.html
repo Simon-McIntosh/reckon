@@ -1,0 +1,14 @@
+<section id="a-refused-landing-writes-nothing-record">
+  <h3>A refused landing is finished at the head it cited</h3>
+  <p><code>crew complete --land</code> writes its pending-landing record before it promotes. The record now carries the revision the landing cited, read from the run's own tree before the promotion runs. The pass that finishes an interrupted landing merges that revision and nothing later: a resume or a repair round moves the worktree, the live pointer and the ledger row to a head no review read, and none of them can substitute for the citation.</p>
+  <p>A cited head already on the primary branch clears the record with nothing merged. A live pointer whose run the ledger already holds a row for is skipped by the lander as <code>landed-elsewhere</code> before its reviews are read, so a promoted run is never held <code>awaiting-review</code> at a head a resume reached.</p>
+  <table>
+    <thead><tr><th>Case</th><th>Base 85bbe4e</th><th>This change</th></tr></thead>
+    <tbody>
+      <tr><td>Pass finishes the interrupted landing</td><td>merges the later head the row names</td><td>merges the cited head; later head stays off the branch</td></tr>
+      <tr><td>Cited head merged by hand before the pass</td><td>merges the later head</td><td><code>already-landed</code>, branch unchanged</td></tr>
+      <tr><td>Lander over the live resumed pointer</td><td>records <code>awaiting-review</code> on the later head</td><td><code>landed-elsewhere</code>, no review hold</td></tr>
+    </tbody>
+  </table>
+  <p>Measure: <code>tests/test_an_interrupted_landing_finishes_at_its_cited_head.py</code> — 3 passed at head; the same file fails all three at the base revision, the third naming the later head held <code>awaiting-review</code>. Focused surrounding landing suite at head: 26 passed. Logs under <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261113T072023880936-a-refused-landing-writes-nothing/</code>: <code>negative-control-base85bbe4e.log</code>, <code>head-arm.log</code>.</p>
+</section>

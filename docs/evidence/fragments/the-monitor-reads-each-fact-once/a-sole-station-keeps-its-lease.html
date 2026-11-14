@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="the-monitor-reads-each-fact-once">
+  <meta name="plan-evidence-for" content="reckon:the-monitor-reads-each-fact-once">
+  <title>A sole station keeps its lease across worker PID namespaces</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" id="a-sole-station-keeps-its-lease-landing" data-node="a-sole-station-keeps-its-lease" data-reckon="landing" data-when="2026-11-12">
+  <h2>A worker's process table cannot pronounce the host station dead</h2>
+  <p>The worker shares the host's node-local lease directory but sees a separate PID namespace. In three live samples, the lease kept inode <code>134544383</code> and token <code>8f7a705cbd8743fd91ccf1679fb57688</code>, and its mtime advanced from <code>1794454376.765274</code> to <code>1794454381.8248003</code>. All three <code>os.kill(2323301, 0)</code> probes nevertheless raised <code>ProcessLookupError</code> in the reader's <code>pid:[4026533837]</code>. The advancing mtime is the positive control: the supposedly absent process was renewing that same lease.</p>
+  <p><code>dispatch_watch._ensure_node_station</code> treats that namespace-local result as proof of death and calls <code>HostLease.release_holder</code>, which at base clears the fresh lease. The next renewal fails, closes the store guard, and ends the station. An isolated dispatch check during a held-open station tick reproduces the loss at base with <q>the worker evicted the sole station</q>. The production log contains lease-loss and guard-refusal messages but no namespace diagnostics; this proves a live, reproducible cause, without attributing every historic restart to it.</p>
+  <p>Implementation <code>84b64e24adf42c265c32b795524fe82d47a6f21b</code> records the holder's PID namespace in the shared lease mechanism. Early dead-holder release requires a known matching namespace and host. In-place reattachment also requires the same namespace, so an unrelated worker with the same numeric PID cannot inherit the token. A legacy record with no namespace waits for normal stale expiry rather than accepting an unverifiable early release. Stale takeover and the token/inode renewal guard retain their existing behavior.</p>
+  <table>
+    <thead><tr><th>Measure</th><th>Base</th><th>Delivered product code</th></tr></thead>
+    <tbody>
+      <tr><td>Armed gate</td><td>51 passed in 9.64s; EXIT=0</td><td>57 passed in 12.12s; EXIT=0</td></tr>
+      <tr><td>Importer arms on all_debug</td><td>12 failed, 114 passed in 48.71s</td><td>12 failed, 120 passed in 50.24s; 0 added failing IDs</td></tr>
+      <tr><td>Delivered regression tests against base source</td><td>4 failed, 2 passed in 0.88s; EXIT=1</td><td>All six regression cases pass</td></tr>
+    </tbody>
+  </table>
+  <p>The slow-tick case watches the same holder and inode for 1.6 seconds with a 0.5-second stale window while the real renewal thread runs. Other cases cover a different or missing namespace, valid same-namespace dead-holder cleanup, a numeric PID collision, and an actual successor closing the store write guard. Matched importer selection covers the two declared modules across 25 test files at head (24 exist at base), with four pytest workers and a 60-second per-test timeout. Both arms share the same 12 failing IDs; these are recorded rather than repaired outside this node's scope. Ruff check and format check are clean on both changed Python paths.</p>
+  <p>Receipts live under <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261112T032541772809-a-sole-station-keeps-its-lease/</code>: <code>live-lease-probe.log</code>, <code>negative-control-final.log</code>, <code>base-suite.log</code>, <code>head-suite.log</code>, <code>base-importers.log</code>, <code>head-importers.log</code> and <code>receipts.json</code>. Job <code>1311336</code> completed on <code>all_debug</code> at <code>98dci4-clu-3141</code>; every gate log names its revision, extracted tree, imported module paths, command and terminal exit status. The delivery manifest carries the final committed-head arm. The coordinator owns integration and the two-hour production uptime and lease-loss observation.</p>
+</article>
+</body>
+</html>

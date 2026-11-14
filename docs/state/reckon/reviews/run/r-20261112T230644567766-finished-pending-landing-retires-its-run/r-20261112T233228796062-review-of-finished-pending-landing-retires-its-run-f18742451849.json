@@ -1,0 +1,147 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_review": [
+    {
+      "fails_if": "Initial direct delivery fails or the conflicting delivery incorrectly succeeds.",
+      "lines": "26,28"
+    },
+    {
+      "fails_if": "Conflict handling does not actually promote the run or does not record a merge conflict.",
+      "lines": "30,31"
+    },
+    {
+      "fails_if": "The real repair merge does not conflict on the intended source file.",
+      "lines": "40,41"
+    },
+    {
+      "fails_if": "Conflict handling fails to retain a marked pointer, pending record or live worktree before finishing.",
+      "lines": "59,60,61"
+    },
+    {
+      "fails_if": "The expected repaired revision is not an ancestor of the bare remote main; the expected SHA comes from the real repair commit, while actual ancestry is read independently from Git.",
+      "lines": "66"
+    },
+    {
+      "fails_if": "The remote file lacks the combined function content; the literal expected marker is checked in remote Git content independently of the reported head.",
+      "lines": "67-69"
+    },
+    {
+      "fails_if": "Finishing reports a non-finished outcome or selects a head other than the actual repaired commit; the input to finish is only the run id, so these are not assertions against an echoed head argument.",
+      "lines": "78,79"
+    },
+    {
+      "fails_if": "Marked-pointer retirement is skipped; negative.log demonstrates exactly this failure after successful remote checks.",
+      "lines": "81"
+    },
+    {
+      "fails_if": "The held worktree directory survives successful retirement.",
+      "lines": "82"
+    },
+    {
+      "fails_if": "Git retains the worktree registration even if the directory was removed.",
+      "lines": "83"
+    },
+    {
+      "fails_if": "The successful landing retains its pending record.",
+      "lines": "84"
+    },
+    {
+      "fails_if": "The real rejecting remote hook is ignored or its refusal is not surfaced in the returned error.",
+      "lines": "96,97"
+    },
+    {
+      "fails_if": "The bare remote moves despite push refusal; remote_before is an independently captured pre-call Git revision.",
+      "lines": "98"
+    },
+    {
+      "fails_if": "A refused push deletes or unmarks the live pointer, removes the worktree, or removes its pending record.",
+      "lines": "99,100,101"
+    },
+    {
+      "fails_if": "The interruption stub is not reached or completion incorrectly reports success after the injected interruption.",
+      "lines": "114,115"
+    },
+    {
+      "fails_if": "The interruption occurs without a durable promotion row naming the actual authored commit.",
+      "lines": "116-119"
+    },
+    {
+      "fails_if": "The interruption fixture does not leave the pointer absent and the pending record present, so it is not testing the specified recovery state.",
+      "lines": "120,121"
+    },
+    {
+      "fails_if": "Finishing with an absent pointer returns a non-finished outcome; the shared remote assertions also require actual landing.",
+      "lines": "125"
+    },
+    {
+      "fails_if": "The recovery unexpectedly recreates a pointer or fails to clear the pending record.",
+      "lines": "127,128"
+    }
+  ],
+  "call_sites": [
+    "reckon/crew/queue_landing.py:1882",
+    "reckon/crew_run_commands.py:3547"
+  ],
+  "checklist_verdicts": {
+    "diff": "Read both d51113cb69d9223d4abd3b5a15def2d668a814ac and f187424518493f36b7c234c1d33c53c27c2fe3d4 against bcca31c1c13df0d941db58e9d02ba96be5f321e0; they add 129 lines of regression tests and 59 lines of evidence with no product change.",
+    "done_when": "Read prompt.txt's done-when and the three tests at tests/test_a_finished_pending_landing_retires_its_run.py:70,87,105; after.log records 54 passed, importer-head.log records 39 passed, and negative.log fails specifically at the retained pointer.",
+    "goal": "Read the source goal in prompt.txt and live plan work-flows-to-the-lane#s29; tests/test_a_finished_pending_landing_retires_its_run.py:70-129 verifies existing retirement without replacing working product code.",
+    "manifest": "Read manifest.md and its actual baseline.log, after.log, reproduction-verified.log, importer arm logs, negative.log and lint.log; their recorded summaries support the reported zero added failures and already-working base behavior.",
+    "write_paths": "Read prompt.txt and manifest.md's declared paths; the two-file diff changes only the assigned regression file and docs/evidence/fragments/work-flows-to-the-lane/finished-pending-landing-retires-its-run.html."
+  },
+  "completed_at": "2026-11-12T23:40:37Z",
+  "dispatched_at": "2026-11-12T23:34:33Z",
+  "evidence": {
+    "after_suite": {
+      "command": "PYTHONPATH=/tmp/pending-landing-1gnfnon6/tree /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q /tmp/pending-landing-1gnfnon6/tree/tests/test_a_finished_pending_landing_retires_its_run.py /tmp/pending-landing-1gnfnon6/tree/tests/test_staged_write_inventory.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261112T230644567766-finished-pending-landing-retires-its-run/after.log",
+      "measurement_cwd": "/tmp/pending-landing-1gnfnon6/tree",
+      "measurement_module": "/tmp/pending-landing-1gnfnon6/tree/reckon/crew/pending_landing.py",
+      "revision": "f187424518493f36b7c234c1d33c53c27c2fe3d4"
+    },
+    "baseline_suite": {
+      "command": "PYTHONPATH=/tmp/pending-landing-pjr0v3bk/tree /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q /tmp/pending-landing-pjr0v3bk/tree/tests/test_staged_write_inventory.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261112T230644567766-finished-pending-landing-retires-its-run/baseline.log",
+      "measurement_cwd": "/tmp/pending-landing-pjr0v3bk/tree",
+      "measurement_module": "/tmp/pending-landing-pjr0v3bk/tree/reckon/crew/pending_landing.py",
+      "revision": "bcca31c1c13df0d941db58e9d02ba96be5f321e0"
+    },
+    "failure_delta_method": "Read completed baseline_suite and after_suite log files; both contain passing summaries, no FAILED ids and terminal EXIT=0; after failure ids minus baseline failure ids is empty. negative.log supplies a positive control with an actual FAILED id and EXIT=1.",
+    "importer_delta": "importer-baseline.log 36 passed; importer-head.log 39 passed; zero failure ids; final head adds only evidence HTML beyond tested d51113cb69d9223d4abd3b5a15def2d668a814ac",
+    "negative_control_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261112T230644567766-finished-pending-landing-retires-its-run/negative.log",
+    "reproduction": "reproduction-verified.log: 3 passed in 8.92s; EXIT=0 at unchanged base"
+  },
+  "findings": [],
+  "project": "reckon",
+  "review": "VERDICT goal: Read the source goal in prompt.txt and live plan work-flows-to-the-lane#s29; tests/test_a_finished_pending_landing_retires_its_run.py:70-129 verifies existing retirement without replacing working product code.\nVERDICT done_when: Read prompt.txt's done-when and the three tests at tests/test_a_finished_pending_landing_retires_its_run.py:70,87,105; after.log records 54 passed, importer-head.log records 39 passed, and negative.log fails specifically at the retained pointer.\nVERDICT write_paths: Read prompt.txt and manifest.md's declared paths; the two-file diff changes only the assigned regression file and docs/evidence/fragments/work-flows-to-the-lane/finished-pending-landing-retires-its-run.html.\nVERDICT manifest: Read manifest.md and its actual baseline.log, after.log, reproduction-verified.log, importer arm logs, negative.log and lint.log; their recorded summaries support the reported zero added failures and already-working base behavior.\nVERDICT diff: Read both d51113cb69d9223d4abd3b5a15def2d668a814ac and f187424518493f36b7c234c1d33c53c27c2fe3d4 against bcca31c1c13df0d941db58e9d02ba96be5f321e0; they add 129 lines of regression tests and 59 lines of evidence with no product change.\nCALL_SITES: reckon/crew/queue_landing.py:1882 (land_once), reckon/crew_run_commands.py:3547 (crew_complete)\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: tests/test_a_finished_pending_landing_retires_its_run.py:70-129 verifies successful pointer/worktree/record retirement, preservation after refused push, and recovery without a pointer, while reproduction-verified.log confirms the original mechanism already passes.\nSCORE evidence: 20\nJUSTIFICATION evidence: baseline.log and after.log record 51 and 54 passing tests at the exact base/head, importer-baseline.log and importer-head.log record 36 and 39 passing tests, and negative.log records the required retained-pointer failure at tests/test_a_finished_pending_landing_retires_its_run.py:81.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: The diff changes only tests/test_a_finished_pending_landing_retires_its_run.py and its declared evidence fragment, with no unrelated product or plan-state changes.\nSCORE durability: 20\nJUSTIFICATION durability: Disabling _release_marked_pointer at reckon/crew/pending_landing.py:505 makes tests/test_a_finished_pending_landing_retires_its_run.py:81 fail after the independent remote checks pass, and lines 96-102 guard against cleanup following a refused push.\nSCORE fit: 20\nJUSTIFICATION fit: tests/test_a_finished_pending_landing_retires_its_run.py:9-18 follows the existing shared-fixture import idiom, uses mechanism-based names, and lint.log records clean Ruff check and formatting results.\nSCORE reuse: 20\nJUSTIFICATION reuse: Capability searches for repair setup, remote ancestry and retirement assertions found tests/test_a_conflicting_landing_is_repaired.py:33,56,172 as the fixture/repair-gate owners that the added helpers wrap and reuse, while production retirement stays owned by reckon/crew/pending_landing.py:169,344.\n",
+  "review_run_id": "r-20261112T233228796062-review-of-finished-pending-landing-retires-its-run-f18742451849",
+  "reviewed_base_sha": "bcca31c1c13df0d941db58e9d02ba96be5f321e0",
+  "reviewed_commits": [
+    "d51113cb69d9223d4abd3b5a15def2d668a814ac",
+    "f187424518493f36b7c234c1d33c53c27c2fe3d4"
+  ],
+  "reviewed_head_sha": "f187424518493f36b7c234c1d33c53c27c2fe3d4",
+  "reviewed_run_id": "r-20261112T230644567766-finished-pending-landing-retires-its-run",
+  "scores": {
+    "durability": 20,
+    "evidence": 20,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "self_referential_assertions": [],
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-12T23:46:02.255343+00:00",
+  "total": 120
+}

@@ -1,0 +1,80 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "f14245484ad4285ed0e2a386d15e1bf639eb23be",
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew/queue_landing.py:1720 finish_pending_landings (station delivery pass)",
+    "reckon/crew_run_commands.py:3547 finish_pending_landings (crew complete --land merge repair)"
+  ],
+  "completed_at": "2026-11-12T22:41:37.297Z",
+  "dispatched_at": "2026-11-12T22:29:06Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "folded",
+      "node": "a-finished-pending-landing-releases-its-run",
+      "recorded_at": "2026-11-12T23:09:02.604186+00:00"
+    },
+    "1": {
+      "kind": "folded",
+      "node": "a-landed-reading-follows-the-primary-branch",
+      "recorded_at": "2026-11-12T23:06:05.871960+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "reckon/crew/pending_landing.py",
+      "line": "403",
+      "severity": "non-blocking",
+      "text": "non-blocking: the record is cleared at :403 before the attempt is retired at :408, so a pass that dies between the two leaves a live pointer with an `attempting` attempt and no pending-landing record -- the landing pass then refuses the run at reckon/crew/queue_landing.py:1809 with nothing left for this sweep to retry, which is the same unliftable hold the node exists to remove; retiring the attempt first closes the window."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261112T210115593728-an-unfinished-promotion-is-retried/manifest.md",
+      "line": "10",
+      "severity": "non-blocking",
+      "text": "non-blocking: the `commits:` line lists 39f312d8, d306cc43 and b5a681a8 but the `docs(evidence)` commit 711daad0 also lands in the delivered range, so a coordinator reconciling the manifest against f1424548..b5a681a8 sees one commit it cannot account for."
+    }
+  ],
+  "head_log_revision": "b5a681a81483ff301d2f3a5b686b54a922740b35",
+  "item_verdicts": {
+    "call_sites": "reckon/crew/queue_landing.py:1720 finish_pending_landings (the station's delivery pass, surfacing interrupted_landings), reckon/crew_run_commands.py:3547 finish_pending_landings (crew complete --land merge-repair path)",
+    "diff": "read commit by commit against base f1424548 \u2014 39f312d8 adds the retry branch and constants, d306cc43 narrows the trigger to the unanswered attempt, 711daad0 adds the fragment, b5a681a8 rewrites its prose; the landed logic is one guarded branch plus four small helpers in reckon/crew/pending_landing.py:214-273.",
+    "done_when": "the done_when names tests/test_an_unfinished_promotion_is_retried.py with five cases (the retry, a held lease, a fresh record, no unanswered attempt, and the unchanged old-and-gone drop), matched arms and a base-revision negative control; the manifest records base 51 passed EXIT=0, after 56 passed EXIT=0 and the control 1 failed 4 passed EXIT=1, so the gate asserts the measure and the second (held-lease) case is present as required.",
+    "goal": "the node's goal is to retry a promotion that ended after its pending-landing record and before its ledger row; reckon/crew/pending_landing.py:397-409 reads a live run with no promoted row, no fresh write, no lease holder and an unanswered `attempting` attempt as exactly that state, clears the record and rewrites the attempt to `interrupted`.",
+    "manifest": "read; status complete, commits 39f312d8, d306cc43 and b5a681a8 (the tree also carries 711daad0 for the fragment, which the commits line omits), changed_paths the three landed files, tests the two-file pytest gate, baseline_suite (f1424548, 0 failures) and after_suite (b5a681a8, 0 failures).",
+    "write_paths": "the node's fence was pending_landing.py, promotion.py, the test file, the evidence fragment and a figures directory; git diff f1424548..b5a681a8 touches only pending_landing.py, the test file and docs/evidence/fragments/the-monitor-reads-each-fact-once/an-unfinished-promotion-is-retried.html, all inside it, and promotion.py was left unchanged."
+  },
+  "justifications": {
+    "durability": "the declared mutation (base sweep restored) reddens tests/test_an_unfinished_promotion_is_retried.py:141-144 at negative-control.log EXIT=1, and the three left-alone cases at :160-197 fail if their lease, age or unanswered-attempt condition is dropped; the live-pointer assertion at :148 holds at base too and guards no regression.",
+    "evidence": "base-arm.log (rev f1424548) reads '51 passed' EXIT=0 and after-arm.log (rev b5a681a8) reads '56 passed' EXIT=0 with negative-control.log at '1 failed, 4 passed' EXIT=1, matching the manifest's recorded baseline_suite and after_suite and the done_when's base-revision control.",
+    "fit": "the additions at reckon/crew/pending_landing.py:52 and :214-273 name the mechanism (UNFINISHED_PROMOTION_SECONDS, _promoted_row_absent, _land_attempt_unanswered, _retire_interrupted_landing) with no plan, node or ticket identifier, local imports and the module docstring updated in the file's own idiom.",
+    "goal_fidelity": "reckon/crew/pending_landing.py:396-409 clears the record only when the ledger proves no row, no lease is held and the pointer's attempt is unanswered, so a run whose promotion never started or is still running is untouched, which is the goal's own boundary.",
+    "reuse": "the new predicate at reckon/crew/pending_landing.py:231 builds the lease through reckon/crew/promotion.py:242's own _promotion_lease_name and host_lease.HostLease.holder, and :214 deliberately reads the ledger path rather than calling the existing _promoted_row at :190, because that helper collapses 'unreadable' into 'absent' and retiring on an unreadable row would strand a promoted-but-unmerged head.",
+    "scope_discipline": "git diffstat f1424548..b5a681a8 lists only reckon/crew/pending_landing.py, tests/test_an_unfinished_promotion_is_retried.py and the evidence fragment, and promotion.py -- in the fence but not required -- is untouched."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to retry a promotion that ended after its pending-landing record and before its ledger row; reckon/crew/pending_landing.py:397-409 reads a live run with no promoted row, no fresh write, no lease holder and an unanswered `attempting` attempt as exactly that state, clears the record and rewrites the attempt to `interrupted`.\nVERDICT done_when: the done_when names tests/test_an_unfinished_promotion_is_retried.py with five cases (the retry, a held lease, a fresh record, no unanswered attempt, and the unchanged old-and-gone drop), matched arms and a base-revision negative control; the manifest records base 51 passed EXIT=0, after 56 passed EXIT=0 and the control 1 failed 4 passed EXIT=1, so the gate asserts the measure and the second (held-lease) case is present as required.\nVERDICT write_paths: the node's fence was pending_landing.py, promotion.py, the test file, the evidence fragment and a figures directory; git diff f1424548..b5a681a8 touches only pending_landing.py, the test file and docs/evidence/fragments/the-monitor-reads-each-fact-once/an-unfinished-promotion-is-retried.html, all inside it, and promotion.py was left unchanged.\nVERDICT manifest: read; status complete, commits 39f312d8, d306cc43 and b5a681a8 (the tree also carries 711daad0 for the fragment, which the commits line omits), changed_paths the three landed files, tests the two-file pytest gate, baseline_suite (f1424548, 0 failures) and after_suite (b5a681a8, 0 failures).\nVERDICT diff: read commit by commit against base f1424548 \u2014 39f312d8 adds the retry branch and constants, d306cc43 narrows the trigger to the unanswered attempt, 711daad0 adds the fragment, b5a681a8 rewrites its prose; the landed logic is one guarded branch plus four small helpers in reckon/crew/pending_landing.py:214-273.\nCALL_SITES: reckon/crew/queue_landing.py:1720 finish_pending_landings (the station's delivery pass, surfacing interrupted_landings), reckon/crew_run_commands.py:3547 finish_pending_landings (crew complete --land merge-repair path)\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/pending_landing.py:396-409 clears the record only when the ledger proves no row, no lease is held and the pointer's attempt is unanswered, so a run whose promotion never started or is still running is untouched, which is the goal's own boundary.\nSCORE evidence: 18\nJUSTIFICATION evidence: base-arm.log (rev f1424548) reads '51 passed' EXIT=0 and after-arm.log (rev b5a681a8) reads '56 passed' EXIT=0 with negative-control.log at '1 failed, 4 passed' EXIT=1, matching the manifest's recorded baseline_suite and after_suite and the done_when's base-revision control.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diffstat f1424548..b5a681a8 lists only reckon/crew/pending_landing.py, tests/test_an_unfinished_promotion_is_retried.py and the evidence fragment, and promotion.py -- in the fence but not required -- is untouched.\nSCORE durability: 18\nJUSTIFICATION durability: the declared mutation (base sweep restored) reddens tests/test_an_unfinished_promotion_is_retried.py:141-144 at negative-control.log EXIT=1, and the three left-alone cases at :160-197 fail if their lease, age or unanswered-attempt condition is dropped; the live-pointer assertion at :148 holds at base too and guards no regression.\nSCORE fit: 20\nJUSTIFICATION fit: the additions at reckon/crew/pending_landing.py:52 and :214-273 name the mechanism (UNFINISHED_PROMOTION_SECONDS, _promoted_row_absent, _land_attempt_unanswered, _retire_interrupted_landing) with no plan, node or ticket identifier, local imports and the module docstring updated in the file's own idiom.\nSCORE reuse: 18\nJUSTIFICATION reuse: the new predicate at reckon/crew/pending_landing.py:231 builds the lease through reckon/crew/promotion.py:242's own _promotion_lease_name and host_lease.HostLease.holder, and :214 deliberately reads the ledger path rather than calling the existing _promoted_row at :190, because that helper collapses 'unreadable' into 'absent' and retiring on an unreadable row would strand a promoted-but-unmerged head.\nFINDING reckon/crew/pending_landing.py:403 non-blocking: the record is cleared at :403 before the attempt is retired at :408, so a pass that dies between the two leaves a live pointer with an `attempting` attempt and no pending-landing record -- the landing pass then refuses the run at reckon/crew/queue_landing.py:1809 with nothing left for this sweep to retry, which is the same unliftable hold the node exists to remove; retiring the attempt first closes the window.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261112T210115593728-an-unfinished-promotion-is-retried/manifest.md:10 non-blocking: the `commits:` line lists 39f312d8, d306cc43 and b5a681a8 but the `docs(evidence)` commit 711daad0 also lands in the delivered range, so a coordinator reconciling the manifest against f1424548..b5a681a8 sees one commit it cannot account for.\n",
+  "review_run_id": "r-20261112T222220695478-review-of-an-unfinished-promotion-is-retried-b5a681a81483",
+  "reviewed_base_sha": "f14245484ad4285ed0e2a386d15e1bf639eb23be",
+  "reviewed_head_sha": "b5a681a81483ff301d2f3a5b686b54a922740b35",
+  "reviewed_run_id": "r-20261112T210115593728-an-unfinished-promotion-is-retried",
+  "reviewer": {
+    "backend": "local",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash",
+    "reviewer_run_id": "r-20261112T222220695478-review-of-an-unfinished-promotion-is-retried-b5a681a81483"
+  },
+  "reviewer_run_id": "r-20261112T222220695478-review-of-an-unfinished-promotion-is-retried-b5a681a81483",
+  "scores": {
+    "durability": 18,
+    "evidence": 18,
+    "fit": 20,
+    "goal_fidelity": 19,
+    "reuse": 18,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-12T22:57:15.777281+00:00",
+  "total": 113
+}

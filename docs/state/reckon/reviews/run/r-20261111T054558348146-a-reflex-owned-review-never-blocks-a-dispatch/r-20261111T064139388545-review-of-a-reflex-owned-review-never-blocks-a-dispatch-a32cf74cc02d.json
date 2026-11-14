@@ -1,0 +1,73 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_review": [
+    "127-128: ownership and scoring assertions fail if the live follower is missing or the delivered fixture stops requiring review.",
+    "133-137: distinct run ID, no waiver, and ownership-read assertions fail if dispatch reuses the old run, depends on an unreconciled waiver, or stops consulting the shared owner. Restoring the removed exemption makes the dispatch at line 131 raise before these assertions; both recorded red controls prove it.",
+    "152-158: the expected exception fails if unarmed or expired waits bypass the fence; the run ID assertion fails if the refusal names a different run.",
+    "164: absence of an inflight review is a precondition that fails if the fixture already owns a review. 173-175: exact launcher and dispatch counts fail if the next sweep does not compose exactly one review.",
+    "176-184: persisted status, pointer/report run identity, git HEAD, and reviewer brief assertions fail if dispatch loses its pointer write, returns a different run, records the base head, or composes a stale brief. HEAD is read independently from git.",
+    "211,214,216: the forbidden launcher fails if a blocking finding launches work; refusal count and stored status fail if the sweep omits or fails to persist the refusal.",
+    "221-225: independent semantic checks require a blocking-finding reason and crew dispose remedy and reject review_owner and follower promises; comparing the independently produced duty and sweep reasons also detects divergence.",
+    "No assertion compares a test-supplied value solely with its echo: 178 compares two separate production outputs, 180 compares persisted state with independent git HEAD, and 222 compares two readers alongside independent cause/remedy checks. Removing the exemption or restoring blanket forgiveness makes the dispatch acceptance or refusal tests fail."
+  ],
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/dispatch.py:1941 dispatch",
+    "reckon/crew/obligations.py:1963 _review_duty_item",
+    "reckon/crew/recovery_review_acceptance.py:638 dispatch_awaiting_reviews"
+  ],
+  "completed_at": "2026-11-11T06:56:32Z",
+  "dispatched_at": "2026-11-11T06:48:53Z",
+  "findings": [],
+  "gate_evidence": {
+    "after_suite_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261111T054558348146-a-reflex-owned-review-never-blocks-a-dispatch/suite-head.log",
+    "baseline_suite_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261111T054558348146-a-reflex-owned-review-never-blocks-a-dispatch/suite-base.log",
+    "importer_added_failure_count": 0,
+    "negative_control_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261111T054558348146-a-reflex-owned-review-never-blocks-a-dispatch/negative-control.log",
+    "parser_positive_control_failure_ids": [
+      "tests/test_a_reflex_owned_review_never_blocks_a_dispatch.py::test_a_session_waiting_inside_the_reflex_window_can_dispatch"
+    ]
+  },
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "Read both 8e79edc0f7b47f6b81277a6c69d3ab918f695637 and a32cf74cc02d3c145abcccd2971b62da35310d7a against the recorded base; recovery_watch.py changes the existing fence, the new test adds five cases, and the fragment records their evidence without unrelated changes.",
+    "done_when": "The source prompt.txt measure and live plan section s30 require dispatch acceptance, overdue sweep composition, and explicit refusal; tests/test_a_reflex_owned_review_never_blocks_a_dispatch.py:115-225 asserts all three and the recorded suite and mutation logs measure them.",
+    "goal": "The source prompt.txt goal excludes reflex-owned review waits from the dispatch fence; reckon/crew/recovery_watch.py:513-518 implements exactly that bounded exemption.",
+    "manifest": "The source manifest.md names both actual commits and readable suite-base.log, suite-head.log, copied-base.log, negative-control.log and importer logs, whose summary and EXIT lines substantiate its reported results.",
+    "write_paths": "The source prompt.txt grants the production module, new test, and landing fragment, and all three paths in the fc6009a41705c2af12c24437b9a5b897c6d16937..a32cf74cc02d3c145abcccd2971b62da35310d7a diff are inside those grants."
+  },
+  "justifications": {
+    "durability": "Restoring the old count in recovery_watch.py:513-518 makes the real dispatch in tests/test_a_reflex_owned_review_never_blocks_a_dispatch.py:131 raise UnreconciledRuns, as both copied-base.log and negative-control.log demonstrate, while lines 142-225 guard the refusal, sweep and obligation behavior independently.",
+    "evidence": "The source suite-base.log and suite-head.log record 51 and 56 passes with EXIT=0, copied-base.log and negative-control.log each record the expected dispatch refusal, and the importer logs retain the identical seven failure IDs.",
+    "fit": "reckon/crew/recovery_watch.py:498-518 extends the existing terminal-pointer filter using a local import and mechanism-based comments, and the added test follows the temporary-repository conventions in tests/test_a_queued_run_is_admitted.py:56.",
+    "goal_fidelity": "reckon/crew/recovery_watch.py:513-518 exempts only scoring runs inside the shared review window whose session satisfies obligations._reflex_owns_review, retaining refusal for other overdue runs.",
+    "reuse": "Capability searches found the ownership and cadence owners in reckon/crew/obligations.py:719 and :739, which the production edit directly reuses, while the new test fixture and dispatch wrappers compose admit_repo, _lane_document and _launcher from tests/test_a_queued_run_is_admitted.py rather than adding a competing runtime mechanism.",
+    "scope_discipline": "The three changed paths reported by the exact base-to-head diff match the source prompt.txt grants, and docs/evidence/fragments/a-queue-holds-the-whole-plan/a-reflex-owned-review-never-blocks-a-dispatch.html confines documentation to the permitted landing fragment."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The source prompt.txt goal excludes reflex-owned review waits from the dispatch fence; reckon/crew/recovery_watch.py:513-518 implements exactly that bounded exemption.\nVERDICT done_when: The source prompt.txt measure and live plan section s30 require dispatch acceptance, overdue sweep composition, and explicit refusal; tests/test_a_reflex_owned_review_never_blocks_a_dispatch.py:115-225 asserts all three and the recorded suite and mutation logs measure them.\nVERDICT write_paths: The source prompt.txt grants the production module, new test, and landing fragment, and all three paths in the fc6009a41705c2af12c24437b9a5b897c6d16937..a32cf74cc02d3c145abcccd2971b62da35310d7a diff are inside those grants.\nVERDICT manifest: The source manifest.md names both actual commits and readable suite-base.log, suite-head.log, copied-base.log, negative-control.log and importer logs, whose summary and EXIT lines substantiate its reported results.\nVERDICT diff: Read both 8e79edc0f7b47f6b81277a6c69d3ab918f695637 and a32cf74cc02d3c145abcccd2971b62da35310d7a against the recorded base; recovery_watch.py changes the existing fence, the new test adds five cases, and the fragment records their evidence without unrelated changes.\nCALL_SITES: reckon/crew/dispatch.py:1941 dispatch, reckon/crew/obligations.py:1963 _review_duty_item, reckon/crew/recovery_review_acceptance.py:638 dispatch_awaiting_reviews\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/recovery_watch.py:513-518 exempts only scoring runs inside the shared review window whose session satisfies obligations._reflex_owns_review, retaining refusal for other overdue runs.\nSCORE evidence: 20\nJUSTIFICATION evidence: The source suite-base.log and suite-head.log record 51 and 56 passes with EXIT=0, copied-base.log and negative-control.log each record the expected dispatch refusal, and the importer logs retain the identical seven failure IDs.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: The three changed paths reported by the exact base-to-head diff match the source prompt.txt grants, and docs/evidence/fragments/a-queue-holds-the-whole-plan/a-reflex-owned-review-never-blocks-a-dispatch.html confines documentation to the permitted landing fragment.\nSCORE durability: 20\nJUSTIFICATION durability: Restoring the old count in recovery_watch.py:513-518 makes the real dispatch in tests/test_a_reflex_owned_review_never_blocks_a_dispatch.py:131 raise UnreconciledRuns, as both copied-base.log and negative-control.log demonstrate, while lines 142-225 guard the refusal, sweep and obligation behavior independently.\nSCORE fit: 20\nJUSTIFICATION fit: reckon/crew/recovery_watch.py:498-518 extends the existing terminal-pointer filter using a local import and mechanism-based comments, and the added test follows the temporary-repository conventions in tests/test_a_queued_run_is_admitted.py:56.\nSCORE reuse: 20\nJUSTIFICATION reuse: Capability searches found the ownership and cadence owners in reckon/crew/obligations.py:719 and :739, which the production edit directly reuses, while the new test fixture and dispatch wrappers compose admit_repo, _lane_document and _launcher from tests/test_a_queued_run_is_admitted.py rather than adding a competing runtime mechanism.\n",
+  "reuse_search": {
+    "runtime": "Searched reflex ownership, review cadence and overdue unreconciled filtering; opened obligations.py:719 and :739 and verified both owners are directly reused; no new production definition exists.",
+    "tests": "Opened admit_repo, _lane_document and _launcher in test_a_queued_run_is_admitted.py and delivered-run builders in test_a_review_is_not_refused_for_its_run.py and test_an_overdue_review_names_why_it_is_held.py; the new fixture specializes the existing repository owner with advanced HEAD, delivery aging and dispatch calls."
+  },
+  "review_run_id": "r-20261111T064139388545-review-of-a-reflex-owned-review-never-blocks-a-dispatch-a32cf74cc02d",
+  "reviewed_base_sha": "fc6009a41705c2af12c24437b9a5b897c6d16937",
+  "reviewed_head_sha": "a32cf74cc02d3c145abcccd2971b62da35310d7a",
+  "reviewed_run_id": "r-20261111T054558348146-a-reflex-owned-review-never-blocks-a-dispatch",
+  "scores": {
+    "durability": 20,
+    "evidence": 20,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-11T07:09:08.682555+00:00",
+  "total": 120
+}

@@ -1,0 +1,974 @@
+{
+  "agent": {
+    "alias": "sol61",
+    "backend": "codex",
+    "effort": "high",
+    "launch": "cli",
+    "model": "gpt-6.1-sol",
+    "sandbox": "worktree-full"
+  },
+  "attempt": 3,
+  "attempt_kind": "resume",
+  "backend": "codex",
+  "base_sha": "4c4cf234390f5326b995cee7ad6bda55fe01b5c0",
+  "boundary_waiver": null,
+  "brief": null,
+  "budget": {
+    "budget_overrun": false,
+    "budget_overrun_notice": null,
+    "budget_overrun_seconds": 0,
+    "budget_overrun_tokens": 0,
+    "cost_usd": null,
+    "detail": "backend reports token usage but no headroom",
+    "headroom": "unknown",
+    "rate_limit_period_minutes": null,
+    "rate_limit_type": null,
+    "refusal": false,
+    "resets_at": null,
+    "surpassed_threshold": null,
+    "threshold_status": null,
+    "tokens": {
+      "cache_write_input_tokens": 0,
+      "cache_write_input_tokens_cumulative": 0,
+      "cached_input_tokens": 14750208,
+      "cached_input_tokens_cumulative": 14750208,
+      "input_tokens": 14936821,
+      "input_tokens_cumulative": 14936821,
+      "output_tokens": 49982,
+      "output_tokens_cumulative": 49982,
+      "reasoning_output_tokens": 18558,
+      "reasoning_output_tokens_cumulative": 18558
+    },
+    "utilisation_pct": null
+  },
+  "changed_lines": {
+    "added": 16,
+    "files": 1,
+    "removed": 4
+  },
+  "clone_matches": [],
+  "commit_resolution": null,
+  "commits": [
+    "214b9015bc4aafa98afac70eda2ba30865f70c77"
+  ],
+  "completed_at": "2026-11-13T14:12:03Z",
+  "completed_at_source": "stream_mtime",
+  "dispatched_at": "2026-11-13T08:58:32Z",
+  "disposition": null,
+  "dispute_count": 0,
+  "domain_waiver": null,
+  "duration_measurement": {
+    "reason": "model_span_unavailable_at_promotion",
+    "status": "underivable"
+  },
+  "execution_fit": {
+    "allowed": true,
+    "execution_capable": true,
+    "matched_measure": null,
+    "override": false,
+    "role": "implement",
+    "status": "no-execution-measure"
+  },
+  "failure_classification": null,
+  "gate": "passed",
+  "gate_check": {
+    "command": "PYTHONPATH=. /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_queue_hold_does_not_wait_for_the_pass.py tests/test_staged_write_inventory.py",
+    "exit_status": 0,
+    "log_digest": null,
+    "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261113T030959269941-ready-work-is-never-stuck-behind-t-s35/armed-suite/after.log"
+  },
+  "impl_move": {
+    "at_complete": null,
+    "at_dispatch": 0.8816840277777778,
+    "plan": "work-is-never-stuck-behind-the-admission-loop",
+    "reason": "corrective-run:resume",
+    "verdict": "exempt"
+  },
+  "lane": "codex",
+  "lane_advisory": {
+    "backend": "codex",
+    "burn_multiple": 2.2352960940781186,
+    "cheaper_lane": {
+      "detail": "",
+      "lane": null,
+      "state": "not_evaluated"
+    },
+    "detail": "'codex' is projected to exhaust at 2026-11-16T04:42:22Z, which is after this node's 3600s horizon ending 2026-11-13T09:56:46.740399+00:00",
+    "horizon_ends_at": "2026-11-13T09:56:46.740399+00:00",
+    "horizon_seconds": 3600,
+    "metered": true,
+    "observed_at": "2026-11-13T08:56:44Z",
+    "precedes_horizon": false,
+    "projected_exhaustion_at": "2026-11-16T04:42:22Z",
+    "resets_at": "2026-11-19T16:24:40Z",
+    "seconds_until_reset": 545275,
+    "state": "quiet",
+    "utilisation_pct": 22.0
+  },
+  "lane_declaration": {
+    "backend": "codex",
+    "headroom": "known",
+    "metered": true,
+    "observed_at": "2026-11-13T08:56:44Z",
+    "read_at": "2026-11-13T08:56:46Z",
+    "resolved_backend": "codex",
+    "utilisation_pct": 22.0
+  },
+  "lane_reading": {
+    "age_seconds": null,
+    "binding_observed": "unknown",
+    "detail": "backend declares no lane document",
+    "generating": "unknown",
+    "headroom": "unknown",
+    "mean_context": "unknown",
+    "observed_at": null,
+    "state": "unknown",
+    "suggested_shelf_life_seconds": null,
+    "throughput": {
+      "age_seconds": null,
+      "aggregate_tokens_per_second": "unknown",
+      "detail": "backend declares no lane document",
+      "mean_tokens_per_second": "unknown",
+      "observed_at": null,
+      "runs": "unknown",
+      "state": "unknown"
+    },
+    "waiting": "unknown"
+  },
+  "lane_receipt": {
+    "effective_context_window": 380000,
+    "notional_cost_usd": "unmeasured",
+    "observed_at": "2026-11-13T14:12:03Z",
+    "quota_state": "measured",
+    "quota_windows": [
+      {
+        "observed_at": "2026-11-13T14:12:03Z",
+        "resets_at": 1795105480,
+        "used_percent": 26.0,
+        "window_minutes": 10080
+      }
+    ],
+    "rate_basis": "unmeasured",
+    "unmeasured": {
+      "notional_cost_usd": "no_dated_rate",
+      "rate_basis": "no_dated_rate"
+    }
+  },
+  "lineage": null,
+  "local": false,
+  "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261113T030959269941-ready-work-is-never-stuck-behind-t-s35/manifest.md",
+  "member": "disposable-r-20261113T030959269941-ready-work-is-never-stuck-behind-t-s35",
+  "model_key": "sol",
+  "negative_control": {
+    "reason": "no-negative-control-declared",
+    "test_paths": [
+      "tests/test_a_queue_hold_does_not_wait_for_the_pass.py"
+    ],
+    "verdict": "exempt"
+  },
+  "no_commit": null,
+  "node": "ready-work-is-never-stuck-behind-t-s35",
+  "node_definition": {
+    "admission_findings": [],
+    "after": [],
+    "anchor_paths": [],
+    "brief": "",
+    "brief_path": "",
+    "brief_sha256": "",
+    "capability": {
+      "class": "orchestrator",
+      "requirements": {
+        "reasoning": "deep",
+        "risk": "elevated",
+        "verification": "strict"
+      },
+      "version": "1.0"
+    },
+    "compares_with": "",
+    "coordinator": {
+      "authoring_turn": {
+        "detail": "the dispatching harness exposed no authoring-turn token usage",
+        "status": "unknown",
+        "tokens": null
+      },
+      "harness": null,
+      "runtime_session_id": null,
+      "session_id": "829e5a4a-6870-4aec-876d-ba2efb1b5ecf"
+    },
+    "done_when": "Done when a new tests/test_a_queue_hold_does_not_wait_for_the_pass.py shows three things with a temporary crew home: With the admission lock held by another thread, queue_edit.hold on one queued request returns within one second and the request reads held . A pass that read the request as queued, then sees it held before launch, does not launch it. Requests changed in other ways while the pass ran are §37's. release returns the request to its prior phase under the same held lock. The second case writes the hold after the pass has read the request as queued and before it launches, so the request is in the launch set. Two negative controls: taking the admission lock in hold again makes the first case time out, and removing the pre-launch phase re-read makes the second case launch the held request. The test files importing reckon.crew.queue_edit or reckon.crew.queue_admission add no failure against the base revision. Ruff adds no findings on the staged paths. Write paths: reckon/crew/queue_edit.py , reckon/crew/queue_admission.py and the new test.",
+    "estimated_hours": 1.0,
+    "goal": "Deliver the section so that a queue hold does not wait for the admission pass",
+    "id": "ready-work-is-never-stuck-behind-t-s35",
+    "images": [],
+    "inputs": [],
+    "lane_declaration": {
+      "backend": "codex",
+      "headroom": "known",
+      "metered": true,
+      "observed_at": "2026-11-13T08:56:44Z",
+      "read_at": "2026-11-13T08:56:46Z",
+      "resolved_backend": "codex",
+      "utilisation_pct": 22.0
+    },
+    "lane_reading": {
+      "age_seconds": null,
+      "binding_observed": "unknown",
+      "detail": "backend declares no lane document",
+      "generating": "unknown",
+      "headroom": "unknown",
+      "mean_context": "unknown",
+      "observed_at": null,
+      "state": "unknown",
+      "suggested_shelf_life_seconds": null,
+      "throughput": {
+        "age_seconds": null,
+        "aggregate_tokens_per_second": "unknown",
+        "detail": "backend declares no lane document",
+        "mean_tokens_per_second": "unknown",
+        "observed_at": null,
+        "runs": "unknown",
+        "state": "unknown"
+      },
+      "waiting": "unknown"
+    },
+    "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261113T030959269941-ready-work-is-never-stuck-behind-t-s35/manifest.md",
+    "negative_control": "",
+    "over_fence_reason": "",
+    "peer_scopes": {
+      "a-design-and-a-content-review-run-together": [
+        "docs/evidence/fragments/a-plan-is-reviewed-before-it-is-built/a-design-and-a-content-review-run-together.html",
+        "docs/figures/a-plan-is-reviewed-before-it-is-built/a-design-and-a-content-review-run-together",
+        "reckon/crew/promotion_checks.py",
+        "reckon/crew/recovery_review_dispatch.py",
+        "reckon/crew/recovery_review_subject.py",
+        "reckon/crew/repair.py",
+        "tests/test_a_design_and_a_content_review_run_together.py",
+        "tests/test_a_design_and_content_review_run_together.py"
+      ],
+      "a-launch-span-is-dated-and-bounded": [
+        "docs/evidence/fragments/a-dispatch-returns-without-its-worker/a-launch-span-is-dated-and-bounded.html",
+        "docs/figures/a-dispatch-returns-without-its-worker/a-launch-span-is-dated-and-bounded",
+        "reckon/crew/dispatch.py",
+        "reckon/crew/dispatch_claims.py",
+        "reckon/crew/dispatch_refusals.py",
+        "reckon/crew/queue_admission.py",
+        "reckon/crew/refusals.py",
+        "tests/test_a_launch_span_is_dated_and_bounded.py",
+        "tests/test_crew_refusal_visibility.py"
+      ],
+      "a-launch-stopped-at-its-claim-is-redispatched": [
+        "docs/evidence/fragments/a-dispatch-returns-without-its-worker/a-launch-stopped-at-its-claim-is-redispatched.html",
+        "reckon/crew/dispatch_claims.py",
+        "reckon/crew/dispatch_launch.py",
+        "reckon/crew/recovery_classification.py",
+        "reckon/crew/recovery_liveness.py",
+        "tests/test_a_launch_stopped_at_its_claim_is_redispatched.py"
+      ],
+      "a-plan-write-parses-its-plan-once": [
+        "docs/evidence/fragments/a-read-answers-inside-its-deadline/a-plan-write-parses-its-plan-once.html",
+        "docs/figures/a-read-answers-inside-its-deadline/a-plan-write-parses-its-plan-once",
+        "reckon/_plan_html.py",
+        "reckon/_store.py",
+        "tests/test_a_plan_write_parses_its_plan_once.py"
+      ],
+      "a-refresh-lists-each-review-store-once": [
+        "docs/evidence/fragments/the-monitor-reads-each-fact-once/a-refresh-lists-each-review-store-once.html",
+        "docs/figures/the-monitor-reads-each-fact-once/a-refresh-lists-each-review-store-once",
+        "reckon/crew/review_records.py",
+        "reckon/crew/station_obligations.py",
+        "tests/test_a_refresh_lists_each_review_store_once.py"
+      ],
+      "a-refused-landing-writes-nothing": [
+        "docs/evidence/fragments/concurrent-edits-meet-at-the-merge/a-refused-landing-writes-nothing.html",
+        "docs/figures/concurrent-edits-meet-at-the-merge/a-refused-landing-writes-nothing",
+        "reckon/crew/pending_landing.py",
+        "reckon/crew/queue_landing.py",
+        "reckon/crew_run_commands.py",
+        "tests/test_an_interrupted_landing_finishes_at_its_cited_head.py"
+      ],
+      "a-session-mismatch-never-skips-the-host": [
+        "docs/evidence/fragments/a-dispatch-returns-without-its-worker/a-session-mismatch-never-skips-the-host.html",
+        "docs/figures/a-dispatch-returns-without-its-worker/a-session-mismatch-never-skips-the-host",
+        "reckon/crew/dispatch_watch.py",
+        "tests/test_a_session_mismatch_never_skips_the_host_silently.py"
+      ],
+      "a-station-refresh-walks-the-process-table-once": [
+        "docs/evidence/fragments/crew-observability-truth/a-station-refresh-walks-the-process-table-once.html",
+        "docs/figures/crew-observability-truth/a-station-refresh-walks-the-process-table-once",
+        "reckon/crew/obligation_snapshot.py",
+        "reckon/crew/process_signal.py",
+        "reckon/crew/recovery_liveness.py",
+        "tests/test_a_station_refresh_walks_the_process_table_once.py"
+      ],
+      "decision-holds-named-sections": [
+        "docs/_shared/plan.schema.json",
+        "docs/evidence/fragments/work-flows-to-the-lane/decision-holds-named-sections.html",
+        "docs/figures/work-flows-to-the-lane/decision-holds-named-sections",
+        "reckon/_plan_html.py",
+        "reckon/_schema.py",
+        "reckon/crew/dispatch.py",
+        "reckon/crew/queue_admission.py",
+        "reckon/roadmap.py",
+        "tests/test_a_decision_holds_only_the_sections_it_names.py"
+      ],
+      "gate-review-named-by-node-s8": [
+        "reckon/crew/promotion_checks.py",
+        "tests/test_a_review_named_by_node_promotes.py"
+      ],
+      "hot-path-reads-only-live-runs": [
+        "docs/evidence/fragments/work-flows-to-the-lane/hot-path-reads-only-live-runs.html",
+        "docs/figures/work-flows-to-the-lane/hot-path-reads-only-live-runs",
+        "reckon/crew",
+        "reckon/crew/open_run_index.py",
+        "reckon/ledger.py",
+        "tests",
+        "tests/test_hot_path_reads_only_live_runs.py"
+      ],
+      "merge-repaired-run-judged-on-own-changes": [
+        "docs/evidence/fragments/work-flows-to-the-lane/merge-repaired-run-judged-on-own-changes.html",
+        "docs/figures/work-flows-to-the-lane/merge-repaired-run-judged-on-own-changes",
+        "reckon/crew",
+        "tests/test_a_merge_repaired_run_is_judged_on_its_own_changes.py"
+      ],
+      "monitor-replayed-row-marked-s130": [
+        "reckon/crew/follow_checkpoint.py",
+        "reckon/crew_follow_commands.py"
+      ],
+      "monitor-two-followers-one-pipe-s131": [
+        "docs/evidence/fragments/the-monitor-shows-the-work-it-watches/two-followers-one-pipe.html"
+      ],
+      "needs-you-replaces-halted": [
+        "docs/evidence/fragments/the-monitor-shows-the-work-it-watches/needs-you-replaces-halted.html",
+        "docs/figures/the-monitor-shows-the-work-it-watches/needs-you-replaces-halted",
+        "reckon/crew/ticker.py",
+        "skills/reckon-build/SKILL.md",
+        "tests"
+      ],
+      "no-caller-waits-on-a-promotion": [
+        "docs/evidence/fragments/a-dispatch-returns-without-its-worker/an-abandoned-launch-retires-no-newer-records.html",
+        "docs/evidence/fragments/a-landing-never-waits-on-a-shared-index/a-killed-promotion-writes-nothing-after-it-dies.html",
+        "docs/evidence/fragments/a-read-answers-inside-its-deadline/a-persisted-review-index-never-claims-more-than-it-read.html",
+        "docs/evidence/fragments/a-read-answers-inside-its-deadline/a-promotion-s-boundary-check-does-not-walk-untracked-trees.html",
+        "docs/evidence/fragments/a-read-answers-inside-its-deadline/a-promotion-s-fleet-reading-costs-the-same-at-any-number-of.html",
+        "docs/evidence/fragments/a-read-answers-inside-its-deadline/attribute-a-live-promotion-s-time-by-stage.html",
+        "docs/evidence/fragments/a-review-dies-where-nobody-is-looking/ready-a-review-dies-where-nobody-i-s15.html",
+        "docs/evidence/fragments/concurrent-edits-meet-at-the-merge/a-gate-log-s-failure-count-is-read-across-the-whole-gate.html",
+        "docs/evidence/fragments/crew-observability-truth/the-stop-hook-blocks-once-per-unchanged-duty-list.html",
+        "docs/evidence/fragments/lane-and-model-routing/ready-lane-and-model-routing-s57.html",
+        "docs/evidence/fragments/scoring-should-stop-a-promotion/a-floor-driven-repair-and-a-promotion-never-both-proceed.html",
+        "docs/evidence/fragments/the-monitor-reads-each-fact-once/a-phase-transition-is-published-first.html",
+        "docs/evidence/fragments/the-monitor-reads-each-fact-once/an-interrupted-promotion-keeps-its-record.html",
+        "docs/evidence/fragments/the-monitor-shows-the-work-it-watches/a-pipe-rearm-draws-each-run-once.html",
+        "docs/evidence/fragments/work-flows-to-the-lane/admission-pass-reads-ledger-once.html",
+        "docs/evidence/fragments/work-flows-to-the-lane/coordinator-holds-a-delivered-run.html",
+        "docs/evidence/fragments/work-flows-to-the-lane/no-caller-waits-on-a-promotion.html",
+        "docs/evidence/fragments/work-flows-to-the-lane/only-unmergeable-paths-are-claimed.html",
+        "docs/evidence/fragments/work-flows-to-the-lane/run-leaves-nothing-behind.html",
+        "docs/evidence/fragments/work-flows-to-the-lane/stopped-run-resumes-with-advice.html",
+        "docs/evidence/fragments/workers-spend-fewer-tokens-per-landed-node/wave2-arm-assignment.json",
+        "docs/figures/work-flows-to-the-lane/no-caller-waits-on-a-promotion",
+        "docs/plans/a-dispatch-returns-without-its-worker.html",
+        "docs/plans/a-gate-halts-only-on-substance.html",
+        "docs/plans/a-landing-never-waits-on-a-shared-index.html",
+        "docs/plans/a-live-worker-is-never-drawn-halted.html",
+        "docs/plans/a-queue-holds-the-whole-plan.html",
+        "docs/plans/a-read-answers-inside-its-deadline.html",
+        "docs/plans/a-report-is-kept-only-when-persisted.html",
+        "docs/plans/a-review-dies-where-nobody-is-looking.html",
+        "docs/plans/concurrent-edits-meet-at-the-merge.html",
+        "docs/plans/crew-observability-truth.html",
+        "docs/plans/lane-and-model-routing.html",
+        "docs/plans/scoring-should-stop-a-promotion.html",
+        "docs/plans/the-monitor-reads-each-fact-once.html",
+        "docs/plans/the-monitor-shows-the-work-it-watches.html",
+        "docs/plans/work-flows-to-the-lane.html",
+        "docs/state/reckon/reviews/plan/a-dispatch-returns-without-its-worker/r-20261113T030246147345-plan-review-of-a-dispatch-returns-without-its-worker.json",
+        "docs/state/reckon/reviews/plan/a-dispatch-returns-without-its-worker/r-20261113T055834783729-plan-review-of-a-dispatch-returns-without-its-worker.json",
+        "docs/state/reckon/reviews/plan/a-gate-halts-only-on-substance/r-20261113T034527499173-plan-review-of-a-gate-halts-only-on-substance.json",
+        "docs/state/reckon/reviews/plan/a-landing-never-waits-on-a-shared-index/r-20261113T013718632763-plan-review-of-a-landing-never-waits-on-a-shared-index.json",
+        "docs/state/reckon/reviews/plan/a-queue-holds-the-whole-plan/r-20261113T040746808063-plan-review-of-a-queue-holds-the-whole-plan.json",
+        "docs/state/reckon/reviews/plan/a-read-answers-inside-its-deadline/r-20261112T230855957381-plan-review-of-a-read-answers-inside-its-deadline.json",
+        "docs/state/reckon/reviews/plan/a-report-is-kept-only-when-persisted/r-20261112T071453214325-plan-review-of-a-report-is-kept-only-when-persisted.json",
+        "docs/state/reckon/reviews/plan/a-report-is-kept-only-when-persisted/r-20261113T014050251448-plan-review-of-a-report-is-kept-only-when-persisted.json",
+        "docs/state/reckon/reviews/plan/a-review-dies-where-nobody-is-looking/r-20261113T040001855951-plan-review-of-a-review-dies-where-nobody-is-looking.json",
+        "docs/state/reckon/reviews/plan/crew-observability-truth/r-20261113T031604110292-plan-review-of-crew-observability-truth.json",
+        "docs/state/reckon/reviews/plan/crew-observability-truth/r-20261113T061611394188-plan-review-of-crew-observability-truth.json",
+        "docs/state/reckon/reviews/plan/the-monitor-reads-each-fact-once/r-20261113T013829173897-plan-review-of-the-monitor-reads-each-fact-once.json",
+        "docs/state/reckon/reviews/plan/the-monitor-reads-each-fact-once/r-20261113T044516987247-plan-review-of-the-monitor-reads-each-fact-once.json",
+        "docs/state/reckon/reviews/plan/the-monitor-shows-the-work-it-watches/r-20261113T033452198445-plan-review-of-the-monitor-shows-the-work-it-watches.json",
+        "docs/state/reckon/reviews/plan/work-flows-to-the-lane/r-20261113T010622148819-plan-review-of-work-flows-to-the-lane.json",
+        "docs/state/reckon/reviews/run/r-20261112T060815185379-a-persisted-item-has-a-record-and-a-home-outside/r-20261113T035545337638-review-of-a-persisted-item-has-a-record-and-a-home-outside-7623bbe1fc34.json",
+        "docs/state/reckon/reviews/run/r-20261112T191137457543-a-promotion-does-not-wait-for-its-worktree-copy-s-deletion/r-20261113T025446441093-review-of-a-promotion-does-not-wait-for-its-worktree-copy-s-deletion-57f07fa2729c.json",
+        "docs/state/reckon/reviews/run/r-20261112T213701785343-every-delivery-the-reflex-owns-gets-its-review/r-20261113T042201470145-review-of-every-delivery-the-reflex-owns-gets-its-review-3c8873c61edd.json",
+        "docs/state/reckon/reviews/run/r-20261112T215221947107-a-floor-driven-repair-and-a-promotion-never-both-proceed/r-20261112T225654449822-review-of-a-floor-driven-repair-and-a-promotion-never-both-proceed-e31da84a8d6b.json",
+        "docs/state/reckon/reviews/run/r-20261112T215221947107-a-floor-driven-repair-and-a-promotion-never-both-proceed/r-20261113T012644880226-review-of-a-floor-driven-repair-and-a-promotion-never-both-proceed-d309fa82770b.json",
+        "docs/state/reckon/reviews/run/r-20261112T215856851067-a-floor-repair-s-advice-carries-the-findings-behind-the-scor/r-20261112T230528821712-review-of-a-floor-repair-s-advice-carries-the-findings-behind-the-scor-080dc36004c3.json",
+        "docs/state/reckon/reviews/run/r-20261112T220918968738-the-stop-hook-blocks-once-per-unchanged-duty-list/r-20261112T231456947857-review-of-the-stop-hook-blocks-once-per-unchanged-duty-list-c6dba3af657b.json",
+        "docs/state/reckon/reviews/run/r-20261112T220918968738-the-stop-hook-blocks-once-per-unchanged-duty-list/r-20261113T012224947637-review-of-the-stop-hook-blocks-once-per-unchanged-duty-list-26f5d613b0f8.json",
+        "docs/state/reckon/reviews/run/r-20261112T221638996828-a-promotion-that-moved-under-itself-still-lands/r-20261112T232247871249-review-of-a-promotion-that-moved-under-itself-still-lands-fad32654e562.json",
+        "docs/state/reckon/reviews/run/r-20261112T221639887735-a-snapshot-duty-whose-run-has-gone-is-not-shown/r-20261113T050823003288-review-of-a-snapshot-duty-whose-run-has-gone-is-not-shown-9d219e329020.json",
+        "docs/state/reckon/reviews/run/r-20261112T222328496505-a-killed-promotion-writes-nothing-after-it-dies/r-20261112T234742476323-review-of-a-killed-promotion-writes-nothing-after-it-dies-cb6358cacaf3.json",
+        "docs/state/reckon/reviews/run/r-20261112T225255775909-a-persisted-review-index-never-claims-more-than-it-read/r-20261112T235032217177-review-of-a-persisted-review-index-never-claims-more-than-it-read-98f28719c86d.json",
+        "docs/state/reckon/reviews/run/r-20261112T231336380925-a-landed-reading-follows-the-primary-branch/r-20261113T013107378107-review-of-a-landed-reading-follows-the-primary-branch-aecee18b9e10.json",
+        "docs/state/reckon/reviews/run/r-20261112T231336380925-a-landed-reading-follows-the-primary-branch/r-20261113T035315466160-review-of-a-landed-reading-follows-the-primary-branch-9ffc0fafe7b6.json",
+        "docs/state/reckon/reviews/run/r-20261112T234811256868-an-interrupted-promotion-keeps-its-record/r-20261113T010154557806-review-of-an-interrupted-promotion-keeps-its-record-4d9818a8c7b5.json",
+        "docs/state/reckon/reviews/run/r-20261112T234811256868-an-interrupted-promotion-keeps-its-record/r-20261113T024903336560-review-of-an-interrupted-promotion-keeps-its-record-7afee0b021c0.json",
+        "docs/state/reckon/reviews/run/r-20261113T003754418594-scheduler-wait-is-not-abandoned/r-20261113T014459414513-review-of-scheduler-wait-is-not-abandoned-9d14291f06c9.json",
+        "docs/state/reckon/reviews/run/r-20261113T003754418594-scheduler-wait-is-not-abandoned/r-20261113T034935011916-review-of-scheduler-wait-is-not-abandoned-d20dde38d630.json",
+        "docs/state/reckon/reviews/run/r-20261113T003754418594-scheduler-wait-is-not-abandoned/r-20261113T060812296939-review-of-scheduler-wait-is-not-abandoned-0d4f6e2f062e.json",
+        "docs/state/reckon/reviews/run/r-20261113T004809073040-an-abandoned-launch-retires-no-newer-records/r-20261113T023208933564-review-of-an-abandoned-launch-retires-no-newer-records-0e61f79edb63.json",
+        "docs/state/reckon/reviews/run/r-20261113T011043749121-no-caller-waits-on-a-promotion/r-20261113T031841613150-review-of-no-caller-waits-on-a-promotion-d513212c9666.json",
+        "docs/state/reckon/reviews/run/r-20261113T011510453024-coordinator-holds-a-delivered-run/r-20261113T015221321497-review-of-coordinator-holds-a-delivered-run-f9eab85d420b.json",
+        "docs/state/reckon/reviews/run/r-20261113T011510453024-coordinator-holds-a-delivered-run/r-20261113T050655058606-review-of-coordinator-holds-a-delivered-run-6ccf02af4ebc.json",
+        "docs/state/reckon/reviews/run/r-20261113T011510453024-coordinator-holds-a-delivered-run/r-20261113T061724468798-review-of-coordinator-holds-a-delivered-run-877a5bd31b3f.json",
+        "docs/state/reckon/reviews/run/r-20261113T011602155862-a-pipe-rearm-draws-each-run-once/r-20261113T020106081485-review-of-a-pipe-rearm-draws-each-run-once-140e2f4d64cc.json",
+        "docs/state/reckon/reviews/run/r-20261113T012014321697-a-promotion-s-boundary-check-does-not-walk-untracked-trees/r-20261113T022338073741-review-of-a-promotion-s-boundary-check-does-not-walk-untracked-trees-bc7e0af26ee8.json",
+        "docs/state/reckon/reviews/run/r-20261113T012546102955-ready-a-review-dies-where-nobody-i-s15/r-20261113T035109580580-review-of-ready-a-review-dies-where-nobody-i-s15-ecba127a2883.json",
+        "docs/state/reckon/reviews/run/r-20261113T012702825786-a-promotion-s-fleet-reading-costs-the-same-at-any-number-of/r-20261113T021433293422-review-of-a-promotion-s-fleet-reading-costs-the-same-at-any-number-of-6f6b7ed60843.json",
+        "docs/state/reckon/reviews/run/r-20261113T013346728643-ready-lane-and-model-routing-s57/r-20261113T035950885143-review-of-ready-lane-and-model-routing-s57-0214cab41948.json",
+        "docs/state/reckon/reviews/run/r-20261113T014538677019-a-phase-transition-is-published-first/r-20261113T042153921533-review-of-a-phase-transition-is-published-first-6994822a20b9.json",
+        "docs/state/reckon/reviews/run/r-20261113T020053676895-only-unmergeable-paths-are-claimed/r-20261113T042224969691-review-of-only-unmergeable-paths-are-claimed-c1dbb46fd03d.json",
+        "docs/state/reckon/reviews/run/r-20261113T023226263467-run-leaves-nothing-behind/r-20261113T053703588634-review-of-run-leaves-nothing-behind-d7e829c317c6.json",
+        "docs/state/reckon/reviews/run/r-20261113T024814201130-a-landing-write-outlasts-a-briefly-held-index-lock/r-20261113T033219624325-review-of-a-landing-write-outlasts-a-briefly-held-index-lock-50493b22a8d2.json",
+        "docs/state/reckon/reviews/run/r-20261113T032923501296-admission-pass-reads-ledger-once/r-20261113T045205157069-review-of-admission-pass-reads-ledger-once-277c5b7e7684.json",
+        "docs/state/reckon/reviews/run/r-20261113T033507849520-service-reloads-between-passes/r-20261113T055235126665-review-of-service-reloads-between-passes-71765ae67b43.json",
+        "docs/state/reckon/reviews/run/r-20261113T044627048212-stopped-run-resumes-with-advice/r-20261113T054446457163-review-of-stopped-run-resumes-with-advice-643ea32dd7fb.json",
+        "docs/state/reckon/runs/r-20261112T215221947107-a-floor-driven-repair-and-a-promotion-never-both-proceed.json",
+        "docs/state/reckon/runs/r-20261112T220918968738-the-stop-hook-blocks-once-per-unchanged-duty-list.json",
+        "docs/state/reckon/runs/r-20261112T221037018610-a-gate-log-s-failure-count-is-read-across-the-whole-gate.json",
+        "docs/state/reckon/runs/r-20261112T222328496505-a-killed-promotion-writes-nothing-after-it-dies.json",
+        "docs/state/reckon/runs/r-20261112T225255775909-a-persisted-review-index-never-claims-more-than-it-read.json",
+        "docs/state/reckon/runs/r-20261112T230528821712-review-of-a-floor-repair-s-advice-carries-the-findings-behind-the-scor-080dc36004c3.json",
+        "docs/state/reckon/runs/r-20261112T231336380925-a-landed-reading-follows-the-primary-branch.json",
+        "docs/state/reckon/runs/r-20261112T232247871249-review-of-a-promotion-that-moved-under-itself-still-lands-fad32654e562.json",
+        "docs/state/reckon/runs/r-20261112T234742476323-review-of-a-killed-promotion-writes-nothing-after-it-dies-cb6358cacaf3.json",
+        "docs/state/reckon/runs/r-20261112T234811256868-an-interrupted-promotion-keeps-its-record.json",
+        "docs/state/reckon/runs/r-20261112T235032217177-review-of-a-persisted-review-index-never-claims-more-than-it-read-98f28719c86d.json",
+        "docs/state/reckon/runs/r-20261113T004809073040-an-abandoned-launch-retires-no-newer-records.json",
+        "docs/state/reckon/runs/r-20261113T010154557806-review-of-an-interrupted-promotion-keeps-its-record-4d9818a8c7b5.json",
+        "docs/state/reckon/runs/r-20261113T010628966316-plan-review-of-work-flows-to-the-lane.json",
+        "docs/state/reckon/runs/r-20261113T011510453024-coordinator-holds-a-delivered-run.json",
+        "docs/state/reckon/runs/r-20261113T011602155862-a-pipe-rearm-draws-each-run-once.json",
+        "docs/state/reckon/runs/r-20261113T012014321697-a-promotion-s-boundary-check-does-not-walk-untracked-trees.json",
+        "docs/state/reckon/runs/r-20261113T012224947637-review-of-the-stop-hook-blocks-once-per-unchanged-duty-list-26f5d613b0f8.json",
+        "docs/state/reckon/runs/r-20261113T012546102955-ready-a-review-dies-where-nobody-i-s15.json",
+        "docs/state/reckon/runs/r-20261113T012644880226-review-of-a-floor-driven-repair-and-a-promotion-never-both-proceed-d309fa82770b.json",
+        "docs/state/reckon/runs/r-20261113T012702825786-a-promotion-s-fleet-reading-costs-the-same-at-any-number-of.json",
+        "docs/state/reckon/runs/r-20261113T013107378107-review-of-a-landed-reading-follows-the-primary-branch-aecee18b9e10.json",
+        "docs/state/reckon/runs/r-20261113T013346728643-ready-lane-and-model-routing-s57.json",
+        "docs/state/reckon/runs/r-20261113T013725431456-plan-review-of-a-landing-never-waits-on-a-shared-index.json",
+        "docs/state/reckon/runs/r-20261113T013838511372-plan-review-of-the-monitor-reads-each-fact-once.json",
+        "docs/state/reckon/runs/r-20261113T014058167417-plan-review-of-a-report-is-kept-only-when-persisted.json",
+        "docs/state/reckon/runs/r-20261113T014459414513-review-of-scheduler-wait-is-not-abandoned-9d14291f06c9.json",
+        "docs/state/reckon/runs/r-20261113T014538677019-a-phase-transition-is-published-first.json",
+        "docs/state/reckon/runs/r-20261113T015221321497-review-of-coordinator-holds-a-delivered-run-f9eab85d420b.json",
+        "docs/state/reckon/runs/r-20261113T020053676895-only-unmergeable-paths-are-claimed.json",
+        "docs/state/reckon/runs/r-20261113T020106081485-review-of-a-pipe-rearm-draws-each-run-once-140e2f4d64cc.json",
+        "docs/state/reckon/runs/r-20261113T021433293422-review-of-a-promotion-s-fleet-reading-costs-the-same-at-any-number-of-6f6b7ed60843.json",
+        "docs/state/reckon/runs/r-20261113T022338073741-review-of-a-promotion-s-boundary-check-does-not-walk-untracked-trees-bc7e0af26ee8.json",
+        "docs/state/reckon/runs/r-20261113T023208933564-review-of-an-abandoned-launch-retires-no-newer-records-0e61f79edb63.json",
+        "docs/state/reckon/runs/r-20261113T023226263467-run-leaves-nothing-behind.json",
+        "docs/state/reckon/runs/r-20261113T024903336560-review-of-an-interrupted-promotion-keeps-its-record-7afee0b021c0.json",
+        "docs/state/reckon/runs/r-20261113T025446441093-review-of-a-promotion-does-not-wait-for-its-worktree-copy-s-deletion-57f07fa2729c.json",
+        "docs/state/reckon/runs/r-20261113T030326156993-plan-review-of-a-dispatch-returns-without-its-worker.json",
+        "docs/state/reckon/runs/r-20261113T031639826510-plan-review-of-crew-observability-truth.json",
+        "docs/state/reckon/runs/r-20261113T031841613150-review-of-no-caller-waits-on-a-promotion-d513212c9666.json",
+        "docs/state/reckon/runs/r-20261113T032923501296-admission-pass-reads-ledger-once.json",
+        "docs/state/reckon/runs/r-20261113T033219624325-review-of-a-landing-write-outlasts-a-briefly-held-index-lock-50493b22a8d2.json",
+        "docs/state/reckon/runs/r-20261113T033507949207-plan-review-of-the-monitor-shows-the-work-it-watches.json",
+        "docs/state/reckon/runs/r-20261113T034532176630-plan-review-of-a-gate-halts-only-on-substance.json",
+        "docs/state/reckon/runs/r-20261113T034935011916-review-of-scheduler-wait-is-not-abandoned-d20dde38d630.json",
+        "docs/state/reckon/runs/r-20261113T035109580580-review-of-ready-a-review-dies-where-nobody-i-s15-ecba127a2883.json",
+        "docs/state/reckon/runs/r-20261113T035315466160-review-of-a-landed-reading-follows-the-primary-branch-9ffc0fafe7b6.json",
+        "docs/state/reckon/runs/r-20261113T035545337638-review-of-a-persisted-item-has-a-record-and-a-home-outside-7623bbe1fc34.json",
+        "docs/state/reckon/runs/r-20261113T035950885143-review-of-ready-lane-and-model-routing-s57-0214cab41948.json",
+        "docs/state/reckon/runs/r-20261113T040029890841-plan-review-of-a-review-dies-where-nobody-is-looking.json",
+        "docs/state/reckon/runs/r-20261113T040751765453-plan-review-of-a-queue-holds-the-whole-plan.json",
+        "docs/state/reckon/runs/r-20261113T042153921533-review-of-a-phase-transition-is-published-first-6994822a20b9.json",
+        "docs/state/reckon/runs/r-20261113T042201470145-review-of-every-delivery-the-reflex-owns-gets-its-review-3c8873c61edd.json",
+        "docs/state/reckon/runs/r-20261113T042224969691-review-of-only-unmergeable-paths-are-claimed-c1dbb46fd03d.json",
+        "docs/state/reckon/runs/r-20261113T044533812322-plan-review-of-the-monitor-reads-each-fact-once.json",
+        "docs/state/reckon/runs/r-20261113T044627048212-stopped-run-resumes-with-advice.json",
+        "docs/state/reckon/runs/r-20261113T045205157069-review-of-admission-pass-reads-ledger-once-277c5b7e7684.json",
+        "docs/state/reckon/runs/r-20261113T050655058606-review-of-coordinator-holds-a-delivered-run-6ccf02af4ebc.json",
+        "docs/state/reckon/runs/r-20261113T050823003288-review-of-a-snapshot-duty-whose-run-has-gone-is-not-shown-9d219e329020.json",
+        "docs/state/reckon/runs/r-20261113T053703588634-review-of-run-leaves-nothing-behind-d7e829c317c6.json",
+        "docs/state/reckon/runs/r-20261113T054446457163-review-of-stopped-run-resumes-with-advice-643ea32dd7fb.json",
+        "docs/state/reckon/runs/r-20261113T055235126665-review-of-service-reloads-between-passes-71765ae67b43.json",
+        "docs/state/reckon/runs/r-20261113T055859042894-plan-review-of-a-dispatch-returns-without-its-worker.json",
+        "docs/state/reckon/runs/r-20261113T060812296939-review-of-scheduler-wait-is-not-abandoned-0d4f6e2f062e.json",
+        "docs/state/reckon/runs/r-20261113T061620192342-plan-review-of-crew-observability-truth.json",
+        "docs/state/reckon/runs/r-20261113T061724468798-review-of-coordinator-holds-a-delivered-run-877a5bd31b3f.json",
+        "reckon/cli.py",
+        "reckon/crew",
+        "reckon/crew/promotion_requests.py",
+        "reckon/crew_follow_commands.py",
+        "reckon/crew_run_commands.py",
+        "reckon/hooks/coordinator_obligations.py",
+        "tests",
+        "tests/test_no_caller_waits_on_a_promotion.py"
+      ],
+      "ready-a-held-lane-never-holds-a-re-s2": [
+        "reckon/crew/dispatch.py",
+        "reckon/crew/queue_admission.py",
+        "reckon/crew/recovery_review_dispatch.py",
+        "reckon/crew/recovery_review_subject.py"
+      ],
+      "ready-a-limit-reset-reaches-every-s3": [
+        "docs/evidence/fragments/a-limit-reset-reaches-every-session/ready-a-limit-reset-reaches-every-s3.html",
+        "docs/figures/a-limit-reset-reaches-every-session/ready-a-limit-reset-reaches-every-s3",
+        "reckon/crew/obligations.py",
+        "reckon/hooks/coordinator_obligations.py"
+      ],
+      "ready-a-limit-reset-reaches-every-s9": [
+        "reckon/crew/lift_watch.py",
+        "reckon/crew/ticker.py",
+        "tests/test_a_limit_reset_reaches_every_pane.py"
+      ],
+      "ready-a-queued-request-is-checked-s5": [
+        "reckon/crew/routing.py"
+      ],
+      "ready-a-queued-request-is-checked-s6": [
+        "dispatch_batch.py",
+        "reckon/crew/dispatch_batch.py"
+      ],
+      "ready-a-queued-request-is-checked-s7": [
+        "reckon/crew/dispatch_admission.py",
+        "reckon/crew/dispatch_batch.py"
+      ],
+      "ready-a-queued-request-is-checked-s8": [
+        "reckon/crew/obligations.py"
+      ],
+      "ready-a-read-answers-inside-its-de-s58": [
+        "docs/evidence/fragments/a-read-answers-inside-its-deadline/a-stopped-claims-git-answer-is-reused-until-its-worktree-moves.html",
+        "reckon/crew/node.py",
+        "reckon/crew/recovery_watch.py",
+        "tests/test_a_stopped_claims_git_answer_is_reused_until_its_worktree_moves.py"
+      ],
+      "ready-a-read-costs-what-changed-s7": [
+        "docs/evidence/fragments/a-read-costs-what-changed"
+      ],
+      "ready-a-reexec-never-orphans-a-dis-s3": [
+        "reckon/crew/promotion.py"
+      ],
+      "ready-a-reexec-never-orphans-a-dis-s5": [
+        "reckon/crew/dispatch_claims.py",
+        "reckon/crew/dispatch_launch.py",
+        "reckon/crew/follower_reload.py",
+        "reckon/crew/queue_admission.py",
+        "reckon/crew/station.py"
+      ],
+      "ready-a-review-can-see-the-figure-s20": [
+        "reckon/crew/recovery_review_dispatch.py",
+        "tests/test_a_figure_review_takes_an_image_lane.py"
+      ],
+      "ready-a-review-can-see-the-figure-s25": [
+        "docs/evidence/fragments/a-review-can-see-the-figure/ready-a-review-can-see-the-figure-s25.html",
+        "docs/figures/a-review-can-see-the-figure/ready-a-review-can-see-the-figure-s25",
+        "reckon/crew/recovery_review_delivery.py"
+      ],
+      "ready-a-seat-held-elsewhere-is-not-s22": [
+        "reckon/crew/runs.py",
+        "reckon/crew/watch_unit.py"
+      ],
+      "ready-lane-and-model-routing-s58": [
+        "docs/_shared/flight.schema.json",
+        "docs/evidence/fragments/lane-and-model-routing/ready-lane-and-model-routing-s58.html",
+        "docs/figures/lane-and-model-routing/ready-lane-and-model-routing-s58",
+        "reckon/_flight_schema.py",
+        "reckon/crew/admission/launching.py",
+        "reckon/crew/dispatch_picker.py",
+        "reckon/crew/queue_admission.py",
+        "reckon/flight.py",
+        "reckon/schema/flight.yaml",
+        "tests/test_a_stale_route_is_picked_again_at_launch.py"
+      ],
+      "ready-lane-and-model-routing-s60": [
+        "docs/evidence/fragments/lane-and-model-routing/ready-lane-and-model-routing-s60.html",
+        "docs/figures/lane-and-model-routing/ready-lane-and-model-routing-s60",
+        "reckon/crew/picker/client.py"
+      ],
+      "ready-the-crew-does-its-own-bookke-s11": [
+        "reckon/ledger.py",
+        "reckon/run_store.py"
+      ],
+      "ready-the-crew-does-its-own-bookke-s3": [
+        "docs/evidence/fragments/the-crew-does-its-own-bookkeeping/ready-the-crew-does-its-own-bookke-s3.html",
+        "docs/figures/the-crew-does-its-own-bookkeeping/ready-the-crew-does-its-own-bookke-s3",
+        "reckon/crew/recovery_review_dispatch.py",
+        "reckon/crew/recovery_review_subject.py"
+      ],
+      "ready-the-crew-does-its-own-bookke-s4": [
+        "docs/evidence/fragments/the-crew-does-its-own-bookkeeping/ready-the-crew-does-its-own-bookke-s4.html",
+        "docs/figures/the-crew-does-its-own-bookkeeping/ready-the-crew-does-its-own-bookke-s4",
+        "reckon/crew/merge.py",
+        "reckon/crew/promotion.py",
+        "reckon/crew_run_commands.py"
+      ],
+      "ready-the-crew-home-has-a-bound-s13": [
+        "docs/evidence/fragments/the-crew-home-has-a-bound/ready-the-crew-home-has-a-bound-s13.html",
+        "docs/figures/the-crew-home-has-a-bound/ready-the-crew-home-has-a-bound-s13",
+        "reckon/crew/gc.py"
+      ],
+      "ready-the-monitor-shows-the-work-i-s103": [
+        "docs/evidence/fragments/the-monitor-shows-the-work-it-watches/ready-the-monitor-shows-the-work-i-s103.html",
+        "docs/figures/the-monitor-shows-the-work-it-watches/ready-the-monitor-shows-the-work-i-s103",
+        "reckon/crew/obligations.py",
+        "reckon/hooks/coordinator_obligations.py"
+      ],
+      "ready-the-monitor-shows-the-work-i-s104": [
+        "docs/evidence/fragments/the-monitor-shows-the-work-it-watches/ready-the-monitor-shows-the-work-i-s104.html",
+        "docs/figures/the-monitor-shows-the-work-it-watches/ready-the-monitor-shows-the-work-i-s104",
+        "reckon/crew/obligation_snapshot.py",
+        "reckon/hooks/coordinator_obligations.py",
+        "tests/test_a_held_duty_is_settled_against_the_pointer.py"
+      ],
+      "ready-the-monitor-shows-the-work-i-s121": [
+        "docs/evidence/fragments/the-monitor-shows-the-work-it-watches/ready-the-monitor-shows-the-work-i-s121.html",
+        "docs/figures/the-monitor-shows-the-work-it-watches/ready-the-monitor-shows-the-work-i-s121",
+        "reckon/crew/obligation_snapshot.py",
+        "reckon/hooks/coordinator_obligations.py",
+        "tests/test_a_quiet_foreign_producer_reads_live.py",
+        "tests/test_a_released_follower_is_told_to_rearm.py",
+        "tests/test_a_stale_code_producer_is_not_reloading_forever.py"
+      ],
+      "ready-the-monitor-shows-the-work-i-s78": [
+        "reckon/crew/needs_you.py",
+        "reckon/crew_follow_commands.py",
+        "tests/test_follow_needs_you_line.py"
+      ],
+      "ready-work-is-never-stuck-behind-t-s21": [
+        "docs/evidence/fragments/work-is-never-stuck-behind-the-admission-loop/ready-work-is-never-stuck-behind-t-s21.html",
+        "docs/figures/work-is-never-stuck-behind-the-admission-loop/ready-work-is-never-stuck-behind-t-s21",
+        "reckon/crew/queue_admission.py",
+        "reckon/crew/runs.py",
+        "reckon/crew_run_commands.py"
+      ],
+      "ready-work-is-never-stuck-behind-t-s23": [
+        "docs/evidence/fragments/work-is-never-stuck-behind-the-admission-loop"
+      ],
+      "ready-work-is-never-stuck-behind-t-s31": [
+        "reckon/crew/queue_admission.py"
+      ],
+      "ready-work-is-never-stuck-behind-t-s38": [
+        "reckon/crew/queue_admission.py",
+        "tests/test_a_launch_rereads_the_run_it_starts.py"
+      ],
+      "ready-work-is-never-stuck-behind-t-s4": [
+        "reckon/crew/queue_admission.py"
+      ],
+      "retention-retires-a-review-run": [
+        "docs/evidence/fragments/work-flows-to-the-lane/retention-retires-a-review-run.html",
+        "docs/figures/work-flows-to-the-lane/retention-retires-a-review-run",
+        "reckon/crew",
+        "tests/test_retention_retires_a_review_run.py"
+      ],
+      "review-duties-are-derived-off-the-tick-thread": [
+        "docs/evidence/fragments/the-monitor-reads-each-fact-once/review-duties-are-derived-off-the-tick-thread.html",
+        "reckon/crew/station.py",
+        "reckon/crew/station_obligations.py",
+        "tests/test_a_phase_transition_is_published_before_review_duties.py",
+        "tests/test_review_duties_are_derived_off_the_tick_thread.py"
+      ],
+      "service-runs-mains-code": [
+        "docs/evidence/fragments/work-is-never-stuck-behind-the-admission-loop/service-runs-mains-code.html",
+        "docs/figures/work-is-never-stuck-behind-the-admission-loop/service-runs-mains-code",
+        "reckon/crew/fleet_supervisor.py",
+        "tests/test_a_service_runs_the_code_main_carries.py"
+      ],
+      "the-old-event-logs-are-retired": [
+        "docs/evidence/fragments/crew-state-stays-bounded/the-old-event-logs-are-retired.html",
+        "docs/figures/crew-state-stays-bounded/the-old-event-logs-are-retired",
+        "reckon/crew/event_log_retirement.py",
+        "reckon/crew/gc.py",
+        "tests/test_the_old_event_logs_are_retired.py"
+      ],
+      "the-review-store-is-indexed-by-its-writers": [
+        "docs/evidence/fragments/the-monitor-reads-each-fact-once/the-review-store-is-indexed-by-its-writers.html",
+        "reckon/crew/plan_review.py",
+        "reckon/crew/review.py",
+        "reckon/crew/review_records.py",
+        "tests/test_the_review_store_is_indexed_by_its_writers.py"
+      ],
+      "the-unreconciled-count-leaves-out-runs-whose-own-review-is-i": [
+        "docs/evidence/fragments/crew-observability-truth/the-unreconciled-count-leaves-out-runs-whose-own-review-is-i.html",
+        "docs/figures/crew-observability-truth/the-unreconciled-count-leaves-out-runs-whose-own-review-is-i",
+        "reckon/crew/obligations.py",
+        "reckon/crew/runs.py",
+        "tests/test_the_unreconciled_count_leaves_out_runs_whose_own_review_is_i.py"
+      ],
+      "wave1-a1-the-monitor-shows-the-work-it-watche-s80": [
+        "docs/evidence/fragments/the-monitor-shows-the-work-it-watches/wave1-a1-the-monitor-shows-the-work-it-watche-s80.html",
+        "docs/figures/the-monitor-shows-the-work-it-watches/wave1-a1-the-monitor-shows-the-work-it-watche-s80",
+        "reckon/crew/admission/launching.py",
+        "reckon/crew/queue_admission.py",
+        "reckon/crew/recovery_classification.py",
+        "reckon/crew/ticker.py",
+        "reckon/crew_follow_commands.py",
+        "tests/test_a_requeued_refusal_draws_no_dropped_row.py"
+      ],
+      "wave2-codex-anchored-the-crew-does-its-own-bookke-s28": [
+        "docs/evidence/fragments/the-crew-does-its-own-bookkeeping/wave2-codex-anchored-the-crew-does-its-own-bookke-s28.html",
+        "docs/figures/the-crew-does-its-own-bookkeeping/wave2-codex-anchored-the-crew-does-its-own-bookke-s28",
+        "reckon/crew/obligations.py",
+        "reckon/crew/recovery_review_dispatch.py",
+        "reckon/crew/review_dispositions.py",
+        "reckon/mcp.py"
+      ]
+    },
+    "plan": "work-is-never-stuck-behind-the-admission-loop",
+    "regenerate_paths": [],
+    "requested_backend": "codex",
+    "requires_decisions": [],
+    "role": "implement",
+    "section": "§35",
+    "spec_level": "exact",
+    "time_budget": "60m",
+    "token_budget": null,
+    "waits_only_after": false,
+    "write_paths": [
+      "reckon/crew/queue_edit.py",
+      "reckon/crew/queue_admission.py",
+      "docs/evidence/fragments/work-is-never-stuck-behind-the-admission-loop/ready-work-is-never-stuck-behind-t-s35.html",
+      "docs/figures/work-is-never-stuck-behind-the-admission-loop/ready-work-is-never-stuck-behind-t-s35",
+      "tests/test_a_queue_hold_does_not_wait_for_the_pass.py"
+    ]
+  },
+  "orchestrator_lane_override": null,
+  "orientation_input_tokens": null,
+  "outcome": "",
+  "outside_scope_paths": [
+    "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261113T030959269941-ready-work-is-never-stuck-behind-t-s35/resumed-importer-comparison.json."
+  ],
+  "pace": {
+    "allowance": {
+      "advisory": true,
+      "burn_multiple": 2.2349048857765856,
+      "derived": 0.10828201304679226,
+      "drain_hours": 168.0,
+      "effective_limit": 0.10828201304679226,
+      "elapsed_fraction": 0.09843819367890205,
+      "elapsed_hours": 16.537616538055545,
+      "group": "codex-sub",
+      "limited_by": "allowance",
+      "observed_at": "2026-11-13T08:56:55+00:00",
+      "pace_multiple": 1.1,
+      "provider_ceiling": null,
+      "reason": null,
+      "remaining_budget": 0.78,
+      "remaining_windows": null,
+      "resets_at": "2026-11-19T16:24:40Z",
+      "state": "observed",
+      "utilisation": 0.22,
+      "window_minutes": 10080
+    },
+    "bar": {
+      "bar": 0.123904,
+      "decided_by": "window",
+      "margin": 0.594846,
+      "name": "ready-work-is-never-stuck-behind-t-s35",
+      "score": 0.71875,
+      "state": "observed",
+      "verdict": "send-metered",
+      "window_fill": 0.22
+    },
+    "clocks": {
+      "five_hour": {
+        "age_seconds": 0.419537,
+        "observed_at": "2026-11-13T08:56:55+00:00",
+        "period": "primary",
+        "resets_at": "2026-11-19T16:24:40Z",
+        "state": "observed",
+        "utilisation": 0.22,
+        "window_minutes": 10080
+      },
+      "seven_day": {
+        "age_seconds": null,
+        "observed_at": null,
+        "period": "seven_day",
+        "resets_at": null,
+        "state": "not_published",
+        "utilisation": null,
+        "window_minutes": null
+      }
+    },
+    "group": "codex-sub",
+    "hold": null,
+    "lane": "codex",
+    "lift_id": null,
+    "member": "codex",
+    "node": "ready-work-is-never-stuck-behind-t-s35",
+    "policy": {
+      "drain_lead_hours": 12.0,
+      "pace_multiple": 1.1
+    },
+    "reason": null,
+    "recorded_at": "2026-11-13T08:56:55.419537+00:00",
+    "score": 0.71875,
+    "session": null,
+    "source": "recorded",
+    "state": "observed"
+  },
+  "picker_selection": {
+    "action": "fallback",
+    "backend": null,
+    "comment": "",
+    "confidence": null,
+    "effort": null,
+    "excluded": [],
+    "fallback_reason": "timeout",
+    "family": null,
+    "jev_model": "~typesafe/jev-latest",
+    "latency_ms": 5000.837,
+    "model": null,
+    "offered": [],
+    "probabilities": {},
+    "stage_ms": {}
+  },
+  "plan": "work-is-never-stuck-behind-the-admission-loop",
+  "plan_impl_at_dispatch": 0.8816840277777778,
+  "plan_link": null,
+  "promoted_by": null,
+  "promoted_revision": "214b9015bc4aafa98afac70eda2ba30865f70c77",
+  "release": {
+    "arms_kept": [],
+    "arms_logs_copied": [],
+    "arms_removed_paths": [],
+    "arms_withheld": "",
+    "process_signalled": false,
+    "process_withheld": "process is not alive",
+    "scratch_absent": true,
+    "scratch_bytes": null,
+    "scratch_host": "98dci4-clu-2019.iter.org",
+    "scratch_path": "/tmp/reckon-crew-scratch/r-20261113T030959269941-ready-work-is-never-stuck-behind-t-s35",
+    "scratch_removed": false,
+    "scratch_removed_paths": [],
+    "scratch_withheld": "scratch directory is no longer present",
+    "worktree_audit": {
+      "counts": {
+        "dirty": 0,
+        "disposable": 0,
+        "integrated": 0,
+        "live-referenced": 0,
+        "retained-for-resume": 0,
+        "unintegrated": 0
+      },
+      "worktrees": [
+        {
+          "available": false,
+          "detail": "tree is no longer available",
+          "path": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/829e5a4a-6870-4aec-876d-ba2efb1b5ecf/ready-work-is-never-stuck-behind-t-s35",
+          "unavailable_state": "missing"
+        }
+      ]
+    },
+    "worktree_released": true
+  },
+  "resume_waiver": null,
+  "review": {
+    "absent": [],
+    "reviewed_base_sha": "4c4cf234390f5326b995cee7ad6bda55fe01b5c0",
+    "reviewed_head_sha": "214b9015bc4aafa98afac70eda2ba30865f70c77",
+    "scores": {
+      "durability": 19,
+      "evidence": 18,
+      "fit": 18,
+      "goal_fidelity": 17,
+      "reuse": 20,
+      "scope_discipline": 19
+    },
+    "status": "parsed",
+    "total": 111
+  },
+  "review_tier": "full",
+  "role": "implement",
+  "route_mode": "explicit",
+  "run_id": "r-20261113T030959269941-ready-work-is-never-stuck-behind-t-s35",
+  "scope_acceptances": null,
+  "scope_changed": false,
+  "section": "§35",
+  "session": "829e5a4a-6870-4aec-876d-ba2efb1b5ecf",
+  "session_harness": "codex",
+  "session_id": "01a1d422-07bf-7930-ad30-52406cbd27b5",
+  "session_model": "gpt-6.1-sol",
+  "shadow_controlled": null,
+  "shadow_patch": "",
+  "spec_level": "exact",
+  "stalled": true,
+  "suite_delta": {
+    "added_failure_ids": [],
+    "after_suite": {
+      "command": "PYTHONPATH=. /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_queue_hold_does_not_wait_for_the_pass.py tests/test_staged_write_inventory.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_digest": null,
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261113T030959269941-ready-work-is-never-stuck-behind-t-s35/armed-suite/after.log",
+      "revision": "214b9015bc4aafa98afac70eda2ba30865f70c77"
+    },
+    "baseline_measured_nothing": false,
+    "baseline_suite": {
+      "command": "PYTHONPATH=. /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_queue_hold_does_not_wait_for_the_pass.py tests/test_staged_write_inventory.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_digest": null,
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261113T030959269941-ready-work-is-never-stuck-behind-t-s35/armed-suite/baseline.log",
+      "revision": "4c4cf234390f5326b995cee7ad6bda55fe01b5c0"
+    },
+    "failure_attribution": {},
+    "measured_by": "run",
+    "status": "clean",
+    "suite_command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_queue_hold_does_not_wait_for_the_pass.py tests/test_staged_write_inventory.py",
+    "waiver_reason": null
+  },
+  "tests_added": 1,
+  "throughput": {
+    "cumulative_cached_input_tokens": 14750208,
+    "cumulative_input_tokens": 29687029,
+    "detail": "turn tokens recorded, but no span was supplied to rate them",
+    "generated_tokens": 68540
+  },
+  "time_budget": "60m",
+  "tool_steps": 104.0,
+  "unplanned_reason": null,
+  "unreconciled_override": null,
+  "wall_seconds": 18811,
+  "watch_override": {
+    "arming_line": "reckon crew watch --project reckon",
+    "attach_line": "/home/ITER/mcintos/Code/reckon/.venv/bin/reckon crew follow --project reckon --session 829e5a4a-6870-4aec-876d-ba2efb1b5ecf",
+    "requested": true,
+    "session_attached": true,
+    "watcher_live": true
+  },
+  "worker_exit": {
+    "attempt": 3,
+    "ended_during": "working",
+    "ended_pids": [],
+    "exit_code": 0,
+    "exited_at": "2026-11-13T14:12:07Z",
+    "last_record_type": "turn.completed",
+    "launched_at": "2026-11-13T14:03:33Z",
+    "recorded_by": "supervisor",
+    "removed_harness_caches": [
+      {
+        "bytes": 72461743,
+        "path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261113T030959269941-ready-work-is-never-stuck-behind-t-s35/codex-home/cache"
+      },
+      {
+        "bytes": 28814443,
+        "path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261113T030959269941-ready-work-is-never-stuck-behind-t-s35/codex-home/plugins"
+      }
+    ],
+    "run_id": "r-20261113T030959269941-ready-work-is-never-stuck-behind-t-s35",
+    "signal": null,
+    "signal_name": null,
+    "stream_records_seen": 490,
+    "worker_pid": 2507398
+  },
+  "worker_seconds": 18760,
+  "worker_seconds_source": "rollout_receipts",
+  "worktree_retention": null
+}

@@ -1,0 +1,180 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-11T15:47:33.741Z",
+  "dispatched_at": "2026-11-11T15:41:02Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/work-flows-to-the-lane/r-20261111T153758715347-plan-review-of-work-flows-to-the-lane/plan.html:22",
+      "id": "wiring-1",
+      "reason": "\u00a79 would be released as soon as \u00a72\u2013\u00a75 land, before the \u00a76 repair exists, so its gate fails on a precondition the plan never declared and the whole four-hour window is wasted.",
+      "text": "\u00a79's done-when requires \"no admit pass holding a request on a claim under a shared root\", which is exactly \u00a76's deliverable, but `plan-section-depends-on` lists only `s2`, `s3`, `s4` and `s5` for `s9`",
+      "type": "wiring",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/work-flows-to-the-lane/r-20261111T153758715347-plan-review-of-work-flows-to-the-lane/plan.html:71",
+      "id": "done_when-1",
+      "reason": "a worker that emits the row and leaves the views unbuilt passes the gate, and the plan's own stated reason for the section (a session that is away still sees what was submitted) is then unproven.",
+      "text": "\u00a75's deliverable requires that \"its live and obligations views list every run submitted since it last read them\", and the done-when exercises only the watch rows, never the views; its negative control (\"a pass that launches nothing writes no row\") cannot fire because nothing in the stated implementation writes a row without a launch",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/work-flows-to-the-lane/r-20261111T153758715347-plan-review-of-work-flows-to-the-lane/plan.html:94",
+      "id": "done_when-2",
+      "reason": "the node cannot make its own measure reachable, so the plan should state that the coordinator queues the sections and opens the window, and the node measures after it.",
+      "text": "\u00a79's done-when begins \"one four-hour window \u2026 in which at least 20 sections were queued\", a condition the dispatched node cannot create, so the gate depends on coordinator behaviour the plan neither names nor assigns",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/work-flows-to-the-lane/r-20261111T153758715347-plan-review-of-work-flows-to-the-lane/plan.html:32",
+      "id": "reasoning-1",
+      "reason": "the section's headline evidence is internally inconsistent, so a reader cannot tell whether 51 or 67 runs were live and the baseline the plan argues from is unverified.",
+      "text": "\u00a71 states \"The crew's 67 live pointers, across all projects, read:\" and then tabulates 9 + 35 + 7 + 0 = 51 rows, with no category accounting for the other 16",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/work-flows-to-the-lane/r-20261111T153758715347-plan-review-of-work-flows-to-the-lane/plan.html:77",
+      "id": "reasoning-2",
+      "reason": "the surrounding sentences state the defect unambiguously, so a competent worker diagnoses the right direction from the deliverable despite the inverted clause.",
+      "text": "\u00a76 tells the worker to name \"which property of the pair took the claim off the shared path\", but the defect is that the claim was kept on the shared path and the request held, so the sentence asks for the inverse diagnosis",
+      "type": "reasoning",
+      "would_change": false
+    }
+  ],
+  "plan_commit": "68b0232793aa517e01f6f0e267e6e6a23de50b23",
+  "plan_fingerprint": "bc9edb6cdae8b3fba5e9df53bf7ff1a023d728b5f36212cab2deb1bf938e3b16",
+  "plan_slug": "work-flows-to-the-lane",
+  "plan_version": 0,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "68b0232793aa517e01f6f0e267e6e6a23de50b23",
+      "commit_basis": "edit",
+      "finding": "wiring-1",
+      "note": "s9 now also waits on s6 in plan-section-depends-on",
+      "reason": "",
+      "when": "2026-11-11T15:54:34.860699+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "68b0232793aa517e01f6f0e267e6e6a23de50b23",
+      "commit_basis": "edit",
+      "finding": "done_when-1",
+      "note": "s5 done-when now asserts the live and obligations views list the submitted runs since the session's last read, and the negative control is a mutation: dropping the row write fails the two-row assertion",
+      "reason": "",
+      "when": "2026-11-11T15:54:45.457729+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "68b0232793aa517e01f6f0e267e6e6a23de50b23",
+      "commit_basis": "edit",
+      "finding": "done_when-2",
+      "note": "s9 now states the coordinator queues the sections and opens the window; the node measures a window that already happened",
+      "reason": "",
+      "when": "2026-11-11T15:54:55.975964+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "68b0232793aa517e01f6f0e267e6e6a23de50b23",
+      "commit_basis": "edit",
+      "finding": "reasoning-1",
+      "note": "s1 now reads 52 live run pointers and its table adds the one blocked run (9+35+7+1+0=52); 67 was the directory entry count",
+      "reason": "",
+      "when": "2026-11-11T15:55:07.845099+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "68b0232793aa517e01f6f0e267e6e6a23de50b23",
+      "commit_basis": "edit",
+      "finding": "reasoning-2",
+      "note": "s6 now asks which property of the pair kept the claim on the shared path from being treated as shared",
+      "reason": "",
+      "when": "2026-11-11T15:55:18.433422+00:00"
+    }
+  ],
+  "responses": {
+    "done_when-1": {
+      "action": "acted",
+      "by": "",
+      "commit": "68b0232793aa517e01f6f0e267e6e6a23de50b23",
+      "commit_basis": "edit",
+      "note": "s5 done-when now asserts the live and obligations views list the submitted runs since the session's last read, and the negative control is a mutation: dropping the row write fails the two-row assertion",
+      "reason": "",
+      "when": "2026-11-11T15:54:45.457729+00:00"
+    },
+    "done_when-2": {
+      "action": "acted",
+      "by": "",
+      "commit": "68b0232793aa517e01f6f0e267e6e6a23de50b23",
+      "commit_basis": "edit",
+      "note": "s9 now states the coordinator queues the sections and opens the window; the node measures a window that already happened",
+      "reason": "",
+      "when": "2026-11-11T15:54:55.975964+00:00"
+    },
+    "reasoning-1": {
+      "action": "acted",
+      "by": "",
+      "commit": "68b0232793aa517e01f6f0e267e6e6a23de50b23",
+      "commit_basis": "edit",
+      "note": "s1 now reads 52 live run pointers and its table adds the one blocked run (9+35+7+1+0=52); 67 was the directory entry count",
+      "reason": "",
+      "when": "2026-11-11T15:55:07.845099+00:00"
+    },
+    "reasoning-2": {
+      "action": "acted",
+      "by": "",
+      "commit": "68b0232793aa517e01f6f0e267e6e6a23de50b23",
+      "commit_basis": "edit",
+      "note": "s6 now asks which property of the pair kept the claim on the shared path from being treated as shared",
+      "reason": "",
+      "when": "2026-11-11T15:55:18.433422+00:00"
+    },
+    "wiring-1": {
+      "action": "acted",
+      "by": "",
+      "commit": "68b0232793aa517e01f6f0e267e6e6a23de50b23",
+      "commit_basis": "edit",
+      "note": "s9 now also waits on s6 in plan-section-depends-on",
+      "reason": "",
+      "when": "2026-11-11T15:54:34.860699+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/Code/reckon/docs/state/reckon/reviews/plan/work-flows-to-the-lane/r-20261111T153758715347-plan-review-of-work-flows-to-the-lane.json",
+  "review_run_id": "r-20261111T153758715347-plan-review-of-work-flows-to-the-lane",
+  "reviewed_blob_sha": "eb9a7bc934d713cdbee719efd16823bad5ae5b19",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every cited target resolves at the reviewed revision: `a-gate-halts-only-on-substance#s7` (present, `implementable`), `a-live-worker-can-be-reached#s8` and `#s9` (present, `done`), `concurrent-edits-meet-at-the-merge#s2` (present, `done`), `reckon/crew/dispatch_claims.py`, `reckon/crew/queue_landing.py`, `reckon/crew/picker/lane_context.py`, `reckon/crew/dispatch.py`, `reckon/crew/queue_admission.py`, `reckon/crew/findings.py`, `reckon/crew/claims.py`, `reckon/crew/runs.py`, `tests/test_a_queued_launch_ignores_the_coordinator_backlog.py` (with `test_a_direct_dispatch_still_refuses_the_backlog` at line 214 as \u00a73 claims), `docs/evidence/archive/`, and `~/public/imas-ambix/lane.json`.",
+    "done_when": "a finding \u2014 \u00a75 asserts a second deliverable (the live and obligations views list every run submitted since the session last read them) that its done-when never exercises, and \u00a79's done-when opens with a precondition (\"at least 20 sections were queued\") that the dispatched node cannot itself produce.",
+    "evidence_paths": "pass \u2014 \u00a79's record and script sit under `docs/evidence/archive/work-flows-to-the-lane-landed.html` and `scripts/`, both durable and committed beside the record; no section puts evidence in a scratchpad or node-local temporary path.",
+    "naming": "pass \u2014 section titles and deliverables are named by behaviour (\"A shared root claim never holds a queued request\", \"deferred\"), and no plan label, stage name or ticket number reaches a symbol or comment; the modules whose names are not fixed in advance are deferred to the node manifest rather than guessed in plan text.",
+    "reasoning": "a finding \u2014 \u00a71's total of \"67 live pointers\" does not match the phase table beneath it, which sums to 51; and \u00a76's reproduction instruction poses the diagnostic question in the inverted direction.",
+    "single_goal": "pass \u2014 each of \u00a72 to \u00a79 names one endpoint (identity lifecycle, dispatch over backlog, deferred dispositions, submission notice, shared-root admission, re-review brief, shadow prediction, lane record); \u00a72's sweep is the crash-enforcement arm of the identity lifecycle rather than a second deliverable.",
+    "wiring": "a finding \u2014 `plan-section-depends-on` gives `s9` the upstreams `s2`, `s3`, `s4` and `s5`, but \u00a79's done-when requires \"no admit pass holding a request on a claim under a shared root\", which is \u00a76's deliverable and is not declared as an upstream."
+  },
+  "section_digests": {
+    "_document": "e6b5ad712adf92d86d5411ad47672eaf7e536665c1e1d0b1710db4c52ec4ec94",
+    "s1": "d64739ea1d708e51adafc3bdda73a5793b112e39d1b0b05b160b0f24588715f7",
+    "s2": "bd3d223462ee3b0fb515f2472d9397d8e27ca44c184bf71b42367fd7a9db1054",
+    "s3": "2a060c7a5415553f71ca05b752499669f3209379066f0ffca3eb658079698d29",
+    "s4": "73dd573a24e53462f06ce2ee81f9ce01d788caba75663d34802e585ffa9af368",
+    "s5": "27851d1d4ab86e530614e1084fc1860268898e339440295bc0b291bb89db8c15",
+    "s6": "af41dfeb5c3ff461770e95f621850e699c60b7572a0e6bbec40e76e744b3dd60",
+    "s7": "8411a4b87a6d941e69b74aa81c380f024a398cf80490125819b718f524deb5fd",
+    "s8": "e20fb1fa345a829eb61e3bcf1af3f102051b1b043cbdb17ddf737f6a141df9c6",
+    "s9": "c24c671c78bf6619b7ffd832298a726a70800d57ab8c0bc062f2e5ed452052e8"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-11T15:52:45.277679+00:00",
+  "total": null
+}

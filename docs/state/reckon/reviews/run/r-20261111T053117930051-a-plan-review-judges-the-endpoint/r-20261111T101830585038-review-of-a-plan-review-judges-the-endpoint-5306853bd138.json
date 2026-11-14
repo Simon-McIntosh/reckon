@@ -1,0 +1,61 @@
+{
+  "added_failure_count": 1,
+  "added_failure_ids": [
+    "tests/test_the_station_reads_only_what_changed.py::test_a_cleared_memo_yields_the_same_payload"
+  ],
+  "added_failures_note": "Derived from the reviewed run's own two gate arms, because its manifest carries no baseline_suite/after_suite fields. importers-base.log header records 'revision: e0e37167f6f4e01facfb4b95c2e9cb159c3ca273' and 'tree: /tmp/mcintos-1310189-imp-NKOa/tree', closes '57 failed, 1840 passed, 8 warnings in 484.41s' followed by a bare 'EXIT=1'; importers-head-fixed.log records 'revision: 0aa99a19ee02fb1731c4bbcde555ac244481d80f' and 'tree: .../a-plan-review-judges-the-endpoint', closes '58 failed, 1846 passed, 8 warnings in 486.81s' followed by 'EXIT=1'. comm over the run's own ids-base.txt (57 lines) and ids-head-fixed.txt (58 lines) shows nothing the base failed is gone and exactly one added id: tests/test_the_station_reads_only_what_changed.py::test_a_cleared_memo_yields_the_same_payload. That id is discounted by the run's own receipts at the head under review: station-head.log (revision 1b521bc9da, 0 failed of 10 isolated runs), station-base.log (revision e0e37167, 0 of 10), station-parallel-head.log and station-parallel-base.log (0 failed of 5 repeats of the whole file at -n 4 at each revision), all EXIT=0. The population arm was run at 0aa99a19, not at the reviewed head; the two commits gained since touch only tests/test_crew.py and a docs fragment, and tests/test_crew.py is measured separately by crew-helper10.log (0 failed of 10 at 1b521bc9da, EXIT=0).",
+  "call_sites": [
+    "reckon/crew/dispatch_launch.py:_adopt_launched_workers_from_reexec",
+    "reckon/crew/dispatch_launch.py:_inherited_child_pids",
+    "reckon/crew/dispatch.py:3578 dispatch() launch step"
+  ],
+  "completed_at": "2026-11-11T10:26:28.478Z",
+  "dispatched_at": "2026-11-11T10:20:06Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "exempted",
+      "reason": "the scoped child check cannot see a detached supervisor, but the corrected stub means no real supervisor is started; a check on the supervisor launch itself is a durability follow-up",
+      "recorded_at": "2026-11-11T10:45:41.175618+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "tests/test_crew.py",
+      "line": 2069,
+      "severity": "non-blocking",
+      "text": "non-blocking: the assertion `children_after - children_before == set()` cannot fail for the regression it names, because the launch path detaches the supervisor \u2014 reckon/crew/dispatch_launch.py:3280-3284 states the supervisor is reparented away from the launching process before the intermediate exits, and dispatch_launch.py:3323 reaps that intermediate with communicate() \u2014 so no direct child exists after the call whether the _start_supervisor stub is applied or removed. The comment at tests/test_crew.py:2064 ('a real supervisor is a child of this process that outlives the call') and the evidence fragment at docs/evidence/fragments/a-plan-is-reviewed-before-it-is-built/a-plan-review-judges-the-endpoint.html:61 repeat the same premise. The seam itself is still guarded by `assert launches` at tests/test_crew.py:2067, which reddens if the stub is no longer the seam dispatch takes."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "Read commit by commit from 471c9812ef2a to 5306853bd1: 1b521bc9da imports reckon.crew.dispatch_launch, deletes the local _child_pids helper, records children_before and replaces the whole-process child assertion with a set difference at tests/test_crew.py:2011,2068-2069; 5306853bd1 rewrites the population paragraph's flake sentence with named receipts, closes its </p>, and adds the helper ten-run sentence at the fragment. 22 insertions and 29 deletions across two files, no production code.",
+    "done_when": "The done_when (prompt.txt line 127) asks that the importer population add no failure against the base revision, that tests/test_skill_contracts.py add no failure, and that ruff add no findings on the staged paths; the population still closes 58 failed at head against 57 at base (importers-head-fixed.log, importers-base.log), so the population clause remains recorded rather than met, with the one added id discounted by station-head.log and station-parallel-head.log; ruff on tests/test_crew.py measures 14 findings at head against 14 at base, an unchanged count.",
+    "goal": "The reviewed node's goal is that the composed plan-review briefs judge each section against the endpoint-only rule (prompt.txt line 38); the span gained since the last review does not restate that goal, it repairs the crew case that guards the node's clean evidence (tests/test_crew.py:2008-2070) and corrects the fragment that records it (docs/evidence/fragments/a-plan-is-reviewed-before-it-is-built/a-plan-review-judges-the-endpoint.html:43-67).",
+    "manifest": "Read; it names both gained commits (1b521bc9da, 5306853bd1) in its commits and checkpoint, reports the repair at 1b521bc9da with 0 failures in 10 runs (crew-helper10.log) on top of 20 at 0aa99a19, and states the replacement id is 0 of 10 at head and 0 of 10 at base plus 0 of 5 repeats in the whole file at each revision.",
+    "write_paths": "The served manifest declares the node's original fence, and the peer review at 471c9812ef2a recorded tests/test_crew.py as granted in resume-2-advice.txt ('tests/test_crew.py is now granted to this run'); the gained span touches exactly tests/test_crew.py and docs/evidence/fragments/a-plan-is-reviewed-before-it-is-built/a-plan-review-judges-the-endpoint.html, both inside that scope, and the reviewed worktree is clean."
+  },
+  "justifications": {
+    "durability": "tests/test_crew.py:2067 fails if the stub is moved off _start_supervisor (launches stays empty), which is the regression that caused the flake, but tests/test_crew.py:2069 cannot fail for that regression because reckon/crew/dispatch_launch.py:3280-3284 detaches the supervisor so it is never a child after the call.",
+    "evidence": "Every claim the gained span adds carries a named log with a revision header, a literal command and a bare EXIT= line (crew-helper10.log 0 failed of 10 at 1b521bc9da; station-head.log and station-base.log 0 of 10; station-parallel-head.log and station-parallel-base.log 0 of 5, all EXIT=0), but the population arm itself was not re-run at the reviewed head, so the done_when's population clause rests on an arm taken two commits earlier.",
+    "fit": "The new import at tests/test_crew.py:26 follows the file's existing module-alias convention (dispatch_plan_module, dispatch_sessions_module) and the helper it calls is the launch path's own, so the case now reads through the same seam production reads at reckon/crew/dispatch_launch.py:501.",
+    "goal_fidelity": "The gained span repairs the flake that kept the node's own endpoint-judging evidence red by stubbing the seam dispatch takes (tests/test_crew.py:2010), exactly as resume-2-advice.txt directed, and leaves the rubric deliverable unchanged.",
+    "reuse": "The duplicate _child_pids helper is deleted and the case now calls reckon/crew/dispatch_launch.py:468 _inherited_child_pids, which delegates to reckon/crew/recovery_liveness.py _process_children, the owner of the capability; no new definition is added.",
+    "scope_discipline": "git diff --stat 471c9812ef2a 5306853bd1 touches only tests/test_crew.py and docs/evidence/fragments/a-plan-is-reviewed-before-it-is-built/a-plan-review-judges-the-endpoint.html, both granted."
+  },
+  "project": "reckon",
+  "review_run_id": "r-20261111T101830585038-review-of-a-plan-review-judges-the-endpoint-5306853bd138",
+  "reviewed_base_sha": "471c9812ef2a648cea86a3403a7aee34d6f85038",
+  "reviewed_head_sha": "5306853bd138358ec6808541e5202dbc73861444",
+  "reviewed_run_id": "r-20261111T053117930051-a-plan-review-judges-the-endpoint",
+  "scores": {
+    "durability": 15,
+    "evidence": 17,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-11T10:44:49.217137+00:00",
+  "total": 110
+}

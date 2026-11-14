@@ -14,6 +14,11 @@ from reckon._flight_schema import BackendConfig
 from reckon.anchored_edit import AnchoredEditor
 from reckon.crew import dispatch_launch, runs
 from reckon.crew.dispatch_admission import _fence_write_roots
+from reckon.crew.prompts import (
+    ANCHORED_EDIT_CLAUDE_INSTRUCTION,
+    ANCHORED_EDIT_HEADING,
+    ANCHORED_EDIT_INSTRUCTION,
+)
 
 BASE_SETTINGS = (
     '{\n  "enableAllProjectMcpServers": false,\n'
@@ -23,6 +28,41 @@ BASE_MCP = (
     '{\n  "mcpServers": {\n    "operator": {\n'
     '      "command": "operator-server"\n    }\n  }\n}\n'
 )
+
+REPO_ROOT = Path(__file__).resolve().parents[1]
+
+
+def _inbox_group() -> dict:
+    """The PostToolUse group seeding adds, written out rather than built.
+
+    Composing this through the installer would assert the function under test
+    against itself: a change to the script name or the interpreter layout would
+    move both sides together and the case would still pass. The literal states
+    what a run home must contain — the checkout's interpreter running the hook
+    script from this repository — so the seeding must agree with it.
+    """
+    script = REPO_ROOT / "reckon" / "hooks" / "worker_inbox.py"
+    interpreter = REPO_ROOT / ".venv" / "bin" / "python"
+    return {"hooks": [{"type": "command", "command": f"{interpreter} {script}"}]}
+
+
+def _with_inbox_hook(document: dict, *, sorted_keys: bool = False) -> bytes:
+    """The settings bytes a run home holds once the inbox hook is merged in.
+
+    Seeding keeps every key and hook group the document already carries and adds
+    exactly one — the run's inbox delivery hook, without which the run has no
+    channel at all. The expectation is written out in full rather than as a
+    containment check, so a case still fails if any other byte changes.
+    ``sorted_keys`` states which writer had the last word: the MCP-settings seed
+    rewrites a home it created with its keys sorted, while a merge into a file
+    the run already wrote leaves the order it found.
+    """
+    merged = dict(document)
+    merged["hooks"] = {
+        **(merged.get("hooks") or {}),
+        "PostToolUse": [_inbox_group()],
+    }
+    return (json.dumps(merged, indent=2, sort_keys=sorted_keys) + "\n").encode()
 
 
 @pytest.fixture
@@ -134,7 +174,9 @@ def test_key_false_preserves_base_argv_and_settings_bytes(
         *(str(root) for root in _backends.fence_writable_roots(compose.write_roots)),
     ]
     assert json.dumps(plan.argv).encode() == json.dumps(expected).encode()
-    assert (run / "harness" / "settings.json").read_bytes() == BASE_SETTINGS.encode()
+    assert (run / "harness" / "settings.json").read_bytes() == _with_inbox_hook(
+        json.loads(BASE_SETTINGS), sorted_keys=True
+    )
     assert (run / "harness" / ".claude.json").read_bytes() == BASE_MCP.encode()
     assert plan.anchored_edit is False
 
@@ -170,6 +212,172 @@ def test_fresh_fenced_launch_registers_scoped_tools_and_records_treatment(
     }
 
 
+@pytest.mark.parametrize("command", ["claude", "clive"])
+def test_a_seeding_launch_instructs_the_anchored_tools(launch_case, command):
+    """The prompt a treated launch hands over names both tools and their route.
+
+    The instruction rides on the launch that seeded the server, so it is
+    read from the plan's own prompt rather than from the base signal prompt:
+    a dispatch-time line keyed on the flight key would also reach a launch
+    that seeded nothing.
+    """
+    compose, _, _, _ = launch_case
+    plan = compose(command=command)
+    assert plan.anchored_edit is True
+    assert plan.prompt.startswith("node prompt")
+    assert "read_anchored" in plan.prompt
+    assert "edit_anchored" in plan.prompt
+    # The harness defers MCP tools, so the worker must be told how to load them.
+    assert "ToolSearch" in plan.prompt
+    assert (
+        "select:mcp__reckon-anchored-edit__read_anchored,"
+        "mcp__reckon-anchored-edit__edit_anchored" in plan.prompt
+    )
+
+
+def test_a_prompt_already_instructed_keeps_one_copy(launch_case):
+    """A lane change composes from the prompt file, which already carries one.
+
+    The launch that follows appends its own instruction, so the block present
+    is removed first: the worker is told once, and the rest of the prompt is
+    left as it was written.
+    """
+    compose, _, _, _ = launch_case
+    already = (
+        f"node prompt\n\n{ANCHORED_EDIT_HEADING}\n{ANCHORED_EDIT_CLAUDE_INSTRUCTION}\n"
+    )
+    plan = compose(prompt=already)
+    assert plan.anchored_edit is True
+    assert plan.prompt.count(ANCHORED_EDIT_HEADING) == 1
+    assert plan.prompt.startswith("node prompt\n\n")
+    assert plan.prompt.rstrip().endswith(ANCHORED_EDIT_CLAUDE_INSTRUCTION)
+
+
+def _answer_the_hook_trust_handshake(monkeypatch):
+    """Answer the codex hook-trust handshake without running the harness.
+
+    Composing a codex launch argv asks the installed harness which inbox hook
+    definition it will load, which costs a subprocess and a writable harness
+    home on whichever machine the suite runs. The subject here is the prompt a
+    launch hands its worker, so the exchange is answered from the definition
+    the argv carries in its place.
+    """
+    from reckon.hooks.install import worker_inbox_group
+
+    handshake = {
+        "result": {
+            "data": [
+                {
+                    "errors": [],
+                    "hooks": [
+                        {
+                            "key": "/<session-flags>/config.toml:post_tool_use:0:0",
+                            "currentHash": "sha256:" + "a" * 64,
+                            "source": "sessionFlags",
+                            "eventName": "postToolUse",
+                            "handlerType": "command",
+                            "command": worker_inbox_group()["hooks"][0]["command"],
+                        }
+                    ],
+                }
+            ]
+        }
+    }
+    monkeypatch.setattr(_backends, "run_probe", lambda probe: handshake)
+
+
+@pytest.mark.parametrize(
+    "command, body",
+    [
+        ("claude", ANCHORED_EDIT_CLAUDE_INSTRUCTION),
+        ("clive", ANCHORED_EDIT_CLAUDE_INSTRUCTION),
+        ("codex", ANCHORED_EDIT_INSTRUCTION),
+        ("codex", ANCHORED_EDIT_CLAUDE_INSTRUCTION),
+    ],
+)
+def test_a_launch_seeding_none_drops_the_carried_instruction(
+    launch_case, monkeypatch, command, body
+):
+    """A lane change composes from the prompt file the anchored launch wrote.
+
+    The launch it moves to seeds no anchored server, so the block naming tools
+    it will not have comes back out, whichever dialect's body was left there,
+    and the rest of the prompt is left as it was written.
+    """
+    compose, _, _, _ = launch_case
+    if command == "codex":
+        _answer_the_hook_trust_handshake(monkeypatch)
+    already = f"node prompt\n\n{ANCHORED_EDIT_HEADING}\n{body}\n"
+    plan = compose(command=command, enabled=False, prompt=already)
+    assert plan.anchored_edit is False
+    assert ANCHORED_EDIT_HEADING not in plan.prompt
+    assert body not in plan.prompt
+    assert plan.prompt.rstrip() == "node prompt"
+
+
+@pytest.mark.parametrize("command", ["claude", "clive"])
+def test_an_unfenced_launch_drops_it_even_with_the_key_on(launch_case, command):
+    """The flight key can ask for the treatment and the launch still seed none.
+
+    A Claude-dialect launch without the fence registers no server, so a prompt
+    carried from an earlier anchored launch loses the block the same way: the
+    resolved fact, not the key, decides.
+    """
+    compose, _, _, _ = launch_case
+    already = (
+        f"node prompt\n\n{ANCHORED_EDIT_HEADING}\n{ANCHORED_EDIT_CLAUDE_INSTRUCTION}\n"
+    )
+    plan = compose(command=command, enabled=True, fence=False, prompt=already)
+    assert plan.anchored_edit is False
+    assert ANCHORED_EDIT_HEADING not in plan.prompt
+    assert plan.prompt.rstrip() == "node prompt"
+
+
+@pytest.mark.parametrize(
+    "command, body",
+    [
+        ("claude", ANCHORED_EDIT_CLAUDE_INSTRUCTION),
+        ("codex", ANCHORED_EDIT_INSTRUCTION),
+    ],
+)
+def test_a_seeding_launch_restates_one_copy_of_the_instruction(
+    launch_case, monkeypatch, command, body
+):
+    """A prompt whose launch carries the block again gets exactly one copy."""
+    compose, _, _, _ = launch_case
+    if command == "codex":
+        _answer_the_hook_trust_handshake(monkeypatch)
+    already = f"node prompt\n\n{ANCHORED_EDIT_HEADING}\n{body}\n"
+    plan = compose(command=command, enabled=True, prompt=already)
+    assert plan.anchored_edit is True
+    assert plan.prompt.count(ANCHORED_EDIT_HEADING) == 1
+    assert plan.prompt.rstrip().endswith(body)
+
+
+@pytest.mark.parametrize(
+    "reason", ["unfenced", "resumed", "operator-settings", "no-flight-config"]
+)
+@pytest.mark.parametrize("command", ["claude", "clive"])
+def test_a_launch_seeding_no_server_carries_no_instruction(
+    launch_case, reason, command
+):
+    """A launch with no anchored server is never told to use its tools."""
+    compose, _, run, _ = launch_case
+    options = {}
+    if reason == "unfenced":
+        options["fence"] = False
+    elif reason == "resumed":
+        options["resume_session"] = "recorded-session"
+    elif reason == "no-flight-config":
+        options["fence_config"] = None
+    else:
+        (run / "harness").mkdir()
+        (run / "harness" / "settings.json").write_text('{"operator":true}')
+    plan = compose(command=command, **options)
+    assert plan.anchored_edit is False
+    assert plan.prompt == "node prompt"
+
+
 @pytest.mark.parametrize(
     "reason", ["unfenced", "resumed", "operator-settings", "no-flight-config"]
 )
@@ -197,7 +405,9 @@ def test_ineligible_launch_keeps_builtin_tools_and_records_why(
             "mcpServers", {}
         )
     if reason == "operator-settings":
-        assert (run / "harness" / "settings.json").read_bytes() == b'{"operator":true}'
+        assert (run / "harness" / "settings.json").read_bytes() == _with_inbox_hook(
+            {"operator": True}
+        )
 
 
 def test_a_treated_run_resumes_with_builtin_tools_and_a_false_receipt(

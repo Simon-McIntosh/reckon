@@ -243,15 +243,39 @@ def _review_grace(project: str) -> int:
         return obligations.parse_duration("15m")
 
 
+def _record_has_pending_work(pointer: Mapping[str, Any]) -> bool:
+    """An unpromoted delivery or review recorded on this pointer still owes work.
+
+    Promotion removes the live pointer. A completed pointer carrying its
+    delivery manifest therefore holds the pane without opening that manifest,
+    a worktree, or the review store. A review dispatch also records outstanding
+    work on a terminal pointer, unless that dispatch has been withdrawn.
+    """
+    if pointer.get("promoted_revision"):
+        return False
+    if str(pointer.get("phase") or "") == "complete" and pointer.get("manifest_path"):
+        return True
+    return any(
+        isinstance(entry, Mapping)
+        and str(entry.get("status") or "") not in ("", "withdrawn")
+        for entry in (
+            pointer.get("review_dispatch"),
+            pointer.get("figure_review_dispatch"),
+        )
+    )
+
+
 def live_work_populations(
     pointers: Iterable[Mapping[str, Any]],
+    *,
+    read_terminal_duties: bool = True,
 ) -> tuple[bool, bool, list[str]]:
     """One fleet's reading: whether anything is live, unowned, and for whom.
 
     This is the one statement of the has-live-work rule. The station writes its
-    answer into the reading a pane settles by, and a pane with no station asks
-    the same rule of the pointers directly, so the two cannot disagree about
-    which run makes a population live.
+    answer into the reading a pane settles by. A stale station's follower
+    reads pointer phases and pending delivery or review records without the
+    review walk; its extended settle grace covers duties only the station sees.
 
     A run that has not reached a terminal phase is work still owed a pane. A
     terminal run is too, while the obligations view raises a duty on that run
@@ -281,7 +305,7 @@ def live_work_populations(
     # live directory and one ordering, so two runs in one pass cannot be judged
     # against two different views of the fleet.
     duty_inputs: dict[str, Any] = {}
-    if any(
+    if read_terminal_duties and any(
         str(pointer.get("phase") or "") in node._TERMINAL_RUN_PHASES
         for pointer in snapshot
     ):
@@ -302,6 +326,7 @@ def live_work_populations(
     # it keeps the whole judgement over one view of the fleet, and costs no
     # directory listing per row.
     from reckon.crew import obligations
+    from reckon.crew.recovery_memo import _classification_input_tick
 
     grouped: dict[str, list[dict[str, Any]]] = {}
     for pointer in snapshot:
@@ -310,34 +335,42 @@ def live_work_populations(
         {project: tuple(rows) for project, rows in grouped.items()}
     )
     try:
-        for pointer in snapshot:
-            if str(pointer.get("phase") or "") not in node._TERMINAL_RUN_PHASES:
+        # Every terminal run's duty reads the review store, so the pass shares
+        # one enumeration of each store directory across all of them, as the
+        # station's classify stage does; per run, it grew with runs times store.
+        with _classification_input_tick():
+            for pointer in snapshot:
+                if str(pointer.get("phase") or "") not in node._TERMINAL_RUN_PHASES or (
+                    not read_terminal_duties and _record_has_pending_work(pointer)
+                ):
+                    project_live = True
+                    owner = str(pointer.get("session") or "")
+                    if owner:
+                        sessions.add(owner)
+                    else:
+                        unowned = True
+                    continue
+                if not read_terminal_duties:
+                    continue
+                project = str(pointer.get("project") or "")
+                if project not in graces:
+                    graces[project] = _review_grace(project)
+                pair = (project, str(pointer.get("session") or ""))
+                if pair not in in_flight:
+                    in_flight[pair] = obligations._live_review_runs(*pair)
+                if not run_owes_its_coordinator(
+                    pointer,
+                    grace=graces[project],
+                    reviews_in_flight=in_flight[pair],
+                    **duty_inputs,
+                ):
+                    continue
                 project_live = True
                 owner = str(pointer.get("session") or "")
                 if owner:
                     sessions.add(owner)
                 else:
                     unowned = True
-                continue
-            project = str(pointer.get("project") or "")
-            if project not in graces:
-                graces[project] = _review_grace(project)
-            pair = (project, str(pointer.get("session") or ""))
-            if pair not in in_flight:
-                in_flight[pair] = obligations._live_review_runs(*pair)
-            if not run_owes_its_coordinator(
-                pointer,
-                grace=graces[project],
-                reviews_in_flight=in_flight[pair],
-                **duty_inputs,
-            ):
-                continue
-            project_live = True
-            owner = str(pointer.get("session") or "")
-            if owner:
-                sessions.add(owner)
-            else:
-                unowned = True
     finally:
         obligations._VIEW_LIVE_POINTERS.reset(token)
     return project_live, unowned, sorted(sessions)

@@ -1,0 +1,89 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_analysis": {
+    "self_referential_assertions": "None found: pid expectations are independently spawned identities, arithmetic answers are literals, and spy input comparisons assert forwarding by recording actual calls rather than comparing a supplied value with an echoed output; the shared-helper mutation records six failures.",
+    "tests/test_crew_census.py:233": "Fails if an unknown lease stops being reported as spared; a numeric expiry substituted for missing renewal would select the child.",
+    "tests/test_crew_census.py:235-237": "Fail if unmatched records still resolve ownership, if no processes remain unrecorded, or census signals a live fixture; the unrecorded lower bound is a coarse count check rather than exact census correctness.",
+    "tests/test_crew_census.py:391-399": "Restoring the prior fallback selects an unrelated producer and hides each independently spawned dead-owner child; the six pid assertions fail, while changing fallback kind breaks the source-kind assertions.",
+    "tests/test_crew_census.py:418-419": "Bypassing process_signal._process_environment omits the spy call and cannot see the injected dead owner of the otherwise unstamped independently spawned child.",
+    "tests/test_crew_census.py:435-436": "Bypassing _parse_follower_owner misses the opaque encoding and the spy call, causing no orphan for the independently spawned child.",
+    "tests/test_crew_census.py:461-466": "Ignoring supplied clock or record triggers pytest.fail; wrong interval arithmetic or boundary conversion differs from independently tabulated numeric answers; treating invalid timestamps as expiry differs from literal None.",
+    "tests/test_crew_census.py:482": "Treating zero as live, reversing the predicate, ignoring the shared lease return, or coercing None to expired contradicts the expected four independently enumerated states.",
+    "tests/test_crew_census.py:483": "The spy compares actual delegated arguments to the supplied snapshot and clock; bypassing the owner, passing a different record, using a live clock or overriding the interval makes it fail.",
+    "tests/test_crew_census.py:498-499": "Inlining lease arithmetic or not forwarding the captured interval produces a result other than sentinel 7.0 or omits/changes the actual delegated call."
+  },
+  "call_site_count": 6,
+  "call_sites": [
+    "reckon/crew_run_commands.py:52 crew_census calls census",
+    "reckon/crew/census.py:318 apply_census revalidates with census",
+    "reckon/crew/census.py:193 _owner_alive calls watch_lease_remaining_from_record",
+    "reckon/crew/runs.py:3927 watch_lease_remaining delegates to the snapshot primitive",
+    "reckon/crew/runs.py:3934 watch_lease_lapsed calls watch_lease_remaining",
+    "reckon/crew/recovery_watch.py:3219 producer wait reads watch_lease_remaining"
+  ],
+  "completed_at": "2026-11-12T03:46:24Z",
+  "dispatched_at": "2026-11-12T03:38:43Z",
+  "findings": [],
+  "gate_evidence": {
+    "after_suite": {
+      "completed": true,
+      "exit_status": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261111T210250166348-crew-census-lists-and-stops-ownerless/ownership-review/head-suite.log",
+      "sha256": "5b824d12d86e34a0066ccfdfd146da1e73d5dfae84821a513915c325ac2b8ff2",
+      "summary": "174 passed in 25.74s"
+    },
+    "baseline_suite": {
+      "completed": true,
+      "exit_status": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261111T210250166348-crew-census-lists-and-stops-ownerless/inventory-baseline-suite.log",
+      "sha256": "ae0a7a97be6a009681f226284ab8e799bafd4bd15e12b7e775cea1417b6cdfd7",
+      "summary": "129 passed in 17.92s"
+    }
+  },
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "Verified production census and producer paths: reckon/crew_run_commands.py:52 crew_census calls census, reckon/crew/census.py:318 apply_census revalidates with census, reckon/crew/census.py:193 _owner_alive calls watch_lease_remaining_from_record, reckon/crew/runs.py:3927 watch_lease_remaining delegates to the snapshot primitive, reckon/crew/runs.py:3934 watch_lease_lapsed calls watch_lease_remaining, reckon/crew/recovery_watch.py:3219 producer wait reads watch_lease_remaining",
+    "diff": "Read the sole new commit 568ec13c6c5f4ae583af6fc66352ab9a07be3554 against previously reviewed 41097b7c51c5c48adebbe0d4011c79b81901e002; all four paths implement or document the ownership and shared-helper repairs.",
+    "done_when": "Read source prompt.txt:131 and its named receipts; inventory-baseline-suite.log records 129 passed and ownership-review/head-suite.log records 174 passed, both EXIT=0, with all 45 census cases and zero added failures.",
+    "goal": "Read source prompt.txt:38 and the live plan section; census.py:118 now ignores unrelated registrations before resolving valid recorded owners, repairing both earlier findings within this incremental review.",
+    "manifest": "Read source manifest.md completed suite objects, six listed commits and repair scope; its precommit after_suite revision is qualified by three source digests that match reviewed commit 568ec13c6c5f4ae583af6fc66352ab9a07be3554.",
+    "write_paths": "Source manifest.md scope_note explicitly adds runs.py; the incremental git diff contains only census.py, runs.py, test_crew_census.py and the owned evidence fragment named by this review brief."
+  },
+  "justifications": {
+    "durability": "tests/test_crew_census.py:391 fails on the restored unrelated-registration fallback, lines 418-436 fail on parser bypass, and lines 461-499 independently assert lease arithmetic, expiry boundaries and delegation.",
+    "evidence": "Source ownership-review-reproduction.log records 6 failed and 2 positive controls passed, ownership-review/head-suite.log records 174 passed with matching committed source digests, and three mutation logs record 4, 6 and 6 expected failures.",
+    "fit": "reckon/crew/census.py:33,159,191 follows existing lazy crew imports, and runs.py:3892 extends the producer lease owner with mechanism-based naming and no forbidden source labels.",
+    "goal_fidelity": "reckon/crew/census.py:118 falls through foreign-host and reused-pid registrations to recorded environment, follower and run owners, and lines 33,159,191 reuse the required capability owners.",
+    "reuse": "Capability searches over reckon/crew and opened owners process_signal.py:124, follower_registration.py:593 and runs.py:3918 show census now wraps the parsers and both live and snapshot readers share the extended lease owner at runs.py:3892.",
+    "scope_discipline": "The exact 41097b7c51c5c48adebbe0d4011c79b81901e002..568ec13c6c5f4ae583af6fc66352ab9a07be3554 diff contains only the four authorized paths, with runs.py explicitly widened in source manifest.md scope_note."
+  },
+  "limitations": "Incremental review does not re-score untouched implementation; the plan working-day operational census and merged-head verification remain coordinator-owned. after_suite names precommit HEAD plus documented repair working tree; recorded hashes match all three changed Python files in the reviewed head.",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: Read source prompt.txt:38 and the live plan section; census.py:118 now ignores unrelated registrations before resolving valid recorded owners, repairing both earlier findings within this incremental review.\nVERDICT done_when: Read source prompt.txt:131 and its named receipts; inventory-baseline-suite.log records 129 passed and ownership-review/head-suite.log records 174 passed, both EXIT=0, with all 45 census cases and zero added failures.\nVERDICT write_paths: Source manifest.md scope_note explicitly adds runs.py; the incremental git diff contains only census.py, runs.py, test_crew_census.py and the owned evidence fragment named by this review brief.\nVERDICT manifest: Read source manifest.md completed suite objects, six listed commits and repair scope; its precommit after_suite revision is qualified by three source digests that match reviewed commit 568ec13c6c5f4ae583af6fc66352ab9a07be3554.\nVERDICT diff: Read the sole new commit 568ec13c6c5f4ae583af6fc66352ab9a07be3554 against previously reviewed 41097b7c51c5c48adebbe0d4011c79b81901e002; all four paths implement or document the ownership and shared-helper repairs.\nCALL_SITES: reckon/crew_run_commands.py:52 crew_census calls census, reckon/crew/census.py:318 apply_census revalidates with census, reckon/crew/census.py:193 _owner_alive calls watch_lease_remaining_from_record, reckon/crew/runs.py:3927 watch_lease_remaining delegates to the snapshot primitive, reckon/crew/runs.py:3934 watch_lease_lapsed calls watch_lease_remaining, reckon/crew/recovery_watch.py:3219 producer wait reads watch_lease_remaining\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/census.py:118 falls through foreign-host and reused-pid registrations to recorded environment, follower and run owners, and lines 33,159,191 reuse the required capability owners.\nSCORE evidence: 20\nJUSTIFICATION evidence: Source ownership-review-reproduction.log records 6 failed and 2 positive controls passed, ownership-review/head-suite.log records 174 passed with matching committed source digests, and three mutation logs record 4, 6 and 6 expected failures.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: The exact 41097b7c51c5c48adebbe0d4011c79b81901e002..568ec13c6c5f4ae583af6fc66352ab9a07be3554 diff contains only the four authorized paths, with runs.py explicitly widened in source manifest.md scope_note.\nSCORE durability: 20\nJUSTIFICATION durability: tests/test_crew_census.py:391 fails on the restored unrelated-registration fallback, lines 418-436 fail on parser bypass, and lines 461-499 independently assert lease arithmetic, expiry boundaries and delegation.\nSCORE fit: 20\nJUSTIFICATION fit: reckon/crew/census.py:33,159,191 follows existing lazy crew imports, and runs.py:3892 extends the producer lease owner with mechanism-based naming and no forbidden source labels.\nSCORE reuse: 20\nJUSTIFICATION reuse: Capability searches over reckon/crew and opened owners process_signal.py:124, follower_registration.py:593 and runs.py:3918 show census now wraps the parsers and both live and snapshot readers share the extended lease owner at runs.py:3892.\n",
+  "reuse_search": {
+    "added_definitions": "watch_lease_remaining_from_record extends the producer owner in runs.py; existing live reader and census wrap it. Added test functions are distinct contract cases in the existing census test owner, with local spy callbacks only.",
+    "searched": "git grep capability search over reviewed reckon/crew for lease remaining/renewed, process environment and owner decoding; opened process_signal, follower_registration, runs and recovery_watch owners."
+  },
+  "review_method": "Read-only incremental review; no test rerun, mutation, production sweep, code modification or repository commit. Reviewed one repair commit using git object content rather than the newer assigned worktree HEAD.",
+  "review_run_id": "r-20261112T032652179139-review-of-crew-census-lists-and-stops-ownerless-568ec13c6c5f",
+  "reviewed_base_sha": "41097b7c51c5c48adebbe0d4011c79b81901e002",
+  "reviewed_head_sha": "568ec13c6c5f4ae583af6fc66352ab9a07be3554",
+  "reviewed_run_id": "r-20261111T210250166348-crew-census-lists-and-stops-ownerless",
+  "scores": {
+    "durability": 20,
+    "evidence": 20,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-12T04:13:01.763483+00:00",
+  "total": 120
+}

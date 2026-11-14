@@ -1,0 +1,39 @@
+<section id="a-promotion-s-fleet-reading-costs-the-same-at-any-number-of-landing">
+  <h2>A promotion's fleet reading no longer classifies the fleet</h2>
+
+  <p><strong>What changed.</strong> A promotion's fleet-state reading stamped
+  four fleet facts on its result and derived every one of them by classifying
+  each live run itself, so promoting one run paid for every other run's stream,
+  manifest and review records. The reading now takes those words from the
+  node's station, which classifies each live run on its own tick and keeps the
+  verdict: <code>_served_fleet_classifications</code> in
+  <code>reckon/crew/promotion_release.py</code> reads every stored verdict in
+  one store read, and <code>_fleet_state_reading</code> counts the actionable
+  runs and the occupied lanes from them. The unreconciled count reaches the
+  closure drain's own composition, <code>reckon/crew/runs.py:_drain_row</code>,
+  which now accepts the classification word its caller already holds instead of
+  re-deriving it, so the drain and the promotion reading still count through one
+  function.</p>
+
+  <p><strong>Two runs are still classified afresh, on purpose.</strong> A run
+  dispatched since the station's last tick has no stored verdict, and a run
+  whose stored word is the fleet reducer's own reading rather than the run's
+  classification &mdash; a stalled stream, a launch its attempt never backed, a
+  worker that died mid-turn, a turn that concluded without a manifest &mdash; is
+  not served, because those four words are exactly where the reducer's reading
+  and the classifier's differ. Serving one would record an actionable
+  classification the per-pointer composition never gives that run.</p>
+
+  <h3 id="a-promotion-s-fleet-reading-costs-the-same-at-any-number-of-measured">Measured</h3>
+
+  <p>The gate test seeds 10 and then 100 live runs, each with a rollout stream,
+  a manifest and a stored review, and an audit-hook instrument counts every
+  file the reading opens under any other run's directory. The count is the same
+  at both populations, and the test's own positive control shows the instrument
+  can see the growth it is there to detect: with no stored verdict to serve,
+  the same reading classifies each run and the count rises with the fleet.</p>
+
+  <p>The fleet fields the reading records are held to the per-pointer
+  composition over the same seed, and the reading that takes them from the
+  store opens nothing to get them.</p>
+</section>

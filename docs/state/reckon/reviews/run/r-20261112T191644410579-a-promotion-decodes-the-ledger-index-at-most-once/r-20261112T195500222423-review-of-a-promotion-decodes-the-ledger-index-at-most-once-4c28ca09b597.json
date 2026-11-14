@@ -1,0 +1,79 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/crew/promotion.py:636 index_reuse entered around the review promotion",
+    "reckon/crew/promotion.py:1296 index_reuse entered around the landing",
+    "reckon/ledger.py:1814 index_reuse",
+    "reckon/ledger.py:1672 _index_payload",
+    "reckon/crew/promotion_checks.py:2420 _landing_preconditions",
+    "reckon/crew/recovery_stream.py:155 _historical_reference_rate"
+  ],
+  "completed_at": "2026-11-12T20:10:13.135Z",
+  "dimension_dispositions": {
+    "reuse": {
+      "kind": "folded",
+      "node": "repair-of-a-promotion-decodes-the-ledger-index-at-most-once-4c28ca09b597",
+      "recorded_at": "2026-11-12T21:21:32.732367+00:00"
+    }
+  },
+  "dispatched_at": "2026-11-12T20:00:37Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "folded",
+      "node": "repair-of-a-promotion-decodes-the-ledger-index-at-most-once-4c28ca09b597",
+      "recorded_at": "2026-11-12T21:21:25.928471+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "tests/test_a_promotion_decodes_the_ledger_index_at_most_once.py",
+      "line": 299,
+      "severity": "blocking",
+      "text": "`assert shared_fleet == alone_fleet` compares two identical empty readings and cannot fail: `recovery_stream._historical_reference_rate` calls `ledger.load(project)` with no root (reckon/crew/recovery_stream.py:167), which resolves the config-home ledger under RECKON_HOME, while the fixture seeds its 2,000-row ledger at the checkout root (`ledger.write(..., root=repository)` in tests/test_a_promotion_does_not_read_the_whole_ledger_index.py:_seed_ledger). The function returns (None, 0) on both sides whatever the region does, so the done-when's 'the fleet-state reading ... still return[s] the same values' clause is unmeasured; the landing half of the same test is genuine because `_landing_preconditions` is passed `ledger_root=repository`."
+    },
+    {
+      "file": "tests/test_a_promotion_decodes_the_ledger_index_at_most_once.py",
+      "line": 138,
+      "severity": "non-blocking",
+      "text": "Three helpers fork capabilities the module this file already imports owns: `_drive_promotion` (:138) re-implements `_drive_one_promotion` (tests/test_a_promotion_does_not_read_the_whole_ledger_index.py:207), `_write_role_run` (:67) re-implements `_write_completed_run` (:122), and the `home`/`repository` fixtures (:50, :59) copy :190 and :199 verbatim. The owner was left unparameterised rather than extended, so a change to the promotion fixture's shape must be made in two places or the two copies drift."
+    },
+    {
+      "file": "logs/head-gate.log",
+      "line": 3,
+      "severity": "non-blocking",
+      "text": "The done-when requires both arms 'run on all_debug one arm at a time with at most -n 4', but no gate log records a partition: head-gate.log, baseline-gate.log, head-suite.log and baseline-suite.log each name the in-worktree command with no srun/sbatch, so the arms ran in the fleet allocation the worker was launched under. The arms did run one at a time and are light (31.02 s and 12.03 s), so the measurement stands; the partition clause is unevidenced."
+    },
+    {
+      "file": "tests/test_a_promotion_decodes_the_ledger_index_at_most_once.py",
+      "line": 221,
+      "severity": "non-blocking",
+      "text": "The freshness case's discriminating power rests on a mutant the manifest claims ('a second mutant that lets the region outlive its close fails the freshness case') but no log for it sits under the run directory; only the no-share mutant is recorded, in logs/negative-control-no-share.log. The done-when requires every log under the run directory, so the second mutant is a claim a reader cannot open."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "Read commit by commit against base 1a0795350b: one commit, 4c28ca09b5, adds a 299-line test module and a 53-line evidence fragment, with no product source change.",
+    "done_when": "The section's done-when names four measurable clauses: counts over one review promotion and one implement landing (tests/test_a_promotion_decodes_the_ledger_index_at_most_once.py:194 and :208 through _assert_one_decode_per_key at :183), a post-append read seeing the promoted and a peer-appended row (:221), fleet-state and landing-precondition parity (:247), a base-side negative control at least two, logs under the run directory ending in EXIT=, base-arm failures at no additions, and clean ruff on the staged paths. The count, freshness, log-shape and base-arm clauses are met and recorded; the fleet-parity half of :247 is vacuous (:299), and the parity comparison is head-region-off rather than the base revision for the landing half.",
+    "goal": "The goal is 'A promotion decodes the ledger index at most once'; the landed change is test-only, measuring that a review promotion and an implement landing each cost one index decode per read key before their append, because the reuse region (reckon/ledger.py:1814) and its entry points (reckon/crew/promotion.py:636, :1296) already sat in the tree at base 1a0795350b.",
+    "manifest": "Read; it records status complete, commit 4c28ca09b5, five logs under the run directory, a red negative control at 2 failed / 2 passed / EXIT=1, and 51-passed suite arms on both revisions. Its ruff claim holds when re-run (ruff check and ruff format --check on the test file both report clean), though no ruff log is among the recorded five.",
+    "write_paths": "Declared paths are reckon/ledger.py, reckon/crew/promotion.py, reckon/crew/promotion_checks.py, tests/, the evidence fragment and the figures directory; the commit touches only tests/test_a_promotion_decodes_the_ledger_index_at_most_once.py and docs/evidence/fragments/a-read-answers-inside-its-deadline/a-promotion-decodes-the-ledger-index-at-most-once.html, both inside them."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is 'A promotion decodes the ledger index at most once'; reckon/ledger.py:1814 already carried the reuse region at base 1a0795350b (entry points reckon/crew/promotion.py:636 and :1296), so tests/test_a_promotion_decodes_the_ledger_index_at_most_once.py delivers the measure of that goal over both promotion shapes rather than a product change.\nVERDICT done_when: tests/test_a_promotion_decodes_the_ledger_index_at_most_once.py:194 and :208 assert one decode per read key through _assert_one_decode_per_key (:183), :221 asserts a post-append read sees both the promoted row and a row a second process appended, and :247 asserts landing-precondition parity, all green in logs/head-gate.log (6 passed, EXIT=0) against a red control (2 failed, EXIT=1); the fleet half of :247 is vacuous at :299, and the parity is taken against head-region-off rather than the base revision.\nVERDICT write_paths: every path in the diff \u2014 tests/test_a_promotion_decodes_the_ledger_index_at_most_once.py and docs/evidence/fragments/a-read-answers-inside-its-deadline/a-promotion-decodes-the-ledger-index-at-most-once.html \u2014 lies inside the declared write paths.\nVERDICT manifest: read; it records the commit, five logs, the red control and the 51-passed arms, and its ruff claim is true on re-run (clean check and format on the test file), but no ruff log sits under the run directory.\nVERDICT diff: read commit by commit against 1a0795350b; a single commit adds one test module and one evidence fragment, no product code.\nCALL_SITES: reckon/crew/promotion.py:636, reckon/crew/promotion.py:1296, reckon/ledger.py:1814, reckon/ledger.py:1672, reckon/crew/promotion_checks.py:2420, reckon/crew/recovery_stream.py:155\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: tests/test_a_promotion_decodes_the_ledger_index_at_most_once.py:194 and :208 measure the decode count on both shapes the goal names, on code that already existed at reckon/ledger.py:1814.\nSCORE evidence: 12\nJUSTIFICATION evidence: logs/head-gate.log records 6 passed and logs/negative-control-no-share.log records the red control at 4 decodes, but the done-when's fleet-state parity clause is unmeasured because the assertion at tests/test_a_promotion_decodes_the_ledger_index_at_most_once.py:299 compares two empty readings.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: the diff is confined to the two files named in the manifest's changed_paths, both inside the declared write paths, with no product change.\nSCORE durability: 13\nJUSTIFICATION durability: the count and freshness assertions at tests/test_a_promotion_decodes_the_ledger_index_at_most_once.py:192 and :234 redden under the recorded no-share mutant, but the fleet assertion at :299 cannot fail whatever the code does.\nSCORE fit: 17\nJUSTIFICATION fit: the module follows the sibling idiom it imports (patched ledger._index_payload, CliRunner, per-test RECKON_HOME) and its name and symbols state the mechanism, with ruff clean on the file.\nSCORE reuse: 5\nJUSTIFICATION reuse: tests/test_a_promotion_decodes_the_ledger_index_at_most_once.py:138 re-implements _drive_one_promotion and :67 re-implements _write_completed_run from the imported owner tests/test_a_promotion_does_not_read_the_whole_ledger_index.py:207 and :122 instead of extending them.\nFINDING tests/test_a_promotion_decodes_the_ledger_index_at_most_once.py:299 blocking: assert shared_fleet == alone_fleet compares two (None, 0) readings because _historical_reference_rate loads the config-home ledger with no root while the fixture seeds the checkout ledger, so the done-when's fleet-state parity clause is unmeasured.\nFINDING tests/test_a_promotion_decodes_the_ledger_index_at_most_once.py:138 non-blocking: _drive_promotion, _write_role_run and the home/repository fixtures fork helpers owned by the sibling module this file already imports, so the fixture shape is maintained in two places.\nFINDING logs/head-gate.log:3 non-blocking: no gate log records the all_debug partition the done-when names; the arms ran light and one at a time, so the measurement stands but the partition clause is unevidenced.\nFINDING tests/test_a_promotion_decodes_the_ledger_index_at_most_once.py:221 non-blocking: the manifest's second mutant, on which this case's discriminating power rests, has no log under the run directory.\n",
+  "review_run_id": "r-20261112T195500222423-review-of-a-promotion-decodes-the-ledger-index-at-most-once-4c28ca09b597",
+  "reviewed_base_sha": "1a0795350b68afae425ca67ec3038e4d8ae19af9",
+  "reviewed_head_sha": "4c28ca09b59763e80c8064a3a88b2472638c9cc0",
+  "reviewed_run_id": "r-20261112T191644410579-a-promotion-decodes-the-ledger-index-at-most-once",
+  "scores": {
+    "durability": 13,
+    "evidence": 12,
+    "fit": 17,
+    "goal_fidelity": 18,
+    "reuse": 5,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-12T20:25:10.695659+00:00",
+  "total": 84
+}

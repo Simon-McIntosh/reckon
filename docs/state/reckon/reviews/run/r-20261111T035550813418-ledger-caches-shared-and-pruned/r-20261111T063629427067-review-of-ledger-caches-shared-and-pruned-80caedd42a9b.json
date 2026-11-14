@@ -1,0 +1,332 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_audit": [
+    {
+      "assertion": "len(set(paths)) == 1",
+      "fails_when": "Restoring the original absolute-checkout path key produces three distinct paths instead of one.",
+      "file": "tests/test_ledger_caches_are_shared_and_pruned.py",
+      "line": 72
+    },
+    {
+      "assertion": "aggregate.call_count == 1",
+      "fails_when": "Skipping the first aggregate parse or parsing it repeatedly changes the independent spy count from one.",
+      "file": "tests/test_ledger_caches_are_shared_and_pruned.py",
+      "line": 80
+    },
+    {
+      "assertion": "document.call_count == 1",
+      "fails_when": "Skipping the first run document or parsing it repeatedly changes the independent spy count from one.",
+      "file": "tests/test_ledger_caches_are_shared_and_pruned.py",
+      "line": 81
+    },
+    {
+      "assertion": "ledger.load(PROJECT, second) == expected",
+      "fails_when": "Reading different rows or versions from the second identical worktree differs from the first source result; the parse-count assertion separately excludes rebuilding.",
+      "file": "tests/test_ledger_caches_are_shared_and_pruned.py",
+      "line": 84
+    },
+    {
+      "assertion": "aggregate.call_count == document.call_count == 0",
+      "fails_when": "Reinstating per-worktree refresh/parsing increments at least one independent spy count.",
+      "file": "tests/test_ledger_caches_are_shared_and_pruned.py",
+      "line": 85
+    },
+    {
+      "assertion": "list(paths[0].parent.glob('ledger-*.sqlite')) == [paths[0]]",
+      "fails_when": "Publishing a second persistent SQLite cache creates an extra directory entry.",
+      "file": "tests/test_ledger_caches_are_shared_and_pruned.py",
+      "line": 86
+    },
+    {
+      "assertion": "ledger.load(PROJECT, first) == ledger.load(PROJECT, first, use_index=False)",
+      "fails_when": "Reusing the main cache for a changed aggregate, changed run, added run or removed run disagrees with the explicitly uncached source read.",
+      "file": "tests/test_ledger_caches_are_shared_and_pruned.py",
+      "line": 111
+    },
+    {
+      "assertion": "ledger.load(PROJECT, first) != expected",
+      "fails_when": "Returning the unchanged main-tree data after a fixture edit equals the saved pre-edit result.",
+      "file": "tests/test_ledger_caches_are_shared_and_pruned.py",
+      "line": 112
+    },
+    {
+      "assertion": "ledger.run_ids(PROJECT, first) == {row['run_id'] for row in ledger.load(PROJECT, first)[0]['runs']}",
+      "fails_when": "Serving membership from the main cache while full load reads the edited tree makes the ID sets disagree.",
+      "file": "tests/test_ledger_caches_are_shared_and_pruned.py",
+      "line": 113
+    },
+    {
+      "assertion": "ledger.load(PROJECT, second) == expected",
+      "fails_when": "Publishing divergent worktree content into the shared cache poisons the second unchanged reader.",
+      "file": "tests/test_ledger_caches_are_shared_and_pruned.py",
+      "line": 116
+    },
+    {
+      "assertion": "index.read_bytes() == before",
+      "fails_when": "Publishing any divergent worktree refresh changes the independently saved persistent file bytes.",
+      "file": "tests/test_ledger_caches_are_shared_and_pruned.py",
+      "line": 117
+    },
+    {
+      "assertion": "ledger._run_index_path(PROJECT, other) != first",
+      "fails_when": "Dropping repository identity aliases another repository to the original cache.",
+      "file": "tests/test_ledger_caches_are_shared_and_pruned.py",
+      "line": 128
+    },
+    {
+      "assertion": "ledger._run_index_path(PROJECT, repo) != first",
+      "fails_when": "Dropping projection version from the filename leaves the cache path unchanged after the version is changed.",
+      "file": "tests/test_ledger_caches_are_shared_and_pruned.py",
+      "line": 130
+    },
+    {
+      "assertion": "holder.stdout.readline().strip() == 'holding'",
+      "fails_when": "The child exits or fails to open the supplied fixture files before signalling readiness.",
+      "file": "tests/test_ledger_caches_are_shared_and_pruned.py",
+      "line": 188
+    },
+    {
+      "assertion": "any((row['pid'] == holder.pid for row in gc._processes_holding(held)))",
+      "fails_when": "The holder instrument cannot see a known child PID holding a known file; this is a positive control, not an absence claim.",
+      "file": "tests/test_ledger_caches_are_shared_and_pruned.py",
+      "line": 190
+    },
+    {
+      "assertion": "all((path.exists() for path in (orphan, old, held, held_index, fresh)))",
+      "fails_when": "Applying deletions during a dry run removes one of the seeded candidate or protected files.",
+      "file": "tests/test_ledger_caches_are_shared_and_pruned.py",
+      "line": 192
+    },
+    {
+      "assertion": "not orphan.exists()",
+      "fails_when": "Removing the scheduled orphan-index call leaves the orphan fixture present, as the base negative control demonstrates.",
+      "file": "tests/test_ledger_caches_are_shared_and_pruned.py",
+      "line": 194
+    },
+    {
+      "assertion": "not old.exists()",
+      "fails_when": "Removing the expired-picker call leaves the old picker fixture present.",
+      "file": "tests/test_ledger_caches_are_shared_and_pruned.py",
+      "line": 195
+    },
+    {
+      "assertion": "all((path.is_file() for path in (held, held_index, fresh, live_index, unrelated)))",
+      "fails_when": "Removing holder protection or deleting fresh, live-source or unrelated files removes a member of the independently seeded protected set.",
+      "file": "tests/test_ledger_caches_are_shared_and_pruned.py",
+      "line": 196
+    },
+    {
+      "assertion": "str(orphan) in printed and str(old) in printed",
+      "fails_when": "Omitting either scheduled removal diagnostic leaves that actual fixture path absent from captured stderr.",
+      "file": "tests/test_ledger_caches_are_shared_and_pruned.py",
+      "line": 200
+    },
+    {
+      "assertion": "str(orphan) in (tmp_path / 'retention.log').read_text()",
+      "fails_when": "Omitting orphan removal from the rotating log leaves the independently known orphan path absent.",
+      "file": "tests/test_ledger_caches_are_shared_and_pruned.py",
+      "line": 201
+    },
+    {
+      "assertion": "str(old) in (tmp_path / 'retention.log').read_text()",
+      "fails_when": "Omitting picker removal from the rotating log leaves the independently known expired-view path absent.",
+      "file": "tests/test_ledger_caches_are_shared_and_pruned.py",
+      "line": 202
+    },
+    {
+      "assertion": "not held.exists()",
+      "fails_when": "Treating a released holder as permanently held or skipping expired views leaves its file after the child exits.",
+      "file": "tests/test_ledger_caches_are_shared_and_pruned.py",
+      "line": 206
+    },
+    {
+      "assertion": "not held_index.exists()",
+      "fails_when": "Treating a released holder as permanently held or skipping orphan caches leaves its index after the child exits.",
+      "file": "tests/test_ledger_caches_are_shared_and_pruned.py",
+      "line": 207
+    },
+    {
+      "assertion": "expected[0]['runs'] == [{'run_id': 'sample', 'node': 'shared'}]",
+      "fails_when": "Ignoring per-run documents when the aggregate is absent loses the literal sample row from the fixture.",
+      "file": "tests/test_ledger_caches_are_shared_and_pruned.py",
+      "line": 214
+    },
+    {
+      "assertion": "index.is_file()",
+      "fails_when": "Failing to publish an index for a per-run-only ledger leaves the expected cache path absent.",
+      "file": "tests/test_ledger_caches_are_shared_and_pruned.py",
+      "line": 216
+    },
+    {
+      "assertion": "not gc._orphan_ledger_indexes(apply=True, now=datetime.now(tz=UTC))",
+      "fails_when": "Reverting the per-run-directory exemption incorrectly offers the valid per-run-only cache for pruning.",
+      "file": "tests/test_ledger_caches_are_shared_and_pruned.py",
+      "line": 217
+    },
+    {
+      "assertion": "index.is_file()",
+      "fails_when": "Reverting the per-run-directory exemption unlinks the independently built valid index.",
+      "file": "tests/test_ledger_caches_are_shared_and_pruned.py",
+      "line": 218
+    },
+    {
+      "fails_when": "Reverting repository-wide cache keys makes the two worktree publishers return different paths.",
+      "file": "tests/test_a_released_worktree_takes_its_index.py",
+      "line": 145
+    },
+    {
+      "fails_when": "Disabling worktree release makes its receipt false or absent.",
+      "file": "tests/test_a_released_worktree_takes_its_index.py",
+      "line": 152
+    },
+    {
+      "fails_when": "Claiming release without removing the fixture tree leaves it present.",
+      "file": "tests/test_a_released_worktree_takes_its_index.py",
+      "line": 153
+    },
+    {
+      "fails_when": "Selecting _run_index_path during release unlinks the shared cache, as release-negative.log demonstrates.",
+      "file": "tests/test_a_released_worktree_takes_its_index.py",
+      "line": 154
+    },
+    {
+      "fails_when": "Rewriting or replacing the shared cache during release changes its independently saved bytes.",
+      "file": "tests/test_a_released_worktree_takes_its_index.py",
+      "line": 155
+    },
+    {
+      "fails_when": "Selecting and deleting the shared cache adds the removal key to the receipt.",
+      "file": "tests/test_a_released_worktree_takes_its_index.py",
+      "line": 156
+    },
+    {
+      "fails_when": "Printing a shared-cache deletion diagnostic violates ordinary release output.",
+      "file": "tests/test_a_released_worktree_takes_its_index.py",
+      "line": 157
+    },
+    {
+      "fails_when": "Selecting the shared cache rather than the legacy private cache deletes this independent shared-index fixture.",
+      "file": "tests/test_a_released_worktree_takes_its_index.py",
+      "line": 189
+    }
+  ],
+  "assertion_independence": "No added assertion compares an echoed caller-supplied value to itself: value equalities are cross-reader/source comparisons backed by literal fixture content, uncached reads, filesystem bytes and independent spies. Legacy-index seeding intentionally computes the old identity independently of _checkout_index_path so a wrong resolver is observable.",
+  "call_site_count": 9,
+  "call_sites": [
+    "reckon/ledger.py:load:1982",
+    "reckon/ledger.py:_indexed_run_ids:1120",
+    "reckon/crew/gc.py:retention_sweep:1740",
+    "reckon/crew/gc.py:main:1902",
+    "reckon/crew/gc.py:render_retention_service_unit:1803",
+    "reckon/crew/promotion_release.py:_released_tree_index:357",
+    "reckon/crew/promotion.py:2217",
+    "reckon/crew/merge.py:1017",
+    "reckon/mcp_views.py:1962"
+  ],
+  "completed_at": "2026-11-11T06:46:18Z",
+  "dimension_dispositions": {
+    "reuse": {
+      "kind": "exempted",
+      "reason": "Test-only: the duplicated _git helper sits in the node's own test fixture, and the product code reviewed clean; switching the fixture to tests/helpers/git.py does not change behaviour.",
+      "recorded_at": "2026-11-11T07:06:42.147948+00:00"
+    }
+  },
+  "dispatched_at": "2026-11-11T06:38:46Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "exempted",
+      "reason": "Test-only: the duplicated _git helper sits in the node's own test fixture, and the product code reviewed clean at 20 on every other dimension. Switching the fixture to tests/helpers/git.py is a test refactor that does not change behaviour, so it isn't worth another repair round on a storage fix the fleet needs now.",
+      "recorded_at": "2026-11-11T06:59:18.647362+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "tests/test_ledger_caches_are_shared_and_pruned.py",
+      "line": "21",
+      "severity": "non-blocking",
+      "text": "non-blocking: _git duplicates tests/helpers/git.py:12, which already returns stripped Git stdout and removes the worker run identity from the child environment; import that owner as the release test does so this fixture does not maintain a second runner that omits that handling."
+    }
+  ],
+  "importer_evidence": {
+    "added_failure_ids": [],
+    "base_failure_count": 90,
+    "base_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261111T035550813418-ledger-caches-shared-and-pruned/release-base-importers.log",
+    "head_failure_count": 88,
+    "head_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261111T035550813418-ledger-caches-shared-and-pruned/release-final-head-importers.log",
+    "resolved_failure_ids": [
+      "tests/test_a_killed_worker_resumes_to_completion.py::test_a_killed_worker_is_classified_resumed_and_completed",
+      "tests/test_crew.py::test_no_watch_dispatch_records_the_override_on_pointer_and_ledger"
+    ]
+  },
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 9 production call site(s)",
+    "diff": "read all six commits from 946d691d74d681ff392c907b657967096656e531 through 80caedd42a9b970ae40fdc3ef8dc8ace98283123; the final diff changes six files and includes the required release compatibility repair and evidence fragment.",
+    "done_when": "the live plan section s11 and prompt.txt require shared paths, no second parse, safe scheduled pruning and zero added importer or lint failures; tests/test_ledger_caches_are_shared_and_pruned.py:69 and the recorded gate receipts measure these conditions.",
+    "goal": "prompt.txt:40 requires repository-shared ledger caches and scheduled pruning; reckon/ledger.py:1255 and reckon/crew/gc.py:1740 implement both, with differing worktrees reading through.",
+    "manifest": "manifest.md records complete scoped arms, importer receipts, negative controls and commits; release-base-armed.log has 55 passes and release-final-head-armed.log has 64 passes, both EXIT=0.",
+    "write_paths": "all six changed files fit the initial prompt.txt scope plus the explicit two-file widening in resume-2-advice.txt:1; no plan or unrelated source changed."
+  },
+  "justifications": {
+    "durability": "tests/test_ledger_caches_are_shared_and_pruned.py:72,85,194,195,196 fail for per-checkout keys, repeated parsing, missing pruning or unsafe pruning, while tests/test_a_released_worktree_takes_its_index.py:154 fails if release selects the shared cache; the recorded negative controls exercise these regressions.",
+    "evidence": "release-base-armed.log and release-final-head-armed.log record 55 and 64 passes with EXIT=0, the matched importer logs contain 90 and 88 failing IDs with none added, and negative-control.log records the intended distinct-path and surviving-orphan failures.",
+    "fit": "reckon/ledger.py:1263 reuses the existing Git pointer readers and reckon/crew/gc.py:1740 extends the existing retention phases and rotating log; added source names describe mechanisms, and delivery-lint.json records zero added findings and zero format failures.",
+    "goal_fidelity": "reckon/ledger.py:1330 keys the persistent cache by common git directory and relative ledger path, reckon/ledger.py:1312 refuses divergent source reuse, and reckon/crew/gc.py:1740 adds both cache classes to scheduled retention.",
+    "reuse": "production additions extend ledger.py and gc.py and reuse git_head.py, file_memo.py and existing holder checks, but tests/test_ledger_caches_are_shared_and_pruned.py:21 duplicates the Git runner already owned by tests/helpers/git.py:12 instead of importing or wrapping it.",
+    "scope_discipline": "the six changed paths in the base-to-head diff are covered by prompt.txt and resume-2-advice.txt:1, including reckon/crew/promotion_release.py and its existing release test."
+  },
+  "measurement_revision_note": "The reviewed final commit only changes the evidence fragment; source and test blobs are unchanged from measured revision 09e52de1e4c999b651df557500f8c1b2ab93af03.",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: prompt.txt:40 requires repository-shared ledger caches and scheduled pruning; reckon/ledger.py:1255 and reckon/crew/gc.py:1740 implement both, with differing worktrees reading through.\nVERDICT done_when: the live plan section s11 and prompt.txt require shared paths, no second parse, safe scheduled pruning and zero added importer or lint failures; tests/test_ledger_caches_are_shared_and_pruned.py:69 and the recorded gate receipts measure these conditions.\nVERDICT write_paths: all six changed files fit the initial prompt.txt scope plus the explicit two-file widening in resume-2-advice.txt:1; no plan or unrelated source changed.\nVERDICT manifest: manifest.md records complete scoped arms, importer receipts, negative controls and commits; release-base-armed.log has 55 passes and release-final-head-armed.log has 64 passes, both EXIT=0.\nVERDICT diff: read all six commits from 946d691d74d681ff392c907b657967096656e531 through 80caedd42a9b970ae40fdc3ef8dc8ace98283123; the final diff changes six files and includes the required release compatibility repair and evidence fragment.\nCALL_SITES: reckon/ledger.py:load:1982, reckon/ledger.py:_indexed_run_ids:1120, reckon/crew/gc.py:retention_sweep:1740, reckon/crew/gc.py:main:1902, reckon/crew/gc.py:render_retention_service_unit:1803, reckon/crew/promotion_release.py:_released_tree_index:357, reckon/crew/promotion.py:2217, reckon/crew/merge.py:1017, reckon/mcp_views.py:1962\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/ledger.py:1330 keys the persistent cache by common git directory and relative ledger path, reckon/ledger.py:1312 refuses divergent source reuse, and reckon/crew/gc.py:1740 adds both cache classes to scheduled retention.\nSCORE evidence: 20\nJUSTIFICATION evidence: release-base-armed.log and release-final-head-armed.log record 55 and 64 passes with EXIT=0, the matched importer logs contain 90 and 88 failing IDs with none added, and negative-control.log records the intended distinct-path and surviving-orphan failures.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the six changed paths in the base-to-head diff are covered by prompt.txt and resume-2-advice.txt:1, including reckon/crew/promotion_release.py and its existing release test.\nSCORE durability: 20\nJUSTIFICATION durability: tests/test_ledger_caches_are_shared_and_pruned.py:72,85,194,195,196 fail for per-checkout keys, repeated parsing, missing pruning or unsafe pruning, while tests/test_a_released_worktree_takes_its_index.py:154 fails if release selects the shared cache; the recorded negative controls exercise these regressions.\nSCORE fit: 20\nJUSTIFICATION fit: reckon/ledger.py:1263 reuses the existing Git pointer readers and reckon/crew/gc.py:1740 extends the existing retention phases and rotating log; added source names describe mechanisms, and delivery-lint.json records zero added findings and zero format failures.\nSCORE reuse: 5\nJUSTIFICATION reuse: production additions extend ledger.py and gc.py and reuse git_head.py, file_memo.py and existing holder checks, but tests/test_ledger_caches_are_shared_and_pruned.py:21 duplicates the Git runner already owned by tests/helpers/git.py:12 instead of importing or wrapping it.\nFINDING tests/test_ledger_caches_are_shared_and_pruned.py:21 non-blocking: _git duplicates tests/helpers/git.py:12, which already returns stripped Git stdout and removes the worker run identity from the child environment; import that owner as the release test does so this fixture does not maintain a second runner that omits that handling.\n",
+  "reuse_audit": [
+    "Searched base reckon/ and tests/helpers/ by cache identity, common Git directory, digest, holder and picker-view capabilities; opened git_head.py, file_memo.py, gc.py, _store.py and tests/helpers/git.py.",
+    "_ledger_repository wraps git_head pointer owners; _ledger_content wraps file_memo digest ownership and ledger snapshot ownership; _shared_index_root adds equivalence routing within ledger.py; _checkout_index_path preserves legacy identity in its ledger owner.",
+    "_ledger_cache_roots composes existing store/ledger root resolvers; _expired_picker_views extends the existing gc retention owner and reuses _scratch_process_holders; no existing budget-view expiry owner was found.",
+    "_seed_index supplies synthetic SQLite source metadata, and _publish_legacy_index is an independent legacy-format test fixture; neither is a new runtime cache publisher.",
+    "The new repository fixture and test cases provide unique sharing/divergence/retention scenarios; the local _git helper duplicates tests/helpers/git.py:12."
+  ],
+  "review_notes": [
+    "No implementation mutation or suite rerun was performed during this independent review.",
+    "One non-blocking finding remains for coordinator disposition; no blocking implementation finding was identified."
+  ],
+  "review_run_id": "r-20261111T063629427067-review-of-ledger-caches-shared-and-pruned-80caedd42a9b",
+  "reviewed_base_sha": "946d691d74d681ff392c907b657967096656e531",
+  "reviewed_head_sha": "80caedd42a9b970ae40fdc3ef8dc8ace98283123",
+  "reviewed_run_id": "r-20261111T035550813418-ledger-caches-shared-and-pruned",
+  "scores": {
+    "durability": 20,
+    "evidence": 20,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "reuse": 5,
+    "scope_discipline": 20
+  },
+  "source_measurement_revision": "09e52de1e4c999b651df557500f8c1b2ab93af03",
+  "status": "parsed",
+  "suite_evidence": {
+    "after_suite": {
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261111T035550813418-ledger-caches-shared-and-pruned/release-final-head-armed.log",
+      "revision": "09e52de1e4c999b651df557500f8c1b2ab93af03",
+      "summary": "64 passed in 15.17s"
+    },
+    "baseline_suite": {
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261111T035550813418-ledger-caches-shared-and-pruned/release-base-armed.log",
+      "revision": "946d691d74d681ff392c907b657967096656e531",
+      "summary": "55 passed in 9.94s"
+    }
+  },
+  "times_source": "run-record",
+  "timestamp": "2026-11-11T06:58:00.962081+00:00",
+  "total": 105
+}

@@ -1,0 +1,58 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/_plan_html.py:edit_keyed_meta",
+    "reckon/_plan_html.py:write_state",
+    "reckon/_plan_html.py:_set_meta_block",
+    "reckon/mcp_discovery.py:213"
+  ],
+  "completed_at": "2026-11-11T19:51:52.949Z",
+  "dispatched_at": "2026-11-11T19:41:09Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261111T185846121313-a-stored-meta-backslash-round-trips/manifest.md",
+      "line": 24,
+      "severity": "non-blocking",
+      "text": "the done_when's ruff clause is claimed as counts with no ruff log among test_logs, so a reader cannot open the run that produced it; an independent measurement gives 15 findings on both extracted revisions with 0 added, so the claim holds but the evidence is not on disk."
+    },
+    {
+      "file": "docs/evidence/fragments/every-plan-write-goes-through-edit-plan/a-stored-meta-backslash-round-trips.html",
+      "line": 11,
+      "severity": "non-blocking",
+      "text": "the fragment and the commit message state that a doubled backslash is silently collapsed to one, but all three values at tests/test_plan_html_meta_roundtrip.py:40 raise PatternError under the old code rather than collapsing, so the silent-rewrite half of the documented defect has no assertion exercising it; the callable replacement removes the class by construction, so a regression still reddens the existing tests."
+    }
+  ],
+  "justifications": {
+    "durability": "tests/test_plan_html_meta_roundtrip.py:35-36 compare a value parsed out of the written document against the literal REASON and against the first write, and negative-control.log shows both tests reddening under the reverted `pat.sub(tag, ...)`.",
+    "evidence": "after-suite.log carries revision, tree, command and a bare EXIT=0, but base-suite.log's 2 errors are scaffolding in a git-archive tree and the ruff clause of the done_when exists only as prose in the source manifest.",
+    "goal_fidelity": "reckon/_plan_html.py:2177 inserts the built tag through a callable, so no byte of a stored value is read as a replacement escape.",
+    "reuse": "the fix extends the module's existing meta owner at reckon/_plan_html.py:2168 in place; the search over reckon/ for other `<meta name=` writers found only reckon/evidence.py:535 and reckon/serve.py:2184, neither of which is a meta-replacement mechanism to extend.",
+    "scope_discipline": "every path in 864e715b is one of the three the manifest declares, and the hunk at reckon/_plan_html.py:2173 is confined to the line the goal names."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is that a stored meta value with a backslash is written back verbatim; reckon/_plan_html.py:2177 now replaces the matched tag through `lambda _match: tag`, and the module's remaining `.sub(` calls (2335 callable, 2191, 2562, 2568, 2588 literal) carry no stored or authored text, so both clauses of the goal hold.\nVERDICT done_when: the done_when names two tests in a file covering `_plan_html` plus a ruff delta; tests/test_plan_html_meta_roundtrip.py:20 and :39 hold those two, after-suite.log records 53 passed EXIT=0, base-suite.log records 49 passed plus 2 errors whose ids are attributed to a git-archive `git ls-tree` exit 128, and I measured 15 ruff findings on each extracted revision with 0 added.\nVERDICT write_paths: the source manifest declares reckon/_plan_html.py, tests/test_plan_html_meta_roundtrip.py and docs/evidence/fragments/every-plan-write-goes-through-edit-plan/a-stored-meta-backslash-round-trips.html; the diff touches exactly those three, and the granted figures directory carries nothing.\nVERDICT manifest: read; it records status complete, the two suite arms with command, tree, module_under_test and EXIT lines, the negative control naming both test ids, and the ruff counts as prose with no log path behind them.\nVERDICT diff: read commit 864e715b against 5848a6d1: one hunk of +4/-1 at reckon/_plan_html.py:2173, a new 49-line test file, and a new 39-line evidence fragment; no other hunk, no plan edit, no index change.\nCALL_SITES: reckon/_plan_html.py:edit_keyed_meta, reckon/_plan_html.py:write_state, reckon/_plan_html.py:_set_meta_block, reckon/mcp_discovery.py:213\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/_plan_html.py:2177 inserts the built tag through a callable, so no byte of a stored value is read as a replacement escape.\nSCORE evidence: 16\nJUSTIFICATION evidence: after-suite.log carries revision, tree, command and a bare EXIT=0, but base-suite.log's 2 errors are scaffolding in a git-archive tree and the ruff clause of the done_when exists only as prose in manifest.md:24.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in 864e715b is one of the three the manifest declares, and the hunk at reckon/_plan_html.py:2173 is confined to the line the goal names.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_plan_html_meta_roundtrip.py:35-36 compare a value parsed out of the written document against the literal REASON and against the first write, and negative-control.log shows both tests reddening under the reverted `pat.sub(tag, ...)`.\nSCORE fit: 18\nJUSTIFICATION fit: the comment at reckon/_plan_html.py:2174 states the mechanism (a replacement string read as a template) in the surrounding module's voice, and the test names state the behaviour with no plan or ticket identifier.\nSCORE reuse: 20\nJUSTIFICATION reuse: the fix extends the module's existing meta owner at reckon/_plan_html.py:2168 in place; the search over reckon/ for other `<meta name=` writers found only reckon/evidence.py:535 and reckon/serve.py:2184, neither of which is a meta-replacement mechanism to extend.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261111T185846121313-a-stored-meta-backslash-round-trips/manifest.md:24 non-blocking: the done_when's ruff clause is claimed as counts (17 at base, 17 at head, format clean) with no ruff log among test_logs, so a reader cannot open the run that produced it; an independent measurement gives 15 findings on both extracted revisions with 0 added, so the claim holds but the evidence is not on disk.\nFINDING docs/evidence/fragments/every-plan-write-goes-through-edit-plan/a-stored-meta-backslash-round-trips.html:11 non-blocking: the fragment and the commit message state that a doubled backslash is silently collapsed to one, but all three values at tests/test_plan_html_meta_roundtrip.py:40 raise PatternError under the old code rather than collapsing, so the silent-rewrite half of the documented defect has no assertion exercising it; the callable replacement removes the class by construction, so a regression still reddens the existing tests.",
+  "review_run_id": "r-20261111T193609464918-review-of-a-stored-meta-backslash-round-trips-864e715b662b",
+  "reviewed_base_sha": "5848a6d1ecd27b099853e19768888a49efeb46cb",
+  "reviewed_head_sha": "864e715b662b844fd5958f85a2eaa8a3b9917b59",
+  "reviewed_run_id": "r-20261111T185846121313-a-stored-meta-backslash-round-trips",
+  "scores": {
+    "durability": 18,
+    "evidence": 16,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-11T19:58:00+00:00",
+  "total": 111,
+  "verdicts": {
+    "diff": "commit 864e715b against 5848a6d1: one hunk of +4/-1 at reckon/_plan_html.py:2173, a new 49-line test file, and a new 39-line evidence fragment.",
+    "done_when": "the done_when names two tests plus a ruff delta; tests/test_plan_html_meta_roundtrip.py:20 and :39 hold those two, after-suite.log records 53 passed EXIT=0, base-suite.log records 49 passed plus 2 scaffolds, and I measured 15 ruff findings at each revision with 0 added.",
+    "goal": "the goal is that a stored meta value with a backslash is written back verbatim; reckon/_plan_html.py:2177 now replaces the matched tag through `lambda _match: tag`, and the module's remaining `.sub(` calls carry no stored or authored text.",
+    "manifest": "read; it records complete status, both suite arms with command and EXIT, the negative control naming both ids, and the ruff counts as prose with no log path.",
+    "write_paths": "the manifest declares reckon/_plan_html.py, tests/test_plan_html_meta_roundtrip.py and the evidence fragment; the diff touches exactly those three."
+  }
+}

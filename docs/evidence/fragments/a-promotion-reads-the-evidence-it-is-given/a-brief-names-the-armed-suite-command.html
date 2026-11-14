@@ -1,0 +1,77 @@
+<section id="a-brief-names-the-armed-suite-command-landing">
+  <h2>A brief and a resume advice name the revisions each suite arm must record</h2>
+
+  <p><strong>What changed.</strong> The implement brief and every resume or
+  repair advice now state the two revisions the suite arms must record, with the
+  armed command resolved separately over each. <code>_suite_gate_prompt_body</code>
+  (<code>reckon/crew/dispatch.py</code>) takes a <code>base_revision</code> and
+  states it beside the resolution it already printed — the worktree's head is
+  the base revision at dispatch, so that resolution is the baseline arm's
+  command — together with the after-arm rule: record the after arm at the run's
+  head, with the command resolved over that head. The revision itself is read
+  by <code>_suite_gate_prompt_body_for</code> from the worktree payload the
+  dispatch has just cut, not supplied by the caller, so the one place that knows
+  which revision the tree was cut from is the one place the brief reads it. A new
+  <code>_revision_suite_block</code> in <code>reckon/crew/resumption.py</code>
+  resolves the declaration at both revisions from the run record's
+  <code>base_sha</code> and the worktree's current <code>HEAD</code>, read
+  through the repository's shared commit resolver
+  <code>_resolve_commit</code> rather than a second <code>git rev-parse</code>
+  composed beside it, and
+  <code>_resume</code> appends it to the advice before the prompt is built, so
+  both the stdin and the argv prompt channels carry it. The repair advice
+  reaches the same writer, so it carries the block without a second change.</p>
+
+  <p><strong>The guard.</strong> <code>tests/test_a_brief_names_the_armed_suite_command.py</code>
+  shows two cases. The first composes the real dispatch brief through
+  <code>_compose_dispatch_prompt</code> from the worktree payload, using the
+  same <code>_suite_gate_prompt_body_for</code> the call site uses, and asserts
+  it names the base revision, the command resolved there, and the after-arm
+  rule; the same payload carrying no <code>base_sha</code> must yield a brief
+  naming no revision. The second drives
+  <code>resumption._resume</code> over a run whose head adds
+  <code>tests/test_y.py</code> absent at its base revision, captures the advice a
+  worker would read, and asserts both revisions are named with two different
+  resolved commands.</p>
+
+  <h3 id="a-brief-names-the-armed-suite-command-measured">Measured</h3>
+
+  <p>Base arm at <code>067c8035e4</code>, the new test file copied into that
+  tree: <code>2 failed</code>, exit 1. The brief case fails with
+  <code>TypeError: _suite_gate_prompt_body() got an unexpected keyword argument
+  'base_revision'</code>; the resume case fails with the advice reading
+  <code>'the catalog is stale; continue'</code> alone, naming neither revision.
+  Head arm at <code>82f38877d2</code> plus this change: <code>2 passed</code>, exit 0.</p>
+
+  <p><strong>The brief case reads the dispatch path, not its own argument.</strong>
+  A probe replaces <code>_suite_gate_prompt_body_for</code> with one that hands
+  the body no revision, which is what a call site that stopped supplying the
+  worktree's <code>base_sha</code> composes. The first case fails and the second
+  passes: <code>1 failed, 1 passed</code>, exit 1, in
+  <code>blank-base-probe.log</code>. Before the repair the case passed its own
+  revision straight into the body and could not have shown this.</p>
+
+  <p><strong>Negative control.</strong> Dropping the revisions from the brief and
+  from the resume advice makes both cases fail: <code>2 failed</code>, exit 1, in
+  <code>negative-control.log</code>.</p>
+
+  <p><strong>The modules' importers.</strong> The 33 test files that import
+  <code>reckon.crew.resumption</code> or compose a dispatch prompt were run one
+  arm at a time at most <code>-n 4</code> on <code>all_debug</code>, each arm
+  resolved over its own tree. Base arm at <code>067c8035e4</code>:
+  <code>38 failed, 274 passed</code>. After arm at <code>82f38877d2</code>:
+  <code>38 failed, 276 passed</code>. No failure id is added or removed: the two
+  arms carry the same 38 failure ids, and the two extra passes are this node's
+  own cases. Those 38 ids are outside this node's scope and are listed in the
+  manifest.</p>
+
+  <p><strong>The armed command.</strong> The template resolved over each arm's
+  own tree: <code>tests/test_staged_write_inventory.py</code> alone at the base
+  revision, which does not hold the new test file, and both files at the head.
+  Base arm <code>51 passed</code>, exit 0. After arm at <code>82f38877d2</code>:
+  <code>53 passed</code>, exit 0. The census test reads its tree through the object store, so the base
+  arm ran in a detached worktree of the base revision rather than in a
+  <code>git archive</code> extraction; an extraction has no object store and the
+  census errored on <code>git ls-tree HEAD</code> there, which is a fact about
+  the scratch tree and not about the change.</p>
+</section>

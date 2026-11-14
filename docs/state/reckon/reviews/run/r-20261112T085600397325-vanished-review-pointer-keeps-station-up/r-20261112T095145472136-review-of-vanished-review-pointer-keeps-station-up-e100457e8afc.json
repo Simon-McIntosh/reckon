@@ -1,0 +1,66 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/crew/obligation_snapshot.py:1364",
+    "reckon/crew/obligations.py:1037",
+    "reckon/crew_follow_commands.py:47"
+  ],
+  "completed_at": "2026-11-12T10:07:41.396Z",
+  "dispatched_at": "2026-11-12T09:59:06Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/the-monitor-reads-each-fact-once/vanished-review-pointer-keeps-station-up.html",
+      "line": "24",
+      "severity": "non-blocking",
+      "text": "non-blocking: the importer-arm row is transposed \u2014 it prints base as 48 failed/582 passed and the delivered code as 48 failed/579 passed, while importer-base-arm.log ends '48 failed, 579 passed' and importer-head-arm.log ends '48 failed, 582 passed' \u2014 and the prose at :29 repeats the inversion ('the head arm collected three fewer passing cases than the base arm'). The logs show head collecting three MORE, exactly the three cases of the new test file, which is the collection difference the sentence is there to explain; as written the evidence document contradicts the logs it cites."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261112T085600397325-vanished-review-pointer-keeps-station-up/manifest.md",
+      "line": "21",
+      "severity": "non-blocking",
+      "text": "non-blocking: evidence_inputs carries the same inversion as the fragment \u2014 'the head importer arm collected three fewer passing cases than base' against base 579 passed and head 582 passed in the two arm logs \u2014 so a coordinator reconciling the manifest against importer-head-arm.log reads a delta that points the wrong way."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "the changed helper is reached in production from obligation_snapshot.py:1364 (_derive_fleet_state, the station tick's own derivation) and obligations.py:1037 (_live_review_runs), and the tick handler wraps every tick the crew station command runs from crew_follow_*commands.py:47.",
+    "diff": "read 27a85ee5c1 and e100457e8a against 8f00956a: 27a85ee5c1 adds the CrewError catch at obligations.py:936 and the tick-failure handler at station.py:807, plus the 211-line regression file; e100457e8a adds only the 32-line landing fragment.",
+    "done_when": "s33's Done-when names tests/test_a_vanished_review_pointer_does_not_stop_the_station.py for three things: a listed-but-deleted review pointer reads False without raising, a CrewError-raising first tick still runs a second tick and prints the terminal line, and a StationLeaseLostError tick still ends the station \u2014 all three are asserted in the added file and negative-control.log shows the first two red at base while the third passes.",
+    "goal": "the goal is to keep the station running when a listed review pointer vanishes before its read; reckon/crew/obligations.py:936-941 catches the CrewError that runs.read_pointer raises for a missing pointer and answers False, and reckon/crew/station.py:807-812 prints station-tick-failure with the traceback and goes on to the next tick.",
+    "manifest": "the reviewed run's manifest reads complete and names commits 27a85ee5c1 and e100457e8a; its gate and arm figures reconcile with head-arm.log (54 passed, EXIT=0), base-arm.log (51 passed, EXIT=0), negative-control.log (2 failed, 1 passed, EXIT=1) and both importer arms (48 identical failing ids, EXIT=1), except that its evidence_inputs direction for the importer delta is inverted.",
+    "write_paths": "the node was fenced to reckon/crew/obligations.py, reckon/crew/station.py, its own test file, its fragment and a figures directory; git diff --stat 8f00956a..e100457e8a lists exactly those four files and nothing else, with the figures directory unused."
+  },
+  "justifications": {
+    "durability": "the negative control reverts both product hunks and reddens tests/test_a_vanished_review_pointer_does_not_stop_the_station.py:117 and :172 while :188 (lost lease) stays green, so each assertion names a change it would catch: removing the CrewError catch raises CrewError again, and reordering the generic catch ahead of the lease handler leaves pytest.raises(StationHeldError) unsatisfied.",
+    "evidence": "every clause of the Done-when is recorded from a log I opened and checked \u2014 negative-control.log reddens exactly the two cases it names, the two importer arms carry identical 48-id failing sets, and I re-ran the node's three cases (3 passed, EXIT=0) and ruff on the three changed Python paths (clean) \u2014 but the landed fragment's importer row at :24 states the arm results transposed against the logs it cites.",
+    "fit": "the catch mirrors the sibling reader at obligations.py:961-964 verbatim, and the handler at station.py:807-812 uses the same print-plus-traceback.print_exc shape and station-<what>-failure prefix as the four existing blocks at station.py:119, :201, :297 and :409.",
+    "goal_fidelity": "obligations.py:936-941 and station.py:807-812 together make a vanished pointer cost one duty and a failed tick cost one tick, while station.py:807 leaves the StationLeaseLostError handler ahead of the generic catch so a lost lease still ends the process.",
+    "reuse": "I searched reckon/crew for an optional live-pointer reader (read_pointer_or_none, pointer_or_none, _read_pointer_or_rebuild) and found no owner \u2014 runs.read_pointer at runs.py:1066 raises by design and promotion_records.py:152 rebuilds a promotion record, a different capability \u2014 so the inline catch extends the owner that exists (the sibling at obligations.py:961) rather than forking one, and station.py already owns the tick-failure printing this repeats.",
+    "scope_discipline": "git diff --stat 8f00956a..e100457e8a names only obligations.py, station.py, the node's test file and its fragment, all inside the declared write paths, with no unrelated edit and no plan or index write."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to keep the station running when a listed review pointer vanishes before its read; reckon/crew/obligations.py:936-941 catches the CrewError that runs.read_pointer raises for a missing pointer and answers False, and reckon/crew/station.py:807-812 prints a station-tick-failure line with the traceback and goes on to the next tick.\nVERDICT done_when: s33's Done-when names tests/test_a_vanished_review_pointer_does_not_stop_the_station.py for three things \u2014 a listed-but-deleted review pointer reading False without raising, a CrewError-raising first tick still running a second tick and printing the line, and a StationLeaseLostError tick still ending the station with StationHeldError; all three are asserted in the added file at :117, :172 and :188, and negative-control.log shows the first two red at base while the third passes.\nVERDICT write_paths: the node was fenced to reckon/crew/obligations.py, reckon/crew/station.py, its own test file, its fragment and a figures directory; git diff --stat 8f00956a..e100457e8a lists exactly rows for those four files (257 insertions, 1 deletion) and nothing outside them, the figures directory unused.\nVERDICT manifest: /home/ITER/mcintos/.config/reckon/crew/runs/r-20261112T085600397325-vanished-review-pointer-keeps-station-up/manifest.md reads complete with commits 27a85ee5c1 and e100457e8a; its figures reconcile with the logs (head-arm 54 passed EXIT=0, base-arm 51 passed EXIT=0, negative control 2 failed 1 passed EXIT=1, importer arms 48 identical failing ids EXIT=1), except that its evidence_inputs line states the importer passing-count delta in the wrong direction.\nVERDICT diff: read 27a85ee5c1 and e100457e8a against 8f00956a commit by commit; 27a85ee5c1 adds the CrewError catch at obligations.py:936-941 and the tick-failure handler at station.py:807-812 plus the 211-line regression file, and e100457e8a adds only the 32-line landing fragment.\nCALL_SITES: reckon/crew/obligation_snapshot.py:1364, reckon/crew/obligations.py:1037, reckon/crew_follow_commands.py:47\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: obligations.py:936-941 and station.py:807-812 make a vanished pointer cost one duty and a failed tick cost one tick, with the StationLeaseLostError handler still ahead of the generic catch so a lost lease ends the process as the goal requires.\nSCORE evidence: 17\nJUSTIFICATION evidence: every Done-when clause is recorded from a log I opened and checked (negative control red on exactly the two named cases, identical 48-id importer failing sets, 3 passed on my own re-run, ruff clean), but the fragment's importer row at :24 states the arm results transposed against those logs.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat 8f00956a..e100457e8a names only obligations.py, station.py, the node's test file and its fragment, all inside the declared write paths.\nSCORE durability: 19\nJUSTIFICATION durability: reinstating either reverted hunk reddens test_a_vanished_review_pointer_does_not_stop_the_station.py:117 (CrewError escapes the derivation) or :172 (the loop ends after one tick), while :188 stays green as the guard on the new broad catch.\nSCORE fit: 19\nJUSTIFICATION fit: the catch mirrors obligations.py:961-964 and the handler reuses the station-<what>-failure print-plus-traceback shape of station.py:119, :201, :297 and :409.\nSCORE reuse: 19\nJUSTIFICATION reuse: a search of reckon/crew for an optional live-pointer reader found no owner (runs.py:1066 raises by design; promotion_records.py:152 rebuilds a promotion record, a different capability), so obligations.py:936 extends the existing sibling catch rather than forking a reader.\nFINDING docs/evidence/fragments/the-monitor-reads-each-fact-once/vanished-review-pointer-keeps-station-up.html:24 non-blocking: the importer-arm row is transposed \u2014 base printed as 582 passed and the delivered code as 579, where importer-base-arm.log ends '48 failed, 579 passed' and importer-head-arm.log '48 failed, 582 passed' \u2014 and the prose at :29 repeats the inversion, so the document contradicts the logs it cites.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261112T085600397325-vanished-review-pointer-keeps-station-up/manifest.md:21 non-blocking: evidence_inputs says the head importer arm collected three fewer passing cases than base, where the logs read 579 at base and 582 at head \u2014 the three-case difference is the new test file, so the delta points the wrong way.\n",
+  "review_run_id": "r-20261112T095145472136-review-of-vanished-review-pointer-keeps-station-up-e100457e8afc",
+  "reviewed_base_sha": "8f00956ae50bc953348749fc077c968f5f90d6b2",
+  "reviewed_head_sha": "e100457e8afc38a75283f4363578dfba6087d4f8",
+  "reviewed_run_id": "r-20261112T085600397325-vanished-review-pointer-keeps-station-up",
+  "reviewer": {
+    "backend": "clive",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash",
+    "reviewer_run_id": "r-20261112T095145472136-review-of-vanished-review-pointer-keeps-station-up-e100457e8afc"
+  },
+  "reviewer_run_id": "r-20261112T095145472136-review-of-vanished-review-pointer-keeps-station-up-e100457e8afc",
+  "scores": {
+    "durability": 19,
+    "evidence": 17,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "reuse": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-12T10:13:11.598039+00:00",
+  "total": 114
+}

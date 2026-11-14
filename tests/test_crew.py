@@ -23,6 +23,7 @@ from pathlib import Path
 import pytest
 from click.testing import CliRunner
 
+import reckon.crew.dispatch_launch as dispatch_launch_module
 import reckon.crew.dispatch_plan as dispatch_plan_module
 import reckon.crew.dispatch_sessions as dispatch_sessions_module
 from reckon import cli as cli_module
@@ -1989,7 +1990,25 @@ def test_no_watch_dispatch_records_the_override_on_pointer_and_ledger(
     home, repo, monkeypatch
 ) -> None:
     monkeypatch.setattr(crew_dispatch_commands, "_resolved_flight", lambda *args, **kwargs: CONFIG)
-    monkeypatch.setattr(crew, "_spawn", lambda *args, **kwargs: 4242)
+    dispatch_module = importlib.import_module("reckon.crew.dispatch")
+    launches: list[tuple[tuple, dict]] = []
+
+    def no_supervisor(*args, **kwargs):
+        launches.append((args, kwargs))
+        # This test process is the recorded worker: the launch must name a
+        # process that is alive, because the completion below waives a live
+        # run, and naming one that does not exist leaves nothing to waive.
+        return os.getpid()
+
+    # The launch seam this dispatch reaches is ``_start_supervisor``, not
+    # ``crew._spawn``: dispatch is called with no launcher, so its launch step
+    # takes the supervisor branch and starts a detached interpreter that goes
+    # on writing the run's phase after this call returns. Stubbing that seam
+    # keeps the launch in-process, which is what the completion below needs:
+    # the supervisor's own phase write otherwise lands while promotion is
+    # checking that the pointer it read is still the pointer on disk.
+    monkeypatch.setattr(dispatch_module, "_start_supervisor", no_supervisor)
+    children_before = set(dispatch_launch_module._inherited_child_pids())
     result = CliRunner().invoke(
         cli_module.main,
         [
@@ -2041,6 +2060,13 @@ def test_no_watch_dispatch_records_the_override_on_pointer_and_ledger(
         )["record"]["watch_override"]
         == waiver
     )
+    # The stub is the seam the launch took, and nothing it started is still
+    # running: a real supervisor is a child of this process that outlives the
+    # call and keeps writing the run's phase. Only children this call added
+    # count, so another case's leftover process cannot redden this one.
+    assert launches, "the dispatch started a supervisor through another seam"
+    children_after = set(dispatch_launch_module._inherited_child_pids())
+    assert children_after - children_before == set()
 
 
 def test_cli_dispatch_arms_a_missing_watcher(home, repo, monkeypatch) -> None:
@@ -2093,7 +2119,7 @@ def test_cli_dispatch_arms_a_missing_watcher(home, repo, monkeypatch) -> None:
     crew.pointer_path(existing["run_id"]).unlink()
 
 
-def test_dispatch_refuses_every_unreconciled_run_past_the_grace(home, repo) -> None:
+def test_dispatch_records_every_unreconciled_run_past_the_grace(home, repo) -> None:
     assert crew.live_dir() == home / "crew" / "live"
     run_ids = ("r-delivered-alpha", "r-delivered-beta")
     for run_id in run_ids:
@@ -2103,35 +2129,19 @@ def test_dispatch_refuses_every_unreconciled_run_past_the_grace(home, repo) -> N
         "fences": {**CONFIG["fences"], "unreconciled_run_grace": "5m"},
     }
 
-    with pytest.raises(crew.UnreconciledRuns) as excinfo:
-        crew.dispatch(
-            node=_node(id="next-node"),
-            project="proj",
-            repo=repo,
-            config=configured,
-            session="sess",
-            launcher=lambda *args, **kwargs: pytest.fail("dispatch must be refused"),
-        )
-
-    assert [row["run_id"] for row in excinfo.value.runs] == list(run_ids)
-    for run_id in run_ids:
-        # A plan-naming run with no section cannot carry a brief beside its
-        # plan, so its review is composed brief-carried: the brief holds the
-        # rubric and the reviewed run's identity, keyed on the reviewed run.
-        brief = runs.run_dir(run_id) / "review-brief.md"
-        expected = (
-            f"- {run_id}: reckon crew dispatch --project proj --brief {brief} "
-            "--role review --spec-level exact"
-        )
-        assert expected in str(excinfo.value)
-    listed = subprocess.run(
-        ["git", "worktree", "list"],
-        cwd=repo,
-        capture_output=True,
-        text=True,
-        check=True,
+    record = crew.dispatch(
+        node=_node(id="next-node"),
+        project="proj",
+        repo=repo,
+        config=configured,
+        session="sess",
+        launcher=lambda *args, **kwargs: 4242,
     )
-    assert "next-node" not in listed.stdout
+
+    assert record["run_id"] not in run_ids
+    assert [
+        row["run_id"] for row in record["unreconciled_override"]["waived_runs"]
+    ] == list(run_ids)
 
 
 def test_dispatch_grace_starts_when_the_manifest_turns_terminal(home, repo) -> None:
@@ -2180,7 +2190,7 @@ def test_dispatch_override_records_and_promotes_the_waived_backlog(home, repo) -
     assert stored["unreconciled_override"] == waiver
 
 
-def test_cli_dispatch_reports_unreconciled_runs_on_its_own_exit_code(
+def test_cli_dispatch_records_unreconciled_runs_on_its_run(
     home, repo, monkeypatch
 ) -> None:
     old_run = "r-cli-delivery"
@@ -2194,6 +2204,7 @@ def test_cli_dispatch_reports_unreconciled_runs_on_its_own_exit_code(
         "_resolved_flight",
         lambda *args, **kwargs: configured,
     )
+    monkeypatch.setattr(crew, "_spawn", lambda *args, **kwargs: 4242)
 
     result = CliRunner().invoke(
         cli_module.main,
@@ -2220,22 +2231,15 @@ def test_cli_dispatch_reports_unreconciled_runs_on_its_own_exit_code(
             "sess",
             "--repo",
             str(repo),
+            "--no-watch",
         ],
     )
 
     payload = json.loads(result.output)
-    assert result.exit_code == 6
-    assert payload["error"] == "unreconciled-runs"
-    assert payload["runs"][0]["run_id"] == old_run
-    # A run that names a plan and no section cannot carry a brief beside the
-    # plan — dispatch refuses a briefed plan without the section it instructs —
-    # so the review is composed brief-carried, and the brief carries the rubric
-    # and the reviewed run's identity. Its path is keyed on the reviewed run.
-    brief = runs.run_dir(old_run) / "review-brief.md"
-    assert (
-        f"- {old_run}: reckon crew dispatch --project proj --brief {brief} "
-        "--role review --spec-level exact" in payload["detail"]
-    )
+    assert result.exit_code == 0, payload
+    recorded = runs.read_pointer(payload["run_id"])
+    backlog = runs.dispatch_field(recorded, "unreconciled_override")
+    assert [row["run_id"] for row in backlog["waived_runs"]] == [old_run]
 
 
 def test_dispatch_refuses_work_above_the_selected_configuration_horizon(

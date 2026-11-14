@@ -1,0 +1,56 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived by parsing the reviewed run's own arm logs for `^FAILED <id>` lines: base-suite.log (revision a3c635a3b945edad442f00840b50bed61da96baf, `pytest -q tests/test_staged_write_inchestory.py`, 51 passed, last line EXIT=0) yields no failure id; after-suite.log (revision c9d5522ad2c873ec69d9d166a08622a1e0a97fa7, the new test plus the same file, 52 passed, EXIT=0) yields no failure id; after-minus-base is therefore 0 failures. Instrument control: the same parse over negative-control.log reports `1 failed`, id tests/test_a_second_follower_keeps_a_landing_from_state.py::test_a_second_follower_continues_the_landing_from_the_panes_word, EXIT=1, so the empty arm results are measured rather than unread.",
+  "call_sites": [
+    "reckon/crew_follow_commands.py:crew_follow (line 3102)",
+    "reckon/crew_follow_commands.py:3346",
+    "reckon/crew_follow_commands.py:_seed_ticker_memory (line 2875)"
+  ],
+  "completed_at": "2026-11-12T21:43:25.992Z",
+  "dispatched_at": "2026-11-12T21:40:59Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "exempted",
+      "reason": "evidence supplied by the coordinator: the 117 test files importing reckon/crew/follow_checkpoint.py, reckon/crew/ticker.py or reckon/crew_follow_commands.py (plus the new test and the census test) ran at base a3c635a3 and head c9d5522 on rigel job 1312674, logs ~/.cache/reckon-arms/s77/base.log and head.log, each headed with revision and command and ending EXIT=. Base 12 failed 1190 passed; head 12 failed 1191 passed; identical failure ids, zero added.",
+      "recorded_at": "2026-11-12T22:37:18.536344+00:00"
+    },
+    "1": {
+      "kind": "exempted",
+      "reason": "non-blocking and outside the node's fence: a public RowPolicy seed for the _printed memory lives in reckon/crew/ticker.py, which this node could not write; carried to the-monitor-shows-the-work-it-watches \u00a778, which reads the same memory.",
+      "recorded_at": "2026-11-12T22:37:28.605778+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "reckon/crew_follow_commands.py",
+      "line": 2369,
+      "severity": "blocking",
+      "text": "the gate's base arm (base-suite.log, `pytest -q tests/test_staged_write_inventory.py`) and head arm (after-suite.log, the new test plus that file) touch no test file importing reckon/crew/follow_checkpoint.py, reckon/crew/ticker.py or reckon/crew_follow_commands.py, so the done_when's clause that those files add no failure against a base arm is unevidenced, and a follower regression from the rewritten fresh-arm resume event is invisible to this gate; run the importing test files, e.g. tests/test_follow_rearm_continues.py and tests/test_follower_rearm_shows_nothing_twice.py, at base and head with logs ending in EXIT=."
+    },
+    {
+      "file": "reckon/crew_follow_commands.py",
+      "line": 1259,
+      "severity": "non-blocking",
+      "text": "_restore_carried_words reads path._policy._printed through getattr chains because reckon/crew/ticker.py:1763 RowPolicy.seed has no counterpart for the _printed memory at reckon/crew/ticker.py:1682; a rename inside ticker.py turns the restore into a silent no-op caught only by the end-to-end test. The node was fenced out of ticker.py and the worker recorded this under outside_scope."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is that a follower armed after a settle continues the pane's words; reckon/crew_follow_commands.py:1243 adds _restore_carried_words and reckon/crew_follow_commands.py:2436-2442 carries the checkpoint's states on the fresh-arm resume event, which is exactly what the landed test drives.\nVERDICT done_when: the behavioural clause is measured, tests/test_a_second_follower_keeps_a_landing_from_state.py:260-262 asserts B draws a row for the landing carrying both delivered and landed, and its negative control is red at EXIT=1 (negative-control.log), but the gate's base arm (base-suite.log) ran only tests/test_staged_write_inventory.py, so the done_when's clause that the test files importing follow_checkpoint.py, ticker.py or crew_follow_commands.py add no failure against a base arm is unmeasured.\nVERDICT write_paths: read the node's five declared write paths in dispatch-detail.json; every path in the diff \u2014 reckon/crew_follow_commands.py, tests/test_a_second_follower_keeps_a_landing_from_state.py and the docs/evidence fragment \u2014 is inside them.\nVERDICT manifest: read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261112T065434682902-wave1-a3-the-monitor-shows-the-work-it-watche-s77/manifest.md; it records one commit c9d5522, after arm 52 passed in 40.03s (EXIT=0), base arm 51 passed in 14.06s (EXIT=0), negative control 1 failed in 17.49s (EXIT=1), and names the base-revision line it read (path.reseed in the reload branch only).\nVERDICT diff: read the single commit c9d5522 against its parent a3c635a3b945edad442f00840b50bed61da96baf; three files, +357/-6, the restore helper and continuing map in reckon/crew_follow_commands.py, the new test, and the one evidence fragment, with nothing the goal does not imply.\nCALL_SITES: reckon/crew_follow_commands.py:crew_follow (line 3102, the crew follow command), reckon/crew_follow_commands.py:3346 (the render loop calling _follow_watch_lines), reckon/crew_follow_commands.py:_seed_ticker_memory (line 2875, consuming the resume event's reported map at crew_follow_commands.py:3365)\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew_follow_commands.py:2436-2442 yields the checkpoint's states on the resume event and reckon/crew_follow_commands.py:2369 restores the carried word before the fresh arm draws, so a landing for a pane-shown delivery is news rather than observer context.\nSCORE evidence: 11\nJUSTIFICATION evidence: base-suite.log records `# command PYTHONPATH=. /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py`, a file importing none of the three modules, so the done_when's base-arm clause has no receipt while after-suite.log covers only the new test plus that same file.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff touches only reckon/crew_follow_commands.py, tests/test_a_second_follower_keeps_a_landing_from_state.py and docs/evidence/fragments/the-monitor-shows-the-work-it-watches/wave1-a3-the-monitor-shows-the-work-it-watche-s77.html, all inside dispatch-detail.json's declared write paths.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_a_second_follower_keeps_a_landing_from_state.py:260 reddens with the path restore removed (negative-control.log) and :261 reddens with the resume event's reported map reverted to {}, because reckon/crew/ticker.py:3383-3386 then falls back to `new` for the row's left word.\nSCORE fit: 17\nJUSTIFICATION fit: reckon/crew_follow_commands.py:1243 follows the module's own private-helper idiom and docstring depth of the neighbouring _follow_resume_plan at reckon/crew_follow_commands.py:747, and introduces no name the repository forbids.\nSCORE reuse: 13\nJUSTIFICATION reuse: reckon/crew_follow_commands.py:1261-1265 reaches into RowPolicy._printed and ticker_module._remembered_word rather than extending the owner, which owns the only seeding seam at reckon/crew/ticker.py:1763 (RowPolicy.seed covers _reported/_shown, not the landing-news memory _printed at :1682).\nFINDING reckon/crew_follow_commands.py:2369 blocking: the gate's base arm ran only tests/test_staged_write_inventory.py, which imports none of reckon/crew/follow_checkpoint.py, reckon/crew/ticker.py or reckon/crew_follow_commands.py, and the head arm ran only the new test plus that file, so the done_when's clause that the test files importing those three modules add no failure against a base arm has no receipt and a regression among the hundred-plus follower tests that the rewritten fresh-arm resume event can reach would land unseen; the repair is to run the importing test files, e.g. tests/test_follow_rearm_continues.py and tests/test_follower_rearm_shows_notething_twice.py, at both the base and head revisions, each log ending in a bare EXIT= line.\nFINDING reckon/crew_follow_commands.py:1259 non-blocking: _restore_carried_words pokes path._policy._printed through two getattr chains, and the owner reckon/crew/ticker.py:1682 has no public seeder for that memory (RowPolicy.seed at reckon/crew/ticker.py:1763 seeds _reported and _shown only), so the capability is now split across two modules and a rename inside ticker.py would make this restore a silent no-op that only the end-to-end test would notice; the node was fenced out of ticker.py, and the worker recorded this under outside_scope.",
+  "review_run_id": "r-20261112T210508422679-review-of-wave1-a3-the-monitor-shows-the-work-it-watche-s77-c9d5522ad2c8",
+  "reviewed_base_sha": "a3c635a3b945edad442f00840b50bed61da96baf",
+  "reviewed_head_sha": "c9d5522ad2c873ec69d9d166a08622a1e0a97fa7",
+  "reviewed_run_id": "r-20261112T065434682902-wave1-a3-the-monitor-shows-the-work-it-watche-s77",
+  "scores": {
+    "durability": 18,
+    "evidence": 11,
+    "fit": 17,
+    "goal_fidelity": 19,
+    "reuse": 13,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-12T22:18:21.120813+00:00",
+  "total": 98
+}

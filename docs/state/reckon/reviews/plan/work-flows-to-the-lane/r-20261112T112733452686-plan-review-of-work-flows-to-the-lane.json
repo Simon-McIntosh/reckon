@@ -1,0 +1,155 @@
+{
+  "absent_items": [],
+  "accepted_edits": [
+    {
+      "by": "8e41a6d3-d0e0-4927-afd1-771942ebfe6a",
+      "digests": {
+        "s22": "a5d78fa647145c171d2f286382057bec8f66c55347171ac921967bfc5efdc858"
+      },
+      "reason": "84eb875417 makes only the three edits the v73 review's findings asked for: five exclusive categories planted in s22, a width-two cap case in s25, and the context estimate kept pre-launch in s22's Why",
+      "units": [
+        "s22"
+      ],
+      "when": "2026-11-12T12:24:40.120569+00:00"
+    }
+  ],
+  "completed_at": "2026-11-12T11:34:54.999Z",
+  "dispatched_at": "2026-11-12T11:29:47Z",
+  "findings": [
+    {
+      "anchor": "plan.html:150",
+      "id": "done_when-1",
+      "reason": "the two most damaging categories are the ones a whole-file write destroys (a figure topic directory and a spliced evidence record), and the gate as written measures neither.",
+      "text": "s22's deliverable enumerates five exclusive patterns (plans, generated state, cumulative evidence records, figure topic directories, dependency locks) but its done-when plants only \"a path matching an exclusive pattern\", so a node that refuses one category and lets a write into a figure topic directory or a cumulative evidence record through passes the whole gate",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "plan.html:162",
+      "id": "done_when-2",
+      "reason": "without a case whose finished reviews outnumber the width, the node's gate cannot show the cap exists, and an uncapped sweep is the same unbounded promotion storm the section exists to end.",
+      "text": "s25's done-when runs four finished reviews against a configured width and asserts they \"run concurrently up to the width\", but it never configures a width smaller than four, so an implementation with no cap at all passes every case while the deliverable requires \"promotions run concurrently up to a configured width\"",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "plan.html:150",
+      "id": "reasoning-1",
+      "reason": "a worker reading s22 will remove the pre-dispatch estimate with no replacement, and the admission refusals s23 and s24 describe return with nothing in the plan saying what sizes a node before it runs.",
+      "text": "s22's Why lists \"the context estimate\" among the jobs that \"can be computed from the diff once it exists, or replaced by a fixed project-wide list\", yet s23 and s24 state that nodes were refused on the local lane because the context estimate exceeded the 230k-token window, which means the estimate is consumed at admission, before any diff exists",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "dca35f9dad42ffca1bd38a1e428567f118419f61",
+  "plan_fingerprint": "93ef11bdfa581b7c601bb431c7dbcf5785cf7c6677d6e645f71ba0e5ae9bcf82",
+  "plan_slug": "work-flows-to-the-lane",
+  "plan_version": 73,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "8e41a6d3-d0e0-4927-afd1-771942ebfe6a",
+      "commit": "84eb8754176f451f483496ef1cdea0b1d5fad988",
+      "commit_basis": "edit",
+      "finding": "done_when-1",
+      "note": "84eb875417: s22's done-when now plants one write in each of the five exclusive categories and requires each refused naming its pattern.",
+      "reason": "",
+      "when": "2026-11-12T12:23:04.649922+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "8e41a6d3-d0e0-4927-afd1-771942ebfe6a",
+      "commit": "84eb8754176f451f483496ef1cdea0b1d5fad988",
+      "commit_basis": "edit",
+      "finding": "done_when-2",
+      "note": "84eb875417: s25's done-when sets the width to two against four finished reviews; no more than two run at once and all four complete.",
+      "reason": "",
+      "when": "2026-11-12T12:23:29.789293+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "8e41a6d3-d0e0-4927-afd1-771942ebfe6a",
+      "commit": "84eb8754176f451f483496ef1cdea0b1d5fad988",
+      "commit_basis": "edit",
+      "finding": "reasoning-1",
+      "note": "84eb875417: s22's Why drops the context estimate from the diff-derived jobs and says it stays a pre-launch estimate from what the node reads.",
+      "reason": "",
+      "when": "2026-11-12T12:23:52.926841+00:00"
+    }
+  ],
+  "responses": {
+    "done_when-1": {
+      "action": "acted",
+      "by": "8e41a6d3-d0e0-4927-afd1-771942ebfe6a",
+      "commit": "84eb8754176f451f483496ef1cdea0b1d5fad988",
+      "commit_basis": "edit",
+      "note": "84eb875417: s22's done-when now plants one write in each of the five exclusive categories and requires each refused naming its pattern.",
+      "reason": "",
+      "when": "2026-11-12T12:23:04.649922+00:00"
+    },
+    "done_when-2": {
+      "action": "acted",
+      "by": "8e41a6d3-d0e0-4927-afd1-771942ebfe6a",
+      "commit": "84eb8754176f451f483496ef1cdea0b1d5fad988",
+      "commit_basis": "edit",
+      "note": "84eb875417: s25's done-when sets the width to two against four finished reviews; no more than two run at once and all four complete.",
+      "reason": "",
+      "when": "2026-11-12T12:23:29.789293+00:00"
+    },
+    "reasoning-1": {
+      "action": "acted",
+      "by": "8e41a6d3-d0e0-4927-afd1-771942ebfe6a",
+      "commit": "84eb8754176f451f483496ef1cdea0b1d5fad988",
+      "commit_basis": "edit",
+      "note": "84eb875417: s22's Why drops the context estimate from the diff-derived jobs and says it stays a pre-launch estimate from what the node reads.",
+      "reason": "",
+      "when": "2026-11-12T12:23:52.926841+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/Code/reckon/docs/state/reckon/reviews/plan/work-flows-to-the-lane/r-20261112T112733452686-plan-review-of-work-flows-to-the-lane.json",
+  "review_run_id": "r-20261112T112733452686-plan-review-of-work-flows-to-the-lane",
+  "reviewed_blob_sha": "31ad3e27a8bd78780235355e326c6930e9688735",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `concurrent-edits-meet-at-the-merge#s3`, `the-monitor-reads-each-fact-once#s28`, `a-read-answers-inside-its-deadline`, `a-gate-halts-only-on-substance#s7` and the evidence anchor `\u2026-landed.html#s14-decision-can-be-withdrawn` each resolve on disk.",
+    "done_when": "two findings \u2014 s22's exclusive-pattern case plants one path against five declared categories, and s25 never sets a promotion width smaller than the number of finished reviews it promotes.",
+    "evidence_paths": "pass \u2014 s22's gate is a test plus a mutation, and s25's live timing is recorded in the plan's evidence record, not a scratchpad.",
+    "naming": "pass \u2014 `tests/test_a_node_needs_no_write_paths.py` and `tests/test_a_sweep_never_waits_on_a_promotion.py` name the behaviour they measure, carrying no plan label, stage name or ticket number.",
+    "reasoning": "one finding \u2014 s22 counts the context estimate among the jobs \"computed from the diff once it exists\", but the plan's own s23 and s24 say the context estimate gates admission before a node is launched.",
+    "single_goal": "pass \u2014 s22 delivers \"a node declares no write paths; its diff is its scope\" and s25 delivers \"a sweep never waits on a promotion\"; each is one deliverable with one verdict.",
+    "wiring": "pass \u2014 `plan-section-depends-on` gives s22 waits on s23 and s24, f-wftl-005 (the only open followup) names every unbuilt section including \u00a720 to \u00a725, and the new s25 is named by that chain and declares no wait it needs."
+  },
+  "section_digests": {
+    "_document": "292282a45baaadd64cc4a18494c0f76e0402383c18fce3fe20390fa7158d18b2",
+    "s1": "1176d881373dcfc183430925a9be7bda1d724f734d02210efa9a7406d8e1fa71",
+    "s10": "b65d0fb4159bfb41836b0ad8f574cf832084834e89db286572f537377eb3eb6d",
+    "s11": "c91dc2f2b4a4a7ba600f8a8f62cb23d0a923515ca21d7e7769645146e4db7427",
+    "s12": "6b87a65f56033f720b634f56c22424f9243d93aa09b8d223f9256a45a62b8401",
+    "s13": "bad1450236608d548873bc0831709655753d5f32c522514cd8a8267e16cc24cb",
+    "s14": "2f8f373cb0aea17e906875fcfee5e31675e99c3770486edcd5ca6381e7c45682",
+    "s15": "e29e1d3a49e752b7bdfe588aa034f386201d10af208f3aa59e29a2f24fe1bd5f",
+    "s16": "3b7f7832ad95bba2eafed9e9cf857961510c04511e9e0ec71438cbce6a583913",
+    "s17": "61f7c6cf19aeea97c136c1e61b863688591bf51fc6ecee75fd76577abe685e5b",
+    "s18": "83c96035969192d1b3be1f3898d127f112e33f0dbac58a7ccb624ab20c5d4844",
+    "s19": "7e2db89abd0f36c289ae715d8efbeeb340e4295f5671e1d350cb85b452cd2119",
+    "s2": "bd3d223462ee3b0fb515f2472d9397d8e27ca44c184bf71b42367fd7a9db1054",
+    "s20": "a3a48d30a0815970f76f95987246e39304eca36cfb2135e853829cf79bf092ba",
+    "s21": "534978447da306fad3f72e4fb24ba76d2de45ed2650892c581fad1c8b520a7fa",
+    "s22": "91922ba262ba540e6084a276323d0fa166578c927e6ba079d0d565ddbf22ee8c",
+    "s23": "2bef8c7bbc76d3d3a437c02cc89a91aae529b00b0073c0a3c030b4fbff677ef1",
+    "s24": "d5bb21282d0bbd0556f4a66c410ce0b238b6f6da4c9469af5bd64c0a50434b84",
+    "s25": "d7b748a1989e484f367b41682a4060137f109d5bf4cfcc975f22d46384d80315",
+    "s3": "2a060c7a5415553f71ca05b752499669f3209379066f0ffca3eb658079698d29",
+    "s4": "73dd573a24e53462f06ce2ee81f9ce01d788caba75663d34802e585ffa9af368",
+    "s5": "71c63f4fe2ec953ac5f7ddb2a246f167602f4978f9480d7bc81453507d1aa8cc",
+    "s6": "3d8f3682cd21a9f9205ae37acce45450d89ee9d1a0a061c46509dea8c5c1bc86",
+    "s7": "8411a4b87a6d941e69b74aa81c380f024a398cf80490125819b718f524deb5fd",
+    "s8": "a66c3212fab5497e7274bfa5e8eaadaea067a414aa6eb26fe1317dff343c2654",
+    "s9": "22b677c7bb355bdeb12944385e3d77bc965d6b2749b0a01789a6c5b8bc805e56"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-12T12:18:53.317491+00:00",
+  "total": null
+}

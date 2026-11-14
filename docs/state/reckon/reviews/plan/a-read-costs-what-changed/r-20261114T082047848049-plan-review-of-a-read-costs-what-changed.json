@@ -1,0 +1,95 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-14T08:33:16.137Z",
+  "dispatched_at": "2026-11-14T08:25:14Z",
+  "findings": [
+    {
+      "anchor": "plan.html:23",
+      "id": "wiring-1",
+      "reason": "the declared graph is what a re-dispatch and a reader order on, and \u00a726's cost figure is only valid once \u00a724 and \u00a725 have landed, so the plan should declare `s25: [s24]` and `s26: [s24, s25]` as `s19`/`s21` already declare their \u00a718 wait.",
+      "text": "`plan-section-depends-on` has no entry for `s25` or `s26`, yet \u00a725's Why is the cost that appeared after \u00a724 landed (plan.html:156) and \u00a726's Why is the cost that appeared with \"\u00a724 and \u00a725 live\", measured after both (plan.html:163); \u00a726 also edits `review_records._build_store_entries`/`_revalidated_entries`, the store-selection path \u00a724 rewrote, so an undeclared edge leaves the declared graph orderable against its own evidence",
+      "type": "wiring",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "7dca1bb7aa91efa01e6ce367cc5705fd51ef6052",
+  "plan_fingerprint": "b4a5b54a346cf8f71fe47d6dd3f2a76ea9691af9a5d024298e942024b343b472",
+  "plan_slug": "a-read-costs-what-changed",
+  "plan_version": 116,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "carried",
+      "by": "",
+      "finding": "wiring-1",
+      "reason": "",
+      "section": "s25",
+      "sections": [
+        "s25",
+        "s26",
+        "s24"
+      ],
+      "when": "2026-11-14T08:36:35.782696+00:00"
+    }
+  ],
+  "responses": {
+    "wiring-1": {
+      "action": "carried",
+      "by": "",
+      "reason": "",
+      "section": "s25",
+      "sections": [
+        "s25",
+        "s26",
+        "s24"
+      ],
+      "when": "2026-11-14T08:36:35.782696+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/Code/reckon/docs/state/reckon/reviews/plan/a-read-costs-what-changed/r-20261114T082047848049-plan-review-of-a-read-costs-what-changed.json",
+  "review_run_id": "r-20261114T082047848049-plan-review-of-a-read-costs-what-changed",
+  "reviewed_blob_sha": "6217a50bcd7f5964747ae1935798d73ac428eb07",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 the commit anchors in the new comments resolve (`e967d2ecc6`, `bd28fcaf`, `2fc648a861`, and the three lander pairs `7172adbf40`/`2b7fdfda5e`, `8c91e2323e`/`e11737202d`, `a8ee186927`/`fd2c43f713`); all four run ids named in the comment ids are present in `run_store.db` (their run directories have been pruned by retention, which is not an anchor defect), and `r-20261113T031406256175-ready-a-read-costs-what-changed-s7` cited at plan.html:141 resolves.",
+    "done_when": "pass \u2014 \u00a722 and \u00a723 (plan.html:141, :145) each name a measurable count, a base-revision comparison and a declared negative control that must turn the case red; the comments added by this unit report those counts and, for \u00a723, the parity probe over 232 plans and 11 shapes.",
+    "evidence_paths": "pass \u2014 the fragment files the sections' write paths name exist on durable paths (`docs/evidence/fragments/a-read-costs-what-changed/read-costs-referenced-plan-once-s22.html`, `read-costs-no-second-parse-s23.html`), and \u00a725/\u00a726's arm logs resolve under `~/.cache/reckon-classify-tick-scope/` and `~/.cache/reckon-refresh-store-scope/` (`arm-base.log`, `arm-head.log` in each), not a scratchpad.",
+    "naming": "pass \u2014 the added comment text carries no plan labels into code paths or the evidence filenames; the sprint label appears only in prose about plan state.",
+    "reasoning": "pass \u2014 \u00a722's 86.1% cumulative share is stated with its own stat-wrapper caveat (29.6% of leaf samples); \u00a723's Why states the 47.0% and 86.0% shares are nested rather than additive and sizes its own residual at 83 of 6,078 samples (1.4%), which reconciles with the cited 2,854 and 2,665 sample totals; the \u00a723 landing comment's \"0 mismatches\" is the pass at the repaired head `69bdb4c082`, and the run's manifest records the divergence the earlier review found as fixed there (read from the run's own manifest \u00a79 / rubric.evidence), so the two comments that touch the parity figure do not contradict each other.",
+    "single_goal": "pass \u2014 \u00a722 (ref reads), \u00a723 (second parse) and the three newly-done sections each name one deliverable.",
+    "wiring": "a finding \u2014 `plan-section-depends-on` (plan.html:23) declares no edge for the newly-declared `s25` or `s26`, though \u00a725's Why opens \"With \u00a724 landed and the station reloaded onto it\" (plan.html:156) and \u00a726's Why opens \"With \u00a724 and \u00a725 live\" and attributes its cost from a profile taken under both (plan.html:163). The carried \u00a77 item is still open in the record and is not re-raised."
+  },
+  "section_digests": {
+    "_document": "5b48e7dd7f1baf9d7cae3a21359e59004f968a615e0d6444e0ec3a1c4a3281ab",
+    "s1": "f8fb0fbbfbbc79977a59ec9d78c0d66f47803aa96db83e4d628a1dfb6b40e6c3",
+    "s10": "68fc6d75acf0741225ab448369611e4eda9f862b50d7907857c1abb24b4138e4",
+    "s11": "2a249381081ebbf2d99b7f9da3b09b1d3b87c6ada44952d6b665283e27021c40",
+    "s12": "c6c234ba14598d6a537e09000d8f5d406295ad40c3c124db34cb1b84868bb22e",
+    "s13": "5ad3b5418d98e6b0afe0d6762c6e34b89b31509e7e0c346c4b5757fc5f9bc443",
+    "s14": "3614708cc686b1aae04bdaa66c5ca55268305b0b9aa743e9b43fdfe333694c78",
+    "s15": "8ea78063ba6178b6ed86513ba9524097199475bbde30df76a27c561a07ae5cd8",
+    "s16": "961c662c2ad9983efdef372ae1d8050c1bc2ad2d5eb48187e5a1460a866750d7",
+    "s17": "dcb1e4207827e554da6f993942f652e42a11e274ac6c0445eb3ca51b1eeabab6",
+    "s18": "017dacf94ae980a1743060b70b94c6310d932d5242464e9503625aad656aeddc",
+    "s19": "7627296ee16bd9037416c990cebedbf14e5920992ee92443ee041d007a4f86b5",
+    "s2": "7de6c2e256fca5545163c6149c674fea249ddd1a72361b49c89ef5beaa22263d",
+    "s20": "13f50ad158e680404f34a74f292834eb01df268bb398d42bd113140aa56a5533",
+    "s21": "c9999579889f86ad547fb804ec54f122a0f8554343ddcc9075ae15c3cd37c4f0",
+    "s22": "0f5b52699cf0cfaae609fa09396bb9b43cae6fb15b3274facd659db2c83bbf41",
+    "s23": "de347de3b8ef82e610d47c0deefc48f874813c55f95f01fcf8007725a84a72a9",
+    "s24": "9536a307365097387461ff484f1478c4d4070650cb95f224824cb31a4c5eca4e",
+    "s25": "696da611106fdc41b6b4c6235e13e7d4c5e06fca1e0d61c0feb5fe7f845988e7",
+    "s26": "e3ab9ebdabe7b5fd0e2bdfacb1da3c843841e0690c6cf173fc6e33c2e9c5172e",
+    "s3": "d11cdceab942c4935f32d292e26f2111b011ca4571980a6c54ef6ae23894aadb",
+    "s4": "d14b5fa9a6b6ef26da6f95b50c43aa782fdbe679ca28020a3095af71cd579417",
+    "s5": "ba22eff9814ea16ac19404864f9a2d1ec8da449b3011fba623d0d1856b2c6ecf",
+    "s6": "b0053663cc25e5e7e15595ae342d21c4c467abe74f06c8c4db86982b276898cc",
+    "s7": "2c7c6fb207a002d2bb1e223ebf1f770570f6b06942edf9ac6647253b410a67b7",
+    "s8": "9a012c065cbd8db9e5e69070d20531b84a584582cc0bf8f45fff060b7f31f464",
+    "s9": "1404fbf63401ab3bd4204175d16adb89094eaa1f1b25160e73fd2bb9c625d0b1"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-14T08:35:57.571778+00:00",
+  "total": null
+}

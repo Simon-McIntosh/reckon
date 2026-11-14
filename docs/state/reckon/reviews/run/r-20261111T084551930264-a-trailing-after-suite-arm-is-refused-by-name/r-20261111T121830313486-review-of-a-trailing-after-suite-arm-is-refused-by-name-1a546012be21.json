@@ -1,0 +1,77 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/promotion.py:714 `_evaluate_suite_delta` called on the promotion path",
+    "reckon/crew/promotion_records.py:1032 `_arm_missing_fields(record, arm_name, observation, head=head)` consumes the head `_run_head` returns",
+    "reckon/crew/promotion_records.py:941 `_arm_revision_mismatch` resolves the tree through `_review_tree` for both arms"
+  ],
+  "completed_at": "2026-11-11T12:29:40.047Z",
+  "dispatched_at": "2026-11-11T12:20:14Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "folded",
+      "node": "a-trailing-after-suite-arm-is-refused-by-name",
+      "recorded_at": "2026-11-11T12:48:32.368857+00:00"
+    },
+    "1": {
+      "kind": "folded",
+      "node": "a-trailing-after-suite-arm-is-refused-by-name",
+      "recorded_at": "2026-11-11T12:48:44.024337+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "reckon/crew/promotion_records.py",
+      "line": 610,
+      "severity": "non-blocking",
+      "summary": "adopting the review resolver replaces ancestry ordering with last-manifest-entry, so a newest-first manifest reads its head as the oldest commit",
+      "text": "`_run_head` now returns `_run_head_for_review`, whose reclaimed-worktree branch is `_record_citation`'s `_record_carried_head` at reckon/crew/recovery_review_dispatch.py:812, which walks `commits:` in reverse and returns the last resolvable entry. The deleted `_newest_cited_commit` answered the same question by `git rev-list --topo-order --max-count=1` over every cited commit, so it was correct in any ordering. A manifest listing its commits newest-first therefore resolves the head to its oldest cited commit, and an after arm recorded at that commit compares equal to the head and is accepted, which is the trailing-arm case \u00a716 exists to refuse. The behaviour is inherited from the shared owner, but this diff is what makes it reachable from the promotion gate."
+    },
+    {
+      "file": "tests/test_a_trailing_after_suite_arm_is_refused_by_name.py",
+      "line": 155,
+      "severity": "non-blocking",
+      "summary": "the released-worktree case's docstring still describes the ancestry mechanism this change removed",
+      "text": "The docstring reads \"With no worktree the head is the newest cited commit by ancestry\", which is the `_newest_cited_commit` path deleted by 269f61739f; the case now exercises the record's carried head through `_run_head_for_review`, which takes the last manifest entry rather than the newest by ancestry. A reader debugging a released-worktree refusal is pointed at a mechanism that is no longer in the tree, and the two rules differ exactly in the ordering case the first finding names."
+    }
+  ],
+  "gate_sources": {
+    "after_suite": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261111T084551930264-a-trailing-after-suite-arm-is-refused-by-name/head-node-arm.log",
+    "baseline_suite": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261111T084551930264-a-trailing-after-suite-arm-is-refused-by-name/baseline-node-arm.log"
+  },
+  "item_verdicts": {
+    "diff": "Read both commits gained since the prior review at 86bda2e3c8: 269f61739f deletes `_revision_store`, `_looks_like_a_commit`, `_cited_commits` and `_newest_cited_commit` and reduces `_run_head` to a deferred-import wrapper over `_run_head_for_review`, with `_arm_revision_mismatch` taking its tree from `_review_tree`; 1a546012be rewrites the fragment to describe that resolver and to quote the head-side refusal from head-trailing-arm.log. No dangling reference to a deleted helper survives in reckon/.",
+    "done_when": "The done-when requires a verbatim base-revision log, a head-side refusal, the new test passing, an importer delta adding no failure and clean ruff: base-revision-trailing-arm.log records the base ACCEPTING with EXIT=0, head-trailing-arm.log records the refusal naming both revisions and the head command with EXIT=1, head-node-arm.log records 54 passed against baseline-node-arm.log's 51, both importer arms record 6 FAILED with byte-identical id sets, and ruff.log reports check_exit=0 and format_exit=0 \u2014 every arm run against a tree whose header names its revision.",
+    "goal": "The node's goal is that a promotion refuses an after-suite arm recorded at a trailing revision and names both revisions; at head 1a546012be the refusal is unchanged (reckon/crew/promotion_records.py:941 and :1032 pass the head into `_arm_missing_fields`) and reckons/crew/promotion_records.py:610 now reads that head through the review path, so the goal still holds and the duplicated reader the prior review scored 5 on is gone.",
+    "manifest": "Read at status complete with five commits: the suite pair, the importer delta, the negative control at 2 failed 1 passed, the ruff result and the head-side probe are each backed by a named log that exists and ends in the EXIT line it claims, and the one claim the prior review found unbacked \u2014 the head-side refusal with no log \u2014 is now carried in head-trailing-arm.log.",
+    "write_paths": "The node was fenced to reckon/crew/promotion_records.py, its new test, the evidence fragment and a figures directory; `git diff --stat 86bda2e3c8..1a546012be` touches exactly promotion_records.py (21 insertions, 106 deletions) and the fragment (22 insertions, 17 deletions), and the one commit outside that pair, 1a546012be, changes the fragment only."
+  },
+  "justifications": {
+    "durability": "tests/test_a_trailing_after_suite_arm_is_refused_by_name.py:167 fails if the carried head stops resolving, so the behaviour is guarded, but no test asserts the delegation itself or the newest-first ordering the deleted ancestry reader handled, so a future re-fork reads green.",
+    "evidence": "head-trailing-arm.log names its imported revision 269f61739fe3 and its module path, prints the refusal verbatim and ends EXIT=1, and head-node-arm.log:1 names revision 1a546012be with 54 passed against the base arm's 51.",
+    "fit": "reckon/crew/promotion_records.py:610 follows the module's deferred-import idiom for its review-path dependency, but the change leaves tests/test_a_trailing_after_suite_arm_is_refused_by_name.py:155 describing a mechanism it removed.",
+    "goal_fidelity": "reckon/crew/promotion_records.py:610 keeps the same question and the same refusal, and answers it through `_run_head_for_review`, so a promotion and a review of one run now key on one head rather than two.",
+    "reuse": "reckon/crew/promotion_records.py:610 and :645 now defer to reckon/crew/recovery_review_dispatch.py:903 `_run_head_for_review` and reckon/crew/recovery_review_subject.py:42 `_review_tree`, and the duplicate readers the prior review named are deleted rather than kept beside the owner.",
+    "scope_discipline": "`git diff --stat 86bda2e3c8..1a546012be` changes only reckon/crew/promotion_records.py and the declared evidence fragment, with nothing outside the grant."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The node's goal is that a promotion refuses an after-suite arm recorded at a trailing revision and names both revisions; at head 1a546012be the refusal is unchanged (reckon/crew/promotion_records.py:941 and :1032 pass the head into `_arm_missing_fields`) and reckon/crew/promotion_records.py:610 now reads that head through the review path, so the goal still holds and the duplicated reader the prior review scored 5 on is gone.\nVERDICT done_when: The done-when requires a verbatim base-revision log, a head-side refusal, the new test passing, an importer delta adding no failure and clean ruff: base-revision-trailing-arm.log records the base ACCEPTING with EXIT=0, head-trailing-arm.log records the refusal naming both revisions and the head command with EXIT=1, head-node-arm.log records 54 passed against baseline-node-arm.log's 51, both importer arms record 6 FAILED with byte-identical id sets, and ruff.log reports check_exit=0 and format_exit=0.\nVERDICT write_paths: The node was fenced to reckon/crew/promotion_records.py, its new test, the evidence fragment and a figures directory; `git diff --stat 86bda2e3c8..1a546012be` touches exactly promotion_records.py (21 insertions, 106 deletions) and the fragment (22 insertions, 17 deletions).\nVERDICT manifest: Read at status complete with five commits: the suite pair, the importer delta, the negative control, the ruff result and the head-side probe are each backed by a named log that exists and ends in the EXIT line it claims, and the one claim the prior review found unbacked is now carried in head-trailing-arm.log.\nVERDICT diff: Read both commits gained since the prior review at 86bda2e3c8: 269f61739f deletes `_revision_store`, `_looks_like_a_commit`, `_cited_commits` and `_newest_cited_commit`, reducing `_run_head` to a deferred-import wrapper over `_run_head_for_review`, and 1a546012be rewrites the fragment to describe that resolver and quote the head refusal; no dangling reference to a deleted helper survives in reckon/.\nCALL_SITES: reckon/crew/promotion.py:714 `_evaluate_suite_delta` called on the promotion path, reckon/crew/promotion_records.py:1032 `_arm_missing_fields(record, arm_name, observation, head=head)` consumes the head `_run_head` returns, reckon/crew/promotion_records.py:941 `_arm_revision_mismatch` resolves the tree through `_review_tree` for both arms\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/promotion_records.py:610 keeps the same question and the same refusal, and answers it through `_run_head_for_review`, so a promotion and a review of one run now key on one head rather than two.\nSCORE evidence: 18\nJUSTIFICATION evidence: head-trailing-arm.log names its imported revision 269f61739fe3 and its module path, prints the refusal verbatim and ends EXIT=1, and head-node-arm.log:1 names revision 1a546012be with 54 passed against the base arm's 51.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: `git diff --stat 86bda2e3c8..1a546012be` changes only reckon/crew/promotion_records.py and the declared evidence fragment, with nothing outside the grant.\nSCORE durability: 15\nJUSTIFICATION durability: tests/test_a_trailing_after_suite_arm_is_refused_by_name.py:167 fails if the carried head stops resolving, so the behaviour is guarded, but no test asserts the delegation itself or the newest-first ordering the deleted ancestry reader handled, so a future re-fork reads green.\nSCORE fit: 16\nJUSTIFICATION fit: reckon/crew/promotion_records.py:610 follows the module's deferred-import idiom for its review-path dependency, but the change leaves tests/test_a_trailing_after_suite_arm_is_refused_by_name.py:155 describing a mechanism it removed.\nSCORE reuse: 20\nJUSTIFICATION reuse: reckon/crew/promotion_records.py:610 and :645 now defer to reckon/crew/recovery_review_dispatch.py:903 `_run_head_for_review` and reckon/crew/recovery_review_subject.py:42 `_review_tree`, and the duplicate readers the prior review named are deleted rather than kept beside the owner.\nFINDING reckon/crew/promotion_records.py:610 non-blocking: `_run_head` now returns `_run_head_for_review`, whose reclaimed-worktree branch is `_record_carried_head` at reckon/crew/recovery_review_dispatch.py:812, which walks `commits:` in reverse and returns the last resolvable entry; the deleted `_newest_cited_commit` answered by `git rev-list --topo-order`, so a manifest listing its commits newest-first now resolves the head to its oldest cited commit and an after arm recorded there compares equal to the head and is accepted, which is the trailing-arm case \u00a716 exists to refuse.\nFINDING tests/test_a_trailing_after_suite_arm_is_refused_by_name.py:155 non-blocking: the docstring reads \"With no worktree the head is the newest cited commit by ancestry\", the `_newest_cited_commit` path this change deleted, while the case now exercises the record's carried head through `_run_head_for_review`, which takes the last manifest entry rather than the newest by ancestry, so a reader debugging a released-worktree refusal is pointed at a mechanism no longer in the tree.",
+  "review_run_id": "r-20261111T121830313486-review-of-a-trailing-after-suite-arm-is-refused-by-name-1a546012be21",
+  "reviewed_base_sha": "86bda2e3c8e440360d9944b4eba933a20684c160",
+  "reviewed_head_sha": "1a546012be211a676735471f9672fe8834926265",
+  "reviewed_run_id": "r-20261111T084551930264-a-trailing-after-suite-arm-is-refused-by-name",
+  "scores": {
+    "durability": 15,
+    "evidence": 18,
+    "fit": 16,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-11T12:30:00.000000+00:00",
+  "total": 108
+}

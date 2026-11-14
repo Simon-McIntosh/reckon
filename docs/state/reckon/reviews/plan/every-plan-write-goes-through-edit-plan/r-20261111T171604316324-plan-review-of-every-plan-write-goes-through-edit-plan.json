@@ -1,0 +1,75 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-11T17:26:00.708Z",
+  "dispatched_at": "2026-11-11T17:17:51Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/every-plan-write-goes-through-edit-plan.html:351",
+      "id": "reasoning-1",
+      "reason": "restating the Deliverable as that endpoint moves the function, line and callable form to the node brief, which is where this plan's own rule puts the reuse map; today a node that finds the named line already correct has no independent way to judge done.",
+      "text": "the Deliverable names `_set_meta`, the exact `pat.sub` call and the implementation form to use, so the plan fixes the mechanism a node is meant to derive from the code rather than the observable endpoint (a stored meta value containing a backslash round-trips through a rewrite unchanged)",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "771028f217be63b65bb0d3bb99479c4a71b74d2d",
+  "plan_fingerprint": "6157a4d49232c186eeac604273f5246338e89ae3b940f445980a9b54bda84db9",
+  "plan_slug": "every-plan-write-goes-through-edit-plan",
+  "plan_version": 97,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "declined",
+      "by": "",
+      "finding": "reasoning-1",
+      "reason": "the done-when already states the endpoint as behaviour: a non-ASCII descope reason and a literal backslash sequence each survive a rewrite byte for byte, so a node that finds the named line correct judges done by those tests; the function and call are the reproduced defect site and the reuse map, not a second requirement",
+      "when": "2026-11-11T17:49:21.176373+00:00"
+    }
+  ],
+  "responses": {
+    "reasoning-1": {
+      "action": "declined",
+      "by": "",
+      "reason": "the done-when already states the endpoint as behaviour: a non-ASCII descope reason and a literal backslash sequence each survive a rewrite byte for byte, so a node that finds the named line correct judges done by those tests; the function and call are the reproduced defect site and the reuse map, not a second requirement",
+      "when": "2026-11-11T17:49:21.176373+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/Code/reckon/docs/state/reckon/reviews/plan/every-plan-write-goes-through-edit-plan/r-20261111T171604316324-plan-review-of-every-plan-write-goes-through-edit-plan.json",
+  "review_run_id": "r-20261111T171604316324-plan-review-of-every-plan-write-goes-through-edit-plan",
+  "reviewed_blob_sha": "a8c52a40b2b02940abdc0b2abf27404c74981371",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `reckon/_plan_html.py` near line 2168 resolves to `def _set_meta`, and the `pat.sub` call the Why describes is at `:2173`; the `plan-descope-reasons` meta is emitted at `:2480`, which is why a general write raises.",
+    "done_when": "pass \u2014 the two cases are measurable and the negative control (revert `_set_meta` to a template) reddens both; I reproduced the control's premise at this base and confirmed the second write raises `PatternError: bad escape \\u`, while a literal `\\d` in a replacement raises too.",
+    "evidence_paths": "pass \u2014 the section names no evidence or log path at all, so it directs nothing into a scratchpad or node-local temporary directory; the run-directory convention supplies the durable location.",
+    "naming": "pass \u2014 no plan labels, ticket numbers, version tags or changelog prose; `re.PatternError`, `pat.sub` and the escape behaviour are stated as mechanism.",
+    "reasoning": "a finding \u2014 the Why's root cause matches the cited code and reproduces exactly, but the Deliverable names the function to change and prescribes its form (\"a callable replacement, not a template\"), which is implementation prescription.",
+    "single_goal": "pass \u2014 one deliverable, that a stored meta value is written back verbatim, with the file sweep as a clause of it rather than a second goal.",
+    "wiring": "pass \u2014 `s18` declares no dependency, and the only file it changes, `reckon/_plan_html.py`, is shared with `s4`, `s5` and `s17`, all declared `done`, so no node is dispatched against it concurrently."
+  },
+  "section_digests": {
+    "_document": "39eb424721abebde183e914998e6480dd87b81d1d6271ea514253da4f18c7574",
+    "s1": "7f96df198aae5b46c87f2d18f8eff17398ead36155ee67ba73607e91aa1d2fe3",
+    "s10": "fd786ebf0d880e15085a2e0ca5423504f73ce4c013e483f5e3cae145e3ad4079",
+    "s11": "19cc30d79534a21675c806c6d7006ea1e8e052fdccf4583b30258f699ee38e45",
+    "s12": "a518fb035478c3d0ebd8f3e07d9c13babbda5a8ab8f5353e60e41564c96ed1b6",
+    "s13": "dd25d451c1972813ffd34279a0d6aeaf5069e4888f6cf1259e3fbbe382da3f44",
+    "s14": "c4467966a573cbea5d7de23da696d1233123f57fbbaa14df1fd73aae6d8bd99b",
+    "s15": "ff509ca1b71affff6e1bf0014621f70955db7586e5eaf056cde66ddbe1e3f93d",
+    "s16": "7e9c4cb9ed664d8653fd6cb709c2d7eee42fe9e93711b6c5dde453329848ef25",
+    "s17": "0a95a123c75c0fe6eae7852eb3b5268c841cba2f54353adc74f43cb9fa6f5f44",
+    "s18": "ebe1dfe8d8152bbd59ba3ab76a98b2c0972cdf71fe5d0bb32415b7a32311b641",
+    "s2": "737250903251177035b357be3d656b549480337bc454f97615634dada495e251",
+    "s3": "4150e9281b9c0fe1173e9c23f5582efb0662d22f1d36944861d3033f988d479c",
+    "s4": "e0390ff35ac5e425fa3060cede9882af598c54dc89e0a6069101b3971f8e8367",
+    "s5": "699b049fe374b1219d8b917168575594a5bcb9255bbe13efdbf1d0c928562a86",
+    "s6": "27f4d6436a652181a180df37fa1a640ebff9cb62418e856c86bc907ecda9778f",
+    "s7": "80062db679255aff5087534386e7372545e1cd3414916db8329aec79a1a8388d",
+    "s8": "f9dd6299834b4d039fd1f45b37141d5e265075b4cfd7f341357bea21196f5b35",
+    "s9": "bd2c3090ecc9a89ad8c0b2f7312aae077382dd2709954d9e27f449e984d622a8"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-11T17:43:11.872054+00:00",
+  "total": null
+}

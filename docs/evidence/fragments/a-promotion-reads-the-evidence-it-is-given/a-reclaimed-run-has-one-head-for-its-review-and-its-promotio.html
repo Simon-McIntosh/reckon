@@ -1,0 +1,42 @@
+<section id="a-reclaimed-run-has-one-head-for-its-review-and-its-promotio-landing">
+  <h2>A reclaimed run has one head for its review and its promotion</h2>
+  <p>A run whose worktree has been reclaimed has its head read from the
+  manifest's <code>commits:</code> field, and that field is a citation list, not
+  an ordered history. The review path's <code>_record_carried_head</code> took
+  the last listed entry while the promotion path resolved the newest by
+  ancestry, so on a manifest written newest-first a review and a promotion of
+  the same run named different heads, and the review scored the oldest commit
+  the run had landed.</p>
+  <p>The ancestry resolution now lives once, in
+  <code>_record_carried_head</code> (<code>reckon/crew/recovery_review_dispatch.py</code>),
+  which resolves each cited entry through the run's tree and takes the newest by
+  ancestry with a bounded <code>git rev-list --topo-order --max-count=1</code>.
+  Promotion's <code>_run_head</code> (<code>reckon/crew/promotion_records.py</code>)
+  reads a reclaimed run's head through that same function, so the two readers
+  cannot disagree about the ordering; its duplicate resolver is removed.</p>
+  <table>
+    <thead><tr><th>Measurement</th><th>Result</th></tr></thead>
+    <tbody>
+      <tr><td id="a-reclaimed-run-has-one-head-for-its-review-and-its-promotio-repro">Defect reproduction at dispatch base <code>0aac2c5f</code>, three chained commits cited newest-first</td>
+      <td>Reproduced before any change: review named the oldest commit, promotion
+      the newest, <code>DISAGREE</code>, log
+      <code>logs/repro-base.log</code> ending <code>EXIT=0</code>.</td></tr>
+      <tr><td id="a-reclaimed-run-has-one-head-for-its-review-and-its-promotio-after">Armed suite at head <code>09e288d5</code></td>
+      <td>53 passed; <code>EXIT=0</code>.</td></tr>
+      <tr><td id="a-reclaimed-run-has-one-head-for-its-review-and-its-promotio-baseline">Armed suite at base <code>0aac2c5f</code>, resolved over that tree (the node's new test file is absent there)</td>
+      <td>51 passed; <code>EXIT=0</code>.</td></tr>
+      <tr><td id="a-reclaimed-run-has-one-head-for-its-review-and-its-promotio-negative">Negative control: <code>_record_carried_head</code> takes the last listed commit</td>
+      <td>1 failed, 1 passed; <code>EXIT=1</code>; failing id
+      <code>tests/test_a_reclaimed_run_has_one_head.py::test_a_newest_first_citation_list_names_the_newest_head</code>,
+      the newest-first case naming the oldest commit. Log
+      <code>logs/negative-control.log</code>.</td></tr>
+      <tr><td id="a-reclaimed-run-has-one-head-for-its-review-and-its-promotio-importers">62 test files importing the changed modules, both arms, <code>all_debug</code>, <code>-n 4</code></td>
+      <td>Base 17 failed, 489 passed, 3 errors, <code>EXIT=1</code>; head
+      17 failed, 489 passed, 3 errors, <code>EXIT=1</code>. The failure id sets
+      are identical — 20 ids either side, none added and none removed — so the
+      change adds no failure against the base revision. Logs
+      <code>logs/importers-baseline.log</code> and
+      <code>logs/importers-after.log</code>.</td></tr>
+    </tbody>
+  </table>
+</section>

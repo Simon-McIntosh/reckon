@@ -21,6 +21,7 @@ STATE_PHRASES: dict[CommandPath, str] = {
         "budget",
     ): "one budget group's pace, its banked reset, its lifts or backend holds",
     ("check",): "delivered manifest or run review",
+    ("census",): "local processes whose recorded owner is dead",
     ("complete",): "finished run",
     ("directory",): "live coordinator ownership",
     ("discard",): "non-running live pointer",
@@ -59,10 +60,11 @@ STATE_PHRASES: dict[CommandPath, str] = {
     ("supersede-review",): "a misattributed row's review",
     ("suite", "run"): "the project's declared suite",
     ("suite", "waive"): "standing-suite hold",
+    ("tell",): "a live run's inbox",
     ("verify-gate",): "one run's gate at the integrated revision",
     ("view",): "one crew read view",
     ("watch",): "project-wide live runs",
-    ("widen",): "run whose worker process has stopped",
+    ("widen",): "a stopped run, or to the run's own worker",
 }
 
 NEAR_NAMESAKE_DISTINCTIONS: dict[CommandPath, str] = {

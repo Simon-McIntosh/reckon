@@ -1,0 +1,96 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own arm logs on disk: gate-base.log at b30f1e1350 records 106 passed EXIT=0 with no FAILED line, and gate-after.log at 1836dc71d0 records 111 passed EXIT=0 with no FAILED line, so the set difference is empty (0).",
+  "call_site_count": 6,
+  "call_sites": [
+    "reckon/crew/promotion.py:690 (_require_gate_log_agrees in the promotion check chain)",
+    "reckon/crew/promotion_evidence.py:1611 (_head_arm_log_failure_ids reads the head log's ids)",
+    "reckon/crew/promotion_evidence.py:1141 (gate_log_failure_ids reader)",
+    "reckon/crew/promotion_evidence.py:1183 (gate_log_failure_ids reader)",
+    "reckon/crew/promotion_checks.py:1968 (gate_log_failure_ids reader)",
+    "reckon/crew/review.py:2898 (base and head added-failure readers)"
+  ],
+  "completed_at": "2026-11-12T23:30:42.628Z",
+  "dispatched_at": "2026-11-12T23:21:37Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "exempted",
+      "reason": "Non-blocking, accepted for this landing: non-blocking: the _require_gate_log_agrees docstring still states that both the failure count and the failure ids are \"read from the last run, the one whose status the tail records\", which this change makes false for a c",
+      "recorded_at": "2026-11-13T00:18:49.939514+00:00"
+    },
+    "1": {
+      "kind": "exempted",
+      "reason": "Non-blocking, accepted for this landing: non-blocking: _text_the_receipt_describes returns the whole ctest log, so a ctest command re-run into one log (a retry appended by the same capture convention) unions both attempts' failures and would refuse an honest la",
+      "recorded_at": "2026-11-13T00:18:59.436909+00:00"
+    },
+    "2": {
+      "kind": "exempted",
+      "reason": "Non-blocking, accepted for this landing: non-blocking: the manifest's tests: line and after_suite.command name head-20261112T233023 with after_suite.revision 6ce9342be7, while the cited gate-after.log header names tree head-20261112T233809 at revision 1836dc71d",
+      "recorded_at": "2026-11-13T00:19:11.356698+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "reckon/crew/promotion_evidence.py",
+      "line": "1463",
+      "severity": "non-blocking",
+      "text": "non-blocking: the _require_gate_log_agrees docstring still states that both the failure count and the failure ids are \"read from the last run, the one whose status the tail records\", which this change makes false for a ctest log; a reader trusting the docstring would reintroduce exactly the 32-versus-0 refusal this node repairs."
+    },
+    {
+      "file": "reckon/crew/promotion_evidence.py",
+      "line": "1358",
+      "severity": "non-blocking",
+      "text": "non-blocking: _text_the_receipt_describes returns the whole ctest log, so a ctest command re-run into one log (a retry appended by the same capture convention) unions both attempts' failures and would refuse an honest last-attempt receipt, which is the protection last_run_text still gives a pytest log; no test covers a repeated ctest attempt."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261112T221037018610-a-gate-log-s-failure-count-is-read-across-the-whole-gate/manifest.md",
+      "line": "11",
+      "severity": "non-blocking",
+      "text": "non-blocking: the manifest's tests: line and after_suite.command name head-20261112T233023 with after_suite.revision 6ce9342be7, while the cited gate-after.log header names tree head-20261112T233809 at revision 1836dc71d0 (and gate-base.log names base-20261112T233809 against baseline_suite.command's base-20261112T233023), so the receipt and the log it cites describe two different arm runs; the pending-landing repair gate compares the manifest command with the log's own command header and would refuse the pair."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 6 production call site(s)",
+    "diff": "read commits aae86762f9, 6ce9342be7, 1836dc71d0 and fbd1bd5fdc against base b30f1e1350; four files, 293 insertions and 21 deletions: the two production hunks are the whole-log selection in promotion_evidence.py:1345-1360 and the resuming FAILED-block scan in review.py:2272-2274, the rest a new 204-line test and a new evidence fragment.",
+    "done_when": "the done_when names a two-label 32/0 log that must agree with a receipt of 32, receipts of 31 and an unknown id that must refuse, a pytest log whose tail disagrees that must refuse, a red negative control at the base revision, and the base/head arm pair on all_debug; tests/test_a_gate_log_is_read_across_the_whole_gate.py:143-204 asserts all five cases, negative-control.log records 3 failed and 2 passed at b30f1e1350, and gate-after.log records 111 passed EXIT=0, so the gate asserts the stated measure.",
+    "goal": "the node goal is that the agreement check reads every run of a gate log the arm's command produced, so a multi-label gate's failure count and ids are compared whole; reckon/crew/promotion_evidence.py:1345-1360 selects the whole log for a ctest gate and reckon/crew/review.py:2272-2274 resumes the FAILED-block scan, so the goal is met.",
+    "manifest": "read; it reports status complete with the head arm 111 passed, base arm 106 passed and negative control 3 failed/2 passed, all three corroborated against the logs on disk, but its tests: and after_suite.command name a different head tree than the cited log's header and its commits: line lists three of the four commits in the reviewed range.",
+    "write_paths": "the declared paths are reckon/crew/promotion_evidence.py, reckon/crew/review.py, tests/, the landing fragment under docs/evidence/fragments/concurrent-edits-meet-at-the-merge/ and a figures directory; the diff touches the first four and every path is inside the fence."
+  },
+  "justifications": {
+    "durability": "tests/test_a_gate_log_is_read_across_the_whole_gate.py:143 and :163 redden when _text_the_receipt_describes reverts to last_run_text and :153 reddens when _ctest_failure_ids breaks at the first block, which negative-control.log proves by failing exactly those three cases at b30f1e1350.",
+    "evidence": "gate-after.log records 111 passed EXIT=0 at revision 1836dc71d0 and gate-base.log records 106 passed EXIT=0 at b30f1e1350, so the delta is zero, but the manifest's tests: and after_suite.command/revision name the 233023 arm while the cited logs are the 233809 arm.",
+    "fit": "the new helper and the resuming scan follow the surrounding module idiom, but reckon/crew/promotion_evidence.py:1463 leaves the owning function's docstring stating the superseded last-run reading.",
+    "goal_fidelity": "reckon/crew/promotion_evidence.py:1358 returns the whole log for a ctest gate and reckon/crew/review.py:2273 sets in_block = False instead of breaking, so every label's failures reach both the count and the ids.",
+    "reuse": "the new definition delegates to the existing owners _gate_log_format, last_run_text and gate_log_failure_ids, and the _ctest_failure_ids change extends the one reader both the review and promotion go through rather than adding a second.",
+    "scope_discipline": "the four paths in the diff are promotion_evidence.py, review.py, tests/test_a_gate_log_is_read_across_the_whole_gate.py and the evidence fragment, all inside the manifest's declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is that the agreement check reads every run of a gate log the arm's command produced, so a multi-label gate's failure count and ids are compared whole; reckon/crew/promotion_evidence.py:1358 returns the whole log for a ctest gate and reckon/crew/review.py:2273 resumes the FAILED-block scan, so the goal is met.\nVERDICT done_when: the done_when names a two-label 32/0 log that must agree with a receipt of 32, receipts of 31 and an unknown id that must refuse, a pytest log whose tail disagrees that must refuse, a red negative control at the base revision, and the base/head arm pair on all_debug; tests/test_a_gate_log_is_read_across_the_whole_gate.py:143-204 asserts all five cases, negative-control.log records 3 failed and 2 passed at b30f1e1350, and gate-after.log records 111 passed EXIT=0, so the gate asserts the stated measure.\nVERDICT write_paths: the declared paths are reckon/crew/promotion_evidence.py, reckon/crew/review.py, tests/, the landing fragment under docs/evidence/fragments/concurrent-edits-meet-at-the-merge/ and a figures directory; the diff touches the first four and every path is inside the fence.\nVERDICT manifest: read; it reports status complete with the head arm 111 passed, base arm 106 passed and negative control 3 failed/2 passed, all three corroborated against the logs on disk, but its tests: and after_suite.command name a different head tree than the cited log's header and its commits: line lists three of the four commits in the reviewed range.\nVERDICT diff: read commits aae86762f9, 6ce9342be7, 1836dc71d0 and fbd1bd5fdc against base b30f1e1350; four files, 293 insertions and 21 deletions: the two production hunks are the whole-log selection in promotion_evidence.py:1345-1360 and the resuming FAILED-block scan in review.py:2272-2274, the rest a new 204-line test and a new evidence fragment.\nCALL_SITES: reckon/crew/promotion.py:690 (_require_gate_log_agrees in the promotion check chain), reckon/crew/promotion_evidence.py:1611 (_head_arm_log_failure_ids), reckon/crew/promotion_evidence.py:1141 (gate_log_failure_ids reader), reckon/crew/promotion_evidence.py:1183 (gate_log_failure_ids reader), reckon/crew/promotion_checks.py:1968 (gate_log_failure_ids reader), reckon/crew/review.py:2898 (base and head added-failure readers)\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/promotion_evidence.py:1358 returns the whole log for a ctest gate and reckon/crew/review.py:2273 sets in_block = False instead of breaking, so every label's failures reach both the count and the ids.\nSCORE evidence: 16\nJUSTIFICATION evidence: gate-after.log records 111 passed EXIT=0 at revision 1836dc71d0 and gate-base.log records 106 passed EXIT=0 at b30f1e1350, but the manifest's tests: and after_suite.command/revision name the 233023 arm while the cited logs are the 233809 arm.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the four paths in the diff are promotion_evidence.py, review.py, tests/test_a_gate_log_is_read_across_the_whole_gate.py and the evidence fragment, all inside the manifest's declared write paths.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_a_gate_log_is_read_across_the_whole_gate.py:143 and :163 redden when _text_the_receipt_describes reverts to last_run_text and :153 reddens when _ctest_failure_ids breaks at the first block, which negative-control.log proves by failing exactly those three cases at b30f1e1350.\nSCORE fit: 16\nJUSTIFICATION fit: the new helper and the resuming scan follow the surrounding module idiom, but reckon/crew/promotion_evidence.py:1463 leaves the owning function's docstring stating the superseded last-run reading.\nSCORE reuse: 20\nJUSTIFICATION reuse: the new definition delegates to the existing owners _gate_log_format, last_run_text and gate_log_failure_ids, and the _ctest_failure_ids change extends the one reader both the review and promotion go through rather than adding a second.\nFINDING reckon/crew/promotion_evidence.py:1463 non-blocking: the _require_gate_log_agrees docstring still states that both the failure count and the failure ids are \"read from the last run, the one whose status the tail records\", which this change makes false for a ctest log; a reader trusting the docstring would reintroduce exactly the 32-versus-0 refusal this node repairs.\nFINDING reckon/crew/promotion_evidence.py:1358 non-blocking: _text_the_receipt_describes returns the whole ctest log, so a ctest command re-run into one log (a retry appended by the same capture convention) unions both attempts' failures and would refuse an honest last-attempt receipt, which is the protection last_run_text still gives a pytest log; no test covers a repeated ctest attempt.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261112T221037018610-a-gate-log-s-failure-count-is-read-across-the-whole-gate/manifest.md:11 non-blocking: the manifest's tests: line and after_suite.command name head-20261112T233023 with after_suite.revision 6ce9342be7, while the cited gate-after.log header names tree head-20261112T233809 at revision 1836dc71d0 (and gate-base.log names base-20261112T233809 against baseline_suite.command's base-20261112T233023), so the receipt and the log it cites describe two different arm runs; the pending-landing repair gate compares the manifest command with the log's own command header and would refuse the pair.",
+  "review_node": "review-of-a-gate-log-s-failure-count-is-read-across-the-whole-gate-fbd1bd5fdc3c",
+  "review_run_id": "r-20261112T231854969031-review-of-a-gate-log-s-failure-count-is-read-across-the-whole-gate-fbd1bd5fdc3c",
+  "reviewed_base_sha": "b30f1e1350adcc64d38de45901cccf13801e5b2c",
+  "reviewed_head_sha": "fbd1bd5fdc3cb866d8f6ffa2f50ae6e3b39fae06",
+  "reviewed_run_id": "r-20261112T221037018610-a-gate-log-s-failure-count-is-read-across-the-whole-gate",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash",
+    "reviewer_run_id": "r-20261112T231854969031-review-of-a-gate-log-s-failure-count-is-read-across-the-whole-gate-fbd1bd5fdc3c"
+  },
+  "scores": {
+    "durability": 18,
+    "evidence": 16,
+    "fit": 16,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-13T00:15:56.267062+00:00",
+  "total": 110
+}

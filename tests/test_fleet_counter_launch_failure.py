@@ -25,7 +25,7 @@ WIDTH = 180
 # today: a fifth cell or a wider label fails on the literal. Each cell is two
 # right-aligned digits and its letter, one space between cells; a count above
 # two digits widens its own cell, which is why the counts here stay single.
-BLOCK = " 1w  2h  0d  1q"
+BLOCK = " 1w  2n  0d  1q"
 BLOCK_WIDTH = 15
 
 
@@ -100,7 +100,7 @@ def test_the_counter_block_keeps_four_cells_and_its_width() -> None:
 
     # Four cells and three single-space gaps, at the width the module states
     # for the block: the launch failure's number did not widen the block.
-    assert re.findall(r"\d[whdq]", launch) == ["1w", "2h", "0d", "1q"]
+    assert re.findall(r"\d[wdqn]", launch) == ["1w", "2n", "0d", "1q"]
     assert BLOCK in launch
     assert launch.count("·") == 0
     assert len(BLOCK) == BLOCK_WIDTH == STATS
@@ -111,4 +111,4 @@ def test_the_counter_block_keeps_four_cells_and_its_width() -> None:
 
 def test_the_launch_failure_is_still_counted_under_the_halted_bucket() -> None:
     """A launch failure contributes to the pane's halted count."""
-    assert ticker_module._bucket_of("launch-failed", "launch-failed") == "halted"
+    assert ticker_module._bucket_of("launch-failed", "launch-failed") == "needs you"

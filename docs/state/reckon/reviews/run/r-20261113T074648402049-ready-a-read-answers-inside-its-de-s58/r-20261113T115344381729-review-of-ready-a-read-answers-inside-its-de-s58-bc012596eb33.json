@@ -1,0 +1,91 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "after_failure_count": 29,
+  "after_suite_revision": "3b1344fb865e016529c978ac131ff35b0af041a3",
+  "baseline_failure_count": 29,
+  "baseline_suite_revision": "479cd489af6101cb00319dbb5ef1bd7aa3ee0cd4",
+  "call_site_count": 8,
+  "call_sites": [
+    "reckon/crew/promotion_scope.py:646",
+    "reckon/crew/claims.py:401",
+    "reckon/crew/directory.py:399",
+    "reckon/crew/dispatch_claims.py:514",
+    "reckon/crew/queue_edit.py:266",
+    "reckon/crew/recovery_review_dispatch.py:2870",
+    "reckon/crew/admission/holds.py:501",
+    "reckon/crew/runs.py:1416"
+  ],
+  "completed_at": "2026-11-13T12:41:02.895Z",
+  "dispatched_at": "2026-11-13T12:27:36Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "exempted",
+      "reason": "non-blocking; carried to the plan's next health review",
+      "recorded_at": "2026-11-13T16:37:41.196487+00:00"
+    },
+    "1": {
+      "kind": "exempted",
+      "reason": "non-blocking; carried to the plan's next health review",
+      "recorded_at": "2026-11-13T16:37:47.665392+00:00"
+    },
+    "2": {
+      "kind": "exempted",
+      "reason": "non-blocking; carried to the plan's next health review",
+      "recorded_at": "2026-11-13T16:37:54.591278+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "reckon/crew/node.py",
+      "line": "1846",
+      "severity": "non-blocking",
+      "text": "the uncommitted-change answer's reuse signature covers .git/index and the declared files but not .gitignore or .git/info/exclude, both of which change what `git status --porcelain` reports; a path that stops being ignored between two dispositions is reported clean from the memo while git would now report it, releasing a claim whose worktree still holds untracked work, which is the one direction the surrounding docstring says the guard must never take."
+    },
+    {
+      "file": "reckon/crew/node.py",
+      "line": "1768",
+      "severity": "non-blocking",
+      "text": "_packed_ref_revision re-implements the packed-refs lookup that reckon/roadmap_snapshot.py:141 already performs inline in _head_commit_of; it duplicates rather than extends that owner, and the two will drift on ref-name and whitespace handling. The write fence excluded roadmap_snapshot.py, so folding this would need a separate node."
+    },
+    {
+      "file": "docs/evidence/fragments/a-read-answers-inside-its-deadline/a-stopped-claims-git-answer-is-reused-until-its-worktree-moves.html",
+      "line": "4",
+      "severity": "non-blocking",
+      "text": "the pass evidence for the fleet measurement rests on one profiled pair (head 121.34 s vs base 140.67 s) while the same run's warm pair reverses the ordering by a larger margin (head 176.85 s vs base 116.71 s) and neither arm's profiled call spent a single git status or rev-list, so the changed code was not exercised; the fragment states the subprocess limit but still presents the time comparison as the pass."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "reckon/crew/promotion_scope.py:646, reckon/crew/directory.py:399, reckon/crew/queue_edit.py:266, reckon/crew/dispatch_claims.py:514, reckon/crew/recovery_review_dispatch.py:2870, reckon/crew/admission/holds.py:501, reckon/crew/runs.py:1416, reckon/crew/claims.py:401",
+    "diff": "Read both commits against 479cd489af; 3b1344fb865 carries 208 lines in node.py, 120 in recovery_watch.py and a 356-line test file, and bc012596eb carries only the 10-line evidence fragment.",
+    "done_when": "Every clause of the done_when has a named test: tests/test_a_stopped_claims_git_answer_is_reused_until_its_worktree_moves.py:156 counts one ask for two dispositions, :190 asks git again after a commit, :216 after an edited declared file, :228 after an edit beneath a declared directory, :254 after a failed command, and :279 is the declared negative control; the fleet measurement is recorded in logs/measure-head.json and logs/measure-base.json.",
+    "goal": "The goal is that a stopped claim's git answer is reused until its worktree moves; reckon/crew/node.py:1680 keys the commit answer on head, integration-ref commit and base, and :1783 keys the status answer on the index and every declared path's stat identity, so an unmoved worktree answers from cache and a moved one asks git.",
+    "manifest": "Read; it records status complete, both commits, the four changed paths, the head and base suite results with their failure ids, the red negative-control log, and the honest limit on the fleet measurement.",
+    "write_paths": "The declared paths are reckon/crew/node.py, reckon/crew/recovery_watch.py, the new test file and the evidence fragment; `git diff --stat 479cd489af bc012596eb` lists those four and no others."
+  },
+  "justifications": {
+    "durability": "tests/test_a_stopped_claims_git_answer_is_reused_until_its_worktree_moves.py:279 reinstates the regression and asserts the four-verb sequence, and logs/negative-control.log records 3 failed / 6 passed at EXIT=1 under the stated mutation, so the guard demonstrably fires; the .gitignore input the status answer also depends on is not covered.",
+    "evidence": "logs/head-arm.log and logs/base-arm.log both end `29 failed, 263 passed` / `29 failed, 272 passed` with identical failure id sets, so the recorded suite delta is 0, but logs/measure-head.json and measure-base.json show zero claim-path subprocesses in either profiled call and the same run's warm pair reverses the ordering (head 176.85 s vs base 116.71 s), so the fleet measurement does not isolate the change.",
+    "fit": "reckon/crew/node.py:1680-1852 keeps module-private helpers with mechanism docstrings and defers the recovery_memo/recovery_watch imports inside the function, matching the existing cycle-avoiding idiom at reckon/crew/recovery_review_subject.py:196, and no name carries a plan, sprint or ticket identifier.",
+    "goal_fidelity": "reckon/crew/node.py:1680 and :1783 route unintegrated_claim_work's two git questions through a commit answer cached on (worktree, head, integration-ref commit, base) and a status answer reused only while the index and the declared files hold their stat identity, which is the deliverable the goal names.",
+    "reuse": "the reachability answer extends the crew home's existing git-answer store as a third bucket (reckon/crew/recovery_watch.py:128) and reuses its corrupt-store fallback rather than adding a second store, but reckon/crew/node.py:1768 re-implements the packed-refs lookup already written at reckon/roadmap_snapshot.py:141 without extending it.",
+    "scope_discipline": "`git diff --stat 479cd489af bc012596eb` names exactly the four declared write paths (node.py, recovery_watch.py, the new test file, the evidence fragment) and nothing else."
+  },
+  "project": "reckon",
+  "review_run_id": "r-20261113T115344381729-review-of-ready-a-read-answers-inside-its-de-s58-bc012596eb33",
+  "reviewed_base_sha": "479cd489af6101cb00319dbb5ef1bd7aa3ee0cd4",
+  "reviewed_head_sha": "bc012596eb33660412777b0a8b7288cbfb7b282f",
+  "reviewed_run_id": "r-20261113T074648402049-ready-a-read-answers-inside-its-de-s58",
+  "scores": {
+    "durability": 15,
+    "evidence": 11,
+    "fit": 17,
+    "goal_fidelity": 18,
+    "reuse": 14,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-13T16:33:18.786562+00:00",
+  "total": 94
+}

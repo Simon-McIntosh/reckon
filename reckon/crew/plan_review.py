@@ -72,7 +72,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
-from reckon import _plan_html
+from reckon import _plan_html, file_memo
 from reckon._plan_html import DOCUMENT_UNIT, landed_section_ids
 from reckon._store import write_json_atomically
 from reckon.crew import review as _review_store
@@ -1147,6 +1147,88 @@ def review_coverage(
     base_dir: str | Path | None = None,
     config: Mapping[str, Any] | None = None,
 ) -> tuple[list[dict[str, Any]], set[str], dict[str, float | None]]:
+    """Share one coverage decision for the exact content and review evidence.
+
+    A judge can answer a write and be unavailable when admission reads it.
+    Holding the complete decision, including deterministic fallback answers,
+    keeps both readers on that answer until an input changes. Plan bytes,
+    review records, snapshot bytes and resolved configuration all participate
+    in its identity; an absent snapshot cannot reuse a measured decision.
+    The judge's policy key carries its instructions, criteria, checklist and
+    model identity, so a covered decision cannot outlive the policy it used.
+    """
+    from reckon import _store, metadata_index
+
+    if config is None:
+        config = runs.resolved_tick_config(project)
+    document = _as_document(plan)
+    content = document if document is not None else plan
+    records = list_plan_reviews(project, plan_slug, base_dir=base_dir)
+    snapshots = []
+    for record in records:
+        snapshot = _review_snapshot(project, plan_slug, record)
+        snapshots.append(
+            None if snapshot is None else file_memo.content_digest(snapshot)
+        )
+    prompt = review_need._prompt_for(review_need.PLAN_SUBJECT)
+    # The judge owns policy identity; the outer key carries the plan-specific
+    # inputs, so only that key's policy portion needs to be represented here.
+    policy_key = review_need._cache_key(
+        review_need.PLAN_SUBJECT,
+        prompt["checks"][review_need.PLAN_SUBJECT],
+        {},
+        {},
+    )
+    identity = _digest(
+        {
+            "plan": content,
+            "reviews": records,
+            "snapshots": snapshots,
+            "config": config,
+            "review_policy": policy_key,
+        }
+    )
+
+    def compute() -> list[Any]:
+        contributing, uncovered, changes = _compute_coverage(
+            project,
+            plan_slug,
+            plan=content,
+            base_dir=base_dir,
+            config=config,
+            _records=records,
+        )
+        return [contributing, sorted(uncovered), changes]
+
+    memo_args = (
+        "plan-review-coverage",
+        1,
+        (project, plan_slug, str(_review_store.review_store_root(base_dir)), identity),
+        (sys.modules[__name__], _plan_html, review_need),
+    )
+    cache_path = metadata_index._persisted_cache_path(*memo_args[:2], *memo_args[2])
+    # Concurrent readers share the first decision, and a write can promise it
+    # only once the durable receipt is readable by the next process.
+    with _store._serialized_path_lock(cache_path, "plan-review-coverage"):
+        held = metadata_index.persisted_memo(*memo_args, compute=compute)
+        if (
+            metadata_index.persisted_memo(*memo_args)
+            is metadata_index._PERSISTED_MISSING
+        ):
+            raise OSError("the review coverage decision could not be persisted")
+    contributing, uncovered, changes = held
+    return copy.deepcopy(contributing), set(uncovered), dict(changes)
+
+
+def _compute_coverage(
+    project: str,
+    plan_slug: str,
+    *,
+    plan: Mapping[str, Any] | str | Path,
+    base_dir: str | Path | None = None,
+    config: Mapping[str, Any] | None = None,
+    _records: list[dict[str, Any]] | None = None,
+) -> tuple[list[dict[str, Any]], set[str], dict[str, float | None]]:
     """Return contributing reviews, uncovered units and their measured change.
 
     A unit is covered by a stored review when it existed in that review and its
@@ -1185,7 +1267,11 @@ def review_coverage(
     content = document if document is not None else plan
     records = [
         record
-        for record in list_plan_reviews(project, plan_slug, base_dir=base_dir)
+        for record in (
+            list_plan_reviews(project, plan_slug, base_dir=base_dir)
+            if _records is None
+            else _records
+        )
         if not _review_is_incomplete(record)
     ]
     forms = _fingerprint_forms(content)
@@ -1419,14 +1505,18 @@ def _load(path: Path) -> dict[str, Any] | None:
 
 
 def _read_record(path: Path) -> dict[str, Any] | None:
-    """Read one stored record from disk."""
-    if not path.is_file():
-        return None
-    try:
-        payload = json.loads(path.read_text(encoding="utf-8"))
-    except (OSError, json.JSONDecodeError):
-        return None
-    return dict(payload) if isinstance(payload, Mapping) else None
+    """Return a mutable copy of a stored record, decoding it once per change."""
+
+    def read() -> dict[str, Any] | None:
+        if not path.is_file():
+            return None
+        try:
+            payload = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            return None
+        return dict(payload) if isinstance(payload, Mapping) else None
+
+    return file_memo.memoized("plan_review_record", path, read, mutable=True)
 
 
 def read_plan_review(
@@ -3263,6 +3353,56 @@ def finding_unit(
     return finding_units(record, finding_id, plan_path=plan_path)[0]
 
 
+def _observation_ids(
+    record: Mapping[str, Any],
+    reviewed_text: Callable[[], str | None],
+    *,
+    plan_path: str | Path | None = None,
+) -> set[str]:
+    """The record's findings that fall on units this review did not trace.
+
+    A re-review is composed for the units an edit left uncovered, so a finding
+    it raises on a unit an earlier review already covers is about content the
+    round was not asked to judge: an observation rather than a finding. A
+    review that traced no unit read the whole plan, and every finding is then
+    its own. A finding on the document unit is never an observation, because
+    the document unit is about the plan as a whole, which every review reads.
+    A finding whose units cannot be read is left a finding, the conservative
+    direction.
+    """
+    traced = _traced_units(record)
+    if not traced:
+        return set()
+    observed: set[str] = set()
+    for finding_id in finding_ids(record):
+        finding = _finding_by_id(record, finding_id)
+        if finding is None:
+            continue
+        units = _finding_units(
+            record, finding, plan_path=plan_path, reviewed_text=reviewed_text
+        )
+        if DOCUMENT_UNIT in units or any(unit in traced for unit in units):
+            continue
+        observed.add(finding_id)
+    return observed
+
+
+def observation_findings(
+    record: Mapping[str, Any],
+    *,
+    plan_path: str | Path | None = None,
+) -> list[str]:
+    """The record's findings on the units this review was not composed for.
+
+    These are listed with the review and can be acted on or carried, but they
+    ask for no change to the content the round was asked to read, so the
+    dispatch gate does not count them as unanswered.
+    """
+    text = _memoised_reviewed_text(record, None, plan_path)
+    observed = _observation_ids(record, text, plan_path=plan_path)
+    return [finding_id for finding_id in finding_ids(record) if finding_id in observed]
+
+
 def unanswered_findings_by_unit(
     record: Mapping[str, Any],
     *,
@@ -3272,12 +3412,18 @@ def unanswered_findings_by_unit(
 
     A finding appears under each unit it blocks, so a finding naming two
     sections holds both and a finding naming none appears under the document
-    unit, which holds every section. The reviewed plan text is read at most
-    once however many line anchors the record carries.
+    unit, which holds every section. A finding the review raised on a unit it
+    did not trace is an observation (:func:`observation_findings`) and is
+    absent here: it did not ask for a change to the content under review, so
+    it holds nothing. The reviewed plan text is read at most once however many
+    line anchors the record carries.
     """
     text = _memoised_reviewed_text(record, None, plan_path)
+    observed = _observation_ids(record, text, plan_path=plan_path)
     grouped: dict[str, list[str]] = {}
     for finding_id in unanswered_findings(record):
+        if finding_id in observed:
+            continue
         finding = _finding_by_id(record, finding_id)
         units = (
             _finding_units(record, finding, plan_path=plan_path, reviewed_text=text)
@@ -3674,6 +3820,78 @@ def compose_burst_refusal(
         if refusal:
             return refusal
     return None
+
+
+def _review_launch_kind(project: str) -> str:
+    """How a composed review of this project is launched, or empty if unknown.
+
+    The review role resolves to its backend through the routing the dispatch
+    itself uses, overlays included, so a refusal answered before composition
+    speaks for the launch that will carry it. An unreadable configuration
+    answers empty: the review is then left to the verb, which reports the
+    configuration it could not resolve rather than a delivery condition nobody
+    measured.
+    """
+    from reckon import flight
+    from reckon.crew import routing
+    from reckon.crew.node import CrewError
+
+    try:
+        config = flight.resolve(project=project).config or {}
+        _backend_name, backend = routing.resolve_role(config, "review")
+    except (flight.FlightConfigError, OSError, CrewError):  # the verb reports
+        return ""
+    return str(backend.get("launch") or "")
+
+
+def session_delivery_refusal(project: str, session: str) -> str | None:
+    """The refusal a review of this session would meet once composed, or None.
+
+    A plan review composes its brief, plan snapshot and sidecar into the plan's
+    report directory before the dispatch that carries it away, and the dispatch
+    is the first place a session's delivery is judged. So a session that would
+    hear nothing was refused only after its report directory had been written:
+    a composition refused that way leaves the directory behind when the caller
+    stops before the dispatch can discard it, and the next attempt reads a
+    report that no run backs.
+
+    The conditions answered here are the session's own — no follower registered
+    for it, a registered follower that is not delivering. The project's producer
+    is a separate, project-global condition that
+    :func:`_unmet_follower_conditions` also reports; it is judged where it is
+    measured, at dispatch, so this refusal answers only for the session it is
+    asked about.
+
+    A session is judged only where the dispatch judges it: a backend that does
+    not launch a command of its own — the calling harness's in-harness launch —
+    has no follower to deliver to, so its dispatch refuses only for the
+    project's producer and a review composed for it is not refused here. An
+    unnamed session is left to the verb, which names the missing flag.
+
+    Returns the text of the refusal the dispatch would raise, built by the same
+    chooser the dispatch uses, so a caller reads one wording whichever stage
+    refuses it.
+    """
+    from reckon.crew.dispatch_watch import (
+        _FollowerAdmissionUnmet,
+        _unmet_follower_conditions,
+    )
+
+    if not str(session or "").strip():
+        return None
+    if _review_launch_kind(project) != "cli":
+        return None
+    watch = runs.watch_state(project, session=session)
+    conditions = _unmet_follower_conditions(
+        project,
+        {**watch, "watcher_live": True},
+        session=session,
+    )
+    if not conditions:
+        return None
+    return str(
+        _FollowerAdmissionUnmet(project, watch, session=session, conditions=conditions)
+    )
 
 
 # ── The composition a quiet plan owes, and its would-not-change answers ─────

@@ -1,0 +1,207 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_assertion_lines": [
+    {
+      "line": 79,
+      "text": "assert report[\"released_stranded\"] == []"
+    },
+    {
+      "line": 80,
+      "text": "assert runs.pointer_path(RUN_ID).is_file()"
+    },
+    {
+      "line": 81,
+      "text": "assert runs.run_dir(RUN_ID).is_dir()"
+    },
+    {
+      "line": 82,
+      "text": "assert dispatch_refusals.launch_refusal(RUN_ID) is None"
+    },
+    {
+      "line": 83,
+      "text": "assert recovery_liveness._stranded_launch(pointer, now_seconds=now) is False"
+    },
+    {
+      "line": 93,
+      "text": "assert recovery_liveness.process_alive(process.pid) is False"
+    },
+    {
+      "line": 95,
+      "text": "assert queue_admission._release_stranded_launches([pointer], now_seconds=now) == ["
+    },
+    {
+      "line": 98,
+      "text": "assert not runs.pointer_path(RUN_ID).exists()"
+    },
+    {
+      "line": 99,
+      "text": "assert not runs.run_dir(RUN_ID).exists()"
+    },
+    {
+      "line": 100,
+      "text": "assert dispatch_refusals.launch_refusal(RUN_ID)[\"reason\"] == \"launch-span-exceeded\""
+    },
+    {
+      "line": 108,
+      "text": "assert recovery_liveness.process_alive(os.getpid()) is True"
+    },
+    {
+      "line": 110,
+      "text": "assert queue_admission._release_stranded_launches([pointer], now_seconds=now) == ["
+    },
+    {
+      "line": 113,
+      "text": "assert not runs.pointer_path(RUN_ID).exists()"
+    },
+    {
+      "line": 114,
+      "text": "assert not runs.run_dir(RUN_ID).exists()"
+    },
+    {
+      "line": 123,
+      "text": "assert queue_admission._release_stranded_launches([pointer], now_seconds=now) == ["
+    },
+    {
+      "line": 126,
+      "text": "assert not runs.run_dir(RUN_ID).exists()"
+    },
+    {
+      "line": 139,
+      "text": "assert queue_admission._release_stranded_launches("
+    },
+    {
+      "line": 142,
+      "text": "assert not runs.run_dir(RUN_ID).exists()"
+    },
+    {
+      "line": 144,
+      "text": "assert trace[\"run_id\"] == RUN_ID"
+    },
+    {
+      "line": 145,
+      "text": "assert trace[\"holder\"][\"reviewed_run_id\"] == SOURCE_RUN"
+    }
+  ],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_analysis": {
+    "fixture_correction": "The existing launch-span tests add no assertion; their 24 assertions remain unchanged, while the ancient claim timestamp supplies a reused pid matching the allowed release condition.",
+    "independence": "RUN_ID and SOURCE_RUN are fixed fixture identities used to check side effects and resolver mapping; no added assertion compares a code-generated value to itself or derives the expected result by invoking the same mechanism.",
+    "tests/test_a_live_launch_holder_is_not_stranded.py:100": "Fails if dead-holder release omits the durable refusal or records another reason.",
+    "tests/test_a_live_launch_holder_is_not_stranded.py:108": "Precondition fails if the current process is not seen alive; independently establishes the reused-pid case is not a dead-pid case.",
+    "tests/test_a_live_launch_holder_is_not_stranded.py:110": "Fails if the start-time comparison is removed and any live pid protects an ancient claim.",
+    "tests/test_a_live_launch_holder_is_not_stranded.py:113": "Fails if reused-pid release leaves the pointer.",
+    "tests/test_a_live_launch_holder_is_not_stranded.py:114": "Fails if reused-pid release leaves the directory.",
+    "tests/test_a_live_launch_holder_is_not_stranded.py:123": "Fails if the host comparison is removed and a locally live pid recorded on another host protects the claim.",
+    "tests/test_a_live_launch_holder_is_not_stranded.py:126": "Fails if foreign-holder release leaves the directory.",
+    "tests/test_a_live_launch_holder_is_not_stranded.py:139": "Fails if either parameterized review identity is not released as the expected review run; a guard protecting reused pids reddens it.",
+    "tests/test_a_live_launch_holder_is_not_stranded.py:142": "Fails if review release leaves its run directory.",
+    "tests/test_a_live_launch_holder_is_not_stranded.py:144": "Fails if the refusal is missing or attributed to another run; RUN_ID is the independently fixed fixture identity.",
+    "tests/test_a_live_launch_holder_is_not_stranded.py:145": "Fails if reviewed_run_id is absent or resolves to a node id instead of the source run; reverting the trace addition reddens both parameterized cases.",
+    "tests/test_a_live_launch_holder_is_not_stranded.py:79": "Fails if admit_once again releases the live-holder run; reinstating the base stranded predicate produces [r-held-launch] rather than an empty released list.",
+    "tests/test_a_live_launch_holder_is_not_stranded.py:80": "Fails if the admit pass deletes the live-holder pointer, including under the base predicate.",
+    "tests/test_a_live_launch_holder_is_not_stranded.py:81": "Fails if the admit pass deletes the live-holder directory, including under the base predicate.",
+    "tests/test_a_live_launch_holder_is_not_stranded.py:82": "Fails if a launch-refusal trace is written for this preserved live holder.",
+    "tests/test_a_live_launch_holder_is_not_stranded.py:83": "Fails if the stranded predicate returns true for the live local holder after the age bound; reverting the added guard reddens it.",
+    "tests/test_a_live_launch_holder_is_not_stranded.py:93": "Precondition fails if the child did not actually exit and be reaped; this is a real process check, not coverage of the added guard.",
+    "tests/test_a_live_launch_holder_is_not_stranded.py:95": "Fails if a dead holder is protected instead of released; making the holder guard true for all claims reddens it.",
+    "tests/test_a_live_launch_holder_is_not_stranded.py:98": "Fails if dead-holder release leaves the pointer behind.",
+    "tests/test_a_live_launch_holder_is_not_stranded.py:99": "Fails if dead-holder release leaves the directory behind."
+  },
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/queue_admission.py:admit_once:5656",
+    "reckon/crew/queue_admission.py:_release_stranded_launches:1949",
+    "reckon/crew/recovery_liveness.py:_stranded_launch:753"
+  ],
+  "completed_at": "2026-11-12T04:15:51Z",
+  "dispatched_at": "2026-11-12T04:07:22Z",
+  "findings": [],
+  "gate_evidence": {
+    "after_suite": {
+      "command": "PYTHONPATH=/tmp/launch-holder-resumed-3j5kcgii /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q /tmp/launch-holder-resumed-3j5kcgii/tests/test_a_launch_span_is_dated_and_bounded.py /tmp/launch-holder-resumed-3j5kcgii/tests/test_a_live_launch_holder_is_not_stranded.py /tmp/launch-holder-resumed-3j5kcgii/tests/test_staged_write_inventory.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "fixture_path": "tests/test_a_launch_span_is_dated_and_bounded.py",
+      "fixture_revision": "0c99497bad22b516c098f799fed292d06a0b78fa",
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261112T031818685439-a-live-launch-holder-is-not-stranded/resumed-head-suite.log",
+      "measurement_cwd": "/tmp/launch-holder-resumed-3j5kcgii",
+      "measurement_module": "/tmp/launch-holder-resumed-3j5kcgii/reckon/crew/recovery_liveness.py",
+      "revision": "a0530572937e36034cec614a2673ec227b6b53bd"
+    },
+    "baseline_suite": {
+      "command": "PYTHONPATH=/tmp/launch-holder-resumed-2tgqm9de /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q /tmp/launch-holder-resumed-2tgqm9de/tests/test_a_launch_span_is_dated_and_bounded.py /tmp/launch-holder-resumed-2tgqm9de/tests/test_staged_write_inventory.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261112T031818685439-a-live-launch-holder-is-not-stranded/resumed-base-suite.log",
+      "measurement_cwd": "/tmp/launch-holder-resumed-2tgqm9de",
+      "measurement_module": "/tmp/launch-holder-resumed-2tgqm9de/reckon/crew/recovery_liveness.py",
+      "revision": "b770ff474971136579a565932036a37a4c76f0b8"
+    },
+    "scope_delta": {
+      "added": [],
+      "removed": []
+    }
+  },
+  "importer_evidence": {
+    "added_failure_ids": [],
+    "base_failure_count": 129,
+    "base_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261112T031818685439-a-live-launch-holder-is-not-stranded/resumed-base-importers.log",
+    "head_failure_count": 129,
+    "head_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261112T031818685439-a-live-launch-holder-is-not-stranded/resumed-head-importers.log",
+    "removed_failure_ids": []
+  },
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "Read commits 818458882af791127f7d3303503766c58bd7d5be, a0530572937e36034cec614a2673ec227b6b53bd, 0c99497bad22b516c098f799fed292d06a0b78fa and b4690828386369f510728525f295ec7173d85333 against b770ff474971136579a565932036a37a4c76f0b8; the final diff contains the holder guard, release trace identity, isolated tests, authorized fixture correction and evidence fragment.",
+    "done_when": "The source prompt and live plan s52 require preservation, dead/reused-holder release and reviewed-run trace identity; resumed-head-suite.log records 61 passes versus 55 in resumed-base-suite.log, and matched resumed importer logs have identical 129 failure IDs.",
+    "goal": "The source prompt goal is to keep live local claim holders out of stranded release; reckon/crew/recovery_liveness.py:703-718 implements that condition and queue_admission.py:1960-1964 preserves review identity on release.",
+    "manifest": "Source manifest.md names all four commits, completed arm receipts, logs and the fixture overlay; their recorded results agree with the logs, including negative-control.log ending EXIT=1 with three failures.",
+    "write_paths": "The five changed files are within the original grants plus the explicit tests/test_a_launch_span_is_dated_and_bounded.py grant in resume-1-advice.txt, whose instruction to preserve assertions is satisfied by the fixture-only diff."
+  },
+  "justifications": {
+    "durability": "tests/test_a_live_launch_holder_is_not_stranded.py:79-83 fails if live holders are again released, :97-119 fails if dead/reused holders are preserved, :128-131 fails if foreign holders are protected, and :144-145 fails if the trace loses review identity; the base negative control demonstrates the live-holder and trace regressions.",
+    "evidence": "negative-control.log records the live-holder and two trace failures, resumed scoped logs end EXIT=0 with 55/61 passes, and resumed importer logs record identical 129 failure IDs with zero added, with measured product/test blobs matching the reviewed head.",
+    "fit": "reckon/crew/recovery_liveness.py:703 extends the existing liveness owner with mechanism-based naming, shared readers and lazy imports, and the changed Python paths pass resumed-static-checks.log without new naming violations.",
+    "goal_fidelity": "reckon/crew/recovery_liveness.py:708-718 requires a live holder on this host whose process started no later than launched_at, while queue_admission.py:1960-1964 records the reviewed run before release.",
+    "reuse": "Capability searches and reads of dispatch_claims.py:741 and :1118, gc.py:528 and :548, recovery_liveness.py:34 and :1126, and recovery_review_delivery.py:231 show the new adapter composes existing claim, process and review-identity owners without copying their readers or substituting a second implementation.",
+    "scope_discipline": "The five paths in the b770ff474971136579a565932036a37a4c76f0b8..b4690828386369f510728525f295ec7173d85333 diff are granted in the source prompt and resume-1-advice.txt; tests/test_a_launch_span_is_dated_and_bounded.py:81-85 changes only the abandoned-holder setup."
+  },
+  "negative_control_evidence": {
+    "exit_status": 1,
+    "live_holder_reproduction": "assert report[\"released_stranded\"] == [] failed because the actual result was ['r-held-launch']",
+    "log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261112T031818685439-a-live-launch-holder-is-not-stranded/negative-control.log",
+    "summary": "3 failed, 3 passed in 8.66s"
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The source prompt goal is to keep live local claim holders out of stranded release; reckon/crew/recovery_liveness.py:703-718 implements that condition and queue_admission.py:1960-1964 preserves review identity on release.\nVERDICT done_when: The source prompt and live plan s52 require preservation, dead/reused-holder release and reviewed-run trace identity; resumed-head-suite.log records 61 passes versus 55 in resumed-base-suite.log, and matched resumed importer logs have identical 129 failure IDs.\nVERDICT write_paths: The five changed files are within the original grants plus the explicit tests/test_a_launch_span_is_dated_and_bounded.py grant in resume-1-advice.txt, whose instruction to preserve assertions is satisfied by the fixture-only diff.\nVERDICT manifest: Source manifest.md names all four commits, completed arm receipts, logs and the fixture overlay; their recorded results agree with the logs, including negative-control.log ending EXIT=1 with three failures.\nVERDICT diff: Read commits 818458882af791127f7d3303503766c58bd7d5be, a0530572937e36034cec614a2673ec227b6b53bd, 0c99497bad22b516c098f799fed292d06a0b78fa and b4690828386369f510728525f295ec7173d85333 against b770ff474971136579a565932036a37a4c76f0b8; the final diff contains the holder guard, release trace identity, isolated tests, authorized fixture correction and evidence fragment.\nCALL_SITES: reckon/crew/queue_admission.py:admit_once:5656, reckon/crew/queue_admission.py:_release_stranded_launches:1949, reckon/crew/recovery_liveness.py:_stranded_launch:753\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/recovery_liveness.py:708-718 requires a live holder on this host whose process started no later than launched_at, while queue_admission.py:1960-1964 records the reviewed run before release.\nSCORE evidence: 20\nJUSTIFICATION evidence: negative-control.log records the live-holder and two trace failures, resumed scoped logs end EXIT=0 with 55/61 passes, and resumed importer logs record identical 129 failure IDs with zero added, with measured product/test blobs matching the reviewed head.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: The five paths in the b770ff474971136579a565932036a37a4c76f0b8..b4690828386369f510728525f295ec7173d85333 diff are granted in the source prompt and resume-1-advice.txt; tests/test_a_launch_span_is_dated_and_bounded.py:81-85 changes only the abandoned-holder setup.\nSCORE durability: 20\nJUSTIFICATION durability: tests/test_a_live_launch_holder_is_not_stranded.py:79-83 fails if live holders are again released, :97-119 fails if dead/reused holders are preserved, :128-131 fails if foreign holders are protected, and :144-145 fails if the trace loses review identity; the base negative control demonstrates the live-holder and trace regressions.\nSCORE fit: 20\nJUSTIFICATION fit: reckon/crew/recovery_liveness.py:703 extends the existing liveness owner with mechanism-based naming, shared readers and lazy imports, and the changed Python paths pass resumed-static-checks.log without new naming violations.\nSCORE reuse: 20\nJUSTIFICATION reuse: Capability searches and reads of dispatch_claims.py:741 and :1118, gc.py:528 and :548, recovery_liveness.py:34 and :1126, and recovery_review_delivery.py:231 show the new adapter composes existing claim, process and review-identity owners without copying their readers or substituting a second implementation.\n",
+  "review_notes": [
+    "No suite was rerun; this read-only review used the source gate logs.",
+    "The later orientation tree is not the reviewed revision; all product/call-site reads used git show at reviewed_head_sha.",
+    "The measured head uses the requested a0530572937e36034cec614a2673ec227b6b53bd product plus the fixture from 0c99497bad22b516c098f799fed292d06a0b78fa; all four changed Python blobs match reviewed_head_sha exactly.",
+    "No figure was added or changed.",
+    "The source importer failures remain outside this node scope; there are zero added IDs."
+  ],
+  "review_run_id": "r-20261112T035851898012-review-of-a-live-launch-holder-is-not-stranded-b46908283863",
+  "reviewed_base_sha": "b770ff474971136579a565932036a37a4c76f0b8",
+  "reviewed_head_sha": "b4690828386369f510728525f295ec7173d85333",
+  "reviewed_run_id": "r-20261112T031818685439-a-live-launch-holder-is-not-stranded",
+  "scores": {
+    "durability": 20,
+    "evidence": 20,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-12T04:35:44.605070+00:00",
+  "total": 120
+}

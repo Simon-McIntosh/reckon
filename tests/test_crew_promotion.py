@@ -541,6 +541,7 @@ def _invoke_complete_cli(run_id: str, gate_log: Path, commit: str) -> Result:
         [
             "crew",
             "complete",
+            "--wait",
             "--run",
             run_id,
             "--gate",
@@ -964,6 +965,7 @@ def test_complete_command_accepts_a_reasoned_resume_path_waiver(
     arguments = [
         "crew",
         "complete",
+        "--wait",
         "--run",
         run_id,
         "--gate",
@@ -1018,6 +1020,7 @@ def test_complete_command_refuses_a_resume_path_waiver_without_a_reason(
         [
             "crew",
             "complete",
+            "--wait",
             "--run",
             run_id,
             "--gate",
@@ -1050,6 +1053,7 @@ def test_complete_command_promotes_a_blocked_run_without_a_recoverable_session(
         [
             "crew",
             "complete",
+            "--wait",
             "--run",
             run_id,
             "--gate",
@@ -1355,6 +1359,7 @@ def test_a_resume_waiver_retains_the_worktree_by_default(
         [
             "crew",
             "complete",
+            "--wait",
             "--run",
             run_id,
             "--gate",

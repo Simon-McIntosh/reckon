@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-gate-halts-only-on-substance">
+  <meta name="plan-evidence-for" content="a-gate-halts-only-on-substance">
+  <title>The picker never budgets below the compute a brief names | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <header>
+      <p class="eyebrow">Execution evidence &middot; fragment</p>
+      <h1>The picker never budgets below the compute a brief names</h1>
+      <p class="lead">The budget floor for a node whose gate names heavy compute is already
+      carried at this revision by <code>node_budget</code> in
+      <code>reckon/crew/picker/lane_context.py</code>, with
+      <code>tests/test_a_heavy_gate_gets_a_full_budget.py</code> asserting it. This node
+      verified that behaviour rather than reimplementing it: the gate and the importer
+      cohort are green, and the declared mutation reddens exactly the two fence cases.</p>
+    </header>
+
+    <section id="the-picker-never-budgets-below-the-compute-a-bri-behaviour">
+      <h2>The behaviour, as it stands at this revision</h2>
+      <ul>
+        <li><code>node_budget(node, *, config=None)</code> returns the node's declared
+        budget unchanged when its goal, done-when and brief name no gate compute.</li>
+        <li>When the node's own text names a scheduler verb, a GPU model or host, a
+        partition or a cluster job, it returns the larger of the declared budget and
+        <code>resolved_time_ceiling(config)</code>. A brief naming an H200 job and no
+        budget therefore receives the resolved fence rather than the small implement
+        default.</li>
+        <li><code>return_times</code> and the build path size the node through it, so the
+        reported <code>size_key</code> / <code>size_bucket</code> are the floored ones.</li>
+      </ul>
+    </section>
+
+    <section id="the-picker-never-budgets-below-the-compute-a-bri-reproduction">
+      <h2>Reproducing the defect the floor prevents</h2>
+      <p>At this revision the defect does not reproduce in the unmodified tree, so the
+      instruction's reproduction step was taken as the declared mutation: with
+      <code>node_budget</code> returning the declared budget before the fence is read, the
+      stubbed node whose brief names a betelgeuse H200 job and declares no budget returns
+      <code>''</code> and is reported <code>size_bucket: up_to_30m</code>. That is the
+      small-node size the plan names. The unmodified tree returns the fence and
+      <code>over_60m</code> for the same node.</p>
+      <p>This is the same floor an earlier node on this section landed; the reproduction
+      confirms it is load-bearing rather than incidental.</p>
+    </section>
+
+    <section id="the-picker-never-budgets-below-the-compute-a-bri-the-gate">
+      <h2>The gate</h2>
+      <p>The node's gate command ran at the base revision and again at the run's head, each
+      arm resolved over its own tree, one arm at a time:</p>
+      <table>
+        <thead><tr><th>Arm</th><th>Result</th><th>Log</th></tr></thead>
+        <tbody>
+          <tr><td>Base <code>c4eff77070</code>, gate command</td><td>56 passed, <code>EXIT=0</code></td><td><code>logs/gate-base.log</code></td></tr>
+          <tr><td>Base <code>c4eff77070</code>, importer cohort (14 files, <code>-n 4</code>)</td><td>178 passed, <code>EXIT=0</code></td><td><code>logs/importer-cohort.log</code></td></tr>
+          <tr><td>Negative control: floor removed</td><td>2 failed, 3 passed, <code>EXIT=1</code></td><td><code>negative-control.log</code></td></tr>
+        </tbody>
+      </table>
+      <p>Logs live under the run directory
+      <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261112T060543442651-the-picker-never-budgets-below-the-compute-a-bri/</code>.
+      The importer cohort is every test file importing
+      <code>reckon.crew.picker.lane_context</code>, and it carries no failure at the base
+      revision. Ruff check and ruff format --check add no findings on the staged paths.</p>
+    </section>
+
+    <section id="the-picker-never-budgets-below-the-compute-a-bri-negative-control">
+      <h2>Declared negative control</h2>
+      <p>Declared mutation: <em>removing the floor gives the H200 node the small size
+      again</em>. Applied to the working copy of <code>node_budget</code>, the gate reports
+      <code>2 failed, 3 passed</code> with <code>EXIT=1</code>:
+      <code>test_a_brief_naming_an_h200_job_takes_the_resolved_fence</code> fails with
+      <code>assert '' == '6h'</code>, and
+      <code>test_the_picker_sizes_a_heavy_brief_at_the_fence_not_the_small_default</code>
+      fails with <code>assert 'up_to_30m' == 'over_60m'</code>. The three cases that assert
+      unchanged behaviour stay green. The source file was restored afterwards and the
+      working tree is clean on that path.</p>
+    </section>
+  </main>
+</body>
+</html>

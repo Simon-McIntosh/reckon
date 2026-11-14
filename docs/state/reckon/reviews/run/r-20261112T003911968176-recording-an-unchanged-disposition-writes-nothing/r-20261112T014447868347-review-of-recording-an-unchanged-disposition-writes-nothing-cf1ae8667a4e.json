@@ -1,0 +1,39 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-11-12T02:01:33.494Z",
+  "dispatched_at": "2026-11-12T01:47:25Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "exempted",
+      "reason": "The code-review finding writer's identical guard is untested; a case for it is a tightening the next review of that writer can add.",
+      "recorded_at": "2026-11-12T02:14:04.800687+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "reckon/crew/review_dispositions.py",
+      "line": "526",
+      "severity": "non-blocking",
+      "text": "The early return added to the code-review finding writer (_record_code_finding_disposition) has no test: the four new cases drive the run-review finding writer and the dimension writer only, so deleting this guard leaves the suite green and re-opens the per-sweep commit on code-review records."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that recording a disposition already stored writes no file and makes no commit, and that a repair round folds each finding and each dimension once; reckon/crew/review_dispositions.py:241 `_disposition_already_stored` is consulted at lines 390, 526 and 652, the three disposition writers, and tests/test_an_identical_disposition_writes_nothing.py drives the fold sweep twice for one round.\nVERDICT done_when: the done_when names tests/test_an_identical_disposition_writes_nothing.py with a finding case, a dimension case, a twice-driven _fold_findings_into_round case and a changed-node case; all four are present and the manifest records 55 passed at head (gate-head.log) and the negative control at 3 failed, 1 passed (negative-control.log).\nVERDICT write_paths: the declared paths are reckon/crew/review_dispositions.py, reckon/crew/recovery_repair_dispatch.py, the new test, docs/evidence/fragments/the-crew-does-its-own-bookkeeping/recording-an-unchanged-disposition-writes-nothing.html and the matching figures directory; the diff touches only review_dispositions.py, the new test and the fragment, with recovery_repair_dispatch.py correctly left unedited because the shared writer it calls now folds idempotently.\nVERDICT manifest: read; it records status complete, gate-head.log 55 passed EXIT=0 at c6cdfeeaf2, gate-base.log 51 passed EXIT=0 at b20201397b, importer arms 6 failed / 309 passed versus 6 failed / 305 passed with identical ids, negative-control.log 3 failed / 1 passed EXIT=1, and baseline_suite/after_suite both with failure_count 0.\nVERDICT diff: three commits read against base b20201397b: 798d47b5d2 adds `_disposition_already_stored` and its three call sites plus the 186-line test, c6cdfeeaf2 reformats the test with no assertion change, cf1ae8667a adds the 8-line landing fragment.\nCALL_SITES: reckon/crew_run_commands.py:1085, reckon/crew_run_commands.py:1095, reckon/crew/recovery_repair_dispatch.py:908, reckon/crew/recovery_repair_dispatch.py:924, reckon/crew/reckon/crew/recovery_review_acceptance.py:170, reckon/crew/review_dispositions.py:586\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/review_dispositions.py:390, :526 and :652 each return the record path before the write when the stored entry already answers the same, and tests/test_an_identical_disposition_writes_nothing.py:143 asserts the second call leaves bytes and commit count untouched.\nSCORE evidence: 18\nJUSTIFICATION evidence: the gate logs carry their revision and literal command headers and a bare EXIT line, the negative control reddens 3 of 4 cases, and the all_debug partition is attested only in the run stream's sbatch invocation rather than in a gate log header.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: the diff touches only reckon/crew/review_dispositions.py, tests/test_an_identical_disposition_writes_nothing.py and the granted evidence fragment, and makes no unrelated edit.\nSCORE durability: 17\nJUSTIFICATION durability: the negative control reinstates the unconditional write and tests/test_an_identical_disposition_writes_nothing.py:143-171 reddens on it, but the guard added at reckon/crew/review_dispositions.py:526 on the code-review writer is not exercised by any case.\nSCORE fit: 18\nJUSTIFICATION fit: `_disposition_already_stored` at reckon/crew/review_dispositions.py:241 sits beside `_build_disposition_entry` and follows the module's long-docstring idiom, and its name carries no plan or ticket label.\nSCORE reuse: 20\nJUSTIFICATION reuse: the comparison is one helper shared by all three writers rather than three copies, and a search across reckon/crew for an existing entry-equality or idempotency helper found none (the nearest, `_carry_answer_to_delivered_copies` at :195, compares delivered copies only).\nFINDING reckon/crew/review_dispositions.py:526 non-blocking: the early return added to `_record_code_finding_disposition` is untested \u2014 the four new cases drive the run-review finding writer and the dimension writer only, so removing this guard leaves the suite green.\n",
+  "review_run_id": "r-20261112T014447868347-review-of-recording-an-unchanged-disposition-writes-nothing-cf1ae8667a4e",
+  "reviewed_base_sha": "b20201397b78e469bad5dbb0367a4b09bae0d05d",
+  "reviewed_head_sha": "cf1ae8667a4ec50b528671456108fc228ce69793",
+  "reviewed_run_id": "r-20261112T003911968176-recording-an-unchanged-disposition-writes-nothing",
+  "scores": {
+    "durability": 17,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-12T02:11:40.693805+00:00",
+  "total": 111
+}

@@ -1,0 +1,44 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/dispatch_batch.py:709",
+    "reckon/crew/queue_edit.py:394",
+    "reckon/crew/node.py:1518"
+  ],
+  "completed_at": "2026-11-12T07:31:35.452Z",
+  "dispatched_at": "2026-11-12T07:17:09Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/a-queued-request-is-checked-when-queued/a-batch-made-request-can-be-edited-in-the-queue.html",
+      "line": 3,
+      "severity": "non-blocking",
+      "text": "the outcome paragraph says this node confirmed the behaviour \"still reproduces\" at the base revision, borrowing the defect-repair contract's verb for a behaviour that was already correct, so a reader can take it as a claim that the defect reproduces at base."
+    },
+    {
+      "file": "docs/evidence/fragments/a-queued-request-is-checked-when-queued/a-batch-made-request-can-be-edited-in-the-queue.html",
+      "line": 16,
+      "severity": "non-blocking",
+      "text": "the negative-control count is recorded as 3 failed where the sibling fragment batch-request-editable-in-queue.html records 2 failed for the same control, without saying that the third test also began depending on the stored path."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is that a batch-made request can be edited in the queue; reckon/crew/dispatch_batch.py:709 stores runs_dir()/<run_id>/manifest.md for a queued entry and reckon/crew/queue_edit.py:394 then judges the edit on that path, so the state holds \u2014 though the capability arrived at f83af26ed2, already an ancestor of the base revision, and this node's own diff adds no production line.\nVERDICT done_when: tests/test_a_batch_request_can_be_edited.py queues a batch entry into a synthesised repository (line 157, dispatch_batch.queue_batch) and shows crew queue edit --time-budget 90m is stored (lines 164-176) and that the stored path is runs_dir()/<run_id>/manifest.md (line 148), with the refusal arm at line 182; all 54 tests in the armed command passed at both arms.\nVERDICT write_paths: read from the dispatch prompt; the diff touches only tests/test_a_batch_request_can_be_edited.py and the node's own evidence fragment, both inside the declared four paths, and reckon/crew/dispatch_batch.py is declared but deliberately unchanged.\nVERDICT manifest: read at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261112T060635135493-a-batch-made-request-can-be-edited-in-the-queue/manifest.md; it records the gate 54 passed at both arms with log paths, the negative control 3 failed EXIT=1, and the ruff result, and every figure matches its log.\nVERDICT diff: read commit by commit \u2014 one commit, f877312a85, 22 insertions and 1 deletion across the test file and the evidence fragment, and no production code.\nCALL_SITES: reckon/crew/dispatch_batch.py:709, reckon/crew/queue_edit.py:394, reckon/crew/node.py:1518\nSCORE goal_fidelity: 15\nJUSTIFICATION goal_fidelity: reckon/crew/dispatch_batch.py:709 already delivered the goal before the base revision, so the landed diff hardens the check around it rather than adding the capability.\nSCORE evidence: 16\nJUSTIFICATION evidence: logs/baseline.log and logs/after.log both end 54 passed with EXIT=0 and logs/negative-control.log ends 3 failed with EXIT=1, though the done_when's clause about every test file importing reckon.crew.dispatch_batch was measured on 2 of the 9 such files.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: the diff at f877312a85 is 22 insertions and 1 deletion in tests/test_a_batch_request_can_be_edited.py and the node's fragment, both inside the declared write paths.\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_a_batch_request_can_be_edited.py:148 would fail if runs.run_dir were redefined to move the delivery path, where the form it replaced would have moved alongside and stayed green.\nSCORE fit: 17\nJUSTIFICATION fit: the fragment follows the structure of its sibling batch-request-editable-in-queue.html, with an added Python comment at tests/test_a_batch_request_can_be_edited.py:145 in RST double-backtick style the file's other comments do not use.\nSCORE reuse: 20\nJUSTIFICATION reuse: no definition is added; the assertion at tests/test_a_batch_request_can_be_edited.py:148 reuses runs.runs_dir(), the owner of the runs-root path, rather than forking a second path builder.\nFINDING docs/evidence/fragments/a-queued-request-is-checked-when-queued/a-batch-made-request-can-be-edited-in-the-queue.html:3 non-blocking: the outcome paragraph says this node confirmed the behaviour \"still reproduces\" at the base revision, borrowing the defect-repair contract's verb for a behaviour that was already correct, so a reader can take it as a claim that the defect reproduces at base in the same paragraph that says the fix landed at f83af26ed2.\nFINDING docs/evidence/fragments/a-queued-request-is-checked-when-queued/a-batch-made-request-can-be-edited-in-the-queue.html:16 non-blocking: the negative-control count is recorded as 3 failed where the sibling fragment batch-request-editable-in-queue.html records 2 failed for the same control, without saying that the third test also began depending on the stored path; a reader composing the section sees two figures for one control and no stated reason for the difference.\n",
+  "review_run_id": "r-20261112T071516711753-review-of-a-batch-made-request-can-be-edited-in-the-queue-f877312a85fe",
+  "reviewed_base_sha": "c4eff7707068362553dc49173df280fd5cbdf254",
+  "reviewed_head_sha": "f877312a85feb461d2d1968c6f84249c77763e64",
+  "reviewed_run_id": "r-20261112T060635135493-a-batch-made-request-can-be-edited-in-the-queue",
+  "scores": {
+    "durability": 17,
+    "evidence": 16,
+    "fit": 17,
+    "goal_fidelity": 15,
+    "reuse": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-12T10:04:39.190827+00:00",
+  "total": 104
+}

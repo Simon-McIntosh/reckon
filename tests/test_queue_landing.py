@@ -176,6 +176,7 @@ def test_accepted_delivery_lands_before_its_downstream_is_admitted(
                 "plan": "delivery-plan",
                 "section": "s2",
                 "role": "implement",
+                "after": [RUN],
                 "done_when": "pytest reports passed for downstream launch",
                 "time_budget": "20m",
                 "spec_level": "exact",

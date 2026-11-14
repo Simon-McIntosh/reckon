@@ -90,7 +90,7 @@ def test_a_stamped_halted_row_prints_nothing_and_the_unstamped_one_prints() -> N
     assert shown == [], shown
     printed = _printed([unstamped])
     assert len(printed) == 1, printed
-    assert ticker._pane_word(printed[0]) == "halted"
+    assert ticker._pane_word(printed[0]) == "needs you"
 
 
 def test_a_stamped_transition_that_is_not_a_halt_still_prints() -> None:

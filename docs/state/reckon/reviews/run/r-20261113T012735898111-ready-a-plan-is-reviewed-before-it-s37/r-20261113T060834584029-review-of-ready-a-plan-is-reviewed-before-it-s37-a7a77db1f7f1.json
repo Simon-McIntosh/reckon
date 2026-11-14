@@ -1,0 +1,75 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 1,
+  "added_failure_ids": [
+    "tests/test_dispatch_returns_without_worker.py::test_a_discarded_run_is_not_recreated"
+  ],
+  "call_site_count": 1,
+  "call_sites": [
+    "reckon/evidence.py:compose_plan_evidence"
+  ],
+  "completed_at": "2026-11-13T07:05:33.937Z",
+  "dispatched_at": "2026-11-13T06:54:20Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "exempted",
+      "reason": "the head-arm row's revision label is a record wording defect; the run's only commit is a docs fragment, so the arm figures cannot differ from base",
+      "recorded_at": "2026-11-13T07:23:38.618999+00:00"
+    },
+    "1": {
+      "kind": "exempted",
+      "reason": "the added failure is a timing flake: the coordinator reran it at head a7a77db1f7 and base b575b660a0, both 1 passed",
+      "recorded_at": "2026-11-13T07:23:43.931667+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/a-plan-is-reviewed-before-it-is-built/ready-a-plan-is-reviewed-before-it-s37.html",
+      "line": "37",
+      "severity": "non-blocking",
+      "text": "non-blocking: the \"Head arm\" row reports 41 failed / 928 passed at \"the same revision\" as the base, but logs/head-arm.log:1 names revision \"b575b660a0-head\" on an uncommitted tree while the manifest's declared after_suite at the committed head a7a77db1f7 records 42 failed / 927 passed, so the landed record names a revision it did not run at and cannot be reconciled with the gate the node declares."
+    },
+    {
+      "file": "docs/evidence/fragments/a-plan-is-reviewed-before-it-is-built/ready-a-plan-is-reviewed-before-it-s37.html",
+      "line": "38",
+      "severity": "non-blocking",
+      "text": "non-blocking: \"Added failures 0\" contradicts the node's own after arm, where tests/test_dispatch_returns_without_worker.py::test_a_discarded_run_is_not_recreated appears in logs/after-failures.txt and not in logs/base-failures.txt, so the record understates the delta the done_when asks to be zero."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 1 production call site(s)",
+    "diff": "one commit a7a77db1f7 against base b575b660a0 adds one 63-line evidence fragment and nothing else; no product source, test, plan or index changed.",
+    "done_when": "the done_when names a store test, a negative control that drops the field, two arms and no added failure; the worker ran the 134-file importer population (base 41 failed / 928 passed, after 42 failed / 927 passed) and the declared control (4 failed / 1 passed, EXIT=1) as logs/base-arm.log, logs/after-arm.log and logs/negative-control.log show, so the test and the control are measured, but the after arm adds one id, so the \"add no failure\" half is not literally met.",
+    "goal": "the node's goal is a plan review's receipt that says whether the review was stored; at the reviewed head the receipt carries plan_review_store (reckon/crew/promotion.py:2174-2175) computed by _plan_review_store_outcome (reckon/crew/promotion_checks.py:2882), and the node's own diff adds only the evidence fragment because the field and its test were already ancestors of base b575b660a0; score 0 if the goal is unimplemented.",
+    "manifest": "read in full; it records status complete, both arms with their revisions, log paths, exit statuses and failure ids, the mutation control, and names the one added id under failure_attribution as environment contention, while also disclosing that the armed census pair was cut off unmeasured.",
+    "write_paths": "the manifest declares reckon/crew/promotion_checks.py, reckon/crew/promotion.py, docs/evidence/fragments/a-plan-is-reviewed-before-it-is-built/ready-a-plan-is-reviewed-before-it-s37.html and a figure topic under docs/figures/, and the diff touches only the fragment, inside that scope."
+  },
+  "justifications": {
+    "durability": "tests/test_plan_review_store_receipt.py exists at base and logs/negative-control.log:114-118 shows four of its five cases red with KeyError: 'plan_review_store' when the receipt assignment is dropped, so the guard fires on the regression it claims to catch.",
+    "evidence": "logs/base-arm.log and logs/after-arm.log record a completed pair whose failure sets differ by tests/test_dispatch_returns_without_worker.py::test_a_discarded_run_is_not_recreated, and the fragment at docs/evidence/fragments/a-plan-is-reviewed-before-it-is-built/ready-a-plan-is-reviewed-before-it-s37.html:37-38 instead reports a head arm at another revision with zero added failures.",
+    "fit": "the fragment follows the evidence-fragment idiom of docs/evidence/fragments/a-plan-is-reviewed-before-it-is-built/ with plan-* metas and element ids prefixed by its node id (docs/evidence/fragments/a-plan-is-reviewed-before-it-is-built/ready-a-plan-is-reviewed-before-it-s37.html:26).",
+    "goal_fidelity": "reckon/crew/promotion_checks.py:2882 computes the field and reckon/crew/promotion.py:2174 attaches it, so the behaviour the section states is present at the reviewed head, though no line of it is the node's own change.",
+    "reuse": "the diff adds no definition; it records a capability whose owner reckon/crew/promotion_checks.py:2882 and its delivery join are reused rather than duplicated, and a search of reckon/ found no second computation of the store outcome.",
+    "scope_discipline": "git diff --stat b575b660a0..a7a77db1f7 names one file, the evidence fragment the scope grants, and no path outside it."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is a plan review's receipt that says whether the review was stored; at the reviewed head the receipt carries plan_review_store (reckon/crew/promotion.py:2174-2175) computed by _plan_review_store_outcome (reckon/crew/promotion_checks.py:2882), and the node's own diff adds only the evidence fragment because the field and its test were already ancestors of base b575b660a0; score 0 if the goal is unimplemented.\nVERDICT done_when: the done_when names a store test, a negative control that drops the field, two arms and no added failure; the worker ran the 134-file importer population (base 41 failed / 928 passed, after 42 failed / 927 passed) and the declared control (4 failed / 1 passed, EXIT=1) as logs/base-arm.log, logs/after-arm.log and logs/negative-control.log show, so the test and the control are measured, but the after arm adds one id, so the \"add no failure\" half is not literally met.\nVERDICT write_paths: the manifest declares reckon/crew/promotion_checks.py, reckon/crew/promotion.py, docs/evidence/fragments/a-plan-is-reviewed-before-it-is-built/ready-a-plan-is-reviewed-before-it-s37.html and a figure topic under docs/figures/, and the diff touches only the fragment, inside that scope.\nVERDICT manifest: read in full; it records status complete, both arms with their revisions, log paths, exit statuses and failure ids, the mutation control, and names the one added id under failure_attribution as environment contention, while also disclosing that the armed census pair was cut off unmeasured.\nVERDICT diff: one commit a7a77db1f7 against base b575b660a0 adds one 63-line evidence fragment and nothing else; no product source, test, plan or index changed.\nCALL_SITES: reckon/evidence.py:compose_plan_evidence\nSCORE goal_fidelity: 15\nJUSTIFICATION goal_fidelity: reckon/crew/promotion_checks.py:2882 computes the field and reckon/crew/promotion.py:2174 attaches it, so the behaviour the section states is present at the reviewed head, though no line of it is the node's own change.\nSCORE evidence: 12\nJUSTIFICATION evidence: logs/base-arm.log and logs/after-arm.log record a completed pair whose failure sets differ by tests/test_dispatch_returns_without_worker.py::test_a_discarded_run_is_not_recreated, and the fragment at docs/evidence/fragments/a-plan-is-reviewed-before-it-is-built/ready-a-plan-is-reviewed-before-it-s37.html:37-38 instead reports a head arm at another revision with zero added failures.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat b575b660a0..a7a77db1f7 names one file, the evidence fragment the scope grants, and no path outside it.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_plan_review_store_receipt.py exists at base and logs/negative-control.log:114-118 shows four of its five cases red with KeyError: 'plan_review_store' when the receipt assignment is dropped, so the guard fires on the regression it claims to catch.\nSCORE fit: 18\nJUSTIFICATION fit: the fragment follows the evidence-fragment idiom of docs/evidence/fragments/a-plan-is-reviewed-before-it-is-built/ with plan-* metas and element ids prefixed by its node id (docs/evidence/fragments/a-plan-is-reviewed-before-it-is-built/ready-a-plan-is-reviewed-before-it-s37.html:26).\nSCORE reuse: 20\nJUSTIFICATION reuse: the diff adds no definition; it records a capability whose owner reckon/crew/promotion_checks.py:2882 and its delivery join are reused rather than duplicated, and a search of reckon/ found no second computation of the store outcome.\nFINDING docs/evidence/fragments/a-plan-is-reviewed-before-it-is-built/ready-a-plan-is-reviewed-before-it-s37.html:37 non-blocking: the \"Head arm\" row reports 41 failed / 928 passed at \"the same revision\" as the base, but logs/head-arm.log:1 names revision \"b575b660a0-head\" on an uncommitted tree while the manifest's declared after_suite at the committed head a7a77db1f7 records 42 failed / 927 passed, so the landed record names a revision it did not run at and cannot be reconciled with the gate the node declares.\nFINDING docs/evidence/fragments/a-plan-is-reviewed-before-it-is-built/ready-a-plan-is-reviewed-before-it-s37.html:38 non-blocking: \"Added failures 0\" contradicts the node's own after arm, where tests/test_dispatch_returns_without_worker.py::test_a_discarded_run_is_not_recreated appears in logs/after-failures.txt and not in logs/base-failures.txt, so the record understates the delta the done_when asks to be zero.\n",
+  "review_run_id": "r-20261113T060834584029-review-of-ready-a-plan-is-reviewed-before-it-s37-a7a77db1f7f1",
+  "reviewed_base_sha": "b575b660a03426db747bcf6b452599b2c47712fa",
+  "reviewed_head_sha": "a7a77db1f7f18cb9766f0bc1941728846297dd32",
+  "reviewed_run_id": "r-20261113T012735898111-ready-a-plan-is-reviewed-before-it-s37",
+  "scores": {
+    "durability": 18,
+    "evidence": 12,
+    "fit": 18,
+    "goal_fidelity": 15,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-13T07:22:02.828225+00:00",
+  "total": 103
+}

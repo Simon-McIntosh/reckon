@@ -1,0 +1,73 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": "reckon/crew/recovery_review_acceptance.py:847, reckon/crew/recovery_watch.py:3713, reckon/crew_dispatch_commands.py:3155, reckon/crew/plan_review.py:4571, reckon/crew/obligations.py:1086",
+  "completed_at": "2026-11-12T23:08:18.663Z",
+  "dimension_dispositions": {
+    "reuse": {
+      "kind": "folded",
+      "node": "every-delivery-the-reflex-owns-gets-its-review",
+      "recorded_at": "2026-11-13T00:33:31.888219+00:00"
+    }
+  },
+  "dispatched_at": "2026-11-12T22:56:34Z",
+  "findings": [
+    {
+      "file": "reckon/crew/recovery_review_dispatch.py",
+      "line": 2910,
+      "severity": "non-blocking",
+      "text": "`_attempt_ended_after` re-reads `attempt-N-exit.json` with its own json.loads, Mapping check and attempt comparison, duplicating the exit-receipt reader the repository already owns at `reckon/crew/recovery_liveness.py:1415` (`_run_exit_record(record, name, require_run_id=True)`); it duplicates rather than extends or wraps that owner, so a change to the receipt shape or its run-id strictness must now be made in two places."
+    },
+    {
+      "file": "tests/test_every_delivery_the_reflex_owns_gets_its_review.py",
+      "line": 319,
+      "severity": "non-blocking",
+      "text": "`assert command in duty[\"next_command\"]` compares against `command`, the value the test itself passes in as `row[\"next_action\"]`, which `_review_duty_item` forwards to `_reflex_open_refusal(dispatch=...)` and the fallback returns verbatim; the assertion is therefore satisfied by echoing the test's own input rather than by an independent source. It still reddens against the prior `next_command = reason` branch, and line 318 (`assert refusal in duty[\"reason\"]`) is independent, so durability does not rest on this line alone."
+    },
+    {
+      "file": "tests/test_every_delivery_the_reflex_owns_gets_its_review.py",
+      "line": 270,
+      "severity": "non-blocking",
+      "text": "The third case the done_when describes as \"the reflex's dispatch fail[ing] with an injected refusal\" builds a pointer carrying `resume_launch_in_flight` and calls `obligations._review_duty_item` directly; it never runs a sweep or an injected-refusal dispatch, so it asserts the duty's reading of the shared predicate but not the dispatch's `_record_review_dispatch(status=\"refused\")` write, which would regress unobserved."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261112T213701785343-every-delivery-the-reflex-owns-gets-its-review/manifest.md",
+      "line": 12,
+      "severity": "non-blocking",
+      "text": "Line 12 glues `retry_failures:` onto the end of the `changed_paths` value with no newline, so `changed_paths` carries a trailing `...review.pyretry_failures:` token and the `retry_failures` key is absent; lines 18-19 record the two suite arms as bare JSON objects with no `baseline_suite:`/`after_suite:` key, and line 14 records `tests:` as prose rather than the literal command. The evidence is not lost (gate-base.log and gate-head.log carry revision, literal command and EXIT=), but the manifest's own fields are unreadable to a promotion that reads them by key."
+    }
+  ],
+  "justifications": {
+    "durability": "tests/test_every_delivery_the_reflex_owns_gets_its_review.py:266 and :318 redden on the base revision, as gate-base-negative-control.log records (2 failed, 1 passed), so both repaired behaviours have a test that fails if they regress.",
+    "evidence": "The gate in gate-head.log resolves the done-when's 12 importing files at the head revision with -n 4 and records 2 failed/63 passed against gate-base.log's 2 failed/60 passed with identical ids, so 0 failures were added.",
+    "fit": "reckon/crew/recovery_review_dispatch.py:2942 follows the surrounding lazy-import and fail-closed idiom and reuses `runs._manifest_freshness` as the manifest owner; ruff check and ruff format --check are clean on all three changed files.",
+    "goal_fidelity": "reckon/crew/recovery_review_dispatch.py:171 accepts a delivery settled by the attempt's exit record, which is the exact state the field report says never reached a review.",
+    "reuse": "reckon/crew/recovery_review_dispatch.py:2910 duplicates the owned exit-receipt reader at reckon/crew/recovery_liveness.py:1415 instead of calling it, which is why the dimension is capped.",
+    "scope_discipline": "Every path in the diff is one of the manifest's declared write paths; the reflex pass in reckon/crew/recovery_review_acceptance.py is untouched and named in outside_scope."
+  },
+  "project": "reckon",
+  "review_run_id": "r-20261112T225312086929-review-of-every-delivery-the-reflex-owns-gets-its-review-753ef7fbacec",
+  "reviewed_base_sha": "287b29e162b208076192a8cb10503fe4ea9e0563",
+  "reviewed_head_sha": "753ef7fbacecbe69985ab852ddc36889927ddf94",
+  "reviewed_run_id": "r-20261112T213701785343-every-delivery-the-reflex-owns-gets-its-review",
+  "rubric": "six-dimension landed-change review",
+  "scores": {
+    "durability": 18,
+    "evidence": 16,
+    "fit": 16,
+    "goal_fidelity": 18,
+    "reuse": 5,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-13T00:05:00+00:00",
+  "total": 92,
+  "verdicts": {
+    "diff": "Read commit by commit against 287b29e; one commit, four files, +467/-27, moving the delivery guards into one shared predicate, adding the supervisor-exit-record delivery evidence, and rewriting the duty's no-finding refusal fallback.",
+    "done_when": "The done_when's cases are tests/test_every_delivery_the_reflex_owns_gets_its_review.py; gate-head.log shows the node's three cases green inside the 12-file arm with 2 failed/63 passed, identical failure ids to gate-base.log's 2 failed/60 passed (0 added), and gate-base-negative-control.log shows 2 failed/1 passed on the base revision.",
+    "goal": "The node's goal is that every delivery the reflex owns gets its review; `_settled_delivery_refusal` (reckon/crew/recovery_review_dispatch.py:2942) and the exit-record leg in `_resumed_attempt_delivered` (:171) make the repair delivery dispatchable, and the duty fallback in `_reflex_open_refusal` (reckon/crew/obligations.py:1082) names the refusal and the hand-dispatch command.",
+    "manifest": "Read; it records commits 753ef7fbac, both gate log paths, a negative-control log and an honest zero-added claim, but its changed_paths/retry_failures line is malformed and the two suite-arm keys are absent.",
+    "write_paths": "The manifest declares reckon/crew/recovery_review_dispatch.py, reckon/crew/reflex.py, reckon/crew/obligations.py, tests/ and the landing fragment; the diff touches recovery_review_dispatch.py, obligations.py, tests/test_every_delivery_the_reflex_owns_gets_its_review.py and that fragment, all inside the grant, with reflex.py correctly left untouched."
+  }
+}

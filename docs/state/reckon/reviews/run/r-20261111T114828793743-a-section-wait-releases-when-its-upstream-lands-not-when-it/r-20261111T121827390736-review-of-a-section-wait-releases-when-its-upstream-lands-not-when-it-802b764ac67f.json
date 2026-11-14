@@ -1,0 +1,100 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/crew/queue_admission.py:_ref_state",
+    "reckon/crew/queue_admission.py:_section_readiness_state",
+    "reckon/crew/queue_admission.py:_dispatch_nonrun_wait_state",
+    "reckon/crew/queue_admission.py:_release_waiters",
+    "reckon/crew/queue_admission.py:_request_state"
+  ],
+  "completed_at": "2026-11-11T12:30:26.247Z",
+  "dispatched_at": "2026-11-11T12:19:38Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "folded",
+      "node": "a-section-wait-releases-when-its-upstream-lands-not-when-it",
+      "recorded_at": "2026-11-11T12:59:36.497065+00:00"
+    },
+    "1": {
+      "kind": "exempted",
+      "reason": "A shared derivation with runs._unloaded_sections is a consolidation the section does not require; both read the same ledger rows today.",
+      "recorded_at": "2026-11-11T12:50:33.570848+00:00"
+    },
+    "2": {
+      "kind": "exempted",
+      "reason": "Ruff check and format were verified clean on the landed files by the reviewer; the missing log lines are a record gap, not a defect.",
+      "recorded_at": "2026-11-11T12:50:46.780916+00:00"
+    },
+    "3": {
+      "kind": "exempted",
+      "reason": "A misnamed test id in the reproduction log; the landed test file is correct.",
+      "recorded_at": "2026-11-11T12:50:59.550352+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "reckon/crew/queue_admission.py",
+      "line": "3406",
+      "severity": "non-blocking",
+      "text": "non-blocking: `_section_run_unlanded` returns False when the project has no registered checkout, so a section declared done whose run delivered or was promoted releases its waiters with the landing never checked \u2014 a fail-open in the guard this node exists to add, where `_request_state` at reckon/crew/queue_admission.py:3512 treats the same condition as PENDING."
+    },
+    {
+      "file": "reckon/crew/queue_admission.py",
+      "line": "3378",
+      "severity": "non-blocking",
+      "text": "non-blocking: the added function re-derives the `(plan, section)` identity over live pointers and ledger rows and applies `_revision_is_ancestor` itself, duplicating the derivation in reckon/crew/runs.py:2348 `_unloaded_sections` without calling or extending it, so the two answers to \"is this section's promotion reachable\" can drift."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261111T114828793743-a-section-wait-releases-when-its-upstream-lands-not-when-it/manifest.md",
+      "line": "12",
+      "severity": "non-blocking",
+      "text": "non-blocking: the done-when's `ruff check` and `ruff format --check` result on the staged paths is recorded neither in `tests:` nor in `test_logs:`, though both pass on the landed files (verified separately); the regression arms logs/regression-suite.log and logs/regression-base.log that back the fragment's \"30 failed, 38 passed\" claim are also absent from `test_logs:`."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261111T114828793743-a-section-wait-releases-when-its-upstream-lands-not-when-it/logs/base-revision-reproduction.log",
+      "line": "8",
+      "severity": "non-blocking",
+      "text": "non-blocking: the reproduction log names `test_a_delivered_unlanded_run_holds_the_wait_until_armed_into_head`, a test that does not exist in the landed file (it is `..._until_merged_into_head` at tests/test_a_wait_releases_when_its_upstream_lands.py:244), so a reader cannot map its failing ids to the landed tests."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "verified 5 production call site(s)",
+    "diff": "read commit by commit against bc6d7fd9f1306f21d21daa58f44f235265e6cca3; 9d35ace1d4b6 adds the guard and the tests, 802b764ac67f adds the evidence fragment, and the code change is confined to the section-ref resolution paths in reckon/crew/queue_admission.py.",
+    "done_when": "the done-when names tests/test_a_wait_releases_when_its_upstream_lands.py, a base-revision reproduction log, four cases, and a negative control; the landed test file at tests/test_a_wait_releases_when_its_upstream_lands.py:244-310 covers the four cases in three functions, and logs/base-revision-reproduction.log and logs/negative-control.log record both red runs.",
+    "goal": "the node's goal is that a section wait releases when its upstream lands, not when it is declared done; reckon/crew/queue_admission.py:3378 `_section_run_unlanded` is consulted at every section-ref resolution point and holds a waiter while a run of the section has delivered or been promoted off HEAD.",
+    "manifest": "read; it states status complete, 54 passed at the head against 51 at the base arm, a parsed baseline_suite and after_suite pair both with zero failures, and a negative control log, but it records no ruff result though the done-when requires one.",
+    "write_paths": "read the manifest's four declared paths \u2014 reckon/crew/queue_admission.py, the new test, the evidence fragment and the figures directory; the diff touches the first three only and nothing outside them."
+  },
+  "justifications": {
+    "durability": "tests/test_a_wait_releases_when_its_upstream_lands.py:259 and :294 fail at the base revision, and the declared negative control at reckon/crew/queue_admission.py:3412 reddens the same two cases.",
+    "evidence": "logs/after-suite.log records \"54 passed\" EXIT=0 at the head and logs/base-revision-reproduction.log records \"2 failed, 1 passed\" EXIT=1 at the base, but the done-when's ruff gate at manifest.md:12 is recorded nowhere.",
+    "fit": "the new helpers follow the module's lazy-import and `#:`-comment idiom of reckon/crew/queue_admission.py:3352-3376, and carry no plan, section or ticket identifier.",
+    "goal_fidelity": "reckon/crew/queue_admission.py:3419-3456 holds a waiter for a run that delivered per its manifest or whose promoted revision is not an ancestor of HEAD, which is the \u00a740 deliverable.",
+    "reuse": "the guard reuses `_revision_is_ancestor` and `project_mount_repository` but re-derives the (plan, section) identity and ledger scan that reckon/crew/runs.py:2348 `_unloaded_sections` already owns.",
+    "scope_discipline": "every path in the two commits is inside the declared write paths, with no figure written and no unrelated edit."
+  },
+  "plan_section": "s40",
+  "plan_slug": "a-queue-holds-the-whole-plan",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that a section wait releases when its upstream lands, not when it is declared done; reckon/crew/queue_admission.py:3378 `_section_run_unlanded` is consulted at every section-ref resolution point and holds a waiter while a run of the section has delivered or been promoted off HEAD.\nVERDICT done_when: the done-when names tests/test_a_wait_releases_when_its_upstream_lands.py, a base-revision reproduction log, four cases, and a negative control; the landed test file at tests/test_a_wait_releases_when_its_upstream_lands.py:244-310 covers the four cases in three functions, and logs/base-revision-reproduction.log and logs/negative-control.log record both red runs.\nVERDICT write_paths: read the manifest's four declared paths \u2014 reckon/crew/queue_admission.py, the new test, the evidence fragment and the figures directory; the diff touches the first three only and nothing outside them.\nVERDICT manifest: read; it states status complete, 54 passed at the head against 51 at the base arm, a parsed baseline_suite and after_suite pair both with zero failures, and a negative control log, but it records no ruff result though the done-when requires one.\nVERDICT diff: read commit by commit against bc6d7fd9f1306f21d21daa58f44f235265e6cca3; 9d35ace1d4b6 adds the guard and the tests, 802b764ac67f adds the evidence fragment, and the code change is confined to the section-ref resolution paths in reckon/crew/queue_admission.py.\nCALL_SITES: reckon/crew/queue_admission.py:_ref_state, reckon/crew/queue_admission.py:_section_readiness_state, reckon/crew/queue_admission.py:_dispatch_nonrun_wait_state, reckon/crew/queue_admission.py:_release_waiters, reckon/crew/queue_admission.py:_request_state\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/queue_admission.py:3419-3456 holds a waiter for a run that delivered per its manifest or whose promoted revision is not an ancestor of HEAD, which is the \u00a740 deliverable.\nSCORE evidence: 17\nJUSTIFICATION evidence: logs/after-suite.log records \"54 passed\" EXIT=0 at the head and logs/base-revision-reproduction.log records \"2 failed, 1 passed\" EXIT=1 at the base, but the done-when's ruff gate at manifest.md:12 is recorded nowhere.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in the two commits is inside the declared write paths, with no figure written and no unrelated edit.\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_a_wait_releases_when_its_upstream_lands.py:259 and :294 fail at the base revision, and the declared negative control at reckon/crew/queue_admission.py:3412 reddens the same two cases.\nSCORE fit: 16\nJUSTIFICATION fit: the new helpers follow the module's lazy-import and `#:`-comment idiom of reckon/crew/queue_admission.py:3352-3376, and carry no plan, section or ticket identifier.\nSCORE reuse: 14\nJUSTIFICATION reuse: the guard reuses `_revision_is_ancestor` and `project_mount_repository` but re-derives the (plan, section) identity and ledger scan that reckon/crew/runs.py:2348 `_unloaded_sections` already owns.\nFINDING reckon/crew/queue_admission.py:3406 non-blocking: `_section_run_unlanded` returns False when the project has no registered checkout, so a section declared done whose run delivered or was promoted releases its waiters with the landing never checked \u2014 a fail-open in the guard this node exists to add, where `_request_state` at reckon/crew/queue_admission.py:3512 treats the same condition as PENDING.\nFINDING reckon/crew/queue_admission.py:3378 non-blocking: the added function re-derives the `(plan, section)` identity over live pointers and ledger rows and applies `_revision_is_ancestor` itself, duplicating the derivation in reckon/crew/runs.py:2348 `_unloaded_sections` without calling or extending it, so the two answers to \"is this section's promotion reachable\" can drift.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261111T114828793743-a-section-wait-releases-when-its-upstream-lands-not-when-it/manifest.md:12 non-blocking: the done-when's `ruff check` and `ruff format --check` result on the staged paths is recorded neither in `tests:` nor in `test_logs:`, though both pass on the landed files (verified separately); the regression arms logs/regression-suite.log and logs/regression-base.log that back the fragment's \"30 failed, 38 passed\" claim are also absent from `test_logs:`.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261111T114828793743-a-section-wait-releases-when-its-upstream-lands-not-when-it/logs/base-revision-reproduction.log:8 non-blocking: the reproduction log names `test_a_delivered_unlanded_run_holds_the_wait_until_armed_into_head`, a test that does not exist in the landed file (it is `..._until_merged_into_head` at tests/test_a_wait_releases_when_its_upstream_lands.py:244), so a reader cannot map its failing ids to the landed tests.",
+  "review_run_id": "r-20261111T121827390736-review-of-a-section-wait-releases-when-its-upstream-lands-not-when-it-802b764ac67f",
+  "reviewed_base_sha": "bc6d7fd9f1306f21d21daa58f44f235265e6cca3",
+  "reviewed_head_sha": "802b764ac67f2f8bb59bf8a8e790f6d8726a91b8",
+  "reviewed_run_id": "r-20261111T114828793743-a-section-wait-releases-when-its-upstream-lands-not-when-it",
+  "scores": {
+    "durability": 17,
+    "evidence": 17,
+    "fit": 16,
+    "goal_fidelity": 18,
+    "reuse": 14,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-11T12:33:56.645200+00:00",
+  "total": 102
+}

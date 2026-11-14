@@ -1,0 +1,96 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/_backends.py:seed_harness_home",
+    "reckon/crew_run_commands.py:crew_check_manifest",
+    "reckon/crew_run_commands.py:crew_tell",
+    "reckon/mcp_views.py:serve_crew_view",
+    "reckon/hooks/worker_message_guard.py:_refusal_message"
+  ],
+  "completed_at": "2026-11-11T04:26:17.019Z",
+  "dispatched_at": "2026-11-11T04:16:10Z",
+  "findings": [
+    {
+      "file": "reckon/mcp_views.py",
+      "line": 4352,
+      "severity": "non-blocking",
+      "summary": "runs view races the hook's claim and raises on a message claimed mid-read",
+      "text": "`pending_messages` lists the inbox and the same list is then stat()ed and read; a hook claiming a message between the two makes path.stat() raise FileNotFoundError, so a named-run view that is meant to report what is queued instead fails with an unhandled exception exactly when a delivery is in progress. The docstring claims the view cannot disagree with the delivery; it can also crash on it."
+    },
+    {
+      "file": "reckon/hooks/worker_inbox.py",
+      "line": 263,
+      "severity": "non-blocking",
+      "summary": "a claimed message that fails to read is lost with no receipt",
+      "text": "After `claim()` has moved a message into inbox/claimed/, a read failure is swallowed with `continue`: the message is neither delivered nor receipted and will never be retried, so the claim's exactly-once guarantee degrades to silent loss for that message."
+    },
+    {
+      "file": "reckon/hooks/install.py",
+      "line": 197,
+      "severity": "non-blocking",
+      "summary": "third copy of the hook-group recogniser already in install.py",
+      "text": "`is_worker_inbox_group` repeats, line for line, the recogniser bodies already present at reckon/hooks/install.py:445 (`is_worker_walk_guard_group`) and reckon/hooks/install.py:470 (`is_worker_git_guard_group`), differing only in the matcher and script name; a third copy means a fix to the interpreter-bound recognition has three places to land. A shared predicate parameterised by script name would serve all three."
+    },
+    {
+      "file": "reckon/hooks/worker_inbox.py",
+      "line": 64,
+      "severity": "non-blocking",
+      "summary": "config-home resolver duplicated from reckon/_store.py and drifts from it",
+      "text": "`_config_home` re-implements reckon/_store.py:130 `_config_home`, the module that documents itself as the shared resolver; the copy also drops its `.resolve()` on the RECKON_HOME override, so a symlinked or trailing-slash RECKON_HOME resolves differently here than everywhere else. A lazy import inside this function would match the lazy `reckon._store` import the same module already makes in write_message."
+    },
+    {
+      "file": "docs/evidence/fragments/a-live-worker-can-be-reached/worker-inbox-hook.html",
+      "line": 57,
+      "severity": "non-blocking",
+      "summary": "evidence record contradicts crew tell's actual refusal order",
+      "text": "The evidence fragment states the reachability test is the run home's settings file \"not the record's fenced flag\", but reckon/crew_run_commands.py:2547 refuses on `record.get(\"fenced\") is not True` before the settings file is consulted, so a fenced-false run whose home does carry the hook is refused. The record's account of why a run is refused disagrees with the code; the manifest evidence_inputs repeats the same claim."
+    },
+    {
+      "file": "tests/test_anchored_edit_claude_arm.py",
+      "line": 43,
+      "severity": "non-blocking",
+      "summary": "reconciled assertions compare against the function they are testing",
+      "text": "`_with_inbox_hook` builds the expected settings bytes from `install.worker_inbox_group()`, the same function the seeder under test calls, so the assertion at line 157/222 holds whatever that function emits \u2014 a regression in the group's command, interpreter or matcher leaves it true. The independent check lives at tests/test_worker_inbox.py:381 (`Path(commands[0].split()[-1]).name == \"worker_inbox.py\"`); the same self-referential shape is used at tests/test_harness_home_carries_the_operator_config.py:206."
+    },
+    {
+      "file": "tests/test_staged_write_inventory.py",
+      "line": 74,
+      "severity": "non-blocking",
+      "summary": "intermediate commit wrote a census file outside the fence, later reverted",
+      "text": "Commit 6e33b1a487 added seven lines to this file to declare the new writer, though it is named by neither the node's declared write paths nor the five paths granted through crew widen; commit cb1dcad073 then removed them, so the net head is unchanged and the manifest discloses the edit. The dispatch's own suite template does name this file in the node's scope, which is the contradiction worth closing in the dispatch contract rather than blaming the worker for."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "Read commit by commit over 78218ee3f8, eab98fe8a6, 6e33b1a487, d4a0b85a76, 0f537a39fd and cb1dcad073: a new hook module, seeding, a CLI writer, a runs-view key, two test reconciliations sets and an evidence fragment, net 1401 insertions over 12 files.",
+    "done_when": "The done_when names nine behaviours plus ruff; tests/test_worker_inbox.py covers the delivery, concurrency, empty-inbox, four refusal classes, manifest finding, run view and help row, but no ruff result is recorded anywhere in the manifest or its logs.",
+    "goal": "The goal is a PostToolUse inbox hook seeded by seed_harness_home with crew tell as the writer; reckon/hooks/worker_inbox.py:259, reckon/_worker_fence.py:337 and reckon/crew_run_commands.py:2492 land all three.",
+    "manifest": "Read in full; it claims 112 passed EXIT=0 after, 49 passed with 2 scaffolding errors before, a red negative control, and messages_received: none, and each claim matches the gate log it cites except that the done_when's ruff clause has no recorded result.",
+    "write_paths": "Read the declared eight paths and the five granted through crew widen; twelve files appear in the head diff and every one is inside those thirteen, with one intermediate commit touching tests/test_staged_write_inventory.py, which neither list names."
+  },
+  "justifications": {
+    "durability": "The concurrency test at tests/test_worker_inbox.py:172 reddens under the declared mutation (negative-control.log, 1 failed EXIT=1), and tests/test_worker_inbox.py:381 names the bound script independently of the production helper; the reconciled files at tests/test_anchored_edit_claude_arm.py:43 build their expectation from the function under test and so guard less than they appear to.",
+    "evidence": "The manifest records the after arm (112 passed, EXIT=0 at gate-after-final.log) and a base arm (49 passed, 2 scaffolding errors at gate-base.log) with the declared negative control red, but the done_when's ruff check and ruff format --check clause is recorded nowhere in the manifest or the logs.",
+    "fit": "The module follows the surrounding hook idiom (install.py:197 mirrors install.py:445) and carries no plan, stage, ticket or author reference in paths, symbols, comments or commit subjects.",
+    "goal_fidelity": "The hook at reckon/hooks/worker_inbox.py:259 claims and emits additionalContext, reckon/_worker_fence.py:337 seeds it for claude dialect, and reckon/crew_run_commands.py:2492 is crew tell as the writer, so every clause of the goal is landed.",
+    "reuse": "The writer correctly extends reckon/_store.py:569 write_atomically, but two added definitions re-implement owned helpers: worker_inbox.py:64 duplicates reckon/_store.py:130 and install.py:197 duplicates install.py:445 and install.py:470.",
+    "scope_discipline": "Every path in the head diff a3f4ba3..cb1dcad is inside the declared write paths plus the five granted through crew widen, but commit 6e33b1a487 staged tests/test_staged_write_inventory.py, which neither list names."
+  },
+  "project": "reckon",
+  "review_run_id": "r-20261111T041138194584-review-of-worker-inbox-hook-cb1dcad07315",
+  "reviewed_base_sha": "a3f4ba35437a328ecc7f0208937f26be4e5dcd79",
+  "reviewed_head_sha": "cb1dcad07315baab7716802d288f113522a8724f",
+  "reviewed_run_id": "r-20261111T012221589185-worker-inbox-hook",
+  "scores": {
+    "durability": 16,
+    "evidence": 14,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 5,
+    "scope_discipline": 16
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-11T04:39:30.745658+00:00",
+  "total": 88
+}

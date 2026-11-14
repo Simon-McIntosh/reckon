@@ -1,0 +1,183 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-11T04:32:48.744Z",
+  "dispatched_at": "2026-11-11T04:23:00Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/crew-state-stays-bounded.html:216",
+      "id": "wiring-1",
+      "reason": "the plan already carries s7\u2192s3 and s8\u2192s7 edges for a \"calls it\" relationship; without an edge or declared scope two nodes collide in gc.py and one is discarded.",
+      "text": "s11 and s12 both land work inside \u00a77's `retention_sweep` (`reckon/crew/gc.py:1571`, documented as \"the run-directory retention alone, not the rest of gc\"), so both edit `reckon/crew/gc.py`, but neither declares a `depends-on` and neither names write paths, unlike every other implementable section here, so the queue can dispatch them concurrently onto one file",
+      "type": "wiring",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/crew-state-stays-bounded.html:220",
+      "id": "evidence_paths-1",
+      "reason": "the measurement is the evidence that the sweep works on the real store, and this plan's \u00a710 already had the identical clause moved from the manifest to a committed fragment under docs/evidence/fragments/crew-state-stays-bounded/; leaving it in the run directory repeats a defect already answered once.",
+      "text": "s12 puts its only host measurement (\"the live store's size and row counts before and after one sweep\") \"in this node's run directory\", which \u00a73 retires once nothing can need the run after a one-day grace (`plan.html:113-120`), and \u00a73 itself says a run's durable facts are its ledger row, committed run record and evidence fragment",
+      "type": "evidence_paths",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/crew-state-stays-bounded.html:220",
+      "id": "done_when-1",
+      "reason": "the Why's premise is that the store's size multiplies every read, and as written a node can satisfy every clause while the size the section exists to bound is unchanged; the measure needs the store's own size, or the archive must be required to be a separate file.",
+      "text": "the gate's third clause is \"the hot tables' page count falls after the sweep\", but the deliverable allows the runs to move \"into a compact archive table or file\": an archive table inside `run_store.db` (one SQLite file, `runs` and `run_details` confirmed present) lowers the hot tables' page count while leaving the file at 781 MB, so the pass cannot distinguish an archive that bounds the store from one that adds a table to it",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/crew-state-stays-bounded.html:216",
+      "id": "reasoning-1",
+      "reason": "the per-cache mean is corroborative; the argument (\"a large GPFS write and a full read per worktree\") holds at 181 MB, and correcting the figure changes no mechanism or run.",
+      "text": "s11's \"about 436 MB each\" is inconsistent with the same sentence's \"139 ledger caches, 31.8 GB\" (229 MB each), and the root measures 90 caches, 16.33 GB, mean 181 MB today (largest 462 MB)",
+      "type": "reasoning",
+      "would_change": false
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/crew-state-stays-bounded.html:216",
+      "id": "evidence_paths-2",
+      "reason": "house convention fills the gap and the dispatched node's manifest records its own logs; adding the line would not change what the node builds.",
+      "text": "s11's done-when names no location for its gate log or its importer arms, where \u00a76, \u00a78, \u00a79 and \u00a710 each say \"Every log is under the run directory\" or name a fragment",
+      "type": "evidence_paths",
+      "would_change": false
+    }
+  ],
+  "plan_commit": "c68101139ea2b356573f4bac32ef567c9ff75a3c",
+  "plan_fingerprint": "577a72f17add403584f787e14a6b988ebb0c3199cc9c261d02ce251b8ff802a7",
+  "plan_slug": "crew-state-stays-bounded",
+  "plan_version": 70,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "1fb615a0-2801-4418-bbb4-c2914719e520",
+      "commit": "bf51ea89fc16a1bd69d9590a7408eaceff5e4961",
+      "commit_basis": "edit",
+      "finding": "wiring-1",
+      "note": "\u00a712 now declares plan-section-depends-on crew-state-stays-bounded#s11, and its dispatch waits on \u00a711's run (--after), since both edit gc.py's retention sweep.",
+      "reason": "",
+      "when": "2026-11-11T05:07:30.260254+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "1fb615a0-2801-4418-bbb4-c2914719e520",
+      "commit": "bf51ea89fc16a1bd69d9590a7408eaceff5e4961",
+      "commit_basis": "edit",
+      "finding": "evidence_paths-1",
+      "note": "\u00a712's live measurement now goes to its evidence fragment, which outlives the run directory \u00a73 retires.",
+      "reason": "",
+      "when": "2026-11-11T05:08:05.975379+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "1fb615a0-2801-4418-bbb4-c2914719e520",
+      "commit": "bf51ea89fc16a1bd69d9590a7408eaceff5e4961",
+      "commit_basis": "edit",
+      "finding": "done_when-1",
+      "note": "\u00a712's archive is now a separate file beside the store, so the hot tables' pages can shrink and the page-count clause is measurable.",
+      "reason": "",
+      "when": "2026-11-11T05:08:31.246637+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "1fb615a0-2801-4418-bbb4-c2914719e520",
+      "commit": "bf51ea89fc16a1bd69d9590a7408eaceff5e4961",
+      "commit_basis": "edit",
+      "finding": "reasoning-1",
+      "note": "\u00a711's figure now reads a 229 MB mean with the largest about 460 MB.",
+      "reason": "",
+      "when": "2026-11-11T05:09:15.333484+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "1fb615a0-2801-4418-bbb4-c2914719e520",
+      "commit": "bf51ea89fc16a1bd69d9590a7408eaceff5e4961",
+      "commit_basis": "edit",
+      "finding": "evidence_paths-2",
+      "note": "\u00a711 now keeps its gate logs and importer receipts under the run directory and cites them in its fragment.",
+      "reason": "",
+      "when": "2026-11-11T05:09:48.661673+00:00"
+    }
+  ],
+  "responses": {
+    "done_when-1": {
+      "action": "acted",
+      "by": "1fb615a0-2801-4418-bbb4-c2914719e520",
+      "commit": "bf51ea89fc16a1bd69d9590a7408eaceff5e4961",
+      "commit_basis": "edit",
+      "note": "\u00a712's archive is now a separate file beside the store, so the hot tables' pages can shrink and the page-count clause is measurable.",
+      "reason": "",
+      "when": "2026-11-11T05:08:31.246637+00:00"
+    },
+    "evidence_paths-1": {
+      "action": "acted",
+      "by": "1fb615a0-2801-4418-bbb4-c2914719e520",
+      "commit": "bf51ea89fc16a1bd69d9590a7408eaceff5e4961",
+      "commit_basis": "edit",
+      "note": "\u00a712's live measurement now goes to its evidence fragment, which outlives the run directory \u00a73 retires.",
+      "reason": "",
+      "when": "2026-11-11T05:08:05.975379+00:00"
+    },
+    "evidence_paths-2": {
+      "action": "acted",
+      "by": "1fb615a0-2801-4418-bbb4-c2914719e520",
+      "commit": "bf51ea89fc16a1bd69d9590a7408eaceff5e4961",
+      "commit_basis": "edit",
+      "note": "\u00a711 now keeps its gate logs and importer receipts under the run directory and cites them in its fragment.",
+      "reason": "",
+      "when": "2026-11-11T05:09:48.661673+00:00"
+    },
+    "reasoning-1": {
+      "action": "acted",
+      "by": "1fb615a0-2801-4418-bbb4-c2914719e520",
+      "commit": "bf51ea89fc16a1bd69d9590a7408eaceff5e4961",
+      "commit_basis": "edit",
+      "note": "\u00a711's figure now reads a 229 MB mean with the largest about 460 MB.",
+      "reason": "",
+      "when": "2026-11-11T05:09:15.333484+00:00"
+    },
+    "wiring-1": {
+      "action": "acted",
+      "by": "1fb615a0-2801-4418-bbb4-c2914719e520",
+      "commit": "bf51ea89fc16a1bd69d9590a7408eaceff5e4961",
+      "commit_basis": "edit",
+      "note": "\u00a712 now declares plan-section-depends-on crew-state-stays-bounded#s11, and its dispatch waits on \u00a711's run (--after), since both edit gc.py's retention sweep.",
+      "reason": "",
+      "when": "2026-11-11T05:07:30.260254+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/Code/reckon/docs/state/reckon/reviews/plan/crew-state-stays-bounded/r-20261111T041915913876-plan-review-of-crew-state-stays-bounded.json",
+  "review_run_id": "r-20261111T041915913876-plan-review-of-crew-state-stays-bounded",
+  "reviewed_blob_sha": "8ec3735d2d3776ecb4c62322fb4302d44378d676",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 s11 and s12 cite `ledger._run_index_path` (`reckon/ledger.py:1246`), `gc._orphan_ledger_indexes` (`reckon/crew/gc.py:397`), `run_store.db` (present, 788 MB), \u00a77, and the section namespaces resolve; no href in the scoped units needs extension-dot-html resolution.",
+    "done_when": "a finding \u2014 s12's done-when measures \"the hot tables' page count falls\", which an in-file archive table satisfies while the 781 MB store the section exists to bound does not shrink.",
+    "evidence_paths": "a finding \u2014 s12 records its only host measurement in \"this node's run directory\", which this plan's own \u00a73 retires after a one-day grace; s11 names no evidence location at all.",
+    "naming": "pass \u2014 `tests/test_ledger_caches_are_shared_and_pruned.py` and `tests/test_the_run_store_retires_old_runs.py` carry no plan labels, stage names, ticket numbers or version tags, and neither unit contains changelog prose.",
+    "reasoning": "a finding \u2014 s11's \"about 436 MB each\" does not follow from its own \"139 ledger caches, 31.8 GB\" (229 MB each) and overstates the measured mean today (90 caches, 16.33 GB, 181 MB each); the root cause itself checks out, since `ledger_path` resolves under the given checkout so each worktree keys its own cache.",
+    "single_goal": "pass \u2014 s11 (one cache per repository plus its pruning) and s12 (retire old runs out of the hot tables) each name one deliverable with one gate.",
+    "wiring": "a finding \u2014 s11 and s12 both extend the \u00a77 `retention_sweep` that \"runs the run-directory retention alone, not the rest of gc\" (`reckon/crew/gc.py:1571-1594`), so both edit `gc.py`, yet neither declares a `depends-on` edge while the plan declares s7\u2192s3 and s8\u2192s7 for exactly this \"calls it\" relationship."
+  },
+  "section_digests": {
+    "_document": "adefd5e7af8cc73feaae325f75cd4c8c92b69a642637eab9205fd607e51adcc4",
+    "s1": "61be6bb6df8b986fbb68c3273e136fcef1b9fa13e7bcadb4fb62eab2fa4145ff",
+    "s10": "12c6b13006e1e29ba78ff8b4b1433daf63861ae2082f24a27887d4203a3903fa",
+    "s11": "ec10a2692b86147fb73ff29010c587a80b3f0e9957a8004bca06655247d26d16",
+    "s12": "d4816a6d9b6cead97b6fb5dc615e418a8360e34d7912c9fd141484799d6fe25f",
+    "s2": "0809becc839b3ed5586cc9018606732a929379de88ab524968574e8429943a9b",
+    "s3": "9aa4d5f5a6287b698b7d6011ac8fcc295589c20484d8892a3c86d88d629b8793",
+    "s4": "2681ac58d6ae7457bc800678db433ce359be271248b74a429b44ee4d817769b4",
+    "s5": "bba37241ec93e13e0fb1eb173abfd49db0b6e77d788aa2dbec1608d164852542",
+    "s6": "c491229cedc576a79a4628da53168b317ce14fef88d78739c48e86b16aaff17a",
+    "s7": "1f6a99e4b8834c4a8bea5559a1507e6da85988f873d5547c7804930237104694",
+    "s8": "bc03fa54cdefe8b48312fabda86a4fca8277e025db66430978900e888a969066",
+    "s9": "94c64e9a52c50d223769478a5aa73517f29bc51fd5a6b123d7978de2b35c4317"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-11T04:58:16.386953+00:00",
+  "total": null
+}

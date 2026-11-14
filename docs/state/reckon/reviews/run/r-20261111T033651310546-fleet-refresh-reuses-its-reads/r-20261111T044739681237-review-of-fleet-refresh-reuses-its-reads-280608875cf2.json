@@ -1,0 +1,451 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_independence": "No added assertion compares an echoed caller-supplied value with that same supplied value; fixture-derived run IDs are independently expected membership, and counter assertions include first-call positive controls.",
+  "assertion_review": [
+    {
+      "assertion": "bindings",
+      "failure_condition": "The stated fixture expectation or observed work count differs from its independently specified expected outcome.",
+      "file": "tests/test_fleet_state_reuses_its_reads_between_ticks.py",
+      "line": 137
+    },
+    {
+      "assertion": "len(state.pointers) == 60",
+      "failure_condition": "A first refresh omits or misattributes a held fixture run.",
+      "file": "tests/test_fleet_state_reuses_its_reads_between_ticks.py",
+      "line": 180
+    },
+    {
+      "assertion": "refresh() == expected",
+      "failure_condition": "The stated fixture expectation or observed work count differs from its independently specified expected outcome.",
+      "file": "tests/test_fleet_state_reuses_its_reads_between_ticks.py",
+      "line": 184
+    },
+    {
+      "assertion": "all(counts[label] > 0 for label in bindings)",
+      "failure_condition": "The stated fixture expectation or observed work count differs from its independently specified expected outcome.",
+      "file": "tests/test_fleet_state_reuses_its_reads_between_ticks.py",
+      "line": 185
+    },
+    {
+      "assertion": "counts[\"held_listing\"] > 0",
+      "failure_condition": "The stated fixture expectation or observed work count differs from its independently specified expected outcome.",
+      "file": "tests/test_fleet_state_reuses_its_reads_between_ticks.py",
+      "line": 186
+    },
+    {
+      "assertion": "refresh() == expected",
+      "failure_condition": "A stream-only append changes held attribution or repeats discovery, directory listing, registry listing or ledger loading.",
+      "file": "tests/test_fleet_state_reuses_its_reads_between_ticks.py",
+      "line": 195
+    },
+    {
+      "assertion": "counts[\"held_listing\"] == 0",
+      "failure_condition": "The stated fixture expectation or observed work count differs from its independently specified expected outcome.",
+      "file": "tests/test_fleet_state_reuses_its_reads_between_ticks.py",
+      "line": 207
+    },
+    {
+      "assertion": "counts[\"held_records\"] == 0",
+      "failure_condition": "The stated fixture expectation or observed work count differs from its independently specified expected outcome.",
+      "file": "tests/test_fleet_state_reuses_its_reads_between_ticks.py",
+      "line": 208
+    },
+    {
+      "assertion": "counts[\"registry_listing\"] == 0",
+      "failure_condition": "The stated fixture expectation or observed work count differs from its independently specified expected outcome.",
+      "file": "tests/test_fleet_state_reuses_its_reads_between_ticks.py",
+      "line": 209
+    },
+    {
+      "assertion": "counts[\"ledger_load\"] == 0",
+      "failure_condition": "The stated fixture expectation or observed work count differs from its independently specified expected outcome.",
+      "file": "tests/test_fleet_state_reuses_its_reads_between_ticks.py",
+      "line": 210
+    },
+    {
+      "assertion": "refresh() == expected - {\"held-run-0\"} | {\"new-holder\"}",
+      "failure_condition": "A new holding row is missed, a disappeared tree remains held, a restored tree remains absent, or a row refresh reloads the entire ledger.",
+      "file": "tests/test_fleet_state_reuses_its_reads_between_ticks.py",
+      "line": 221
+    },
+    {
+      "assertion": "counts[\"held_records\"] > 0 and counts[\"ledger_load\"] == 0",
+      "failure_condition": "A new holding row is missed, a disappeared tree remains held, a restored tree remains absent, or a row refresh reloads the entire ledger.",
+      "file": "tests/test_fleet_state_reuses_its_reads_between_ticks.py",
+      "line": 222
+    },
+    {
+      "assertion": "refresh() == expected - {\"held-run-0\", \"held-run-1\"} | {\"new-holder\"}",
+      "failure_condition": "A new holding row is missed, a disappeared tree remains held, a restored tree remains absent, or a row refresh reloads the entire ledger.",
+      "file": "tests/test_fleet_state_reuses_its_reads_between_ticks.py",
+      "line": 225
+    },
+    {
+      "assertion": "counts[\"held_records\"] > 0",
+      "failure_condition": "The stated fixture expectation or observed work count differs from its independently specified expected outcome.",
+      "file": "tests/test_fleet_state_reuses_its_reads_between_ticks.py",
+      "line": 226
+    },
+    {
+      "assertion": "refresh() == expected - {\"held-run-0\"} | {\"new-holder\"}",
+      "failure_condition": "The stated fixture expectation or observed work count differs from its independently specified expected outcome.",
+      "file": "tests/test_fleet_state_reuses_its_reads_between_ticks.py",
+      "line": 228
+    },
+    {
+      "assertion": "len(state.pointers) == 60",
+      "failure_condition": "The stated fixture expectation or observed work count differs from its independently specified expected outcome.",
+      "file": "tests/test_fleet_state_reuses_its_reads_between_ticks.py",
+      "line": 265
+    },
+    {
+      "assertion": "refresh() == expected",
+      "failure_condition": "The stated fixture expectation or observed work count differs from its independently specified expected outcome.",
+      "file": "tests/test_fleet_state_reuses_its_reads_between_ticks.py",
+      "line": 269
+    },
+    {
+      "assertion": "all(counts[label] > 0 for label in bindings)",
+      "failure_condition": "Unrelated ledger/registration churn changes attribution, triggers any full reader, decodes other than one changed document, or rematches other than the single new tree.",
+      "file": "tests/test_fleet_state_reuses_its_reads_between_ticks.py",
+      "line": 270
+    },
+    {
+      "assertion": "refresh() == expected",
+      "failure_condition": "An in-place row edit fails to take over its independently expected tree or does more than one row read/tree match.",
+      "file": "tests/test_fleet_state_reuses_its_reads_between_ticks.py",
+      "line": 288
+    },
+    {
+      "assertion": "counts[\"ledger_load\"] == 0",
+      "failure_condition": "The stated fixture expectation or observed work count differs from its independently specified expected outcome.",
+      "file": "tests/test_fleet_state_reuses_its_reads_between_ticks.py",
+      "line": 290
+    },
+    {
+      "assertion": "counts[\"whole_ledger\"] == 0",
+      "failure_condition": "The stated fixture expectation or observed work count differs from its independently specified expected outcome.",
+      "file": "tests/test_fleet_state_reuses_its_reads_between_ticks.py",
+      "line": 291
+    },
+    {
+      "assertion": "counts[\"registry_listing\"] == 0",
+      "failure_condition": "The stated fixture expectation or observed work count differs from its independently specified expected outcome.",
+      "file": "tests/test_fleet_state_reuses_its_reads_between_ticks.py",
+      "line": 292
+    },
+    {
+      "assertion": "counts[\"record_read\"] == 1",
+      "failure_condition": "The stated fixture expectation or observed work count differs from its independently specified expected outcome.",
+      "file": "tests/test_fleet_state_reuses_its_reads_between_ticks.py",
+      "line": 293
+    },
+    {
+      "assertion": "counts[\"tree_match\"] == 1",
+      "failure_condition": "Deleting the new holder fails to restore the independently expected earlier owner or reads/rematches excess rows/trees.",
+      "file": "tests/test_fleet_state_reuses_its_reads_between_ticks.py",
+      "line": 294
+    },
+    {
+      "assertion": "refresh() == expected - {\"held-run-0\"} | {\"unrelated-landing\"}",
+      "failure_condition": "The stated fixture expectation or observed work count differs from its independently specified expected outcome.",
+      "file": "tests/test_fleet_state_reuses_its_reads_between_ticks.py",
+      "line": 299
+    },
+    {
+      "assertion": "counts[\"record_read\"] == 1 and counts[\"tree_match\"] == 1",
+      "failure_condition": "A new tree is not attributed to the pre-existing matching historical row or triggers full reads rather than one tree match.",
+      "file": "tests/test_fleet_state_reuses_its_reads_between_ticks.py",
+      "line": 300
+    },
+    {
+      "assertion": "counts[\"ledger_load\"] == counts[\"whole_ledger\"] == 0",
+      "failure_condition": "A new tree is not attributed to the pre-existing matching historical row or triggers full reads rather than one tree match.",
+      "file": "tests/test_fleet_state_reuses_its_reads_between_ticks.py",
+      "line": 301
+    },
+    {
+      "assertion": "refresh() == expected",
+      "failure_condition": "A new tree is not attributed to the pre-existing matching historical row or triggers full reads rather than one tree match.",
+      "file": "tests/test_fleet_state_reuses_its_reads_between_ticks.py",
+      "line": 306
+    },
+    {
+      "assertion": "counts[\"record_read\"] == 0 and counts[\"tree_match\"] == 1",
+      "failure_condition": "A new tree is not attributed to the pre-existing matching historical row or triggers full reads rather than one tree match.",
+      "file": "tests/test_fleet_state_reuses_its_reads_between_ticks.py",
+      "line": 307
+    },
+    {
+      "assertion": "refresh() == expected | {\"history-0\"}",
+      "failure_condition": "A new tree is not attributed to the pre-existing matching historical row or triggers full reads rather than one tree match.",
+      "file": "tests/test_fleet_state_reuses_its_reads_between_ticks.py",
+      "line": 312
+    },
+    {
+      "assertion": "counts[\"record_read\"] == 0 and counts[\"tree_match\"] == 1",
+      "failure_condition": "A new tree is not attributed to the pre-existing matching historical row or triggers full reads rather than one tree match.",
+      "file": "tests/test_fleet_state_reuses_its_reads_between_ticks.py",
+      "line": 313
+    },
+    {
+      "assertion": "counts[\"registry_listing\"]\n        == counts[\"whole_ledger\"]\n        == counts[\"ledger_load\"]\n        == 0",
+      "failure_condition": "A new tree is not attributed to the pre-existing matching historical row or triggers full reads rather than one tree match.",
+      "file": "tests/test_fleet_state_reuses_its_reads_between_ticks.py",
+      "line": 314
+    },
+    {
+      "assertion": "{row[\"run_id\"] for row in before.held_worktrees[SESSION]} == {\n        f\"held-run-{index}\" for index in range(4)\n    }",
+      "failure_condition": "The stated fixture expectation or observed work count differs from its independently specified expected outcome.",
+      "file": "tests/test_fleet_state_reuses_its_reads_between_ticks.py",
+      "line": 324
+    },
+    {
+      "assertion": "{item[\"run_id\"] for item in after.held_worktrees[SESSION]} == {\n        \"aggregate-holder\",\n        \"held-run-1\",\n        \"held-run-2\",\n        \"held-run-3\",\n    }",
+      "failure_condition": "The rewritten aggregate is not merged with split records in promotion order, losing or misattributing a known tree.",
+      "file": "tests/test_fleet_state_reuses_its_reads_between_ticks.py",
+      "line": 350
+    },
+    {
+      "assertion": "{item[\"run_id\"] for item in aggregate_only.held_worktrees[SESSION]} == {\n        \"earlier-holder\"\n    }",
+      "failure_condition": "Removing the last split-only rows fails to restore authored aggregate order and choose earlier-holder.",
+      "file": "tests/test_fleet_state_reuses_its_reads_between_ticks.py",
+      "line": 360
+    }
+  ],
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/station_obligations.py:185",
+    "reckon/crew/obligation_snapshot.py:1326",
+    "reckon/crew/obligations.py:2613"
+  ],
+  "completed_at": "2026-11-11T05:01:09Z",
+  "dimension_dispositions": {
+    "reuse": {
+      "kind": "folded",
+      "node": "fleet-refresh-reuses-its-reads",
+      "recorded_at": "2026-11-11T05:29:16.067473+00:00"
+    }
+  },
+  "dispatched_at": "2026-11-11T04:51:56Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "folded",
+      "node": "fleet-refresh-reuses-its-reads",
+      "recorded_at": "2026-11-11T05:33:34.738458+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "reckon/crew/obligations.py",
+      "line": "2423",
+      "severity": "blocking",
+      "text": "blocking: _HeldRecordIndex duplicates the retained-path, session/node and sessionless-node bucket capability owned by reckon/crew/routing.py:1191 WorktreeRecordIndex; it neither extends nor wraps that owner, so record-to-tree matching now has two implementations that can diverge; extend the owner with incremental replacement/removal and let obligations retain affected-tree state around it."
+    }
+  ],
+  "gate_log_evidence": {
+    "after_suite": {
+      "completed": true,
+      "exit_status": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261111T033651310546-fleet-refresh-reuses-its-reads/final-armed-suite.log",
+      "summary": "54 passed in 14.79s"
+    },
+    "baseline_suite": {
+      "completed": true,
+      "exit_status": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261111T033651310546-fleet-refresh-reuses-its-reads/baseline-suite.log",
+      "summary": "51 passed in 11.90s"
+    }
+  },
+  "importer_comparison": {
+    "added_failure_ids": [],
+    "after": {
+      "completed": true,
+      "exit_status": 1,
+      "failure_ids": [
+        "tests/test_a_held_request_records_what_holds_it.py::test_a_finished_holder_owes_its_session_one_obligation",
+        "tests/test_a_held_request_records_what_holds_it.py::test_a_launch_refused_on_a_scope_conflict_records_the_holder",
+        "tests/test_a_held_request_records_what_holds_it.py::test_a_scope_conflict_expires_when_its_holder_no_longer_claims_the_path",
+        "tests/test_a_held_request_records_what_holds_it.py::test_a_scope_conflict_replaces_a_stored_router_full_reason",
+        "tests/test_a_held_request_records_what_holds_it.py::test_an_attended_holder_keeps_the_duty_on_its_own_session",
+        "tests/test_a_held_request_records_what_holds_it.py::test_an_idle_holder_reaches_the_waiting_requests_session",
+        "tests/test_a_held_request_records_what_holds_it.py::test_an_unreconciled_runs_refusal_names_every_holding_run",
+        "tests/test_a_run_wait_names_its_project.py::test_a_pointer_naming_no_project_is_released_by_the_reader",
+        "tests/test_a_run_wait_names_its_project.py::test_a_run_no_project_holds_raises_wait_unresolvable",
+        "tests/test_a_run_wait_names_its_project.py::test_an_open_upstream_still_reads_as_waiting",
+        "tests/test_a_run_wait_names_its_project.py::test_every_writer_leaves_every_run_ref_with_a_project",
+        "tests/test_a_run_wait_names_its_project.py::test_the_writer_records_the_project_of_a_ref_it_adds",
+        "tests/test_a_running_review_finishes_across_a_resume.py::test_a_launched_review_is_not_withdrawn_and_its_verdict_carries_forward",
+        "tests/test_a_running_review_finishes_across_a_resume.py::test_a_launched_review_over_a_source_move_earns_a_light_re_review",
+        "tests/test_a_stalled_request_reaches_its_obligations.py::test_a_fresh_snapshot_build_carries_the_stalled_row",
+        "tests/test_a_stalled_request_reaches_its_obligations.py::test_a_later_launch_verdict_clears_the_stalled_row",
+        "tests/test_a_stalled_request_reaches_its_obligations.py::test_a_request_without_a_stall_verdict_keeps_its_queued_row",
+        "tests/test_a_stalled_request_reaches_its_obligations.py::test_a_stalled_request_is_a_stalled_row_in_obligations",
+        "tests/test_a_stalled_request_reaches_its_obligations.py::test_a_stalled_row_does_not_hold_the_hook_stop",
+        "tests/test_a_stalled_request_reaches_its_obligations.py::test_one_obligations_build_reads_the_verdict_log_once",
+        "tests/test_crew_obligations.py::test_obligations_reads_scoring_without_observing_or_dispatching",
+        "tests/test_obligations_hook_reads_the_snapshot.py::test_the_prompt_path_loads_no_derivation_module",
+        "tests/test_plan_edit_never_strands.py::test_a_blocked_upstream_keeps_its_waiter_waiting",
+        "tests/test_plan_edit_never_strands.py::test_a_discarded_upstream_blocks_its_waiter",
+        "tests/test_plan_edit_never_strands.py::test_a_hand_held_request_stays_held_through_the_releasing_pass",
+        "tests/test_plan_edit_never_strands.py::test_a_narrowed_wait_releases_a_waiting_request",
+        "tests/test_plan_edit_never_strands.py::test_a_narrowed_wait_rewrites_the_stored_refs_before_launch",
+        "tests/test_plan_edit_never_strands.py::test_a_widened_wait_sends_a_queued_request_back",
+        "tests/test_plan_edit_never_strands.py::test_an_after_ref_survives_the_same_pass",
+        "tests/test_plan_edit_never_strands.py::test_an_edit_elsewhere_lets_its_neighbour_launch",
+        "tests/test_plan_edit_never_strands.py::test_an_edit_holding_two_sections_reads_as_one_plan_row",
+        "tests/test_queue_hold_release.py::test_hold_skips_the_head_and_release_launches_it_next",
+        "tests/test_queued_work_shows_where_held_work_shows.py::test_one_queued_run_reads_as_queued_on_every_surface",
+        "tests/test_queued_work_shows_where_held_work_shows.py::test_the_live_view_names_the_queued_runs_place",
+        "tests/test_queued_work_shows_where_held_work_shows.py::test_two_queued_runs_follow_the_admission_order",
+        "tests/test_review_carries_forward.py::test_a_data_file_relocation_carries_the_review_forward",
+        "tests/test_review_carries_forward.py::test_a_judge_that_cannot_answer_leaves_the_light_review",
+        "tests/test_review_carries_forward.py::test_a_review_that_raised_findings_is_never_judged",
+        "tests/test_review_carries_forward.py::test_a_runtime_source_commit_dispatches_a_light_scoped_review",
+        "tests/test_review_carries_forward.py::test_a_runtime_source_commit_earns_a_light_review_of_that_commit",
+        "tests/test_review_carries_forward.py::test_a_source_move_judged_immaterial_carries_the_clean_review",
+        "tests/test_review_carries_forward.py::test_a_source_move_judged_material_earns_the_light_review",
+        "tests/test_the_queue_reports_its_own_stalls.py::test_a_lane_with_no_room_or_a_live_claim_records_no_stall",
+        "tests/test_the_queue_reports_its_own_stalls.py::test_a_recorded_stall_reaches_its_session_once_until_it_clears",
+        "tests/test_the_queue_reports_its_own_stalls.py::test_a_request_a_pass_holds_is_never_stalled[held-behind-earlier-request]",
+        "tests/test_the_queue_reports_its_own_stalls.py::test_a_request_a_pass_holds_is_never_stalled[held-by-gate]",
+        "tests/test_the_queue_reports_its_own_stalls.py::test_a_request_a_pass_holds_is_never_stalled[held-for-allowance]",
+        "tests/test_the_queue_reports_its_own_stalls.py::test_a_request_a_pass_holds_is_never_stalled[held-on-claim]",
+        "tests/test_the_queue_reports_its_own_stalls.py::test_a_request_a_pass_holds_is_never_stalled[held-on-plan-review]",
+        "tests/test_the_queue_reports_its_own_stalls.py::test_a_request_a_pass_holds_is_never_stalled[held-on-retry-backoff]",
+        "tests/test_the_queue_reports_its_own_stalls.py::test_a_request_a_pass_holds_is_never_stalled[held-until-changed]",
+        "tests/test_the_queue_reports_its_own_stalls.py::test_a_request_the_pass_holds_on_this_pass_is_never_stalled",
+        "tests/test_the_queue_reports_its_own_stalls.py::test_a_request_waiting_on_its_dependencies_is_never_stalled",
+        "tests/test_the_queue_reports_its_own_stalls.py::test_a_stall_is_recorded_once_and_clears_on_a_later_verdict",
+        "tests/test_the_queue_reports_its_own_stalls.py::test_an_eleven_minute_wait_on_a_lane_with_room_records_one_stall"
+      ],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261111T033651310546-fleet-refresh-reuses-its-reads/head-final-importers.log",
+      "summary": "55 failed, 651 passed in 95.63s (0:01:35)"
+    },
+    "baseline": {
+      "completed": true,
+      "exit_status": 1,
+      "failure_ids": [
+        "tests/test_a_held_request_records_what_holds_it.py::test_a_finished_holder_owes_its_session_one_obligation",
+        "tests/test_a_held_request_records_what_holds_it.py::test_a_launch_refused_on_a_scope_conflict_records_the_holder",
+        "tests/test_a_held_request_records_what_holds_it.py::test_a_scope_conflict_expires_when_its_holder_no_longer_claims_the_path",
+        "tests/test_a_held_request_records_what_holds_it.py::test_a_scope_conflict_replaces_a_stored_router_full_reason",
+        "tests/test_a_held_request_records_what_holds_it.py::test_an_attended_holder_keeps_the_duty_on_its_own_session",
+        "tests/test_a_held_request_records_what_holds_it.py::test_an_idle_holder_reaches_the_waiting_requests_session",
+        "tests/test_a_held_request_records_what_holds_it.py::test_an_unreconciled_runs_refusal_names_every_holding_run",
+        "tests/test_a_run_wait_names_its_project.py::test_a_pointer_naming_no_project_is_released_by_the_reader",
+        "tests/test_a_run_wait_names_its_project.py::test_a_run_no_project_holds_raises_wait_unresolvable",
+        "tests/test_a_run_wait_names_its_project.py::test_an_open_upstream_still_reads_as_waiting",
+        "tests/test_a_run_wait_names_its_project.py::test_every_writer_leaves_every_run_ref_with_a_project",
+        "tests/test_a_run_wait_names_its_project.py::test_the_writer_records_the_project_of_a_ref_it_adds",
+        "tests/test_a_running_review_finishes_across_a_resume.py::test_a_launched_review_is_not_withdrawn_and_its_verdict_carries_forward",
+        "tests/test_a_running_review_finishes_across_a_resume.py::test_a_launched_review_over_a_source_move_earns_a_light_re_review",
+        "tests/test_a_stalled_request_reaches_its_obligations.py::test_a_fresh_snapshot_build_carries_the_stalled_row",
+        "tests/test_a_stalled_request_reaches_its_obligations.py::test_a_later_launch_verdict_clears_the_stalled_row",
+        "tests/test_a_stalled_request_reaches_its_obligations.py::test_a_request_without_a_stall_verdict_keeps_its_queued_row",
+        "tests/test_a_stalled_request_reaches_its_obligations.py::test_a_stalled_request_is_a_stalled_row_in_obligations",
+        "tests/test_a_stalled_request_reaches_its_obligations.py::test_a_stalled_row_does_not_hold_the_hook_stop",
+        "tests/test_a_stalled_request_reaches_its_obligations.py::test_one_obligations_build_reads_the_verdict_log_once",
+        "tests/test_crew_obligations.py::test_obligations_reads_scoring_without_observing_or_dispatching",
+        "tests/test_obligations_hook_reads_the_snapshot.py::test_the_prompt_path_loads_no_derivation_module",
+        "tests/test_plan_edit_never_strands.py::test_a_blocked_upstream_keeps_its_waiter_waiting",
+        "tests/test_plan_edit_never_strands.py::test_a_discarded_upstream_blocks_its_waiter",
+        "tests/test_plan_edit_never_strands.py::test_a_hand_held_request_stays_held_through_the_releasing_pass",
+        "tests/test_plan_edit_never_strands.py::test_a_narrowed_wait_releases_a_waiting_request",
+        "tests/test_plan_edit_never_strands.py::test_a_narrowed_wait_rewrites_the_stored_refs_before_launch",
+        "tests/test_plan_edit_never_strands.py::test_a_widened_wait_sends_a_queued_request_back",
+        "tests/test_plan_edit_never_strands.py::test_an_after_ref_survives_the_same_pass",
+        "tests/test_plan_edit_never_strands.py::test_an_edit_elsewhere_lets_its_neighbour_launch",
+        "tests/test_plan_edit_never_strands.py::test_an_edit_holding_two_sections_reads_as_one_plan_row",
+        "tests/test_queue_hold_release.py::test_hold_skips_the_head_and_release_launches_it_next",
+        "tests/test_queued_work_shows_where_held_work_shows.py::test_one_queued_run_reads_as_queued_on_every_surface",
+        "tests/test_queued_work_shows_where_held_work_shows.py::test_the_live_view_names_the_queued_runs_place",
+        "tests/test_queued_work_shows_where_held_work_shows.py::test_two_queued_runs_follow_the_admission_order",
+        "tests/test_review_carries_forward.py::test_a_data_file_relocation_carries_the_review_forward",
+        "tests/test_review_carries_forward.py::test_a_judge_that_cannot_answer_leaves_the_light_review",
+        "tests/test_review_carries_forward.py::test_a_review_that_raised_findings_is_never_judged",
+        "tests/test_review_carries_forward.py::test_a_runtime_source_commit_dispatches_a_light_scoped_review",
+        "tests/test_review_carries_forward.py::test_a_runtime_source_commit_earns_a_light_review_of_that_commit",
+        "tests/test_review_carries_forward.py::test_a_source_move_judged_immaterial_carries_the_clean_review",
+        "tests/test_review_carries_forward.py::test_a_source_move_judged_material_earns_the_light_review",
+        "tests/test_the_queue_reports_its_own_stalls.py::test_a_lane_with_no_room_or_a_live_claim_records_no_stall",
+        "tests/test_the_queue_reports_its_own_stalls.py::test_a_recorded_stall_reaches_its_session_once_until_it_clears",
+        "tests/test_the_queue_reports_its_own_stalls.py::test_a_request_a_pass_holds_is_never_stalled[held-behind-earlier-request]",
+        "tests/test_the_queue_reports_its_own_stalls.py::test_a_request_a_pass_holds_is_never_stalled[held-by-gate]",
+        "tests/test_the_queue_reports_its_own_stalls.py::test_a_request_a_pass_holds_is_never_stalled[held-for-allowance]",
+        "tests/test_the_queue_reports_its_own_stalls.py::test_a_request_a_pass_holds_is_never_stalled[held-on-claim]",
+        "tests/test_the_queue_reports_its_own_stalls.py::test_a_request_a_pass_holds_is_never_stalled[held-on-plan-review]",
+        "tests/test_the_queue_reports_its_own_stalls.py::test_a_request_a_pass_holds_is_never_stalled[held-on-retry-backoff]",
+        "tests/test_the_queue_reports_its_own_stalls.py::test_a_request_a_pass_holds_is_never_stalled[held-until-changed]",
+        "tests/test_the_queue_reports_its_own_stalls.py::test_a_request_the_pass_holds_on_this_pass_is_never_stalled",
+        "tests/test_the_queue_reports_its_own_stalls.py::test_a_request_waiting_on_its_dependencies_is_never_stalled",
+        "tests/test_the_queue_reports_its_own_stalls.py::test_a_stall_is_recorded_once_and_clears_on_a_later_verdict",
+        "tests/test_the_queue_reports_its_own_stalls.py::test_an_eleven_minute_wait_on_a_lane_with_room_records_one_stall"
+      ],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261111T033651310546-fleet-refresh-reuses-its-reads/base-importers.log",
+      "summary": "55 failed, 651 passed in 80.40s (0:01:20)"
+    }
+  },
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "Read all five commits against ff70ae551df3e399c8ce7dff21e21347239064e7 through 280608875cf205c157615e9b4be1f09013c0b076; tests, the incremental discovery implementation and evidence are coherent, but obligations.py:2423 duplicates the existing naming-index owner.",
+    "done_when": "Read the live plan section s25 and baseline-suite.log/final-armed-suite.log; the 60-pointer streaming fixture checks zero repeat reads and source invalidation, while the declared quiet-base failure already passed and churn-negative-control-receipt.log supplies the reproduced failing extension.",
+    "goal": "Read prompt.txt:44 and the live plan section s25; obligations.py:2490 retains held-tree answers across unchanged ticks and incrementally applies changed documents and registrations.",
+    "manifest": "Read the source manifest.md; its 51-to-54 passing armed results, zero-added importer delta and failing churn control reconcile with the actual logs, with the head gate at f2d1b5fa and only evidence prose changed afterward.",
+    "write_paths": "Read prompt.txt:79-85 and diff-tree output for all five commits; the three changed paths are inside the six declared paths and no figure was added."
+  },
+  "justifications": {
+    "durability": "tests/test_fleet_state_reuses_its_reads_between_ticks.py:276-316 fails when full reads or whole-tree rematches return, and lines 350-362 fail when union attribution or aggregate-only authored ordering changes; the assertions compare independent expected outcomes and observed call counts.",
+    "evidence": "tests/test_fleet_state_reuses_its_reads_between_ticks.py:276 asserts bounded changed work and churn-negative-control-receipt.log records one failing base case, while the original quiet-base-failure clause in live plan s25 was not reproduced and is explicitly disclosed.",
+    "fit": "reckon/crew/obligations.py:2359 uses the surrounding memo/read-only-region design with a bounded locked mutable cache, and its added source names describe mechanisms without forbidden plan identifiers.",
+    "goal_fidelity": "reckon/crew/obligations.py:2563 updates only moved document identities and tests/test_fleet_state_reuses_its_reads_between_ticks.py:201 refuses repeated reads after stream growth.",
+    "reuse": "reckon/crew/obligations.py:2423 adds a parallel naming-bucket index and lines 2400-2420 restate key construction already owned by reckon/crew/routing.py:1191-1248 instead of extending or wrapping that owner.",
+    "scope_discipline": "The five commit diffs touch only reckon/crew/obligations.py, tests/test_fleet_state_reuses_its_reads_between_ticks.py and the declared fleet-refresh-reuses-its-reads.html evidence fragment."
+  },
+  "limitations": [
+    "No suite rerun during review; raw source gate logs were read.",
+    "The post-landing 60-second station CPU/read-rate check belongs to the coordinator.",
+    "The original quiet-base negative control is already green; the recorded red control exercises unrelated ledger and registry churn instead."
+  ],
+  "negative_control_evidence": {
+    "completed": true,
+    "exit_status": 1,
+    "failure_ids": [
+      "tests/test_fleet_state_reuses_its_reads_between_ticks.py::test_unrelated_landing_and_registry_churn_do_only_changed_work"
+    ],
+    "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261111T033651310546-fleet-refresh-reuses-its-reads/churn-negative-control-receipt.log",
+    "summary": "1 failed in 41.03s"
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: Read prompt.txt:44 and the live plan section s25; obligations.py:2490 retains held-tree answers across unchanged ticks and incrementally applies changed documents and registrations.\nVERDICT done_when: Read the live plan section s25 and baseline-suite.log/final-armed-suite.log; the 60-pointer streaming fixture checks zero repeat reads and source invalidation, while the declared quiet-base failure already passed and churn-negative-control-receipt.log supplies the reproduced failing extension.\nVERDICT write_paths: Read prompt.txt:79-85 and diff-tree output for all five commits; the three changed paths are inside the six declared paths and no figure was added.\nVERDICT manifest: Read the source manifest.md; its 51-to-54 passing armed results, zero-added importer delta and failing churn control reconcile with the actual logs, with the head gate at f2d1b5fa and only evidence prose changed afterward.\nVERDICT diff: Read all five commits against ff70ae551df3e399c8ce7dff21e21347239064e7 through 280608875cf205c157615e9b4be1f09013c0b076; tests, the incremental discovery implementation and evidence are coherent, but obligations.py:2423 duplicates the existing naming-index owner.\nCALL_SITES: reckon/crew/station_obligations.py:185, reckon/crew/obligation_snapshot.py:1326, reckon/crew/obligations.py:2613\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/obligations.py:2563 updates only moved document identities and tests/test_fleet_state_reuses_its_reads_between_ticks.py:201 refuses repeated reads after stream growth.\nSCORE evidence: 18\nJUSTIFICATION evidence: tests/test_fleet_state_reuses_its_reads_between_ticks.py:276 asserts bounded changed work and churn-negative-control-receipt.log records one failing base case, while the original quiet-base-failure clause in live plan s25 was not reproduced and is explicitly disclosed.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: The five commit diffs touch only reckon/crew/obligations.py, tests/test_fleet_state_reuses_its_reads_between_ticks.py and the declared fleet-refresh-reuses-its-reads.html evidence fragment.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_fleet_state_reuses_its_reads_between_ticks.py:276-316 fails when full reads or whole-tree rematches return, and lines 350-362 fail when union attribution or aggregate-only authored ordering changes; the assertions compare independent expected outcomes and observed call counts.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/crew/obligations.py:2359 uses the surrounding memo/read-only-region design with a bounded locked mutable cache, and its added source names describe mechanisms without forbidden plan identifiers.\nSCORE reuse: 5\nJUSTIFICATION reuse: reckon/crew/obligations.py:2423 adds a parallel naming-bucket index and lines 2400-2420 restate key construction already owned by reckon/crew/routing.py:1191-1248 instead of extending or wrapping that owner.\nFINDING reckon/crew/obligations.py:2423 blocking: _HeldRecordIndex duplicates the retained-path, session/node and sessionless-node bucket capability owned by reckon/crew/routing.py:1191 WorktreeRecordIndex; it neither extends nor wraps that owner, so record-to-tree matching now has two implementations that can diverge; extend the owner with incremental replacement/removal and let obligations retain affected-tree state around it.\n",
+  "reuse_search": "Searched naming buckets, worktree indexes, incremental readers and registry readers in routing.py, ledger.py and file_memo.py; opened routing.WorktreeRecordIndex and record_names_worktree. _HeldRecordIndex and _held_row_keys/_held_tree_keys duplicate that owner; _held_registry_changes wraps initial routing discovery and adds incremental gitdir reads, with no existing incremental owner found; _held_remember bounds distinct mutable state rather than parsed-document memo entries. Test patch_bindings extends the established all-loaded-bindings counter technique.",
+  "review_run_id": "r-20261111T044739681237-review-of-fleet-refresh-reuses-its-reads-280608875cf2",
+  "reviewed_base_sha": "ff70ae551df3e399c8ce7dff21e21347239064e7",
+  "reviewed_commits": [
+    "d6a409e4c59306d0019f624a80225afb51a87e05",
+    "c87ad70e0e936323219614189397f04d0d8c4e5d",
+    "a4124167a55a572703f35b96a7d77c19042f082a",
+    "f2d1b5fa903f1e5e922b4f7249411af2bb4483cd",
+    "280608875cf205c157615e9b4be1f09013c0b076"
+  ],
+  "reviewed_head_sha": "280608875cf205c157615e9b4be1f09013c0b076",
+  "reviewed_run_id": "r-20261111T033651310546-fleet-refresh-reuses-its-reads",
+  "scores": {
+    "durability": 19,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 5,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-11T05:25:03.493672+00:00",
+  "total": 100
+}

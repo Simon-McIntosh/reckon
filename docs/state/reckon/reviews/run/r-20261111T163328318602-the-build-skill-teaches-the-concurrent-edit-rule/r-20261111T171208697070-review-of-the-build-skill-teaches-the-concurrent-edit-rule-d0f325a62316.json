@@ -1,0 +1,57 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-11-11T17:24:25.602Z",
+  "dispatched_at": "2026-11-11T17:14:29Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "exempted",
+      "reason": "worker-protocol.md carried the retired remedy the census reads; the run is widened to it.",
+      "recorded_at": "2026-11-11T17:50:43.146662+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "skills/reckon-build/references/worker-protocol.md",
+      "line": 30,
+      "severity": "non-blocking",
+      "summary": "the file lies outside the node's declared write paths; it had to change because the new census reads every reference, so the coordinator must ratify the path with `crew complete --accept-path` rather than treat the fence as satisfied"
+    },
+    {
+      "file": "tests/test_skill_contracts.py",
+      "line": 970,
+      "severity": "non-blocking",
+      "summary": "the case asserts only that the retired phrasing is absent and that the remedies name the exclusive classes, so a rewrite that deletes the concurrent-edit ruling outright leaves the suite green and the plan's goal unguarded against removal"
+    }
+  ],
+  "gate_logs": [
+    "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261111T163328318602-the-build-skill-teaches-the-concurrent-edit-rule/logs/base-arm.log",
+    "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261111T163328318602-the-build-skill-teaches-the-concurrent-edit-rule/logs/head-arm.log",
+    "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261111T163328318602-the-build-skill-teaches-the-concurrent-edit-rule/logs/negative-control.log"
+  ],
+  "item_verdicts": {
+    "diff": "read commit by commit from 16bf78f0ef to d0f325a623 across three commits; 09b2e71075 and 062f2ea3f9 change prose and the census, d0f325a623 changes one evidence-fragment line only, and no commit carries an AI trailer.",
+    "done_when": "the done_when names tests/test_skill_contracts.py with a new whole-tree census case; tests/test_skill_contracts.py:944 is that case and tests/test_skill_contracts.py:970 is its absence assertion, with the negative control recorded in the run's logs/negative-control.log.",
+    "goal": "the node's goal is that the build skill teaches the concurrent-edit rule; skills/reckon-build/SKILL.md:149 states that concurrent edits to one source file are dispatched and meet at the merge, with exclusive scope only for paths a textual merge cannot reconcile.",
+    "manifest": "read; it records both arms (123 passed at 16bf78f0ef, 124 passed at the head), the negative control (1 failed, 72 deselected), the ruff delta, and discloses the worker-protocol.md path it was not fenced to write.",
+    "write_paths": "the dispatch declared four paths (SKILL.md, sprint-orchestration.md, coordinator-reference.md, tests/test_skill_contracts.py); the diff changes those four plus skills/reckon-build/references/worker-protocol.md, which the census reads and which still carried the retired sentence at the base revision."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that the build skill teaches the concurrent-edit rule; skills/reckon-build/SKILL.md:149 states that concurrent edits to one source file are dispatched and meet at the merge, with exclusive scope only for paths a textual merge cannot reconcile.\nVERDICT done_when: the done_when names tests/test_skill_contracts.py with a new whole-tree census case; tests/test_skill_contracts.py:944 is that case and tests/test_skill_contracts.py:970 is its absence assertion, with the negative control recorded in the run's logs/negative-control.log.\nVERDICT write_paths: the dispatch declared four paths (SKILL.md, sprint-orchestration.md, coordinator-reference.md, tests/test_skill_contracts.py); the diff changes those four plus skills/reckon-build/references/worker-protocol.md, which the census reads and which still carried the retired sentence at the base revision.\nVERDICT manifest: read; it records both arms (123 passed at 16bf78f0ef, 124 passed at the head), the negative control (1 failed, 72 deselected), the ruff delta, and discloses the worker-protocol.md path it was not fenced to write.\nVERDICT diff: read commit by commit from 16bf78f0ef to d0f325a623 across three commits; 09b2e71075 and 062f2ea3f9 change prose and the census, d0f325a623 changes one evidence-fragment line only, and no commit carries an AI trailer.\nCALL_SITES: none\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: skills/reckon-build/SKILL.md:149 and skills/reckon-build/references/coordinator-reference.md:201 both state the ruling and the six exclusive classes, and skills/reckon-build/SKILL.md:254 carries the repaired scope-conflict remedy.\nSCORE evidence: 18\nJUSTIFICATION evidence: base-arm.log records 123 passed at 16bf78f0ef and head-arm.log 124 passed at 062f2ea3, the last commit touching code under test, and I re-ran the gate case at d0f325a623 in a temp extraction and saw 1 passed.\nSCORE scope_discipline: 15\nJUSTIFICATION scope_discipline: five of the six changed paths are inside the declared list, and skills/reckon-build/references/worker-protocol.md is outside it although the done-when's whole-tree census cannot pass without its repair.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_skill_contracts.py:970 reddens when the retired sentence is restored, as logs/negative-control.log shows, but nothing asserts the new ruling's presence, so deleting the whole rule would stay green.\nSCORE fit: 16\nJUSTIFICATION fit: the test additions follow the file's existing census idiom of tests/test_skill_contracts.py:855 and introduce no plan label or host path, though five module-level constants are added for one case.\nSCORE reuse: 20\nJUSTIFICATION reuse: _build_skill_read_set at tests/test_skill_contracts.py:830 lifts the read set the pre-existing census held inline so both censuses share one definition, and the broader whole-tree walker tests/test_skills_name_no_host_path.py:30 is left as its owner.\nFINDING skills/reckon-build/references/worker-protocol.md:30 non-blocking: the file lies outside the node's declared write paths; it had to change because the new census reads every reference, so the coordinator must ratify the path with `crew complete --accept-path` rather than treat the fence as satisfied.\nFINDING tests/test_skill_contracts.py:970 non-blocking: the case asserts only that the retired phrasing is absent and that the remedies name the exclusive classes, so a rewrite that deletes the concurrent-edit ruling outright leaves the suite green and the plan's goal unguarded against removal.\n",
+  "review_run_id": "r-20261111T171208697070-review-of-the-build-skill-teaches-the-concurrent-edit-rule-d0f325a62316",
+  "reviewed_base_sha": "16bf78f0ef6d74fdf7116a441da200a5c13ebf8d",
+  "reviewed_head_sha": "d0f325a62316e47c7d1e4e7ba163a2c283075a61",
+  "reviewed_run_id": "r-20261111T163328318602-the-build-skill-teaches-the-concurrent-edit-rule",
+  "scores": {
+    "durability": 18,
+    "evidence": 18,
+    "fit": 16,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 15
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-11T17:40:20.039928+00:00",
+  "total": 106
+}

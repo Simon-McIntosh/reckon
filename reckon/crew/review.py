@@ -322,6 +322,11 @@ def claimless_findings(review: Mapping[str, Any]) -> list[tuple[int, Any]]:
 # schema to its prompt holds these two. The rubrics are advisory: a finding is
 # scored on whether it would have changed the plan, so the items are the checks
 # a reviewer owes an answer to, not scores.
+#
+# Both rubrics judge the endpoint a section delivers, never the implementation
+# that would reach it. A section that prescribes a code path, a step sequence, a
+# formula or a function to extend is a finding, and the reuse map the design
+# reviewer composes belongs to the node brief rather than to plan text.
 PLAN_REVIEW_ITEMS: tuple[str, ...] = (
     "wiring",
     "done_when",
@@ -1791,6 +1796,36 @@ ADDED_FAILURES_TOTAL_CAP = REVIEW_MAX_SCORE // 4
 _SUMMARY_REASON_SEPARATOR = " - "
 _GATE_FAILURE_RE = re.compile(r"^(?:FAILED|ERROR)\s+(.+)$", re.MULTILINE)
 
+# What a pytest failure line's id looks like: a test address carrying pytest's
+# ``::`` separator, or the file path a collection error names. A test's own
+# captured log output reaches the same lines looking like ``ERROR
+# package.module:file.py:3553 message`` — a logger, a filename and a line
+# number, separated by single colons — and that shape is a message a test
+# printed, never a test that failed.
+_FAILURE_FILE_ID_RE = re.compile(r"^\S+\.py$")
+_FAILURE_BARE_ID_RE = re.compile(r"^\S+$")
+_CAPTURED_RECORD_RE = re.compile(r"^[^\s:]+:\S+:\d+(?:\s|$)")
+
+
+def _is_failure_node_id(candidate: str) -> bool:
+    """Whether a failure line's id name is a test identity rather than printed text.
+
+    A short-summary id is a node id (``tests/test_x.py::TestY::test_z``, with
+    any parametrisation in brackets), the file path a collection error names, or
+    the bare test name a manifest records and the shared matching rule lets
+    stand for a qualified id. A captured logging record is a logger, filename
+    and line number separated by single colons and followed by a message, which
+    is none of those.
+    """
+    if _CAPTURED_RECORD_RE.match(candidate):
+        return False
+    return (
+        "::" in candidate
+        or _FAILURE_FILE_ID_RE.match(candidate) is not None
+        or _FAILURE_BARE_ID_RE.match(candidate) is not None
+    )
+
+
 # A ctest gate log's failure summary. Every entry under the block header is a
 # failure, so a test reported ``(Not Run)`` counts as one. The entry shape is
 # ``<index> - <name> (<reason>)``, where the reason may itself contain spaces,
@@ -2198,8 +2233,13 @@ def _pytest_failure_ids(
     for raw in log_text.splitlines():
         match = _GATE_FAILURE_RE.match(raw.strip())
         if match:
-            node_id = match.group(1).partition(_SUMMARY_REASON_SEPARATOR)[0]
-            ids.add(canonical_node_id(node_id.strip(), arm_directory))
+            node_id = match.group(1).partition(_SUMMARY_REASON_SEPARATOR)[0].strip()
+            # A line a test prints carries its own prefix-shaped text and is
+            # not a failure pytest reported, so only a node-id-shaped name
+            # counts.
+            if not _is_failure_node_id(node_id):
+                continue
+            ids.add(canonical_node_id(node_id, arm_directory))
     return ids
 
 
@@ -2210,9 +2250,12 @@ def _ctest_failure_ids(log_text: str) -> set[str]:
     as one ``<index> - <name> (<reason>)`` entry beneath the line ``The
     following tests FAILED:``. Each entry is a failure whatever its reason, so
     a test reported ``Not Run`` behind a build break is read the same as one
-    that ran and failed. The name is taken verbatim: a ctest name is the
-    label the project gave the test, not a path relative to a working
-    directory, so it needs no reduction against the arm that printed it.
+    that ran and failed. A block ends at the first line that is not an entry,
+    and the scan resumes rather than stopping: a multi-label gate runs ctest
+    once per label, so its log carries one ``The following tests FAILED:``
+    block per label and every one of them belongs to the gate's failure set. The name is taken verbatim: a
+    ctest name is the label the project gave the test, not a path relative to a
+    working directory, so it needs no reduction against the arm that printed it.
     """
     ids: set[str] = set()
     in_block = False
@@ -2227,7 +2270,7 @@ def _ctest_failure_ids(log_text: str) -> set[str]:
             ids.add(match.group(1))
             continue
         if raw.strip():
-            break
+            in_block = False
     return ids
 
 
@@ -2371,6 +2414,9 @@ def _read_gate_log(log_path: str | None, run_directory: Path | None) -> str | No
     path = Path(log_path)
     if not path.is_absolute() and run_directory is not None:
         path = Path(run_directory) / path
+    from reckon.crew.runs import resolve_run_path
+
+    path = resolve_run_path(path)
     try:
         return path.read_text(encoding="utf-8", errors="replace")
     except OSError:
@@ -3465,14 +3511,21 @@ def committed_record_project(
 
 
 def repair_run_review(
-    reviewed_run_id: str,
+    run_id: str,
     record_path: str | Path,
     change: str,
     reason: str,
     *,
     project: str | None = None,
 ) -> dict[str, str]:
-    """Repair a delivered review's status or missing subject ids with provenance.
+    """Repair a delivered review's status, subject ids or mistyped run id.
+
+    ``run_id`` names the reviewed run, or the review run that wrote the record.
+    A review delivers into the reviewed run's review-records directory, so a
+    coordinator repairing a mistyped id holds the review run's id and the
+    record's own path: the location check accepts the directory of either run,
+    whichever id the caller names, and the record's own fields settle which run
+    it is about.
 
     The record may sit at either location a run review is stored in: the host
     review-records directory a live reviewer delivers into, or the project's
@@ -3486,6 +3539,12 @@ def repair_run_review(
     pointer and ledger row are both gone is still repairable from the record
     alone.
 
+    ``review_run_id`` may be rewritten only to an id that extends the stored
+    value: a record that dropped a suffix from its own id names a review that
+    never ran under the shortened name, and nothing else distinguishes that
+    typo from a record that names a different review entirely, so any other
+    replacement is refused.
+
     A committed record is a tracked file, so its rewrite is committed here as
     the other committed record writes are: an uncommitted write is visible only
     to the checkout that made it. The as-delivered copy is kept beside it under
@@ -3495,13 +3554,32 @@ def repair_run_review(
     from reckon.crew import runs
 
     source = Path(record_path).expanduser().resolve()
-    staging = run_review_record_directory(runs.run_dir(reviewed_run_id)).resolve()
-    in_staging = source.parent == staging and source.name.startswith(reviewed_run_id)
-    if not project and not in_staging and source.name.endswith(".json"):
-        project = committed_record_project(source, reviewed_run_id)
-    committed = (
-        committed_run_review_directory(project, reviewed_run_id) if project else None
+    original = source.read_bytes()
+    body = json.loads(original)
+    if not isinstance(body, dict):
+        raise TypeError("review record is not an object")
+    reviewed_run_id = str(body.get("reviewed_run_id") or "").strip()
+    stored_review_run_id = str(body.get("review_run_id") or "").strip()
+    replacement_review_run_id = (
+        change.partition("=")[2].strip() if change.startswith("review_run_id=") else ""
     )
+
+    def _stages(run: str) -> bool:
+        return (
+            bool(run)
+            and source.parent
+            == run_review_record_directory(runs.run_dir(run)).resolve()
+        )
+
+    in_staging = any(
+        _stages(name) and source.name.startswith(name)
+        for name in (run_id, reviewed_run_id)
+    )
+    if not project and not in_staging and source.name.endswith(".json"):
+        project = committed_record_project(source, run_id) or committed_record_project(
+            source, reviewed_run_id
+        )
+    committed = committed_run_review_directory(project, run_id) if project else None
     in_committed = (
         committed is not None
         and source.parent == committed.resolve()
@@ -3511,6 +3589,12 @@ def repair_run_review(
         raise ValueError(
             "record is outside the reviewed run's review-records directory"
         )
+    if reviewed_run_id and run_id not in (
+        reviewed_run_id,
+        stored_review_run_id,
+        replacement_review_run_id,
+    ):
+        raise ValueError("review record names a different reviewed run")
     explanation = reason.strip()
     if not explanation:
         raise ValueError("a review repair requires a non-empty --reason")
@@ -3520,17 +3604,27 @@ def repair_run_review(
             raise ValueError(
                 "status must be one of " + ", ".join(sorted(RECOGNISED_REVIEW_STATUSES))
             )
+    elif change.startswith("review_run_id="):
+        value = replacement_review_run_id
+        if (
+            not value
+            or not stored_review_run_id
+            or value == stored_review_run_id
+            or not value.startswith(stored_review_run_id)
+        ):
+            raise ValueError(
+                "review_run_id may only be repaired to an id that extends the "
+                "stored one"
+            )
     elif change != "subject":
-        raise ValueError("--set may only name status=<accepted value> or subject")
-    original = source.read_bytes()
-    body = json.loads(original)
-    if not isinstance(body, dict):
-        raise TypeError("review record is not an object")
-    if body.get("reviewed_run_id") and body["reviewed_run_id"] != reviewed_run_id:
-        raise ValueError("review record names a different reviewed run")
+        raise ValueError(
+            "--set may only name status=<accepted value>, review_run_id=<longer id> "
+            "or subject"
+        )
     updates: dict[str, Any] = {}
     if change == "subject":
-        reviewed = runs.read_pointer(reviewed_run_id)
+        subject_run = reviewed_run_id or run_id
+        reviewed = runs.read_pointer(subject_run)
         project = str(reviewed.get("project") or "")
         if not project:
             raise ValueError("reviewed run records no project")
@@ -3541,14 +3635,17 @@ def repair_run_review(
         ]
         if len(reviewers) != 1:
             raise ValueError("cannot identify exactly one review run for this record")
-        for key, value in (
+        for key, filled in (
             ("project", project),
-            ("reviewed_run_id", reviewed_run_id),
+            ("reviewed_run_id", subject_run),
             ("review_run_id", reviewers[0]["run_id"]),
         ):
             if not body.get(key):
-                body[key] = value
-                updates[key] = value
+                body[key] = filled
+                updates[key] = filled
+    elif change.startswith("review_run_id="):
+        body["review_run_id"] = value
+        updates["review_run_id"] = value
     else:
         body["status"] = value
         updates["status"] = value
@@ -3903,6 +4000,9 @@ def _write_record(path: Path, record: Mapping[str, Any]) -> None:
     directory to resurrect. The record is indented and key-sorted as before,
     and the parent keeps its previous mode rather than taking a private one.
     """
+    from reckon import ledger
+
+    previous = ledger._file_identity(path.parent)
     write_json_atomically(
         path,
         dict(record),
@@ -3912,6 +4012,9 @@ def _write_record(path: Path, record: Mapping[str, Any]) -> None:
         fsync=False,
         create_parents=False,
     )
+    from reckon.crew import open_run_index
+
+    open_run_index.review_written(path, record, previous=previous)
 
 
 # ── The review-record store family, owned by review_records ──

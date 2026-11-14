@@ -1,0 +1,55 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/crew/promotion.py:2677 rerun_gate_at_integrated_revision imported for the verify-gate pass",
+    "reckon/crew/recovery_review_acceptance.py:441 promotion_module.rerun_gate_at_integrated_revision",
+    "reckon/crew/promotion_checks.py:1309 promotion_gate.replay_domain_invariant_checks",
+    "reckon/crew/landing_measure.py:709 _partition_runner calls partition_submission"
+  ],
+  "completed_at": "2026-11-12T14:51:14.361Z",
+  "dispatched_at": "2026-11-12T14:45:53Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "exempted",
+      "reason": "the replay's receipt reader and landing_measure's inline rule differ only when scheduler text follows the receipt; the shared helper now owns submission, and folding the reader into it is a follow-on narrowing, recorded here",
+      "recorded_at": "2026-11-12T15:04:23.857421+00:00"
+    },
+    "1": {
+      "kind": "exempted",
+      "reason": "the srun step is built by the shared partition_submission helper, which the landing-measure tests already cover; an explicit assertion here is a test refinement",
+      "recorded_at": "2026-11-12T15:05:04.595793+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "reckon/crew/promotion_gate.py",
+      "line": "69",
+      "severity": "non-blocking",
+      "text": "_job_log_receipt re-implements the receipt rule reckon/crew/landing_measure.py:752-755 already states inline, and the two copies disagree: promotion_gate anchors on the last line shaped like EXIT=<n> anywhere in the log, while landing_measure requires the receipt to be the file's final line (re.search(r\"^EXIT=(\\d+)\\n?\\Z\", MULTILINE)) and additionally reports 3 when the receipt disagrees with the submission's return code. A log carrying trailing scheduler text after the receipt therefore reads as a verdict in the replay and as unreadable in the landing measure. The repair consolidated the submission form into the owner but left the receipt rule with two implementations, so a later change to that rule has two places to land."
+    },
+    {
+      "file": "tests/test_a_gate_replay_runs_on_the_measure_partition.py",
+      "line": "113",
+      "severity": "non-blocking",
+      "text": "no case in this file asserts positively that the submission's --wrap script runs the measure as an srun step; test_the_replay_is_submitted_as_a_batch_job_on_the_measure_partition checks only argv[:2] == [\"sbatch\", \"--wait\"], --partition and --chdir, and the in-place case asserts only the absence of srun. A change to reckon/crew/landing_measure.py:partition_submission that ran the script as the batch job's own shell command would leave every assertion here true. The clause the done_when states first is guarded only by tests/test_a_landing_measure_runs_on_its_partition.py:115, which asserts shlex.split(wrap)[0] == \"srun\" against the shared helper."
+    }
+  ],
+  "project": "reckon",
+  "review_run_id": "r-20261112T144205460765-review-of-gate-replay-runs-on-the-measure-partition-9b931b8b258f",
+  "reviewed_base_sha": "ac7ca6c5ff80fcdeead95ef2992bde4d8882c147",
+  "reviewed_head_sha": "9b931b8b258f48e3631059f5f08812be180a5945",
+  "reviewed_run_id": "r-20261112T123733584745-gate-replay-runs-on-the-measure-partition",
+  "scores": {
+    "durability": 17,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 14,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-12T14:56:09.765176+00:00",
+  "total": 103
+}

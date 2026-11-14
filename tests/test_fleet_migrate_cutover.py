@@ -63,6 +63,7 @@ class Actions:
         self.calls: list[tuple] = []
         self.old_sessions = {"first-fleet", "second-fleet"}
         self.steps: list[str] = []
+        self.live: list[dict] = []
         self.processes_ready = True
         self.relay_fails = False
         self.ready_response = True
@@ -131,6 +132,7 @@ class Actions:
             send_supervisor=self.send,
             inspect_session=self.inspect,
             list_worker_steps=self.worker_steps,
+            list_live_runs=lambda: self.live,
             cancel_job=self.cancel,
             pause=lambda _: None,
             **options,
@@ -388,6 +390,20 @@ def test_retire_refuses_steps_and_sessions_then_requires_confirmation(actions: A
     with pytest.raises(fleet_migrate.MigrationError, match="zellij sessions"):
         actions.migrate(confirm=True)
     actions.old_sessions.clear()
+    # A worker the supervisor spawned runs in the batch step, not a step.
+    actions.live = [
+        {
+            "run_id": "r-resident",
+            "launcher_host": "old-node.example",
+            "phase": "working",
+        }
+    ]
+    with pytest.raises(fleet_migrate.MigrationError, match="r-resident"):
+        actions.migrate(confirm=True)
+    actions.live = [
+        {"run_id": "r-elsewhere", "launcher_host": "new-node", "phase": "working"},
+        {"run_id": "r-finished", "launcher_host": "old-node", "phase": "complete"},
+    ]
     answer = actions.migrate()
     assert "scancel 1234" in answer and "--confirm required" in answer
     assert not any(call[0] == "cancel" for call in actions.calls)

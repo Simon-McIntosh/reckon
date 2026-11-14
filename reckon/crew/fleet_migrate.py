@@ -6,6 +6,7 @@ import json
 import os
 import re
 import secrets
+import shutil
 import socket
 import subprocess
 import sys
@@ -21,6 +22,7 @@ from reckon.crew.fleet_supervisor import (
     runtime_directory,
     state_directory,
 )
+from reckon.crew.node import _TERMINAL_RUN_PHASES
 from reckon.crew.recovery import _resume_remedy
 from reckon.crew.resumption import resolve_session
 
@@ -93,6 +95,11 @@ def parse_layout(source: str) -> list[dict[str, Any]]:
     return tabs
 
 
+def fleet_zellij_socket_dir(environ: Mapping[str, str] | None = None) -> str:
+    """Where the fleet supervisor's zellij servers keep their sockets."""
+    return str(runtime_directory(environ) / "zellij")
+
+
 def _listed_sessions(
     *,
     invoke: Callable[..., subprocess.CompletedProcess[str]] = subprocess.run,
@@ -103,6 +110,10 @@ def _listed_sessions(
     environment = os.environ.copy()
     for key in ("ZELLIJ", "ZELLIJ_SESSION_NAME", "ZELLIJ_PANE_ID"):
         environment.pop(key, None)
+    # The fleet's zellij servers listen in the fleet runtime directory, not
+    # wherever the caller's environment points: a step launched from a
+    # login node inherits that node's settings and would list none.
+    environment["ZELLIJ_SOCKET_DIR"] = fleet_zellij_socket_dir(environment)
     options: dict[str, Any] = {
         "capture_output": True,
         "text": True,
@@ -423,6 +434,60 @@ def _read_runs() -> list[dict[str, Any]]:
     return rows
 
 
+def unresolved_backend_commands(
+    path: str,
+    backends: Mapping[str, Mapping[str, Any]] | None = None,
+) -> list[str]:
+    """Commands the flight places in a declared directory that ``path`` misses.
+
+    A backend's location is a fact the flight declares, so a backend whose
+    command is absent from the directory it declares is one the hold cannot
+    supply whatever shell submitted it. A backend that declares no directory is
+    not judged here: its location is a fact about the submitting environment,
+    which a hold cannot add to either.
+    """
+    if backends is None:
+        from reckon import flight
+
+        backends = flight.resolve().config.get("backends") or {}
+    from reckon._backends import backend_search_directories
+
+    missing: list[str] = []
+    for name in sorted(backends):
+        backend = backends[name] or {}
+        command = str(backend.get("command") or "")
+        if not command or not backend_search_directories(backend):
+            continue
+        if shutil.which(command, path=path) is None and command not in missing:
+            missing.append(command)
+    return missing
+
+
+def verify_backend_commands(
+    job: Mapping[str, Any],
+    *,
+    path: str | None = None,
+    backends: Mapping[str, Mapping[str, Any]] | None = None,
+) -> None:
+    """Refuse a migration whose new allocation cannot find a declared backend.
+
+    The check runs before the migration names the new allocation anywhere: a
+    missing command is reported with the allocation it would have switched to
+    and nothing is written, so the fleet record keeps naming the node that
+    still serves every backend.
+    """
+    missing = unresolved_backend_commands(
+        fleet_node.hold_path() if path is None else path, backends
+    )
+    if not missing:
+        return
+    names = ", ".join(f"'{command}'" for command in missing)
+    raise MigrationError(
+        f"backend command {names} does not resolve in allocation "
+        f"{job.get('jobid') or 'unknown'} on {job.get('node') or 'unknown'}"
+    )
+
+
 def _fleet_record(state: Path) -> dict[str, Any]:
     try:
         record = json.loads((state / fleet_node.RECORD_NAME).read_text())
@@ -575,6 +640,38 @@ def _worker_steps(job_id: str) -> list[str]:
         for line in result.stdout.splitlines()
         if line.strip() and not line.strip().endswith((".batch", ".extern"))
     ]
+
+
+# Phases in which a run has no worker process: it has finished, it is waiting
+# for the coordinator to promote it, or it has not been launched yet. Any other
+# phase, including one this list does not know, counts as a worker that may
+# still be running, so retire fails closed.
+_PROCESS_FREE_RUN_PHASES = _TERMINAL_RUN_PHASES | {
+    "promotion-requested",
+    "queued",
+    "awaiting-upstream",
+    "held",
+    "blocked-upstream",
+}
+
+
+def _runs_launched_on(node: str, live: list[dict[str, Any]]) -> list[str]:
+    """Live runs launched on ``node`` whose worker may still be running.
+
+    A worker the supervisor spawns runs in the allocation's batch step, not
+    in a step of its own, so the step list does not show it; cancelling the
+    allocation would end it all the same. The run pointer names the host
+    that launched it.
+    """
+    short = node.split(".", 1)[0]
+    if not short:
+        return []
+    return sorted(
+        str(run.get("run_id") or "?")
+        for run in live
+        if str(run.get("launcher_host") or "").split(".", 1)[0] == short
+        and str(run.get("phase") or "") not in _PROCESS_FREE_RUN_PHASES
+    )
 
 
 def _cancel_job(job_id: str) -> subprocess.CompletedProcess[str]:
@@ -828,6 +925,7 @@ def migrate(
         [Mapping[str, str], str], dict[str, Any]
     ] = _inspect_remote_session,
     list_worker_steps: Callable[[str], list[str]] = _worker_steps,
+    list_live_runs: Callable[[], list[dict[str, Any]]] = runs.list_live,
     cancel_job: Callable[[str], subprocess.CompletedProcess[str]] = _cancel_job,
     pause: Callable[[float], None] = time.sleep,
     hostname: Callable[[], str] = socket.gethostname,
@@ -1044,6 +1142,7 @@ def migrate(
             query_jobs=query_jobs,
             pause=pause,
         )
+        verify_backend_commands(job)
         try:
             replacement = replace_reservation(job_id=standing["job_id"])
         except placement.CrewError as exc:
@@ -1194,6 +1293,12 @@ def migrate(
             raise MigrationError(
                 f"old job {old_job_id} still holds worker steps: {', '.join(steps)}"
             )
+        old_node = str(ledger["stand_up"]["old_record"].get("node") or "")
+        resident = _runs_launched_on(old_node, list_live_runs())
+        if resident:
+            raise MigrationError(
+                f"old node {old_node} still hosts live runs: {', '.join(resident)}"
+            )
         argv = fleet_node.placement_argv(
             {"jobid": old_job_id},
             [sys.executable, "-m", "reckon.crew.fleet_migrate", "list-sessions"],
@@ -1219,6 +1324,11 @@ def migrate(
             raise MigrationError(
                 f"old job {old_job_id} acquired worker steps: {', '.join(steps)}"
             )
+        resident = _runs_launched_on(old_node, list_live_runs())
+        if resident:
+            raise MigrationError(
+                f"old node {old_node} acquired live runs: {', '.join(resident)}"
+            )
         answer = cancel_job(old_job_id)
         if answer.returncode:
             raise MigrationError(
@@ -1239,6 +1349,7 @@ def migrate(
 
 
 if __name__ == "__main__":
+    os.environ["ZELLIJ_SOCKET_DIR"] = fleet_zellij_socket_dir()
     if sys.argv[1:] == ["collect-local"]:
         print(json.dumps(collect_local()))
     elif len(sys.argv) >= 3 and sys.argv[1] == "request":

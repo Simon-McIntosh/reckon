@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="work-flows-to-the-lane">
+  <meta name="plan-title" content="A held request names its hold">
+  <meta name="plan-summary" content="A request held on its own section's readiness reports the blocker by kind and id — the open decision's key or the unpassed gate's id — in the dispatch answer, on the request's recorded hold and in an admission pass's verdict row, all derived by one function, so a coordinator told about the hold is told what to settle rather than sent looking for an upstream that does not exist.">
+  <meta name="plan-evidence-for" content="work-flows-to-the-lane">
+  <meta name="plan-verifies" content="work-flows-to-the-lane#s11">
+  <meta name="plan-verdict" content="pass">
+  <title>A held request names its hold &mdash; evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<main class="plan-doc">
+  <h1 id="held-request-names-its-hold-title">A held request names its hold</h1>
+  <p id="held-request-names-its-hold-defect">Four dispatches of a plan's sections answered <code>awaiting-upstream</code> with one reason &mdash; <em>this section's waits have not landed</em> &mdash; for sections that declared no waits at all. What held them was an open decision on the plan, so a coordinator reading the answer went looking for an upstream that did not exist. The readiness ref that carries such a hold names no upstream: it is the plan's hold on the section the request would build, and the blockers behind it are what a reader has to settle.</p>
+
+  <p id="held-request-names-its-hold-change"><code>reckon/crew/queue_admission.py</code> now derives the hold in one place, <code>section_hold()</code>, which resolves each ref a request is held on: a declared section, gate or request wait is reported as itself, and a readiness ref is resolved to the roadmap's own blocker rows for that section, naming each blocker as <code>decision:&lt;key&gt;</code> or <code>gate:&lt;id&gt;</code>. The wording about waits survives only where every unmet ref is a declared wait, which is the one case where it is true. The dispatch answer, the request's recorded hold and an admission pass's verdict row all read that one derivation, so the three cannot describe one hold two ways.</p>
+
+  <figure id="held-request-names-its-hold-figure">
+    <img src="/reckon/figures/work-flows-to-the-lane/held-request-names-its-hold/one-hold-three-readers.svg"
+         alt="One derivation, section_hold, reads the roadmap's readiness rows and names each blocker by kind and id into three readers: the dispatch answer, the request's recorded hold and the admission verdict row.">
+    <figcaption>The readiness rows of the request's own section are resolved once, and the same blocker names reach the coordinator's answer, the pointer and the pass's ledger row. The derive-and-report direction is green; the roadmap read it consumes is grey.</figcaption>
+  </figure>
+
+  <section id="held-request-names-its-hold-cases">
+    <h2>The cases the node pins</h2>
+    <ul>
+      <li id="held-request-names-its-hold-case-decision">A section held by an open decision and declaring no wait: the dispatch answer carries <code>hold: ["decision:route"]</code> and a reason naming it, the pointer's recorded hold carries the same, and the reason no longer claims an upstream is missing.</li>
+      <li id="held-request-names-its-hold-case-gate">A section held by a gate whose verdict is empty: the answer and the recorded hold carry <code>gate:ship</code>.</li>
+      <li id="held-request-names-its-hold-case-wait">A section that does declare a wait: the answer still names that wait's ref and keeps the wording about waits, which is the case it describes, and the hold is recorded under its own verdict, <code>held-on-waits</code>, rather than as <code>held-on-readiness</code>.</li>
+      <li id="held-request-names-its-hold-case-verdict">An admission pass over a decision-held request records a <code>held-on-readiness</code> verdict row carrying the same names, where before the pass recorded nothing for a request that never reached the queue it launches from.</li>
+      <li id="held-request-names-its-hold-case-pass">A dispatched readiness hold survives the pass that re-reads waits, so the first admission pass no longer releases a decision-held request to launch.</li>
+    </ul>
+  </section>
+
+  <section id="held-request-names-its-hold-measure">
+    <h2>Measure</h2>
+    <p id="held-request-names-its-hold-measure-arms">The node gate ran both arms in scratch trees on <code>all_debug</code> with the module under test resolving from each tree: at base <code>2e4cf59</code> <code>tests/test_staged_write_inventory.py</code> read 51 passed, exit 0; at head <code>8e0fc11c</code> the node's five cases plus that file read 56 passed, exit 0. The negative control restored the fixed wording in a scratch tree at <code>8e0fc11c</code> and failed exactly the two cases that name a blocker &mdash; <code>test_a_dispatch_held_by_an_open_decision_names_the_decision</code> and <code>test_a_dispatch_held_by_a_closed_gate_names_the_gate</code> &mdash; 2 failed and 3 passed, exit 1. The importer population (65 test files naming the modified modules) ran one arm at a time on <code>all_debug</code> at <code>-n 4</code>: 170 failed and 301 passed at base, 170 failed and 306 passed at head, with no failure id added and none removed between the arms; the five extra passes are the node's new file. The failures common to both arms are environment-dependent pre-existing ones (headless browser and related), identical on each side. An earlier head run at <code>333307a89</code> added two failures in <code>tests/test_a_pass_computes_coverage_once.py</code>, the pass's read-count guards; the pass now re-derives a readiness ref only onto a record that already carries one, and those guards are green at <code>8e0fc11c</code>. Ruff check and format --check report no findings on the three staged paths. Logs, commands and module paths are in the run manifest.</p>
+  </section>
+</main>
+</body>
+</html>

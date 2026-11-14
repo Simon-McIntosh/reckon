@@ -1,0 +1,70 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew_run_commands.py:crew_check",
+    "reckon/crew_run_commands.py:crew_check_review",
+    "reckon/crew_run_commands.py:crew_repair_review"
+  ],
+  "completed_at": "2026-11-11T12:25:31.192Z",
+  "dispatched_at": "2026-11-11T12:17:04Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "exempted",
+      "reason": "Not a regression: the base revision refused a committed-tree record under a different run id too; the section's endpoint is the mistyped-id refusal and repair, which the head meets.",
+      "recorded_at": "2026-11-11T12:32:06.156648+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "reckon/crew/review.py",
+      "line": "3541",
+      "severity": "non-blocking",
+      "text": "non-blocking: the committed-tree location check resolves committed_run_review_directory from the run id handed to --run alone, so a record committed under the reviewed run's directory is still refused when --run names the review run, against the docstring at line 3485 claiming either run's directory is accepted."
+    },
+    {
+      "file": "reckon/crew/review.py",
+      "line": "3572",
+      "severity": "non-blocking",
+      "text": "non-blocking: the repair accepts any id that extends the stored value, not only the review run's own id as the deliverable states, so a typo repaired to a wrong longer id is refused only later by crew check --review --run."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read commit by commit against base bc6d7fd9; one commit changes repair_run_review in reckon/crew/review.py and the check command in reckon/crew_run_commands.py, and adds the test and the evidence fragment.",
+    "done_when": "the done-when's four cases are among the five cases in tests/test_a_mistyped_review_run_id_can_be_repaired.py and the head arm records 56 passed at e8bd52d044; the base arm ran only tests/test_staged_write_inventory.py, which imports neither changed module, so the done-when's \"test files importing the changed modules add no failure against the base revision\" is not measured, as the manifest's blockers record.",
+    "goal": "the node's goal is that a mistyped review run id is refused at write time and repairable; reckon/crew_run_commands.py:crew_check sets expected_run_id for a review-role run and refuses a record whose id is not that run's own, and reckon/crew/review.py:repair_run_review now rewrites review_run_id only to a longer id.",
+    "manifest": "read; it states the head arm 56 passed, the negative control 1 failed and 4 passed, tests/test_review_record_contract.py 62 passed, and names its logs; it discloses the cancelled importer-population arm under blockers.",
+    "write_paths": "the manifest declares reckon/crew/review.py, reckon/crew_run_commands.py, the new test and the evidence fragment; git show e8bd52d044 --numstat lists exactly those four files plus nothing else."
+  },
+  "justifications": {
+    "durability": "tests/test_a_mistyped_review_run_id_can_be_repaired.py:101 fails when the prefix rule is removed, as negative-control.log records, and its assertion names the fixture's own full id rather than a value read back from the code.",
+    "evidence": "gate-head-arm.log shows 56 passed and negative-control.log shows the repair case red, but gate-base-arm.log measures tests/test_staged_write_inventory.py, which imports neither changed module.",
+    "fit": "the helpers are imported from reckon/crew/recovery_review_delivery.py in the same private-name style crew_run_*commands*.py:3462 already uses, and the new comments state the mechanism rather than a ticket.",
+    "goal_fidelity": "reckon/crew_run_commands.py:1307 sets expected_run_id only for a review-role pointer and the refusal names the full id, while reckon/crew/review.py:3572 accepts any extension of the stored id rather than only the review run's own.",
+    "reuse": "reckon/crew_run_commands.py:1300 reuses _declared_head_keyed_record, _is_review_run and stored_record, and a search of reckon/ for a run-id prefix rule found no owner to extend.",
+    "scope_discipline": "all four paths in git show e8bd52d044 --numstat sit inside the manifest's declared write paths, with no plan or state edit."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that a mistyped review run id is refused at write time and repairable; reckon/crew_run_commands.py:crew_check sets expected_run_id for a review-role run and refuses a record whose id is not that run's own, and reckon/crew/review.py:repair_run_review now rewrites review_run_id only to a longer id.\nVERDICT done_when: the done-when's four cases are among the five cases in tests/test_a_mistyped_review_run_id_can_be_repaired.py and the head arm records 56 passed at e8bd52d044; the base arm ran only tests/test_staged_write_inventory.py, which imports neither changed module, so the done-when's \"test files importing the changed modules add no failure against the base revision\" is not measured, as the manifest's blockers record.\nVERDICT write_paths: the manifest declares reckon/crew/review.py, reckon/crew_run_commands.py, the new test and the evidence fragment; git show e8bd52d044 --numstat lists exactly those four files plus nothing else.\nVERDICT manifest: read; it states the head arm 56 passed, the negative control 1 failed and 4 passed, tests/test_review_record_contract.py 62 passed, and names its logs; it discloses the cancelled importer-population arm under blockers.\nVERDICT diff: read commit by commit against base bc6d7fd9; one commit changes repair_run_review in reckon/crew/review.py and the check command in reckon/crew_run_commands.py, and adds the test and the evidence fragment.\nCALL_SITES: reckon/crew_run_commands.py:crew_check, reckon/crew_run_commands.py:crew_check_review, reckon/crew_run_commands.py:crew_repair_review\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: reckon/crew_run_commands.py:1307 sets expected_run_id only for a review-role pointer and the refusal names the full id, while reckon/crew/review.py:3572 accepts any extension of the stored id rather than only the review run's own.\nSCORE evidence: 14\nJUSTIFICATION evidence: gate-head-arm.log shows 56 passed and negative-control.log shows the repair case red, but gate-base-arm.log measures tests/test_staged_write_inventory.py, which imports neither changed module.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: all four paths in git show e8bd52d044 --numstat sit inside the manifest's declared write paths, with no plan or state edit.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_a_mistyped_review_run_id_can_be_repaired.py:101 fails when the prefix rule is removed, as negative-control.log records, and its assertion names the fixture's own full id rather than a value read back from the code.\nSCORE fit: 16\nJUSTIFICATION fit: the helpers are imported from reckon/crew/recovery_review_delivery.py in the same private-name style crew_run_*commands*.py:3462 already uses, and the new comments state the mechanism rather than a ticket.\nSCORE reuse: 19\nJUSTIFICATION reuse: reckon/crew_run_commands.py:1300 reuses _declared_head_keyed_record, _is_review_run and stored_record, and a search of reckon/ for a run-id prefix rule found no owner to extend.\nFINDING reckon/crew/review.py:3541 non-blocking: the committed-tree location check resolves committed_run_review_directory from the run id handed to --run alone, so a record committed under the reviewed run's directory is still refused when --run names the review run, against the docstring at line 3485 claiming either run's directory is accepted.\nFINDING reckon/crew/review.py:3572 non-blocking: the repair accepts any id that extends the stored value, not only the review run's own id as the deliverable states, so a typo repaired to a wrong longer id is refused only later by crew check --review --run.",
+  "review_run_id": "r-20261111T121504892221-review-of-a-mistyped-review-run-id-can-be-repaired-and-is-refused-at-w-e8bd52d04461",
+  "reviewed_base_sha": "bc6d7fd9f1306f21d21daa58f44f235265e6cca3",
+  "reviewed_head_sha": "e8bd52d044614560940e85ec1e277ef9ccdc09bc",
+  "reviewed_run_id": "r-20261111T115434865847-a-mistyped-review-run-id-can-be-repaired-and-is-refused-at-w",
+  "scores": {
+    "durability": 18,
+    "evidence": 14,
+    "fit": 16,
+    "goal_fidelity": 17,
+    "reuse": 19,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-11T12:27:34.819324+00:00",
+  "total": 103
+}

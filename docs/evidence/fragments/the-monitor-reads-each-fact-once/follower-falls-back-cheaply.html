@@ -1,0 +1,48 @@
+<section id="follower-falls-back-cheaply">
+  <h3>A stale follower shares one bounded run-record reading</h3>
+  <p>The follower caches its population reading for 60 seconds across its own and observed
+  sessions. A completed pointer carrying its delivery manifest, or a terminal pointer carrying
+  an outstanding review dispatch, keeps the pane open until promotion. These checks use fields
+  already on the pointer without opening the manifest, worktree or review store. The stale
+  fallback adds 60 seconds to the configured settle grace, and a fresh station answer bypasses
+  the cached fallback immediately.</p>
+  <table>
+    <thead><tr><th>Measure</th><th>Base</th><th>Implementation</th></tr></thead>
+    <tbody>
+      <tr><td>Population calculations in 60 one-second samples over 40 pointers</td><td>60</td><td>At most 2</td></tr>
+      <tr><td>Review-in-flight checks in those samples</td><td>2,400</td><td>0</td></tr>
+      <tr><td>Pointer turning terminal after the opening sample</td><td>Not the bounded path</td><td>Read at 60 seconds</td></tr>
+      <tr><td>Widened armed gate</td><td>68 passed</td><td>77 passed</td></tr>
+    </tbody>
+  </table>
+  <p>The review recorder's positive control observes 40 calls before the follower measurement.
+  Every loaded alias of the population and review functions is patched. The new sample-count
+  assertion fails against the unmodified base with 60 calculations and passes at the implementation
+  commit <code>47a92a406c6c9b546b33ebd538898ef5d5a2fb41</code>.</p>
+  <h4 id="follower-falls-back-cheaply-review-holds">Review holds survive the cheap fallback</h4>
+  <p>The initial phase-only delivery added three importer failure ids. Its two review-hold
+  failures reproduced before repair; the pane-text case passed unchanged in isolation. The
+  repaired fallback retains pending work from the run's own record while keeping the interval
+  bound. No pre-existing test file was edited, and no compatibility assertion was weakened.</p>
+  <p>Four new controls fail against the phase-only delivery at
+  <code>d85087cbccc21347bb796fea8856dd0e71966d47</code>:
+  <strong>4 failed in 0.77s</strong>. Each delivery or review-dispatch variant stays open through
+  181 one-second samples with at most four population calculations and zero review-in-flight
+  calls. Promotion removes the pointer, is seen at the next interval, and releases the pane
+  after the stale grace. The focused compatibility gate reads <strong>26 passed in 52.06s</strong>.</p>
+  <p>The final matched 66-file importer arms ran sequentially on <code>all_debug</code>, job
+  <code>1310041</code>, with four workers and a 120-second per-test bound. Base reads
+  <strong>10 failed, 504 passed in 228.71s (0:03:48)</strong>; repaired head reads
+  <strong>9 failed, 505 passed in 223.23s (0:03:43)</strong>, with zero added failure ids.
+  All three cases from the initial added-failure report pass at the repaired head. Remaining
+  inherited failure ids are recorded in the worker manifest. The widened armed gate reads
+  <strong>68 passed in 28.66s</strong> and <strong>77 passed in 26.10s</strong>; its base cost
+  control fails as declared with <strong>1 failed in 0.59s</strong>.</p>
+  <p>Ruff adds no finding: the follower module retains the same two lint findings and the same
+  64 formatting-delta lines at base and head; the station module and new test are clean. Durable
+  commands, imported-module paths, receipts and logs are in the <code>resumed-checks</code>
+  directory of run <code>r-20261111T034614437441-follower-falls-back-cheaply</code>. The partition
+  job removed its scratch tree before exit.</p>
+  <p>The coordinator's post-integration 60-second CPU/read-rate measurement remains outstanding
+  against the recorded 586% CPU and approximately 25 GB/min baseline.</p>
+</section>

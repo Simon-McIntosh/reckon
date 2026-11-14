@@ -1,0 +1,68 @@
+<section id="review-promotion-waits-for-its-record-landing">
+  <h2>A review's own promotion waits for its record</h2>
+
+  <p>A review run's promotion was requested as soon as the review sweep saw the
+  run, which is while the reviewer is still working and before the record it
+  owes exists. The request moved the pointer out of its working phase, and the
+  promotion service then refused it for a record that had not been written yet.
+  Nothing re-requested it, so the review stayed unpromoted until a coordinator
+  noticed.</p>
+
+  <h3 id="review-promotion-waits-for-its-record-reproduction">Reproduction before repair</h3>
+  <p>The base revision's own modules, run against a live reviewer whose record
+  is not yet stored and whose <code>review-self</code> request exists:</p>
+  <pre id="review-promotion-waits-for-its-record-repro-output">{"launched": ["r-20261113T100000000001-review-of-first"], "phase": "promotion-refused", "error": "the review run's worker is still alive", "pointer_phase": "working"}</pre>
+  <p>The request was launched at the first opportunity and refused while the
+  reviewer was alive, exactly the defect the section records.</p>
+
+  <h3 id="review-promotion-waits-for-its-record-change">What changed</h3>
+  <ul>
+    <li><code>review_self_state()</code> answers one question for both callers:
+      <em>ready</em> when the record is stored, <em>waiting</em> while the
+      reviewer is still producing it, <em>refused</em> once the reviewer has
+      ended without it. A refusal and a wait are now different facts rather
+      than both being reported as a failure.</li>
+    <li>The review sweep requests nothing while the reviewer is running, so no
+      <code>promotion-requested</code> pointer is written for a record that
+      cannot be read yet.</li>
+    <li>The promotion service parks a <code>review-self</code> request whose
+      reviewer is live: the request moves to <code>promotion-waiting</code>
+      outside the pending set, so it holds neither a promotion slot nor the
+      head of the queue, and the run's pointer keeps its working phase. The
+      requests behind it are drained in the same pass.</li>
+    <li>A reviewer that has ended without a record still leaves a refusal, and
+      that refusal names the missing record.</li>
+  </ul>
+
+  <h3 id="review-promotion-waits-for-its-record-measures">Measurements</h3>
+  <table id="review-promotion-waits-for-its-record-table">
+    <caption>Gate, arms and the declared negative control, each logged at the
+    revision it ran on. Logs are in the node's run directory.</caption>
+    <thead><tr><th>Measurement</th><th>Recorded result</th></tr></thead>
+    <tbody>
+      <tr><td>Pre-repair reproduction</td>
+        <td><code>promotion-refused</code> — “the review run's worker is still alive”; pointer left working</td></tr>
+      <tr><td>Head gate (revision <code>ee37c3d19c</code>)</td>
+        <td>54 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>Base arm (revision <code>5c05b3dd71</code>)</td>
+        <td>51 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>Declared negative control: the request is written at the
+        reviewer's first progress event</td>
+        <td>1 failed — <code>test_a_review_is_requested_only_once_its_record_is_stored</code>, <code>EXIT=1</code></td></tr>
+    </tbody>
+  </table>
+
+  <h3 id="review-promotion-waits-for-its-record-cases">The cases the tests fix</h3>
+  <ol>
+    <li>A stub reviewer writes its record only when it is told to. The sweep
+      reads no <code>review-self</code> request while the reviewer is alive,
+      and the review is promoted once the record is stored and the reviewer
+      has ended.</li>
+    <li>A request that exists while its reviewer is live is parked: it reads
+      <code>promotion-waiting</code>, the pointer keeps its working phase, and
+      a ready review queued behind it is promoted by the same service
+      pass.</li>
+    <li>A reviewer that ends without a record leaves the request refused, with
+      the missing record named, and the run's pointer intact.</li>
+  </ol>
+</section>

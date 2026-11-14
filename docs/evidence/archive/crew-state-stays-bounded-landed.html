@@ -55,6 +55,11 @@
     <p>§10 landed at <code>5bc89fc029</code> (reviewed head <code>6cc3130cd2</code>, run <code>r-20261107T145629802776-a-retention-pass-finishes-inside-its-slot</code>). A pass examines at most its <code>--limit</code>, resumes from a cursor that only an applied pass moves, resolves each project's grace once, and prints per-phase timings and progress to stderr. On a synthetic 2,000-directory home a <code>--limit 100</code> pass reaches a prune candidate behind a 300-directory withheld head by the fourth pass. On the real 20,975-directory store a <code>--limit 500</code> dry run finished in 223.93 s (ledger 49.5 s, judge 166.6 s). The full-store <code>--limit 100000</code> dry run did not finish: the first attempt exceeded 1,900 s in the judge phase; the second was stopped by the coordinator at 936 s (8,310 directories, about 8.9 per second) to cut GPFS load. Per-prune <code>tree_size_bytes</code> walks dominate the judge phase and are outside this section. Tests: 6 cases, three negative controls each failing one case. Review at <code>6cc3130cd2</code>: three non-blocking findings, all exempted with reasons.</p>
   </section>
 
+  <section id="ledger-caches-shared-and-pruned" data-evidence-origin="append">
+    <h2>Ledger caches are shared per repository and pruned by the sweep</h2>
+    <p>Landed from r-20261111T035550813418 (head 80caedd42a). Worktrees of one repository share one ledger cache keyed by the common git directory. Releasing a worktree no longer deletes it, and the retention sweep prunes orphaned caches and picker view files older than seven days. Armed tests: 64 passed at head. The 306-file importer comparison added no failures. The review's one finding, a test-only helper duplicate, was exempted. Before landing, the coordinator pruned 56 orphaned caches (16.6 GB) by hand, leaving 79.</p>
+  </section>
+
 </main>
 </body>
 </html>

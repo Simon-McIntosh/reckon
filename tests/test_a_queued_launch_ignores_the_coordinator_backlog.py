@@ -1,11 +1,10 @@
 """A launch from the queue is not refused on its coordinator's backlog.
 
 Queued work exists so that it runs when its lane frees, whether or not its
-coordinator is awake to reconcile delivered runs. The
-unreconciled-run guard judges a request when it is queued, not again when the
-lane opens: an admission launch waives its session's backlog and records that
-waiver on the run with the runs it covered, while a direct dispatch keeps the
-refusal unchanged.
+coordinator is awake to reconcile delivered runs. Neither route is held back by
+a session's terminal backlog. A coordinator's direct dispatch records the
+overdue runs the work was chosen over; admission continues a queued request
+without computing or recording that backlog.
 """
 
 from __future__ import annotations
@@ -206,29 +205,32 @@ def test_an_admission_launch_waives_its_coordinator_backlog(
     assert result["launched"] == ["r-queued"], json.dumps(result, default=str)
     pointer = runs.read_pointer("r-queued")
     waiver = runs.dispatch_field(pointer, "unreconciled_override")
-    assert waiver["requested"] is True
-    assert waiver["source"] == "admission-launch"
-    assert [row["run_id"] for row in waiver["waived_runs"]] == ["r-delivered"]
+    assert waiver is None
 
 
-def test_a_direct_dispatch_still_refuses_the_backlog(admit_repo: Path) -> None:
+def test_a_direct_dispatch_records_the_backlog_it_runs_over(
+    admit_repo: Path,
+) -> None:
+    """A direct dispatch succeeds and names the runs it was chosen over."""
     home = Path(os.environ["RECKON_HOME"])
     _write_overdue_run(home, "r-delivered")
     config, _ = _config_for()
+    recorded: list = []
 
-    with pytest.raises(dispatch_module.UnreconciledRuns) as excinfo:
-        dispatch_module.dispatch(
-            node=_node("direct"),
-            project=PROJECT,
-            repo=admit_repo,
-            config=config,
-            session=SESSION,
-            launcher=lambda *args, **kwargs: pytest.fail(
-                "a direct dispatch must be refused"
-            ),
-        )
+    result = dispatch_module.dispatch(
+        node=_node("direct"),
+        project=PROJECT,
+        repo=admit_repo,
+        config=config,
+        session=SESSION,
+        launcher=_launcher(recorded),
+    )
 
-    assert [row["run_id"] for row in excinfo.value.runs] == ["r-delivered"]
+    assert result["run_id"] != "r-delivered"
+    backlog = runs.dispatch_field(result, "unreconciled_override")
+    assert backlog["source"] == "coordinator"
+    assert backlog["requested"] is False
+    assert [row["run_id"] for row in backlog["waived_runs"]] == ["r-delivered"]
 
 
 def test_a_request_with_no_backlog_records_no_waiver(admit_repo: Path) -> None:
@@ -242,3 +244,26 @@ def test_a_request_with_no_backlog_records_no_waiver(admit_repo: Path) -> None:
         runs.dispatch_field(runs.read_pointer("r-clean"), "unreconciled_override")
         is None
     )
+
+
+def test_the_stored_override_does_not_govern_the_admission_launch(
+    admit_repo: Path,
+) -> None:
+    """The value recorded when the request was queued does not decide its launch.
+
+    A request can wait days for a lane, so the waiver its dispatch stored then
+    describes that moment. Admission continues the request without computing
+    or recording its session's backlog at launch.
+    """
+    home = Path(os.environ["RECKON_HOME"])
+    _write_overdue_run(home, "r-delivered")
+    _, resolve = _config_for()
+    request = _queue(admit_repo, node_id="stored", run_id="r-stored")
+    request["dispatch_options"]["allow_unreconciled_runs"] = False
+    runs.queue_dispatch(request)
+
+    result = queue_admission.admit_once(config_for=resolve, launcher=_launcher([]))
+
+    assert result["launched"] == ["r-stored"], json.dumps(result, default=str)
+    waiver = runs.dispatch_field(runs.read_pointer("r-stored"), "unreconciled_override")
+    assert waiver is None

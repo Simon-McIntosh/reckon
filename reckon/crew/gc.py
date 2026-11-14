@@ -1,12 +1,16 @@
 import bisect
+import contextlib
 import json
 import os
 import re
 import shlex
 import shutil
+import socket
 import sys
+import tempfile
 import time
-from collections.abc import Callable, Mapping, Sequence
+from collections.abc import Callable, Iterable, Mapping, Sequence
+from typing import TextIO
 
 from reckon import review_tiers
 from reckon.crew.routing import (
@@ -56,6 +60,7 @@ from reckon.crew.runs import (
     read_pointer,
     record_process_alive,
 )
+from reckon.run_store import INCREMENTAL_VACUUM_PAGES, RETIREMENT_BATCH_SIZE
 
 # The scratch a harness plants in every worktree it provisions: the agent home
 # a worker runs against, and the directory carrying the run's own harness
@@ -113,16 +118,17 @@ WITHHELD_REASONS = {
 ARCHIVE_REF_PREFIX = "refs/reckon/archive/"
 
 
-def _sweep_worktree_trash(repo: Path, *, apply: bool) -> list[dict[str, Any]]:
-    """Remove leftover worktree trash a release's deletion step did not finish.
+def _sweep_trash_directories(
+    trash_roots: Iterable[Path], *, apply: bool, announce: TextIO | None = None
+) -> list[dict[str, Any]]:
+    """Remove every directory a release left behind in a worktree trash root.
 
-    Trash is written only after a tree has been moved off its registered path
-    and deregistered, so removing it cannot strand a registered tree; a gc pass
-    that runs with ``apply`` deletes each directory and prints it.
+    Trash is written only after a release has moved a tree off its registered
+    path and deregistered it, so removing it cannot strand a registered tree; a
+    pass that runs with ``apply`` deletes each directory and names it.
     """
     rows: list[dict[str, Any]] = []
-    for root in _releasable_roots(repo):
-        trash_root = root / WORKTREE_TRASH_DIRNAME
+    for trash_root in trash_roots:
         if not trash_root.is_dir():
             continue
         for entry in sorted(trash_root.iterdir()):
@@ -136,9 +142,52 @@ def _sweep_worktree_trash(repo: Path, *, apply: bool) -> list[dict[str, Any]]:
                     row["error"] = str(exc)
                 else:
                     row["removed"] = True
-                    print(f"removed worktree trash {entry}")
+                    print(
+                        f"removed worktree trash {entry}", file=announce or sys.stdout
+                    )
             rows.append(row)
     return rows
+
+
+def _sweep_worktree_trash(
+    repo: Path, *, apply: bool, announce: TextIO | None = None
+) -> list[dict[str, Any]]:
+    """Sweep this checkout's trash roots, named through git."""
+    return _sweep_trash_directories(
+        (root / WORKTREE_TRASH_DIRNAME for root in _releasable_roots(repo)),
+        apply=apply,
+        announce=announce,
+    )
+
+
+def _mounted_trash_roots(repo: Path) -> list[Path]:
+    """The trash roots of a mounted project, named without asking git.
+
+    A managed root names each checkout's trees by a digest of its git directory,
+    which only git can compute, so the hourly pass reads the root one level deep
+    instead. That is one directory listing per project and starts no git
+    process, which is what keeps the pass cheap whatever a checkout carries.
+    """
+    override = os.environ.get("RECKON_WORKTREE_ROOT")
+    managed = (
+        Path(override).expanduser().resolve()
+        if override
+        else repo.parent / ".reckon-worktrees"
+    )
+    candidates = [managed, Path(tempfile.gettempdir()) / "reckon-worktrees"]
+    roots: list[Path] = []
+    for candidate in candidates:
+        if not candidate.is_dir():
+            continue
+        roots.extend(
+            entry / WORKTREE_TRASH_DIRNAME
+            for entry in sorted(candidate.iterdir())
+            if entry.is_dir()
+        )
+    # A worker's own `git worktree add` puts a tree inside its run directory,
+    # and that root's trash is shared by every project on this host.
+    roots.append(runs_dir() / WORKTREE_TRASH_DIRNAME)
+    return roots
 
 
 # The extraction's reason is held in its own constant rather than joining
@@ -215,6 +264,76 @@ def _gc_partial_report(
 LEDGER_INDEX_UNRECORDED_MAX_AGE_DAYS = 7
 
 
+# A persisted memo is a cache of an expensive computation, re-derivable from the
+# source it was computed from, so an entry no reader has rewritten for this long
+# is offered for removal. Seven days matches the ledger index window: long past
+# any live reader's reuse cadence, far short of the unbounded growth a reviewed
+# plan edit adds with every new snapshot digest. A read never refreshes an
+# entry, so an entry still in use is simply rewritten on its next miss.
+PERSISTED_MEMO_MAX_AGE_DAYS = 7
+
+# The kinds `metadata_index.persisted_memo` stores, each in its own directory
+# under the config home's cache. The directory is named for the kind and the
+# files it holds are `<digest>-v<version>.json`, written by
+# `_persisted_cache_path`, so a sweep can find them without reading a file to
+# learn what it is.
+PERSISTED_MEMO_KINDS = (
+    "metadata-index",
+    "plan-review-coverage",
+    "plan-review-snapshot-evidence",
+)
+
+
+def _persisted_memo_roots() -> list[Path]:
+    """Return the cache directories the persisted-memo store writes into."""
+
+    from reckon._store import _config_home
+
+    cache = _config_home() / "cache"
+    return [cache / kind for kind in PERSISTED_MEMO_KINDS]
+
+
+def _expired_persisted_memos(*, apply: bool, now: datetime) -> list[dict[str, Any]]:
+    """Offer persisted memos no reader has rewritten within the age window.
+
+    The store holds one file per memo identity and nothing else removes them,
+    so every plan edit whose review persists a new snapshot adds one. An entry
+    is cache after all: its producers' source digests guard it, and a miss
+    recomputes and rewrites it, so age is the only fact a sweep needs. A file a
+    process currently holds is left alone, and so is one whose stat moved
+    between the decision and the unlink.
+    """
+
+    cutoff = (
+        now.timestamp() - timedelta(days=PERSISTED_MEMO_MAX_AGE_DAYS).total_seconds()
+    )
+    entries: list[dict[str, Any]] = []
+    for root in _persisted_memo_roots():
+        if not root.is_dir():
+            continue
+        holders = _scratch_process_holders(root)
+        for path in sorted(root.glob("*-v*.json")):
+            try:
+                stat = path.stat()
+                if not path.is_file() or stat.st_mtime >= cutoff:
+                    continue
+                entry = {"path": str(path), "size": stat.st_size, "removed": False}
+                if apply and not holders.get(path.name) and path.stat() == stat:
+                    # stdout carries the pass's JSON report; every cache sweep
+                    # announces on stderr so that report stays parseable.
+                    sys.stderr.write(
+                        f"removing persisted memo {path} ({stat.st_size} bytes)\n"
+                    )
+                    sys.stderr.flush()
+                    path.unlink()
+                    entry["removed"] = True
+                entries.append(entry)
+            except FileNotFoundError:
+                # Another sweep or an atomic publisher may move the file.
+                continue
+    return entries
+
+
 # A run directory's size is measured while it still exists, because the size is
 # reported at the moment it dies and there is no second chance to measure it.
 # The walk is bounded so a pass on shared storage cannot be made to traverse a
@@ -275,6 +394,50 @@ def _committed_review_exists(project: str, run_id: str, repo: Path) -> bool:
     return bool(heads)
 
 
+def _stored_reviewer_result_exists(
+    project: str,
+    run_id: str,
+    repo: Path,
+    committed_paths: dict[Path, dict[str, list[Path]]] | None = None,
+) -> bool:
+    """Find a readable result produced by this reviewer outside its run directory."""
+    from reckon.crew import review, review_records
+
+    def belongs_to_reviewer(body: Any) -> bool:
+        return (
+            isinstance(body, Mapping)
+            and body.get("review_run_id") == run_id
+            and isinstance(body.get("status"), str)
+            and review.names_a_review_subject(body)
+            and review.carries_review_material(body)
+            and review.review_status_refusal(body) is None
+        )
+
+    try:
+        staged = review_records.record_for_review_run(project, run_id)
+        if staged is not None and belongs_to_reviewer(staged[1]):
+            return True
+    except (OSError, ValueError, TypeError):
+        pass
+    root = review.committed_review_root(project, root=repo)
+    if root is None:
+        return False
+    # Cache only locations for this pass; re-read selected bytes before removal.
+    paths = committed_paths if committed_paths is not None else {}
+    if root not in paths:
+        paths[root] = review_records.committed_record_paths_by_review_run(
+            project, root=repo
+        )
+    for path in paths[root].get(run_id, ()):
+        try:
+            body = json.loads(path.read_text(encoding="utf-8"))
+            if belongs_to_reviewer(body):
+                return True
+        except (OSError, ValueError, TypeError):
+            continue
+    return False
+
+
 def _run_directory_retention_report(
     directory: Path,
     record: Mapping[str, Any],
@@ -283,6 +446,7 @@ def _run_directory_retention_report(
     repo_root: Path,
     cutoff: datetime,
     live_review_targets: set[str],
+    review_result_paths: dict[Path, dict[str, list[Path]]] | None = None,
 ) -> dict[str, Any] | None:
     """Classify one ledgered run directory under the retention rule.
 
@@ -294,6 +458,7 @@ def _run_directory_retention_report(
     :func:`garbage_collect` classify a directory identically.
     """
     from reckon.crew.dispatch_launch import tree_size_bytes
+    from reckon.crew.recovery_review_delivery import _is_review_run
 
     run_id = directory.name
     # A review in flight is a run of its own that names this run as its subject;
@@ -301,12 +466,32 @@ def _run_directory_retention_report(
     # cannot see it.
     if run_id in live_review_targets:
         return None
-    # A review is owed while the run's tier says one is required and no complete
-    # review of it is committed yet. The directory holds the stream and diff such
-    # a review reads, so it is kept until the review lands.
+    # Reviewers owe their own stored result, rather than a review of themselves.
+    # Other runs keep their stream and diff while their tier requires a review
+    # whose committed record is still missing.
     tier = str(record.get("review_tier") or "").strip().lower()
+    # A ledger stores the node id where a dispatch pointer stores a node object.
+    node = record.get("node")
+    identity = {**record, "node": node if isinstance(node, Mapping) else {"id": node}}
+    reviewer = _is_review_run(identity)
+    if reviewer and not _stored_reviewer_result_exists(
+        project, run_id, repo_root, review_result_paths
+    ):
+        return {
+            "run_id": run_id,
+            "path": str(directory),
+            "action": "withheld",
+            "removed": False,
+            "withheld": "missing-review-result",
+            "reason": (
+                "the review record produced by this reviewer is missing or "
+                "unreadable in the staging and committed stores; its directory "
+                "stays until its own result is stored"
+            ),
+        }
     if (
         tier
+        and not reviewer
         and tier != review_tiers.NONE
         and not _committed_review_exists(project, run_id, repo_root)
     ):
@@ -394,57 +579,247 @@ def _run_directory_grace_seconds(project: str | None, repo_root: Path) -> int:
         return parse_duration(DEFAULT_RUN_DIRECTORY_GRACE)
 
 
-def _orphan_ledger_indexes(
-    *, apply: bool, now: datetime | None
-) -> list[dict[str, Any]]:
-    """Ledger caches whose checkout is gone, or stale and carrying no path.
-
-    Each index is keyed per checkout, so a worktree that is later removed
-    leaves a full-size index behind that nothing resolves again. An index
-    recording a ledger path that no longer exists is an orphan outright; one
-    recording no path at all is offered only once it has aged past
-    :data:`LEDGER_INDEX_UNRECORDED_MAX_AGE_DAYS`, so a reader between opening
-    and rebuilding an index is never swept. A cache file a live process holds
-    is left alone whatever the age, and only ``ledger-*.sqlite`` files are
-    matched, so the picker's ``picker-*.json`` inputs in the same root are
-    untouched. Every row states its path and size, and removal happens only
-    under ``--apply``.
-    """
+def _ledger_cache_roots() -> list[Path]:
+    """Include the cache used by readers fenced out of the configured home."""
     from reckon import _store
     from reckon import ledger as ledger_module
 
-    root = _store.cache_root("pick-input")
-    if not root.is_dir():
-        return []
+    roots = {
+        _store.cache_root("pick-input").resolve(),
+        ledger_module._index_directory().resolve(),
+    }
+    if not os.environ.get(
+        "RECKON_PICK_CACHE"
+    ) and _store._config_home() == _store._config_home({}):
+        roots.add(ledger_module._default_cache_root().resolve())
+    return sorted(roots)
+
+
+def _orphan_ledger_indexes(
+    *, apply: bool, now: datetime | None, report_removals: bool = False
+) -> list[dict[str, Any]]:
+    """Offer missing-source ledger caches and aged caches carrying no source.
+
+    Every index records its canonical ledger path. A missing source is an
+    orphan; an unrecorded index gets the grace window so an unfinished build
+    is left alone. Open descriptors and SQLite write locks protect live users.
+    """
+    from reckon import ledger as ledger_module
+
     current = now or datetime.now(tz=UTC)
     stale_before = current - timedelta(days=LEDGER_INDEX_UNRECORDED_MAX_AGE_DAYS)
     entries: list[dict[str, Any]] = []
-    for index in sorted(
-        path for path in root.glob("ledger-*.sqlite") if path.is_file()
-    ):
-        recorded = ledger_module.recorded_ledger_path(index)
-        if recorded is not None:
-            if Path(recorded).exists():
+    for root in _ledger_cache_roots():
+        if not root.is_dir():
+            continue
+        holders = _scratch_process_holders(root)
+        for index in sorted(root.glob("ledger-*.sqlite")):
+            if not index.is_file():
                 continue
-            reason = "recorded-checkout-gone"
-        else:
-            modified = datetime.fromtimestamp(index.stat().st_mtime, tz=UTC)
-            if modified > stale_before:
+            try:
+                recorded = ledger_module.recorded_ledger_path(index)
+                stat = index.stat()
+                if recorded is not None:
+                    source = Path(recorded)
+                    if source.exists() or (source.parent / "runs").is_dir():
+                        continue
+                    reason = "recorded-checkout-gone"
+                else:
+                    if datetime.fromtimestamp(stat.st_mtime, tz=UTC) > stale_before:
+                        continue
+                    reason = "unrecorded-stale"
+                entry = {
+                    "path": str(index),
+                    "size": stat.st_size,
+                    "recorded_ledger_path": recorded,
+                    "reason": reason,
+                    "action": "prune",
+                    "removed": False,
+                }
+                if (
+                    apply
+                    and not holders.get(index.name)
+                    and not _ledger_index_locked(index)
+                    and index.stat() == stat
+                ):
+                    if report_removals:
+                        sys.stderr.write(
+                            f"removing ledger cache {index} ({stat.st_size} bytes)\n"
+                        )
+                        sys.stderr.flush()
+                    index.unlink()
+                    entry["removed"] = True
+                entries.append(entry)
+            except FileNotFoundError:
+                # Another sweep or an atomic publisher may move the file.
                 continue
-            reason = "unrecorded-stale"
-        entry = {
-            "path": str(index),
-            "size": index.stat().st_size,
-            "recorded_ledger_path": recorded,
-            "reason": reason,
-            "action": "prune",
-            "removed": False,
-        }
-        if apply and not _ledger_index_locked(index):
-            index.unlink()
-            entry["removed"] = True
-        entries.append(entry)
     return entries
+
+
+PICKER_VIEW_MAX_AGE_DAYS = 7
+
+
+def _expired_picker_views(*, apply: bool, now: datetime) -> list[dict[str, Any]]:
+    """Offer only aged picker budget views, retaining files a process holds."""
+    cutoff = now.timestamp() - timedelta(days=PICKER_VIEW_MAX_AGE_DAYS).total_seconds()
+    entries: list[dict[str, Any]] = []
+    for root in _ledger_cache_roots():
+        if not root.is_dir():
+            continue
+        holders = _scratch_process_holders(root)
+        for path in sorted(root.glob("picker-budget-view-*.json")):
+            try:
+                stat = path.stat()
+                if not path.is_file() or stat.st_mtime >= cutoff:
+                    continue
+                entry = {"path": str(path), "size": stat.st_size, "removed": False}
+                if apply and not holders.get(path.name) and path.stat() == stat:
+                    sys.stderr.write(
+                        f"removing picker view {path} ({stat.st_size} bytes)\n"
+                    )
+                    sys.stderr.flush()
+                    path.unlink()
+                    entry["removed"] = True
+                entries.append(entry)
+            except FileNotFoundError:
+                continue
+    return entries
+
+
+# Identity files a dispatch publishes beside its node claims are named for the
+# pid that wrote them, so a sweep judges one from the file and the kernel: the
+# pid is running, and the process now wearing it began before the file was
+# written. Anything else is a file whose execution has gone.
+_EXEC_IDENTITY_NAME = re.compile(r"^exec-(\d+)\.identity$")
+
+# Clock granularity between the kernel's process start time and a file's
+# modification time, which are sampled from different clocks.
+_EXEC_IDENTITY_CLOCK_SLACK_SECONDS = 2.0
+
+# How long an identity file published by another host is kept. A pid is
+# meaningful only on the node that issued it, while the claims directory sits
+# under a crew home every node shares, so this kernel cannot find a foreign
+# holder gone and must not remove its file on local evidence. The bound is the
+# age past which no claim-holding execution survives: the only process that
+# publishes one is a dispatch composing a launch, and the admission pass
+# releases a launch that outlives its span. A file older than a day therefore
+# names a holder that has gone, whatever host wrote it.
+EXEC_IDENTITY_FOREIGN_HOST_MAX_AGE_SECONDS = 24 * 60 * 60.0
+
+
+def _process_start_epoch(pid: int) -> float | None:
+    """When the process now wearing ``pid`` began, in epoch seconds."""
+    try:
+        stat = Path(f"/proc/{pid}/stat").read_text()
+        uptime = float(Path("/proc/uptime").read_text().split()[0])
+        ticks = os.sysconf("SC_CLK_TCK")
+    except (OSError, ValueError, IndexError):
+        return None
+    # The comm field is parenthesised and may contain spaces, so the fields
+    # begin after its closing parenthesis; the second of them is ``state``.
+    fields = stat[stat.rfind(")") + 2 :].split()
+    if len(fields) <= 19:
+        return None
+    try:
+        started = float(fields[19]) / ticks
+    except (TypeError, ValueError):
+        return None
+    return time.time() - uptime + started
+
+
+def _execution_is_live(pid: int, path: Path) -> bool:
+    """Whether the process now wearing ``pid`` is the execution that wrote it."""
+    try:
+        os.kill(pid, 0)
+    except ProcessLookupError:
+        return False
+    except (PermissionError, OverflowError):
+        return True
+    started = _process_start_epoch(pid)
+    if started is None:
+        return True
+    try:
+        written = path.stat().st_mtime
+    except OSError:
+        return False
+    return written >= started - _EXEC_IDENTITY_CLOCK_SLACK_SECONDS
+
+
+def _foreign_identity_is_kept(path: Path) -> bool:
+    """Whether an identity file another host published is inside the age bound.
+
+    A file whose age cannot be read is kept: the sweep removes what it can
+    show is dead, and a stat that fails shows nothing.
+    """
+    try:
+        age = time.time() - path.stat().st_mtime
+    except OSError:
+        return True
+    return age < EXEC_IDENTITY_FOREIGN_HOST_MAX_AGE_SECONDS
+
+
+def sweep_exec_identities(*, apply: bool) -> dict[str, Any]:
+    """Remove execution identity files of processes that are no longer running.
+
+    Every identity file names the pid that published it and the host it was
+    published from. On the host that published a file, one belongs to a live
+    execution only while its pid is running and is still the process that
+    wrote it; a pid the kernel has freed, or one now worn by a later process,
+    leaves a file that no claim can be judged against and that nothing else
+    removes. A file published by another host cannot be judged here at all —
+    its pid belongs to that host's kernel — so it is kept until it is older
+    than any claim-holding execution lives. Each removal is printed, so a
+    sweep can be read without opening the directory afterwards.
+    """
+    from reckon.crew.dispatch_claims import (
+        NODE_DISPATCH_CLAIM_DIRECTORY,
+        read_exec_identity,
+    )
+    from reckon.crew.runs import crew_home
+
+    directory = crew_home() / NODE_DISPATCH_CLAIM_DIRECTORY
+    report: dict[str, Any] = {
+        "directory": str(directory),
+        "applied": apply,
+        "removed": [],
+        "kept": [],
+    }
+    try:
+        entries = sorted(directory.iterdir())
+    except OSError:
+        return report
+    for path in entries:
+        match = _EXEC_IDENTITY_NAME.match(path.name)
+        if match is None:
+            continue
+        pid = int(match.group(1))
+        identity = read_exec_identity(path)
+        host = None if identity is None else identity[0]
+        if host is not None and host != socket.gethostname():
+            if _foreign_identity_is_kept(path):
+                report["kept"].append(str(path))
+                continue
+            sys.stderr.write(
+                f"removing identity file {path} (published by host {host!r}, "
+                f"older than {EXEC_IDENTITY_FOREIGN_HOST_MAX_AGE_SECONDS:.0f}s)\n"
+            )
+            if apply:
+                with contextlib.suppress(OSError):
+                    path.unlink(missing_ok=True)
+            report["removed"].append({"path": str(path), "pid": pid, "host": host})
+            continue
+        if _execution_is_live(pid, path):
+            report["kept"].append(str(path))
+            continue
+        sys.stderr.write(
+            f"removing identity file {path} (pid {pid} is not that process)\n"
+        )
+        if apply:
+            with contextlib.suppress(OSError):
+                path.unlink(missing_ok=True)
+        report["removed"].append({"path": str(path), "pid": pid})
+    sys.stderr.flush()
+    return report
 
 
 def garbage_collect(
@@ -473,9 +848,11 @@ def garbage_collect(
         raise CrewError("retention days cannot be negative")
     repo_root = Path(repo).resolve()
     from reckon.crew.recovery import _resolve_commit
+    from reckon.crew.terminal_cleanup import sweep_ended_runs
 
     if not _resolve_commit(repo_root, integrated_into):
         raise CrewError(f"integration revision {integrated_into!r} is not a commit")
+    ended_cleanup = sweep_ended_runs(repo=repo_root) if apply and run_id is None else []
     confined_to: Path | None = None
     already_removed_run = ""
     already_removed_worktree = ""
@@ -751,6 +1128,7 @@ def garbage_collect(
         )
         live_ids = {str(record.get("run_id") or "") for record in list_live()}
         live_review_targets = _live_review_targets()
+        review_result_paths: dict[Path, dict[str, list[Path]]] = {}
         run_reports: list[dict[str, Any]] = []
         run_file_reports: list[dict[str, Any]] = []
         from reckon.crew.fleet_supervisor import bound_run_files, run_file_limit_bytes
@@ -779,6 +1157,7 @@ def garbage_collect(
                     repo_root=repo_root,
                     cutoff=run_directory_cutoff,
                     live_review_targets=live_review_targets,
+                    review_result_paths=review_result_paths,
                 )
                 if report is None:
                     continue
@@ -844,6 +1223,11 @@ def garbage_collect(
         # run, so a pass confined to one run's artifacts does not reach it.
         ledger_index_reports = (
             _orphan_ledger_indexes(apply=apply, now=now) if run_id is None else []
+        )
+        persisted_memo_reports = (
+            _expired_persisted_memos(apply=apply, now=now or datetime.now(tz=UTC))
+            if run_id is None
+            else []
         )
     except PROGRAMMING_ERRORS:
         # Re-raised untouched: the traceback names the defective line, where a
@@ -957,6 +1341,7 @@ def garbage_collect(
         "already_removed": bool(already_removed_run),
         "already_removed_run": already_removed_run,
         "already_removed_worktree": already_removed_worktree,
+        "ended_cleanup": ended_cleanup,
         "run_lock": run_lock_reports,
         "unledgered_run_directories": unledgered_run_reports,
         "unledgered_run_directories_removed": sum(
@@ -965,6 +1350,10 @@ def garbage_collect(
         "ledger_indexes": ledger_index_reports,
         "ledger_indexes_removed": sum(
             1 for item in ledger_index_reports if item.get("removed")
+        ),
+        "persisted_memos": persisted_memo_reports,
+        "persisted_memos_removed": sum(
+            1 for item in persisted_memo_reports if item.get("removed")
         ),
         "scratch": (
             garbage_collect_orphan_scratch(apply=apply) if run_id is None else None
@@ -1473,7 +1862,7 @@ RETENTION_PROGRESS_EVERY = 10
 
 #: The phases a pass times. Each prints one line to stderr as it completes, so a
 #: pass killed under its timeout still leaves a record of how far it got.
-RETENTION_PHASES = ("ledger", "judge", "scratch", "log")
+RETENTION_PHASES = ("ledger", "judge", "trash", "scratch", "cache", "store", "log")
 
 
 def retention_log_path() -> Path:
@@ -1568,20 +1957,86 @@ def _retention_ledger_records(
     return runs_root, records, owner, roots
 
 
+def _retire_run_store(
+    roots: Mapping[str, Path],
+    *,
+    apply: bool,
+    now: datetime,
+    limit: int,
+    vacuum_pages: int,
+) -> dict[str, Any]:
+    """Retire store history only after live consumers and owed reviews release it."""
+    from reckon import run_store
+    from reckon.crew.queue_admission import REQUEST_REF_PREFIX, section_waits_for
+
+    if not run_store.store_path().is_file():
+        return {"offered": [], "retired": []}
+    protected = _live_review_targets()
+    for pointer in list_live():
+        protected.add(str(pointer.get("run_id") or ""))
+        protected.update(
+            ref.removeprefix(REQUEST_REF_PREFIX)
+            for ref in section_waits_for(pointer)
+            if ref.startswith(REQUEST_REF_PREFIX)
+        )
+
+    def released(record: Mapping[str, Any]) -> bool:
+        tier = str(record.get("review_tier") or "").strip().lower()
+        return (
+            not tier
+            or tier == review_tiers.NONE
+            or _committed_review_exists(
+                str(record["project"]),
+                str(record["run_id"]),
+                roots[str(record["project"])],
+            )
+        )
+
+    with run_store.RunStore() as store:
+        report = store.retire(
+            before=now - timedelta(days=30),
+            protected=protected,
+            projects=set(roots),
+            apply=apply,
+            can_retire=released,
+            limit=limit,
+            vacuum_pages=vacuum_pages,
+        )
+    for run_id in report["retired"]:
+        sys.stderr.write(f"archived run {run_id} to {report['archive']}\n")
+    if report["retired"]:
+        sys.stderr.write(
+            f"incrementally compacted run store pages {report['pages_before']} -> {report['pages_after']}\n"
+        )
+        sys.stderr.flush()
+    if report["maintenance_required"]:
+        sys.stderr.write(
+            "run store needs one-time incremental-vacuum maintenance; "
+            "run python -m reckon.run_store --enable-incremental-vacuum "
+            "in a separate all_debug job\n"
+        )
+        sys.stderr.flush()
+    return report
+
+
 def retention_sweep(
     *,
     project: str | None = None,
     apply: bool = False,
     limit: int = RETENTION_SWEEP_LIMIT,
+    store_limit: int = RETIREMENT_BATCH_SIZE,
+    store_vacuum_pages: int = INCREMENTAL_VACUUM_PAGES,
     now: datetime | None = None,
     log: Path | None = None,
 ) -> dict[str, Any]:
     """Retire finished runs' directories across every mounted project.
 
-    This is the run-directory retention alone, not the rest of gc: it starts no
-    git process and inspects no worktree, because gc's worktree checks are where
-    a pass over the whole home spent its time. It examines at most ``limit``
-    directories, so one pass stays short on shared storage; the rest wait for
+    This sweeps run directories, worktree trash, scratch and disposable
+    caches: it starts no git process and inspects no worktree, because gc's
+    worktree checks are where a pass over the whole home spent its time. Trash
+    is only listed and removed — a tree reaches it after being moved off its
+    registered path and deregistered — so the sweep needs no git. It examines
+    at most ``limit`` directories, so one pass stays short on shared storage; the rest wait for
     the next hour. A removal is written to one log under the crew home, and a
     pass that removed nothing writes nothing.
 
@@ -1593,10 +2048,14 @@ def retention_sweep(
     so a pass killed under its timeout still leaves a record of how far it got.
     """
     from reckon import flight
+    from reckon.crew.terminal_cleanup import sweep_ended_runs
 
     moment = now or datetime.now(tz=timezone.utc)
     if limit < 1:
         raise CrewError("retention sweep limit must be at least one directory")
+    if store_limit < 1 or store_vacuum_pages < 1:
+        raise CrewError("store row and compaction page limits must be positive")
+    ended_cleanup = sweep_ended_runs(limit=limit) if apply else []
     phase_seconds: dict[str, float] = {}
 
     started = time.perf_counter()
@@ -1605,6 +2064,7 @@ def retention_sweep(
     runs_root, records, owner_of, roots = _retention_ledger_records(projects, mounted)
     live_ids = {str(record.get("run_id") or "") for record in list_live()}
     live_review_targets = _live_review_targets()
+    review_result_paths: dict[Path, dict[str, list[Path]]] = {}
     unreachable = [name for name in projects if name not in roots]
     # One resolve per project: every directory that project dispatched is judged
     # against the same window, and the config read is the cost this hoists out
@@ -1642,6 +2102,7 @@ def retention_sweep(
                     repo_root=root,
                     cutoff=cutoff,
                     live_review_targets=live_review_targets,
+                    review_result_paths=review_result_paths,
                 )
                 if row is not None:
                     judged += 1
@@ -1673,6 +2134,22 @@ def retention_sweep(
 
     removed = [row for row in offered if row["removed"]]
     started = time.perf_counter()
+    # A release moves a tree aside and deregisters it before the copy's
+    # deletion, so sweeping the trash root can never strand a registered tree.
+    # The hourly timer is the one pass that runs whatever this host is doing,
+    # so a copy a promotion left behind is reclaimed here even when no session
+    # runs `crew gc`; each directory removed is printed by name.
+    trash_roots: dict[str, Path] = {}
+    for candidate in sorted({str(Path(root)) for root in roots.values()}):
+        for trash_root in _mounted_trash_roots(Path(candidate)):
+            trash_roots.setdefault(str(trash_root), trash_root)
+    trash_rows = _sweep_trash_directories(
+        trash_roots.values(), apply=apply, announce=sys.stderr
+    )
+    trash_removed = [str(row["path"]) for row in trash_rows if row.get("removed")]
+    _emit_phase("trash", started, phase_seconds)
+
+    started = time.perf_counter()
     # The pass settles this host's scratch copies too. A run's scratch leaves
     # with the run on every host that holds one, and the hourly timer is the one
     # caller that runs whether or not this host launches a worker. It reads the crew
@@ -1683,8 +2160,33 @@ def retention_sweep(
     _emit_phase("scratch", started, phase_seconds)
 
     started = time.perf_counter()
+    indexes = _orphan_ledger_indexes(apply=apply, now=moment, report_removals=True)
+    picker_views = _expired_picker_views(apply=apply, now=moment)
+    persisted_memos = _expired_persisted_memos(apply=apply, now=moment)
+    caches_removed = [
+        row for row in [*indexes, *picker_views, *persisted_memos] if row["removed"]
+    ]
+    _emit_phase("cache", started, phase_seconds)
+
+    started = time.perf_counter()
+    store_retention = _retire_run_store(
+        roots,
+        apply=apply,
+        now=moment,
+        limit=store_limit,
+        vacuum_pages=store_vacuum_pages,
+    )
+    _emit_phase("store", started, phase_seconds)
+
+    started = time.perf_counter()
     written = ""
-    if removed or settled_removed:
+    if (
+        removed
+        or settled_removed
+        or trash_removed
+        or caches_removed
+        or store_retention["retired"]
+    ):
         from reckon.crew.watch_unit import _WatchLogStream
 
         target = log or retention_log_path()
@@ -1692,8 +2194,14 @@ def retention_sweep(
         try:
             for row in removed:
                 stream.write(f"removed {row['path']} ({row['bytes']} bytes)\n")
+            for path in trash_removed:
+                stream.write(f"removed worktree trash {path}\n")
             for path in settled_removed:
                 stream.write(f"removed scratch {path}\n")
+            for row in caches_removed:
+                stream.write(f"removed cache {row['path']} ({row['size']} bytes)\n")
+            for run_id in store_retention["retired"]:
+                stream.write(f"archived run {run_id} to {store_retention['archive']}\n")
         finally:
             stream.close()
         written = str(target)
@@ -1704,6 +2212,7 @@ def retention_sweep(
         "projects": projects,
         "unreachable_projects": unreachable,
         "limit": limit,
+        "ended_cleanup": ended_cleanup,
         "examined": examined,
         "judged": judged,
         "offered": offered,
@@ -1712,6 +2221,13 @@ def retention_sweep(
         "removed_count": len(removed),
         "scratch": settled,
         "scratch_removed": settled_removed,
+        "worktree_trash": trash_rows,
+        "worktree_trash_removed": len(trash_removed),
+        "ledger_indexes": indexes,
+        "picker_views": picker_views,
+        "persisted_memos": persisted_memos,
+        "cache_removed_count": len(caches_removed),
+        "run_store": store_retention,
         "log": written,
         "phase_seconds": phase_seconds,
     }
@@ -1726,7 +2242,7 @@ def render_retention_service_unit(
     """Render the oneshot service that runs the retention pass once.
 
     ``ExecStart`` is the interpreter that ran the install with
-    ``-m reckon.crew.gc --apply``, so the timer runs this checkout's own code
+    ``-m reckon.crew.gc --apply --limit N``, so the timer runs a bounded pass
     under the environment the install ran from. ``WorkingDirectory`` is the
     checkout root, which puts that tree on the module search path even where the
     package is not installed into the interpreter's environment.
@@ -1735,7 +2251,14 @@ def render_retention_service_unit(
 
     interpreter = str(executable or sys.executable)
     working_directory = str(root or Path(__file__).resolve().parents[2])
-    argv = [interpreter, "-m", "reckon.crew.gc", "--apply"]
+    argv = [
+        interpreter,
+        "-m",
+        "reckon.crew.gc",
+        "--apply",
+        "--limit",
+        str(RETENTION_SWEEP_LIMIT),
+    ]
     forwarded = dict(environment or {})
     home = os.environ.get("RECKON_HOME")
     if home:
@@ -1781,9 +2304,12 @@ def install_retention_timer(
 
 USAGE = """\
 usage: python -m reckon.crew.gc [--apply] [--limit N] [--project NAME] [--install-timer]
+                              [--store-limit N] [--store-vacuum-pages N]
+                              [--sweep-exec-identities]
 
 Retire finished crew run directories across every mounted project. Without
 --apply the pass reports what it would remove and removes nothing.
+Store retirement defaults to 2,000 rows and 256 incremental compaction pages.
 """
 
 
@@ -1798,8 +2324,11 @@ def main(argv: Sequence[str] | None = None) -> int:
     args = list(sys.argv[1:] if argv is None else argv)
     apply = False
     install = False
+    sweep_identities = False
     project: str | None = None
     limit = RETENTION_SWEEP_LIMIT
+    store_limit = RETIREMENT_BATCH_SIZE
+    store_vacuum_pages = INCREMENTAL_VACUUM_PAGES
     index = 0
     while index < len(args):
         flag = args[index]
@@ -1807,24 +2336,40 @@ def main(argv: Sequence[str] | None = None) -> int:
             apply = True
         elif flag == "--install-timer":
             install = True
+        elif flag == "--sweep-exec-identities":
+            sweep_identities = True
         elif flag in ("--help", "-h"):
             sys.stdout.write(USAGE)
             return 0
         elif flag == "--project":
             index += 1
             project = args[index] if index < len(args) else None
-        elif flag == "--limit":
+        elif flag in ("--limit", "--store-limit", "--store-vacuum-pages"):
             index += 1
             value = args[index] if index < len(args) else ""
             try:
-                limit = int(value)
+                parsed = int(value)
             except ValueError:
                 sys.stderr.write(f"limit must be an integer, not {value!r}\n")
                 return 2
+            if parsed < 1:
+                sys.stderr.write(f"{flag} must be positive\n")
+                return 2
+            if flag == "--limit":
+                limit = parsed
+            elif flag == "--store-limit":
+                store_limit = parsed
+            else:
+                store_vacuum_pages = parsed
         else:
             sys.stderr.write(f"unknown argument {flag!r}\n{USAGE}")
             return 2
         index += 1
+
+    if sweep_identities:
+        report = sweep_exec_identities(apply=apply)
+        sys.stdout.write(json.dumps(report, indent=2, default=str) + "\n")
+        return 0
 
     if install:
         result = install_retention_timer()
@@ -1834,7 +2379,13 @@ def main(argv: Sequence[str] | None = None) -> int:
         )
         return 0
 
-    report = retention_sweep(project=project, apply=apply, limit=limit)
+    report = retention_sweep(
+        project=project,
+        apply=apply,
+        limit=limit,
+        store_limit=store_limit,
+        store_vacuum_pages=store_vacuum_pages,
+    )
     sys.stdout.write(json.dumps(report, indent=2, default=str) + "\n")
     return 0
 

@@ -1,0 +1,82 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_analysis": [
+    {
+      "fails_if": "The command rule is dropped and a port list is read as jobs: ['nc','-z','a-host','50000,50001'] stops returning ()."
+    },
+    {
+      "fails_if": "The port-ceiling override is dropped, so ['nc','-z','a-host','70000,70001'] returns () instead of the two ids."
+    },
+    {
+      "fails_if": "The command rule is over-applied to every command, so a script handed '1234,5678' stops naming two jobs."
+    },
+    {
+      "fails_if": "The raw-vector flag read is removed: --jobs=..., and -j..., return only the first id, as the reversed reader arm records."
+    },
+    {
+      "fails_if": "Only the word-split id is queried, so the fixture with the script idle and _scheduler_stub listing BATCH_JOBS[1] is classified producer-gone instead of waiting."
+    }
+  ],
+  "assertion_independence": "every expected value is a literal or a module constant read from outside the code under test (the port pair, the 70000 pair, the 1234/5678 pair, PRODUCER_GONE_STATUS, BATCH_JOBS as the fixture's declared ids); the two BATCH_JOBS round trips compare the reader's output against the same constant that built the probe, which is a literal in disguise and still reddens when an id is dropped, so no assertion moves with the code it judges.",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/recovery_classification.py:546 _scheduler_jobs_reading",
+    "reckon/crew/recovery_classification.py:600 _scheduler_job_alive",
+    "reckon/crew/recovery_classification.py:2716 re-export"
+  ],
+  "completed_at": "2026-11-13T06:23:14.428Z",
+  "dispatched_at": "2026-11-13T06:11:38Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "exempted",
+      "reason": "non-blocking edge case noted by the re-review; tracked as a follow-up, not this section's endpoint",
+      "recorded_at": "2026-11-13T06:44:18.728186+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "reckon/crew/recovery_wait.py",
+      "line": "958",
+      "severity": "non-blocking",
+      "text": "non-blocking: a comma-separated job batch reached through a shell or interpreter string is still unread, because the job-shaped list is applied only to the raw probe items and never to the words the shell or interpreter string is split into: ['bash','-lc','python x.py 1234,5678'] and ['ssh','host','python x.py 1234,5678'] both return (), so a run whose probe passes its jobs that way can still read producer-gone while a job is alive. This delta does not introduce the gap (the same loop ran over probe[1:] before it) and the declared canonical shape is a shell-free interpreter vector, so it does not hold this node; the fix is not a one-liner because command_takes_ports must then derive from the inner command, not the shell."
+    }
+  ],
+  "gate_evidence": "tests/test_a_wait_on_scheduler_jobs_is_not_abandoned.py -k 'port_list or flag_list' re-run by this reviewer at 0d4f6e2f: 2 passed, 8 deselected, EXIT=0; ruff check and ruff format --check on the three changed paths: clean.",
+  "item_verdicts": {
+    "diff": "read commit by commit at 65640e18 and 0d4f6e2f; the fix commit replaces the digit-count rule with a command rule plus a port-ceiling override, adds a raw-vector flag list read, and re-points the tests at the shared fixtures; the docs commit re-measures the fragment.",
+    "done_when": "the done_when names tests/test_a_wait_on_scheduler_jobs_is_not_abandoned.py and its four readings plus the no-producer-word check, no added importer failures and clean ruff; the manifest records the four-file head gate, the base and head arms, the importer arms, both negative controls and a ruff run.",
+    "goal": "the node's goal is to read a probe that passes scheduler job ids as a wait on those jobs, so a live job keeps the run waiting; reckon/crew/recovery_wait.py:917 _wait_probe_job_ids now returns every id in a batch operand, a whole job-flag list and the whole glued list, and recovery_classification.py:546 asks squeue about all of them in one query.",
+    "manifest": "read; it records status complete, the nine commits, the gate and arm logs, the two negative controls and the stale-numbers repair, and its landing line states the measure.",
+    "write_paths": "declared paths are recovery_wait.py, recovery_classification.py, obligations.py, the three test files and the evidence fragment; the delta touches recovery_wait.py, two test files and the fragment, all inside them."
+  },
+  "justifications": {
+    "durability": "logs/negative-control-reader.log reverses only recovery_wait.py at 65640e18 and records '2 failed, 72 passed' with the port-list and flag-list cases failing, so the added assertions redden on the regression they claim to guard.",
+    "evidence": "logs/armed-head.log ends '74 passed, 2 errors' with EXIT=1 against logs/armed-base.log '64 passed, 2 errors', and logs/head-gate.log ends '76 passed' with EXIT=0; the two errors are the git-archive scaffolding attributed in the manifest and reproduce identically in the base arm.",
+    "fit": "reckon/crew/recovery_wait.py:842 sorts the job flags longest-first before matching glue and leaves tokens carrying '=' to the exact flag rule, which keeps the reader consistent with its own flag vocabulary.",
+    "goal_fidelity": "reckon/crew/recovery_wait.py:896-905 makes the command decide a number list and treats a value above the 65535 port ceiling as a job list, which is exactly the two shapes the prior review found still abandoned.",
+    "reuse": "the delta removes the second copy of _absent_pid, _stamp, _history and _waiting_run and imports the parked-run module's fixtures through tests/test_a_wait_on_scheduler_jobs_is_not_abandoned.py:31-38, and it reuses the module's own _wait_probe_names_a_port rather than adding a second port test.",
+    "scope_discipline": "git diff --stat d20dde38..0d4f6e2f names four files, every one of them inside the source node's declared write paths."
+  },
+  "negative_control_evidence": "logs/negative-control-reader.log: revision 65640e18 with reckon/crew/recovery_wait.py reversed, 2 failed / 72 passed / 2 scaffolding errors, EXIT=1, failing tests/test_a_wait_on_scheduler_jobs_is_not_abandoned.py::test_a_port_list_is_not_read_as_a_job_batch and ::test_a_flag_list_is_read_whole_before_the_words_are_split",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to read a probe that passes scheduler job ids as a wait on those jobs; reckon/crew/recovery_wait.py:917 now returns every id in a batch operand, a whole job-flag list and the whole glued list.\nVERDICT done_when: the done_when's four readings and its no-producer-word check are in tests/test_a_wait_on_scheduler_jobs_is_not_abandoned.py, and the manifest records the four-file gate, both arms, both negative controls and ruff.\nVERDICT write_paths: the delta touches recovery_wait.py, two test files and the evidence fragment, all inside the declared paths.\nVERDICT manifest: read; status complete, nine commits, seven logs, two negative controls, and a landing line stating the measure.\nVERDICT diff: read commit by commit at 65640e18 and 0d4f6e2f; the digit-count rule is replaced by a command rule with a port-ceiling override and the flag list is read from the raw vector.\nCALL_SITES: reckon/crew/recovery_classification.py:546 _scheduler_jobs_reading, reckon/crew/recovery_classification.py:600 _scheduler_job_alive, reckon/crew/recovery_classification.py:2716 re-export\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/recovery_wait.py:896-905 makes the command decide a number list and treats a value above the 65535 port ceiling as a job list.\nSCORE evidence: 18\nJUSTIFICATION evidence: logs/armed-head.log ends '74 passed, 2 errors' against logs/armed-base.log '64 passed, 2 errors', and logs/head-gate.log ends '76 passed' with EXIT=0.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat d20dde38..0d4f6e2f names only four files, each inside the source node's declared write paths.\nSCORE durability: 19\nJUSTIFICATION durability: logs/negative-control-reader.log reverses only recovery_wait.py and records the port-list and flag-list cases failing, so the added assertions redden on the regression they guard.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/crew/recovery_wait.py:842 sorts the job flags longest-first and leaves '=' tokens to the exact flag rule, matching the module's own flag vocabulary.\nSCORE reuse: 20\nJUSTIFICATION reuse: the delta imports the parked-run module's fixtures instead of copying them and reuses the module's own _wait_probe_names_a_port.\nFINDING reckon/crew/recovery_wait.py:958 non-blocking: a batch reached through a shell or interpreter string is still unread, so ['bash','-lc','python x.py 1234,5678'] and ['ssh','host','python x.py 1234,5678'] both return (); the delta does not introduce the gap and the canonical shell-free shape is covered.",
+  "reuse_search": "searched reckon/crew for an existing probe-to-job-id reader: _wait_probe_job_ids in reckon/crew/recovery_wait.py is the owner, _wait_probe_names_a_port and the _WAIT_PROBE_PORT_COMMANDS vocabulary already exist in the same module, and the parked-run test module owns the run_id, _stamp, _history and _absent_pid fixtures; the delta extends each owner and forks none.",
+  "review_method": "read the plan section's evidence fence, the prior review record at d20dde38, the source manifest, the two-commit diff, the seven gate and arm logs, the classification call sites, and re-ran the two repaired cases; no full suite was run.",
+  "review_run_id": "r-20261113T060812296939-review-of-scheduler-wait-is-not-abandoned-0d4f6e2f062e",
+  "reviewed_base_sha": "d20dde38d630b4c00c73a6c26d328cbd393a9d6a",
+  "reviewed_head_sha": "0d4f6e2f062ef5f2dd627ae59dee27fc016c3197",
+  "reviewed_run_id": "r-20261113T003754418594-scheduler-wait-is-not-abandoned",
+  "scores": {
+    "durability": 19,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-13T06:42:12.841093+00:00",
+  "total": 115
+}

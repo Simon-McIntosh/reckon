@@ -1,0 +1,94 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/flight.py:validate_layer",
+    "reckon/project_state.py:read_resource",
+    "reckon/project_state.py:write_resource"
+  ],
+  "completed_at": "2026-11-13T04:25:18.679Z",
+  "dimension_dispositions": {
+    "reuse": {
+      "kind": "folded",
+      "node": "repair-of-a-persisted-item-has-a-record-and-a-home-outside-7623bbe1fc34",
+      "recorded_at": "2026-11-13T07:10:56.552782+00:00"
+    }
+  },
+  "dispatched_at": "2026-11-13T04:15:33Z",
+  "findings": [
+    {
+      "file": "reckon/crew/persist.py",
+      "line": 109,
+      "severity": "non-blocking",
+      "text": "_sha256_path is a verbatim reimplementation of the chunked file digest owned by reckon/project_state.py:361, in a file that already imports read_resource, resource_path and write_resource from that module; it should import the owner rather than fork it."
+    },
+    {
+      "file": "reckon/flight.py",
+      "line": 107,
+      "severity": "non-blocking",
+      "text": "staging_root and REPORTS_PATH_KEYS add validation for a retention pass this node does not implement, so the schema advertises a store nothing here writes."
+    },
+    {
+      "file": "tests/test_a_persisted_item_has_a_record.py",
+      "line": 102,
+      "severity": "non-blocking",
+      "text": "the done_when requires the real crew home and docs state untouched, but the autouse fixture asserts only the reports and runs subtrees of the crew home and never the real docs state."
+    },
+    {
+      "file": "tests/test_a_persisted_item_has_a_record.py",
+      "line": 150,
+      "severity": "non-blocking",
+      "text": "the assertion compares figure_record[\"source\"] with data_record[\"figure\"], two values the code produced, so a figure field set from a path unrelated to the fixture would still satisfy it; store[\"figure\"] is the independent source."
+    },
+    {
+      "file": "reckon/crew/persist.py",
+      "line": 75,
+      "severity": "non-blocking",
+      "text": "the refusal for a persist root inside the crew home is exercised by no test, so dropping that guard would leave the suite green."
+    },
+    {
+      "file": "reckon/project_state.py",
+      "line": 59,
+      "severity": "non-blocking",
+      "text": "the persisted_items registration is a production module the node's declared write paths did not include; the worker disclosed it and it needs coordinator ratification."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "two commits, five files, 765 insertions against the base.",
+    "done_when": "tests/test_a_persisted_item_has_a_record.py carries a case per done-when behaviour; the manifest records 7 passed.",
+    "goal": "persist_item at reckon/crew/persist.py:201 copies each source into the declared persist root and records it.",
+    "manifest": "read; records both suite arms, the negative control and the fence shortfall.",
+    "write_paths": "three files outside the declared scope, all disclosed in the manifest's outside_scope."
+  },
+  "justifications": {
+    "durability": "tests/test_a_persisted_item_has_a_record.py:150 compares two records the code produced rather than the fixture's own figure path, and the crew-home refusal at reckon/crew/persist.py:75 has no test.",
+    "evidence": "the after-suite log records 7 passed EXIT=0 and the negative control log shows DID NOT RAISE PersistError, though the base arm was built by copying the new test into a base tree rather than resolved over that tree.",
+    "fit": "reckon/crew/persist.py:39 declares PersistError(RuntimeError) as the surrounding modules do and reads its setting through reckon/flight.py:812 reports_setting.",
+    "goal_fidelity": "reckon/crew/persist.py:201 copies the figure and any named data files into the project's declared persist root and reckon/crew/persist.py:59 refuses a root inside the crew home.",
+    "reuse": "reckon/crew/persist.py:109 reimplements reckon/project_state.py:361 _sha256_path verbatim in a module that already imports three names from that same file.",
+    "scope_discipline": "reckon/flight.py:107 and reckon/project_state.py:59 lie outside the FENCE-SCOPE list the node was given, and the manifest records them as a fence short of the done-when rather than hiding them."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that a persisted item has a record and a home outside the crew home; reckon/crew/persist.py:201 persist_item copies each source into the project's declared persist root and appends one record per copy through reckon/project_state.py write_resource.\nVERDICT done_when: the done_when names tests/test_a_persisted_item_has_a_record.py and six behaviours (one verified copy and record, three copies for a figure plus two data files, refusal with no persist root, no second record on repeat, refusal of an altered copy, real store untouched); the file carries a case per behaviour and the manifest records the run and its 7 passed result.\nVERDICT write_paths: the declared scope was reckon/crew, the landing fragment and a figures directory; the diff also touches reckon/flight.py, reckon/project_state.py and tests/test_a_persisted_item_has_a_record.py, all three disclosed under the manifest's outside_scope.\nVERDICT manifest: read; it states the gate at 7 passed with both suite arms and the negative control recorded by path, and it names the fence short of the paths the done-when required.\nVERDICT diff: read commit by commit against 1f190e0ba4db58a328557b76138f03f078a9a1fe; two commits, five files, 765 insertions, the implementation and its test in the first and the evidence fragment in the second.\nCALL_SITES: reckon/flight.py:validate_layer, reckon/project_state.py:read_resource, reckon/project_state.py:write_resource\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/persist.py:201 copies the figure and any named data files into the project's declared persist root and reckon/crew/persist.py:59 refuses a root inside the crew home.\nSCORE evidence: 14\nJUSTIFICATION evidence: /home/ITER/mcintos/.config/reckon/crew/runs/r-20261112T060815185379-a-persisted-item-has-a-record-and-a-home-outside/logs/after-suite.log records 7 passed EXIT=0 and the negative control log shows DID NOT RAISE PersistError, though the base arm was built by copying the new test into a base tree rather than resolved over that tree.\nSCORE scope_discipline: 13\nJUSTIFICATION scope_discipline: reckon/flight.py:107 and reckon/project_state.py:59 lie outside the FENCE-SCOPE list the node was given, and the manifest records them as a fence short of the done-when rather than hiding them.\nSCORE durability: 16\nJUSTIFICATION durability: tests/test_a_persisted_item_has_a_record.py:150 compares two records the code produced rather than the fixture's own figure path, and the crew-home refusal at reckon/crew/persist.py:75 has no test.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/crew/persist.py:39 declares PersistError(RuntimeError) as the surrounding modules do (reckon/crew/directory.py:19) and reads its setting through reckon/flight.py:812 reports_setting.\nSCORE reuse: 5\nJUSTIFICATION reuse: reckon/crew/persist.py:109 reimplements reckon/project_state.py:361 _sha256_path verbatim in a module that already imports three names from that same file.\nFINDING reckon/crew/persist.py:109 non-blocking: _sha256_path is a verbatim reimplementation of the chunked file digest owned by reckon/project_state.py:361, in a file that already imports read_resource, resource_path and write_resource from that module; it should import the owner rather than fork it.\nFINDING reckon/flight.py:107 non-blocking: staging_root and REPORTS_PATH_KEYS add validation for a retention pass this node does not implement, so the schema advertises a store nothing here writes.\nFINDING tests/test_a_persisted_item_has_a_record.py:102 non-blocking: the done_when requires the real crew home and docs state untouched, but the autouse fixture asserts only the reports and runs subtrees of the crew home and never the real docs state.\nFINDING tests/test_a_persisted_item_has_a_record.py:150 non-blocking: the assertion compares figure_record[\"source\"] with data_record[\"figure\"], two values the code produced, so a figure field set from a path unrelated to the fixture would still satisfy it; store[\"figure\"] is the independent source.\nFINDING reckon/crew/persist.py:75 non-blocking: the refusal for a persist root inside the crew home is exercised by no test, so dropping that guard would leave the suite green.\nFINDING reckon/project_state.py:59 non-blocking: the persisted_items registration is a production module the node's declared write paths did not include; the worker disclosed it and it needs coordinator ratification.\n",
+  "review_run_id": "r-20261113T035545337638-review-of-a-persisted-item-has-a-record-and-a-home-outside-7623bbe1fc34",
+  "reviewed_at": "2026-11-13T05:0:00Z",
+  "reviewed_base": "1f190e0ba4db58a328557b76138f03f078a9a1fe",
+  "reviewed_base_sha": "1f190e0ba4db58a328557b76138f03f078a9a1fe",
+  "reviewed_head": "7623bbe1fc344988192eeb63e4d99e0a2b31b9d4",
+  "reviewed_head_sha": "7623bbe1fc344988192eeb63e4d99e0a2b31b9d4",
+  "reviewed_run_id": "r-20261112T060815185379-a-persisted-item-has-a-record-and-a-home-outside",
+  "reviewer": "independent review (review-of-a-persisted-item-has-a-record-and-a-home-outside-7623bbe1fc34)",
+  "scores": {
+    "durability": 16,
+    "evidence": 14,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 5,
+    "scope_discipline": 13
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-13T05:27:55.011675+00:00",
+  "total": 84
+}

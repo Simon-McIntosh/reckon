@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-read-answers-inside-its-deadline">
+  <meta name="plan-evidence-for" content="reckon:a-read-answers-inside-its-deadline">
+  <meta name="plan-verifies" content="reckon:a-read-answers-inside-its-deadline#s67">
+  <meta name="plan-recorded-at" content="2026-11-11">
+  <meta name="plan-verdict" content="passed">
+  <title>A promotion reads the ledger index once before it appends | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" id="a-promotion-reads-the-ledger-index-once-landing" data-node="a-promotion-reads-the-ledger-index-once" data-reckon="landed" data-when="2026-11-11">
+  <h2>A promotion builds the ledger index once per read key before its append</h2>
+  <p>A promotion reads the ledger four times before it writes its row: the landing checks read it from <code>complete</code> for the existing-row probe, again through <code>_landing_preconditions</code>, and the locked body reads it a third time to build the row, with the tree-boundary scan reaching a fourth. Each read ran its own decode of the whole index, so the before-append stage was the only part of a promotion whose cost grew with the ledger: <code>_index_payload</code> held 49.8% of the promotion body at 7,787 rows against 7.1% at one twentieth of that.</p>
+  <p><code>reckon/crew/promotion.py</code> now opens one <code>ledger.index_reuse()</code> region in <code>complete</code>, before the independent checks run, and hands it to <code>_complete_locked</code> as an <code>ExitStack</code>. The locked body exits that region immediately before <code>ledger.append_run</code>, so every read before the append shares one decode per read key and a read after the append decodes afresh and sees the row just written. A direct caller of <code>_complete_locked</code> opens a region of its own, so both entry points carry the property. No second cache is added: the region is the existing one the obligation snapshot already uses.</p>
+  <p><code>tests/test_a_promotion_does_not_read_the_whole_ledger_index.py</code> builds its own crew home, checkout and a 2,000-row ledger, warms the index with one read, then drives one in-process <code>crew complete --gate not-run</code> of a run whose deliverable is its report. A wrapped <code>ledger._index_payload</code> records each decode's read key and whether the append had happened, keyed by the index file and the projection asked for.</p>
+  <p>On the <code>all_debug</code> partition, over that 2,000-row fixture, the full-index key costs <strong>4</strong> decodes before the append at base <code>e77152e3</code> and <strong>1</strong> at head <code>f67f6551</code>; a read after the append costs 1 in both arms and sees the promoted row (<code>EXIT=0</code> on both arms). The declared negative control — removing the reuse region — raises the before-append count for that key back to 4 and fails <code>test_a_promotion_decodes_each_index_key_once_before_its_append</code> while the after-append test still passes (<code>EXIT=1</code>), so the head figure passed rather than the test resting on an unseen defect.</p>
+  <p>The fence suite over this node's write scope reads 53 passed at head <code>17b56a97</code> (<code>EXIT=0</code>) and 49 passed plus 2 errors at base <code>e77152e3</code>, the two errors being the base tree's <code>git archive</code> extraction carrying no <code>.git</code> for that file to read. Over the 97 test files that import the changed module, run one arm at a time on <code>all_debug</code> with <code>-n 4</code>, both arms read 22 failed and 681 passed with an identical failure-id set: zero added failures. Every one of the 22 fails on a container test writing into the job's own temporary directory, which the sandbox mounts read-only, so the failures are the harness rather than the change. <code>ruff check</code> and <code>ruff format --check</code> add no findings over the staged paths.</p>
+</article>
+</body>
+</html>

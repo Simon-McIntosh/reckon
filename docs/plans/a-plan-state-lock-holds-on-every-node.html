@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="plan">
+  <meta name="plan-slug" content="a-plan-state-lock-holds-on-every-node">
+  <meta name="plan-title" content="A plan-state lock holds on every node">
+  <meta name="plan-summary" content="Plan-state locks are flock, which GPFS grants per node, so a reader on another node can undo half a sprint move; make them exclude everywhere, the reply true.">
+  <meta name="plan-status" content="done">
+  <meta name="plan-roi" content="high">
+  <meta name="plan-effort-hours" content="6.0">
+  <meta name="plan-capability-version" content="1.0">
+  <meta name="plan-capability-class" content="general">
+  <meta name="plan-capability-reasoning" content="deep">
+  <meta name="plan-capability-verification" content="strict">
+  <meta name="plan-capability-risk" content="elevated">
+  <meta name="plan-sprint" content="S27">
+  <meta name="plan-owner" content="Simon McIntosh">
+  <meta name="plan-tags" content="crew,reckon-tooling">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;}">
+  <meta name="plan-section-depends-on" content="{&quot;s4&quot;:[&quot;a-plan-state-lock-holds-on-every-node#s2&quot;]}">
+  <title>A plan-state lock holds on every node | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+<meta name="plan-version" content="17">
+<meta name="plan-modified" content="2026-11-14">
+</head>
+<body>
+  <main class="plan-doc">
+    <h2 id="s1">§1 — Why: a sprint move landed in both sprints</h2>
+<section data-reckon="section" data-id="s1" data-effort-hours="0.25" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="standard" data-capability-risk="low" data-status="done" data-links=""></section>
+<p>On 2026-11-13 the nova session reported a sprint <code>move</code> through <code>edit_plan</code> (S26 to S23) that failed with <code>[Errno 2] No such file or directory: docs/.reckon/transactions/sprint-move-&lt;id&gt;.json</code> and still changed state:</p>
+<ul>
+  <li>The first time, both sprints were updated and both versions bumped, although the reply said <code>ok=false</code>.</li>
+  <li>The second time, the destination gained the item (S23 v26 to v27) and the source kept it (S26 stayed at v7). <code>labeller-throughput-and-shape-inverse</code> sat in both sprints, and a retry was refused with "already exists in sprint S23". nova repaired it by hand.</li>
+</ul>
+<p>The missing directory was not the cause. <code>move_sprint_item</code> in <code>reckon/project_state.py</code> creates the journal's directory before writing it, and has done since 2026-07-29. The ENOENT comes after both sprint writes, when the move marks its journal committed: by then the journal has been deleted by someone else.</p>
+<p>Every <code>read_resource</code> that finds a pending journal runs <code>recover_project_state_transactions</code>. That pass restores the journal's "before" bytes of both sprints and deletes the journal. The move and the recovery are meant to exclude each other through the per-resource locks, and those locks are <code>fcntl.flock</code>. Measured on 2026-11-13:</p>
+<table>
+  <thead><tr><th>Probe, lock held on clu-2023</th><th>Same node</th><th>clu-3141 (srun on all_debug)</th></tr></thead>
+  <tbody>
+    <tr><td><code>flock(LOCK_EX|LOCK_NB)</code> on the held flock</td><td>blocked</td><td><strong>acquired</strong></td></tr>
+    <tr><td>POSIX <code>lockf(LOCK_EX|LOCK_NB)</code> on a held POSIX lock</td><td>blocked</td><td>blocked</td></tr>
+  </tbody>
+</table>
+<p>Both probe files were under <code>~/.cache</code> on the shared GPFS home. Plan state is read and written on the login node, where the reckon server runs, and on the fleet node, where sessions' MCP servers run. So a read on one node can run recovery in the middle of a move on the other. Both of nova's symptoms follow from that ordering:</p>
+<ol>
+  <li>Recovery between the journal write and the first sprint write is a no-op restore. Both writes then land, and the commit mark fails: the state is right and the reply is wrong.</li>
+  <li>Recovery between the two sprint writes restores the source with the item still in it. The target write then adds the item: it is in both sprints.</li>
+</ol>
+<p>The same primitive appears 74 times in 23 modules under <code>reckon/</code>. <a href="/reckon/a-seat-held-elsewhere-is-not-restarted.html#s8">a-seat-held-elsewhere-is-not-restarted §8</a> found the node-local <code>flock</code> for follower registrations and judged them by a renewed lease instead. Plan state was not covered.</p>
+
+    <h2 id="s2">§2 — A plan-state write and its recovery exclude each other on every node</h2>
+<section data-reckon="section" data-id="s2" data-effort-hours="2.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="done" data-links=""></section>
+<p>Deliverable: while a process on one node holds a plan-state resource lock, another process on any node that asks for the same lock waits or is refused. This covers sprint moves, pushes, closes and every other <code>project_state</code> write, and the transaction recovery that reads beside them. Exclusion between two holders inside one process (two threads, or two opens of the lock file) is no weaker than today's.</p>
+<p>Done when:</p>
+<ul>
+  <li>A probe script under <code>scripts/</code> holds a plan-state resource lock through the production lock code, on a temporary docs tree and never a live project's, on the node it runs on. The tree is on storage both nodes open (the shared home, never a node-local <code>/tmp</code>). A second invocation on a different compute node, against the same temporary tree, finds the lock file present and reports that the lock was refused; a missing path is not a refusal.</li>
+  <li>The negative control is the same pair run against the base revision: there the second node reports that it took the lock.</li>
+  <li>Both runs are logged under the run directory with each hostname printed. The two hostnames must differ, or the run is not evidence.</li>
+  <li>A test, using a temporary docs tree, shows two threads of one process exclude each other on one resource lock. It also shows that a recovery started while a move holds its locks either waits for the move to finish or finds no journal; it never restores either sprint's "before" bytes.</li>
+  <li>The test files that import <code>reckon/project_state.py</code> give the same pass and fail ids at head as at base, except for the new test file.</li>
+</ul>
+<p>Write paths: <code>reckon/project_state.py</code>, one new module under <code>reckon/</code> if the lock is factored out, the probe script under <code>scripts/</code>, and <code>tests/test_a_plan_state_lock_holds_on_every_node.py</code>.</p>
+
+    <h2 id="s3">§3 — A sprint move replies with what landed</h2>
+<section data-reckon="section" data-id="s3" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="done" data-links=""></section>
+<p>Deliverable: a sprint move, push or close that touches two sprint resources ends in one of two states, both applied or neither applied. Its reply through <code>edit_plan</code> names which one, with both versions as they now stand on disk. A failure after both writes have landed does not report <code>ok=false</code> as if nothing changed. A failure of the move itself never leaves an item in both sprints or in neither. A reader on another node recovering mid-move is §2's case, not this section's.</p>
+<p>Done when a test with a temporary docs tree injects a fault at each step of a move:</p>
+<ul>
+  <li>after the journal is written;</li>
+  <li>after the first sprint write;</li>
+  <li>after the second sprint write;</li>
+  <li>while the journal is marked committed, including the journal already being gone.</li>
+</ul>
+<p>For each step, the test asserts that the item is in exactly one sprint and that the reply's applied-or-not verdict and versions match a fresh read of both resources. The negative control runs the commit-mark fault against the base revision and shows the reply says not applied while both writes landed. It is recorded in the run directory. The test files that import <code>reckon/project_state.py</code> or the <code>edit_plan</code> sprint path give the same pass and fail ids at head as at base, except for the new file. Write paths: <code>reckon/project_state.py</code>, the sprint branch of the edit-plan write path, and <code>tests/test_a_sprint_move_replies_with_what_landed.py</code>.</p>
+
+    <h2 id="s4">§4 — Every flock on shared state is accounted for</h2>
+<section data-reckon="section" data-id="s4" data-effort-hours="1.75" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="done" data-links=""></section>
+<p>Deliverable: a census of every <code>fcntl.flock</code> call under <code>reckon/</code> that takes a lock (exclusive or shared; a call that only releases one is not a row), as an evidence fragment at <code>docs/evidence/fragments/a-plan-state-lock-holds-on-every-node/every-flock-is-accounted-for.html</code>, with one row per call site giving:</p>
+<ul>
+  <li>the file and line at the commit the census read;</li>
+  <li>what the lock guards;</li>
+  <li>whether a holder on another node can touch it.</li>
+</ul>
+<p>Each row ends in exactly one verdict:</p>
+<ul>
+  <li><strong>node-local by design</strong>, with the reason, such as a FIFO or socket that exists only on one host;</li>
+  <li><strong>already judged cross-node</strong> by another mechanism, citing it, such as §8's follower lease;</li>
+  <li><strong>needs the §2 lock</strong>, which the coordinator files as a followup or a new section on this plan, naming the module.</li>
+</ul>
+<p>Done when:</p>
+<ul>
+  <li>the fragment's rows, keyed by file and line, are exactly the lock-taking <code>fcntl.flock</code> calls under <code>reckon/</code> at the commit it names: none missing and none listed twice, with the count stated in the fragment;</li>
+  <li>a row claimed node-local by design names the host-local object it guards.</li>
+</ul>
+<p>The negative controls are two copies of the fragment, one with a row removed and one with a row removed and another duplicated in its place; the check must fail both. Write paths: the fragment only; this section changes no source.</p>
+
+    
+
+    <section data-reckon="followups" id="followups" class="r-followups">
+<h2><span class="sec">§</span> Followups</h2>
+<article class="r-fu" data-id="f-apsl-001" data-status="resolved" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-create" data-written-at="2026-11-13" data-recommends-skill="/reckon-build a-plan-state-lock-holds-on-every-node §2" data-resolved-at="2026-11-13T16:31:08+00:00" data-resolved-by="">
+    <h4 class="r-fu-title">Cross-node plan-state lock</h4>
+    <div class="r-fu-body"><p>§2 and §3 can run together; §4 reuses §2's lock. A content review is owed before dispatch.</p></div>
+    <pre class="r-fu-prompt">/reckon-build a-plan-state-lock-holds-on-every-node §2</pre>
+    <p class="r-fu-outcome">§2 (cross-node lock) and §3 (sprint-move reply) landed on main on 2026-11-13; evidence is in the landed record.</p>
+    </article>
+<article class="r-fu" data-id="f-apsl-002" data-status="resolved" data-written-by="coordinator 047d83aa" data-written-at="2026-11-13" data-recommends-skill="/reckon-build a-plan-state-lock-holds-on-every-node §4" data-resolved-at="2026-11-14T08:06:09+00:00" data-resolved-by="">
+    <h4 class="r-fu-title">Census every flock and finish the move reply</h4>
+    <div class="r-fu-body"><p>§4's census node is released now that §2 has landed. The §3 follow-up node <code>move-reply-keeps-its-verdict-on-a-failed-read</code> runs on the landed base. Land both and close the plan.</p></div>
+    <pre class="r-fu-prompt">/reckon-build a-plan-state-lock-holds-on-every-node §4</pre>
+    <p class="r-fu-outcome">done — no followup. §4's census and the §3 repair both landed on main on 2026-11-14. The 20 shared-home locks the census found need the cross-node lock; that is new work for its own plan.</p>
+    </article>
+</section>
+
+    
+  <section data-reckon="comments" id="comments" class="r-comments">
+<div class="r-comment" data-section="s2" data-id="c-run-r-20261113T135237082089-review-of-plan-state-lock-excludes-across-nodes-d900333f10eb" data-who="reckon-build" data-when="2026-11-13T14:01:57.311Z">
+    <div class="r-comment-body"><p>independent review of r-20261113T122205596186-plan-state-lock-excludes-across-nodes at head d900333f10eb scores goal_fidelity 19, evidence 18, scope_discipline 19, durability 18, fit 18, reuse 16, records zero added failures, and carries two non-blocking findings</p></div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-run-r-20261113T122205596186-plan-state-lock-excludes-across-nodes" data-who="reckon-build" data-when="2026-11-13T13:15:59Z">
+    <div class="r-comment-body"><p>plan-state resource locks now take a POSIX record lock (fcntl.lockf) beside the flock in a new reckon/node_exclusive_lock.py, with a process-local lock per path so two threads and two opens still exclude each other; a two-node probe holds the lock on clu-3141 and the second node on clu-3142 is refused with the lock file present, where the base revision let it take the lock (acquired); the guarded thread and move/recovery cases fail against the base lock and pass at head; head arm 53 passed, base arm 51 passed with identical ids.</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20261113T134003615244-review-of-sprint-move-replies-with-what-landed-26ee25c9bf4d" data-who="reckon-build" data-when="2026-11-13T13:49:28.964Z">
+    <div class="r-comment-body"><p>An independent review of sprint-move-replies-with-what-landed at 26ee25c9bf scored 95/120 (goal_fidelity 18, evidence 17, scope_discipline 20, durability 17, fit 18, reuse 5) with three non-blocking findings and zero added failures between the population arms; the parsed record is stored beside the reviewed run.</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20261113T140952798148-review-of-sprint-move-replies-with-what-landed-ba742341e881" data-who="reckon-build" data-when="2026-11-13T14:32:31.783Z">
+    <div class="r-comment-body"><p>Independent review of r-20261113T122412926821-sprint-move-replies-with-what-landed stored at the run's review-records path, covering reviewed_base_sha 26ee25c9bf4d4ef5ad9f919e868054a218ec7f35 to reviewed_head_sha ba742341e88106ea5e3a391ca3bdf8e828fb7748; all six dimensions scored (goal_fidelity 19, evidence 16, scope_discipline 17, durability 18, fit 19, reuse 5), added_failure_count 0.</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20261113T153003270623-review-of-sprint-move-replies-with-what-landed-88e7bee930bd" data-who="reckon-build" data-when="2026-11-13T15:38:23.447Z">
+    <div class="r-comment-body"><p>An independent review of r-20261113T122412926821-sprint-move-replies-with-what-landed over the commits it gained since the review at ba742341e8 (0947cd5cb4 and docs-only 88e7bee930, base ba742341e88106ea5e3a391ca3bdf8e828fb7748, head 88e7bee930bd0a8944912d44d339876e15cc2a9d) scores goal_fidelity 19, evidence 16, scope_discipline 18, durability 16, fit 16, reuse 19, records added_failure_count 0 with no added failure ids, and files three non-blocking findings: a post-write read failure now silently drops the applied verdict at reckon/mcp_edit_plan.py:1756, one added ruff finding S112 at :925 that contradicts the manifest's clean-changed-paths claim, and a redundant except clause at reckon/project_state.py:2167.</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20261113T122412926821-sprint-move-replies-with-what-landed" data-who="reckon-build" data-when="2026-11-13T14:52:32Z">
+    <div class="r-comment-body"><p>A sprint move now settles all-or-nothing and replies with what landed: both sprint versions and the applied verdict are read back from disk, a journal commit-mark or unlink failure after both writes is a warning rather than an ok=false reply, and a read-back that disagrees restores both sprints from the journal before the refusal; the fault tests pass 6/6 at head and fail 6/6 at base, whose commit-mark cases report not applied while the item sits in the destination.</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20261113T170733419931-review-of-move-reply-keeps-its-verdict-on-a-failed-read-616f01e709ec" data-who="reckon-build" data-when="2026-11-13T17:29:12.913Z">
+    <div class="r-comment-body"><p>Independent review of 616f01e709 against 22c3fbda: the move reply keeps `applied` on a failed version read and names the failure, the duplicate JSONDecodeError clause is gone, and the S112 is absent (ruff recount 18 -&gt; 17 with the summary line excluded); scores goal_fidelity 19, evidence 13, scope_discipline 20, durability 19, fit 18, reuse 19, with two non-blocking evidence findings (no ruff log stored; the all_debug claim has no submitted-job receipt).</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20261113T154236531991-move-reply-keeps-its-verdict-on-a-failed-read" data-who="reckon-build" data-when="2026-11-13T17:00:14.984Z">
+    <div class="r-comment-body"><p>A sprint move's reply now sets `applied` whenever the edit carries a move and names each failed version read in `warnings` (`sprint_version_read_failed=&lt;id&gt;`), so a post-write read failure reports what landed instead of dropping the verdict; the unreachable `except json.JSONDecodeError` clause in the journal reader is gone, and ruff on the two modules reports 18 findings against 19 at base with the move-path S112 absent. New test `test_a_failed_post_write_version_read_keeps_the_applied_verdict` passes at head and fails at base with "a failed version read must not drop the verdict". Head arm 58 passed / base arm 57 passed; gate (with tests/test_mcp_tools.py) 42 passed.</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-run-r-20261114T074244265423-review-of-every-flock-is-accounted-for-a8f1c7ba6b13" data-who="reckon-build" data-when="2026-11-14T07:58:35.585Z">
+    <div class="r-comment-body"><p>independent review of r-20261113T123341589000-every-flock-is-accounted-for at head a8f1c7ba6b1340d5123a635772b6eec99f50751b scores goal_fidelity 20, evidence 19, scope_discipline 20, durability 10, fit 19, reuse 20 (total 108), records zero added failures, and carries two non-blocking findings — the census check is uncommitted so the census can rot silently, and the checker classifies any computed flag argument other than the literal name flags as release-only and drops it — both of which leave the census correct at the reviewed commit.</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-run-r-20261113T123341589000-every-flock-is-accounted-for" data-who="reckon-build" data-when="2026-11-13T16:53:14.723Z">
+    <div class="r-comment-body"><p>§4 census of every lock-taking fcntl.flock under reckon/ at 7d8ca3f4658: 43 rows, 10 node-local by design, 13 already judged cross-node, 20 needing the §2 lock; the set-equality check passes at head and fails both negative controls</p></div>
+</div>
+</section>
+</main>
+</body>
+</html>

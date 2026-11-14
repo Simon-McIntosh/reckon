@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>A project's watch producer survives when linger is unavailable — landing record</title>
+<meta name="docs-project" content="reckon">
+<meta name="plan-slug" content="the-monitor-shows-the-work-it-watches">
+<meta name="node-id" content="a-project-s-watch-producer-survives-when-linger-is-unavailab">
+</head>
+<body>
+<article class="r-landing" id="a-project-s-watch-producer-survives-when-linger-is-unavailab-landing">
+<h2>A project's watch producer survives when linger is unavailable</h2>
+
+<p>A producer armed on a host without linger runs as a plain background
+process under the arming supervisor. Its seat is a renewable lease, and when
+nothing renewed that lease the producer ended with status <code>0</code> — the
+value the supervisor reads as a deliberate stop — so it stayed gone until
+someone armed it by hand.</p>
+
+<h3 id="a-project-s-watch-producer-survives-when-linger-is-unavailab-what">What changed</h3>
+
+<table>
+<thead><tr><th>Path</th><th>Change</th></tr></thead>
+<tbody>
+<tr>
+<td><code>reckon/crew/runs.py</code></td>
+<td>A producer that still holds its lease but can no longer renew it, or whose
+own registration nobody renewed for a full interval while runs are live
+(<code>watch_lease_lapsed</code>, read through the one predicate
+<code>watch_lease_remaining</code>), now leaves from
+<code>renew_watch_host_lease</code> with <code>WATCH_SEAT_LOST_EXIT</code> and writes
+<code>reckon crew watch stopped: seat lost for &lt;project&gt;</code> to the
+project's watch log. The same lapse behind no live run is the ordinary drain:
+exit <code>0</code>, so a quiet project is not restarted once per interval.</td>
+</tr>
+<tr>
+<td><code>reckon/crew/recovery_watch.py</code></td>
+<td>Every lapse the producer sees between polls now asks the same verdict,
+including the one taken on entry to its wait, which used to end the ticker with
+exit <code>0</code>. The wait's lease arithmetic delegates to the one predicate
+in <code>runs</code> rather than re-deriving it.</td>
+</tr>
+<tr>
+<td><code>reckon/crew/dispatch_watch.py</code></td>
+<td>The arming supervisor restarts a producer that exits with that status, and
+declares the seat free first (<code>watch_seat_held_elsewhere</code>): a seat
+another live producer took at renewal time is not contested, where a foreign
+host's record is taken at its word and this host's must name a process still
+running. Exit <code>0</code> still means a deliberate stop and is never
+restarted.</td>
+</tr>
+<tr>
+<td><code>tests/test_a_producer_survives_without_linger.py</code></td>
+<td>New: six cases, every one started through the same supervised launch — a
+lapsed lease with work still live is restarted; a lapse seen inside the wait is
+restarted; a misplaced-seat release stays stopped; a claim refused by a live
+holder stays stopped; a seat taken at renewal stays stopped; a lapse with no
+live run left starts nothing more.</td>
+</tr>
+<tr>
+<td><code>tests/test_a_crashed_producer_is_restarted.py</code></td>
+<td>The lapsed-lease case, which pinned the old not-restarted behaviour,
+becomes a restart case; the crash-limit fixture's steady-run bound is raised
+above the interpreter's start-up, which the supervisor counts from the
+spawn.</td>
+</tr>
+</tbody>
+</table>
+
+<h3 id="a-project-s-watch-producer-survives-when-linger-is-unavailab-why">Why the exit status carries the reason</h3>
+
+<p>The supervisor can only see a child's exit status, and three different
+stops have to be told apart: a deliberate stop (<code>0</code>), a crash (a
+status it counts against the restart limit), and a seat this producer lost
+rather than gave up. Only the producer knows which happened, so the reason
+travels as its exit status; the supervisor then asks whether anyone else holds
+the seat before starting it again.</p>
+
+<h3 id="a-project-s-watch-producer-survives-when-linger-is-unavailab-evidence">Evidence</h3>
+
+<p>The gate is the two node test files, run on <code>all_debug</code> one arm
+at a time, with the base arm at
+<code>a5764282bdeeeda4d3f26910564f212bcfcacc12</code>'s own tree. The
+negative control re-treats the lost seat as a deliberate stop, after which the
+first case ends with no producer running.</p>
+</article>
+</body>
+</html>

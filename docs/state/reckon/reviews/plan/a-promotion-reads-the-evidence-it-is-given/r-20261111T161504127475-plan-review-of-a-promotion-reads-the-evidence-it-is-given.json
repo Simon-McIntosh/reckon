@@ -1,0 +1,101 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-11T16:32:00.303Z",
+  "dispatched_at": "2026-11-11T16:18:05Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-promotion-reads-the-evidence-it-is-given.html:130",
+      "id": "done_when-1",
+      "reason": "the node's only guard would pass on the unfixed code, so the section could be declared done with the two readers still disagreeing, and the fixture must record a worktree path that does not exist rather than omit the field.",
+      "text": "\u00a717's done-when says the test \"builds a temporary repository with three chained commits, cites them newest-first and oldest-first in a run's manifest with no worktree\", but a record with no `worktree` field is not a reclaimed run: `_worktree_reclaimed` requires a non-empty worktree path that is absent from disk, so such a record falls through to the live path, where `_review_tree` falls back to the named `repo` and both the review head and the promotion head read that checkout's HEAD \u2014 which is the newest commit anyway, so the assertion holds without any change and the case cannot fail",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-promotion-reads-the-evidence-it-is-given.html:118",
+      "id": "anchors_resolve-1",
+      "reason": "both sections are already closed and the symbol names resolve on their own, so correcting the line numbers changes a pointer a later reader follows, not what any node builds.",
+      "text": "\u00a714 cites `_arm_missing_fields (reckon/crew/promotion_records.py:686, its comparison at 702\u2013722)` and \u00a716 cites `promotion_records.py:686` and `:109\u2013121` for the same function and record shape, but `reckon/crew/promotion_records.py:686` now sits inside a different function and `_arm_missing_fields` is defined at line 971, so a reader sent to the anchor lands on unrelated code",
+      "type": "anchors_resolve",
+      "would_change": false
+    }
+  ],
+  "plan_commit": "d7c7ecc4e1b14af7aac818a1b610f99600eceda4",
+  "plan_fingerprint": "5f0884be61b1c28dfe9d179ad1375777ef0137c1856b5c8904fe08c3bbc90478",
+  "plan_slug": "a-promotion-reads-the-evidence-it-is-given",
+  "plan_version": 111,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "d7c7ecc4e1b14af7aac818a1b610f99600eceda4",
+      "commit_basis": "edit",
+      "finding": "done_when-1",
+      "note": "\u00a717's records now name a worktree path absent from disk, so the reclaimed branch is the one exercised",
+      "reason": "",
+      "when": "2026-11-11T16:58:01.796507+00:00"
+    },
+    {
+      "action": "declined",
+      "by": "",
+      "finding": "anchors_resolve-1",
+      "reason": "both sections are closed and the symbol resolves by name in its module",
+      "when": "2026-11-11T16:58:24.367236+00:00"
+    }
+  ],
+  "responses": {
+    "anchors_resolve-1": {
+      "action": "declined",
+      "by": "",
+      "reason": "both sections are closed and the symbol resolves by name in its module",
+      "when": "2026-11-11T16:58:24.367236+00:00"
+    },
+    "done_when-1": {
+      "action": "acted",
+      "by": "",
+      "commit": "d7c7ecc4e1b14af7aac818a1b610f99600eceda4",
+      "commit_basis": "edit",
+      "note": "\u00a717's records now name a worktree path absent from disk, so the reclaimed branch is the one exercised",
+      "reason": "",
+      "when": "2026-11-11T16:58:01.796507+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/Code/reckon/docs/state/reckon/reviews/plan/a-promotion-reads-the-evidence-it-is-given/r-20261111T161504127475-plan-review-of-a-promotion-reads-the-evidence-it-is-given.json",
+  "review_run_id": "r-20261111T161504127475-plan-review-of-a-promotion-reads-the-evidence-it-is-given",
+  "reviewed_blob_sha": "5d11d3808c401100ef86a57368a914c5449bd51e",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "a finding \u2014 the exact line anchors \u00a714 and \u00a716 place on `reckon/crew/promotion_records.py:686` no longer land on `_arm_missing_fields`, which is now at line 118/126 of the snapshot.",
+    "done_when": "a finding \u2014 \u00a717's done-when builds its fixture as \"a run's manifest with no worktree\", which is not the reclaimed-worktree state the section repairs, so the case passes without the fix.",
+    "evidence_paths": "pass \u2014 every section writes its gate logs and census output under the run directory (durable and reopenable), and none names a session scratchpad or a node-local temporary path.",
+    "naming": "pass \u2014 no section names a new file or symbol after a plan label, stage name, ticket number or version tag; the new test files carry behaviour names (`test_a_reclaimed_run_has_one_head`, `test_a_ctest_receipt_counts_its_own_failures`).",
+    "reasoning": "pass \u2014 \u00a717's root cause is the one the code shows.",
+    "single_goal": "pass \u2014 \u00a717 carries one deliverable (one head for review and promotion); the sixteen closed sections each name one goal, with \u00a78's three reader repairs all serving the single goal of reading a manifest in the shapes workers write.",
+    "wiring": "pass \u2014 `plan-section-depends-on` resolves for every declared wait (s4/s5\u2192s2, s7\u2192s4+s5, s8\u2192s7, s9\u2192s6, s13\u2192s11, s14\u2192s12, s15\u2192`workers-spend-fewer-tokens-per-landed-node#s9`, s16\u2192s14), each target section exists in its named plan, and the only open node (\u00a717) waits on nothing that is pending."
+  },
+  "section_digests": {
+    "_document": "e2e8115179d8762080bf33b64ac74d6796aa8ab4dc431905c489a55f60bf75da",
+    "s1": "5eac0eb57fbf9fccaeee6fb2da59c42ca24c4433f0cffcb4b7de1b6b04324b6c",
+    "s10": "6eded2e6a5570026a61a372a16d3db3742c440d6e2301a8cbc745329a0aa00f9",
+    "s11": "660a4e592122dacd85dcf8340cbd8617de596dccebc87e8fa42f837393d9fc36",
+    "s12": "550cf547388f373020c35c77420464f06ed4636f9d95b52fcd3266cac0bf0e11",
+    "s13": "2a128b5aaa7df7a064e132b982fa9c92c8ed7a03cc656ba0d1d9e87174336e0e",
+    "s14": "75ff492347584a3997696dd59937811debb6ac4159d034205ec33ffb54807e9d",
+    "s15": "620380b3d79c245d6219424330ab9d9ed11e7ee01e3bc84d6609ee062bbe9303",
+    "s16": "9072354fb4ba67955dd864c1f84a0e417cfa37b331a0ba91b8ec8b7314ee5187",
+    "s17": "274b68593a4f49641d108691f928e09bc43c31ced9a66516c1ff1687253c4ad2",
+    "s2": "259d093654ecf00609d51d02f39bb21a9feda5af8b5626a64e881f7e85d5abe4",
+    "s3": "479c8ebc617467c2744513e850433e87af52a3d22110620dcfdfb48f9975d081",
+    "s4": "bc5eebc33cf8175dd508f65245c7126745fc3e87a3e75e6229c55004ae265f62",
+    "s5": "f597850868c537fd163cabb422a3322df0e81659a7ceda007a561f633c75c9bf",
+    "s6": "2e81c0cbe61ef60fc16acb159e81912b5b6263e9d12b8059efbd9482d722976c",
+    "s7": "a015e1ea2396b50fe1763afc13f7b9ab2e452b85287b48a63a06e3503c3f2674",
+    "s8": "f0d1ed6febbf8f9ad2c9d36e204cfd29684121da43f557cf62b470c78f3de6b4",
+    "s9": "08ec740250081eecbaeb8dd5092c4149694553aa4b674594f5236d37c1560127"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-11T16:47:12.841611+00:00",
+  "total": null
+}

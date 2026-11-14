@@ -1,0 +1,194 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-14T08:20:53.940Z",
+  "dispatched_at": "2026-11-14T08:11:34Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/a-read-costs-what-changed/r-20261114T080540162316-plan-review-of-a-read-costs-what-changed/plan.html:141",
+      "id": "anchors_resolve-1",
+      "reason": "a reader verifying either Why lands on unrelated code in all five cases, and the drift came from the sections' own landed edits, so the anchors need dropping to symbols or refreshing.",
+      "text": "\u00a722 cites `_resolve_plan_ref` at `reckon/mcp.py:1971` and `_section_dependency_rows` at `:1938`, but they now sit at `reckon/mcp.py:2036` and `:1920`; \u00a723 (plan.html:145) cites `_read_state` at `reckon/_store.py:812`, `_unparsed_section_warnings` at `:700` and `_state_with_diagnostics` at `:738`, where the tree now has `_unparsed_section_warnings` at `:768`, `_state_with_diagnostics` at `:826` and `_read_state` at `:885`, and `:812` is not a definition at all",
+      "type": "anchors_resolve",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/a-read-costs-what-changed/r-20261114T080540162316-plan-review-of-a-read-costs-what-changed/plan.html:23",
+      "id": "wiring-1",
+      "reason": "an undeclared edge is the defect the record has already accepted twice (`s19` and `s21` both wait on `s18`), and the declaration is the only ordering fact a future reader or queue has.",
+      "text": "`plan-section-depends-on` carries no entry for `s25` (nor for `s22`\u2013`s24`), although \u00a725's Why (plan.html:156) is the measurement taken after \u00a724 landed and its deliverable extends the very store cache \u00a724 added",
+      "type": "wiring",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/a-read-costs-what-changed/r-20261114T080540162316-plan-review-of-a-read-costs-what-changed/plan.html:319",
+      "id": "reasoning-1",
+      "reason": "a read path that silently prefers the live copy where the base raised changes an answer the plan presents as unchanged, so either a decision must accept it or the done-when must require the collision behaviour to survive.",
+      "text": "the \u00a722 landing comment closes the section while its own review reports that a live-plus-archived duplicate slug is now silently resolved to the live copy where a full plan read raises a collision, and neither the deliverable (\"reads each from the metadata index, not through a full plan read\") nor the done-when's \"rows returned equal those at the base revision\" covers it, the fixture having distinct plan slugs",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/a-read-costs-what-changed/r-20261114T080540162316-plan-review-of-a-read-costs-what-changed/plan.html:145",
+      "id": "reasoning-2",
+      "reason": "the plan sets its own condition for judging \u00a723's benefit and then closes the section without meeting or deferring it, so the record cannot tell a proven saving from an unmeasured one.",
+      "text": "\u00a723 is declared done while its own Why states \"its benefit is judged on a profile taken after \u00a722 lands\", and no comment on the section records such a profile; its only figures are the tree counts its done-when already asserts",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/a-read-costs-what-changed/r-20261114T080540162316-plan-review-of-a-read-costs-what-changed/plan.html:158",
+      "id": "done_when-1",
+      "reason": "the named cost is a listing count per tick, and a scope-membership assertion cannot report that count, so the gate can go green while the three-minute classify stage returns.",
+      "text": "\u00a725's done-when asks whether every classification runs inside one shared, non-empty store scope, which is the shape of the fix rather than the cost it names (\"a tick enumerates each store directory once\"), so a tick that opens the scope but re-lists inside it still passes",
+      "type": "done_when",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "7f1197888865e163e4d954887934b44437960817",
+  "plan_fingerprint": "927f7050fde69e261bca449a89aef2d287887ef32e10c625aad4acdb3ce2f248",
+  "plan_slug": "a-read-costs-what-changed",
+  "plan_version": 114,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "declined",
+      "by": "",
+      "finding": "anchors_resolve-1",
+      "reason": "\u00a722 and \u00a723 have landed; the cited lines drifted after landing, which changes no node's work",
+      "when": "2026-11-14T08:24:01.011966+00:00"
+    },
+    {
+      "action": "carried",
+      "by": "",
+      "finding": "wiring-1",
+      "reason": "",
+      "section": "s25",
+      "sections": [
+        "s25",
+        "s22",
+        "s24"
+      ],
+      "when": "2026-11-14T08:24:10.693071+00:00"
+    },
+    {
+      "action": "carried",
+      "by": "",
+      "finding": "reasoning-1",
+      "reason": "",
+      "section": "s22",
+      "sections": [
+        "s22"
+      ],
+      "when": "2026-11-14T08:24:21.847724+00:00"
+    },
+    {
+      "action": "declined",
+      "by": "",
+      "finding": "reasoning-2",
+      "reason": "\u00a723's done-when (zero trees on a persisted read, same warnings) was met and reviewed; the post-\u00a722 profile is \u00a77's re-measurement, which stays implementable",
+      "when": "2026-11-14T08:24:37.047930+00:00"
+    },
+    {
+      "action": "carried",
+      "by": "",
+      "finding": "done_when-1",
+      "reason": "",
+      "section": "s25",
+      "sections": [
+        "s25"
+      ],
+      "when": "2026-11-14T08:24:47.474410+00:00"
+    }
+  ],
+  "responses": {
+    "anchors_resolve-1": {
+      "action": "declined",
+      "by": "",
+      "reason": "\u00a722 and \u00a723 have landed; the cited lines drifted after landing, which changes no node's work",
+      "when": "2026-11-14T08:24:01.011966+00:00"
+    },
+    "done_when-1": {
+      "action": "carried",
+      "by": "",
+      "reason": "",
+      "section": "s25",
+      "sections": [
+        "s25"
+      ],
+      "when": "2026-11-14T08:24:47.474410+00:00"
+    },
+    "reasoning-1": {
+      "action": "carried",
+      "by": "",
+      "reason": "",
+      "section": "s22",
+      "sections": [
+        "s22"
+      ],
+      "when": "2026-11-14T08:24:21.847724+00:00"
+    },
+    "reasoning-2": {
+      "action": "declined",
+      "by": "",
+      "reason": "\u00a723's done-when (zero trees on a persisted read, same warnings) was met and reviewed; the post-\u00a722 profile is \u00a77's re-measurement, which stays implementable",
+      "when": "2026-11-14T08:24:37.047930+00:00"
+    },
+    "wiring-1": {
+      "action": "carried",
+      "by": "",
+      "reason": "",
+      "section": "s25",
+      "sections": [
+        "s25",
+        "s22",
+        "s24"
+      ],
+      "when": "2026-11-14T08:24:10.693071+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/Code/reckon/docs/state/reckon/reviews/plan/a-read-costs-what-changed/r-20261114T080540162316-plan-review-of-a-read-costs-what-changed.json",
+  "review_run_id": "r-20261114T080540162316-plan-review-of-a-read-costs-what-changed",
+  "reviewed_blob_sha": "644a3c54e363b156c85fe91f417fae8bef777bf7",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "a finding \u2014 \u00a722's `reckon/mcp.py:1971` and `:1938` and \u00a723's `reckon/_store.py:812`, `:700` and `:738` all land on unrelated code after those sections' own changes moved the symbols.",
+    "done_when": "a finding \u2014 \u00a725's done-when (plan.html:158) asserts that a tick's classifications sit inside one shared store scope, so a fix that opens the scope but still re-lists the store per run passes it.",
+    "evidence_paths": "pass \u2014 \u00a722 and \u00a723 name gate logs \"under the run directory\" and \u00a724/\u00a725 name `~/.cache/reckon-review-store-select/` and `~/.cache/reckon-classify-tick-scope/`, all durable GPFS paths a later reader can open.",
+    "naming": "pass \u2014 the newly declared sections name no plan labels, ticket numbers or version tags, and no changelog prose reaches source.",
+    "reasoning": "a finding \u2014 \u00a722 is declared done on a record whose own review reports a live-plus-archived duplicate slug now silently resolving to the live plan where the base revision raised a collision, and neither the deliverable nor the done-when carries that semantic change.",
+    "single_goal": "pass \u2014 \u00a722 delivers one index-backed reference read, \u00a723 one parse-free persisted read, \u00a725 one per-tick store scope; each node closes on a single verdict.",
+    "wiring": "a finding \u2014 `plan-section-depends-on` (snapshot plan.html:23) declares no edge for `s25`, although \u00a725 exists only because \u00a724 landed and its deliverable continues the same store cache."
+  },
+  "section_digests": {
+    "_document": "953423ae4f5cfaa87ef9c2a049882fc300a196983aa7e2d55c690f6eb97f9417",
+    "s1": "f8fb0fbbfbbc79977a59ec9d78c0d66f47803aa96db83e4d628a1dfb6b40e6c3",
+    "s10": "68fc6d75acf0741225ab448369611e4eda9f862b50d7907857c1abb24b4138e4",
+    "s11": "2a249381081ebbf2d99b7f9da3b09b1d3b87c6ada44952d6b665283e27021c40",
+    "s12": "c6c234ba14598d6a537e09000d8f5d406295ad40c3c124db34cb1b84868bb22e",
+    "s13": "5ad3b5418d98e6b0afe0d6762c6e34b89b31509e7e0c346c4b5757fc5f9bc443",
+    "s14": "3614708cc686b1aae04bdaa66c5ca55268305b0b9aa743e9b43fdfe333694c78",
+    "s15": "8ea78063ba6178b6ed86513ba9524097199475bbde30df76a27c561a07ae5cd8",
+    "s16": "961c662c2ad9983efdef372ae1d8050c1bc2ad2d5eb48187e5a1460a866750d7",
+    "s17": "dcb1e4207827e554da6f993942f652e42a11e274ac6c0445eb3ca51b1eeabab6",
+    "s18": "017dacf94ae980a1743060b70b94c6310d932d5242464e9503625aad656aeddc",
+    "s19": "7627296ee16bd9037416c990cebedbf14e5920992ee92443ee041d007a4f86b5",
+    "s2": "7de6c2e256fca5545163c6149c674fea249ddd1a72361b49c89ef5beaa22263d",
+    "s20": "13f50ad158e680404f34a74f292834eb01df268bb398d42bd113140aa56a5533",
+    "s21": "c9999579889f86ad547fb804ec54f122a0f8554343ddcc9075ae15c3cd37c4f0",
+    "s22": "0f5b52699cf0cfaae609fa09396bb9b43cae6fb15b3274facd659db2c83bbf41",
+    "s23": "de347de3b8ef82e610d47c0deefc48f874813c55f95f01fcf8007725a84a72a9",
+    "s24": "9536a307365097387461ff484f1478c4d4070650cb95f224824cb31a4c5eca4e",
+    "s25": "696da611106fdc41b6b4c6235e13e7d4c5e06fca1e0d61c0feb5fe7f845988e7",
+    "s3": "d11cdceab942c4935f32d292e26f2111b011ca4571980a6c54ef6ae23894aadb",
+    "s4": "d14b5fa9a6b6ef26da6f95b50c43aa782fdbe679ca28020a3095af71cd579417",
+    "s5": "ba22eff9814ea16ac19404864f9a2d1ec8da449b3011fba623d0d1856b2c6ecf",
+    "s6": "b0053663cc25e5e7e15595ae342d21c4c467abe74f06c8c4db86982b276898cc",
+    "s7": "2c7c6fb207a002d2bb1e223ebf1f770570f6b06942edf9ac6647253b410a67b7",
+    "s8": "9a012c065cbd8db9e5e69070d20531b84a584582cc0bf8f45fff060b7f31f464",
+    "s9": "1404fbf63401ab3bd4204175d16adb89094eaa1f1b25160e73fd2bb9c625d0b1"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-14T08:23:18.285765+00:00",
+  "total": null
+}

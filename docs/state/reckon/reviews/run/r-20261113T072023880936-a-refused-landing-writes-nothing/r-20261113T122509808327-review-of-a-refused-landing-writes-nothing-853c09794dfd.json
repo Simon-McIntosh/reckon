@@ -1,0 +1,68 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/crew/queue_landing.py:1949 _land_deliveries -> _promoted_row_head -> _ledger_row",
+    "reckon/crew/queue_landing.py:1109 _measure_delivery._moved_primary_keeps_the_measurement -> _landed_elsewhere -> _ledger_row",
+    "reckon/crew/queue_landing.py:2173 _land_deliveries -> _landed_elsewhere -> _ledger_row",
+    "reckon/crew/queue_landing.py land_once",
+    "reckon/crew_run_commands.py crew_complete -> finish_pending_landings"
+  ],
+  "completed_at": "2026-11-13T12:39:50.741Z",
+  "dispatched_at": "2026-11-13T12:28:27Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "exempted",
+      "reason": "test-strength finding: the guard moved unchanged into the one shared helper; a direct test of the foreign-run-id guard is a separate coverage item",
+      "recorded_at": "2026-11-13T13:07:56.093713+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "reckon/crew/queue_landing.py",
+      "line": 44,
+      "severity": "non-blocking",
+      "text": "The new single _ledger_row carries the unreadable-row refusal and the foreign-run-id guard with no test, and because both callers now depend on that one copy, dropping the row.get(\"run_id\") != run_id check would let another run's row answer as this run's without reddening any test."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261113T072023880936-a-refused-landing-writes-nothing/head-arm-importers.log",
+      "line": 1,
+      "severity": "non-blocking",
+      "text": "The importer arm the done_when names was run at 6892c102b2 and never at the landed head 853c0979, so the refactor's effect on queue_landing's importers is unmeasured at the revision this review read."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "Read 95c0e0db9a..853c0979 commit by commit; one file changed. The two ledger-row reads collapse into _ledger_row at reckon/crew/queue_landing.py:33, _promoted_row_head and _landed_elsewhere both derive from it, and every branch -- absent row, unreadable row, foreign run id, promoted_revision read -- keeps its prior answer.",
+    "done_when": "The reviewed done_when asks for the section's test with its negative control, no added importer failure against base and clean ruff; after-suite-repair.log records 54 passed with EXIT=0 at 853c09794dfd and baseline-suite-repair.log records 49 passed with two instrument setup errors and EXIT=1 at 85bbe4ec02, ruff check and format are clean on the file at head (measured here), but no importer arm was run at the landed head -- head-arm-importers.log:1 names 6892c102b2.",
+    "goal": "The reviewed node's goal is that a refused landing writes nothing; this increment, commit 853c0979, changes only the ledger-row read at reckon/crew/queue_landing.py:33-67 and leaves the cited-head behaviour the goal rests on unchanged.",
+    "manifest": "Read; it records 853c0979 as the reuse repair, carries after_suite at revision 853c09794dfd (54 passed, EXIT=0) and baseline_suite at 85bbe4ec02 (49 passed, two setup errors), and its finding-reuse-a/b/c entries answer the prior review's three findings; its artifacts line's 9-failure figure matches after-arm-lander.log and its 10-failure figure matches head-arm-importers.log.",
+    "write_paths": "The reviewed manifest declares six write paths including reckon/crew/queue_landing.py; the increment changes exactly that one file, 11 insertions and 18 deletions, and nothing outside the fence."
+  },
+  "justifications": {
+    "durability": "The commit adds no assertion; tests/test_the_lander_skips_a_run_landed_elsewhere.py:47 reddens if _ledger_row stops returning an existing row, but the unreadable-row and foreign-run-id refusals at reckon/crew/queue_landing.py:44-48 have no test.",
+    "evidence": "after-suite-repair.log heads revision 853c09794dfd with 54 passed and EXIT=0 and baseline-suite-repair.log heads 85bbe4ec02 with 49 passed and two setup errors, but head-arm-importers.log:1 names 6892c102b2 rather than the landed head.",
+    "fit": "The helper follows the module's private-helper idiom and docstring style at reckon/crew/queue_landing.py:34-39, and ruff check and ruff format --check both pass on the file at head.",
+    "goal_fidelity": "reckon/crew/queue_landing.py:53-56 derives the promoted head from the row the module already read, so the pass that finishes a landing at its cited head keeps its answer.",
+    "reuse": "_ledger_row at reckon/crew/queue_landing.py:33 is now the one owner of the row read; a search of reckon/ledger.py, reckon/crew/open_run_index.py:358 and reckon/crew/admission/readiness.py:612 found no existing reader of one run's row by pointer.",
+    "scope_discipline": "git diff --stat 95c0e0db9a 853c0979 lists only reckon/crew/queue_landing.py, 11 insertions and 18 deletions, inside the reviewed manifest's declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the reviewed node's goal is that a refused landing writes nothing; this increment, commit 853c0979, changes only the ledger-row read at reckon/crew/queue_landing.py:33-67 and leaves the cited-head behaviour the goal rests on unchanged.\nVERDICT done_when: the reviewed done_when asks for the section's test with its negative control, no added importer failure against base, and clean ruff; after-suite-repair.log records 54 passed with EXIT=0 at 853c09794dfd and baseline-suite-repair.log records 49 passed with two instrument setup errors and EXIT=1 at 85bbe4ec02, ruff check and ruff format are clean on the file at head (measured here), but no importer arm was run at the landed head -- head-arm-importers.log:1 names 6892c102b2.\nVERDICT write_paths: the reviewed manifest declares six write paths including reckon/crew/queue_landing.py; the increment changes exactly that one file, 11 insertions and 18 deletions, and nothing outside the fence.\nVERDICT manifest: read; it records 853c0979 as the reuse repair.\nVERDICT diff: read 95c0e0db9a20ffb81161a398e1e7e1669e6780a4..853c09794dfddb7183705b8684b0cba84bfdddb1; the two ledger-row reads collapse into _ledger_row at reckon/crew/queue_landing.py:33, _promoted_row_head and _landed_elsewhere both derive from it, and every branch -- absent row, unreadable row, foreign run id, promoted_revision read -- keeps its prior answer.\nCALL_SITES: reckon/crew/queue_landing.py:1949 _land_deliveries -> _promoted_row_head -> _ledger_row, reckon/crew/queue_landing.py:1109 _measure_delivery -> _landed_elsewhere -> _ledger_row, reckon/crew/queue_landing.py:2173 _land_deliveries -> _landed_elsewhere -> _ledger_row, reckon/crew/queue_landing.py land_once (entry point), reckon/crew_run_commands.py crew_complete -> finish_pending_landings\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/queue_landing.py:53-56 derives the promoted head from the row the module already read, so the pass that finishes a landing at its cited head keeps the pass's answer.\nSCORE evidence: 16\nJUSTIFICATION evidence: after-suite-repair.log heads revision 853c09794dfd with 54 passed and EXIT=0 and baseline-suite-repair.log heads 85bbe4ec02 with 49 passed and two setup errors, but head-arm-importers.log:1 names 6892c102b2 rather than the landed head.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat 95c0e0db9a 853c0979 lists only reckon/crew/queue_landing.py, 11 insertions and 18 deletions, inside the reviewed manifest's declared write paths.\nSCORE durability: 15\nJUSTIFICATION durability: the commit adds no assertion; tests/test_the_lander_skips_a_run_landed_elsewhere.py:47 reddens if _ledger_row stops returning an existing row, but the unreadable-row and foreign-run-id refusals at reckon/crew/queue_landing.py:44-48 have no test.\nSCORE fit: 19\nJUSTIFICATION fit: the helper follows the module's private-helper idiom and its docstring at reckon/crew/queue_landing.py:34-39, and ruff check and ruff format --check both pass on the file at head.\nSCORE reuse: 20\nJUSTIFICATION reuse: _ledger_row at reckon/crew/queue_landing.py:33 is now the one owner of the row read; a search of reckon/ledger.py, reckon/crew/open_run_index.py:358 and reckon/crew/admission/readiness.py:612 found no existing reader of one run's row by pointer.\nFINDING reckon/crew/queue_landing.py:44 non-blocking: the new single _ledger_row carries the unreadable-row refusal and the foreign-run-id guard with no test, and because both callers now depend on that one copy, dropping the row.get(\"run_id\") != run_id check would let another run's row answer as this run's without reddening any test.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261113T072023880936-a-refused-landing-writes-nothing/head-arm-importers.log:1 non-blocking: the importer arm the done_when names was run at 6892c102b2 and never at the landed head 853c0979, so the refactor's effect on queue_landing's importers is unmeasured at the revision this review read.\n",
+  "review_run_id": "r-20261113T122509808327-review-of-a-refused-landing-writes-nothing-853c09794dfd",
+  "review_scope": "increment only: 95c0e0db9a..853c0979 (reckon/crew/queue_landing.py), the commits the reviewed run gained since its review at 95c0e0db9a; the run's overall base is 85bbe4ec020b87a4a2e5398a00dd9831725b51f5",
+  "reviewed_base_sha": "95c0e0db9a20ffb81161a398e1e7e1669e6780a4",
+  "reviewed_head_sha": "853c09794dfddb7183705b8684b0cba84bfdddb1",
+  "reviewed_run_id": "r-20261113T072023880936-a-refused-landing-writes-nothing",
+  "scores": {
+    "durability": 15,
+    "evidence": 16,
+    "fit": 19,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-13T12:48:25.917145+00:00",
+  "total": 108
+}

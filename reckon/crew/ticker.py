@@ -190,7 +190,7 @@ DISPLAY_HUE = {
         "queued": 97,
         "working": 26,
         "waiting": 97,
-        "halted": 124,
+        "needs you": 124,
         "delivered": 30,
         "in review": 30,
         "landed": 22,
@@ -202,7 +202,7 @@ DISPLAY_HUE = {
         "queued": 104,
         "working": 75,
         "waiting": 104,
-        "halted": 203,
+        "needs you": 203,
         "delivered": 80,
         "in review": 80,
         "landed": 71,
@@ -278,6 +278,7 @@ LIMIT_RESET = "limit-reset"
 LIFT_STATES = frozenset({LIFT_GRANTED, LIFT_IN_FORCE, LIFT_ENDED, LIMIT_RESET})
 LIFT_STAGE = "lift"
 LIMIT_STAGE = "limit"
+SUBMISSION_STAGE = "submitted"
 
 # The words a coordinator's own gate run occupies. Spelled here for the reason
 # the lift words above are: the gate fold imports the recovery watch, which
@@ -450,7 +451,11 @@ PANE_STATES = {
     # by a lane slot. One whose wait can no longer land asks for the decision a
     # blocked run asks for, so it sits beside blocked.
     "waiting": frozenset({"waiting", "paused", "wait-aged", "awaiting-upstream"}),
-    "halted": frozenset(
+    # A run the orchestrator whose pane this is must act on next: it is blocked,
+    # failed, stalled, stopped, abandoned, held, or its manifest is unreadable.
+    # The word says so rather than reading as a state the run sits in by
+    # itself, because every state below is the orchestrator's move.
+    "needs you": frozenset(
         {
             "blocked-upstream",
             "blocked",
@@ -505,8 +510,8 @@ PANE_STATES = {
 # follower's own end are carried by their own facts too:
 #
 #   delivered      a run of this session delivered and unpromoted;
-#   halted         a run halted, which is blocked, failed, stalled, or carried
-#                  an unreadable manifest;
+#   needs you      a run that reads as halted, which is blocked, failed,
+#                  stalled, or carried an unreadable manifest;
 #   in review      a run delivered whose review has started, drawn under the
 #                  reviewed run's node and naming the review run;
 #   landed         a run that reached a written record — recorded or promoted,
@@ -545,7 +550,7 @@ PANE_STATES = {
 # replay of a start, a re-arm or reload baseline, and a reload notice. The row
 # policy and the summary lines read the rule from here rather than restating it,
 # so a row the stream withholds is withheld by one decision.
-CARRIED_PANE_WORDS = frozenset({"delivered", "halted", "in review", "seat moved"})
+CARRIED_PANE_WORDS = frozenset({"delivered", "needs you", "in review", "seat moved"})
 
 # The pane words of a run whose work is over: a written record, or a drop. A
 # landing is news only when the pane itself drew the delivery before it, and a
@@ -570,6 +575,69 @@ LAUNCH_HORIZON = 120.0
 # row rather than in a word because a launch's word is ``working``, which every
 # churn row shares.
 LAUNCH_FIELD = "pane_launch"
+
+# The sentence the recovery classifier composes when a queued request's own
+# launch attempt was refused, and the remedy it names in the same row's
+# ``next_action``. A refused attempt leaves the request in ``queued``, holding
+# its place, so the refusal is the one fact on that row a coordinator must act
+# on and the only thing that distinguishes it from the ordinary row saying the
+# request waits for a slot. The clauses themselves live in the classifier that
+# writes them, so the reader recognises a refusal by the same text that made it.
+
+# The row field the row policy sets on the request's row when it names a
+# refusal the pane has not shown before. A refusal is news once: a request
+# refused again for the same reason is the same remedy the coordinator already
+# has, so the second identical refusal carries nothing. The field holds the
+# clause the pane prints, so the renderer needs no second look at the row.
+QUEUED_REFUSED_FIELD = "pane_queued_refused"
+
+# The stage word a refusal row carries in the role column. The row is the
+# request speaking about its own launch rather than a run changing state, so
+# the column names what the row is; the request's own role stays in the job
+# cell's own facts and the clause names the work by its node.
+REFUSAL_STAGE = "refused"
+
+
+def queued_refusal(event: Mapping[str, Any]) -> str:
+    """The refusal a queued row names, with the remedy the classifier composed.
+
+    A queued row carries the refusal only while the request's latest attempt
+    failed for a reason a coordinator must clear; an ordinary queued row's
+    detail names the slot it waits for. Both of the classifier's refusal
+    clauses are recognised — the lane's and the dispatching session's — because
+    both leave the request queued and both name a remedy. The remedy is the
+    command the classifier wrote into ``next_action``: the reader that owns it
+    is ``_queued_failure_remedy`` in ``reckon.crew.recovery_classification``,
+    which also writes the prefixes, so the row prints what that reader decided
+    rather than deriving a second answer here.
+    """
+    from reckon.crew.recovery_classification import QUEUED_REFUSAL_PREFIXES
+
+    if str(event.get("to_state") or "") != "queued":
+        return ""
+    detail = str(event.get("detail") or "").strip()
+    if not detail.startswith(QUEUED_REFUSAL_PREFIXES):
+        return ""
+    remedy = str(event.get("next_action") or "").strip()
+    if remedy and remedy not in detail:
+        return f"{detail} — {remedy}"
+    return detail
+
+
+def refusal_key(event: Mapping[str, Any]) -> str:
+    """What names one queued request for the refusal the pane has already named.
+
+    The run id, because a refused launch does not mint one: the admission pass
+    writes the request back under the id the request already carries, so the
+    attempts and the re-queues of one request all publish that id and a
+    different request publishes a different one. The queue's own record of a
+    request's identity is ``runs._node_identity`` — the plan, section and node
+    id a pointer names — and it is deliberately not read here: the classified
+    transition row carries the project, session, plan and node id and no
+    section, so composing that tuple from the row would restate a definition
+    this module does not own and read a field the row never has.
+    """
+    return str(event.get("run_id") or "")
 
 
 # The dispatch vocabulary, verbatim. Kept here rather than derived from a
@@ -636,20 +704,25 @@ HIDDEN_AT_ATTACH = SETTLED_STATES - frozenset(
     {"completed_unpromoted", "failed", "abandoned"}
 )
 
-_CELLS = ("working", "halted", "delivered")
+_CELLS = ("working", "needs you", "delivered")
 _WAIT_CELL = "waiting"
 
 # The event still carries the historical count-field keys. The visible buckets
 # use pane words; a waiting count includes queued and externally waiting runs.
-_COUNT_FIELD = {"halted": "blocked", "delivered": "unpromoted", "waiting": "waiting"}
+_COUNT_FIELD = {
+    "needs you": "blocked",
+    "delivered": "unpromoted",
+    "waiting": "waiting",
+}
 
 # Each counter is labelled with the lower-case initial of a pane word. The
 # waiting bucket holds queued runs as well as runs waiting on a declared
-# condition, and its label is ``q`` for the queued word, so no two labels share
-# a letter and none needs a case to tell it apart.
+# condition, and its label is ``q`` for the queued word. ``n`` is the needs-you
+# bucket's letter, and no other counter uses it, so no two labels share a
+# letter and none needs a case to tell it apart.
 STAT_LETTER = {
     "working": "w",
-    "halted": "h",
+    "needs you": "n",
     "delivered": "d",
     "waiting": "q",
 }
@@ -877,7 +950,7 @@ def _bucket_of(state: Any, classification: Any) -> str | None:
     if word in FLEET_UNPROMOTED_STATES:
         return "delivered"
     if word in FLEET_BLOCKED_STATES:
-        return "halted"
+        return "needs you"
     if word in FLEET_WAITING_STATES:
         return _WAIT_CELL
     if word in FLEET_WORKING_STATES:
@@ -1011,11 +1084,20 @@ def lane_mean_from_text(raw: str | None, *, now: datetime) -> float | str:
     return float(mean)
 
 
+# A pane word written before a state was renamed. A checkpoint, a stored
+# history and a delivered-state record all hold pane words, so a record written
+# by an earlier pane names the same state with the word it used then. The reader
+# takes such a word in as the word the pane draws now, so a run whose only
+# change since that record is the word draws no row.
+SUPERSEDED_PANE_WORDS = {"halted": "needs you"}
+
+
 def _display_state(state: Any) -> str:
     internal = str(state or "")
-    return next(
+    shown = next(
         (word for word, states in PANE_STATES.items() if internal in states), ""
     )
+    return shown or SUPERSEDED_PANE_WORDS.get(internal, "")
 
 
 def _remembered_word(state: Any) -> str:
@@ -1029,9 +1111,11 @@ def _remembered_word(state: Any) -> str:
     a run live across a re-arm shows its pane word on the left.
 
     A state that is already one of the pane's words maps to itself. Five of
-    them — ``delivered``, ``halted``, ``in review``, ``landed`` and ``dropped``
-    — are not also internal states, so ``_display_state`` blanks them; the
-    identity is therefore taken first rather than falling through to the blank.
+    them — ``delivered``, ``needs you``, ``in review``, ``landed`` and
+    ``dropped`` — are not also internal states, so ``_display_state`` blanks
+    them; the identity is therefore taken first rather than falling through to
+    the blank. A word a previous pane wrote for one of these states, such as
+    ``halted``, is read by ``_display_state`` as the word the pane draws now.
     """
     spelled = str(state or "")
     if spelled in PANE_STATES:
@@ -1301,12 +1385,12 @@ ARRIVAL_WINDOW = 90.0
 #
 # A run reaches ``working`` from ``dispatched`` on a fresh launch, from
 # ``starting`` on a relaunched attempt, and from any stop state the pane drew as
-# ``halted`` when an attempt is resumed. All announce the same news — the run
+# ``needs you`` when an attempt is resumed. All announce the same news — the run
 # began doing the work — so all are starts. ``START_KIND`` is the fresh-launch
 # pair a reader names when it means the canonical start; ``RowPolicy`` reads the
 # set when it decides whether a row is a start. The stop states are read from
 # the pane's own vocabulary rather than listed here, so every state the pane
-# draws ``halted`` — ``blocked``, ``exited-unfinished``, ``stalled``,
+# draws ``needs you`` — ``blocked``, ``exited-unfinished``, ``stalled``,
 # ``abandoned`` and the rest — pairs with ``working`` and a new one is a start
 # the moment it is drawn. The states the pane draws ``delivered`` or ``landed``
 # are excluded, because a producer re-reading a rewritten manifest as working
@@ -1324,7 +1408,7 @@ ARRIVAL_WINDOW = 90.0
 START_KIND: tuple[Any, Any] = ("dispatched", "working")
 START_KINDS: frozenset[tuple[Any, Any]] = frozenset(
     {START_KIND, ("starting", "working"), ("queued", "working"), (None, "working")}
-) | frozenset((state, "working") for state in PANE_STATES["halted"])
+) | frozenset((state, "working") for state in PANE_STATES["needs you"])
 
 # ── The settle hold ───────────────────────────────────────────────────────────
 #
@@ -1448,6 +1532,43 @@ def _pane_word(event: Mapping[str, Any]) -> str:
     return _display_state(entry)
 
 
+def is_submission_row(event: Mapping[str, Any]) -> bool:
+    """Whether the row is the admit pass announcing a submitted request.
+
+    The kind is named by the module that writes it, so the reader and the
+    writer cannot drift about which rows are these. The import is taken here
+    rather than at module import because the watch unit imports the run paths
+    and the fleet modules this renderer is read from.
+    """
+    from reckon.crew.watch_unit import SUBMISSION_EVENT
+
+    return str(event.get("event") or "") == SUBMISSION_EVENT
+
+
+def submission_clause(event: Mapping[str, Any]) -> str:
+    """What a submission row says: what started, and how to reach it.
+
+    The run leads, because it is the handle the coordinator acts with; the plan
+    section, the lane and the ``crew tell`` command follow in the order a
+    reader uses them. A piece the row does not carry is left out rather than
+    drawn empty, so a request queued without a section still reads as a
+    sentence.
+    """
+    run_id = str(event.get("run_id") or "")
+    plan = str(event.get("plan") or "")
+    section = str(event.get("section") or "")
+    lane = str(event.get("lane") or "")
+    tell = str(event.get("tell_command") or "")
+    parts = [f"run {run_id}" if run_id else ""]
+    if plan or section:
+        parts.append(f"{plan} §{section}".strip())
+    if lane:
+        parts.append(f"lane {lane}")
+    if tell:
+        parts.append(tell)
+    return " · ".join(part for part in parts if part)
+
+
 def stream_carries(event: Mapping[str, Any]) -> bool:
     """Whether this row is a line the Monitor stream carries.
 
@@ -1466,8 +1587,13 @@ def stream_carries(event: Mapping[str, Any]) -> bool:
     the rule the follower's summary lines read before naming anything, stated
     once here so the stream and the summaries cannot disagree about what is news.
     """
-    if event.get("status_repair") and _pane_word(event) == "halted":
-        # A transition into a halted word that a coordinator's own ``crew
+    if is_submission_row(event):
+        # The admit pass submitting a session's queued request: the coordinator
+        # can steer the worker from the moment it starts, which is the news the
+        # row exists to say and which no state transition carries.
+        return True
+    if event.get("status_repair") and _pane_word(event) == "needs you":
+        # A transition into a needs-you word that a coordinator's own ``crew
         # repair --status`` caused: the coordinator wrote the word itself, so
         # the row carries nothing it does not already know — the same reading a
         # ``landed`` or ``dropped`` row from its own merge or discard is given.
@@ -1476,7 +1602,7 @@ def stream_carries(event: Mapping[str, Any]) -> bool:
         # A repair not followed by a resume still leaves the run in the
         # needs-you summary, so nothing actionable is lost with the row.
         #
-        # Only the halted word is withheld. This rule removes the row a halt
+        # Only the needs-you word is withheld. This rule removes the row a halt
         # produces, not every row a repair causes: a repair that lands a run on
         # the other carried word, a delivery, is judged as any other row is, so
         # the rule cannot silence a delivery it did not itself complete.
@@ -1501,6 +1627,12 @@ def stream_carries(event: Mapping[str, Any]) -> bool:
         # A landing or a drop the policy judged news: the delivery it follows
         # was printed by this pane, or the run was drawn before it ended. The
         # mark carries that judgement so this rule stays a function of the row.
+        return True
+    if event.get(QUEUED_REFUSED_FIELD):
+        # A queued request whose launch was refused, named once per refusal.
+        # The request keeps its place and its word, so this row is the only
+        # notice a coordinator gets that the launch will repeat the same
+        # refusal until the remedy is run.
         return True
     if _pane_word(event) in CARRIED_PANE_WORDS:
         return True
@@ -1623,6 +1755,14 @@ class RowPolicy:
         # the state word, because a run's pane word passes through the review
         # and back; the attempt is what decides whether a delivery is fresh.
         self._launches: dict[str, int] = {}
+        # run id -> the refusal clauses this pane has already named for that
+        # request. A request refused again for the same reason carries the
+        # remedy the reader already has, so the row is not news and prints
+        # nothing; a refusal the request has not shown before prints once. The
+        # key is :func:`refusal_key`: the admission pass re-queues a refused
+        # request under the id it already had, so one request's attempts and
+        # re-queues share an id while two requests do not.
+        self._refusals: dict[str, set[str]] = {}
 
     @property
     def lift_groups(self) -> frozenset[str]:
@@ -1740,7 +1880,7 @@ class RowPolicy:
         The attempt's own memory decides once-only: a run the pane already
         shows ``working`` has had its launch drawn, so a replayed or
         re-announced start adds nothing and a resume, which leaves a word the
-        pane draws ``halted``, prints its own.
+        pane draws ``needs you``, prints its own.
 
         A review run's launch is drawn under the reviewed run's node as the
         reviewed run's ``in review`` row, naming the review run in its own
@@ -1754,7 +1894,7 @@ class RowPolicy:
         # it already shows did not begin under it: the row is a re-derivation
         # after a reload, or a producer rewriting the state it had recorded, and
         # neither opens an attempt the reader is watching start. A resume, whose
-        # pair leaves a word the pane draws ``halted``, is a launch either way.
+        # pair leaves a word the pane draws ``needs you``, is a launch either way.
         if (
             kind == START_KIND
             and run_id
@@ -2005,7 +2145,27 @@ class RowPolicy:
         if not run_id:
             return False
         if str(event.get("to_state") or "") == "withdrawn":
+            # A queued request has no run behind it, so a withdrawal is the
+            # admission pass taking an impossible launch back, never the work
+            # leaving the fleet. The request keeps its place and its word, and
+            # the row that follows it is a refusal naming the remedy; drawing
+            # the withdrawal would tell the coordinator the request had been
+            # dropped. This is a property of the row, not of how close the
+            # next row lands, so it holds whether or not a follower saw the
+            # request's pointer come back.
             return False
+        if (
+            str(event.get("to_state") or "") == "discarded"
+            and str(event.get("from_state") or "") == "queued"
+        ):
+            # A queued request that was really discarded has no run behind it,
+            # so this row is the only account of the work going away and it
+            # keeps its word: the pane never drew the request, because a queued
+            # request waiting for a slot is not news. A withdrawal and a
+            # departure stay silent — a refused launch's pointer is released
+            # and rewritten by the next admission pass, and the request it
+            # belongs to is still queued.
+            return True
         if _pane_word(event) == "landed":
             return self._printed.get(run_id) == "delivered"
         return bool(self._printed.get(run_id))
@@ -2113,6 +2273,12 @@ class RowPolicy:
         ``_reported`` bookkeeping, which is what makes a later re-derivation of a
         withheld row silent.
         """
+        if is_submission_row(event):
+            # A submission row names no state, so no hold, departure or round
+            # trip speaks to it, and recording a word for its run would put a
+            # state the pane never drew into the memory the round-trip rule
+            # reads. It reaches the pane as it stands, once.
+            return [event]
         out = self._mark_carried(self._feed(event, now=now))
         self._note_shown(out)
         return out
@@ -2130,6 +2296,27 @@ class RowPolicy:
         from_state = event.get("from_state")
         to_state = str(event.get("to_state") or "")
         kind = (from_state, to_state)
+
+        # A refused launch leaves the request queued, so the row that carries
+        # the refusal is the request's own and not a move: no hold, no round
+        # trip and no settle rule speaks to it, and the word the pane holds for
+        # the request must not move with it. Each refusal the request has not
+        # shown before prints once; the same refusal again is the remedy the
+        # coordinator already has and prints nothing.
+        refusal = queued_refusal(event)
+        if refusal:
+            # The request is still held, so a departure this pane is sitting on
+            # for the run is the launch attempt's released pointer and not a
+            # drop: the row that proves the request survived cancels it.
+            self._departures.pop(run_id, None)
+            self._held.pop(run_id, None)
+            seen = self._refusals.setdefault(refusal_key(event), set())
+            if refusal in seen:
+                return []
+            seen.add(refusal)
+            marked = {**event, QUEUED_REFUSED_FIELD: refusal}
+            self._note_printed(run_id, event)
+            return [marked]
 
         # A departure is held while the run is away. A row that lands the run
         # back in the word the pane last showed cancels the hold and drops both
@@ -3167,6 +3354,10 @@ class Ticker:
         carries no free text, and ends on its last cell with any trailing pad
         removed.
         """
+        if is_submission_row(event):
+            return self._submission_line(event)
+        if event.get(QUEUED_REFUSED_FIELD):
+            return self._refusal_line(event)
         node = str(event.get("node") or event.get("run_id") or "unknown")
         # The row names its own project, so the model column is sized from the
         # project layer its dispatch would read rather than a project-less
@@ -3383,6 +3574,93 @@ class Ticker:
             for text, style in cells
         )
 
+    def _clause_line(
+        self,
+        event: Mapping[str, Any],
+        *,
+        stage: str,
+        handle: str,
+        hue_key: str,
+        clause: str,
+    ) -> str:
+        """A row that speaks about one handle rather than moving a run.
+
+        A submission, a lift and a refusal are all the same shape: the stage
+        word in the role column, the handle in the job cell, one composed
+        clause where a transition would go, then the spend and counter cells
+        that keep the row lined up with the fleet beneath it. The clause takes
+        the room the transition columns leave and is cut like any other cell, so
+        a narrow pane drops its tail rather than wrapping the row.
+        """
+        spend = self._spend_cells(event, stage)
+        stats = self._stats(event)
+        tail = (
+            GAP
+            + sum(len(text) for text, _ in spend)
+            + GAP
+            + sum(len(text) for text, _ in stats)
+        )
+        room = self._grid_width() - CLOCK - GAP - ROLE - GAP - NODE - GAP - tail
+        job = _job_name(handle, event.get("role"))
+        cells: list[tuple[str, Any]] = [
+            (f"{local_clock(event.get('observed_at')):<{CLOCK}}", "dim"),
+            (" " * GAP, None),
+            (f"{stage:<{ROLE}}", "dim"),
+            (" " * GAP, None),
+            (f"{self._job_cell(job, stage, handle, ''):<{NODE}}", self.hue(hue_key)),
+            (" " * GAP, None),
+            (elide(clause, room), None),
+            (" " * GAP, None),
+            *spend,
+            (" " * GAP, None),
+            *stats,
+        ]
+        shadow = is_shadow(event)
+        return "".join(
+            self._paint(text, "dim" if shadow and style is not None else style)
+            for text, style in cells
+        )
+
+    def _refusal_line(self, event: Mapping[str, Any]) -> str:
+        """One queued request whose launch was refused, as a clause naming it.
+
+        The request keeps its place and stays ``queued``, so the row carries no
+        transition: the refusal and the remedy that clears it are the whole of
+        the news, and the pane's memory for the request stays on the word it
+        already held.
+        """
+        run_id = str(event.get("run_id") or "")
+        if str(event.get("event") or "").strip():
+            # The request's own word does not move, so the next row's left half
+            # reads the word this row left the pane holding.
+            self._reported[run_id] = "queued"
+        return self._clause_line(
+            event,
+            stage=REFUSAL_STAGE,
+            handle=run_id,
+            hue_key=str(event.get("node") or run_id),
+            clause=str(event.get(QUEUED_REFUSED_FIELD) or ""),
+        )
+
+    def _submission_line(self, event: Mapping[str, Any]) -> str:
+        """One queued request submitted to a worker, as a clause naming it.
+
+        The row is the admit pass speaking, not a run changing state, so it
+        carries the stage word rather than a transition: the run in the job
+        cell, then the plan section, the lane and the ``crew tell`` command that
+        reaches the row's worker. The clause takes the room the transition
+        columns leave and is cut like any other cell, so a narrow pane drops the
+        tail of the command rather than wrapping the row.
+        """
+        run_id = str(event.get("run_id") or "")
+        return self._clause_line(
+            event,
+            stage=SUBMISSION_STAGE,
+            handle=run_id,
+            hue_key=str(event.get("node") or run_id),
+            clause=submission_clause(event),
+        )
+
     def _lift_line(self, event: Mapping[str, Any]) -> str:
         """One grant that replaced another, as a clause naming both.
 
@@ -3393,37 +3671,13 @@ class Ticker:
         The elapsed and counter cells keep their places after it, so the row
         lines up with the fleet rows beneath it.
         """
-        spend = self._spend_cells(event, LIFT_STAGE)
-        stats = self._stats(event)
         group = str(event.get("node") or "")
-        job = _job_name(group, event.get("role"))
-        tail = (
-            GAP
-            + sum(len(text) for text, _ in spend)
-            + GAP
-            + sum(len(text) for text, _ in stats)
-        )
-        room = self._grid_width() - CLOCK - GAP - ROLE - GAP - NODE - GAP - tail
-        cells: list[tuple[str, Any]] = [
-            (f"{local_clock(event.get('observed_at')):<{CLOCK}}", "dim"),
-            (" " * GAP, None),
-            (f"{LIFT_STAGE:<{ROLE}}", "dim"),
-            (" " * GAP, None),
-            (
-                f"{self._job_cell(job, LIFT_STAGE, group, ''):<{NODE}}",
-                self.hue(group),
-            ),
-            (" " * GAP, None),
-            (elide(lift_clause(event), room), None),
-            (" " * GAP, None),
-            *spend,
-            (" " * GAP, None),
-            *stats,
-        ]
-        shadow = is_shadow(event)
-        return "".join(
-            self._paint(text, "dim" if shadow and style is not None else style)
-            for text, style in cells
+        return self._clause_line(
+            event,
+            stage=LIFT_STAGE,
+            handle=group,
+            hue_key=group,
+            clause=lift_clause(event),
         )
 
     def _spend_cells(

@@ -1,0 +1,141 @@
+{
+  "added_failure_count": 0,
+  "added_failure_derivation": "baseline_suite and after_suite in the manifest carry the same three failing ids (two failures and one setup error), so the after-minus-base delta is empty.",
+  "added_failure_ids": [],
+  "assertion_audit": [
+    {
+      "failure_condition": "The fixture drifting out of the review contract, for example losing added_failure_count, which review_record_refusals refuses.",
+      "file": "tests/test_a_figure_review_is_complete_by_its_own_rubric.py",
+      "line": 214
+    },
+    {
+      "failure_condition": "The owner's figure branch removed, so _review_is_complete reads a complete figure record as missing the six code dimensions; the negative-control log shows eight such failures.",
+      "file": "tests/test_a_figure_review_is_complete_by_its_own_rubric.py",
+      "line": 215
+    },
+    {
+      "failure_condition": "The delivery check judging a complete figure record incomplete, which is the recorded incident.",
+      "file": "tests/test_a_figure_review_is_complete_by_its_own_rubric.py",
+      "line": 218
+    },
+    {
+      "failure_condition": "A missing figure item not being named in the refusal, or a code dimension being named instead.",
+      "file": "tests/test_a_figure_review_is_complete_by_its_own_rubric.py",
+      "line": 249
+    },
+    {
+      "failure_condition": "A blank verdict being counted as a checked item.",
+      "file": "tests/test_a_figure_review_is_complete_by_its_own_rubric.py",
+      "line": 267
+    },
+    {
+      "failure_condition": "The derived total not being computed from the stored scores.",
+      "file": "tests/test_a_figure_review_is_complete_by_its_own_rubric.py",
+      "line": 285
+    },
+    {
+      "failure_condition": "A code record no longer refused for its own missing dimension.",
+      "file": "tests/test_a_figure_review_is_complete_by_its_own_rubric.py",
+      "line": 303
+    }
+  ],
+  "assertion_independence": "Two assertions restate the test's own input rather than an independent expectation: the scores equality at line 284 and the empty scores mapping at line 229, both round-trips that hold whatever the rule does. The durability claim rests on lines 215, 218 and the parametrized cases, which the negative-control log shows reddening with the answering branch removed.",
+  "call_site_count": 9,
+  "call_sites": [
+    "reckon/crew/recovery_review_delivery.py:443",
+    "reckon/crew/recovery_review_acceptance.py:119",
+    "reckon/crew/recovery_repair_dispatch.py:1392",
+    "reckon/crew/recovery_classification.py:410",
+    "reckon/crew/recovery_classification.py:1371",
+    "reckon/crew/review_records.py:532",
+    "reckon/crew/obligations.py:2309",
+    "reckon/crew/recovery_review_dispatch.py:1204",
+    "reckon/crew/queue_landing.py:243"
+  ],
+  "completed_at": "2026-11-13T16:00:09.613Z",
+  "dispatched_at": "2026-11-13T15:48:08Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "exempted",
+      "reason": "non-blocking; carried to the plan's next health review",
+      "recorded_at": "2026-11-13T17:47:25.826067+00:00"
+    },
+    "1": {
+      "kind": "exempted",
+      "reason": "non-blocking; carried to the plan's next health review",
+      "recorded_at": "2026-11-13T17:47:35.748123+00:00"
+    },
+    "2": {
+      "kind": "exempted",
+      "reason": "non-blocking; carried to the plan's next health review",
+      "recorded_at": "2026-11-13T17:47:49.661763+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "tests/test_a_figure_review_is_complete_by_its_own_rubric.py",
+      "id": "f3ecc8a8ab6",
+      "line": "284",
+      "severity": "non-blocking",
+      "text": "non-blocking: the code-record case asserts the stored scores mapping equals the mapping _text_round passed in, a round-trip that holds whatever the completeness rule does; it is not a guard for this change, which the negative control and the parametrized cases carry instead."
+    },
+    {
+      "file": "reckon/crew/recovery_review_acceptance.py",
+      "id": "f1b33b4693b",
+      "line": "119",
+      "severity": "non-blocking",
+      "text": "non-blocking: _record_is_complete ANDs _review_is_complete with _scores_are_in_range, which returns False for a figure record carrying no scores, so _review_accepts_promotion still rejects a contract-valid figure review at recovery_review_acceptance.py:476 and recovery_review_dispatch.py:1269. Pre-existing at 60e9f4edec and outside the section's delivery-check deliverable; the change's claim that every reader agrees does not hold for this one."
+    },
+    {
+      "file": "tests/test_staged_write_inventory.py",
+      "id": "f88863e31ee",
+      "line": "1",
+      "severity": "non-blocking",
+      "text": "non-blocking: the repair round's done_when named this file's pytest command for both arms; the manifest records a different command and no log names it, so the round's stated gate was not the gate run."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "three files against the base revision: 35 lines in the owner, the 303-line test, and the 111-line evidence fragment; recovery_review_delivery.py carries no diff from 082607a9e8",
+    "done_when": "the new test carries the five cases the measure names and the negative control is logged red; the repair round's named suite command is absent from the logs",
+    "goal": "the goal is that a figure review is complete by its own rubric; the completeness owner now dispatches on the record's rubric and the delivery check delegates to it",
+    "manifest": "complete, both findings answered by id, arms and negative control recorded; no ruff log and no test_staged_write_inventory run",
+    "write_paths": "the owner module edited is outside the node's declared write path and is declared in the manifest's scope_note as the finding's prescribed repair; the delivery module is back at its base content"
+  },
+  "justifications": {
+    "durability": "tests/test_a_figure_review_is_complete_by_its_own_rubric.py:215 reddens in the negative-control log when the owner's figure branch is removed.",
+    "evidence": "logs/baseline-arm-2.log and logs/after-arm-2.log carry revision, command and EXIT lines with zero added failures, but the repair's named suite command was never run and the ruff clause is unlogged.",
+    "fit": "_figure_missing_measures at reckon/crew/recovery_review_subject.py:1543 follows the _claims_missing_measures family in the same module.",
+    "goal_fidelity": "reckon/crew/recovery_review_subject.py:1531 dispatches on the rubric reader reckon/crew/review.py:2751 exposes, which is the section's deliverable.",
+    "reuse": "the new helper extends the single owner at reckon/crew/recovery_review_subject.py:1511 and recovery_review_delivery.py is identical to its base revision.",
+    "scope_discipline": "reckon/crew/recovery_review_subject.py is edited outside the declared write path, declared in the manifest's scope_note as the finding's prescribed repair."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The source goal is to deliver section 25 so a figure review is complete by its own rubric; the repair puts the figure branch in the single owner, so one rule answers, and tests/test_a_figure_review_is_complete_by_its_own_rubric.py:215 shows a complete figure record satisfying that owner.\nVERDICT done_when: the section 25 measure is the new test's complete, missing-measure, blank-measure, code-complete and code-incomplete cases with a logged negative control; the test carries all five (lines 206, 235, 254, 270, 288), logs/negative-control-owner-unaware-of-figure-rubric.log records 8 failed / 2 passed / EXIT=1 with the owner reverted, and the repair round's own done_when named tests/test_staged_write_inventory.py in both arms, which no log carries.\nVERDICT write_paths: the node declares reckon/crew/recovery_review_delivery.py; the diff against 60e9f4edec touches that module (removing the round-1 wrapper, now identical to the base revision), reckon/crew/recovery_review_subject.py, the new test and the evidence fragment - the owner module sits outside the node's declared path and is declared in the manifest's scope_note as the finding's prescribed repair.\nVERDICT manifest: read; it answers both findings by id, records the base arm at 082607a9e8 (349 passed, 2 failed, 1 error) and the head arm at 94368137 (359 passed, same two failures and error, zero added), the node test at 10 passed, and the negative control at 8 failed, but records no ruff log and no test_staged_write_inventory run.\nVERDICT diff: read 94368137, 6f5baa79 and 1c070f67 against 60e9f4edec and the whole node against 082607a9e8; the source diff is 35 lines in the owner, the test gains two contract fields and two agreement assertions, recovery_review_delivery.py is back to its base content, and the fragment records the repair.\nCALL_SITES: reckon/crew/recovery_review_delivery.py:443, reckon/crew/recovery_review_acceptance.py:119, reckon/crew/recovery_repair_dispatch.py:1392, reckon/crew/recovery_classification.py:410, reckon/crew/recovery_classification.py:1371, reckon/crew/review_records.py:532, reckon/crew/obligations.py:2309, reckon/crew/recovery_review_dispatch.py:1204, reckon/crew/queue_landing.py:243\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/recovery_review_subject.py:1531 dispatches on the rubric reader reckon/crew/review.py:2751 exposes, which is what section 25 asks for.\nSCORE evidence: 13\nJUSTIFICATION evidence: logs/baseline-arm-2.log and logs/after-arm-2.log carry revision, literal command and EXIT lines with zero added failures, but the repair done_when's named tests/test_staged_write_inventory.py command was never run and the ruff clause rests on the manifest line alone.\nSCORE scope_discipline: 14\nJUSTIFICATION scope_discipline: the diff against 60e9f4edec edits reckon/crew/recovery_review_subject.py, outside the node's declared write path reckon/crew/recovery_review_delivery.py, declared in the manifest's scope_note as the finding's prescribed repair.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_a_figure_review_is_complete_by_its_own_rubric.py:215 asserts the owner reads a complete figure record as complete, and the negative-control log shows eight cases reddening when that branch is removed.\nSCORE fit: 18\nJUSTIFICATION fit: _figure_missing_measures at reckon/crew/recovery_review_subject.py:1543 sits beside _claims_missing_measures in the owner's family and carries no plan or ticket label.\nSCORE reuse: 19\nJUSTIFICATION reuse: the new _figure_missing_measures at reckon/crew/recovery_review_subject.py:1543 extends the declared single owner _review_missing_measures and the second dispatcher is gone, with recovery_review_delivery.py identical to its base revision.\nFINDING tests/test_a_figure_review_is_complete_by_its_own_rubric.py:284 non-blocking: the code-record case passes scores of 20 into the record and then asserts the stored scores mapping equals that same input, so the line restates the fixture's own value and holds whatever the completeness rule does; durability rests on lines 215, 218 and the parametrized cases instead.\nFINDING reckon/crew/recovery_review_acceptance.py:119 non-blocking: _record_is_complete still ANDs the now rubric-aware _review_is_complete with _scores_are_in_range, which returns False for a figure record carrying no scores mapping, so _review_accepts_promotion (recovery_review_acceptance.py:476 and recovery_review_dispatch.py:1269, neither figure-gated like queue_landing.py:243) reads a contract-valid figure review as not promotable; verified by probe on the head, _record_is_complete false and review_record_refusals empty, and the conjunction is unchanged from 60e9f4edec, so the repair neither introduced nor worsened it.\nFINDING tests/test_staged_write_inventory.py:1 non-blocking: the repair round's done_when required both arms to run exactly the pytest command over tests/test_staged_write_inventory.py, the manifest records a different command (a -n 4 file list) and no log in the run directory names that file, so the round's stated gate is not the gate that ran.",
+  "reuse_search": {
+    "assessment": "the new _figure_missing_measures extends the declared single owner _review_missing_measures rather than forking it.",
+    "capabilities": [
+      "which measures a stored review lacks (owner: reckon/crew/recovery_review_subject.py:1511 _review_missing_measures)"
+    ]
+  },
+  "review_limitations": [
+    "Read-only review: no mutation of the node and no suite re-run; the recorded arms were read rather than repeated.",
+    "Ruff check was re-run by the reviewer with --no-cache on the two source paths (clean) because the node recorded no ruff log; format --check reports both already formatted.",
+    "The merged result was not verified; that belongs to a separately dispatched test node."
+  ],
+  "review_run_id": "r-20261113T104411283773-review-of-ready-a-review-can-see-the-figure-s25-1c070f676916",
+  "reviewed_base_sha": "60e9f4edec411493af64eb3a5b411dcd5258d245",
+  "reviewed_head_sha": "1c070f6769161b739ddddbd433831e1871097c3d",
+  "reviewed_run_id": "r-20261113T022856934048-ready-a-review-can-see-the-figure-s25",
+  "scores": {
+    "durability": 18,
+    "evidence": 13,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 19,
+    "scope_discipline": 14
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-13T15:58:00+00:00",
+  "total": 101
+}

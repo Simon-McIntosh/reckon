@@ -6,7 +6,7 @@ import json
 import time
 from collections.abc import Callable, Iterable, Mapping, Sequence
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import UTC, datetime, timezone
 from pathlib import Path
 from typing import Any
 
@@ -125,9 +125,9 @@ def _measured_rollout_receipt(session_id: str, run_id: str | None) -> Any | None
         candidate = rollout.read_rollout_receipt(session_id, run_id=run_id or None)
     except (OSError, ValueError):
         return None
-    if isinstance(
-        getattr(candidate, "generation_seconds", None), float
-    ) and isinstance(getattr(candidate, "machine_seconds", None), float):
+    if isinstance(getattr(candidate, "generation_seconds", None), float) and isinstance(
+        getattr(candidate, "machine_seconds", None), float
+    ):
         return candidate
     return None
 
@@ -212,10 +212,7 @@ def _terminal_stream_data(
             if span_receipt is not None:
                 session_spans.setdefault(
                     stream_session,
-                    int(
-                        span_receipt.generation_seconds
-                        + span_receipt.machine_seconds
-                    ),
+                    int(span_receipt.generation_seconds + span_receipt.machine_seconds),
                 )
         try:
             written = candidate.stat().st_mtime
@@ -796,6 +793,97 @@ def _require_no_undisposed_blocking_figure_finding(
     )
 
 
+def _declared_dimension_floors(project: str, root: str | Path | None) -> dict[str, int]:
+    """The dimension floors the project's resolved flight config declares.
+
+    A config that cannot be resolved declares nothing, so a promotion on a host
+    whose flight layer is unreadable reports no owed repair rather than refusing
+    over a lookup it cannot make. The resolution is the one the rest of
+    promotion makes, so the standard an owed repair is read against is the
+    standard the project declared rather than one compiled in here.
+    """
+    from reckon.crew import review_dispositions
+
+    try:
+        config = flight.resolve(project or None, checkout_path=root).config
+    except (flight.FlightConfigError, OSError, ValueError):
+        return {}
+    return review_dispositions.declared_dimension_floors(config)
+
+
+def owed_floor_repair(
+    run_id: str,
+    record: Mapping[str, Any],
+    reviewed: Mapping[str, Any] | None,
+) -> dict[str, Any]:
+    """The sub-floor dimensions a promotion lands with no repair answering them.
+
+    A dimension below its declared floor is a finding with a disposition of its
+    own, so a review's total can be high while that dimension sits unanswered.
+    The review reflex composes one repair round for such a record, and no floor
+    repair round starts for a run once its promotion has begun — so a promotion
+    that lands the run while the round is still owed settles a run whose floor
+    repair will never be opened. Naming it here is what tells the coordinator
+    the work is still owed, rather than leaving it to surface later as commits
+    in a worktree with no landing path.
+
+    The floors come from the project's resolved flight config and the scores
+    from the ledger block the promotion already read. A block with no dimension
+    below a declared floor — the ordinary case — answers with no further store
+    read. Where one does, the stored record is read to honour dispositions: a
+    dimension answered as folded or exempted is no longer owed, and that answer
+    is recorded on the record rather than on the block.
+
+    Returns ``{}`` when nothing is owed, and otherwise
+    ``{"dimensions": [...], "note": "..."}``, each dimension row carrying its
+    name, its score and its floor. A record that cannot be read keeps the
+    dimensions the block already showed: an unreadable answer is not an answer,
+    and the promotion gate refuses an unreadable review before this is reached.
+    """
+    project = str(record.get("project") or "")
+    block = reviewed if isinstance(reviewed, Mapping) else {}
+    if not project or not block:
+        return {}
+    floors = _declared_dimension_floors(project, record.get("repo"))
+    if not floors:
+        return {}
+    from reckon.crew import review_dispositions
+
+    rows = review_dispositions.sub_floor_dimensions(block, floors)
+    if not rows:
+        return {}
+    from reckon.crew.recovery_review_subject import select_review_for_head
+
+    head = str(block.get(review_module.REVIEWED_HEAD_KEY) or "").strip()
+    if run_id and head:
+        try:
+            stored, _other = select_review_for_head(project, run_id, head)
+        except (OSError, ValueError):
+            stored = None
+        if isinstance(stored, Mapping):
+            rows = review_dispositions.sub_floor_dimensions(stored, floors)
+            if not rows:
+                return {}
+    named = "; ".join(
+        f"{row['dimension']} scored {row['score']} below its floor {row['floor']}"
+        for row in rows
+    )
+    return {
+        "dimensions": [
+            {
+                "dimension": str(row["dimension"]),
+                "score": int(row["score"]),
+                "floor": int(row["floor"]),
+            }
+            for row in rows
+        ],
+        "note": (
+            f"the review leaves {named}. No floor repair round starts once a run is "
+            "promoted, so this obligation needs a node of its own"
+        ),
+    }
+
+
 def _require_worker_stopped_before_promotion(
     run_id: str,
     record: Mapping[str, Any],
@@ -967,9 +1055,7 @@ def _capability_risk_of(capability: Any) -> str:
     return str(requirements.get("risk") or "").strip()
 
 
-def _run_capability_risk(
-    record: Mapping[str, Any], *, root: str | Path | None
-) -> str:
+def _run_capability_risk(record: Mapping[str, Any], *, root: str | Path | None) -> str:
     """The capability risk the run's plan or its section declares.
 
     A section's own declaration is read first because a plan can carry a
@@ -1201,14 +1287,18 @@ def _require_review_waiver(
         # promotion is one flag rather than a search for which of two revisions
         # the store meant.
         cite_reviewed_head = ""
-        if stale_head and promoted_head and not any(
-            str(candidate).strip()
-            and (
-                str(candidate).strip() == stale_head
-                or stale_head.startswith(str(candidate).strip())
-                or str(candidate).strip().startswith(stale_head)
+        if (
+            stale_head
+            and promoted_head
+            and not any(
+                str(candidate).strip()
+                and (
+                    str(candidate).strip() == stale_head
+                    or stale_head.startswith(str(candidate).strip())
+                    or str(candidate).strip().startswith(stale_head)
+                )
+                for candidate in manifest_commits
             )
-            for candidate in manifest_commits
         ):
             cite_reviewed_head = stale_head
         raise CrewError(
@@ -1302,8 +1392,8 @@ def _require_domain_invariant_checks(
     cannot be read raises rather than promoting a node whose rules were never
     matched.
     """
-    from reckon.crew.domain_rules import rules_for
     from reckon.crew import promotion_gate
+    from reckon.crew.domain_rules import rules_for
 
     if not project or not node or repository is None:
         return None
@@ -1314,7 +1404,9 @@ def _require_domain_invariant_checks(
         checkout_path=str(checkout),
     )
     checks = tuple(
-        invariant for invariant in rules.invariants if str(invariant.check or "").strip()
+        invariant
+        for invariant in rules.invariants
+        if str(invariant.check or "").strip()
     )
     if not checks:
         return None
@@ -1415,6 +1507,36 @@ def _require_gate_check_precondition(
         )
 
 
+# The two spellings an absent review is refused under, kept as constants so a
+# reader below matches the text the refusal writes rather than a copy of it that
+# drifts. The first means no review is stored at all; the second means the store
+# holds a review of a different revision.
+MISSING_REVIEW_REFUSAL = "no complete independent review is stored"
+STALE_REVIEW_REFUSAL = "no review of the promoted revision is stored"
+
+
+def refusal_awaits_a_review(refusal: BaseException | str) -> bool:
+    """Whether every reason a promotion gave for refusing is an absent review.
+
+    A run refused only because the review that would licence it is not stored
+    yet is waiting, not failing: its review may be queued behind the same
+    promotion service. Callers that keep such a request queued need to separate
+    that case from a run refused for anything else, and from one whose refusal
+    carries several reasons of which the absent review is only the first.
+
+    The reasons are read from the aggregated refusal's own parts when it carries
+    them, so a refusal raised for a stale suite beside a missing review is not
+    mistaken for a run waiting on its review.
+    """
+    parts = list(getattr(refusal, "refusals", ()) or ())
+    if not parts:
+        parts = [refusal]
+    missing = (MISSING_REVIEW_REFUSAL, STALE_REVIEW_REFUSAL)
+    return bool(parts) and all(
+        any(text in str(part) for text in missing) for part in parts
+    )
+
+
 def _unreviewed_refusal(
     run_id: str,
     review_action: str,
@@ -1442,10 +1564,9 @@ def _unreviewed_refusal(
     """
     revision = (
         f"the stored review read revision {stale_head[:12]} and this promotion "
-        f"asserts {promoted_head[:12]}: no review of the promoted revision is "
-        "stored"
+        f"asserts {promoted_head[:12]}: {STALE_REVIEW_REFUSAL}"
         if stale_head and promoted_head
-        else "no complete independent review is stored"
+        else MISSING_REVIEW_REFUSAL
     )
     citation = (
         " The manifest's own commit list predates the revision the review read: "
@@ -1585,6 +1706,116 @@ def _plan_review_promotion_outcome(run_id: str, project: str, plan_slug: str) ->
     return _plan_review_outcome_summary(found[1])
 
 
+#: The delivery condition a review record fails when the ``review_run_id`` it
+#: carries is not this run's exact id. That field names the run that produced
+#: the record, and a record can carry the name with the node's trailing hash
+#: suffix left off, so the name is resolved to a run rather than compared as
+#: text.
+_NAMED_REVIEW_CONDITION = "record names a different review run"
+
+
+def _known_run_ids() -> set[str]:
+    """Every run id this machine can see, from live pointers and run homes."""
+    from reckon.crew.runs import crew_home, live_dir, runs_dir
+
+    found: set[str] = set()
+    for directory, suffix in (
+        (live_dir(), ".json"),
+        (runs_dir(), ""),
+        (crew_home() / "archive" / "runs", ""),
+    ):
+        try:
+            entries = list(directory.iterdir())
+        except OSError:
+            continue
+        for entry in entries:
+            name = entry.name
+            if suffix and name.endswith(suffix):
+                name = name[: -len(suffix)]
+            if name:
+                found.add(name)
+    return found
+
+
+def _resolve_named_review_run(
+    record: Mapping[str, Any],
+    project: str,
+    refusal: Mapping[str, Any],
+    run_id: str,
+) -> tuple[dict[str, Any] | None, Path | None]:
+    """Judge a record's shortened review-run name by the run it reaches.
+
+    A record's ``review_run_id`` names the run that produced it, and that name
+    can arrive with the hash suffix a run's id ends in left off. The delivery
+    verdict compares the name with the run's id as text, which refuses a
+    record that holds the whole review for a reason that is about how the run
+    is spelled rather than about anything missing. The name is a run id, so it
+    is resolved: a name that reaches exactly one run — this one — delivers the
+    record at the path the verdict already found, provided the record was
+    written after this run was dispatched. A name that reaches no run, or more
+    than one, stays refused, and the refusal names the runs it reached so a
+    coordinator can see what has to be disambiguated.
+
+    Returns ``(None, path)`` when the name reaches this run, otherwise the
+    refusal to raise and no path.
+    """
+    from reckon.crew.recovery_review_delivery import (
+        _read_review_record,
+        _review_dispatch_instant,
+    )
+
+    path = Path(str(refusal.get("path") or ""))
+    read = _read_review_record(path)
+    if read is None:
+        return dict(refusal), None
+    body, mtime = read
+    named = str(body.get("review_run_id") or "").strip()
+    if not named or named == run_id or not run_id.startswith(named + "-"):
+        return dict(refusal), None
+    reached = sorted(
+        candidate for candidate in _known_run_ids() if candidate.startswith(named + "-")
+    )
+    if len(reached) > 1:
+        return (
+            {
+                "delivered": False,
+                "condition": _NAMED_REVIEW_CONDITION,
+                "path": str(path),
+                "detail": (
+                    f"the name {named} stored at {path} reaches more than one "
+                    f"run: {', '.join(reached)}"
+                ),
+                "remedy": refusal.get("remedy", ""),
+            },
+            None,
+        )
+    if reached != [run_id]:
+        return dict(refusal), None
+    dispatched = _review_dispatch_instant(record, project)
+    if dispatched is None or mtime <= dispatched:
+        written = datetime.fromtimestamp(mtime, UTC).isoformat()
+        known = (
+            "is unknown"
+            if dispatched is None
+            else f"is {datetime.fromtimestamp(dispatched, UTC).isoformat()}"
+        )
+        return (
+            {
+                "delivered": False,
+                "condition": "record written before the dispatch",
+                "path": str(path),
+                "detail": (
+                    f"stores a record at {path} written at {written}, before "
+                    f"this run was dispatched at {known}, so it is an earlier "
+                    "round's verdict"
+                ),
+                "remedy": "re-dispatch the review so it writes a fresh record",
+            },
+            None,
+        )
+    return None, path
+
+
 def _resolve_promotion_outcome(
     run_id: str,
     record: Mapping[str, Any],
@@ -1641,19 +1872,29 @@ def _resolve_promotion_outcome(
             "the evidence could not be produced"
         )
     refusal = review_delivery_refusal(record, project)
+    named_path: Path | None = None
+    if (
+        refusal is not None
+        and str(refusal.get("condition") or "") == _NAMED_REVIEW_CONDITION
+    ):
+        refusal, named_path = _resolve_named_review_run(
+            record, project, refusal, run_id
+        )
     if refusal is not None:
         raise CrewError(
             f"run {run_id!r} is a review run refused for delivery: "
             f"{refusal['condition']}; {refusal['detail']}; {refusal['remedy']}"
         )
-    delivered = recovery._delivered_review_record(record, project)
-    if delivered is None:
-        raise CrewError(
-            f"run {run_id!r} is a review run whose stored review cannot be "
-            "read, so --outcome has no default to take; store the review or "
-            "write what failed or why the evidence could not be produced"
-        )
-    _, path = delivered
+    if named_path is None:
+        delivered = recovery._delivered_review_record(record, project)
+        if delivered is None:
+            raise CrewError(
+                f"run {run_id!r} is a review run whose stored review cannot be "
+                "read, so --outcome has no default to take; store the review or "
+                "write what failed or why the evidence could not be produced"
+            )
+        _, named_path = delivered
+    path = named_path
     try:
         stored = json.loads(path.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError):
@@ -2143,25 +2384,6 @@ def _require_declared_negative_control(
         "" if manifest is None else str(manifest.get("negative_control_log") or "")
     )
     check["log"] = delivered
-    if not delivered:
-        raise CrewError(
-            f"run {run_id!r} writes a check ({', '.join(test_paths)}) and declares "
-            f"the mutation {declaration!r} in its {NEGATIVE_CONTROL_FIELD} field, "
-            "but its manifest carries no negative_control_log path. Promotion "
-            "refuses a passing gate whose negative control was never run: keep the "
-            "log that mutation produced beside the passing one and name its path "
-            "in the manifest as `negative_control_log: <path>`"
-        )
-    text, resolved = _negative_control_log_text(delivered, manifest_path=manifest_path)
-    check["resolved_log"] = resolved
-    if text is None:
-        raise CrewError(
-            f"run {run_id!r} names negative_control_log {delivered!r}, which cannot "
-            "be read, so the mutation it was to evidence was never shown to fail. "
-            "Write the red log where the manifest can be read alongside it and "
-            "name that path"
-        )
-    control_ids = _control_failure_ids(text)
     head_ids = _head_suite_failure_ids(manifest)
     baseline_ids = _baseline_suite_failure_ids(manifest)
     # The head arm decides the control whenever it is readable; the baseline is
@@ -2173,16 +2395,6 @@ def _require_declared_negative_control(
         reference_ids: set[str] | None = head_ids
     else:
         reference_ids = baseline_ids
-    added = (
-        []
-        if reference_ids is None
-        else sorted(review_module.failure_ids_covered(reference_ids, control_ids))
-    )
-    recorded_exit = _recorded_exit_status(text)
-    run_failed = _control_run_shows_a_failure(text, recorded_exit)
-    check["control_exit_status"] = recorded_exit
-    check["control_run_failed"] = run_failed
-    check["control_failure_ids"] = sorted(control_ids)
     if baseline_ids is not None:
         check["baseline_failure_ids"] = sorted(baseline_ids)
     if head_ids is not None:
@@ -2193,6 +2405,86 @@ def _require_declared_negative_control(
         check["comparison_arm"] = "baseline_suite"
     else:
         check["comparison_arm"] = "after_suite"
+
+    # The log the manifest names is read first and kept whenever it admits the
+    # control. A run that named a lint log, kept only its exit line, or named
+    # nothing at all kept the red log elsewhere in its own directory as often as
+    # not, and the declaration is discharged by the run recorded rather than by
+    # the field's spelling: a log beside the manifest that shows the mutation
+    # failing is admitted, and the log used is written on the row.
+    text = ""
+    resolved = ""
+    source = ""
+    named_resolved = ""
+    named_text: str | None = None
+    if delivered:
+        named_text, named_resolved = _negative_control_log_text(
+            delivered, manifest_path=manifest_path
+        )
+        check["resolved_log"] = named_resolved
+        if named_text is not None:
+            # Kept so a refusal describes the log the manifest named even when
+            # another log is the one admitted.
+            text, resolved = named_text, named_resolved
+    if named_text is not None and _control_log_added_failure_ids(
+        named_text, reference_ids
+    ):
+        text, resolved, source = named_text, named_resolved, "manifest"
+    else:
+        beside = _run_directory_control_log(
+            Path(manifest_path).expanduser().parent if manifest_path else None,
+            reference_ids=reference_ids,
+            skip=[Path(named_resolved)] if named_resolved else (),
+        )
+        if beside is not None:
+            text, resolved = beside
+            source = "run-directory"
+
+    # With no log anywhere in the run's directory, the landing takes the
+    # reading itself: the declared mutation is run over the tree the repair is
+    # absent from, and its failures are the control the log would have carried.
+    measured_observation: Mapping[str, Any] | None = None
+    if not source:
+        measured = _measured_control(run_id, record, test_paths)
+        if measured is not None and measured.get("unreadable"):
+            check["control_measure_unreadable"] = str(measured.get("unreadable"))
+        elif measured is not None:
+            observation = measured.get("control_suite") or {}
+            measured_observation = observation
+            check["control_suite"] = dict(observation)
+            if reference_ids is not None and review_module.failure_ids_covered(
+                reference_ids, set(observation.get("failure_ids") or [])
+            ):
+                source = "landing-measure"
+                resolved = str(observation.get("log_path") or "")
+                try:
+                    text = Path(resolved).read_text(encoding="utf-8")
+                except (OSError, UnicodeError):
+                    text = ""
+    check["control_log_source"] = source or "none"
+    if source:
+        check["resolved_log"] = resolved
+
+    if source == "landing-measure" and measured_observation is not None:
+        recorded_exit = measured_observation.get("exit_status")
+        run_failed = recorded_exit not in (None, 0)
+        control_ids = {
+            review_module.canonical_node_id(str(test_id).strip())
+            for test_id in (measured_observation.get("failure_ids") or [])
+            if str(test_id).strip()
+        }
+    else:
+        recorded_exit = _recorded_exit_status(text)
+        run_failed = _control_run_shows_a_failure(text, recorded_exit)
+        control_ids = _control_failure_ids(text)
+    added = (
+        []
+        if reference_ids is None
+        else sorted(review_module.failure_ids_covered(reference_ids, control_ids))
+    )
+    check["control_exit_status"] = recorded_exit
+    check["control_run_failed"] = run_failed
+    check["control_failure_ids"] = sorted(control_ids)
     check["added_failure_ids"] = added
     # Both facts have to come from something only the run could have written: a
     # run that reports no failure in either its capture status or its runner's
@@ -2230,10 +2522,43 @@ def _require_declared_negative_control(
         )
     else:
         unexplained = ""
+    if not source:
+        # No log the run kept admits the control, so the refusal says what was
+        # looked at — the named log and the run's own directory — rather than
+        # only what a path holds: a run whose log lived beside its manifest is
+        # refused here only when that directory holds no red log either.
+        if not delivered:
+            unexplained = (
+                "its manifest names no negative_control_log, and no log in the "
+                "run's own directory adds a failing test id to the comparison arm"
+            )
+        elif named_text is None:
+            unexplained = (
+                f"negative_control_log {delivered!r} cannot be read, and no log "
+                "in the run's own directory adds a failing test id to the "
+                "comparison arm"
+            )
+        else:
+            unexplained = (
+                f"the log at {named_resolved!r} shows no failed control run: "
+                f"{unexplained}; no log in the run's own directory adds a failing "
+                "test id to the comparison arm"
+            )
+        measured_problem = check.get("control_measure_unreadable")
+        if measured_problem:
+            unexplained = (
+                f"{unexplained}; the landing could not measure the mutation "
+                f"itself either: {measured_problem}"
+            )
+        elif measured_observation is not None:
+            unexplained = (
+                f"{unexplained}; the landing ran the declared mutation itself and "
+                "it failed no test the comparison arm passes"
+            )
     if unexplained:
         refusal = (
-            f"run {run_id!r} declares the mutation {declaration!r} but the log at "
-            f"{resolved!r} shows no failed control run: {unexplained}. A control "
+            f"run {run_id!r} declares the mutation {declaration!r} but no log of "
+            f"that run shows it failing: {unexplained}. A control "
             "is admitted on its facts alone — a non-zero exit record and at least "
             "one failing test id the head arm does not fail, falling back to the "
             "baseline's failing ids only when the manifest records no readable "
@@ -2297,7 +2622,14 @@ def _landing_scope_products(
     if not commits:
         return {"shadow_patch": "", "changed_lines": None, "scope_acceptances": []}
     tree = _tree_for_measurement(record, run_id)
-    cumulative = _committed_scope(cwd=tree, commits=commits, run_id=run_id)
+    from reckon.crew.promotion_evidence import _merge_repair_scope
+    from reckon.crew.promotion_scope import _descendant_commit
+
+    cumulative = _merge_repair_scope(
+        record, tree=tree, head=_descendant_commit(tree, commits)
+    )
+    if cumulative is None:
+        cumulative = _committed_scope(cwd=tree, commits=commits, run_id=run_id)
     acceptances: list[dict[str, str]] = []
     if cumulative.changed_lines.get("available", True):
         if (
@@ -2379,14 +2711,9 @@ def _landing_preconditions(
     project = str(record.get("project") or "")
     node = record.get("node") or {}
     shadow = _is_shadow(record)
-    existing = next(
-        (
-            item
-            for item in ledger.load(project, root=ledger_root)[0]["runs"]
-            if str(item.get("run_id") or "") == run_id
-        ),
-        None,
-    )
+    from reckon.crew.open_run_index import row_for_run
+
+    existing = row_for_run(project, run_id, ledger_root)
     if existing is not None:
         return {"already_landed": True}
 
@@ -2993,9 +3320,10 @@ def _delivered_review_payloads_for_commit(
     delivered_bytes: bytes | None = None
     if delivered_path is not None:
         delivered_payload = _read_json_object(delivered_path)
-        if delivered_payload and not str(
-            delivered_payload.get("review_run_id") or ""
-        ).strip():
+        if (
+            delivered_payload
+            and not str(delivered_payload.get("review_run_id") or "").strip()
+        ):
             delivered_payload = {**delivered_payload, "review_run_id": run_id}
         include(delivered_payload)
         try:
@@ -3072,13 +3400,15 @@ def _delivered_review_payloads_for_commit(
     return payloads
 
 
-
 from reckon.crew.promotion_evidence import (
     _committed_scope,
+    _control_log_added_failure_ids,
     _control_run_shows_a_failure,
     _manifest_text,
+    _measured_control,
     _presented_commits_without_a_declaration,
     _recorded_exit_status,
+    _run_directory_control_log,
 )
 from reckon.crew.promotion_records import (
     _read_json_object,

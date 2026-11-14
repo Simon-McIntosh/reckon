@@ -1,0 +1,165 @@
+{
+  "absent_items": [],
+  "accepted_edits": [
+    {
+      "by": "1fb615a0-2801-4418-bbb4-c2914719e520",
+      "digests": {
+        "s31": "35cfb5425b6a12a44fe3cbcfe5d11d4c5d6703db443dfe832ba6b2bb0245a247",
+        "s33": "0e44e6d1431aadaa877dc028310aba32d67fac411382290abee5872474ecf4ae"
+      },
+      "reason": "the edit makes exactly the three acted answers' changes to section 33",
+      "units": [
+        "s31",
+        "s33"
+      ],
+      "when": "2026-11-13T06:51:57.491161+00:00"
+    }
+  ],
+  "completed_at": "2026-11-13T06:32:44.137Z",
+  "dispatched_at": "2026-11-13T06:24:11Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-dispatch-returns-without-its-worker.html:1083",
+      "id": "done_when-1",
+      "reason": "a node can satisfy all three cases with a cli-shaped fixture, pass, and leave the station-launched shape the section was filed from still reading starting, so the node must either pin a station launch as a case or list recovery_liveness.py and state that the claim's own instant dates a non-cli launch.",
+      "text": "the done-when builds \"a run at claim-published with no reservation\" without naming the launch kind, but the age the reading rests on is absent for a station launch: `_stranded_launch_age_seconds` (reckon/crew/recovery_liveness.py:685) dates a record only from an attempt start, and falls back to the claim or creation instant only when `record[\"launch\"] == \"cli\"`, so all four evidence runs \u2014 station launches and one killed at a 600 s timeout \u2014 have `age is None` and never reach the release the section asks for; the write paths also omit recovery_liveness.py, where `_stranded_launch`, `_launch_claim_holder_is_alive` and `STRANDED_LAUNCH_BOUND_SECONDS` (900) live",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-dispatch-returns-without-its-worker.html:1083",
+      "id": "reasoning-1",
+      "reason": "the release is the safe half only when paired with an abandon fence, and \u00a728's own text records that rule, so the plan must state the fence or narrow the trigger to holders whose liveness cannot be proven.",
+      "text": "the second trigger releases the claim of a live holder past the bound and then lets a redispatch go, with no fence on the original launch: a launch merely slow on storage that resumes after release takes its own run directory, prompt and worktree while the redispatched run writes the same node, which is the duplicate-worker class \u00a728 closed with a fourth case (the aged-out launch re-reads and abandons before `_start_supervisor`); \u00a733 records no equivalent and its negative control only asserts that the base reads starting",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-dispatch-returns-without-its-worker.html:1083",
+      "id": "reasoning-2",
+      "reason": "the root cause as stated points at a missing reader rather than at the missing release and clock, which is where the node's change has to land.",
+      "text": "the Why states that a claim-published launch leaves \"only the dispatch claim, which no reader frees\", but a reader does classify this shape: for a non-cli launch the age is missing (above) and for a cli launch `_stranded_launch` already yields `launch-failed` at `reckon/crew/recovery_classification.py:2128` \u2014 so the gap is the release and the station clock, not the absence of a reading; as written a worker may re-read the classifier and conclude no change is needed there",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "7353f0c830ce13874e0879aac2df1e76b7668c5a",
+  "plan_fingerprint": "13f0b1049ea18d061e12a9f3bc10d1779a2443ed1d1f34b8a42727f4474b6540",
+  "plan_slug": "a-dispatch-returns-without-its-worker",
+  "plan_version": 245,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "86d8e74f2c78a108882fa60675d3d2050c628c5b",
+      "commit_basis": "edit",
+      "finding": "done_when-1",
+      "note": "\u00a733 now dates a non-cli (station) launch from its dispatch claim's own claim_registered_at, adds reckon/crew/recovery_liveness.py (_stranded_launch, _launch_claim_holder_is_alive, STRANDED_LAUNCH_BOUND_SECONDS) to its write paths, and its done-when pins a station-launched run (launch not cli) in each case.",
+      "reason": "",
+      "when": "2026-11-13T06:47:33.840165+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "86d8e74f2c78a108882fa60675d3d2050c628c5b",
+      "commit_basis": "edit",
+      "finding": "reasoning-1",
+      "note": "\u00a733 now pairs the live-holder release with a fence like \u00a728's: before writing its launch reservation, a launch re-reads its dispatch claim and abandons, starting nothing, when the claim was released; a fourth case asserts a released launch that resumes starts no worker.",
+      "reason": "",
+      "when": "2026-11-13T06:48:23.419794+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "86d8e74f2c78a108882fa60675d3d2050c628c5b",
+      "commit_basis": "edit",
+      "finding": "reasoning-2",
+      "note": "\u00a733's Why now states the gap as the missing clock for non-cli launches and the missing release: _stranded_launch already classifies a cli launch as launch-failed, but a station launch has no age and nothing frees its claim.",
+      "reason": "",
+      "when": "2026-11-13T06:49:20.417005+00:00"
+    }
+  ],
+  "responses": {
+    "done_when-1": {
+      "action": "acted",
+      "by": "",
+      "commit": "86d8e74f2c78a108882fa60675d3d2050c628c5b",
+      "commit_basis": "edit",
+      "note": "\u00a733 now dates a non-cli (station) launch from its dispatch claim's own claim_registered_at, adds reckon/crew/recovery_liveness.py (_stranded_launch, _launch_claim_holder_is_alive, STRANDED_LAUNCH_BOUND_SECONDS) to its write paths, and its done-when pins a station-launched run (launch not cli) in each case.",
+      "reason": "",
+      "when": "2026-11-13T06:47:33.840165+00:00"
+    },
+    "reasoning-1": {
+      "action": "acted",
+      "by": "",
+      "commit": "86d8e74f2c78a108882fa60675d3d2050c628c5b",
+      "commit_basis": "edit",
+      "note": "\u00a733 now pairs the live-holder release with a fence like \u00a728's: before writing its launch reservation, a launch re-reads its dispatch claim and abandons, starting nothing, when the claim was released; a fourth case asserts a released launch that resumes starts no worker.",
+      "reason": "",
+      "when": "2026-11-13T06:48:23.419794+00:00"
+    },
+    "reasoning-2": {
+      "action": "acted",
+      "by": "",
+      "commit": "86d8e74f2c78a108882fa60675d3d2050c628c5b",
+      "commit_basis": "edit",
+      "note": "\u00a733's Why now states the gap as the missing clock for non-cli launches and the missing release: _stranded_launch already classifies a cli launch as launch-failed, but a station launch has no age and nothing frees its claim.",
+      "reason": "",
+      "when": "2026-11-13T06:49:20.417005+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/Code/reckon/docs/state/reckon/reviews/plan/a-dispatch-returns-without-its-worker/r-20261113T055834783729-plan-review-of-a-dispatch-returns-without-its-worker.json",
+  "review_run_id": "r-20261113T055834783729-plan-review-of-a-dispatch-returns-without-its-worker",
+  "reviewed_blob_sha": "3f87d1b1dc13cff1c55ce7026044085319ef90e6",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `reckon/crew/dispatch_claims.py`, `reckon/crew/recovery_classification.py` and the named test path are valid paths; the `\u00a728` reference resolves to a section that states the reservation fence it is compared against.",
+    "done_when": "a finding \u2014 the three cases do not pin the launch kind, and for a station launch the existing age clock yields no age at all, so the evidence case still reads starting.",
+    "evidence_paths": "pass \u2014 both arm logs sit under the run directory (`~/.config/reckon/crew/runs/<run>/`, durable) and the gate is an `all_debug` sbatch job, never the fleet node.",
+    "naming": "pass \u2014 no plan labels, ticket numbers or version tags reach a symbol, filename or comment; the section's mechanism words (unreached launch, claim) are mechanism, not plan vocabulary.",
+    "reasoning": "a finding \u2014 the live-holder-past-the-bound clause releases a claim with no fence, and the stated gap (\"no reader frees\" the claim) overstates: a reader already classifies this shape as launch-failed, while what is genuinely missing is the release and a clock for station launches.",
+    "single_goal": "pass \u2014 \u00a733 names one deliverable: a claim-published launch with no launch evidence is classified as unreached and its claim released.",
+    "wiring": "pass \u2014 \u00a733's only declared relationship is its textual pointer to \u00a728, which resolves at line 1064; it consumes no section's output (\u00a728 fences a launch reservation, \u00a733 handles the launch that never reached one), so no plan-section-depends-on entry is owed."
+  },
+  "section_digests": {
+    "_document": "90edf4e7b5155b9728f24eccd079fdfd40994620af1e7c30bc7dfc05fdf48f35",
+    "s1": "e28838b990406106b728a03b1ce4d69905073033be3fbe16e2adec3322ccb41c",
+    "s10": "e0dad3fb234ab0708520137693f2171fd162f14f568d4b2869b4c71edc0efac0",
+    "s11": "c6b91fa66c01d6a9c4559aab10c088c049ede69554509210d53e1320ff55e7fd",
+    "s12": "06d045128a1a1f7a3d660e692c5d22b6d99cc3f1d9900b353c62ac8bfd3d60d7",
+    "s13": "ef8cd63a45cd947493184ee0e6449ec77593c6d63b58e49bc53238a950b5eaee",
+    "s14": "defc27c7ad0a511d1d46f705963f70f7e81c3191dd1c6d99c5a17c443abf908a",
+    "s15": "69ab8a4cf40c7cd5f8d8bc43e78f0e061d4659cd2a47f435f049183d9514fee6",
+    "s16": "1336f961b97041db0650d8602be3a96c2c59934a8d4873beb798369d9c5f927f",
+    "s17": "88d9571bb685887322a3326dcc28b4564790835781000548808ff28a2f4a41c4",
+    "s18": "74bce0c984fecfcbfa0463cb56ac1208fa8643d81d778787e2426ea1659e6c59",
+    "s19": "795e59e9c05c23a6a1ac9bb6442c5f6bcf5053cab2e3c3751412c914d3bc3971",
+    "s2": "4a27b5dea20b1d3354fb4c55104e868cf43416f93c5e221d90a6f07f7dd74114",
+    "s20": "49fa75b158c7050846bac6d83dd9130a6d2e79c5994e1d1a1cd53fe02871a56a",
+    "s21": "13c716b3c1bbbc8942518f34eb913c0cfdd8f50eddd2c354cd750826cd589d41",
+    "s22": "11e4ea82910dbc44c680b335b3492b480dede92aefca198a5f77d5afa94f580d",
+    "s23": "c91ce6a0b316e854ceafb7addbfc7bc53cbde49e623fd1f2f794b2f612e60332",
+    "s24": "2bf6e7c384b7a13336594083c1dbadbffefb7c5d52142917063db4e951331526",
+    "s25": "cc23505f11a53b6805235d1291e66a2c125b10d71645b70b50b7c29a9e2de0ee",
+    "s26": "ca859de70832b19bd595ec082b963a83ad8cda76b0f083eeb7178ddb47771957",
+    "s27": "eac4a3e04958e98f59e51c91d4bc2a9b689284ffd6b314309af2e6ec6b206808",
+    "s28": "d8ae29323972b12bcdfe13dc0c83467f079a5c2ac64bfb3a8d684bbce498e7df",
+    "s29": "9e5f8cbbe7799f02f10a6a4857dff226a334655f7b9a2e40e31a6629deaf33f1",
+    "s3": "825a19937c51e9c0642eb9f634ccf4d61bdbd31335debd0a28807c04739fc31a",
+    "s30": "96abac85c2a075d88d30c38a2f817dda8f9e5fd2c0d8985a75f4012f74768c99",
+    "s31": "cc4d104e107825db65ef142c874f0024de4685eb4f49c1c7835ce97f73aec6f1",
+    "s32": "b2023f87d9b106511071b1982ca59e394dcbeb5589b4be69e356827bfce140dc",
+    "s33": "d7139c72bdc0424a825b2896d9df783057aaedf8ba0ebef87cd1c9acbbf5c64e",
+    "s4": "3c9553df00b4b52978a7b856a781f44cfbc9040b5369476acbfbd26c1401d109",
+    "s5": "902423914229fd3034527b5d329e757e05b7e2e5368f41a9832f90bee29f1e43",
+    "s6": "bf0a39b8c4fdfbb05246451d1868e014a84296c86dfe7d6090e7343db3dbd70b",
+    "s7": "3016609b879a9d7722cbebc8bff660b9e141e11eb02b98d195da3851f2340144",
+    "s8": "c93baadf650a2e67225cfb81b756692522c1ada3166037ba4f460feec98bc021",
+    "s9": "466c5aea5f624160543c791b665d76df99dcc43842ea4d5ea64071eed7aa0e00"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-13T06:40:50.477903+00:00",
+  "total": null
+}

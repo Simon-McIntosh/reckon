@@ -1,0 +1,137 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-11T22:15:43.307Z",
+  "dispatched_at": "2026-11-11T22:04:34Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/work-flows-to-the-lane.html:159",
+      "id": "wiring-1",
+      "reason": "the same defect was raised against f-wftl-002 and answered by writing f-wftl-003 to name every unbuilt section; adding \u00a720 without updating f-wftl-003 repeats it, and \u00a720 would sit unbuilt behind a record that says the plan is fully queued.",
+      "text": "f-wftl-003, the plan's only open followup, is titled \"Build \u00a73, \u00a76 to \u00a719\" and names \u00a717, \u00a718 and \u00a719 as the unbuilt sections, but \u00a720 is declared implementable and is named by no followup, so a coordinator driving the plan from its open followup never dispatches \u00a720",
+      "type": "wiring",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/work-flows-to-the-lane.html:130",
+      "id": "done_when-1",
+      "reason": "a node that satisfies every clause of this section still refuses a \u00a72-style landing on the control log, so the section delivers two of its three stated cases and the refusal it was written to remove survives.",
+      "text": "\u00a717's Why gives three refusals it exists to end, and the first is \u00a72's, refused because the guard read a repair round's control log that kept only its exit line while the run's first control log named both failing tests; the deliverable and done-when act only on baseline and after arms (missing, other revision, other command), so a node implementing \u00a717 exactly leaves the control-log refusal in place and its gate cannot show it ended",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/work-flows-to-the-lane.html:130",
+      "id": "reasoning-1",
+      "reason": "the cited evidence names a mechanism outside the declared endpoint, so either the deliverable becomes wait-conditioned under a truthful declaration or the plan carries a stated cause its scope does not act on.",
+      "text": "the section argues from three refusals that \"every one of this plan's first landings was refused on how a suite arm or control was recorded\", yet its endpoint is stated over suite arms alone, and the control log is a distinct manifest field read by the landing guard (reckon/crew/promotion_checks.py:1933, reckon/crew/promotion_records.py:327), so the reasoning that motivates the section does not carry through to what it declares done",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "c7d109611d2a39b2f26309286a1b305aaf3d6422",
+  "plan_fingerprint": "3c700ac31dba63dd2c28696ae86a2c951dd83d1cdd7e3b1f92f557d5922218d5",
+  "plan_slug": "work-flows-to-the-lane",
+  "plan_version": 34,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "91b6c5323749ce893c9b0d177932aad823cfcfc9",
+      "commit_basis": "edit",
+      "finding": "wiring-1",
+      "note": "f-wftl-003 is resolved as superseded; f-wftl-004 names every unbuilt section, s20 and the new s21 included",
+      "reason": "",
+      "when": "2026-11-12T05:29:25.828757+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "91b6c5323749ce893c9b0d177932aad823cfcfc9",
+      "commit_basis": "edit",
+      "finding": "done_when-1",
+      "note": "s17 landed covering suite arms; the control-log refusals it cites (s2, s5, s11) are carried into the new s21, a landing reads the control the run recorded",
+      "reason": "",
+      "when": "2026-11-12T05:29:38.245685+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "91b6c5323749ce893c9b0d177932aad823cfcfc9",
+      "commit_basis": "edit",
+      "finding": "reasoning-1",
+      "note": "s17's endpoint stays over suite arms as landed; the control-log case its Why cites is s21's endpoint",
+      "reason": "",
+      "when": "2026-11-12T05:29:52.450634+00:00"
+    }
+  ],
+  "responses": {
+    "done_when-1": {
+      "action": "acted",
+      "by": "",
+      "commit": "91b6c5323749ce893c9b0d177932aad823cfcfc9",
+      "commit_basis": "edit",
+      "note": "s17 landed covering suite arms; the control-log refusals it cites (s2, s5, s11) are carried into the new s21, a landing reads the control the run recorded",
+      "reason": "",
+      "when": "2026-11-12T05:29:38.245685+00:00"
+    },
+    "reasoning-1": {
+      "action": "acted",
+      "by": "",
+      "commit": "91b6c5323749ce893c9b0d177932aad823cfcfc9",
+      "commit_basis": "edit",
+      "note": "s17's endpoint stays over suite arms as landed; the control-log case its Why cites is s21's endpoint",
+      "reason": "",
+      "when": "2026-11-12T05:29:52.450634+00:00"
+    },
+    "wiring-1": {
+      "action": "acted",
+      "by": "",
+      "commit": "91b6c5323749ce893c9b0d177932aad823cfcfc9",
+      "commit_basis": "edit",
+      "note": "f-wftl-003 is resolved as superseded; f-wftl-004 names every unbuilt section, s20 and the new s21 included",
+      "reason": "",
+      "when": "2026-11-12T05:29:25.828757+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/Code/reckon/docs/state/reckon/reviews/plan/work-flows-to-the-lane/r-20261111T215626861539-plan-review-of-work-flows-to-the-lane.json",
+  "review_run_id": "r-20261111T215626861539-plan-review-of-work-flows-to-the-lane",
+  "reviewed_blob_sha": "58f3eb53251c4a71ea91271634a5c077bb2458fd",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 the cited commits 20da47addf, 921bc3d492 and 0147697ad8 all resolve, every write-path module s17\u2013s20 name exists (promotion_evidence.py, queue_landing.py, routing.py, dispatch_claims.py, gc.py, recovery_repair_dispatch.py, repair.py), the four evidence anchors s2-identity-published-with-its-claim, s4-non-blocking-deferred-at-landing, s5-session-told-of-submission and s2-live-sweep exist in that archive, and every extensionless evidence href resolves as `<path>.html`.",
+    "done_when": "a finding \u2014 s17's done-when exercises only the three arm cases, so its gate cannot show the control-log refusal that its own Why cites first is ended.",
+    "evidence_paths": "pass \u2014 the landing evidence for s2, s4 and s5 sits under docs/evidence/archive/work-flows-to-the-lane-landed.html, and no changed unit routes evidence to a scratchpad or node-local temporary path.",
+    "naming": "pass \u2014 the new test filenames and the section text name mechanisms (a landing measures a mismatched arm, a worktree leaves the shared configuration alone, an identity is judged on its host, a finding on a run's own file opens its repair), carrying no plan labels, ticket numbers or version tags.",
+    "reasoning": "a finding \u2014 s17's deliverable covers the two arm causes but leaves the control-log cause its Why states first unaddressed, so the stated endpoint does not reach one of the section's own three motivating refusals.",
+    "single_goal": "pass \u2014 s17, s18, s19 and s20 each name one deliverable (a landing that measures a mismatched arm; a worktree creation that leaves shared config alone; a host-scoped identity judgement; a repair round opened on a run's own file), and each gate closes on that one verdict.",
+    "wiring": "a finding \u2014 the open driving followup f-wftl-003 reads \"Build \u00a73, \u00a76 to \u00a719\" and names \u00a717, \u00a718 and \u00a719 as unbuilt, while \u00a720 is declared implementable, unbuilt, and named by no followup."
+  },
+  "section_digests": {
+    "_document": "657d075352a6fc9808c2ff19180ef5364445fa6931e04a128d9007de3c81ff0d",
+    "s1": "1176d881373dcfc183430925a9be7bda1d724f734d02210efa9a7406d8e1fa71",
+    "s10": "b65d0fb4159bfb41836b0ad8f574cf832084834e89db286572f537377eb3eb6d",
+    "s11": "c91dc2f2b4a4a7ba600f8a8f62cb23d0a923515ca21d7e7769645146e4db7427",
+    "s12": "6b87a65f56033f720b634f56c22424f9243d93aa09b8d223f9256a45a62b8401",
+    "s13": "bad1450236608d548873bc0831709655753d5f32c522514cd8a8267e16cc24cb",
+    "s14": "2f8f373cb0aea17e906875fcfee5e31675e99c3770486edcd5ca6381e7c45682",
+    "s15": "e29e1d3a49e752b7bdfe588aa034f386201d10af208f3aa59e29a2f24fe1bd5f",
+    "s16": "3b7f7832ad95bba2eafed9e9cf857961510c04511e9e0ec71438cbce6a583913",
+    "s17": "61f7c6cf19aeea97c136c1e61b863688591bf51fc6ecee75fd76577abe685e5b",
+    "s18": "83c96035969192d1b3be1f3898d127f112e33f0dbac58a7ccb624ab20c5d4844",
+    "s19": "7e2db89abd0f36c289ae715d8efbeeb340e4295f5671e1d350cb85b452cd2119",
+    "s2": "bd3d223462ee3b0fb515f2472d9397d8e27ca44c184bf71b42367fd7a9db1054",
+    "s20": "a3a48d30a0815970f76f95987246e39304eca36cfb2135e853829cf79bf092ba",
+    "s3": "2a060c7a5415553f71ca05b752499669f3209379066f0ffca3eb658079698d29",
+    "s4": "73dd573a24e53462f06ce2ee81f9ce01d788caba75663d34802e585ffa9af368",
+    "s5": "71c63f4fe2ec953ac5f7ddb2a246f167602f4978f9480d7bc81453507d1aa8cc",
+    "s6": "3d8f3682cd21a9f9205ae37acce45450d89ee9d1a0a061c46509dea8c5c1bc86",
+    "s7": "8411a4b87a6d941e69b74aa81c380f024a398cf80490125819b718f524deb5fd",
+    "s8": "a66c3212fab5497e7274bfa5e8eaadaea067a414aa6eb26fe1317dff343c2654",
+    "s9": "22b677c7bb355bdeb12944385e3d77bc965d6b2749b0a01789a6c5b8bc805e56"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-12T01:19:34.059388+00:00",
+  "total": null
+}

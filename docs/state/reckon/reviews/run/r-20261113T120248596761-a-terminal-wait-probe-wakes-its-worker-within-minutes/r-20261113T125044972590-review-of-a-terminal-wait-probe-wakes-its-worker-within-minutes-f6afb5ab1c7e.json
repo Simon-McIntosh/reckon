@@ -1,0 +1,148 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_analysis": [
+    {
+      "assertions": "held_launch_reservation is None for a parked worker whose supervisor is alive",
+      "fails_if": "Reinstating the base revision's reservation_in_flight (which returns held whenever the recorded supervisor is alive) makes this red; the negative-control log records exactly that failure at base.",
+      "path": "tests/test_a_terminal_wait_probe_wakes_its_worker.py:171"
+    },
+    {
+      "assertions": "reserve_launch_attempt succeeds (returns a reservation) for that same parked run",
+      "fails_if": "Restoring the refusal in reserve_launch_attempt raises CrewError here; independent of the input the test passed in, since the reservation it takes is what is asserted.",
+      "path": "tests/test_a_terminal_wait_probe_wakes_its_worker.py:181-182"
+    },
+    {
+      "assertions": "a running worker's reservation is still held and names that worker's pid",
+      "fails_if": "Over-widening parked_on_declared_wait to ignore worker liveness returns None here; guards against the over-release direction.",
+      "path": "tests/test_a_terminal_wait_probe_wakes_its_worker.py:204-206"
+    },
+    {
+      "assertions": "the held tick never returned",
+      "fails_if": "Nothing: held_tick is never set anywhere in the file, so the assertion is true unconditionally.",
+      "path": "tests/test_a_terminal_wait_probe_wakes_its_worker.py:272"
+    },
+    {
+      "assertions": "the sweep resumed the run after the probe turned terminal",
+      "fails_if": "The base revision's resume-refused guard leaves report['resumed'] empty, as the negative-control log shows ('assert wave in {}').",
+      "path": "tests/test_a_terminal_wait_probe_wakes_its_worker.py:274-277"
+    },
+    {
+      "assertions": "the wake lands within WAKE_BOUND_SECONDS of the probe turning terminal",
+      "fails_if": "A wake that only fired on a later sweep pass would exceed the bound; the two sides are an observation from the sweep report and the test's own sweep cadence, so they do not move together.",
+      "path": "tests/test_a_terminal_wait_probe_wakes_its_worker.py:279-281"
+    }
+  ],
+  "call_sites": [
+    "reckon/crew/dispatch_launch.py:2602",
+    "reckon/crew/dispatch_launch.py:2742",
+    "reckon/crew/resumption.py:2736",
+    "reckon/crew/resumption.py:2715",
+    "reckon/crew/dispatch_sessions.py:1317",
+    "reckon/crew/dispatch_sessions.py:1941"
+  ],
+  "completed_at": "2026-11-13T13:06:21.187Z",
+  "dispatched_at": "2026-11-13T12:52:25Z",
+  "findings": [
+    {
+      "file": "tests/test_a_terminal_wait_probe_wakes_its_worker.py",
+      "line": "272",
+      "severity": "non-blocking",
+      "summary": "`held_tick` is a local Event nothing sets or reads, so the assertion that it is unset cannot fail and the 'tick held for the whole case' claim is unmeasured.",
+      "text": "non-blocking: `held_tick` is a local threading.Event that no line ever sets or reads, so `assert held_tick.is_set() is False` holds whatever the code does and the case proves nothing about a station tick being held; the done-when's 'station tick held for 30 minutes by an injected delay' clause is therefore unmeasured and the test's own docstring claims it."
+    },
+    {
+      "file": "test-logs/after-arm.log",
+      "line": "1",
+      "severity": "non-blocking",
+      "summary": "Head-arm log header records the base revision plus uncommitted changes while the manifest records the head arm at 2182aea966.",
+      "text": "non-blocking: the head arm's own header records the base revision 'plus the node's uncommitted worktree changes', while the manifest's after_suite and the fragment record the head arm at 2182aea966; the record names a revision the log does not."
+    },
+    {
+      "file": "test-logs/after-arm.log",
+      "line": "3",
+      "severity": "non-blocking",
+      "summary": "Both gate logs and the manifest's suite records carry an angle-bracket placeholder command instead of the literal command that ran.",
+      "text": "non-blocking: the header's command line carries the placeholder '<19 related test files plus the node's new test file>' instead of the literal file list, and the manifest's baseline_suite and after_suite commands carry '<tree>' and '<19 related test files>' the same way, so neither arm can be re-run from the record although the done-when requires a literal command in every log."
+    },
+    {
+      "file": "reckon/crew/recovery_liveness.py",
+      "line": "1157",
+      "severity": "non-blocking",
+      "summary": "A just-resumed attempt reads as parked until its supervisor writes the new worker record, reporting the reservation it just took as free.",
+      "text": "non-blocking: the parked reading is taken from the run's worker record, which the supervisor rewrites only once the resumed worker is spawned, so in the window between a resume being admitted and its worker.json landing a run that is genuinely running still reads as parked and its reservation reads as free."
+    },
+    {
+      "file": "reckon/crew/dispatch_launch.py",
+      "line": "2520",
+      "severity": "non-blocking",
+      "summary": "Comments narrate the incident that motivated the change instead of the mechanism.",
+      "text": "non-blocking: the comment explains the change by its incident ('which is what left one run forty minutes past the end of its job') rather than by the mechanism, which the repository's comment rules forbid."
+    }
+  ],
+  "gate_evidence": {
+    "added_failure_ids": [],
+    "after_suite": {
+      "exit_status": 1,
+      "failures": 4,
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261113T120248596761-a-terminal-wait-probe-wakes-its-worker-within-minutes/test-logs/after-arm.log",
+      "passed": 201,
+      "revision": "2182aea966 (recorded; the log's own header says the base revision plus uncommitted changes)"
+    },
+    "baseline_suite": {
+      "exit_status": 1,
+      "failures": 6,
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261113T120248596761-a-terminal-wait-probe-wakes-its-worker-within-minutes/test-logs/base-arm.log",
+      "passed": 199,
+      "revision": "d788950ae4bb450757b59c56b4d5cb6524edcc2f"
+    },
+    "negative_control": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261113T120248596761-a-terminal-wait-probe-wakes-its-worker-within-minutes/test-logs/negative-control.log",
+    "shared_failure_ids": [
+      "tests/test_waiting_claims_never_block_a_launch.py::test_working_claim_still_refuses_a_dispatch",
+      "tests/test_waiting_claims_never_block_a_launch.py::test_ready_waiter_stays_queued_while_the_launched_claim_holds_its_path",
+      "tests/test_dispatch_returns_without_worker.py::test_dispatch_returns_once_its_supervisor_runs",
+      "tests/test_dispatch_returns_without_worker.py::test_a_delegated_launch_records_a_boundary_snapshot"
+    ]
+  },
+  "importer_delta": "none: the changed modules add one new public reading and two private adapters; no importer outside the reviewed diff changes.",
+  "item_verdicts": [
+    "VERDICT goal: the node's goal is \"A terminal wait probe wakes its worker within minutes\"; reckon/crew/recovery_liveness.py:1126 adds `parked_on_declared_wait` and reckon/crew/dispatch_launch.py:2524 and reckon/crew/resumption.py:1370/1525 consume it to lift the reservation and both resume guards for a parked worker, which is the wake the goal names.",
+    "VERDICT done_when: the done_when names tests/test_a_terminal_wait_probe_wakes_its_worker.py; the manifest records the two all_debug arms plus the node file (3 passed), and I re-ran the file against the reviewed head content, which printed \"3 passed in 3.53s\".",
+    "VERDICT write_paths: the manifest declares reckon/crew/recovery_wait.py, resumption.py, recovery_liveness.py, dispatch_launch.py, the new test file and the evidence fragment; every path in the diff is inside that set, and recovery_wait.py is unchanged.",
+    "VERDICT manifest: read in full; it states status complete, both commits, the two gate arms with their pass/fail counts, the negative-control log, and four pre-existing after-arm failures attributed to the base revision.",
+    "VERDICT diff: read commit by commit against d788950a \u2014 2182aea966 changes three production modules plus the new test file (146 added, 3 deleted excluding the test), and f6afb5ab adds only the evidence fragment."
+  ],
+  "justifications": [
+    "SCORE goal_fidelity: 18",
+    "JUSTIFICATION goal_fidelity: reckon/crew/dispatch_launch.py:2524 returns the reservation as unheld for a parked run and reckon/crew/resumption.py:1525 drops the observed-end refusal, which are the two doors that left the reported run unwoken.",
+    "SCORE evidence: 15",
+    "JUSTIFICATION evidence: the gate arms in test-logs/base-arm.log and test-logs/after-arm.log measure the done-when's failure counts (6 failed/199 passed at base against 4 failed/201 passed at head), but after-arm.log:1 names the base revision plus uncommitted changes rather than the head the manifest records, and both headers carry a placeholder command at line 3.",
+    "SCORE scope_discipline: 20",
+    "JUSTIFICATION scope_discipline: every path in the two commits (reckon/crew/dispatch_launch.py, reckon/crew/recovery_liveness.py, reckon/crew/resumption.py, tests/test_a_terminal_wait_probe_wakes_its_worker.py, the fragment) is in the manifest's declared write paths and nothing else changed.",
+    "SCORE durability: 15",
+    "JUSTIFICATION durability: tests/test_a_terminal_wait_probe_wakes_its_worker.py:171 and :265 fail at the base revision as the negative-control log shows, but :272 asserts an Event nothing ever sets and the wake case runs sweep(dry_run=True) so no resume is actually launched.",
+    "SCORE fit: 16",
+    "JUSTIFICATION fit: the lazy `from reckon.crew.recovery_liveness import ...` at reckon/crew/dispatch_launch.py:2532 matches the module's existing idiom, but the comments at dispatch_launch.py:2520-2523 and resumption.py:1527-1530 narrate the incident (\"what left one run forty minutes past the end of its job\") rather than the mechanism.",
+    "SCORE reuse: 19",
+    "JUSTIFICATION reuse: reckon/crew/recovery_liveness.py:1126 composes the existing external_wait owner and the existing live_worker_reading owner, and a search for an existing parked-or-idle-supervisor reading over reckon/crew found none."
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is \"A terminal wait probe wakes its worker within minutes\"; reckon/crew/recovery_liveness.py:1126 adds `parked_on_declared_wait` and reckon/crew/dispatch_launch.py:2524 and reckon/crew/resumption.py:1370/1525 consume it to lift the reservation and both resume guards for a parked worker, which is the wake the goal names.\nVERDICT done_when: the done_when names tests/test_a_terminal_wait_probe_wakes_its_worker.py; the manifest records the two all_debug arms plus the node file (3 passed), and I re-ran the file against the reviewed head content, which printed \"3 passed in 3.53s\".\nVERDICT write_paths: the manifest declares reckon/crew/recovery_wait.py, resumption.py, recovery_liveness.py, dispatch_launch.py, the new test file and the evidence fragment; every path in the diff is inside that set, and recovery_wait.py is unchanged.\nVERDICT manifest: read in full; it states status complete, both commits, the two gate arms with their pass/fail counts, the negative-control log, and four pre-existing after-arm failures attributed to the base revision.\nVERDICT diff: read commit by commit against d788950a \u2014 2182aea966 changes three production modules plus the new test file (146 added, 3 deleted excluding the test), and f6afb5ab adds only the evidence fragment.\nCALL_SITES: reckon/crew/dispatch_launch.py:2602 (reservation_in_flight inside reserve_launch_attempt), reckon/crew/dispatch_launch.py:2742 (held_launch_reservation), reckon/crew/resumption.py:2736 (_launcher_refusal inside sweep), reckon/crew/resumption.py:2715 (_observed_end_refusal inside sweep), reckon/crew/dispatch_sessions.py:1317 (_observed_end_refusal on the resume door), reckon/crew/dispatch_sessions.py:1941 (_observed_end_refusal on the preview door)\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/dispatch_launch.py:2524 returns the reservation as unheld for a parked run and reckon/crew/resumption.py:1525 drops the observed-end refusal, which are the two doors that left the reported run unwoken.\nSCORE evidence: 15\nJUSTIFICATION evidence: the gate arms in test-logs/base-arm.log and test-logs/after-arm.log measure the done-when's failure counts (6 failed/199 passed at base against 4 failed/201 passed at head), but after-arm.log:1 names the base revision plus uncommitted changes rather than the head the manifest records, and both headers carry a placeholder command at line 3.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in the two commits (reckon/crew/dispatch_launch.py, reckon/crew/recovery_liveness.py, reckon/crew/resumption.py, tests/test_a_terminal_wait_probe_wakes_its_worker.py, the fragment) is in the manifest's declared write paths and nothing else changed.\nSCORE durability: 15\nJUSTIFICATION durability: tests/test_a_terminal_wait_probe_wakes_its_worker.py:171 and :265 fail at the base revision as the negative-control log shows, but :272 asserts an Event nothing ever sets and the wake case runs sweep(dry_run=True) so no resume is actually launched.\nSCORE fit: 16\nJUSTIFICATION fit: the lazy `from reckon.crew.recovery_liveness import ...` at reckon/crew/dispatch_launch.py:2532 matches the module's existing idiom, but the comments at dispatch_launch.py:2520-2523 and resumption.py:1527-1530 narrate the incident (\"what left one run forty minutes past the end of its job\") rather than the mechanism.\nSCORE reuse: 19\nJUSTIFICATION reuse: reckon/crew/recovery_liveness.py:1126 composes the existing external_wait owner and the existing live_worker_reading owner, and a search for an existing parked-or-idle-supervisor reading over reckon/crew found none.\nFINDING tests/test_a_terminal_wait_probe_wakes_its_worker.py:272 non-blocking: `held_tick` is a local threading.Event that no line ever sets or reads, so `assert held_tick.is_set() is False` holds whatever the code does and the case proves nothing about a station tick being held; the done-when's \"station tick held for 30 minutes by an injected delay\" clause is therefore unmeasured and the test's own docstring claims it.\nFINDING test-logs/after-arm.log:1 non-blocking: the head arm's own header records \"revision: d788950ae4bb450757b59c56b4d5cb6524edcc2f plus the node's uncommitted worktree changes\", while the manifest's after_suite and the fragment record the head arm at 2182aea966; the record names a revision the log does not, so a reader cannot tell that the measured tree was the committed one.\nFINDING test-logs/after-arm.log:3 non-blocking: the header's command line carries the placeholder \"<19 related test files plus the node's new test file>\" instead of the literal file list, and the manifest's baseline_suite and after_suite commands carry \"<tree>\" and \"<19 related test files>\" the same way, so neither arm can be re-run from the record although the done-when requires a literal command in every log.\nFINDING reckon/crew/recovery_liveness.py:1157 non-blocking: the parked reading is taken from the run's worker record, which the supervisor rewrites only once the resumed worker is spawned, so between a resume being admitted and its worker.json landing a run that is genuinely running still reads as parked and the reservation it just took is reported free; the window is narrow and does not touch the reported shape, but it admits a second launch in it.\nFINDING reckon/crew/dispatch_launch.py:2520 non-blocking: the comment explains the change by its incident (\"which is what left one run forty minutes past the end of its job\") rather than by the mechanism, which is the changelog-in-source form the repository's comment rules forbid and which stops meaning anything once the incident is not in the reader's head.\n",
+  "reproduction_quote": "AssertionError: a parked worker's idle supervisor still held the reservation (test-logs/negative-control.log, base d788950a)",
+  "review_run_id": "r-20261113T125044972590-review-of-a-terminal-wait-probe-wakes-its-worker-within-minutes-f6afb5ab1c7e",
+  "reviewed_base_sha": "d788950ae4bb450757b59c56b4d5cb6524edcc2f",
+  "reviewed_head_sha": "f6afb5ab1c7e356a41b79a802852edd770a78cb4",
+  "reviewed_run_id": "r-20261113T120248596761-a-terminal-wait-probe-wakes-its-worker-within-minutes",
+  "scores": {
+    "durability": 15,
+    "evidence": 15,
+    "fit": 16,
+    "goal_fidelity": 18,
+    "reuse": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-13T13:07:35.785917+00:00",
+  "total": 103
+}

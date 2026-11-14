@@ -26,12 +26,52 @@ class LiveJevDisabledError(RuntimeError):
     """
 
 
+def checkout_root() -> Path:
+    """The checkout that supplied this import, which may be a linked worktree."""
+    return Path(__file__).resolve().parents[3]
+
+
+def main_checkout(root: Path) -> Path:
+    """Resolve ``root`` to the main checkout when it is a linked worktree.
+
+    A linked worktree carries a ``.git`` file naming its git directory under the
+    main checkout; that directory's ``commondir`` file names the shared git
+    directory, whose parent is the main checkout. Every other layout — a main
+    checkout, an export without ``.git``, a malformed pointer — resolves to
+    ``root`` itself.
+    """
+    marker = root / ".git"
+    if not marker.is_file():
+        return root
+    try:
+        pointer = marker.read_text().strip()
+    except OSError:
+        return root
+    if not pointer.startswith("gitdir:"):
+        return root
+    gitdir = Path(pointer[len("gitdir:") :].strip())
+    if not gitdir.is_absolute():
+        gitdir = root / gitdir
+    try:
+        common = (gitdir / "commondir").read_text().strip()
+    except OSError:
+        return root
+    shared = Path(common)
+    if not shared.is_absolute():
+        shared = gitdir / shared
+    return shared.resolve().parent
+
+
 def credential_path() -> Path:
-    """Resolve the tool's environment file independently of the target project."""
+    """Resolve the tool's environment file independently of the target project.
+
+    The file is the main checkout's ``.env``: a follower, service or MCP server
+    may import reckon from a linked worktree, and a worktree carries no key.
+    """
     override = os.environ.get(CREDENTIAL_ENV, "").strip()
     if override:
         return Path(override).expanduser().resolve()
-    return (Path(__file__).resolve().parents[3] / ".env").resolve()
+    return (main_checkout(checkout_root())) / ".env"
 
 
 def load_key(env_path: Path) -> str:
