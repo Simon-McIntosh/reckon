@@ -4,6 +4,8 @@ from __future__ import annotations
 import hashlib
 import json
 import subprocess
+import threading
+from collections import OrderedDict
 from contextlib import suppress
 from pathlib import Path
 from typing import Any, Callable, Mapping, Sequence
@@ -776,6 +778,105 @@ _PRE_LAUNCH_PHASES = frozenset({"queued", "awaiting-upstream", "starting"})
 REVIEW_SELF_REFUSED = "refused"
 
 
+def _review_self_signature(pointer: Mapping[str, Any]) -> tuple[Any, ...] | None:
+    """The identity of the pointer and run directory a refusal was read at.
+
+    A review run that ended without storing its record changes none of its own
+    inputs, so re-reading it every sweep reaches the same refusal and costs the
+    same record search. The pair the run can move — its pointer and its run
+    directory — is the identity the answer is kept under: a worker that writes
+    into the run directory, or anything that rewrites the pointer, changes it
+    and makes the next sweep look again. ``None`` when either cannot be
+    stat'ed, which leaves the caller reading uncached.
+    """
+    run_id = str(pointer.get("run_id") or "")
+    if not run_id:
+        return None
+    from reckon import file_memo
+
+    try:
+        return (
+            run_id,
+            file_memo.file_signature(runs.pointer_path(run_id)),
+            file_memo.file_signature(Path(runs.run_dir(run_id))),
+        )
+    except OSError:
+        return None
+
+
+def _delivered_once(
+    kind: str,
+    signature: tuple[Any, ...] | None,
+    read: Callable[[], Any],
+) -> Any:
+    """Read a review's delivered record once per pointer-and-directory identity.
+
+    A review that has ended and stored nothing will keep delivering nothing
+    until its pointer or its run directory moves, so the search that establishes
+    the absence is shared across the sweeps that read it: the first pass pays for
+    it and every pass at the same identity reads what it found. A record that
+    appears while the identity is unchanged is not seen until one of the pair
+    moves, which is the condition the refusal is remembered under.
+    """
+    if signature is None:
+        return read()
+    from reckon import file_memo
+
+    return file_memo.memoized_key(f"review_self_delivered_{kind}", signature, read)
+
+
+#: Refusal identities whose line the station has already written. A refusal is
+#: reported from the durable promotion receipt the drain leaves, which every
+#: later sweep reads again, so without this the station logs the same unchanged
+#: refusal on every pass. Sized for the station's own lifetime and bounded so a
+#: long one cannot grow it without limit.
+_REPORTED_REFUSALS: OrderedDict[tuple[Any, ...], None] = OrderedDict()
+_REPORTED_REFUSALS_LOCK = threading.Lock()
+_REPORTED_REFUSALS_LIMIT = 4096
+
+
+def _mark_refusal_reported(signature: tuple[Any, ...]) -> bool:
+    """Whether this pass is the one that reports the refusal at ``signature``.
+
+    True the first time a refusal at an identity is put in a sweep report and
+    False for every later pass over the same pointer and run directory, so the
+    station writes one run-failure line per refusal rather than one per sweep.
+    The claim is per process: a restarted station reports a still refused run
+    once more, which is right, because its log went with it.
+    """
+    with _REPORTED_REFUSALS_LOCK:
+        if signature in _REPORTED_REFUSALS:
+            _REPORTED_REFUSALS.move_to_end(signature)
+            return False
+        _REPORTED_REFUSALS[signature] = None
+        while len(_REPORTED_REFUSALS) > _REPORTED_REFUSALS_LIMIT:
+            _REPORTED_REFUSALS.popitem(last=False)
+        return True
+
+
+def _settled_self_refusal(run_id: str, reason: str) -> str | None:
+    """The durable refusal this review run's promotion request already carries.
+
+    The drain records a refused ``review-self`` request as a terminal receipt,
+    and the sweep's report is where the station logs it. Reading it here keeps
+    the line tied to the refusal the drain actually made, and returning it only
+    when it names the same reason this pass reads keeps a run that has since
+    moved from being reported under its older refusal.
+    """
+    if not run_id or not reason:
+        return None
+    from reckon.crew import promotion_requests
+
+    try:
+        receipt = promotion_requests.read_promotion(run_id)
+    except (CrewError, OSError, ValueError):
+        return None
+    if receipt.get("phase") != promotion_requests.REFUSED:
+        return None
+    error = str(receipt.get("error") or "")
+    return error if error == reason else None
+
+
 def _plan_review_delivery(
     record: Mapping[str, Any], project: str
 ) -> Mapping[str, Any] | None:
@@ -858,12 +959,18 @@ def review_self_state(
             ),
             None,
         )
+    # A review that has ended changes nothing about itself until its pointer or
+    # its run directory moves, so the record search below is shared across the
+    # sweeps that read it at one identity rather than repeated each pass.
+    signature = _review_self_signature(pointer)
     plan_slug = _plan_review_pointer_slug(pointer)
     if plan_slug:
         # A plan review's record is the report it wrote under the composed
         # directory its brief named, so it is read through the join the store
         # step uses rather than through a run-review's head-keyed path.
-        delivered = _plan_review_delivery(pointer, project)
+        delivered = _delivered_once(
+            "plan", signature, lambda: _plan_review_delivery(pointer, project)
+        )
         if delivered is None:
             from reckon.crew import plan_review
 
@@ -878,7 +985,9 @@ def review_self_state(
                 None,
             )
         return REVIEW_SELF_READY, "", Path(str(delivered.get("report_path") or ""))
-    stored = _delivered_review_record(pointer, project)
+    stored = _delivered_once(
+        "run", signature, lambda: _delivered_review_record(pointer, project)
+    )
     if stored is None:
         named = f" for head {declares[1]}" if declares is not None else ""
         return (
@@ -1143,6 +1252,23 @@ def dispatch_awaiting_reviews(
                 # which moved a queued pointer to promotion-requested, where
                 # admission never launches it.
                 state, reason, _record = review_self_state(pointer)
+                # A refusal the drain has already recorded is not retried: the
+                # record search that produced it is shared across the sweeps at
+                # one pointer and run directory, and the station logs the line
+                # once rather than on every pass. A run whose pointer or run
+                # directory moves reaches a new identity and is read again.
+                settled = (
+                    _settled_self_refusal(run_id, reason)
+                    if state == REVIEW_SELF_REFUSED
+                    else None
+                )
+                signature = (
+                    _review_self_signature(pointer) if settled is not None else None
+                )
+                if settled is not None and signature is not None:
+                    if _mark_refusal_reported(signature):
+                        failed.append({"run_id": run_id, "error": settled})
+                    continue
                 not_launched = str(pointer.get("phase") or "") in _PRE_LAUNCH_PHASES
                 if not_launched or (
                     record_process_alive(pointer) is True
