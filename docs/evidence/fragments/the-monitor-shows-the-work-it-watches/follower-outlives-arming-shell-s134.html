@@ -1,0 +1,38 @@
+<article class="r-evidence" id="follower-outlives-arming-shell-s134-landed">
+  <h2 id="follower-outlives-arming-shell-s134-landed-title">A re-parented follower keeps streaming while a reader holds its pipe</h2>
+
+  <p id="follower-outlives-arming-shell-s134-landed-fix">The consumer check in
+  <code>reckon/crew_follow_commands.py</code> now asks whether the follower's output still has a
+  reader before it treats a dead owner as an ending. <code>_stdout_has_reader()</code> measures only
+  a pipe: a closed read end shows on the write end as <code>POLLERR</code>, the same condition that
+  makes the next write fail with <code>EPIPE</code>, and the command now ends directly on
+  <code>BrokenPipeError</code> from that write. The substitution is gated by
+  <code>_arming_has_gone()</code>: it applies only when the follower has been re-parented, so a
+  follower awaiting a takeover keeps the owner-only ending even when a live parent's pipe still holds
+  an unread read end. Nothing changes for a follower no reader holds — a regular file or a terminal
+  answers no, so it still ends and frees its registration.</p>
+
+  <p id="follower-outlives-arming-shell-s134-landed-proof">The new test arms two session followers as
+  background jobs of a shell that exits at once, writing into one reader, and asserts that both are
+  alive 2.5 s later with each still holding a registration naming the process the shell started. It
+  then closes the reader and asserts both followers end and both registrations are free. The base
+  revision ends both inside the span; the owner-only check restored as a negative control fails the
+  first case; the two sibling guard files still pass, each arming its follower with a regular-file
+  stdout.</p>
+
+  <table id="follower-outlives-arming-shell-s134-landed-arms">
+    <thead><tr><th>arm</th><th>source</th><th>result</th></tr></thead>
+    <tbody>
+      <tr><td>both cases, head</td><td><code>2bcfdec2f5</code></td><td>2 passed</td></tr>
+      <tr><td>first case, base</td><td><code>47d4d53612</code></td><td>1 failed — a follower ended inside the span</td></tr>
+      <tr><td>first case, owner-only check restored</td><td>head + negative control</td><td>1 failed — same assertion</td></tr>
+      <tr><td>two sibling guard files + new test, head</td><td><code>2bcfdec2f5</code></td><td>9 passed</td></tr>
+    </tbody>
+  </table>
+
+  <p id="follower-outlives-arming-shell-s134-landed-scope">Files changed:
+  <code>reckon/crew_follow_commands.py</code> and
+  <code>tests/test_a_follower_with_a_reader_outlives_its_arming_shell.py</code>. Ruff reports only the
+  two findings that pre-date this change in the command module (SIM103, SIM115) and none in the test,
+  which is format-clean.</p>
+</article>
