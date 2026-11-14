@@ -1,0 +1,55 @@
+<section id="plain-text-finding-does-not-stop-a-re-review-landing">
+  <h2>A review whose findings are plain text does not stop its run being reviewed again</h2>
+  <p>A stored review may record its findings as bare strings such as
+  <code>"non-blocking: reckon/crew/promotion.py:291 ..."</code> rather than as
+  records carrying a <code>severity</code> field; that is the shape a review
+  worker writing its JSON by hand stores, and it is what the record of
+  <code>r-20261114T081014193672</code> holds. Composing that run's re-review
+  read each finding's severity through the record shape, so
+  <code>declared_severity</code> called <code>.get</code> on a string and raised
+  <code>AttributeError: 'str' object has no attribute 'get'</code>. The reflex's
+  review pass read the failure as a failed composition and dropped the run on
+  every sweep, so it could never be reviewed again without a hand-built brief.</p>
+  <p><code>declared_severity</code> now reads a finding that is not a mapping
+  through <code>finding_claim</code>, applying the same leading-word rule
+  (<code>blocking:</code> / <code>non-blocking:</code>) every other finding
+  uses, so a plain-text finding answers with the severity it states and one
+  that states none reports "unstated severity" instead of raising. The same
+  reader serves the promotion audit, the repair reflex and the landing guard,
+  so every consumer of a stored finding gains the same behaviour. The
+  disposition writer already read plain-text findings correctly; the node adds
+  the test that proves it rather than reimplementing it.</p>
+  <table id="plain-text-finding-does-not-stop-a-re-review-measures">
+    <caption>Arms run on <code>all_debug</code>. Each log names the revision,
+    tree and command it ran, the imported module path and the resolved working
+    directory, and ends with a bare <code>EXIT=</code> line.</caption>
+    <thead><tr><th>Measure</th><th>Observed result</th></tr></thead>
+    <tbody>
+      <tr><td>Baseline armed command at
+        <code>81709f1d3eeb7e9b9bed213a7afcb1e12b1ad3b5</code></td>
+        <td>51 passed, <code>EXIT=0</code>; the node's test file does not exist
+        at this revision.</td></tr>
+      <tr><td>Defect reproduced before the repair</td>
+        <td>1 failed, 1 passed, <code>EXIT=1</code>:
+        <code>AttributeError: 'str' object has no attribute 'get'</code> raised
+        from <code>declared_severity</code> while composing the re-review
+        brief.</td></tr>
+      <tr><td>Armed command at the repair's head</td>
+        <td>53 passed, <code>EXIT=0</code>: the two node cases plus the 51
+        baseline checks.</td></tr>
+      <tr><td>The node's second case against the unrepaired tree</td>
+        <td>Passed before the repair, confirming the disposition writer already
+        read plain-text findings; the test is added to hold that behaviour
+        rather than reimplement it.</td></tr>
+      <tr><td>Declared mutation applied to the repaired product code: read a
+        plain-text finding as a record</td>
+        <td>The re-review case fails with the recorded
+        <code>AttributeError</code>: 1 failed, 1 passed, <code>EXIT=1</code>.</td></tr>
+    </tbody>
+  </table>
+  <p>The gate log is
+  <code>logs/after.log</code> and the baseline arm's is
+  <code>logs/baseline.log</code> under the run directory
+  <code>~/.config/reckon/crew/runs/r-20261114T112502305428-plain-text-finding-does-not-stop-a-re-review/</code>,
+  beside the negative control's <code>negative-control.log</code>.</p>
+</section>
