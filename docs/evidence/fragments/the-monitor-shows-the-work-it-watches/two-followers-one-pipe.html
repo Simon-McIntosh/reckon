@@ -1,0 +1,95 @@
+<article class="r-evidence" id="monitor-two-followers-one-pipe-s131-writable">
+  <h2 id="monitor-two-followers-one-pipe-s131-writable-title">The follower whose arming shell is gone ends the stream, not the pipe</h2>
+
+  <p id="monitor-two-followers-one-pipe-s131-writable-cause">Two <code>crew follow</code> processes
+  writing into one <code>grep</code> end the stream because each follower's own arming process is
+  gone, not because the pipe broke. A follower fixes its owner once, as the pid and kernel start
+  time of the process that armed it (<code>follower_owner()</code>,
+  <code>reckon/crew/follower_registration.py</code>), and <code>_check_consumer()</code> in
+  <code>reckon/crew_follow_commands.py</code> ends the arming when that owner is no longer alive —
+  committed blob <code>d325cb9fe1</code>, lines <strong>1718&ndash;1719</strong>:
+
+  <code>if owner_pid &lt;= 1 or runs.process_alive(owner_pid) is not True:</code> then
+  <code>consumer_gone = True; return</code>. The wait loop at line <strong>2164</strong>
+  (<code>while not _stopped() and not lifetime_elapsed and not consumer_gone and not settled:</code>)
+  then leaves, the generator ends without the settle row, and the process returns <strong>0</strong>.
+  It prints nothing: that path exists so a pane whose reader has gone does not accumulate orphans.</p>
+
+  <p id="monitor-two-followers-one-pipe-s131-writable-repro">Two followers for one project cannot be
+  written into one pipe in the foreground, so the shell writes them as background jobs and exits at
+  once — <code>bash -c 'crew follow -p P -s A &amp; crew follow -p P -s B &amp;' | grep .</code>. Both
+  followers are then reparented while the pipe reader is still reading, and the owner check ends each
+  of them on its next wait pass (0.1 s). Their exit records name the reason <code>ended</code> — the
+  normal-return path, exit status 0 — and the reader then sees EOF and exits. A single project-wide
+  follower has no such short-lived intermediate shell, its owner is the shell that is running the
+  command, and it stays up; that is the asymmetry the report observed.</p>
+
+  <table id="monitor-two-followers-one-pipe-s131-writable-arms">
+    <thead><tr><th>arm</th><th>arrangement</th><th>result at <code>d325cb9fe1</code></th></tr></thead>
+    <tbody>
+      <tr>
+        <td>two</td>
+        <td>two session followers backgrounded by a shell that exits, into one <code>grep</code></td>
+        <td>stream ends; both exit records read <code>"reason": "ended"</code> (exit 0)</td>
+      </tr>
+      <tr>
+        <td>stamped</td>
+        <td>the same two followers on one <code>grep</code>, with the arming owner made observable as
+        a stub that exits at 0.6 s</td>
+        <td><code>s-a rc=0</code> and <code>s-b rc=0</code> in the same wait pass; the reader then
+        exits. The first process to exit is a follower, not <code>grep</code>.</td>
+      </tr>
+      <tr>
+        <td>one (control)</td>
+        <td>one project-wide follower, <code>crew follow -p P | grep .</code></td>
+        <td>still up after the span: the reader is the live shell, so no owner ever dies</td>
+      </tr>
+      <tr>
+        <td>mutant</td>
+        <td>the two-follower arm run from a scratch tree whose <code>_check_consumer()</code> returns
+        before reading its owner</td>
+        <td>both followers stay up for the whole span: the check at 1718&ndash;1719 is the line that
+        ends them</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p id="monitor-two-followers-one-pipe-s131-writable-fix">The fix, as a done-when a later section can
+  carry: <em>a follower whose arming process has gone but whose stdout still has a reader stays, and
+  it ends only when writing to that stdout fails, so two followers backgrounded by a short-lived
+  shell into one <code>grep</code> keep streaming for the reader's lifetime.</em> Closing it either
+  writes the sample row and catches <code>EPIPE</code> from <code>_echo_follow_line</code>'s flush as
+  the end condition, or asks whether stdout is still open to a reader instead of whether the arming
+  pid is alive; the owner check keeps its present job for a follower no reader holds.</p>
+
+  <p id="monitor-two-followers-one-pipe-s131-writable-guard">The claim is guarded by the suite, not
+  by this record alone. <code>tests/test_follower_checks_its_owner.py</code> and
+  <code>tests/test_orphaned_follower_releases.py</code> run the real follower command against a
+  temporary crew home and require a follower whose owner is gone to leave and free its registration.
+  That pair was measured three ways — at the pinned revision, at the tree carrying this fragment, and
+  against a scratch copy of the pinned revision whose <code>_check_consumer()</code> returns before it
+  reads its owner. Verdicts in that order: 7 passed, 7 passed, and <strong>5 failed, 2 passed</strong> —
+including <code>test_a_read_only_follower_leaves_when_its_own_owner_dies</code> and
+  <code>test_an_orphaned_follower_releases_its_registration_and_leaves</code>. An edit that removed the
+  owner check therefore turns those tests red instead of leaving this paragraph standing. Re-run it
+  with:
+
+  <code>cd &lt;tree&gt; &amp;&amp; PYTHONPATH=&lt;tree&gt; python -m pytest -p no:cacheprovider -q
+  tests/test_follower_checks_its_owner.py tests/test_orphaned_follower_releases.py</code>
+
+  — the two followers the check ends are the same condition these tests assert, so the record and the
+  guard cannot disagree without a red run.</p>
+
+  <p id="monitor-two-followers-one-pipe-s131-writable-evidence">Reproduction and gate:
+  <code>repro/repro.sh</code> (arms <code>two</code>, <code>stamped</code>, <code>one</code>,
+  <code>mutant</code>) and <code>repro/gate.sh</code> in run
+  <code>r-20261113T154544279755-monitor-two-followers-one-pipe-s131-writable</code>, written on
+  <code>all_debug</code> as <code>repro/two-all-debug.log</code>,
+  <code>repro/one-all-debug.log</code>, <code>repro/mutant-all-debug.log</code> and
+  <code>repro/gate-all-debug.log</code>, each naming the revision, the tree imported and the literal
+  command and ending in <code>EXIT=0</code>. The mutant diff is <code>repro/mutant.diff</code>; the
+  guard measurement above is <code>repro/guard-all-debug.log</code>, produced by
+  <code>repro/guard.sh</code>. Every arm stops only the pids it started, matched on its own probe
+  project, and names them before signalling, so the script is safe beside a live session's followers
+  on a shared host.</p>
+</article>
