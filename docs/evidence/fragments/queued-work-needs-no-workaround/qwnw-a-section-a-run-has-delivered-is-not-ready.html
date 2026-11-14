@@ -27,13 +27,12 @@
   section verdict, which is the answer admission and dispatch already derive their waits from.</p>
 
   <p id="qwnw-a-section-a-run-has-delivered-is-not-ready-mechanism">The defect was structural. The
-  roadmap's only run input was <code>crew.list_live()</code>, joined into per-section rows at
-  <code>reckon/crew/section_holds.py</code>'s caller in <code>reckon/roadmap.py:3774</code>; section
-  readiness was then computed from declared holds alone (<code>named_holds</code>, then
-  <code>reckon/roadmap.py:952</code>), whose <code>ready</code> is <code>plan_ready and not
+  roadmap's only run input was <code>crew.list_live()</code>; section readiness was derived from that
+  live set and from declared holds alone, by <code>section_readiness_verdict</code> at
+  <code>reckon/roadmap.py:964</code>, whose <code>ready</code> is <code>plan_ready and not
   blockers</code>. Promotion unlinks the live pointer (<code>reckon/crew/promotion.py:251</code>), so the
   moment a node was delivered the run left the only set the roadmap read, and the section came back
-  ready.</p>
+  ready. Nothing in that path could see a promoted run, which is the record promotion leaves.</p>
 
   <p id="qwnw-a-section-a-run-has-delivered-is-not-ready-rule">The hold is read from both records a run
   leaves: the live pointers, where a phase of <code>complete</code> or a running phase holds and a stored
@@ -53,13 +52,13 @@
     (:206) for a readiness answer, <code>held_node_rows</code> (:232) for one node about to be queued,
     and <code>section_nodes</code> (:254) for the node set. The promoted history is one indexed
     <code>ledger.picker_runs</code> projection per ledger state, cached across builds;</li>
-    <li><code>reckon/roadmap.py:3774</code> — the hold is computed once per build and folded into
+    <li><code>reckon/roadmap.py:3781</code> — the hold is computed once per build and folded into
     <code>named_holds</code> (:4591), which is what makes it a section blocker of kind
     <code>run</code>; <code>:4617</code> adds it to the condition that populates
     <code>ready_sections</code>, so a plan held only by a run reports the key rather than omitting it;</li>
     <li><code>reckon/roadmap.py:4821</code> — a section held only by a run that has left the page's live
     set gets a section row anyway, with the holding run in its <code>blockers</code>;</li>
-    <li><code>reckon/roadmap.py:4706</code> — the wiring finding <code>run-not-landed</code>: a section
+    <li><code>reckon/roadmap.py:1948</code> — the wiring finding <code>run-not-landed</code>: a section
     declared done whose promoting run's head is not an ancestor of the local integration branch
     (<code>main</code>, or the checked-out branch), naming the run and the head;</li>
     <li><code>reckon/crew/dispatch_batch.py:838</code> — a batch entry for a held node is answered
