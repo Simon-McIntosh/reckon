@@ -27,13 +27,14 @@
 
   <h3 id="a-write-paths-sentence-is-read-in-either-form-measured">Measured</h3>
 
-  <p>The new test holds four cases: a full-stop section yields its code-formatted
-  path through the section reader and through the batch reader; the colon form
-  still yields its paths through both; a batch entry for a full-stop section
-  with no <code>write_paths</code> queues carrying the section's paths; and
-  <code>audit-doc</code> warns on a label in neither form while accepting both
-  parseable forms; and a section that mentions write paths in prose
-  beside a parseable label raises no warning.</p>
+  <p>The new test holds eight cases. A full-stop section yields its
+  code-formatted path through the section reader and through the batch reader;
+  the colon form still yields its paths through both; a batch entry for a
+  full-stop section with no <code>write_paths</code> queues carrying the
+  section's paths; and <code>audit-doc</code> warns on a label in neither form
+  while accepting both parseable forms. The eighth case is the narrowing the
+  review asked for: a section that mentions write paths in prose beside a
+  parseable label raises no warning.</p>
 
   <table id="a-write-paths-sentence-is-read-in-either-form-arms">
     <caption>Every arm ran on <code>all_debug</code>; each log's first line names
@@ -42,8 +43,8 @@
     <thead><tr><th>arm</th><th>revision</th><th>result</th></tr></thead>
     <tbody>
       <tr><td>after suite (node's two files)</td>
-        <td><code>c3ca399f</code>, worktree head</td>
-        <td>58 passed, <code>EXIT=0</code></td></tr>
+        <td><code>344fc562</code>, worktree head</td>
+        <td>59 passed, <code>EXIT=0</code></td></tr>
       <tr><td>baseline suite (template over the base tree, new test absent)</td>
         <td><code>465c2df0</code></td>
         <td>51 passed, <code>EXIT=0</code></td></tr>
@@ -54,8 +55,8 @@
         <td><code>c3ca399f</code>, worktree head</td>
         <td>3 failed, 586 passed, <code>EXIT=1</code></td></tr>
       <tr><td>negative control: colon-only pattern restored</td>
-        <td><code>c3ca399f</code> + mutation</td>
-        <td>4 failed, 3 passed, <code>EXIT=1</code></td></tr>
+        <td><code>344fc562</code> + mutation</td>
+        <td>4 failed, 4 passed, <code>EXIT=1</code></td></tr>
     </tbody>
   </table>
 
@@ -67,6 +68,6 @@
   (<code>test_mcp_views.py::test_raw_and_schema_are_explicit_layers</code>,
   <code>test_skill_contracts.py::test_ship_crew_views_match_the_typed_mcp_surface</code>
   and <code>test_skill_contracts.py::test_every_registered_crew_verb_is_documented_or_exempt</code>),
-  so the change adds none; the head arm's seven extra passes are the new test's
-  seven cases.</p>
+  so the change adds none; the head arm's extra passes are the new test's
+  eight cases.</p>
 </section>
