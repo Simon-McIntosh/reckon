@@ -1,0 +1,20 @@
+<section class="r-evidence" id="wave3-clive-the-monitor-shows-the-work-i-s86" data-plan="the-monitor-shows-the-work-it-watches">
+  <h3>§86 — The obligations snapshot is fresh, or says why it is not</h3>
+
+  <p><strong>Cause, read from the committed blob at the base revision.</strong> A session's snapshot carries an age, so publishing a fresh one becomes due with the passage of time. Every producer-side trigger for the sweep nevertheless read a document: a pointer transition, a file under the project's state or plan trees, and the crew home's fingerprint the ticker gates its fleet listing on — a fingerprint that deliberately excludes the watch directory.
+
+  <p>The obligations sweep is reachable only through that gate. <code>reckon/crew/recovery_watch.py:3425</code> calls <code>list_live(project=project)</code> inside <code>if sweep:</code>, and <code>list_live</code> is the only producer-side caller of <code>runs._publish_watch_stream</code> — the only caller of <code>_publish_obligation_snapshots</code>. <code>obligation_snapshot.FLOOR_TICK_SECONDS</code> (60 s) is documented as publishing duties that become due with time alone, but on a quiet fleet no beat ever reached it.
+
+  <p>That is the reported reading exactly: the seat held, <code>watcher_live: true</code>, the pane still drawing rows, and the session's obligations snapshot ageing without bound — 8308 s, then 8461 s, then 9382 s — while the hook could name only the age of the reading, never who held the seat.</p>
+
+  <h4>Repair</h4>
+  <ul>
+    <li><code>runs.publish_obligations_on_beat(project)</code> starts one sweep from the producer's own clock. It lists nothing and folds no transition; the sweep's own floor interval decides whether that beat publishes, so a fleet that is moving costs nothing extra. A sweep already in flight is skipped rather than queued, as a change gate's trigger already is.</li>
+    <li>The ticker calls it on every pass of the tick body rather than behind the change gate or behind any other cadence. Those gates are what a quiet fleet never opens, so a call placed behind either of them is the same defect with a longer period rather than a repair.</li>
+    <li>Both producers of a sweep now take one path, <code>runs._start_obligation_sweep</code>: the thread start, the non-blocking lock, and the guard that keeps a trigger raised inside a running sweep from re-entering the listing it is deriving from had been written twice, and only one copy carried the guard.</li>
+    <li>The stale notice now names the holder. <code>not_fresh_line</code> reads the seat's registration and says <em>the snapshot is 8308s old; the seat holder (pid 4242 on host H) last wrote it 8308s ago</em>. With no registration to read it names no holder rather than guessing one.</li>
+  </ul>
+
+  <h4>Evidence</h4>
+  <p>The five cases in <code>tests/test_the_obligations_snapshot_is_fresh_or_says_why_it_is_not.py</code> pin both halves. The positive case drives a real ticker, a real producer and a real follower registration against a synthesised project, with the fleet listing pinned to one answer so the change gate opens once and never again; the snapshot it had aged past the freshness window is refreshed within one producer interval, and the listing is never called again, which shows the refresh came from the clock. A second case holds the crew home's fingerprint still so the gate opens once and shuts, holds the neighbouring cadence at an hour, and requires a later beat to reach the publisher anyway and leave a snapshot inside the window. The negative control removes the beat's publication and drives the identical beats: the same snapshot stays stale past the window. Run as a control against the delivered tree, moving the beat's call back inside the change gate changes nothing else and the second case fails, so it detects the gate rather than some other trigger. The two notice cases pin the pid, host and last write, and the no-registration shape.</p>
+</section>
