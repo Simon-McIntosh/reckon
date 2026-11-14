@@ -191,3 +191,16 @@ def test_audit_doc_accepts_both_parseable_forms(sentence: str) -> None:
     assert not any(
         finding.code == "write-paths-sentence-unparsed" for finding in findings
     ), [f.fmt() for f in findings]
+
+
+def test_a_prose_mention_beside_a_parseable_label_raises_no_warning() -> None:
+    mention = "<p>The write paths below are the fence for this section.</p>"
+    document = _plan_document(COLON).replace(
+        f"<p>{COLON}.</p>", f"{mention}<p>{COLON}.</p>"
+    )
+
+    findings = doccheck.audit_html(document)
+
+    assert not any(
+        finding.code == "write-paths-sentence-unparsed" for finding in findings
+    ), [f.fmt() for f in findings]

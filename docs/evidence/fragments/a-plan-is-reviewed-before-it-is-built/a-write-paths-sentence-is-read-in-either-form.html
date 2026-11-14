@@ -15,11 +15,15 @@
   accepts either punctuation, so both readers take the sentence once.</p>
 
   <p><strong>Audit coverage.</strong> <code>reckon audit-doc</code> gains a
-  <code>write-paths-sentence-unparsed</code> warning: a plan section that
-  mentions write paths in a form neither reader parses is reported when the
-  plan is audited, rather than surfacing as a refused dispatch. The check fires
-  only on sections that mention the sentence at all, so a section describing no
-  write paths is not a finding.</p>
+  <code>write-paths-sentence-unparsed</code> warning: a plan section that opens
+  a paragraph with the write-paths label in a form neither reader parses is
+  reported when the plan is audited, rather than surfacing as a refused
+  dispatch. The subject is the label sentence, not the phrase: a section that
+  discusses write paths in prose raises nothing, and neither does a section
+  whose prose already yields paths through the section reader. Over
+  <code>docs/plans</code> and <code>docs/evidence</code> the check reports 296
+  and 274 sections on any prose mention, and 0 and 0 once it is narrowed to an
+  unparseable label sentence.</p>
 
   <h3 id="a-write-paths-sentence-is-read-in-either-form-measured">Measured</h3>
 
@@ -28,7 +32,8 @@
   still yields its paths through both; a batch entry for a full-stop section
   with no <code>write_paths</code> queues carrying the section's paths; and
   <code>audit-doc</code> warns on a label in neither form while accepting both
-  parseable forms.</p>
+  parseable forms; and a section that mentions write paths in prose
+  beside a parseable label raises no warning.</p>
 
   <table id="a-write-paths-sentence-is-read-in-either-form-arms">
     <caption>Every arm ran on <code>all_debug</code>; each log's first line names
