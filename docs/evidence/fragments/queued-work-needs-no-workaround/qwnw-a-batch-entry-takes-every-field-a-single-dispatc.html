@@ -84,28 +84,31 @@ worktree, each resolved over its own tree with the main checkout's interpreter
 -p no:cacheprovider -q</code>).</p>
 
 <ul>
-  <li>Base arm: <code>90 passed in 8.82s</code>, <code>BASELINE_EXIT=0</code>
+  <li>Base arm: <code>90 passed in 9.41s</code>, <code>EXIT=0</code>
   (<code>gate-baseline.log</code>).</li>
-  <li>After arm: <code>98 passed in 7.21s</code>, <code>AFTER_EXIT=0</code>
+  <li>After arm: <code>98 passed in 8.17s</code>, <code>EXIT=0</code>
   (<code>gate-after.log</code>).</li>
 </ul>
 
 <p>The targets are the node's two test files plus the batch, dispatch-surface,
-duration and time-fence modules that cover the changed code. Six cases in
-<code>tests/test_a_queued_request_is_stamped_at_queue_time.py</code> fail
-identically on both the base extraction and the after arm, so the delta between
-the two runs is zero — that failure is not this node's.</p>
+duration and time-fence modules that cover the changed code. The two arms differ
+only in those two files: the base arm runs the retired refusal case, the after
+arm runs its replacement and this node's new file. Both arms are green and the
+eight cases the after arm adds over the base arm are this node's change; no
+failure in either arm is this node's to attribute.</p>
 
 <h3 id="qwnw-a-batch-entry-takes-every-field-a-single-dispatc-control">The negative control, executed</h3>
 
-<p>One entry carrying all four fields is handed to
-<code>dispatch_batch.queue_batch</code> under a chosen <code>PYTHONPATH</code>.
-Against the base revision the entry is refused with
-<code>entry 1 carries unknown field(s): comment, local, priority</code>, exit 0
-from the driver (<code>negative-control.log</code>). Against this tree the same
-entry passes the field check and is answered on its plan document instead, which
-is how the field set is proved to be the difference. The refusal fires before any
-plan is read, so the control needs no repository to reproduce.</p>
+<p>This node's new test file is copied into the base extraction and run there, so
+the same entries meet the base revision's field set. It reads
+<code>7 failed, 1 passed in 0.62s</code>, <code>EXIT=1</code>
+(<code>negative-control.log</code>), with the refusal named in the traceback:
+<code>entry 1 carries unknown field(s): comment, local, priority</code> and
+<code>entry 2 carries unknown field(s): priority</code>. Every one of those seven
+cases passes on the after arm, and the single case that passes at the base is the
+one that only requires a mistyped lane or priority to be refused, which the base
+refuses for a different reason. The control is the same test run against the base
+revision failing, as the section declares.</p>
 
 <h3 id="qwnw-a-batch-entry-takes-every-field-a-single-dispatc-scope">Scope</h3>
 
