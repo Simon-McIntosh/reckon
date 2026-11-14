@@ -29,6 +29,20 @@ def _pid_namespace() -> str:
         return ""
 
 
+def _process_start(pid: int) -> str:
+    """A process's start time in clock ticks, or empty when it cannot be read.
+
+    Paired with a pid it names one process: a pid the kernel has reused for a
+    later process carries a different start time.
+    """
+    try:
+        text = Path(f"/proc/{pid}/stat").read_text(encoding="utf-8")
+    except OSError:
+        return ""
+    fields = text.rpartition(")")[2].split()
+    return fields[19] if len(fields) > 19 else ""
+
+
 @dataclass(frozen=True)
 class LeaseHolder:
     host: str
@@ -36,6 +50,7 @@ class LeaseHolder:
     job: str
     token: str
     pid_namespace: str = ""
+    pid_start: str = ""
 
 
 class HostLease:
@@ -52,7 +67,9 @@ class HostLease:
         clock: Callable[[], float] = time.time,
     ) -> None:
         self.path = state / "leases" / f"{name}.json"
-        self.owner = LeaseHolder(host, pid, job, uuid4().hex, _pid_namespace())
+        self.owner = LeaseHolder(
+            host, pid, job, uuid4().hex, _pid_namespace(), _process_start(pid)
+        )
         self._clock = clock
         self._inode: int | None = None
 
@@ -67,6 +84,7 @@ class HostLease:
                 str(record["job"]),
                 str(record["token"]),
                 str(record.get("pid_namespace") or ""),
+                str(record.get("pid_start") or ""),
             ), stat
         except (OSError, ValueError, KeyError, TypeError):
             try:
@@ -81,11 +99,39 @@ class HostLease:
             return None
         return holder
 
+    def _holder_is_running_here(self, holder: LeaseHolder) -> bool:
+        """Whether the holder is a process still running on this host.
+
+        A lease goes stale when its renewal lapses, and a renewal lapses while a
+        busy holder's renewing thread waits on its interpreter -- a long decode
+        on the main thread is enough. Stale then says the holder is slow, not
+        gone, and taking the lease from it starts a second holder and stops the
+        first. So a holder this host can see running, matched by pid and by
+        the start time it recorded, keeps its lease however long its renewal
+        has lapsed. A record without a start time cannot be matched against a
+        reused pid, so it is judged by staleness as before.
+        """
+        return (
+            holder.host == self.owner.host
+            and bool(holder.pid_namespace)
+            and holder.pid_namespace == self.owner.pid_namespace
+            and bool(holder.pid_start)
+            and _process_start(holder.pid) == holder.pid_start
+        )
+
     def claim(self) -> bool:
         """Take an absent or stale lease, or reattach after an in-place exec."""
         self.path.parent.mkdir(parents=True, exist_ok=True)
         for _ in range(3):
             holder, stat = self._read()
+            if (
+                holder is not None
+                and stat is not None
+                and (holder.pid, holder.pid_start)
+                != (self.owner.pid, self.owner.pid_start)
+                and self._holder_is_running_here(holder)
+            ):
+                return False
             if holder is not None and stat is not None:
                 if (
                     (holder.host, holder.pid, holder.job, holder.pid_namespace)

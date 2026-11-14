@@ -1,0 +1,72 @@
+{
+  "added_failure_count": 4,
+  "added_failure_ids": [
+    "ERROR tests/test_a_producer_sweeps_only_on_change.py::test_a_handover_written_on_a_quiet_beat_sweeps",
+    "ERROR tests/test_crew_recovery.py::test_single_event_watch_still_returns_the_first_terminal_run",
+    "ERROR tests/test_obligations_snapshot_is_published.py::test_a_slow_sweep_does_not_hold_the_next_transition",
+    "ERROR tests/test_producer_reads_only_what_changed.py::test_a_poll_over_unchanged_runs_reads_no_admission_bytes"
+  ],
+  "call_sites": [
+    "reckon/crew/recovery_watch.py:_watch_snapshot",
+    "reckon/crew/recovery_watch.py:_watch_transition",
+    "reckon/crew/recovery_watch.py:_transition_counts",
+    "reckon/crew/recovery_watch.py:_scoped_watch_event",
+    "reckon/crew/ticker.py:_stat_cells"
+  ],
+  "completed_at": "2026-11-14T18:06:54.260Z",
+  "dispatched_at": "2026-11-14T18:03:24Z",
+  "failing_tests_after": 30,
+  "failing_tests_baseline": 31,
+  "findings": [
+    {
+      "file": "tests/test_the_pane_counts_parked_work.py",
+      "line": 68,
+      "severity": "non-blocking",
+      "text": "the test supplies the truthy 'stuck' key on its own snapshot, so reckon/crew/recovery_watch.py:1591 _with_stuck_verdict and runs.stuck_verdict are never exercised; deleting the _with_stuck_verdict call at recovery_watch.py:1649 would leave every assertion here green while the pane permanently read s=0"
+    },
+    {
+      "file": "tests/test_the_pane_counts_parked_work.py",
+      "line": 120,
+      "severity": "non-blocking",
+      "text": "the waiting-bucket assertions drive _snapshot with recovery_classification set to the same phase word the bucket maps, so the assertion and the input move together for the four listed phases; the negative control is what makes it a guard, not the assertion alone"
+    },
+    {
+      "file": "tests/test_a_limit_reset_reaches_every_pane.py",
+      "line": 1,
+      "severity": "non-blocking",
+      "text": "seven sibling test files are edited outside the node's declared write paths, recorded under outside_scope in the manifest and awaiting crew complete --accept-path ratification"
+    }
+  ],
+  "justifications": {
+    "durability": "tests/test_the_pane_counts_parked_work.py:112 guards the counted figure through two negative controls, but the _with_stuck_verdict wiring at recovery_watch.py:1649 is unguarded by any assertion.",
+    "evidence": "the manifest's tests line names the focused eight-file run (69 passed exit 0) and both arms are recorded in baseline_suite/after_suite with log paths.",
+    "fit": "reckon/crew/ticker.py:714 follows the surrounding _CELLS/_WAIT_CELL pattern and reads STUCK_HUE from the existing STATE_HUE palette.",
+    "goal_fidelity": "reckon/crew/recovery_watch.py:1850 FLEET_PARKED_STATES admits awaiting-upstream and blocked-upstream to the waiting figure the pane's q cell draws.",
+    "reuse": "reckon/crew/runs.py:2834 stuck_verdict and reckon/crew/recovery_classification.py:2793 already own the stuck verdict; the diff extends them rather than deriving a second answer.",
+    "scope_discipline": "seven test files under tests/ are edited outside the four declared write paths declared at prompt.txt:80-84 and are declared under outside_scope."
+  },
+  "project": "reckon",
+  "review_run_id": "r-20261114T175823009851-review-of-wave4-clive-the-monitor-shows-the-wo-s100-5b76e7ff3394",
+  "reviewed_base_sha": "b4700c0d20e70b117969d8c907af78d11014ad72",
+  "reviewed_head_sha": "5b76e7ff3394aea61e5c34e28e66c1a12dbc2765",
+  "reviewed_run_id": "r-20261114T150124690549-wave4-clive-the-monitor-shows-the-wo-s100",
+  "scores": {
+    "durability": 15,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 18,
+    "scope_discipline": 13
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-14T18:55:56.577932+00:00",
+  "total": 99,
+  "verdicts": {
+    "diff": "read commit by commit against b4700c0d; 11 files, one commit, adding the waiting-bucket phase set, stuck counting through the producer's per-session fold, and the s cell.",
+    "done_when": "the manifest records the done-when test tests/test_the_pane_counts_parked_work.py passing plus two negative controls and the base/head arm pair recorded in baseline_suite/after_suite.",
+    "goal": "Deliver section s100 (waiting bucket includes every parked phase, stuck counted beside it) \u2014 user asked: 'the monitor shows the work it watches' \u2014 the diff at b4700c0d..5b76e7ff adds FLEET_PARKED_STATES and the s cell, matching the stated goal.",
+    "manifest": "read; status complete, local gate 69 passed exit 0, arms and negative controls recorded with log paths.",
+    "write_paths": "read the manifest's declared paths; source paths match, but seven sibling test files are edited outside them and reported under outside_scope."
+  }
+}

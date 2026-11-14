@@ -1,0 +1,108 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_audit": [
+    {
+      "fails_if": "The persisted aggregate is not indexed, a fixture terminal has its own run file, or an absent id is wrongly reported present; these establish positive and negative lookup controls.",
+      "lines": "tests/test_open_run_index_rebuilt_once_per_pass.py:41,42,45"
+    },
+    {
+      "fails_if": "The real Station.tick boundary fails to visit 50 fixture identities, returns a missing identity or rebuilds twice after the intervening ledger write; removing per-pass validation makes line 138 fail.",
+      "lines": "tests/test_open_run_index_rebuilt_once_per_pass.py:137,138"
+    },
+    {
+      "fails_if": "Any persisted identity is lost, fewer than 49 later reads execute, nested scopes reset validation or later reads issue BEGIN/schema/DML; restoring stale-per-lookup refresh changes observed rebuild counts and SQL traces.",
+      "lines": "tests/test_open_run_index_rebuilt_once_per_pass.py:169,174,178,179"
+    },
+    {
+      "fails_if": "A current lookup requests the existing connection helper without read_only=True, loses the present identity or bypasses/repeats the helper; restoring the original writer-opening _ensure trips line 193.",
+      "lines": "tests/test_open_run_index_rebuilt_once_per_pass.py:193,198,199"
+    },
+    {
+      "fails_if": "The child never enters its rebuild, a lookup falls back to historical ledger reads, known present/absent membership is wrong, reads wait for the child or exceed one second, or child rebuilding fails; restoring blocking rebuild acquisition violates timing/liveness and may hit the explicit history refusal.",
+      "lines": "tests/test_open_run_index_rebuilt_once_per_pass.py:226,229,234,235,237,240,249"
+    },
+    {
+      "fails_if": "Known present membership fails, stale reads rebuild inside the first scope or validation leaks across outer scopes and prevents the next rebuild; removing reuse fails line 260, while retaining the cache beyond the outer scope fails line 263.",
+      "lines": "tests/test_open_run_index_rebuilt_once_per_pass.py:257,259,260,262,263"
+    },
+    {
+      "fails_if": "Admission/review does not reach its patched first runtime hook, a known indexed id is lost or removing either operational_read decorator makes the two reads rebuild twice.",
+      "lines": "tests/test_open_run_index_rebuilt_once_per_pass.py:280,282,296,298"
+    }
+  ],
+  "assertion_independence": "No added assertion compares an implementation-supplied expected value with the same input echoed back: membership is grounded in the persisted aggregate and absent-id control, counts observe ledger.load calls, SQL is independently traced, and concurrency uses a separate process and monotonic time.",
+  "call_site_count": 6,
+  "call_sites": [
+    "reckon/crew/station.py:Station.tick:890",
+    "reckon/crew/admission/selection.py:admit_once:41",
+    "reckon/crew/recovery_review_dispatch.py:dispatch_review_for_run:3307",
+    "reckon/crew/recovery_review_dispatch.py:_open_review_refusal:2996",
+    "reckon/ledger.py:open_runs:4580",
+    "reckon/crew/open_run_index.py:has_row:584"
+  ],
+  "completed_at": "2026-11-14T18:32:56Z",
+  "dispatched_at": "2026-11-14T18:26:53Z",
+  "findings": [],
+  "gate_evidence": {
+    "after_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261114T141121908157-open-run-index-rebuilt-once-per-pass/after-final.log",
+    "after_summary": "58 passed in 10.67s",
+    "baseline_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261114T141121908157-open-run-index-rebuilt-once-per-pass/baseline-fixed.log",
+    "baseline_summary": "51 passed in 8.17s",
+    "negative_control_added_failure_count": 5,
+    "negative_control_failure_ids": [
+      "tests/test_open_run_index_rebuilt_once_per_pass.py::test_next_pass_revalidates_the_ledger",
+      "tests/test_open_run_index_rebuilt_once_per_pass.py::test_one_station_tick_rebuilds_at_most_once",
+      "tests/test_open_run_index_rebuilt_once_per_pass.py::test_operational_entrypoints_share_validation[admission]",
+      "tests/test_open_run_index_rebuilt_once_per_pass.py::test_operational_entrypoints_share_validation[review]",
+      "tests/test_open_run_index_rebuilt_once_per_pass.py::test_rebuilt_index_answers_later_stale_lookup_without_writing"
+    ],
+    "negative_control_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261114T141121908157-open-run-index-rebuilt-once-per-pass/negative-control-final.log",
+    "negative_summary": "5 failed, 53 passed in 10.59s",
+    "partition": "all_debug",
+    "partition_evidence": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261114T141121908157-open-run-index-rebuilt-once-per-pass/stream.jsonl",
+    "reproduction_quote": "one tick rebuilt 2 times; lookup waited 4.041s behind the rebuild"
+  },
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 6 production call site(s)",
+    "diff": "read 666203e7604626a49b77d31af3c96dcd002b71a4, 912d8b0b191fdd5ec60252bf73a21f24e683e616 and c970e70bf02161115c351bacf990a78d149b94ff against 4db790f722836f91495ea2abb5dcf57021602ba0; the changes implement index reuse, strengthen concurrency assertions and preserve the existing cache refusal fallback.",
+    "done_when": "dispatch-detail.json:admit_request.node.done_when is measured by tests/test_open_run_index_rebuilt_once_per_pass.py:123,141,215 and negative-control-final.log, with 50 lookups, one rebuild, 49 later write-free reads and two concurrent reads in 0.003 seconds on all_debug.",
+    "goal": "dispatch-detail.json:admit_request.node.goal requires at most one index rebuild per pass and no writes for current lookups; reckon/crew/open_run_index.py:291 and the operational boundaries implement both.",
+    "manifest": "manifest.md names three resolvable commits and completed baseline_suite/after_suite receipts; baseline-fixed.log records 51 passed and after-final.log records 58 passed with EXIT=0.",
+    "write_paths": "dispatch-detail.json:admit_request.node.write_paths contains reckon, the added test and the evidence fragment, and all five changed paths are within those grants."
+  },
+  "justifications": {
+    "durability": "tests/test_open_run_index_rebuilt_once_per_pass.py:138,179,193,237,240,260,263,298 fails on repeated rebuilds, writer requests, blocking reads or lost revalidation, and reinstating per-lookup validation produces five named failures in negative-control-final.log.",
+    "evidence": "tests/test_open_run_index_rebuilt_once_per_pass.py:137,179,226,240 measures the exact requested populations and transactions, and after-final.log plus negative-control-final.log records their passing and falsified results at the reviewed head.",
+    "fit": "reckon/crew/open_run_index.py:27,52,269,302 extends its existing ContextVar scope, connection helper and projection owner while admission/selection.py:41 and recovery_review_dispatch.py:3307 reuse the existing operational_read decorator with mechanism-based names.",
+    "goal_fidelity": "reckon/crew/open_run_index.py:52,297,302,322 shares validation across nested reads, opens current metadata read-only and declines a busy rebuild without waiting.",
+    "reuse": "reckon/crew/open_run_index.py:269 extracts its owner's existing freshness check and extends its existing read_scope/_connect mechanisms; the capability search and opened reckon/ledger.py:1067 and reckon/file_memo.py:46 show different historical-index and per-file memo owners rather than a duplicate open-run projection implementation.",
+    "scope_discipline": "the three production files, tests/test_open_run_index_rebuilt_once_per_pass.py and docs/evidence/fragments/work-flows-to-the-lane/open-run-index-rebuilt-once-per-pass.html all lie within dispatch-detail.json:admit_request.node.write_paths and directly serve the goal."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: dispatch-detail.json:admit_request.node.goal requires at most one index rebuild per pass and no writes for current lookups; reckon/crew/open_run_index.py:291 and the operational boundaries implement both.\nVERDICT done_when: dispatch-detail.json:admit_request.node.done_when is measured by tests/test_open_run_index_rebuilt_once_per_pass.py:123,141,215 and negative-control-final.log, with 50 lookups, one rebuild, 49 later write-free reads and two concurrent reads in 0.003 seconds on all_debug.\nVERDICT write_paths: dispatch-detail.json:admit_request.node.write_paths contains reckon, the added test and the evidence fragment, and all five changed paths are within those grants.\nVERDICT manifest: manifest.md names three resolvable commits and completed baseline_suite/after_suite receipts; baseline-fixed.log records 51 passed and after-final.log records 58 passed with EXIT=0.\nVERDICT diff: read 666203e7604626a49b77d31af3c96dcd002b71a4, 912d8b0b191fdd5ec60252bf73a21f24e683e616 and c970e70bf02161115c351bacf990a78d149b94ff against 4db790f722836f91495ea2abb5dcf57021602ba0; the changes implement index reuse, strengthen concurrency assertions and preserve the existing cache refusal fallback.\nCALL_SITES: reckon/crew/station.py:Station.tick:890, reckon/crew/admission/selection.py:admit_once:41, reckon/crew/recovery_review_dispatch.py:dispatch_review_for_run:3307, reckon/crew/recovery_review_dispatch.py:_open_review_refusal:2996, reckon/ledger.py:open_runs:4580, reckon/crew/open_run_index.py:has_row:584\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/open_run_index.py:52,297,302,322 shares validation across nested reads, opens current metadata read-only and declines a busy rebuild without waiting.\nSCORE evidence: 20\nJUSTIFICATION evidence: tests/test_open_run_index_rebuilt_once_per_pass.py:137,179,226,240 measures the exact requested populations and transactions, and after-final.log plus negative-control-final.log records their passing and falsified results at the reviewed head.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the three production files, tests/test_open_run_index_rebuilt_once_per_pass.py and docs/evidence/fragments/work-flows-to-the-lane/open-run-index-rebuilt-once-per-pass.html all lie within dispatch-detail.json:admit_request.node.write_paths and directly serve the goal.\nSCORE durability: 20\nJUSTIFICATION durability: tests/test_open_run_index_rebuilt_once_per_pass.py:138,179,193,237,240,260,263,298 fails on repeated rebuilds, writer requests, blocking reads or lost revalidation, and reinstating per-lookup validation produces five named failures in negative-control-final.log.\nSCORE fit: 20\nJUSTIFICATION fit: reckon/crew/open_run_index.py:27,52,269,302 extends its existing ContextVar scope, connection helper and projection owner while admission/selection.py:41 and recovery_review_dispatch.py:3307 reuse the existing operational_read decorator with mechanism-based names.\nSCORE reuse: 20\nJUSTIFICATION reuse: reckon/crew/open_run_index.py:269 extracts its owner's existing freshness check and extends its existing read_scope/_connect mechanisms; the capability search and opened reckon/ledger.py:1067 and reckon/file_memo.py:46 show different historical-index and per-file memo owners rather than a duplicate open-run projection implementation.\n",
+  "review_run_id": "r-20261114T182337723815-review-of-open-run-index-rebuilt-once-per-pass-c970e70bf021",
+  "reviewed_base_sha": "4db790f722836f91495ea2abb5dcf57021602ba0",
+  "reviewed_commits": [
+    "666203e7604626a49b77d31af3c96dcd002b71a4",
+    "912d8b0b191fdd5ec60252bf73a21f24e683e616",
+    "c970e70bf02161115c351bacf990a78d149b94ff"
+  ],
+  "reviewed_head_sha": "c970e70bf02161115c351bacf990a78d149b94ff",
+  "reviewed_run_id": "r-20261114T141121908157-open-run-index-rebuilt-once-per-pass",
+  "scores": {
+    "durability": 20,
+    "evidence": 20,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-14T18:31:23.362152+00:00",
+  "total": 120
+}

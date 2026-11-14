@@ -903,6 +903,44 @@ def _reflex_owns_review(project: str, pointer: Mapping[str, Any]) -> bool:
     return bool(state.get("live"))
 
 
+def _producer_lease(project: str, *, now: datetime) -> tuple[bool | None, int | None]:
+    """Whether a producer stands behind the project, and how old its silence is.
+
+    The lease is the one liveness the coordinator hook reads for the same
+    question (:func:`reckon.hooks.coordinator_obligations.producer_lease_is_live`):
+    the producer writes it when it takes the seat and each live follower renews
+    it on its wait pass, so a renewal inside one lease interval is a staffed
+    project. The age beside the verdict is how long nothing has swept.
+
+    A project with no renewal recorded at all has never seated a producer
+    that published one, so there is no silence to age. ``None`` says that, and
+    the caller keeps the liveness it has already established for the run
+    rather than declaring a producer down over a record never written.
+    """
+    renewed = runs.watch_lease_renewed_at(project)
+    if renewed is None:
+        return None, None
+    age = max(0, int(now.timestamp() - renewed))
+    return age < runs.producer_lease_seconds(), age
+
+
+def _producer_down_command(project: str, *, age: int) -> str:
+    """The next action while no producer is live to sweep this run's review.
+
+    An armed follower's reflex is staffed by the project's producer: the review
+    pass runs inside its sweep, so with no producer the promised window holds
+    nothing and would keep promising on every turn until the row went stale.
+    The age is the interval the lease has stood still, which is how long nothing
+    has been sweeping.
+    """
+    return (
+        "the producer is down: its lease has not been renewed for "
+        f"{_overdue_figure(age)}, so no sweep will compose this run's "
+        "review; arm it again with: "
+        f"`reckon crew watch --ensure --project {project}`"
+    )
+
+
 def _reflex_review_window_seconds() -> int:
     """The window a duty may expect the reflex's next sweep within.
 
@@ -1359,7 +1397,32 @@ def _classified_rows(project: str) -> list[dict[str, Any]]:
             and str(pointer.get("phase") or "") == queue_admission.QUEUED_PHASE
         ):
             subject = {**pointer, "phase": ""}
-        row = recovery.classify_pointer(subject)
+        try:
+            row = recovery.classify_pointer(subject)
+        except Exception as error:  # noqa: BLE001 - one run must not fail the fleet
+            # A classification that raises would otherwise take the whole
+            # project's derivation with it, so no session's obligations are
+            # published and every reader serves a snapshot hours old. A run
+            # whose pointer is gone ended while it was being read, and owes
+            # nothing; one still present is shown unreadable, naming the error,
+            # so the failure reaches its coordinator instead of hiding.
+            run_id = str(pointer.get("run_id") or "")
+            if not run_id or not runs.pointer_path(run_id).exists():
+                continue
+            print(
+                f"obligations-classify-failure: {run_id}: {error!r}",
+                file=sys.stderr,
+                flush=True,
+            )
+            row = {
+                "run_id": run_id,
+                "session": str(pointer.get("session") or ""),
+                "project": str(pointer.get("project") or ""),
+                "node": str((pointer.get("node") or {}).get("id") or ""),
+                "classification": "blocked",
+                "recovery_classification": "unreadable",
+                "detail": f"the run could not be classified: {error}",
+            }
         refusal = _queued_contract_refusal(pointer, row)
         if refusal is not None:
             row["contract_refusal"] = refusal
@@ -2536,20 +2599,35 @@ def _review_duty_item(
         elif _reflex_owns_review(project, pointer):
             # One actor owns review dispatch. While an armed follower will
             # compose this review, the duty names that reflex and the window
-            # its cadence promises, as a field beside the words so a reader
+            # its cadence promises, as a field beside the reflex so a reader
             # deciding whether to act reads the same figure the text quotes.
-            # A reflex already refused is not a wait, so once its window has
+            #
+            # The reflex runs inside the producer's sweep, so an armed follower
+            # with no producer is a staffed session and an unstaffed project,
+            # and the promise of a window holds nothing: a lease nothing has
+            # renewed is the producer's own silence, read by the rule the
+            # reflex reads it with, so the duty states that silence with the
+            # age it has stood still and names the command that arms a producer
+            # again. A reflex already refused is not a wait, so once its window
             # passed the duty carries the refusal's own reason and the dispose
             # command that lifts it instead of a follower to inspect.
-            held = _reflex_open_refusal(
-                project,
-                pointer,
-                age=age,
-                dispatch=str(item.get("next_command") or ""),
+            producer_live, producer_age = _producer_lease(project, now=now)
+            held = (
+                _reflex_open_refusal(
+                    project,
+                    pointer,
+                    age=age,
+                    dispatch=str(item.get("next_command") or ""),
+                )
+                if producer_live is not False
+                else None
             )
             if held is not None:
                 item["reason"] = held["reason"]
                 item["next_command"] = held["next_command"]
+            elif producer_live is False:
+                item["next_command"] = _producer_down_command(project, age=producer_age)
+                item["producer_down_seconds"] = producer_age
             else:
                 # The row's own action is the dispatch this duty replaces only
                 # while the reflex still owns it inside the window; past the

@@ -1,0 +1,107 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "after_failure_count": 0,
+  "baseline_failure_count": 2,
+  "baseline_failure_ids": [
+    "tests/test_staged_write_inventory.py::test_claim_move_aside_is_not_a_staged_write",
+    "tests/test_staged_write_inventory.py::test_every_staged_write_reaches_the_owner"
+  ],
+  "call_site_count": 18,
+  "call_sites": [
+    "reckon/_store.py:_serialized_path_lock at reckon/_store.py:414",
+    "reckon/_store.py:1460",
+    "reckon/_store.py:1593",
+    "reckon/_store.py:2584",
+    "reckon/crew/gate_watch.py:156",
+    "reckon/crew/gate_watch.py:179",
+    "reckon/crew/plan_review.py:1210",
+    "reckon/compliance.py:_write_entries at reckon/compliance.py:290",
+    "reckon/compliance.py:328",
+    "reckon/compliance.py:332",
+    "reckon/crew/review_records.py:_index_lock at reckon/crew/review_records.py:2141",
+    "reckon/crew/review_records.py:2229",
+    "reckon/crew/review_records.py:2347",
+    "reckon/crew/dispatch_peer.py:_update_peer_index at reckon/crew/dispatch_peer.py:257",
+    "reckon/crew/dispatch_peer.py:258",
+    "reckon/crew/dispatch_peer.py:262",
+    "reckon/crew/dispatch_peer.py:263",
+    "reckon/crew/dispatch_peer.py:274"
+  ],
+  "completed_at": "2026-11-14T19:37:10.724Z",
+  "dispatched_at": "2026-11-14T19:15:41Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "exempted",
+      "reason": "a one-caller path helper that names what it derives; inlining it changes no behaviour and is not worth a repair round on a lock migration",
+      "recorded_at": "2026-11-14T20:17:47.214424+00:00"
+    },
+    "1": {
+      "kind": "exempted",
+      "reason": "the delta claim the evidence makes (no added ruff findings) holds on re-measurement; only the absolute pre-existing count is off (20 stated, 14 measured)",
+      "recorded_at": "2026-11-14T20:17:56.721678+00:00"
+    },
+    "2": {
+      "kind": "exempted",
+      "reason": "log-header format only; the manifest records the revision and command of each arm",
+      "recorded_at": "2026-11-14T20:18:04.596570+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "reckon/compliance.py",
+      "line": "142",
+      "severity": "non-blocking",
+      "text": "non-blocking: _lock_path has exactly one caller, _write_entries at reckon/compliance.py:184, so the brief's condition for keeping the path derivation rather than inlining it is not met and a one-caller indirection survives the migration."
+    },
+    {
+      "file": "docs/evidence/fragments/every-shared-home-lock-holds-across-nodes/store-and-review-index-locks-cross-node.html",
+      "line": "39",
+      "severity": "non-blocking",
+      "text": "non-blocking: the record states the four modules carry 20 pre-existing ruff findings at base and the pinned ruff 0.16.4 re-measures 14 at 65431adf17 and 14 at 6cf4f73a7a, so the delta claim holds but the absolute figure in the delivered evidence does not."
+    },
+    {
+      "file": "logs/head-arm.log",
+      "line": "1",
+      "severity": "non-blocking",
+      "text": "non-blocking: the focused head arm's first line is \"# arm: head\" rather than naming the revision, tree and command on one line as the manifest contract states, so a reader keying on the first line cannot tell which revision the log ran at."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 18 production call site(s)",
+    "diff": "read both commits against 65431adf17; commit 899b8988db migrates the four sites, deletes compliance._locked in favour of a lock-path derivation, updates the review_records docstring, drops four guard rows and adds the new test file, and commit 6cf4f73a7a adds the evidence fragment, with nothing changed outside the declared scope.",
+    "done_when": "judged against the coordinator brief's split, which assigns four of the plan's nine section-4 locks to this node, the four pending rows are gone from tests/test_every_shared_home_lock_holds_across_nodes.py:66-79, tests/test_store_and_review_index_locks_hold_across_nodes.py holds the cross-process record-lock measurement for two of the four sites, the docstring at reckon/crew/review_records.py:1951 describes the lock taken, and the manifest records the focused gate, its base arm and the negative control.",
+    "goal": "the node goal is to move the persisted-store, compliance, review-index and peer-index locks onto the cross-node lock, and reckon/_store.py:407, reckon/compliance.py:184, reckon/crew/review_records.py:1970 and reckon/crew/dispatch_peer.py:221 each now take reckon.node_exclusive_lock.exclusive_lock instead of flock.",
+    "manifest": "read; it reports 2 passed at head and 2 failed at base for the new tests, 109 passed with 1 pre-existing failure for the 11-file focused gate, and 57 passed for the promotion suite arm, each naming its log.",
+    "write_paths": "read the manifest's orientation_write_paths and the node prompt's fence; the seven changed paths all fall inside them, including the evidence fragment the manifest declares."
+  },
+  "justifications": {
+    "durability": "reinstating the lockf take-removal in a scratch copy of reckon/node_exclusive_lock.py turns tests/test_store_and_review_index_locks_hold_across_nodes.py red with 2 failed, so the added assertions fail on the regression they guard, while the compliance and peer-index sites rest on the static guard alone.",
+    "evidence": "tests/test_store_and_review_index_locks_hold_across_nodes.py is recorded green at 6cf4f73a7a in logs/head-arm.log and red at 65431adf17 in logs/negative-control-base.log, though the base focused arm at logs/base-arm.log carries two scaffolding errors and the focused head log's first line is not the revision line.",
+    "fit": "the migration follows the existing property_state.py:322 use of the same helper, the review_records docstring at reckon/crew/review_records.py:1951 is updated to the lock actually taken, and no added name carries a plan or ticket label.",
+    "goal_fidelity": "reckon/_store.py:407 and reckon/compliance.py:184 and reckon/crew/review_records.py:1970 and reckon/crew/dispatch_peer.py:221 all take exclusive_lock, and the answer each caller gets when the lock is unavailable is preserved by reckon/crew/review_records.py:1966-1974.",
+    "reuse": "the search over reckon/ for a shared-home lock capability found reckon/node_exclusive_lock.exclusive_lock as the owner, and every migrated site calls it rather than adding a second implementation.",
+    "scope_discipline": "every path in git diff --stat 65431adf17..6cf4f73a7a is inside the manifest's declared orientation_write_paths, and no changed file carries work the goal does not imply."
+  },
+  "project": "reckon",
+  "raw_text": "reviewed_base_sha: 65431adf17b56c3a1fb04f32971d7729e4108dcc\nreviewed_head_sha: 6cf4f73a7af78df2c32ffe616ce78cc848492c12\nVERDICT goal: the node goal is to move the persisted-store, compliance, review-index and peer-index locks onto the cross-node lock, and reckon/_store.py:407, reckon/compliance.py:184, reckon/crew/review_records.py:1970 and reckon/crew/dispatch_peer.py:221 each now take reckon.node_exclusive_lock.exclusive_lock instead of flock.\nVERDICT done_when: judged against the coordinator brief's split, which assigns four of the plan's nine section-4 locks to this node, the four pending rows are gone from tests/test_every_shared_home_lock_holds_across_nodes.py:66-79, tests/test_store_and_review_index_locks_hold_across_nodes.py holds the cross-process record-lock measurement for two of the four sites, the docstring at reckon/crew/review_records.py:1951 describes the lock taken, and the manifest records the focused gate, its base arm and the negative control.\nVERDICT write_paths: read the manifest's orientation_write_paths and the node prompt's fence; the seven changed paths all fall inside them, including the evidence fragment the manifest declares.\nVERDICT manifest: read; it reports 2 passed at head and 2 failed at base for the new tests, 109 passed with 1 pre-existing failure for the 11-file focused gate, and 57 passed for the promotion suite arm, each naming its log.\nVERDICT diff: read both commits against 65431adf17; commit 899b8988db migrates the four sites, deletes compliance._locked in favour of a lock-path derivation, updates the review_records docstring, drops four guard rows and adds the new test file, and commit 6cf4f73a7a adds the evidence fragment, with nothing changed outside the declared scope.\nCALL_SITES: reckon/_store.py:_serialized_path_lock at reckon/_store.py:414, reckon/_store.py:1460, reckon/_store.py:1593, reckon/_store.py:2584, reckon/crew/gate_watch.py:156, reckon/crew/gate_watch.py:179, reckon/crew/plan_review.py:1210, reckon/compliance.py:_write_entries at reckon/compliance.py:290, reckon/compliance.py:328, reckon/compliance.py:332, reckon/crew/review_records.py:_index_lock at reckon/crew/review_records.py:2141, reckon/crew/review_records.py:2229, reckon/crew/review_records.py:2347, reckon/crew/dispatch_peer.py:_update_peer_index at reckon/crew/dispatch_peer.py:257, reckon/crew/dispatch_peer.py:258, reckon/crew/dispatch_peer.py:262, reckon/crew/dispatch_peer.py:263, reckon/crew/dispatch_peer.py:274\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/_store.py:407 and reckon/compliance.py:184 and reckon/crew/review_records.py:1970 and reckon/crew/dispatch_peer.py:221 all take exclusive_lock, and the answer each caller gets when the lock is unavailable is preserved by reckon/crew/review_records.py:1966-1974.\nSCORE evidence: 17\nJUSTIFICATION evidence: tests/test_store_and_review_index_locks_hold_across_nodes.py is recorded green at 6cf4f73a7a in logs/head-arm.log and red at 65431adf17 in logs/negative-control-base.log, though the base focused arm at logs/base-arm.log carries two scaffolding errors and the focused head log's first line is not the revision line.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every path in git diff --stat 65431adf17..6cf4f73a7a is inside the manifest's declared orientation_write_paths, and no changed file carries work the goal does not imply.\nSCORE durability: 18\nJUSTIFICATION durability: reinstating the lockf take-removal in a scratch copy of reckon/node_exclusive_lock.py turns tests/test_store_and_review_index_locks_hold_across_nodes.py red with 2 failed, so the added assertions fail on the regression they guard, while the compliance and peer-index sites rest on the static guard alone.\nSCORE fit: 18\nJUSTIFICATION fit: the migration follows the existing property_state.py:322 use of the same helper, the review_records docstring at reckon/crew/review_records.py:1951 is updated to the lock actually taken, and no added name carries a plan or ticket label.\nSCORE reuse: 20\nJUSTIFICATION reuse: the search over reckon/ for a shared-home lock capability found reckon/node_exclusive_lock.exclusive_lock as the owner, and every migrated site calls it rather than adding a second implementation.\nFINDING reckon/compliance.py:142 non-blocking: _lock_path has exactly one caller, _write_entries at reckon/compliance.py:184, so the brief's condition for keeping the path derivation rather than inlining it is not met and a one-caller indirection survives the migration.\nFINDING docs/evidence/fragments/every-shared-home-lock-holds-across-nodes/store-and-review-index-locks-cross-node.html:39 non-blocking: the record states the four modules carry 20 pre-existing ruff findings at base and the pinned ruff 0.16.4 re-measures 14 at 65431adf17 and 14 at 6cf4f73a7a, so the delta claim holds but the absolute figure in the delivered evidence does not.\nFINDING logs/head-arm.log:1 non-blocking: the focused head arm's first line is \"# arm: head\" rather than naming the revision, tree and command on one line as the manifest contract states, so a reader keying on the first line cannot tell which revision the log ran at.",
+  "review_run_id": "r-20261114T191234937350-review-of-store-and-review-index-locks-cross-node-6cf4f73a7af7",
+  "reviewed_base_sha": "65431adf17b56c3a1fb04f32971d7729e4108dcc",
+  "reviewed_head_sha": "6cf4f73a7af78df2c32ffe616ce78cc848492c12",
+  "reviewed_run_id": "r-20261114T140031957329-store-and-review-index-locks-cross-node",
+  "scores": {
+    "durability": 18,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-14T20:16:46.128430+00:00",
+  "total": 111
+}

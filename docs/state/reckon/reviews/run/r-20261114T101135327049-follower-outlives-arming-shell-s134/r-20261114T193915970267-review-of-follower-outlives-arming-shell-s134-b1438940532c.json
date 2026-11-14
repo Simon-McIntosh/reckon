@@ -1,0 +1,75 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/crew_follow_commands.py:1927 (_check_consumer on the follower's wait pass)",
+    "reckon/crew_follow_commands.py:3766 (BrokenPipeError catch around the follow stream)",
+    "reckon/crew/session_host.py:376 (builds the crew follow argv the host runs)",
+    "reckon/crew/follower_registration.py:137 (_pipe_reader_pids, the read-end walk the probe calls)",
+    "reckon/crew/watch_unit.py:1621 (launches follow)"
+  ],
+  "completed_at": "2026-11-14T20:01:30.734Z",
+  "dispatched_at": "2026-11-14T19:45:17Z",
+  "findings": [
+    {
+      "file": "reckon/crew_follow_commands.py",
+      "line": "2694",
+      "severity": "blocking",
+      "text": "_stdout_has_reader answers True for every descriptor that is neither regular nor a FIFO, so a terminal and /dev/null both count as 'a reader'. /dev/null has no reader at all, and session_host.py:376 launches followers with no --lifetime (its module docstring, lines 11-13, says the follower's stdout is the host's), so a follower that outlives a dead owner with such a stdout never ends, keeps the session's registration and refuses every dispatch from that session watcher-required - the outcome _check_consumer's docstring at :1727 says this branch preserves. The sibling guards arm the follower with a regular-file stdout (test_orphaned_follower_releases.py:73-89, test_follower_checks_its_owner.py:_STUB), so no test covers the char-device branch."
+    },
+    {
+      "file": "reckon/crew_follow_commands.py",
+      "line": "1727",
+      "severity": "non-blocking",
+      "text": "the _check_consumer docstring still states 'An arming whose output goes to a file or a terminal keeps the owner-only rule', which is the opposite of what the code does since c7de78b608: _stdout_has_reader returns True for any non-FIFO descriptor, terminals included. The function's own docstring says terminals answer yes, so the two docstrings in the same change contradict each other and the safety rationale a reader relies on is the false one."
+    },
+    {
+      "file": "reckon/crew/follower_registration.py",
+      "line": "198",
+      "severity": "non-blocking",
+      "text": "delivery_mode (and _descriptor_kind at :161 with DELIVERING_MODES) already classify what consumes a process's stdout, and _trace_delivery at :173 already follows a pipe to the pids on its read end with a TTL'd cache. _stdout_has_reader adds a second classifier of the same capability rather than extending that owner: it re-implements the kind rule with stat.S_ISREG/stat.S_ISFIFO and re-derives its own reader answer, and it reaches into the owner only for the private _pipe_reader_pids (:137). It does not extend the owner; it duplicates its classification with a deliberately different policy (any process holding the read end rather than the end of the chain)."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261114T101135327049-follower-outlives-arming-shell-s134/manifest.md",
+      "line": "14",
+      "severity": "blocking",
+      "text": "negative_control_log carries a path plus a quoted description and two further paths on one line, so it is not the bare path the manifest contract requires. `reckon crew check --manifest --run r-20261114T101135327049-follower-outlives-arming-shell-s134` refuses on it: \"negative_control_log 'scratch/negative-control.log (owner-only check restored: 1 failed); also scratch/negative-control-base.log and scratch/negative-control-repair.log' does not resolve to a readable log file\". The red log exists at scratch/negative-control.log (1 failed, EXIT=1), so the repair is to name that path alone."
+    },
+    {
+      "file": "docs/evidence/fragments/the-monitor-shows-the-work-it-watches/follower-outlives-arming-shell-s134.html",
+      "line": "51",
+      "severity": "non-blocking",
+      "text": "the fragment cites the ruff result as a done-when receipt, but the only ruff log (scratch/ruff-head.log) is headed 'ee25b58b3cd5 + repair working tree', so it predates the final source change in c7de78b608 and is not a head-revision receipt. Re-running ruff check on the head files confirms the claim itself: 2 findings, SIM103 at reckon/crew_follow_commands.py:98 and SIM115, both outside the introduced block and both present at base."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261114T101135327049-follower-outlives-arming-shell-s134/manifest.md",
+      "line": "30",
+      "severity": "non-blocking",
+      "text": "the recorded observation that 'in both cases of the new test the owner/reader probe is never called' is not supportable and understates the coverage it claims to lack: the negative control at scratch/negative-control.log restores the owner-only branch and reddens the first case, which can only differ from the head at the _stdout_has_reader call (:1750), so that call is reached in both arms of that comparison."
+    }
+  ],
+  "project": "reckon",
+  "review_run_id": "r-20261114T193915970267-review-of-follower-outlives-arming-shell-s134-b1438940532c",
+  "reviewed_base_sha": "47d4d536120a2e6d4356124856be6285061e6806",
+  "reviewed_head_sha": "b1438940532c79927aa207afd76ea583a2b5fbaa",
+  "reviewed_run_id": "r-20261114T101135327049-follower-outlives-arming-shell-s134",
+  "scores": {
+    "durability": 13,
+    "evidence": 16,
+    "fit": 14,
+    "goal_fidelity": 13,
+    "reuse": 8,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-14T20:40:00.446343+00:00",
+  "total": 83,
+  "verdicts": {
+    "diff": "read commit by commit from 47d4d536 to b1438940: 2bcfdec2f5 adds the reader substitution and the test, ee25b58b3c records the evidence, 686080dde6 judges re-parenting against the recorded owner and renames owner_alive to owner_running, c7de78b608 widens the kind rule to sockets and terminals, b143894053 adds the population arms to the fragment; three files, 470 insertions.",
+    "done_when": "the done_when names tests/test_a_follower_with_a_reader_outlives_its_arming_shell.py, the two sibling guard files, a base arm and a negative control; scratch/head-gate-partition.log records 60 passed EXIT=0 at b1438940 on all_debug (job 1315731), scratch/base-arm.log records 1 failed EXIT=1 at 47d4d536, scratch/negative-control.log records 1 failed EXIT=1, and the two population arms record 14 failed / 516 passed with identical ids and EXIT=1.",
+    "goal": "the goal is a follower whose arming shell has exited keeps streaming while its stdout still has a reader; reckon/crew_follow_commands.py:1750 now ends the arming only when _stdout_has_reader (:2660) reports no reader, which delivers the plan's pipe reproduction but also answers yes for char devices with no reader (_/dev/null_ at :2694).",
+    "manifest": "read in full: it records two commits-and-two-docs worth of arms, both suite records with failure_count, both population arms and a subreaper experiment recorded as non-discriminating, but its negative_control_log line is not a bare path and `reckon crew check --manifest` refuses the record on that line and on two logs lacking an EXIT= line.",
+    "write_paths": "the source node declared reckon/crew_follow_commands.py, the new test file, the evidence fragment and a figures directory; the diff touches only the first three, all inside the declared set."
+  }
+}

@@ -1357,7 +1357,7 @@ def _queue_dispatch_batch(
     help=(
         "Why this node's time budget needs more wall clock than the resolved "
         "fence allows, e.g. a measured gate the fence predates. Recorded on "
-        "the node and its run record; without it an over-fence budget is refused."
+        "the node and its run record beside the over-fence note. This reason is optional."
     ),
 )
 @click.option(

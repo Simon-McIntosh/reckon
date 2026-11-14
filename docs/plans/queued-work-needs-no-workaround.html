@@ -135,7 +135,7 @@
 <p><strong>Deliverable.</strong> The roadmap's ready set, batch dispatch and admission all treat a section's node as not ready while that node has a live, delivered, promoted or landed implementation run, and say which run holds it. The hold is per node: a section split on purpose into several nodes (as reckon-02 split a context-fit section into three) keeps its other nodes ready while one is in flight or landed. The roadmap reports a section declared done whose run never landed as a wiring finding, naming the run.</p>
 <p><strong>Done when.</strong> Tests with a temporary repository and crew home show the following:</p>
 <ul>
-  <li>A section with a promoted run is absent from <code>ready_sections</code>.</li>
+  <li>A section whose only node has a promoted run is absent from <code>ready_sections</code>, and a section with a second node not yet queued stays listed.</li>
   <li>A batch entry for the same node is answered as held by that run, not queued, while an entry for a second node of the same section is queued.</li>
   <li>A done section whose run's head is not on the integration branch yields the finding.</li>
 </ul>
@@ -157,6 +157,7 @@
   <li>A request naming a not-yet-existing input is queued, and is refused at release if the input is still missing.</li>
   <li>A codex-routed awaiting-upstream request launches when its upstream lands.</li>
   <li>A request waiting on a landed section is released while a promoted review pointer of that section is still live.</li>
+  <li>The ledger row a promotion writes for an implementation run carries its plan slug.</li>
 </ul>
 <p>Negative control: against the base revision, the first request stays parked, and the failing run is logged.</p>
 
@@ -193,6 +194,8 @@
   <li><code>crew resume --advice</code> during the hold is accepted.</li>
   <li>A reservation naming a dead pid, and one naming a host whose lease has expired, are both released on read. One naming a host whose lease is fresh is kept.</li>
   <li>A resume mark whose attempt has a result record does not hold review dispatch.</li>
+  <li>A coordinator resume with advice, sent while an automatic repair round holds its reservation without a worker, launches the coordinator's advice and records the repair round superseded.</li>
+  <li>Every resume, automatic or coordinator, writes one transition row a follower prints.</li>
 </ul>
 <p>Negative control: the advice-hold case against the base revision refuses the resume, and the failing run is logged.</p>
 
@@ -268,7 +271,7 @@
 <section data-reckon="section" data-id="s15" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="implementable" data-links=""></section>
 <p><strong>Why.</strong> Defects D98, D99 and D105. <code>archived: true</code> fails with a raw schema error while the string <code>"1"</code> works. A followup append requires <code>written_at</code> and <code>written_by</code>, which the reckon-edit examples omit. A sprint append refuses a committed plan until some state write registers it.</p>
 <p><strong>Deliverable.</strong> Boolean and string spellings of a flag are both accepted. A followup append defaults its author and date. A sprint append resolves any committed plan with valid metadata.</p>
-<p><strong>Done when.</strong> Tests drive the three cases through the MCP edit tool against a temporary project and read the written plan or sprint. Negative control: <code>archived: true</code> against the base revision fails with the schema error, and the failing run is logged.</p>
+<p><strong>Done when.</strong> Tests drive the three cases through the MCP edit tool against a temporary project and read the written plan or sprint, one test per case. Negative controls, one per case, each run against the base revision and logged: <code>archived: true</code> fails with the schema error; a followup append without author and date is refused; a sprint append naming a committed plan with no state write is refused.</p>
 
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
