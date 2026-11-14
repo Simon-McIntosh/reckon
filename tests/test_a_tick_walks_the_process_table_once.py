@@ -308,7 +308,7 @@ def test_one_pass_walks_the_table_once(
         )
         assert head_walks == 1, (
             f"one live-work pass over {POINTERS} terminal pointers walked the"
-            f" process table {head_walks} times",
+            f" process table {head_walks} times"
         )
 
         # The populations the base revision returns, measured by neutralising
