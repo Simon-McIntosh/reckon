@@ -25,7 +25,7 @@
   <title>The Monitor Reads Each Fact Once | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="261">
+<meta name="plan-version" content="262">
 <meta name="plan-modified" content="2026-11-14">
 </head>
 <body>
@@ -1131,6 +1131,9 @@ staged paths.</p>
 </div>
 <div class="r-comment" data-section="s45" data-id="c-run-r-20261113T082959041438-the-review-store-is-indexed-by-its-writers" data-who="reckon-build" data-when="2026-11-13T17:57:21Z">
     <div class="r-comment-body"><p>The review store keeps exactly one index -- the document its writers maintain under a lock on the shared home -- and every staging-store read answers from it: a run's records, the per-tick store view, the non-tick path listing, the changed-run query, the station's misfiled-review candidate search and stored_record list nothing and stat no record outside the one run they select, where the pre-change readers on the station's main thread listed and stat'ed every record of the store.</p></div>
+</div>
+<div class="r-comment" data-section="s45" data-id="c-s45-population-break" data-who="reckon-build" data-when="">
+    <div class="r-comment-body"><p>§45's head <code>6cd3459136</code> was promoted (<code>36090968f3</code>) but is not on main. Its gate measured only its own test file and the staged-write inventory. Over the 331 test files that import <code>review_records</code>, <code>open_run_index</code>, <code>review</code>, <code>plan_review</code> or <code>station_subscriber</code>, the head adds 240 failures against its base <code>eb36ed6177</code> (368 failed and 41 errors, against 167 and 3), run as all_debug jobs 1314911 and 1314912. Merging it onto main <code>6ff4f572a2</code> adds the same 240, so the peer rework <code>a8ee186927</code> is not the cause. Several failures are the review's findings 1 and 2 seen live: a record written outside <code>record_written</code> is invisible to the index's readers. The repair node <code>r-20261114T090705769742-the-review-store-index-keeps-the-suite-green</code> builds on the merge <code>9176942392</code>. Arm logs are under <code>~/.cache/reckon-landing/s45-pop/</code>.</p></div>
 </div>
 <div class="r-comment" data-section="s5" data-id="c-run-r-20261023T170707287094-the-station-store-is-node-local" data-who="reckon-build" data-when="2026-10-23T18:59:58Z">
     <div class="r-comment-body"><p>station_store adds the node-local SQLite store at the node-local runtime root: pointer and stream identity is file_memo.file_signature's, day files hold the events and an out-of-window day file is unlinked with its rows, and a root reached only through TMPDIR or on a shared mount is refused; tests/test_the_station_store_is_node_local.py is 15 passed EXIT=0, and both declared mutations turn their case red (1 failed and 8 failed).</p></div>
