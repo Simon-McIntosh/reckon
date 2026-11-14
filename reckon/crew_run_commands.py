@@ -2399,7 +2399,9 @@ def _record_resumed_time_budget(
     "--ready", is_flag=True, help="Resume every newly ready run in a project."
 )
 @click.option(
-    "--reopen", is_flag=True, help="Reopen a completed run before resuming it."
+    "--reopen",
+    is_flag=True,
+    help="Reopen a halted or completed run before resuming it.",
 )
 @click.option(
     "--write-path",
@@ -2467,7 +2469,7 @@ def crew_resume(
     """Resume one stopped run, every ready run, or a run on another backend.
 
     The ready sweep answers provider holds and declared external waits.
-    Reopening grants paths and repairs a completed delivery before its session
+    Reopening optionally grants paths and repairs a stopped delivery before its session
     continues; a backend move may choose the lane's declared model. A resume
     may state a new allowance with ``--time-budget``, recorded on the run so
     the attempt it launches is judged against that clock rather than the one
@@ -2508,15 +2510,13 @@ def crew_resume(
             "--time-budget is recorded on the run; it cannot be previewed with "
             "--print-only"
         )
-    if reopen and (not write_paths or backend or print_only):
-        raise click.UsageError(
-            "--reopen needs --write-path and cannot combine with --backend or --print-only"
-        )
+    if reopen and (backend or print_only):
+        raise click.UsageError("--reopen cannot combine with --backend or --print-only")
     if reopen and advice:
         # The reopen starts nothing, so there is no turn for advice to enter.
         # Accepting it would look like it had been delivered.
         raise click.UsageError(
-            "--advice starts a resume; --reopen only widens a completed run. "
+            "--advice starts a resume; --reopen prepares a halted or completed run. "
             "Reopen first, then resume with the advice in a separate call"
         )
     if not advice and not reopen:
@@ -2533,15 +2533,8 @@ def crew_resume(
         if reopen:
             from reckon.crew.resumption import reopen_run
 
-            if str(record.get("phase") or "") != "complete" and (
-                _manifest_reported_status(record) != "complete"
-            ):
-                raise click.ClickException("--reopen requires a completed run")
-            # A reopen answers a caller asking for a wider boundary, not one
-            # asking for work. Launching here spent an attempt on advice
-            # composed for a state the run had left. The grant is made and
-            # reported, and any advice a refused resume left waiting is named
-            # for the resume the caller starts next.
+            # Reopening prepares the stopped delivery and any scope grant;
+            # the caller's next resume supplies the instructions to execute.
             _emit_crew_result(
                 reopen_run(run_id, list(write_paths), reason=reason), pretty
             )
