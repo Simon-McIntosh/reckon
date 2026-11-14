@@ -147,6 +147,9 @@ def test_a_ledger_run_attributes_an_item_to_its_plan(store, monkeypatch):
     item = _item(store["reports"], "hand-filed-topic", 29)
     run_id = "r-20260101T000000000000-a-run"
     (item / run_id).mkdir()
+    # The run directory is a fresh write inside the item, so age the item again
+    # and leave attribution as the only variable this case tests.
+    _age(item, 29)
 
     monkeypatch.setattr(
         "reckon.ledger.runs",
@@ -298,18 +301,25 @@ def _snapshot(root: Path) -> dict[str, tuple[int, int]]:
     return snapshot
 
 
-def _real_reports_root() -> Path:
-    return real_store_home() / "crew" / "reports"
+def _real_project_root() -> Path:
+    return real_store_home() / "crew" / "reports" / PROJECT
 
 
 def test_the_real_crew_home_is_untouched(store):
     """A sweep in the synthetic home leaves the operator's own store identical."""
     real_store_is_not_a_fixture_target(store["home"])
-    root = _real_reports_root()
-    before = _snapshot(root)
+    # Scoped to this project's path rather than the whole store: peer sessions
+    # write the operator's reports store while this runs, and their work is not
+    # this case's subject.
+    real_project = _real_project_root()
+    before = _snapshot(real_project)
 
     _item(store["reports"], "aged-away", 40)
     rows = _sweep(apply=True)
 
     assert any(row["removed"] for row in rows), "the sweep must have removed something"
-    assert _snapshot(root) == before
+    assert _snapshot(real_project) == before
+    touched = {Path(row["path"]) for row in rows}
+    assert not any(
+        path == real_project or path.is_relative_to(real_project) for path in touched
+    )
