@@ -25,6 +25,8 @@
   <title>Every shared-home lock holds across nodes | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
+<meta name="plan-version" content="1">
+<meta name="plan-modified" content="2026-11-14">
 </head>
 <body>
   <main class="plan-doc">
@@ -39,7 +41,7 @@
   <li>the ledger write lock;</li>
   <li>the placement reservation.</li>
 </ul>
-<p>Today the fleet node and the login node both run crew commands, and the admit service can run on either.</p>
+<p>Today the fleet node and the login node both run crew commands, and the admit service can run on either. That is not hypothetical. From about 13:10Z on 2026-11-13 until job 1291586 was cancelled at 07:42Z on 2026-11-14, a station and a local-lane admit service ran on both <code>98dci4-clu-2023</code> and <code>98dci4-clu-2001</code>, and the two split one promotion queue. Two coordinator sessions had a <code>crew complete --wait</code> on clu-2001 refused because the run was "already being promoted by host 98dci4-clu-2023" (reported by the reckon monitor session).</p>
 <p>The coordinator re-read the tree at <code>03b18d9</code> on 2026-11-14 and found 45 sites, two of them new:</p>
 <ul>
   <li><code>review_records._index_lock</code>, added the day before, guards the review store index. Its docstring says the lock "serialises against every other node's writer", which the census disproved for <code>flock</code>. This makes 21 shared-home sites.</li>
@@ -78,9 +80,10 @@
       <li>adding an entry for a function with no <code>flock</code> fails the test, naming the stale entry.</li>
     </ul>
   </li>
+  <li>The guard is declared among the project's census tests, so it runs inside the scoped gate command of every node that writes product source, not only in a full-suite run. The manifest shows a scoped gate command composed for a product-source node that carries the guard.</li>
   <li>The new file passes <code>ruff check</code> and <code>ruff format --check</code>.</li>
 </ul>
-<p><strong>Write paths.</strong> <code>tests/test_every_shared_home_lock_holds_across_nodes.py</code>.</p>
+<p><strong>Write paths.</strong> <code>tests/test_every_shared_home_lock_holds_across_nodes.py</code> and <code>docs/state/reckon/flight.yaml</code>.</p>
 
     <h2 id="s3">§3 — Run, queue, landing and ledger locks exclude across nodes</h2>
 <section data-reckon="section" data-id="s3" data-effort-hours="2.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="implementable" data-links=""></section>
@@ -166,12 +169,12 @@
 
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
-<article class="r-fu" data-id="f-eshl-001" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-create" data-written-at="2026-11-14" data-recommends-skill="/reckon-build every-shared-home-lock-holds-across-nodes §2">
+<article class="r-fu" data-id="f-eshl-001" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-create" data-written-at="2026-11-14" data-recommends-skill="/reckon-build every-shared-home-lock-holds-across-nodes §2" data-resolved-at="" data-resolved-by="">
     <h4 class="r-fu-title">Guard first, then three migration waves</h4>
     <div class="r-fu-body"><p>§2 lands the guard. §3, §4 and §5 then run together, each removing its rows from the pending table. §6 closes the table and measures one lock across two nodes. A content review and a design review are owed before dispatch.</p></div>
     <pre class="r-fu-prompt">/reckon-build every-shared-home-lock-holds-across-nodes §2</pre>
-</article>
-    </section>
+    </article>
+</section>
   </main>
 </body>
 </html>
