@@ -21,6 +21,7 @@ from collections.abc import (
     Iterable as Iterable,
     Iterator as Iterator,
     Mapping as Mapping,
+    Sequence as Sequence,
 )
 from contextlib import contextmanager as contextmanager, suppress as suppress
 from contextvars import ContextVar as ContextVar
@@ -2686,7 +2687,7 @@ STUCK_ADMISSION_PASSES = 3
 #: same import-order reason as the log's name.
 WAIT_UNRESOLVABLE_PREFIX = "wait-unresolvable:"
 
-_PASS_HISTORY_CACHE: tuple[tuple[int, int, int], list[dict[str, Any]]] | None = None
+_PASS_HISTORY_CACHE: dict[str, Any] = {}
 
 
 def admission_pass_history() -> list[dict[str, Any]]:
@@ -2698,16 +2699,14 @@ def admission_pass_history() -> list[dict[str, Any]]:
     records are memoised against the file's identity, so a view that classifies
     many requests parses the log once while a later append is still seen.
     """
-    global _PASS_HISTORY_CACHE
     path = crew_home() / ADMISSION_VERDICT_LOG_NAME
     try:
         stat = path.stat()
     except OSError:
         return []
     signature = (stat.st_mtime_ns, stat.st_size, stat.st_ino)
-    cached = _PASS_HISTORY_CACHE
-    if cached is not None and cached[0] == signature:
-        return cached[1]
+    if _PASS_HISTORY_CACHE.get("signature") == signature:
+        return list(_PASS_HISTORY_CACHE.get("records") or [])
     try:
         text = path.read_text(encoding="utf-8")
     except OSError:
@@ -2720,7 +2719,8 @@ def admission_pass_history() -> list[dict[str, Any]]:
             continue
         if isinstance(record, dict):
             records.append(record)
-    _PASS_HISTORY_CACHE = (signature, records)
+    _PASS_HISTORY_CACHE["signature"] = signature
+    _PASS_HISTORY_CACHE["records"] = records
     return records
 
 
@@ -2730,12 +2730,12 @@ def _verdict_rows_for(
     """Every verdict a pass recorded for one request, oldest first."""
     if not run_id:
         return []
-    rows: list[Mapping[str, Any]] = []
-    for record in passes:
-        for row in record.get("pointers") or ():
-            if isinstance(row, Mapping) and str(row.get("run_id") or "") == run_id:
-                rows.append(row)
-    return rows
+    return [
+        row
+        for record in passes
+        for row in record.get("pointers") or ()
+        if isinstance(row, Mapping) and str(row.get("run_id") or "") == run_id
+    ]
 
 
 def _admissible_unlaunched_passes(
@@ -2945,16 +2945,6 @@ def _drain_week_view(project: str, pointers: list[dict[str, Any]]) -> dict[str, 
         if not isinstance(hold, Mapping):
             hold = {}
         reason = str(hold.get("reason") or pointer.get("reason") or "unspecified")
-        if phase == "held":
-            phase_stamp = hold.get("started_at")
-        elif phase == "queued":
-            phase_stamp = pointer.get("queued_at")
-        elif phase == "launch-failed":
-            phase_stamp = pointer.get("failure_at")
-        elif phase == "awaiting-upstream":
-            phase_stamp = pointer.get("waits_at") or pointer.get("created_at")
-        else:
-            phase_stamp = pointer.get("created_at")
         # The stuck verdict is the one function every surface reads, so the
         # drain view reports the reason the hook and the live view report
         # rather than deriving a second answer from the same log.
