@@ -26,7 +26,7 @@
   <title>A Read Answers Inside Its Deadline | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="674">
+<meta name="plan-version" content="675">
 <meta name="plan-modified" content="2026-11-14">
 </head>
 <body>
@@ -1573,7 +1573,10 @@
     <div class="r-comment-body"><p>§6's measured targets are met, with the in-session control its reopen required. In the same exclusive job, head's cold roadmap is 11.43 s against 30 s and base's is 106.1 s. Warm roadmap is 0.70 s against 2 s, and warm audit is 1.15 s against 3 s (§19's run <code>r-20261017T000930623892</code>). One clause remains: a roadmap through the MCP server restarted on the promoted code returns without <code>storage-slow</code>. This session's MCP server started at 21:26 on 2026-10-16, before §19 merged, and its roadmap returned <code>storage-slow</code> at 30 s with 1.2 s of CPU. Closing §6 needs that server reconnected and the roadmap called again. A fresh CLI roadmap on the live fleet node took 131 s, which §27 attributes.</p></div>
 </div>
 <div class="r-comment" data-section="s6" data-id="c-run-r-20261114T212902108673-review-of-the-reads-are-measured-inside-their-deadline-339d0e7fbfa0" data-who="reckon-build" data-when="2026-11-14T22:05:24.763Z">
-    <div class="r-comment-body"><p>Independent review of the-reads-are-measured-inside-their-deadline landed: the three targeted medians are met on one corpus pinned at d249200c7 with the base control at 92.584 s cold against the 30 s deadline, and the review records two non-blocking defects in the run&#x27;s own summary script plus the unmet live-MCP done-when clause.</p></div>
+    <div class="r-comment-body"><p>Independent review of the-reads-are-measured-inside-their-deadline landed: the three targeted medians are met on one corpus pinned at d249200c7 with the base control at 92.584 s cold against the 30 s deadline, and the review records two non-blocking defects in the run's own summary script plus the unmet live-MCP done-when clause.</p></div>
+</div>
+<div class="r-comment" data-section="s6" data-id="c-run-r-20261114T144026603146-the-reads-are-measured-inside-their-deadline" data-who="reckon-build" data-when="2026-11-14T21:14:41Z">
+    <div class="r-comment-body"><p>All three targeted figures meet their deadlines on one corpus pinned at d249200c7: warm roadmap 0.015 s against 2 s, warm audit 1.999 s against 3 s, cold roadmap 7.481 s against the 30 s deadline, while the base revision cold roadmap is 92.584 s, so the control exceeds the deadline; discovery answers in 6.568 s cold and 0.182 s warm at head against 73.319 s and 0.521 s at base.</p></div>
 </div>
 <div class="r-comment" data-section="s60" data-id="c-defer-s60" data-who="reckon-build" data-when="2026-10-24T09:00:00Z">
     <div class="r-comment-body"><p>Deferred until §51 lands. Two content reviews of this section, on 2026-10-24, found its design depends on the shape of <code>roadmap.plan_blocker_state</code>. That function exists only in §51's run until §51 lands. Re-plan it then, against the landed function, carrying these points. First, the inventory's blocking rows also carry gate blockers with <code>kind: "gate"</code> (<code>reckon/serve.py</code> near line 2067, row shape in <code>reckon/lifecycle.py</code> near lines 52 to 71). <code>_blocking</code> includes gates today through <code>split_unpassed_gates</code>, so a filter to <code>explicit</code> and <code>held</code> rows drops them. Plan-level open decisions must likewise reach the function. Second, this section and §56 both write <code>reckon/mcp.py</code>, so the re-plan orders them with a section dependency.</p></div>

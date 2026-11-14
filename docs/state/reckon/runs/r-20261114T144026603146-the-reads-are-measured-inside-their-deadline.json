@@ -1,0 +1,714 @@
+{
+  "agent": {
+    "alias": "dsv4.1-flash",
+    "backend": "clive",
+    "effective_input_window": 230144,
+    "effort": "high",
+    "launch": "cli",
+    "local": true,
+    "model": "deepseek-v4.1-flash",
+    "sandbox": "worktree-full",
+    "usable_input_window": 230144
+  },
+  "attempt": 2,
+  "attempt_kind": "resume",
+  "backend": "clive",
+  "base_sha": "b4700c0d20e70b117969d8c907af78d11014ad72",
+  "boundary_waiver": null,
+  "brief": null,
+  "budget": {
+    "budget_overrun": false,
+    "budget_overrun_notice": null,
+    "budget_overrun_seconds": 0,
+    "budget_overrun_tokens": 0,
+    "cost_usd": null,
+    "cost_usd_cumulative": null,
+    "cost_usd_imputed": true,
+    "detail": "no rate-limit event in the stream yet",
+    "headroom": "unknown",
+    "rate_limit_period_minutes": null,
+    "rate_limit_type": null,
+    "refusal": false,
+    "resets_at": null,
+    "surpassed_threshold": null,
+    "threshold_status": null,
+    "tokens": {
+      "cache_creation_input_tokens": 0,
+      "cache_creation_input_tokens_cumulative": 0,
+      "cache_read_input_tokens": 0,
+      "cache_read_input_tokens_cumulative": 0,
+      "fallback_credit": null,
+      "inference_geo": "",
+      "input_tokens": 18191461,
+      "input_tokens_cumulative": 18191461,
+      "output_tokens": 70777,
+      "output_tokens_cumulative": 70777,
+      "service_tier": "standard",
+      "speed": "standard"
+    },
+    "utilisation_pct": null
+  },
+  "changed_lines": {
+    "added": 111,
+    "files": 1,
+    "removed": 0
+  },
+  "clone_matches": [],
+  "commit_resolution": null,
+  "commits": [
+    "b8a9fc24f20e1564015762bdb858f8c33848d347",
+    "339d0e7fbfa0de40237f034a72d2b97a35f5131f"
+  ],
+  "completed_at": "2026-11-14T21:14:41Z",
+  "completed_at_source": "terminal_event",
+  "dispatched_at": "2026-11-14T15:42:33Z",
+  "disposition": null,
+  "dispute_count": 0,
+  "domain_waiver": null,
+  "duration_measurement": null,
+  "execution_fit": {
+    "allowed": true,
+    "execution_capable": true,
+    "matched_measure": null,
+    "override": false,
+    "role": "implement",
+    "status": "no-execution-measure"
+  },
+  "failure_classification": null,
+  "gate": "passed",
+  "gate_check": {
+    "command": "env -u SLURM_JOB_ID -u SLURM_JOBID sbatch --partition=all_debug --exclusive --cpus-per-task=12 --mem=48G --time=00:50:00 --chdir=/home/ITER/mcintos/.config/reckon/crew/runs/r-20261114T144026603146-the-reads-are-measured-inside-their-deadline/measure --output=/home/ITER/mcintos/.config/reckon/crew/runs/r-20261114T144026603146-the-reads-are-measured-inside-their-deadline/measure/core/sbatch.log --wrap \"CORPUS_SHA=d249200c7 ONLY=core bash /home/ITER/mcintos/.config/reckon/crew/runs/r-20261114T144026603146-the-reads-are-measured-inside-their-deadline/measure/run_measure.sh /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/efd0ee8c-9d4e-4fa3-a440-ac05791d4758/the-reads-are-measured-inside-their-deadline d249200c7 b8a9fc24f20e1564015762bdb858f8c33848d347 /home/ITER/mcintos/.config/reckon/crew/runs/r-20261114T144026603146-the-reads-are-measured-inside-their-deadline/measure/core\"",
+    "exit_status": 0,
+    "log_digest": null,
+    "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261114T144026603146-the-reads-are-measured-inside-their-deadline/measure/gate.log"
+  },
+  "impl_move": {
+    "at_complete": null,
+    "at_dispatch": 0.980246913580247,
+    "plan": "a-read-answers-inside-its-deadline",
+    "reason": "corrective-run:resume",
+    "verdict": "exempt"
+  },
+  "lane": "clive",
+  "lane_advisory": {
+    "backend": "clive",
+    "burn_multiple": null,
+    "cheaper_lane": {
+      "detail": "",
+      "lane": null,
+      "state": "not_evaluated"
+    },
+    "detail": "'clive' is unmetered, so it has no window to exhaust; the local lane's scarcity is throughput, which it does not publish",
+    "horizon_ends_at": "2026-11-14T16:41:47.650413+00:00",
+    "horizon_seconds": 3600,
+    "metered": false,
+    "observed_at": null,
+    "precedes_horizon": null,
+    "projected_exhaustion_at": null,
+    "resets_at": null,
+    "seconds_until_reset": null,
+    "state": "quiet",
+    "utilisation_pct": null
+  },
+  "lane_declaration": {
+    "backend": "clive",
+    "headroom": null,
+    "metered": false,
+    "observed_at": null,
+    "read_at": "2026-11-14T15:41:47Z",
+    "resolved_backend": "clive",
+    "utilisation_pct": null
+  },
+  "lane_reading": {
+    "age_seconds": 20,
+    "binding_observed": "unknown",
+    "detail": "",
+    "generating": 11,
+    "headroom": 2,
+    "mean_context": 97143,
+    "observed_at": "2026-11-14T15:41:27Z",
+    "state": "fresh",
+    "suggested_shelf_life_seconds": 45,
+    "throughput": {
+      "age_seconds": 20,
+      "aggregate_tokens_per_second": 436.532,
+      "detail": "",
+      "mean_tokens_per_second": 33.579,
+      "observed_at": "2026-11-14T15:41:27Z",
+      "runs": 13.0,
+      "state": "measured"
+    },
+    "waiting": 0
+  },
+  "lane_receipt": {
+    "effective_context_window": "unmeasured",
+    "notional_cost_usd": "unmeasured",
+    "observed_at": "2026-11-14T21:14:41Z",
+    "quota_state": "unmeasured",
+    "quota_windows": [],
+    "rate_basis": "unmeasured",
+    "unmeasured": {
+      "effective_context_window": "missing_rollout",
+      "notional_cost_usd": "missing_rollout",
+      "quota_windows": "unmetered",
+      "rate_basis": "missing_rollout"
+    }
+  },
+  "lineage": null,
+  "local": true,
+  "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261114T144026603146-the-reads-are-measured-inside-their-deadline/manifest.md",
+  "member": "disposable-r-20261114T144026603146-the-reads-are-measured-inside-their-deadline",
+  "model_key": "flash",
+  "negative_control": {
+    "reason": "node-writes-no-test-path",
+    "verdict": "exempt"
+  },
+  "no_commit": null,
+  "node": "the-reads-are-measured-inside-their-deadline",
+  "node_definition": {
+    "admission_findings": [],
+    "after": [],
+    "anchor_paths": [],
+    "brief": "",
+    "brief_path": "",
+    "brief_sha256": "",
+    "capability": {
+      "class": "general",
+      "requirements": {
+        "reasoning": "standard",
+        "risk": "low",
+        "verification": "strict"
+      },
+      "version": "1.0"
+    },
+    "compares_with": "",
+    "coordinator": {
+      "authoring_turn": {
+        "detail": "the dispatching harness exposed no authoring-turn token usage",
+        "status": "unknown",
+        "tokens": null
+      },
+      "harness": null,
+      "runtime_session_id": null,
+      "session_id": "efd0ee8c-9d4e-4fa3-a440-ac05791d4758"
+    },
+    "done_when": "Done when a log under the run directory records, beside the §1 figures, the median of every read it ran, cold and warm, for roadmap, audit and discovery. Those include at least the reads the deliverable's completion floor names, and any read the hour cut is named as not run. Three medians carry targets and are marked against them: a warm median of at most 2 s for roadmap and 3 s for audit, and a cold roadmap under the 30 s MCP deadline. Cold audit and both discovery medians carry no target and are recorded beside the §1 figures for comparison only. This measurement decides whether the fixes from §8 to §17 meet the targets. Every target this run misses is attributed from the kept profile dumps: functions covering at least 80 percent of the excess are named, with the commits that introduced them, and the repair is proposed as a new section of this plan, as the 2026-10-16 measurement proposed §16 and §17. A missed target attributed that way completes this node. Once every target is met, roadmap(project=\"reckon\") through the MCP server, restarted on the promoted code, returns without storage-slow . The negative control is the base revision measured the same way in the same session, which must exceed the deadline for the comparison to count. Both arms run on an exclusive all_debug node in the same window. Each log names the code revision it measured, the pinned corpus revision, the host it ran on and its literal command. Every profiler .prof dump and the pinned corpus revision are copied into the run directory before the job ends, as §7 keeps its dumps, so a missed target is attributed from them rather than from node-local scratch. Write paths: the run directory.",
+    "estimated_hours": 1.0,
+    "goal": "measure roadmap, audit and discovery reads cold and warm on a frozen corpus against their deadlines",
+    "id": "the-reads-are-measured-inside-their-deadline",
+    "images": [],
+    "inputs": [],
+    "lane_declaration": {
+      "backend": "clive",
+      "headroom": null,
+      "metered": false,
+      "observed_at": null,
+      "read_at": "2026-11-14T15:41:47Z",
+      "resolved_backend": "clive",
+      "utilisation_pct": null
+    },
+    "lane_reading": {
+      "age_seconds": 20,
+      "binding_observed": "unknown",
+      "detail": "",
+      "generating": 11,
+      "headroom": 2,
+      "mean_context": 97143,
+      "observed_at": "2026-11-14T15:41:27Z",
+      "state": "fresh",
+      "suggested_shelf_life_seconds": 45,
+      "throughput": {
+        "age_seconds": 20,
+        "aggregate_tokens_per_second": 436.532,
+        "detail": "",
+        "mean_tokens_per_second": 33.579,
+        "observed_at": "2026-11-14T15:41:27Z",
+        "runs": 13.0,
+        "state": "measured"
+      },
+      "waiting": 0
+    },
+    "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261114T144026603146-the-reads-are-measured-inside-their-deadline/manifest.md",
+    "negative_control": "none: a measurement node, whose comparison arm is the pinned base revision the section names",
+    "over_fence_reason": "",
+    "peer_scopes": {
+      "a-design-and-a-content-review-run-together": [
+        "docs/evidence/fragments/a-plan-is-reviewed-before-it-is-built/a-design-and-a-content-review-run-together.html",
+        "docs/figures/a-plan-is-reviewed-before-it-is-built/a-design-and-a-content-review-run-together",
+        "reckon/crew/promotion_checks.py",
+        "reckon/crew/recovery_review_dispatch.py",
+        "reckon/crew/recovery_review_subject.py",
+        "reckon/crew/repair.py",
+        "tests/test_a_design_and_a_content_review_run_together.py",
+        "tests/test_a_design_and_content_review_run_together.py"
+      ],
+      "a-figure-review-runs-only-on-an-unmetered-image-lane": [
+        "reckon/crew/recovery_review_dispatch.py",
+        "tests/test_a_figure_review_takes_an_image_lane.py"
+      ],
+      "a-finished-review-releases-its-scope-claim": [
+        "docs/evidence/fragments/a-review-dies-where-nobody-is-looking/a-finished-review-releases-its-scope-claim.html",
+        "docs/figures/a-review-dies-where-nobody-is-looking/a-finished-review-releases-its-scope-claim",
+        "reckon/crew/node.py",
+        "reckon/crew/recovery_review_dispatch.py",
+        "reckon/crew/runs.py",
+        "tests/test_a_finished_review_releases_its_scope_claim.py"
+      ],
+      "a-landing-without-its-pointer-keeps-the-pending-record": [
+        "docs/evidence/fragments/concurrent-edits-meet-at-the-merge/a-landing-without-its-pointer-keeps-the-pending-record.html",
+        "docs/figures/concurrent-edits-meet-at-the-merge/a-landing-without-its-pointer-keeps-the-pending-record",
+        "reckon/crew/pending_landing.py",
+        "reckon/crew_run_commands.py",
+        "tests/test_a_landing_without_its_pointer_keeps_the_pending_record.py"
+      ],
+      "a-launch-span-is-dated-and-bounded": [
+        "docs/evidence/fragments/a-dispatch-returns-without-its-worker/a-launch-span-is-dated-and-bounded.html",
+        "docs/figures/a-dispatch-returns-without-its-worker/a-launch-span-is-dated-and-bounded",
+        "reckon/crew/dispatch.py",
+        "reckon/crew/dispatch_claims.py",
+        "reckon/crew/dispatch_refusals.py",
+        "reckon/crew/queue_admission.py",
+        "reckon/crew/refusals.py",
+        "tests/test_a_launch_span_is_dated_and_bounded.py",
+        "tests/test_crew_refusal_visibility.py"
+      ],
+      "a-promotion-lands-in-under-a-minute-with-peers": [
+        "docs/evidence/fragments/a-landing-never-waits-on-a-shared-index/a-promotion-lands-in-under-a-minute-with-peers.html"
+      ],
+      "a-tick-computes-the-reference-rate-once": [
+        "docs/evidence/fragments/the-monitor-reads-each-fact-once/a-tick-computes-the-reference-rate-once.html",
+        "docs/figures/the-monitor-reads-each-fact-once/a-tick-computes-the-reference-rate-once",
+        "reckon/crew/recovery_stream.py",
+        "tests/test_a_tick_computes_the_reference_rate_once.py"
+      ],
+      "an-unchanged-index-is-parsed-once": [
+        "docs/evidence/fragments/the-monitor-reads-each-fact-once/an-unchanged-index-is-parsed-once.html",
+        "docs/figures/the-monitor-reads-each-fact-once/an-unchanged-index-is-parsed-once",
+        "reckon/crew/review_records.py",
+        "tests/test_an_unchanged_index_is_parsed_once.py"
+      ],
+      "cleanly-reviewed-run-lands-itself": [
+        "docs/evidence/fragments/work-flows-to-the-lane/cleanly-reviewed-run-lands-itself.html",
+        "docs/figures/work-flows-to-the-lane/cleanly-reviewed-run-lands-itself",
+        "reckon",
+        "tests/test_cleanly_reviewed_run_lands_itself.py"
+      ],
+      "composed-review-waits-for-a-roster-slot": [
+        "docs/evidence/fragments/work-flows-to-the-lane/composed-review-waits-for-a-roster-slot.html",
+        "docs/figures/work-flows-to-the-lane/composed-review-waits-for-a-roster-slot",
+        "reckon",
+        "tests/test_composed_review_waits_for_a_roster_slot.py"
+      ],
+      "composed-review-writes-under-its-own-run": [
+        "docs/evidence/fragments/work-flows-to-the-lane/composed-review-writes-under-its-own-run.html",
+        "docs/figures/work-flows-to-the-lane/composed-review-writes-under-its-own-run",
+        "reckon",
+        "tests/test_composed_review_writes_under_its_own_run.py"
+      ],
+      "fenced-worker-tmp-is-its-scratch": [
+        "docs/evidence/fragments/work-flows-to-the-lane/fenced-worker-tmp-is-its-scratch.html",
+        "docs/figures/work-flows-to-the-lane/fenced-worker-tmp-is-its-scratch",
+        "reckon",
+        "tests/test_a_worker_cannot_remove_the_nodes_temporary_files.py",
+        "tests/test_fenced_worker_tmp_is_its_scratch.py"
+      ],
+      "follower-outlives-arming-shell-s134": [
+        "docs/evidence/fragments/the-monitor-shows-the-work-it-watches/follower-outlives-arming-shell-s134.html",
+        "docs/figures/the-monitor-shows-the-work-it-watches/follower-outlives-arming-shell-s134",
+        "reckon/crew_follow_commands.py",
+        "tests/test_a_follower_with_a_reader_outlives_its_arming_shell.py"
+      ],
+      "git-answer-and-resumption-locks-cross-node": [
+        "reckon/crew/recovery_watch.py",
+        "reckon/crew/resumption.py",
+        "tests/test_every_shared_home_lock_holds_across_nodes.py",
+        "tests/test_recovery_store_locks_hold_across_nodes.py"
+      ],
+      "lane-budget-picker-locks-cross-node": [
+        "reckon/crew/budget_reset.py",
+        "reckon/crew/model_catalogue.py",
+        "reckon/crew/paid_lanes.py",
+        "reckon/crew/picker/outcomes.py",
+        "tests/test_every_shared_home_lock_holds_across_nodes.py",
+        "tests/test_lane_and_picker_locks_hold_across_nodes.py"
+      ],
+      "open-run-index-rebuilt-once-per-pass": [
+        "docs/evidence/fragments/work-flows-to-the-lane/open-run-index-rebuilt-once-per-pass.html",
+        "docs/figures/work-flows-to-the-lane/open-run-index-rebuilt-once-per-pass",
+        "reckon",
+        "tests/test_open_run_index_rebuilt_once_per_pass.py"
+      ],
+      "over-fence-budget-recorded-not-refused": [
+        "docs/evidence/fragments/work-flows-to-the-lane/over-fence-budget-recorded-not-refused.html",
+        "docs/figures/work-flows-to-the-lane/over-fence-budget-recorded-not-refused",
+        "reckon",
+        "tests/test_over_fence_budget_recorded_not_refused.py"
+      ],
+      "parallel-nodes-on-one-module-land-measured": [
+        "docs/evidence/fragments/concurrent-edits-meet-at-the-merge/parallel-nodes-on-one-module-land-measured.html"
+      ],
+      "pending-table-empty-and-two-node-measure": [
+        "docs/evidence/archive/every-shared-home-lock-holds-across-nodes-landed.html",
+        "tests/test_every_shared_home_lock_holds_across_nodes.py"
+      ],
+      "promotion-checks-read-only-what-moved": [
+        "reckon/crew/promotion.py",
+        "reckon/crew/promotion_checks.py",
+        "tests/test_promotion_checks_read_only_what_moved.py"
+      ],
+      "queue-edit-keeps-the-named-backend": [
+        "docs/evidence/fragments/work-flows-to-the-lane/queue-edit-keeps-the-named-backend.html",
+        "docs/figures/work-flows-to-the-lane/queue-edit-keeps-the-named-backend",
+        "reckon",
+        "tests/test_queue_edit_keeps_the_named_backend.py"
+      ],
+      "ready-a-review-can-see-the-figure-s20": [
+        "reckon/crew/recovery_review_dispatch.py",
+        "tests/test_a_figure_review_takes_an_image_lane.py"
+      ],
+      "review-dispatch-and-index-lag-locks-cross-node": [
+        "reckon/crew/obligations.py",
+        "reckon/crew/recovery_review_dispatch.py",
+        "tests/test_every_shared_home_lock_holds_across_nodes.py",
+        "tests/test_review_dispatch_lock_holds_across_nodes.py"
+      ],
+      "run-landing-ledger-locks-cross-node": [
+        "reckon/crew/admission/service.py",
+        "reckon/crew/placement.py",
+        "reckon/crew/queue_landing.py",
+        "reckon/crew/runs.py",
+        "reckon/ledger.py",
+        "tests/test_every_shared_home_lock_holds_across_nodes.py",
+        "tests/test_run_and_landing_locks_hold_across_nodes.py"
+      ],
+      "service-runs-mains-code": [
+        "docs/evidence/fragments/work-is-never-stuck-behind-the-admission-loop/service-runs-mains-code.html",
+        "docs/figures/work-is-never-stuck-behind-the-admission-loop/service-runs-mains-code",
+        "reckon/crew/fleet_supervisor.py",
+        "tests/test_a_service_runs_the_code_main_carries.py"
+      ],
+      "store-and-review-index-locks-cross-node": [
+        "reckon/_store.py",
+        "reckon/compliance.py",
+        "reckon/crew/dispatch_peer.py",
+        "reckon/crew/review_records.py",
+        "tests/test_every_shared_home_lock_holds_across_nodes.py",
+        "tests/test_store_and_review_index_locks_hold_across_nodes.py"
+      ],
+      "the-bounded-pass-is-re-measured-after-the-git-repairs": [
+        "docs/evidence/fragments/a-read-answers-inside-its-deadline/the-bounded-pass-is-re-measured-after-the-git-repairs.html"
+      ],
+      "the-census-finds-no-live-worker-drawn-halted": [
+        "docs/evidence/fragments/a-live-worker-is-never-drawn-halted/census-instrument.html",
+        "reckon/crew/live_worker_census.py",
+        "tests/test_live_worker_census.py"
+      ],
+      "the-dispatch-exit-bound-holds-at-working-load": [
+        "docs/evidence/fragments/a-dispatch-returns-without-its-worker/the-dispatch-exit-bound-holds-at-working-load.html",
+        "docs/figures/a-dispatch-returns-without-its-worker/the-dispatch-exit-bound-holds-at-working-load",
+        "tests/test_dispatch_returns_without_worker.py"
+      ],
+      "the-old-event-logs-are-retired": [
+        "docs/evidence/fragments/crew-state-stays-bounded/the-old-event-logs-are-retired.html",
+        "docs/figures/crew-state-stays-bounded/the-old-event-logs-are-retired",
+        "reckon/crew/event_log_retirement.py",
+        "reckon/crew/gc.py",
+        "tests/test_the_old_event_logs_are_retired.py"
+      ],
+      "unreadable-queued-pointer-never-fails-ordering": [
+        "docs/evidence/fragments/work-flows-to-the-lane/unreadable-queued-pointer-never-fails-ordering.html",
+        "docs/figures/work-flows-to-the-lane/unreadable-queued-pointer-never-fails-ordering",
+        "reckon",
+        "tests/test_the_admission_pass_survives_a_pointer_without_its_time.py",
+        "tests/test_unreadable_queued_pointer_never_fails_ordering.py"
+      ],
+      "wave3-clive-the-monitor-shows-the-work-i-s86": [
+        "docs/evidence/fragments/the-monitor-shows-the-work-it-watches/wave3-clive-the-monitor-shows-the-work-i-s86.html",
+        "docs/figures/the-monitor-shows-the-work-it-watches/wave3-clive-the-monitor-shows-the-work-i-s86",
+        "reckon/crew/recovery_watch.py",
+        "tests/test_the_obligations_snapshot_is_fresh_or_says_why_it_is_not.py"
+      ],
+      "wave3-clive-the-monitor-shows-the-work-i-s88": [
+        "docs/evidence/fragments/the-monitor-shows-the-work-it-watches/wave3-clive-the-monitor-shows-the-work-i-s88.html",
+        "docs/figures/the-monitor-shows-the-work-it-watches/wave3-clive-the-monitor-shows-the-work-i-s88",
+        "reckon/crew/recovery_classification.py",
+        "tests/test_a_worker_that_ends_its_first_turn_without_acting_is_named_as_such.py"
+      ],
+      "wave3-codex-anchored-the-crew-does-its-own-bookke-s7": [
+        "docs/evidence/fragments/the-crew-does-its-own-bookkeeping/wave3-codex-anchored-the-crew-does-its-own-bookke-s7.html",
+        "docs/figures/the-crew-does-its-own-bookkeeping/wave3-codex-anchored-the-crew-does-its-own-bookke-s7",
+        "reckon/crew/resumption.py",
+        "reckon/crew_run_commands.py",
+        "tests/test_resume_and_reopen_take_a_halted_run_and_need_no_new_write_path.py"
+      ],
+      "wave4-clive-a-landing-never-waits-on-s10": [
+        "reckon/crew/merge.py"
+      ],
+      "wave4-clive-anchored-a-landing-never-waits-on-s11": [
+        "reckon/crew/pending_landing.py",
+        "reckon/crew/promotion.py"
+      ],
+      "wave4-clive-anchored-lane-and-model-routing-s59": [
+        "reckon/crew/dispatch_picker.py",
+        "reckon/crew/dispatch_plan.py",
+        "reckon/crew/picker/__init__.py",
+        "reckon/crew/picker/types.py"
+      ],
+      "wave4-clive-anchored-the-crew-does-its-own-bo-s14": [
+        "reckon/crew/recovery_classification.py"
+      ],
+      "wave4-clive-anchored-the-monitor-shows-the-wo-s72": [
+        "docs/evidence/fragments/the-monitor-shows-the-work-it-watches/wave4-clive-anchored-the-monitor-shows-the-wo-s72.html",
+        "docs/figures/the-monitor-shows-the-work-it-watches/wave4-clive-anchored-the-monitor-shows-the-wo-s72",
+        "reckon/crew_follow_commands.py"
+      ],
+      "wave4-clive-anchored-the-monitor-shows-the-wo-s78": [
+        "docs/evidence/fragments/the-monitor-shows-the-work-it-watches/wave4-clive-anchored-the-monitor-shows-the-wo-s78.html",
+        "docs/figures/the-monitor-shows-the-work-it-watches/wave4-clive-anchored-the-monitor-shows-the-wo-s78",
+        "reckon/crew/needs_you.py",
+        "reckon/crew_follow_commands.py",
+        "tests/test_follow_needs_you_line.py"
+      ],
+      "wave4-clive-the-monitor-shows-the-wo-s100": [
+        "docs/evidence/fragments/the-monitor-shows-the-work-it-watches/wave4-clive-the-monitor-shows-the-wo-s100.html",
+        "docs/figures/the-monitor-shows-the-work-it-watches/wave4-clive-the-monitor-shows-the-wo-s100",
+        "reckon/crew/recovery_watch.py",
+        "reckon/crew/ticker.py"
+      ],
+      "wave4-clive-the-monitor-shows-the-wo-s106": [
+        "docs/evidence/fragments/the-monitor-shows-the-work-it-watches/wave4-clive-the-monitor-shows-the-wo-s106.html",
+        "docs/figures/the-monitor-shows-the-work-it-watches/wave4-clive-the-monitor-shows-the-wo-s106",
+        "reckon/crew/obligations.py",
+        "reckon/crew/recovery_review_dispatch.py"
+      ],
+      "wave4-clive-the-monitor-shows-the-wo-s73": [
+        "reckon/crew_follow_commands.py"
+      ],
+      "wave4-codex-a-seat-held-elsewhere-is-s24": [
+        "docs/evidence/fragments/a-seat-held-elsewhere-is-not-restarted/wave4-codex-a-seat-held-elsewhere-is-s24.html",
+        "docs/figures/a-seat-held-elsewhere-is-not-restarted/wave4-codex-a-seat-held-elsewhere-is-s24",
+        "reckon/crew/runs.py",
+        "reckon/crew_follow_commands.py",
+        "reckon/hooks/coordinator_obligations.py"
+      ],
+      "wave4-codex-anchored-a-seat-held-elsewhere-is-s23": [
+        "reckon/crew/watch_unit.py",
+        "reckon/crew_follow_commands.py"
+      ],
+      "wave4-codex-anchored-the-crew-does-its-own-bo-s17": [
+        "reckon/crew/recovery_classification.py",
+        "reckon/crew/recovery_liveness.py"
+      ],
+      "wave4-codex-anchored-the-crew-does-its-own-bo-s18": [
+        "reckon/crew/promotion.py"
+      ],
+      "wave4-codex-anchored-the-crew-does-its-own-bo-s19": [
+        "docs/evidence/fragments/the-crew-does-its-own-bookkeeping/wave4-codex-anchored-the-crew-does-its-own-bo-s19.html",
+        "docs/figures/the-crew-does-its-own-bookkeeping/wave4-codex-anchored-the-crew-does-its-own-bo-s19",
+        "reckon/crew/resumption.py",
+        "reckon/crew_run_commands.py"
+      ],
+      "wave4-codex-lane-and-model-routing-s53": [
+        "reckon/crew/budget_group.py",
+        "reckon/crew/budget_lift.py",
+        "reckon/crew/lift_watch.py",
+        "reckon/crew/picker/snapshot.py",
+        "reckon/crew/routing.py",
+        "reckon/crew_run_commands.py",
+        "skills/reckon-build/SKILL.md"
+      ],
+      "wave4-codex-the-crew-does-its-own-bo-s13": [
+        "reckon/crew/reports.py",
+        "reckon/crew_run_commands.py"
+      ],
+      "wave4-codex-the-crew-does-its-own-bo-s8": [
+        "reckon/crew/promotion_checks.py",
+        "reckon/crew/promotion_evidence.py"
+      ],
+      "wave4-omp-local-a-landing-survives-a-mov-s2": [
+        "reckon/crew/queue_landing.py"
+      ],
+      "wave4-omp-local-the-crew-does-its-own-bo-s15": [
+        "reckon/crew/obligations.py",
+        "reckon/crew/recovery_classification.py"
+      ],
+      "wave4-omp-local-the-crew-does-its-own-bo-s16": [
+        "reckon/crew/recovery_classification.py"
+      ],
+      "wave4-omp-local-the-monitor-shows-the-wo-s105": [
+        "reckon/crew/obligations.py",
+        "reckon/crew/recovery_classification.py",
+        "reckon/hooks/coordinator_obligations.py"
+      ],
+      "wave4-omp-local-the-monitor-shows-the-wo-s108": [
+        "reckon/crew/obligations.py",
+        "reckon/crew/recovery_review_dispatch.py"
+      ]
+    },
+    "plan": "a-read-answers-inside-its-deadline",
+    "regenerate_paths": [],
+    "requested_backend": "clive",
+    "requires_decisions": [],
+    "role": "implement",
+    "section": "§6",
+    "spec_level": "exact",
+    "time_budget": "60m",
+    "token_budget": null,
+    "waits_only_after": false,
+    "write_paths": [
+      "docs/evidence/fragments/a-read-answers-inside-its-deadline/the-reads-are-measured-inside-their-deadline.html",
+      "docs/figures/a-read-answers-inside-its-deadline/the-reads-are-measured-inside-their-deadline"
+    ]
+  },
+  "orchestrator_lane_override": null,
+  "orientation_input_tokens": 13178527.0,
+  "outcome": "",
+  "outside_scope_paths": [],
+  "pace": {
+    "allowance": null,
+    "bar": null,
+    "clocks": {
+      "five_hour": {
+        "age_seconds": null,
+        "observed_at": null,
+        "period": "five_hour",
+        "resets_at": null,
+        "state": "unknown",
+        "utilisation": null,
+        "window_minutes": null
+      },
+      "seven_day": {
+        "age_seconds": null,
+        "observed_at": null,
+        "period": "seven_day",
+        "resets_at": null,
+        "state": "unknown",
+        "utilisation": null,
+        "window_minutes": null
+      }
+    },
+    "group": null,
+    "hold": null,
+    "lane": "clive",
+    "lift_id": null,
+    "member": null,
+    "node": "the-reads-are-measured-inside-their-deadline",
+    "policy": {
+      "drain_lead_hours": 12.0,
+      "pace_multiple": 1.1
+    },
+    "reason": "the lane declares no budget group, so no wallet paced it",
+    "recorded_at": "2026-11-14T15:41:49.982910+00:00",
+    "score": 0.56875,
+    "session": null,
+    "source": null,
+    "state": "unknown"
+  },
+  "picker_selection": {
+    "action": "fallback",
+    "backend": null,
+    "comment": "",
+    "confidence": null,
+    "effort": null,
+    "excluded": [],
+    "fallback_reason": "timeout",
+    "family": null,
+    "jev_model": "~typesafe/jev-latest",
+    "latency_ms": 5000.56,
+    "model": null,
+    "offered": [],
+    "probabilities": {},
+    "stage_ms": {}
+  },
+  "plan": "a-read-answers-inside-its-deadline",
+  "plan_impl_at_dispatch": 0.980246913580247,
+  "plan_link": null,
+  "promoted_by": null,
+  "promoted_revision": "339d0e7fbfa0de40237f034a72d2b97a35f5131f",
+  "resume_waiver": null,
+  "review": {
+    "absent": [],
+    "reviewed_base_sha": "b4700c0d20e70b117969d8c907af78d11014ad72",
+    "reviewed_head_sha": "339d0e7fbfa0de40237f034a72d2b97a35f5131f",
+    "scores": {
+      "durability": 10,
+      "evidence": 15,
+      "fit": 18,
+      "goal_fidelity": 17,
+      "reuse": 20,
+      "scope_discipline": 19
+    },
+    "status": "parsed",
+    "total": 99
+  },
+  "review_tier": "none",
+  "role": "implement",
+  "route_mode": "explicit",
+  "run_id": "r-20261114T144026603146-the-reads-are-measured-inside-their-deadline",
+  "scope_acceptances": null,
+  "scope_changed": false,
+  "section": "§6",
+  "session": "efd0ee8c-9d4e-4fa3-a440-ac05791d4758",
+  "session_harness": "claude",
+  "session_id": "b2df3565-2555-4b0a-af16-c201a3451105",
+  "session_model": "deepseek-v4.1-flash",
+  "shadow_controlled": null,
+  "shadow_patch": "",
+  "spec_level": "exact",
+  "stalled": true,
+  "suite_delta": null,
+  "tests_added": null,
+  "throughput": {
+    "cumulative_cached_input_tokens": 0,
+    "cumulative_input_tokens": 18191461,
+    "detail": "generation and wall clock reported separately by the backend; utilisation divided by the configured lane window 230144",
+    "elapsed_seconds": 5039.598,
+    "generated_tokens": 70777,
+    "generation_seconds": 2941.848,
+    "input_budget_tokens": 230144,
+    "input_utilisation_pct": 84.0,
+    "machine_seconds": 2097.75,
+    "peak_input_tokens": 193401,
+    "tokens_per_second": 24.06,
+    "wall_tokens_per_second": 14.04
+  },
+  "time_budget": "60m",
+  "tool_steps": 149.0,
+  "unplanned_reason": null,
+  "unreconciled_override": null,
+  "wall_seconds": 19928,
+  "watch_override": {
+    "arming_line": "reckon crew watch --project reckon",
+    "attach_line": "/home/ITER/mcintos/Code/reckon/.venv/bin/reckon crew follow --project reckon --session efd0ee8c-9d4e-4fa3-a440-ac05791d4758",
+    "requested": true,
+    "session_attached": true,
+    "watcher_live": true
+  },
+  "worker_exit": {
+    "attempt": 2,
+    "ended_during": "working",
+    "ended_pids": [
+      2812339,
+      3308844,
+      3308886,
+      3308885,
+      3308887,
+      2812668,
+      2812824
+    ],
+    "exit_code": 0,
+    "exited_at": "2026-11-14T21:14:44Z",
+    "last_record_type": "user",
+    "launched_at": "2026-11-14T20:20:57Z",
+    "recorded_by": "supervisor",
+    "removed_harness_caches": [],
+    "run_id": "r-20261114T144026603146-the-reads-are-measured-inside-their-deadline",
+    "signal": null,
+    "signal_name": null,
+    "stream_records_seen": 17973,
+    "worker_pid": 2808114
+  },
+  "worker_seconds": 8129,
+  "worker_seconds_source": "stream_events",
+  "worktree_retention": null
+}
