@@ -1,0 +1,68 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 8,
+  "call_sites": [
+    "reckon/crew/recovery_review_dispatch.py:3312 dispatch_review_for_run",
+    "reckon/crew/recovery_watch.py:3785",
+    "reckon/crew/plan_review.py:4565",
+    "reckon/crew/recovery_review_acceptance.py:1224",
+    "reckon/crew_dispatch_commands.py:3163",
+    "reckon/crew/obligations.py:3539 _index_lag_notice",
+    "reckon/crew/obligations.py:3976",
+    "reckon/crew/obligation_snapshot.py:1889"
+  ],
+  "completed_at": "2026-11-14T22:07:19.988Z",
+  "dispatched_at": "2026-11-14T21:33:30Z",
+  "findings": [
+    {
+      "file": "reckon/crew/review_records.py",
+      "line": "1951",
+      "severity": "non-blocking",
+      "text": "non-blocking: the docstring still states that a writer on any node serialises against every other node's writer while _index_lock takes bare flock, so the \u00a74 item naming that correction is unmet and \u00a74 cannot close from this node's record; the node declares the file out of its fence for sibling node store-and-review-index-locks-cross-node."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261114T140123157216-review-dispatch-and-index-lag-locks-cross-node/manifest.md",
+      "line": "25",
+      "severity": "non-blocking",
+      "text": "non-blocking: the opener census states dispatch.lock is opened only by two tests, but the delivered head adds a third test that opens it (tests/test_review_dispatch_lock_holds_across_nodes.py:66) and the fragment relies on that census to argue no other descriptor can drop the record lock mid-body."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 8 production call site(s)",
+    "diff": "read commit by commit against db9288122b; 9e1fcaafeb swaps both locks, drops both pending rows and adds the 109-line test, and edd2e01e1e merges main resolving only the pending table, at which head I confirmed both rows are gone and both exclusive_lock takes remain.",
+    "done_when": "the dispatched done_when asks for nine pending rows removed, a second-process record-lock holder moving the dispatch on, the base revision failing that same test, and the review index docstring corrected; the gate delivers two rows (57 passed after against 55 at the base, after-suite.log and baseline-suite.log) and the holder case (tests/test_review_dispatch_lock_holds_across_nodes.py:101 with negative-control-base-dispatch-lock.log ending EXIT=1), while the docstring and the other seven rows sit with the sibling node store-and-review-index-locks-cross-node and are not measured by this record.",
+    "goal": "the goal is to move the plan-review dispatch lock and the index-lag seen-set lock onto the cross-node lock, and both takes are now reckon.node_exclusive_lock.exclusive_lock (reckon/crew/recovery_review_dispatch.py:2654 non-blocking, reckon/crew/obligations.py:3491 blocking), with both rows absent from the guard's pending table at the reviewed head.",
+    "manifest": "read; it records status complete, the gate command with four log paths, 55 passed at the base and 57 after with zero failures, and the base-revision negative control, and each log header names its revision, tree, command and module.__file__ (after-suite.log lines 1-5).",
+    "write_paths": "the node is granted four paths (reckon/crew/recovery_review_dispatch.py, reckon/crew/obligations.py, tests/test_every_shared_home_lock_holds_across_nodes.py, tests/test_review_dispatch_lock_holds_across_nodes.py); the diff touches those four plus docs/evidence/fragments/every-shared-home-lock-holds-across-nodes/review-dispatch-and-index-lag-locks-cross-node.html, which the manifest's own orientation_write_paths lists, and nothing else."
+  },
+  "justifications": {
+    "durability": "tests/test_review_dispatch_lock_holds_across_nodes.py:101 asserts the dispatch reports dispatched False while a second process holds only the record lock, and the recorded base run reddens at that id (negative-control-base-dispatch-lock.log, EXIT=1).",
+    "evidence": "the gate records its result in after-suite.log and baseline-suite.log, but the dispatched done_when asks for nine pending rows and the review index docstring, and this record measures two rows and leaves reckon/crew/review_records.py:1951 to a sibling node.",
+    "fit": "the take uses ExitStack so only the take maps LockHeld (reckon/crew/recovery_review_dispatch.py:2651-2656), the index-lag site keeps its OSError best-effort guard (reckon/crew/obligations.py:3491), and no name states a plan or stage label.",
+    "goal_fidelity": "the goal names two locks and both sites now call reckon.node_exclusive_lock.exclusive_lock (reckon/crew/recovery_review_dispatch.py:2654, reckon/crew/obligations.py:3491), with the guard's PENDING set carrying neither key at the reviewed head.",
+    "reuse": "both sites call the repository's existing reckon/node_exclusive_lock.py owner and the diff adds no new lock helper or wrapper.",
+    "scope_discipline": "every path in the diff is inside the manifest's orientation_write_paths, though the evidence fragment in docs/evidence/fragments/every-shared-home-lock-holds-across-nodes/ is not among the four paths the node record grants."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is to move the plan-review dispatch lock and the index-lag seen-set lock onto the cross-node lock, and both takes are now reckon.node_exclusive_lock.exclusive_lock (reckon/crew/recovery_review_dispatch.py:2654 non-blocking, reckon/crew/obligations.py:3491 blocking), with both rows absent from the guard's pending table at the reviewed head.\nVERDICT done_when: the dispatched done_when asks for nine pending rows removed, a second-process record-lock holder moving the dispatch on, the base revision failing that same test, and the review index docstring corrected; the gate delivers two rows (57 passed after against 55 at the base, after-suite.log and baseline-suite.log) and the holder case (tests/test_review_dispatch_lock_holds_across_nodes.py:101 with negative-control-base-dispatch-lock.log ending EXIT=1), while the docstring and the other seven rows sit with the sibling node store-and-review-index-locks-cross-node and are not measured by this record.\nVERDICT write_paths: the node is granted four paths (reckon/crew/recovery_review_dispatch.py, reckon/crew/obligations.py, tests/test_every_shared_home_lock_holds_across_nodes.py, tests/test_review_dispatch_lock_holds_across_nodes.py); the diff touches those four plus docs/evidence/fragments/every-shared-home-lock-holds-across-nodes/review-dispatch-and-index-lag-locks-cross-node.html, which the manifest's own orientation_write_paths lists, and nothing else.\nCALL_SITES: reckon/crew/recovery_review_dispatch.py:3312 dispatch_review_for_run, reckon/crew/recovery_watch.py:3785, reckon/crew/plan_review.py:4565, reckon/crew/recovery_review_acceptance.py:1224, reckon/crew_dispatch_commands.py:3163, reckon/crew/obligations.py:3539 _index_lag_notice, reckon/crew/obligations.py:3976, reckon/crew/obligation_snapshot.py:1889\nVERDICT manifest: read; it records status complete, the gate command with four log paths, 55 passed at the base and 57 after with zero failures, and the base-revision negative control, and each log header names its revision, tree, command and module.__file__ (after-suite.log lines 1-5).\nVERDICT diff: read commit by commit against db9288122b; 9e1fcaafeb swaps both locks, drops both pending rows and adds the 109-line test, and edd2e01e1e merges main resolving only the pending table, at which head I confirmed both rows are gone and both exclusive_lock takes remain.\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: the goal names two locks and both sites now call reckon.node_exclusive_lock.exclusive_lock (reckon/crew/recovery_review_dispatch.py:2654, reckon/crew/obligations.py:3491), with the guard's PENDING set carrying neither key at the reviewed head.\nSCORE evidence: 14\nJUSTIFICATION evidence: the gate records its result in after-suite.log and baseline-suite.log, but the dispatched done_when asks for nine pending rows and the review index docstring, and this record measures two rows and leaves reckon/crew/review_records.py:1951 to a sibling node.\nSCORE scope_discipline: 16\nJUSTIFICATION scope_discipline: every path in the diff is inside the manifest's orientation_write_paths, though the evidence fragment in docs/evidence/fragments/every-shared-home-lock-holds-across-nodes/ is not among the four paths the node record grants.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_review_dispatch_lock_holds_across_nodes.py:101 asserts the dispatch reports dispatched False while a second process holds only the record lock, and the recorded base run reddens at that id (negative-control-base-dispatch-lock.log, EXIT=1).\nSCORE fit: 18\nJUSTIFICATION fit: the take uses ExitStack so only the take maps LockHeld (reckon/crew/recovery_review_dispatch.py:2651-2656), the index-lag site keeps its OSError best-effort guard (reckon/crew/obligations.py:3491), and no name states a plan or stage label.\nSCORE reuse: 20\nJUSTIFICATION reuse: both sites call the repository's existing reckon/node_exclusive_lock.py owner and the diff adds no new lock helper or wrapper.\nFINDING reckon/crew/review_records.py:1951 non-blocking: the docstring still states that a writer on any node serialises against every other node's writer while _index_lock takes bare flock, so the \u00a74 item naming that correction is unmet and \u00a74 cannot close from this node's record; the node declares the file out of its fence for sibling node store-and-review-index-locks-cross-node.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261114T140123157216-review-dispatch-and-index-lag-locks-cross-node/manifest.md:25 non-blocking: the opener census states dispatch.lock is opened only by two tests, but the delivered head adds a third test that opens it (tests/test_review_dispatch_lock_holds_across_nodes.py:66) and the fragment relies on that census to argue no other descriptor can drop the record lock mid-body.\n",
+  "review_run_id": "r-20261114T205443513907-review-of-review-dispatch-and-index-lag-locks-cross-node-edd2e01e1ee9",
+  "reviewed_base_sha": "db9288122bd023b8fdd7d96b52f732e3ebed861e",
+  "reviewed_head_sha": "edd2e01e1ee98f1b0aff73ebd382c1130139f260",
+  "reviewed_run_id": "r-20261114T140123157216-review-dispatch-and-index-lag-locks-cross-node",
+  "scores": {
+    "durability": 18,
+    "evidence": 14,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 16
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-14T22:11:16.649491+00:00",
+  "total": 105
+}
