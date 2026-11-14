@@ -1,0 +1,50 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-11-14T14:28:42.731Z",
+  "dispatched_at": "2026-11-14T14:12:41Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/work-flows-to-the-lane/unreadable-queued-pointer-never-fails-ordering.html",
+      "line": 61,
+      "severity": "blocking",
+      "summary": "the record says both cases now read the set-aside ordering while de99d812 restored tests/test_a_queued_pointer_without_its_time_reads_no_place.py to the base refusal, which fails at the reviewed head."
+    },
+    {
+      "file": "docs/evidence/fragments/work-flows-to-the-lane/unreadable-queued-pointer-never-fails-ordering.html",
+      "line": 28,
+      "severity": "non-blocking",
+      "summary": "the fragment still names unplaceable_queued(), which this range renamed to partition_placeable in reckon/crew/queue_order.py:247, so the record points a reader at a symbol that no longer exists."
+    },
+    {
+      "file": "reckon/crew/queue_order.py",
+      "line": 255,
+      "severity": "non-blocking",
+      "summary": "the docstring says every reader of the queue takes this split from here rather than reading the field again, but reckon/crew/admission/ordering.py:233 still partitions inline on parse_utc(pointer.get(queued_at)), so the stated invariant is not true of the tree it lands on."
+    },
+    {
+      "file": "tests/test_a_queued_pointer_without_its_time_reads_no_place.py",
+      "line": 169,
+      "severity": "non-blocking",
+      "summary": "the case asserts the refusal this section removes, so the merged head carries one added failing test; 1be6d469 repaired it and de99d812 reverted that repair because the file is outside the node's declared write paths, so the fold needs a node whose write paths include it."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that one unreadable queued pointer never fails admission ordering or a review compose; the gained commits keep reckon/crew/queue_order.py:340 setting such a pointer aside and route reckon/crew/admission/selection.py:232 through the same split, so the goal still holds at de99d812.\nVERDICT done_when: the done_when names three measures; the first is asserted by tests/test_the_admission_pass_survives_a_pointer_without_its_time.py:299-320 and tests/test_unreadable_queued_pointer_never_fails_ordering.py:79-86, the second only approximately by the queue-position case, and the third by test_no_writer_copies_an_arrival_it_has_not_read; head-arm.log ends \"1 failed, 60 passed\" with the same single failure carried by baseline-arm.log.\nVERDICT write_paths: the manifest declares reckon, tests/test_unreadable_queued_pointer_never_fails_ordering.py and the evidence fragment; the net diff 7fec4416..de99d812 touches only those plus ruff reformatting inside reckon/, but commit 1be6d469 also edited tests/test_a_queued_pointer_without_its_time_reads_no_place.py outside the fence before de99d812 restored it, so the head is in scope and one commit in the run was not.\nVERDICT manifest: read in full; it records five commits, both arms each with its own revision, command, log path, completed flag and failure ids, the negative-control log path, and the outside-scope case, and its checkpoint and landing lines agree with the logs on disk.\nVERDICT diff: read commit by commit against 7fec44167755 - 1be6d469 renames unplaceable_queued to partition_placeable, routes selection.py through it and repoints the cases; d25fdd23 rewrites the fragment's gate paragraph; de99d812 restores the read-surface case to the base refusal.\nCALL_SITES: reckon/crew/admission/selection.py:232 (admit_once), reckon/crew/admission/ordering.py:164 and :240, reckon/crew/dispatching/requests.py:414, reckon/crew/runs.py:1009, reckon/crew/queue_order.py:340\nSCORE goal_fidelity: 18\nSCORE evidence: 13\nSCORE scope_discipline: 13\nSCORE durability: 17\nSCORE fit: 17\nSCORE reuse: 16\nJUSTIFICATION goal_fidelity: reckon/crew/queue_order.py:340-353 and reckon/crew/admission/selection.py:232 make one split both the ordering and the pass use, which is the goal's ranks-what-it-can-read and sets the rest aside.\nJUSTIFICATION evidence: head-arm.log and baseline-arm.log record \"1 failed, 60 passed\" and \"1 failed, 53 passed\" at their own revisions, but docs/evidence/fragments/work-flows-to-the-lane/unreadable-queued-pointer-never-fails-ordering.html:55-63 reports the narrow arm as though it settled the wide arm the run itself measured at 9 failed against 8.\nJUSTIFICATION scope_discipline: every path in the net diff is inside the declared paths, but tests/test_a_queued_pointer_without_its_time_reads_no_place.py:169 was edited in 1be6d469 outside the fence and reverted in de99d812, leaving the head with a case the change contradicts.\nJUSTIFICATION durability: tests/test_the_admission_pass_survives_a_pointer_without_its_time.py:316-320 reddens with a ValueError were the ordering's raise restored, which logs/negative-control.log shows for the ordering case, and it compares a computed order against ids the test supplied rather than the code's own output.\nJUSTIFICATION fit: reckon/crew/queue_order.py:247-262 follows the module's documented-helper idiom and tests/test_unreadable_queued_pointer_never_fails_ordering.py:1-8 states the mechanism rather than the history; ruff check and format --check are clean on all six changed Python paths.\nJUSTIFICATION reuse: reckon/crew/admission/selection.py:232 now takes the split from the owner instead of re-reading the field, retiring the earlier duplicate, but reckon/crew/admission/ordering.py:233 still carries an inline copy of the same predicate while reckon/crew/queue_order.py:251-255 claims every reader takes the helper.\nFINDING docs/evidence/fragments/work-flows-to-the-lane/unreadable-queued-pointer-never-fails-ordering.html:61 blocking: the record says both cases now read the set-aside ordering while de99d812 restored tests/test_a_queued_pointer_without_its_time_reads_no_place.py to the base refusal, which fails at the reviewed head.\nFINDING docs/evidence/fragments/work-flows-to-the-lane/unreadable-queued-pointer-never-fails-ordering.html:28 non-blocking: the fragment still names unplaceable_queued(), which this range renamed to partition_placeable in reckon/crew/queue_order.py:247, so the record points a reader at a symbol that no longer exists.\nFINDING reckon/crew/queue_order.py:255 non-blocking: the docstring says every reader of the queue takes this split from here rather than reading the field again, but reckon/crew/admission/ordering.py:233 still partitions inline on parse_utc(pointer.get(queued_at)), so the stated invariant is not true of the tree it lands on.\nFINDING tests/test_a_queued_pointer_without_its_time_reads_no_place.py:169 non-blocking: the case asserts the refusal this section removes, so the merged head carries one added failing test; 1be6d469 repaired it and de99d812 reverted that repair because the file is outside the node's declared write paths, so the fold needs a node whose write paths include it.",
+  "review_run_id": "r-20261114T141042571920-review-of-unreadable-queued-pointer-never-fails-ordering-de99d812f9c2",
+  "reviewed_base_sha": "7fec4416775540fdd544f4973e544a58c80986e3",
+  "reviewed_head_sha": "de99d812f9c2324b8210d1b264d348517ecb88a9",
+  "reviewed_run_id": "r-20261114T112555787298-unreadable-queued-pointer-never-fails-ordering",
+  "scores": {
+    "durability": 17,
+    "evidence": 13,
+    "fit": 17,
+    "goal_fidelity": 18,
+    "reuse": 16,
+    "scope_discipline": 13
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-14T14:29:43.374192+00:00",
+  "total": 94
+}
