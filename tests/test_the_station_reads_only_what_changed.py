@@ -363,6 +363,41 @@ def test_a_steady_answer_store_read_parses_once_and_a_write_re_reads(
     )
 
 
+def test_a_steady_prompt_read_opens_the_rubric_once(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The rubric text is held while its file is unchanged, and re-read after an edit."""
+    prompt = tmp_path / "rubric.md"
+    prompt.write_text("first\n", encoding="utf-8")
+    monkeypatch.setattr(review_module, "_PROMPT_PATH", prompt)
+
+    reads: list[str] = []
+    real_open = io.open
+
+    def counting_open(file: Any, *args: Any, **kwargs: Any) -> Any:
+        if str(file) == str(prompt):
+            reads.append(str(file))
+        return real_open(file, *args, **kwargs)
+
+    monkeypatch.setattr(io, "open", counting_open)
+    for _ in range(5):
+        assert review_module.load_review_prompt() == "first\n"
+    assert len(reads) == 1, (
+        f"five steady reads opened the unchanged rubric {len(reads)} times "
+        "(expected one, for the first)"
+    )
+
+    prompt.write_text("second\n", encoding="utf-8")
+    reads.clear()  # the edit itself opens the file; count only the reads after it
+    assert review_module.load_review_prompt() == "second\n", (
+        "the edited rubric was served from the held copy"
+    )
+    assert len(reads) == 1, (
+        f"the read after the edit opened the rubric {len(reads)} times "
+        "(expected one: the re-read)"
+    )
+
+
 def test_moving_one_head_recomputes_only_that_run(
     fleet: dict[str, Any], monkeypatch: pytest.MonkeyPatch
 ) -> None:

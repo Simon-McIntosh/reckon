@@ -462,6 +462,28 @@ _FIGURE_REVIEW_PROMPT_PATH = (
 )
 
 
+# Prompt text, held against the identity of the file it was read from. A tick
+# asks for a rubric once per run it classifies, so a steady tick re-read the
+# same unchanged bytes hundreds of times. The identity is the stat identity, so
+# an edit changes it and the next call reads the new text; a path that cannot be
+# stat'd falls through to a plain read and caches nothing.
+_PROMPT_TEXT: dict[Path, tuple[tuple[int, int, int, int], str]] = {}
+
+
+def _prompt_text(path: Path) -> str:
+    try:
+        info = path.stat()
+    except OSError:
+        return path.read_text(encoding="utf-8")
+    identity = (info.st_dev, info.st_ino, info.st_size, info.st_mtime_ns)
+    held = _PROMPT_TEXT.get(path)
+    if held is not None and held[0] == identity:
+        return held[1]
+    text = path.read_text(encoding="utf-8")
+    _PROMPT_TEXT[path] = (identity, text)
+    return text
+
+
 def _sha_from(value: Any) -> str | None:
     """Reduce a stored or emitted revision value to one sha, or ``None``.
 
@@ -800,33 +822,33 @@ class ReviewScoreError(ValueError):
 
 
 def load_review_prompt() -> str:
-    """Read the persisted review prompt from disk at call time."""
-    return _PROMPT_PATH.read_text(encoding="utf-8")
+    """The review prompt, read from disk unless the prompt file is unchanged."""
+    return _prompt_text(_PROMPT_PATH)
 
 
 def load_claims_review_prompt() -> str:
-    """Read the claims rubric prompt from disk at call time."""
-    return _CLAIMS_PROMPT_PATH.read_text(encoding="utf-8")
+    """The claims prompt, read from disk unless the prompt file is unchanged."""
+    return _prompt_text(_CLAIMS_PROMPT_PATH)
 
 
 def load_plan_review_prompt() -> str:
-    """Read the plan-review rubric prompt from disk at call time."""
-    return _PLAN_REVIEW_PROMPT_PATH.read_text(encoding="utf-8")
+    """The plan-review prompt, read from disk unless the file is unchanged."""
+    return _prompt_text(_PLAN_REVIEW_PROMPT_PATH)
 
 
 def load_plan_design_review_prompt() -> str:
-    """Read the plan-design-review rubric prompt from disk at call time."""
-    return _PLAN_DESIGN_REVIEW_PROMPT_PATH.read_text(encoding="utf-8")
+    """The plan-design prompt, read from disk unless the file is unchanged."""
+    return _prompt_text(_PLAN_DESIGN_REVIEW_PROMPT_PATH)
 
 
 def load_health_review_prompt() -> str:
-    """Read the health-review rubric prompt from disk at call time."""
-    return _HEALTH_REVIEW_PROMPT_PATH.read_text(encoding="utf-8")
+    """The health prompt, read from disk unless the file is unchanged."""
+    return _prompt_text(_HEALTH_REVIEW_PROMPT_PATH)
 
 
 def load_figure_review_prompt() -> str:
-    """Read the figure-review rubric prompt from disk at call time."""
-    return _FIGURE_REVIEW_PROMPT_PATH.read_text(encoding="utf-8")
+    """The figure prompt, read from disk unless the file is unchanged."""
+    return _prompt_text(_FIGURE_REVIEW_PROMPT_PATH)
 
 
 # ── The parser ──────────────────────────────────────────────────────────────
