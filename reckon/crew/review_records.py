@@ -1995,13 +1995,27 @@ def _document_is_usable(directory: Path, doc: Any) -> bool:
     return isinstance(doc.get("runs"), dict)
 
 
-def _read_index_document(directory: Path) -> dict[str, Any] | None:
-    """Read the store's index document, or ``None`` when there is not one.
+# The parsed document this process last read from each store, keyed on the
+# document file's inode, size and modification time. Every writer replaces the
+# document under a new inode, so an unchanged key means unchanged content and
+# a repeat read costs one stat rather than a parse of megabytes. An entry is
+# dropped as this process persists a document, and a writer that mutates one
+# takes its own copy rather than the cached mapping.
+_PARSED_INDEX_DOCUMENTS: dict[
+    str, tuple[tuple[int, int, int], dict[str, Any] | None]
+] = {}
 
-    The read is a read: no stat of the document, the directory or a record. An
-    unusable document -- another checkout's, another store's, half written or
-    not JSON -- answers ``None`` exactly as a missing one does, because an index
-    that cannot be read is not an index.
+
+def _forget_parsed_index_document(directory: Path) -> None:
+    """Drop this process's parsed copy, so the next read takes the file."""
+    _PARSED_INDEX_DOCUMENTS.pop(str(directory), None)
+
+
+def _fresh_index_document(directory: Path) -> dict[str, Any] | None:
+    """Read and parse the document afresh, neither consulting nor filling the cache.
+
+    A writer mutates the document it reads, so it takes this private copy: the
+    cached mapping is what other readers in this process are already holding.
     """
     try:
         raw = _index_document_path(directory).read_bytes()
@@ -2014,8 +2028,34 @@ def _read_index_document(directory: Path) -> dict[str, Any] | None:
     return doc if _document_is_usable(directory, doc) else None
 
 
+def _read_index_document(directory: Path) -> dict[str, Any] | None:
+    """The store's index document, parsed once per unchanged file.
+
+    A read costs one stat while the document is unchanged: the parsed mapping
+    is kept keyed on the file's inode, size and modification time, and every
+    write replaces the file under a new inode. A changed or unusable document
+    -- another checkout's, another store's, half written or not JSON -- is
+    parsed again and answers ``None`` exactly as a missing one does, because an
+    index that cannot be read is not an index.
+    """
+    path = _index_document_path(directory)
+    try:
+        info = path.stat()
+    except OSError:
+        _forget_parsed_index_document(directory)
+        return None
+    key = (info.st_ino, info.st_size, info.st_mtime_ns)
+    cached = _PARSED_INDEX_DOCUMENTS.get(str(directory))
+    if cached is not None and cached[0] == key:
+        return cached[1]
+    document = _fresh_index_document(directory)
+    _PARSED_INDEX_DOCUMENTS[str(directory)] = (key, document)
+    return document
+
+
 def _persist_index_document(directory: Path, doc: Mapping[str, Any]) -> None:
     """Write the store's index document atomically in the store's index dir."""
+    _forget_parsed_index_document(directory)
     try:
         from reckon._store import write_json_atomically
 
@@ -2129,7 +2169,7 @@ def _index_stored_record(path: Path, record: Mapping[str, Any]) -> None:
     entry = _entry_facts(path.name, record, data)
     entry["inode"] = inode
     with _index_lock(directory):
-        doc = _read_index_document(directory)
+        doc = _fresh_index_document(directory)
         if doc is None:
             doc = _rebuild_index_document(directory)
         version = int(doc.get("version") or 0) + 1
@@ -2196,7 +2236,7 @@ def reconcile_foreign_write(directory: Path) -> int:
     Only added or replaced names are read; removed names are dropped. An
     external rewrite retaining its inode becomes visible at the next rebuild.
     """
-    doc = _read_index_document(directory)
+    doc = _fresh_index_document(directory)
     if doc is None:
         return 0
     identity = _store_directory_identity(directory)
@@ -2212,7 +2252,7 @@ def reconcile_foreign_write(directory: Path) -> int:
             # and the document this reader already has is at most that one
             # write behind.
             return 0
-        doc = _read_index_document(directory) or doc
+        doc = _fresh_index_document(directory) or doc
         identity = _store_directory_identity(directory)
         if identity is None or identity == tuple(doc.get("directory_identity") or ()):
             return 0
@@ -2325,7 +2365,8 @@ def _settled_index_document(directory: Path) -> dict[str, Any] | None:
     except OSError:
         return None
     with _index_lock(directory):
-        document = _read_index_document(directory)
+        # Another process may have written while this one waited for the lock.
+        document = _fresh_index_document(directory)
         if document is None:
             document = _rebuild_index_document(directory)
             _persist_index_document(directory, document)
