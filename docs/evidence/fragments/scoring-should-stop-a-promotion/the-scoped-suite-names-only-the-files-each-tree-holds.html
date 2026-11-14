@@ -72,6 +72,14 @@
         <code>tests/test_deleted.py</code>, which that tree does not hold, and pytest reports
         <code>no tests ran in 0.00s</code> with exit 4 — the measured defect reproduced at
         the point the guard is meant to stop it.</p>
+      <p>Each arm log is written to a temporary file beside the durable path and moved
+        into place only once its final <code>EXIT=</code> line has been written, so a run
+        killed mid-suite leaves the previous complete log intact. An earlier after-arm log
+        was written by redirecting the durable path directly and was truncated by a killed
+        re-run, leaving a log with neither a pytest summary nor an <code>EXIT=</code> line
+        while the manifest still claimed its exit status. Both arms were therefore
+        re-measured at their recorded revisions, and the re-measured logs carry the summary
+        and the <code>EXIT=</code> line promotion reads.</p>
       <p>The test file and the module are unchanged by this node: the guard was already
         correct, so the node verified it and recorded the failing limbs rather than
         reimplementing a working rule. Log paths are recorded in the run manifest.</p>
