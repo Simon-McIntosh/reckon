@@ -25,7 +25,7 @@
   <title>Every shared-home lock holds across nodes | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="11">
+<meta name="plan-version" content="13">
 <meta name="plan-modified" content="2026-11-14">
 </head>
 <body>
@@ -186,6 +186,21 @@
 <div class="r-comment" data-section="s2" data-id="c-run-r-20261114T135621152111-shared-home-lock-guard" data-who="reckon-build" data-when="2026-11-14T14:15:21.520Z">
     <div class="r-comment-body"><p>§2 landed in cf8d735fcf: tests/test_every_shared_home_lock_holds_across_nodes.py keys every lock-taking flock under reckon/ by file and qualified function and requires each site in exactly one of two tables — judged (21 keys, 24 calls) or pending (21 sites) — with docs/state/reckon/flight.yaml declaring it a census test; census at the head reads 42 keys / 45 calls, all judged or pending, and the after arm is 55 passed EXIT=0.</p></div>
 </div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20261114T191947600177-review-of-run-landing-ledger-locks-cross-node-e48cf2ab3bdc" data-who="reckon-build" data-when="2026-11-14T19:38:48.033Z">
+    <div class="r-comment-body"><p>independent review of r-20261114T135734165051-run-landing-ledger-locks-cross-node at base 63b51b8337c4d61f3fc0b93d25ffb048273ed293, head e48cf2ab3bdc45a1fc582c95ee117d1b328885f1; six dimensions scored goal_fidelity 20, evidence 17, scope_discipline 20, durability 20, fit 18, reuse 20 (total 115); added_failure_count 0; three non-blocking findings.</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-run-r-20261114T191620527558-review-of-git-answer-and-resumption-locks-cross-node-3766d298f9ef" data-who="reckon-build" data-when="2026-11-14T19:35:56.210Z">
+    <div class="r-comment-body"><p>Independent review of run r-20261114T140151869239-git-answer-and-resumption-locks-cross-node at head 3766d298f9ef572879b95d0d7b2bf2be14cca8b0 against base ffcba6679c7cb5812709911217e6cf43ebbe9870 scored goal_fidelity 20, evidence 19, scope_discipline 20, durability 19, fit 13, reuse 19, with added_failure_count 0 and one non-blocking finding (four blank lines left in reckon/crew/resumption.py where the deleted lock context managers stood, so ruff format --check regresses on that file).</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-run-r-20261114T192633397919-review-of-review-dispatch-and-index-lag-locks-cross-node-9e1fcaafeb91" data-who="reckon-build" data-when="2026-11-14T19:46:11.593Z">
+    <div class="r-comment-body"><p>§4 review of run r-20261114T140123157216-review-dispatch-and-index-lag-locks-cross-node at 9e1fcaafeb against base db9288122b: scores goal_fidelity 19, evidence 17, scope_discipline 19, durability 18, fit 19, reuse 20, added_failure_count 0, one non-blocking finding (unrecorded retry_failures); record stored at the reviewed run's review-records directory.</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-run-r-20261114T191234937350-review-of-store-and-review-index-locks-cross-node-6cf4f73a7af7" data-who="reckon-build" data-when="2026-11-14T19:37:10.724Z">
+    <div class="r-comment-body"><p>review of r-20261114T140031957329-store-and-review-index-locks-cross-node at head 6cf4f73a7af7 scored goal_fidelity 19, evidence 17, scope_discipline 19, durability 18, fit 18, reuse 20, zero added failures, and raised three non-blocking findings (compliance._lock_path one-caller derivation; the evidence record's ruff count reads 20 against a re-measured 14; the focused head log's first line is not its revision line).</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-run-r-20261114T140151869239-git-answer-and-resumption-locks-cross-node" data-who="reckon-build" data-when="2026-11-14T18:59:08.197Z">
+    <div class="r-comment-body"><p>Migrated the git-answer store (recovery_watch._update_git_answer_store), lane-probe cache (resumption.probe_lane_availability) and sweep-status record (resumption._write_sweep_status) onto reckon.node_exclusive_lock.exclusive_lock, deleted the two one-caller forwarding context managers, and added tests/test_recovery_store_locks_hold_across_nodes.py whose record-lock-only holder makes each site wait (3 passed at head) and which fails all 3 tests against the base revision.</p></div>
+</div>
 <div class="r-comment" data-section="s5" data-id="c-run-r-20261114T185131299174-review-of-lane-budget-picker-locks-cross-node-4634a0bd4d16" data-who="reckon-build" data-when="2026-11-14T19:08:49.699Z">
     <div class="r-comment-body"><p>independent review of r-20261114T135814761240-lane-budget-picker-locks-cross-node at base 65431adf17b56c3a1fb04f32971d7729e4108dcc, head 4634a0bd4d16c9182934d7cff27798cc6df68ec3; six dimensions scored 19/19/20/17/19/19 (total 113); added_failure_count 0; two non-blocking findings.</p></div>
 </div>
@@ -194,15 +209,6 @@
 </div>
 <div class="r-comment" data-section="s5" data-id="c-run-r-20261114T135814761240-lane-budget-picker-locks-cross-node" data-who="reckon-build" data-when="2026-11-14T18:45:14.240Z">
     <div class="r-comment-body"><p>moved the banked-reset, model-catalogue refresh, paid-lane document and picker-hold locks onto reckon.node_exclusive_lock.exclusive_lock and removed their five rows from the guard's pending table; the guard passes, and a second-process POSIX record-lock holder makes the picker's hold wait and the catalogue refresh read the snapshot instead of fetching (both fail at the base revision).</p></div>
-</div>
-<div class="r-comment" data-section="s4" data-id="c-run-r-20261114T191620527558-review-of-git-answer-and-resumption-locks-cross-node-3766d298f9ef" data-who="reckon-build" data-when="2026-11-14T19:35:56.210Z">
-    <div class="r-comment-body"><p>Independent review of run r-20261114T140151869239-git-answer-and-resumption-locks-cross-node at head 3766d298f9ef572879b95d0d7b2bf2be14cca8b0 against base ffcba6679c7cb5812709911217e6cf43ebbe9870 scored goal_fidelity 20, evidence 19, scope_discipline 20, durability 19, fit 13, reuse 19, with added_failure_count 0 and one non-blocking finding (four blank lines left in reckon/crew/resumption.py where the deleted lock context managers stood, so ruff format --check regresses on that file).</p></div>
-</div>
-<div class="r-comment" data-section="s4" data-id="c-run-r-20261114T192633397919-review-of-review-dispatch-and-index-lag-locks-cross-node-9e1fcaafeb91" data-who="reckon-build" data-when="2026-11-14T19:46:11.593Z">
-    <div class="r-comment-body"><p>§4 review of run r-20261114T140123157216-review-dispatch-and-index-lag-locks-cross-node at 9e1fcaafeb against base db9288122b: scores goal_fidelity 19, evidence 17, scope_discipline 19, durability 18, fit 19, reuse 20, added_failure_count 0, one non-blocking finding (unrecorded retry_failures); record stored at the reviewed run&#x27;s review-records directory.</p></div>
-</div>
-<div class="r-comment" data-section="s3" data-id="c-run-r-20261114T191947600177-review-of-run-landing-ledger-locks-cross-node-e48cf2ab3bdc" data-who="reckon-build" data-when="2026-11-14T19:38:48.033Z">
-    <div class="r-comment-body"><p>independent review of r-20261114T135734165051-run-landing-ledger-locks-cross-node at base 63b51b8337c4d61f3fc0b93d25ffb048273ed293, head e48cf2ab3bdc45a1fc582c95ee117d1b328885f1; six dimensions scored goal_fidelity 20, evidence 17, scope_discipline 20, durability 20, fit 18, reuse 20 (total 115); added_failure_count 0; three non-blocking findings.</p></div>
 </div>
 </section>
 </main>
