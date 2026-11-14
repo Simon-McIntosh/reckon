@@ -35,11 +35,10 @@ def stopped_run(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
 
 
 @pytest.mark.parametrize("phase", ["stopped", "complete"])
-def test_reopen_without_a_new_path_then_resume(
-    run_on_the_dispatch_host, base_resume_control, phase
-):
+@pytest.mark.usefixtures("base_resume_control")
+def test_reopen_without_a_new_path_then_resume(request, phase):
     """Reopen starts nothing; the explicit resume records the next attempt."""
-    run_id, record = RUN_ID, run_on_the_dispatch_host
+    run_id, record = RUN_ID, request.getfixturevalue("run_on_the_dispatch_host")
     prior_attempt = record["attempt"]
     record["phase"] = phase
     manifest = Path(record["manifest_path"])
