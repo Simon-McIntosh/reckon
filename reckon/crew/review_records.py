@@ -1953,11 +1953,8 @@ def _read_index_stamp(directory: Path) -> tuple[tuple[int, ...], int] | None:
     A missing, half-written or unusable stamp answers ``None`` exactly as an
     absent one does, which makes the next reader reconcile and write it again.
     """
-    try:
-        raw = json.loads(_index_stamp_path(directory).read_bytes())
-    except (OSError, ValueError):
-        return None
-    if not isinstance(raw, Mapping):
+    raw = read_cache_document(_index_stamp_path(directory))
+    if raw is None:
         return None
     identity = raw.get("directory_identity")
     if not isinstance(identity, list) or not identity:
@@ -1981,17 +1978,10 @@ def _persist_index_stamp(
     """
     if identity is None or not _resolved(directory):
         return
-    try:
-        from reckon._store import write_json_atomically
-
-        write_json_atomically(
-            _index_stamp_path(directory),
-            {"directory_identity": list(identity), "version": int(version)},
-            indent=None,
-            sort_keys=True,
-        )
-    except OSError:
-        return
+    write_cache_document(
+        _index_stamp_path(directory),
+        {"directory_identity": list(identity), "version": int(version)},
+    )
 
 
 def _index_is_settled(
