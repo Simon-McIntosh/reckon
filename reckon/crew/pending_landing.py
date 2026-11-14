@@ -77,6 +77,8 @@ def write_pending(
     must merge the revision a review read rather than whichever head the run
     happened to reach before the record was read.
     """
+    if not project.strip():
+        return
     path = _record_path(run_id)
     try:
         path.parent.mkdir(parents=True, exist_ok=True)
