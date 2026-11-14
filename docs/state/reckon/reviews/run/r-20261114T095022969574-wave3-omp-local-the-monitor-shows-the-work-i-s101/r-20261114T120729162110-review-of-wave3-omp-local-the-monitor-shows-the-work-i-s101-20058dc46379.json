@@ -1,0 +1,62 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/crew/obligation_snapshot.py:1629",
+    "reckon/crew/obligation_snapshot.py:1774",
+    "reckon/crew/recovery_classification.py:1089",
+    "reckon/crew/recovery_classification.py:1644"
+  ],
+  "completed_at": "2026-11-14T12:15:55.768Z",
+  "dispatched_at": "2026-11-14T12:11:10Z",
+  "findings": [
+    {
+      "disposition": "folded",
+      "file": "reckon/crew/runs.py",
+      "line": 2665,
+      "severity": "non-blocking",
+      "summary": "the unplaced verdict was dropped from the stuck verdict set, so a request that cannot be placed is no longer reported stuck after an hour"
+    },
+    {
+      "disposition": "folded",
+      "file": "tests/test_every_surface_reads_one_stuck_verdict.py",
+      "line": 147,
+      "severity": "non-blocking",
+      "summary": "_payload carries an unreachable duplicate return statement immediately after the real one"
+    },
+    {
+      "disposition": "exempted",
+      "file": "tests/test_every_surface_reads_one_stuck_verdict.py",
+      "line": 255,
+      "severity": "non-blocking",
+      "summary": "the agreement assertions compare two readings produced by the same stuck_verdict function, so they catch surface divergence but cannot fail on a wrong verdict the three share"
+    }
+  ],
+  "project": "reckon",
+  "review_run_id": "r-20261114T120729162110-review-of-wave3-omp-local-the-monitor-shows-the-work-i-s101-20058dc46379",
+  "reviewed_base_sha": "b50f364425aece972e6aa1f4b5e932e64e2d6536",
+  "reviewed_head_sha": "20058dc46379d87a17e07dd2c7ebe572054af400",
+  "reviewed_run_id": "r-20261114T095022969574-wave3-omp-local-the-monitor-shows-the-work-i-s101",
+  "scores": {
+    "durability": 14,
+    "evidence": 17,
+    "fit": 17,
+    "goal_fidelity": 18,
+    "reuse": 18,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-14T13:36:18.093240+00:00",
+  "total": 102,
+  "verdicts": {
+    "call_sites": "reckon/crew/obligation_snapshot.py:1629,1774 and reckon/crew/recovery_classification.py:1089,1644",
+    "diff": "read commit by commit 5348334f5c, 314bd70dd8, 20058dc463: one verdict function, two import-ordered adapters, one test module and one evidence fragment",
+    "done_when": "the done_when names tests/test_every_surface_reads_one_stuck_verdict.py and requires four requests, a two-versus-three-pass boundary and two negative controls; the file builds exactly those and the manifest records 3 passed",
+    "goal": "the goal is that the stop hook, crew view live and the drain view read one stuck verdict rather than each deriving its own; reckon/crew/runs.py:2804 defines stuck_verdict and all three surfaces call it",
+    "manifest": "read; it states the node test passed (3 passed, gate-after.log EXIT=0) and names both negative-control logs",
+    "run_goal": "deliver one stuck verdict read by every surface that reports a stuck request",
+    "the_tests_added": "reckon/crew/runs.py:2804 stuck_verdict's agreement assertions compare readings of the same function, so they guard surface wiring rather than the verdict's content",
+    "write_paths": "the declared paths are reckon/crew/runs.py, obligation_snapshot.py, recovery_classification.py, the new test file and the evidence fragment; every path in the diff is one of those five"
+  }
+}
