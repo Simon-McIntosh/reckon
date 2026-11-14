@@ -1747,12 +1747,10 @@ def _follow_watch_lines(
             owner_running = runs._process_start_time(owner_pid) == owner_start
         if owner_running:
             return
-        if not reader_confirmed:
-            if not _stdout_has_reader(owner_pid):
-                consumer_gone = True
-                return
-            reader_confirmed = True
-        return
+        if not _stdout_has_reader(owner_pid, confirmed=reader_confirmed):
+            consumer_gone = True
+            return
+        reader_confirmed = True
 
     def _check_lifetime() -> None:
         """Mark this arming ended when its own deadline has passed.
@@ -2659,7 +2657,7 @@ def _follow_watch_lines(
 
 
 
-def _stdout_has_reader(owner_pid: int, stream=None) -> bool:
+def _stdout_has_reader(owner_pid: int, stream=None, *, confirmed=False) -> bool:
     """Whether this follower's output still reaches a reader that is not its parent.
 
     A follower armed by a shell that exits — two followers piped into one
@@ -2675,21 +2673,22 @@ def _stdout_has_reader(owner_pid: int, stream=None) -> bool:
     follower at all.
 
     A socket and a terminal carry a reader by construction, so they answer yes.
-    A piped output is followed to the process holding its read end: the follower
-    keeps streaming only when some process other than its current parent reads
-    it. A parent that did start this follower and holds the read end is an
-    in-process harness whose armed owner was killed elsewhere — a takeover, not
-    an orphan — and that pipe is never read, so the owner-only rule keeps its
-    present job there. A regular file is read by whoever opens it later, which
-    for a command that never exits is nobody: those answer no, and an orphan
-    writing into one still ends and frees the registration instead of refusing
-    every dispatch from its session.
+    A piped output is followed to the process holding its read end: the pids
+    holding that end answer whether anyone reads it, and the follower keeps
+    streaming when one of them is not the process that started it. A parent
+    holding an unread pipe for a dead armed owner is an in-process harness — a
+    takeover, not an orphan — and the owner-only rule keeps its present job on
+    it. That probe costs a walk of ``/proc``, so once a reader has been found
+    ``confirmed`` asks only the cheap question: the pipe's read end is still
+    open, which ``POLLERR`` answers on the write end. A regular file is read by
+    whoever opens it later, which for a command that never exits is nobody:
+    those answer no, and an orphan writing into one still ends and frees the
+    registration instead of refusing every dispatch from its session.
     """
     try:
         target = stream or click.get_text_stream("stdout")
         descriptor = target.fileno()
         info = os.fstat(descriptor)
-
         if stat.S_ISREG(info.st_mode):
             return False
         if not stat.S_ISFIFO(info.st_mode):
@@ -2698,6 +2697,8 @@ def _stdout_has_reader(owner_pid: int, stream=None) -> bool:
         poller.register(descriptor, select.POLLERR)
         if any(mask & select.POLLERR for _event, mask in poller.poll(0)):
             return False
+        if confirmed:
+            return True
         parent = os.getppid()
         # An owner of pid 1 or below is the re-parented marker rather than a
         # process, so it cannot be compared with the parent.
