@@ -188,9 +188,10 @@ def test_the_counters_are_labelled_w_h_d_q(grid):
         "needs you": "n",
         "delivered": "d",
         "waiting": "q",
+        "stuck": "s",
     }
     line = plain(grid.render(_event(working=3, blocked=1, unpromoted=7, waiting=2)))
-    assert "3w  1n  7d  2q" in line
+    assert "3w  1n  7d  2q  0s" in line
 
 
 def test_a_review_shows_the_job_under_review_beside_its_stage(grid):
@@ -293,12 +294,12 @@ def test_a_narrow_pane_drops_the_effort_then_the_model_then_the_rate(lane_row):
     assert "tok/s" in wide and "sonnet5" in wide and "medium" in wide
 
     # Effort dropped, rate and model kept.
-    no_effort = row_at(124)
+    no_effort = row_at(128)
     assert "tok/s" in no_effort and "sonnet5" in no_effort
     assert "medium" not in no_effort
 
     # Model dropped too, rate kept.
-    rate_only = row_at(116)
+    rate_only = row_at(120)
     assert "tok/s" in rate_only
     assert "sonnet5" not in rate_only and "medium" not in rate_only
 
@@ -309,8 +310,8 @@ def test_a_narrow_pane_drops_the_effort_then_the_model_then_the_rate(lane_row):
 
     for width, line in (
         (180, wide),
-        (124, no_effort),
-        (116, rate_only),
+        (128, no_effort),
+        (120, rate_only),
         (ticker_module.MIN_WIDTH, none_left),
     ):
         assert len(line) <= width, (width, line)

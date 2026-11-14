@@ -1588,6 +1588,25 @@ def _compute_watch_snapshot(
     }
 
 
+def _with_stuck_verdict(
+    snapshot: Mapping[str, Any], pointer: Mapping[str, Any]
+) -> dict[str, Any]:
+    """Attach the one stuck verdict to a snapshot, read from its live pointer.
+
+    The verdict is recomputed on every observation rather than frozen into the
+    reusable snapshot. A snapshot is reused while every file it was classified
+    from is untouched, and neither input to this verdict is a file: a phase's
+    age crosses the stuck phase's bound on the clock, and the admission pass log
+    appends between polls. A stuck cell reading either of those an hour stale
+    would report an alarm that has cleared, or miss one that has just started.
+    The pass history is memoised by the reader that owns it, so each row costs a
+    stat rather than a re-parse.
+    """
+    verdict = dict(snapshot)
+    verdict["stuck"] = runs.stuck_verdict(pointer)
+    return verdict
+
+
 def _watch_snapshot(
     pointer: Mapping[str, Any],
     *,
@@ -1627,14 +1646,17 @@ def _watch_snapshot(
             stored.get("liveness_proven"),
             stored.get("process_descendant_alive"),
         ):
-            return _refresh_snapshot(stored, moment=moment, stall_seconds=stall_seconds)
+            return _with_stuck_verdict(
+                _refresh_snapshot(stored, moment=moment, stall_seconds=stall_seconds),
+                pointer,
+            )
     snapshot = _compute_watch_snapshot(
         pointer, moment=moment, stall_seconds=stall_seconds, pointers=pointers
     )
     refreshed = _refresh_snapshot(snapshot, moment=moment, stall_seconds=stall_seconds)
     if run_id and key is not None:
         _remember_snapshot(run_id, key, refreshed, cache=store)
-    return refreshed
+    return _with_stuck_verdict(refreshed, pointer)
 
 
 #: How far past its declared allowance a still-running worker is before it is
@@ -1825,6 +1847,26 @@ FLEET_WAITING_STATES = tuple(sorted(WAITING_STATES))
 # excluding a run that is legitimately still in the waiting column.
 FLEET_BLOCKED_STATES = tuple(sorted(NEEDS_ACTION - WAITING_STATES))
 
+# The phases a request is parked in before launch: the queue owns it, so no
+# worker is running and no lane slot will free it on its own. Its wait is the
+# fleet's waiting figure rather than an action tally, which is what the pane's
+# `q` cell counts. `blocked-upstream` sits here beside `awaiting-upstream`
+# because the request is still parked; it asks for a decision, and the stuck
+# count is the cell that raises that alarm.
+FLEET_PARKED_STATES = frozenset({"awaiting-upstream", "blocked-upstream"})
+
+
+def _stuck_count(rows: Iterable[Mapping[str, Any]]) -> int:
+    """How many of these rows the one stuck verdict calls stuck.
+
+    The verdict is already on each snapshot, written from the live pointer by
+    the one function every surface reads, so this counts the alarm rather than
+    deriving a second answer. A stuck request keeps the cell its phase belongs
+    to, so this figure overlaps the bucket counts by design and never joins
+    their sum.
+    """
+    return sum(1 for row in rows if row.get("stuck"))
+
 
 def _fleet_counts(
     snapshots: Mapping[str, Mapping[str, Any]], *, session: str | None = None
@@ -1858,14 +1900,13 @@ def _fleet_counts(
         ),
         "unpromoted": sum(state in FLEET_UNPROMOTED_STATES for state in states),
     }
-    waiting = (
-        sum(
-            str(snapshot.get("state") or "") in FLEET_WAITING_STATES
-            and str(snapshot.get("recovery_classification") or "") != "held"
-            for snapshot in rows
-        )
-        + held
-    )
+    waiting = held
+    for snapshot in rows:
+        if str(snapshot.get("recovery_classification") or "") == "held":
+            continue
+        state = str(snapshot.get("state") or "")
+        if state in FLEET_WAITING_STATES or state in FLEET_PARKED_STATES:
+            waiting += 1
     if waiting:
         counts["waiting"] = waiting
     return counts
@@ -2324,14 +2365,25 @@ def _session_fleet_counts(
     ``""`` entry, which counts only the rows no session owns.
     """
     owners = {str(snapshot.get("session") or "") for snapshot in snapshots.values()}
-    return {owner: _fleet_counts(snapshots, session=owner) for owner in owners | {""}}
+    counts: dict[str, dict[str, int]] = {}
+    for owner in owners | {""}:
+        rows, _peers = _partition_session_rows(snapshots.values(), owner)
+        counts[owner] = {
+            **_fleet_counts(snapshots, session=owner),
+            "stuck": _stuck_count(rows),
+        }
+    return counts
 
 
 def _transition_counts(
     snapshots: Mapping[str, Mapping[str, Any]],
 ) -> dict[str, Any]:
     """The fleet's counts at one transition, with the per-session partition."""
-    return {**_fleet_counts(snapshots), "sessions": _session_fleet_counts(snapshots)}
+    return {
+        **_fleet_counts(snapshots),
+        "stuck": _stuck_count(snapshots.values()),
+        "sessions": _session_fleet_counts(snapshots),
+    }
 
 
 def _reviewed_run_facts(
@@ -2467,6 +2519,12 @@ def _watch_transition(
         "working": counts["working"],
         "blocked": counts["blocked"],
         "unpromoted": counts["unpromoted"],
+        # The stuck count sits beside the bucket counters rather than inside
+        # them: a stuck request keeps the cell its phase belongs to, so this
+        # figure recounts rows the buckets already hold. It is always present so
+        # the pane's `s` cell renders a dimmed zero rather than vanishing and
+        # leaving the block ragged.
+        "stuck": int(counts.get("stuck") or 0),
         # The same partition per owning session, taken by the fold at this
         # transition. A follower scoped to one session reads its own entry, so
         # the row's figures describe the fleet the transition left rather than
@@ -2819,7 +2877,7 @@ def _session_counts_in_other_projects(project: str, session: str) -> dict[str, i
     if not project or not session:
         return {}
     own = watch_stream_path(project)
-    total = {"working": 0, "blocked": 0, "unpromoted": 0}
+    total = {"working": 0, "blocked": 0, "unpromoted": 0, "stuck": 0}
     waiting_seen = False
     waiting = 0
     stamp: str | None = None
@@ -2880,7 +2938,8 @@ def _live_project_session_counts(project: str, session: str) -> dict[str, int]:
         for pointer in pointers
         if pointer.get("run_id")
     }
-    return _fleet_counts(current, session=session)
+    rows, _peers = _partition_session_rows(current.values(), session)
+    return {**_fleet_counts(current, session=session), "stuck": _stuck_count(rows)}
 
 
 def _scoped_watch_event(event: Mapping[str, Any], session: str) -> dict[str, Any]:
@@ -2921,6 +2980,7 @@ def _scoped_watch_event(event: Mapping[str, Any], session: str) -> dict[str, Any
         "working": int(own.get("working") or 0),
         "blocked": int(own.get("blocked") or 0),
         "unpromoted": int(own.get("unpromoted") or 0),
+        "stuck": int(own.get("stuck") or 0),
     }
     if "waiting" in own:
         project_counts["waiting"] = int(own.get("waiting") or 0)
@@ -2930,7 +2990,7 @@ def _scoped_watch_event(event: Mapping[str, Any], session: str) -> dict[str, Any
         elsewhere = _session_counts_in_other_projects(
             str(event.get("project") or ""), session
         )
-        for key in ("working", "blocked", "unpromoted"):
+        for key in ("working", "blocked", "unpromoted", "stuck"):
             total[key] = total.get(key, 0) + elsewhere.get(key, 0)
         if "waiting" in elsewhere:
             total["waiting"] = total.get("waiting", 0) + elsewhere["waiting"]
@@ -2942,6 +3002,11 @@ def _scoped_watch_event(event: Mapping[str, Any], session: str) -> dict[str, Any
     scoped["project_working"] = project_counts.get("working", 0)
     scoped["project_blocked"] = project_counts.get("blocked", 0)
     scoped["project_unpromoted"] = project_counts.get("unpromoted", 0)
+    # The stuck figure overlaps the buckets rather than joining them, so it is
+    # copied whole instead of being summed out of them: a session's stuck
+    # requests are already counted under their own phases.
+    scoped["stuck"] = int(total.get("stuck") or 0)
+    scoped["project_stuck"] = project_counts.get("stuck", 0)
     if "waiting" in project_counts:
         scoped["project_waiting"] = project_counts["waiting"]
     previous = scoped.get("from_state")
