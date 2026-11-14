@@ -3,6 +3,7 @@
 from pathlib import Path
 
 import pytest
+from bs4 import BeautifulSoup
 
 from reckon import _store
 from reckon.crew.node import CrewError
@@ -159,7 +160,11 @@ def test_receipts_follow_text_edits_across_state_writes_and_author_commits(
     landing._promote(repository, "the text write chain is admitted")
     committed = landing._git(repository, "show", f"HEAD:{landing.PLAN_RELATIVE}")
     assert ORIGINAL in committed
-    assert 'name="plan-owner" content="Editor"' in committed
+    owner = BeautifulSoup(committed, "html.parser").find(
+        "meta", attrs={"name": "plan-owner"}
+    )
+    assert owner is not None
+    assert owner.attrs == {"name": "plan-owner", "content": "Editor"}
     assert next_prose in path.read_text()
     landing._git(repository, "add", "--", landing.PLAN_RELATIVE)
     landing._git(
@@ -193,14 +198,20 @@ def test_a_text_landing_preserves_unrelated_staged_content(repository: Path) -> 
     assert REVISED in path.read_text()
 
 
+@pytest.mark.parametrize(
+    "empty_section", ["", '<section data-reckon="comments"><h3>Comments</h3></section>']
+)
 def test_a_failed_text_landing_preserves_the_edit_and_removes_its_comment(
     repository: Path,
     monkeypatch: pytest.MonkeyPatch,
+    empty_section: str,
 ) -> None:
     from reckon.crew import merge
 
     path = _seed_prose(repository)
     _edit_text(repository, ORIGINAL, REVISED)
+    if empty_section:
+        path.write_text(path.read_text().replace("</main>", empty_section + "</main>"))
     before = path.read_bytes()
     landing._pointer(repository)
 
@@ -214,3 +225,45 @@ def test_a_failed_text_landing_preserves_the_edit_and_removes_its_comment(
     assert path.read_bytes() == before
     assert landing._dirty(repository, path)
     assert landing.RUN_ID not in path.read_text()
+
+
+@pytest.mark.parametrize("peer", ["comment", "unparsed"])
+def test_text_rollback_preserves_content_added_after_its_snapshot(
+    repository: Path,
+    peer: str,
+) -> None:
+    from reckon import _plan_html
+    from reckon.crew.promotion_scope import _remove_text_landing_comment
+
+    path = _seed_prose(repository)
+    _edit_text(repository, ORIGINAL, REVISED)
+    before = path.read_text()
+    landing._record_comment_without_committing(repository, "the attempted landing")
+    if peer == "comment":
+        landing._record_comment_without_committing(
+            repository, "the peer's comment", landing.RUN_ID_SECOND
+        )
+    else:
+        text = path.read_text()
+        section = BeautifulSoup(text, "html.parser").select_one(
+            'section[data-reckon="comments"]'
+        )
+        assert section is not None
+        changed = str(section).replace(
+            "</section>", "<p>Unparsed peer prose.</p></section>"
+        )
+        path.write_text(_plan_html._splice_section(text, "comments", changed))
+
+    _remove_text_landing_comment(path, before, landing.RUN_ID)
+
+    restored = path.read_text()
+    assert REVISED in restored
+    state = _plan_html.read_state(restored)
+    ids = {row["id"] for rows in state.get("comments", {}).values() for row in rows}
+    assert "c-run-" + landing.RUN_ID not in ids
+    if peer == "comment":
+        assert "c-run-" + landing.RUN_ID_SECOND in ids
+    else:
+        assert "Unparsed peer prose." in restored
+        with pytest.raises(_plan_html.UnparsedSectionWriteError, match="would empty"):
+            _plan_html.write_state(restored, state)

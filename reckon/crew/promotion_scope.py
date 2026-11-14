@@ -2567,13 +2567,32 @@ def _stage_landing_writes(
 
 
 def _remove_text_landing_comment(path: Path, before: str, run_id: str) -> None:
-    """Undo only this attempt's comment while retaining pending prose and peers."""
+    """Restore the captured comments section, retaining concurrent content."""
     from bs4 import BeautifulSoup
 
     from reckon import _plan_html
 
+    def section_text(document: str) -> str:
+        record = next(
+            (
+                item
+                for item in _plan_html._structural_spans(document)
+                if item.tag == "section" and item.kind == "comments"
+            ),
+            None,
+        )
+        return document[record.start : record.end] if record is not None else ""
+
+    def canonical(document: str, *, stamps: bool = True) -> str:
+        soup = BeautifulSoup(document, "html.parser")
+        if not stamps:
+            for element in soup.find_all("meta"):
+                if element.get("name") in {"plan-version", "plan-modified"}:
+                    element.decompose()
+        return _collapse_inter_tag(str(soup))
+
     original = _plan_html.read_state(before)
-    comment_id = f"c-run-{run_id}"
+    comment_id = f"{RUN_COMMENT_PREFIX}{re.sub(r'[^A-Za-z0-9._-]+', '-', run_id)}"
     if any(
         row.get("id") == comment_id
         for rows in (original.get("comments") or {}).values()
@@ -2582,24 +2601,41 @@ def _remove_text_landing_comment(path: Path, before: str, run_id: str) -> None:
         return
     current = path.read_text(encoding="utf-8")
     state = _plan_html.read_state(current)
-    state["comments"] = {
-        key: [row for row in rows if row.get("id") != comment_id]
-        for key, rows in (state.get("comments") or {}).items()
+    expected_comments = {
+        key: list(rows) for key, rows in (original.get("comments") or {}).items()
     }
-    state["comments"] = {key: rows for key, rows in state["comments"].items() if rows}
-    restored = _plan_html.write_state(current, state)
-    unstamped = _plan_html.write_state(
-        restored,
-        {
-            **state,
-            "version": original.get("version", 0),
-            "modified": original.get("modified"),
-        },
+    for key, rows in (state.get("comments") or {}).items():
+        for row in rows:
+            if row.get("id") == comment_id:
+                expected_comments.setdefault(key, []).append(row)
+    if expected_comments == (original.get("comments") or {}):
+        return
+    expected_state = {
+        **original,
+        "comments": expected_comments,
+        "version": state.get("version"),
+        "modified": state.get("modified"),
+    }
+    if original.get("status") in {"draft", "pending"}:
+        expected_state["status"] = "in-progress"
+    expected = _plan_html.write_state(
+        before, expected_state, drop_authored_impl_meta=True
     )
-    if str(BeautifulSoup(unstamped, "html.parser")) == str(
-        BeautifulSoup(before, "html.parser")
-    ):
+    if canonical(current) == canonical(expected):
         restored = before
+    else:
+        current_section = section_text(current)
+        if canonical(current_section) == canonical(section_text(expected)):
+            replacement = section_text(before)
+        else:
+            section = BeautifulSoup(current_section, "html.parser")
+            for comment in section.select(".r-comment"):
+                if comment.get("data-id") == comment_id:
+                    comment.decompose()
+            replacement = str(section)
+        restored = _plan_html._splice_section(current, "comments", replacement)
+        if canonical(restored, stamps=False) == canonical(before, stamps=False):
+            restored = before
     _store.write_atomically(path, lambda handle: handle.write(restored))
 
 
