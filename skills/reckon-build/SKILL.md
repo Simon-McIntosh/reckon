@@ -598,6 +598,48 @@ looks full.
 Every dispatch still gets a disposable worker; reuse the members a project
 already has and register none.
 
+### Priority: set it on what others wait for, change it while it waits
+
+Admission is fair across sessions: each launch goes to the session using the
+least of the lane. Within your own session the queue launches, in order:
+
+1. the review of a delivered run, because it lets that run land;
+2. any request that has waited 30 minutes, so nothing starves;
+3. requests carrying a priority, highest first;
+4. the rest in roadmap order (critical path, then sprint order), then oldest.
+
+Give a priority to every request whose launch others wait on, with a reason:
+
+| Priority | Use it for |
+|---|---|
+| 90–100 | work the lead marked priority; a fix that unblocks other sessions; a plan review that gates every queued section of a plan |
+| 60–80 | the critical-path section the next wave waits on; a repair round; a review your landing waits on |
+| 30–50 | an ordinary section you want ahead of plain roadmap order |
+| unset | everything else: the roadmap orders it |
+
+```text
+reckon crew queue reprioritise --run <id> --priority 90 --reason "gates every queued section of the plan"
+```
+
+Any priority sorts ahead of every request without one, so a low number does
+not push work back. To defer work, hold it.
+
+**Change it in flight.** A priority is stored on the request and read on every
+admission pass, so raise or lower it whenever needs change while the request
+waits, queued or awaiting its upstream. Once the worker has launched, the
+router serves it and the priority no longer applies.
+
+**Take work out of the queue when it is no longer wanted.**
+
+- `reckon crew queue hold --run <id> --reason <why>` pauses one request, or
+  every request of a plan, and `reckon crew queue release` restores it with
+  its place kept.
+- `reckon crew queue drop --run <id> --reason <why>` removes a request for
+  good: wrong, superseded, or descoped by the lead. Record the descope on the
+  plan in the same beat.
+- Never `crew discard` a queued request to re-dispatch it. That only loses its
+  place. Change it in place with `reckon crew queue edit`.
+
 ## Advisory fleet-size guide
 
 This table is advisory: it shapes the active fleet, never whether to delegate;

@@ -799,6 +799,10 @@ def test_ship_refills_members_without_crossing_unverified_dependencies() -> None
     assert "The fleet node's cores are reported, not enforced" in ship
     assert "Codex launches at once when its lane is open" in ship
     assert "reuse the members a project already has and register none" in ship
+    assert "Priority: set it on what others wait for, change it while it waits" in ship
+    assert "Any priority sorts ahead of every request without one" in ship
+    assert "Change it in flight." in ship
+    assert "Take work out of the queue when it is no longer wanted." in ship
     assert "independent refill may start" in reference
 
 
