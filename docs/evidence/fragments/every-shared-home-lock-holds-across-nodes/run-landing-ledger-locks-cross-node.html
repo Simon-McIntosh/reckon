@@ -81,6 +81,13 @@
   The census at this head reads 35 sites and 38 lock-taking calls: 21 judged keys, unchanged, and
   14 pending. The four guard tests pass, and no site is in neither table.</p>
 
+  <p id="run-landing-ledger-locks-cross-node-focused">The wider population is the 261 test files that
+  name one of the five changed modules, run on a compute partition in both arms. The base arm reads
+  160 failed and 2676 passed; the head arm reads 158 failed, 2731 passed and 3 skipped. Compared as
+  failed ids, the head adds none and drops two — both are tests that compare a revision against the
+  base, so they fail at base by construction. The failure list is therefore unchanged by this
+  node's edit, and the remaining 158 are the same in both arms.</p>
+
   <p id="run-landing-ledger-locks-cross-node-gate">The suite arms resolve the template over each
   tree: the base arm carries the guard and the staged-write inventory
   (<code>55 passed</code>, <code>EXIT=0</code>), and the after arm at this head carries those plus
