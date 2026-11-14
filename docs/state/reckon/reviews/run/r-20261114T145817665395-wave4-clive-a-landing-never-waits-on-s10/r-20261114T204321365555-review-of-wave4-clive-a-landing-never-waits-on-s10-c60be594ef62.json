@@ -1,0 +1,31 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-11-14T20:57:44.641Z",
+  "dispatched_at": "2026-11-14T20:45:38Z",
+  "findings": [
+    {
+      "detail": "_index_lock_age_seconds catches OSError rather than FileNotFoundError, so a stat failure other than absence (permission, EIO) returns None and reads as 'no lock age'; the caller then never clears and never refuses on age. The moved copy carried this already; recording it now that merge.py is the single owner.",
+      "file": "reckon/crew/merge.py",
+      "line": 702,
+      "severity": "non-blocking"
+    }
+  ],
+  "project": "reckon",
+  "review_run_id": "r-20261114T204321365555-review-of-wave4-clive-a-landing-never-waits-on-s10-c60be594ef62",
+  "reviewed_base_sha": "e7ac22d23db1623ce009260f4f4e504a03f4a948",
+  "reviewed_head_sha": "c60be594ef623db14162bec589f8bdff66f74b47",
+  "reviewed_run_id": "r-20261114T145817665395-wave4-clive-a-landing-never-waits-on-s10",
+  "scores": {
+    "durability": 18,
+    "evidence": 18,
+    "fit": 17,
+    "goal_fidelity": 19,
+    "reuse": 19,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-14T22:06:43.124633+00:00",
+  "total": 110
+}
