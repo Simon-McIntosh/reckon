@@ -1932,6 +1932,7 @@ def _run_report_trees(
         return []
     current = now or datetime.now(tz=UTC)
     entries: list[dict[str, Any]] = []
+    mounted = flight.mounted_project_docs()
     for project_dir in sorted(p for p in reports_root.iterdir() if p.is_dir()):
         name = project_dir.name
         if project and name != project:
