@@ -1,0 +1,76 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-14T18:03:10.088Z",
+  "dispatched_at": "2026-11-14T17:52:58Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/building-a-plan-queues-all-of-it.html:43",
+      "id": "single_goal-1",
+      "reason": "the ownership rule needs its own done-when (queue as owner, skip named for the wrong session, and queue when the owner's session is passed), which is a plan edit rather than something the implementing node can settle.",
+      "text": "\u00a72's deliverable carries two mechanisms: \"one node for every section the plan declares implementable\" (the batch derivation) and the ownership rule in the bullet \"A section whose plan names an owning session other than the caller's is skipped, naming the owner\". \u00a71 lists the ownership defect as its own root cause (\"Nothing marks who owns a plan's sections\", with the nova \u00a73/\u00a74 incident), and \u00a72's done-when tests only \"a section with a live run of another session is skipped naming that session\", which is run-level deduplication, not the derived plan-owner rule and not its \"unless the caller passes the owner's session\" escape. A node that lands the batch call and misses the ownership derivation is closed on a gate that never exercised it.",
+      "type": "single_goal",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/building-a-plan-queues-all-of-it.html:43",
+      "id": "reasoning-1",
+      "reason": "one line settling it (extra nodes dispatched separately after the first act, or such a section skipped with its own row reason) decides what a coordinator does and what a test asserts; without it two implementers will build different endpoints.",
+      "text": "\u00a72 states the endpoint as one node per section (\"queues one node for every section the plan declares implementable\"), and \u00a74 makes that same call the first act of `/reckon-build`, before any review is composed. The landed `a-queue-holds-the-whole-plan` \u00a79 states the opposite sizing rule \u2014 \"Sizing is the orchestrator's judgement and stays so. It reads each section, decides how many nodes the section needs\" \u2014 and the build skill keeps that rule at HEAD (\"A section is one node unless two of its parts must run in parallel\"). The plan therefore needs a multi-node section to be expressible in the new first act, or it silently drops a rule it does not mention; nothing in \u00a72, \u00a73 or \u00a74 says which. The gap is not cosmetic: a coordinator whose section genuinely needs two nodes now has no stated route, and a worker reading \u00a72 alone will queue the section once and leave the section's second deliverable unqueued with no row saying so.",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/building-a-plan-queues-all-of-it.html:76",
+      "id": "evidence_paths-1",
+      "reason": "\u00a74 needs the same one-line evidence path the other two sections carry, or its negative control leaves no durable artifact to check.",
+      "text": "\u00a74's negative control reads \"that test fails against the base revision's skill, and the failing run is logged\", naming no path, whereas \u00a72 and \u00a73 both name `docs/evidence/fragments/building-a-plan-queues-all-of-it/s<n>.html`. A gate log with no path is a run a later reader cannot open, and this repository's evidence convention requires the durable path to be declared with the measure.",
+      "type": "evidence_paths",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/building-a-plan-queues-all-of-it.html:59",
+      "id": "naming-1",
+      "reason": "the file still records the same measurement, so renaming it changes nothing about what the node builds or what the gate asserts; the author may decline this one at no cost.",
+      "text": "the evidence paths `docs/evidence/fragments/building-a-plan-queues-all-of-it/s2.html` (line 59) and `\u2026/s3.html` (line 71) name their files by plan section label, while every existing directory under `docs/evidence/fragments/` names its files by what the fragment holds (for example `a-mention-is-charged-a-reference-cost.html`) and the repository's naming rule bans section labels in filenames.",
+      "type": "naming",
+      "would_change": false
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/building-a-plan-queues-all-of-it.html:22",
+      "id": "wiring-1",
+      "reason": "every section here is implementable on its own once the code is read, and the superseded rule is replaced rather than depended on, so adding the relationship improves the record but would not change what any node builds.",
+      "text": "the plan's only declared relationships are `plan-after: queued-work-needs-no-workaround` and `plan-section-depends-on` for s4, yet \u00a72 reverses a statement that plan makes as a landed done-when (\"Each dispatch is an ordinary `reckon crew dispatch`\" \u2014 `a-queue-holds-the-whole-plan` \u00a79, status done), and \u00a72's design leans on \u00a711/\u00a719 of that plan for the `plan-review-owed` hold it inherits. No relationship to `a-queue-holds-the-whole-plan` is declared, so a reader comparing the two plans sees one plan saying a plan is loaded one node per call and another saying one call loads it all, with nothing marking which supersedes which.",
+      "type": "wiring",
+      "would_change": false
+    }
+  ],
+  "plan_commit": "48859c4e0bec8bd5b53339641d6f77fc2aea88b5",
+  "plan_fingerprint": "318031fc6a8fa94903e065277a2cd8331a730b9c2968706ba0d7e109297f920f",
+  "plan_slug": "building-a-plan-queues-all-of-it",
+  "plan_version": 0,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261114T174945912457-plan-review-of-building-a-plan-queues-all-of-it",
+  "reviewed_blob_sha": "2a5044a77fdf3474617826a8248714a4c1fc94a9",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `skills/reckon-build/SKILL.md`, `AGENTS.md`, `docs/plans/queued-work-needs-no-workaround.html` and the `docs/evidence/fragments/<slug>/` directory convention (136 existing plan directories) all resolve at the base revision.",
+    "done_when": "pass \u2014 each of \u00a72, \u00a73 and \u00a74 names a scenario list and a declared negative control, and every control is a behaviour the base revision lacks (base refuses/does not queue rather than composing rows), so each measure can fail.",
+    "evidence_paths": "a finding \u2014 \u00a74's negative-control run names no path, while \u00a72 and \u00a73 name one.",
+    "naming": "a finding \u2014 the evidence filenames `s2.html`/`s3.html` encode section labels where the house convention in `docs/evidence/fragments/` names the file by what it holds.",
+    "reasoning": "a finding \u2014 \u00a72 fixes one node per section and makes that call the first act of the build loop, while the done-when of `a-queue-holds-the-whole-plan` \u00a79 (\"Sizing is the orchestrator's judgement and stays so \u2026 decides how many nodes the section needs\") is a landed rule the plan does not address.",
+    "single_goal": "a finding \u2014 \u00a72 delivers the full-width queue and, as a fourth sub-bullet, a plan-ownership rule that \u00a71 names as a separate root cause and that no done-when tests directly.",
+    "wiring": "pass \u2014 `plan-after` resolves to `docs/plans/queued-work-needs-no-workaround.html` (active), and `plan-section-depends-on` (line 24) matches the followup's \"\u00a72 and \u00a73 are independent; \u00a74 waits on both\"; the mechanisms \u00a71 relies on (`plan-review-owed` at `reckon/crew/admission/shared.py:163`, the admission release at `skills/reckon-build/SKILL.md:191`) already exist, so no missing dependency. See FINDING wiring for the one relationship I would add and why I would not hold the plan for it."
+  },
+  "section_digests": {
+    "_document": "9d8cf663ccdf21c00977d0760dbc1dba06da8c26a951a6b980847e85956e6cf5",
+    "s1": "68aae36865e02028c23514c19fd458ab66921c7ef94761508248c9770120d987",
+    "s2": "a6b6ff9d44e595a5ef69d72014a2a727c006c9638e4eae2f639e4eeffe0a8e28",
+    "s3": "286f43522fdbd0826c263df872f523b1f3d8222157583f2327738b131225980b",
+    "s4": "116df170d55beabe9cf6f79e724b6b7e9bec98c8e94d7d8046c49005264e8356"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-14T18:26:37.950965+00:00",
+  "total": null
+}
