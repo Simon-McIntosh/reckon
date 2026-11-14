@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="plan-slug" content="the-monitor-shows-the-work-it-watches">
+  <meta name="plan-evidence-for" content="reckon:the-monitor-shows-the-work-it-watches">
+  <meta name="plan-verifies" content="reckon:the-monitor-shows-the-work-it-watches#s105">
+  <meta name="plan-recorded-at" content="2026-11-14">
+  <title>A queued row names its own hold | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" id="wave4-omp-local-the-monitor-shows-the-wo-s105-landing" data-node="wave4-omp-local-the-monitor-shows-the-wo-s105" data-reckon="landed" data-when="2026-11-14">
+  <h2>A queued request names the hold it waits on, never another run's command</h2>
+  <p>The queued reading published a text-searched command for every refusal whose words quoted one, so a request refused at launch because a live run claimed a write path was handed a completion command naming that holder, which addresses the run holding the path rather than the request waiting on it, and the stop hook then refused the coordinator's turn until it had run it. The refusal is now read for the run and path the claim names, and the request reads under a duty kind of its own, <code>scope-held</code>, carrying the holder and the claim path and publishing no command at all: nothing the waiting session runs shortens that wait, and the holder's landing releases it.</p>
+  <p>The refusal writer stamps every <code>session_refusal</code> with the refusal's own <code>recorded_at</code>, and a claim also with <code>holder_run_id</code> and <code>held_path</code>, read from the refusal text or, failing that, from the hold the admission pass recorded on the pointer, so the two facts are never composed a second time. The queued reading orders that record against the pointer's current hold: a refusal recorded before a hold that still leaves the request queued is not a session duty at all, so the request reads as queued at its own place and the stop hook's duty list omits it. A refusal recorded after that hold keeps its duty, so the rule discriminates rather than hiding every duty.</p>
+  <p><code>scope-held</code> joins <code>NON_BLOCKING_DUTY_KINDS</code> in <code>reckon/crew/obligations.py</code> and <code>_NON_BLOCKING_KINDS</code> in <code>reckon/hooks/coordinator_obligations.py</code>, so the row is printed and never holds a stop open.</p>
+  <p>The queued reading of a request that has not launched is repaired here too. The liveness arms read a stored request's absent process, stream and manifest as evidence about a worker and reported it as running, which made every queued row in the drain view, the live view and the stop hook read as work in flight; the phase reading now stands for a request in a pre-spawn phase, and the stuck verdict still speaks because it is about the wait rather than about a worker.</p>
+  <p><code>tests/test_a_queued_row_names_its_own_hold.py</code> builds a peer run holding a write path, a request refused on that claim, a request refused on a session-subject condition, and a refusal recorded before a later open hold on the same pointer. The cases read them through the classifier, the obligations snapshot and the stop hook's own row predicates: the claim names its holder and path with no command, no <code>queued-awaiting-session</code> row carries a command naming another run, the earlier refusal reads as queued at its position while the hook omits it, and a refusal recorded after the hold still reads <code>queued-awaiting-session</code>, which is what shows the comparison discriminates. Two negative controls were applied and both fire: restoring the inherited command and kind for a claim fails the naming case, and treating every recorded refusal as current fails the earlier-refusal case.</p>
+  <p>Measured against the base revision, the test files importing <code>reckon.crew.obligations</code> go from twenty-one failures across five files to six, and two of those six are a base test that expects a scope claim to read as a plain <code>run-queued</code>, which this section's own reading supersedes; that file is outside this node's write paths. The remaining four are a fixture that rebuilds a task node without a required field, a defect in the base revision's own test.</p>
+</article>
+</body>
+</html>
