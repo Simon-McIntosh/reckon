@@ -106,12 +106,32 @@ def _store_paths(directory: Path, pattern: str) -> list[Path]:
 
 
 def _record_stat(path: Path) -> os.stat_result:
-    files = _tick_store(path.parent)
+    return _listed_stat(_tick_store(path.parent), path)
+
+
+def _listed_stat(
+    files: dict[Path, os.stat_result] | None, path: Path
+) -> os.stat_result:
+    """One record's stat, read from a listing already taken of its store.
+
+    A loop over a store takes the listing once and reads every file's stat from
+    it. Asking ``_record_stat`` per file instead re-takes the listing for each
+    one, and taking it means reading every live pointer and stat-ing every file
+    open work selects, so the loop becomes quadratic in the store's size.
+    """
     if files is None:
         return path.stat()
     if path not in files:
         raise FileNotFoundError(path)
     return files[path]
+
+
+def _listed_paths(
+    directory: Path, files: dict[Path, os.stat_result] | None, pattern: str
+) -> list[Path]:
+    if files is None:
+        return list(directory.glob(pattern))
+    return [path for path in files if fnmatchcase(path.name, pattern)]
 
 
 def _record_exists(path: Path) -> bool:
@@ -1419,9 +1439,10 @@ def _build_store_entries(directory: Path) -> list[dict[str, Any]]:
     left out rather than named.
     """
     entries: list[dict[str, Any]] = []
-    for path in sorted(_store_paths(directory, "*.json")):
+    listing = _tick_store(directory)
+    for path in sorted(_listed_paths(directory, listing, "*.json")):
         try:
-            info = _record_stat(path)
+            info = _listed_stat(listing, path)
         except OSError:
             continue
         if not stat.S_ISREG(info.st_mode):
@@ -1720,10 +1741,13 @@ def _revalidated_entries(entries: Iterable[dict[str, Any]]) -> list[dict[str, An
     the same rule the build and update passes apply.
     """
     refreshed: list[dict[str, Any]] = []
+    listings: dict[Path, dict[Path, os.stat_result] | None] = {}
     for entry in entries:
         path = entry["path"]
+        if path.parent not in listings:
+            listings[path.parent] = _tick_store(path.parent)
         try:
-            info = _record_stat(path)
+            info = _listed_stat(listings[path.parent], path)
         except OSError:
             continue
         if not stat.S_ISREG(info.st_mode):
