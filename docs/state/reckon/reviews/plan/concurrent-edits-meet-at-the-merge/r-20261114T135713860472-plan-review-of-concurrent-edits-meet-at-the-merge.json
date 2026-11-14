@@ -1,0 +1,70 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-14T14:04:53.253Z",
+  "dispatched_at": "2026-11-14T13:58:44Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/concurrent-edits-meet-at-the-merge/r-20261114T135713860472-plan-review-of-concurrent-edits-meet-at-the-merge/plan.html:215",
+      "id": "wiring-1",
+      "reason": "without a followup for \u00a714 nothing schedules the work this revision added, and the open \u00a713 followup misdirects the dispatcher to a done section.",
+      "text": "`plan-section-declarations` (:23) marks s13 `done`, yet f-cem-004, whose whole body and prompt are `/reckon-build concurrent-edits-meet-at-the-merge \u00a713`, remains `data-status=\"open\"`, and the newly added implementable s14 (:192) has no followup naming it \u2014 a coordinator reading the followups dispatches a section that has already landed and never dispatches the one that has not",
+      "type": "wiring",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/concurrent-edits-meet-at-the-merge.html#s14",
+      "id": "done_when-1",
+      "reason": "a base arm whose wait half holds at base makes the node's central contrast unmeasurable and would let the gate pass while the claimed defect is not reproduced.",
+      "text": "the done-when claims \"At the base revision the same test finds the record still present and the wait pending\", but `_section_run_unlanded` already skips a discarded run (readiness.py:584 `not _release._discarded(run_id)`, :607) and returns False when no candidate or promotion survives, so the wait half of the base arm cannot fail and the head case's readiness assertion passes on the unfixed code \u2014 a record-clearing change would be credited for a release it did not cause",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/concurrent-edits-meet-at-the-merge.html#s14",
+      "id": "reasoning-1",
+      "reason": "a wrongly attributed consumer sends the node's done-when at a mechanism that never held the wait, and leaves the real one (the landing pass retrying a discarded run's record) unmeasured.",
+      "text": "the Why attributes the stuck wait to \"readiness's `_section_run_unlanded` kept finding that record\", but no readiness path reads pending-landing records (readiness.py:535 reads `_ledger_run_rows` and the live pointers, and its only discard test is `promotion.discard_recorded`); the consumers of `pending-landings/` are the landing and recovery paths (pending_landing.finish_pending_landings, pending_landing.py:429, driven by queue_landing.py:1900, and recovery_classification.py:1035) \u2014 the actual cost of the stale record after a discard is repeated finish/classify passes, not a held readiness wait",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "f7b2179f1a0caf9109df7356848a2f0dbe64ef06",
+  "plan_fingerprint": "1de9db121e1fe9a447c1f862f67dc2ed8fc5ad98c61d0d60190aae1b43f255fc",
+  "plan_slug": "concurrent-edits-meet-at-the-merge",
+  "plan_version": 80,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261114T135713860472-plan-review-of-concurrent-edits-meet-at-the-merge",
+  "reviewed_blob_sha": "37d38db2e731b5d53ce853c18c3af9b5d8e7fabd",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every cited anchor resolves: `pending_landing._settled_landing` (reckon/crew/pending_landing.py:119), `pending_landing.clear_pending` (:111), `readiness._section_run_unlanded` (reckon/crew/admission/readiness.py:535), the `crew/pending-landings/` directory (pending_landing.pending_dir, :56), and `crew discard` (promotion.discard, promotion.py:2297).",
+    "done_when": "a finding \u2014 s14's base arm asserts the wait stays pending at the base revision, but readiness already skips a discarded run's ledger row, so that half of the base arm cannot reproduce.",
+    "evidence_paths": "pass \u2014 s14 puts every gate log under the run directory, which is durable and openable by a later reader.",
+    "naming": "pass \u2014 no plan labels, stage names or ticket numbers reach the new test filename or the section's prose, and its name states the behaviour.",
+    "reasoning": "a finding \u2014 s14 blames readiness's `_section_run_unlanded` for finding the pending record, but that function reads the ledger and live pointers only and never reads a pending-landing record, so the stated mechanism does not match the cited consumer.",
+    "single_goal": "pass \u2014 s14 names one endpoint, \"a recorded discard retires the run's pending-landing record\"; the no-discard case is a control for that endpoint, not a second deliverable.",
+    "wiring": "a finding \u2014 the document marks s13 done but its build followup f-cem-004 stays open, while the newly implementable s14 carries no followup at all."
+  },
+  "section_digests": {
+    "_document": "d8d085dd7177fc48f48a16944c8bc4df50738f4e919d40c8b3c454455797b618",
+    "s1": "3b65e328477dcad431890ad6e57cffb8c8385c67744b318213b4ad9eea2ee1c1",
+    "s10": "e8472937ce59a6c791cb2b42a60eee597bc2ae3a43d0db9ae5cc9ebe61cc8d49",
+    "s11": "7185088dec97bbe621a6c8604b017e1309cdf9ed12c9f1018f3f4a0925479f38",
+    "s12": "d44ce1d2fa90c5f2f1dd2fb0bb6089cd3d96c9c116f8d7265bb17c462321716a",
+    "s13": "fc7dc2121a9df872677d70e61ef0349d0af25e837b00343ccabc79f8c22f74c3",
+    "s14": "46da9ea16aeab461b57d0b7b35e58995d5c8cccd2fd7aa1706b0de0857546e00",
+    "s2": "bd0097b598a59627cecc4193f6a0815cc60aa0926670d4db5cb738cef62049a4",
+    "s3": "675d18417ee1df0c38d4ff105292833f6aee25b598a13faeee5014f08a3de827",
+    "s4": "16684fd478883b396d5e8f5e3a562edb3b727dcf5ff6e6a326afc75b84b32254",
+    "s5": "f192ba5b1e26f6e57e9650504aca535703eb93332d1030dd1a75fe040ef041e7",
+    "s6": "a3972e388ac76ab83edc0fc942d90bdfa8b94d9a04ee5d436ddf459d03859173",
+    "s7": "9e07feae77865a57d989ea02f10c0b69b3867dfe8f8a9b684e67be62750f6560",
+    "s8": "c0c2b4ab76c3adbd96cc5fa0191b8793a15bcef1b15d35af1b7c16db59bb89e4",
+    "s9": "70801aa3e0f1ac1b0f12696b59036350ff8cccb56ec6eebac7049aefe579ab60"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-14T15:47:14.308845+00:00",
+  "total": null
+}
