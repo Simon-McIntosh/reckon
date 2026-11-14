@@ -13,21 +13,20 @@
   <table>
     <thead><tr><th>Measure</th><th>Recorded result</th><th>Receipt</th></tr></thead>
     <tbody>
-      <tr><td>Head arm on <code>all_debug</code> at <code>e4c248e0b60f</code></td>
-        <td>1 failed, 58 passed in 15.89s; EXIT=1</td><td><code>logs/head-arm.log</code></td></tr>
+      <tr><td>Head arm on <code>all_debug</code> at <code>8e5f6679ab75</code></td>
+        <td>59 passed in 16.98s; EXIT=0</td><td><code>logs/head-arm.log</code></td></tr>
       <tr><td>Baseline arm at <code>9c8632ca0b99</code> in a scratch tree</td>
         <td>49 passed, 2 errors in 0.72s; EXIT=1</td><td><code>logs/baseline-arm.log</code></td></tr>
       <tr><td>Negative control: worktree grant removed</td>
-        <td>1 failed, 7 passed in 5.25s; EXIT=1</td><td><code>logs/negative-control.log</code></td></tr>
+        <td>2 failed, 6 passed in 5.27s; EXIT=1</td><td><code>logs/negative-control.log</code></td></tr>
     </tbody>
   </table>
   <p>The baseline arm's two errors are pre-existing at the base revision and not
-  introduced here. The head arm's single failure is the node's own
-  negative-control case, not the fence: its mutation removes the worktree write
-  grant, but on <code>all_debug</code> the fixture worktree sits under
-  <code>/tmp</code>, while the node-temp seal covers only the job's
-  <code>TMPDIR</code> scratch, so the source write still succeeds and the expected
-  refusal never fires. The eight new cases otherwise pass, including one refusal
-  per exclusive category, the source and new-test writes, and the declared-node
-  case. The measure is therefore unmet and the section stays open.</p>
+  introduced here. The head arm passes all 59 collected tests, eight of them new:
+  the source-file and new-test writes succeed, one write per exclusive category
+  is refused as read-only and the refusal's pattern is named by the composed
+  launch's <code>unmergeable_seals</code> map, a declared node's worktree is left
+  unsealed, and the initial control case passes. The negative control removes the
+  worktree write grant and the run is red on two ids the head arm does not fail,
+  which is what shows the source write's success is that grant doing its work.</p>
 </section>
