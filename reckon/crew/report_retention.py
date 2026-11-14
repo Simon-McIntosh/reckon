@@ -20,7 +20,7 @@ from __future__ import annotations
 
 import re
 from dataclasses import dataclass, field
-from datetime import UTC, datetime, timedelta
+from datetime import datetime, timedelta
 from pathlib import Path
 
 RETENTION_DAYS = 30
@@ -75,28 +75,6 @@ class Context:
     staging_root: Path | None = None
 
 
-def _newest_write(path: Path) -> datetime | None:
-    """The newest write time anywhere inside an item, or ``None``."""
-    if path.is_symlink():
-        path = path.resolve()
-        if not path.exists():
-            return None
-    latest: float | None = None
-    if path.is_file():
-        latest = path.stat().st_mtime
-    elif path.is_dir():
-        for entry in path.rglob("*"):
-            try:
-                if entry.is_file():
-                    stamp = entry.stat().st_mtime
-                    latest = stamp if latest is None else max(latest, stamp)
-            except OSError:
-                continue
-    if latest is None:
-        return None
-    return datetime.fromtimestamp(latest, tz=UTC)
-
-
 def _forms(path: Path) -> tuple[Path, ...]:
     forms: list[Path] = [path]
     try:
@@ -127,12 +105,16 @@ def attribution(context: Context, item: Path) -> str | None:
     return None
 
 
-def classify_item(context: Context, item: Path) -> Verdict:
+def classify_item(
+    context: Context, item: Path, *, newest_write: datetime | None
+) -> Verdict:
     """Return the class, expiry and reason for one report item.
 
     A kept item's expiry is ``None``. A working item expires at the earlier of
     its plan's close — reported as the item's own newest write once that plan is
-    terminal — and ``RETENTION_DAYS`` after its newest write.
+    terminal — and ``RETENTION_DAYS`` after its newest write. ``newest_write``
+    is supplied by the caller so one walk of the item serves both the verdict
+    and the sweep's report.
     """
     item_forms = _forms(item)
 
@@ -145,7 +127,7 @@ def classify_item(context: Context, item: Path) -> Verdict:
     if any(_names_path(item_forms, live) for live in context.live):
         return Verdict(WORKING, None, "a live run pointer names it")
 
-    modified = _newest_write(item)
+    modified = newest_write
     if modified is None:
         return Verdict(WORKING, None, "no file inside it carries a write time")
     ceiling = modified + timedelta(days=RETENTION_DAYS)

@@ -284,8 +284,32 @@ def test_the_dry_run_names_exactly_what_apply_removes(store):
     assert removed == before
 
 
-def test_the_real_crew_home_is_untouched(home: Path):
-    real_store_is_not_a_fixture_target(home)
-    assert sorted(
-        str(p) for p in (real_store_home() / "crew" / "reports").glob("*")
-    ) == (sorted(str(p) for p in (real_store_home() / "crew" / "reports").glob("*")))
+def _snapshot(root: Path) -> dict[str, tuple[int, int]]:
+    """Every entry under ``root`` with its mtime and size, for a before/after."""
+    snapshot: dict[str, tuple[int, int]] = {}
+    if not root.is_dir():
+        return snapshot
+    for path in sorted(root.rglob("*")):
+        try:
+            flat = path.lstat()
+        except OSError:
+            continue
+        snapshot[str(path)] = (flat.st_mtime_ns, flat.st_size)
+    return snapshot
+
+
+def _real_reports_root() -> Path:
+    return real_store_home() / "crew" / "reports"
+
+
+def test_the_real_crew_home_is_untouched(store):
+    """A sweep in the synthetic home leaves the operator's own store identical."""
+    real_store_is_not_a_fixture_target(store["home"])
+    root = _real_reports_root()
+    before = _snapshot(root)
+
+    _item(store["reports"], "aged-away", 40)
+    rows = _sweep(apply=True)
+
+    assert any(row["removed"] for row in rows), "the sweep must have removed something"
+    assert _snapshot(root) == before

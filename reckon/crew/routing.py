@@ -1866,15 +1866,33 @@ PLAN_REVIEW_RAW_REPORT_REASON = (
 )
 
 
-def _newest_mtime(directory: Path) -> datetime:
-    """The newest file mtime beneath a tree, or the tree directory's own."""
-    newest = directory.stat().st_mtime
-    for child in directory.rglob("*"):
-        try:
-            stamp = child.stat().st_mtime
-        except OSError:
-            continue
-        newest = max(newest, stamp)
+def _newest_mtime(item: Path) -> datetime | None:
+    """The newest write time of an item, following a symlink to its target.
+
+    An item is a report item: a folder, a file directly in a reports
+    directory, or a symlink to a folder moved off the crew home. A symlink is
+    judged by its target, because the link's own timestamp says when it was
+    made rather than when anything inside it was last written. ``None`` means
+    no readable file carries a write time, which keeps the item rather than
+    expiring it on a zero.
+    """
+    if item.is_symlink():
+        item = item.resolve()
+    newest: float | None = None
+    try:
+        if item.is_file():
+            newest = item.stat().st_mtime
+        elif item.is_dir():
+            for child in item.rglob("*"):
+                try:
+                    stamp = child.stat().st_mtime
+                except OSError:
+                    continue
+                newest = stamp if newest is None else max(newest, stamp)
+    except OSError:
+        return None
+    if newest is None:
+        return None
     return datetime.fromtimestamp(newest, tz=UTC)
 
 
@@ -1949,8 +1967,10 @@ def _run_report_trees(
         for item in report_retention.report_items(project_dir):
             if run_id and item.name != run_id:
                 continue
-            verdict = report_retention.classify_item(context, item)
-            modified = report_retention._newest_write(item)
+            modified = _newest_mtime(item)
+            verdict = report_retention.classify_item(
+                context, item, newest_write=modified
+            )
             if verdict.expires is None or verdict.expires > current:
                 continue
             size = tree_size_bytes(item) if item.is_dir() else item.stat().st_size
