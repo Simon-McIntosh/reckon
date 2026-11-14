@@ -255,6 +255,7 @@ _NON_BLOCKING_KINDS = frozenset(
         "unreadable-review-record",
         "index-lags-head",
         "repair-round",
+        "scope-held",
     }
 )
 

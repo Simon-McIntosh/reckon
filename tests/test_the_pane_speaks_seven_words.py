@@ -67,12 +67,20 @@ def test_rows_use_the_pane_words_and_first_row_says_new() -> None:
 
 
 def test_counter_labels_and_hues_share_the_pane_words() -> None:
-    assert set(ticker._MAX_CELLS) <= WORDS
-    assert ticker._MAX_CELLS == ("working", "needs you", "delivered", "waiting")
+    # The stuck figure is a count beside the pane words, not one of them.
+    assert set(ticker._MAX_CELLS) - {"stuck"} <= WORDS
+    assert ticker._MAX_CELLS == (
+        "working",
+        "needs you",
+        "delivered",
+        "waiting",
+        "stuck",
+    )
     assert ticker._COUNT_FIELD == {
         "needs you": "blocked",
         "delivered": "unpromoted",
         "waiting": "waiting",
+        "stuck": "stuck",
     }
     assert all(
         ticker._state_hue(theme, word) != "dim"

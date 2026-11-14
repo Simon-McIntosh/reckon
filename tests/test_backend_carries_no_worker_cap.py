@@ -257,32 +257,35 @@ def test_the_summary_reports_the_roster_key_as_retired(home, monkeypatch, tmp_pa
     assert report["binding"] != "roster"
 
 
-# ── The cores bound is still enforced ───────────────────────────────────────
+# ── The login memory slice is still enforced ────────────────────────────────
 
 
-def test_an_exhausted_partition_core_bound_still_refuses(
+def test_an_exhausted_login_memory_slice_still_refuses(
     home, repo, tmp_path, monkeypatch
 ):
-    """Only the roster bound retired: spent partition cores still refuse.
+    """The roster key and the core count no longer bind; spent memory still does.
 
-    A reservation records 2 admitted cores, two placed workers ask one core
-    each, and the backend still declares ``max_concurrent_runs: 2``. The cores
-    bound is the one that binds, and the refusal names it rather than the
-    retired roster — so a change that removed every bound would fail here.
+    The slice holds 18 GiB of a 20 GiB maximum and one placed worker asks
+    16 GiB, so the login memory slice is the bound that refuses, naming
+    itself, while the backend still declares ``max_concurrent_runs: 2`` — so
+    a change that removed every bound would fail here.
     """
-    _slice_with_room(tmp_path, monkeypatch)
-    _publish_reservation(cores=2)
-    placement = _placement("--cpus-per-task=1")
+    monkeypatch.setattr(
+        summary_module,
+        "read_login_slice",
+        lambda: summary_module.LoginSlice(
+            readable=True, current=18 * 1024**3, maximum=20 * 1024**3
+        ),
+    )
+    placement = _placement("--mem=16G")
     config = _resolved_config(home)
     assert config["backends"]["alpha"]["max_concurrent_runs"] == 2
     config["backends"]["alpha"]["placement"] = placement
-    for token in ("a", "b"):
-        _seed_run("alpha", "working", f"occupying-{token}", placement=placement)
+    _seed_run("alpha", "working", "occupying-a", placement=placement)
 
     with pytest.raises(crew.CrewError) as excinfo:
         _dispatch(config, repo, tmp_path)
 
     message = str(excinfo.value)
-    assert "partition admitted cores" in message
-    assert "2 of 2 cores admitted (1 per worker)" in message
+    assert "login memory slice" in message
     assert "concurrency ceiling" not in message
