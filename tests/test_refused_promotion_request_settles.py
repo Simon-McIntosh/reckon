@@ -187,6 +187,52 @@ def test_a_discarded_run_settles_its_refused_request(repository, tmp_path):
     print(f"discarded {REVIEW_RUN_ID}: request settled as {settled['settled']}")
 
 
+def test_a_landed_run_settles_its_refused_request_as_landed(repository, tmp_path):
+    """A ledger row outranks the missing pointer: the run landed, it did not vanish."""
+    from reckon import ledger
+
+    _plant_review_run(repository, tmp_path)
+    _refuse(REVIEW_RUN_ID)
+    assert _refused_run_ids() == [REVIEW_RUN_ID]
+
+    row = {"run_id": REVIEW_RUN_ID, "commits": ["a" * 40]}
+    ledger.run_path(PROJECT, REVIEW_RUN_ID, repository).parent.mkdir(
+        parents=True, exist_ok=True
+    )
+    ledger.write_run_file(PROJECT, row, root=repository)
+    assert ledger.run_path(PROJECT, REVIEW_RUN_ID, repository).is_file()
+    runs.pointer_path(REVIEW_RUN_ID).unlink()
+
+    assert _refused_run_ids() == []
+    settled = requests.read_promotion(REVIEW_RUN_ID)
+    assert settled["phase"] == requests.SETTLED, settled
+    assert settled["settled"] == "landed", settled
+    assert settled["error"] == REFUSAL, "the record of the refusal is kept"
+    print(f"landed {REVIEW_RUN_ID}: request settled as {settled['settled']}")
+
+
+def test_a_run_with_no_pointer_and_no_record_settles_its_refusal_as_gone(
+    repository, tmp_path
+):
+    from reckon import ledger
+
+    _plant_review_run(repository, tmp_path)
+    _refuse(REVIEW_RUN_ID)
+    assert _refused_run_ids() == [REVIEW_RUN_ID]
+
+    runs.pointer_path(REVIEW_RUN_ID).unlink()
+    assert not promotion.discard_recorded(REVIEW_RUN_ID)
+    assert not ledger.run_path(PROJECT, REVIEW_RUN_ID, repository).exists()
+
+    assert _refused_run_ids() == []
+    settled = requests.read_promotion(REVIEW_RUN_ID)
+    assert settled["phase"] == requests.SETTLED, settled
+    assert settled["settled"] == "gone", settled
+    assert settled["error"] == REFUSAL, "the record of the refusal is kept"
+    assert requests.PromotionService().tick() == []
+    print(f"gone {REVIEW_RUN_ID}: request settled as {settled['settled']}")
+
+
 def _duty_row(run_id: str) -> dict:
     return {
         "kind": "promotion-failed",

@@ -610,8 +610,9 @@ def _settled_state(request: Mapping[str, Any]) -> str:
     the refusal was asking it to go, and a run whose pointer has gone can no
     longer be promoted at all, so in each of those cases the next command the
     duty carries can only fail. The discard marker is read first because it is
-    written before the pointer goes, and a run with a ledger row has landed
-    whether or not a pointer outlived the landing.
+    written before the pointer goes, then the ledger row, because a run that
+    landed and whose pointer has since gone has still landed; only a run with
+    neither a discard record nor a ledger row and no pointer is gone.
     """
     run_id = str(request.get("run_id") or "")
     if not run_id:
@@ -623,8 +624,6 @@ def _settled_state(request: Mapping[str, Any]) -> str:
             return "discarded"
     except OSError:
         pass
-    if not runs.pointer_path(run_id).exists():
-        return "gone"
     try:
         landed = runs._promoted_record_project(
             run_id, str(request.get("project") or "")
@@ -633,6 +632,8 @@ def _settled_state(request: Mapping[str, Any]) -> str:
         landed = None
     if landed:
         return "landed"
+    if not runs.pointer_path(run_id).exists():
+        return "gone"
     return ""
 
 
