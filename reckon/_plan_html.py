@@ -23,6 +23,7 @@ yields a valid record (slug from filename, title from <title>, status=draft).
 
 from __future__ import annotations
 
+import functools
 import html as _htmlmod
 import json
 import re
@@ -437,7 +438,16 @@ def plan_headings(html_text: str):
     ``span`` is the section extent; ``heading_span`` and ``identity_span``
     identify the heading and the element carrying its identity independently.
     An invalid replacement extent carries ``error`` and never earns a card flag.
+
+    The answer is a function of the text alone, so one text is parsed once: a
+    dispatch reads every plan its waits name, and an admission pass launching
+    many requests read the same plans again for each of them.
     """
+    return _plan_headings_of(html_text)
+
+
+@functools.lru_cache(maxsize=256)
+def _plan_headings_of(html_text: str) -> tuple:
     return tuple(
         record.heading
         for record in _structural_spans(html_text)
