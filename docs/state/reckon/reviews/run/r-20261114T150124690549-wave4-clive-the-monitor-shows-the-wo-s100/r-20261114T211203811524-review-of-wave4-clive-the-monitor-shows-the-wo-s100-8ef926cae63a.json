@@ -1,0 +1,63 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/crew/station_store.py:865 (_watch_snapshot per-row loop)",
+    "reckon/crew/runs.py:3411 (_watch_stream_snapshots)",
+    "reckon/crew/runs.py:3802 (_transition_counts)",
+    "reckon/crew/recovery.py:398-430 (re-export shim for _watch_snapshot/_fleet_counts/_transition_counts)",
+    "reckon/crew/ticker.py:3766 (Ticker row cell render)"
+  ],
+  "completed_at": "2026-11-14T21:44:02.929Z",
+  "dispatched_at": "2026-11-14T21:28:26Z",
+  "failing_note": "baseline 23 failed + 8 errors from base.log; head wide arm 20 failed + 6 errors from arm-wide.log; head failure ids are a strict subset of base, so zero added",
+  "failing_tests_after": 26,
+  "failing_tests_baseline": 31,
+  "findings": [
+    {
+      "file": "reckon/crew/recovery_watch.py",
+      "line": 1620,
+      "severity": "non-blocking",
+      "text": "the passes parameter and its threading are the entire content of commit 8ef926cae6, yet no assertion fails if the threading is reverted: tests/test_the_pane_counts_parked_work.py:100 passes passes=[] into _with_stuck_verdict directly and its stubbed verdict ignores the argument, so dropping passes= at the _watch_snapshot call sites or the quiet-beat attach at :3249 would stay green while the per-row pass-log read and the unverdicted reuse returned."
+    },
+    {
+      "file": "reckon/crew/station_store.py",
+      "line": 865,
+      "severity": "non-blocking",
+      "text": "the station tick still calls _watch_snapshot once per pointer with no passes, so each row calls runs.stuck_verdict and stats the admission verdict log on every run; the memoised parse keeps it cheap, but it is the same per-row shape the head repaired on the producer path and leaves the tick growing with run count."
+    }
+  ],
+  "justifications": {
+    "durability": "no assertion in tests/test_the_pane_counts_parked_work.py observes how often runs.admission_pass_history is read, so reverting the passes threading at reckon/crew/recovery_watch.py:1653 or the quiet-beat reuse attach at :3249 leaves every case green while the per-row read the commit fixes returns.",
+    "evidence": "the head fence arm is on disk at /home/ITER/mcintos/.cache/reckon-wave4-s100/arm-fixed.log (rev 8ef926cae6, 124 passed, EXIT=0) and the wide arm at arm-wide.log reconciles to zero added failure ids against base.log's 23 failures + 8 errors.",
+    "fit": "reckon/crew/recovery_watch.py:1591 follows the surrounding _watch_snapshot/_refresh_snapshot idiom and introduces no name the repository's naming rules forbid.",
+    "goal_fidelity": "reckon/crew/recovery_watch.py:1900 admits FLEET_PARKED_STATES to the waiting figure and :2530 emits the stuck cell on every transition, so the head's per-beat pass read keeps the figure live rather than frozen into a reusable snapshot.",
+    "reuse": "reckon/crew/runs.py:2834 stuck_verdict and :2723 admission_pass_history already own this capability and the head extends them with a passes argument instead of adding a second reader.",
+    "scope_discipline": "reckon/crew/runs.py:3402 is edited outside the two granted source paths and is named in the assistant's manifest outside_scope for coordinator ratification; no other new path enters the diff at this head."
+  },
+  "project": "reckon",
+  "review_run_id": "r-20261114T211203811524-review-of-wave4-clive-the-monitor-shows-the-wo-s100-8ef926cae63a",
+  "reviewed_base_sha": "b4700c0d20e70b117969d8c907af78d11014ad72",
+  "reviewed_head_sha": "8ef926cae63aad006ba9ea42a64ca9eaa38e2e4d",
+  "reviewed_run_id": "r-20261114T150124690549-wave4-clive-the-monitor-shows-the-wo-s100",
+  "scores": {
+    "durability": 14,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 15
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-14T21:47:18.003932+00:00",
+  "total": 102,
+  "verdicts": {
+    "assertions": "Read every assertion the head adds or changes: the three cases at tests/test_the_pane_counts_parked_work.py:107-159 assert against counts/event/rendered line built through _with_stuck_verdict, _transition_counts and _watch_transition, with only runs.stuck_verdict stubbed; each fails under the recorded negative controls, and none compares a value against the same variable the test passed in.",
+    "diff": "Read commit by commit from b4700c0d to 8ef926cae6; the head commit threads one admission_pass_history() reading into every row at reckon/crew/recovery_watch.py:3565 and reckon/crew/runs.py:3402, and attaches the verdict on the quiet-beat reuse path at reckon/crew/recovery_watch.py:3249, which previously reused a snapshot with no verdict.",
+    "done_when": "The done_when names tests/test_the_pane_counts_parked_work.py with three cases and two negative controls; the file is in the diff at tests/test_the_pane_counts_parked_work.py:107-159 and negative_controls.log records control A failing test_every_parked_phase_counts_once_in_the_waiting_cell and control B failing test_a_stuck_request_reads_in_the_alarm_colour_beside_its_cell.",
+    "goal": "The goal is to deliver section s100 so the pane counts every parked request once and the stuck ones apart; the head keeps that landed and completes the freshness half at reckon/crew/recovery_watch.py:1591 (_with_stuck_verdict) and the per-beat read at reckon/crew/recovery_watch.py:3565.",
+    "manifest": "Read the source manifest; it states status complete, the head fence arm 124 passed EXIT=0 (arm-fixed.log), the wide arm 20 failed / 863 passed / 6 errors (arm-wide.log), and both negative controls logged at /home/ITER/mcintos/.cache/reckon-wave4-s100/negative_controls.log.",
+    "write_paths": "Declared paths are reckon/crew/recovery_watch.py and reckon/crew/ticker.py plus the new test; at this head the changed files are those three plus reckon/crew/runs.py, which carries the same one-read-per-view fix and is declared under outside_scope for coordinator ratification, as are the seven sibling test files carried from 5b76e7ff."
+  }
+}
