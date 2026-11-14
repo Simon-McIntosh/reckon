@@ -19,12 +19,12 @@
   <meta name="plan-sprint" content="S27">
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="crew,reckon-tooling">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;}">
   <meta name="plan-section-depends-on" content="{&quot;s4&quot;:[&quot;a-plan-state-lock-holds-on-every-node#s2&quot;]}">
   <title>A plan-state lock holds on every node | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="14">
+<meta name="plan-version" content="16">
 <meta name="plan-modified" content="2026-11-14">
 </head>
 <body>
@@ -78,7 +78,7 @@
 <p>For each step, the test asserts that the item is in exactly one sprint and that the reply's applied-or-not verdict and versions match a fresh read of both resources. The negative control runs the commit-mark fault against the base revision and shows the reply says not applied while both writes landed. It is recorded in the run directory. The test files that import <code>reckon/project_state.py</code> or the <code>edit_plan</code> sprint path give the same pass and fail ids at head as at base, except for the new file. Write paths: <code>reckon/project_state.py</code>, the sprint branch of the edit-plan write path, and <code>tests/test_a_sprint_move_replies_with_what_landed.py</code>.</p>
 
     <h2 id="s4">§4 — Every flock on shared state is accounted for</h2>
-<section data-reckon="section" data-id="s4" data-effort-hours="1.75" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+<section data-reckon="section" data-id="s4" data-effort-hours="1.75" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="done" data-links=""></section>
 <p>Deliverable: a census of every <code>fcntl.flock</code> call under <code>reckon/</code> that takes a lock (exclusive or shared; a call that only releases one is not a row), as an evidence fragment at <code>docs/evidence/fragments/a-plan-state-lock-holds-on-every-node/every-flock-is-accounted-for.html</code>, with one row per call site giving:</p>
 <ul>
   <li>the file and line at the commit the census read;</li>
@@ -143,6 +143,9 @@
 </div>
 <div class="r-comment" data-section="s4" data-id="c-run-r-20261114T074244265423-review-of-every-flock-is-accounted-for-a8f1c7ba6b13" data-who="reckon-build" data-when="2026-11-14T07:58:35.585Z">
     <div class="r-comment-body"><p>independent review of r-20261113T123341589000-every-flock-is-accounted-for at head a8f1c7ba6b1340d5123a635772b6eec99f50751b scores goal_fidelity 20, evidence 19, scope_discipline 20, durability 10, fit 19, reuse 20 (total 108), records zero added failures, and carries two non-blocking findings — the census check is uncommitted so the census can rot silently, and the checker classifies any computed flag argument other than the literal name flags as release-only and drops it — both of which leave the census correct at the reviewed commit.</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-run-r-20261113T123341589000-every-flock-is-accounted-for" data-who="reckon-build" data-when="2026-11-13T16:53:14.723Z">
+    <div class="r-comment-body"><p>§4 census of every lock-taking fcntl.flock under reckon/ at 7d8ca3f4658: 43 rows, 10 node-local by design, 13 already judged cross-node, 20 needing the §2 lock; the set-equality check passes at head and fails both negative controls</p></div>
 </div>
 </section>
 </main>
