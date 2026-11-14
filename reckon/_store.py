@@ -66,7 +66,7 @@ import os
 import re
 import secrets
 from collections import Counter
-from collections.abc import Callable, Mapping, Sequence
+from collections.abc import Callable, Iterable, Mapping, Sequence
 from contextlib import ExitStack, contextmanager, suppress
 from contextvars import ContextVar
 from datetime import UTC, date, datetime
@@ -1052,6 +1052,19 @@ def _consume_write_effects(kind: str, data: dict[str, Any]) -> list[dict[str, st
     return list(pending[1])
 
 
+def _pending_evidence_plans(working: dict[str, Any]) -> set[str]:
+    """Plan slugs this batch's queued evidence appends will reach.
+
+    Effects are collected out of band while the ops run and written after the
+    batch is validated, so a later op's guard that reads the record from disk
+    cannot see them yet. This is how that guard sees its own batch's evidence.
+    """
+    pending = _WRITE_EFFECTS["evidence_appends"].get()
+    if pending is None or pending[0] is not working:
+        return set()
+    return {str(request.get("plan") or "") for request in pending[1]}
+
+
 def _forged_plan_structure(body: str) -> str | None:
     """Name what a body would forge, or ``None`` when it is authored prose alone.
 
@@ -1755,7 +1768,13 @@ def _write_state_locked(
         _require_transition_verdict(new_data, "plan-terminal")
         if requested_status in _LANDED_STATUSES:
             _require_every_section_ticked(new_data, text)
-        _require_terminal_evidence(project, slug, requested_status, root)
+        _require_terminal_evidence(
+            project,
+            slug,
+            requested_status,
+            root,
+            {str(request.get("plan") or "") for request in evidence_appends},
+        )
     if state_type == "plan":
         _validate_decision_transitions(new_data, cur_state)
     new_data.pop("_version", None)  # never allow the old JSON key in the state
@@ -4971,7 +4990,14 @@ def validate_landing_patch(
         project = str(state.get("project") or "")
         slug = str(state.get("slug") or "")
         if project and slug:
-            guard(_require_terminal_evidence, project, slug, requested_status)
+            guard(
+                _require_terminal_evidence,
+                project,
+                slug,
+                requested_status,
+                None,
+                _pending_evidence_plans(state),
+            )
     if (
         requested_status in _LANDED_STATUSES
         and not continuation_present(state)
@@ -4988,10 +5014,18 @@ def _require_terminal_evidence(
     slug: str,
     status: str,
     root: str | Path | None = None,
+    pending_plans: Iterable[str] = (),
 ) -> None:
-    """Refuse closure until a typed evidence resource claims the plan."""
+    """Refuse closure until a typed evidence resource claims the plan.
+
+    ``pending_plans`` names the plans this batch's own queued evidence appends
+    will reach. They are not on disk yet, and a close batched behind them must
+    still see them, so appending the evidence and closing the plan is one write.
+    """
     from reckon import ledger
 
+    if slug in pending_plans:
+        return
     if ledger.evidence_records_for_plan(project, slug, root):
         return
     expected = f"docs/evidence/archive/{slug}-landed.html"
