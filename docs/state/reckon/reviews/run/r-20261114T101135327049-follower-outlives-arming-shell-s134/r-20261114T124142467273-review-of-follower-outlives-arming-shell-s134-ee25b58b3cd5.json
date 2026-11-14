@@ -1,0 +1,107 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "47d4d536120a2e6d4356124856be6285061e6806",
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/cli.py:227 (imports the follower command group)",
+    "reckon/crew_follow_commands.py:3191 @crew.command(name=\"follow\") crew_follow",
+    "reckon/crew_follow_commands.py:1708 _check_consumer inside _follow_watch_lines",
+    "reckon/crew/session_host.py:376 (builds the crew follow argv)",
+    "reckon/crew/watch_unit.py:1621 (launches follow)"
+  ],
+  "completed_at": "2026-11-14T12:58:07.091Z",
+  "dispatched_at": "2026-11-14T12:45:25Z",
+  "findings": [
+    {
+      "file": "reckon/crew_follow_commands.py",
+      "line": "2675",
+      "severity": "blocking",
+      "text": "_arming_has_gone() decides the arming has gone from os.getppid() being dead, but follower_registration.py:559-564 records that after an arming session dies its parent names init or a subreaper; under a live subreaper getppid() is alive, _arming_has_gone() returns False and the reader substitution never fires, so the defect \u00a7134 describes persists in exactly the state the module's own comment says re-parenting produces. The discriminator should compare the current parent against the recorded owner from follower_owner(), not merely test the parent's liveness."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261114T101135327049-follower-outlives-arming-shell-s134/manifest.md",
+      "line": "20",
+      "severity": "blocking",
+      "text": "the blockers line records that the population arm over the files importing reckon/crew_follow_commands.py was never run, a done-when item \u00a7134 states as required evidence, and scratch/head-all-three.log records its '# cwd:' as the worktree rather than an all_debug partition job as the done-when specifies."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261114T101135327049-follower-outlives-arming-shell-s134/manifest.md",
+      "line": "11",
+      "severity": "blocking",
+      "text": "the tests field is a prose description of three runs rather than the literal command a shell was handed, so promotion cannot fill its gate receipt from this line and refuses it; the commands that actually ran are on the '# cmd:' header lines of the logs named in test_logs."
+    },
+    {
+      "file": "reckon/crew_follow_commands.py",
+      "line": "2701",
+      "severity": "non-blocking",
+      "text": "_stdout_has_reader() answers False for stat.S_ISSOCK and stat.S_ISCHR, so an orphaned follower whose stdout is a socket or a terminal, both readers under \u00a7134's deliverable, still ends and frees its registration; the narrowing to pipes is documented in the docstring but is a narrower reading than the plan states."
+    },
+    {
+      "file": "reckon/crew/follower_registration.py",
+      "line": "137",
+      "severity": "non-blocking",
+      "text": "_pipe_reader_pids, and delivery_mode at :199, already answer whether anything holds a pipe's read end; _stdout_has_reader adds a second mechanism for that one capability rather than extending the owner, defensible only because its POLLERR probe is cheap where the /proc walk is memoised at 211 ms."
+    },
+    {
+      "file": "reckon/crew_follow_commands.py",
+      "line": "1745",
+      "severity": "non-blocking",
+      "text": "the local owner_alive shadows the module-level owner_alive function imported at line 33 and used at line 1025, and the two differ in semantics \u2014 the imported one requires a recorded start_time while the local one skips the start check when it is empty \u2014 so a later call in this scope would silently receive a bool."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261114T101135327049-follower-outlives-arming-shell-s134/manifest.md",
+      "line": "14",
+      "severity": "non-blocking",
+      "text": "baseline_suite and after_suite omit the required failure_count key, so both arms are shape-incomplete; the counts derive from the named logs as 1 (scratch/base-arm.log) and 0 (scratch/head-all-three.log)."
+    },
+    {
+      "file": "docs/evidence/fragments/the-monitor-shows-the-work-it-watches/follower-outlives-arming-shell-s134.html",
+      "line": "35",
+      "severity": "non-blocking",
+      "text": "the fragment asserts the ruff result at the head, but the only ruff log (scratch/ruff-check.log) carries no revision header and ends FORMAT_EXIT=1 with the new test unformatted, so no head-revision receipt exists for that done-when item; re-run at ee25b58b3c the test is format-clean and the only findings are SIM103 and SIM115, both present at base."
+    }
+  ],
+  "head_log_revision": "ee25b58b3cd5bec30e2214415acc1fa715d18b01",
+  "item_verdicts": {
+    "diff": "read both commits against base 47d4d53612: 2bcfdec2f5 changes 100 lines of reckon/crew_follow_commands.py and adds a 324-line test, and ee25b58b3c adds only the 38-line evidence fragment.",
+    "done_when": "the done_when names two cases, a base arm, an owner-only negative control, two sibling guard files, a population arm over every importer on all_debug, and a ruff arm; scratch/base-arm.log (1 failed, EXIT=1), scratch/head-all-three.log (9 passed, EXIT=0), scratch/head-both.log (2 passed, EXIT=0) and scratch/negative-control.log (1 failed, EXIT=1) record the first five, while the population arm is unrun and the only ruff log carries no head revision and ends FORMAT_EXIT=1.",
+    "goal": "the node's goal is that a follower whose arming shell has exited keeps streaming while its stdout still has a reader; reckon/crew_follow_commands.py:1745-1756 substitutes a stdout-reader test for the owner check once the arming has gone, and reckon/crew_follow_commands.py:2701 restricts that test to a pipe.",
+    "manifest": "read; status complete but a blockers line that itself records the population arm as unmeasured, commits 2bcfdec2f5, a tests field that is a prose description of three runs rather than a command, and baseline_suite/after_suite JSON that omit failure_count.",
+    "write_paths": "the fence was reckon/crew_follow_commands.py, tests/test_a_follower_with_a_reader_outlives_its_arming_shell.py and the evidence fragment; git diff --stat 47d4d53612..ee25b58b3c touches exactly those three files and nothing else."
+  },
+  "justifications": {
+    "durability": "scratch/negative-control.log restores the owner-only check and reddens the first case at EXIT=1, and tests/test_a_follower_with_a_reader_outlives_its_arming_shell.py:305 fails if a follower keeps streaming after its reader closes.",
+    "evidence": "the plan's population arm over every test file importing reckon/crew_follow_commands.py was not run and the three-file gate in scratch/head-all-three.log ran in the worktree rather than on all_debug, and scratch/ruff-check.log carries no revision header and ends FORMAT_EXIT=1.",
+    "fit": "reckon/crew_follow_commands.py:1745 binds a local owner_alive that shadows the module-level owner_alive imported at line 33 and used at line 1025, with different start-time semantics.",
+    "goal_fidelity": "reckon/crew_follow_commands.py:2701 narrows the reader test to stat.S_ISFIFO, so an orphaned follower whose stdout is a socket or a terminal, readers by \u00a7134's wording, still ends.",
+    "reuse": "reckon/crew/follower_registration.py:137 _pipe_reader_pids, and delivery_mode at :199, already answer whether a pipe's read end is held, and _stdout_has_reader adds a second mechanism rather than extending that owner.",
+    "scope_discipline": "git diff --stat 47d4d53612..ee25b58b3c lists only reckon/crew_follow_commands.py, tests/test_a_follower_with_a_reader_outlives_its_arming_shell.py and the evidence fragment, all inside the manifest's declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that a follower whose arming shell has exited keeps streaming while its stdout still has a reader; reckon/crew_follow_commands.py:1745-1756 substitutes a stdout-reader test for the owner check once the arming has gone, and reckon/crew_follow_commands.py:2701 restricts that test to a pipe.\nVERDICT done_when: the done_when names two cases, a base arm, an owner-only negative control, two sibling guard files, a population arm over every importer on all_debug, and a ruff arm; scratch/base-arm.log (1 failed, EXIT=1), scratch/head-all-three.log (9 passed, EXIT=0), scratch/head-both.log (2 passed, EXIT=0) and scratch/negative-control.log (1 failed, EXIT=1) record the first five, while the population arm is unrun and the only ruff log carries no head revision and ends FORMAT_EXIT=1.\nVERDICT write_paths: the fence was reckon/crew_follow_commands.py, tests/test_a_follower_with_a_reader_outlives_its_arming_shell.py and the evidence fragment; git diff --stat 47d4d53612..ee25b58b3c touches exactly those three files and nothing else.\nVERDICT manifest: read; status complete but a blockers line that itself records the population arm as unmeasured, commits 2bcfdec2f5, a tests field that is a prose description of three runs rather than a command, and baseline_suite/after_suite JSON that omit failure_count.\nVERDICT diff: read both commits against base 47d4d53612: 2bcfdec2f5 changes 100 lines of reckon/crew_follow_commands.py and adds a 324-line test, and ee25b58b3c adds only the 38-line evidence fragment.\nCALL_SITES: reckon/cli.py:227 (imports the follower command group), reckon/crew_follow_commands.py:3191 @crew.command(name=\"follow\") crew_follow, reckon/crew_follow_commands.py:1708 _check_consumer inside _follow_watch_lines, reckon/crew/session_host.py:376 (builds the crew follow argv), reckon/crew/watch_unit.py:1621 (launches follow)\nSCORE goal_fidelity: 15\nJUSTIFICATION goal_fidelity: reckon/crew_follow_commands.py:2701 narrows the reader test to stat.S_ISFIFO, so an orphaned follower whose stdout is a socket or a terminal, readers by \u00a7134's wording, still ends.\nSCORE evidence: 9\nJUSTIFICATION evidence: the plan's population arm over every test file importing reckon/crew_follow_commands.py was not run and the three-file gate in scratch/head-all-three.log ran in the worktree rather than on all_debug, and scratch/ruff-check.log carries no revision header and ends FORMAT_EXIT=1.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: git diff --stat 47d4d53612..ee25b58b3c lists only reckon/crew_follow_commands.py, tests/test_a_follower_with_a_reader_outlives_its_arming_shell.py and the evidence fragment, all inside the manifest's declared write paths.\nSCORE durability: 18\nJUSTIFICATION durability: scratch/negative-control.log restores the owner-only check and reddens the first case at EXIT=1, and tests/test_a_follower_with_a_reader_outlives_its_arming_shell.py:305 fails if a follower keeps streaming after its reader closes.\nSCORE fit: 14\nJUSTIFICATION fit: reckon/crew_follow_commands.py:1745 binds a local owner_alive that shadows the module-level owner_alive imported at line 33 and used at line 1025, with different start-time semantics.\nSCORE reuse: 11\nJUSTIFICATION reuse: reckon/crew/follower_registration.py:137 _pipe_reader_pids, and delivery_mode at :199, already answer whether a pipe's read end is held, and _stdout_has_reader adds a second mechanism rather than extending that owner.\nFINDING reckon/crew_follow_commands.py:2675 blocking: _arming_has_gone() decides the arming has gone from os.getppid() being dead, but follower_registration.py:559-564 records that after an arming session dies its parent names init or a subreaper; under a live subreaper getppid() is alive, _arming_has_gone() returns False and the reader substitution never fires, so the defect \u00a7134 describes persists in exactly the state the module's own comment says re-parenting produces. The discriminator should compare the current parent against the recorded owner from follower_owner(), not merely test the parent's liveness.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261114T101135327049-follower-outlives-arming-shell-s134/manifest.md:20 blocking: the blockers line records that the population arm over the files importing reckon/crew_follow_commands.py was never run, a done-when item \u00a7134 states as required evidence, and scratch/head-all-three.log records its '# cwd:' as the worktree rather than an all_debug partition job as the done-when specifies.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261114T101135327049-follower-outlives-arming-shell-s134/manifest.md:11 blocking: the tests field is a prose description of three runs rather than the literal command a shell was handed, so promotion cannot fill its gate receipt from this line and refuses it; the commands that actually ran are on the '# cmd:' header lines of the logs named in test_logs.\nFINDING reckon/crew_follow_commands.py:2701 non-blocking: _stdout_has_reader() answers False for stat.S_ISSOCK and stat.S_ISCHR, so an orphaned follower whose stdout is a socket or a terminal, both readers under \u00a7134's deliverable, still ends and frees its registration; the narrowing to pipes is documented in the docstring but is a narrower reading than the plan states.\nFINDING reckon/crew/follower_registration.py:137 non-blocking: _pipe_reader_pids, and delivery_mode at :199, already answer whether anything holds a pipe's read end; _stdout_has_reader adds a second mechanism for that one capability rather than extending the owner, defensible only because its POLLERR probe is cheap where the /proc walk is memoised at 211 ms.\nFINDING reckon/crew_follow_commands.py:1745 non-blocking: the local owner_alive shadows the module-level owner_alive function imported at line 33 and used at line 1025, and the two differ in semantics \u2014 the imported one requires a recorded start_time while the local one skips the start check when it is empty \u2014 so a later call in this scope would silently receive a bool.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261114T101135327049-follower-outlives-arming-shell-s134/manifest.md:14 non-blocking: baseline_suite and after_suite omit the required failure_count key, so both arms are shape-incomplete; the counts derive from the named logs as 1 (scratch/base-arm.log) and 0 (scratch/head-all-three.log).\nFINDING docs/evidence/fragments/the-monitor-shows-the-work-it-watches/follower-outlives-arming-shell-s134.html:35 non-blocking: the fragment asserts the ruff result at the head, but the only ruff log (scratch/ruff-check.log) carries no revision header and ends FORMAT_EXIT=1 with the new test unformatted, so no head-revision receipt exists for that done-when item; re-run at ee25b58b3c the test is format-clean and the only findings are SIM103 and SIM115, both present at base.\n",
+  "review_run_id": "r-20261114T124142467273-review-of-follower-outlives-arming-shell-s134-ee25b58b3cd5",
+  "reviewed_base_sha": "47d4d536120a2e6d4356124856be6285061e6806",
+  "reviewed_head_sha": "ee25b58b3cd5bec30e2214415acc1fa715d18b01",
+  "reviewed_run_id": "r-20261114T101135327049-follower-outlives-arming-shell-s134",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash",
+    "reviewer_run_id": "r-20261114T124142467273-review-of-follower-outlives-arming-shell-s134-ee25b58b3cd5"
+  },
+  "reviewer_run_id": "r-20261114T124142467273-review-of-follower-outlives-arming-shell-s134-ee25b58b3cd5",
+  "scores": {
+    "durability": 18,
+    "evidence": 9,
+    "fit": 14,
+    "goal_fidelity": 15,
+    "reuse": 11,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-14T13:05:08.766249+00:00",
+  "total": 86
+}
