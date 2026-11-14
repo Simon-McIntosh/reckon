@@ -3843,6 +3843,7 @@ def _land_a_promoted_run(
     checkout_path: Path | None,
     pointer: Mapping[str, Any] | None = None,
     candidate: str = "",
+    gate_check: Mapping[str, Any] | None = None,
 ) -> tuple[dict[str, Any], int]:
     """Merge, verify and push a promoted run's head, then release its worktree.
 
@@ -3865,6 +3866,7 @@ def _land_a_promoted_run(
     import shlex
 
     from reckon.crew import merge as merge_module
+    from reckon.crew import pending_landing
     from reckon.crew import promotion_release as release_module
 
     project = str(promoted.get("project") or "")
@@ -3874,6 +3876,8 @@ def _land_a_promoted_run(
             record[key] = pointer[key]
     report: dict[str, Any] = {
         "ok": False,
+        "merged": False,
+        "pending_landing": str(pending_landing._record_path(run_id)),
         "run_id": run_id,
         "project": project,
         "steps": {"promote": {"ok": True}},
@@ -3956,6 +3960,25 @@ def _land_a_promoted_run(
             (promoted.get("release") or {}).get("worktree_released")
         )
         return report, 1
+
+    def verify_gate(checkout, _base, _head, revision):
+        from reckon.crew.review_landing import replay_candidate
+
+        checked = replay_candidate(
+            {
+                **record,
+                **(pointer or {}),
+                "repo": str(checkout),
+                "project": project,
+                "run_id": run_id,
+            },
+            revision,
+            gate_check,
+        )
+        report["gate_report"] = checked
+        if not checked["ok"]:
+            raise merge_module.MergeError(checked["reason"])
+
     try:
         if candidate:
             from reckon.crew import queue_landing
@@ -3974,6 +3997,7 @@ def _land_a_promoted_run(
             message=message,
             body=body,
             **({"candidate": candidate} if candidate else {}),
+            **({"verify": verify_gate} if gate_check is not None else {}),
         )
     except merge_module.MergeConflictError as exc:
         from reckon.crew.recovery_repair_dispatch import dispatch_merge_repair
@@ -3996,6 +4020,7 @@ def _land_a_promoted_run(
         report["worktree_released"] = False
         return report, 1
     except merge_module.MergePushOutstandingError as exc:
+        report["merged"] = True
         report["steps"]["land"] = {
             "ok": True,
             "push_outstanding": True,
@@ -4013,8 +4038,8 @@ def _land_a_promoted_run(
         )
         return report, code
     report["steps"]["land"] = {"ok": True, **landed}
-    from reckon.crew import pending_landing
-
+    report["merged"] = True
+    report["pending_landing"] = ""
     pending_landing.clear_pending(run_id)
     # The release judges the worker's head against the commit this landing
     # wrote, in the checkout the merge advanced: a run whose record names a
@@ -4028,6 +4053,27 @@ def _land_a_promoted_run(
         integration_repo=repository,
         integration_commit=str(landed.get("commit") or ""),
     )
+    if report.get("gate_report"):
+        from reckon import ledger
+        from reckon.crew import runs
+        from reckon.crew.promotion_gate import _update_run_record
+        from reckon.crew.promotion_scope import _commit_landing_writes
+
+        report["gate_report"]["log_path"] = str(
+            runs.resolve_run_path(report["gate_report"]["log_path"])
+        )
+        gate_row = ledger.run_path(project, run_id, checkout_path or repository)
+        _update_run_record(
+            gate_row, run_id, {"integrated_gate_check": report["gate_report"]}
+        )
+        _commit_landing_writes(
+            run_id=run_id,
+            verdict="passed",
+            checkout=checkout_path or repository,
+            paths=[gate_row],
+            subject="test: record the merged delivery gate",
+            body="Keep the gate receipt beside the delivery whose integrated revision it measured.",
+        )
     # The ledger write and the branch read below belong to the checkout the
     # landing advanced, not to whatever checkout the run recorded: a run whose
     # `repo` names an observer would otherwise stage its release in a tree the

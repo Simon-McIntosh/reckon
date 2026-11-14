@@ -508,6 +508,10 @@ def finish_pending_landings(
         ):
             results.append({"run_id": run_id, "status": "promotion-requested"})
             continue
+        automatic_gate = (record.get("pointer") or {}).get("automatic_landing_gate")
+        if automatic_gate and _promotion_lease_held(run_id):
+            results.append({"run_id": run_id, "status": "promotion-running"})
+            continue
         row = _promoted_row(project, run_id)
         cited = _cited_head(record)
         head = cited or (_reviewed_head(row) if row else "")
@@ -625,6 +629,25 @@ def finish_pending_landings(
                 results.append({"run_id": run_id, "status": "awaiting-merge-repair"})
                 continue
             head = repaired
+
+        replay_pointer = record.get("pointer") or {}
+
+        def verify_gate(
+            checkout,
+            _base,
+            _head,
+            revision,
+            pointer=replay_pointer,
+            gate=automatic_gate,
+        ):
+            from reckon.crew.review_landing import replay_candidate
+
+            checked = replay_candidate(
+                {**pointer, "repo": str(checkout)}, revision, gate
+            )
+            if not checked["ok"]:
+                raise merge.MergeError(checked["reason"])
+
         try:
             repository = merge.project_repository(project)
             landed = lander(
@@ -638,6 +661,7 @@ def finish_pending_landings(
                     "ended before the reviewed head was merged. The landing "
                     f"pass finishes that merge of {head}."
                 ),
+                **({"verify": verify_gate} if automatic_gate else {}),
             )
         except merge.MergeConflictError as exc:
             from reckon.crew.recovery_repair_dispatch import dispatch_merge_repair
@@ -677,6 +701,19 @@ def finish_pending_landings(
             merge.release_landed_worktrees(
                 repository, str(landed["commit"]), head=head, projects=[project]
             )
+        if automatic_gate:
+            from reckon.crew.review_landing import finish_landing
+
+            refusal = finish_landing(record["pointer"], run_id)
+            if refusal:
+                results.append(
+                    {
+                        "run_id": run_id,
+                        "status": "declaration-refused",
+                        "error": refusal,
+                    }
+                )
+                continue
         clear_pending(run_id)
         results.append(
             {

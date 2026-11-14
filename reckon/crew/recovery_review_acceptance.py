@@ -451,11 +451,9 @@ def accept_clean_review(
     must already have passed, the gate is re-run against the repository's
     current head with the run merged, and on all of those passing the run is
     promoted with ``promoted_by: review-acceptance`` on its ledger row.
-    Anything short of that returns to the coordinator exactly as
-    before, so this is the accepting branch beside the refusal that stops a
-    promotion without a clean review rather than a bypass of it. Acceptance
-    never merges: an unmerged run stands down and names the commits it found
-    off the branch.
+    An implementation not yet on primary is measured at its merge candidate
+    and landed through the same publication path a coordinator uses. Conflicts,
+    a failed merged gate and a plan reserving manual landing stay delivered.
 
     None is returned when the run is not acceptance-eligible at all — no stored
     review, or a review that is incomplete or carrying a blocking finding —
@@ -481,7 +479,19 @@ def accept_clean_review(
     checkout = Path(checkout_value).expanduser() if checkout_value else None
     gate_check, commits = _recorded_gate_passed(pointer)
     inputs = _acceptance_inputs(pointer, head, tree, review, gate_check, commits)
-    refusal_key = [inputs, _acceptance_remote_inputs(checkout, commits)]
+    from reckon.crew import review_landing
+
+    implementation = (
+        str(pointer.get("role") or (pointer.get("node") or {}).get("role") or "")
+        == "implement"
+    )
+    try:
+        manual_reason = (
+            review_landing.manual_landing_reason(pointer) if implementation else ""
+        )
+    except (OSError, ValueError) as exc:
+        manual_reason = f"the plan's landing decision could not be read: {exc}"
+    refusal_key = [inputs, _acceptance_remote_inputs(checkout, commits), manual_reason]
     memo_path = runs.run_dir(run_id) / "acceptance-refusal.json"
     try:
         memo = json.loads(memo_path.read_text(encoding="utf-8"))
@@ -500,6 +510,10 @@ def accept_clean_review(
         # different acceptance verdict.
         with suppress(OSError):
             runs._write_json(memo_path, {"inputs": refusal_key, "refusal": result})
+        if implementation and not result.get("held"):
+            review_landing.record_refusal(
+                pointer, head, str(result.get("reason") or "landing refused")
+            )
         return result
 
     # A coordinator's hold defers the promotion however clean the review reads:
@@ -515,6 +529,8 @@ def accept_clean_review(
                 "held": True,
             }
         )
+    if manual_reason:
+        return refuse({"run_id": run_id, "accepted": False, "reason": manual_reason})
     if checkout is None or not checkout.is_dir():
         return refuse(
             {
@@ -531,12 +547,10 @@ def accept_clean_review(
                 "reason": "the run records no passing gate to re-run at the merged head",
             }
         )
-    # The run's work must already be on the branch the remote carries. A run
-    # reaching acceptance straight after its review has not been merged, so a
-    # gate re-run here would verify a tree the change is not in and record a
-    # promotion whose commits never landed. A remote that cannot be read, or
-    # that carries no primary ref, is that same state with no way to check it,
-    # so acceptance stands down naming the cause rather than promoting blind.
+    # Read the remote before deciding whether this run needs a merge. An
+    # unreadable remote cannot establish publication, so it refuses acceptance.
+    # An implementation missing there is verified on a merge candidate rather
+    # than on primary, which does not yet carry the delivered change.
     missing, remote_refusal = _commits_missing_from(checkout, commits)
     if remote_refusal is not None:
         return refuse(
@@ -547,7 +561,7 @@ def accept_clean_review(
                 "remote_cause": remote_refusal.get("cause"),
             }
         )
-    if missing:
+    if missing and not implementation:
         return refuse(
             {
                 "run_id": run_id,
@@ -562,26 +576,37 @@ def accept_clean_review(
     from reckon.crew import promotion as promotion_module
 
     worktree = str(pointer.get("worktree") or "").strip()
-    report = promotion_module.rerun_gate_at_integrated_revision(
-        repository=checkout,
-        gate_check=gate_check,
-        base_verdict="passed",
-        integrated_revision="HEAD",
-        worktree_roots=(worktree,) if worktree else (),
-    )
+    automatic_land = bool(missing and implementation)
+    if automatic_land:
+        from reckon.crew import merge
+
+        try:
+            report = review_landing.prepare_landing(pointer, head, gate_check, config)
+        except (CrewError, OSError, ValueError, merge.MergeError) as exc:
+            return refuse({"run_id": run_id, "accepted": False, "reason": str(exc)})
+    else:
+        report = promotion_module.rerun_gate_at_integrated_revision(
+            repository=checkout,
+            gate_check=gate_check,
+            base_verdict="passed",
+            integrated_revision="HEAD",
+            worktree_roots=(worktree,) if worktree else (),
+        )
     if str(report.get("integrated_verdict")) != "passed":
         return refuse(
             {
                 "run_id": run_id,
                 "accepted": False,
                 "reason": str(
-                    report.get("finding")
+                    report.get("reason")
+                    or report.get("finding")
                     or report.get("reason")
                     or "the integrated gate did not pass at the merged head"
                 ),
                 "gate_report": report,
             }
         )
+    landing_result = {}
     try:
         with promotion_module._promotion_host_lease(run_id):
             # Manifest-backed runs are live deliveries. Reconstructed records
@@ -618,13 +643,72 @@ def accept_clean_review(
                         "accepted": False,
                         "reason": "the run or its acceptance inputs changed while it was judged",
                     }
+            if implementation and review_landing.manual_landing_reason(current):
+                return refuse(
+                    {
+                        "run_id": run_id,
+                        "accepted": False,
+                        "reason": "the plan now reserves landing for its coordinator",
+                    }
+                )
+            if automatic_land:
+                from reckon.crew import pending_landing, queue_landing
+
+                pending_landing.write_pending(
+                    run_id,
+                    project,
+                    pointer={**current, "automatic_landing_gate": dict(gate_check)},
+                    head=head,
+                )
+                if not pending_landing._record_path(run_id).is_file():
+                    return refuse(
+                        {
+                            "run_id": run_id,
+                            "accepted": False,
+                            "reason": "the pending landing record could not be written",
+                        }
+                    )
             result = promotion_module.complete(
                 run_id,
                 gate="passed",
                 gate_check=gate_check,
                 root=checkout,
                 promoted_by="review-acceptance",
+                **(
+                    {"no_impl_change": queue_landing.LANDING_BEAT_REASON}
+                    if automatic_land
+                    else {}
+                ),
             )
+            if automatic_land:
+                from reckon.crew_run_commands import _land_a_promoted_run
+
+                landing_result, _code = _land_a_promoted_run(
+                    result,
+                    run_id=run_id,
+                    gate="passed",
+                    checkout_path=checkout,
+                    pointer=pointer,
+                    gate_check=gate_check,
+                )
+                report = landing_result.get("gate_report") or report
+                if not landing_result.get("merged"):
+                    return {
+                        **landing_result,
+                        "accepted": False,
+                        "promoted": True,
+                        "reason": str(
+                            (landing_result.get("steps", {}).get("land") or {}).get(
+                                "error"
+                            )
+                            or landing_result.get("error")
+                            or "the pending landing did not merge"
+                        ),
+                        "gate_report": report,
+                    }
+                beat_refusal = review_landing.finish_landing(pointer, run_id)
+                if beat_refusal:
+                    landing_result["landing_beat_refusal"] = beat_refusal
     except (CrewError, OSError) as refusal:
         return {
             "run_id": run_id,
@@ -655,6 +739,7 @@ def accept_clean_review(
         )
     return {
         "run_id": run_id,
+        **landing_result,
         "accepted": True,
         "promoted": True,
         "review": {
