@@ -1,0 +1,44 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-11-14T13:02:58.908Z",
+  "dispatched_at": "2026-11-14T12:45:55Z",
+  "findings": [
+    {
+      "file": "reckon/doccheck.py",
+      "line": 1079,
+      "severity": "non-blocking",
+      "text": "non-blocking: the check now fires only where a paragraph's visible text begins with the write-paths label, so a section whose only write-paths mention sits mid-paragraph in a form neither reader parses is no longer reported. Measured 162 such sections over docs/plans and docs/evidence at fab91223 (corpus-count.log), none of which warn; if one of them states its fence in prose, the audit stays silent while the batch reader refuses the dispatch. The narrowing is the review's request and is the right trade, but the silent population is worth knowing about."
+    },
+    {
+      "file": "reckon/doccheck.py",
+      "line": 1081,
+      "severity": "non-blocking",
+      "text": "non-blocking: the section identity is read from the raw h2 id attribute, while _plan_html.section_prose yields section_record_id's derived identity (casefolded, with a dotted number normalised, so s5.1 becomes s5-1); a plan whose heading id is spelled differently from its section record would be compared against a different key than the one the parseable set holds. No such id exists in the corpus today (3119 h2 ids surveyed, 0 dotted or uppercase), so the mismatch is latent rather than current, and using section_record_id would remove it."
+    },
+    {
+      "file": "tests/test_a_write_paths_sentence_is_read_in_either_form.py",
+      "line": 196,
+      "severity": "non-blocking",
+      "text": "non-blocking: the head arm at 344fc562 runs only this test file and tests/test_staged_write_inventory.py, so the changed audit_html is not exercised by tests/test_doccheck.py at the head; the wide arm that includes test_doccheck.py ran at c3ca399f, before this change. The risk is low because the new module was exercised over 2331 corpus documents by the count run without error, but the repository's own doccheck tests have not seen the new code."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is that a section's write-paths sentence is read whatever punctuation follows the label; the gained commits repair the audit check that goal added, and reckon/doccheck.py:1048 now subjects only a paragraph-initial label to the check.\nVERDICT done_when: the done_when names four cases in tests/test_a_write_paths_sentence_is_read_in_either_form.py; the file holds eight cases at fab91223, and head-arm.log records 59 passed with a bare EXIT=0 at 344fc562.\nVERDICT write_paths: the declared scope is reckon/crew/plan_review.py, reckon/doccheck.py, the new test, the landing fragment and a figure directory; the two gained commits touch reckon/doccheck.py, the test and the fragment, and write no figure.\nVERDICT manifest: read; it states the head arm 59 passed and the base arm 51 passed, names every log, and its checkpoint records the corpus counts 296/274 before and 0/0 after.\nVERDICT diff: read commit by commit from c44de374 to fab91223; 344fc562 changes doccheck.py, the test and the new test case, fab91223 updates the fragment's arm table, 81 insertions and 30 deletions across three files, all inside the declared write paths.\nCALL_SITES: reckon/doccheck.py:audit_html, reckon/doccheck.py:audit_file, reckon/compliance.py:53\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/doccheck.py:1079-1100 narrows the check to a paragraph-initial unparseable label, which is the label-sentence subject the deliverable names, though it no longer warns on a mid-paragraph unparseable mention the deliverable's 'any other form' could be read to cover.\nSCORE evidence: 18\nJUSTIFICATION evidence: head-arm.log ends EXIT=0 with 59 passed, and I independently reproduced the fragment's corpus figures at both revisions (296 and 274 findings at c44de374, 0 and 0 at fab91223, module paths printed in corpus-count.log), though the head arm omits tests/test_doccheck.py.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the two commits touch only docs/evidence/fragments/a-plan-is-reviewed-before-it-is-built/a-write-paths-sentence-is-read-in-either-form.html, reckon/doccheck.py and tests/test_a_write_paths_sentence_is_read_in_either_form.py, each a declared write path.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_a_write_paths_sentence_is_read_in_either_form.py:196 fails if the over-broad mention scan returns, and :179 fails if the narrowing stops the check firing at all, but no test covers a prose-only mention in a section that carries no parseable label.\nSCORE fit: 17\nJUSTIFICATION fit: reckon/doccheck.py:1045-1100 follows the module's module-level compiled-pattern and Finding(...) idiom, but line 1081 reads a section identity from the raw h2 id instead of _plan_html.section_record_id.\nSCORE reuse: 17\nJUSTIFICATION reuse: the check reuses _plan_html.section_prose and plan_review._WRITE_PATHS_SENTENCE rather than compiling a second grammar, but its inline identity read duplicates part of _plan_html.section_record_id.\nFINDING reckon/doccheck.py:1079 non-blocking: the paragraph-initial narrowing leaves 162 corpus sections whose only write-paths mention is mid-paragraph and unparseable unwarned (corpus-count.log), so a section stating its fence in prose is silent while a dispatch would refuse it.\nFINDING reckon/doccheck.py:1081 non-blocking: the section identity is read from the raw h2 id rather than _plan_html.section_record_id, so a differently spelled heading id would be compared against a different key than section_prose yields; no such id exists in the corpus today.\nFINDING tests/test_a_write_paths_sentence_is_read_in_either_form.py:196 non-blocking: the head arm never runs tests/test_doccheck.py against the changed audit_html, and the wide arm that does ran at c3ca399f, before this change.\n",
+  "review_run_id": "r-20261114T124204380140-review-of-a-write-paths-sentence-is-read-in-either-form-fab91223bdae",
+  "reviewed_base_sha": "c44de37456ef5dc1fb940d014038b22a60a93a9a",
+  "reviewed_head_sha": "fab91223bdae062becebe7d2d1b042f7e4f8c05f",
+  "reviewed_run_id": "r-20261114T094123760799-a-write-paths-sentence-is-read-in-either-form",
+  "scores": {
+    "durability": 18,
+    "evidence": 18,
+    "fit": 17,
+    "goal_fidelity": 18,
+    "reuse": 17,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-14T13:38:31.413750+00:00",
+  "total": 108
+}
