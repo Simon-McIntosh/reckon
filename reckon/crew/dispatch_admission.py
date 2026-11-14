@@ -263,6 +263,7 @@ def _refuse_over_concurrency_ceiling(
     # counts with, while the lane bound above stays this backend's own.
     reservation_occupancy: int | None = None
     roster_pointers: list[dict[str, Any]] = []
+    seat_ids: list[str] = []
     if flight.placement_for(backend) is not None:
         from reckon.crew import placement as placement_module
 
@@ -270,7 +271,11 @@ def _refuse_over_concurrency_ceiling(
             _live_runs_across_backends(exclude_run_ids=exclude_run_ids),
             placement_module.read_reservation(project),
         )
-        reservation_occupancy = len(placement_module.roster_occupants(roster_pointers))
+        seat_ids = [
+            str(pointer.get("run_id") or "unknown")
+            for pointer in placement_module.roster_occupants(roster_pointers)
+        ]
+        reservation_occupancy = len(seat_ids)
     bounds = summary.concurrency_bounds(
         backend,
         occupancy=len(occupying),
@@ -278,6 +283,27 @@ def _refuse_over_concurrency_ceiling(
         reservation_occupancy=reservation_occupancy,
     )
     binding = summary.binding_bound(bounds)
+    if (
+        binding is not None
+        and not binding.admits_one_more
+        and binding.name == "partition-cores"
+    ):
+        # The admitted cores are spent by the workers placed in the reservation,
+        # so the refusal names those workers rather than this backend's whole
+        # population, whose queued and parked requests hold no core. A core
+        # frees when one of those workers ends, so this is a wait for a seat
+        # exactly as the roster cap is, and a caller that can queue does.
+        raise RosterFull(
+            format_refusal(
+                "D09",
+                summary.bound_refusal_text(
+                    binding, backend_name=backend_name, occupying=seat_ids
+                ),
+            ),
+            occupancy=len(seat_ids),
+            limit=int(binding.capacity or 0),
+            occupying=seat_ids,
+        )
     if binding is not None and not binding.admits_one_more:
         run_ids = [str(pointer.get("run_id") or "unknown") for pointer in occupying]
         raise CrewError(

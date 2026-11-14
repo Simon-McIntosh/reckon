@@ -264,3 +264,101 @@ def test_a_direct_local_dispatch_on_a_full_roster_is_queued(
     assert queued, held.value
     assert [pointer["run_id"] for pointer in _queued_reviews()] == [queued["run_id"]]
     assert "roster is full" in str(queued.get("reason") or "")
+
+
+def _fill_the_admitted_cores(cores: int) -> None:
+    """Spend every core a small reservation admits, under the roster cap.
+
+    One placed worker holds one core, so ``cores`` residents spend the
+    allocation while the roster still has seats, and the cores bound is the one
+    that binds. A parked request on the same backend holds no core.
+    """
+    placement_module.publish_reservation(
+        {**RESERVATION, "size": {"cores": cores, "memory_gb": 128}}
+    )
+    for index in range(cores):
+        _seed_resident_worker(f"r-core-holder-{index}")
+    parked = {
+        "run_id": "r-parked-awaiting-upstream",
+        "project": "sample",
+        "backend": "worker",
+        "phase": "awaiting-upstream",
+        "pid": None,
+        "launched_at": None,
+    }
+    path = runs.pointer_path(parked["run_id"])
+    path.write_text(json.dumps(parked), encoding="utf-8")
+
+
+def test_a_spent_cores_bound_is_a_seat_wait_naming_the_core_holders(
+    project: tuple[Path, Path, Path],
+) -> None:
+    """The cores bound raises the queueable seat wait and names only core holders.
+
+    It refused with a plain error before the roster check ever ran, so every
+    dispatch past the admitted cores was lost even after the roster cap queued,
+    and its list of occupying runs was the backend's whole population, parked
+    requests included, which read as though a parked request held a core.
+    """
+    from reckon.crew.dispatch_admission import (
+        RosterFull,
+        _refuse_over_concurrency_ceiling,
+    )
+
+    _fill_the_admitted_cores(3)
+    with pytest.raises(RosterFull) as held:
+        _refuse_over_concurrency_ceiling(
+            "worker", _config()["backends"]["worker"], "sample"
+        )
+
+    assert sorted(held.value.occupying) == [
+        f"r-core-holder-{index}" for index in range(3)
+    ]
+    assert held.value.occupancy == 3
+    assert "r-parked-awaiting-upstream" not in str(held.value)
+    assert "partition admitted cores bound" in str(held.value)
+
+
+def test_a_direct_local_dispatch_past_the_admitted_cores_is_queued(
+    project: tuple[Path, Path, Path],
+) -> None:
+    from reckon.crew.dispatch_admission import LanePaused
+    from reckon.crew.dispatching import preparation
+    from reckon.crew.node import TaskNode
+
+    _home, repo, _path = project
+    _fill_the_admitted_cores(3)
+    brief = repo / "brief.md"
+    brief.write_text("Review the delivery.\n", encoding="utf-8")
+    node = TaskNode(
+        id="review-cores",
+        goal="review the delivered work",
+        plan="fixture",
+        section="delivery",
+        brief=str(brief),
+        role="review",
+        spec_level="exact",
+        done_when=(
+            "the review stores a parsed record scoring all 6 dimensions in the range "
+            "0..20 at docs/evidence/review-cores.html, and the manifest reads complete"
+        ),
+        write_paths=["docs/evidence/review-cores.html"],
+        time_budget="20m",
+    )
+
+    with pytest.raises(LanePaused) as held:
+        preparation.dispatch(
+            node=node,
+            project="sample",
+            repo=repo,
+            config=_config(),
+            session="coordinator",
+            local=True,
+            unreviewed_plan_override=True,
+            unreconciled_override=True,
+            watch_override=True,
+        )
+
+    queued = getattr(held.value, "queued", None)
+    assert queued, held.value
+    assert queued["run_id"] in [pointer["run_id"] for pointer in _queued_reviews()]
