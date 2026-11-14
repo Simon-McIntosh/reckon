@@ -21,9 +21,8 @@ from pathlib import Path
 
 import pytest
 
-from reckon.crew import plan_review, recovery, runs
+from reckon.crew import plan_review, recovery
 from reckon.crew import review as review_module
-from reckon.crew.dispatch_admission import LanePaused
 from reckon.crew.recovery_review_acceptance import promote_review_run_itself
 from reckon.crew.runs import _write_json, pointer_path, run_dir
 from tests.conftest import EXECUTABLE_GATE_COMMAND
@@ -86,43 +85,6 @@ def project(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> tuple[Path, Path
         subprocess.run(["git", *args], cwd=repo, check=True, capture_output=True)
     (home / "mounts.json").write_text(json.dumps({PROJECT: str(repo / "docs")}))
     return home, repo
-
-
-def _compose_while_held(repo: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
-    """Compose a plan review held by the lane, leaving one queued pointer.
-
-    Returns the composed report directory, read from the queued pointer before
-    the admission pass consumes it.
-    """
-    dispatch = importlib.import_module("reckon.crew.dispatch")
-    subject = recovery.plan_review_subject(PROJECT, PLAN_SLUG, "coordinator")
-
-    def hold(**kwargs):
-        node = kwargs["node"]
-        runs.queue_dispatch(
-            {
-                "run_id": "queued-review",
-                "project": PROJECT,
-                "plan": node.plan,
-                "section": node.section,
-                "repo": str(repo),
-                "session": "coordinator",
-                "node": node.as_dict(),
-                "backend": "worker",
-                "launch": "cli",
-                "local": True,
-                "phase": "queued",
-                "queued_at": LAUNCHED_AT,
-                "created_at": LAUNCHED_AT,
-                "reason": "the router grants 0 slots",
-            }
-        )
-        raise LanePaused({"state": "held", "detail": "the router grants 0 slots"})
-
-    monkeypatch.setattr(dispatch, "dispatch", hold)
-    result = recovery.dispatch_review_for_run(subject, config=_worker_config())
-    assert result["dispatched"] is False
-    return Path(runs.read_pointer("queued-review")["node"]["write_paths"][0])
 
 
 def _launched_pointer(

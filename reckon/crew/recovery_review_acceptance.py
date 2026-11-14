@@ -685,25 +685,6 @@ REVIEW_SELF_WAITING = "waiting"
 REVIEW_SELF_REFUSED = "refused"
 
 
-def _plan_review_target(record: Mapping[str, Any]) -> str:
-    """The plan a plan-review pointer reads.
-
-    A plan review's node id carries its slug under the plan-review prefix, and
-    the grammar that mints those ids is the only owner of where the slug ends —
-    a design review appends its rubric, so a prefix slice would read the rubric
-    as part of the plan. A pointer that is not a plan review yields ``""``, so
-    callers can tell that case from a plan review whose slug does not resolve.
-    """
-    from reckon.crew import recovery
-    from reckon.crew.repair import round_node_source
-
-    node_id = str((record.get("node") or {}).get("id") or "")
-    prefix = recovery.PLAN_REVIEW_NODE_PREFIX
-    if not node_id.startswith(prefix):
-        return ""
-    return round_node_source(node_id, prefix)
-
-
 def _plan_review_delivery(
     record: Mapping[str, Any], project: str
 ) -> Mapping[str, Any] | None:
@@ -716,12 +697,12 @@ def _plan_review_delivery(
     keeps this reader and the store step from disagreeing about where a plan
     review's record is.
     """
-    plan_slug = _plan_review_target(record)
+    from reckon.crew import promotion_checks
+
+    plan_slug = _plan_review_pointer_slug(record)
     run_id = str(record.get("run_id") or "")
     if not (plan_slug and run_id):
         return None
-    from reckon.crew import promotion_checks
-
     return promotion_checks._delivered_plan_review_for_run(project, plan_slug, run_id)
 
 
@@ -786,7 +767,7 @@ def review_self_state(
             ),
             None,
         )
-    plan_slug = _plan_review_target(pointer)
+    plan_slug = _plan_review_pointer_slug(pointer)
     if plan_slug:
         # A plan review's record is the report it wrote under the composed
         # directory its brief named, so it is read through the join the store
@@ -1309,6 +1290,7 @@ from .recovery_repair_dispatch import (  # noqa: E402
     dispatch_repair_for_run,
 )
 from .recovery_review_dispatch import (  # noqa: E402
+    _plan_review_pointer_slug,
     _record_review_dispatch,
     _review_head_and_tree,
     dispatch_review_for_run,
