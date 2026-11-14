@@ -10,7 +10,6 @@ Older rows with no route mode use the backend match as an approximate attributio
 
 from __future__ import annotations
 
-import fcntl
 import hashlib
 import json
 import os
@@ -26,6 +25,7 @@ from reckon import capabilities, flight, ledger
 from reckon._timestamps import parse_utc
 from reckon.crew.run_time_profile import _number, _percentile, run_time_profile
 from reckon.crew.runs import crew_home
+from reckon.node_exclusive_lock import exclusive_lock
 
 REVIEW_SUCCESS_SCORE = 80
 SUCCESS_RULE = (
@@ -276,12 +276,13 @@ def record_picker_hold(
         record["payload_ref"] = _write_hold_payload(
             path.parent, request_digest, payload
         )
-    with path.open("a", encoding="utf-8") as stream:
-        fcntl.flock(stream, fcntl.LOCK_EX)
+    with (
+        exclusive_lock(path.with_name(path.name + ".lock")),
+        path.open("a", encoding="utf-8") as stream,
+    ):
         stream.write(json.dumps(record, sort_keys=True) + "\n")
         stream.flush()
         os.fsync(stream.fileno())
-        fcntl.flock(stream, fcntl.LOCK_UN)
     return record
 
 
