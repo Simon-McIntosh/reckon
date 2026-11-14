@@ -419,7 +419,6 @@ def _landing_checkout(
     )
 
 
-@operational_read
 def _promotion_commits(
     record: Mapping[str, Any], manifest_commits: Sequence[Any]
 ) -> list[str]:
@@ -460,6 +459,7 @@ def _default_gate_evidence_from_manifest(
     )
 
 
+@operational_read
 def complete(
     run_id: str,
     *,
