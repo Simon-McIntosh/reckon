@@ -1,0 +1,73 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "1a601cae93d280976ab012b98ec3c47768abfbf9",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/recovery_classification.py:2614 _budget_overrun_cause",
+    "reckon/crew/recovery_stream.py:467 _budget_overrun_cause",
+    "reckon/crew/recovery_watch.py:1779 _budget_overrun_cause"
+  ],
+  "completed_at": "2026-11-14T15:47:47.832Z",
+  "dispatched_at": "2026-11-14T15:16:24Z",
+  "findings": [
+    {
+      "file": "tests/test_a_tick_computes_the_reference_rate_once.py",
+      "line": "158",
+      "severity": "non-blocking",
+      "summary": "equivalence assertion derives both sides from the held answer",
+      "text": "the equivalence assertion at :158-165 computes the expected values with classify_pointer after the tick, which resolves the rate from the same held answer, so it holds whatever the cache returns and cannot catch a mis-keyed entry."
+    },
+    {
+      "file": "reckon/crew/recovery_stream.py",
+      "line": "207",
+      "severity": "non-blocking",
+      "summary": "second cache duplicating the existing lru_cache",
+      "text": "the new cache at :207-220 duplicates the @lru_cache(maxsize=64) at :154 on the same function and key, so the ledger-fold count the plan's Why cites is unchanged at one per key, as the manifest's CacheInfo(hits=49, misses=1) at base."
+    }
+  ],
+  "head_log_revision": "be72dd7fe15bc54511ac699d1be3ff7e19917f66",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "diff": "pass \u2014 three commits read; the source change is 35 lines, the test 191 lines, the fragment 38 lines.",
+    "done_when": "fail \u2014 the recording stand-in count is measured (50 at base, 1 at head) and the arms match, but the done_when's clause that each pointer's classification equal its base-revision classification is not measured by any of the test's three assertions.",
+    "goal": "pass \u2014 reckon/crew/recovery_stream.py:207-220 resolves the rate once per key, though the base @lru_cache at :154 already did, so the change adds a second store rather than removing a fold.",
+    "manifest": "pass \u2014 read; it states the test, the four logs, the matched arms, and it records that the defect does not reproduce.",
+    "write_paths": "pass \u2014 the three files in git diff 1a601cae93..275b58183b are the three the manifest declares."
+  },
+  "justifications": {
+    "durability": "tests/test_a_tick_computes_the_reference_rate_once.py:149 genuinely reddens on reversion (the base negative control shows 50), but the equivalence assertion at :158-165 reads the same held answer on both sides.",
+    "evidence": "negative-control-base.log records 50 stand-in calls at EXIT=1 and head-gate.log records 2 passed, but no artifact compares a classification against the base revision and the CacheInfo figure exists only in the manifest.",
+    "fit": "reckon/crew/recovery_stream.py:191-204 follows the module's comment-and-constant style with no plan or ticket identifier, though a second module-level cache beside the existing lru_cache is not the surrounding idiom.",
+    "goal_fidelity": "reckon/crew/recovery_stream.py:207-220 holds the answer once per key, but its cache duplicates the lru_cache at :154, so the profile cost the plan cites is the same before and after.",
+    "reuse": "reckon/crew/recovery_stream.py:207 re-implements the memoisation the module already owns at :154 rather than extending it.",
+    "scope_discipline": "git diff --stat 1a601cae93..275b58183b lists only reckon/crew/recovery_stream.py, tests/test_a_tick_computes_the_reference_rate_once.py and the evidence fragment."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: pass \u2014 reckon/crew/recovery_stream.py:207-220 resolves the rate once per key, though the base @lru_cache at :154 already did, so the change adds a second store rather than removing a fold.\nVERDICT done_when: fail \u2014 the stand-in count is measured (50 at the base tree, head-gate.log 2 passed), but the done_when's base-revision classification clause is not, and none of the test's three assertions does it.\nVERDICT write_paths: pass \u2014 git diff 1a601cae93..275b58183b touches only tests/test_a_tick_computes_the_reference_rate_once.py, reckon/crew/recovery_stream.py and the evidence fragment.\nVERDICT manifest: pass \u2014 read; status complete, three commits, four log paths, matched arms with 20 identical failure ids, and evidence_inputs recording that the defect does not reproduce.\nVERDICT diff: pass \u2014 three commits read: source, test, fragment.\nCALL_SITES: reckon/crew/recovery_classification.py:2614, reckon/crew/recovery_stream.py:467, reckon/crew/recovery_watch.py:1779\nSCORE goal_fidelity: 12\nJUSTIFICATION goal_fidelity: reckon/crew/recovery_stream.py:207-220 holds the answer per key but duplicates the lru_cache at :154.\nSCORE evidence: 14\nJUSTIFICATION evidence: negative-control-base.log records 50 calls and head-gate.log 2 passed, but no artifact compares classification with the base revision.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat 1a601cae93..275b58183b lists only the three declared paths.\nSCORE durability: 15\nJUSTIFICATION durability: tests/test_a_tick_computes_the_reference_rate_once.py:149 reddens on reversion, but :158-165 moves with the value it checks.\nSCORE fit: 15\nJUSTIFICATION fit: reckon/crew/recovery_stream.py:191-204 states the mechanism without a plan identifier; the second cache is not the module's idiom.\nSCORE reuse: 4\nJUSTIFICATION reuse: reckon/crew/recovery_stream.py:207 re-implements the memoisation at :154 rather than extending it.\nFINDING tests/test_a_tick_computes_the_reference_rate_once.py:158 non-blocking: the expected classifications come from the same held answer, so the assertion cannot catch a wrong-answer cache.\nFINDING reckon/crew/recovery_stream.py:207 non-blocking: the new cache duplicates the existing lru_cache at :154.",
+  "review_run_id": "r-20261114T151437179974-review-of-a-tick-computes-the-reference-rate-once-275b58183b9d",
+  "reviewed_base_sha": "1a601cae93d280976ab012b98ec3c47768abfbf9",
+  "reviewed_head_sha": "275b58183b9d1f181c227554fca3ea0ba708a913",
+  "reviewed_run_id": "r-20261114T135004086166-a-tick-computes-the-reference-rate-once",
+  "reviewer": {
+    "backend": "local",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash",
+    "reviewer_run_id": "r-20261114T151437179974-review-of-a-tick-computes-the-reference-rate-once-275b58183b9d"
+  },
+  "reviewer_run_id": "r-20261114T151437179974-review-of-a-tick-computes-the-reference-rate-once-275b58183b9d",
+  "scores": {
+    "durability": 15,
+    "evidence": 14,
+    "fit": 15,
+    "goal_fidelity": 12,
+    "reuse": 4,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-14T16:01:28.615505+00:00",
+  "total": 80
+}
