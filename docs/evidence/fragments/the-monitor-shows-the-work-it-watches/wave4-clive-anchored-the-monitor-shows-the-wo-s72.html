@@ -25,6 +25,15 @@
   now reports only a reload whose window has elapsed, or one the producer's own
   log records as failed.</p>
 
+  <p>What counts is the <em>current</em> reload. The producer's log keeps its
+  lines across reloads, so a failure recorded for an earlier attempt was still
+  in the four-kilobyte tail while a later reload was inside its window, and the
+  follower reported that later attempt at once for it. The failure line is now
+  accepted only when its own timestamp — the prefix the log writer adds to
+  every line — is at or after the stamp the seat record carries. A line with no
+  such prefix cannot be dated and is read as the current attempt rather than
+  withheld, so a log written without the prefix keeps its earlier behaviour.</p>
+
   <h3 id="wave4-clive-anchored-the-monitor-shows-the-wo-s72-which-reading">Which
   liveness reading turns false</h3>
   <p>Measured, not inferred. A real <code>crew watch</code> producer was armed
@@ -44,15 +53,16 @@
   <h3 id="wave4-clive-anchored-the-monitor-shows-the-wo-s72-measures">Measures</h3>
   <table>
     <tr><th>Measure</th><th>Result</th></tr>
-    <tr><td>new test, three cases</td><td>3 passed</td></tr>
-    <tr><td>follow population, base arm (90 files, <code>-n 4</code>, <code>all_debug</code> job)</td>
-        <td>50 failed, 685 passed</td></tr>
-    <tr><td>follow population, head arm (91 files, <code>-n 4</code>, <code>all_debug</code> job)</td>
-        <td>49 failed, 689 passed</td></tr>
-    <tr><td>failure ids added at head</td>
-        <td>none; the head set is a strict subset of the base set, one base-only failure not reproducing</td></tr>
-    <tr><td>follow population, earlier in-place arms at <code>-n 8</code></td>
-        <td>49 failed at both, with identical ids</td></tr>
+    <tr><td>new test, four cases</td><td>4 passed</td></tr>
+    <tr><td>base arm at <code>50cf9e4e</code> (window and inventory tests, <code>-n 4</code>, compute node)</td>
+        <td>1 failed, 54 passed — the module-window case only</td></tr>
+    <tr><td>after arm at <code>b99ba42e</code> (this node's test, window and inventory tests)</td>
+        <td>1 failed, 58 passed — the same module-window case, and four added cases passing</td></tr>
+    <tr><td>failure ids added at head</td><td>none; the same single failure at both arms</td></tr>
+    <tr><td>follow population, earlier arms</td>
+        <td>at <code>-n 4</code> 50 failed against 49 with identical sets, and 49 against 49 in place at <code>-n 8</code></td></tr>
+    <tr><td>negative control for the stale failure line</td>
+        <td>with the stamp binding removed, the stale-line case alone fails (1 failed, 3 passed)</td></tr>
     <tr><td>negative control: window check removed, first case</td>
         <td>1 reload-failure row (the case fails)</td></tr>
     <tr><td>ruff check / format --check</td>
