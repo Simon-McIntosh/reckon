@@ -63,7 +63,6 @@ PENDING: frozenset[str] = frozenset(
     {
         "reckon/_store.py::_serialized_path_lock",
         "reckon/compliance.py::_locked",
-        "reckon/crew/admission/service.py::_admit_lock",
         "reckon/crew/budget_reset.py::_locked",
         "reckon/crew/dispatch_peer.py::_update_peer_index",
         "reckon/crew/model_catalogue.py::_refresh_lock",
@@ -71,17 +70,11 @@ PENDING: frozenset[str] = frozenset(
         "reckon/crew/paid_lanes.py::publish_document",
         "reckon/crew/paid_lanes.py::refresh_reserved_window",
         "reckon/crew/picker/outcomes.py::record_picker_hold",
-        "reckon/crew/placement.py::_reservation_hold_lock",
-        "reckon/crew/queue_landing.py::land_once",
         "reckon/crew/recovery_review_dispatch.py::_dispatch_text_review_for_run",
         "reckon/crew/recovery_watch.py::_update_git_answer_store",
         "reckon/crew/resumption.py::_lane_probe_lock",
         "reckon/crew/resumption.py::_sweep_status_lock",
         "reckon/crew/review_records.py::_index_lock",
-        "reckon/crew/runs.py::_pointer_lock",
-        "reckon/crew/runs.py::queue_dispatch",
-        "reckon/crew/runs.py::update_watch_registration",
-        "reckon/ledger.py::_ledger_write_lock",
     }
 )
 

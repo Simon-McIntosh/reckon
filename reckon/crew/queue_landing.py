@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import fcntl
 import json
 import os
 import re
@@ -22,6 +21,7 @@ from reckon.crew.node import CrewError
 from reckon.crew.open_run_index import operational_read
 from reckon.crew.recovery_review_acceptance import _review_accepts_promotion
 from reckon.crew.resume import hold_reason as delivery_hold_reason
+from reckon.node_exclusive_lock import LockHeld, exclusive_lock
 
 _run_srun = subprocess.run
 
@@ -1891,11 +1891,10 @@ def land_once() -> dict[str, Any]:
     # A landing promoted but never merged is finished before new deliveries are
     # judged: its promotion already counts as landed everywhere else.
     lock = runs.crew_home() / "locks" / "landing-pass.lock"
-    lock.parent.mkdir(parents=True, exist_ok=True)
-    with lock.open("a+b") as handle:
+    with ExitStack() as held:
         try:
-            fcntl.flock(handle.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
-        except BlockingIOError:
+            held.enter_context(exclusive_lock(lock, blocking=False))
+        except LockHeld:
             return {"landed": [], "obligations": [], "deferred": [], "busy": True}
         finished = pending_landing.finish_pending_landings()
         with plan_read_scopes():

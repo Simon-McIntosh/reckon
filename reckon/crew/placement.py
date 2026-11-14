@@ -20,7 +20,6 @@ axis that binds and cores are the cheap one.
 from __future__ import annotations
 
 import contextlib
-import fcntl
 import getpass
 import json
 import os
@@ -34,6 +33,7 @@ from typing import Any
 from reckon._store import write_json_atomically
 from reckon.crew.refusals import format_refusal
 from reckon.crew.runs import CrewError
+from reckon.node_exclusive_lock import exclusive_lock
 
 # The size the lead locked on 2026-09-20. Under --overlap the reservation is a
 # place to run rather than a quota, so the numbers are a place to run in and
@@ -159,9 +159,11 @@ def reservation_lock_path() -> Path:
 def _reservation_hold_lock() -> Iterator[None]:
     """Hold the lock that makes holding the reservation idempotent under a race.
 
-    The claim is a POSIX advisory lock on a file beside the record — an
-    operation that is atomic between the separate processes dispatching on this
-    workstation, which a lock held inside one process is not. Several dispatches
+    The claim is a POSIX record lock on a file beside the record, taken through
+    :func:`reckon.node_exclusive_lock.exclusive_lock` — an operation that is
+    atomic between the separate processes dispatching on this workstation and
+    whose lock the file server also holds against a holder on another node,
+    neither of which a lock held inside one process is. Several dispatches
     starting at once therefore produce one allocation rather than one each:
     exactly one proceeds through the read, the probe and the submission while
     the rest block here, and each of those reads the record it published once
@@ -169,15 +171,8 @@ def _reservation_hold_lock() -> Iterator[None]:
     reservation is absent, and mints an allocation of its own — the per-worker
     minting this module exists to remove.
     """
-    path = reservation_lock_path()
-    path.parent.mkdir(parents=True, exist_ok=True)
-    handle = os.open(path, os.O_CREAT | os.O_RDWR, 0o600)
-    try:
-        fcntl.flock(handle, fcntl.LOCK_EX)
+    with exclusive_lock(reservation_lock_path()):
         yield
-    finally:
-        fcntl.flock(handle, fcntl.LOCK_UN)
-        os.close(handle)
 
 
 def project_reservation_path(project: str) -> Path:
