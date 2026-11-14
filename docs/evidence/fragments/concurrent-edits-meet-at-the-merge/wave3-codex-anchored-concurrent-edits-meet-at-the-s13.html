@@ -1,0 +1,28 @@
+<section id="wave3-codex-anchored-concurrent-edits-meet-at-the-s13-evidence">
+  <h3>A missing pointer preserves its pending landing</h3>
+  <p><code>crew complete --land</code> refuses a run without a live pointer
+  before either synchronous promotion or a queued request writes a record.
+  The refusal names the pending record's path. <code>write_pending</code>
+  ignores an empty or whitespace-only project before creating a directory
+  or replacing any bytes.</p>
+  <p>Four regression cases pass: both CLI routes preserve the pending
+  record byte for byte and create no other crew-home files; the landing
+  pass returns one row for that run, including the deliberately refused
+  landing; an empty project creates no record; and an empty-project retry
+  preserves an existing project and head.</p>
+  <table>
+    <thead><tr><th>Measurement</th><th>Result</th></tr></thead>
+    <tbody>
+      <tr><td>Baseline suite at <code>47d4d536120a2e6d4356124856be6285061e6806</code></td><td>51 passed in 23.02s</td></tr>
+      <tr><td>Negative control: regression tests against unchanged base source</td><td>4 failed in 3.95s</td></tr>
+      <tr><td>Focused repair gate before commit <code>c74c9829bda9ea4920bdbc63f85e43c389e664bd</code></td><td>4 passed in 5.99s</td></tr>
+    </tbody>
+  </table>
+  <p>The negative control's synchronous case fails at
+  <code>assert record.read_bytes() == before</code>, reproducing the erased
+  project and head. The queued route already refused at base but omitted
+  the pending record's path. Both direct empty-project cases also fail at
+  base. The manifest names the durable logs and final revision-bound
+  suite receipt. Ruff check and format check pass on all three Python
+  paths. Combined-head verification remains the coordinator's separate gate.</p>
+</section>
