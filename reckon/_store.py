@@ -1799,9 +1799,7 @@ def _write_state_locked(
             # The reasons map is a head meta too, rewritten from the mapping
             # already on the page so a write lands its own sections and leaves
             # its siblings' reasons alone.
-            source_text = _apply_descope_reason_edits(
-                source_text, descope_reason_edits
-            )
+            source_text = _apply_descope_reason_edits(source_text, descope_reason_edits)
         if meta_removals:
             source_text = _store_section_ops.apply_meta_removals(
                 source_text, meta_removals
@@ -2509,7 +2507,8 @@ def plan_text_projection(document: str) -> tuple[str, list[tuple[int, str]]]:
     whitespace = list(re.finditer(r"(?<=>)\s+(?=<)", authored))
     slots = [
         (
-            offset - sum(
+            offset
+            - sum(
                 min(max(offset - match.start(), 0), match.end() - match.start())
                 for match in whitespace
             ),
@@ -4443,7 +4442,9 @@ def _apply_accept(working: dict, op: dict, is_index: bool, warnings: list[str]) 
     }
 
 
-def _apply_withdraw(working: dict, op: dict, is_index: bool, warnings: list[str]) -> None:
+def _apply_withdraw(
+    working: dict, op: dict, is_index: bool, warnings: list[str]
+) -> None:
     """Withdraw an unlocked decision, keeping its reason and date in the plan.
 
     A withdrawal takes a decision out of the wait without pretending anyone
