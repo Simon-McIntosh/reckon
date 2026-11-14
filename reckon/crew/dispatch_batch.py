@@ -611,12 +611,10 @@ def _entry_node(
                 "done-when, so the entry must give one"
             )
         done_when, derived["done_when"] = derivation["done_when"]
-    if not write_paths:
-        if "write_paths" not in derivation:
-            raise BatchEntryRefusedError(
-                f"{project}:{plan}#{section}: the section states no write-paths "
-                "sentence and the entry gives none"
-            )
+    if not write_paths and "write_paths" in derivation:
+        # A node with no write paths is queued as one: the worktree is its
+        # scope, so a section stating no sentence is dispatchable rather than
+        # refused. An entry that declares paths keeps them, exactly as before.
         write_paths, derived["write_paths"] = derivation["write_paths"]
 
     estimated_hours = entry.get("estimated_hours")

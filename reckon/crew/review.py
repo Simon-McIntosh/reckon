@@ -180,7 +180,7 @@ def current_finding_severity(word: str) -> str:
 _SEVERITY_PREFIX = re.compile(r"^(non-blocking|blocking)\s*:", re.IGNORECASE)
 
 
-def _severity_stated_in_text(finding: Mapping[str, Any]) -> str | None:
+def _severity_stated_in_text(finding: Any) -> str | None:
     """Return the severity a finding's claim opens with, or ``None``.
 
     The claim is read through :func:`finding_claim`, so a finding that states its
@@ -196,12 +196,14 @@ def _severity_stated_in_text(finding: Mapping[str, Any]) -> str | None:
     return current_finding_severity(match.group(1).lower()) if match else None
 
 
-def declared_severity(finding: Mapping[str, Any]) -> str | None:
+def declared_severity(finding: Any) -> str | None:
     """Return the severity a stored finding declares, or ``None``.
 
     The one reader of a stored finding's severity, so the promotion audit, the
     repair reflex and the parser cannot disagree about which findings carry a
-    judgement. A finding states one of :data:`FINDING_SEVERITIES` either in its
+    judgement.
+
+    A finding states one of :data:`FINDING_SEVERITIES` either in its
     ``severity`` field — in its declared spelling, surrounding whitespace
     trimmed, a retired spelling read as its current one — or by opening its claim
     with the severity and a colon. Without either, it states nothing: an absent
@@ -209,7 +211,17 @@ def declared_severity(finding: Mapping[str, Any]) -> str | None:
     vocabulary all mean the same thing here, no declared severity. A value
     outside the vocabulary is never guessed at, because a defaulted severity is a
     judgement nobody made.
+
+    A stored review may record its findings as plain text — a bare string such
+    as ``"non-blocking: <path>:<line> ..."`` — rather than as records carrying
+    that field, which is the shape a review worker writing its JSON by hand
+    stores. Such a finding states its severity the way any finding's claim does,
+    and is read through :func:`finding_claim` rather than treated as a record,
+    so a plain-text finding answers with its stated severity instead of raising
+    an attribute error that fails every consumer of the record.
     """
+    if not isinstance(finding, Mapping):
+        return _severity_stated_in_text(finding)
     value = finding.get("severity")
     if value is None:
         return _severity_stated_in_text(finding)

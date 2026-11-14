@@ -1,0 +1,50 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-11-14T12:55:42.534Z",
+  "dispatched_at": "2026-11-14T12:45:43Z",
+  "findings": [
+    {
+      "file": "reckon/crew/admission/selection.py",
+      "line": 237,
+      "severity": "non-blocking",
+      "summary": "unplaceable_queued() in reckon/crew/queue_order.py re-implements the placeable/unplaceable partition that selection.py:233-239 already owns; the addition duplicates the owner rather than extending it, so the ordering and the admission pass now each carry their own policy for a pointer with no readable queued_at."
+    },
+    {
+      "file": "reckon/crew/queue_order.py",
+      "line": 339,
+      "severity": "non-blocking",
+      "summary": "admission_order_details builds set_aside inline instead of calling the unplaceable_queued() helper added in the same change, so the public helper has no production caller (only the test uses it) and the reported behaviour comes from the log line while a second copy of the same predicate can drift from it."
+    },
+    {
+      "file": "tests/test_the_admission_pass_survives_a_pointer_without_its_time.py",
+      "line": 300,
+      "severity": "non-blocking",
+      "summary": "test_the_admission_ordering_still_refuses_a_pointer_without_its_time asserts the ValueError that this change removes from admission_order, so the merged head carries one added failing test; the node was fenced out of this file and reported it under outside_scope, and the repair (invert the case to read the two placeable pointers ranked and UNREADABLE named by unplaceable_queued) must be folded into a node before the run's suite is green."
+    },
+    {
+      "file": "tests/test_unreadable_queued_pointer_never_fails_ordering.py",
+      "line": 4,
+      "severity": "non-blocking",
+      "summary": "The module docstring is changelog prose (\"the ordering used to refuse the whole pass\", a dated incident narrative) which the repository's comment rule bans in source, and its closing sentence at line 13 is ungrammatical (\"a queued pointer is never written without a readable arrival is stamped where it is missing\"); the history belongs in the evidence fragment's article, not in the module."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that one unreadable queued pointer never fails admission ordering or a review compose; reckon/crew/queue_order.py:340-353 now leaves such a pointer out of the ordering and warns with its run id, and reckon/crew/runs.py:984-990 plus reckon/crew/admission/launching.py:610 and :741 stamp an arrival no writer supplies.\nVERDICT done_when: the done_when names three measures; the first is asserted by test_the_ordering_ranks_the_readable_pointers_and_names_the_set_aside_one, the second only approximately by test_a_queued_review_is_placed_while_an_unreadable_pointer_waits (it queues a review request and reads a position rather than composing a review), and the third only in part by test_no_writer_copies_an_arrival_it_has_not_read, which forbids copying another record's queued_at but does not assert every writer stamps a readable one; the gate ran both test files and the manifest records 58 passed EXIT=0.\nVERDICT write_paths: the manifest declares reckon, tests/test_unreadable_queued_pointer_never_fails_ordering.py, the evidence fragment and a figures directory; the diff touches only reckon/crew/queue_order.py, reckon/crew/runs.py, reckon/crew/admission/launching.py, the named test file and the named fragment, so every path is inside them.\nVERDICT manifest: read in full; it states tests 58 passed in 15.24s with EXIT=0 at e83916f1, base arm 51 passed at cd5e68ec, names both logs on disk, and names its declared negative control and the outside-scope test it supersedes.\nVERDICT diff: read commit by commit against cd5e68ec \u2014 e83916f17f is the implementation and its test (4 files, +271/-5), 7fec441677 is the evidence fragment alone (1 file, +61); both carry conventional subjects with bodies and no attribution trailers.\nCALL_SITES: reckon/crew/admission/ordering.py:164 (fair_share_admission_order), reckon/crew/admission/ordering.py:240 (admission_order_details), reckon/crew/dispatching/requests.py:423, reckon/crew/runs.py:998 (queue_dispatch queue position), reckon/crew/admission/launching.py:610 (_requeued_request), reckon/crew/admission/launching.py:741 (_restore_queued)\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/queue_order.py:340-353 sets the unplaceable pointer aside instead of raising, and reckon/crew/runs.py:984-990 stamps the arrival a dispatch caller omitted, which is exactly the goal.\nSCORE evidence: 16\nJUSTIFICATION evidence: the gate log /home/ITER/mcintos/.config/reckon/crew/runs/r-20261114T112555787298-unreadable-queued-pointer-never-fails-ordering/logs/head-arm.log ends EXIT=0 with 58 passed and the negative-control log reddens both named cases, though the base arm ran only tests/test_staged_write_inventory.py so the pair is not like-for-like.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every path in e83916f17f and 7fec441677 is inside the manifest's declared write paths, and no source outside reckon/crew was touched.\nSCORE durability: 16\nJUSTIFICATION durability: the negative-control log shows test_the_ordering_ranks_the_readable_pointers_and_names_the_set_aside_one and test_a_queued_review_is_placed_while_an_unreadable_pointer_waits failing with ValueError when the raise is restored, so those guards fail on the regression; the review-compose and whole-writer measures of the done_when are only approximated.\nSCORE fit: 14\nJUSTIFICATION fit: reckon/crew/admission/launching.py:5 imports readable_queued_at at module scope while reckon/crew/runs.py:932 and :984 import it lazily in two separate places, and tests/test_unreadable_queued_pointer_never_fails_ordering.py:4-13 is changelog prose.\nSCORE reuse: 5\nJUSTIFICATION reuse: reckon/crew/admission/selection.py:233-239 already owns the placeable/unplaceable partition and the unplaced verdict, and reckon/crew/queue_order.py:253-266 adds a second implementation of the same predicate without extending it.\nFINDING reckon/crew/admission/selection.py:237 non-blocking: unplaceable_queued() and the inline set_aside duplicate the partition the admission pass already owns, so one policy now lives in two layers.\nFINDING reckon/crew/queue_order.py:339 non-blocking: the ordering builds its own set_aside rather than calling the unplaceable_queued() helper added beside it, leaving that helper with no production caller.\nFINDING tests/test_the_admission_pass_survives_a_pointer_without_its_time.py:300 non-blocking: the change inverts the refusal this existing test asserts, so the merged head carries one added failing test that must be folded into a repair node.\nFINDING tests/test_unreadable_queued_pointer_never_fails_ordering.py:4 non-blocking: the module docstring is changelog prose with a broken sentence at line 13, where source should state the mechanism.",
+  "review_run_id": "r-20261114T124049234084-review-of-unreadable-queued-pointer-never-fails-ordering-7fec44167755",
+  "reviewed_base_sha": "cd5e68ecbd2b48d24a8bd5b0037f042a2de84810",
+  "reviewed_head_sha": "7fec4416775540fdd544f4973e544a58c80986e3",
+  "reviewed_run_id": "r-20261114T112555787298-unreadable-queued-pointer-never-fails-ordering",
+  "scores": {
+    "durability": 16,
+    "evidence": 16,
+    "fit": 14,
+    "goal_fidelity": 18,
+    "reuse": 5,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-14T13:05:00.593843+00:00",
+  "total": 88
+}

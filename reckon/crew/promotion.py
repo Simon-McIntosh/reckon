@@ -889,6 +889,15 @@ def complete(
             # release latency is then the promotion's own duration instead of the
             # duration of whatever pass is in progress.
             result["released"] = _release_waiters_of_the_landed_section(record)
+            # A promotion that succeeded here answers any request queued for
+            # the same run, so the request is settled now, in the process that
+            # landed it, rather than being drained again or raising a duty for
+            # a run that is already promoted.
+            from reckon.crew import promotion_requests
+
+            result["settled_requests"] = promotion_requests.settle_requests_for(
+                run_id, settled_as="promoted"
+            )
             return result
 
 

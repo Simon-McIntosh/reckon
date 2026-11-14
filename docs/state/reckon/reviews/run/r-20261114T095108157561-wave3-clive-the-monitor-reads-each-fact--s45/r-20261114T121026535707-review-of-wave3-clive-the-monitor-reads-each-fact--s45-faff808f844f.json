@@ -1,0 +1,64 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/crew/review.py:4016",
+    "reckon/crew/obligations.py:2082",
+    "reckon/crew/obligations.py:3239",
+    "reckon/crew/obligations.py:3270",
+    "reckon/crew/obligations.py:3322",
+    "reckon/crew/plan_review.py:765"
+  ],
+  "completed_at": "2026-11-14T12:19:59.156Z",
+  "dispatched_at": "2026-11-14T12:16:07Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "exempted",
+      "reason": "non-blocking; carried to the plan's next health review",
+      "recorded_at": "2026-11-14T13:08:53.948204+00:00"
+    },
+    "1": {
+      "kind": "exempted",
+      "reason": "non-blocking; carried to the plan's next health review",
+      "recorded_at": "2026-11-14T13:08:58.508880+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "reckon/crew/review_records.py",
+      "line": 1877,
+      "severity": "non-blocking",
+      "text": "record_store_write advances the document and clears the reconcile mark, but a record rewritten in place by a path that bypasses it keeps its old inode/size in the document and the run digest does not move; the bypass test covers only an added file, not an in-place rewrite of an existing one."
+    },
+    {
+      "file": "reckon/crew/plan_review.py",
+      "line": 765,
+      "severity": "non-blocking",
+      "text": "the index advance is added as a function-local import inside store_plan_review rather than at module scope, which is the surrounding idiom but means the coupling to review_records is invisible to a reader of the module header."
+    }
+  ],
+  "project": "reckon",
+  "review_run_id": "r-20261114T121026535707-review-of-wave3-clive-the-monitor-reads-each-fact--s45-faff808f844f",
+  "reviewed_base_sha": "3728e4ae702a3d61a18fa7e4f6e97f6123d0c1e0",
+  "reviewed_head_sha": "faff808f844fd5150bade578233b849f2ef37d2f",
+  "reviewed_run_id": "r-20261114T095108157561-wave3-clive-the-monitor-reads-each-fact--s45",
+  "scores": {
+    "durability": 18,
+    "evidence": 17,
+    "fit": 17,
+    "goal_fidelity": 19,
+    "reuse": 18,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-14T13:04:50.609620+00:00",
+  "total": 108,
+  "verdicts": {
+    "diff": "read commit by commit against 3728e4ae; two commits, 5 files, 786 insertions, 79 deletions, all inside the declared scope; review_records.py carries the document, its lock, and the reader paths; review.py and plan_review.py call record_store_write.",
+    "done_when": "the done_when names tests/test_the_review_store_is_indexed_by_its_writers.py with 500 records across 50 runs, five behaviours, a negative control at base, matched arms on all_debug, and ruff; the manifest records the after arm at faff808f84 as 57 passed EXIT=0 and the manifest's evidence_inputs names both logs.",
+    "goal": "the node goal is to deliver section s45 of the-monitor-reads-each-fact-once; reckon/crew/review_records.py:1653-2130 replaces the reader-rebuilt store index with a writer-advanced index document (.review-index).",
+    "manifest": "read; it states the after arm 57 passed EXIT=0 at faff808f844fd5150bade578233b849f2ef37d2f, names both all_debug logs, and records one retry_failure fixed by routing the document through reckon._store.write_json_atomically.",
+    "write_paths": "read the manifest's declared paths \u2014 reckon/crew/review_records.py, reckon/crew/review.py, reckon/crew/plan_review.py, tests/test_the_review_store_is_indexed_by_its_writers.py and the s45 fragment dir; every path in the diff is inside them."
+  }
+}

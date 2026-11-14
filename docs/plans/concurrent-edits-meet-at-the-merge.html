@@ -24,7 +24,7 @@
   <title>Concurrent Edits Meet At The Merge | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="78">
+<meta name="plan-version" content="79">
 <meta name="plan-modified" content="2026-11-14">
 </head>
 <body>
@@ -236,6 +236,12 @@
 <div class="r-comment" data-section="s12" data-id="c-run-r-20261113T072023880936-a-refused-landing-writes-nothing" data-who="reckon-build" data-when="2026-11-13T12:10:07Z">
     <div class="r-comment-body"><p>Pending-landing records now carry the head the landing cited, read from the run's own tree before promotion; the pass merges that revision and nothing later, clears the record with nothing merged when the cited head is already on the branch, and the lander no longer holds a promoted run awaiting-review at a later head — 3 node tests pass at head and all 3 fail at base 85bbe4ec02, the third reproducing the awaiting-review-on-the-later-head failure.</p></div>
 </div>
+<div class="r-comment" data-section="s13" data-id="c-run-r-20261114T103251388768-review-of-a-landing-without-its-pointer-keeps-the-pending-record-92b4484919b2" data-who="reckon-build" data-when="2026-11-14T11:11:01.602Z">
+    <div class="r-comment-body"><p>independent review of r-20261114T093943384148 landed a parsed record at reviewed_base fb92136a / reviewed_head 92b44849 scoring all six dimensions; one blocking finding: the rename of pending_landing._record_path to record_path left recovery_classification.py:1035 and recovery_repair_dispatch.py:93/134/137 calling the old name, raising AttributeError on every settled-run classification (reproduced).</p></div>
+</div>
+<div class="r-comment" data-section="s13" data-id="c-run-r-20261114T095151395139-wave3-codex-anchored-concurrent-edits-meet-at-the-s13" data-who="reckon-build" data-when="2026-11-14T11:23:03Z">
+    <div class="r-comment-body"><p>Missing-pointer landing requests refuse before writing and name their pending record; empty-project writes preserve existing bytes; final-head suite 55 passed versus base 51 passed, zero added failures; base negative control 4 failed, including the synchronous byte comparison.</p></div>
+</div>
 <div class="r-comment" data-section="s2" data-id="c-run-r-20261108T123713881297-review-of-a-source-file-is-shared-by-default-d7fb8d91992a" data-who="reckon-build" data-when="2026-11-08T12:59:46Z">
     <div class="r-comment-body"><p>Independent review stores all six scores and exact source revision; focused added-failure count is zero, with one blocking incomplete-importer finding.</p></div>
 </div>
@@ -310,9 +316,6 @@
 </div>
 <div class="r-comment" data-section="s9" data-id="c-run-r-20261112T215811285812-a-merge-repair-is-not-held-by-a-dead-worker" data-who="reckon-build" data-when="2026-11-12T22:36:27.625Z">
     <div class="r-comment-body"><p>A merge repair is released once the resumed turn's process is gone — a pointer or worker-record pid proved dead no longer holds the round, while unknown liveness keeps the old stream reading; node gate 4 passed, negative control at the base revision 2 failed/2 passed, importer arms 184 passed at base and 188 at head with zero added failure ids, suite arms 51/51.</p></div>
-</div>
-<div class="r-comment" data-section="s13" data-id="c-run-r-20261114T103251388768-review-of-a-landing-without-its-pointer-keeps-the-pending-record-92b4484919b2" data-who="reckon-build" data-when="2026-11-14T11:11:01.602Z">
-    <div class="r-comment-body"><p>independent review of r-20261114T093943384148 landed a parsed record at reviewed_base fb92136a / reviewed_head 92b44849 scoring all six dimensions; one blocking finding: the rename of pending_landing._record_path to record_path left recovery_classification.py:1035 and recovery_repair_dispatch.py:93/134/137 calling the old name, raising AttributeError on every settled-run classification (reproduced).</p></div>
 </div>
 </section>
 </main>

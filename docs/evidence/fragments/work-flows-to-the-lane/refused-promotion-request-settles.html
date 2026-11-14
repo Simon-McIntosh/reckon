@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="refused-promotion-request-settles">
+  <meta name="plan-title" content="A refused promotion request settles once its run has landed or gone">
+  <meta name="plan-summary" content="A refused promotion request whose run has since been promoted, landed, discarded or has no live pointer raises no duty and is recorded as settled; a promotion that succeeds in the caller's process settles the run's queued request; crew ack defers a row for a run with no live pointer.">
+  <meta name="plan-evidence-for" content="reckon:work-flows-to-the-lane">
+  <meta name="plan-verifies" content="reckon:work-flows-to-the-lane#s52">
+  <meta name="plan-commits" content="81c3e9d10c9346949a6cc24098d7e272d75ad9a9, 54c4af532658c3b0f2291ba252af6a78aa8a29c2, e1ea7e5841fc4f03db69a0d46003fd0219a495fb">
+  <meta name="plan-recorded-at" content="2026-11-14">
+  <meta name="plan-verdict" content="recorded">
+  <title>A refused promotion request settles | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article id="refused-promotion-request-settles-record" data-node="refused-promotion-request-settles" data-reckon="landed">
+  <h2 id="refused-promotion-request-settles-outcome">A refusal outlives the run it asked about</h2>
+  <p>A refused or failed promotion request stays in the requests directory, and every obligations
+  read projected it into a <code>promotion-failed</code> duty with a next command that can no longer
+  apply. The row survived its run being promoted by hand, landed, or discarded, and
+  <code>crew ack</code> could not defer it either: a discarded run has no live pointer and no ledger
+  record, so the deferral was refused with "no live run … and no ledger record for it".</p>
+  <p>The reproduction below was taken against the assigned base before the repair, with the
+  settlement phase present and its behaviour absent: the duty list still names the promoted run
+  after an in-process promotion, and the acknowledgement exits 1.</p>
+  <pre id="refused-promotion-request-settles-reproduction"><code>FAILED test_a_promoted_run_settles_its_refused_request
+  AssertionError: assert ['r-20261114T090100000000-review-of-reviewed-run'] == []   # duty survives the promotion
+FAILED test_a_discarded_run_settles_its_refused_request
+  AssertionError: assert ['r-20261114T090100000000-review-of-reviewed-run'] == []   # duty survives the discard
+FAILED test_ack_defers_a_row_for_a_run_with_no_live_pointer
+  AssertionError: assert 1 == 0   # Error: no live run '…-gone-run' and no ledger record for it
+3 failed in 2.10s</code></pre>
+  <p><code>promotion_requests</code> now settles a refusal when its run has arrived where the refusal
+  asked it to go: a discard marker settles the request as <code>discarded</code>, a ledger row for
+  the run settles it as <code>landed</code>, and a run with no live pointer settles it as
+  <code>gone</code>. The request file is rewritten in place with the refusal kept, so the record
+  stays readable and a reader skips any phase outside <code>ERRORS</code> without a second store to
+  reconcile. A promotion that succeeds in the caller's own process calls
+  <code>settle_requests_for</code>, which is the case a coordinator's <code>crew complete --wait</code>
+  creates: the queued request for that run is settled rather than drained again.</p>
+  <p><code>crew ack</code> files a deferral for a run with no live pointer, resolving the project from
+  the run's ledger record first, then the caller's own <code>--project</code>, then the promotion
+  request the run left behind — and refuses only when none of the three names one.</p>
+  <h3 id="refused-promotion-request-settles-measurements">Checks that detect the defect</h3>
+  <table>
+    <thead><tr><th>Measurement</th><th>Observed result</th></tr></thead>
+    <tbody>
+      <tr><td>Base arm at <code>9c8632ca0b99</code> on <code>all_debug</code> (the node's own test is absent there)</td><td>73 passed in 130.89s; EXIT=0</td></tr>
+      <tr><td>After arm at <code>e1ea7e5841fc</code> on <code>all_debug</code></td><td>78 passed in 132.58s; EXIT=0</td></tr>
+      <tr><td>Negative control: every refused request projected into duties (<code>all_debug</code>)</td><td>1 failed in 3.29s; EXIT=1 — <code>FAILED test_a_promoted_run_settles_its_refused_request</code>, the in-process promoted run listed as a duty</td></tr>
+    </tbody>
+  </table>
+  <h3 id="refused-promotion-request-settles-gate">Gate log</h3>
+  <p>The gate runs the node's declared test files on <code>all_debug</code>; the arms are recorded in
+  the run's directory, and for each the log's first lines name the revision, tree and command, and
+  its last line is the bare exit status read below.</p>
+  <pre id="refused-promotion-request-settles-gate-head"><code># revision: e1ea7e5841fc4f03db69a0d46003fd0219a495fb
+# tree: .../8e41a6d3-d0e0-4927-afd1-771942ebfe6a/refused-promotion-request-settles
+# command: PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_no_caller_waits_on_a_promotion.py tests/test_refused_promotion_request_settles.py tests/test_staged_write_inventory.py
+78 passed in 132.58s
+EXIT=0</code></pre>
+  <pre id="refused-promotion-request-settles-gate-base"><code># revision: 9c8632ca0b992790566bc487862f2c9be6f8906d
+# tree: a node-local extraction of that revision, committed so the inventory test can read HEAD
+# command: PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_no_caller_waits_on_a_promotion.py tests/test_staged_write_inventory.py
+73 passed in 130.89s
+EXIT=0</code></pre>
+  <p>The sibling test that asserted the retired behaviour now asserts the settled one. With the
+  pointer gone and no promoted row naming its own run, a refusal used to raise a duty; it now reads
+  <code>promotion-settled</code> as <code>gone</code> and keeps the refusal's recorded error, in all
+  four parametrisations. That file was reported as an outside-scope finding in the first delivery and
+  was brought into this node's write paths for the repair round.</p>
+  <p>The settlement reads the ledger row before the pointer, so a run that landed and whose pointer
+  has since gone is recorded <code>landed</code> rather than <code>gone</code>. Two tests hold it: one
+  for the landed row with no pointer, one for a run with neither a record nor a pointer settling as
+  <code>gone</code>.</p>
+</article>
+</body>
+</html>

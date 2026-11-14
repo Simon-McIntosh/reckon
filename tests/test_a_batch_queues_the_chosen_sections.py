@@ -3,8 +3,8 @@
 A batch of six entries over two fixture plans shows that queuing the chosen
 work is cheap and that the section stays the authority: an entry's omitted
 fields come from its own section, its given fields win, an entry may wait on
-another entry of the same batch, a section that names no write paths is refused
-by name without stopping the rest, a repeat of an already-queued section is
+another entry of the same batch, a section that names no write paths is queued
+with no fence rather than refused, a repeat of an already-queued section is
 reported rather than stored twice, each plan is parsed once and the project's
 roadmap is derived once for the whole batch.
 """
@@ -235,14 +235,21 @@ def test_a_batch_of_six_entries_queues_the_chosen_sections(batch_repo: Path) -> 
     result = _queue(batch_repo)
     rows = {row["node"]: row for row in result["results"]}
 
-    assert result["refused"] == 1, "only the entry with no write paths is refused"
-    assert rows["n-b2"]["status"] == "refused"
-    assert "write-paths" in rows["n-b2"]["reason"]
+    assert result["refused"] == 0, (
+        "no entry is refused: the worktree is the scope when a section names "
+        "no write paths"
+    )
+    assert rows["n-b2"]["status"] == "queued"
     assert rows["n-b2"]["plan"] == PLAN_B and rows["n-b2"]["section"] == "s2"
     for node_id in ("n-a1", "n-a2", "n-a3", "n-b1", "n-b3"):
         assert rows[node_id]["status"] in {"queued", "awaiting-upstream"}, rows[node_id]
 
     pointers = _pointers()
+
+    # 0. A section that states no write-paths sentence supplies none, so the
+    #    entry is stored with an empty fence rather than refused for lacking
+    #    the sentence its section does not carry.
+    assert pointers[f"{PLAN_B}#s2:n-b2"]["node"]["write_paths"] == []
 
     # 1. An entry waiting on another entry of the batch is stored
     #    awaiting-upstream on that entry's stored run id.

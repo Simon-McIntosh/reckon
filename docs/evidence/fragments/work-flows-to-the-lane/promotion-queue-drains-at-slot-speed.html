@@ -1,0 +1,47 @@
+<article class="r-evidence" data-plan="work-flows-to-the-lane" data-section="s46" data-node="promotion-queue-drains-at-slot-speed" data-revision="fd2c43f713ac0434de3d40b49f4742bb6eaec86b">
+<h3 id="promotion-queue-drains-at-slot-speed-summary">The promotion queue drains at slot speed, not at pass speed</h3>
+
+<p id="promotion-queue-drains-at-slot-speed-what">A freed promotion slot is taken up by the next waiting request on the promoting
+thread's own wakeup, with a two-second poll for requests another process queued, instead of
+waiting for the admission pass. The drain also watches the checkout's code stamp: once it
+moves nothing further starts, and the admission loop waits for the promotions in flight and
+re-executes the image. Every finished request is appended to a bounded drain log, and
+<code>crew promotions</code> reports the requests waiting, the oldest wait and the counts
+finished in a window.</p>
+
+<table id="promotion-queue-drains-at-slot-speed-measure">
+<tr><th>arm</th><th>command</th><th>result</th></tr>
+<tr><td>base <code>fd2c43f7</code></td><td><code>pytest -q tests/test_staged_write_inventory.py</code> in a detached worktree at the base revision; the node's new test file does not exist there</td><td>51 passed, <code>EXIT=0</code></td></tr>
+<tr><td>head</td><td><code>pytest -q tests/test_promotion_queue_drains_at_slot_speed.py tests/test_staged_write_inventory.py</code></td><td>55 passed, <code>EXIT=0</code></td></tr>
+<tr><td>negative control</td><td>head code with <code>return  # mutation: no refill thread work</code> as the first statement of <code>PromotionService._refill</code></td><td><code>FAILED tests/test_promotion_queue_drains_at_slot_speed.py::test_a_freed_slot_takes_the_next_request</code> and the interleave test, <code>EXIT=1</code></td></tr>
+<tr><td>serialisation mutant</td><td>head code with <code>tick()</code> and <code>begin_drain()</code> taking no <code>_tick_lock</code></td><td><code>FAILED tests/test_promotion_queue_drains_at_slot_speed.py::test_a_drain_does_not_interleave_with_a_refill_tick</code> &mdash; "begin_drain returned through a tick in flight", <code>EXIT=1</code></td></tr>
+</table>
+
+<p id="promotion-queue-drains-at-slot-speed-drain">Five requests at width 2 with a stub promotion of one fixed second, and the pass held for ten
+promotion times: the head arm drains them in 3.05&nbsp;s, and the request that fills the first
+freed slot starts within one promotion time of that slot freeing. The control arm, taking
+requests up only from a pass that comes round every ten promotion times, needs 10.5&nbsp;s at a
+figure of ten seconds a batch &mdash; more than ten promotion times.</p>
+
+<p id="promotion-queue-drains-at-slot-speed-serialised">A tick holds one lock for its whole body, shared by the admission pass and the refill thread.
+<code>begin_drain</code> takes that lock, so it returns only once no tick is in flight, and
+<code>wait_for_in_flight</code> reads the thread set under it &mdash; every promotion a racing
+tick started is therefore waited for. A test parks a refill tick between two requests, requests
+the drain while it is parked, and reads that the drain blocks until the tick completes, that a
+third queued request never starts, and that the wait covers both promotions the racing tick
+started. Removing the lock fails that test at the blocked-drain assertion.</p>
+
+<p id="promotion-queue-drains-at-slot-speed-reload">The second test moves the code stamp while one promotion is in flight: the freed slot stays
+empty, the second request stays at <code>promotion-requested</code>, and only the replacement image
+starts it after the admission loop has drained and re-executed.</p>
+
+<p id="promotion-queue-drains-at-slot-speed-live">Live reading at 2026-11-14T08:56Z from <code>crew promotions</code> over the fleet's real queue:
+2 requests waiting, 5 parked on a reviewer's unwritten record, 0 running, and the oldest wait
+70&nbsp;s (<code>r-20261114T075216484763-review-of-unverified-switching-windows-s9b</code>) while
+the queue is non-empty. The one-hour count reads 0, which is a property of the instrument and
+the service, not of the drain: the drain log is created by this change, so no history predates
+it, and the running admission service still carries the pre-landing image. A promoted request's
+request file is deleted at promotion, so the store held no hourly history to read either &mdash;
+which is why the log is written at all. The rate is read from <code>crew promotions</code> once
+the fleet reloads into this code.</p>
+</article>

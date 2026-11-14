@@ -699,6 +699,10 @@ def station_lease(root: Path) -> HostLease:
     )
 
 
+#: The station value under which each project's announced reset ids are kept.
+_ANNOUNCED_RESETS_KEY = "announced-resets"
+
+
 class StationReloader:
     """Replace the station with a proved image from the node's runtime root."""
 
@@ -836,6 +840,53 @@ class Station:
             )
         self.store.set_station_value(obligation_snapshot.STATION_TICK_STAGE_KEY, stage)
 
+    def _due_reset_events(
+        self, project: str, moment: datetime
+    ) -> tuple[list[dict[str, Any]], set[str]]:
+        """The limit resets now due in one project, as station events.
+
+        A reset announced to the orchestrator group reached a pane only through
+        the project's producer stream, which no station-fed pane reads, so the
+        row was written and nobody drew it. The station folds the same due
+        resets, through the same reader the producer uses, into the events it
+        publishes. The ids it has announced are kept in the station store, so a
+        restarted station does not wake the fleet with a reset it already
+        announced, and the reader's own horizon bounds a fresh store.
+        """
+        from reckon.crew import lift_watch
+
+        seen = self._announced_resets(project)
+        rows: list[dict[str, Any]] = []
+        try:
+            announced = lift_watch.sweep_resets(
+                project,
+                seen=seen,
+                now=moment,
+                append=lambda _path, new: rows.extend(dict(row) for row in new),
+            )
+        except Exception as error:  # noqa: BLE001 - one bad read costs one reset
+            print(f"station-reset-failure: {project}: {error}", flush=True)
+            return [], seen
+        for row in rows:
+            row["audience"] = str(row.get("session") or "*")
+            row["duty"] = ticker.transition_class(None, lift_watch.LIMIT_RESET)
+        return rows, set(announced)
+
+    def _announced_resets(self, project: str) -> set[str]:
+        raw = self.store.station_value(f"{_ANNOUNCED_RESETS_KEY}:{project}")
+        try:
+            value = json.loads(raw) if raw else []
+        except ValueError:
+            value = []
+        return (
+            {str(item) for item in value if item} if isinstance(value, list) else set()
+        )
+
+    def _remember_announced_resets(self, project: str, announced: set[str]) -> None:
+        self.store.set_station_value(
+            f"{_ANNOUNCED_RESETS_KEY}:{project}", json.dumps(sorted(announced))
+        )
+
     @operational_read
     def tick(self, *, now: datetime | None = None) -> list[dict[str, Any]]:
         """Publish every new transition, then move the heartbeat."""
@@ -916,7 +967,11 @@ class Station:
                     event["audience"] = str(event.get("session") or "*")
                     event["duty"] = ticker.transition_class(previous, state)
                     events.append(event)
+                resets, announced = self._due_reset_events(project, moment)
+                events.extend(resets)
                 self.store.record_tick(project, events, next_known, at=moment)
+                if resets:
+                    self._remember_announced_resets(project, announced)
                 published.extend(events)
                 # The reading a pane's settle is judged by, written on every tick
                 # rather than on change: a pane settles on emptiness, and a quiet

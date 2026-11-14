@@ -1952,6 +1952,26 @@ def crew_drain(project, session, leaves, pretty):
     )
 
 
+@crew.command(name="promotions")
+@click.option(
+    "--window",
+    "window_seconds",
+    type=float,
+    default=3600.0,
+    help="Seconds back over which finished promotions are counted.",
+)
+@click.option("--pretty", is_flag=True, help="Indent the JSON for reading.")
+def crew_promotions(window_seconds, pretty):
+    """Report the promotion queue: waiting, oldest wait, and drain rate.
+
+    A coordinator reads this to answer whether the queue is draining and, when
+    it is not, which request has been waiting longest.
+    """
+    from reckon.crew.promotion_requests import promotion_queue_report
+
+    _emit_crew_result(promotion_queue_report(window_seconds=window_seconds), pretty)
+
+
 @crew.command(name="ack")
 @click.option(
     "--run",
@@ -1982,7 +2002,7 @@ def crew_ack(run_id, notice_id, reason, until, pretty, project=None):
     A live run's deferral is written beside its pointer; one for a run already
     promoted is written under the crew home and swept once its instant passes.
     """
-    _accept_a_matching_project(run_id, project)
+    resolved_project = _accept_a_matching_project(run_id, project)
     if bool(run_id) == bool(notice_id):
         raise click.ClickException("exactly one of --run and --notice is required")
     if notice_id:
@@ -2005,7 +2025,9 @@ def crew_ack(run_id, notice_id, reason, until, pretty, project=None):
     from reckon.crew import runs as runs_module
 
     try:
-        updated = runs_module.record_run_acknowledgement(run_id, reason, until)
+        updated = runs_module.record_run_acknowledgement(
+            run_id, reason, until, project=resolved_project
+        )
     except crew_module.CrewError as exc:
         raise click.ClickException(str(exc)) from exc
     _emit_crew_result(
@@ -3481,6 +3503,8 @@ def crew_complete(
     """
     from reckon.crew.promotion_requests import COMMAND_REPLY, request_promotion
 
+    if land and not dry_run:
+        _refuse_a_landing_without_its_pointer(run_id)
     if not wait and not dry_run and COMMAND_REPLY.get() is None:
         parameters = dict(locals())
         for name in ("COMMAND_REPLY", "request_promotion"):
@@ -3711,6 +3735,19 @@ def crew_complete(
             raise click.exceptions.Exit(exit_code)
         return
     _emit_crew_result(result, pretty)
+
+
+def _refuse_a_landing_without_its_pointer(run_id: str) -> None:
+    from reckon.crew import pending_landing, runs
+
+    try:
+        runs.read_pointer(run_id)
+    except runs.CrewError as exc:
+        record = pending_landing.pending_dir() / f"{run_id}.json"
+        raise click.ClickException(
+            f"cannot land {run_id} without a live pointer; "
+            f"pending landing record: {record}. {exc}"
+        ) from exc
 
 
 def _refuse_a_plain_complete_off_the_branch(

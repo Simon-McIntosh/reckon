@@ -206,6 +206,8 @@ def test_an_orchestrator_reset_says_continue_and_opens_no_worker_lane(tmp_path):
     assert "limits reset" in rendered, rendered
     assert "orchestrator sessions continue" in rendered, rendered
     assert "worker lanes keep their limits" in rendered, rendered
+    # The announcer's reason follows the instruction.
+    assert "the lead said the limit reset" in rendered, rendered
     assert "new → working" not in rendered, rendered
 
 

@@ -1,0 +1,54 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-11-14T12:28:07.676Z",
+  "dispatched_at": "2026-11-14T12:25:23Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "exempted",
+      "reason": "non-blocking; carried to the plan's next health review",
+      "recorded_at": "2026-11-14T13:24:55.167801+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "tests/test_a_review_brief_follows_the_reviewed_run_s_head.py",
+      "line": 110,
+      "severity": "non-blocking",
+      "text": "the delivery fixture writes the run's manifest and advances the pointer, but nothing asserts the phase a launch failure leaves; the negative control covers only the first-delivery case, so the LAUNCH_FAILED_PHASE guard at reckon/crew/dispatch_launch.py:4257 has no test that reddens when it is removed"
+    }
+  ],
+  "justifications": {
+    "durability": "tests/test_a_review_brief_follows_the_reviewed_run_s_head.py:143 asserts the brief's named head equals the sha git reports after the second commit, so reverting the write hook leaves the brief absent and the assertion red.",
+    "evidence": "the head arm runs tests/test_a_review_brief_follows_the_reviewed_run_s_head.py plus tests/test_staged_write_inventory.py at 54 passed, but the 51-test base arm ran tests/test_staged_write_inventory.py alone, so importers of recovery_review_subject.py beyond that file were not measured.",
+    "fit": "reckon/crew/recovery_review_subject.py:947 follows the module's existing private-helper and docstring idiom beside materialize_run_review_brief at :903.",
+    "goal_fidelity": "reckon/crew/recovery_review_subject.py:984 writes the brief from _run_head_for_review(record), so the file follows a resume and exists for a deferred run.",
+    "reuse": "recovery_review_subject.py:1707 imports _run_head_for_review from recovery_review_dispatch rather than re-deriving the head, and :947 anchors the head line to the emitter at :705.",
+    "scope_discipline": "reckon/crew/dispatch_launch.py is outside the four declared write paths and is carried only because the manifest names it as the module where the cause lay."
+  },
+  "project": "reckon",
+  "review_run_id": "r-20261114T122116021802-review-of-wave3-clive-the-crew-does-its-own-bookke-s20-54793fa128c7",
+  "reviewed_base_sha": "47d4d536120a2e6d4356124856be6285061e6806",
+  "reviewed_head_sha": "54793fa128c7442602f0fdf9ea392eb39e1eacb4",
+  "reviewed_run_id": "r-20261114T095204048221-wave3-clive-the-crew-does-its-own-bookke-s20",
+  "scores": {
+    "durability": 18,
+    "evidence": 15,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 18,
+    "scope_discipline": 16
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-14T13:18:57.617211+00:00",
+  "total": 103,
+  "verdicts": {
+    "call_sites": "reckon/crew/dispatch_launch.py:4137, :4984, :5006, :5069 call _publish_stored_phase; only the ended=True paths can reach the new writer",
+    "diff": "read commit by commit 47d4d53612..54793fa128; two commits, four files, 302 insertions, a delivery-time write hook plus the composer, the test and the fragment",
+    "done_when": "the done-when asks for a test where a resumed run's brief names its new head and a deferred run gets one; tests/test_a_review_brief_follows_the_reviewed_run_s_head.py covers both, and the manifest records head 54 passed, base 51 passed, negative control 1 failed of 3",
+    "goal": "the goal is a delivered run's review brief naming the head it delivered; reckon/crew/dispatch_launch.py:4257 writes it at the phase advance and recovery_review_subject.py:1003 composes it from the tree head",
+    "manifest": "read; it records commits 6b2de30715 and 54793fa128, the four scratch failures attributed to scaffolding, and log paths for both arms and the negative control",
+    "write_paths": "declared paths are recovery_review_subject.py, the new test, an evidence fragment and a figures dir; the diff touches those plus reckon/crew/dispatch_launch.py, which the manifest declares under outside_scope with a scope_note for ratification"
+  }
+}

@@ -1,0 +1,74 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "75fa11d2c68c589a81212534bde0f9436c84f447",
+  "call_site_count": 10,
+  "call_sites": [
+    "reckon/crew/open_run_index.py:205",
+    "reckon/crew/open_run_index.py:251",
+    "reckon/crew/open_run_index.py:279",
+    "reckon/crew/open_run_index.py:294",
+    "reckon/crew/picker/lane_context.py:819",
+    "reckon/crew/picker/lane_context.py:1006",
+    "reckon/crew/picker/lane_context.py:1072",
+    "reckon/budget.py:675",
+    "reckon/ledger.py:1303",
+    "reckon/ledger.py:1984"
+  ],
+  "completed_at": "2026-11-14T12:26:22.224Z",
+  "dispatched_at": "2026-11-14T12:17:48Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "exempted",
+      "reason": "the one-line retarget of tests/test_a_ledger_read_does_not_walk_every_run.py was granted by crew widen before the resume; it is required because the ledger now advances its own counter",
+      "recorded_at": "2026-11-14T12:46:12.929929+00:00"
+    },
+    "1": {
+      "kind": "exempted",
+      "reason": "the manifest's baseline_suite and after_suite carry the literal 437/438-path commands, so the run is reproducible from the record; the log header placeholder is cosmetic",
+      "recorded_at": "2026-11-14T12:47:15.984214+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "tests/test_a_ledger_read_does_not_walk_every_run.py",
+      "id": "f23c690ed8d",
+      "line": 208,
+      "severity": "non-blocking",
+      "text": "non-blocking: the file is edited outside the declared write paths (the dispatch fence names reckon/ledger.py, reckon/_store.py, reckon/crew/open_run_index.py, tests/test_a_plan_write_keeps_the_ledger_index.py and the fragment) and the manifest files it under changed_paths while recording outside_scope as none; the one-line retarget is required, since the old patch of _store.advance_write_generation no longer intercepts the advance _bump_generation now makes, but a required out-of-scope change belongs in outside_scope."
+    },
+    {
+      "file": "baseline.log",
+      "id": "fbabeb907cf",
+      "line": 4,
+      "severity": "non-blocking",
+      "text": "non-blocking: the arm logs' `# command:` header lines (baseline.log:4, head.log:4) carry the literal placeholder `<population>` rather than the resolved test-file list, so the done_when's requirement that each arm log open with its revision and literal command is unmet in the log itself; the manifest's structured baseline_suite/after_suite commands do carry the 437/438-path literals, so the run is still reproducible from the record."
+    }
+  ],
+  "head_log_revision": "941703b78b2b2c014188e948e9c9e032bae41a18",
+  "project": "reckon",
+  "review_run_id": "r-20261114T121050391443-review-of-a-plan-write-keeps-the-ledger-index-31209a2504f6",
+  "reviewed_base_sha": "75fa11d2c68c589a81212534bde0f9436c84f447",
+  "reviewed_head_sha": "31209a2504f605d97bf3ab1d4fd234b665082070",
+  "reviewed_run_id": "r-20261114T102533509163-a-plan-write-keeps-the-ledger-index",
+  "rubric_text": "VERDICT goal: the node goal is to give the ledger its own write generation so a plan write does not invalidate the ledger index; reckon/_store.py:1934-1993 adds the family-keyed counter and reckon/ledger.py:1200-1250 points the ledger readers at it.\nVERDICT done_when: the gate is tests/test_a_plan_write_keeps_the_ledger_index.py over a 60-run ledger; the manifest records 3 passed EXIT=0 and a base-revision negative control of 1 load, and I re-ran the file at 31209a2504 and measured 3 passed.\nVERDICT write_paths: the fence named reckon/ledger.py, reckon/_store.py, reckon/crew/open_run_index.py, the new test and the fragment; the diff also edits tests/test_a_ledger_read_does_not_walk_every_run.py, which is outside it.\nVERDICT manifest: read; it records complete, both suite arms as structured JSON with literal commands, the negative control log and a landing line, and names the out-of-fence test file in changed_paths.\nVERDICT diff: read commit by commit against 75fa11d2c6; four commits, five files, 277 insertions and 20 deletions, the behaviour confined to the two source files and the new test.\nCALL_SITES: reckon/crew/open_run_index.py:205, reckon/crew/open_run_index.py:251, reckon/crew/open_run_index.py:279, reckon/crew/open_run_index.py:294, reckon/crew/picker/lane_context.py:819, reckon/crew/picker/lane_context.py:1006, reckon/crew/picker/lane_context.py:1072, reckon/budget.py:675, reckon/ledger.py:1303, reckon/ledger.py:1984\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/ledger.py:1220 reads _store.read_ledger_write_generation, so a plan write through _store.write_plan no longer moves the generation the ledger index keys on.\nSCORE evidence: 18\nJUSTIFICATION evidence: negative-control.log records the base revision 75fa11d2c6 failing with `1 load(s)` and both arm logs end EXIT=1 with 174/173 failures and 0 added ids, but the arm logs' command header carries a `<population>` placeholder.\nSCORE scope_discipline: 14\nJUSTIFICATION scope_discipline: tests/test_a_ledger_read_does_not_walk_every_run.py:208 is retargeted outside the five declared write paths while the manifest records outside_scope as none.\nSCORE durability: 19\nJUSTIFICATION durability: reinstating the shared counter reddens tests/test_a_plan_write_keeps_the_ledger_index.py:153 with one load, and silencing advance_ledger_write_generation reddens tests/test_a_ledger_read_does_not_walk_every_run.py:211.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/_store.py:1911 refactors the existing generation helpers into _generation_path/_read_generation/_advance_generation with the surrounding docstring idiom and ruff reports no finding on the new lines.\nSCORE reuse: 20\nJUSTIFICATION reuse: reckon/_store.py:1934 extends the existing per-project counter owner rather than adding a second mechanism, and I searched reckon/ for another write-generation counter and found only this one.",
+  "scores": {
+    "durability": 19,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 14
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-14T12:24:31.533047+00:00",
+  "total": 110,
+  "verdicts": {
+    "diff": "read commit by commit against 75fa11d2c6; four commits, five files, 277 insertions and 20 deletions, splitting the generation counter into a family-keyed path (reckon/_store.py:1911-1993) and repointing the ledger readers (reckon/ledger.py:1200-1250) with the new test and an evidence fragment.",
+    "done_when": "the done_when names tests/test_a_plan_write_keeps_the_ledger_index.py over a 60-run ledger with no-run-file lookups and a recording stand-in for ledger.load; the manifest records 3 passed EXIT=0 at head, both population arms (174 failed at base, 173 at head, 0 added) and a base-revision negative control showing 1 load, and I re-ran the file at 31209a2504 and measured 3 passed in 17.15s.",
+    "goal": "the node goal is to give the ledger its own write generation so a plan write stops invalidating the ledger index; reckon/_store.py:1934-1993 adds a per-family counter and reckon/ledger.py:1200-1250 points ledger_generation and _bump_generation at it, leaving reckon/crew/open_run_index.py unchanged because it already keyed on ledger.ledger_generation.",
+    "manifest": "read; it records status complete, both suite arms as structured JSON with literal 437/438-path commands, the negative control log at negative-control.log, the ruff clause and a landing line, and its changed_paths names the out-of-fence test file.",
+    "write_paths": "the declared paths were reckon/ledger.py, reckon/_store.py, reckon/crew/open_run_index.py, tests/test_a_plan_write_keeps_the_ledger_index.py and the node's fragment; the diff touches the first two, the new test and the fragment, and also retargets tests/test_a_ledger_read_does_not_walk_every_run.py, which the fence did not name."
+  }
+}

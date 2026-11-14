@@ -1,0 +1,82 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "465c2df0f495d270143ab87b0a0fbb5cc04390b4",
+  "call_site_count": 7,
+  "call_sites": [
+    "reckon/crew/dispatch_claims.py:514 _repository_scope_claims",
+    "reckon/crew/runs.py:1417 _live_scope_claims",
+    "reckon/crew/recovery_review_dispatch.py:3075 claim_refusal_still_holds",
+    "reckon/crew/promotion_scope.py:646",
+    "reckon/crew/admission/holds.py:501 _claim_disposition_of",
+    "reckon/crew/queue_edit.py:266",
+    "reckon/crew/directory.py:399"
+  ],
+  "completed_at": "2026-11-14T12:18:09.150Z",
+  "dispatched_at": "2026-11-14T12:05:28Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261114T094047809362-a-finished-review-releases-its-scope-claim/arm-base-465c2df0.log",
+      "line": "35",
+      "severity": "blocking",
+      "text": "blocking: the log's final line is `rm: cannot remove '/tmp/arm-LBQQpE/.git': Directory not empty` and its EXIT=0 is the second-to-last line, so a reader cannot tell the arm's status from its last line; `crew check --manifest` refuses the record with \"ends with no EXIT=<n> line\" and the base arm is unreadable as a completed run."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261114T094047809362-a-finished-review-releases-its-scope-claim/manifest.md",
+      "line": "16",
+      "severity": "blocking",
+      "text": "blocking: the two suite arms are recorded only in an `arms:` prose block, while promotion reads the structured `baseline_suite` and `after_suite` keys (reckon/crew/promotion_checks.py:2253,2287); both are absent, so `_reference_failure_ids` returns None and the declared base-revision negative control is refused as having no readable comparison arm (reckon/crew/promotion_checks.py:2508)."
+    },
+    {
+      "file": "tests/test_a_finished_review_releases_its_scope_claim.py",
+      "line": "63",
+      "severity": "non-blocking",
+      "text": "non-blocking: every test calls claim_disposition directly and none dispatches a second review or compares the first review's stored record, so the done_when's admission and unchanged-record clauses are guarded by nothing \u2014 a regression in the dispatch claim walk (reckon/crew/dispatch_claims.py:514) that stopped consulting the disposition would leave this file green."
+    }
+  ],
+  "head_log_revision": "0d3828e526",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified seven production call sites of claim_disposition, led by the dispatch scope-conflict walk at reckon/crew/dispatch_claims.py:514 and the live scope registry at reckon/crew/runs.py:1417.",
+    "diff": "read both commits against base 465c2df0: 0d3828e526 adds FINISHED_CLAIM_PHASES, the alive-None release branch and the two helpers to reckon/crew/node.py plus a 144-line test file, and e56e1ea9c4 adds a 30-line evidence fragment; the mechanism matches the commit bodies.",
+    "done_when": "the done_when asks for a test that completes a review without promoting it, dispatches a second review onto the same record path, and shows the second admitted with the first record unchanged; tests/test_a_finished_review_releases_its_scope_claim.py:63-144 exercises claim_disposition on synthetic pointers instead, asserting neither the dispatch nor the stored record.",
+    "goal": "the node's goal is to release a finished review run's scope claim so the reviewed run's next review can be dispatched; reckon/crew/node.py:1994-1997 supplies that release at the judgement every dispatch reads, reckon/crew/dispatch_claims.py:514.",
+    "manifest": "read; status complete, commits 0d3828e526 and e56e1ea9c4, changed_paths, tests and test_logs are recorded, but the two suite arms appear only as an `arms:` prose block with no baseline_suite/after_suite keys and arm-base-465c2df0.log ends in a cleanup message after its EXIT=0, which `crew check --manifest` refuses.",
+    "write_paths": "the fence was reckon/crew/recovery_review_dispatch.py, reckon/crew/runs.py, tests/test_a_finished_review_releases_its_scope_claim.py, the evidence fragment and a figures directory, with reckon/crew/node.py added by crew widen (resume-1-advice.txt); the diff touches node.py, the test file and the fragment and nothing else."
+  },
+  "justifications": {
+    "durability": "at the base revision the same test file reads 3 failed (tests/test_a_finished_review_releases_its_scope_claim.py:74,78,143 \u2014 the two release cases and the unintegrated-work case), so restoring the old alive-is-None branch reddens the file.",
+    "evidence": "the gate at tests/test_a_finished_review_releases_its_scope_claim.py:63-144 asserts claim_disposition's verdict on synthetic pointers rather than the done_when's second-dispatch admission, and its recorded arms sit in the manifest's prose rather than in baseline_suite/after_suite.",
+    "fit": "reckon/crew/node.py:1936-1940 and :2040-2071 name the mechanism only, reuse the module's _TERMINAL_RUN_PHASES vocabulary and carry no plan, sprint or ticket identifier or attribution.",
+    "goal_fidelity": "reckon/crew/node.py:1994-1997 reads a finished phase whose recorded pid is gone as a stopped worker, so the dispatch claim walk at reckon/crew/dispatch_claims.py:514 judges the pointer on its work and a finished review stops blocking the next review's record path.",
+    "reuse": "reckon/crew/node.py:2040 extends claim_disposition, the repository's owner of claim judgement, and reuses reckon.crew.runs.process_alive; the neighbouring stopped_with_terminal_manifest (reckon/crew/dispatch_claims.py:2373) answers a different question from the manifest and local_liveness and is deliberately not forked.",
+    "scope_discipline": "the diff of 465c2df0..e56e1ea9 touches only reckon/crew/node.py, tests/test_a_finished_review_releases_its_scope_claim.py and the evidence fragment, each inside the fence after reckon/crew/node.py was added by crew widen."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to release a finished review run's scope claim so the reviewed run's next review can be dispatched; reckon/crew/node.py:1994-1997 turns a finished phase with a gone pid into a stopped claim, so the dispatch claim walk at reckon/crew/dispatch_claims.py:514 judges it on its work alone.\nVERDICT done_when: the done_when asks for a test that completes a review without promoting it, dispatches a second review onto the same record path, and shows the second admitted with the first record unchanged; tests/test_a_finished_review_releases_its_scope_claim.py:63-144 exercises claim_disposition on synthetic pointers instead, asserting neither the dispatch nor the stored record.\nVERDICT write_paths: the fence was reckon/crew/recovery_review_dispatch.py, reckon/crew/runs.py, tests/test_a_finished_review_releases_its_scope_claim.py, the evidence fragment and a figures directory, with reckon/crew/node.py added by crew widen (resume-1-advice.txt); the diff touches node.py, the test file and the fragment and nothing else.\nVERDICT manifest: read; status complete, commits 0d3828e526 and e56e1ea9c4, changed_paths, tests and test_logs are recorded, but the two suite arms appear only as an `arms:` prose block with no baseline_suite/after_suite keys, and arm-base-465c2df0.log ends in a cleanup message after its EXIT=0, which `crew check --manifest` refuses.\nVERDICT diff: read both commits against base 465c2df0: 0d3828e526 adds FINISHED_CLAIM_PHASES, the alive-None release branch and two helpers to reckon/crew/node.py plus a 144-line test file, and e56e1ea9c4 adds a 30-line evidence fragment; the mechanism matches the commit bodies.\nCALL_SITES: reckon/crew/dispatch_claims.py:514 _repository_scope_claims, reckon/crew/runs.py:1417 _live_scope_claims, reckon/crew/recovery_review_dispatch.py:3075 claim_refusal_still_holds, reckon/crew/promotion_scope.py:646, reckon/crew/admission/holds.py:501 _claim_disposition_of, reckon/crew/queue_edit.py:266, reckon/crew/directory.py:399\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: reckon/crew/node.py:1994-1997 reads a finished phase whose recorded pid is gone as a stopped worker, so the dispatch claim walk at reckon/crew/dispatch_claims.py:514 judges the pointer on its work and a finished review stops blocking the next review's record path.\nSCORE evidence: 13\nJUSTIFICATION evidence: the gate at tests/test_a_finished_review_releases_its_scope_claim.py:63-144 asserts claim_disposition's verdict on synthetic pointers rather than the done_when's second-dispatch admission, and its recorded arms sit in the manifest's prose rather than in baseline_suite/after_suite.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: the diff of 465c2df0..e56e1ea9 touches only reckon/crew/node.py, tests/test_a_finished_review_releases_its_scope_claim.py and the evidence fragment, each inside the fence after reckon/crew/node.py was added by crew widen.\nSCORE durability: 17\nJUSTIFICATION durability: at the base revision the same test file reads 3 failed (tests/test_a_finished_review_releases_its_scope_claim.py:74,78,143 \u2014 the two release cases and the unintegrated-work case), so restoring the old alive-is-None branch reddens the file.\nSCORE fit: 17\nJUSTIFICATION fit: reckon/crew/node.py:1936-1940 and :2040-2071 name the mechanism only, reuse the module's _TERMINAL_RUN_PHASES vocabulary and carry no plan, sprint or ticket identifier or attribution.\nSCORE reuse: 17\nJUSTIFICATION reuse: reckon/crew/node.py:2040 extends claim_disposition, the repository's owner of claim judgement, and reuses reckon.crew.runs.process_alive; the neighbouring stopped_with_terminal_manifest (reckon/crew/dispatch_claims.py:2373) answers a different question from the manifest and local_liveness and is deliberately not forked.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261114T094047809362-a-finished-review-releases-its-scope-claim/arm-base-465c2df0.log:35 blocking: the log's final line is a cleanup message and its EXIT=0 is the second-to-last line, so a reader cannot tell the arm's status from its last line; `crew check --manifest` refuses the record with \"ends with no EXIT=<n> line\".\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261114T094047809362-a-finished-review-releases-its-scope-claim/manifest.md:16 blocking: the two suite arms are recorded only in an `arms:` prose block while promotion reads structured baseline_suite and after_suite keys (reckon/crew/promotion_checks.py:2253,2287); both are absent, so _reference_failure_ids returns None and the declared negative control is refused as having no readable comparison arm (reckon/crew/promotion_checks.py:2508).\nFINDING tests/test_a_finished_review_releases_its_scope_claim.py:63 non-blocking: every test calls claim_disposition directly and none dispatches a second review or compares the first review's stored record, so the done_when's admission and unchanged-record clauses are guarded by nothing; a regression at reckon/crew/dispatch_claims.py:514 that stopped consulting the disposition would leave this file green.\n",
+  "review_run_id": "r-20261114T120338310630-review-of-a-finished-review-releases-its-scope-claim-e56e1ea9c44c",
+  "reviewed_base_sha": "465c2df0f495d270143ab87b0a0fbb5cc04390b4",
+  "reviewed_head_sha": "e56e1ea9c44c3035821cac9fec15a26c07b473d0",
+  "reviewed_run_id": "r-20261114T094047809362-a-finished-review-releases-its-scope-claim",
+  "reviewer": {
+    "backend": "clive",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash",
+    "reviewer_run_id": "r-20261114T120338310630-review-of-a-finished-review-releases-its-scope-claim-e56e1ea9c44c"
+  },
+  "reviewer_run_id": "r-20261114T120338310630-review-of-a-finished-review-releases-its-scope-claim-e56e1ea9c44c",
+  "scores": {
+    "durability": 17,
+    "evidence": 13,
+    "fit": 17,
+    "goal_fidelity": 17,
+    "reuse": 17,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-14T13:05:00.563935+00:00",
+  "total": 100
+}
