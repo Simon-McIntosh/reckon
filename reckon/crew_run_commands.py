@@ -1952,6 +1952,26 @@ def crew_drain(project, session, leaves, pretty):
     )
 
 
+@crew.command(name="promotions")
+@click.option(
+    "--window",
+    "window_seconds",
+    type=float,
+    default=3600.0,
+    help="Seconds back over which finished promotions are counted.",
+)
+@click.option("--pretty", is_flag=True, help="Indent the JSON for reading.")
+def crew_promotions(window_seconds, pretty):
+    """Report the promotion queue: waiting, oldest wait, and drain rate.
+
+    A coordinator reads this to answer whether the queue is draining and, when
+    it is not, which request has been waiting longest.
+    """
+    from reckon.crew.promotion_requests import promotion_queue_report
+
+    _emit_crew_result(promotion_queue_report(window_seconds=window_seconds), pretty)
+
+
 @crew.command(name="ack")
 @click.option(
     "--run",
