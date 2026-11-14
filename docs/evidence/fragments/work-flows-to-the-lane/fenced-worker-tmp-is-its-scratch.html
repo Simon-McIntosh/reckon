@@ -24,15 +24,17 @@
     <thead><tr><th>Measure</th><th>Observed result</th></tr></thead>
     <tbody>
       <tr><td>Baseline arm at <code>a01e2b9afcc862321403374ebd3dd42949df1121</code>,
-        before the change: <code>tests/test_staged_write_inventory.py</code></td>
-        <td>51 passed, <code>EXIT=0</code>. The two other arms' target test does
-        not exist at this revision.</td></tr>
-      <tr><td>Head arm at <code>e543aa06d8f2795b5dabec45d2293b7e9609be0f</code>:
-        <code>tests/test_fenced_worker_tmp_is_its_scratch.py tests/test_staged_write_inventory.py</code></td>
-        <td>56 passed, <code>EXIT=0</code>, with <code>module.__file__</code>
+        before the change:
+        <code>tests/test_a_worker_cannot_remove_the_nodes_temporary_files.py tests/test_staged_write_inventory.py</code></td>
+        <td>59 passed, <code>EXIT=0</code>. The scratch test does not exist at
+        this revision.</td></tr>
+      <tr><td>Head arm:
+        <code>tests/test_a_worker_cannot_remove_the_nodes_temporary_files.py tests/test_fenced_worker_tmp_is_its_scratch.py tests/test_staged_write_inventory.py</code></td>
+        <td>64 passed, <code>EXIT=0</code>, with <code>module.__file__</code>
         resolving inside the worktree.</td></tr>
-      <tr><td>Declared negative control at the same head: the mount is dropped
-        and the seal left in place</td>
+      <tr><td>Declared negative control at the head arm's revision, applied to
+        <code>tests/test_fenced_worker_tmp_is_its_scratch.py</code>: the mount is
+        dropped and the seal left in place</td>
         <td>1 failed, 4 passed, <code>EXIT=1</code>. The first executed test
         reports <code>/tmp/probe: Read-only file system</code>.</td></tr>
     </tbody>
@@ -48,10 +50,15 @@
   another session's file absent and neither survives its removal attempt; and a
   third writes each runtime path, the write landing in the node's real runtime
   directory.</p>
-  <p>Three tests in <code>tests/test_a_worker_cannot_remove_the_nodes_temporary_files.py</code>
-  fail under the new composition and sit outside this node's write scope, so
-  they are reported rather than repaired: they assert the earlier semantics, in
-  which a scratch outside the node tmp mounts nothing, a probe written directly
-  into the node tmp root is refused, and the composed argv for a fixed root set
-  is literal.</p>
+  <p>Three cases in <code>tests/test_a_worker_cannot_remove_the_nodes_temporary_files.py</code>
+  asserted the earlier contract, in which the node tmp read back read-only
+  outside the run's scratch and a probe written directly into its root was
+  refused. They are kept and re-stated for the composition this section lands: a
+  file another session placed in the node's real node tmp survives a fenced
+  removal and is unchanged, the scratch mount is the only writable grant naming
+  the node tmp and it follows the seal, a probe written straight into the node
+  tmp root lands in the run's own scratch and not in the shared one, and the
+  literal argv carries the mount. That file's own declared negative controls —
+  no node-tmp seal, and the separate runtime-path creation loop restored — still
+  redden the cases they name.</p>
 </section>
