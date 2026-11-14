@@ -1442,6 +1442,14 @@ def _prompt(payload: dict[str, Any]) -> int:
 # costs one stat per row.
 _WORKTREE_HELD_KIND = "worktree-held"
 
+# The duties an automatic step left behind for one run: a promotion that refused
+# and a station sweep that failed. Each publishes a remedy that applies to that
+# run, so each is owed only while the run can still be acted on. Once the run's
+# live pointer has gone and its outcome is written to the ledger, the row names
+# a run that has arrived where the failure left it, and the remedy can only
+# fail.
+_FAILED_STEP_DUTY_KINDS = frozenset({"promotion-failed", "sweep-failed"})
+
 # A run id is a path component when the record is resolved, so only the shape
 # the ledger itself accepts is resolved at all.
 _RUN_ID = re.compile(r"[A-Za-z0-9._-]+")
@@ -1518,6 +1526,34 @@ def _worktree_row_is_stale(
     return not Path(tree).expanduser().is_dir()
 
 
+def _failed_step_row_is_stale(
+    item: Mapping[str, Any], *, project: str, docs_dir: Path | None
+) -> bool:
+    """Whether a failed step's row names a run that ended and was recorded.
+
+    Both halves are read now, because either alone is not enough. The run must
+    have released its live pointer, so nothing is still being attempted for it;
+    and the ledger must already carry its own record, so an outcome exists that
+    the failure belongs to. A run that never reached the ledger is not settled
+    by this rule -- there the row is the only record the failure has.
+    """
+    run_id = str(item.get("run_id") or "").strip()
+    if not run_id or docs_dir is None:
+        return False
+    if snapshot_module().live_pointer_path(run_id).exists():
+        return False
+    return _run_ledger_record(project, run_id, docs_dir=docs_dir) is not None
+
+
+def _settlement_candidate(item: Any) -> bool:
+    """Whether one row is of a kind this read settles against the fleet."""
+    if not isinstance(item, Mapping):
+        return False
+    return str(item.get("kind") or "") in (
+        {_WORKTREE_HELD_KIND} | _FAILED_STEP_DUTY_KINDS
+    )
+
+
 def recheck_worktree_held_rows(
     payload: dict[str, Any], *, project: str
 ) -> dict[str, Any]:
@@ -1533,7 +1569,9 @@ def recheck_worktree_held_rows(
     * its kind names state the run's current pointer has already answered -- a
       promoted run that no longer reads complete, or a stopped run resumed
       after the manifest the row was built from;
-    * it is a worktree-held row whose tree the fleet has released.
+    * it is a worktree-held row whose tree the fleet has released;
+    * it is a failed step's row whose run has released its live pointer and
+      already has a written ledger record.
 
     A row whose run still holds its tree is left exactly as the snapshot
     carried it; only a row whose record shows the tree released, or whose
@@ -1545,22 +1583,24 @@ def recheck_worktree_held_rows(
     """
     payload = snapshot_module().without_departed_run_duties(payload)
     items = payload.get("obligations") or ()
-    if not any(
-        isinstance(item, Mapping) and str(item.get("kind") or "") == _WORKTREE_HELD_KIND
-        for item in items
-    ):
+    if not any(_settlement_candidate(item) for item in items):
         return payload
     docs_dir = _mounts().get(project)
     kept: list[Any] = []
     dropped = False
     for item in items:
-        if (
-            isinstance(item, Mapping)
-            and str(item.get("kind") or "") == _WORKTREE_HELD_KIND
-            and _worktree_row_is_stale(item, project=project, docs_dir=docs_dir)
-        ):
-            dropped = True
-            continue
+        if isinstance(item, Mapping):
+            kind = str(item.get("kind") or "")
+            if kind == _WORKTREE_HELD_KIND and _worktree_row_is_stale(
+                item, project=project, docs_dir=docs_dir
+            ):
+                dropped = True
+                continue
+            if kind in _FAILED_STEP_DUTY_KINDS and _failed_step_row_is_stale(
+                item, project=project, docs_dir=docs_dir
+            ):
+                dropped = True
+                continue
         kept.append(item)
     if not dropped:
         return payload

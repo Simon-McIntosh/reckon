@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="the-monitor-shows-the-work-it-watches">
+  <meta name="plan-evidence-for" content="reckon:the-monitor-shows-the-work-it-watches">
+  <meta name="plan-verifies" content="reckon:the-monitor-shows-the-work-it-watches#s140">
+  <meta name="plan-recorded-at" content="2026-11-14">
+  <meta name="plan-verdict" content="passed">
+  <title>A duty for a gone run is not shown | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" id="s140-landing" data-node="full-the-monitor-shows-the-work-it--s140" data-reckon="landed" data-when="2026-11-14">
+  <h2>A held duty outlives its run, and a failed step's row keeps the stop blocked</h2>
+  <p>A station computes each session's duties once per tick and keeps that answer until the next tick, so the list a pane and the stop hook read can be minutes old. Most of a held answer's life is already settled at read time: a run-keyed duty whose live pointer has gone is dropped before a coordinator sees it. What was not settled was the pair of rows an automatic step leaves behind -- <code>promotion-failed</code> from a refused promotion, and <code>sweep-failed</code> from a station sweep that failed. Each publishes a remedy for the run it names, so each is owed only while that run can still be acted on. The stop hook read them as outstanding for a run that had already released its live pointer, already landed, and already had its outcome written to its ledger record, so a coordinator ending a turn there was sent to a remedy that could only fail.</p>
+  <p><strong>Three facts are recorded here as measured, not assumed: all three already hold at the base revision.</strong> The pane's obligations reader drops a duty whose run has no live pointer. A run whose live pointer reads a working phase is drawn working from that pointer whatever the answer's age, and its session is not drawn halted. And a duty for a run whose pointer goes between two reads of the same held answer is dropped on the second. Those are the settlement's own behaviour, delivered by the earlier section that added the read-time drop, so this section fixes them in a case rather than reimplementing a working guard.</p>
+  <p><strong>Deliverable.</strong> <code>reckon/hooks/coordinator_obligations.py</code> gains <code>_FAILED_STEP_DUTY_KINDS</code>, <code>_failed_step_row_is_stale</code> and a second branch in <code>recheck_worktree_held_rows</code>. A failed step's row is dropped only where both facts read now hold: the run has released its live pointer, so nothing is being attempted for it, and the run's own ledger record is present, so an outcome exists the failure belongs to. A run that never reached the ledger is kept, because there the row and nothing else records the failure. It reads only the per-run file the worktree settlement already reads, so the hook's budget is unchanged.</p>
+<p><strong>Gate.</strong> The node's case, <code>tests/test_a_duty_for_a_gone_run_is_not_shown.py</code>: <strong>4 passed</strong> at this head. (a) A held answer carrying <code>review-missing</code> and <code>run-queued</code> duties for two runs with no live pointer, plus one duty for a standing run, yields exactly the standing run's duty through <code>serve_crew_view("obligations")</code>, and the live view draws a run whose pointer reads <code>working</code> as <code>working</code>, with no row of the session drawn halted; (b) deleting the standing run's pointer between two reads of the same answer drops its duty on the second; (c) <code>promotion-failed</code> and <code>sweep-failed</code> rows for a run with no live pointer whose ledger record is written do not block the stop hook's read; and (d) the control, the same row for the same run while it still holds its pointer, does block.</p>
+<p><strong>Population.</strong> The resolved command's three files -- this node's case, <code>tests/test_staged_write_inventory.py</code> and <code>tests/test_every_shared_home_lock_holds_across_nodes.py</code> -- at both revisions, taken one arm at a time on the <code>all_debug</code> partition. Base: <strong>1 failed, 58 passed</strong>, and the failure is case (c) above. Head: <strong>59 passed</strong>. The change adds no failure and repairs exactly the case it names.</p>
+<p><strong>Negative controls.</strong> The declared one is the existence check itself: it removes the settlement, so a held payload passes through as the station stored it. Case (a) then fails, naming <code>run-gone-review-duty</code> among the duties it shows. Log: <code>negative-control.log</code> under the run directory. A narrower mutation, removing only the live-pointer clause of the settlement, is <em>not</em> detected, and is recorded rather than assumed: all four cases stay green, because case (a) carries no duty of those kinds and its rows are settled by the review and queued branches. The mutation the case depends on is the settlement as a whole, which is the declared one. A third control removes the failed-step branch this section adds, and case (c) blocks again -- the base revision's behaviour, measured against this head.</p>
+<p><code>ruff check</code> reports no finding on the staged paths and <code>ruff format --check</code> reports both files already formatted. The two <code>S105</code> findings in the hook at this head are present at the base revision too, on lines this change does not touch.</p>
+</article>
+</body>
+</html>
