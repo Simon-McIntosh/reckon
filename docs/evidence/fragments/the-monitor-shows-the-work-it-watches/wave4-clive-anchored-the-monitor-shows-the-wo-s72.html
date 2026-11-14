@@ -45,11 +45,14 @@
   <table>
     <tr><th>Measure</th><th>Result</th></tr>
     <tr><td>new test, three cases</td><td>3 passed</td></tr>
-    <tr><td>follow population, base arm (90 files, <code>-n 8</code>, in place)</td>
-        <td>49 failed, 686 passed</td></tr>
-    <tr><td>follow population, head arm (91 files, <code>-n 8</code>, in place)</td>
+    <tr><td>follow population, base arm (90 files, <code>-n 4</code>, <code>all_debug</code> job)</td>
+        <td>50 failed, 685 passed</td></tr>
+    <tr><td>follow population, head arm (91 files, <code>-n 4</code>, <code>all_debug</code> job)</td>
         <td>49 failed, 689 passed</td></tr>
-    <tr><td>failure ids added at head</td><td>none (identical 49)</td></tr>
+    <tr><td>failure ids added at head</td>
+        <td>none; the head set is a strict subset of the base set, one base-only failure not reproducing</td></tr>
+    <tr><td>follow population, earlier in-place arms at <code>-n 8</code></td>
+        <td>49 failed at both, with identical ids</td></tr>
     <tr><td>negative control: window check removed, first case</td>
         <td>1 reload-failure row (the case fails)</td></tr>
     <tr><td>ruff check / format --check</td>
