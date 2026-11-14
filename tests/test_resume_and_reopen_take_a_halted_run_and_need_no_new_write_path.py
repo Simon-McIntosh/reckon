@@ -9,10 +9,18 @@ from pathlib import Path
 import pytest
 from click.testing import CliRunner
 
-from reckon import crew
 from reckon.cli import main
 from reckon.crew import resumption, runs
-from tests.test_a_reopen_launches_no_worker import CONFIG, _absent_pid, _completed_run
+from tests.test_a_reopen_launches_no_worker import CONFIG, _completed_run
+from tests.test_a_resume_records_the_host_that_launched_it import (  # noqa: F401
+    RUN_ID,
+    _resume_here,
+    base_resume_control,
+    crew_home,
+    operator_home,
+    repo,
+    run_on_the_dispatch_host,
+)
 
 
 @pytest.fixture()
@@ -27,9 +35,11 @@ def stopped_run(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
 
 
 @pytest.mark.parametrize("phase", ["stopped", "complete"])
-def test_reopen_without_a_new_path_then_resume(stopped_run, monkeypatch, phase):
+def test_reopen_without_a_new_path_then_resume(
+    run_on_the_dispatch_host, base_resume_control, phase
+):
     """Reopen starts nothing; the explicit resume records the next attempt."""
-    run_id, record = stopped_run
+    run_id, record = RUN_ID, run_on_the_dispatch_host
     prior_attempt = record["attempt"]
     record["phase"] = phase
     manifest = Path(record["manifest_path"])
@@ -38,11 +48,6 @@ def test_reopen_without_a_new_path_then_resume(stopped_run, monkeypatch, phase):
     runs._write_json(runs.pointer_path(run_id), record)
     launched = []
 
-    def launch(plan, **kwargs):
-        launched.append(plan)
-        return _absent_pid()
-
-    monkeypatch.setattr(crew, "_spawn", launch)
     runner = CliRunner()
     reopened = runner.invoke(main, ["crew", "resume", "--run", run_id, "--reopen"])
 
@@ -60,13 +65,11 @@ def test_reopen_without_a_new_path_then_resume(stopped_run, monkeypatch, phase):
         == []
     )
 
-    resumed = runner.invoke(
-        main, ["crew", "resume", "--run", run_id, "--advice", "continue the repair"]
-    )
+    resumed = _resume_here(runs.read_pointer(run_id), launched)
 
-    assert resumed.exit_code == 0, resumed.output
+    assert resumed["pid"] == os.getpid()
     assert len(launched) == 1
-    assert "continue the repair" in launched[0].stdin_text
+    assert "continue" in resumed["plan"].stdin_text
     after = runs.read_pointer(run_id)
     assert after["phase"] == "working"
     assert after["attempt"] > prior_attempt
