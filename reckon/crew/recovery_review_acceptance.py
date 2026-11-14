@@ -682,6 +682,12 @@ def accept_clean_review(
 
 REVIEW_SELF_READY = "ready"
 REVIEW_SELF_WAITING = "waiting"
+
+#: The phases a run's pointer carries before any worker has been spawned for
+#: it: a request waiting for a lane slot, one waiting on an upstream landing,
+#: and one the launcher has claimed but not yet started. A review in one of
+#: them has produced nothing, so its own promotion is not yet owed.
+_PRE_LAUNCH_PHASES = frozenset({"queued", "awaiting-upstream", "starting"})
 REVIEW_SELF_REFUSED = "refused"
 
 
@@ -1005,11 +1011,22 @@ def dispatch_awaiting_reviews(
                 # not been written yet. The request is made on a later pass,
                 # once the reviewer has ended. One that ended without a record
                 # is requested, so its refusal reaches the coordinator.
+                #
+                # A review not yet launched is not owed one either: it has no
+                # process to read as alive, so it fell through to the request,
+                # which moved a queued pointer to promotion-requested, where
+                # admission never launches it.
                 state, reason, _record = review_self_state(pointer)
-                if (
+                not_launched = str(pointer.get("phase") or "") in _PRE_LAUNCH_PHASES
+                if not_launched or (
                     record_process_alive(pointer) is True
                     and state == REVIEW_SELF_WAITING
                 ):
+                    if not_launched:
+                        reason = (
+                            f"the review run is {pointer.get('phase')} and has "
+                            "not launched, so it has produced no record yet"
+                        )
                     review_self_waiting.append(
                         {
                             "run_id": run_id,
