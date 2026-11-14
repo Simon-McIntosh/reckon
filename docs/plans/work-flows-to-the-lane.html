@@ -24,7 +24,7 @@
   <title>Work Flows To The Lane | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="214">
+<meta name="plan-version" content="215">
 <meta name="plan-modified" content="2026-11-14">
 </head>
 <body>
@@ -854,6 +854,9 @@
 <div class="r-comment" data-section="s50" data-id="c-run-r-20261114T083851987719-review-of-promoted-review-never-held-for-landing-repair-fa334babcdbb" data-who="reckon-build" data-when="2026-11-14T08:57:18.287Z">
     <div class="r-comment-body"><p>§50 review stored: parsed record at base b8ea8f9f21006af8668ef0cc226799ae50bf966a, head fa334babcdbbb09d830587f15eca7fc18905b57c; scores goal_fidelity 19, evidence 17, scope_discipline 20, durability 18, fit 18, reuse 17; three non-blocking findings (unconditional pointer unlink at promotion.py:291, the run's pending-landing record not cleared at pending_landing.py:460, negative-control.log header naming the base revision).</p></div>
 </div>
+<div class="r-comment" data-section="s51" data-id="c-run-r-20261114T081039880525-fleet-migration-carries-backend-environment" data-who="reckon-build" data-when="2026-11-14T08:51:30.824Z">
+    <div class="r-comment-body"><p>A fleet hold now exports a PATH composed of the submitting environment plus every directory the flight declares for a backend, so a hold submitted from a /usr/bin:/bin shell still starts sessions that resolve codex (/home/ITER/mcintos/.npm/packages/bin/codex), and the migration refuses to promote a standby allocation in which a declared backend command does not resolve, naming the command and the allocation and leaving the fleet record unchanged; gate 55 passed EXIT=0 at head against 51 passed EXIT=0 at base on all_debug.</p></div>
+</div>
 <div class="r-comment" data-section="s6" data-id="c-s6-directory-claims" data-who="reckon-build" data-when="2026-11-11T17:00:00Z">
     <div class="r-comment-body"><p>§6's reproduction found the 11 November hold was a directory claim (<code>reckon/crew/picker</code>), which <code>concurrent-edits-meet-at-the-merge</code> §2 keeps exclusive, enforced again at launch in <code>reckon/crew/dispatch_claims.py</code>. By the lead's ruling that work does not wait on file claims, §6 now makes a directory claim under a shared root share as its files do, and its run is widened to that module and to the test it supersedes.</p></div>
 </div>
@@ -899,8 +902,8 @@
 <div class="r-comment" data-section="s8" data-id="c-close-s8" data-who="reckon-build" data-when="2026-11-12T02:20:00Z">
     <div class="r-comment-body"><p>§8 landed at <code>ff797f0c45</code>. <a href="/reckon/evidence/archive/work-flows-to-the-lane-landed.html#s8-re-review-need-in-shadow">evidence</a></p></div>
 </div>
-<div class="r-comment" data-section="s51" data-id="c-run-r-20261114T081039880525-fleet-migration-carries-backend-environment" data-who="reckon-build" data-when="2026-11-14T08:51:30.824Z">
-    <div class="r-comment-body"><p>A fleet hold now exports a PATH composed of the submitting environment plus every directory the flight declares for a backend, so a hold submitted from a /usr/bin:/bin shell still starts sessions that resolve codex (/home/ITER/mcintos/.npm/packages/bin/codex), and the migration refuses to promote a standby allocation in which a declared backend command does not resolve, naming the command and the allocation and leaving the fleet record unchanged; gate 55 passed EXIT=0 at head against 51 passed EXIT=0 at base on all_debug.</p></div>
+<div class="r-comment" data-section="s49" data-id="c-run-r-20261114T090520360114-review-of-every-launch-route-runs-the-resolved-command-97ad0b48bc6d" data-who="reckon-build" data-when="2026-11-14T09:18:16.716Z">
+    <div class="r-comment-body"><p>independent review of r-20261114T081055722855 stored: six dimensions scored 18/13/19/18/14/20 over base 6ff4f572a2f9c924c8ead49acb0483323fe2f8d2..head 97ad0b48bc6d927bf75432ccc459d479dff732e5, no added failures, six non-blocking findings</p></div>
 </div>
 </section>
 </main>
