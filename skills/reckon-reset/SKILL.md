@@ -1,28 +1,37 @@
 ---
 name: reckon-reset
 description: >-
-  Announce an orchestrator usage-limit reset through the monitor and confirm
-  every pane was sent it. Use whenever the lead says the limits have reset, the
-  weekly limit reset, or the subscription or account was switched so sessions
-  can continue, or asks to broadcast or resend a reset. Trigger phrases:
-  "limits reset", "limits reset, continue", "switched sub", "new login, carry
-  on", "broadcast the reset", "/reckon-reset". Worker lanes, holds and lifts are
-  out of scope.
-allowed-tools: Bash(*) ListAgents SendMessage
+  Announce an orchestrator usage-limit reset through the monitor, once. Use
+  whenever the lead says the limits have reset, the weekly limit reset, or the
+  subscription or account was switched so sessions can continue, or asks to
+  broadcast a reset. Trigger phrases: "limits reset", "limits reset, continue",
+  "switched sub", "new login, carry on", "broadcast the reset", "/reckon-reset".
+  Worker lanes, holds and lifts are out of scope.
+allowed-tools: Bash(*)
 ---
 
-# reckon-reset — announce a reset through the monitor, and check it went out
+# reckon-reset — announce a reset through the monitor, once
 
 The monitor is the channel: the station publishes the reset as a `limit` row to
 every project's pane, and a session that draws it resumes. This skill records
-the reset, confirms the station published it, and messages sessions directly
-only when it did not.
+the reset and confirms the station published it. It sends nothing else, and
+nothing follows it up.
+
+## No follow-ups
+
+A reset is one message. Never relay it, message sessions directly about it,
+re-announce it, or schedule anything on a five-hour or any other clock. By the
+time a follow-up arrives the lead may have switched account again, and the
+second message describes a state that no longer holds. The station can take
+several minutes to publish when its tick is slow; a late row is not a missing
+one.
 
 ## 1. Record the reset
 
 Use the lead's own words as the reason, and `--clock seven_day` when the lead
 names the weekly limit (`five_hour` otherwise). Switching subscription or
-account counts as a reset of that clock.
+account counts as a reset of that clock. The clock names which limit was
+cleared; it schedules nothing.
 
 ```bash
 reckon crew budget --reset --used --group claude-orchestrators \
@@ -50,26 +59,21 @@ EOF
 
 Your own pane draws the same `limit` row.
 
-## 3. Only if it did not publish
+## 3. If it has not published
 
-If no row naming this reset appears within two minutes, the monitor path is
-broken. Then, and only then, call `ListAgents` and send each listed peer one
-`SendMessage`:
-
-> Usage limits have reset (<the lead's words>, <UTC time>, <clock>): resume your
-> work now. Orchestrator sessions only; worker lanes are unchanged.
-
-Report the broken broadcast as a monitor defect.
+Wait for the station's current tick to finish (`tick_started_at` and
+`tick_finished_at` in the station store) before concluding anything. If a full
+tick passes with no row naming this reset, report it to the lead as a monitor
+defect and stop there. Do not message sessions yourself: a direct copy sent
+late is exactly the stale follow-up this skill exists to prevent.
 
 ## 4. Report
 
 One line: the reset id and clock, and either "published to N projects" or "not
-published; messaged M live sessions directly". The registration-based
-`unreached` list in the reset's JSON is not a list of live sessions and is not
-reported as sessions missed.
+published after a full tick", naming the defect.
 
 ## When a session sees the reset
 
 A `limit` row naming `claude-orchestrators` means continue: re-read the
-obligations view and carry on, dispatching included. The reset never changes a
-worker lane.
+obligations view and carry on, dispatching included. Do not relay it to other
+sessions; the monitor already did. The reset never changes a worker lane.

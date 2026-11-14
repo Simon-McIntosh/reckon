@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="the-monitor-reads-each-fact-once">
+  <meta name="plan-evidence-for" content="reckon:the-monitor-reads-each-fact-once">
+  <meta name="plan-verifies" content="reckon:the-monitor-reads-each-fact-once#s53">
+  <meta name="plan-recorded-at" content="2026-11-14">
+  <meta name="plan-verdict" content="passed">
+  <title>A live-work pass walks the process table once</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+
+<article class="r-note" id="a-tick-walks-the-process-table-once-landing" data-node="a-tick-walks-the-process-table-once" data-reckon="landed" data-when="2026-11-14">
+  <h2>One walk of the process table serves a whole live-work pass</h2>
+
+  <p id="a-tick-walks-the-process-table-once-change"><strong>What landed.</strong> <code>station_subscriber.live_work_populations</code> now opens <code>process_signal.process_table_walk_once()</code> around the loop that asks each terminal pointer's duty. A terminal pointer whose recorded pids have gone reaches <code>recovery_liveness._env_scan_run_pid</code>, and that scan is answered from a walk of <code>/proc</code>. The walk was shared only within <code>BEAT_SECONDS</code> (one second), which bounds a poller's pass and not a reading that outlasts a beat: on a loaded host nearly every pointer's liveness read fell in a beat of its own and walked the table again. Inside the region the first read takes the walk and every later read in the same pass answers from that table, so a reading costs one listing rather than one per pointer, and no two pointers in a pass are judged against two different views of the table. The region joins any region already open, so the station's own derivation paths and the follower's settle keep the tables they already hold.</p>
+
+  <p id="a-tick-walks-the-process-table-once-gate"><strong>Gate.</strong> <code>tests/test_a_tick_walks_the_process_table_once.py</code> builds a temporary crew home of 40 terminal pointers whose pointer pid and worker-record pid are both dead, the condition under which <code>local_liveness</code> enters <code>_env_scan_run_pid</code>. A recording stand-in replaces <code>process_signal._walk_marked_processes</code> and a clock steps past <code>BEAT_SECONDS</code> on every table read. One pointer's mark is carried by a live child of the test process, so the table is seen answering before either count is believed: that pointer reads <code>(True, True)</code> and a pointer with no mark reads dead. The head pass walks the table <strong>once</strong> over the 40 pointers. The same pass with the region neutralised — the base revision's behaviour — walks it <strong>40</strong> times and returns the same populations, so the reading is unchanged and only its cost moved. <strong>1 passed, EXIT=0</strong> (<code>gate-tick-walk.log</code>).</p>
+
+  <p id="a-tick-walks-the-process-table-once-negative"><strong>Negative control.</strong> The test file run against a tree extracted from the base revision <code>b8530ec5e1</code> fails exactly where the defect is: <code>AssertionError: ('one live-work pass over 40 terminal pointers walked the process table 40 times',)</code>, <strong>1 failed, EXIT=1</strong> (<code>negative-control-base.log</code>), with the module confirmed as the base tree's own <code>reckon/crew/station_subscriber.py</code> on the log's header. The positive controls hold in that same run, so the count is the walk count and not a fixture that never reached the scan.</p>
+
+  <p id="a-tick-walks-the-process-table-once-suite"><strong>Matched arms.</strong> Both arms ran the project's suite command on an <code>all_debug</code> partition job. The base arm, resolved over a tree extracted from <code>b8530ec5e1</code> (which does not carry this node's new test file), ran <code>tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py</code>: <strong>55 passed, EXIT=0</strong> (<code>baseline-suite.log</code>). The head arm at <code>2640003b86</code> ran those two files with <code>tests/test_a_tick_walks_the_process_table_once.py</code>: <strong>56 passed, EXIT=0</strong> (<code>after-suite.log</code>). No failure in either arm, so the added-failure set is empty. <code>ruff check</code> and <code>ruff format --check</code> report no finding on the two staged paths. Every log this fragment cites sits in the node's run directory, <code>runs/r-20261114T174544423075-a-tick-walks-the-process-table-once/</code>, which is outside the repository.</p>
+</article>
+</body>
+</html>

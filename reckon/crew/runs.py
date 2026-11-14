@@ -2801,9 +2801,7 @@ def _admissible_unlaunched_passes(
 _LAUNCHED_VERDICTS = frozenset({"launched", "routed", "moved"})
 
 
-def _stuck_wait_started(
-    pointer: Mapping[str, Any], phase: str
-) -> datetime | None:
+def _stuck_wait_started(pointer: Mapping[str, Any], phase: str) -> datetime | None:
     """When the request entered the phase whose wait is being judged."""
     hold = pointer.get("queue_hold")
     if not isinstance(hold, Mapping):
@@ -3407,9 +3405,14 @@ def _watch_stream_snapshots(
     moment = _utc_seconds()
     stall_seconds = parse_duration(stall_window)
     pointers = list(records)
+    passes = admission_pass_history()
     return {
         str(record.get("run_id") or ""): _watch_snapshot(
-            record, moment=moment, stall_seconds=stall_seconds, pointers=pointers
+            record,
+            moment=moment,
+            stall_seconds=stall_seconds,
+            pointers=pointers,
+            passes=passes,
         )
         for record in _tick_pointers(pointers)
         if record.get("run_id")
@@ -3886,8 +3889,31 @@ def _publish_watch_stream(project: str, records: Iterable[Mapping[str, Any]]) ->
         transition_fired = _publish_watch_transitions(project, producer, records)
     finally:
         _SWEEP_LOCAL.in_transition = False
+    _start_obligation_sweep(project, transition_fired=transition_fired)
+
+
+def _start_obligation_sweep(project: str, *, transition_fired: bool) -> bool:
+    """Start one obligations sweep, or report that one is already in flight.
+
+    Both triggers take this one path: the change gate folds its transitions and
+    then starts a sweep that knows whether a transition fired, and the
+    producer's own beat starts one with no transition at all. One sweep runs at
+    a time, and a trigger arriving while a sweep is in flight is skipped rather
+    than queued — the sweep's floor interval decides whether that pass writes,
+    so a skipped trigger costs no freshness.
+
+    A trigger raised from inside a running sweep is left to that sweep. This is
+    load-bearing rather than defensive: the derivation lists the fleet through
+    the same call that publishes this stream, so re-entering here would publish
+    a second stream from within the first.
+    """
+    if getattr(_SWEEP_LOCAL, "in_sweep", False):
+        return False
+    producer = _WATCH_STREAM_PRODUCERS.get(project)
+    if producer is None:
+        return False
     if not producer.sweep_lock.acquire(blocking=False):
-        return
+        return False
     producer.sweep_thread = threading.Thread(
         target=_run_obligation_sweep,
         args=(project, producer, transition_fired),
@@ -3895,6 +3921,26 @@ def _publish_watch_stream(project: str, records: Iterable[Mapping[str, Any]]) ->
         daemon=True,
     )
     producer.sweep_thread.start()
+    return True
+
+
+def publish_obligations_on_beat(project: str) -> bool:
+    """Start one obligations sweep without asking for a fleet read.
+
+    A session's snapshot carries an age, so publishing a fresh one becomes due
+    by the passage of time alone. Every other trigger for the sweep reads a
+    document — a transition, a file under the state or plan tree, or the crew
+    home's fingerprint — and a fleet that is simply quiet moves none of them, so
+    a producer reachable only through those triggers goes on holding the seat
+    while its sessions' snapshots age out of the freshness window. This call is
+    the producer's own beat reaching the sweep: it lists nothing, folds no
+    transition, and leaves the sweep's floor interval to decide whether this
+    beat publishes.
+
+    Reports whether a sweep was started. A sweep already in flight is skipped
+    rather than queued, exactly as a trigger from the change gate is.
+    """
+    return _start_obligation_sweep(project, transition_fired=False)
 
 
 def _run_obligation_sweep(

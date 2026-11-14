@@ -169,6 +169,8 @@ def _refuse_over_reservation_roster(
     backend: Mapping[str, Any],
     occupying: list[dict[str, Any]],
     project: str | None = None,
+    *,
+    reserve: int = 0,
 ) -> None:
     """Refuse a dispatch past the placement reservation's roster cap.
 
@@ -205,9 +207,16 @@ def _refuse_over_reservation_roster(
     occupants = placement_module.roster_occupants(
         placement_module.placed_in_reservation(occupying, reservation)
     )
-    refusal = placement_module.reservation_roster_refusal(len(occupants))
+    limit = max(1, placement_module.RESERVATION_ROSTER_LIMIT - max(0, reserve))
+    refusal = placement_module.reservation_roster_refusal(len(occupants), limit=limit)
     if refusal is None:
         return
+    if reserve:
+        refusal = (
+            f"{refusal} The local lane stops {reserve} seats short of the "
+            f"roster's cap of {placement_module.RESERVATION_ROSTER_LIMIT}, "
+            "which are kept for a dispatch naming another lane."
+        )
     # The seats, not the population handed in: with the population host-wide a
     # reader would otherwise be shown every live run on the machine, most of
     # which are not inside the allocation at all.
@@ -217,7 +226,7 @@ def _refuse_over_reservation_roster(
         f"queued behind this cap launches then. "
         f"Occupying runs: {', '.join(occupying_ids) or 'none'}.",
         occupancy=len(occupants),
-        limit=placement_module.RESERVATION_ROSTER_LIMIT,
+        limit=limit,
         occupying=occupying_ids,
     )
 
@@ -228,8 +237,14 @@ def _refuse_over_concurrency_ceiling(
     project: str | None = None,
     *,
     exclude_run_ids: Iterable[str] = (),
+    reserve: int = 0,
 ) -> None:
     """Refuse a dispatch that would exceed whichever resource bound is binding.
+
+    ``reserve`` is the number of reservation seats, and their cores, this
+    dispatch must leave free: the local lane passes
+    :data:`reckon.crew.placement.LOCAL_LANE_RESERVE`, so a dispatch naming
+    another lane is never starved by the local queue.
 
     A physical resource that is already spent must not be asked to carry one
     more worker: the harness retry budget is fixed and reckon passes no retry
@@ -263,6 +278,7 @@ def _refuse_over_concurrency_ceiling(
     # counts with, while the lane bound above stays this backend's own.
     reservation_occupancy: int | None = None
     roster_pointers: list[dict[str, Any]] = []
+    seat_ids: list[str] = []
     if flight.placement_for(backend) is not None:
         from reckon.crew import placement as placement_module
 
@@ -270,7 +286,11 @@ def _refuse_over_concurrency_ceiling(
             _live_runs_across_backends(exclude_run_ids=exclude_run_ids),
             placement_module.read_reservation(project),
         )
-        reservation_occupancy = len(placement_module.roster_occupants(roster_pointers))
+        seat_ids = [
+            str(pointer.get("run_id") or "unknown")
+            for pointer in placement_module.roster_occupants(roster_pointers)
+        ]
+        reservation_occupancy = len(seat_ids) + max(0, reserve)
     bounds = summary.concurrency_bounds(
         backend,
         occupancy=len(occupying),
@@ -278,6 +298,27 @@ def _refuse_over_concurrency_ceiling(
         reservation_occupancy=reservation_occupancy,
     )
     binding = summary.binding_bound(bounds)
+    if (
+        binding is not None
+        and not binding.admits_one_more
+        and binding.name == "partition-cores"
+    ):
+        # The admitted cores are spent by the workers placed in the reservation,
+        # so the refusal names those workers rather than this backend's whole
+        # population, whose queued and parked requests hold no core. A core
+        # frees when one of those workers ends, so this is a wait for a seat
+        # exactly as the roster cap is, and a caller that can queue does.
+        raise RosterFull(
+            format_refusal(
+                "D09",
+                summary.bound_refusal_text(
+                    binding, backend_name=backend_name, occupying=seat_ids
+                ),
+            ),
+            occupancy=len(seat_ids),
+            limit=int(binding.capacity or 0),
+            occupying=seat_ids,
+        )
     if binding is not None and not binding.admits_one_more:
         run_ids = [str(pointer.get("run_id") or "unknown") for pointer in occupying]
         raise CrewError(
@@ -294,7 +335,7 @@ def _refuse_over_concurrency_ceiling(
     # the only bound nothing else enforces on the fleet's behalf. It is counted
     # over the host-wide population, because a placed worker of any backend is
     # a step inside the same allocation.
-    _refuse_over_reservation_roster(backend, roster_pointers, project)
+    _refuse_over_reservation_roster(backend, roster_pointers, project, reserve=reserve)
 
 
 def _refuse_against_the_bookend_reserve(
@@ -1278,7 +1319,9 @@ class RosterFull(CrewError):  # noqa: N818 - a held condition named beside the l
     that produced it, so a reader sees the same population the guard counted.
     """
 
-    def __init__(self, message: str, *, occupancy: int, limit: int, occupying: list[str]) -> None:
+    def __init__(
+        self, message: str, *, occupancy: int, limit: int, occupying: list[str]
+    ) -> None:
         super().__init__(message)
         self.occupancy = occupancy
         self.limit = limit

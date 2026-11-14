@@ -1,0 +1,99 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_analysis": [
+    {
+      "fails_when": "Restoring inline admission selection produces no cached selector call (observed 0 versus required 1 in reuse-negative-control.log); repeated delegation also fails the exact count.",
+      "path": "tests/test_owed_plan_reviews_queue_held.py:94"
+    },
+    {
+      "fails_when": "Passing a new list, filtered copy or reread rather than the same held all_records object fails identity; the assertion checks cache sharing rather than only selected content.",
+      "path": "tests/test_owed_plan_reviews_queue_held.py:95"
+    },
+    {
+      "fails_when": "Selecting no design, a content review or a wrong stored review fails the fixed review-design fixture identity.",
+      "path": "tests/test_owed_plan_reviews_queue_held.py:96"
+    },
+    {
+      "fails_when": "Removing numeric ordering picks version 2 instead of version 10, or failing rubric filtering picks the content record at version 999.",
+      "path": "tests/test_owed_plan_reviews_queue_held.py:115"
+    },
+    {
+      "fails_when": "Removing cached plan filtering picks the other plan at version 1000; removing rubric filtering picks content at 999; lexical ordering picks 2; ignoring the iterator is additionally caught by the final store-read assertion.",
+      "path": "tests/test_owed_plan_reviews_queue_held.py:116-121"
+    },
+    {
+      "fails_when": "Treating an explicit empty cache as missing and falling back to the store returns a review rather than None.",
+      "path": "tests/test_owed_plan_reviews_queue_held.py:122"
+    },
+    {
+      "fails_when": "Any store read by either cached call adds entries beyond the single expected default read; suppressing the default read also fails.",
+      "path": "tests/test_owed_plan_reviews_queue_held.py:123"
+    }
+  ],
+  "assertion_independence": "The selected newest object is also an input candidate, but the expected choice is fixed by plan, rubric and numeric version and competing decoys make these identity checks fail under selection regressions; none is a self-comparison that survives the claimed regression.",
+  "call_sites": [
+    "reckon/crew/admission/reviews.py:272",
+    "reckon/crew/admission/reviews.py:468",
+    "reckon/crew/plan_review.py:3483",
+    "reckon/crew/plan_review.py:4328",
+    "reckon/crew/plan_review.py:4583"
+  ],
+  "completed_at": "2026-11-14T22:34:23Z",
+  "dispatched_at": "2026-11-14T22:28:12Z",
+  "findings": [],
+  "justifications": {
+    "durability": "tests/test_owed_plan_reviews_queue_held.py:94-123 fails for restored inline selection, copied or reloaded cache, wrong selected review, lexical version ordering, missing rubric or plan filtering, or a store fallback on an explicit empty cache.",
+    "evidence": "repair-focused-gate.log:7-8 records 149 passed at b05e55c636, reuse-negative-control.log:29-38 proves the prior selector duplication is detected, and baseline-suite-final.log plus repair-delivery-after-suite.log each record 55 passed with EXIT=0.",
+    "fit": "reckon/crew/plan_review.py:1814-1841 retains the keyword-only store-reading default, documents the optional iterable and uses existing Mapping and Iterable idioms without adding prohibited names.",
+    "goal_fidelity": "reckon/crew/admission/reviews.py:272 now calls newest_design_review with all_records, satisfying the requested repair while preserving the prior filter and numeric ordering.",
+    "reuse": "The capability search for design-review filtering and plan-version selection found the owner at reckon/crew/plan_review.py:1785-1841, which this diff extends; admission/reviews.py:272 delegates to that owner rather than duplicating it.",
+    "scope_discipline": "The two-commit diff changes only the five requested targets, all permitted by resume-1-advice.txt and the source live pointer's widened write_paths."
+  },
+  "project": "reckon",
+  "review_run_id": "r-20261114T221749414828-review-of-bpq-owed-review-queues-held-9da61f8b8d0f",
+  "review_text": "VERDICT goal: Read prompt.txt:38 and live plan section s3; the incremental repair in reckon/crew/admission/reviews.py:272 preserves review-debt queueing while delegating design selection to its existing owner as resume-2-advice.txt requires.\nVERDICT done_when: Read prompt.txt:160-161 and resume-2-advice.txt; repair-focused-gate.log:7-8 records 149 passed and EXIT=0, reuse-negative-control.log reproduces zero selector calls at the prior head, and repair-base-negative-control.log records the original dispatch refusal.\nVERDICT write_paths: Read the source live pointer node.write_paths and resume-1-advice.txt; all five incremental paths lie within the widened reckon/, tests/ and evidence-fragment grants and this review's five named targets.\nVERDICT manifest: Read the source manifest.md; its eight commits include the two reviewed additions, its completed baseline_suite and after_suite agree with their 55-pass logs, and the repair-focused gate and both controls have readable receipts.\nVERDICT diff: Read b05e55c636d711b371df1e7a9ba98e058a32346f and 9da61f8b8d0f2aa6d4e09f2667ea3b8d9ea0451f individually against 6632bc8e5dd2b75a2ed5326bc25b865450060fb1; the five-file delta extends newest_design_review, delegates admission to it, adds two regressions, and refreshes evidence without introducing a defect.\nCALL_SITES: reckon/crew/admission/reviews.py:272, reckon/crew/admission/reviews.py:468, reckon/crew/plan_review.py:3483, reckon/crew/plan_review.py:4328, reckon/crew/plan_review.py:4583\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/admission/reviews.py:272 now calls newest_design_review with all_records, satisfying the requested repair while preserving the prior filter and numeric ordering.\nSCORE evidence: 20\nJUSTIFICATION evidence: repair-focused-gate.log:7-8 records 149 passed at b05e55c636, reuse-negative-control.log:29-38 proves the prior selector duplication is detected, and baseline-suite-final.log plus repair-delivery-after-suite.log each record 55 passed with EXIT=0.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: The two-commit diff changes only the five requested targets, all permitted by resume-1-advice.txt and the source live pointer's widened write_paths.\nSCORE durability: 20\nJUSTIFICATION durability: tests/test_owed_plan_reviews_queue_held.py:94-123 fails for restored inline selection, copied or reloaded cache, wrong selected review, lexical version ordering, missing rubric or plan filtering, or a store fallback on an explicit empty cache.\nSCORE fit: 20\nJUSTIFICATION fit: reckon/crew/plan_review.py:1814-1841 retains the keyword-only store-reading default, documents the optional iterable and uses existing Mapping and Iterable idioms without adding prohibited names.\nSCORE reuse: 20\nJUSTIFICATION reuse: The capability search for design-review filtering and plan-version selection found the owner at reckon/crew/plan_review.py:1785-1841, which this diff extends; admission/reviews.py:272 delegates to that owner rather than duplicating it.",
+  "reviewed_base_sha": "6632bc8e5dd2b75a2ed5326bc25b865450060fb1",
+  "reviewed_head_sha": "9da61f8b8d0f2aa6d4e09f2667ea3b8d9ea0451f",
+  "reviewed_run_id": "r-20261114T194828404887-bpq-owed-review-queues-held",
+  "scope": "Incremental review of the two commits after prior reviewed head; no suite rerun; merged-head verification remains separate.",
+  "scores": {
+    "durability": 20,
+    "evidence": 20,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "suite_evidence": {
+    "after_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261114T194828404887-bpq-owed-review-queues-held/repair-delivery-after-suite.log",
+      "revision": "9da61f8b8d0f2aa6d4e09f2667ea3b8d9ea0451f"
+    },
+    "baseline_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261114T194828404887-bpq-owed-review-queues-held/baseline-suite-final.log",
+      "revision": "bc316766333df704e7a671de195467dc836ab4b1"
+    }
+  },
+  "times_source": "run-record",
+  "timestamp": "2026-11-14T22:46:43.846206+00:00",
+  "total": 120,
+  "verdicts": {
+    "diff": "Read b05e55c636d711b371df1e7a9ba98e058a32346f and 9da61f8b8d0f2aa6d4e09f2667ea3b8d9ea0451f individually against 6632bc8e5dd2b75a2ed5326bc25b865450060fb1; the five-file delta extends newest_design_review, delegates admission to it, adds two regressions, and refreshes evidence without introducing a defect.",
+    "done_when": "Read prompt.txt:160-161 and resume-2-advice.txt; repair-focused-gate.log:7-8 records 149 passed and EXIT=0, reuse-negative-control.log reproduces zero selector calls at the prior head, and repair-base-negative-control.log records the original dispatch refusal.",
+    "goal": "Read prompt.txt:38 and live plan section s3; the incremental repair in reckon/crew/admission/reviews.py:272 preserves review-debt queueing while delegating design selection to its existing owner as resume-2-advice.txt requires.",
+    "manifest": "Read the source manifest.md; its eight commits include the two reviewed additions, its completed baseline_suite and after_suite agree with their 55-pass logs, and the repair-focused gate and both controls have readable receipts.",
+    "write_paths": "Read the source live pointer node.write_paths and resume-1-advice.txt; all five incremental paths lie within the widened reckon/, tests/ and evidence-fragment grants and this review's five named targets."
+  }
+}

@@ -1,0 +1,6 @@
+<article class="r-evidence" id="wave4-clive-anchored-the-crew-does-its-own-bo-s14">
+<h3 id="wave4-clive-anchored-the-crew-does-its-own-bo-s14-title">A resumed run's old manifest status is unknown until the worker rewrites it</h3>
+<p><strong>Finding.</strong> The defect no longer reproduces at <code>9fcf1375ab</code>. <code>_manifest_is_the_predecessor_attempts_report</code> already withdraws a manifest word the current attempt did not write, and <code>tests/test_a_resumed_run_is_not_read_by_its_old_status.py</code> passes 8/8 there with the blocked classification withdrawn.</p>
+<p><strong>Change.</strong> Added <code>tests/test_a_resumed_run_s_old_manifest_status_is_unknown_until_the_worker_rewrit.py</code>, which asserts the duty the coordinator reads: no blocked obligation while the resumed attempt moves, and the blocked obligation restored once a manifest written after the attempt start reads blocked.</p>
+<p><strong>Measure.</strong> The negative control reads the predecessor's word instead of dating the attempt, and the stale blocked duty then appears: <code>1 failed, 1 passed</code> at head, with the duty carrying <code>next_command</code> naming the predecessor's manifest. Head arm vs base arm results are recorded in the run manifest.</p>
+</article>

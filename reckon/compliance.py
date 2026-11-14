@@ -19,19 +19,17 @@ configuration home's cache directory, so a restart reuses them.
 from __future__ import annotations
 
 import argparse
-import contextlib
-import fcntl
 import json
 import logging
 import sys
 import time
-from collections.abc import Iterator
 from dataclasses import dataclass
 from pathlib import Path
 
 from reckon import doccheck, metadata_index, resources
 from reckon._store import write_json_atomically
 from reckon.file_memo import file_signature
+from reckon.node_exclusive_lock import exclusive_lock
 
 LOGGER = logging.getLogger("reckon.compliance")
 
@@ -141,18 +139,9 @@ def _store_path(docs_dir: Path, project: str) -> Path:
     )
 
 
-@contextlib.contextmanager
-def _locked(docs_dir: Path, project: str) -> Iterator[None]:
-    """Serialise writers — the server, a refresh process, the CLI — on one store."""
-
-    lock_path = _store_path(docs_dir, project).with_suffix(".lock")
-    lock_path.parent.mkdir(parents=True, exist_ok=True)
-    with lock_path.open("a") as handle:
-        fcntl.flock(handle, fcntl.LOCK_EX)
-        try:
-            yield
-        finally:
-            fcntl.flock(handle, fcntl.LOCK_UN)
+def _lock_path(docs_dir: Path, project: str) -> Path:
+    """The lock file that serialises writers on one project's store."""
+    return _store_path(docs_dir, project).with_suffix(".lock")
 
 
 def stored_verdicts(docs_dir: Path, project: str) -> dict[str, dict]:
@@ -192,7 +181,7 @@ def _write_entries(
 ) -> None:
     """Merge ``updates`` into the store; with ``keep``, drop every other path."""
 
-    with _locked(docs_dir, project):
+    with exclusive_lock(_lock_path(docs_dir, project)):
         entries = stored_verdicts(docs_dir, project)
         entries.update(updates)
         if keep is not None:
