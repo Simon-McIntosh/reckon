@@ -1,0 +1,53 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-14T17:38:57.696Z",
+  "dispatched_at": "2026-11-14T17:30:56Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-session-spends-a-priority-budget.html:106",
+      "id": "done_when-1",
+      "reason": "the worker must choose whether the router keeps withholding submissions or only orders them, and either choice falsifies one clause of the node's own gate, so the measure as written cannot pass.",
+      "text": "\u00a75's third done-when requires 30 jobs in the scheduler, a router gate waiting count above zero and an in-flight count at its width, and with 30 workers dispatched and a width below 30 these cannot all hold: if the router still withholds submissions there are fewer than 30 jobs, and if it submits all 30 then in-flight reaches 30 and nothing is waiting",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-session-spends-a-priority-budget.html:62",
+      "id": "reasoning-1",
+      "reason": "read literally a worker builds one global order across lanes, letting a request queued on a saturated lane outrank a runnable one on an idle lane and breaking the per-lane fair share \u00a71 says already holds.",
+      "text": "\u00a72's order is stated \"across sessions\" with no lane scope, but its fair-share step compares live runs on a lane and the existing ordering documents itself as \"the lane's whole order\" (`reckon/crew/admission/ordering.py:106`), so the plan does not say whether the new order is computed within a lane or globally",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "fccbfa77c7e4a506c79a4400ffd0c3cee5da1b23",
+  "plan_fingerprint": "0f6d56e0fda5df1c7b8d191bb5b84a93be2808226874ab4ce2ebb16bdb7e1dc6",
+  "plan_slug": "a-session-spends-a-priority-budget",
+  "plan_version": 0,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261114T172903149288-plan-review-of-a-session-spends-a-priority-budget",
+  "reviewed_blob_sha": "07a89127aa9b262b9e152f6e60e5eabc96febd6f",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `reckon.crew.queue_order.admission_order_details` resolves (`reckon/crew/queue_order.py:283`), `crew queue reprioritise` resolves (`reckon/crew/queue_edit.py:564`), the \"roster cap of 25\" resolves (`reckon/crew/placement.py:88`) and its refusal names the cap (`placement.py:1363`), and `rigel` is a live partition; this plan carries no hrefs, so the extensionless-href convention does not arise.",
+    "done_when": "a finding \u2014 \u00a75's third done-when (line 106) asks for 30 scheduler jobs, a router waiting count above zero and an in-flight count held at its width, three quantities the deliverable never reconciles.",
+    "evidence_paths": "pass \u2014 \u00a72, \u00a74 and \u00a75 each name `docs/evidence/fragments/a-session-spends-a-priority-budget/<section>.html`, a durable repository path (the `docs/evidence/fragments/` tree already carries 136 plan records), and \u00a75's live-measurement log lands beside its gate log rather than on a temporary path.",
+    "naming": "pass \u2014 no plan-section labels, gate IDs, ticket numbers or version tags reach a symbol, a file name or a comment in the text, and none of the sections carries changelog prose.",
+    "reasoning": "a finding \u2014 \u00a72's ordering list (line 62) states one cross-session order without saying it is computed within a lane, while the \"fair share by live runs\" step is a per-lane quantity.",
+    "single_goal": "pass \u2014 \u00a72 delivers the budget, \u00a74 delivers the queue read, \u00a75 delivers scheduler-owned worker placement; each gate closes on one verdict.",
+    "wiring": "pass \u2014 `plan-section-depends-on` declares s3 -> s2 and s4 -> s2, which matches the followup's \"\u00a73 and \u00a74 wait on \u00a72's budget\"; \u00a75's reference to \u00a72's admission order names an ordering that already exists (`reckon/crew/admission/ordering.py`), so it needs no declared wait and the followup's \"\u00a72 and \u00a75 are independent\" holds."
+  },
+  "section_digests": {
+    "_document": "7bdb23387894ac3d429275276e1de0c15261b81328a8fd69bb7de381c94c86ef",
+    "s1": "9129508a68c3f0a27ffb0621e389dc4500399b17ee841c29c79988113c1612f1",
+    "s2": "ddd5fc3914d9b2e16bfe09c1f7873fabf5ca9f2925a1052b52800c7557ad1d07",
+    "s3": "4958667ab753c206cfd1b106adb8206692beb62257209fe45687fc015efa7f41",
+    "s4": "969203a52e9ff67c218bcc06af4a5ef51b04c2abe3e142ff1681f59dd0c0a8b5",
+    "s5": "9b5a8012bd00f8b845b32ec93e1deec0981fea308300c29fac0bd49fdaac66ba"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-14T18:25:20.290759+00:00",
+  "total": null
+}
