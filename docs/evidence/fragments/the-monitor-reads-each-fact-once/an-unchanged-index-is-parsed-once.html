@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="the-monitor-reads-each-fact-once">
+  <meta name="plan-evidence-for" content="reckon:the-monitor-reads-each-fact-once">
+  <meta name="plan-verifies" content="reckon:the-monitor-reads-each-fact-once#s51">
+  <meta name="plan-recorded-at" content="2026-11-14">
+  <meta name="plan-verdict" content="passed">
+  <title>An unchanged index document is parsed once per process</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+
+<article class="r-note" id="an-unchanged-index-is-parsed-once-landing" data-node="an-unchanged-index-is-parsed-once" data-reckon="landed" data-when="2026-11-14">
+  <h2>A repeat read of the store's index costs a stat, not a decode</h2>
+
+  <p id="an-unchanged-index-is-parsed-once-defect"><strong>The defect.</strong> <code>store_index_document</code> answered every call outside a producer tick by reading and decoding <code>.review-index/index.json</code> afresh — 4.8 MB on the shared store. On the base revision, 100 calls in a row over an untouched store decoded the document <strong>100 times</strong>: the file had not moved between any two of them, and the reader had already parsed exactly those bytes.</p>
+
+  <p id="an-unchanged-index-is-parsed-once-what-landed"><strong>What landed.</strong> <code>reckon/crew/review_records.py</code> keeps the parsed mapping it last read from each store, keyed on the document file's inode, size and modification time. A repeat read stats the file and, when the key matches, returns the mapping it already holds; a changed file is parsed again. Every writer replaces the cache entry as it persists a document, so a write is always followed by a read that takes the file. The reconciling path takes a private parse of its own: it mutates what it reads, while the cached mapping is what other readers in this process are already holding. The settle path that read the document inside the index lock also parses afresh, because another process may have written while it waited for the lock.</p>
+
+  <p id="an-unchanged-index-is-parsed-once-harness"><strong>The harness.</strong> <code>tests/test_an_unchanged_index_is_parsed_once.py</code> builds a store on the test's temporary crew home through <code>record_written</code>, then counts decodes of the index document's own bytes through a recording stand-in for <code>json.loads</code>. It calls <code>store_index_document</code> 100 times outside any tick and asserts one parse. It then writes another record through <code>record_written</code> and asserts that the next call parses once more and returns the entry the write added.</p>
+
+  <p id="an-unchanged-index-is-parsed-once-gate"><strong>Gate.</strong> Base revision <strong>869274dbfa</strong>, run from a scratch worktree on <code>all_debug</code>: the staged-write inventory alone <strong>51 passed, EXIT=0</strong> (the node's case does not exist at base, so it is dropped from that arm). Head: <strong>52 passed, EXIT=0</strong>. The negative control is the node's own case against the base tree: <strong>1 failed, EXIT=1</strong>, failing id <code>test_an_unchanged_index_is_parsed_once</code>, whose assertion prints <em>“100 reads of an unchanged index document parsed it 100 times”</em> — the defect reproduced. The two files that own the neighbouring index behaviour, <code>tests/test_the_review_store_is_indexed_by_its_writers.py</code> and <code>tests/test_a_review_index_reader_never_waits_or_rewrites.py</code>, stay green at the head (<strong>11 passed</strong>). <code>ruff check</code> reports no finding and <code>ruff format --check</code> reports both staged files formatted.</p>
+
+  <p id="an-unchanged-index-is-parsed-once-logs"><strong>Logs.</strong> <code>logs/base-arm.log</code>, <code>logs/after-arm.log</code> and <code>logs/negative-control.log</code> in the node's run directory, each headed with its tree, revision, working directory, literal command and imported module path, and ending in a bare <code>EXIT=</code> line.</p>
+</article>
+
+</body>
+</html>
