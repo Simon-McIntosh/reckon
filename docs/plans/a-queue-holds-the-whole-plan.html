@@ -25,8 +25,8 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-sprint" content="S27">
-<meta name="plan-version" content="373">
-<meta name="plan-modified" content="2026-11-13">
+<meta name="plan-version" content="374">
+<meta name="plan-modified" content="2026-11-14">
 </head>
 <body>
   <main class="plan-doc">
@@ -913,6 +913,9 @@
 </div>
 <div class="r-comment" data-section="s45" data-id="c-run-r-20261113T163019965606-review-of-a-batch-decodes-the-ledger-index-once-9af0947d38b3" data-who="reckon-build" data-when="2026-11-13T16:53:26.186Z">
     <div class="r-comment-body"><p>review of r-20261113T131132182840-a-batch-decodes-the-ledger-index-once at head 9af0947d38 over base a5ea48f256 scores goal_fidelity 19, evidence 16, scope_discipline 20, durability 18, fit 19, reuse 18 (total 110) with one non-blocking finding, no added suite failure, status parsed</p></div>
+</div>
+<div class="r-comment" data-section="s45" data-id="c-run-r-20261113T131132182840-a-batch-decodes-the-ledger-index-once" data-who="reckon-build" data-when="2026-11-13T16:28:54Z">
+    <div class="r-comment-body"><p>a batch dispatch opens one ledger index reuse region and shares one decoded payload across its entries&#x27; read shapes, so ten entries over three plans cost one decode instead of eleven and an eight-entry review batch at the live 10,300-row history ran 0.060 s per entry against 0.095 s with the region removed (ratio 1.59)</p></div>
 </div>
 <div class="r-comment" data-section="s5" data-id="c-20261023-s5-review" data-who="reckon-build" data-when="2026-10-23T09:30:00Z">
     <div class="r-comment-body"><p>Design review on 2026-10-23: <code>_store_brief</code> is defined in <code>reckon/crew/dispatch_admission.py</code>, not <code>dispatch.py</code>, and §5's new <code>crew queue</code> verbs should name what they retire or merge against the CLI surface.</p></div>
