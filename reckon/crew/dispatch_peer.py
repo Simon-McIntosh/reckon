@@ -3,7 +3,6 @@ from __future__ import annotations
 import argparse
 import ast
 import ctypes
-import fcntl
 import json
 import os
 import select
@@ -33,6 +32,7 @@ from reckon.crew.runs import (
     read_pointer,
     run_dir,
 )
+from reckon.node_exclusive_lock import exclusive_lock
 
 _INOTIFY_EVENTS = 0x00000100 | 0x00000008 | 0x00000080
 
@@ -218,8 +218,7 @@ def _update_peer_index(
     root = _channel_root(run_id)
     root.mkdir(parents=True, exist_ok=True)
     lock_path = root / "peers.lock"
-    with lock_path.open("a+b") as handle:
-        fcntl.flock(handle.fileno(), fcntl.LOCK_EX)
+    with exclusive_lock(lock_path):
         index_path = root / "peers.json"
         index = _read_json(index_path) or {"run_id": run_id, "peers": {}}
         peers = index.setdefault("peers", {})
@@ -229,7 +228,6 @@ def _update_peer_index(
             peers[peer_run_id] = dict(details)
         index["updated_at"] = _utc_now()
         _write_json(index_path, index)
-        fcntl.flock(handle.fileno(), fcntl.LOCK_UN)
 
 
 def _wire_peer_channels(
