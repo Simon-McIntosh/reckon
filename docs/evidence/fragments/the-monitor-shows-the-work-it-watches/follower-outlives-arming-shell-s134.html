@@ -34,6 +34,7 @@
       <tr><td>both cases, final head</td><td><code>c7de78b608</code></td><td>2 passed, <code>test_staged_write_inventory</code> alongside: 53 passed</td></tr>
       <tr><td>population: every test file importing the follow command, base</td><td><code>47d4d53612</code></td><td>14 failed, 516 passed</td></tr>
       <tr><td>population: every test file importing the follow command, head</td><td><code>c7de78b608</code></td><td>14 failed, 516 passed</td></tr>
+      <tr><td>device case and descriptor-kind case, previous rule restored</td><td>head before the device repair</td><td>2 failed — a /dev/null follower outlived its owner, and /dev/null answered as a reader</td></tr>
     </tbody>
   </table>
 
@@ -45,6 +46,8 @@
   removes none. Those fourteen are subprocess and <code>crew follow</code> launches that
   exceed a 30 s wait under parallel load in a compute-node sandbox, and they are listed on
   the logs' <code>FAILED</code> lines.</p>
+
+  <p id="follower-outlives-arming-shell-s134-landed-device">A descriptor kind that is neither a file nor a pipe answered yes to the reader question, so a follower writing into <code>/dev/null</code> outlived its dead owner and held its session's registration, refusing every dispatch from that session <code>watcher-required</code>. The session host launches followers whose stdout is its own, so that shape is ordinary. The rule now asks whether the descriptor takes part in a reader at all: a socket has a peer, a terminal has a screen attached, and a character device that is not a terminal delivers nowhere. A follower armed with <code>/dev/null</code> as its stdout must now end and free its registration, and a direct check asks the question of a regular file, <code>/dev/null</code>, a terminal and a socket.</p>
 
   <p id="follower-outlives-arming-shell-s134-landed-scope">Files changed:
   <code>reckon/crew_follow_commands.py</code> and
