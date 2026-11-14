@@ -65,7 +65,7 @@ class _Pane:
 
     def __init__(self) -> None:
         self.path = ticker.PaneRowPath(own_session=SESSION)
-        self.grid = ticker.Ticker(width=200, color=False, model_aliases=())
+        self.grid = ticker.Ticker(width=204, color=False, model_aliases=())
 
     def feed(
         self, event: dict[str, Any], *, now: float

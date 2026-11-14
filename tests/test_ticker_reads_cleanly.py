@@ -180,14 +180,14 @@ def test_a_long_state_word_keeps_the_arrow_on_one_column(grid):
 
 
 def test_every_counter_bucket_renders_at_one_width(grid):
-    """All four buckets print on every row, zeros dimmed rather than dropped."""
+    """All five buckets print on every row, zeros dimmed rather than dropped."""
     counts = []
     for queued in (False, True):
         event = _event(to_state="working")
         if queued:
             event["waiting"] = 9
         line = plain(grid.render(event))
-        block = re.search(r"\d+w *\d+n *\d+d *\d+q", line)
+        block = re.search(r"\d+w *\d+r *\d+n *\d+d *\d+q", line)
         assert block, line
         counts.append(block.group(0))
     assert {len(block) for block in counts} == {len(counts[0])}, counts

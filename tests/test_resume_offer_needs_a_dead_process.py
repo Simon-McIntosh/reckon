@@ -157,9 +157,9 @@ def _render_parked_row(pointer: dict, moment: float) -> tuple[dict, dict, str]:
     return row, snapshot, line
 
 
-def _counters(line: str) -> tuple[int, int, int, int]:
+def _counters(line: str) -> tuple[int, int, int, int, int]:
     """The fleet counters the row carries, read off the rendered block."""
-    found = re.search(r"(\d+)w\s+(\d+)n\s+(\d+)d\s+(\d+)q", line)
+    found = re.search(r"(\d+)w\s+(\d+)r\s+(\d+)n\s+(\d+)d\s+(\d+)q", line)
     assert found is not None, line
     return tuple(int(group) for group in found.groups())
 
@@ -183,7 +183,7 @@ def test_a_met_wait_beside_a_live_process_waits(tmp_path: Path) -> None:
     assert "resume" not in reason, reason
     assert "waiting" in reason, reason
     assert "→ waiting" in line, line
-    assert _counters(line) == (0, 0, 0, 1), line
+    assert _counters(line) == (0, 0, 0, 0, 1), line
     assert row["recovery_classification"] == "waiting", row["recovery_classification"]
     assert row["recovery"] == "wait", row["recovery"]
     assert snapshot["state"] == "waiting", snapshot["state"]
@@ -207,7 +207,7 @@ def test_a_met_wait_beside_a_gone_process_offers_the_resume(tmp_path: Path) -> N
     assert row["liveness_proven"] is True, row["liveness_proven"]
     assert "ready to resume" in row["fleet_verdict"]["detail"], row["fleet_verdict"]
     assert "→ waiting" in line, line
-    assert _counters(line) == (0, 0, 0, 1), line
+    assert _counters(line) == (0, 0, 0, 0, 1), line
     assert row["recovery_classification"] == "ready", row["recovery_classification"]
     assert row["recovery"] == "resume", row["recovery"]
     assert snapshot["state"] == "waiting", snapshot["state"]
@@ -233,7 +233,7 @@ def test_a_met_wait_beside_an_unproven_process_waits(tmp_path: Path) -> None:
     assert "resume" not in reason, reason
     assert "waiting" in reason, reason
     assert "→ waiting" in line, line
-    assert _counters(line) == (0, 0, 0, 1), line
+    assert _counters(line) == (0, 0, 0, 0, 1), line
     assert row["recovery_classification"] == "waiting", row["recovery_classification"]
     assert row["recovery"] == "wait", row["recovery"]
     assert snapshot["state"] == "waiting", snapshot["state"]

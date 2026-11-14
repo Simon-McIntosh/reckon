@@ -203,9 +203,9 @@ def _render_stalled_row(pointer: dict, moment: float) -> tuple[dict, dict, str]:
     return row, snapshot, line
 
 
-def _counters(line: str) -> tuple[int, int, int, int]:
+def _counters(line: str) -> tuple[int, int, int, int, int]:
     """The fleet counters the row carries, read off the rendered block."""
-    found = re.search(r"(\d+)w\s+(\d+)n\s+(\d+)d\s+(\d+)q", line)
+    found = re.search(r"(\d+)w\s+(\d+)r\s+(\d+)n\s+(\d+)d\s+(\d+)q", line)
     assert found is not None, line
     return tuple(int(group) for group in found.groups())
 
@@ -229,7 +229,7 @@ def test_a_stalled_row_names_a_live_process(tmp_path: Path) -> None:
     # alone, with the fleet counters after it. The liveness reading is a fact
     # of the classifier's verdict, not free text on the row.
     assert "→ needs you" in line, line
-    assert _counters(line) == (0, 1, 0, 0), line
+    assert _counters(line) == (0, 0, 1, 0, 0), line
     assert row["fleet_verdict"]["detail"].startswith("alive, quiet "), row["detail"]
 
 
@@ -249,7 +249,7 @@ def test_a_stalled_row_names_a_gone_process(tmp_path: Path) -> None:
     assert snapshot["process_alive"] is False
     assert row["liveness_proven"] is True
     assert "→ needs you" in line, line
-    assert _counters(line) == (0, 1, 0, 0), line
+    assert _counters(line) == (0, 0, 1, 0, 0), line
     assert row["fleet_verdict"]["detail"].startswith("process gone, quiet "), row[
         "detail"
     ]
@@ -276,7 +276,7 @@ def test_a_stalled_row_names_a_recorded_exit(tmp_path: Path) -> None:
     assert row["liveness_proven"] is False
     assert row["exit_record"] is not None, row["exit_record"]
     assert "→ needs you" in line, line
-    assert _counters(line) == (0, 1, 0, 0), line
+    assert _counters(line) == (0, 0, 1, 0, 0), line
     assert row["fleet_verdict"]["detail"].startswith("process gone, quiet "), row[
         "detail"
     ]
@@ -299,7 +299,7 @@ def test_a_stalled_row_admits_an_unrecorded_process(tmp_path: Path) -> None:
     assert snapshot["process_alive"] is None
     assert row["liveness_proven"] is False
     assert "→ needs you" in line, line
-    assert _counters(line) == (0, 1, 0, 0), line
+    assert _counters(line) == (0, 0, 1, 0, 0), line
     assert row["fleet_verdict"]["detail"].startswith("liveness unknown, quiet "), row[
         "detail"
     ]
@@ -328,4 +328,4 @@ def test_a_stalled_row_admits_a_process_it_cannot_check(tmp_path: Path) -> None:
     assert snapshot["process_alive"] is False
     assert row["liveness_proven"] is False
     assert "→ needs you" in line, line
-    assert _counters(line) == (0, 1, 0, 0), line
+    assert _counters(line) == (0, 0, 1, 0, 0), line
