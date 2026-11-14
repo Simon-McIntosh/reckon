@@ -1,0 +1,32 @@
+<section id="open-run-index-rebuilt-once-per-pass-evidence">
+  <h3>Open-run index reuse across an operational pass</h3>
+  <p>The projection is validated once per outer operational read, shared by nested reads,
+  and revalidated by the next pass. Station ticks, admission passes and run-review
+  dispatches use that boundary. Current metadata is read through a read-only SQLite
+  connection. A stale reader attempts the rebuild transaction without waiting; a busy
+  transaction leaves it reading the last committed projection.</p>
+  <table>
+    <thead><tr><th>Measure</th><th>Reproduced defect</th><th>Focused result</th></tr></thead>
+    <tbody>
+      <tr><td>One station tick, 50 index-only terminal lookups</td><td>2 rebuilds</td><td>1 rebuild</td></tr>
+      <tr><td>49 later lookups after an authoritative ledger write leaves the projection stale</td><td>Another rebuild and schema/write statements</td><td>0 rebuilds; 0 write statements</td></tr>
+      <tr><td>Two lookups while another process holds the rebuild</td><td>4.041 seconds waiting</td><td>0.002 seconds</td></tr>
+      <tr><td>Existing scoped baseline</td><td colspan="2">51 passed in 8.17 seconds</td></tr>
+      <tr><td>Focused implementation gate</td><td colspan="2">58 passed in 8.74 seconds; zero added failures</td></tr>
+      <tr><td>Declared negative control: rebuild on every stale lookup</td><td colspan="2">50 lookups rebuild twice; 5 failed, 53 passed in 9.18 seconds</td></tr>
+    </tbody>
+  </table>
+  <p>The fixture keeps all 50 terminal run files absent. A real ledger writer writes an
+  unrelated run after the first lookup while its projection publication is held, so the
+  generation is stale during every later lookup. A known present identity and a known
+  absent identity check the instrument. The concurrent-reader test also refuses historical
+  ledger reads, and the next-pass test requires revalidation after the scope ends.</p>
+  <p>All measurements run on <code>all_debug</code>. Durable gate logs are under
+  <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261114T141121908157-open-run-index-rebuilt-once-per-pass/</code>:
+  <code>baseline-fixed.log</code>, <code>reproduction-ready.log</code>,
+  <code>focused.log</code>, <code>negative-control.log</code>,
+  <code>regression.log</code>, and the committed-head receipt in <code>after.log</code>.
+  Each log records its revision, command, resolved import path, working directory and exit status.</p>
+  <p>Implementation: <code>666203e7604626a49b77d31af3c96dcd002b71a4</code>.
+  The coordinator owns integration and the separately dispatched merged-head verification.</p>
+</section>

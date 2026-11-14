@@ -208,7 +208,7 @@ def _hold_rebuild(repo, held, release):
 
 @pytest.mark.timeout(15)
 def test_lookup_reads_last_complete_index_while_another_process_rebuilds(
-    indexed, capsys
+    indexed, capsys, monkeypatch
 ):
     repo, _home, rows = indexed
     _stale(repo)
@@ -218,10 +218,19 @@ def test_lookup_reads_last_complete_index_while_another_process_rebuilds(
     process.start()
     try:
         assert held.wait(3), "the second process never entered its rebuild"
+
+        def refuse_history(*args, **kwargs):
+            pytest.fail("a concurrent lookup escaped to historical ledger reads")
+
+        for name in ("load", "runs", "load_aggregate"):
+            monkeypatch.setattr(ledger, name, refuse_history)
         started = time.monotonic()
         assert open_run_index.has_row(PROJECT, rows[0]["run_id"], repo)
         assert not open_run_index.has_row(PROJECT, "absent", repo)
         elapsed = time.monotonic() - started
+        assert process.is_alive(), (
+            "the lookup waited until the rebuilding process ended"
+        )
         assert elapsed < 1, f"lookup waited {elapsed:.3f}s behind the rebuild"
         with capsys.disabled():
             print(f"concurrent rebuild: lookups=2 elapsed_seconds={elapsed:.3f}")
