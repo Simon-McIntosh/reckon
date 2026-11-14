@@ -25,7 +25,7 @@
   <title>The Monitor Reads Each Fact Once | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="287">
+<meta name="plan-version" content="288">
 <meta name="plan-modified" content="2026-11-14">
 </head>
 <body>
@@ -1220,6 +1220,9 @@ staged paths.</p>
 </div>
 <div class="r-comment" data-section="s51" data-id="c-run-r-20261114T171854188084-review-of-an-unchanged-index-is-parsed-once-81e357dcb79d" data-who="reckon-build" data-when="2026-11-14T18:04:46.823Z">
     <div class="r-comment-body"><p>reviewed run r-20261114T134655530222-an-unchanged-index-is-parsed-once at its head 81e357dcb79d5edbcafa0ad3dd5fb2c5b47132d7 against base 869274dbfaa088e78ce8b7292cca87732b425a45: goal_fidelity 20, evidence 16, scope_discipline 19, durability 19, fit 19, reuse 20, with two non-blocking findings against the evidence fragment's stale mechanism paragraph and its over-broad logs claim, and zero added failure ids.</p></div>
+</div>
+<div class="r-comment" data-section="s51" data-id="c-run-r-20261114T134655530222-an-unchanged-index-is-parsed-once" data-who="reckon-build" data-when="2026-11-14T17:09:47Z">
+    <div class="r-comment-body"><p>s51 — an unchanged index document is parsed once per process: the read asks reckon.file_memo for the document, keyed on the file&#x27;s stat identity with the index code stamp as variant, and hands a reader a read-only view inside a read-only region, a private parse to a writer; the hand-rolled mapping and its shared mutable document are gone. Earlier form: store_index_document kept the parsed mapping keyed on the document file&#x27;s inode, size and mtime, so a repeat read costs one stat; writers take a private parse under the index lock, persisting drops the cached copy, and a held mapping is re-checked against the code stamp before it answers. Measured 100 calls parse once at the head against 100 parses at the base revision; the importing population runs 192 / 193 tests with zero added failures.</p></div>
 </div>
 <div class="r-comment" data-section="s52" data-id="c-run-r-20261114T151437179974-review-of-a-tick-computes-the-reference-rate-once-275b58183b9d" data-who="reckon-build" data-when="2026-11-14T15:47:47.832Z">
     <div class="r-comment-body"><p>the review of r-20261114T135004086166-a-tick-computes-the-reference-rate-once stores a parsed record scoring goal_fidelity 12, evidence 14, scope_discipline 20, durability 15, fit 15, reuse 4, with two non-blocking findings and done_when recorded as fail.</p></div>
