@@ -2040,7 +2040,7 @@ def _index_lock_outlasted_bound_note(
         return ""
     bound = _index_lock_retry_bound_seconds(attempts, retry_seconds)
     spacing = f"{attempts} attempts {retry_seconds:.2f}s apart"
-    age = _index_lock_age_seconds(checkout)
+    age = _index_lock_age_seconds(_git_dir(checkout) / "index.lock")
     if age is None:
         return (
             f" The checkout's index lock outlasted this landing's {bound:.1f}s "
@@ -2713,6 +2713,7 @@ def _revision_is_ancestor(checkout: Path, revision: str, target: str) -> bool:
 
 
 from reckon.crew.merge import (
+    _git_dir,
     _index_lock_age_seconds,
     _index_lock_held,
     _run_waiting_out_a_held_index_lock,
