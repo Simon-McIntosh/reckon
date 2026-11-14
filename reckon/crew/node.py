@@ -1030,11 +1030,6 @@ _TEST_FILE_RE = re.compile(
 # fixture and a helper are all part of a check, and none of them is collected.
 _COLLECTIBLE_TEST_FILE_RE = re.compile(r"^(?:test_.*|.*_test)\.py$")
 
-# A done-when names the check it asks a reader to run. The pattern is the one
-# the repair round grants a test path the pattern matches, so a node's
-# done-when and a review's remedy recognise the same set of test files.
-_DONE_WHEN_TEST_PATH = re.compile(r"\btests?/[A-Za-z0-9_./-]+\.py\b")
-
 
 def is_test_path(path: str) -> bool:
     """Return whether a declared write path names a test file.
@@ -1089,7 +1084,7 @@ def negative_control_writes_a_check(node: TaskNode) -> bool:
         return False
     if node.write_paths:
         return any(is_test_path(path) for path in node.write_paths)
-    return bool(_DONE_WHEN_TEST_PATH.search(node.done_when))
+    return bool(_done_when_test_paths(node.done_when))
 
 
 def negative_control_is_none(declaration: str) -> bool:
@@ -1105,6 +1100,19 @@ def negative_control_reason(declaration: str) -> str:
     if not separator or str(head).strip().lower() != NEGATIVE_CONTROL_NONE:
         return ""
     return rest.strip()
+
+
+def _done_when_test_paths(done_when: str) -> list[str]:
+    """Return the test paths a node's done-when names, in the order named.
+
+    The pattern is the repository's one owner of "a test path a text names" —
+    the one the repair round grants a test from — so a node's measure and a
+    review's remedy recognise the same set. A second rule written here would
+    drift the moment that one moves.
+    """
+    from reckon.crew.recovery_repair_dispatch import _TEST_PATH_PATTERN
+
+    return [match.group(0) for match in _TEST_PATH_PATTERN.finditer(done_when)]
 
 
 def negative_control_finding(node: TaskNode) -> dict[str, str] | None:
@@ -1125,7 +1133,7 @@ def negative_control_finding(node: TaskNode) -> dict[str, str] | None:
     else:
         trigger = (
             "the node's done-when names a test file "
-            f"({', '.join(_DONE_WHEN_TEST_PATH.findall(node.done_when))})"
+            f"({', '.join(_done_when_test_paths(node.done_when))})"
         )
     return {
         "property": NEGATIVE_CONTROL_FIELD,
@@ -1555,9 +1563,10 @@ def validate_node(
 
     # A node whose scope includes a test file writes a check, and a check whose
     # author never named the mutation it must fail against is a guard that
-    # passed by not exercising anything. The trigger is the declared write path
-    # rather than the done-when prose, so the refusal rests on a structured
-    # field a dispatcher can read on every path.
+    # passed by not exercising anything. The trigger is a write path when the
+    # node declares one, and the test file its done-when names when it declares
+    # none, so every node that writes a check owes a negative control however
+    # its scope is stated.
     control_finding = negative_control_finding(node)
     if control_finding is not None:
         findings.append(control_finding)

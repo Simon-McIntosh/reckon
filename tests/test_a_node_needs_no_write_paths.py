@@ -178,6 +178,7 @@ def test_a_queued_node_with_no_write_paths_is_launched(
     assert pointer["phase"] != "queued", pointer
     # Launch grants each node its own landing fragment and names its figure
     # directory; nothing else is added to a node that declared no paths.
+    assert pointer["node"]["write_paths"], pointer["node"]
     assert all(
         path.startswith(("docs/evidence/fragments/", "docs/figures/"))
         for path in pointer["node"]["write_paths"]
@@ -220,6 +221,7 @@ def test_a_direct_dispatch_with_no_write_paths_is_launched(
 
     stored = runs.read_pointer("r-direct-no-paths")
     assert "failure" not in stored, stored
+    assert stored["node"]["write_paths"], stored["node"]
     assert all(
         path.startswith(("docs/evidence/fragments/", "docs/figures/"))
         for path in stored["node"]["write_paths"]
