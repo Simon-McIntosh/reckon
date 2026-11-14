@@ -24,15 +24,19 @@
       answering the finding releases it without a plan edit.</td></tr>
       <tr><td>Composition eligibility</td><td>Editing, terminal and already
       covered plans compose no new review.</td></tr>
-      <tr><td>Focused gate at <code>630b0fd7101e32ad1ebf15dc08d9904a85882f64</code></td>
-      <td>147 passed in 30.32s; <code>EXIT=0</code>, including CLI preview and launch parity.</td></tr>
+      <tr><td>Focused gate at <code>b05e55c636d711b371df1e7a9ba98e058a32346f</code></td>
+      <td>149 passed in 31.28s; <code>EXIT=0</code>, including CLI preview and launch parity.</td></tr>
       <tr><td>Required suite at base
       <code>bc316766333df704e7a671de195467dc836ab4b1</code></td>
       <td>55 passed in 20.86s; <code>EXIT=0</code>.</td></tr>
       <tr><td>Required suite at source revision
       <code>7af35b70046dfd99c6c1842aaca118c07543269a</code></td>
       <td>55 passed in 19.87s; <code>EXIT=0</code>; zero added failures.</td></tr>
-      <tr><td>Base refusal control</td><td>1 failed in 1.24s;
+      <tr><td>Shared-selector control at
+      <code>6632bc8e5dd2b75a2ed5326bc25b865450060fb1</code></td>
+      <td>1 failed in 1.46s; <code>EXIT=1</code>: admission made 0 calls
+      to <code>newest_design_review</code>, where the regression requires 1.</td></tr>
+      <tr><td>Base refusal control</td><td>1 failed in 1.60s;
       <code>EXIT=1</code>. Dispatch raises <code>PlanReviewMissingError</code>:
       “carries no stored review under the design rubric”, instead of returning
       a held request.</td></tr>
@@ -43,6 +47,12 @@
   manifest records the final delivery revision and suite receipt. Integration
   with the independently implemented plan-width command is measured by the
   separately assigned merged-head verification.</p>
+  <p>Admission delegates cached design-review selection to
+  <code>newest_design_review</code>. That owner accepts already-read project
+  records, so rubric filtering and numeric plan-version ordering share one
+  implementation. The two added regressions verify the delegation and cached
+  selection, including other-plan exclusion and an empty iterable that reads
+  nothing from the store.</p>
   <p>The related queue fixtures now supply complete node contracts, including
   manifest paths, configured roles and specification levels, so their assertions
   reach review evaluation. CLI parity assertions read stdout independently of
