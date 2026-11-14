@@ -1,0 +1,43 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "293b3ddd68558b435ceff29cf3400c39807a7470",
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew_dispatch_commands.py:2262",
+    "reckon/crew/dispatching/preparation.py:1167"
+  ],
+  "completed_at": "2026-11-14T11:24:08.907Z",
+  "dispatched_at": "2026-11-14T11:17:24Z",
+  "findings": [
+    {
+      "file": "tests/test_a_dispatch_that_outlives_its_caller_s_timeout_names_what_it_created.py",
+      "line": "164",
+      "severity": "non-blocking",
+      "text": "non-blocking: the completed-call control compares json.loads(stdout)[\"run_id\"] to pointer[\"run_id\"], two values both produced by the code under test, so it cannot redden on the notice's removal; durability rests instead on tests/test_a_dispatch_that_outlives_its_caller_s_timeout_names_what_it_created.py:154."
+    }
+  ],
+  "head_log_revision": "6e816d279c92698d8303cf7a9ec9f646c46b6df1",
+  "item_verdicts": {},
+  "justifications": {},
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to deliver section s6 of the-crew-does-its-own-bookkeeping, whose defect is that a killed dispatch caller retains no evidence of the run it created; reckon/crew/dispatching/preparation.py:1167 flushes the created run id to stderr immediately after the durable claim is published, which is what the goal asks for.\nVERDICT done_when: the source node's done_when delegates to the plan section (\"as its done-when states\"), so I judged the gate against the section's measure; the manifest's tests line and after-suite.log run tests/test_a_dispatch_that_outlives_its_caller_s_timeout_names_what_it_created.py plus tests/test_staged_write_inventory.py, and the interrupted-call assertion at :154 is the one that reddens without the new notice.\nVERDICT write_paths: the dispatch declared reckon/crew_dispatch_commands.py, tests/test_a_dispatch_that_outlives_its_caller_s_timeout_names_what_it_created.py and two docs paths; every diffed path is one of the latter three, and the moved implementation target reckon/crew/dispatching/preparation.py is recorded in the manifest's evidence_inputs as granted on resume.\nVERDICT manifest: read; it records status complete at head 6e816d279c92698d8303cf7a9ec9f646c46b6df1, baseline 51 passed EXIT=0, head 53 passed EXIT=0, and a declared mutation at negative-control.log with 1 failed / 1 passed EXIT=1.\nVERDICT diff: read all three local commits (486e7c54, 4a73e31f, 6e816d27) against base 293b3ddd; 175 insertions over preparation.py (5 lines), a new 164-line regression test, and a 6-line evidence fragment, with no deletion anywhere.\nCALL_SITES: reckon/crew_dispatch_commands.py:2262 (crew_dispatch calls crew_module.dispatch), reckon/crew/dispatching/preparation.py:1167 (the notice inside dispatch itself)\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/dispatching/preparation.py:1167 prints the created run id with flush=True before launch work, so a killed caller leaves the identity on stderr.\nSCORE evidence: 17\nJUSTIFICATION evidence: the gate at after-suite.log runs the new test plus the inventory arm and reports 53 passed EXIT=0 against a 6e816d27 base arm of 51 passed, giving added_failure_count 0 from the two recorded logs.\nSCORE scope_discipline: 18\nJUSTIFICATION scope_discipline: the only runtime change is five lines at reckon/crew/dispatching/preparation.py:1167-1169 plus one import, everything else being the named test and evidence fragment.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_a_dispatch_that_outlives_its_caller_s_timeout_names_what_it_created.py:154 fails if the stderr notice is removed, shown by the recorded mutation at negative-control.log (1 failed, 1 passed, EXIT=1) where the killed caller captures empty streams while the pointer exists.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/crew/dispatching/preparation.py:1167 uses the repo's existing plain `print(..., file=sys.stderr)` idiom and states why stdout is kept for the final JSON, adding no forbidden name.\nSCORE reuse: 19\nJUSTIFICATION reuse: a capability search over reckon/ for a stderr-notice helper found only per-module prints (reckon/worker_git_shim.py:761, reckon/nested_launch.py:405), so no owner was forked and no shared helper was warranted for one line.\nFINDING tests/test_a_dispatch_that_outlives_its_caller_s_timeout_names_what_it_created.py:164 non-blocking: the completed-call control compares json.loads(stdout)[\"run_id\"] to pointer[\"run_id\"], two values both produced by the code under test, so it cannot redden on the notice's removal; it is a shape control and the durability of this change rests instead on the interrupted assertion at :154.",
+  "review_run_id": "r-20261114T110716235112-review-of-wave3-codex-anchored-the-crew-does-its-own-bookke-s6-6e816d279c92",
+  "reviewed_base_sha": "293b3ddd68558b435ceff29cf3400c39807a7470",
+  "reviewed_head_sha": "6e816d279c92698d8303cf7a9ec9f646c46b6df1",
+  "reviewed_run_id": "r-20261114T095127716203-wave3-codex-anchored-the-crew-does-its-own-bookke-s6",
+  "reviewer": "review",
+  "reviewer_run_id": "r-20261114T110716235112-review-of-wave3-codex-anchored-the-crew-does-its-own-bookke-s6-6e816d279c92",
+  "scores": {
+    "durability": 18,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 20,
+    "reuse": 19,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-14T11:35:49.078488+00:00",
+  "total": 110
+}
