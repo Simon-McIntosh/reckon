@@ -1,0 +1,74 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_review": [
+    "tests/test_every_review_record_write_moves_the_index.py:138,139: repair CLI refusal or filing to a different independently prepared path fails the exit and filed-path assertions.",
+    "tests/test_every_review_record_write_moves_the_index.py:170,171: disposition CLI refusal or a different selected record fails the exit and path assertions.",
+    "tests/test_every_review_record_write_moves_the_index.py:182: a fixture never indexed cannot pass the nonempty baseline-digest control.",
+    "tests/test_every_review_record_write_moves_the_index.py:195,196: reinstating either original bypass leaves the digest and version unchanged, so the positive assertions fail; expectations are read from pre-write index state, not from supplied timestamps.",
+    "tests/test_every_review_record_write_moves_the_index.py:204,205: a fallback still publishing despite the no-op mutation makes the inverted assertions fail; both direct owner and public alias are patched and reader reconciliation is disabled.",
+    "tests/test_the_review_store_is_indexed_by_its_writers.py:266: omitting reconciliation leaves no post-rebuild event for the foreign run and fails the exact changed-run assertion; the expected run identity names the independent foreign fixture, not a returned input echo.",
+    "tests/test_the_review_store_is_indexed_by_its_writers.py:279: restoring an assertion that always passes causes the expected AssertionError to be absent, making the disabling-control test fail.",
+    "No newly added assertion compares an implementation result with a self-consistent input echo; CLI path assertions are routing checks, and durability rests on independently captured digest/version state and mutation controls."
+  ],
+  "call_site_count": 7,
+  "call_sites": [
+    "reckon/crew/promotion.py:2059 store_committed_review",
+    "reckon/crew_run_commands.py:1419 repair_run_review",
+    "reckon/crew_run_commands.py:970 crew_dispose",
+    "reckon/crew/plan_review.py:2733 record_response",
+    "reckon/crew/plan_review.py:2895 accept_edits",
+    "reckon/crew/plan_review.py:5973 store_code_review",
+    "reckon/crew/review.py:4002 _write_record"
+  ],
+  "completed_at": "2026-11-14T13:57:27Z",
+  "dispatched_at": "2026-11-14T13:52:05Z",
+  "evidence": {
+    "after_suite_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261114T100607338350-every-review-record-write-moves-the-index/final-head.log",
+    "after_summary": "77 passed in 16.82s",
+    "baseline_suite_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261114T100607338350-every-review-record-write-moves-the-index/baseline.log",
+    "baseline_summary": "60 passed in 14.32s",
+    "foreign_control": "foreign-control.log: 1 failed in 1.23s; EXIT=1",
+    "importer_delta": "importers-base.log 195 failure/error IDs; importers-head.log 194; added 0; both EXIT=1",
+    "negative_control": "negative-control.log: 8 failed in 1.23s; EXIT=1",
+    "reproduction": "reproduction-corrected.log: 2 failed, 14 passed in 2.39s; commit_record_write and store_code_review: the indexed run digest did not change"
+  },
+  "findings": [],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 7 production call site(s)",
+    "diff": "read b875035d7aecd7abc51267759991a91a9e35b294 and 0e561dea1e86da59b000609c4916a5387e79c5e6 against base 8753ba2f08416ceaf8ca0b413f5e7edbbc493a9d; the first routes writes and adds behavioral controls while the second adds the evidence fragment.",
+    "done_when": "dispatch-detail.json and live section s46 require digest/version changes plus disabling controls; final-head.log records 77 passes, negative-control.log records eight failures and foreign-control.log records one failure, with zero added importer failure IDs.",
+    "goal": "dispatch-detail.json requires every code-review writer to publish through the index owner; reckon/crew/review_records.py:489 and reckon/crew/plan_review.py:5973 close the reproduced bypasses.",
+    "manifest": "manifest.md records both commits, matched gate receipts, the red importer arms and their delta, and the bounded staging-index policy; these agree with the opened logs.",
+    "write_paths": "dispatch-detail.json's expanded write_paths grants the five Python paths and landing fragment, and the two-commit diff changes exactly those six granted files."
+  },
+  "justifications": {
+    "durability": "tests/test_every_review_record_write_moves_the_index.py:195 fails when either repaired writer bypass returns, its disabled-publication cases prove both measured signals stop, and tests/test_the_review_store_is_indexed_by_its_writers.py:279 catches disabled reconciliation at the independently captured rebuild version.",
+    "evidence": "tests/test_every_review_record_write_moves_the_index.py:193 measures digest and version independently of supplied payloads, and final-head.log plus the two disabling-control logs record the required green and red outcomes.",
+    "fit": "reckon/crew/review_records.py:2179 reuses the repository's atomic writers and the existing index owner while the new test uses tests/conftest.py:1570 for temporary-home isolation, with clean recorded Ruff results.",
+    "goal_fidelity": "reckon/crew/review_records.py:489 publishes externally rewritten indexed staging records and reckon/crew/plan_review.py:5973 routes code-review stores through the existing publication owner.",
+    "reuse": "publication and atomic-write capability searches resolve to reckon/crew/review_records.py:2126 and reckon/_store.py:570, which the change extends and calls, while tests/conftest.py:1570 supplies isolation and the new test-local helpers only assemble and measure the eight existing entry points.",
+    "scope_discipline": "the six files changed by the two reviewed commits are included in dispatch-detail.json's expanded write_paths and implement or document the requested writer publication checks."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: dispatch-detail.json requires every code-review writer to publish through the index owner; reckon/crew/review_records.py:489 and reckon/crew/plan_review.py:5973 close the reproduced bypasses.\nVERDICT done_when: dispatch-detail.json and live section s46 require digest/version changes plus disabling controls; final-head.log records 77 passes, negative-control.log records eight failures and foreign-control.log records one failure, with zero added importer failure IDs.\nVERDICT write_paths: dispatch-detail.json's expanded write_paths grants the five Python paths and landing fragment, and the two-commit diff changes exactly those six granted files.\nVERDICT manifest: manifest.md records both commits, matched gate receipts, the red importer arms and their delta, and the bounded staging-index policy; these agree with the opened logs.\nVERDICT diff: read b875035d7aecd7abc51267759991a91a9e35b294 and 0e561dea1e86da59b000609c4916a5387e79c5e6 against base 8753ba2f08416ceaf8ca0b413f5e7edbbc493a9d; the first routes writes and adds behavioral controls while the second adds the evidence fragment.\nCALL_SITES: reckon/crew/promotion.py:2059 store_committed_review, reckon/crew_run_commands.py:1419 repair_run_review, reckon/crew_run_commands.py:970 crew_dispose, reckon/crew/plan_review.py:2733 record_response, reckon/crew/plan_review.py:2895 accept_edits, reckon/crew/plan_review.py:5973 store_code_review, reckon/crew/review.py:4002 _write_record\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/review_records.py:489 publishes externally rewritten indexed staging records and reckon/crew/plan_review.py:5973 routes code-review stores through the existing publication owner.\nSCORE evidence: 20\nJUSTIFICATION evidence: tests/test_every_review_record_write_moves_the_index.py:193 measures digest and version independently of supplied payloads, and final-head.log plus the two disabling-control logs record the required green and red outcomes.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the six files changed by the two reviewed commits are included in dispatch-detail.json's expanded write_paths and implement or document the requested writer publication checks.\nSCORE durability: 20\nJUSTIFICATION durability: tests/test_every_review_record_write_moves_the_index.py:195 fails when either repaired writer bypass returns, its disabled-publication cases prove both measured signals stop, and tests/test_the_review_store_is_indexed_by_its_writers.py:279 catches disabled reconciliation at the independently captured rebuild version.\nSCORE fit: 20\nJUSTIFICATION fit: reckon/crew/review_records.py:2179 reuses the repository's atomic writers and the existing index owner while the new test uses tests/conftest.py:1570 for temporary-home isolation, with clean recorded Ruff results.\nSCORE reuse: 20\nJUSTIFICATION reuse: publication and atomic-write capability searches resolve to reckon/crew/review_records.py:2126 and reckon/_store.py:570, which the change extends and calls, while tests/conftest.py:1570 supplies isolation and the new test-local helpers only assemble and measure the eight existing entry points.\n",
+  "review_run_id": "r-20261114T130442036371-review-of-every-review-record-write-moves-the-index-0e561dea1e86",
+  "reviewed_base_sha": "8753ba2f08416ceaf8ca0b413f5e7edbbc493a9d",
+  "reviewed_head_sha": "0e561dea1e86da59b000609c4916a5387e79c5e6",
+  "reviewed_run_id": "r-20261114T100607338350-every-review-record-write-moves-the-index",
+  "scores": {
+    "durability": 20,
+    "evidence": 20,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-14T13:58:18.558652+00:00",
+  "total": 120
+}
