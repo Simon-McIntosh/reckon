@@ -1,0 +1,86 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "9c8632ca0b992790566bc487862f2c9be6f8906d",
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/crew/dispatching/launch.py:737 _launch_dispatch",
+    "reckon/crew/dispatch_sessions.py:1368 resume_plan",
+    "reckon/crew/dispatch_sessions.py:1888 change_lane",
+    "reckon/_backends.py:2931 launch_plan",
+    "reckon/_worker_fence.py:1445 unmergeable_seals -> fence_argv"
+  ],
+  "completed_at": "2026-11-14T10:03:46.849Z",
+  "dispatched_at": "2026-11-14T09:47:56Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "exempted",
+      "reason": "narrow edge: an absent exclusive directory can be created by a no-write-paths worker; a figure directory created fresh has nothing to merge against, and the sealed case covers existing ones",
+      "recorded_at": "2026-11-14T10:11:11.784311+00:00"
+    },
+    "1": {
+      "kind": "exempted",
+      "reason": "evidence-header omission; the 59-passed result is recorded",
+      "recorded_at": "2026-11-14T10:11:22.461981+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "reckon/_worker_fence.py",
+      "line": "1734",
+      "severity": "non-blocking",
+      "text": "non-blocking: the seal is skipped when the target does not exist yet, so a no-write-paths worker can create an absent exclusive directory (for example docs/figures/ in a project that has none) and write into it; unmergeable_seals promises at reckon/_worker_fence.py:1465-1470 that a new name under a sealed directory is refused, and every test fixture pre-creates the directories so the gap is uncovered."
+    },
+    {
+      "file": "docs/evidence/fragments/work-flows-to-the-lane/worker-writes-anywhere-but-unmergeable-paths.html",
+      "line": "16",
+      "severity": "non-blocking",
+      "text": "non-blocking: the table states 'Head arm on all_debug at 8e5f6679ab75', but logs/head-arm.log's header records no partition marker and its command is a bare pytest invocation in the worker worktree with no srun, so the done_when's all_debug clause is unshown; the 59-passed result itself is recorded."
+    }
+  ],
+  "head_log_revision": "8e5f6679ab750b6ab911473679c2a3e236a52453",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified five production call sites: dispatch composition, two resume paths, the launch planner and the fence composer.",
+    "diff": "read four commits against 9c8632ca0b99: reckon/_backends.py threads unmergeable_patterns through launch_plan into fence_argv; reckon/_worker_fence.py adds worktree_write_grant and unmergeable_seals and appends ro-binds after the writable grants; reckon/crew/runs.py adds unmergeable_patterns over DEFAULT_EXCLUSIVE_PATHS plus _SharedWritePaths.exclusive_patterns; launch.py and both resume paths pass them only for undeclared nodes; plus the test file and evidence fragment.",
+    "done_when": "the done_when names a test that launches a no-write-paths worker in a temp repo and crew home; tests/test_worker_writes_anywhere_but_unmergeable_paths.py:154-229 asserts the source and new-test writes succeed, one write per exclusive category is refused, a declared node is unsealed, and the negative control refuses the source write, and logs/head-arm.log records 59 passed EXIT=0.",
+    "goal": "the node's goal is that a worker may write anywhere in its worktree except paths git cannot merge; reckon/_worker_fence.py:1434 grants the whole worktree and reckon/_worker_fence.py:1445-1502 seals the exclusive patterns, so an undeclared node is fenced to its worktree minus those paths.",
+    "manifest": "read; status complete, commits e4c248e0b6 8e5f6679ab 4153aaf5a4 (the range also carries 086ce1934b, omitted), changed_paths the seven landed files, baseline_suite 2 failures at 9c8632ca0b99 and after_suite 0 at 8e5f6679ab, but rubric.correctness reads '58 of 59 head-arm tests pass' and rubric.self-check reads 'status blocked names the unmet measure' against a head arm of 59 passed EXIT=0 and status complete.",
+    "write_paths": "the declared paths were reckon/, tests/test_worker_writes_anywhere_but_unmergeable_paths.py and the evidence fragment; git diff --stat 9c8632ca0b99..4153aaf5a4 lists five reckon/ modules, the test file and the fragment, every one inside them."
+  },
+  "justifications": {
+    "durability": "logs/negative-control.log is red on test_a_no_write_paths_worker_writes_its_source_and_a_new_test and test_a_declared_node_is_fenced_as_before when worktree_write_grant returns no root, so those two assertions fail on the regression they guard; the seal-skip at reckon/_worker_fence.py:1734 is untested because every fixture pre-creates the directories.",
+    "evidence": "logs/head-arm.log reads '59 passed in 16.98s' EXIT=0 at rev 8e5f6679ab and logs/negative-control.log reads '2 failed, 6 passed' EXIT=1, but the head log header carries no partition marker and the command is a bare pytest invocation, so the done_when's all_debug clause is unsubstantiated.",
+    "fit": "reckon/_worker_fence.py:1445-1502 states the mechanism in its docstring with no plan, sprint or ticket identifier, and the added comment at reckon/_backends.py:3155-3161 explains why the grant precedes the seal.",
+    "goal_fidelity": "reckon/_worker_fence.py:1434-1442 grants the whole worktree and reckon/_worker_fence.py:1727-1735 seals exactly the unmergeable paths, which is the goal's rule.",
+    "reuse": "reckon/crew/runs.py:1840-1841 builds on DEFAULT_EXCLUSIVE_PATHS and _SharedWritePaths.exclusive_patterns, the existing owner of exclusive artifact classes, rather than a second pattern list; unmergeable_seals is a new path resolver with no prior owner.",
+    "scope_discipline": "git diff --stat 9c8632ca0b99..4153aaf5a4 touches only reckon/, tests/test_worker_writes_anywhere_but_unmergeable_paths.py and the evidence fragment, all inside the three declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that a worker may write anywhere in its worktree except paths git cannot merge; reckon/_worker_fence.py:1434 grants the whole worktree and reckon/_worker_fence.py:1445-1502 seals the exclusive patterns, so an undeclared node is fenced to its worktree minus those paths.\nVERDICT done_when: the done_when names a test that launches a no-write-paths worker in a temp repo and crew home; tests/test_worker_writes_anywhere_but_unmergeable_paths.py:154-229 asserts the source and new-test writes succeed, one write per exclusive category is refused, a declared node is unsealed, and the negative control refuses the source write, and logs/head-arm.log records 59 passed EXIT=0.\nVERDICT write_paths: the declared paths were reckon/, tests/test_worker_writes_anywhere_but_unmergeable_paths.py and the evidence fragment; git diff --stat 9c8632ca0b99..4153aaf5a4 lists five reckon/ modules, the test file and the fragment, every one inside them.\nVERDICT manifest: read; status complete, commits e4c248e0b6 8e5f6679ab 4153aaf5a4 (the range also carries 086ce1934b, omitted), changed_paths the seven landed files, baseline_suite 2 failures at 9c8632ca0b99 and after_suite 0 at 8e5f6679ab, but rubric.correctness reads '58 of 59 head-arm tests pass' and rubric.self-check reads 'status blocked names the unmet measure' against a head arm of 59 passed EXIT=0 and status complete.\nVERDICT diff: read four commits against 9c8632ca0b99: reckon/_backends.py threads unmergeable_patterns through launch_plan into fence_argv; reckon/_worker_fence.py adds worktree_write_grant and unmergeable_seals and appends ro-binds after the writable grants; reckon/crew/runs.py adds unmergeable_patterns over DEFAULT_EXCLUSIVE_PATHS plus _SharedWritePaths.exclusive_patterns; launch.py and both resume paths pass them only for undeclared nodes; plus the test file and evidence fragment.\nVERDICT call_sites: verified five production call sites: dispatch composition, two resume paths, the launch planner and the fence composer.\nCALL_SITES: reckon/crew/dispatching/launch.py:737 _launch_dispatch, reckon/crew/dispatch_sessions.py:1368 resume_plan, reckon/crew/dispatch_sessions.py:1888 change_lane, reckon/_backends.py:2931 launch_plan, reckon/_worker_fence.py:1445 unmergeable_seals -> fence_argv\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/_worker_fence.py:1434-1442 grants the whole worktree and reckon/_worker_fence.py:1727-1735 seals exactly the unmergeable paths, which is the goal's rule.\nSCORE evidence: 16\nJUSTIFICATION evidence: logs/head-arm.log reads '59 passed in 16.98s' EXIT=0 at rev 8e5f6679ab and logs/negative-control.log reads '2 failed, 6 passed' EXIT=1, but the head log header carries no partition marker and the command is a bare pytest invocation, so the done_when's all_debug clause is unsubstantiated.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat 9c8632ca0b99..4153aaf5a4 touches only reckon/, tests/test_worker_writes_anywhere_but_unmergeable_paths.py and the evidence fragment, all inside the three declared write paths.\nSCORE durability: 18\nJUSTIFICATION durability: logs/negative-control.log is red on test_a_no_write_paths_worker_writes_its_source_and_a_new_test and test_a_declared_node_is_fenced_as_before when worktree_write_grant returns no root, so those two assertions fail on the regression they guard; the seal-skip at reckon/_worker_fence.py:1734 is untested because every fixture pre-creates the directories.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/_worker_fence.py:1445-1502 states the mechanism in its docstring with no plan, sprint or ticket identifier, and the added comment at reckon/_backends.py:3155-3161 explains why the grant precedes the seal.\nSCORE reuse: 18\nJUSTIFICATION reuse: reckon/crew/runs.py:1840-1841 builds on DEFAULT_EXCLUSIVE_PATHS and _SharedWritePaths.exclusive_patterns, the existing owner of exclusive artifact classes, rather than a second pattern list; unmergeable_seals is a new path resolver with no prior owner.\nFINDING reckon/_worker_fence.py:1734 non-blocking: the seal is skipped when the target does not exist yet, so a no-write-paths worker can create an absent exclusive directory (for example docs/figures/ in a project that has none) and write into it; unmergeable_seals promises at reckon/_worker_fence.py:1465-1470 that a new name under a sealed directory is refused, and every test fixture pre-creates the directories so the gap is uncovered.\nFINDING docs/evidence/fragments/work-flows-to-the-lane/worker-writes-anywhere-but-unmergeable-paths.html:16 non-blocking: the table states 'Head arm on all_debug at 8e5f6679ab75', but logs/head-arm.log's header records no partition marker and its command is a bare pytest invocation in the worker worktree with no srun, so the done_when's all_debug clause is unshown; the 59-passed result itself is recorded.",
+  "review_run_id": "r-20261114T094702490286-review-of-worker-writes-anywhere-but-unmergeable-paths-4153aaf5a4f8",
+  "reviewed_base_sha": "9c8632ca0b992790566bc487862f2c9be6f8906d",
+  "reviewed_head_sha": "4153aaf5a4f85fed3cc3bf720acf6f17b71c8f96",
+  "reviewed_run_id": "r-20261114T082600855170-worker-writes-anywhere-but-unmergeable-paths",
+  "reviewer": {
+    "backend": "deepseek-v4.1-flash",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash",
+    "reviewer_run_id": "r-20261114T094702490286-review-of-worker-writes-anywhere-but-unmergeable-paths-4153aaf5a4f8"
+  },
+  "reviewer_run_id": "r-20261114T094702490286-review-of-worker-writes-anywhere-but-unmergeable-paths-4153aaf5a4f8",
+  "scores": {
+    "durability": 18,
+    "evidence": 16,
+    "fit": 18,
+    "goal_fidelity": 20,
+    "reuse": 18,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-14T10:10:33.610946+00:00",
+  "total": 110
+}

@@ -214,6 +214,18 @@ def test_without_a_persisted_parse_the_read_parses_once_and_warns_the_same(
         ),
         # Authored content outside any recognised section is nobody's child.
         ("<p>loose</p><div></div>", 0),
+        # Only a section holds a section's children; an element that merely
+        # carries the value is a different element and holds none of them.
+        ('<div data-reckon="decisions"><div></div><div></div></div>', 0),
+        ('<article data-reckon="decisions"><div></div></article><p></p>', 0),
+        # A non-section claim must not stand in for the real section either.
+        (
+            (
+                '<div data-reckon="decisions"><div></div><div></div></div>'
+                '<section data-reckon="decisions"><div class="r-dec"></div></section>'
+            ),
+            1,
+        ),
     ],
 )
 def test_the_raw_count_matches_the_soup_walk(markup: str, expected: int) -> None:
@@ -231,10 +243,49 @@ def test_the_raw_count_matches_the_soup_walk(markup: str, expected: int) -> None
     counts = store._authored_child_counts(markup, _plan_html.SECTION_IDS)
 
     assert counts.get(reckon_id, 0) == expected
+    # The soup walk is the definition of this measure, so it is asked on every
+    # shape the diagnostic names — including the ones where the two could
+    # disagree about which element holds a section's children. An id outside
+    # that set is one the diagnostic never reports on, so there is no count of
+    # its to compare.
     if reckon_id in _plan_html.SECTION_IDS:
-        # The soup walk is only asked about the ids the diagnostic names; an
-        # id outside that set is a section it never reports on.
         assert _plan_html._authored_child_count(markup, reckon_id) == expected
+
+
+def test_a_section_id_on_another_element_is_not_a_section(
+    tmp_path: Path, home: Path
+) -> None:
+    """A document that spells a section id on a div warns about nothing.
+
+    Only a ``section`` holds a section's authored children, so an element that
+    merely carries the value must not be counted. The read would otherwise
+    report children the write-refusal path, which selects on ``section``, does
+    not see — two answers about one document.
+    """
+
+    root = tmp_path / "tree"
+    plans = root / "docs" / "plans"
+    plans.mkdir(parents=True)
+    (plans / f"{SLUG}.html").write_text(
+        '<!doctype html><html lang="en"><head><meta charset="utf-8">'
+        f'<meta name="docs-project" content="{PROJECT}">'
+        f'<meta name="plan-slug" content="{SLUG}">'
+        '<meta name="reckon-type" content="plan">'
+        '<meta name="plan-status" content="active">'
+        '<meta name="plan-impl" content="0.25">'
+        '<meta name="plan-version" content="1">'
+        '<title>t</title></head><body><main class="plan-doc">'
+        '<div data-reckon="decisions"><article></article><article></article></div>'
+        "</main></body></html>",
+        encoding="utf-8",
+    )
+
+    state, _version = _read(root)
+
+    assert _warnings(state) == []
+    # The write-refusal path's own count agrees: there is no such section.
+    html = (plans / f"{SLUG}.html").read_text(encoding="utf-8")
+    assert _plan_html._authored_child_count(html, "decisions") == 0
 
 
 def test_restoring_the_soup_count_builds_a_document_tree_again(

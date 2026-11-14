@@ -1431,6 +1431,72 @@ def fence_writable_roots(
     return roots
 
 
+def worktree_write_grant(worktree: str | Path) -> tuple[Path, ...]:
+    """The roots a launch may write inside its own checkout.
+
+    A run that cannot write its own worktree delivers nothing, so the checkout
+    is granted whatever the node declared. What a node declares decides only
+    what the fence seals *within* the worktree; whether the worktree itself is
+    writable never depends on it.
+    """
+    return (Path(worktree),)
+
+
+def unmergeable_seals(
+    worktree: str | Path, patterns: Iterable[str]
+) -> tuple[tuple[Path, str], ...]:
+    """Resolve exclusive patterns to the worktree paths a fence seals read-only.
+
+    A worker with no declared write paths is free to write its whole worktree,
+    so the paths git cannot reconcile are what remain sealed: a plan document,
+    generated state, a cumulative evidence record, a figure topic directory and
+    a dependency lock are each a file two versions of which no textual merge
+    can settle. ``patterns`` are repository-relative, the same spellings a
+    project's sharing declaration and the shipped default use.
+
+    A pattern ending in ``/`` names a directory, and the directory itself is
+    sealed: a new file written beneath it is as unmergeable as an existing one,
+    and sealing a directory refuses the creation of that file too. A glob
+    confined to one directory is treated the same way, for the same reason — a
+    file matching it may not overwrite an existing plan or receipt, and the
+    fence cannot refuse a name it has not seen, so the directory it lands in is
+    what gets sealed. A glob that reaches the repository root (``*.receipt``)
+    is expanded to the files that exist instead, because sealing the root would
+    seal the whole worktree.
+
+    Each pattern keeps its own spelling in the result, so a refusal can name the
+    pattern that governs the path rather than merely report it read-only.
+    """
+    root = Path(worktree).expanduser().resolve()
+    seals: dict[str, tuple[Path, str]] = {}
+
+    def seal(target: Path) -> None:
+        seals.setdefault(str(target), (target, text))
+
+    for raw in patterns:
+        text = str(raw).strip()
+        if not text:
+            continue
+        relative = text.rstrip("/")
+        name = Path(relative).name
+        directory = Path(relative).parent.as_posix()
+        if text.endswith("/"):
+            seal(root / relative)
+            continue
+        if any(character in name for character in "*?["):
+            confined = directory not in ("", ".") and not any(
+                character in directory for character in "*?["
+            )
+            if confined:
+                seal(root / directory)
+            else:
+                for match in sorted(root.glob(text)):
+                    seal(match)
+            continue
+        seal(root / relative)
+    return tuple(seals.values())
+
+
 def fence_argv(
     argv: Sequence[str],
     *,
@@ -1440,6 +1506,7 @@ def fence_argv(
     home: str | Path | None = None,
     read_only_binds: Iterable[tuple[str | Path, str | Path]] = (),
     read_write_binds: Iterable[tuple[str | Path, str | Path]] = (),
+    unmergeable_paths: Iterable[tuple[str | Path, str]] = (),
     masked_paths: Iterable[str | Path] = (),
     config: Mapping[str, Any] | None = None,
 ) -> list[str]:
@@ -1523,7 +1590,7 @@ def fence_argv(
     protected = declared_protected_paths(home, config)
     roots: list[Path] = [Path(path) for path in writable_directories]
     if worktree is not None:
-        roots.append(Path(worktree))
+        roots.extend(worktree_write_grant(worktree))
         roots.extend(worktree_git_write_roots(worktree))
     if manifest_path is not None:
         roots.append(Path(manifest_path).parent)
@@ -1657,6 +1724,16 @@ def fence_argv(
             continue
         granted.add(key)
         fenced += ["--bind", key, key]
+    # The paths git cannot merge are sealed here, after the writable grants: a
+    # grant is the last word on its own path, so a seal emitted before the
+    # grant that covers it would be re-opened. A run with no declared write
+    # paths is otherwise free of its whole worktree, and these are the only
+    # paths it may not write.
+    for raw, _pattern in unmergeable_paths:
+        target = resolved_destination(raw)
+        if not target.exists():
+            continue
+        fenced += ["--ro-bind", str(target), str(target)]
     for source, destination in read_only_binds:
         fenced += ["--ro-bind", str(source), str(destination)]
     for source, destination in read_write_binds:
