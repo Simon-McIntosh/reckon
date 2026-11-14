@@ -86,6 +86,16 @@ SLURM_JOB_ENVIRONMENT_ROOTS = ("SLURM_JOB", "SLURM_STEP")
 # core count, so the cap is raised by reading memory across a wave rather than
 # by counting cores.
 RESERVATION_ROSTER_LIMIT = 25
+
+# The seats the local lane leaves free inside the reservation. The admit
+# service launches a queued local request the moment a seat frees, while a
+# dispatch naming another lane -- codex as the fast escape hatch, or any lane a
+# coordinator names because the work must run there -- is refused at a full
+# roster and cannot queue. With no reserve the local queue took every freed
+# seat first: on 14 November a codex review was refused seven times in thirty
+# minutes at 25 of 25. The local lane stops this many seats and cores short of
+# the bounds, so a named lane always finds room.
+LOCAL_LANE_RESERVE = 3
 RESERVATION_ROSTER_BASIS = (
     "resident memory per worker against the reservation's reserved memory, "
     "not a core count"
