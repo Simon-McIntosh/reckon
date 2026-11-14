@@ -26,7 +26,10 @@
   <p>The stamp records the identity taken before the listing its entries came from, never a later
   stat, so a record written after that listing moves the identity again and the stamp cannot mask
   it. A document write carries its stamp in the same step, so a reader sees both or sees the stamp
-  lagging and reconciles.</p>
+  lagging and reconciles. The stamp is read and written through the cache document helpers the rest
+  of the store already uses, so it inherits their rule rather than repeating it: a missing,
+  half-written or malformed stamp reads as absent, and advancing it neither fsyncs a cache file nor
+  narrows its mode.</p>
   <p>The declared mutation restores the base behaviour -- writing the whole document when a
   reconcile changes no entry -- and the test fails with
   <strong>an unchanged reconcile rewrote the index document</strong> and <code>EXIT=1</code>.</p>
@@ -36,9 +39,10 @@
   <code>tests/test_staged_write_inventory.py</code>, whose fixture runs <code>git ls-tree HEAD</code>
   against a tree extracted with <code>git archive</code>, which carries no repository.
   <code>ruff check</code> and <code>ruff format --check</code> add no finding on the staged paths.</p>
-  <p>Retiring the in-process memo leaves one module outside this node's write scope reading it:
-  <code>tests/test_a_review_index_reader_never_waits_or_rewrites.py</code> clears
-  <code>review_records._SETTLED_IDENTITIES</code> in an autouse fixture, so its two tests error at
-  setup. That fixture is dead once the memo is gone and should be deleted; it was reported to the
-  coordinator rather than edited from here.</p>
+  <p>Retiring the in-process memo also retires the fixture that cleared it:
+  <code>tests/test_a_review_index_reader_never_waits_or_rewrites.py</code> carried an autouse
+  fixture calling <code>review_records._SETTLED_IDENTITIES.clear()</code>, so its two tests failed
+  at setup once the memo was gone, where both passed at base. The fixture, and the import only it
+  used, are deleted in the same change: a reader now settles against the recorded stamp, so no
+  process state is left to reset between tests.</p>
 </section>
