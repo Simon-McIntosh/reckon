@@ -506,13 +506,58 @@ arms and attaches exactly ONE monitor, one per session. A second follower on the
 same session is a defect, not redundancy. To watch more than your own runs, name
 them on the one follower with `--observe-session`. Never arm a second follower.
 
-**Read the counts on the rows, and take names from the obligations list.** A
-follower row carries the fleet's four counters — `w` working, `n` needs you, `d`
-delivered, `q` queued — so the pane tells you how much is outstanding at a
-glance. It does not name the runs: a line composed for the pane was measured as
-noise, printed again on a cadence while nothing had changed. To learn which runs
-those counts are, read `reckon crew view obligations --project P --session S`:
-each row carries the run and the command that answers it.
+**The monitor is how you track work; a shell is the exception.** Your pane
+draws every transition of every run your session owns, and the station keeps it
+current, so watch the pane rather than polling. Reach for a shell to track work
+only where the pane cannot answer: a gate or job you started by hand, a log the
+pane does not carry, or a run the pane reports wrongly (and then report that as
+a monitor defect). A loop that re-reads pointers, `squeue` or a run directory on
+a timer is the pattern this replaces.
+
+**Reading a row.** Each row is one transition:
+
+```text
+14:01:20  implement  follower-outl…ing-shell-s134  in review → delivered  1h57m   1w  0n  3d  0q   72.3 tok/s  <model>  high
+```
+
+- **time**: when the transition was observed, in local time.
+- **role**: `implement`, `review`, `investigate`, or the kind of a fleet event
+  (`limit` for a budget reset or lift, a gate row for a coordinator's gate).
+- **job**: the node id, elided in the middle to fit.
+- **from → to**: the pane's words. `new` on the left means this pane had not
+  drawn the run before. A leading `[replay]` marks a row written before the
+  pane attached: history, not news.
+- **age**: how long the run has existed.
+- **counters**: your session's totals across every project at that moment.
+- **rate, model, effort**: the worker's generation rate and its routing, added
+  only where the pane has room.
+
+**The pane words**: `queued` (waiting for a lane slot), `waiting` (held on an
+upstream section, a pause or a declared condition), `working` (dispatched,
+starting or running, and a coordinator's own gate or a lift or reset row),
+`in review` (delivered, and its review is running), `delivered` (finished and
+waiting to be promoted and landed), `needs you` (stopped until you act:
+blocked, failed, stalled, held, stopped, unreadable, or refused at admission),
+`landed` (promoted, recorded, or a lift ended), `dropped` (withdrawn, discarded
+or departed), and `seat moved` (the producer moved to another node).
+
+**The counters**:
+
+- `w`: live workers: runs dispatched, starting or running, review runs
+  included. Your session is doing work while this is above zero.
+- `n`: needs you: runs stopped on your move. Read `crew view obligations` for
+  the command each one needs.
+- `d`: delivered and not yet landed. A delivered run must not sit: promote and
+  land it, or answer the review that holds it. A `d` that stays above zero with
+  `0w` is a stalled session, whatever else is quiet.
+- `q`: queued or waiting, including held requests: work that will start
+  without you once its slot or upstream frees.
+
+What the counts mean together: `0w 0q` with `n` or `d` above zero means
+nothing moves until you act. A count that stays put while `w` is above zero is
+a worker to observe with `crew observe`, not a pane to restart. The rows do not name the runs behind
+a count. Take names from `reckon crew view obligations --project P --session S`,
+where each row carries the run and the command that answers it.
 See `references/sprint-orchestration.md` §17.
 
 ## Concurrency — the roster is the whole authority
