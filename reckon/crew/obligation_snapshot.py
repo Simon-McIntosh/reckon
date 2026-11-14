@@ -1126,6 +1126,40 @@ REVIEW_DUTY_KINDS = frozenset({REVIEW_MISSING_DUTY_KIND, REVIEW_QUEUED_DUTY_KIND
 # this file is loaded by path, so it may reach no derivation.
 REVIEW_DISPATCH_FIELDS = ("review_dispatch", "figure_review_dispatch")
 
+# The duties a run's own current pointer answers beyond the phases above, and
+# the state that settles each. A station tick computes these rows from the
+# fleet as it read at one instant and serves the same answer for as long as the
+# tick runs, so a pointer that moved inside that window leaves a row whose
+# premise the pointer has already contradicted.
+#
+# * a ``review-ready`` or ``promotable-stale`` row offers the promotion of a
+#   delivered run, and a promotion is taken only on a run whose pointer reads
+#   complete;
+# * a ``blocked`` or ``review-missing`` row was raised from a manifest, and a
+#   run resumed after that manifest was written owes neither, because the
+#   resume carried it onto a new attempt.
+#
+# The readings are the pointer's own fields, so neither needs a ledger read or
+# a derivation module. A pointer that states no phase states no move, so it is
+# read the way an unreadable one is: the row keeps the evidence it was raised
+# on. A ``review-queued`` row has no reading here; the review duties settle it
+# above, where its own two facts are read.
+PROMOTION_DUTY_KINDS = frozenset({"review-ready", "promotable-stale"})
+RESUME_ANSWERED_DUTY_KINDS = frozenset({"blocked", REVIEW_MISSING_DUTY_KIND})
+POINTER_ANSWERED_DUTY_KINDS = PROMOTION_DUTY_KINDS | RESUME_ANSWERED_DUTY_KINDS
+
+#: The phase a run's pointer reads once its worker has delivered, and the only
+#: phase a promotion is taken on.
+COMPLETE_POINTER_PHASE = "complete"
+
+#: The phases a run's pointer carries while an attempt is running it. The
+#: pre-spawn spellings are the ones the launcher and the resume door write
+#: before the worker's first stream line, so a resumed run reads as working
+#: from the instant its new attempt starts rather than from its first output.
+WORKING_POINTER_PHASES = frozenset(
+    {"working", "starting", "launching", "launcher", "dispatching"}
+)
+
 # A pointer file present but unreadable is not evidence that its run left the
 # phase, so the duty it raised stands.
 _UNREADABLE_POINTER = object()
@@ -1227,6 +1261,49 @@ def _review_duty_survives_read(row: Mapping[str, Any]) -> bool:
     return not _review_dispatch_for_head(document, row.get("head"))
 
 
+def _resume_instant(document: Mapping[str, Any]) -> datetime | None:
+    """The newest instant this run is known to have been resumed, or None.
+
+    Two pointer slots carry one and a reader needs whichever is newest: the
+    revision a resume replaced is stamped with the current attempt's start, and
+    the sweep's automatic lift stamps its own. Reading one alone would misdate
+    a resume the other recorded.
+    """
+    stamps: list[datetime] = []
+    for key in ("resume_superseded_head", "auto_resume"):
+        slot = document.get(key)
+        if isinstance(slot, Mapping):
+            stamp = _parse_instant(slot.get("at"))
+            if stamp is not None:
+                stamps.append(stamp)
+    return max(stamps, default=None)
+
+
+def _resume_answers_the_manifest(document: Mapping[str, Any]) -> bool:
+    """Whether this run was resumed after the manifest its row was read from.
+
+    A row naming a blocker or a missing review is built from a manifest, and a
+    resume carries the run past that attempt onto a new one. The pointer states
+    both halves: it reads a working phase, and it carries a resume instant
+    later than that manifest's own write. A run whose manifest was rewritten
+    after the resume is the new attempt's own record, so the comparison fails
+    there and the row stands until the derivation reads the manifest.
+    """
+    if str(document.get("phase") or "") not in WORKING_POINTER_PHASES:
+        return False
+    resumed_at = _resume_instant(document)
+    if resumed_at is None:
+        return False
+    manifest = str(document.get("manifest_path") or "")
+    if not manifest:
+        return False
+    try:
+        written_at = datetime.fromtimestamp(Path(manifest).stat().st_mtime, tz=UTC)
+    except OSError:
+        return False
+    return resumed_at > written_at
+
+
 def without_departed_run_duties(payload: Mapping[str, Any]) -> dict[str, Any]:
     """A held payload minus the duties its runs have already moved past.
 
@@ -1251,6 +1328,14 @@ def without_departed_run_duties(payload: Mapping[str, Any]) -> dict[str, Any]:
     review owed is owed against a tree that still exists and that no dispatch
     has yet read.
 
+    Two further readings settle a row against the run's own current pointer. A
+    ``review-ready`` or ``promotable-stale`` row offers the promotion of a
+    delivered run, and a promotion is taken only on a run whose pointer still
+    reads ``complete``. A ``blocked`` or ``review-missing`` row was raised from
+    a manifest, and a run resumed after that manifest was written owes neither,
+    because the resume carried it onto a new attempt. A pointer carrying no
+    phase states no move, so the row stands.
+
     A duty of any other kind is kept, whatever its pointer state: its evidence
     is a ledger record or nothing at all -- a hold, a refusal, a blocked run or
     a tree still held -- so a missing pointer says nothing about it. That
@@ -1264,6 +1349,7 @@ def without_departed_run_duties(payload: Mapping[str, Any]) -> dict[str, Any]:
     kept: list[Any] = []
     dropped = False
     phases: dict[str, Any] = {}
+    documents: dict[str, Any] = {}
     for row in rows:
         if not isinstance(row, Mapping):
             kept.append(row)
@@ -1290,6 +1376,24 @@ def without_departed_run_duties(payload: Mapping[str, Any]) -> dict[str, Any]:
             if phase is not _UNREADABLE_POINTER and phase != "queued":
                 dropped = True
                 continue
+        if run_id and kind in POINTER_ANSWERED_DUTY_KINDS:
+            if run_id not in documents:
+                documents[run_id] = _live_pointer_document(run_id)
+            document = documents[run_id]
+            if isinstance(document, Mapping):
+                phase = str(document.get("phase") or "")
+                if (
+                    kind in PROMOTION_DUTY_KINDS
+                    and phase
+                    and phase != COMPLETE_POINTER_PHASE
+                ):
+                    dropped = True
+                    continue
+                if kind in RESUME_ANSWERED_DUTY_KINDS and _resume_answers_the_manifest(
+                    document
+                ):
+                    dropped = True
+                    continue
         kept.append(row)
     if not dropped:
         return dict(payload)

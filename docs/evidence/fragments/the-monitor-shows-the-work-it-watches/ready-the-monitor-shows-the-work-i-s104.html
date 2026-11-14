@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="the-monitor-shows-the-work-it-watches">
+  <meta name="plan-evidence-for" content="reckon:the-monitor-shows-the-work-it-watches">
+  <meta name="plan-verifies" content="reckon:the-monitor-shows-the-work-it-watches#s104">
+  <meta name="plan-recorded-at" content="2026-11-14">
+  <title>A held duty is settled against the run's current pointer | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" id="ready-the-monitor-shows-the-work-i-s104-landing" data-node="ready-the-monitor-shows-the-work-i-s104" data-reckon="landed" data-when="2026-11-14">
+  <h2>A held duty is settled against the run's current pointer</h2>
+
+  <p>A session's duties are computed once per station tick and served until the next one, so any
+  launch, resume or promotion that happens inside that window is invisible to the answer a
+  coordinator reads. The only read-time settlement was
+  <code>obligation_snapshot.without_departed_run_duties</code>, which dropped a row when its run's
+  live pointer file was gone and nothing else. A delivered run that resumed, or a resumed run whose
+  previous attempt left a halt behind, changes the pointer while the held row stands — so the stop
+  hook went on refusing turns for work the pointer had already answered.</p>
+
+  <p id="ready-the-monitor-shows-the-work-i-s104-settlement">That settlement now reads two further
+  facts from the run's current pointer, all of them pointer fields rather than derived state, so it
+  still imports no derivation module and makes no ledger read. A <code>review-ready</code> or
+  <code>promotable-stale</code> row is dropped once the pointer no longer reads
+  <code>complete</code>, because a promotion is taken only on a delivered run. A
+  <code>blocked</code> or <code>review-missing</code> row is dropped once the run has been resumed
+  after the manifest that row was built from, which the pointer states as a working phase and a
+  resume instant later than the manifest's own write.</p>
+
+  <p id="ready-the-monitor-shows-the-work-i-s104-review">The review duties are settled exactly as
+  they already were: a <code>review-missing</code> or <code>review-queued</code> row is dropped when
+  the run has released its pointer, or when that pointer records a review dispatched for the head
+  the row names. The two readings above compose with that rule rather than replacing it, so a
+  review-missing row is answered either by the dispatch main reads or by a resume after the
+  manifest.</p>
+
+  <p id="ready-the-monitor-shows-the-work-i-s104-scope">The hook's own account of the settlement, in
+  <code>recheck_worktree_held_rows</code> (<code>reckon/hooks/coordinator_obligations.py</code>),
+  names the two new readings beside the ones it already carried. Every other duty kind is left as
+  it was: a row whose evidence is a ledger record, a worktree hold or nothing at all still keeps
+  through any pointer state.</p>
+
+  <p id="ready-the-monitor-shows-the-work-i-s104-evidence">Evidence:
+  <code>tests/test_a_held_duty_is_settled_against_the_pointer.py</code> passes seven cases. Each
+  writes its rows into one stored snapshot and reads that same snapshot back after the fleet has
+  moved, and each records the settled answer from before the move as its positive control. A
+  review-missing row survives the sweep and is dropped once the run's pointer records a review
+  dispatched for the row's head; it is kept when no review has been dispatched, when the attempt was
+  held for a lane, or when the dispatch stands for an earlier head. A promotable-stale row and a
+  blocked row built from a manifest are both dropped once the run's pointer reads working after a
+  resume stamped later than that manifest's write, and a review-missing row is dropped by the same
+  resume; a manifest written after the resume keeps the halt, so the comparison is against the
+  manifest's own write rather than the resume alone. A promotable-stale row whose run still reads
+  complete, and a promotion row whose pointer carries no phase at all, are both kept. The declared
+  negative control — removing the promotion and resume readings from the settlement — fails exactly
+  the promotion and resume cases (<code>2 failed, 5 passed</code>).</p>
+</article>
+</body>
+</html>
