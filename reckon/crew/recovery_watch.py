@@ -48,6 +48,7 @@ from reckon.crew.watch_unit import (
     seat_names_a_live_foreign_producer,
     watch_state,
 )
+from reckon.node_exclusive_lock import exclusive_lock
 
 # The waiting family is the stop that lifts itself, an overdue wait included:
 # a run whose declared external wait has aged past its expectation has not
@@ -239,13 +240,7 @@ def _update_git_answer_store(mutate: Callable[[dict[str, Any]], None]) -> None:
     path = _git_answer_store_path()
     lock_path = path.with_name(f"{path.name}.lock")
     try:
-        path.parent.mkdir(parents=True, exist_ok=True)
-        lock = lock_path.open("a+")
-    except OSError:
-        return
-    with lock:
-        try:
-            fcntl.flock(lock.fileno(), fcntl.LOCK_EX)
+        with exclusive_lock(lock_path):
             store = _read_git_answer_store()
             mutate(store)
             _bound_git_answer_store(store)
@@ -253,10 +248,8 @@ def _update_git_answer_store(mutate: Callable[[dict[str, Any]], None]) -> None:
             temporary = path.with_name(f".{path.name}.{os.getpid()}.tmp")
             temporary.write_text(payload, encoding="utf-8")
             os.replace(temporary, path)
-        except OSError:
-            return
-        finally:
-            fcntl.flock(lock.fileno(), fcntl.LOCK_UN)
+    except OSError:
+        return
 
 
 def _stored_commit_answer(tree: Path, candidate: str) -> str:
