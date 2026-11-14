@@ -1034,6 +1034,30 @@ def producer_lease_is_live(project: str, *, now: float | None = None) -> bool:
     return (moment - float(renewed)) < producer_lease_seconds()
 
 
+def producer_seat_holder(project: str) -> tuple[int | None, str]:
+    """The pid and host the seat's registration records, where it records them.
+
+    A stale snapshot is a reading of the seat holder's own write, so naming who
+    holds the seat is what tells a coordinator whether the staleness is its own
+    or another process's. A record that is missing or unreadable answers with no
+    holder rather than a guess, and the line then says only what it knows.
+    """
+    try:
+        record = json.loads(
+            producer_lease_path(project).read_text(encoding="utf-8") or "{}"
+        )
+    except (OSError, ValueError):
+        return None, ""
+    if not isinstance(record, dict):
+        return None, ""
+    pid = record.get("pid")
+    host = record.get("host")
+    named_pid = (
+        pid if not isinstance(pid, bool) and isinstance(pid, int) and pid > 0 else None
+    )
+    return named_pid, str(host) if isinstance(host, str) else ""
+
+
 def not_fresh_line(
     state: str,
     *,
@@ -1073,6 +1097,13 @@ def not_fresh_line(
             if age is None
             else f"the snapshot is {age}s old"
         )
+        holder_pid, holder_host = producer_seat_holder(project)
+        if holder_pid is not None or holder_host:
+            holder = f"pid {holder_pid}" if holder_pid is not None else "no pid"
+            if holder_host:
+                holder = f"{holder} on {holder_host}"
+            wrote = "at an unrecorded time" if age is None else f"{age}s ago"
+            reason = f"{reason}; the seat holder ({holder}) last wrote it {wrote}"
     elif state == module.FOLLOWER_RELEASED:
         age = module.snapshot_age_seconds(document)
         published = "with no readable age" if age is None else f"{age}s ago"

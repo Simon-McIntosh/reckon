@@ -3712,6 +3712,37 @@ def _publish_watch_stream(project: str, records: Iterable[Mapping[str, Any]]) ->
     producer.sweep_thread.start()
 
 
+def publish_obligations_on_beat(project: str) -> bool:
+    """Start one obligations sweep without asking for a fleet read.
+
+    A session's snapshot carries an age, so publishing a fresh one becomes due
+    by the passage of time alone. Every other trigger for the sweep reads a
+    document — a transition, a file under the state or plan tree, or the crew
+    home's fingerprint — and a fleet that is simply quiet moves none of them, so
+    a producer reachable only through those triggers goes on holding the seat
+    while its sessions' snapshots age out of the freshness window. This call is
+    the producer's own beat reaching the sweep: it lists nothing, folds no
+    transition, and leaves the sweep's floor interval to decide whether this
+    beat publishes.
+
+    Reports whether a sweep was started. A sweep already in flight is skipped
+    rather than queued, exactly as a trigger from the change gate is.
+    """
+    if getattr(_SWEEP_LOCAL, "in_sweep", False):
+        return False
+    producer = _WATCH_STREAM_PRODUCERS.get(project)
+    if not producer.sweep_lock.acquire(blocking=False):
+        return False
+    producer.sweep_thread = threading.Thread(
+        target=_run_obligation_sweep,
+        args=(project, producer, False),
+        name=f"reckon-obligations-sweep-{project}",
+        daemon=True,
+    )
+    producer.sweep_thread.start()
+    return True
+
+
 def _run_obligation_sweep(
     project: str, producer: _WatchStreamProducer, transition_fired: bool
 ) -> None:
