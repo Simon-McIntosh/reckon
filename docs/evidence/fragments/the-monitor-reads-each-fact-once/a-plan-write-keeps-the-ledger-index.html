@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="the-monitor-reads-each-fact-once">
+  <meta name="plan-evidence-for" content="reckon:the-monitor-reads-each-fact-once">
+  <meta name="plan-verifies" content="reckon:the-monitor-reads-each-fact-once#s47">
+  <meta name="plan-recorded-at" content="2026-11-14">
+  <meta name="plan-verdict" content="passed">
+  <title>A plan write keeps the ledger index</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+
+<article class="r-note" id="a-plan-write-keeps-the-ledger-index-landing" data-node="a-plan-write-keeps-the-ledger-index" data-reckon="landed" data-when="2026-11-14">
+  <h2>The ledger keys its own writes, not the plan's</h2>
+
+  <p id="a-plan-write-keeps-the-ledger-index-cause"><strong>The cause.</strong> <code>ledger.ledger_generation</code> read <code>_store.read_write_generation</code>, the project's plan-write counter, and <code>_store.write_plan</code> advanced that same counter. The open-run index compares the generation it recorded against <code>ledger.ledger_generation</code> and reloads the whole ledger when they differ, so a promotion's plan record, a comment or a section edit sent every ledger reader back through <code>ledger.load</code> — a rebuild for a write that had the wrong shipping address and had touched no run document.</p>
+
+  <p id="a-plan-write-keeps-the-ledger-index-split"><strong>What landed.</strong> The store keeps two counters, one file per project per family under the crew home: <code>crew/write-generation/</code> for plan writes and <code>crew/ledger-write-generation/</code> for ledger writes. <code>_store.ledger_write_generation_path</code>, <code>read_ledger_write_generation</code> and <code>advance_ledger_write_generation</code> are the ledger's own; <code>write_generation_path</code>, <code>read_write_generation</code> and <code>advance_write_generation</code> keep the plan meaning every other reader already had. <code>ledger.ledger_generation</code> reads the ledger counter, <code>ledger.ledger_generation_path</code> names its file, and <code>_bump_generation</code> advances and verifies that one. <code>open_run_index</code> needed no change: it already keyed on <code>ledger.ledger_generation</code>, so it now keys on the counter its own writes move.</p>
+
+  <p id="a-plan-write-keeps-the-ledger-index-absence"><strong>Absence keeps its meaning.</strong> A counter that does not exist still reads as "no key" rather than as a value, so a ledger whose documents were written by something that never bumped keeps walking to the documents. A project picks its ledger counter up with its first ledger write after this lands; until then its index reads as no-key and walks, which is the pre-existing behaviour for an untouched project rather than a new one.</p>
+
+  <p id="a-plan-write-keeps-the-ledger-index-gate"><strong>Gate.</strong> <code>tests/test_a_plan_write_keeps_the_ledger_index.py</code> builds a synthetic crew home and a ledger of 60 per-run documents, brings the index current, then measures run ids with no run file — the case the profile shows: a finished run that is not promoted has no run file, so <code>has_row</code> passes its file check and reaches <code>_ensure</code>. GATE_RESULTS_PLACEHOLDER</p>
+
+  <p id="a-plan-write-keeps-the-ledger-index-negative"><strong>Negative control.</strong> NEGATIVE_PLACEHOLDER</p>
+</article>
+
+</body>
+</html>
