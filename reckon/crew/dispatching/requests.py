@@ -402,12 +402,21 @@ def _session_older_admissible_request(
     therefore never stops the session launching. The ranking among sessions is
     the admission pass's — only this session's own requests are ever chosen.
     """
+    from reckon._timestamps import parse_utc
     from reckon.crew import queue_admission, queue_order
     from reckon.crew import runs as runs_module
 
     live = runs_module.list_live()
+    # The ordering refuses a queued pointer whose arrival time cannot be read,
+    # and one such pointer -- a record read mid-write is enough -- would refuse
+    # the whole order and with it this dispatch. Such a request has no place,
+    # so it is left out here as the admission pass and the live view leave it
+    # out, and the ordering keeps its refusal.
     queued = [
-        pointer for pointer in live if str(pointer.get("phase") or "") == "queued"
+        pointer
+        for pointer in live
+        if str(pointer.get("phase") or "") == "queued"
+        and parse_utc(pointer.get("queued_at")) is not None
     ]
     if not queued:
         return None
