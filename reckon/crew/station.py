@@ -394,6 +394,13 @@ REFLEX_BEAT_SECONDS = 30.0
 # and the duties it had not yet published are the next station's to derive.
 DUTY_DRAIN_SECONDS = 10.0
 
+# How long a due reload is held for the derivations in flight to land. A reload
+# replaces the image and ends every thread, so a derivation slower than the gap
+# between two landings on the primary branch was ended on every reload and its
+# project's duties never moved. The station keeps ticking while it holds, and
+# the bound keeps one stuck derivation from pinning old code for ever.
+RELOAD_HOLD_SECONDS = 900.0
+
 
 class _CommitBarrier:
     """Hold derivations out of the store while a tick writes transitions."""
@@ -447,6 +454,7 @@ class DutyBeat:
         self._workers: dict[str, threading.Thread] = {}
         self._commit = threading.Condition()
         self._committing = 0
+        self._quiescing = False
 
     def committing(self) -> _CommitBarrier:
         """Hold every derivation at its first step until the block ends."""
@@ -474,9 +482,15 @@ class DutyBeat:
         changed: bool,
         moment: datetime | None,
     ) -> bool:
-        """Start this project's derivation unless one is already in flight."""
+        """Start this project's derivation unless one is in flight or a reload waits.
+
+        While a reload waits for the derivations in flight to land, no new one
+        starts: one that started would only be ended by the reload, and starting
+        them tick after tick would leave the reload nothing quiet to wait for. A
+        refused change is kept, so the derivation it asked for still runs.
+        """
         with self._lock:
-            if project in self._in_flight:
+            if self._quiescing or project in self._in_flight:
                 if changed:
                     self._changed.add(project)
                 return False
@@ -502,6 +516,17 @@ class DutyBeat:
         """The projects whose derivation is running right now."""
         with self._lock:
             return set(self._in_flight)
+
+    def quiesce(self) -> bool:
+        """Start no new derivation; answer whether none is still in flight."""
+        with self._lock:
+            self._quiescing = True
+            return not self._in_flight
+
+    def resume(self) -> None:
+        """Start derivations again after a reload that did not happen."""
+        with self._lock:
+            self._quiescing = False
 
     def drain(self, timeout: float | None = None) -> None:
         """Wait for the derivations this station started to finish."""
@@ -730,9 +755,16 @@ class StationReloader:
             except (OSError, ValueError):
                 pass
         self.deferred_identity: str | None = None
+        self._held_since: float | None = None
 
-    def poll(self) -> None:
-        """Check committed code after a tick and re-execute when it moves."""
+    def poll(self, duties: DutyBeat | None = None) -> None:
+        """Check committed code after a tick and re-execute when it moves.
+
+        With ``duties`` named, a due reload first lets the derivations in flight
+        land: it stops new ones and returns, and the station keeps ticking until
+        a later poll finds none running or :data:`RELOAD_HOLD_SECONDS` has
+        passed. A reload that does not happen starts the derivations again.
+        """
         if self.image_pin is not None:
             checkout_trust.refresh_materialized_tree_pin(
                 self.image_pin, self.import_root
@@ -740,12 +772,33 @@ class StationReloader:
         current = checkout_trust.source_code_identity(
             self.source_root / "reckon", source_root=self.source_root
         )
-        if current in (checkout_trust.IDENTITY_UNKNOWN, self.identity):
+        due = (
+            current not in (checkout_trust.IDENTITY_UNKNOWN, self.identity)
+            and current != self.deferred_identity
+            and re.fullmatch(r"[0-9a-f]{40}", current) is not None
+        )
+        if due and duties is not None and not self._quiet(duties):
             return
-        if current == self.deferred_identity or not re.fullmatch(
-            r"[0-9a-f]{40}", current
-        ):
-            return
+        try:
+            if due:
+                self._replace(current)
+        finally:
+            # Reached only when no exec happened: nothing was due, the image did
+            # not import, or the exec itself failed. A hold taken for a reload
+            # that is no longer due must not leave the derivations stopped.
+            self._held_since = None
+            if duties is not None:
+                duties.resume()
+
+    def _quiet(self, duties: DutyBeat) -> bool:
+        """Whether the derivations have landed, or the hold has run out."""
+        idle = duties.quiesce()
+        now = time.monotonic()
+        if self._held_since is None:
+            self._held_since = now
+        return idle or now - self._held_since >= RELOAD_HOLD_SECONDS
+
+    def _replace(self, current: str) -> None:
         image, _removed, _kept, pin = checkout_trust.materialize_committed_tree(
             self.source_root, current, active_root=self.import_root
         )
@@ -1127,7 +1180,7 @@ def run_station(
                     break
                 if once:
                     break
-                reloader.poll()
+                reloader.poll(station.duties)
                 time.sleep(interval)
             if renewal.lost():
                 raise StationHeldError(f"station lost its lease at {lease.path}")
