@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="fleet-migration-carries-backend-environment">
+  <meta name="plan-title" content="A fleet migration carries the backends' environment, whoever runs it">
+  <meta name="plan-evidence-for" content="reckon:work-flows-to-the-lane">
+  <meta name="plan-verifies" content="reckon:work-flows-to-the-lane#s51">
+  <meta name="plan-recorded-at" content="2026-11-14">
+  <meta name="plan-verdict" content="passed">
+  <title>A fleet migration carries the backends' environment, whoever runs it | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article id="fleet-migration-carries-backend-environment-record" data-node="fleet-migration-carries-backend-environment" data-reckon="landed">
+  <h2 id="fleet-migration-carries-backend-environment-outcome">A fleet hold carries the backends&#x27; environment</h2>
+
+  <p id="fleet-migration-carries-backend-environment-defect">At base
+  <code>6ff4f572a2f9c924c8ead49acb0483323fe2f8d2</code> the generated hold script exported no
+  <code>PATH</code>, so the batch step handed every session and service whatever environment the
+  submitting shell carried. Composing a hold from a submitting environment whose <code>PATH</code>
+  is only <code>/usr/bin:/bin</code> left codex unresolvable: the run printed
+  <q>hold PATH export: ABSENT &#x2014; services inherit the submitting PATH</q> and
+  <q>command -v codex: MISSING (exit 1)</q> (<code>logs/live-hold-path-base.log</code>). That is the
+  fault reported for the move to job 1313886 on clu-2001, where every codex dispatch failed until a
+  link was placed in <code>~/.local/bin</code> by hand on 14 November.</p>
+
+  <p id="fleet-migration-carries-backend-environment-change">In <code>reckon/crew/fleet_node.py</code>,
+  <code>declared_backend_directories</code> reads every search directory the resolved flight declares
+  for a backend, and <code>hold_path</code> composes the submitting environment with those directories
+  appended. <code>generate_hold_script</code> takes the submitting environment and writes one
+  <code>export PATH</code> line above the supervisor it execs, so the sessions and services the hold
+  starts inherit the composed PATH. A directory the submitter already holds is never displaced, because
+  the declared entries go after the inherited entries. The same script is composed for a named fleet
+  and a standby hold, since both run the same body.</p>
+
+  <p id="fleet-migration-carries-backend-environment-switch">In <code>reckon/crew/fleet_migrate.py</code>,
+  <code>unresolved_backend_commands</code> asks which commands the flight places in a declared search
+  directory are still absent from the composed hold PATH, and <code>verify_backend_commands</code>
+  refuses with a message naming both the command and the allocation. It runs in the promote step
+  before the reservation is replaced and before the supervisor is asked to publish the new fleet
+  record, so a refusal leaves the fleet record naming the node that still serves every backend. A
+  backend that declares no search directory is not judged there: its location is a fact about the
+  submitting environment, which a hold cannot add to either.</p>
+
+  <table id="fleet-migration-carries-backend-environment-gate">
+    <thead><tr><th>arm</th><th>command</th><th>result</th></tr></thead>
+    <tbody>
+      <tr>
+        <td>base, <code>6ff4f572a2</code></td>
+        <td><code>PYTHONPATH=. /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py</code></td>
+        <td><code>51 passed in 10.09s</code>, <code>EXIT=0</code></td>
+      </tr>
+      <tr>
+        <td>head</td>
+        <td><code>PYTHONPATH=. /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_fleet_migration_carries_backend_environment.py tests/test_staged_write_inventory.py</code></td>
+        <td><code>55 passed in 10.18s</code>, <code>EXIT=0</code></td>
+      </tr>
+    </tbody>
+  </table>
+  <p id="fleet-migration-carries-backend-environment-gate-note">Both arms ran on <code>all_debug</code> as their own batch jobs. The new test
+  file does not exist at the base revision, so the base arm's command resolves over the base tree
+  without it. The logs are <code>logs/gate-base.log</code> and <code>logs/gate-head.log</code>.</p>
+
+  <p id="fleet-migration-carries-backend-environment-negative">The declared negative control composes
+  the hold without the declared backends' directories. With <code>hold_path</code> returning only the
+  inherited entries, the run reported
+  <code>FAILED tests/test_fleet_migration_carries_backend_environment.py::test_a_hold_from_a_bare_submitter_resolves_a_declared_backend</code>
+  and
+  <code>2 failed, 2 passed in 1.32s</code>, <code>EXIT=1</code>
+  (<code>logs/negative-control.log</code>).</p>
+
+  <p id="fleet-migration-carries-backend-environment-live">The live check composed a hold from a
+  submitting environment whose <code>PATH</code> is only <code>/usr/bin:/bin</code>, took the PATH its
+  services would start with, and removed <code>~/.local/bin</code> from it so the hand-made codex link
+  could not answer. At the head the remaining PATH was
+  <code>/usr/bin:/bin:/work/projects/imas_gpu/agents:/home/ITER/mcintos/.npm/packages/bin:/home/ITER/mcintos/.local/share/omp-pilot/node_modules/.bin</code>
+  and <code>command -v codex</code> answered
+  <code>/home/ITER/mcintos/.npm/packages/bin/codex</code> (<code>logs/live-hold-path-head.log</code>).
+  The same check at the base revision is recorded beside it and fails, above.</p>
+</article>
+</body>
+</html>
