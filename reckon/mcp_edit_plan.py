@@ -891,7 +891,7 @@ def _refused_resource_edit(
         **(fields or {}),
         "detail": str(exc),
     }
-    versions = _move_sprint_versions(docs_dir, project, doc_type, slug, ops)
+    versions, _failed = _move_sprint_versions(docs_dir, project, doc_type, slug, ops)
     if versions:
         reply["sprint_versions"] = versions
     return reply
@@ -903,29 +903,34 @@ def _move_sprint_versions(
     doc_type: str,
     slug: str,
     ops: Any,
-) -> dict[str, int]:
+) -> tuple[dict[str, int], list[str]]:
     """Both sprint versions a move touches, read fresh from disk.
 
+    Returns the versions that could be read beside the ids whose read failed.
     A reply names what the sprints hold now, whether the move settled or was
-    refused, so a caller can compare the answer with its own read.
+    refused, so a caller can compare the answer with its own read. A failed
+    read is reported by the caller rather than failing a reply whose write
+    already landed.
     """
     move_ops = [
         op for op in (ops or []) if isinstance(op, dict) and op.get("op") == "move"
     ]
     if not move_ops:
-        return {}
+        return {}, []
     identifiers = {str(slug)}
     identifiers.update(str(op.get("to") or "") for op in move_ops)
     versions: dict[str, int] = {}
+    failed: list[str] = []
     for sprint_id in sorted(identifiers):
         if not sprint_id:
             continue
         try:
             _, version = read_resource(docs_dir, project, doc_type, sprint_id)
-        except Exception:  # noqa: BLE001 — a reply must never fail on a version
-            continue
-        versions[sprint_id] = version
-    return versions
+        except Exception:  # noqa: BLE001 — a version read must not fail the reply
+            failed.append(sprint_id)
+        else:
+            versions[sprint_id] = version
+    return versions, failed
 
 
 def _move_sprint_item(
@@ -1750,14 +1755,20 @@ def _edit_plan(
                 new_version=new_version,
                 created=create,
             )
-            sprint_versions = _move_sprint_versions(
+            sprint_versions, failed_reads = _move_sprint_versions(
                 docs_dir, project, canonical_doc_type, slug, ops
             )
-            if sprint_versions:
+            if sprint_versions or failed_reads:
                 # The reply names what settled, with both versions read back
                 # from disk rather than assumed from the write that returned.
                 result["applied"] = True
+            if sprint_versions:
                 result["sprint_versions"] = sprint_versions
+            if failed_reads:
+                warnings = [
+                    *(warnings or []),
+                    *(f"sprint_version_read_failed={sid}" for sid in failed_reads),
+                ]
             result["doc_type"] = canonical_doc_type
             result["path"] = str(
                 resource_path(docs_dir, project, canonical_doc_type, slug)

@@ -2171,9 +2171,8 @@ def _restore_move_journal(docs_dir: Path, project: str, journal: Path) -> bool:
         payload = json.loads(journal.read_text(encoding="utf-8"))
     except FileNotFoundError:
         return False
-    except json.JSONDecodeError as exc:
-        raise ProjectStateError(f"malformed transaction journal: {journal}") from exc
     except (KeyError, ValueError) as exc:
+        # json.JSONDecodeError is a ValueError, so this clause covers it.
         raise ProjectStateError(f"malformed transaction journal: {journal}") from exc
     try:
         source_id = _safe_segment(str(payload["source_id"]), "journal source id")
