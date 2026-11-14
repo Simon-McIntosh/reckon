@@ -4252,6 +4252,9 @@ def _publish_stored_phase(
         )
         if phase:
             record["phase"] = phase
+        # A launch failure is not a delivery: the worker reached no model, so
+        # it produced no head for a review brief to name.
+        delivered_status = phase if ended and phase != LAUNCH_FAILED_PHASE else ""
         if "anchored_edit" in spec:
             record["anchored_edit"] = spec["anchored_edit"] is True
             record["anchored_edit_reason"] = spec.get("anchored_edit_reason")
@@ -4267,6 +4270,25 @@ def _publish_stored_phase(
                     if worker.get(key):
                         record[key] = worker[key]
         _write_existing_pointer(run_id, record)
+
+    if delivered_status:
+        # The run's review brief is composed where its delivery is recorded, so
+        # a reader opening it is told the revision this run actually delivered.
+        # A dispatch writes one when it is composed for a review; a resumed run
+        # and a run whose obligations a coordinator deferred can both reach a
+        # delivery that no dispatch ever follows, and either then leaves a
+        # brief naming an older head or no brief at all. The pointer is read
+        # after the phase write, outside the lock, because composing the brief
+        # asks the run's tree for its head. A brief must never take a delivery
+        # down, so a composition that raises leaves the phase written.
+        try:
+            from reckon.crew.recovery_review_subject import (
+                write_delivered_run_review_brief,
+            )
+
+            write_delivered_run_review_brief(record)
+        except Exception:  # noqa: BLE001, S110 - the delivered phase is written
+            pass
 
 
 # A worker whose manifest reaches one of these has delivered its verdict and
