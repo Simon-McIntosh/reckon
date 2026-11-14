@@ -2014,13 +2014,11 @@ def _document_is_usable(directory: Path, doc: Any) -> bool:
     return isinstance(doc.get("runs"), dict)
 
 
-def _read_index_document(directory: Path) -> dict[str, Any] | None:
-    """Read the store's index document, or ``None`` when there is not one.
+def _fresh_index_document(directory: Path) -> dict[str, Any] | None:
+    """Read and parse the document afresh, consulting no memo and filling none.
 
-    The read is a read: no stat of the document, the directory or a record. An
-    unusable document -- another checkout's, another store's, half written or
-    not JSON -- answers ``None`` exactly as a missing one does, because an index
-    that cannot be read is not an index.
+    A writer mutates the document it reads, so it takes this private copy
+    rather than the shared one the read path hands out.
     """
     try:
         raw = _index_document_path(directory).read_bytes()
@@ -2031,6 +2029,29 @@ def _read_index_document(directory: Path) -> dict[str, Any] | None:
     except ValueError:
         return None
     return doc if _document_is_usable(directory, doc) else None
+
+
+def _read_index_document(directory: Path) -> Mapping[str, Any] | None:
+    """The store's index document, parsed once per unchanged file.
+
+    :func:`reckon.file_memo.memoized` owns the reuse: a read costs one stat
+    while the file is unchanged. The code stamp is part of the memo's variant
+    because it decides whether a document is usable, so a document is also read
+    again when the stamp this process files under changes. Inside a read-only
+    region the held document reaches a reader as a read-only view, so a reader
+    cannot change what the next reader is given; a writer takes
+    :func:`_fresh_index_document` for itself instead. A changed or unusable
+    document -- another checkout's, another store's, half written or not JSON
+    -- reads as ``None`` exactly as a missing one does, because an index that
+    cannot be read is not an index.
+    """
+    with file_memo.read_only_region():
+        return file_memo.memoized(
+            "index_document",
+            _index_document_path(directory),
+            lambda: _fresh_index_document(directory),
+            variant=_index_code_stamp(),
+        )
 
 
 def _persist_index_document(directory: Path, doc: Mapping[str, Any]) -> None:
@@ -2148,7 +2169,7 @@ def _index_stored_record(path: Path, record: Mapping[str, Any]) -> None:
     entry = _entry_facts(path.name, record, data)
     entry["inode"] = inode
     with _index_lock(directory):
-        doc = _read_index_document(directory)
+        doc = _fresh_index_document(directory)
         if doc is None:
             doc = _rebuild_index_document(directory)
         version = int(doc.get("version") or 0) + 1
@@ -2225,7 +2246,7 @@ def reconcile_foreign_write(directory: Path) -> int:
     Only added or replaced names are read; removed names are dropped. An
     external rewrite retaining its inode becomes visible at the next rebuild.
     """
-    doc = _read_index_document(directory)
+    doc = _fresh_index_document(directory)
     if doc is None:
         return 0
     identity = _store_directory_identity(directory)
@@ -2241,7 +2262,7 @@ def reconcile_foreign_write(directory: Path) -> int:
             # and the document this reader already has is at most that one
             # write behind.
             return 0
-        doc = _read_index_document(directory) or doc
+        doc = _fresh_index_document(directory) or doc
         identity = _store_directory_identity(directory)
         if identity is None or identity == tuple(doc.get("directory_identity") or ()):
             return 0
@@ -2314,7 +2335,7 @@ def reconcile_foreign_write(directory: Path) -> int:
     return changed
 
 
-def store_index_document(directory: Path) -> dict[str, Any] | None:
+def store_index_document(directory: Path) -> Mapping[str, Any] | None:
     """The store's index document, as current as its writers have left it.
 
     The document is probed against the store directory's identity, which is the
@@ -2335,7 +2356,7 @@ def store_index_document(directory: Path) -> dict[str, Any] | None:
     return document
 
 
-def _settled_index_document(directory: Path) -> dict[str, Any] | None:
+def _settled_index_document(directory: Path) -> Mapping[str, Any] | None:
     """Read the document and bring it up to date with the store it describes."""
     document = _read_index_document(directory)
     if document is not None:
@@ -2354,7 +2375,8 @@ def _settled_index_document(directory: Path) -> dict[str, Any] | None:
     except OSError:
         return None
     with _index_lock(directory):
-        document = _read_index_document(directory)
+        # Another process may have written while this one waited for the lock.
+        document = _fresh_index_document(directory)
         if document is None:
             document = _rebuild_index_document(directory)
             _persist_index_document(directory, document)
