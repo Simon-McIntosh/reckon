@@ -418,7 +418,7 @@ def _dispatch_gate_owed(
     repo: str,
     options: Mapping[str, Any],
 ) -> str | None:
-    """The dispatch gate's verdict for a request that recorded no contract."""
+    """The gate's verdict when reusable review evidence cannot be read."""
     from reckon.crew import routing
 
     try:

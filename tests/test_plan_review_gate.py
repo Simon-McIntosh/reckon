@@ -349,15 +349,10 @@ def test_report_only_mode_records_an_unanswered_finding_by_name(
     assert any(finding_id in warning for warning in warnings)
 
 
-def test_dry_run_names_the_plan_review_error_key(
+def test_dry_run_previews_the_plan_review_hold(
     reviewed_project: tuple[Path, Path, Path], monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """A validating dry run points at the review, not at the plan's mounts.
-
-    The same condition answered ``plan-unavailable`` on this path while the
-    launching path answered ``plan-review-missing``, so an operator diagnosing
-    with --dry-run was sent to the mounts for what was a missing review.
-    """
+    """A preview reports the same review hold a real dispatch stores."""
     _config_home, repo, _plan_path = reviewed_project
     monkeypatch.setattr(
         crew_dispatch_commands,
@@ -388,6 +383,9 @@ def test_dry_run_names_the_plan_review_error_key(
             "pytest reports one passing plan review gate case",
             "--write-path",
             "src/change.py",
+            "--route",
+            "deterministic",
+            "--no-watch",
             "--session",
             "dry-run-session",
             "--repo",
@@ -397,22 +395,20 @@ def test_dry_run_names_the_plan_review_error_key(
     )
 
     payload = json.loads(result.stdout.splitlines()[0])
-    assert result.exit_code == 4
-    assert payload["error"] == "plan-review-missing"
+    assert result.exit_code == 0, result.output
+    assert payload["phase"] == "held"
+    assert payload["reason"] == "plan-review-owed"
+    assert payload["would_queue"] is True
     assert "fixture" in payload["detail"]
+    from reckon.crew import runs
+
+    assert runs.list_live(project="sample") == []
 
 
-def test_launch_path_names_the_plan_review_error_key(
+def test_launch_path_stores_the_plan_review_hold(
     reviewed_project: tuple[Path, Path, Path], monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """The launching path reports the missing review under the same key.
-
-    The dry-run case beside this one asserts the mapping on the validating
-    branch; the launching branch is a separate ``except`` clause, so a change
-    to one would leave the other answering a different error key. No worker is
-    spawned: the review gate refuses inside ``plan_dispatch``, before a
-    worktree, pointer or ledger row exists.
-    """
+    """Review debt queues held without launching a worker."""
     _config_home, repo, _plan_path = reviewed_project
     monkeypatch.setattr(
         crew_dispatch_commands,
@@ -443,6 +439,9 @@ def test_launch_path_names_the_plan_review_error_key(
             "pytest reports one passing plan review gate case",
             "--write-path",
             "src/change.py",
+            "--route",
+            "deterministic",
+            "--no-watch",
             "--session",
             "launch-session",
             "--repo",
@@ -451,9 +450,17 @@ def test_launch_path_names_the_plan_review_error_key(
     )
 
     payload = json.loads(result.stdout.splitlines()[0])
-    assert result.exit_code == 4
-    assert payload["error"] == "plan-review-missing"
+    assert result.exit_code == 0, result.output
+    assert payload["queued"] is True
+    assert payload["phase"] == "held"
+    assert payload["reason"] == "plan-review-owed"
     assert "fixture" in payload["detail"]
+    assert "plan_reviews" in payload
+    from reckon.crew import runs
+
+    pointer = runs.read_pointer(payload["run_id"])
+    assert pointer["queue_hold"]["detail"] == payload["detail"]
+    assert not pointer.get("worktree")
 
 
 def test_dry_run_in_report_only_mode_admits_and_carries_the_warning(

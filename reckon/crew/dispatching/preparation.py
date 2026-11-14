@@ -180,6 +180,13 @@ def _queue_review_held_request(
         "run_id": pointer["run_id"],
         "position": position,
         "phase": pointer["phase"],
+        "queued": pointer["phase"]
+        in (
+            queue_admission.QUEUED_PHASE,
+            queue_admission.HELD_PHASE,
+            *queue_admission.WAITING_UPSTREAM_PHASES,
+        ),
+        "backend": resolution.backend,
         "reason": hold.get("reason"),
         "detail": hold.get("detail"),
         "waits": list(refs),
