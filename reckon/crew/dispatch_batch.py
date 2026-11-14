@@ -759,13 +759,17 @@ def _queue_batch(
     ``ok`` field is true only when every entry was stored, while a refused
     entry leaves the rest of the batch stored either way.
     """
-    from reckon.crew import queue_admission
+    from reckon.crew import queue_admission, section_holds
     from reckon.crew.dispatch import queue_requests as queue_one
     from reckon.crew.dispatch_admission import node_context_fit_finding
-    from reckon.crew.runs import new_run_id, read_pointer, run_dir
+    from reckon.crew.runs import list_live, new_run_id, read_pointer, run_dir
 
     root = Path(repo_root).expanduser().resolve()
     plans = _Plans(root)
+    try:
+        live_pointers = list_live()
+    except Exception:  # noqa: BLE001 - an unreadable live set holds nothing
+        live_pointers = []
     results: list[dict[str, Any]] = []
     refused = 0
 
@@ -827,6 +831,31 @@ def _queue_batch(
             # before `queue_one` writes a pointer, so the row that comes back
             # names the estimate and the window the entry could not meet.
             work_repository = plans.read(project, node.plan).repo_root
+            # A node a run has already delivered is not new work: queueing it
+            # again is the duplicate a deep queue exists to avoid. The hold is
+            # per node, so the section's other nodes are unaffected, and the
+            # answer names the run that holds this one.
+            held = section_holds.held_node_rows(
+                project,
+                work_repository,
+                live_pointers,
+                plan=node.plan,
+                section=node.section,
+                node=node.id,
+            )
+            if held:
+                results.append(
+                    {
+                        "index": index,
+                        "node": node.id,
+                        "project": project,
+                        "plan": node.plan,
+                        "section": node.section,
+                        "status": "held",
+                        "held_by": [dict(row) for row in held],
+                    }
+                )
+                continue
             fit = node_context_fit_finding(
                 node,
                 project=project,
@@ -890,9 +919,13 @@ def _queue_batch(
             refuse(index, entry, str(exc))
 
     results.sort(key=lambda row: int(row["index"]))
+    # A held entry stored no request, so it is neither queued nor refused: it is
+    # answered, and the answer is the run that already holds its node.
+    held_count = sum(1 for row in results if row.get("status") == "held")
     return {
         "ok": refused == 0,
-        "queued": len(results) - refused,
+        "queued": len(results) - refused - held_count,
+        "held": held_count,
         "refused": refused,
         "results": results,
     }
