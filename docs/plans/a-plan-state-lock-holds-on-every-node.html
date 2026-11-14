@@ -8,7 +8,7 @@
   <meta name="plan-slug" content="a-plan-state-lock-holds-on-every-node">
   <meta name="plan-title" content="A plan-state lock holds on every node">
   <meta name="plan-summary" content="Plan-state locks are flock, which GPFS grants per node, so a reader on another node can undo half a sprint move; make them exclude everywhere, the reply true.">
-  <meta name="plan-status" content="active">
+  <meta name="plan-status" content="done">
   <meta name="plan-roi" content="high">
   <meta name="plan-effort-hours" content="6.0">
   <meta name="plan-capability-version" content="1.0">
@@ -24,7 +24,7 @@
   <title>A plan-state lock holds on every node | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="16">
+<meta name="plan-version" content="17">
 <meta name="plan-modified" content="2026-11-14">
 </head>
 <body>
@@ -108,10 +108,11 @@
     <pre class="r-fu-prompt">/reckon-build a-plan-state-lock-holds-on-every-node §2</pre>
     <p class="r-fu-outcome">§2 (cross-node lock) and §3 (sprint-move reply) landed on main on 2026-11-13; evidence is in the landed record.</p>
     </article>
-<article class="r-fu" data-id="f-apsl-002" data-status="open" data-written-by="coordinator 047d83aa" data-written-at="2026-11-13" data-recommends-skill="/reckon-build a-plan-state-lock-holds-on-every-node §4" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-apsl-002" data-status="resolved" data-written-by="coordinator 047d83aa" data-written-at="2026-11-13" data-recommends-skill="/reckon-build a-plan-state-lock-holds-on-every-node §4" data-resolved-at="2026-11-14T08:06:09+00:00" data-resolved-by="">
     <h4 class="r-fu-title">Census every flock and finish the move reply</h4>
     <div class="r-fu-body"><p>§4's census node is released now that §2 has landed. The §3 follow-up node <code>move-reply-keeps-its-verdict-on-a-failed-read</code> runs on the landed base. Land both and close the plan.</p></div>
     <pre class="r-fu-prompt">/reckon-build a-plan-state-lock-holds-on-every-node §4</pre>
+    <p class="r-fu-outcome">done — no followup. §4's census and the §3 repair both landed on main on 2026-11-14. The 20 shared-home locks the census found need the cross-node lock; that is new work for its own plan.</p>
     </article>
 </section>
 
