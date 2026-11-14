@@ -24,7 +24,7 @@
   <title>Work Flows To The Lane | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="221">
+<meta name="plan-version" content="222">
 <meta name="plan-modified" content="2026-11-14">
 </head>
 <body>
@@ -886,6 +886,12 @@
 <div class="r-comment" data-section="s51" data-id="c-run-r-20261114T081039880525-fleet-migration-carries-backend-environment" data-who="reckon-build" data-when="2026-11-14T08:51:30.824Z">
     <div class="r-comment-body"><p>A fleet hold now exports a PATH composed of the submitting environment plus every directory the flight declares for a backend, so a hold submitted from a /usr/bin:/bin shell still starts sessions that resolve codex (/home/ITER/mcintos/.npm/packages/bin/codex), and the migration refuses to promote a standby allocation in which a declared backend command does not resolve, naming the command and the allocation and leaving the fleet record unchanged; gate 55 passed EXIT=0 at head against 51 passed EXIT=0 at base on all_debug.</p></div>
 </div>
+<div class="r-comment" data-section="s53" data-id="c-run-r-20261114T094702490286-review-of-worker-writes-anywhere-but-unmergeable-paths-4153aaf5a4f8" data-who="reckon-build" data-when="2026-11-14T10:03:46.849Z">
+    <div class="r-comment-body"><p>Reviewed r-20261114T082600855170-worker-writes-anywhere-but-unmergeable-paths at head 4153aaf5a4f85fed3cc3bf720acf6f17b71c8f96 against base 9c8632ca0b992790566bc487862f2c9be6f8906d; the parsed record scores all six dimensions and carries two non-blocking findings (an unsealed absent exclusive directory, and an unsupported all_debug claim in the evidence fragment).</p></div>
+</div>
+<div class="r-comment" data-section="s53" data-id="c-run-r-20261114T082600855170-worker-writes-anywhere-but-unmergeable-paths" data-who="reckon-build" data-when="2026-11-14T09:13:19.393Z">
+    <div class="r-comment-body"><p>A node with no declared write paths is granted its whole worktree except the paths git cannot merge: the fence seals plan documents, generated state, cumulative evidence records, figure topic directories and dependency locks inside the worktree after its writable grants, and the composed launch records the pattern governing each sealed path. A node that declares write paths seals none of them. The node test file passes 59 tests at the head (8 new), and the negative control that removes the worktree grant is red on two ids the head arm does not fail.</p></div>
+</div>
 <div class="r-comment" data-section="s54" data-id="c-run-r-20261114T090648364970-review-of-armed-suite-and-review-scope-from-the-diff-756a364cbda9" data-who="reckon-build" data-when="2026-11-14T09:19:40.454Z">
     <div class="r-comment-body"><p>s54 review — the reviewed change derives a delivered run's armed command, importer population and review neighbourhood from its diff in reckon/crew/delivery_scope.py and arms the measured suite from that derivation at reckon/crew/queue_landing.py:1136; recorded 17/15/19/13/18/20 over goal_fidelity/evidence/scope_discipline/durability/fit/reuse, 0 added failures, three non-blocking findings (untested production wiring, a second done_when case that edits two files rather than one, and an armed_command docstring claim that census tests break).</p></div>
 </div>
@@ -936,9 +942,6 @@
 </div>
 <div class="r-comment" data-section="s8" data-id="c-close-s8" data-who="reckon-build" data-when="2026-11-12T02:20:00Z">
     <div class="r-comment-body"><p>§8 landed at <code>ff797f0c45</code>. <a href="/reckon/evidence/archive/work-flows-to-the-lane-landed.html#s8-re-review-need-in-shadow">evidence</a></p></div>
-</div>
-<div class="r-comment" data-section="s53" data-id="c-run-r-20261114T094702490286-review-of-worker-writes-anywhere-but-unmergeable-paths-4153aaf5a4f8" data-who="reckon-build" data-when="2026-11-14T10:03:46.849Z">
-    <div class="r-comment-body"><p>Reviewed r-20261114T082600855170-worker-writes-anywhere-but-unmergeable-paths at head 4153aaf5a4f85fed3cc3bf720acf6f17b71c8f96 against base 9c8632ca0b992790566bc487862f2c9be6f8906d; the parsed record scores all six dimensions and carries two non-blocking findings (an unsealed absent exclusive directory, and an unsupported all_debug claim in the evidence fragment).</p></div>
 </div>
 </section>
 </main>
