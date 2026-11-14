@@ -45,14 +45,16 @@
         <td>the writer stamps the moment the request enters the queue</td></tr>
     </tbody>
   </table>
-  <p>The gate ran on <code>all_debug</code>:
-  <code>PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q
-  tests/test_the_admission_pass_survives_a_pointer_without_its_time.py
-  tests/test_unreadable_queued_pointer_never_fails_ordering.py
-  tests/test_staged_write_inventory.py</code> — 60 passed, 1 failed, whose one
-  failing id
-  (<code>test_the_pass_admits_the_placed_requests_and_names_the_unplaceable_one</code>)
-  fails identically at the base revision, so the change adds no failure. The
+  <p>The gate ran on <code>all_debug</code> over
+  <code>tests/test_a_queued_pointer_without_its_time_reads_no_place.py</code>,
+  <code>tests/test_the_admission_pass_survives_a_pointer_without_its_time.py</code>,
+  <code>tests/test_unreadable_queued_pointer_never_fails_ordering.py</code> and
+  <code>tests/test_staged_write_inventory.py</code>: 62 passed and 2 failed at
+  this head, against 55 passed and the same 2 failed at the base revision. The
+  two ids
+  (<code>test_the_live_view_lists_the_unplaceable_run_as_queued</code> and
+  <code>test_the_pass_admits_the_placed_requests_and_names_the_unplaceable_one</code>)
+  fail identically at the base revision, so the change adds no failure. The
   declared negative control restores the raise and ends 2 failed, with both the
   ordering case and the review-placement case red.</p>
   <p>The case in
