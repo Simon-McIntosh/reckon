@@ -929,7 +929,11 @@ def queue_dispatch(
                                 "retry dispatch"
                             )
                         record["run_id"] = existing_run_id
-                        record["queued_at"] = current["queued_at"]
+                        from reckon.crew.queue_order import readable_queued_at
+
+                        record["queued_at"] = readable_queued_at(
+                            current, now=datetime.now(UTC)
+                        )
                         record["created_at"] = current["created_at"]
                         record = _merged_requeue(current, record)
                         requeued = True
@@ -977,6 +981,15 @@ def queue_dispatch(
                         if session_held >= cap:
                             raise QueueFull(session=session, held=session_held, cap=cap)
                 run_id = str(record["run_id"])
+                # The queue is ordered by arrival, so a pointer is never
+                # written without an arrival every reader can parse: a caller
+                # that supplies none has this writer's moment stamped in. One
+                # unplaceable pointer would otherwise stop every ordering pass.
+                from reckon.crew.queue_order import readable_queued_at
+
+                record["queued_at"] = readable_queued_at(
+                    record, now=datetime.now(UTC)
+                )
                 with _pointer_lock(run_id):
                     _write_json(pointer_path(run_id), record)
             # A request is checked for review when it enters the queue: the

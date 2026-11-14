@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from ..queue_order import readable_queued_at
+
 from . import holds as _holds
 from . import service as _service
 from . import verdicts as _verdicts
@@ -605,6 +607,7 @@ def _requeued_request(request: Mapping[str, Any], run_id: str) -> dict[str, Any]
     restored = copy.deepcopy(dict(request))
     restored["run_id"] = str(run_id)
     restored["phase"] = "queued"
+    restored["queued_at"] = readable_queued_at(restored, now=_service._now())
     return restored
 
 
@@ -628,7 +631,6 @@ def _requeue_admitted_failures(
         failures = list(pointer.get("launch_failures") or ())
         failure = dict(failures[-1]) if failures else {}
         restored = _requeued_request(request, str(pointer["run_id"]))
-        restored["queued_at"] = _service._utc_now()
         restored.setdefault("created_at", restored["queued_at"])
         # Stamp the re-queue with the same back-off a failed attempt records, so
         # a request that keeps failing on launch is attempted once per back-off
@@ -736,6 +738,7 @@ def _restore_queued(
         return
     restored = copy.deepcopy(dict(snapshot))
     restored["phase"] = "queued"
+    restored["queued_at"] = readable_queued_at(restored, now=moment or _service._now())
     if hold is None:
         _holds._stamp_failure(
             restored, failure, moment=moment or _service._now(), guard=guard
