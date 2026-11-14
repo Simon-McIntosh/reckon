@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>A raced promotion still lands its head</title>
+<meta name="docs-project" content="reckon">
+</head>
+<body>
+<main class="plan-doc">
+
+<h2 id="raced-promotion-lands-s11-summary">Two promotions of one implementation</h2>
+
+<p id="raced-promotion-lands-s11-defect">A run that has already been promoted once can be promoted again by a second caller before its head is on the branch. The second promotion reaches a ledger row another writer already wrote, and the code that answers that case re-raised out of the pointer removal instead of returning to the caller&rsquo;s landing step. The caller then reported &ldquo;the ledger row for run &hellip; is already written; do not re-promote&rdquo; and never ran the merge, so the reviewed head stayed off <code>main</code> while the pointer was left marked <code>pending_landing_repair</code>. The row was written; the work was not landed.</p>
+
+<p id="raced-promotion-lands-s11-reproduce">The race was reproduced directly at base revision <code>63b51b8337c4</code>: two <code>crew complete --land</code> promotions of one reviewed head, the second starting after the other writer&rsquo;s ledger row exists, with the station rewriting the live pointer to <code>promotion-requested</code> while the promotion runs. The call exits 1 with the message above; the head is not an ancestor of <code>main</code> and the pointer still names the run.</p>
+
+<h2 id="raced-promotion-lands-s11-change">The change</h2>
+
+<p id="raced-promotion-lands-s11-identity">The pointer comparison that raised was comparing the whole pointer, including <code>phase</code>. A phase is not part of the identity of an attempt: the station rewrites it to <code>promotion-requested</code> while the attempt it belongs to is still running, so a mark made during a promotion reads as a race. The comparison now names four fields &mdash; <code>attempt</code>, <code>attempt_kind</code>, <code>pid</code> and <code>pid_start_time</code>, the fields that say which attempt wrote the pointer &mdash; and a pointer a newer attempt wrote is still kept, which is what a resume depends on.</p>
+
+<p id="raced-promotion-lands-s11-lands">A promotion that finds the other writer&rsquo;s row now finishes the landing itself. It records the merge it owes in the pending-landing store, retires the pointer when the pointer still belongs to its own attempt, and returns to the caller, whose landing step merges the reviewed head and clears the pending record on success &mdash; the same merge the winning writer would have run. That branch never raises: the run is either landed and retired in this call, or left with a pending record and a live pointer that the next landing pass completes.</p>
+
+<h2 id="raced-promotion-lands-s11-measure">Measure</h2>
+
+<p id="raced-promotion-lands-s11-measure-case">The case is <code>tests/test_a_raced_promotion_still_lands.py</code>, over a temporary origin, checkout, worktree and crew home. It asserts that when the second call returns, the reviewed head is an ancestor of <code>main</code>, the live pointer is gone, no pending record is left, and neither call raised. A second case moves the pointer onto a newer attempt mid-promotion and asserts the newer attempt keeps its pointer while the head still lands.</p>
+
+<p id="raced-promotion-lands-s11-measure-base">At the base revision, with the new test file copied into a tree of that revision, the file reports <strong>2 failed</strong>, exit 1. Both failures are the same exit, and the first is the defect verbatim from the run above: <code>Error: the ledger row for run 'r-20261114T094542374628-a-raced-promotion' is already written; do not re-promote. Landing or cleanup failed: &hellip; its pointer is kept, marked pending_landing_repair</code>. The case bites at base, in the direction the section describes.</p>
+
+<p id="raced-promotion-lands-s11-measure-head">At the head the same file, beside the node&rsquo;s two importer files, reports <strong>57 passed</strong>, exit 0, in 28.35 s, imported from the worktree&rsquo;s own <code>reckon/crew/promotion.py</code>. The base arm, the node&rsquo;s two importer files over a tree of <code>63b51b8337c4</code>, reports **55 passed**, exit 0, in 29.74 s.</p>
+
+<h2 id="raced-promotion-lands-s11-control">Negative control</h2>
+
+<p id="raced-promotion-lands-s11-control-note">Removing the loser&rsquo;s landing step from the head revision &mdash; the block that records the owed merge, retires the pointer when it is still this attempt&rsquo;s, and returns to the caller &mdash; turns the same file red again: <strong>2 failed</strong>, exit 1, and both failures are the exit quoted above. The mutant reports the ledger row already written and the pointer kept as <code>pending_landing_repair</code> rather than landing the head, so the case is measuring the landing step and nothing else it depends on.</p>
+
+</main>
+</body>
+</html>
