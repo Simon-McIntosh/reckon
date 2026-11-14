@@ -258,7 +258,7 @@ def test_one_listing_answers_every_run_and_an_unchanged_tick_reads_no_review(
         "enumerations": 1,
         **dict.fromkeys((f"read:{run_id}" for run_id in paths), 1),
     }, "the instrument must see every run's review exactly once on the first tick"
-    assert second == {"enumerations": 1}
+    assert second == {}
 
 
 def test_an_unchanged_tick_stats_no_review_file_per_run(reviewed_store):
@@ -295,7 +295,7 @@ def test_an_in_place_rewrite_is_read_on_the_next_tick(reviewed_store):
 
     first, second = _ticks(paths, counts, rewrite)
     assert first["enumerations"] == 1
-    assert second == {"enumerations": 1, f"read:{run_id}": 1}
+    assert second == {f"read:{run_id}": 1}
     assert observed[run_id]["scores"]["goal_fidelity"] == 5
 
 
@@ -313,7 +313,7 @@ def test_an_atomic_replacement_rereads_only_its_run(reviewed_store):
 
     first, second = _ticks(paths, counts, replace)
     assert first["enumerations"] == 1
-    assert second == {"enumerations": 1, f"read:{run_id}": 1}
+    assert second == {f"read:{run_id}": 1}
     assert observed[run_id]["scores"]["goal_fidelity"] == 6
 
 
@@ -353,7 +353,7 @@ def test_annotation_inputs_change_the_next_tick_answer(reviewed_store, changed_i
         assert recovery_memo._file_identity(paths[run_id]) == record_identity
 
     _first, second = _ticks(paths, counts, rewrite)
-    assert second == {"enumerations": 1, f"read:{run_id}": 1}
+    assert second == {f"read:{run_id}": 1}
     assert observed[run_id]["added_failure_count"] == 1
     assert observed[run_id]["added_failure_ids"] == [failure_id]
     assert observed[run_id]["total"] == review.ADDED_FAILURES_TOTAL_CAP
@@ -380,7 +380,7 @@ def test_a_live_runs_growing_stream_reads_no_review(reviewed_store):
         "enumerations": 1,
         **dict.fromkeys((f"read:{run_id}" for run_id in paths), 1),
     }
-    assert second == {"enumerations": 1}
+    assert second == {}
 
 
 def test_two_threads_missing_at_once_raise_nothing(reviewed_store, monkeypatch):

@@ -6,9 +6,8 @@ tree. This module owns that family: reading a run's record from the committed
 tree first and the staging store after, selecting the copy a named head names,
 unioning the disposition and answer fields every copy of one review run holds,
 writing a record and committing that write, and the store index that answers a
-misfiled lookup and a delivered-plan-review lookup from one listing per store
-directory, updated in place when a file is added, changed or removed and
-persisted in a node-local cache the node's other processes start from.
+misfiled lookup and a delivered-plan-review lookup. Staging stores keep a
+shared writer-maintained index; committed directories use a node-local cache.
 
 The store resolves its directories through :mod:`reckon.crew.review` and shares
 its schema constants and revision helpers with it, so those names are imported
@@ -35,9 +34,9 @@ from typing import Any
 from reckon import file_memo
 from reckon.crew import open_run_index
 
-# Each producer tick freezes the store's names and per-file identities once.
-# Parsed bytes use the shared bounded memo; the next tick revalidates every
-# file, including rewrites that leave the directory identity unchanged.
+# Each producer tick freezes the store's names and indexed content hashes.
+# Parsed bytes use the shared bounded memo; writer updates move the next tick's
+# key without stat-ing every record.
 _TICK_REVIEW_STORES: ContextVar[dict[Path, dict[Path, os.stat_result]] | None] = (
     ContextVar("tick_review_stores", default=None)
 )
@@ -51,7 +50,7 @@ _TICK_INDEX_DOCUMENTS: ContextVar[dict[Path, Any] | None] = ContextVar(
 
 @contextmanager
 def review_store_tick() -> Iterator[None]:
-    """Share one enumeration per store among all review readers in a tick."""
+    """Share one index snapshot per store among review readers in a tick."""
     stores_token = _TICK_REVIEW_STORES.set({})
     indexes_token = _TICK_REVIEW_INDEXES.set({})
     documents_token = _TICK_INDEX_DOCUMENTS.set({})
@@ -171,10 +170,11 @@ def _record_exists(path: Path) -> bool:
 
 
 def _record_identity(path: Path) -> str:
-    # This is the one place a reader stats a record, and it stats only the files
-    # it names: a record rewritten in place at a path the index already holds
-    # does not move the directory the index is probed against, so the file's own
-    # identity is what carries that rewrite into a memo key.
+    document = store_index_document(path.parent)
+    if document is not None:
+        entry = document.get("entries", {}).get(path.name)
+        return str(entry.get("sha256") or "unreadable") if entry else "absent"
+    # Committed records are outside the writer-maintained staging index.
     try:
         return ":".join(map(str, file_memo.signature_from_stat(path.stat())))
     except OSError:
@@ -2056,13 +2056,14 @@ def _entries_from_listing(directory: Path) -> dict[str, Any]:
         try:
             data = path.read_bytes()
         except OSError:
+            entries[name] = _entry_facts(name, {}, b"")
             continue
         try:
             record = json.loads(data)
         except ValueError:
-            continue
+            record = {}
         if not isinstance(record, Mapping):
-            continue
+            record = {}
         entries[name] = _entry_facts(name, record, data)
     return entries
 
@@ -2076,6 +2077,7 @@ def _directory_mtime_ns(directory: Path) -> int | None:
 
 def _rebuild_index_document(directory: Path) -> dict[str, Any]:
     """Rebuild the whole document from one listing of the store."""
+    mtime = _directory_mtime_ns(directory)
     entries = _entries_from_listing(directory)
     runs = {run: _run_digest(entries, run) for run in _runs_of(entries)}
     for index, name in enumerate(sorted(entries), start=1):
@@ -2092,7 +2094,7 @@ def _rebuild_index_document(directory: Path) -> dict[str, Any]:
         ],
         "entries": entries,
         "runs": runs,
-        "dir_mtime_ns": _directory_mtime_ns(directory),
+        "dir_mtime_ns": mtime,
     }
 
 
@@ -2103,6 +2105,8 @@ def _runs_of(entries: Mapping[str, Any]) -> set[str]:
 def _index_stored_record(path: Path, record: Mapping[str, Any]) -> None:
     """Advance the store's index for one record this process has just written."""
     directory = path.parent
+    if not _indexable(directory):
+        return
     try:
         data = path.read_bytes()
     except OSError:
@@ -2192,13 +2196,13 @@ def reconcile_foreign_write(directory: Path) -> int:
             try:
                 data = path.read_bytes()
             except OSError:
-                continue
+                data = b""
             try:
                 record = json.loads(data)
             except ValueError:
-                continue
+                record = {}
             if not isinstance(record, Mapping):
-                continue
+                record = {}
             entry = _entry_facts(name, record, data)
             doc["version"] = int(doc.get("version") or 0) + 1
             entry["entry_version"] = doc["version"]
@@ -2404,11 +2408,10 @@ def _indexed_record_stat(entry: Mapping[str, Any]) -> _IndexedStat:
 def review_entries_signature(project: str, reviewed_run_id: str) -> tuple[Any, ...]:
     """The current identities of one reviewed run's indexed record files.
 
-    The index updates after an atomic store write moves the directory. Another
-    run's new record leaves this run's key unchanged. A same-path rewrite does
-    not move the directory, so each indexed file is stat'ed without reading its
-    contents; a changed file then changes this run's key. The committed
-    directory is included because promotion can replace staging as the source.
+    A staging record written through the store moves its run's digest. Another
+    run's new record leaves this key unchanged. Records outside the indexed
+    staging store use their file identities. The committed directory is included
+    because promotion can replace staging as the source.
     """
     directory = _review.review_store_root() / project
     digest = store_index_run_digest(directory, reviewed_run_id)
