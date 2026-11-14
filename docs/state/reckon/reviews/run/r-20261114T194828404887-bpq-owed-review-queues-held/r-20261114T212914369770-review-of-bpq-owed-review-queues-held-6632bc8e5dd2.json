@@ -1,0 +1,68 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/crew_dispatch_commands.py:2031",
+    "reckon/crew_dispatch_commands.py:2286",
+    "reckon/crew/dispatch_plan.py:916",
+    "reckon/crew/dispatching/preparation.py:469",
+    "reckon/crew/admission/reviews.py:312",
+    "reckon/crew/dispatching/requests.py:251",
+    "reckon/crew/admission/release.py:555",
+    "reckon/crew/dispatch_batch.py:876",
+    "reckon/crew/resumption.py:2854"
+  ],
+  "completed_at": "2026-11-14T21:54:13Z",
+  "dimension_dispositions": {
+    "reuse": {
+      "kind": "folded",
+      "node": "bpq-owed-review-queues-held",
+      "recorded_at": "2026-11-14T22:04:13.631421+00:00"
+    }
+  },
+  "dispatched_at": "2026-11-14T21:36:42Z",
+  "findings": [
+    {
+      "description": "The inline design-review filter and plan-version ordering duplicate the existing selector in reckon/crew/plan_review.py:1814 and can drift.",
+      "disposition": "exempted",
+      "disposition_reason": "The predicate and ordering currently match exactly, and changing the owner's input contract can be a separate refactor.",
+      "file": "reckon/crew/admission/reviews.py",
+      "line": 272,
+      "severity": "non-blocking",
+      "text": "The inline design-review filter and plan-version ordering duplicate the existing selector in reckon/crew/plan_review.py:1814 and can drift."
+    }
+  ],
+  "justifications": {
+    "durability": "tests/test_owed_plan_reviews_queue_held.py:127-214 fails if requests are not held, reviews are duplicated, review storage does not release them, or an answered finding leaves its section held.",
+    "evidence": "focused-gate.log:1-8 records the required temporary-repository gate at revision 630b0fd7101e32ad1ebf15dc08d9904a85882f64 with 147 passed and EXIT=0, while negative-control-final.log:4-68 records the base refusal and failing test.",
+    "fit": "reckon/crew/dispatching/preparation.py:130 uses a capability-named helper and the changed source adds no plan-stage or version labels to code names.",
+    "goal_fidelity": "reckon/crew/dispatching/preparation.py:469 queues an implementation request when the review gate owes review, then composes the plan's owed reviews at lines 169-174.",
+    "reuse": "reckon/crew/admission/reviews.py:272 duplicates the latest design-review selector owned by reckon/crew/plan_review.py:1814 rather than extending that owner to accept cached records.",
+    "scope_discipline": "The final live write grants contain the changed reckon/ and tests/ paths and the section evidence fragment, including reckon/crew/dispatching/preparation.py:130."
+  },
+  "project": "reckon",
+  "review_run_id": "r-20261114T212914369770-review-of-bpq-owed-review-queues-held-6632bc8e5dd2",
+  "review_text": "VERDICT goal: the plan's \u00a73 deliverable is to queue sections held while review is owed and compose missing reviews; reckon/crew/dispatching/preparation.py:469 routes single dispatch through that behavior, while reckon/crew/dispatching/requests.py:251 covers batch queueing.\nVERDICT done_when: the focused gate covers no-review holds and composition, admission release, unanswered-finding holds and release, and duplicate prevention; focused-gate.log:7-8 records 147 passed and EXIT=0, and the base control records the dispatch refusal.\nVERDICT write_paths: the final live declaration grants reckon/, tests/, the section evidence directory and skills/reckon-build/; the six-commit diff stays within those grants.\nVERDICT manifest: the source manifest records six commits, the literal focused-gate command and logs, completed base/head suite arms, and the negative-control result.\nVERDICT diff: read all six commits from bc316766333df704e7a671de195467dc836ab4b1 through 6632bc8e5dd2b75a2ed5326bc25b865450060fb1; implementation, tests and evidence stay within the grants, with one selector-duplication finding at reckon/crew/admission/reviews.py:272.\nCALL_SITES: reckon/crew_dispatch_commands.py:2031, reckon/crew_dispatch_commands.py:2286, reckon/crew/dispatch_plan.py:916, reckon/crew/dispatching/preparation.py:469, reckon/crew/admission/reviews.py:312, reckon/crew/dispatching/requests.py:251, reckon/crew/admission/release.py:555, reckon/crew/dispatch_batch.py:876, reckon/crew/resumption.py:2854\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/dispatching/preparation.py:469 queues an implementation request when the review gate owes review, then composes the plan's owed reviews at lines 169-174.\nSCORE evidence: 20\nJUSTIFICATION evidence: focused-gate.log:1-8 records the required temporary-repository gate at revision 630b0fd7101e32ad1ebf15dc08d9904a85882f64 with 147 passed and EXIT=0, while negative-control-final.log:4-68 records the base refusal and failing test.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the final live write grants contain the changed reckon/ and tests/ paths and the section evidence fragment, including reckon/crew/dispatching/preparation.py:130.\nSCORE durability: 20\nJUSTIFICATION durability: tests/test_owed_plan_reviews_queue_held.py:127-214 fails if requests are not held, reviews are duplicated, review storage does not release them, or an answered finding leaves its section held.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/crew/dispatching/preparation.py:130 uses a capability-named helper and the changed source adds no plan-stage or version labels to code names.\nSCORE reuse: 5\nJUSTIFICATION reuse: reckon/crew/admission/reviews.py:272 duplicates the latest design-review selector owned by reckon/crew/plan_review.py:1814 rather than extending that owner to accept cached records.\nFINDING reckon/crew/admission/reviews.py:272 non-blocking: the inline design-review filter and plan-version ordering duplicate the existing selector in reckon/crew/plan_review.py:1814 and can drift; disposition: exempted because the predicate and ordering currently match exactly, and changing the owner's input contract can be a separate refactor.",
+  "reviewed_base_sha": "bc316766333df704e7a671de195467dc836ab4b1",
+  "reviewed_head_sha": "6632bc8e5dd2b75a2ed5326bc25b865450060fb1",
+  "reviewed_run_id": "r-20261114T194828404887-bpq-owed-review-queues-held",
+  "scores": {
+    "durability": 20,
+    "evidence": 20,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "reuse": 5,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-14T22:06:54.928619+00:00",
+  "total": 104,
+  "verdicts": {
+    "diff": "Read all six commits from bc316766333df704e7a671de195467dc836ab4b1 through 6632bc8e5dd2b75a2ed5326bc25b865450060fb1; implementation, tests and evidence stay within the grants, with one selector-duplication finding at reckon/crew/admission/reviews.py:272.",
+    "done_when": "The focused gate covers no-review holds and composition, admission release, unanswered-finding holds and release, and duplicate prevention; focused-gate.log:7-8 records 147 passed and EXIT=0, and the base control records the dispatch refusal.",
+    "goal": "The plan's \u00a73 deliverable is to queue sections held while review is owed and compose missing reviews; reckon/crew/dispatching/preparation.py:469 routes single dispatch through that behavior, while reckon/crew/dispatching/requests.py:251 covers batch queueing.",
+    "manifest": "The source manifest records six commits, the literal focused-gate command and logs, completed base/head suite arms, and the negative-control result.",
+    "write_paths": "The final live declaration grants reckon/, tests/, the section evidence directory and skills/reckon-build/; the six-commit diff stays within those grants."
+  }
+}
