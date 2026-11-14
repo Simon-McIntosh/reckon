@@ -25,7 +25,7 @@
   <title>Every shared-home lock holds across nodes | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="18">
+<meta name="plan-version" content="19">
 <meta name="plan-modified" content="2026-11-15">
 </head>
 <body>
@@ -194,6 +194,9 @@
 </div>
 <div class="r-comment" data-section="s3" data-id="c-close-s3" data-who="reckon-build" data-when="2026-11-15T00:20:00Z">
     <div class="r-comment-body"><p>Landed: the seven run, queue, landing and ledger lock sites take the cross-node lock, and their pending rows are gone. Re-review r-20261114T212841353303 found nothing blocking. Evidence is at anchor s3-run-landing-ledger-landed.</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20261114T135734165051-run-landing-ledger-locks-cross-node" data-who="reckon-build" data-when="2026-11-14T22:50:42Z">
+    <div class="r-comment-body"><p>Run, queue, watch-registration, landing-pass, admission-pass, reservation and ledger-write locks now take the cross-node record lock, and the guard&#x27;s seven rows for them are gone. A second process holding only the record lock refuses the pointer take and makes the landing pass busy, where the base revision sees the lock free and fails both. The repaired merge head is d260dbcaa9, after merges against primary a946964dd3 and 6eff5826; the delivery commits a355eac555, bcbe687be0 and e48cf2ab3b remain its ancestors.</p></div>
 </div>
 <div class="r-comment" data-section="s4" data-id="c-run-r-20261114T191620527558-review-of-git-answer-and-resumption-locks-cross-node-3766d298f9ef" data-who="reckon-build" data-when="2026-11-14T19:35:56.210Z">
     <div class="r-comment-body"><p>Independent review of run r-20261114T140151869239-git-answer-and-resumption-locks-cross-node at head 3766d298f9ef572879b95d0d7b2bf2be14cca8b0 against base ffcba6679c7cb5812709911217e6cf43ebbe9870 scored goal_fidelity 20, evidence 19, scope_discipline 20, durability 19, fit 13, reuse 19, with added_failure_count 0 and one non-blocking finding (four blank lines left in reckon/crew/resumption.py where the deleted lock context managers stood, so ruff format --check regresses on that file).</p></div>
