@@ -1,0 +1,73 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/crew_run_commands.py:428",
+    "reckon/crew/merge.py:533",
+    "reckon/crew/merge.py:1134",
+    "reckon/crew/promotion_scope.py:1900",
+    "reckon/crew/promotion_scope.py:2496",
+    "reckon/crew/promotion_scope.py:2629",
+    "reckon/ledger.py:3182",
+    "reckon/ledger.py:3216"
+  ],
+  "completed_at": "2026-11-14T20:14:07.497Z",
+  "dispatched_at": "2026-11-14T19:56:33Z",
+  "findings": [
+    {
+      "file": "reckon/crew/merge.py",
+      "line": "709",
+      "severity": "non-blocking",
+      "text": "_processes_holding re-implements the repository's process-holder scan owned by reckon/crew/gc.py:1713 (the same helper re-exported through reckon/crew/routing.py and used by reckon/crew/dispatch_sessions.py:2198) instead of extending or sharing that owner; the two now differ in semantics (gc matches a path or anything beneath it and returns a list of dicts, this one matches only the file and returns pids or None), so the repository has two drifting answers to one question."
+    },
+    {
+      "file": "reckon/crew/merge.py",
+      "line": "741",
+      "severity": "non-blocking",
+      "text": "_index_lock_age_seconds duplicates reckon/crew/promotion_scope.py:2029, which already computes the same checkout's index.lock age under the identical name and is the older owner; the copies differ in taking a lock path versus a checkout and in clamping negatives, so the age of one lock is now defined twice."
+    },
+    {
+      "file": "reckon/crew/promotion_scope.py",
+      "line": "1900",
+      "severity": "non-blocking",
+      "text": "every other caller of the shared wait helper (promotion_scope.py:1900, :2496, :2629 and ledger.py:3182, :3216) now clears a provably stale lock but passes no on_stale_removed, so those paths deletes a lock with nothing in the landing record naming it; the plan's 'one line naming the lock's age and that it was removed goes to the landing's own record' holds only for land_merge, as the landed fragment's scope note admits."
+    },
+    {
+      "file": "tests/test_a_lander_clears_a_stale_index_lock.py",
+      "line": "122",
+      "severity": "non-blocking",
+      "text": "the done_when's 'at the base revision the first case refuses' has no recorded arm: the base arm removes the new test rather than running it against the base reckon/crew/merge.py, so the reported defect's reproduction is inferred from the passing head case and no log quotes it; running the case against the base module and capturing its red EXIT would close it."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261114T174207045976-stale-index-lock-cleared-s10/manifest.md",
+      "line": "16",
+      "severity": "non-blocking",
+      "text": "the tests field is a prose description of the gate rather than the literal command a shell ran, which the delivery contract says promotion cannot re-run and refuses; the literal command survives only in each log's '# command:' header, so the field should be replaced with the head arm's exact command line before promotion."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "Read commit by commit against 1ce60abb857f: the one commit adds the stale-lock judgement and its helpers to reckon/crew/merge.py (149 insertions), adds the four-case test file (234 insertions) and adds the evidence fragment (104 insertions), with no change outside the three declared paths.",
+    "done_when": "The four cases exist at tests/test_a_lander_clears_a_stale_index_lock.py:122,152,179,214 and the negative control's 2-failed/EXIT=1 log shows the holder and mtime conditions each hold the matching case red; the importer arms record 23 identical failure ids with 318 passed base against 322 passed head; the one named measure with no recorded arm is 'at the base revision the first case refuses'.",
+    "goal": "The node goal is 'Clear an index lock whose holder is proven gone so a landing is never blocked by it'; reckon/crew/merge.py:748 implements exactly the three conditions the plan fixes (age >= STALE_INDEX_LOCK_AGE_SECONDS, unchanged signature across the retry window, no local holder from /proc), unlinks the lock at :832, retries once at :842 and records the removal at :1168-1176.",
+    "manifest": "Read the reviewed manifest: it records the single commit 7bb5a36264, the three changed paths, the base/after/negative/importer logs and their numbers, which all agree with each log's own summary line; its tests field is prose rather than the literal gate command, which is recorded as a finding.",
+    "write_paths": "The reviewed node was fenced to reckon/crew/merge.py, tests/test_a_lander_clears_a_stale_index_lock.py, the evidence fragment and a figures directory (prompt.txt:81-84); git diff --name-only 1ce60abb..7bb5a36264 names exactly the first three and nothing else."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to clear an index lock whose holder is proven gone so a landing is never blocked by it, and reckon/crew/merge.py:748 implements exactly the three conditions the plan fixes, unlinks the lock at :832, retries once at :842 and records the removal into the report at :1168-1176.\nVERDICT done_when: the four cases exist at tests/test_a_lander_clears_a_stale_index_lock.py:122,152,179,214, the negative control at negative-control-s10.log shows 2 failed EXIT=1 on the two declared mutations, and the importer arms record 23 identical failure ids with 318 passed base against 322 passed head -- the one named measure with no recorded arm is ''at the base revision the first case refuses''.\nVERDICT write_paths: the reviewed node was fenced to reckon/crew/merge.py, tests/test_a_lander_clears_a_stale_index_lock.py, the evidence fragment and a figures directory (prompt.txt:81-84), and git diff --name-only 1ce60abb857f..7bb5a3626416 names exactly the first three files.\nVERDICT manifest: read the reviewed manifest; it records commit 7bb5a36264, the three changed paths and the five gate logs, and its quoted counts agree with each log's own summary line -- its tests field is prose rather than the literal gate command, which is recorded as a finding.\nVERDICT diff: read the single commit 7bb5a36264 against base 1ce60abb857f; it adds 149 lines to reckon/crew/merge.py, the 234-line test file and the 104-line evidence fragment, and touches nothing outside the declared paths.\nCALL_SITES: reckon/crew_run_commands.py:428, reckon/crew/merge.py:533, reckon/crew/merge.py:1134, reckon/crew/promotion_scope.py:1900, reckon/crew/promotion_scope.py:2496, reckon/crew/promotion_scope.py:2629, reckon/ledger.py:3182, reckon/ledger.py:3216\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/merge.py:767 gates the age at STALE_INDEX_LOCK_AGE_SECONDS and :832 unlinks a lock only after the signature and holder checks pass, so the landed change does what the goal states.\nSCORE evidence: 15\nJUSTIFICATION evidence: negative-control-s10.log records 2 failed EXIT=1 on the declared mutations and head-arm-s10.log records 59 passed EXIT=0, but no log runs the first case against the base module, so the done_when's 'at the base revision the first case refuses' is inferred rather than recorded.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat 1ce60abb857f..7bb5a36264 lists exactly reckon/crew/merge.py, tests/test_a_lander_clears_a_stale_index_lock.py and the evidence fragment, all inside the four declared write paths.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_a_lander_clears_a_stale_index_lock.py:152 and :179 are shown red by the two declared mutations, and :122 and :214 fail on any regression that drops the stale removal or the age bound; no assertion compares a value against the same variable the test supplied.\nSCORE fit: 17\nJUSTIFICATION fit: the additions at reckon/crew/merge.py:700-772 follow the module's keyword-only callback and one-decision-helper idiom and introduce no plan or ticket name, but _index_lock_age_seconds at :741 restates a helper the codebase already has.\nSCORE reuse: 5\nJUSTIFICATION reuse: reckon/crew/merge.py:709 duplicates reckon/crew/gc.py:1713 and :741 duplicates reckon/crew/promotion_scope.py:2029, so two added definitions re-implement capabilities the repository already owns instead of extending their owners.\nFINDING reckon/crew/merge.py:709 non-blocking: _processes_holding re-implements the process-holder scan owned by reckon/crew/gc.py:1713 rather than extending or sharing it, and the two differ in matching semantics and return shape, so the repository keeps two drifting answers to one question.\nFINDING reckon/crew/merge.py:741 non-blocking: _index_lock_age_seconds duplicates reckon/crew/promotion_scope.py:2029, which computes the same index.lock age under the same name, so the age of one lock is defined twice.\nFINDING reckon/crew/promotion_scope.py:1900 non-blocking: the other five callers of the shared wait helper clear a stale lock without passing on_stale_removed, so those landings destroy a lock with nothing in their record naming it.\nFINDING tests/test_a_lander_clears_a_stale_index_lock.py:122 non-blocking: the done_when's base-revision refusal for the first case has no recorded arm, because the base arm removes the new test instead of running it against the base module.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261114T174207045976-stale-index-lock-cleared-s10/manifest.md:16 non-blocking: the tests field describes the gate in prose rather than carrying the literal command a shell ran, which promotion cannot re-run.\n",
+  "review_run_id": "r-20261114T193420264150-review-of-stale-index-lock-cleared-s10-7bb5a3626416",
+  "reviewed_base_sha": "1ce60abb857f9692212788f166561bd7a1820255",
+  "reviewed_head_sha": "7bb5a362641628cd3675551a1fff1c63428761e5",
+  "reviewed_run_id": "r-20261114T174207045976-stale-index-lock-cleared-s10",
+  "scores": {
+    "durability": 18,
+    "evidence": 15,
+    "fit": 17,
+    "goal_fidelity": 18,
+    "reuse": 5,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-14T20:37:50.755483+00:00",
+  "total": 93
+}
