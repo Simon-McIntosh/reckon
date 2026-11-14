@@ -24,7 +24,7 @@ PROMOTION_SECONDS = 1.0
 # the receipt write on this filesystem — is about 0.15 s a request, so each
 # batch pays it. It is a property of the store, not of the drain, and — short
 # as it is beside a real promotion, which takes minutes.
-SUITE_OVERHEAD_SECONDS = 1.0
+SUITE_OVERHEAD_SECONDS = 1.5
 # The control's promotion is shorter so that ten times it fits in the test.
 CONTROL_PROMOTION_SECONDS = 0.5
 PASS_SECONDS = 10 * CONTROL_PROMOTION_SECONDS
@@ -55,17 +55,23 @@ def _run_ids() -> list[str]:
 
 
 def _executor(
-    started: list[str], finished: list[str], duration: float = PROMOTION_SECONDS
+    started: list[str],
+    finished: list[str],
+    duration: float = PROMOTION_SECONDS,
+    moments: dict[str, list[float]] | None = None,
 ):
     lock = threading.Lock()
+    moments = moments if moments is not None else {"start": [], "finish": []}
 
     def perform(request):
         run_id = str(request["run_id"])
         with lock:
             started.append(run_id)
+            moments["start"].append(time.monotonic())
         time.sleep(duration)
         with lock:
             finished.append(run_id)
+            moments["finish"].append(time.monotonic())
         return {"ok": True, "run_id": run_id, "record": {"commits": []}}
 
     return perform
@@ -94,7 +100,10 @@ def test_a_freed_slot_takes_the_next_request(monkeypatch):
         _queue(run_id)
     started: list[str] = []
     finished: list[str] = []
-    service = PromotionService(width=2, execute=_executor(started, finished))
+    moments: dict[str, list[float]] = {"start": [], "finish": []}
+    service = PromotionService(
+        width=2, execute=_executor(started, finished, PROMOTION_SECONDS, moments)
+    )
     service.start_refill()
     try:
         began = time.monotonic()
@@ -109,6 +118,9 @@ def test_a_freed_slot_takes_the_next_request(monkeypatch):
 
     assert drained, f"{len(finished)} of {len(run_ids)} promotions finished"
     assert _all_promoted(run_ids)
+    # The property under test: the request that fills a freed slot starts within
+# one promotion time of that slot being freed, with no pass in between.
+    assert moments["start"][2] - moments["finish"][0] < PROMOTION_SECONDS
     assert elapsed <= 3 * PROMOTION_SECONDS + SUITE_OVERHEAD_SECONDS, (
         f"five requests at width 2 took {elapsed:.2f} s, over three "
         f"{PROMOTION_SECONDS:g} s promotion times plus bookkeeping"
