@@ -1,0 +1,75 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/dispatching/launch.py:282",
+    "reckon/crew/routing.py:2456",
+    "reckon/crew/dispatch_launch.py:3037"
+  ],
+  "completed_at": "2026-11-14T17:25:50.718Z",
+  "dispatched_at": "2026-11-14T17:06:29Z",
+  "findings": [
+    {
+      "file": "tests/test_dispatch_returns_without_worker.py",
+      "line": "968",
+      "severity": "non-blocking",
+      "text": "non-blocking: `_measured_preparation_seconds` returns `float(output.get(\"dispatch_seconds\") or 0.0)`, so if the delegated dispatch writes no output the new preparation term silently collapses to zero and the case still passes, making a broken reference measurement indistinguishable from a healthy one and reverting the bound to its pre-change form without any failure; assert the reference measured above zero."
+    },
+    {
+      "file": "docs/evidence/fragments/a-dispatch-returns-without-its-worker/the-dispatch-exit-bound-holds-at-working-load.html",
+      "line": "39",
+      "severity": "non-blocking",
+      "text": "non-blocking: the fragment records that the required main negative control \"did not reproduce on this node\" (12 of 12 base runs passed), so the headline 20-of-20 does not by itself distinguish head from base under contention; the defect is still shown deterministically at base by the whole-file base arm, and the record should say which arm carries that claim."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261114T143528943618-the-dispatch-exit-bound-holds-at-working-load/manifest.md",
+      "line": "20",
+      "severity": "non-blocking",
+      "text": "non-blocking: after_suite.log_path names /home/ITER/mcintos/.config/rekon/logs/after-arm.log, a path that does not exist because its parent is \"rekon\" not \"reckon\", so a reader cannot open the gate log the record cites; name the real logs/after-arm.log the run directory holds."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261114T143528943618-the-dispatch-exit-bound-holds-at-working-load/logs/negative-control-join-supervisor.log",
+      "line": "1",
+      "severity": "non-blocking",
+      "text": "non-blocking: the header names the base revision b4700c0d while the body's traceback shows the new `preparation_seconds` line, so the log was taken from uncommitted head content labelled with the base sha; the header revision is what a later reader trusts and it reports the wrong tree."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read the single commit e2ee6d785a commit by commit: it adds `_measured_preparation_seconds` (tests/test_dispatch_returns_without_worker.py:946), threads `preparation_seconds` into `_dispatch_exit_bound` (lines 985-987) and the case's report (line 1055), adds an env-driven join-the-supervisor seam inside the embedded driver source (line 315), widens the `_capture` stub signature for a peer's `untracked_roots` change (line 1178), and adds the evidence fragment; no production module is touched.",
+    "done_when": "the done_when names five clauses; the gate records four - the file:line naming (fragment line 25 and manifest evidence_inputs), 20 of 20 contended passes with preparation_seconds recorded in all 20 reports under logs/contended-head/, and the join-the-supervisor mutation failing (logs/negative-control-join-supervisor.log, 1 failed in 68.49 s, EXIT=1) - while the fifth, \"the negative control is main, where the same contended runs fail at least once\", did not reproduce: logs/contended-base-12/ has 12 of 12 passing and the manifest records exactly that.",
+    "goal": "the node goal is to derive the dispatch-exit bound from a reference that includes the dispatch work the current reference omits; the diff adds a measured preparation reference at tests/test_dispatch_returns_without_worker.py:946 and a `PREPARATION_UNITS` term at tests/test_dispatch_returns_without_worker.py:139 and 985-987, and the work it covers is real: `_create_worktree` at reckon/crew/routing.py:2456 runs the fleet-script subprocess at reckon/crew/routing.py:2472 on the pre-return launch path reached from reckon/crew/dispatching/launch.py:282.",
+    "manifest": "read; it states the case passes 20 of 20 contended (confirmed across 20 reports in logs/contended-head/), the mutation fails at EXIT=1, and both suite arms with counts; one receipt defect found - after_suite's log_path is /home/ITER/mcintos/.config/rekon/logs/after-arm.log, a nonexistent path (the omitted c in \"reckon\"), while the real log is the run's logs/after-arm.log.",
+    "write_paths": "the manifest declares tests/test_dispatch_returns_without_worker.py and docs/evidence/fragments/a-dispatch-returns-without-its-worker/the-dispatch-exit-bound-holds-at-working-load.html; `git diff --stat b4700c0d e2ee6d785a` lists exactly those two files, 145 insertions and 14 deletions, every path inside the declared scope."
+  },
+  "justifications": {
+    "durability": "tests/test_dispatch_returns_without_worker.py:968 returns 0.0 when the delegated reference records no dispatch_seconds, and logs/contended-base-12/ shows the old bound passing 12 of 12, so removing the new preparation term would not turn the case red on this node.",
+    "evidence": "logs/contended-head/ evidences the 20 of 20 claim, but the done_when's main close clause did not reproduce (logs/contended-base-12/ passes 12 of 12) and the contended arm was four waves of five concurrent runs rather than the -n 8 shape the done_when names.",
+    "fit": "the new helpers follow the surrounding measured-reference style of tests/test_dispatch_returns_without_worker.py:912 rather than adding a parallel harness.",
+    "goal_fidelity": "tests/test_dispatch_returns_without_worker.py:985-987 adds the measured preparation term to the bound, and the work it covers is the pre-return create at reckon/crew/routing.py:2472 called from reckon/crew/dispatching/launch.py:282.",
+    "reuse": "`_measured_preparation_seconds` at tests/test_dispatch_returns_without_worker.py:946 reuses `_start_dispatch` and the existing measured-reference pattern, and no repository owner provides a dispatch-preparation timing mechanism.",
+    "scope_discipline": "every path in the diff is one of the two declared write paths (git diff --stat b4700c0d e2ee6d785a), with only the disclosed `_capture` signature widening beyond the goal."
+  },
+  "project": "reckon",
+  "raw_text": "Reviewed run: r-20261114T143528943618-the-dispatch-exit-bound-holds-at-working-load\nReviewed base: b4700c0d20e70b117969d8c907af78d11014ad72\nReviewed head: e2ee6d785a3d2636e36041dcfa35a3470099eae2\n\nVERDICT goal: the node goal is to derive the dispatch-exit bound from a reference that includes the dispatch work the current reference omits; the diff adds a measured preparation reference at tests/test_dispatch_returns_without_worker.py:946 and a `PREPARATION_UNITS` term at tests/test_dispatch_returns_without_worker.py:139 and 985-987, and the work it covers is real: `_create_worktree` at reckon/crew/routing.py:2456 runs the fleet-script subprocess at reckon/crew/routing.py:2472 on the pre-return launch path reached from reckon/crew/dispatching/launch.py:282.\nVERDICT done_when: the done_when names five clauses; the gate records four - the file:line naming (fragment line 25 and manifest evidence_inputs), 20 of 20 contended passes with preparation_seconds recorded in all 20 reports under logs/contended-head/, and the join-the-supervisor mutation failing (logs/negative-control-join-supervisor.log, 1 failed in 68.49 s, EXIT=1) - while the fifth, \"the negative control is main, where the same contended runs fail at least once\", did not reproduce: logs/contended-base-12/ has 12 of 12 passing and the manifest records exactly that.\nVERDICT write_paths: the manifest declares tests/test_dispatch_returns_without_worker.py and docs/evidence/fragments/a-dispatch-returns-without-its-worker/the-dispatch-exit-bound-holds-at-working-load.html; `git diff --stat b4700c0d e2ee6d785a` lists exactly those two files, 145 insertions and 14 deletions, every path inside the declared scope.\nVERDICT manifest: read; it states the case passes 20 of 20 contended (confirmed across 20 reports in logs/contended-head/), the mutation fails at EXIT=1, and both suite arms with counts; one receipt defect found - after_suite's log_path is /home/ITER/mcintos/.config/rekon/logs/after-arm.log, a nonexistent path (the omitted c in \"reckon\"), while the real log is the run's logs/after-arm.log.\nVERDICT diff: read the single commit e2ee6d785a commit by commit: it adds `_measured_preparation_seconds` (tests/test_dispatch_returns_without_worker.py:946), threads `preparation_seconds` into `_dispatch_exit_bound` (lines 985-987) and the case's report (line 1055), adds an env-driven join-the-supervisor seam inside the embedded driver source (line 315), widens the `_capture` stub signature for a peer's `untracked_roots` change (line 1178), and adds the evidence fragment; no production module is touched.\nCALL_SITES: reckon/crew/dispatching/launch.py:282, reckon/crew/routing.py:2456, reckon/crew/dispatch_launch.py:3037\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: tests/test_dispatch_returns_without_worker.py:985-987 adds the measured preparation term to the bound, and the work it covers is the pre-return create at reckon/crew/routing.py:2472 called from reckon/crew/dispatching/launch.py:282.\nSCORE evidence: 12\nJUSTIFICATION evidence: logs/contended-head/ evidences the 20 of 20 claim, but the done_when's main close clause did not reproduce (logs/contended-base-12/ passes 12 of 12) and the contended arm was four waves of five concurrent runs rather than the -n 8 shape the done_when names.\nSCORE scope_discipline: 18\nJUSTIFICATION scope_discipline: every path in the diff is one of the two declared write paths (git diff --stat b4700c0d e2ee6d785a), with only the disclosed `_capture` signature widening beyond the goal.\nSCORE durability: 8\nJUSTIFICATION durability: tests/test_dispatch_returns_without_worker.py:968 returns 0.0 when the delegated reference records no dispatch_seconds, and logs/contended-base-12/ shows the old bound passing 12 of 12, so removing the new preparation term would not turn the case red on this node.\nSCORE fit: 16\nJUSTIFICATION fit: the new helpers follow the surrounding measured-reference style of tests/test_dispatch_returns_without_worker.py:912 rather than adding a parallel harness.\nSCORE reuse: 19\nJUSTIFICATION reuse: `_measured_preparation_seconds` at tests/test_dispatch_returns_without_worker.py:946 reuses `_start_dispatch` and the existing measured-reference pattern, and no repository owner provides a dispatch-preparation timing mechanism.\nFINDING tests/test_dispatch_returns_without_worker.py:968 non-blocking: `_measured_preparation_seconds` returns `float(output.get(\"dispatch_seconds\") or 0.0)`, so if the delegated dispatch writes no output the new preparation term silently collapses to zero and the case still passes, making a broken reference measurement indistinguishable from a healthy one and reverting the bound to its pre-change form without any failure; assert the reference measured above zero.\nFINDING docs/evidence/fragments/a-dispatch-returns-without-its-worker/the-dispatch-exit-bound-holds-at-working-load.html:39 non-blocking: the fragment records that the required main negative control \"did not reproduce on this node\" (12 of 12 base runs passed), so the headline 20-of-20 does not by itself distinguish head from base under contention; the defect is still shown deterministically at base by the whole-file base arm, and the record should say which arm carries that claim.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261114T143528943618-the-dispatch-exit-bound-holds-at-working-load/manifest.md:20 non-blocking: after_suite.log_path names /home/ITER/mcintos/.config/rekon/logs/after-arm.log, a path that does not exist because its parent is \"rekon\" not \"reckon\", so a reader cannot open the gate log the record cites; name the real logs/after-arm.log the run directory holds.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261114T143528943618-the-dispatch-exit-bound-holds-at-working-load/logs/negative-control-join-supervisor.log:1 non-blocking: the header names the base revision b4700c0d while the body's traceback shows the new `preparation_seconds` line, so the log was taken from uncommitted head content labelled with the base sha; the header revision is what a later reader trusts and it reports the wrong tree.",
+  "review_run_id": "r-20261114T163355943338-review-of-the-dispatch-exit-bound-holds-at-working-load-e2ee6d785a3d",
+  "reviewed_base_sha": "b4700c0d20e70b117969d8c907af78d11014ad72",
+  "reviewed_head_sha": "e2ee6d785a3d2636e36041dcfa35a3470099eae2",
+  "reviewed_run_id": "r-20261114T143528943618-the-dispatch-exit-bound-holds-at-working-load",
+  "scores": {
+    "durability": 8,
+    "evidence": 12,
+    "fit": 16,
+    "goal_fidelity": 18,
+    "reuse": 19,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-14T17:34:47.168314+00:00",
+  "total": 91
+}
