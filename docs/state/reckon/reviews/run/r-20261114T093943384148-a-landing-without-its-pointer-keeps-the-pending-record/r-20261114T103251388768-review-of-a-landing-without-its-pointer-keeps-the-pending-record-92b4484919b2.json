@@ -1,0 +1,62 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own arms on disk: after-arm.log at 92b44849 records 54 passed EXIT=0 and base-arm.log at fb92136a records 51 passed EXIT=0, both with no FAILED line, so the set difference is empty (0). The node's arms measure only the new test file and tests/test_staged_write_inventory.py, so they do not exercise the callers of the name the diff changed (see the findings).",
+  "call_sites": [
+    "reckon/crew_run_commands.py:3641 (crew_complete --land, the changed branch)",
+    "reckon/crew_run_commands.py:3618 (crew_complete calls finish_pending_landings)",
+    "reckon/crew_run_commands.py:4006 (clear_pending)",
+    "reckon/crew/queue_landing.py:1897 (landing pass calls finish_pending_landings)",
+    "reckon/crew/recovery_classification.py:1035 (_promoted_awaiting_merge calls the renamed helper)",
+    "reckon/crew/recovery_repair_dispatch.py:93 (merge-repair dispatch calls the renamed helper)"
+  ],
+  "completed_at": "2026-11-14T11:11:01.602Z",
+  "dispatched_at": "2026-11-14T10:34:24Z",
+  "findings": [
+    {
+      "file": "reckon/crew/pending_landing.py",
+      "line": "60",
+      "severity": "blocking",
+      "text": "the helper was renamed from _record_path to record_path, but three production callers still call the old name and now raise AttributeError: reckon/crew/recovery_classification.py:1035, reckon/crew/recovery_repair_dispatch.py:93, :134 and :137. _promoted_awaiting_merge sits on the settled-run classification path (reckon/crew/recovery_classification.py:2829) and catches only OSError and ValueError, so every classification of a settled run now raises instead of returning its awaiting-merge verdict. Reproduced against an extraction of the head revision: recovery_classification._promoted_awaiting_merge({'run_id': 'r-x'}, moment=0.0) raises AttributeError: module 'reckon.crew.pending_landing' has no attribute '_record_path'. This is the module the landing pass reads, so the change breaks the reader of the very state it protects."
+    },
+    {
+      "file": "tests/test_a_finished_pending_landing_retires_its_run.py",
+      "line": "63",
+      "severity": "non-blocking",
+      "text": "five test files still reference pending_landing._record_path and will red at the head: tests/test_a_finished_pending_landing_retires_its_run.py (63,87,105,125,132,181,198,230,247,283), tests/test_a_discarded_run_stays_discarded.py (67,73,141,163,184,262), tests/test_a_landed_reading_follows_the_primary_branch.py (134,188), tests/test_a_promoted_run_is_not_landed_until_merged.py (119,122) and tests/test_a_conflicting_landing_is_repaired.py (246). The node's after arm names only its own new test and tests/test_staged_write_inventory.py, so this is invisible to its recorded gate and would surface as added failures in a full-suite run. Fixed by the same repair as the blocking finding."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "read commit 92b44849 against fb92136a: four files, 145 insertions and 5 deletions; the crew_run_commands.py hunk adds the pre-write refusal at :3653-3666 and moves an existing import, pending_landing.py adds the empty-project guard at :88 and renames :60 to record_path, and the test file and the fragment are new.",
+    "done_when": "the done_when's three assertions are exactly tests/test_a_landing_without_*_pending_record.py:93 (exit_code != 0), :94 (the record's bytes are unchanged) and :95-99 (finish_pending_landings returns one row naming the run with the cited head), plus the second test at :104 asserting no file is written for an empty project; after-arm.log records 54 passed EXIT=0 over both files and negative-control.log at fb92136a records 3 failed EXIT=1 whose first failure is line 98 'the pending record was overwritten', matching the declared mutation.",
+    "goal": "the goal is to keep a pending-landing record when its run's pointer is gone so the landing pass can still finish it; reckon/crew_run_commands.py:3653 resolves the existing record's path in a refusal that raises before any write, and reckon/crew/pending_landing.py:88 returns early from write_pending when the project is empty or whitespace, so a record naming a project survives and finish_pending_landings(only_run=...) still yields its row.",
+    "manifest": "read; status complete, one commit 92b44849, arms recorded as base 51 passed and head 54 passed with the negative control red at 3 failed, and its rubric lines claim all six dimensions answered.",
+    "write_paths": "the declared paths are reckon/crew/pending_landing.py, reckon/crew_run_commands.py, tests/test_a_landing_without_its_pointer_keeps_the_pending_record.py, the evidence fragment at docs/evidence/fragments/concurrent-edits-meet-at-the-merge/a-landing-without-its-pointer-keeps-the-pending-record.html and an unused figures directory; the diff touches the first four and every one is inside the fence, but the rename inside pending_landing.py changes behaviour its out-of-fence callers depend on."
+  },
+  "justifications": {
+    "durability": "each guard reddens on its own reinstatement (negative-control.log fails the byte comparison at tests/test_a_landing_without_its_pointer_keeps_the_pending_record.py:94 and the no-write cases), but no assertion covers the renamed helper's callers and the node's arms never run the five test files that reference it.",
+    "evidence": "after-arm.log and base-arm.log on disk carry revision headers, module paths, commands and EXIT lines, and negative-control.log reds at tests/test_a_landing_without_its_pointer_keeps_the_pending_record.py:98 exactly as the node declared.",
+    "fit": "the added guard and refusal follow the surrounding style of reckon/crew/pending_landing.py:88, but exposing a private helper as public without updating reckon/crew/recovery_classification.py:1035 is not the pattern its callers observe.",
+    "goal_fidelity": "reckon/crew/pending_landing.py:88 and reckon/crew_run_commands.py:3653 implement the plan's deliverable exactly, refusing before any write and keeping a named record intact.",
+    "reuse": "reckon/crew_run_commands.py:3653 reuses pending_landing.record_path rather than recomputing the directory, and a search of reckon/crew for another pending-record path helper found none.",
+    "scope_discipline": "reckon/crew/pending_landing.py:60 changes a name three out-of-fence production modules call, so the diff's reach exceeds its declared write paths although every changed path is listed."
+  },
+  "project": "reckon",
+  "review_node": "review-of-a-landing-without-its-pointer-keeps-the-pending-record-92b4484919b2",
+  "review_run_id": "r-20261114T103251388768-review-of-a-landing-without-its-pointer-keeps-the-pending-record-92b4484919b2",
+  "reviewed_base_sha": "fb92136adacd509b805dc48763b7c80a81f9a16d",
+  "reviewed_head_sha": "92b4484919b20ae4859bf6fe5d4afad4f0e13e39",
+  "reviewed_run_id": "r-20261114T093943384148-a-landing-without-its-pointer-keeps-the-pending-record",
+  "scores": {
+    "durability": 14,
+    "evidence": 19,
+    "fit": 11,
+    "goal_fidelity": 18,
+    "reuse": 19,
+    "scope_discipline": 11
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-14T11:43:01.498823+00:00",
+  "total": 82
+}
