@@ -1,0 +1,62 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-14T13:54:24.819Z",
+  "dispatched_at": "2026-11-14T13:47:38Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/every-shared-home-lock-holds-across-nodes.html:102",
+      "id": "done_when-1",
+      "reason": "the section must name the second node's host, or the stated outcome of its own negative control is false and the node's gate cannot be satisfied as written.",
+      "text": "\u00a73's negative control says a flock-only take \"from that second process\" must fail to observe the holder, but exclusive_lock takes flock before the record lock, so a contender on the same node DOES observe the holder through the flock half and the control reports held; only a contender on a different node reports free, which the section never requires, so the node either fails its own gate or ships a control that demonstrates nothing about cross-node exclusion",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/every-shared-home-lock-holds-across-nodes.html:131",
+      "id": "done_when-2",
+      "reason": "the node needs a different control (the holder's absence of the flock half, or a second node) or it will report a red or a vacuous green.",
+      "text": "\u00a74 repeats the same single-node control for the plan-review dispatch lock, inheriting the same false expectation (a same-node flock-only contender sees the holder's flock), so its \u00a74 done-when cannot be met by the test it describes",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/every-shared-home-lock-holds-across-nodes.html:148",
+      "id": "done_when-3",
+      "reason": "without a control \u00a75's whole measure rests on assertions that hold on the unmigrated code, so the section cannot be closed on a verdict.",
+      "text": "\u00a75's done-when lists five assertions but no negative control: nothing shows that the picker's new lock file actually excludes (a two-process picker test showing two whole lines passes whether or not the lock is taken), and nothing shows the catalogue refresh \"reads the snapshot instead of fetching\" would ever fetch without the lock",
+      "type": "done_when",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "812a6e5d5606da8ed6331b3111f84e9b11a8c8fe",
+  "plan_fingerprint": "dadc76e34de69b01297b3e0abe885b88f6d8a0c4db3dc9f677d9b65966c2b1c2",
+  "plan_slug": "every-shared-home-lock-holds-across-nodes",
+  "plan_version": 1,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261114T134336725459-plan-review-of-every-shared-home-lock-holds-across-nodes",
+  "reviewed_blob_sha": "7293925f5c4215fa132f74cd4d4d5ea0d604e8da",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 verified docs/plans/a-plan-state-lock-holds-on-every-node.html, docs/evidence/fragments/a-plan-state-lock-holds-on-every-node/every-flock-is-accounted-for{.html}, commits 7d8ca3f and 03b18d9, every module named in \u00a73/\u00a74/\u00a75 (each carries a lock-taking flock), reckon/node_exclusive_lock.exclusive_lock, PointerLockHeldError in reckon/crew/runs.py, the \"another sweep is composing this plan's review now\" branch, and docs/state/reckon/flight.yaml's census_tests block.",
+    "done_when": "a finding \u2014 \u00a73 and \u00a74 both name a single-node \"second process\" control that, as stated, must \"fail to observe the holder\", which is false on one node because exclusive_lock takes flock as well as the record lock; \u00a75's done-when names no negative control at all.",
+    "evidence_paths": "pass \u2014 gates and negative controls go to the run directory, the landed record to docs/evidence/archive/ (the directory exists), and the two-node log to ~/.cache/reckon-lock-proto/ on the shared home; none is a node-local temporary path.",
+    "naming": "pass \u2014 the new test file name describes the mechanism, and no new symbol, comment or filename carries a plan label, stage name, ticket number or version tag; the pending/judged tables are named by what they record.",
+    "reasoning": "pass \u2014 the stated root cause (flock is granted by the local kernel) matches the cited census (43 lock-taking calls, 10 node-local, 13 lease-decided, 20 needing the cross-node lock) and the review-store docstring it quotes; each section's endpoint is obtainable from the described system and no section prescribes a code path or a formula.",
+    "single_goal": "pass \u2014 \u00a72 delivers the guard, \u00a73/\u00a74/\u00a75 each deliver one class of lock migrations with one pending-table gate, and \u00a76 delivers closure plus the two-node measurement the followup names as one closing step.",
+    "wiring": "pass \u2014 plan-depends-on names a-plan-state-lock-holds-on-every-node, which resolves at docs/plans/a-plan-state-lock-holds-on-every-node.html; the section graph (s3, s4, s5 depend on s2; s6 depends on s5, s4, s3) matches the followup's guard-first ordering and every referenced section id exists."
+  },
+  "section_digests": {
+    "_document": "4d38e92acdabfa19f6f7f3a12c8a74da360c239446c9e8cdc24207433b4ffe3e",
+    "s1": "a75973b8e1a6a73fd685e3eb80975309bc946a73f47a56f1c7704b0202b23e59",
+    "s2": "bd6b80063ec83bde16ad3166f499ed3e326b1e2e6207c79d89eb3aff8e6b9139",
+    "s3": "c9acd50b7af1658c8f2692494104722ac201867f0cf36b0dfb92e4b78bcd6e43",
+    "s4": "7514a505ea5928cae351a5061f696a72400228a93232a83a24414996895f5428",
+    "s5": "3cae2d2f888cb54e14fbf0528c916db8163f7b7fd6a5fdc5e03a03c32992f499",
+    "s6": "0b940b56b8b52c5769f4f6eaf09bdae842b04973c399f3e2ec476aa51d9036fb"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-14T13:54:14.013572+00:00",
+  "total": null
+}
