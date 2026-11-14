@@ -1,0 +1,93 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-14T15:51:35.360Z",
+  "dispatched_at": "2026-11-14T15:35:25Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/the-crew-home-has-a-bound.html:128",
+      "id": "reasoning-1",
+      "reason": "this is the exact hazard `c-hold-s5-scope` recorded as the reason \u00a75 stays held, and the section was moved to `implementable` on the claim that it is gone, so a node built from it would run an irreversible `crew gc --apply` across every project's runs while its evidence fragment reported the pass as project-scoped.",
+      "text": "\"The pass is scoped to the project it is invoked for\" and the sentence that follows assert a scoping the code does not have: `_unledgered_run_directories` iterates `runs_root` with no project argument, spares a directory only when its run id is in some registered mount's ledger (`reckon/crew/routing.py:2177`), and removes it otherwise, so `gc --apply --project reckon` deletes another project's unledgered run directory; two further sweeps in the same call are unscoped as well (`_orphan_ledger_indexes` and `_stale_run_locks`, `reckon/crew/gc.py:1198-1231`)",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/the-crew-home-has-a-bound.html:128",
+      "id": "wiring-1",
+      "reason": "a coordinator dispatching \u00a75 would expect a dependency the plan's own sections do not provide, and the node can neither build nor verify the scoping it is judged on.",
+      "text": "the done-when now depends on a project-scoped unledgered sweep that no section delivers: the sweep is `reckon/crew/routing.py:2130`, and the call is `reckon/crew/gc.py:1214`, both outside \u00a75's write paths and unowned by any other section",
+      "type": "wiring",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/the-crew-home-has-a-bound.html:128",
+      "id": "done_when-1",
+      "reason": "a criterion no output can satisfy leaves the section's gate unmeasurable, and the neighbouring \"the drop equals the counts the report named\" then compares against a report that omits exactly those directories.",
+      "text": "\"An unledgered run directory whose pointer, manifest or name places it in another project is listed as kept, with that project named, and never removed\" names a row the report never carries: the row is built with only `run_id`, `path`, `size`, `age_days`, `action` and `removed` (`reckon/crew/routing.py:2182-2189`), no project attribution exists in the sweep, and every directory it spares is skipped before a row is appended (`routing.py:2177`)",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/the-crew-home-has-a-bound.html:128",
+      "id": "done_when-2",
+      "reason": "the fleet node serves every live orchestrator session on the machine, and the pass starves them, so the done-when should name a compute partition for it.",
+      "text": "\"Every command runs on the fleet node with a timeout\" places the pass on the coordination allocation, while a destructive sweep that walks the whole run store for sizes (`tree_size_bytes` per directory, 5,048 at measurement) belongs on a compute partition",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/the-crew-home-has-a-bound.html:128",
+      "id": "anchors_resolve-1",
+      "reason": "the claim it supports is false anyway, so re-citing the anchor changes no outcome on its own.",
+      "text": "\"`garbage_collect` reclaims only directories the project's ledger knows (`gc.py` near line 767)\" cites a line inside the `sweep_exec_identities` docstring, unrelated to any run-directory reclaim",
+      "type": "anchors_resolve",
+      "would_change": false
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/the-crew-home-has-a-bound.html:127",
+      "id": "reasoning-2",
+      "reason": "\u00a75 is un-deferred on a four-day-old figure, and \u00a77 retires 500 directories a pass, so \u00a75's population may not exist by dispatch.",
+      "text": "\"What remains is the population itself: 22,350 run directories\" is stale: the store held 5,048 entries when measured on 2026-11-14, and the hourly retirement that `crew-state-stays-bounded` \u00a77 runs across every project is what shrank it",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "1705d69a72bc5328b94cd4587f63288dcb953322",
+  "plan_fingerprint": "173e2e25a6335cbfe774792751dd916247a1239125c8e9fab3d688a199e8ec6f",
+  "plan_slug": "the-crew-home-has-a-bound",
+  "plan_version": 122,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261114T150611148213-plan-review-of-the-crew-home-has-a-bound",
+  "reviewed_blob_sha": "58f28d21f0fbede31cd117abca40c186978d5c0c",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "a finding \u2014 `gc.py` near line 767 resolves, but to `sweep_exec_identities`, not to the run-directory reclaim the sentence describes, which lives at `reckon/crew/gc.py:1214` and `reckon/crew/routing.py:2130-2201`.",
+    "done_when": "a finding \u2014 the new criterion \"listed as kept, with that project named\" names a row gc never emits, and \"Every command runs on the fleet node\" places an irreversible walk of the whole run store on the coordination node, against the standing fleet-node allocation rule.",
+    "evidence_paths": "pass \u2014 the log lands in the run's own log directory and the before/after figures in `docs/evidence/fragments/the-crew-home-has-a-bound/the-existing-backlog-is-reclaimed.html`, neither on a node-local temporary path, and both survive the run.",
+    "naming": "pass \u2014 the new text introduces no plan labels, ticket numbers or version tags, and names its records and counts by what they measure.",
+    "reasoning": "a finding \u2014 the section states the pass is scoped to the project it is invoked for and that gc reclaims only ledger-known directories, both of which the code it describes contradicts.",
+    "single_goal": "pass \u2014 \u00a75 carries one operational deliverable, one reclaim of the run store, and its done-when closes on that one measure.",
+    "wiring": "a finding \u2014 \u00a75's done-when now requires a project-scoped unledgered run-directory sweep, and no section builds it: `_unledgered_run_directories` takes no project argument (`reckon/crew/routing.py:2130-2138`), the call site passes none (`reckon/crew/gc.py:1214-1221`), and \u00a75's write paths are the run's log directory and one evidence fragment, so the code its done-when measures is outside this section and owned by no other."
+  },
+  "section_digests": {
+    "_document": "14c888e680e0cf3bc62c494d6bab96f7864706bc57643615027d2155c566694a",
+    "s1": "32d74b1202f967c9688afa80dbd94719f49d78f6a5afcc8d56d9c46602e1c0a5",
+    "s10": "56c18da5f95c1af6bc07050b4374f565f11fa8750f575894cd4e1cc2b5ea773a",
+    "s11": "80acd3bb5f292230c27316d662ee39353a2f9d2571e4aa608f5e765924e25480",
+    "s12": "45922de00c241b79de39fff9312c389ca9030f6fa16a304a9d0c35e383ad77be",
+    "s13": "acf680c3187bbb981fd28a86fcf53a07328031935536c58872746cc6e10a6f26",
+    "s2": "9328c20a14a28cadebc0cf3424b9fa61772f8c3bea7e4f7b1e097571697c0369",
+    "s3": "42466bfb93ed68c3dcdb669550dae38d00ebbdea5e24407a7579076255209fbf",
+    "s4": "ea437bee063bb05e8f8ddb6f7a30f7f066d66dff1770c1488e31b86a6f5c7ba8",
+    "s5": "4b44702f37f7a6685aa205436e7af469f17ce0e5cd1cf702daec829ae9bab45a",
+    "s6": "3f82b3311550663b1d18b1428203c2b44805aff91f1c998049de11dd82bfe201",
+    "s7": "d966e9dc54000fcf7d43d9d39567b2a791c2670b0224b881649472a126a8f106",
+    "s8": "07d9242815cd2c19cf76c9484aa28c908834190af477f204091de9d695b3e8a5",
+    "s9": "5e8a5c96b9e0b65736bdee8a24254ce6fe4a12c73dcb34c44b3a5a72b6e6d9c8"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-14T17:12:35.334934+00:00",
+  "total": null
+}

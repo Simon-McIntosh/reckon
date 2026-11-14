@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="docs-project" content="reckon"><title>Reviewed deliveries land through a measured merge</title></head>
+<body><main>
+<section id="cleanly-reviewed-run-lands-itself-result">
+<h2>Reviewed deliveries land through a measured merge</h2>
+<p>The acceptance reflex measures a merge candidate before promotion and verifies the final merge before primary advances. It reuses the partition archive runner, review-tier checks, publication, pending-landing recovery, and section writeback. A locked <code>landing</code> decision with choice <code>manual</code> or <code>coordinator</code> reserves integration for the coordinator. A conflict or a failed candidate gate leaves the delivery unpromoted, with its landing refusal recorded. A merge refused after promotion names its pending landing and reports <code>merged: false</code>.</p>
+<p>The temporary-repository cases prove the delivered head reaches primary, its introduced <code>feature</code> marker survives, the merged-head gate receipt is preserved in the run and ledger, and the section declaration is committed as done. Refusal cases exercise a conflicting head, a gate failing only at the merged tree, manual integration, and a conflict arising after promotion. Classification, monitor snapshots, weekly totals, departure wording and promotion settlement do not call the unmerged delivery landed. Pending recovery replays the gate and refuses a post-promotion failure. The weekly checks read an absent per-plan bucket as zero and include an explicit omitted-bucket case.</p>
+<p>The base reproduction failed because the clean delivered head remained off primary: “the run's commits are not on the primary branch yet; a coordinator merges it”. All measurements below ran in separate <code>all_debug</code> jobs.</p>
+<table>
+<thead><tr><th>Measurement</th><th>Observed result</th><th>Receipt</th></tr></thead>
+<tbody>
+<tr><td>Baseline at <code>f9ef714581e99472eafc9f68f1852b7f46a5deea</code></td><td>51 passed in 9.29s; EXIT=0</td><td><a href="/home/ITER/mcintos/.config/reckon/crew/runs/r-20261114T133509241528-cleanly-reviewed-run-lands-itself/baseline-relative.log">baseline arm</a></td></tr>
+<tr><td>Repaired scoped probe; eight delivery cases plus the staged-write inventory</td><td>59 passed in 16.28s; EXIT=0</td><td><a href="/home/ITER/mcintos/.config/reckon/crew/runs/r-20261114T133509241528-cleanly-reviewed-run-lands-itself/resumed-probe.log">repair probe</a></td></tr>
+<tr><td>Declared mutation: stop after promotion, omitting the merge and section writeback</td><td>2 failed, 57 passed in 13.05s; EXIT=1</td><td><a href="/home/ITER/mcintos/.config/reckon/crew/runs/r-20261114T133509241528-cleanly-reviewed-run-lands-itself/negative-control.log">negative control</a></td></tr>
+</tbody></table>
+<p>The negative control extracted commit <code>86aaf08bcf413ac98eca6e942e3b37cb2f9d7991</code> into node-local scratch and bypassed the post-promotion landing block. <code>test_a_clean_review_lands_and_records_the_measured_head</code> failed because its delivered head remained off primary; the post-promotion recovery case also failed. Neither id fails in the unmutated scoped probe.</p>
+<p>The exact relative command is <code>PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_cleanly_reviewed_run_lands_itself.py tests/test_staged_write_inventory.py</code>; the baseline drops the delivery test file, which does not exist at its revision. The <a href="/home/ITER/mcintos/.config/reckon/crew/runs/r-20261114T133509241528-cleanly-reviewed-run-lands-itself/final-head.log">final committed-head arm</a> records its actual revision, imported module, resolved working directory, test summary and terminal exit receipt. The run manifest carries that final arm under <code>after_suite</code>.</p>
+</section>
+</main></body></html>

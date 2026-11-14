@@ -1,0 +1,82 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-14T15:26:12.845Z",
+  "dispatched_at": "2026-11-14T15:12:57Z",
+  "findings": [
+    {
+      "anchor": "reckon/crew/admission/ordering.py:192",
+      "id": "reuse_search-1",
+      "reason": "",
+      "text": "\u2014 \u00a71's third bullet, \"No view, MCP read or importable function lists the queue in the order admission will launch it, with the reason for each place\", is false of this tree. `queued_placements` returns, per queued request, `position` (place among every queued request on the lane), `rank` (place within its own session), `effective_rank` and `reason` (\"the signal that placed it\").",
+      "type": "reuse_search",
+      "would_change": null
+    },
+    {
+      "anchor": "reckon/crew/admission/ordering.py:106",
+      "id": "reuse_search-2",
+      "reason": "the plan must state that its ageing guarantee is a repair to `priorities_first`, and \u00a72's cross-session mechanism, but a comparator added beside it, is a duplicate.",
+      "text": "the plan's \u00a71 says priority \"orders only a session's own requests and its project's sessions, and never trades against fair share\": that is stale. Cross-session priority is a lane-wide hoist at `reckon/crew/admission/ordering.py:106` (`priorities_first`), called by `fair_share_admission_order` (`:149`) and by `queued_placements` (`:192`), which lifts as `_override` (`reckon/crew/queue_order.py:106,240`) above every other request's place. So \u00a72's cross-session deliverable is a change of degree, not a new mechanism. The existing hoist also bypasses the starvation bound: it ignores age, so a raised request does jump an aged one in another session. \u00a72's own done-when (\"A priority-0 request older than the ageing bound is admitted before a fresh priority-3 request\") therefore fails on today's code, and the fix belongs at `ordering.py:106` where the ageing comparison (`reckon/crew/queue_order.py:247` `_next_to_launch` and `:319-327` `_rank`) must be honoured.",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/promotion_requests.py:461",
+      "id": "duplicate_owner-1",
+      "reason": "the section's first test is already satisfied by the base and its negative control is therefore unbuildable as written; priority must enter the two existing comparators rather than be built beside them.",
+      "text": "\u00a73 orders the promotion queue by priority and the review queue by inherited priority, and each already has exactly one owner the change must extend: promotion drain order is `_pending_requests` (`reckon/crew/promotion_requests.py:461-491`, review-before-subject then name order). Review admission order is `_next_to_launch` (`reckon/crew/queue_order.py:247-265`), which already launches a delivered review ahead of every implementation however long it has waited. A second comparator for either queue is the fork this item exists to catch. Two facts that would change \u00a73's tests: its first done-when (a priority-4 run's review admitted before a priority-0 run's review queued earlier) is already true on the base revision because reviews lead unconditionally, so that test cannot distinguish the change and cannot support its negative control.",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/query.py:458",
+      "id": "thin_wrapper-1",
+      "reason": "the section must either extend the live view's projection and filters, or state why the new rows cannot live there; a second view is the thin layer this item refuses without that sentence.",
+      "text": "`crew view queue` is proposed as a new view while `crew view live` already stamps `position`, `rank` and `reason` onto every queued row from the same `queued_placements` call (`reckon/crew/query.py:456-462`), and the live view already takes `fields`, `session` and a pointer set to narrow and project by. The plan says nothing about that machinery being unable to take the new rows, filters and budget block.",
+      "type": "thin_wrapper",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/queue_edit.py:490",
+      "id": "deep_module-1",
+      "reason": "the plan should place the ledger in one owner every write path asks, which is the depth this item asks for and which the plan currently leaves to each call site.",
+      "text": "the budget (\"the points a session has placed on its unlaunched requests never exceed its budget\") is written as a predicate over the pointers that must hold at five write paths: `crew dispatch`, a batch entry, `crew review` (all \u00a72) and `crew queue reprioritise` (`reckon/crew/queue_edit.py:490`, including \u00a73's delivered-run case). Each caller would scan the queue and sum priorities itself, so one balance computation lives in five places and a later caller silently skips it.",
+      "type": "deep_module",
+      "would_change": true
+    },
+    {
+      "anchor": "a-session-spends-a-priority-budget#s2",
+      "id": "interface_budget-1",
+      "reason": "the section must state which field is merged or retired and account for the new refusal family, rather than shipping two priority fields and no retirement.",
+      "text": "public_definitions 2701, cli_options 488, mcp_views 15, refusal_families 25 stand. \u00a72 adds a flight-config family (per-session priority budget), priority arguments on `crew dispatch`, batch entries and `crew review`, and a refusal; it also keeps the existing `priority_override` field (`reckon/crew/queue_order.py:240`) beside the new priority, although `priorities_first` already gives the override cross-session force, so one field could serve both. \u00a72 names nothing it retires or merges, and no reason why nothing can. \u00a74 likewise adds a view and two filters without naming any.",
+      "type": "interface_budget",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "d3e53cbde2305b8f10fdfe44de22f8073d8b8259",
+  "plan_fingerprint": "30a815360bc769c78951d0f12f73fddf4d883d56d7ed8f571ec3ac65ca2d8507",
+  "plan_slug": "a-session-spends-a-priority-budget",
+  "plan_version": 0,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261114T151036137967-plan-review-of-a-session-spends-a-priority-budget",
+  "reviewed_blob_sha": "7cbcba54642b6460261c98ffa246174858914ce0",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "a finding \u2014 the budget is stated as a property of `queued` pointers, so five write paths would each re-derive points-in-use instead of one ledger owning them.",
+    "duplicate_owner": "a finding \u2014 a second queue reader and a second promotion comparator are proposed beside `queued_placements` (`admission/ordering.py:192`) and `_pending_requests` (`promotion_requests.py:461`), which own those two orders today.",
+    "interface_budget": "a finding \u2014 public_definitions 2701, cli_options 488, mcp_views 15, refusal_families 25 held; \u00a72 adds a flight-config family, priority arguments on three verbs and a refusal, \u00a74 adds a view and two filters, and neither section names what it retires or merges, or why nothing can be.",
+    "reuse_search": "a finding \u2014 \u00a74's read already exists as `queued_placements` (`reckon/crew/admission/ordering.py:192`) and \u00a72's cross-session priority as `priorities_first` (`:106`); the plan searched neither.",
+    "thin_wrapper": "a finding \u2014 `crew view queue` is added beside `crew view live`, which already renders `crew/query.py:456`'s positions, with no statement of why live cannot be extended."
+  },
+  "section_digests": {
+    "_document": "f14ed1c411ddcc334dce99ff9d19b88a07ea70798f776b7facf5e741ff94a6af",
+    "s1": "18c85abe4231ea5d432c54d0291c86fae3ddb332356927c52a727510b51f7d77",
+    "s2": "9f41ede878f7f1e24ef378c6972f825dd70497323e0542459206840e35df2dd6",
+    "s3": "dfe4283b30cea0b24c61d2d4c326aa3fd8385c1ce627ed83afc076c7f8c624bf",
+    "s4": "a4d94d2f0d264eb33ccac335c30d474738428b29a51eef9df7259477ccca53b2"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-14T17:17:00.210405+00:00",
+  "total": null
+}

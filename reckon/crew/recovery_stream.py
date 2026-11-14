@@ -151,7 +151,48 @@ def _positive_rate(value: Any) -> float | None:
     return rate if math.isfinite(rate) and rate > 0 else None
 
 
-@lru_cache(maxsize=64)
+@lru_cache(maxsize=16)
+def _lane_reference_rates(
+    project: str, window_bucket: int
+) -> dict[tuple[str, str], tuple[float, ...]]:
+    """Every backend and model's recent committed rates, from one ledger read.
+
+    The rate a run is judged against is a per-lane median, but reading the
+    ledger is the cost: it decodes every promoted row. Keying that read on the
+    lane as well made each lane and model pay for its own decode of the whole
+    ledger in every five-minute bucket, and the station classifies runs of
+    several lanes in several projects on every tick. One read per project and
+    bucket now answers every lane.
+    """
+    from reckon import ledger as ledger_module
+
+    try:
+        rows = ledger_module.load(project)[0]["runs"]
+    except (ledger_module.LedgerError, OSError, ValueError, KeyError, TypeError):
+        return {}
+    end = window_bucket * 300
+    start = end - 7 * 86400
+    rates: dict[tuple[str, str], list[float]] = {}
+    for row in rows:
+        if not isinstance(row, Mapping):
+            continue
+        agent = row.get("agent")
+        if not isinstance(agent, Mapping):
+            continue
+        completed = parse_utc(str(row.get("completed_at") or ""))
+        if completed is None or not start <= completed.timestamp() <= end:
+            continue
+        throughput = row.get("throughput")
+        if not isinstance(throughput, Mapping):
+            continue
+        rate = _positive_rate(throughput.get("tokens_per_second"))
+        if rate is None:
+            continue
+        lane = (str(row.get("backend") or ""), str(agent.get("model") or ""))
+        rates.setdefault(lane, []).append(rate)
+    return {lane: tuple(values) for lane, values in rates.items()}
+
+
 def _historical_reference_rate(
     project: str, backend: str, model: str, window_bucket: int
 ) -> tuple[float | None, int]:
@@ -161,31 +202,13 @@ def _historical_reference_rate(
     small or absent cohort is not a reference; a run then keeps an unknown
     cause instead of inheriting another backend's or model's rate.
     """
-    from reckon import ledger as ledger_module
-
-    try:
-        rows = ledger_module.load(project)[0]["runs"]
-    except (ledger_module.LedgerError, OSError, ValueError, KeyError, TypeError):
-        return None, 0
-    end = window_bucket * 300
-    start = end - 7 * 86400
-    rates: list[float] = []
-    for row in rows:
-        if not isinstance(row, Mapping) or row.get("backend") != backend:
-            continue
-        agent = row.get("agent")
-        if not isinstance(agent, Mapping) or agent.get("model") != model:
-            continue
-        completed = parse_utc(str(row.get("completed_at") or ""))
-        if completed is None or not start <= completed.timestamp() <= end:
-            continue
-        throughput = row.get("throughput")
-        if not isinstance(throughput, Mapping):
-            continue
-        rate = _positive_rate(throughput.get("tokens_per_second"))
-        if rate is not None:
-            rates.append(rate)
+    rates = _lane_reference_rates(project, window_bucket).get((backend, model), ())
     return (median(rates), len(rates)) if len(rates) >= 10 else (None, len(rates))
+
+
+# Callers clear the reference cache through this name; the read it caches is
+# the per-project one above.
+_historical_reference_rate.cache_clear = _lane_reference_rates.cache_clear  # type: ignore[attr-defined]
 
 
 def _budget_overrun_cause(

@@ -103,6 +103,71 @@ def _node_of(record: Mapping[str, Any]) -> TaskNode:
     return _node_from_pointer(record)
 
 
+def _backend_serves_pair(
+    config: Mapping[str, Any], backend: str, lane: str, model_key: str
+) -> bool:
+    """Whether the named backend's own entry carries ``(lane, model_key)``.
+
+    Two backends may serve one pair, such as a lane's plain backend and an
+    editing variant of it, so the pair alone does not name the backend. The
+    named backend's own entry is what decides whether it can run the model, by
+    the same two paths the catalogue resolver accepts: an entry carrying the
+    pair, or the lane's own backend serving one of the lane's declared models.
+    """
+    entry = (config.get("backends") or {}).get(backend)
+    if not isinstance(entry, Mapping):
+        return False
+    if str(entry.get("lane") or "") != lane:
+        return False
+    if str(entry.get("model_key") or "") == model_key:
+        return True
+    declared = (config.get("lanes") or {}).get(lane) or {}
+    return model_key in (declared.get("models") or {})
+
+
+def _pair_a_named_backend_serves(
+    config: Mapping[str, Any], backend: str, model: str
+) -> tuple[str, str]:
+    """The ``(lane, model key)`` a named backend serves for ``model``, or a refusal.
+
+    A model name may be declared by more than one lane, and one lane may be
+    served by more than one backend, so resolving the model on its own returns
+    whichever backend the configuration happens to list first. The backend the
+    edit named is asked directly instead: the model is resolved within that
+    backend's own lane, and refused naming both when the lane does not declare
+    it or the backend's entry does not serve the pair.
+    """
+    from reckon import ledger
+
+    backends = config.get("backends") or {}
+    entry = backends.get(backend)
+    if not isinstance(entry, Mapping):
+        defined = ", ".join(sorted(str(name) for name in backends))
+        raise CrewError(
+            f"backend {backend!r} is not defined by the flight configuration "
+            f"(defined backends: {defined or 'none'})"
+        )
+    lane = str(entry.get("lane") or "") or str(ledger.resolve_name(backend)[0] or "")
+    lane_filter = lane or None
+    try:
+        resolved_lane, model_key = ledger.resolve_name(model, lane=lane_filter)
+    except ValueError as exc:
+        raise CrewError(
+            f"backend {backend!r} does not serve model {model!r}: {exc}"
+        ) from exc
+    if resolved_lane is None:
+        raise CrewError(
+            f"backend {backend!r} does not serve model {model!r}: "
+            f"{ledger._undeclared_model_refusal(model, lane_filter)}"
+        )
+    if not _backend_serves_pair(config, backend, resolved_lane, str(model_key)):
+        raise CrewError(
+            f"backend {backend!r} does not serve model {model!r} "
+            f"(lane {resolved_lane!r}, model key {model_key!r})"
+        )
+    return resolved_lane, str(model_key)
+
+
 def _named_route(
     record: Mapping[str, Any], backend: str, model: str
 ) -> dict[str, str] | None:
@@ -110,7 +175,9 @@ def _named_route(
 
     A route named here is a named route, not a hint: it passes the same
     override checks a dispatch's own lane and model do, so an edit cannot put a
-    request on a lane or model the flight configuration does not serve. The
+    backend, a lane or a model the flight configuration does not serve on a
+    request. A backend named beside a model is kept when that backend serves the
+    model, because which backend runs a pair is the caller's decision; the
     backend's lane and model key are returned beside its name, so a later
     reader carries the catalogue pair without re-resolving a name that may
     since have moved.
@@ -127,6 +194,13 @@ def _named_route(
     config = _resolve_lane_config(record)
     _refuse_a_combined_lane_model_backend(backend)
     if model:
+        if backend:
+            lane, model_key = _pair_a_named_backend_serves(config, backend, model)
+            return {
+                "backend": str(backend),
+                "lane": lane,
+                "model_key": model_key,
+            }
         try:
             backend_name, lane, model_key = _model_narrowed_backend(
                 config, model, backend, local=bool(record.get("local"))

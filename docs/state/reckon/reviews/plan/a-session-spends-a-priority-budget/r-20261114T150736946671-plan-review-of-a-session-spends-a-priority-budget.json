@@ -1,0 +1,185 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-14T15:19:49.307Z",
+  "dispatched_at": "2026-11-14T15:10:26Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-session-spends-a-priority-budget.html:62",
+      "id": "reasoning-1",
+      "reason": "the rule and the acceptance test are mutually unsatisfiable, so a node implementing the stated ordering fails the section's own gate while a node passing the gate implements a different ordering, and the starvation guarantee the section rests on has no mechanism behind it.",
+      "text": "\u00a72 says admission orders across sessions \"by priority first\", with ageing applied only among equal priorities, and in the same breath says \"the ageing rule still lifts any request that has waited past its bound, so a spent budget can move work ahead but cannot starve another session\"; its own done-when at line 69 then requires a priority-0 request older than the ageing bound to be admitted ahead of a fresh priority-3 one",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-session-spends-a-priority-budget.html:86",
+      "id": "wiring-1",
+      "reason": "as declared \u00a74 is dispatchable in parallel with \u00a72 and its own done-when fails on priority and budget columns that do not yet exist.",
+      "text": "\u00a74's done-when requires a queue view whose rows carry \"its priority\" and whose rows sit beside each session's budget, and both facts arrive only with \u00a72; `<meta name=\"plan-section-depends-on\">` declares only `s3 -> s2`",
+      "type": "wiring",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-session-spends-a-priority-budget.html:53",
+      "id": "reasoning-2",
+      "reason": "\u00a74's scope is exposing an existing ordering and its reasons plus the genuinely new fields, not authoring the ordering; left as written a node may re-derive it, which the section's own requirement that the view and admission cannot disagree forbids.",
+      "text": "\u00a71 states that no \"importable function lists the queued and awaiting requests in the order admission will launch them, with the reason for each place\", but `reckon.crew.queue_order.admission_order_details` already returns exactly that pairing, emitting \"delivered review\", \"ageing\", \"priority override N\", \"roadmap priority\" and \"queued at (roadmap priority unavailable)\"",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-session-spends-a-priority-budget.html:71",
+      "id": "evidence_paths-1",
+      "reason": "a coordinator composing a node brief must name the log path, and a log left in a worker's scratch tree is not evidence a later reader can open.",
+      "text": "\u00a72 and \u00a73 delegate their gate log to \"the section's evidence fragment\" (line 82) without naming a path, and \u00a74's done-when (line 96) names no evidence destination at all",
+      "type": "evidence_paths",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-session-spends-a-priority-budget.html:96",
+      "id": "done_when-1",
+      "reason": "the control is implementable as a mutation of the view's ordering, so it can fail and does show the guard fires; the base-revision form would be stronger but its absence does not invalidate the gate.",
+      "text": "\u00a74's negative control is a stated counterfactual (\"a view that ordered by queue time alone\") rather than an arm run against the base revision, which is the form \u00a72 and \u00a73 use",
+      "type": "done_when",
+      "would_change": false
+    }
+  ],
+  "plan_commit": "d3e53cbde2305b8f10fdfe44de22f8073d8b8259",
+  "plan_fingerprint": "30a815360bc769c78951d0f12f73fddf4d883d56d7ed8f571ec3ac65ca2d8507",
+  "plan_slug": "a-session-spends-a-priority-budget",
+  "plan_version": 0,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "8e41a6d3-d0e0-4927-afd1-771942ebfe6a",
+      "commit": "fccbfa77c7e4a506c79a4400ffd0c3cee5da1b23",
+      "commit_basis": "edit",
+      "finding": "reasoning-1",
+      "note": "\u00a72 states one order: delivered reviews, then ageing past its bound, then priority, then fair share, then roadmap rank; the done-when case matches it",
+      "reason": "",
+      "when": "2026-11-14T17:25:22.176946+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "8e41a6d3-d0e0-4927-afd1-771942ebfe6a",
+      "commit": "fccbfa77c7e4a506c79a4400ffd0c3cee5da1b23",
+      "commit_basis": "edit",
+      "finding": "wiring-1",
+      "note": "plan-section-depends-on now declares s4 -> s2 beside s3 -> s2",
+      "reason": "",
+      "when": "2026-11-14T17:25:27.091038+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "8e41a6d3-d0e0-4927-afd1-771942ebfe6a",
+      "commit": "fccbfa77c7e4a506c79a4400ffd0c3cee5da1b23",
+      "commit_basis": "edit",
+      "finding": "reasoning-2",
+      "note": "\u00a71 now names admission_order_details and states what is missing: no served view or MCP read, and no awaiting, review, promotion, hold or budget rows",
+      "reason": "",
+      "when": "2026-11-14T17:25:31.980663+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "8e41a6d3-d0e0-4927-afd1-771942ebfe6a",
+      "commit": "fccbfa77c7e4a506c79a4400ffd0c3cee5da1b23",
+      "commit_basis": "edit",
+      "finding": "evidence_paths-1",
+      "note": "\u00a72, \u00a73, \u00a74 and \u00a75 name docs/evidence/fragments/a-session-spends-a-priority-budget/<section>.html",
+      "reason": "",
+      "when": "2026-11-14T17:25:37.183320+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "8e41a6d3-d0e0-4927-afd1-771942ebfe6a",
+      "commit": "fccbfa77c7e4a506c79a4400ffd0c3cee5da1b23",
+      "commit_basis": "edit",
+      "finding": "done_when-1",
+      "note": "\u00a74's negative control is now the base-revision arm, where no queue view or MCP read exists",
+      "reason": "",
+      "when": "2026-11-14T17:25:59.871981+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "8e41a6d3-d0e0-4927-afd1-771942ebfe6a",
+      "commit": "fccbfa77c7e4a506c79a4400ffd0c3cee5da1b23",
+      "commit_basis": "edit",
+      "finding": "done_when-1",
+      "note": "\u00a74's negative control is now the base-revision arm, where no queue view or MCP read exists",
+      "reason": "",
+      "when": "2026-11-14T17:26:16.650875+00:00"
+    }
+  ],
+  "responses": {
+    "done_when-1": {
+      "action": "acted",
+      "by": "8e41a6d3-d0e0-4927-afd1-771942ebfe6a",
+      "commit": "fccbfa77c7e4a506c79a4400ffd0c3cee5da1b23",
+      "commit_basis": "edit",
+      "note": "\u00a74's negative control is now the base-revision arm, where no queue view or MCP read exists",
+      "reason": "",
+      "when": "2026-11-14T17:26:16.650875+00:00"
+    },
+    "evidence_paths-1": {
+      "action": "acted",
+      "by": "8e41a6d3-d0e0-4927-afd1-771942ebfe6a",
+      "commit": "fccbfa77c7e4a506c79a4400ffd0c3cee5da1b23",
+      "commit_basis": "edit",
+      "note": "\u00a72, \u00a73, \u00a74 and \u00a75 name docs/evidence/fragments/a-session-spends-a-priority-budget/<section>.html",
+      "reason": "",
+      "when": "2026-11-14T17:25:37.183320+00:00"
+    },
+    "reasoning-1": {
+      "action": "acted",
+      "by": "8e41a6d3-d0e0-4927-afd1-771942ebfe6a",
+      "commit": "fccbfa77c7e4a506c79a4400ffd0c3cee5da1b23",
+      "commit_basis": "edit",
+      "note": "\u00a72 states one order: delivered reviews, then ageing past its bound, then priority, then fair share, then roadmap rank; the done-when case matches it",
+      "reason": "",
+      "when": "2026-11-14T17:25:22.176946+00:00"
+    },
+    "reasoning-2": {
+      "action": "acted",
+      "by": "8e41a6d3-d0e0-4927-afd1-771942ebfe6a",
+      "commit": "fccbfa77c7e4a506c79a4400ffd0c3cee5da1b23",
+      "commit_basis": "edit",
+      "note": "\u00a71 now names admission_order_details and states what is missing: no served view or MCP read, and no awaiting, review, promotion, hold or budget rows",
+      "reason": "",
+      "when": "2026-11-14T17:25:31.980663+00:00"
+    },
+    "wiring-1": {
+      "action": "acted",
+      "by": "8e41a6d3-d0e0-4927-afd1-771942ebfe6a",
+      "commit": "fccbfa77c7e4a506c79a4400ffd0c3cee5da1b23",
+      "commit_basis": "edit",
+      "note": "plan-section-depends-on now declares s4 -> s2 beside s3 -> s2",
+      "reason": "",
+      "when": "2026-11-14T17:25:27.091038+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/Code/reckon/docs/state/reckon/reviews/plan/a-session-spends-a-priority-budget/r-20261114T150736946671-plan-review-of-a-session-spends-a-priority-budget.json",
+  "review_run_id": "r-20261114T150736946671-plan-review-of-a-session-spends-a-priority-budget",
+  "reviewed_blob_sha": "7cbcba54642b6460261c98ffa246174858914ce0",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `1ad29c422c` resolves as a plan commit, `queued-work-needs-no-workaround` resolves under `docs/plans/`, and sections s1\u2013s4 resolve.",
+    "done_when": "a finding \u2014 \u00a72's done-when carries a bullet that contradicts its own ordering rule, so no implementation of the stated mechanism can satisfy the gate. Every section does name a negative control.",
+    "evidence_paths": "a finding \u2014 \u00a72 and \u00a73 send the gate log to \"the section's evidence fragment\" rather than a path, and \u00a74 names no evidence destination at all.",
+    "naming": "pass \u2014 no plan labels or ticket numbers reach a symbol or a comment; no changelog prose.",
+    "reasoning": "a finding \u2014 \u00a72 asserts two incompatible admission rules, and \u00a71 claims an absence that the repository already supplies.",
+    "single_goal": "pass \u2014 each of \u00a72, \u00a73 and \u00a74 carries one mechanism: a budgeted cross-session priority, its inheritance into the downstream queues, and one readable queue document.",
+    "wiring": "a finding \u2014 \u00a74's done-when requires priority-at-submission and per-session budget figures that only \u00a72 delivers, yet `plan-section-depends-on` declares only `s3 -> s2`."
+  },
+  "section_digests": {
+    "_document": "f14ed1c411ddcc334dce99ff9d19b88a07ea70798f776b7facf5e741ff94a6af",
+    "s1": "18c85abe4231ea5d432c54d0291c86fae3ddb332356927c52a727510b51f7d77",
+    "s2": "9f41ede878f7f1e24ef378c6972f825dd70497323e0542459206840e35df2dd6",
+    "s3": "dfe4283b30cea0b24c61d2d4c326aa3fd8385c1ce627ed83afc076c7f8c624bf",
+    "s4": "a4d94d2f0d264eb33ccac335c30d474738428b29a51eef9df7259477ccca53b2"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-14T17:17:00.385364+00:00",
+  "total": null
+}
