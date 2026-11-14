@@ -1,0 +1,57 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own arms on disk: suite-after-arm.log at revision 0344f019e5 records 54 passed EXIT=0, suite-base-arm.log at revision fb92136a records 51 passed EXIT=0, and suite-record-path-callers.log at 0344f019e5 records 34 passed EXIT=0. None carries a FAILED line, so the set difference between the base arm and the after arm is empty (0 failures added). The after arm covers tests/test_a_landing_without_its_pointer_keeps_the_pending_record.py and tests/test_staged_write_inventory.py; the caller arm covers the five test files that reference pending_landing._record_path.",
+  "call_sites": [
+    "reckon/crew/recovery_classification.py:1035 (_promoted_awaiting_merge reads pending_landing._record_path; on the settled-run classification path reached from reckon/crew/recovery_classification.py:2831)",
+    "reckon/crew/recovery_repair_dispatch.py:93 (merge-repair dispatch reads pending_landing._record_path)",
+    "reckon/crew/recovery_repair_dispatch.py:134 (_settled_landing branch reads pending_landing record path) and :137 (the write-back to the same path)",
+    "reckon/crew_run_commands.py:3653 (crew_complete --land refusal reads pending_landing._record_path before any write)",
+    "reckon/crew_run_commands.py:3618 (crew_complete calls finish_pending_landings(only_run=run_id))",
+    "reckon/crew_run_commands.py:4006 (clear_pending unlinks the record through _record_path inside the module)",
+    "reckon/crew/queue_landing.py:1897 (the landing pass calls pending_landing.finish_pending_landings)"
+  ],
+  "completed_at": "2026-11-14T12:37:23.036Z",
+  "dispatched_at": "2026-11-14T12:30:49Z",
+  "findings": [
+    {
+      "file": "reckon/crew/recovery_classification.py",
+      "line": "1035",
+      "severity": "non-blocking",
+      "text": "no committed test exercises _promoted_awaiting_merge, so the caller whose AttributeError this repair fixes is guarded only incidentally: the rename would be caught by the five test files that call pending_landing._record_path directly (for example tests/test_a_finished_pending_landing_retires_its_run.py:63), but a caller that changed to some other accessor without renaming the helper would red nowhere. The node's negative control for this caller is a script in its run directory rather than a test, so the specific path stays unguarded by the suite. Worth recording; it does not hold this node, whose repair is the minimal restoration of the name its callers already use."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "read commit 0344f019e5 against its parent 92b4484919, the revision the previous review read: two files, 4 insertions and 4 deletions. reckon/crew/pending_landing.py:60 renames record_path back to _record_path and :90 and :122 use the renamed helper; reckon/crew_run_commands.py:3653 reads pending_landing._record_path in the land refusal. No other line moved.",
+    "done_when": "the reviewed node's done_when names tests/test_a_landing_without_its_pointer_keeps_the_pending_record.py and three assertions (non-zero exit, unchanged record bytes, one row from finish_pending_landings(only_run=...)), plus an empty-project no-write case; the after arm on disk runs that file with tests/test_staged_write_inventory.py and records 54 passed EXIT=0 at revision 0344f019e5, so the gate asserts the done_when's measure at the head under review.",
+    "goal": "the reviewed node's goal is to keep a pending-landing record when its run's pointer is gone so the landing pass can still finish it; the landed delta preserves it by restoring the accessor that both the writer (reckon/crew/pending_landing.py:60) and the reader (reckon/crew_run_commands.py:3653) use, so the record the refusal points at is the record the pass can read.",
+    "manifest": "read; status complete, commits 92b4484919b20ae4859bf6fe5d4afad4f0e13e39 and 0344f019e546364f04feebcdb65cbdf7b14da870, arms recorded as after 54 passed, base 51 passed, five caller files 34 passed, and the negative control recorded as an AttributeError then EXIT=1 at the parent tree.",
+    "write_paths": "the reviewed node declared reckon/crew/pending_landing.py, reckon/crew_run_commands.py, tests/test_a_landing_without_its_pointer_keeps_the_pending_record.py, docs/evidence/fragments placeholder plus a figures directory; the delta under review touches only the first two, both inside the fence, and adds no path."
+  },
+  "justifications": {
+    "durability": "the rename is caught only indirectly: tests/test_a_finished_pending_landing_retires_its_run.py:63 calls pending_landing._record_path and would raise AttributeError if the helper were renamed again, but no test names reckon/crew/recovery_classification.py:1035, the caller whose AttributeError this repair fixes.",
+    "evidence": "suite-after-arm.log records 54 passed EXIT=0 at revision 0344f019e5 with the revision, tree and command in its header, and negative-control.log records the AttributeError at reckon/crew/recovery_classification.py:1035 over the parent tree; I re-ran its probe against the head tree and got EXIT=0 with a verdict sentence.",
+    "fit": "the underscore-private accessor matches the surrounding helpers in reckon/crew/pending_landing.py:113 (_cited_head) and :119 (clear_pending's private call), and restoring the original name adds no alias for callers to drift across.",
+    "goal_fidelity": "reckon/crew/pending_landing.py:60 and reckon/crew_run_commands.py:3653 now name the record path identically, so the refusal protects the same file the landing pass reads.",
+    "reuse": "the delta adds no definition; it restores the single accessor at reckon/crew/pending_landing.py:60 rather than introducing a second naming path, and a grep for pending_landing.record_path at the head returns nothing.",
+    "scope_discipline": "commit 0344f019e5 changes only reckon/crew/pending_landing.py and reckon/crew_run_commands.py, both declared write paths, in 4 added and 4 removed lines with no surrounding cleanup."
+  },
+  "project": "reckon",
+  "review_node": "review-of-a-landing-without-its-pointer-keeps-the-pending-record-0344f019e546",
+  "review_run_id": "r-20261114T122410834261-review-of-a-landing-without-its-pointer-keeps-the-pending-record-0344f019e546",
+  "reviewed_base_sha": "92b4484919b20ae4859bf6fe5d4afad4f0e13e39",
+  "reviewed_head_sha": "0344f019e546364f04feebcdb65cbdf7b14da870",
+  "reviewed_run_id": "r-20261114T093943384148-a-landing-without-its-pointer-keeps-the-pending-record",
+  "scores": {
+    "durability": 15,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-14T14:05:46.632192+00:00",
+  "total": 111
+}
