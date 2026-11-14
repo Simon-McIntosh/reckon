@@ -25,7 +25,7 @@
   <title>The Monitor Reads Each Fact Once | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="292">
+<meta name="plan-version" content="293">
 <meta name="plan-modified" content="2026-11-14">
 </head>
 <body>
@@ -1234,6 +1234,12 @@ staged paths.</p>
 <div class="r-comment" data-section="s52" data-id="c-run-r-20261114T151437179974-review-of-a-tick-computes-the-reference-rate-once-275b58183b9d" data-who="reckon-build" data-when="2026-11-14T15:47:47.832Z">
     <div class="r-comment-body"><p>the review of r-20261114T135004086166-a-tick-computes-the-reference-rate-once stores a parsed record scoring goal_fidelity 12, evidence 14, scope_discipline 20, durability 15, fit 15, reuse 4, with two non-blocking findings and done_when recorded as fail.</p></div>
 </div>
+<div class="r-comment" data-section="s53" data-id="c-run-r-20261114T212556245162-review-of-a-tick-walks-the-process-table-once-00645a9bd975" data-who="reckon-build" data-when="2026-11-14T22:08:37.156Z">
+    <div class="r-comment-body"><p>review of r-20261114T174544423075-a-tick-walks-the-process-table-once stored parsed at its review-records directory (base b8530ec5e1, head 00645a9bd9), scores recorded, 0 added failures, 2 non-blocking findings</p></div>
+</div>
+<div class="r-comment" data-section="s53" data-id="c-run-r-20261114T174544423075-a-tick-walks-the-process-table-once" data-who="reckon-build" data-when="2026-11-14T21:20:29.547Z">
+    <div class="r-comment-body"><p>§53 now holds one process-table walk for the whole live-work pass: live_work_populations opens process_signal.process_table_walk_once() around its terminal-duty loop, so a reading over 40 terminal pointers walks /proc once instead of 40 times (gate 1 passed EXIT=0; base negative control 40 walks, 1 failed EXIT=1; matched arms base 55 passed, head 56 passed). Fragment: docs/evidence/fragments/the-monitor-reads-each-fact-once/a-tick-walks-the-process-table-once.html</p></div>
+</div>
 <div class="r-comment" data-section="s6" data-id="c-run-r-20261024T125322878212-the-station-ingests-only-new-bytes" data-who="reckon-build" data-when="2026-10-24T13:09:00.668Z">
     <div class="r-comment-body"><p>stream ingest reads only bytes past its stored offset with a 64-byte tail anchor and a stored last-read size, refolding on a changed inode, a size below the consumed offset, a size below the last-read size, or a moved anchor; five recorded streams replayed as 93 appends fold equal to a full fold with 0 per-tick byte-bound violations, descriptors equal across 50 event writes, gate 24 passed exit 0 against base 15 passed exit 0</p></div>
 </div>
@@ -1302,9 +1308,6 @@ staged paths.</p>
 </div>
 <div class="r-comment" data-section="s9" data-id="c-run-r-20261027T042852990093-obligations-read-the-station" data-who="reckon-build" data-when="2026-10-27T13:28:42Z">
     <div class="r-comment-body"><p>The station computes each live session's obligations once per change into its node-local store and exports one change-only snapshot per project at most every 10 s, with the carried station heartbeat republished once it has moved and the file is 90 s old so a quiet station never reads as stopped; the prompt hook and the crew obligations view both answer from it, in that order ahead of the derivation, and a station heartbeat past the 120 s window is reported stale with its age.</p></div>
-</div>
-<div class="r-comment" data-section="s53" data-id="c-run-r-20261114T212556245162-review-of-a-tick-walks-the-process-table-once-00645a9bd975" data-who="reckon-build" data-when="2026-11-14T22:08:37.156Z">
-    <div class="r-comment-body"><p>review of r-20261114T174544423075-a-tick-walks-the-process-table-once stored parsed at its review-records directory (base b8530ec5e1, head 00645a9bd9), scores recorded, 0 added failures, 2 non-blocking findings</p></div>
 </div>
 </section>
 </main>
