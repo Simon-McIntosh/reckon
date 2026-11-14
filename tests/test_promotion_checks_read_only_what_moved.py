@@ -27,8 +27,9 @@ from click.testing import CliRunner
 
 from reckon import cli as cli_module
 from reckon import ledger
-from reckon.crew import promotion_checks
+from reckon.crew import promotion_checks, promotion_evidence
 from reckon.crew.node import CrewError
+from reckon.crew.runs import pointer_path
 from tests.helpers.git import git as _git
 from tests.test_a_promotion_does_not_read_the_whole_ledger_index import (
     PLAN,
@@ -100,6 +101,42 @@ def _enumerates_the_tree(argv: list[str]) -> bool:
 
 def _tree_walks(calls: list[list[str]]) -> list[list[str]]:
     return [argv for argv in calls if _enumerates_the_tree(argv)]
+
+
+def _unbounded_working_tree_reads(calls: list[list[str]]) -> list[list[str]]:
+    """Whether a git argv reads the working tree without bounding the paths.
+
+    This is the cost the promotion pays per promotion: ``status``,
+    ``ls-files`` and ``ls-tree`` enumerate what they are pointed at, and a
+    ``diff`` with fewer than two revisions diffs the working tree against a
+    commit. A two-commit diff reads no working tree at all — git compares the
+    two tree objects and touches only the paths that differ — so it is not
+    counted here even though :func:`_enumerates_the_tree` treats it as a walk.
+    """
+    subcommands = {"status", "ls-tree", "ls-files", "diff"}
+
+    def unbounded(argv: list[str]) -> bool:
+        index = next(
+            (position for position, item in enumerate(argv) if item in subcommands),
+            None,
+        )
+        if index is None:
+            return False
+        subcommand = argv[index]
+        if "--" in argv:
+            tail = argv[argv.index("--") + 1 :]
+            if [item for item in tail if not item.startswith("-")]:
+                return False
+        if subcommand in {"ls-tree", "ls-files", "status"}:
+            return True
+        revisions = [
+            item
+            for item in argv[index + 1 :]
+            if not item.startswith("-") and item != "--"
+        ]
+        return len(revisions) < 2
+
+    return [argv for argv in calls if unbounded(argv)]
 
 
 @pytest.fixture()
@@ -193,6 +230,100 @@ def _record(root: Path, tmp_path: Path, base: str, commit: str) -> dict:
         "manifest_path": str(manifest),
         "node": {"id": "figure-node", "plan": PLAN, "section": "s3"},
     }
+
+
+def _declare_write_paths(paths: list[str]) -> None:
+    """Give the fixture's run a declaration, so the reads have a root to bound;
+    a run that declares nothing has nothing its changes can be charged to."""
+    pointer_file = pointer_path(RUN_ID)
+    pointer = json.loads(pointer_file.read_text(encoding="utf-8"))
+    pointer["node"]["write_paths"] = list(paths)
+    pointer_file.write_text(json.dumps(pointer), encoding="utf-8")
+
+
+def _promote(root: Path, home: Path) -> tuple[object, _GitRecorder]:
+    (home / "mounts.json").write_text(
+        json.dumps({PROJECT: str(root / "docs")}), encoding="utf-8"
+    )
+    recorder = _GitRecorder()
+    with recorder:
+        result = CliRunner().invoke(
+            cli_module.main,
+            [
+                "crew",
+                "complete",
+                "--wait",
+                "--run",
+                RUN_ID,
+                "--gate",
+                "not-run",
+                "--outcome",
+                "the fixture exercises the working-tree reads a promotion makes",
+                "--no-commit",
+                "the sole deliverable is the report",
+                "--checkout-path",
+                str(root),
+            ],
+        )
+    return result, recorder
+
+
+def test_a_full_promotion_reads_no_unbounded_working_tree(
+    tmp_path: Path, home: Path
+) -> None:
+    """A promotion of the 2,000-row / 5,000-file fixture bounds every status."""
+    root = _build_checkout(tmp_path / "repo")
+    _five_thousand_files(root)
+    _seed(root, tmp_path)
+    _declare_write_paths(["docs/"])
+
+    result, recorder = _promote(root, home)
+
+    assert result.exit_code == 0, result.output
+    assert recorder.calls, "the instrument saw no git call at all"
+    unbounded = _unbounded_working_tree_reads(recorder.calls)
+    assert unbounded == [], unbounded
+    status_calls = [argv for argv in recorder.calls if "status" in argv]
+    assert status_calls, "no status call at all, so nothing was measured"
+    assert all("--" in argv for argv in status_calls), status_calls
+
+
+def test_dirt_outside_the_declared_paths_is_not_charged_to_the_run(
+    tmp_path: Path, home: Path
+) -> None:
+    """Bounding the read must not make the refusal stop firing at a root.
+
+    The committed-work guard charges a run only for the paths it declared, so a
+    peer's stray edit beside them reaches the boundary check instead of this
+    refusal. The same instrument is shown catching dirt at a declared path, so
+    the clean reading is an absence rather than a broken reader.
+    """
+    root = _build_checkout(tmp_path / "repo")
+    _five_thousand_files(root)
+    base = _git(root, "rev-parse", "HEAD")
+    (root / "corpus" / "shot-00001.txt").write_text("stray edit\n", encoding="utf-8")
+    record = {
+        "run_id": "r-20261114T000000000000-stray-a",
+        "project": PROJECT,
+        "repo": str(root),
+        "worktree": str(root),
+        "base_sha": base,
+        "node": {"id": "stray-node", "write_paths": ["docs/"]},
+    }
+    recorder = _GitRecorder()
+    with recorder:
+        promotion_evidence._require_commits_beyond_base(
+            record["run_id"], record, ()
+        )
+
+    statuses = [argv for argv in recorder.calls if "status" in argv]
+    assert statuses, "the instrument saw no status call at all"
+    assert all("--" in argv for argv in statuses), statuses
+
+    (root / "docs" / "deliverable.txt").write_text("declared\n", encoding="utf-8")
+    with pytest.raises(CrewError) as refused:
+        promotion_evidence._require_commits_beyond_base(record["run_id"], record, ())
+    assert "docs/deliverable.txt" in str(refused.value), refused.value
 
 
 def test_the_figure_twin_check_reads_only_the_run_commits(

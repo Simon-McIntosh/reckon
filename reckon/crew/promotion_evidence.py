@@ -268,7 +268,7 @@ def _committed_scope_uncached(
     )
 
 
-def _uncommitted_paths(tree: Path) -> list[str]:
+def _uncommitted_paths(tree: Path, *, roots: Iterable[Path] | None = None) -> list[str]:
     """Return the tree's own report of the paths it holds uncommitted.
 
     Untracked paths count: a deliverable written but never staged is exactly
@@ -276,9 +276,22 @@ def _uncommitted_paths(tree: Path) -> list[str]:
     working tree holds rather than what the index knows about it. A tree git
     cannot read reports nothing, and the caller treats that as unmeasured
     rather than as clean.
+
+    ``roots`` bounds the read to the repository-relative paths a caller can
+    charge a change to, as literal pathspecs. A shared checkout and a fleet
+    worktree both carry other sessions' uncommitted work, so an unrestricted
+    read walks trees no run declares and then discards what it found; naming
+    the roots keeps the walk inside the paths the run answered for. ``None``
+    keeps the unrestricted read, which a caller reporting a whole tree needs.
     """
+    command = ["git", "status", "--porcelain"]
+    if roots is not None:
+        pathspecs = [f":(literal){Path(root).as_posix()}" for root in roots]
+        if not pathspecs:
+            return []
+        command += ["--", *pathspecs]
     result = subprocess.run(
-        ["git", "status", "--porcelain"],
+        command,
         cwd=tree,
         capture_output=True,
         text=True,
@@ -390,11 +403,11 @@ def _require_commits_beyond_base(
             )
     if commits:
         return
-    uncommitted = _uncommitted_paths(tree)
-    if not uncommitted:
-        return
     roots = _declared_repository_roots(record, tree=tree)
     if not roots:
+        return
+    uncommitted = _uncommitted_paths(tree, roots=roots)
+    if not uncommitted:
         return
     held = [
         path
