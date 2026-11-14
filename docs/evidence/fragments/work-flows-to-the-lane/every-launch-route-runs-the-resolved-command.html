@@ -1,0 +1,81 @@
+<section id="every-launch-route-runs-the-resolved-command-evidence" class="r-evidence">
+  <h2>Every launch route runs the resolved command</h2>
+
+  <h3 id="every-launch-route-runs-the-resolved-command-call">The call that ran the bare command</h3>
+  <p>
+    <code>reckon/crew/resumption.py::_request_lane_availability</code> composes a launch
+    plan with <code>fence=False</code> and hands <code>plan.argv</code> straight to
+    <code>subprocess.run</code>. A composed argv carries the backend's bare command name,
+    so this call execs the name rather than the absolute path the launch routes resolve.
+    It is the first call a dispatch makes that runs a backend's own command, so a host
+    whose PATH omits a directory the flight layer declares for that backend kills the
+    probe and the lane reads <em>unavailable</em> although the flight view reports the
+    command found.
+  </p>
+
+  <h3 id="every-launch-route-runs-the-resolved-command-route">What the composed launch route already did</h3>
+  <p>
+    An end-to-end <code>crew dispatch --backend &lt;backend&gt; --no-watch</code> through
+    the CLI, with a stub <code>codex</code> that exists only in a directory on the
+    backend's declared search path and a PATH that omits that directory, launches on the
+    unchanged code: the record's argv carries the absolute stub path behind the fence's
+    <code>--</code>. The composition routes therefore already rewrite the harness element,
+    and the surviving call is the probe above rather than the launch composition.
+  </p>
+
+  <h3 id="every-launch-route-runs-the-resolved-command-reproduction">The reproduction, on unchanged code</h3>
+  <p>
+    The probe is driven with a marking stub on the declared search path, a PATH without
+    that directory, and a backend entry declaring only <code>launch: cli</code>,
+    <code>command: codex</code> and <code>search_path</code>. The stub never runs and the
+    call raises:
+  </p>
+  <pre>AssertionError: {'status': 'unavailable', 'detail': "lane probe could not run:
+[Errno 2] No such file or directory: 'codex'"}</pre>
+  <p>
+    The exception text is the incident's own: a bare name the resolution had already
+    located, raised by <code>subprocess.run</code> inside
+    <code>_request_lane_availability</code>.
+  </p>
+
+  <h3 id="every-launch-route-runs-the-resolved-command-repair">The repair</h3>
+  <p>
+    That call now resolves its command before it resolves whether the lane is up: the plan
+    the probe composes is passed through <code>resolve_launch_executable</code>, the same
+    rewrite every launch route applies, and an unresolvable backend refuses with the
+    resolution's own message naming the PATH and the declared directories it searched.
+  </p>
+
+  <h3 id="every-launch-route-runs-the-resolved-command-control">The negative control</h3>
+  <p>
+    Restoring the bare command name on that call — the composed plan handed to
+    <code>subprocess.run</code> without the resolution — fails the test again with the
+    same text:
+  </p>
+  <pre>1 failed, 1 passed in 4.53s
+E  AssertionError: {'status': 'unavailable', 'detail': "lane probe could not run:
+[Errno 2] No such file or directory: 'codex'"}</pre>
+
+  <h3 id="every-launch-route-runs-the-resolved-command-gate">The gate</h3>
+  <p>
+    The node's suite arm reads <code>53 passed</code> over
+    <code>tests/test_every_launch_route_runs_the_resolved_command.py</code> and
+    <code>tests/test_staged_write_inventory.py</code>, run with the shared root
+    environment:
+  </p>
+  <pre>PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q \
+  tests/test_every_launch_route_runs_the_resolved_command.py \
+  tests/test_staged_write_inventory.py
+53 passed in 19.20s</pre>
+
+  <h3 id="every-launch-route-runs-the-resolved-command-limits">What this evidence does not show</h3>
+  <p>
+    The gate ran on the fleet node rather than on <code>all_debug</code>, because the time
+    fence was reached before the submission. The baseline arm at the declared base
+    revision was not run as a separate full-file arm at that revision: the before state is
+    the failing run of the same test against unchanged source, and the after state the
+    passing run at the head, which is the same comparison at a finer grain. The end-to-end
+    dispatch test in the same file passes on both sides; it is the guard that the
+    composition route keeps resolving, not the reproduction.
+  </p>
+</section>
