@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="every-shared-home-lock-holds-across-nodes">
+  <meta name="plan-title" content="Every shared-home lock holds across nodes">
+  <meta name="plan-evidence-for" content="reckon:every-shared-home-lock-holds-across-nodes">
+  <meta name="plan-verifies" content="reckon:every-shared-home-lock-holds-across-nodes#s5">
+  <meta name="plan-recorded-at" content="2026-11-14">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-tags" content="locks,flock,lockf,model-catalogue,picker,budget">
+  <title>Lane, budget and picker locks exclude across nodes — evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+</head>
+<body>
+<article class="r-note" data-node="lane-budget-picker-locks-cross-node" data-reckon="landed" data-when="2026-11-14">
+  <h2 id="lane-budget-parts-head">Lane, budget and picker locks exclude across nodes</h2>
+
+  <p id="lane-budget-parts-what">Five shared-home lock sites took
+  <code>reckon.node_exclusive_lock.exclusive_lock</code>, whose POSIX record lock the file
+  server holds, in place of a bare <code>flock</code>, which the local kernel grants and a
+  second node therefore never sees: <code>budget_reset._locked</code>,
+  <code>model_catalogue._refresh_lock</code>, <code>paid_lanes.refresh_reserved_window</code>,
+  <code>paid_lanes.publish_document</code> and
+  <code>picker.outcomes.record_picker_hold</code>. Each keeps the answer its callers already
+  received: no call site changed.</p>
+
+  <p id="lane-budget-parts-answers">The banked-reset flag drops its module-level
+  <code>threading.RLock</code>, because <code>exclusive_lock</code> holds a process-local lock
+  per path before it opens the file, so two threads of one process are excluded exactly as
+  before and a nested call from one thread would deadlock no matter which lock came first —
+  the module makes no nested call. The catalogue refresh keeps its non-blocking take: a
+  refresh that cannot take the lock yields <code>False</code> and
+  <code>check_model_catalogue</code> returns <code>_read_snapshot()</code>, so a producer that
+  loses the race reads the snapshot on disk instead of fetching. The picker's holds log no
+  longer locks the file it appends to; it takes its lock on
+  <code>picker-holds.jsonl.lock</code>, because closing any descriptor for a record-locked file
+  drops the record lock, so the log being appended to cannot itself be the lock.</p>
+
+  <p id="lane-budget-parts-paths">Each of the four lock files is opened under
+  <code>reckon/</code> only through <code>exclusive_lock</code>. The audit log
+  <code>lock-path-audit.log</code> in the run directory shows the four constructions —
+  <code>budget-resets.json.lock</code> at <code>budget_reset.py:94</code> and the
+  <code>with_name(... + ".lock")</code> forms in the other three — beside every <code>open()</code>
+  in those modules: the picker's <code>path.open("a")</code> appends to the log, and
+  <code>paid_lanes</code>' three opens read the lane document and a stream. No other module in
+  <code>reckon/</code> names a lock path for any of the four, and nothing globs their
+  directories, so no second opener exists to drop a migrated lock mid-body.</p>
+
+  <p id="lane-budget-parts-guard">The guard's pending table drops exactly these five rows
+  (<code>reckon/crew/budget_reset.py::_locked</code>,
+  <code>reckon/crew/model_catalogue.py::_refresh_lock</code>,
+  <code>reckon/crew/paid_lanes.py::publish_document</code>,
+  <code>reckon/crew/paid_lanes.py::refresh_reserved_window</code>,
+  <code>reckon/crew/picker/outcomes.py::record_picker_hold</code>); the migrated calls no longer
+  take a bare <code>flock</code>, so the second assertion would name any row left behind.</p>
+
+  <p id="lane-budget-parts-test"><code>tests/test_lane_and_picker_locks_hold_across_nodes.py</code>
+  holds each lock from a second process with <code>fcntl.lockf</code> only — never
+  <code>flock</code> — which is the half GPFS holds across nodes. A hold recorded in a thread
+  while the picker's lock is held does not reach the log
+  (<code>_log_lines(log_path) == []</code>, asserted against a log that the released hold then
+  fills with exactly one line) and lands as one whole JSON line once the holder releases. A
+  catalogue refresh while the record lock is held calls its <code>fetch</code> zero times and
+  returns the snapshot already on disk; the same call on the free lock fetches once and returns
+  the new models, which is the control that the fetch this test watches for can be seen to
+  happen.</p>
+
+  <p id="lane-budget-parts-negative">The negative control is the same test file run against
+  <code>65431adf17b56c3a1fb04f32971d7729e4108dcc</code>, where neither site waits on a record
+  lock. Both cases fail there, on the assertion each exists to make:
+  <code>AssertionError: the hold did not wait for the record-lock holder</code> and
+  <code>AssertionError: the refresh fetched while a record-lock holder held</code>
+  (<code>assert ['https://lis...valid/models'] == []</code>). The run is
+  <code>negative-control-base.log</code> in the run directory, ending <code>2 failed</code> and
+  <code>EXIT=1</code>.</p>
+
+  <p id="lane-budget-parts-gate">Both suite arms ran on <code>65431adf</code>'s tree and this
+  head's tree with the same resolved command. The baseline arm reports
+  <code>53 passed, 2 errors</code>; the two errors are setup failures of
+  <code>test_staged_write_inventory.py</code>, whose module fixture runs
+  <code>git ls-tree</code> against the arm's tree and the baseline arm's tree is a
+  <code>git archive</code> extraction with no <code>.git</code> — they are scaffolding, not code
+  under test, and are attributed as such in the manifest. The after arm reports
+  <code>57 passed</code>, <code>EXIT=0</code>. Both logs are in the run directory.</p>
+</article>
+</body>
+</html>
