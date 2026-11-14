@@ -21,6 +21,7 @@ from collections.abc import (
     Iterable as Iterable,
     Iterator as Iterator,
     Mapping as Mapping,
+    Sequence as Sequence,
 )
 from contextlib import contextmanager as contextmanager, suppress as suppress
 from contextvars import ContextVar as ContextVar
@@ -2694,16 +2695,226 @@ _DRAIN_STUCK_VERDICTS = frozenset(
     {
         "stalled",
         "refused",
-        "unplaced",
         "held-for-allowance",
         "held-by-gate",
         "held-on-claim",
         "held-until-changed",
         "held-on-retry-backoff",
         "held-on-plan-review",
-        "held-behind-earlier-request",
     }
 )
+
+#: The verdict log's file name under the crew home, spelled here because the
+#: admission package imports this module at module scope and so cannot be
+#: imported back from here at module scope in turn.
+ADMISSION_VERDICT_LOG_NAME = "admission-verdicts.jsonl"
+#: How long a request may wait in a parked phase before it reads as stuck.
+STUCK_PHASE_SECONDS = 3600.0
+#: How long a request may stay admissible with lane room, across admission
+#: passes, without launching before it reads as stuck.
+STUCK_ADMISSION_PASSES = 3
+#: The prefix an unresolvable wait's obligation carries, spelled here for the
+#: same import-order reason as the log's name.
+WAIT_UNRESOLVABLE_PREFIX = "wait-unresolvable:"
+
+_PASS_HISTORY_CACHE: dict[str, Any] = {}
+
+
+def admission_pass_history() -> list[dict[str, Any]]:
+    """Every admission pass the verdict log records, oldest first.
+
+    One view reads this once and hands it to every row it classifies, so a
+    request's stuck verdict is decided from one reading of the log and two rows
+    in one view cannot disagree about what the passes recorded. The parsed
+    records are memoised against the file's identity, so a view that classifies
+    many requests parses the log once while a later append is still seen.
+    """
+    path = crew_home() / ADMISSION_VERDICT_LOG_NAME
+    try:
+        stat = path.stat()
+    except OSError:
+        return []
+    signature = (stat.st_mtime_ns, stat.st_size, stat.st_ino)
+    if _PASS_HISTORY_CACHE.get("signature") == signature:
+        return list(_PASS_HISTORY_CACHE.get("records") or [])
+    try:
+        text = path.read_text(encoding="utf-8")
+    except OSError:
+        return []
+    records: list[dict[str, Any]] = []
+    for line in text.splitlines():
+        try:
+            record = json.loads(line)
+        except ValueError:
+            continue
+        if isinstance(record, dict):
+            records.append(record)
+    _PASS_HISTORY_CACHE["signature"] = signature
+    _PASS_HISTORY_CACHE["records"] = records
+    return records
+
+
+def _verdict_rows_for(
+    passes: Sequence[Mapping[str, Any]], run_id: str
+) -> list[Mapping[str, Any]]:
+    """Every verdict a pass recorded for one request, oldest first."""
+    if not run_id:
+        return []
+    return [
+        row
+        for record in passes
+        for row in record.get("pointers") or ()
+        if isinstance(row, Mapping) and str(row.get("run_id") or "") == run_id
+    ]
+
+
+def _admissible_unlaunched_passes(
+    passes: Sequence[Mapping[str, Any]], run_id: str
+) -> int:
+    """How many of the latest passes left an admissible request unlaunched.
+
+    Counted from the newest pass backwards, and only while each pass had lane
+    room — the pass's own ``admissible_age_*`` figure, the measurement the drain
+    view reports. A pass that held the request for its allowance, its lane's
+    gate, a claim, or behind earlier requests had no room for it or decided
+    against it on purpose, and either way the run of passes ends there.
+    """
+    from reckon.crew import queue_admission
+
+    count = 0
+    for record in reversed(passes):
+        stamp = record.get("admissible_age_seconds")
+        if not isinstance(stamp, (int, float)) or isinstance(stamp, bool):
+            break
+        rows = _verdict_rows_for((record,), run_id)
+        if not rows:
+            # A pass that never saw the request says nothing about it: the run
+            # of unlaunched passes ends where the log stops mentioning it.
+            break
+        word = str(rows[-1].get("verdict") or "")
+        if word in queue_admission.HOLD_VERDICTS or word in _LAUNCHED_VERDICTS:
+            break
+        count += 1
+    return count
+
+
+_LAUNCHED_VERDICTS = frozenset({"launched", "routed", "moved"})
+
+
+def _stuck_wait_started(
+    pointer: Mapping[str, Any], phase: str
+) -> datetime | None:
+    """When the request entered the phase whose wait is being judged."""
+    hold = pointer.get("queue_hold")
+    if not isinstance(hold, Mapping):
+        hold = {}
+    if phase == "held":
+        stamp = hold.get("started_at")
+    elif phase == "queued":
+        stamp = pointer.get("queued_at")
+    elif phase == "launch-failed":
+        stamp = pointer.get("failure_at")
+    elif phase == "awaiting-upstream":
+        stamp = pointer.get("waits_at") or pointer.get("created_at")
+    else:
+        stamp = pointer.get("queued_at") or pointer.get("created_at")
+    return parse_utc(stamp)
+
+
+def _request_waits(pointer: Mapping[str, Any]) -> list[str]:
+    """The refs a request still waits on, as its own record states them."""
+    refs = pointer.get("waits")
+    if isinstance(refs, str):
+        refs = [refs]
+    if not isinstance(refs, (list, tuple)):
+        return []
+    return [str(ref).strip() for ref in refs if str(ref).strip()]
+
+
+def stuck_verdict(
+    pointer: Mapping[str, Any],
+    *,
+    passes: Sequence[Mapping[str, Any]] | None = None,
+    now: datetime | None = None,
+) -> dict[str, Any] | None:
+    """The one verdict on whether one request is stuck, and why.
+
+    The stop hook, ``crew view live`` and the drain view all read this, so none
+    of them derives its own answer. Three cases make a request stuck:
+
+    ``wait-unresolvable``
+        it carries a wait no project can resolve, so the phase stamp is not the
+        cause and waiting longer cannot clear it;
+    ``admissible-unlaunched``
+        every wait it declares is satisfied and it stayed admissible with lane
+        room across :data:`STUCK_ADMISSION_PASSES` passes without launching;
+    ``waiting``
+        it has waited past :data:`STUCK_PHASE_SECONDS` in a parked phase and the
+        pass that last examined it recorded a verdict that left it waiting.
+
+    ``passes`` is the caller's own read of :func:`admission_pass_history`, taken
+    once per view; a caller that passes none has the log read here.
+    """
+    now = now or datetime.now(UTC)
+    run_id = str(pointer.get("run_id") or "")
+    if not run_id:
+        return None
+    phase = str(pointer.get("phase") or "")
+    if phase not in _DRAIN_STUCK_PHASES:
+        return None
+    if passes is None:
+        passes = admission_pass_history()
+    rows = _verdict_rows_for(passes, run_id)
+    last = rows[-1] if rows else {}
+    last_verdict = str(last.get("verdict") or "")
+    started = _stuck_wait_started(pointer, phase)
+    age = (now - started).total_seconds() if started is not None else None
+    stage = str(last.get("stage") or "")
+    stage_seconds = last.get("stage_seconds")
+
+    def row(kind: str, reason: str) -> dict[str, Any]:
+        return {
+            "run_id": run_id,
+            "phase": phase,
+            "kind": kind,
+            "reason": reason,
+            "since": started.isoformat() if started is not None else "",
+            "age_seconds": round(age, 3) if age is not None else None,
+            "last_verdict": last_verdict,
+            "stage": stage,
+            "stage_seconds": stage_seconds,
+            "stalled": kind == "waiting" and last_verdict == "stalled",
+        }
+
+    unresolvable = [
+        str(detail)
+        for detail in pointer.get("upstream_obligations") or ()
+        if str(detail).startswith(WAIT_UNRESOLVABLE_PREFIX)
+    ]
+    if unresolvable:
+        return row("wait-unresolvable", unresolvable[0])
+    if phase == "queued" and not _request_waits(pointer):
+        counted = _admissible_unlaunched_passes(passes, run_id)
+        if counted >= STUCK_ADMISSION_PASSES:
+            return row(
+                "admissible-unlaunched",
+                f"admissible with lane room for {counted} admission passes "
+                "without launching",
+            )
+    if (
+        age is not None
+        and age >= STUCK_PHASE_SECONDS
+        and last_verdict in _DRAIN_STUCK_VERDICTS
+    ):
+        where = f" at the {stage} stage" if stage else ""
+        return row("waiting", f"{last_verdict}{where} for {round(age, 0):.0f}s")
+    return None
+
+
+def stuck_reason(pointer: Mapping[str, Any], *, passes=None, now=None) -> str:
+    """The reason, or empty, for a request a surface is drawing."""
+    verdict = stuck_verdict(pointer, passes=passes, now=now)
+    return str(verdict.get("reason") or "") if verdict is not None else ""
 
 
 def _drain_week_view(project: str, pointers: list[dict[str, Any]]) -> dict[str, Any]:
@@ -2712,46 +2923,19 @@ def _drain_week_view(project: str, pointers: list[dict[str, Any]]) -> dict[str, 
 
     now = datetime.now(UTC)
     day_ago = now - timedelta(days=1)
-    hour_ago = now - timedelta(hours=1)
     landed, _version = ledger.load(project, use_index=False)
-    latest_verdict: dict[str, str] = {}
-    #: The stall each request's last pass recorded, beside the stage the stall
-    #: named. A later verdict for the same request replaces the entry, which is
-    #: how a stall clears: the pass that launches the request records a
-    #: ``launched`` verdict against it.
-    stalled: dict[str, dict[str, Any]] = {}
+    #: The passes' own record, read once for the whole view and handed to the
+    #: one stuck verdict every row is judged by.
+    passes = admission_pass_history()
     #: The age of the oldest request the last pass could launch and did not,
     #: while its lane had room. The pass measures it with the lane's own gate
     #: and allowance, so the view reports the measurement rather than judging
     #: room a second time from a pointer.
     admissible_age: float | None = None
-    try:
-        with (crew_home() / "admission-verdicts.jsonl").open() as stream:
-            for line in stream:
-                try:
-                    record = json.loads(line)
-                except ValueError:
-                    continue
-                stamp = record.get("admissible_age_seconds")
-                if isinstance(stamp, (int, float)):
-                    admissible_age = round(float(stamp), 3)
-                for verdict in record.get("pointers") or ():
-                    run_id = str(verdict.get("run_id") or "")
-                    if not run_id:
-                        continue
-                    word = str(verdict.get("verdict") or "")
-                    latest_verdict[run_id] = word
-                    if word == "stalled":
-                        stalled[run_id] = {
-                            "at": str(record.get("at") or ""),
-                            "stage": str(verdict.get("stage") or ""),
-                            "stage_seconds": verdict.get("stage_seconds"),
-                            "age_seconds": verdict.get("age_seconds"),
-                        }
-                    else:
-                        stalled.pop(run_id, None)
-    except FileNotFoundError:
-        pass
+    for record in passes:
+        stamp = record.get("admissible_age_seconds")
+        if isinstance(stamp, (int, float)) and not isinstance(stamp, bool):
+            admissible_age = round(float(stamp), 3)
 
     def empty() -> dict[str, Any]:
         return {
@@ -2791,34 +2975,11 @@ def _drain_week_view(project: str, pointers: list[dict[str, Any]]) -> dict[str, 
         if not isinstance(hold, Mapping):
             hold = {}
         reason = str(hold.get("reason") or pointer.get("reason") or "unspecified")
-        if phase == "held":
-            phase_stamp = hold.get("started_at")
-        elif phase == "queued":
-            phase_stamp = pointer.get("queued_at")
-        elif phase == "launch-failed":
-            phase_stamp = pointer.get("failure_at")
-        elif phase == "awaiting-upstream":
-            phase_stamp = pointer.get("waits_at") or pointer.get("created_at")
-        else:
-            phase_stamp = pointer.get("created_at")
-        phase_start = parse_utc(phase_stamp)
-        overdue = phase_start is not None and phase_start < hour_ago
-        # A request is stuck when a pass examined it, recorded why it did not
-        # launch, and the request is still waiting an hour or more later. The
-        # cause is read from that record rather than derived a second time: the
-        # drain view no longer resolves a request's waits to decide this, so the
-        # request that waited past an hour is named by the verdict the pass that
-        # last looked at it recorded, and a request no pass has examined is not
-        # reported stuck on this view's own judgement. The phase and the word
-        # both have to say the request is waiting: a run a pass launched carries
-        # a launch verdict and a working phase, and its age is its own.
+        # The stuck verdict is the one function every surface reads, so the
+        # drain view reports the reason the hook and the live view report
+        # rather than deriving a second answer from the same log.
         run_id = str(pointer.get("run_id") or "")
-        last_verdict = latest_verdict.get(run_id)
-        stuck = bool(
-            overdue
-            and phase in _DRAIN_STUCK_PHASES
-            and last_verdict in _DRAIN_STUCK_VERDICTS
-        )
+        verdict = stuck_verdict(pointer, passes=passes, now=now)
         for view in targets(plan):
             view["phases"][bucket] += 1
             view["remaining"] += 1
@@ -2826,22 +2987,23 @@ def _drain_week_view(project: str, pointers: list[dict[str, Any]]) -> dict[str, 
                 view["held_reasons"][reason] = view["held_reasons"].get(reason, 0) + 1
             if started is not None and day_ago <= started <= now:
                 view["launches_24h"] += 1
-            if stuck:
-                stall = stalled.get(run_id) or {}
+            if verdict is not None:
                 view["stuck"].append(
                     {
                         "run_id": run_id,
                         "phase": phase,
-                        "since": phase_start.isoformat(),
-                        "age_seconds": round((now - phase_start).total_seconds(), 3),
-                        "last_verdict": last_verdict,
+                        "kind": verdict["kind"],
+                        "reason": verdict["reason"],
+                        "since": verdict.get("since") or "",
+                        "age_seconds": verdict.get("age_seconds"),
+                        "last_verdict": verdict.get("last_verdict") or "",
                         # The stall's own record, when this request has one: the
                         # stage that held it and that stage's duration on the
                         # last pass, so a reader learns which of release, launch
                         # and land to look at.
-                        "stalled": bool(stall),
-                        "stage": stall.get("stage") or "",
-                        "stage_seconds": stall.get("stage_seconds"),
+                        "stalled": bool(verdict.get("stalled")),
+                        "stage": verdict.get("stage") or "",
+                        "stage_seconds": verdict.get("stage_seconds"),
                     }
                 )
 
