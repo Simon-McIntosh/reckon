@@ -1,8 +1,8 @@
-"""A fenced worker sees the node's /tmp read-only outside its own scratch.
+"""A fenced worker's node tmp holds only its own scratch.
 
 The fence dev-binds ``/`` writable and overlays only the declared protected
 paths read-only. The crew scratch root is sealed, but the rest of the node's
-``/tmp`` is not, so every fenced worker shares it writable with every other
+``/tmp`` is not, so every fenced worker would share it writable with every other
 session on the node under one uid. On 2026-10-18 a run's cleanup named
 ``rm -rf /tmp/tmp*``: that glob covers the node's shared ``/tmp``, not the
 worker's own scratch, and its output was discarded, so what it removed is
@@ -10,21 +10,24 @@ unknown. Python's ``tempfile`` default, pytest's ``/tmp/pytest-of-<user>`` and
 the fleet's runtime sockets all live there.
 
 The fence closes this by sealing the node's ``/tmp`` read-only among the
-protected paths, then re-binding writable only the run's own scratch directory
-(its ``TMPDIR``) and the runtime paths its launch must write — the fleet's
-sockets and codex's sandbox marker directory, enumerated once in
-``node_tmp_runtime_paths`` beside ``worker_scratch_seal_root``.
+protected paths and mounting the run's own scratch directory over it, so a
+worker that names ``/tmp`` writes into its own scratch whatever its ``TMPDIR``
+says, while every other session's file under the node's real ``/tmp`` reads as
+absent. The runtime paths a launch must write — the fleet's sockets and codex's
+sandbox marker directory, enumerated once in ``node_tmp_runtime_paths`` beside
+``worker_scratch_seal_root`` — are re-bound inside that view.
 
-The property is asserted three ways, because a shape assertion cannot tell a
-fence that holds from one spelled correctly and doing nothing, and an executed
-refusal cannot tell which overlay produced it:
+The property is asserted four ways, because a shape assertion cannot tell a
+fence that holds from one spelled correctly and doing nothing, and one executed
+outcome cannot tell which overlay produced it:
 
 * The outline is asserted on the *composed argv*: the node tmp is overlaid
-  read-only, the run's own scratch and each enumerated runtime path are bound
-  writable, and a file outside the scratch and the runtime paths is not.
+  read-only, the run's own scratch is mounted over it, and each enumerated
+  runtime path is bound writable.
 * The fence holds, proved by *executing* the composed argv: a fenced command
   creates and removes a file in its own scratch and reaches each runtime path,
-  while a file it created in the node tmp outside those is refused and survives.
+  another session's file under the node tmp survives untouched, and a probe a
+  worker writes straight into the node tmp root lands in its own scratch.
 * The runtime directories are *created* before the argv is composed, so a node
   whose harness has never run still gets the grant: composed on a temporary
   node tmp whose runtime directories do not exist, each one is found created
@@ -32,7 +35,8 @@ refusal cannot tell which overlay produced it:
 
 The declared negative control strips the node-tmp seal from the fence — the
 seam that decides it is patched so no read-only overlay of the node tmp is
-emitted — and the outside file is then removed. It is applied by running with
+emitted, which also drops the scratch mount that sits over it — and the outside
+file is then removed. It is applied by running with
 ``RECKON_TEST_NODE_TMP_SEAL_NEGATIVE=1``.
 """
 
@@ -197,6 +201,15 @@ def _bind_of(argv: list[str], destination: Path) -> int:
     return -1
 
 
+def _bind_onto(argv: list[str], destination: Path) -> int:
+    """Return the index of the writable ``--bind`` whose target is ``destination``."""
+    target = str(_worker_fence.resolved_destination(destination))
+    for index, part in enumerate(argv):
+        if part == "--bind" and index + 2 < len(argv) and argv[index + 2] == target:
+            return index
+    return -1
+
+
 def _ro_bind_of(argv: list[str], destination: Path) -> int:
     """Return the index of the read-only overlay of ``destination``, or -1."""
     target = str(_worker_fence.resolved_destination(destination))
@@ -209,7 +222,7 @@ def _ro_bind_of(argv: list[str], destination: Path) -> int:
 def test_the_node_tmp_is_sealed_and_the_runtime_paths_are_granted_after(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """The node tmp is overlaid read-only; scratch and runtime paths follow."""
+    """The node tmp is sealed, the run's scratch mounts over it, grants follow."""
     node = NodeTmp(tmp_path)
     node.point_the_node_tmp(monkeypatch)
     argv = node.argv()
@@ -230,9 +243,22 @@ def test_the_node_tmp_is_sealed_and_the_runtime_paths_are_granted_after(
             f"the grant of {runtime} precedes the node-tmp overlay, so the "
             "read-only bind would shadow it"
         )
-    # No writable grant reaches the outside file's directory beyond the scratch
-    # and the runtime paths: the node tmp itself is never granted writable.
-    assert _bind_of(argv, node.node_tmp) == -1, "the node tmp itself was granted"
+    # The one grant that names the node tmp is the run's own scratch mounted
+    # over it, and it lands after the seal. Nothing else in the node tmp is
+    # writable, so a file another session put there is not reachable at all.
+    node_tmp_mount = _bind_onto(argv, node.node_tmp)
+    assert node_tmp_mount != -1, (
+        "the run's scratch was not mounted over the node tmp, so a worker's "
+        "literal /tmp path would meet the read-only seal"
+    )
+    assert node_tmp_mount > tmp_overlay, (
+        "the scratch mount precedes the node-tmp seal, so the seal would shadow it"
+    )
+    assert argv[node_tmp_mount + 1] == str(
+        _worker_fence.resolved_destination(node.own)
+    ), (
+        f"the mount over the node tmp does not name the run's scratch: {argv[node_tmp_mount : node_tmp_mount + 3]}"
+    )
 
 
 def test_the_runtime_paths_are_enumerated_beside_the_scratch_seal() -> None:
@@ -319,7 +345,13 @@ def test_a_fenced_run_cannot_remove_a_file_outside_its_scratch(
     monkeypatch: pytest.MonkeyPatch,
     declared_seal_mutation: None,
 ) -> None:
-    """Case 1: the outside removal is refused read-only; scratch and runtime land."""
+    """Case 1: another session's file survives; own-scratch and runtime writes land.
+
+    The run's scratch is mounted over the node tmp, so the removal names a path
+    that does not exist in the worker's view: it succeeds and removes nothing,
+    and the file another session placed in the node's real node tmp is
+    untouched. The seal beneath is still what the negative control removes.
+    """
     node = NodeTmp(tmp_path)
     node.point_the_node_tmp(monkeypatch)
     proc = node.run_fence(node.argv())
@@ -330,54 +362,60 @@ def test_a_fenced_run_cannot_remove_a_file_outside_its_scratch(
     assert not (node.own / "probe").exists()
     for runtime in node.runtime_paths():
         assert f"runtime-write-delete-ok:{runtime}" in results, results
-    assert proc.returncode != 0, (
-        f"the fenced rm of the outside file exited {proc.returncode}, not "
-        f"non-zero; stderr: {proc.stderr!r}"
+    assert node.outside.exists(), (
+        "another session's file under the node tmp was removed through the fence"
     )
-    # The refusal names the path the worker tried to write, so a reader is told
-    # which /tmp path the seal withheld rather than a bare failure.
-    assert str(node.outside) in proc.stderr, (
-        f"the refusal did not name {node.outside}: {proc.stderr!r}"
+    assert node.outside.read_text() == "other session's file\n", (
+        "another session's file under the node tmp was overwritten"
     )
-    assert "Read-only file system" in proc.stderr, proc.stderr
-    assert node.outside.exists(), "the outside file created in the node tmp was removed"
     assert not (node.outside.parent / "probe").exists()
+    assert proc.returncode == 0, (
+        f"the fenced command exited {proc.returncode}: with the node tmp replaced "
+        f"by the run's scratch the removal names no existing path; stderr: "
+        f"{proc.stderr!r}"
+    )
 
 
 @requires_bwrap
-def test_a_probe_written_directly_into_the_node_tmp_root_is_refused(
+def test_a_probe_written_directly_into_the_node_tmp_root_lands_in_the_scratch(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
     declared_seal_mutation: None,
 ) -> None:
-    """A probe straight into the node tmp root is refused and never lands.
+    """A probe straight into the node tmp root reaches the run's own scratch.
 
-    The removal case proves the seal against a file that already exists; this
-    one proves it against a *write*, which is the operation a stray cleanup
-    actually performs. The probe is the first assertion in the test — nothing
-    stands between the seal and this check — so with the seal removed the
-    write succeeds and the test fails here rather than on a later assertion
-    about a file some other step placed. The stub writes only the probe, so the
-    record in its results file is the write's own outcome.
+    The removal case proves nothing another session owns is reachable; this one
+    proves a *write*, the operation a stray cleanup actually performs, is kept
+    to the run. The probe names a path directly in the node tmp, the shape a
+    ``mkdir /tmp/...`` or a glob takes, and it lands in the run's scratch
+    because that scratch is mounted over the node tmp. The node's real node tmp
+    gains nothing, which is what matters when every session shares one uid.
+
+    The probe is the first assertion in the test, so with the seal and its mount
+    removed the write reaches the shared node tmp and the test fails here.
     """
     node = NodeTmp(tmp_path)
     node.point_the_node_tmp(monkeypatch)
     node.stub.write_text(_PROBE_STUB)
     proc = node.run_fence(node.argv())
     results = node.results_text()
-    # Positive control: the stub records only from inside the fence, so a record
-    # naming the refusal proves the shim ran and reached the node tmp root.
-    assert "node-tmp-probe-write-refused" in results, (
-        f"the probe write into the node tmp root was not refused: {results!r}"
+    # Positive control: the stub records only from inside the fence, so the
+    # record proves the shim ran and reached the node tmp root at all.
+    assert "node-tmp-probe-write-ok" in results, (
+        f"the probe write into the node tmp root did not land: {results!r}; "
+        f"stderr: {proc.stderr!r}"
+    )
+    landed = node.own / node.node_tmp_probe.name
+    assert landed.is_file(), (
+        f"the probe is not in the run's scratch at {landed}, so a /tmp write "
+        "did not resolve there"
     )
     assert not node.node_tmp_probe.exists(), (
         f"a probe landed directly in the node tmp root at {node.node_tmp_probe}"
     )
-    assert proc.returncode != 0, (
-        f"the fenced probe write exited {proc.returncode}, not non-zero; "
-        f"stderr: {proc.stderr!r}"
+    assert proc.returncode == 0, (
+        f"the fenced probe write exited {proc.returncode}; stderr: {proc.stderr!r}"
     )
-    assert "Read-only file system" in proc.stderr, proc.stderr
 
 
 def _separate_creation_loop() -> list[Path]:
@@ -493,6 +531,11 @@ def test_the_composed_fence_argv_for_a_fixed_root_set_is_literal(
         # The node tmp itself, sealed read-only.
         "--ro-bind",
         str(resolve(node.node_tmp)),
+        str(resolve(node.node_tmp)),
+        # Then the run's own scratch mounted over the node tmp, so a worker's
+        # literal /tmp path is its own scratch rather than another session's.
+        "--bind",
+        str(resolve(node.own)),
         str(resolve(node.node_tmp)),
         # Then the writable grants, in root order: the run's own scratch, the
         # run directory the manifest lives in, then the two runtime paths.
