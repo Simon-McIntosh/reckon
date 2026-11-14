@@ -965,9 +965,24 @@ def _measured_preparation_seconds(host: dict, marker_dir: Path) -> float:
     try:
         reference_run.process.wait(timeout=SPAWN_BOUND)
         output = reference_run.output() or {}
-        return float(output.get("dispatch_seconds") or 0.0)
+        measured = float(output.get("dispatch_seconds") or 0.0)
+        # A reference of zero is not a cheap host, and it is not a measurement:
+        # it is a driver that failed to record one. Left to collapse into the
+        # bound, it would drop the whole preparation term and restore the bound
+        # this case exists to move past, silently, on any host whose delegated
+        # dispatch broke. Refusing here makes a missing measurement a failure of
+        # the case rather than a quieter bound.
+        if measured <= 0.0 or not output.get("run_id"):
+            raise AssertionError(
+                "the preparation reference recorded no dispatch of its own: "
+                f"returncode={reference_run.process.returncode} "
+                f"run_id={output.get('run_id')!r} "
+                f"dispatch_seconds={output.get('dispatch_seconds')!r} "
+                f"stderr={_tail(reference_run.stderr_path)}"
+            )
     finally:
         _finish(reference_run, {"case": "the preparation reference"})
+    return measured
 
 
 def _dispatch_exit_bound(reference_seconds: float, preparation_seconds: float) -> float:
@@ -990,6 +1005,57 @@ def _dispatch_exit_bound(reference_seconds: float, preparation_seconds: float) -
 # --------------------------------------------------------------------------
 # The cases.
 # --------------------------------------------------------------------------
+
+
+@pytest.mark.parametrize("recorded", [None, 0.0])
+def test_a_preparation_reference_that_recorded_no_time_is_refused(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path, recorded: float | None
+) -> None:
+    """A delegated dispatch that recorded no time is a broken reference, not a bound.
+
+    The preparation term enters the bound multiplied by ``PREPARATION_UNITS``
+    and added, so a reference that reads zero removes it and restores the bound
+    the term was added to widen. The case would then pass on a host whose
+    delegated lane had stopped dispatching at all, with nothing in the report to
+    say so. Here the delegated lane records no time, and the measurement must
+    refuse rather than hand back a zero.
+    """
+
+    class _Finished:
+        returncode = 0
+
+        def poll(self) -> int:
+            return 0
+
+        def kill(self) -> None:
+            pass
+
+        def wait(self, timeout: float | None = None) -> int:
+            return 0
+
+    class _SilentReference:
+        def __init__(self) -> None:
+            self.process = _Finished()
+            self.stderr_path = tmp_path / "silent-reference.err"
+            self.pointer = None
+
+        def output(self) -> dict[str, Any]:
+            return {"run_id": "run-silent", "dispatch_seconds": recorded}
+
+        def survivors(self) -> list[int]:
+            return []
+
+        def own_pointer_names(self) -> list[str]:
+            return []
+
+    monkeypatch.setattr(
+        sys.modules[__name__],
+        "_start_dispatch",
+        lambda *args, **kwargs: _SilentReference(),
+    )
+
+    with pytest.raises(AssertionError, match="recorded no dispatch of its own"):
+        _measured_preparation_seconds({}, tmp_path)
 
 
 def test_dispatch_returns_once_its_supervisor_runs(
