@@ -2002,7 +2002,7 @@ def crew_ack(run_id, notice_id, reason, until, pretty, project=None):
     A live run's deferral is written beside its pointer; one for a run already
     promoted is written under the crew home and swept once its instant passes.
     """
-    _accept_a_matching_project(run_id, project)
+    resolved_project = _accept_a_matching_project(run_id, project)
     if bool(run_id) == bool(notice_id):
         raise click.ClickException("exactly one of --run and --notice is required")
     if notice_id:
@@ -2025,7 +2025,9 @@ def crew_ack(run_id, notice_id, reason, until, pretty, project=None):
     from reckon.crew import runs as runs_module
 
     try:
-        updated = runs_module.record_run_acknowledgement(run_id, reason, until)
+        updated = runs_module.record_run_acknowledgement(
+            run_id, reason, until, project=resolved_project
+        )
     except crew_module.CrewError as exc:
         raise click.ClickException(str(exc)) from exc
     _emit_crew_result(

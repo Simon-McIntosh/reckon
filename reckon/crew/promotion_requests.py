@@ -40,6 +40,10 @@ DEFERRED = "promotion-deferred"
 WAITING = "promotion-waiting"
 PENDING = frozenset({REQUESTED, RUNNING})
 ERRORS = frozenset({FAILED, REFUSED})
+# A refusal whose run has since been promoted, landed, discarded or has no live
+# pointer is no longer the coordinator's to answer: the phase records that the
+# request is settled, and the file is kept so the refusal stays readable.
+SETTLED = "promotion-settled"
 
 # How long the drain waits for a wakeup before looking for requests another
 # process queued. A freed slot wakes it immediately, so this only bounds the
@@ -842,6 +846,86 @@ class PromotionService:
             thread.join(max(0.0, deadline - time.monotonic()))
 
 
+def _settled_state(request: Mapping[str, Any]) -> str:
+    """Why a request's run no longer needs the duty, or "" while it does.
+
+    A refusal is the coordinator's to answer only while the run it concerns is
+    still waiting for one. A run promoted, landed or discarded has arrived where
+    the refusal was asking it to go, and a run whose pointer has gone can no
+    longer be promoted at all, so in each of those cases the next command the
+    duty carries can only fail. The discard marker is read first because it is
+    written before the pointer goes, then the ledger row, because a run that
+    landed and whose pointer has since gone has still landed; only a run with
+    neither a discard record nor a ledger row and no pointer is gone.
+    """
+    run_id = str(request.get("run_id") or "")
+    if not run_id:
+        return ""
+    from reckon.crew import promotion
+
+    try:
+        if promotion.discard_recorded(run_id):
+            return "discarded"
+    except OSError:
+        pass
+    try:
+        landed = runs._promoted_record_project(
+            run_id, str(request.get("project") or "")
+        )
+    except (OSError, ValueError, CrewError):
+        landed = None
+    if landed:
+        return "landed"
+    if not runs.pointer_path(run_id).exists():
+        return "gone"
+    return ""
+
+
+def _settle(request: Mapping[str, Any], reason: str) -> dict[str, Any]:
+    """Record a refusal as settled in place, keeping everything it carried.
+
+    The request file is rewritten rather than removed: the refusal's reason, the
+    attempt it belongs to and the run it named stay readable, and every reader
+    that projects a duty skips a phase outside :data:`ERRORS` without any second
+    store to reconcile. A request another drain has since moved on is left to
+    that drain.
+    """
+    run_id = str(request["run_id"])
+    settled = {
+        **dict(request),
+        "phase": SETTLED,
+        "settled": reason,
+        "settled_at": _now(),
+    }
+    with runs._pointer_lock(f"promotion-request-{run_id}"):
+        current = _read(_request_path(run_id))
+        if current.get("request_id") != request.get("request_id"):
+            return {}
+        runs._write_json(_request_path(run_id), settled)
+    return settled
+
+
+def settle_requests_for(run_id: str, *, settled_as: str = "promoted") -> list[str]:
+    """Settle every request still open for a run another path has finished.
+
+    A promotion that succeeds in the caller's own process already answers the
+    queued request for that run, and a discard or a landing answers it too. What
+    is left behind is a request the drain would promote again or refuse for a
+    reason that no longer applies, so it is settled here instead of being left
+    to raise a duty. Only requests for this one run are touched.
+    """
+    settled: list[str] = []
+    for path in _requests_dir().glob("*.json"):
+        request = _read(path)
+        if str(request.get("run_id") or "") != run_id:
+            continue
+        if request.get("phase") == SETTLED:
+            continue
+        if _settle(request, settled_as):
+            settled.append(run_id)
+    return settled
+
+
 def failure_obligations(
     project: str, session: str, *, now: datetime | None = None
 ) -> list[dict[str, Any]]:
@@ -852,6 +936,13 @@ def failure_obligations(
         if request.get("phase") not in ERRORS:
             continue
         if request.get("project") != project or request.get("session") != session:
+            continue
+        settled = _settled_state(request)
+        if settled:
+            # The run has arrived where the refusal asked it to go, or can no
+            # longer go anywhere: the request is settled here rather than
+            # raising a duty whose next command cannot apply.
+            _settle(request, settled)
             continue
         items.append(
             {

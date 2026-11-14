@@ -2289,11 +2289,28 @@ def _record_promoted_acknowledgement(
     """
     name = _promoted_record_project(run_id, project)
     if name is None:
+        # A run whose pointer, ledger record and review records have all gone
+        # still holds duties: a discard removes the pointer, and a run the
+        # fleet reaped leaves no row either. The deferral names the run, so it
+        # needs no project to be honoured — but the reader is asked per project
+        # and a record naming none is never returned, so a project is resolved
+        # from the remaining records in order: the caller's own, then the
+        # promotion request the run left behind.
+        name = str(project or "").strip()
+    if not name:
+        from reckon.crew import promotion_requests
+
+        try:
+            name = str(promotion_requests.read_promotion(run_id).get("project") or "")
+        except (OSError, ValueError, CrewError):
+            name = ""
+    if not name:
         looked = (
             ", ".join(sorted(_mounted_project_roots(project))) or "no mounted project"
         )
         raise CrewError(
-            f"no live run {run_id!r} and no ledger record for it (looked in: {looked})"
+            f"no live run {run_id!r}, no ledger record for it, and no --project "
+            f"to file its deferral under (looked in: {looked})"
         )
     payload = {"run_id": run_id, "project": name, **dict(deferral)}
     path = acknowledgement_path(run_id)
