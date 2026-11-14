@@ -1678,10 +1678,15 @@ def _advisory_unless_paused(
         f"{decision.get('reason')}; the backend's lane allowance is advisory, "
         "so the request waits in the router's queue rather than here"
     )
+    # The allowance is withdrawn as well as the hold: the admission pass holds a
+    # session whose allowance reads zero or less, whatever the hold flag says.
+    # The router's figure stays readable under its own key.
     return {
         **decision,
         "held": False,
         "state": "advisory",
+        "allowance": None,
+        "router_allowance": decision.get("allowance"),
         "reason": reason,
         "detail": reason,
     }

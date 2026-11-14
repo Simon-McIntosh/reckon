@@ -63,7 +63,8 @@ def test_an_advisory_lane_launches_past_a_congested_router(tmp_path: Path) -> No
 
     assert decision["held"] is False
     assert decision["state"] == "advisory"
-    assert decision["allowance"] == 0
+    assert decision["allowance"] is None
+    assert decision["router_allowance"] == 0
     assert "router's queue" in str(decision["reason"])
 
 
@@ -74,3 +75,20 @@ def test_an_advisory_lane_still_holds_on_a_pause(tmp_path: Path) -> None:
     )
 
     assert decision["held"] is True
+
+
+def test_admission_attempts_a_request_on_an_advisory_lane(tmp_path: Path) -> None:
+    """The admission pass reads no zero allowance from an advisory lane."""
+    from reckon.crew.admission import holds
+
+    path = _document(tmp_path / "lane.json", verdict="congested")
+    config = {
+        "backends": {
+            "clive": {"lane_document": str(path), "lane_allowance": "advisory"}
+        }
+    }
+    allowance, _source = holds._session_allowance_read(
+        {"backend": "clive", "session": SESSION}, config_for=lambda _pointer: config
+    )
+
+    assert allowance is None
