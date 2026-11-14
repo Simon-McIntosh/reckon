@@ -7,9 +7,9 @@
   <meta name="reckon-type" content="evidence">
   <meta name="plan-slug" content="scoring-should-stop-a-promotion">
   <meta name="plan-title" content="The scoped suite names only the files each tree holds">
-  <meta name="plan-summary" content="A write path is not a file that exists, so one resolution of the scoped suite template named a different file list from each tree: the head command named a test the change deleted and pytest stopped with exit 4 having run nothing, and a pair in which neither arm ran a test read as a clean observation. The command is now resolved over the files each arm's own tree holds, the arm comparison is made against that per-tree resolution of the same template, and an arm left naming no file or that exited having collected none is refused as unmeasured. The behaviour was already present at the base revision; this node verified the done-when against it, reproduced the exit 4 the defect produced, and removed a test helper that had been defined twice.">
+  <meta name="plan-summary" content="The armed suite command is resolved per arm over the files that arm's own tree holds, so a deleted test leaves the head command and a created one leaves the base command. The arm comparison compares each arm with that per-tree resolution of the same template, and an arm left naming no test file or having collected none is refused as unmeasured. This node re-measured the limbs a prior review found unmeasured: the test fails against the pre-rule module and against a mutation that bypasses the presence check, where the head command names a deleted file and pytest reproduces exit 4 having run nothing.">
   <meta name="plan-evidence-for" content="scoring-should-stop-a-promotion">
-  <meta name="plan-recorded-at" content="2026-11-03">
+  <meta name="plan-recorded-at" content="2026-11-14">
   <meta name="plan-verdict" content="passed">
   <title>The scoped suite names only the files each tree holds | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
@@ -21,54 +21,60 @@
 
     <section id="the-scoped-suite-names-only-the-files-each-tree-holds-defect">
       <h2>The defect</h2>
-      <p>The armed suite declaration is scoped with a placeholder that stood for the node's
-        fence write paths. A write path is not a file that exists: a node that replaces a
-        test deletes one file and creates another, so the same fence names a different file
-        list in the base tree and in the head tree. Resolving it once, over the write paths
-        alone, produced a head command naming a deleted file. Reproduced in a scratch
-        repository holding the head tree — one kept test, the deleted test, the added one —
-        the old command ran nothing:</p>
-      <pre><code>ERROR: file or directory not found: tests/test_deleted.py
-
-no tests ran in 0.00s
-EXIT=4</code></pre>
-      <p>Because the suite delta is computed from failure ids alone, a pair in which neither
-        arm ran a test carried an empty failure list and was credited as a clean
-        observation.</p>
+      <p>The armed suite command carries a <code>{node_test_files}</code> placeholder that
+        stands for the node's fenced write paths. A write path is not a file that exists: a
+        node that replaces a test deletes one file and creates another, so one write scope
+        names a different file list in the base tree and in the head tree. Resolved once
+        over the write paths alone, the head command named a file the head no longer held,
+        pytest stopped with exit 4 having run nothing, and the empty failure list read as a
+        clean observation in a delta computed from failure ids alone.</p>
     </section>
 
     <section id="the-scoped-suite-names-only-the-files-each-tree-holds-change">
       <h2>The change</h2>
       <p><code>_scoped_suite_command</code> in <code>reckon/crew/promotion_records.py</code>
-        takes the revision the command will run against and keeps only the scoped files
-        that revision's tree holds, read from the tree's own object store rather than from a
-        working directory, which is the head's content whichever arm is being resolved. An
-        unanswered probe falls back to the declared scope as written, and the arm-level
-        checks below still refuse a pair that measured nothing.</p>
-      <p>The comparison accepts the per-tree resolution of the same template for each arm,
-        and still accepts the whole-scope spelling a run dispatched before the rule recorded.
-        An after arm left naming no file, or either arm exiting 4 or 5 with no failure,
-        is refused as unmeasured; a base arm whose own tree holds none of the scope's tests
-        is recorded explicitly as an empty baseline rather than refused, because a scope
-        whose tests the change creates has nothing to measure against.</p>
+        takes the revision the command will run against and keeps only the write paths that
+        revision's tree holds, read through the object store so a linked worktree reads the
+        revision it names rather than the head's content.
+        <code>_paths_present_in_tree</code> answers which paths a revision holds and
+        answers <em>unknown</em> rather than <em>none</em> when it cannot see the tree, so an
+        unreadable object store falls back to the declared scope instead of silently
+        deleting every file.</p>
+      <p>The arm comparison accepts each arm's per-tree resolution of the same template
+        alongside the whole-scope spelling a run dispatched before the rule recorded. An
+        after arm left naming no test file, or either arm is an arm that exited 4 or 5
+        having collected nothing, is refused as <code>unmeasured</code>; an empty
+        <em>baseline</em> is recorded honestly when the change creates every test in the
+        scope.</p>
+      <p>This node found the behaviour already present at its base revision and did not
+        reimplement it. The prior review of this section recorded the base-fail limb as
+        unmeasured — the suite arm at the base revision passed five cases because that base
+        already carried the rule. This node measured that limb against the two shapes it can
+        be measured in: the pre-rule module, and the declared mutation.</p>
     </section>
 
     <section id="the-scoped-suite-names-only-the-files-each-tree-holds-evidence">
       <h2>Evidence</h2>
-      <p>The node inherited this behaviour at its base revision and verified it rather than
-        reimplementing it: the five cases in
-        <code>tests/test_a_scoped_suite_names_only_present_files.py</code> pass at the base
-        (5 passed, EXIT=0) and after the node's change (5 passed, EXIT=0). The same test
-        file fails against the pre-rule module (5 failed, EXIT=1), so the cases are
-        sensitive to the behaviour they describe.</p>
-      <p>The declared negative control removed the presence check from
-        <code>_scoped_suite_command</code>, resolving over the write paths alone again.
-        Three cases reddened (3 failed, EXIT=1): the per-tree resolution case, the accepted
-        pair, and the collected-nothing refusal, which then reported a missing file rather
-        than a run that collected nothing.</p>
-      <p>The node's own change removes a helper the review of the landing work had flagged
-        as duplicated: <code>_write_suite_manifest</code> was defined twice, the second
-        shadowing the first byte for byte.</p>
+      <p>The head arm at this worktree's revision passes both files in the node's test
+        scope: <code>56 passed</code> and <code>EXIT=0</code>. The same template over the
+        base revision's own tree passes the same 56, so the node adds no failure.</p>
+      <p>Against the pre-rule module — the resolver before the per-tree rule landed, in a
+        scratch extraction with the current test file — the same test file fails all five
+        cases: <code>5 failed</code>, <code>EXIT=1</code>, the first naming the absent
+        per-tree resolution; this is the base-fail limb the prior review found recorded as a
+        pass.</p>
+      <p>The declared negative control bypasses the presence check in a scratch extraction of
+        this head and runs the same test: <code>3 failed, 2 passed</code>,
+        <code>EXIT=1</code>, with the failures on the behavioural assertions — the head
+        command retains the deleted test and the per-tree pair no longer differs. In the same
+        tree the resolver is then driven over a fixture repository whose head deletes one
+        test and adds another: the head command hands pytest
+        <code>tests/test_deleted.py</code>, which that tree does not hold, and pytest reports
+        <code>no tests ran in 0.00s</code> with exit 4 — the measured defect reproduced at
+        the point the guard is meant to stop it.</p>
+      <p>The test file and the module are unchanged by this node: the guard was already
+        correct, so the node verified it and recorded the failing limbs rather than
+        reimplementing a working rule. Log paths are recorded in the run manifest.</p>
     </section>
   </main>
 </body>
