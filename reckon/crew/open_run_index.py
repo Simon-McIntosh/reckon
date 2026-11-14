@@ -24,6 +24,10 @@ _READERS: ContextVar[tuple[Mapping[str, Any], ...] | None] = ContextVar(
     "open_run_readers", default=None
 )
 
+_VALIDATED: ContextVar[set[Path] | None] = ContextVar(
+    "open_run_validated_indexes", default=None
+)
+
 
 def pointers() -> tuple[Mapping[str, Any], ...] | None:
     """The live-index snapshot this operational read is using, if any."""
@@ -45,10 +49,13 @@ def read_scope(record: Mapping[str, Any] | None = None) -> Iterator[None]:
     ):
         snapshot = (*snapshot, record)
     token = _READERS.set(snapshot)
+    validated_token = _VALIDATED.set(set()) if _VALIDATED.get() is None else None
     try:
         yield
     finally:
         _READERS.reset(token)
+        if validated_token is not None:
+            _VALIDATED.reset(validated_token)
 
 
 def operational_read(function):
@@ -141,7 +148,9 @@ def index_path(project: str, root: str | Path | None = None) -> Path:
     return ledger._index_directory() / "open-run-index" / f"{key}.sqlite"
 
 
-def _connect(path: Path) -> sqlite3.Connection:
+def _connect(path: Path, *, read_only: bool = False) -> sqlite3.Connection:
+    if read_only:
+        return sqlite3.connect(f"{path.as_uri()}?mode=ro", uri=True, timeout=0)
     path.parent.mkdir(parents=True, exist_ok=True)
     connection = sqlite3.connect(path, timeout=30)
     connection.execute(
@@ -257,83 +266,113 @@ def aggregate_written(
                 )
 
 
+def _current(connection: sqlite3.Connection, project: str, root) -> bool:
+    """Validate the complete projection using only reads."""
+    from reckon import file_memo, ledger
+
+    metadata = dict(connection.execute("SELECT key, value FROM metadata"))
+    aggregate = ledger.ledger_path(project, root).resolve()
+    recorded = connection.execute(
+        "SELECT stamp FROM sources WHERE name=?", (str(aggregate),)
+    ).fetchone()
+    try:
+        actual = json.dumps(file_memo.file_signature(aggregate))
+    except FileNotFoundError:
+        actual = None
+    generation = ledger.ledger_generation(project)
+    return (
+        metadata.get("ready") == "1"
+        and generation is not None
+        and metadata.get("generation") == json.dumps(generation)
+        and (recorded[0] if recorded else None) == actual
+    )
+
+
 def _ensure(project: str, root=None) -> Path:
-    """Bootstrap an installation that predates the incremental projection."""
+    """Validate once per operational pass; reuse a complete index while busy."""
     from reckon import ledger
 
     path = index_path(project, root)
-    with contextlib.closing(_connect(path)) as connection:
+    validated = _VALIDATED.get()
+    if validated is not None and path in validated:
+        return path
 
-        def current():
-            metadata = dict(connection.execute("SELECT key, value FROM metadata"))
-            from reckon import file_memo
-
-            aggregate = ledger.ledger_path(project, root).resolve()
-            recorded = connection.execute(
-                "SELECT stamp FROM sources WHERE name=?", (str(aggregate),)
-            ).fetchone()
-            try:
-                actual = json.dumps(file_memo.file_signature(aggregate))
-            except FileNotFoundError:
-                actual = None
-            generation = ledger.ledger_generation(project)
-            return (
-                metadata.get("ready") == "1"
-                and generation is not None
-                and metadata.get("generation") == json.dumps(generation)
-                and (recorded[0] if recorded else None) == actual
+    ready = False
+    if path.exists():
+        with contextlib.closing(_connect(path, read_only=True)) as connection:
+            ready = (
+                connection.execute(
+                    "SELECT 1 FROM metadata WHERE key='ready' AND value='1'"
+                ).fetchone()
+                is not None
             )
+            if ready and _current(connection, project, root):
+                if validated is not None:
+                    validated.add(path)
+                return path
 
-        if current():
-            return path
-        # Serialize bootstrap with writers; rows written while this starts are
-        # either in the authoritative read or applied after this transaction.
-        with connection:
+    # A complete projection needs no schema writes. Acquiring the rebuild's
+    # transaction never waits: another writer leaves the last committed rows
+    # available to this reader until the next operational pass revalidates.
+    with contextlib.closing(
+        sqlite3.connect(path, timeout=0) if ready else _connect(path)
+    ) as connection:
+        try:
             connection.execute("BEGIN IMMEDIATE")
-            if not current():
-                generation = ledger.ledger_generation(project)
-                aggregate = ledger.ledger_path(project, root)
-                if not aggregate.exists() and not any(
-                    (aggregate.parent / "runs").glob("*.json")
-                ):
-                    data, _version = {"runs": []}, 0
-                else:
-                    token = _READERS.set(None)
-                    try:
-                        data, _version = ledger.load(project, root)
-                    finally:
-                        _READERS.reset(token)
-                connection.execute("DELETE FROM records")
-                connection.execute("DELETE FROM tips")
-                connection.execute("DELETE FROM sources")
-                connection.executemany(
-                    "INSERT OR REPLACE INTO records VALUES (?, ?, ?, ?, ?, ?)",
-                    [_values(row) for row in data["runs"] if row.get("run_id")],
-                )
-                connection.executemany(
-                    "INSERT OR REPLACE INTO tips VALUES (?, ?)",
-                    [
-                        (str(row["run_id"]), ledger._run_tip(row))
-                        for row in data["runs"]
-                        if row.get("run_id")
-                    ],
-                )
-                connection.execute(
-                    "INSERT OR REPLACE INTO metadata VALUES ('version', ?)",
-                    (str(_version),),
-                )
-                _source_written(connection, ledger.ledger_path(project, root))
-                for source in (ledger.ledger_path(project, root).parent / "runs").glob(
-                    "*.json"
-                ):
-                    _source_written(connection, source)
-                connection.execute(
-                    "INSERT OR REPLACE INTO metadata VALUES ('generation', ?)",
-                    (json.dumps(generation),),
-                )
-                connection.execute(
-                    "INSERT OR REPLACE INTO metadata VALUES ('ready', '1')"
-                )
+        except sqlite3.OperationalError as error:
+            if not ready or error.sqlite_errorcode not in (
+                sqlite3.SQLITE_BUSY,
+                sqlite3.SQLITE_LOCKED,
+            ):
+                raise
+        else:
+            with connection:
+                if not _current(connection, project, root):
+                    generation = ledger.ledger_generation(project)
+                    aggregate = ledger.ledger_path(project, root)
+                    if not aggregate.exists() and not any(
+                        (aggregate.parent / "runs").glob("*.json")
+                    ):
+                        data, _version = {"runs": []}, 0
+                    else:
+                        token = _READERS.set(None)
+                        try:
+                            data, _version = ledger.load(project, root)
+                        finally:
+                            _READERS.reset(token)
+                    connection.execute("DELETE FROM records")
+                    connection.execute("DELETE FROM tips")
+                    connection.execute("DELETE FROM sources")
+                    connection.executemany(
+                        "INSERT OR REPLACE INTO records VALUES (?, ?, ?, ?, ?, ?)",
+                        [_values(row) for row in data["runs"] if row.get("run_id")],
+                    )
+                    connection.executemany(
+                        "INSERT OR REPLACE INTO tips VALUES (?, ?)",
+                        [
+                            (str(row["run_id"]), ledger._run_tip(row))
+                            for row in data["runs"]
+                            if row.get("run_id")
+                        ],
+                    )
+                    connection.execute(
+                        "INSERT OR REPLACE INTO metadata VALUES ('version', ?)",
+                        (str(_version),),
+                    )
+                    _source_written(connection, ledger.ledger_path(project, root))
+                    for source in (
+                        ledger.ledger_path(project, root).parent / "runs"
+                    ).glob("*.json"):
+                        _source_written(connection, source)
+                    connection.execute(
+                        "INSERT OR REPLACE INTO metadata VALUES ('generation', ?)",
+                        (json.dumps(generation),),
+                    )
+                    connection.execute(
+                        "INSERT OR REPLACE INTO metadata VALUES ('ready', '1')"
+                    )
+    if validated is not None:
+        validated.add(path)
     return path
 
 

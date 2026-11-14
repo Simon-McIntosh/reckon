@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from reckon.crew.open_run_index import operational_read
+
 from . import holds as _holds
 from . import launching as _launching
 from . import ordering as _ordering
@@ -36,6 +38,7 @@ from .shared import (
 )
 
 
+@operational_read
 def admit_once(
     *,
     launcher: Callable[..., int] | None = None,
