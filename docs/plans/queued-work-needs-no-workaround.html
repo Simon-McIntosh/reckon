@@ -20,7 +20,7 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-after" content="work-flows-to-the-lane">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;implementable&quot;,&quot;s10&quot;:&quot;implementable&quot;,&quot;s11&quot;:&quot;implementable&quot;,&quot;s12&quot;:&quot;implementable&quot;,&quot;s13&quot;:&quot;implementable&quot;,&quot;s14&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;implementable&quot;,&quot;s10&quot;:&quot;implementable&quot;,&quot;s11&quot;:&quot;implementable&quot;,&quot;s12&quot;:&quot;implementable&quot;,&quot;s13&quot;:&quot;implementable&quot;,&quot;s14&quot;:&quot;implementable&quot;,&quot;s15&quot;:&quot;implementable&quot;}">
   <title>Queued work needs no workaround | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
@@ -83,13 +83,13 @@
   <li>the specification level, from its capability attributes;</li>
   <li>the negative control, from the done-when's negative-control sentence.</li>
 </ul>
-<p>Text inside a <code>&lt;code&gt;</code> span is never read as a placeholder or an instruction.</p>
+<p>A code span is exempt from the placeholder rule when its text reads as a path or filename pattern (it holds a <code>/</code> or a file extension around the bracketed token) or as an HTML tag written as test data. A code span whose bracketed token stands alone, such as <code>&lt;project&gt;</code>, is still a placeholder and still refused.</p>
 <p><strong>Done when.</strong> Tests with a temporary repository and crew home show the following:</p>
 <ul>
   <li>A batch entry naming only project, plan, section, node and goal is queued, with done-when, budget, specification level and negative control equal to the section's.</li>
   <li>A single dispatch omitting <code>--done-when</code> stores the section's.</li>
-  <li>A done-when whose only angle brackets sit inside a code span is accepted.</li>
-  <li>A done-when with a bare <code>&lt;n&gt;</code> in prose is still refused.</li>
+  <li>A done-when naming <code>pf&lt;n&gt;-terminal-edge.json</code> or the tag <code>&lt;strong&gt;</code> inside code spans is accepted.</li>
+  <li>A done-when with a bare <code>&lt;n&gt;</code> in prose is still refused, and so is a code span holding only <code>&lt;project&gt;</code>.</li>
 </ul>
 <p>Negative control: the section-only entry against the base revision is refused, naming the budget and specification level. The gate runs on <code>all_debug</code>, and its log is written to the section's evidence fragment.</p>
 
@@ -132,35 +132,37 @@
   <li>Two runs were promoted "passed" with no landing while their sections were declared done.</li>
 </ul>
 <p>A deep queue only helps if nothing in it is already built.</p>
-<p><strong>Deliverable.</strong> The roadmap's ready set, batch dispatch and admission all treat a section as not ready while it has a live, delivered, promoted or landed implementation run, and say which run holds it. The roadmap reports a section declared done whose run never landed as a wiring finding, naming the run.</p>
+<p><strong>Deliverable.</strong> The roadmap's ready set, batch dispatch and admission all treat a section's node as not ready while that node has a live, delivered, promoted or landed implementation run, and say which run holds it. The hold is per node: a section split on purpose into several nodes (as reckon-02 split a context-fit section into three) keeps its other nodes ready while one is in flight or landed. The roadmap reports a section declared done whose run never landed as a wiring finding, naming the run.</p>
 <p><strong>Done when.</strong> Tests with a temporary repository and crew home show the following:</p>
 <ul>
   <li>A section with a promoted run is absent from <code>ready_sections</code>.</li>
-  <li>A batch entry for it is answered as held by that run, not queued.</li>
+  <li>A batch entry for the same node is answered as held by that run, not queued, while an entry for a second node of the same section is queued.</li>
   <li>A done section whose run's head is not on the integration branch yields the finding.</li>
 </ul>
 <p>Negative control: against the base revision, the promoted section is listed ready, and the failing run is logged.</p>
 
     <h2 id="s7">§7 — A finished upstream releases its waiters</h2>
 <section data-reckon="section" data-id="s7" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
-<p><strong>Why.</strong> Defects D13, D38, D107 and D112.</p>
+<p><strong>Why.</strong> Defects D13, D38, D107, D112 and D148.</p>
 <ul>
   <li>A plan-level dependency on a plan whose sections are all done, but whose status is still active, parked its dependents until the upstream was closed by hand. Batch entries list such a dependency among their waits.</li>
   <li>Dispatch refuses an input path that a declared upstream section will create.</li>
   <li>A request routed to a metered lane is never launched once its upstream lands. A coordinator therefore cannot queue a chain whose sections only fit on codex.</li>
+  <li>A review run's pointer survived its promotion (<code>pointer_removed: false</code>). The release check counts any live pointer on a section as an unlanded run of it, so six requests waiting on every-shared-home-lock-holds-across-nodes §2 stayed held for 91 minutes after §2 landed. The promoted §2 row also recorded no plan slug.</li>
 </ul>
-<p><strong>Deliverable.</strong> A plan-level dependency is met once every section of that plan is done or descoped. An awaiting-upstream request may name an input that does not yet exist, and is refused only if the input is still absent when it is released. An awaiting-upstream request on a metered lane is launched by admission when its upstream lands, under that lane's own admission rule.</p>
+<p><strong>Deliverable.</strong> A plan-level dependency is met once every section of that plan is done or descoped. An awaiting-upstream request may name an input that does not yet exist, and is refused only if the input is still absent when it is released. An awaiting-upstream request on a metered lane is launched by admission when its upstream lands, under that lane's own admission rule. A review run, or any run that already has a ledger row, never counts as an unlanded run of its section. A promotion that writes a review's ledger row removes its pointer, and every promoted row carries its plan slug.</p>
 <p><strong>Done when.</strong> Tests with a temporary repository and crew home show the following:</p>
 <ul>
   <li>A request waiting on a plan whose sections are all done is released without the plan being closed.</li>
   <li>A request naming a not-yet-existing input is queued, and is refused at release if the input is still missing.</li>
   <li>A codex-routed awaiting-upstream request launches when its upstream lands.</li>
+  <li>A request waiting on a landed section is released while a promoted review pointer of that section is still live.</li>
 </ul>
 <p>Negative control: against the base revision, the first request stays parked, and the failing run is logged.</p>
 
     <h2 id="s8">§8 — Every obligation clears when its duty ends</h2>
 <section data-reckon="section" data-id="s8" data-effort-hours="3.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="implementable" data-links=""></section>
-<p><strong>Why.</strong> Defects D14, D31, D43, D47, D59, D90, D103, D114, D124 and D125. Seven sessions saw <code>promotion-failed</code>, <code>sweep-failed</code>, <code>review-in-flight</code> or <code>worktree-held</code> rows after the run was promoted, landed, resumed or discarded. They saw this after work-flows-to-the-lane §52 landed, so its fix covers only part of the cases. The stop hook refuses every turn on such a row. <code>crew ack</code> returns success but leaves the row, and for a run with no pointer and no ledger row it refuses. One session's rows were served from a station snapshot two hours old.</p>
+<p><strong>Why.</strong> Defects D14, D31, D43, D47, D59, D90, D103, D114, D124, D125 and D149. Seven sessions saw <code>promotion-failed</code>, <code>sweep-failed</code>, <code>review-in-flight</code> or <code>worktree-held</code> rows after the run was promoted, landed, resumed or discarded. They saw this after work-flows-to-the-lane §52 landed, so its fix covers only part of the cases. The stop hook refuses every turn on such a row. <code>crew ack</code> returns success but leaves the row, and for a run with no pointer and no ledger row it refuses. One session's rows were served from a station snapshot two hours old. A <code>sweep-failed</code> row comes from the station's per-session failure list, which only that session's next completed sweep replaces, and the view adds each entry back without checking that its run still exists.</p>
 <p><strong>Deliverable.</strong> An obligation row is removed in each of these cases:</p>
 <ul>
   <li>its run is promoted, landed, discarded or resumed out of the state that raised it;</li>
@@ -181,7 +183,7 @@
 <p><strong>Deliverable.</strong> No reservation, promotion lock or resume mark outlasts the work it guards:</p>
 <ul>
   <li>A path that holds for coordinator advice holds no reservation.</li>
-  <li>A reservation, lock or mark whose holder has exited, or whose holder lives on a host that is no longer the fleet node, is released when the next reader finds it.</li>
+  <li>A reservation, lock or mark whose holder is proven gone is released when the next reader finds it. On this host, gone means the pid is dead or its start time differs from the recorded one. On another host, gone means that host's own lease or heartbeat has expired. A live holder on another host still holds.</li>
   <li>A coordinator resume with advice supersedes an automatic repair round that has not started its worker.</li>
   <li>Every resume prints a transition row.</li>
 </ul>
@@ -189,20 +191,21 @@
 <ul>
   <li>An advice hold leaves no reservation on disk.</li>
   <li><code>crew resume --advice</code> during the hold is accepted.</li>
-  <li>A reservation naming a dead pid and a reservation naming a foreign host are both released on read.</li>
+  <li>A reservation naming a dead pid, and one naming a host whose lease has expired, are both released on read. One naming a host whose lease is fresh is kept.</li>
   <li>A resume mark whose attempt has a result record does not hold review dispatch.</li>
 </ul>
 <p>Negative control: the advice-hold case against the base revision refuses the resume, and the failing run is logged.</p>
 
-    <h2 id="s10">§10 — Automatic repair rounds are bounded and carry every finding</h2>
+    <h2 id="s10">§10 — A repair round's advice carries every finding disposed into the run</h2>
 <section data-reckon="section" data-id="s10" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="elevated" data-status="implementable" data-links=""></section>
 <p><strong>Why.</strong> Defects D28 and D50.</p>
 <ul>
   <li>Between 17:56Z on 13 November and 07:40Z on 14 November, run <code>r-20261113T114341166779-vofa-candidates-vessel</code> was resumed 437 times on the claude lane. Each round's worker rewrote its status as <code>in-progress</code> with checkpoint "nothing remaining".</li>
   <li>Another repair round's advice named only the blocking dimension finding, and dropped four non-blocking findings folded into the node.</li>
 </ul>
-<p><strong>Deliverable.</strong> Automatic repair resumes of one run stop at a bound declared in flight, and stop at once when a round ends with the same head and the same unrecognised status as the round before. The run then raises one obligation naming the bound it reached. A repair round's advice carries every finding disposed into the run.</p>
-<p><strong>Done when.</strong> A test drives a run whose worker always ends <code>in-progress</code> at an unchanged head, and reads exactly one automatic resume, then a single obligation. A test reads every folded finding in a composed repair advice. Negative control: the first test against the base revision resumes again, and the failing run is logged.</p>
+<p>The 437-resume loop was fixed directly on 2026-11-14 (<code>1e9c272ea7</code>): a refusal written between two resumes had reset the round's attempt count, so the cap never fired. Its test is in <code>tests/test_the_reflex_resumes_an_unpromoted_run.py</code>. What remains is the dropped findings.</p>
+<p><strong>Deliverable.</strong> A repair round's advice carries every finding disposed into the run, blocking and folded alike, each with its id and text.</p>
+<p><strong>Done when.</strong> A test composes repair advice for a run with one blocking dimension finding and two non-blocking findings folded into its node, and reads all three ids and texts in the advice. Negative control: against the base revision the folded findings are absent, and the failing run is logged.</p>
 
     <h2 id="s11">§11 — A manifest is refused while its worker is live for anything promotion would refuse</h2>
 <section data-reckon="section" data-id="s11" data-effort-hours="3.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="implementable" data-links=""></section>
@@ -238,7 +241,7 @@
   <li>A code-mode review promotes.</li>
   <li>A record stored under its plain name is accepted by promotion as by the check.</li>
 </ul>
-<p>A census of the live crew home, written to the section's evidence fragment, finds no run removed in the last day without a record. Negative control: the never-launched case against the base revision reaches <code>promotion-requested</code>, and the failing run is logged.</p>
+<p>A census, written to the section's evidence fragment, takes every run id the last day's admission verdict log and dispatch records name, and finds for each one a live pointer, a ledger row or a discard or failure record. A run named in those logs with none of the three is a vanished run, and the census finds none. Negative control: the never-launched case against the base revision reaches <code>promotion-requested</code>, and the failing run is logged.</p>
 
     <h2 id="s13">§13 — Landing judges added failures, and reads a finished review at the head</h2>
 <section data-reckon="section" data-id="s13" data-effort-hours="2.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="implementable" data-links=""></section>
@@ -255,24 +258,23 @@
 <p><strong>Deliverable.</strong> Promotion and landing judge a suite by failures added against the base, not by exit status. A log cited as a negative control is required to record a failure. A commit after the after-suite arm that touches no path the suite imports does not invalidate the arm. A node whose done-when names no test lands on its declared evidence check. A delivered review of the asserted head counts, whether or not its own run is promoted yet. A repeated <code>crew complete</code> drives the queued promotion. A dry run submits no job.</p>
 <p><strong>Done when.</strong> Tests with a temporary repository and crew home land each case above, and read a dry run that writes nothing and starts no scheduler job. Negative control: the paired base-and-head failure case against the base revision is refused as red, and the failing run is logged.</p>
 
-    <h2 id="s14">§14 — Plan edits that coordinators hand-patch have an op</h2>
+    <h2 id="s14">§14 — A decision can hold only its sections, and a batch sees its own earlier ops</h2>
 <section data-reckon="section" data-id="s14" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
-<p><strong>Why.</strong> Defects D5, D25, D98, D99 and D105. Coordinators bypassed <code>edit_plan</code>, or split one write into two, because:</p>
-<ul>
-  <li>no op scopes a decision to the sections it holds, so every open decision holds the whole plan;</li>
-  <li><code>close</code> refuses in the same batch as the <code>append_evidence</code> that satisfies it;</li>
-  <li><code>archived: true</code> fails with a raw schema error, while the string <code>"1"</code> works;</li>
-  <li>a followup append requires <code>written_at</code> and <code>written_by</code>, which the examples omit;</li>
-  <li>a sprint append refuses a committed plan until some state write registers it.</li>
-</ul>
-<p><strong>Deliverable.</strong> <code>edit_plan</code> sets the sections a decision holds. A batch's later ops see the effects of its earlier ones. Boolean and string spellings of a flag are both accepted. A followup append defaults its author and date. A sprint append resolves any committed plan with valid metadata.</p>
-<p><strong>Done when.</strong> Tests drive each case through the MCP edit tool against a temporary project and read the plan HTML. A decision scoped to §2 holds only §2 on the roadmap. A close batched after its evidence succeeds in one write. Negative control: the batched close against the base revision is refused at its op index, and the failing run is logged.</p>
+<p><strong>Why.</strong> Defects D5 and D25. No op scopes a decision to the sections it holds, so every open decision holds the whole plan and coordinators edit the HTML by hand. And <code>close</code> refuses in the same batch as the <code>append_evidence</code> that satisfies it, so one write becomes two.</p>
+<p><strong>Deliverable.</strong> <code>edit_plan</code> sets the sections a decision holds, and a batch's later ops see the effects of its earlier ones.</p>
+<p><strong>Done when.</strong> Tests drive both cases through the MCP edit tool against a temporary project and read the plan HTML. A decision scoped to §2 holds only §2 on the roadmap. A close batched after its evidence succeeds in one write. Negative control: the batched close against the base revision is refused at its op index, and the failing run is logged.</p>
+
+    <h2 id="s15">§15 — An edit op accepts the input forms its examples show</h2>
+<section data-reckon="section" data-id="s15" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="implementable" data-links=""></section>
+<p><strong>Why.</strong> Defects D98, D99 and D105. <code>archived: true</code> fails with a raw schema error while the string <code>"1"</code> works. A followup append requires <code>written_at</code> and <code>written_by</code>, which the reckon-edit examples omit. A sprint append refuses a committed plan until some state write registers it.</p>
+<p><strong>Deliverable.</strong> Boolean and string spellings of a flag are both accepted. A followup append defaults its author and date. A sprint append resolves any committed plan with valid metadata.</p>
+<p><strong>Done when.</strong> Tests drive the three cases through the MCP edit tool against a temporary project and read the written plan or sprint. Negative control: <code>archived: true</code> against the base revision fails with the schema error, and the failing run is logged.</p>
 
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
 <article class="r-fu" data-id="f-qwnw-001" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-create" data-written-at="2026-11-14" data-recommends-skill="/reckon-build queued-work-needs-no-workaround" data-resolved-at="" data-resolved-by="">
     <h4 class="r-fu-title">Review, then queue every section in one batch</h4>
-    <div class="r-fu-body"><p>§2–§14 are independent, and each removes one family of workaround. Once the content and design reviews are answered, queue them all in one batch, with priority to §4 (the lead's directive), §8, §10 and §2. Each delivered section is announced to the reporting sessions it answers.</p></div>
+    <div class="r-fu-body"><p>§2–§15 are independent, and each removes one family of workaround. Once the content and design reviews are answered, queue them all in one batch, with priority to §4 (the lead's directive), §8, §9 and §2. Each delivered section is announced to the reporting sessions it answers.</p></div>
     <pre class="r-fu-prompt">/reckon-build queued-work-needs-no-workaround</pre>
     </article>
 </section>

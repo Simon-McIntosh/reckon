@@ -10,7 +10,7 @@
   <meta name="plan-summary" content="Each session holds a priority budget it spends across its queued work, moves at any time, and reads back beside the whole queue from the CLI, MCP or Python.">
   <meta name="plan-status" content="active">
   <meta name="plan-roi" content="high">
-  <meta name="plan-effort-hours" content="8.0">
+  <meta name="plan-effort-hours" content="12.0">
   <meta name="plan-capability-version" content="1.0">
   <meta name="plan-capability-class" content="general">
   <meta name="plan-capability-reasoning" content="deep">
@@ -20,8 +20,8 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-after" content="queued-work-needs-no-workaround">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;}">
-  <meta name="plan-section-depends-on" content="{&quot;s3&quot;:[&quot;a-session-spends-a-priority-budget#s2&quot;]}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-depends-on" content="{&quot;s3&quot;:[&quot;a-session-spends-a-priority-budget#s2&quot;],&quot;s4&quot;:[&quot;a-session-spends-a-priority-budget#s2&quot;]}">
   <title>A session spends a priority budget | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
@@ -50,7 +50,7 @@
   <li><strong>Priority cannot be given at submission.</strong> Neither <code>crew dispatch</code> nor a batch entry accepts one. It is set afterwards, one request at a time, with <code>crew queue reprioritise</code>.</li>
   <li><strong>Priority is unbounded and has no cross-session meaning.</strong> Any session can mark every request at any value, so the number carries no information. It orders only a session's own requests and its project's sessions, and never trades against fair share. Nothing stops one session claiming the lane. Nothing lets a session spend a limited claim on the one run that matters.</li>
   <li><strong>Priority stops at launch.</strong> A prioritised run's review and its promotion request queue at default priority. A coordinator who wants a run landed first cannot say so to the review queue or the promotion queue.</li>
-  <li><strong>The queue cannot be read as a queue.</strong> No view, MCP read or importable function lists the queued and awaiting requests in the order admission will launch them, with the reason for each place. A coordinator reconstructs it from <code>crew view live</code> and pointer files, and cannot see where its request stands against other sessions.</li>
+  <li><strong>The queue cannot be read as a queue.</strong> <code>reckon.crew.queue_order.admission_order_details</code> already ranks queued requests and names the reason for each place, but nothing serves it. No view and no MCP read return it, and it covers neither awaiting-upstream requests, pending reviews and promotions, the hold that stops a request, nor any budget. A coordinator reconstructs the queue from <code>crew view live</code> and pointer files, and cannot see where its request stands against other sessions.</li>
 </ul>
 
     <h2 id="s2">§2 — Each session holds a priority budget and spends it at submission or later</h2>
@@ -59,7 +59,7 @@
 <ul>
   <li>A session gives a request a priority at submission, through <code>crew dispatch</code>, a batch entry or <code>crew review</code>. It changes that priority at any time before launch, through <code>crew queue reprioritise</code>.</li>
   <li>The points a session has placed on its unlaunched requests never exceed its budget. A submission or change that would exceed it is refused, naming the budget, the points in use and the requests holding them. A request's points return to the budget when it launches, is dropped or is discarded.</li>
-  <li>Admission orders requests across sessions by priority first. Requests of equal priority are ordered exactly as they are today: delivered reviews first, then ageing, then fair share by live runs, then roadmap rank. The ageing rule still lifts any request that has waited past its bound, so a spent budget can move work ahead but cannot starve another session.</li>
+  <li>Admission orders requests across sessions in this order: delivered reviews first; then any request that has waited past the ageing bound, oldest first; then priority, highest first; then fair share by live runs; then roadmap rank. Ageing sits above priority on purpose, so a spent budget can move work ahead but cannot starve another session.</li>
 </ul>
 <p><strong>Done when.</strong> Tests with a temporary repository and crew home show the following:</p>
 <ul>
@@ -68,7 +68,7 @@
   <li>Of two sessions, the one with more live runs but a priority-3 request has that request admitted before the other session's priority-0 request.</li>
   <li>A priority-0 request older than the ageing bound is admitted before a fresh priority-3 request.</li>
 </ul>
-<p>Negative control: the cross-session case against the base revision admits the session with fewer live runs first, and the failing run is logged. The gate runs on <code>all_debug</code>, and its log is written to the section's evidence fragment.</p>
+<p>Negative control: the cross-session case against the base revision admits the session with fewer live runs first, and the failing run is logged. The gate runs on <code>all_debug</code>, and its log is written to <code>docs/evidence/fragments/a-session-spends-a-priority-budget/s2.html</code>.</p>
 
     <h2 id="s3">§3 — A run's priority carries to its review and its promotion</h2>
 <section data-reckon="section" data-id="s3" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
@@ -79,7 +79,7 @@
   <li>Of two promotion requests, the priority-4 one is drained first.</li>
   <li>Reprioritising a delivered run charges the session's budget, and landing returns the points.</li>
 </ul>
-<p>Negative control: the promotion-order case against the base revision drains in request order, and the failing run is logged. The gate runs on <code>all_debug</code>, and its log is written to the section's evidence fragment.</p>
+<p>Negative control: the promotion-order case against the base revision drains in request order, and the failing run is logged. The gate runs on <code>all_debug</code>, and its log is written to <code>docs/evidence/fragments/a-session-spends-a-priority-budget/s3.html</code>.</p>
 
     <h2 id="s4">§4 — The queue reads as a queue, from the CLI, MCP and Python</h2>
 <section data-reckon="section" data-id="s4" data-effort-hours="2.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
@@ -93,13 +93,25 @@
   <li>for a request that cannot launch, the hold that stops it.</li>
 </ul>
 <p>Each session's budget, the points in use and the points free appear beside the rows. The read filters by session and by project. It is derived in Python and computed by the same ordering that admission uses, so the view and the next admission pass cannot disagree.</p>
-<p><strong>Done when.</strong> A test queues requests from two sessions with different priorities, waits and holds, and reads the same order and reasons from the function, the CLI and the MCP tool. A test runs one admission pass and reads the request it launched at position 1 of the view taken just before. Negative control: a view that ordered by queue time alone fails the position-1 test, and the failing run is logged.</p>
+<p><strong>Done when.</strong> A test queues requests from two sessions with different priorities, waits and holds, and reads the same order and reasons from the function, the CLI and the MCP tool. A test runs one admission pass and reads the request it launched at position 1 of the view taken just before. Negative control: the same tests run against the base revision fail, because the base serves no queue view and no MCP read, and the failing run is logged. The gate runs on <code>all_debug</code>, and its log is written to <code>docs/evidence/fragments/a-session-spends-a-priority-budget/s4.html</code>.</p>
+
+    <h2 id="s5">§5 — A worker runs as its own scheduler job, so the partition is the worker queue</h2>
+<section data-reckon="section" data-id="s5" data-effort-hours="4.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="implementable" data-links=""></section>
+<p><strong>Why.</strong> The lead's direction of 2026-11-14: the router should hold a very large queue, kept off the cards by its gate width, and reckon should not cap how many workers wait in it. Today local-lane workers run as <code>--overlap</code> steps inside the fleet allocation. That allocation is one node, shared with every orchestrator session. Its roster cap of 25 is a memory bound. The node had 20 GB free of 125 GB at 17:15Z on 2026-11-14, with 13 steps using 18.9 GB: median 584 MB, p90 2.9 GB, and one at 10.5 GB while running tests. Lifting the cap there would risk an out-of-memory kill of the coordinators along with the workers.</p>
+<p><strong>Deliverable.</strong> A local-lane worker is launched as its own scheduler job on a CPU partition the flight configuration names, not as a step of the fleet allocation. The scheduler's pending queue holds workers past the partition's capacity, and reckon applies no roster cap to such a lane. Reckon still decides submission order, by the admission order of §2, and a pending worker's priority can still be raised. A worker's tool commands, tests included, run on the job's node, never on the fleet node.</p>
+<p><strong>Done when.</strong>
+<ul>
+  <li>A test with a stub scheduler dispatches more workers than the old roster cap, reads one job submission per worker on the named partition, and reads no refusal naming the roster.</li>
+  <li>A test raises a pending worker's priority and reads the scheduler asked to reorder it.</li>
+  <li>A live measurement on <code>rigel</code> dispatches 30 workers. It reads 30 jobs in the scheduler and no worker process on the fleet node, and the router's gate waiting count is above zero while its in-flight count stays at its width.</li>
+</ul>
+<p>Negative control: the first test against the base revision refuses past 25, naming the roster cap, and the failing run is logged. The gate runs on <code>all_debug</code>, and the live measurement's log is written to <code>docs/evidence/fragments/a-session-spends-a-priority-budget/s5.html</code>.</p>
 
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
 <article class="r-fu" data-id="f-sspb-001" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-create" data-written-at="2026-11-14" data-recommends-skill="/reckon-build a-session-spends-a-priority-budget" data-resolved-at="" data-resolved-by="">
-    <h4 class="r-fu-title">Review, then build §2 and §4 together, then §3</h4>
-    <div class="r-fu-body"><p>§2 and §4 are independent. §3 waits on §2's budget. Route the build to codex at the lead's direction of 2026-11-14.</p></div>
+    <h4 class="r-fu-title">Review, then build §2 and §5 together, then §3 and §4</h4>
+    <div class="r-fu-body"><p>§2 and §5 are independent. §3 and §4 wait on §2's budget. Route the build to codex at the lead's direction of 2026-11-14.</p></div>
     <pre class="r-fu-prompt">/reckon-build a-session-spends-a-priority-budget</pre>
     </article>
 </section>
