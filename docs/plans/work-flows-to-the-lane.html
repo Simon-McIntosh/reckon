@@ -24,7 +24,7 @@
   <title>Work Flows To The Lane | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="248">
+<meta name="plan-version" content="249">
 <meta name="plan-modified" content="2026-11-14">
 </head>
 <body>
@@ -970,6 +970,9 @@
 <div class="r-comment" data-section="s50" data-id="c-run-r-20261114T125839611793-review-of-promoted-review-never-held-for-landing-repair-23a4457b7885" data-who="reckon-build" data-when="2026-11-14T13:22:15.574Z">
     <div class="r-comment-body"><p>§50 review at head 23a4457b78 of the commits gained since fa334babcd: parsed record scoring all six dimensions (goal_fidelity 18, evidence 15, scope_discipline 20, durability 16, fit 18, reuse 15) with added_failure_count 0 from the reviewed run's own gate logs (base 51 passed, head 54 passed, both EXIT=0), and four non-blocking findings</p></div>
 </div>
+<div class="r-comment" data-section="s50" data-id="c-run-r-20261114T081014193672-promoted-review-never-held-for-landing-repair" data-who="reckon-build" data-when="2026-11-14T09:22:30Z">
+    <div class="r-comment-body"><p>§50: a review run promoted while its pointer moves retires that pointer instead of marking it pending_landing_repair, comparing the pointer&#x27;s attempt identity so a newer attempt is left in place, and the landing sweep retires a review pointer already left marked beside its ledger row and clears that run&#x27;s pending-landing record; gate on all_debug: base 51 passed, head 54 passed, declared mutation 2 failed / 1 passed.</p></div>
+</div>
 <div class="r-comment" data-section="s51" data-id="c-run-r-20261114T081039880525-fleet-migration-carries-backend-environment" data-who="reckon-build" data-when="2026-11-14T08:51:30.824Z">
     <div class="r-comment-body"><p>A fleet hold now exports a PATH composed of the submitting environment plus every directory the flight declares for a backend, so a hold submitted from a /usr/bin:/bin shell still starts sessions that resolve codex (/home/ITER/mcintos/.npm/packages/bin/codex), and the migration refuses to promote a standby allocation in which a declared backend command does not resolve, naming the command and the allocation and leaving the fleet record unchanged; gate 55 passed EXIT=0 at head against 51 passed EXIT=0 at base on all_debug.</p></div>
 </div>
@@ -1018,6 +1021,9 @@
 <div class="r-comment" data-section="s58" data-id="c-run-r-20261114T124049234084-review-of-unreadable-queued-pointer-never-fails-ordering-7fec44167755" data-who="reckon-build" data-when="2026-11-14T12:55:42.534Z">
     <div class="r-comment-body"><p>reviewed r-20261114T112555787298-unreadable-queued-pointer-never-fails-ordering at cd5e68ec..7fec4416 and stored a parsed six-dimension record; the change does what the goal states, and four non-blocking findings are recorded (a duplicated placeable/unplaceable partition owned by admission/selection.py, a helper with no production caller, one added failure in an existing out-of-scope test, and docstring changelog prose)</p></div>
 </div>
+<div class="r-comment" data-section="s59" data-id="c-run-r-20261114T132031512928-review-of-fenced-worker-tmp-is-its-scratch-b543b3702bf8" data-who="reckon-build" data-when="2026-11-14T13:34:51.886Z">
+    <div class="r-comment-body"><p>review of r-20261114T112605744964-fenced-worker-tmp-is-its-scratch at b543b3702b (base a01e2b9a) scored goal_fidelity 19, evidence 15, scope_discipline 19, durability 19, fit 18, reuse 18, with one blocking finding that three tests in tests/test_a_worker_cannot_remove_the_nodes_temporary_files.py (:317, :348, :457) assert the superseded composition and fail at this head.</p></div>
+</div>
 <div class="r-comment" data-section="s6" data-id="c-s6-directory-claims" data-who="reckon-build" data-when="2026-11-11T17:00:00Z">
     <div class="r-comment-body"><p>§6's reproduction found the 11 November hold was a directory claim (<code>reckon/crew/picker</code>), which <code>concurrent-edits-meet-at-the-merge</code> §2 keeps exclusive, enforced again at launch in <code>reckon/crew/dispatch_claims.py</code>. By the lead's ruling that work does not wait on file claims, §6 now makes a directory claim under a shared root share as its files do, and its run is widened to that module and to the test it supersedes.</p></div>
 </div>
@@ -1062,9 +1068,6 @@
 </div>
 <div class="r-comment" data-section="s8" data-id="c-close-s8" data-who="reckon-build" data-when="2026-11-12T02:20:00Z">
     <div class="r-comment-body"><p>§8 landed at <code>ff797f0c45</code>. <a href="/reckon/evidence/archive/work-flows-to-the-lane-landed.html#s8-re-review-need-in-shadow">evidence</a></p></div>
-</div>
-<div class="r-comment" data-section="s59" data-id="c-run-r-20261114T132031512928-review-of-fenced-worker-tmp-is-its-scratch-b543b3702bf8" data-who="reckon-build" data-when="2026-11-14T13:34:51.886Z">
-    <div class="r-comment-body"><p>review of r-20261114T112605744964-fenced-worker-tmp-is-its-scratch at b543b3702b (base a01e2b9a) scored goal_fidelity 19, evidence 15, scope_discipline 19, durability 19, fit 18, reuse 18, with one blocking finding that three tests in tests/test_a_worker_cannot_remove_the_nodes_temporary_files.py (:317, :348, :457) assert the superseded composition and fail at this head.</p></div>
 </div>
 </section>
 </main>
