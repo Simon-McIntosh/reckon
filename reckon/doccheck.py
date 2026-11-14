@@ -1042,6 +1042,47 @@ def _structure_findings(html_text: str) -> list[Finding]:
     return out
 
 
+_WRITE_PATHS_MENTION = re.compile(r"write\s+paths?\b", re.IGNORECASE)
+
+
+def _write_paths_sentence_findings(html_text: str) -> list[Finding]:
+    """Report a section whose write-paths sentence no reader can parse.
+
+    Both readers of the sentence — the section reader and the batch entry
+    reader — take it only when the label ends in a colon or a full stop, so a
+    section that writes the label another way states paths no consumer sees and
+    is refused downstream as if it had named none. The check fires only on
+    sections that mention write paths at all, so a section that describes no
+    write paths is not a finding; the sentence's own form is the subject.
+
+    Severity ``warn``: the plan is authored and a human can repair the
+    punctuation, and the failure it causes already surfaces loudly when a
+    batch is refused.
+    """
+    from reckon.crew.plan_review import _WRITE_PATHS_SENTENCE
+
+    out: list[Finding] = []
+    for identity, prose in _plan_html.section_prose(html_text or ""):
+        if identity == _plan_html.DOCUMENT_UNIT:
+            continue
+        for mention in _WRITE_PATHS_MENTION.finditer(prose):
+            if _WRITE_PATHS_SENTENCE.match(prose, mention.start()):
+                continue
+            label = " ".join(mention.group(0).split())
+            out.append(
+                Finding(
+                    "warn",
+                    "write-paths-sentence-unparsed",
+                    f"<section id=\"{identity}\"> states {label!r} without a "
+                    "colon or a full stop after it — neither the section reader "
+                    "nor the batch entry reader parses that sentence, so the "
+                    "paths it names are invisible downstream",
+                )
+            )
+            break
+    return out
+
+
 def _scalar_duplicate_findings(soup: BeautifulSoup) -> list[Finding]:
     """Report a duplicated ``plan-*`` scalar, which the reader resolves first-wins.
 
@@ -1636,6 +1677,11 @@ def audit_html(
 
     # (g) Scalar duplicates — the authoritative state, not the prose around it.
     out.extend(_scalar_duplicate_findings(soup))
+
+    # (g) Plan sections name their write paths in one sentence, and both
+    # readers parse only a colon or a full stop after the label. A sentence in
+    # any other form leaves those paths invisible downstream.
+    out.extend(_write_paths_sentence_findings(html_text))
 
     # Document type — research/doc are non-actionable; plan requires status.
     rt = soup.find("meta", attrs={"name": "reckon-type"})

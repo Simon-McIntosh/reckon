@@ -5460,8 +5460,10 @@ CODE_REVIEW_FILE_PREFIX = "code-"
 # The write-path sentence a plan section carries, and the path-shaped tokens it
 # names. A section's write paths are authored prose rather than markup, so the
 # composer reads the sentence that states them and takes the ``.py`` paths from
-# it rather than guessing at any path-like token in the prose.
-_WRITE_PATHS_SENTENCE = re.compile(r"write\s+paths?\s*:", re.IGNORECASE)
+# it rather than guessing at any path-like token in the prose. The label ends in
+# a colon or a full stop: both are authored as a bold lead-in, and a section
+# that writes "Write paths." rather than "Write paths:" states the same paths.
+_WRITE_PATHS_SENTENCE = re.compile(r"write\s+paths?\s*[.:]", re.IGNORECASE)
 _PY_PATH_TOKEN = re.compile(r"[A-Za-z0-9_][A-Za-z0-9_./-]*\.py")
 
 
