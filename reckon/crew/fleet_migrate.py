@@ -6,6 +6,7 @@ import json
 import os
 import re
 import secrets
+import shutil
 import socket
 import subprocess
 import sys
@@ -431,6 +432,60 @@ def _read_runs() -> list[dict[str, Any]]:
             }
         )
     return rows
+
+
+def unresolved_backend_commands(
+    path: str,
+    backends: Mapping[str, Mapping[str, Any]] | None = None,
+) -> list[str]:
+    """Commands the flight places in a declared directory that ``path`` misses.
+
+    A backend's location is a fact the flight declares, so a backend whose
+    command is absent from the directory it declares is one the hold cannot
+    supply whatever shell submitted it. A backend that declares no directory is
+    not judged here: its location is a fact about the submitting environment,
+    which a hold cannot add to either.
+    """
+    if backends is None:
+        from reckon import flight
+
+        backends = flight.resolve().config.get("backends") or {}
+    from reckon._backends import backend_search_directories
+
+    missing: list[str] = []
+    for name in sorted(backends):
+        backend = backends[name] or {}
+        command = str(backend.get("command") or "")
+        if not command or not backend_search_directories(backend):
+            continue
+        if shutil.which(command, path=path) is None and command not in missing:
+            missing.append(command)
+    return missing
+
+
+def verify_backend_commands(
+    job: Mapping[str, Any],
+    *,
+    path: str | None = None,
+    backends: Mapping[str, Mapping[str, Any]] | None = None,
+) -> None:
+    """Refuse a migration whose new allocation cannot find a declared backend.
+
+    The check runs before the migration names the new allocation anywhere: a
+    missing command is reported with the allocation it would have switched to
+    and nothing is written, so the fleet record keeps naming the node that
+    still serves every backend.
+    """
+    missing = unresolved_backend_commands(
+        fleet_node.hold_path() if path is None else path, backends
+    )
+    if not missing:
+        return
+    names = ", ".join(f"'{command}'" for command in missing)
+    raise MigrationError(
+        f"backend command {names} does not resolve in allocation "
+        f"{job.get('jobid') or 'unknown'} on {job.get('node') or 'unknown'}"
+    )
 
 
 def _fleet_record(state: Path) -> dict[str, Any]:
@@ -1087,6 +1142,7 @@ def migrate(
             query_jobs=query_jobs,
             pause=pause,
         )
+        verify_backend_commands(job)
         try:
             replacement = replace_reservation(job_id=standing["job_id"])
         except placement.CrewError as exc:
