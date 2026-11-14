@@ -39,4 +39,19 @@ classifier arm and is reported here rather than treated as a separate control.</
 object store, so each arm is a <code>git clone --shared --no-checkout</code> of
 the worktree at that revision. The clones carry their own writable repository,
 which the staged-write inventory test needs to read its trees.</p>
+<h4>Landing merge against primary main</h4>
+<p>The landing conflicted in the classification module, where primary main adds
+the one stuck verdict every surface reads. Both changes are kept: the
+premature-end helpers and their constants stand as delivered, and the stuck
+verdict reader joins them ahead of the classification chain. The premature-end
+arm still runs after every manifest, wait, phase and budget reading, so a
+stuck request keeps its own reading and only a run whose stream ended before
+it acted takes the premature end.</p>
+<table>
+<thead><tr><th>Measure</th><th>Observed result</th></tr></thead>
+<tbody>
+<tr><td>Repaired merge head, <code>768e520a8c</code></td><td>54 passed in 13.98s, <code>EXIT=0</code></td></tr>
+<tr><td>Delivery commits kept</td><td><code>b058eaa9d9</code> and <code>857d4ddafd</code></td></tr>
+</tbody>
+</table>
 </section>
