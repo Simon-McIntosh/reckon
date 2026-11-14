@@ -339,6 +339,11 @@ def test_the_publisher_is_reached_on_a_beat_the_change_gate_skips(
     monkeypatch.setattr(
         recovery_watch, "_crew_home_change_token", lambda project, pointers: "still"
     )
+    # The neighbours that ride the clock's own cadence are held shut, so the
+    # only route a later beat has to the publisher is the one this case is
+    # about. Were the beat's call to drift back behind either gate, no beat in
+    # this case could reach it and the snapshot would stay stale.
+    monkeypatch.setattr(recovery_watch, "WATCHER_SWEEP_INTERVAL_SECONDS", 3600.0)
     published: list[str] = []
     starts_sweep = runs.publish_obligations_on_beat
 
