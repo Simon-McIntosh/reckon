@@ -1042,6 +1042,66 @@ def _structure_findings(html_text: str) -> list[Finding]:
     return out
 
 
+_WRITE_PATHS_LABEL = re.compile(r"^write\s+paths?\b", re.IGNORECASE)
+
+
+def _write_paths_sentence_findings(
+    html_text: str, soup: BeautifulSoup
+) -> list[Finding]:
+    """Report a section whose write-paths label sentence no reader can parse.
+
+    Both readers of the sentence — the section reader and the batch entry
+    reader — take it only when the label ends in a colon or a full stop, so a
+    section that opens a paragraph with the label another way states paths no
+    consumer sees and is refused downstream as if it had named none.
+
+    The subject is the label sentence, not the phrase: a section that discusses
+    write paths in prose is not a finding, and neither is a section whose prose
+    already yields paths through the section reader, whatever prose around them
+    says. The finding fires only where a paragraph begins with the label and no
+    parseable label sentence sits in that section at all.
+
+    Severity ``warn``: the plan is authored and a human can repair the
+    punctuation, and the failure it causes already surfaces loudly when a
+    batch is refused.
+    """
+    from reckon.crew.plan_review import _WRITE_PATHS_SENTENCE
+
+    document = html_text or ""
+    parseable = {
+        identity
+        for identity, prose in _plan_html.section_prose(document)
+        if _WRITE_PATHS_SENTENCE.search(prose)
+    }
+
+    out: list[Finding] = []
+    identity = ""
+    for element in soup.find_all(["h2", "p"]):
+        if element.name == "h2":
+            identity = str(element.get("id") or "")
+            continue
+        if not identity or identity in parseable:
+            continue
+        if element.find_parent("section", class_=_plan_html.LANDED_SECTION_CLASS):
+            continue
+        text = _visible_text(element)
+        match = _WRITE_PATHS_LABEL.match(text)
+        if match is None or _WRITE_PATHS_SENTENCE.match(text):
+            continue
+        label = " ".join(match.group(0).split())
+        out.append(
+            Finding(
+                "warn",
+                "write-paths-sentence-unparsed",
+                f'<section id="{identity}"> opens a paragraph with {label!r} '
+                "without a colon or a full stop after it — neither the section "
+                "reader nor the batch entry reader parses that sentence, so the "
+                "paths it names are invisible downstream",
+            )
+        )
+    return out
+
+
 def _scalar_duplicate_findings(soup: BeautifulSoup) -> list[Finding]:
     """Report a duplicated ``plan-*`` scalar, which the reader resolves first-wins.
 
@@ -1636,6 +1696,11 @@ def audit_html(
 
     # (g) Scalar duplicates — the authoritative state, not the prose around it.
     out.extend(_scalar_duplicate_findings(soup))
+
+    # (g) Plan sections name their write paths in one sentence, and both
+    # readers parse only a colon or a full stop after the label. A sentence in
+    # any other form leaves those paths invisible downstream.
+    out.extend(_write_paths_sentence_findings(html_text, soup))
 
     # Document type — research/doc are non-actionable; plan requires status.
     rt = soup.find("meta", attrs={"name": "reckon-type"})
