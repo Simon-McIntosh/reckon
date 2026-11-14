@@ -9,6 +9,7 @@ existing guards, lease and idempotent ledger/release path.
 from __future__ import annotations
 
 import json
+import logging
 import os
 import re
 import threading
@@ -24,6 +25,8 @@ from reckon.crew import runs
 from reckon.crew.host_lease import HostLease, local_host
 from reckon.crew.node import CrewError
 
+_LOGGER = logging.getLogger(__name__)
+
 REQUESTED = "promotion-requested"
 RUNNING = "promotion-running"
 PROMOTED = "promoted"
@@ -37,6 +40,14 @@ DEFERRED = "promotion-deferred"
 WAITING = "promotion-waiting"
 PENDING = frozenset({REQUESTED, RUNNING})
 ERRORS = frozenset({FAILED, REFUSED})
+
+# How long the drain waits for a wakeup before looking for requests another
+# process queued. A freed slot wakes it immediately, so this only bounds the
+# latency of a request nobody told it about.
+REFILL_POLL_SECONDS = 2.0
+DRAINED_LOG_NAME = "promotion-drained.jsonl"
+_DRAINED_LOG_MAX_BYTES = 256_000
+_DRAINED_LOG_KEEP_LINES = 500
 
 # A captured command uses the same callback and verdict writer as the CLI,
 # with its response retained on the request instead of printed by a thread.
@@ -63,6 +74,132 @@ def _request_path(run_id: str) -> Path:
 
 def _receipt_path(run_id: str) -> Path:
     return runs.run_dir(run_id) / "promotion.json"
+
+
+def _drained_log_path() -> Path:
+    return runs.crew_home() / DRAINED_LOG_NAME
+
+
+def _waited_seconds(requested_at: Any, finished_at: Any) -> float | None:
+    try:
+        requested = datetime.fromisoformat(str(requested_at))
+        finished = datetime.fromisoformat(str(finished_at))
+    except (TypeError, ValueError):
+        return None
+    return round(max(0.0, (finished - requested).total_seconds()), 3)
+
+
+def _trim_drained_log(path: Path) -> None:
+    try:
+        if path.stat().st_size <= _DRAINED_LOG_MAX_BYTES:
+            return
+        lines = path.read_text().splitlines()[-_DRAINED_LOG_KEEP_LINES:]
+    except OSError:
+        return
+    try:
+        path.write_text("\n".join(lines) + ("\n" if lines else ""))
+    except OSError:
+        return
+
+
+def _record_drained(receipt: Mapping[str, Any]) -> None:
+    """Append one finished request to the log the queue report reads.
+
+    A receipt lives in the run directory, which a promotion's release path
+    removes, so the rate over a window cannot be read back from receipts once
+    their runs are gone. The append is best-effort: bookkeeping must never fail
+    a promotion whose outcome is already durable on its receipt.
+    """
+    row = {
+        "run_id": receipt.get("run_id"),
+        "phase": receipt.get("phase"),
+        "requested_at": receipt.get("requested_at"),
+        "finished_at": receipt.get("finished_at"),
+        "waited_seconds": _waited_seconds(
+            receipt.get("requested_at"), receipt.get("finished_at")
+        ),
+    }
+    path = _drained_log_path()
+    try:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        with path.open("a") as handle:
+            handle.write(json.dumps(row) + "\n")
+    except OSError:
+        return
+    _trim_drained_log(path)
+
+
+def promotion_queue_report(
+    *, now: datetime | None = None, window_seconds: float = 3600.0
+) -> dict[str, Any]:
+    """What the queue holds now and how fast it has drained recently.
+
+    ``waiting`` counts the requests a slot would take up next, ``running`` the
+    ones holding a slot, and ``parked`` the ones held outside every slot
+    because the record a reviewer still owes is not written yet. The oldest
+    wait is measured from the request that has waited longest, so a queued
+    request that is stuck shows up even while younger ones drain past it.
+    """
+    moment = now or datetime.now(UTC)
+    waiting: list[dict[str, Any]] = []
+    running = 0
+    parked = 0
+    for path in _requests_dir().glob("*.json"):
+        request = _read(path)
+        phase = request.get("phase")
+        if phase == REQUESTED:
+            waiting.append(request)
+        elif phase == RUNNING:
+            running += 1
+        elif phase == WAITING:
+            parked += 1
+    oldest = None
+    for request in waiting:
+        try:
+            requested_at = datetime.fromisoformat(str(request.get("requested_at")))
+        except (TypeError, ValueError):
+            continue
+        if oldest is None or requested_at < oldest[0]:
+            oldest = (requested_at, request)
+    counted = {"promoted": 0, "refused": 0, "failed": 0, "deferred": 0}
+    try:
+        finished = _drained_log_path().read_text().splitlines()
+    except OSError:
+        finished = []
+    cutoff = moment.timestamp() - window_seconds
+    for line in finished:
+        try:
+            row = json.loads(line)
+            stamp = datetime.fromisoformat(str(row.get("finished_at")))
+        except (TypeError, ValueError):
+            continue
+        if stamp.timestamp() < cutoff:
+            continue
+        key = {
+            PROMOTED: "promoted",
+            REFUSED: "refused",
+            FAILED: "failed",
+            DEFERRED: "deferred",
+        }.get(str(row.get("phase")))
+        if key is not None:
+            counted[key] += 1
+    return {
+        "waiting": len(waiting),
+        "running": running,
+        "parked": parked,
+        "oldest_wait_seconds": (
+            None
+            if oldest is None
+            else round(max(0.0, (moment - oldest[0]).total_seconds()), 3)
+        ),
+        "oldest_wait_run_id": None if oldest is None else oldest[1].get("run_id"),
+        "window_seconds": window_seconds,
+        "finished_last_window": sum(counted.values()),
+        "promoted_last_window": counted["promoted"],
+        "refused_last_window": counted["refused"],
+        "failed_last_window": counted["failed"],
+        "deferred_last_window": counted["deferred"],
+    }
 
 
 def _read(path: Path) -> dict[str, Any]:
@@ -289,6 +426,7 @@ def _finish(request: Mapping[str, Any], phase: str, **result: Any) -> dict[str, 
             runs._write_json(path, receipt)
         else:
             path.unlink(missing_ok=True)
+    _record_drained(receipt)
     return receipt
 
 
@@ -420,15 +558,101 @@ class PromotionService:
         *,
         width: int = 2,
         execute: Callable[[Mapping[str, Any]], dict[str, Any] | None] | None = None,
+        code_stamp: Callable[[], str] | None = None,
     ) -> None:
         self.width = max(1, int(width))
         self.execute = execute or _execute
+        self.code_stamp = code_stamp
         self._threads: list[threading.Thread] = []
+        self._tick_lock = threading.Lock()
         self._draining = False
+        self._refill_wakeup = threading.Event()
+        self._refill_stop = threading.Event()
+        self._refill_thread: threading.Thread | None = None
+        self._refill_armed_stamp: str | None = None
+
+    def start_refill(self) -> None:
+        """Start the thread that takes the next request as soon as a slot frees.
+
+        An admission pass runs every 60 to 80 seconds, and longer under load,
+        while one promotion holds its slot for minutes. A queue refilled only by
+        the pass leaves a freed slot empty for the rest of that interval, so the
+        drain is driven by the promotions themselves. ``crew admit --once`` and
+        a test that drives single passes explicitly start nothing here.
+        """
+        if self._refill_thread is not None and self._refill_thread.is_alive():
+            return
+        self._refill_armed_stamp = (
+            None if self.code_stamp is None else self.code_stamp()
+        )
+        self._refill_stop.clear()
+        self._refill_thread = threading.Thread(
+            target=self._refill,
+            name="promotion-refill",
+            daemon=True,
+        )
+        self._refill_thread.start()
+
+    def stop_refill(self) -> None:
+        """Stop taking new requests; work already running still finishes."""
+        self._refill_stop.set()
+        self._refill_wakeup.set()
+        thread = self._refill_thread
+        if thread is not None:
+            thread.join(5.0)
+        self._refill_thread = None
+
+    def wake(self) -> None:
+        """A slot has freed or a request has been queued: refill without a pass."""
+        self._refill_wakeup.set()
+
+    def _code_moved(self) -> bool:
+        """Whether the checkout's code has moved past the image this runs.
+
+        A replacement image ends this process's threads, so a request started
+        here would be cut off mid-promotion by that replacement. An unreadable
+        stamp is not evidence of a move, and must never stop the drain.
+        """
+        if self.code_stamp is None:
+            return False
+        try:
+            return self.code_stamp() != self._refill_armed_stamp
+        except Exception:  # noqa: BLE001 - an unreadable stamp is not a move
+            return False
+
+    def _refill(self) -> None:
+        """Read the queue and start what fits, on its own clock.
+
+        One failure is recorded and the loop carries on: a queue that could not
+        be read this second, or a promotion that raised while starting, must not
+        end the only thread that refills a freed slot for the rest of the
+        service's life.
+        """
+        while not self._refill_stop.is_set():
+            self._refill_wakeup.wait(REFILL_POLL_SECONDS)
+            self._refill_wakeup.clear()
+            if self._refill_stop.is_set() or self._draining:
+                return
+            try:
+                if self._code_moved():
+                    # Hand the replacement to the admission loop: it waits for
+                    # the promotions in flight and re-executes the image.
+                    self.begin_drain()
+                    return
+                self.tick()
+            except Exception:  # one failed refill must not stop the drain
+                _LOGGER.exception("promotion refill failed; the next tick retries")
 
     def begin_drain(self) -> None:
-        """Start no further promotion; work already running still finishes."""
-        self._draining = True
+        """Start no further promotion; work already running still finishes.
+
+        The decision is taken under the tick lock, so it cannot land between a
+        tick reading the queue and that tick starting a promotion: this call
+        returns only once no tick is in flight, and every tick after it refuses.
+        """
+        with self._tick_lock:
+            self._draining = True
+        self._refill_wakeup.set()
 
     def wait_for_in_flight(self, timeout: float | None = None) -> list[str]:
         """Wait for this instance's promotions, returning those still running.
@@ -439,7 +663,12 @@ class PromotionService:
         """
         deadline = None if timeout is None else time.monotonic() + timeout
         still_running: list[str] = []
-        for thread in list(self._threads):
+        # Read under the tick lock: a tick that was in flight when the drain was
+        # decided has appended its threads before this snapshot is taken, and no
+        # later tick can append one.
+        with self._tick_lock:
+            in_flight = list(self._threads)
+        for thread in in_flight:
             thread.join(
                 None if deadline is None else max(0.0, deadline - time.monotonic())
             )
@@ -486,7 +715,19 @@ class PromotionService:
 
         Requests are taken in the order :func:`_pending_requests` gives, so a
         review starts ahead of the run it reviews when both are waiting.
+
+        Two callers tick this instance — the admission pass and the refill
+        thread — so a tick holds ``_tick_lock`` for its whole body. A drain
+        decision taken between two ticks would otherwise be made while a tick
+        was half done, and that tick would start a promotion after the reload
+        had already been decided, and after the set of threads the reload waits
+        for had been read.
         """
+        with self._tick_lock:
+            return self._tick_locked()
+
+    def _tick_locked(self) -> list[str]:
+        """One tick, with the drain decision serialised against it."""
         self._threads = [thread for thread in self._threads if thread.is_alive()]
         if self._draining:
             return []
@@ -590,6 +831,9 @@ class PromotionService:
                 renewer.stop()
             for lease in reversed(leases):
                 self._release(lease)
+            # The slot that just freed takes the next waiting request now,
+            # not when the admission pass next comes round.
+            self.wake()
 
     def settle(self, timeout: float = 300.0) -> None:
         """Wait within an explicit budget for work this instance started."""
