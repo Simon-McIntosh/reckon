@@ -1,0 +1,213 @@
+"""A promotion's checks read only the paths its commits touch.
+
+A promotion used to answer the figure-twin question by enumerating the whole
+checkout: every path added since the run's base, then every path in the head
+tree, to find an SVG beside a PNG. On a repository carrying thousands of files
+that cost lands on every promotion, and it charges a run for paths a peer's
+commit or a merged branch brought in.
+
+These tests pin the two facts a promotion's own checks owe: the ledger loader
+is called once, and the figure-twin check reads the commits the run cites. Each
+test carries a positive control, so a clean reading is shown to be an absence
+rather than a broken instrument.
+
+Nothing here touches the operator's store: the crew home, the ledger and the
+checkout are all built under the test's own temporary directory.
+"""
+
+from __future__ import annotations
+
+import json
+import subprocess
+from pathlib import Path
+from unittest import mock
+
+import pytest
+from click.testing import CliRunner
+
+from reckon import cli as cli_module
+from reckon import ledger
+from reckon.crew import promotion_checks
+from reckon.crew.node import CrewError
+from tests.helpers.git import git as _git
+from tests.test_a_promotion_does_not_read_the_whole_ledger_index import (
+    PLAN,
+    PROJECT,
+    ROW_COUNT,  # noqa: F401 - the fixture's ledger size, named for a reader
+    RUN_ID,
+    _build_checkout,
+    _seed,
+)
+
+# The checkout a promotion lands into carries this many tracked files, so a
+# command that enumerates the tree costs visibly more than one that reads the
+# paths a run touched.
+TREE_FILES = 5000
+
+
+class _GitRecorder:
+    """Record every ``git`` argv run through ``subprocess.run``."""
+
+    def __init__(self) -> None:
+        self.calls: list[list[str]] = []
+
+    def run(self, argv, *args, **kwargs):
+        if isinstance(argv, (list, tuple)) and argv and str(argv[0]).endswith("git"):
+            self.calls.append([str(item) for item in argv])
+        return self._original(argv, *args, **kwargs)
+
+    def __enter__(self):
+        self._original = subprocess.run
+        self._patch = mock.patch.object(subprocess, "run", self.run)
+        self._patch.start()
+        return self
+
+    def __exit__(self, *exc_info):
+        self._patch.stop()
+        return False
+
+
+def _enumerates_the_tree(argv: list[str]) -> bool:
+    """Whether a git argv asks git to enumerate a tree without naming paths.
+
+    ``status`` walks the whole tree when nothing after ``--`` bounds it, and
+    ``ls-tree``/``ls-files`` enumerate every path they are pointed at. A ``diff``
+    with a single revision reads that commit's own change set, so it reads what
+    moved; two revisions diff two trees, which is the base-to-head walk this
+    measure exists to catch. `git -C <dir> …` puts the directory before the
+    subcommand, so the tokens are matched against the subcommand vocabulary
+    rather than taken positionally.
+    """
+    subcommands = {"status", "ls-tree", "ls-files", "diff", "diff-tree"}
+    index = next(
+        (position for position, item in enumerate(argv) if item in subcommands),
+        None,
+    )
+    if index is None:
+        return False
+    subcommand = argv[index]
+    if "--" in argv:
+        tail = argv[argv.index("--") + 1 :]
+        if [item for item in tail if not item.startswith("-")]:
+            return False
+    if subcommand in {"ls-tree", "ls-files"}:
+        return True
+    if subcommand == "status":
+        return "--" not in argv
+    revisions = [item for item in argv[index + 1 :] if not item.startswith("-")]
+    return len(revisions) > 1
+
+
+def _tree_walks(calls: list[list[str]]) -> list[list[str]]:
+    return [argv for argv in calls if _enumerates_the_tree(argv)]
+
+
+@pytest.fixture()
+def home(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
+    config_home = tmp_path / "config"
+    config_home.mkdir()
+    monkeypatch.setenv("RECKON_HOME", str(config_home))
+    monkeypatch.delenv("RECKON_RUN_ID", raising=False)
+    return config_home
+
+
+def _five_thousand_files(root: Path) -> None:
+    """Track this many files so a whole-tree walk is a different shape."""
+    bulk = root / "corpus"
+    bulk.mkdir()
+    for index in range(TREE_FILES):
+        (bulk / f"shot-{index:05d}.txt").write_text(f"{index}\n", encoding="utf-8")
+    _git(root, "add", "corpus")
+    _git(root, "commit", "-q", "-m", "test: seed corpus")
+
+
+def test_a_promotion_calls_the_ledger_loader_once(tmp_path: Path, home: Path) -> None:
+    """One promotion over 2,000 ledger rows and a 5,000-file checkout."""
+    root = _build_checkout(tmp_path / "repo")
+    (home / "mounts.json").write_text(
+        json.dumps({PROJECT: str(root / "docs")}), encoding="utf-8"
+    )
+    _five_thousand_files(root)
+    _seed(root, tmp_path)
+
+    loader_calls: list[tuple] = []
+    original_load_open = ledger.load_open
+
+    def counting_load_open(*args, **kwargs):
+        loader_calls.append((args, tuple(kwargs)))
+        return original_load_open(*args, **kwargs)
+
+    with mock.patch.object(ledger, "load_open", counting_load_open):
+        result = CliRunner().invoke(
+            cli_module.main,
+            [
+                "crew",
+                "complete",
+                "--wait",
+                "--run",
+                RUN_ID,
+                "--gate",
+                "not-run",
+                "--outcome",
+                "the fixture exercises the ledger reads a promotion makes",
+                "--no-commit",
+                "the sole deliverable is the report",
+                "--checkout-path",
+                str(root),
+            ],
+        )
+
+    assert result.exit_code == 0, result.output
+    assert loader_calls, "the instrument saw no ledger loader call at all"
+    assert len(loader_calls) == 1, loader_calls
+
+
+def _figure_commit(root: Path) -> tuple[str, str]:
+    """Commit an SVG and its PNG twin, and return the base and the commit."""
+    base = _git(root, "rev-parse", "HEAD")
+    figures = root / "docs" / "figures"
+    figures.mkdir(parents=True, exist_ok=True)
+    (figures / "diagram.svg").write_text("<svg/>\n", encoding="utf-8")
+    (figures / "diagram.png").write_text("png\n", encoding="utf-8")
+    _git(root, "add", "docs/figures")
+    _git(root, "commit", "-q", "-m", "docs: add a figure")
+    return base, _git(root, "rev-parse", "HEAD")
+
+
+def _record(root: Path, tmp_path: Path, base: str, commit: str) -> dict:
+    manifest = tmp_path / "manifests" / "figure.md"
+    manifest.parent.mkdir(parents=True, exist_ok=True)
+    manifest.write_text(
+        "node: figure-node\n"
+        "status: complete\n"
+        "changed_paths: docs/figures/\n"
+        f"commits: {commit}\n",
+        encoding="utf-8",
+    )
+    return {
+        "run_id": "r-20261114T000000000000-figure-a",
+        "project": PROJECT,
+        "repo": str(root),
+        "worktree": str(root),
+        "base_sha": base,
+        "manifest_path": str(manifest),
+        "node": {"id": "figure-node", "plan": PLAN, "section": "s3"},
+    }
+
+
+def test_the_figure_twin_check_reads_only_the_run_commits(
+    tmp_path: Path, home: Path
+) -> None:
+    """The twin is found from the run's own commit, and no tree is walked."""
+    root = _build_checkout(tmp_path / "repo")
+    _five_thousand_files(root)
+    base, commit = _figure_commit(root)
+    record = _record(root, tmp_path, base, commit)
+
+    recorder = _GitRecorder()
+    with recorder, pytest.raises(CrewError) as refused:
+        promotion_checks._require_no_png_twin_of_an_svg(record["run_id"], record)
+
+    assert "diagram.png" in str(refused.value), refused.value
+    assert recorder.calls, "the instrument saw no git call at all"
+    assert _tree_walks(recorder.calls) == [], _tree_walks(recorder.calls)
