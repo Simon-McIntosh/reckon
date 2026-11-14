@@ -1,0 +1,78 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/evidence.py:compose_landed_record",
+    "reckon/resources.py:EVIDENCE_FRAGMENTS_SUBTREE",
+    "reckon/crew/reports.py:2550"
+  ],
+  "completed_at": "2026-11-14T07:58:35.585Z",
+  "dispatched_at": "2026-11-14T07:46:18Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/a-plan-state-lock-holds-on-every-node/every-flock-is-accounted-for.html",
+      "line": "90",
+      "severity": "non-blocking",
+      "text": "the set-equality check that keeps this census honest exists only as check_census.py under the run directory; nothing in the repository re-runs it, so a later commit that adds a lock-taking flock under reckon/ leaves every row here correct and the census silently incomplete with no failing test, and this is the whole of the durability this record scores."
+    },
+    {
+      "file": "check_census.py",
+      "line": "36",
+      "severity": "non-blocking",
+      "text": "the checker's _takes_lock special-cases the literal variable name flags as the only computed flag argument, so a flock call written fcntl.flock(fd, mode) or any other computed name is classified release-only and dropped from the site set without the check failing; no such call exists at 7d8ca3f4658 (an independent scan found exactly one computed argument, flags at reckon/crew/runs.py:493), so the census is correct today but the instrument would pass on a future miss."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": {
+      "detail": "a fragment under docs/evidence/fragments/ is read by the plan's landed record composer and by the resource discovery walk; no runtime path takes a lock because of it.",
+      "verdict": "pass"
+    },
+    "diff": {
+      "detail": "one commit adds one evidence fragment of 93 lines, with no source, test, plan or figure change.",
+      "verdict": "pass"
+    },
+    "done_when": {
+      "detail": "the done-when's set equality, stated count and both negative controls are asserted by check_census.py:74-94; census-check.log shows 43 sites / 43 rows and the controls log shows both arms with EXIT=1 and the missing/duplicate keys named.",
+      "verdict": "pass"
+    },
+    "goal": {
+      "detail": "the goal is a census of every lock-taking flock under reckon/ with one verdict each; docs/evidence/fragments/a-plan-state-lock-holds-on-every-node/every-flock-is-accounted-for.html:10-68 lists 43 rows whose data-site keys an independent AST walk of 7d8ca3f4658 reproduced exactly.",
+      "verdict": "pass"
+    },
+    "manifest": {
+      "detail": "the manifest states the checker command, the 43/43 result with 0 missing and 0 extra, the verdict split, both control failures and the two log paths.",
+      "verdict": "pass"
+    },
+    "write_paths": {
+      "detail": "the diff of 7d8ca3f4658ee37aebaeb0d9c7749394c1f4f85e..a8f1c7ba6b1340d5123a635772b6eec99f50751b touches only docs/evidence/fragments/a-plan-state-lock-holds-on-every-node/every-flock-is-accounted-for.html, which is the node's single declared write path.",
+      "verdict": "pass"
+    }
+  },
+  "justifications": {
+    "durability": "the only mechanism that catches a row dropped or a site uncensused is check_census.py:69, which lives under the run directory and is not committed, so no test in the repository reddens when a later commit adds a lock-taking flock under reckon/.",
+    "evidence": "check_census.py:74-94 asserts exactly the done-when's set equality, count and duplicate rules, and census-check.log records 43 sites / 43 rows with VERDICT PASS and EXIT=0; I re-derived the same set independently (74 flock calls, 43 lock-taking, 31 release-only) and ran the two controls' logic against the fragment, so the gate is confirmed to measure what the done-when asks.",
+    "fit": "docs/evidence/fragments/a-plan-state-lock-holds-on-every-node/every-flock-is-accounted-for.html:10-68 follows the sibling fragment head, meta and id-per-element shape, uses the plan's own three-verdict vocabulary, and carries no plan label in a name a reader would parse as code.",
+    "goal_fidelity": "docs/evidence/fragments/a-plan-state-lock-holds-on-every-node/every-flock-is-accounted-for.html:10 names 43 lock-taking fcntl.flock calls at 7d8ca3f4658 and rows 1-43 at :25-68 give each a file:line, the object it guards, its cross-node reachability and exactly one verdict, which an independent AST walk of that commit reproduced as exactly 43 keys with none missing and none extra.",
+    "reuse": "the landed change adds no definition; I searched docs/ for an existing flock inventory, scripts/census/ for a prior census utility, and the repo's AST walkers (reckon/clones.py, reckon/interface_counts.py) for the same capability and found no owner this fragment forks.",
+    "scope_discipline": "git diff 7d8ca3f4658ee37aebaeb0d9c7749394c1f4f85e..a8f1c7ba6b1340d5123a635772b6eec99f50751b changes only docs/evidence/fragments/a-plan-state-lock-holds-on-every-node/every-flock-is-accounted-for.html, the one declared write path, and adds no source, test or plan edit."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to census every lock-taking flock call under reckon/ with one verdict each; docs/evidence/fragments/a-plan-state-lock-holds-on-every-node/every-flock-is-accounted-for.html:10 states 43 lock-taking calls at 7d8ca3f4658 and the table at :25-68 carries one row per call site with what it guards, cross-node reachability and one verdict.\nVERDICT done_when: the done-when asks for file-and-line rows equal to the lock-taking fcntl.flock set at the named commit with none missing or twice, the count stated, node-local rows naming their host-local object, and two failing negative controls; check_census.py:74-94 asserts exactly that and census-check.log records 43 sites / 43 rows / 0 missing / 0 extra / 0 duplicate, VERDICT PASS.\nVERDICT write_paths: the declared path is docs/evidence/fragments/a-plan-state-lock-holds-on-every-node/every-flock-is-accounted-for.html only; git diff 7d8ca3f4658ee37aebaeb0d9c7749394c1f4f85e..a8f1c7ba6b1340d5123a635772b6eec99f50751b touches that file and nothing else.\nVERDICT manifest: read; it records the checker command, the 43-row head result, the 10 node-local / 13 already judged / 20 needs-the-\u00a72-lock split, both failing controls, and the two log paths.\nVERDICT diff: read commit by commit against 7d8ca3f4658ee37aebaeb0d9c7749394c1f4f85e; one commit, a8f1c7ba6b1340d5123a635772b6eec99f50751b, adds one 93-line HTML evidence fragment and changes no source, test or plan file.\nCALL_SITES: reckon/evidence.py:compose_landed_record, reckon/resources.py:EVIDENCE_FRAGMENTS_SUBTREE, reckon/crew/reports.py:2550\nSCORE goal_fidelity: 20\nSCORE evidence: 19\nSCORE scope_discipline: 20\nSCORE durability: 10\nSCORE fit: 19\nSCORE reuse: 20\nJUSTIFICATION goal_fidelity: docs/evidence/fragments/a-plan-state-lock-holds-on-every-node/every-flock-is-accounted-for.html:10 names 43 lock-taking fcntl.flock calls at 7d8ca3f4658 and rows 1-43 at :25-68 give each a file:line, the object it guards, its cross-node reachability and exactly one verdict, which an independent AST walk of that commit reproduced as exactly 43 keys with none missing and none extra.\nJUSTIFICATION evidence: check_census.py:74-94 asserts exactly the done-when's set equality, count and duplicate rules, and census-check.log records 43 sites / 43 rows with VERDICT PASS and EXIT=0; I re-derived the same set independently (74 flock calls, 43 lock-taking, 31 release-only) and ran the two controls' logic against the fragment, so the gate is confirmed to measure what the done-when asks.\nJUSTIFICATION scope_discipline: git diff 7d8ca3f4658ee37aebaeb0d9c7749394c1f4f85e..a8f1c7ba6b1340d5123a635772b6eec99f50751b changes only docs/evidence/fragments/a-plan-state-lock-holds-on-every-node/every-flock-is-accounted-for.html, the one declared write path, and adds no source, test or plan edit.\nJUSTIFICATION durability: the only mechanism that catches a row dropped or a site uncensused is check_census.py:69, which lives under the run directory and is not committed, so no test in the repository reddens when a later commit adds a lock-taking flock under reckon/.\nJUSTIFICATION fit: docs/evidence/fragments/a-plan-state-lock-holds-on-every-node/every-flock-is-accounted-for.html:10-68 follows the sibling fragment head, meta and id-per-element shape, uses the plan's own three-verdict vocabulary, and carries no plan label in a name a reader would parse as code.\nJUSTIFICATION reuse: the landed change adds no definition; I searched docs/ for an existing flock inventory, scripts/census/ for a prior census utility, and the repo's AST walkers (reckon/clones.py, reckon/interface_counts.py) for the same capability and found no owner this fragment forks.\nFINDING docs/evidence/fragments/a-plan-state-lock-holds-on-every-node/every-flock-is-accounted-for.html:90 non-blocking: the set-equality check that keeps this census honest exists only as check_census.py under the run directory; nothing in the repository re-runs it, so a later commit that adds a lock-taking flock under reckon/ leaves every row here correct and the census silently incomplete with no failing test, and this is the whole of the durability this record scores.\nFINDING check_census.py:36 non-blocking: the checker's _takes_lock special-cases the literal variable name flags as the only computed flag argument, so a flock call written fcntl.flock(fd, mode) or any other computed name is classified release-only and dropped from the site set without the check failing; no such call exists at 7d8ca3f4658 (an independent scan found exactly one computed argument, flags at reckon/crew/runs.py:493), so the census is correct today but the instrument would pass on a future miss.\n",
+  "review_run_id": "r-20261114T074244265423-review-of-every-flock-is-accounted-for-a8f1c7ba6b13",
+  "reviewed_base_sha": "7d8ca3f4658ee37aebaeb0d9c7749394c1f4f85e",
+  "reviewed_head_sha": "a8f1c7ba6b1340d5123a635772b6eec99f50751b",
+  "reviewed_run_id": "r-20261113T123341589000-every-flock-is-accounted-for",
+  "scores": {
+    "durability": 10,
+    "evidence": 19,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-14T07:54:24.458952Z",
+  "total": 108
+}

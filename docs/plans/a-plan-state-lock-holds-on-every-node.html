@@ -24,7 +24,7 @@
   <title>A plan-state lock holds on every node | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="13">
+<meta name="plan-version" content="14">
 <meta name="plan-modified" content="2026-11-14">
 </head>
 <body>
@@ -139,7 +139,10 @@
     <div class="r-comment-body"><p>Independent review of 616f01e709 against 22c3fbda: the move reply keeps `applied` on a failed version read and names the failure, the duplicate JSONDecodeError clause is gone, and the S112 is absent (ruff recount 18 -&gt; 17 with the summary line excluded); scores goal_fidelity 19, evidence 13, scope_discipline 20, durability 19, fit 18, reuse 19, with two non-blocking evidence findings (no ruff log stored; the all_debug claim has no submitted-job receipt).</p></div>
 </div>
 <div class="r-comment" data-section="s3" data-id="c-run-r-20261113T154236531991-move-reply-keeps-its-verdict-on-a-failed-read" data-who="reckon-build" data-when="2026-11-13T17:00:14.984Z">
-    <div class="r-comment-body"><p>A sprint move&#x27;s reply now sets `applied` whenever the edit carries a move and names each failed version read in `warnings` (`sprint_version_read_failed=&lt;id&gt;`), so a post-write read failure reports what landed instead of dropping the verdict; the unreachable `except json.JSONDecodeError` clause in the journal reader is gone, and ruff on the two modules reports 18 findings against 19 at base with the move-path S112 absent. New test `test_a_failed_post_write_version_read_keeps_the_applied_verdict` passes at head and fails at base with &quot;a failed version read must not drop the verdict&quot;. Head arm 58 passed / base arm 57 passed; gate (with tests/test_mcp_tools.py) 42 passed.</p></div>
+    <div class="r-comment-body"><p>A sprint move's reply now sets `applied` whenever the edit carries a move and names each failed version read in `warnings` (`sprint_version_read_failed=&lt;id&gt;`), so a post-write read failure reports what landed instead of dropping the verdict; the unreachable `except json.JSONDecodeError` clause in the journal reader is gone, and ruff on the two modules reports 18 findings against 19 at base with the move-path S112 absent. New test `test_a_failed_post_write_version_read_keeps_the_applied_verdict` passes at head and fails at base with "a failed version read must not drop the verdict". Head arm 58 passed / base arm 57 passed; gate (with tests/test_mcp_tools.py) 42 passed.</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-run-r-20261114T074244265423-review-of-every-flock-is-accounted-for-a8f1c7ba6b13" data-who="reckon-build" data-when="2026-11-14T07:58:35.585Z">
+    <div class="r-comment-body"><p>independent review of r-20261113T123341589000-every-flock-is-accounted-for at head a8f1c7ba6b1340d5123a635772b6eec99f50751b scores goal_fidelity 20, evidence 19, scope_discipline 20, durability 10, fit 19, reuse 20 (total 108), records zero added failures, and carries two non-blocking findings — the census check is uncommitted so the census can rot silently, and the checker classifies any computed flag argument other than the literal name flags as release-only and drops it — both of which leave the census correct at the reviewed commit.</p></div>
 </div>
 </section>
 </main>
