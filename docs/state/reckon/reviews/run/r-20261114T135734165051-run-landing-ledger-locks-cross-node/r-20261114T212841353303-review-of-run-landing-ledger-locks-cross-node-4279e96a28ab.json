@@ -1,0 +1,96 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/crew/promotion_requests.py",
+    "reckon/crew/promotion_release.py",
+    "reckon/crew/resumption.py",
+    "reckon/crew/dispatch_launch.py",
+    "reckon/crew/dispatch_claims.py",
+    "reckon/crew/dispatch_picker.py",
+    "reckon/crew/queue_edit.py",
+    "reckon/crew/routing.py",
+    "reckon/crew/pending_landing.py",
+    "reckon/crew/terminal_cleanup.py",
+    "reckon/crew/dispatch.py",
+    "reckon/crew/admission/launching.py",
+    "reckon/crew/admission/landing.py",
+    "reckon/crew/admission/selection.py",
+    "reckon/crew/dispatching/requests.py",
+    "reckon/crew/dispatching/preparation.py",
+    "reckon/crew/recovery_review_dispatch.py",
+    "reckon/crew/recovery.py",
+    "reckon/crew/recovery_watch.py",
+    "reckon/crew/queue_admission.py"
+  ],
+  "completed_at": "2026-11-14T22:09:01.346Z",
+  "dispatched_at": "2026-11-14T21:35:56Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/every-shared-home-lock-holds-across-nodes/run-landing-ledger-locks-cross-node.html",
+      "line": 57,
+      "severity": "non-blocking",
+      "text": "the fragment cites the ledger take as ledger.py:2629, which at the reviewed head is a docstring line; the take is at ledger.py:2634, so a reader following the citation opens the wrong line."
+    },
+    {
+      "file": "manifest.md",
+      "line": 20,
+      "severity": "non-blocking",
+      "text": "the artifacts line quotes focused-arm totals of base 164 failed / 2721 passed / 2 errors and head 167 failed / 2722 passed, but the logs named in test_logs read 165 failed / 2720 passed / 3 skipped / 2 errors and 166 failed / 2723 passed / 3 skipped, so the record does not reconcile with its own evidence."
+    },
+    {
+      "file": "docs/evidence/fragments/every-shared-home-lock-holds-across-nodes/run-landing-ledger-locks-cross-node.html",
+      "line": 97,
+      "severity": "non-blocking",
+      "text": "the wider-population paragraph reports the delivery-head arms (base 160 failed / 2676 passed, head 158 failed / 2731 passed, adds none and drops two) without naming their revision; the arm run at the reviewed head 4279e96a28 reads 165 and 166 failed and adds four ids, all four failing at primary a946964dd3 per attrib-main.log, so a reader takes a delivery-head result as the merged head's."
+    },
+    {
+      "file": "manifest.md",
+      "line": 27,
+      "severity": "non-blocking",
+      "text": "section 3's done_when asks the manifest to list every other reference to each of the seven lock paths and why none opens the file; rubric.paths claims this answered, but the enumeration exists only in the evidence fragment, so the manifest carries the claim without the list it asserts."
+    },
+    {
+      "file": "tests/test_run_and_landing_locks_hold_across_nodes.py",
+      "line": 37,
+      "severity": "non-blocking",
+      "text": "record_lock_held_elsewhere and its subprocess script duplicate the record-lock holder at tests/test_lane_and_picker_locks_hold_across_nodes.py:39-67, which the concurrent lane-and-picker merge introduced; a shared fixture under tests/ would remove the twin."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "Verified the twenty production callers of the seven locks listed on the CALL_SITES line; the pointer lock is reached from promotion, resumption, dispatch, queue-edit, routing and admission paths, and the landing, ledger, placement and admit locks from their own modules' entry points.",
+    "diff": "Read commit by commit against 63b51b8337: a355eac555 migrates the five modules and removes seven pending rows, bcbe687be0, e48cf2ab3b and 4279e96a28 add and amend the evidence fragment, and the merge 1d0e64557b only folds in primary work; nothing outside the declared scope changed.",
+    "done_when": "The done_when asks for the guard minus seven pending rows, a second-process record-lock holder observed by the pointer and landing-pass takes, the base-revision negative control and no added focused failures; the guard's PENDING table now holds nine rows with none of the seven, the two new tests exist, and negative-control.log fails both at base, but the reference enumeration sits in the evidence fragment rather than the manifest and the manifest's focused-arm totals do not match its named logs.",
+    "goal": "The goal is seven run, queue, landing and ledger locks on the cross-node lock; reckon/crew/runs.py:497 (_pointer_lock), runs.py:886 (queue_dispatch), runs.py:3313 (update_watch_registration), reckon/ledger.py:2634, reckon/crew/queue_landing.py:1896, reckon/crew/admission/service.py:44 and reckon/crew/placement.py:174 each call reckon.node_exclusive_lock.exclusive_lock.",
+    "manifest": "Read; it records seven migrations, the two suite arms (55 and 57 passed, EXIT=0), the base-revision negative control (2 failed, EXIT=1) and the focused arms, but its artifacts line quotes focused-arm totals its own test_logs no longer carry.",
+    "write_paths": "The fence in the reviewed run's prompt.txt:94-103 declares the five modules, the guard test, the new test file and the evidence fragment, and every path in git diff 63b51b83..4279e96a28 (five modules, two tests, one evidence fragment) is inside it."
+  },
+  "justifications": {
+    "durability": "tests/test_run_and_landing_locks_hold_across_nodes.py:72-76 fails with DID NOT RAISE at base 63b51b8337 and :88 fails with busy None there, which negative-control.log records, so reverting either site to flock reddens the test.",
+    "evidence": "The suite arms are recorded (suite3-base.log 55 passed, suite3-head.log 57 passed, both EXIT=0) and the negative control is logged, but the done_when's reference enumeration is only in the evidence fragment (manifest.md:27) and the manifest's focused-arm totals (manifest.md:20) do not match focused3-base.log/focused3-head.log.",
+    "fit": "The modules keep the surrounding idiom and the docstrings name the record lock (reckon/ledger.py:2626-2632); the retained one-line _admit_lock wrapper at reckon/crew/admission/service.py:44 is an out-of-scope carry-over recorded in the manifest.",
+    "goal_fidelity": "All seven named sites call exclusive_lock and each keeps its held answer, as reckon/crew/runs.py:495-502 and reckon/crew/queue_landing.py:1894-1897 show.",
+    "reuse": "The production change extends the existing owner reckon/node_exclusive_lock.py:46 exclusive_lock at all seven sites and adds no second lock primitive; the test-local record-lock holder at tests/test_run_and_landing_locks_hold_across_nodes.py:37 was written before the concurrent sibling helper existed.",
+    "scope_discipline": "Every path in the node's commits is a fenced write path from prompt.txt:94-103, including the evidence fragment; the merge commit 1d0e64557b only folds primary work in."
+  },
+  "node": "run-landing-ledger-locks-cross-node",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The goal is seven run, queue, landing and ledger locks on the cross-node lock; reckon/crew/runs.py:497 (_pointer_lock), runs.py:886 (queue_dispatch), runs.py:3313 (update_watch_registration), reckon/ledger.py:2634, reckon/crew/queue_landing.py:1896, reckon/crew/admission/service.py:44 and reckon/crew/placement.py:174 each call reckon.node_exclusive_lock.exclusive_lock.\nVERDICT done_when: The done_when asks for the guard minus seven pending rows, a second-process record-lock holder observed by the pointer and landing-pass takes, the base-revision negative control and no added focused failures; the guard's PENDING table now holds nine rows with none of the seven, the two new tests exist, and negative-control.log fails both at base, but the reference enumeration sits in the evidence fragment rather than the manifest and the manifest's focused-arm totals do not match its named logs.\nVERDICT write_paths: The fence in the reviewed run's prompt.txt:94-103 declares the five modules, the guard test, the new test file and the evidence fragment, and every path in git diff 63b51b83..4279e96a28 (five modules, two tests, one evidence fragment) is inside it.\nVERDICT manifest: Read; it records seven migrations, the two suite arms (55 and 57 passed, EXIT=0), the base-revision negative control (2 failed, EXIT=1) and the focused arms, but its artifacts line quotes focused-arm totals its own test_logs no longer carry.\nVERDICT diff: Read commit by commit against 63b51b8337: a355eac555 migrates the five modules and removes seven pending rows, bcbe687be0, e48cf2ab3b and 4279e96a28 add and amend the evidence fragment, and the merge 1d0e64557b only folds in primary work; nothing outside the declared scope changed.\nCALL_SITES: reckon/crew/promotion_requests.py, reckon/crew/promotion_release.py, reckon/crew/resumption.py, reckon/crew/dispatch_launch.py, reckon/crew/dispatch_claims.py, reckon/crew/dispatch_picker.py, reckon/crew/queue_edit.py, reckon/crew/routing.py, reckon/crew/pending_landing.py, reckon/crew/terminal_cleanup.py, reckon/crew/dispatch.py, reckon/crew/admission/launching.py, reckon/crew/admission/landing.py, reckon/crew/admission/selection.py, reckon/crew/dispatching/requests.py, reckon/crew/dispatching/preparation.py, reckon/crew/recovery_review_dispatch.py, reckon/crew/recovery.py, reckon/crew/recovery_watch.py, reckon/crew/queue_admission.py\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: All seven named sites call exclusive_lock and each keeps its held answer, as reckon/crew/runs.py:495-502 and reckon/crew/queue_landing.py:1894-1897 show.\nSCORE evidence: 15\nJUSTIFICATION evidence: The suite arms are recorded (suite3-base.log 55 passed, suite3-head.log 57 passed, both EXIT=0) and the negative control is logged, but the done_when's reference enumeration is only in the evidence fragment (manifest.md:27) and the manifest's focused-arm totals (manifest.md:20) do not match focused3-base.log/focused3-head.log.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: Every path in the node's commits is a fenced write path from prompt.txt:94-103, including the evidence fragment; the merge commit 1d0e64557b only folds primary work in.\nSCORE durability: 20\nJUSTIFICATION durability: tests/test_run_and_landing_locks_hold_across_nodes.py:72-76 fails with DID NOT RAISE at base 63b51b8337 and :88 fails with busy None there, which negative-control.log records, so reverting either site to flock reddens the test.\nSCORE fit: 18\nJUSTIFICATION fit: The modules keep the surrounding idiom and the docstrings name the record lock (reckon/ledger.py:2626-2632); the retained one-line _admit_lock wrapper at reckon/crew/admission/service.py:44 is an out-of-scope carry-over recorded in the manifest.\nSCORE reuse: 18\nJUSTIFICATION reuse: The production change extends the existing owner reckon/node_exclusive_lock.py:46 exclusive_lock at all seven sites and adds no second lock primitive; the test-local record-lock holder at tests/test_run_and_landing_locks_hold_across_nodes.py:37 was written before the concurrent sibling helper existed.\nFINDING docs/evidence/fragments/every-shared-home-lock-holds-across-nodes/run-landing-ledger-locks-cross-node.html:57 non-blocking: the fragment cites the ledger take as ledger.py:2629, which at the reviewed head is a docstring line; the take is at ledger.py:2634, so a reader following the citation opens the wrong line.\nFINDING manifest.md:20 non-blocking: the artifacts line quotes focused-arm totals of base 164 failed / 2721 passed / 2 errors and head 167 failed / 2722 passed, but the logs named in test_logs read 165 failed / 2720 passed / 3 skipped / 2 errors and 166 failed / 2723 passed / 3 skipped, so the record does not reconcile with its own evidence.\nFINDING docs/evidence/fragments/every-shared-home-lock-holds-across-nodes/run-landing-ledger-locks-cross-node.html:97 non-blocking: the wider-population paragraph reports the delivery-head arms (base 160 failed / 2676 passed, head 158 failed / 2731 passed, adds none and drops two) without naming their revision; the arm run at the reviewed head 4279e96a28 reads 165 and 166 failed and adds four ids, all four failing at primary a946964dd3 per attrib-main.log, so a reader takes a delivery-head result as the merged head's.\nFINDING manifest.md:27 non-blocking: section 3's done_when asks the manifest to list every other reference to each of the seven lock paths and why none opens the file; rubric.paths claims this answered, but the enumeration exists only in the evidence fragment, so the manifest carries the claim without the list it asserts.\nFINDING tests/test_run_and_landing_locks_hold_across_nodes.py:37 non-blocking: record_lock_held_elsewhere and its subprocess script duplicate the record-lock holder at tests/test_lane_and_picker_locks_hold_across_nodes.py:39-67, which the concurrent lane-and-picker merge introduced; a shared fixture under tests/ would remove the twin.\n",
+  "review_run_id": "r-20261114T212841353303-review-of-run-landing-ledger-locks-cross-node-4279e96a28ab",
+  "reviewed_base_sha": "63b51b8337c4d61f3fc0b93d25ffb048273ed293",
+  "reviewed_head_sha": "4279e96a28abb976573dd48694d4595a2b0d9207",
+  "reviewed_run_id": "r-20261114T135734165051-run-landing-ledger-locks-cross-node",
+  "rubric": "landed_node",
+  "scores": {
+    "durability": 20,
+    "evidence": 15,
+    "fit": 18,
+    "goal_fidelity": 20,
+    "reuse": 18,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-14T22:11:22.090445+00:00",
+  "total": 111
+}
