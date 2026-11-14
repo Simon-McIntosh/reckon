@@ -5,4 +5,15 @@
   <p>After the source grants were extended, <code>333f4f70a2965fa8817272691aa62d1a7ae82395</code> added content-bound text-write receipts and a private-index landing projection. The first head arm reported <strong>6 failed, 59 passed in 20.20s</strong>: bookkeeping whitespace prevented the authored projection from round-tripping. <code>291a4feaee9361d931ca6eed70c5b62f6007bdf5</code> normalised those gaps and avoided empty projection commits.</p>
   <p>The second head arm reported <strong>2 failed, 63 passed in 19.79s</strong>. Text-mode promotion now proceeds while leaving its prose uncommitted; the state-mode, unrecorded-prose, deletion, duplicate-prose and unrelated-index cases pass. The rollback case still fails because removing the sole comment reaches the state writer’s refusal to empty its comments section. The edit-chain case reaches a metadata assertion that assumes a particular HTML attribute order.</p>
   <p>The worker stopped under its two-failed-attempt rule. The importer head arm and declared mutation have not run; this is a committed partial repair with failing coverage, not completed delivery. Ruff check adds zero findings: the store module retains its 11 baseline findings. Format checking additionally flags the offset-subtraction expression introduced by the whitespace repair; the store file also retains two pre-existing formatting regions. The other three Python paths are clean.</p>
+  <h4 id="wave4-codex-anchored-the-crew-does-its-own-bo-s18-authorised-verification">Authorised repair verification</h4>
+  <p>The additional authorised attempt landed <code>b7607593d57f6a384d95d5a267bc8209af8095c5</code> for formatting and <code>83307a115b2ec0d19803dcbad3dcdc21089e230b</code> for rollback and metadata assertions. Rollback restores the captured prior comments section exactly when the attempted landing was its only writer, including absent and empty sections. Concurrent comments and unparsed authored content are retained. The existing empty-section guard remains unchanged, and a control explicitly confirms that it still refuses to erase unparsed content.</p>
+  <table>
+    <thead><tr><th>Measure</th><th>Observed result</th></tr></thead>
+    <tbody>
+      <tr><td>Fresh armed base</td><td>55 passed in 15.83s</td></tr>
+      <tr><td>Authorised candidate</td><td>68 passed in 22.35s</td></tr>
+      <tr><td>State-only mutation</td><td>7 failed, 6 passed in 5.00s; the text-mode promotion case fails and the state-mode case passes</td></tr>
+    </tbody>
+  </table>
+  <p>All measures ran on <code>all_debug</code> from separate archive-derived trees with four pytest workers and the follower variables unset. The metadata assertion compares parsed attribute mappings, allowing the edit-chain case to exercise a later author commit and another text edit. Ruff check adds zero findings; the store retains its 11 baseline findings. All four Python paths pass formatting.</p>
 </section>
