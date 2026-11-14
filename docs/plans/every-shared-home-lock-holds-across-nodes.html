@@ -25,7 +25,7 @@
   <title>Every shared-home lock holds across nodes | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="7">
+<meta name="plan-version" content="8">
 <meta name="plan-modified" content="2026-11-14">
 </head>
 <body>
@@ -191,6 +191,9 @@
 </div>
 <div class="r-comment" data-section="s5" data-id="c-close-s5" data-who="reckon-build" data-when="2026-11-14T19:30:00Z">
     <div class="r-comment-body"><p>§5 landed: five lane, budget and picker locks moved onto <code>exclusive_lock</code> (commits <code>786228ab9d</code>, <code>4634a0bd4d</code>). The cross-node tests fail at base. Review scored 113 of 120. <a href="/reckon/evidence/archive/every-shared-home-lock-holds-across-nodes-landed.html#s5-lane-budget-picker-landed">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s5" data-id="c-run-r-20261114T135814761240-lane-budget-picker-locks-cross-node" data-who="reckon-build" data-when="2026-11-14T18:45:14.240Z">
+    <div class="r-comment-body"><p>moved the banked-reset, model-catalogue refresh, paid-lane document and picker-hold locks onto reckon.node_exclusive_lock.exclusive_lock and removed their five rows from the guard&#x27;s pending table; the guard passes, and a second-process POSIX record-lock holder makes the picker&#x27;s hold wait and the catalogue refresh read the snapshot instead of fetching (both fail at the base revision).</p></div>
 </div>
 </section>
 </main>
