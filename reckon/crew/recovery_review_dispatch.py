@@ -24,6 +24,7 @@ from reckon.crew import review_need
 from reckon.crew.node import (
     CrewError,
 )
+from reckon.crew.open_run_index import operational_read
 from reckon.crew.reports import (
     ManifestParseError,
     parse_manifest,
@@ -3307,6 +3308,7 @@ def _resume_superseded_refusal(
     }
 
 
+@operational_read
 def dispatch_review_for_run(
     record: Mapping[str, Any],
     *,

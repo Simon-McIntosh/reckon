@@ -1,0 +1,44 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-11-14T17:22:52.878Z",
+  "dispatched_at": "2026-11-14T17:12:58Z",
+  "findings": [
+    {
+      "file": "tests/test_every_module_fits_a_worker_window.py",
+      "line": 1,
+      "severity": "non-blocking",
+      "text": "The done-when clause that this test passes at head is unmet and cannot be met inside this node's write paths: it fails at both arms because 13 modules breach the 50,000-token bound at the base revision, reckon/crew_follow_commands.py among them (50,277 tokens at 50cf9e4e, 51,026 at 92648a3115). The worker disclosed it under outside_scope and blockers; the repair needs a node whose scope covers those modules."
+    },
+    {
+      "file": "reckon/crew_follow_commands.py",
+      "line": 553,
+      "severity": "non-blocking",
+      "text": "_logged_reload_failure scans the whole 4 KiB producer-log tail for any line naming a watch command plus a failure marker, without binding that line to the reload the seat record's marker describes. A failure line left in the tail by an earlier, since-superseded reload reports the next in-window reload at once, which is the same false row this node set out to stop; producer_reload_failure_reported resets per follower so nothing suppresses it across a re-arm."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261114T145655332088-wave4-clive-anchored-the-monitor-shows-the-wo-s72/manifest.md",
+      "line": 5,
+      "severity": "non-blocking",
+      "text": "The manifest's status reads complete while its blockers line names an unmet done-when clause and its checkpoint calls that clause unattainable; a terminal status should read blocked so a promotion guard sees the outstanding condition rather than only a terminal word."
+    }
+  ],
+  "project": "reckon",
+  "review_run_id": "r-20261114T171022783593-review-of-wave4-clive-anchored-the-monitor-shows-the-wo-s72-9f545ded3643",
+  "reviewed_base_sha": "50cf9e4e08445ab2b646fc409ceb84b4ae49bfdf",
+  "reviewed_head_sha": "9f545ded3643ef5d55d716fc53189e15ca83cabc",
+  "reviewed_run_id": "r-20261114T145655332088-wave4-clive-anchored-the-monitor-shows-the-wo-s72",
+  "scores": {
+    "durability": 17,
+    "evidence": 13,
+    "fit": 18,
+    "goal_fidelity": 15,
+    "reuse": 16,
+    "scope_discipline": 20,
+    "scope_discipline_note": null
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-14T18:59:19.836751+00:00",
+  "total": 99
+}

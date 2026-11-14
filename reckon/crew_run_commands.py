@@ -2642,6 +2642,7 @@ def crew_resume(
             "pid": result["pid"],
             "log_path": result["log_path"],
             "resumed_turn": result["turn"],
+            "advice": advice,
             # The resumed worker's rows reach a pane only while its session's
             # host holds a follower, and a resume sends no dispatch request, so
             # the answer to the re-arm says whether that pane is following.

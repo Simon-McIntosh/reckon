@@ -101,6 +101,7 @@ def writable_marker_dir(monkeypatch: pytest.MonkeyPatch) -> Path:
         monkeypatch.setenv("FLEET_RUNTIME_DIR", directory)
         yield Path(directory)
 
+
 PYTHON = Path(sys.executable)
 
 PROJECT = "sample"
@@ -121,12 +122,21 @@ WORKTREE_COUNT = 30
 # fixed bound cannot carry this: at load near 50 this case's dispatch measured
 # about 10.9 s against a fixed 8.0 s and failed as readily at the base revision
 # as at the fix, so the constant was measuring the host rather than dispatch.
-# REFERENCE_UNITS is generous beside the pre-return work dispatch measured on
-# this host and far below the roughly thirty-second hold a dispatch that joined
-# its supervisor must outlast, so that failure is still caught decisively.
+# Interpreter starts are not the whole of dispatch's own time. Its pre-return
+# path also prepares the run: it creates the worktree through the fleet script
+# (reckon/crew/routing.py, the subprocess at ``_create_worktree``), composes the
+# launch plan, reads the project's state and writes the run records. That work
+# is repository-facing file and git traffic, which a loaded host slows far more
+# than it slows a bare import — so a bound built only from import units reads
+# under the real cost, which is how it failed at a fixed multiple of an import
+# reference at load near 11. PREPARATION_UNITS charges that preparation at a
+# measured round trip of dispatch's own preparation work (one delegated
+# dispatch, which prepares a run and spawns nothing), so the bound carries the
+# cost the import unit cannot see.
 REFERENCE_IMPORT = "import reckon.crew.dispatch"
 REFERENCE_SAMPLES = 3
 REFERENCE_UNITS = 8.0
+PREPARATION_UNITS = 3.0
 MARKER_BOUND = 60.0
 EXIT_RECORD_BOUND = 10.0
 COMPLETION_RECORD_BOUND = 120.0
@@ -294,6 +304,31 @@ if _FLAG:
             return pid
 
         _dispatch._spawn_detached_supervisor = _holding
+    except Exception:
+        pass
+
+# The declared mutation this case's negative control applies through the
+# environment: a dispatch that joins the supervisor it started, applied so the
+# negative control can be run without editing the module under test. It reads
+# the same seam the hold above does, so it survives a change to how the
+# supervisor is spawned.
+if os.environ.get("RECKON_GATE_JOIN_SUPERVISOR"):
+    try:
+        import importlib
+
+        _launch = importlib.import_module("reckon.crew.dispatch_launch")
+        _original_spawn = _launch._spawn_detached_supervisor
+
+        def _joining(argv, stderr_path):
+            joined = _original_spawn(argv, stderr_path)
+            while True:
+                try:
+                    os.kill(joined, 0)
+                except OSError:
+                    return joined
+                time.sleep(0.05)
+
+        _launch._spawn_detached_supervisor = _joining
     except Exception:
         pass
 '''
@@ -908,15 +943,63 @@ def _survival_window_seconds() -> float:
     return float(dispatch_module.SUPERVISOR_SURVIVAL_SECONDS)
 
 
-def _dispatch_exit_bound(reference_seconds: float) -> float:
-    """Dispatch's own-clock bound: its survival window plus measured units.
+def _measured_preparation_seconds(host: dict, marker_dir: Path) -> float:
+    """Time one dispatch that prepares a run and spawns nothing.
+
+    The delegated lane composes no launch plan and starts no supervisor, but it
+    performs the rest of dispatch's own pre-return work in this same
+    repository: it creates the worktree through the fleet script
+    (``reckon/crew/routing.py``, ``_create_worktree``), reads the project's
+    state and writes the run records. That round trip is the unit an import
+    reference cannot see, measured on this host at this moment, and it follows
+    the host's load because it is the work itself rather than a proxy for it.
+    """
+    reference_run = _start_dispatch(
+        host,
+        tag=f"preparation-reference-{uuid.uuid4().hex[:8]}",
+        marker_dir=marker_dir,
+        stub_sleep=0,
+        hold=False,
+        config_data=IN_HARNESS_CONFIG,
+    )
+    try:
+        reference_run.process.wait(timeout=SPAWN_BOUND)
+        output = reference_run.output() or {}
+        measured = float(output.get("dispatch_seconds") or 0.0)
+        # A reference of zero is not a cheap host, and it is not a measurement:
+        # it is a driver that failed to record one. Left to collapse into the
+        # bound, it would drop the whole preparation term and restore the bound
+        # this case exists to move past, silently, on any host whose delegated
+        # dispatch broke. Refusing here makes a missing measurement a failure of
+        # the case rather than a quieter bound.
+        if measured <= 0.0 or not output.get("run_id"):
+            raise AssertionError(
+                "the preparation reference recorded no dispatch of its own: "
+                f"returncode={reference_run.process.returncode} "
+                f"run_id={output.get('run_id')!r} "
+                f"dispatch_seconds={output.get('dispatch_seconds')!r} "
+                f"stderr={_tail(reference_run.stderr_path)}"
+            )
+    finally:
+        _finish(reference_run, {"case": "the preparation reference"})
+    return measured
+
+
+def _dispatch_exit_bound(reference_seconds: float, preparation_seconds: float) -> float:
+    """Dispatch's own-clock bound, derived from work measured here and now.
 
     The window is the bounded wait ``_confirm_supervisor_survived`` performs
-    while the supervisor it started is alive and has not yet recorded a worker;
-    the rest is REFERENCE_UNITS units of the reference round trip the case
-    measured on this host at this moment.
+    while the supervisor it started is alive and has not yet recorded a worker.
+    The rest is the work dispatch does around it: REFERENCE_UNITS interpreter
+    starts of the kind its launch steps make, and PREPARATION_UNITS round trips
+    of its own preparation work, each measured on this host at this moment, so
+    both classes of cost widen the bound as the host slows.
     """
-    return _survival_window_seconds() + REFERENCE_UNITS * reference_seconds
+    return (
+        _survival_window_seconds()
+        + REFERENCE_UNITS * reference_seconds
+        + PREPARATION_UNITS * preparation_seconds
+    )
 
 
 # --------------------------------------------------------------------------
@@ -924,8 +1007,61 @@ def _dispatch_exit_bound(reference_seconds: float) -> float:
 # --------------------------------------------------------------------------
 
 
+@pytest.mark.parametrize("recorded", [None, 0.0])
+def test_a_preparation_reference_that_recorded_no_time_is_refused(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path, recorded: float | None
+) -> None:
+    """A delegated dispatch that recorded no time is a broken reference, not a bound.
+
+    The preparation term enters the bound multiplied by ``PREPARATION_UNITS``
+    and added, so a reference that reads zero removes it and restores the bound
+    the term was added to widen. The case would then pass on a host whose
+    delegated lane had stopped dispatching at all, with nothing in the report to
+    say so. Here the delegated lane records no time, and the measurement must
+    refuse rather than hand back a zero.
+    """
+
+    class _Finished:
+        returncode = 0
+
+        def poll(self) -> int:
+            return 0
+
+        def kill(self) -> None:
+            pass
+
+        def wait(self, timeout: float | None = None) -> int:
+            return 0
+
+    class _SilentReference:
+        def __init__(self) -> None:
+            self.process = _Finished()
+            self.stderr_path = tmp_path / "silent-reference.err"
+            self.pointer = None
+
+        def output(self) -> dict[str, Any]:
+            return {"run_id": "run-silent", "dispatch_seconds": recorded}
+
+        def survivors(self) -> list[int]:
+            return []
+
+        def own_pointer_names(self) -> list[str]:
+            return []
+
+    monkeypatch.setattr(
+        sys.modules[__name__],
+        "_start_dispatch",
+        lambda *args, **kwargs: _SilentReference(),
+    )
+
+    with pytest.raises(AssertionError, match="recorded no dispatch of its own"):
+        _measured_preparation_seconds({}, tmp_path)
+
+
 def test_dispatch_returns_once_its_supervisor_runs(
-    host: dict[str, Any], tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+    host: dict[str, Any],
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
     writable_marker_dir: Path,
 ) -> None:
     """Case one: a return bounded from a reference measured on this host, and a
@@ -944,6 +1080,9 @@ def test_dispatch_returns_once_its_supervisor_runs(
     marker_dir = writable_marker_dir
     real_before = _snapshot(REAL_LIVE_DIR)
     reference_seconds = _measured_reference_seconds(host)
+    # Dispatch's own preparation, measured on this host now, so the bound
+    # carries the repository-facing work an import reference cannot see.
+    preparation_seconds = _measured_preparation_seconds(host, marker_dir)
     run = _start_dispatch(
         host,
         tag="returns",
@@ -977,8 +1116,9 @@ def test_dispatch_returns_once_its_supervisor_runs(
         # the case nor a warm import cache in the driver can hold the bound
         # under what this host is charging while the dispatch runs.
         reference = max(reference_seconds, startup)
-        bound = _dispatch_exit_bound(reference)
+        bound = _dispatch_exit_bound(reference, preparation_seconds)
         outcome["reference_seconds"] = round(reference, 3)
+        outcome["preparation_seconds"] = round(preparation_seconds, 3)
         outcome["dispatch_exit_bound"] = round(bound, 3)
         assert exit_after <= bound + startup + DRIVER_EXIT_SLACK, (
             f"the dispatch process was alive {exit_after:.3f} s after its start, "
@@ -1101,7 +1241,9 @@ def test_dispatch_returns_once_its_supervisor_runs(
         class _ReachedError(Exception):
             pass
 
-        def _capture(repository: Path, *, roots: Any = None) -> Any:
+        def _capture(
+            repository: Path, *, roots: Any = None, untracked_roots: Any = None
+        ) -> Any:
             captured["roots"] = list(roots or ())
             captured["repository"] = str(repository)
             raise _ReachedError
@@ -1273,7 +1415,9 @@ def test_sigkill_to_the_worker_is_recorded(
 
 
 def test_a_discarded_run_is_not_recreated(
-    host: dict[str, Any], tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+    host: dict[str, Any],
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
     writable_marker_dir: Path,
 ) -> None:
     """Case four: a discard during a live worker leaves nothing behind."""
@@ -1427,7 +1571,9 @@ def _assert_phase_publish_cannot_restore_released_claim(
 
 
 def test_a_delegated_launch_records_a_boundary_snapshot(
-    host: dict[str, Any], tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+    host: dict[str, Any],
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
     writable_marker_dir: Path,
 ) -> None:
     """Case five: a lane that spawns nothing still takes the boundary baseline.

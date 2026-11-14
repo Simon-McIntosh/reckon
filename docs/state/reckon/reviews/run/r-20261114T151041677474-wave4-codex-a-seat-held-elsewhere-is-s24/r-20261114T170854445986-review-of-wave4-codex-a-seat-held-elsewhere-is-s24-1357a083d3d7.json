@@ -1,0 +1,43 @@
+{
+  "added_failure_count": 5,
+  "added_failure_ids": [
+    "tests/test_crew.py::test_resumed_attempt_owns_its_stream_phase_and_manifest",
+    "tests/test_crew_tool_carries_the_write_verbs.py::test_each_action_matches_its_cli_verb[queue-drop]",
+    "tests/test_dispatch_records_the_pace_row.py::test_a_promoted_run_replays_its_allowance_from_the_committed_row",
+    "tests/test_spawn_retries_a_vanished_bind.py::test_a_spawn_refused_over_a_vanished_protected_bind_is_retried[Can't find source path]",
+    "tests/test_watch_version_stamp.py::test_producer_live_leaves_a_record_replaced_mid_check_alone"
+  ],
+  "completed_at": "2026-11-14T17:24:30.009Z",
+  "dispatched_at": "2026-11-14T17:18:17Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/a-seat-held-elsewhere-is-not-restarted/wave4-codex-a-seat-held-elsewhere-is-s24.html",
+      "line": 4,
+      "severity": "non-blocking",
+      "text": "The importer population adds 5 failure ids and removes 2 against the base revision, so the done_when's no-added-failures clause on the test files importing reckon.crew.runs is unmet; the manifest records this under outside_scope and no triage was attempted, which is correct for the fence but leaves the node's own gate clause unsatisfied."
+    },
+    {
+      "file": "tests/test_a_live_producer_reads_live.py",
+      "line": 37,
+      "severity": "non-blocking",
+      "text": "assert hook.producer_lease_seconds() == interval compares the hook's reading of the interval against runs.producer_lease_seconds() rather than against an independent literal, so the parity assertion holds whenever both move together and cannot alone catch a regression that changes the interval in both places."
+    }
+  ],
+  "project": "reckon",
+  "review_run_id": "r-20261114T170854445986-review-of-wave4-codex-a-seat-held-elsewhere-is-s24-1357a083d3d7",
+  "reviewed_base_sha": "de40d35123a47a5b72910de5571132678b023a4f",
+  "reviewed_head_sha": "1357a083d3d7906010eaa8c75f95e2f35fcf3ab7",
+  "reviewed_run_id": "r-20261114T151041677474-wave4-codex-a-seat-held-elsewhere-is-s24",
+  "scores": {
+    "durability": 16,
+    "evidence": 14,
+    "fit": 17,
+    "goal_fidelity": 12,
+    "reuse": 19,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-14T18:52:52.336664+00:00",
+  "total": 96
+}

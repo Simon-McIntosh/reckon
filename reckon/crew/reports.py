@@ -1552,6 +1552,39 @@ def _test_log_command(text: str) -> str | None:
     return None
 
 
+def _log_location_findings(
+    manifest: dict[str, Any],
+    *,
+    manifest_path: Path | None,
+) -> list[str]:
+    """Require cited logs to be readable files inside the manifest's run directory.
+
+    Relative paths use the same manifest-relative reader as the gate and control
+    checks. Resolve symbolic links before testing containment so a durable name
+    cannot stand in for a file that disappears with node-local scratch.
+    """
+    if manifest_path is None:
+        return []
+    root = manifest_path.expanduser().parent.resolve()
+    findings: list[str] = []
+    for key, cited in _cited_log_paths(manifest):
+        try:
+            text, path = _read_control_log(cited, manifest_path=manifest_path)
+            if not path.resolve().is_relative_to(root):
+                reason = "resolves outside the run directory"
+            elif text is None:
+                reason = "does not resolve to a readable log file"
+            else:
+                continue
+        except (OSError, RuntimeError, ValueError) as exc:
+            reason = f"cannot be resolved or read ({exc})"
+        findings.append(
+            f"{key} log {cited!r} {reason}: every cited log must exist "
+            f"under the run directory {str(root)!r}"
+        )
+    return findings
+
+
 def _test_log_findings(
     manifest: dict[str, Any],
     *,
@@ -2789,6 +2822,9 @@ def audit_manifest(
     )
     findings.extend(_test_log_findings(manifest, manifest_path=resolved_manifest_path))
     findings.extend(
+        _log_location_findings(manifest, manifest_path=resolved_manifest_path)
+    )
+    findings.extend(
         _plan_label_findings(manifest, worktree=worktree, repository=repository)
     )
     findings.extend(
@@ -3067,6 +3103,9 @@ def _cited_log_paths(manifest: dict[str, Any]) -> Iterator[tuple[str, str]]:
             log_path = observation.get("log_path")
             if log_path:
                 yield f"{key}.log_path", str(log_path)
+    control = str(manifest.get("negative_control_log") or "").strip()
+    if control.lower() not in _NONE_VALUES:
+        yield "negative_control_log", control
 
 
 def _resolves_under(path: str, root: str) -> bool:

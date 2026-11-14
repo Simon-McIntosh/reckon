@@ -1,0 +1,50 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-11-14T19:08:49.699Z",
+  "dispatched_at": "2026-11-14T18:54:16Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "exempted",
+      "reason": "the test's independent observation (the hold waits while another process holds the record lock) is the assertion that fails at base; the two self-comparing lines add no false pass",
+      "recorded_at": "2026-11-14T19:16:43.984331+00:00"
+    },
+    "1": {
+      "kind": "folded",
+      "node": "pending-table-empty-and-two-node-measure",
+      "recorded_at": "2026-11-14T19:16:27.692579+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "tests/test_lane_and_picker_locks_hold_across_nodes.py",
+      "line": 116,
+      "severity": "non-blocking",
+      "text": "record_on_disk[node] == probe-node compares the record against a value the test itself passed in, and line 117 written[0][held_at] == record_on_disk[held_at] compares two manifestations of one code-generated value, so both move together and hold whatever the code does; the durable guard is the independent observation at lines 106-107, which reddens at the base revision."
+    },
+    {
+      "file": "tests/test_every_shared_home_lock_holds_across_nodes.py",
+      "line": 59,
+      "severity": "non-blocking",
+      "text": "the census guard asserts only that a migrated site takes no bare flock, so removing exclusive_lock from reckon/crew/budget_reset.py::_locked or the two reckon/crew/paid_lanes.py writers and leaving no lock at all would pass both guard assertions; only the picker and catalogue migrations carry a behavioural cross-node test, so durability for two of the five sites rests on absence of flock rather than presence of the cross-node lock."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is to move the budget-flag, model-catalogue, paid-lane and picker-hold locks onto the cross-node lock; reckon/crew/budget_reset.py:97, reckon/crew/model_catalogue.py:290, reckon/crew/paid_lanes.py:653 and :820 and reckon/crew/picker/outcomes.py:280 now take reckon.node_exclusive_lock.exclusive_lock, and tests/test_every_shared_home_lock_holds_across_nodes.py drops exactly those five pending rows.\nVERDICT done_when: the done_when requires the guard with five rows removed, a second-process record-lock holder test for the picker and for the catalogue, both red at the review base revision, and no added failures; after-suite.log records 57 passed EXIT=0 including the new tests, negative-control-base.log records 2 failed EXIT=1 at 65431adf on the two intended assertions, and the baseline arm's 2 setup errors in test_staged_write_inventory.py are attributed scaffolding that does not recur in the after arm.\nVERDICT write_paths: the manifest declares four modules, the guard test, a new test file, an evidence fragment and a figure directory; git diff 65431adf 4634a0bd touches only the first six of those paths and adds no figure, so every changed path is inside the declared scope.\nVERDICT manifest: read; it records baseline 53 passed 2 errors EXIT=1 at 65431adf and after 57 passed EXIT=0 at 4634a0bd, names both suite logs and the negative-control log, gives the measurement module and cwd, and fills all seven rubric lines plus a scope_note for the concurrently edited guard table.\nVERDICT diff: read both commits against 65431adf; 786228ab9d replaces bare flock with exclusive_lock at the five sites (budget_reset drops its RLock, catalogue maps LockHeld to yield False, picker locks a sibling .lock file), removes the five pending rows and adds tests/test_lane_and_picker_locks_hold_across_nodes.py; 4634a0bd adds the evidence fragment; 271 insertions against 39 deletions, all in scope.\nCALL_SITES: reckon/crew/dispatching/preparation.py:380, reckon/crew/dispatching/preparation.py:891, reckon/crew/dispatching/preparation.py:1002, reckon/crew/recovery_watch.py:3468, reckon/crew/picker/snapshot.py:1557, reckon/crew/paid_lanes.py:1456, reckon/pace_report.py:209, reckon/crew/obligations.py:3422\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: all five named locks take exclusive_lock at reckon/crew/picker/outcomes.py:280 and the four sibling sites, each keeps its held answer (the catalogue maps LockHeld to yield False at reckon/crew/model_catalogue.py:290), and the five pending rows are gone from tests/test_every_shared_home_lock_holds_across_nodes.py.\nSCORE evidence: 19\nJUSTIFICATION evidence: after-suite.log records 57 passed EXIT=0 at 4634a0bd and negative-control-base.log records 2 failed EXIT=1 at 65431adf, each on the assertion the done_when names, so the gate measures each clause of the done_when rather than restating it.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff 65431adf 4634a0bd touches only reckon/crew/budget_reset.py, reckon/crew/model_catalogue.py, reckon/crew/paid_lanes.py, reckon/crew/picker/outcomes.py, the guard test, the new test file and the evidence fragment, all inside the manifest's declared write paths.\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_lane_and_picker_locks_hold_across_nodes.py:106-107 reddens at 65431adf because the worker thread finishes and the log is written while the foreign record lock is held, and :153 reddens likewise, but the post-hoc comparisons at :116-117 move with the code they test and two of the five sites have no behavioural test.\nSCORE fit: 19\nJUSTIFICATION fit: the modules already import from reckon.node_exclusive_lock after the migration and the new test follows the subprocess-holder idiom of tests/test_a_plan_state_lock_holds_on_every_node.py:83, with no plan, stage, ticket or version identifier in any changed line.\nSCORE reuse: 19\nJUSTIFICATION reuse: every added lock take extends reckon/node_exclusive_lock.py:exclusive_lock rather than forking it; the new test helper _record_lock_holder overlaps the non-blocking _posix_lock_attempt probe at tests/test_a_plan_state_lock_holds_on_every_node.py:83 but adds a held-lock handshake that probe does not provide.\nFINDING tests/test_lane_and_picker_locks_hold_across_nodes.py:116 non-blocking: record_on_disk[node] == probe-node compares the record against a value the test itself passed in, and :117 written[0][held_at] == record_on_disk[held_at] compares two manifestations of one code-generated value, so both move together and hold whatever the code does; the durable guard is the independent observation at :106-107.\nFINDING tests/test_every_shared_home_lock_holds_across_nodes.py:59 non-blocking: the census guard asserts only that a migrated site takes no bare flock, so removing exclusive_lock from reckon/crew/budget_reset.py::_locked or the two reckon/crew/paid_lanes.py writers and leaving no lock at all would pass both guard assertions; only the picker and catalogue migrations carry a behavioural cross-node test.",
+  "review_run_id": "r-20261114T185131299174-review-of-lane-budget-picker-locks-cross-node-4634a0bd4d16",
+  "reviewed_base_sha": "65431adf17b56c3a1fb04f32971d7729e4108dcc",
+  "reviewed_head_sha": "4634a0bd4d16c9182934d7cff27798cc6df68ec3",
+  "reviewed_run_id": "r-20261114T135814761240-lane-budget-picker-locks-cross-node",
+  "scores": {
+    "durability": 17,
+    "evidence": 19,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-14T19:09:05.051541+00:00",
+  "total": 113
+}
