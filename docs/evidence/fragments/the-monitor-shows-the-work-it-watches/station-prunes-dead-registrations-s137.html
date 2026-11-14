@@ -1,0 +1,38 @@
+<article class="r-evidence" id="station-prunes-dead-registrations-s137-root">
+  <h2 id="station-prunes-dead-registrations-s137-title">The station prunes a released follower registration after a day</h2>
+
+  <p id="station-prunes-dead-registrations-s137-what">A released follower registration keeps its file,
+  and nothing called <code>follower_registration.sweep_released_followers</code>, so each project's
+  registry grew by one file per session that had ever followed it; the reset report listed 187 ended
+  sessions as unreached. <code>Station.tick</code> now runs the sweep for every mounted project from its
+  maintenance stage, never from a read path, with a one-day threshold and at most once an hour. The
+  hourly bound is recorded as a station value, because the registry grows from sessions that have
+  ended and no single session's fleet change announces that. The sweep's own non-blocking lock stays
+  the only liveness check: a held lock keeps a registration whatever its file's age. Each removal
+  prints one <code>station-pruned-follower:</code> line naming the project, session and path.</p>
+
+  <p id="station-prunes-dead-registrations-s137-proof"><code>tests/test_the_station_prunes_dead_registrations.py</code>
+  builds one project with three registrations: a live one whose lock a second process holds and whose
+  file is back-dated two days, a released one back-dated two days, and a released one an hour old. One
+  tick removes only the two-day-old released registration and prints exactly one line naming it; the
+  live registration survives on its lock alone. A second case adds a second two-day-old registration
+  after the first tick, shows it surviving a tick thirty minutes later and removed by a tick two hours
+  later, which is the hourly bound measured rather than asserted. A third case shows a released
+  registration younger than a day surviving a pass that prunes.</p>
+
+  <table id="station-prunes-dead-registrations-s137-arms">
+    <thead><tr><th>arm</th><th>command</th><th>result</th></tr></thead>
+    <tbody>
+      <tr><td>new file at base 0f9b0b5</td><td><code>PYTHONPATH=. /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_the_station_prunes_dead_registrations.py</code>, against the unmodified base tree</td><td>2 failed, 1 passed, EXIT=1 — the dead registration survived the pass</td></tr>
+      <tr><td>base 0f9b0b5</td><td><code>PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q -n 4</code> over the 42 test files importing <code>reckon.crew.station</code> or <code>reckon.crew.follower_registration</code> at that tree</td><td>17 failed, 292 passed, 2 errors, EXIT=1</td></tr>
+      <tr><td>head b1edbb6</td><td>the same command over the same 42 files plus the new test (43)</td><td>17 failed, 297 passed, EXIT=1</td></tr>
+    </tbody>
+  </table>
+
+  <p id="station-prunes-dead-registrations-s137-controls">One negative control, applied at the head with
+  the tick's call to the prune removed: the new test fails with the two-day-old registration still on
+  disk after the pass (<code>negative-control.log</code>: 2 failed, EXIT=1). The base arm above is the
+  same fact at the untouched revision, where two failures inspect the dead file's survival and the
+  third, younger-than-a-day case passes trivially. Both arms fail the same seventeen test ids that fail
+  on the base's red tree, so the change adds none.</p>
+</article>
