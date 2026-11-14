@@ -125,21 +125,28 @@ def _invoke(repo: Path, *, node: str, dry_run: bool, extra: list[str] | None = N
 
 
 def _payload(result) -> dict:
-    return json.loads(result.output.splitlines()[0])
+    return json.loads(result.stdout.splitlines()[0])
 
 
-def test_a_dry_run_refuses_an_unreviewed_plan_where_the_launch_does(
+def test_a_dry_run_holds_an_unreviewed_plan_where_the_launch_does(
     dispatch_repo: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     _configure(dispatch_repo, monkeypatch, plan_review_gate="enforce")
 
-    dry = _invoke(dispatch_repo, node="unreviewed-plan", dry_run=True)
-    real = _invoke(dispatch_repo, node="unreviewed-plan", dry_run=False)
+    dry = _invoke(
+        dispatch_repo, node="unreviewed-plan", dry_run=True, extra=["--local"]
+    )
+    real = _invoke(
+        dispatch_repo, node="unreviewed-plan", dry_run=False, extra=["--local"]
+    )
 
-    assert dry.exit_code == 4, dry.output
-    assert _payload(dry)["error"] == "plan-review-missing"
-    assert real.exit_code == 4, real.output
-    assert _payload(real)["error"] == "plan-review-missing"
+    assert dry.exit_code == 0, dry.output
+    assert real.exit_code == 0, real.output
+    for result in (dry, real):
+        assert _payload(result)["phase"] == "held"
+        assert _payload(result)["reason"] == "plan-review-owed"
+    assert _payload(dry)["would_queue"] is True
+    assert _payload(real)["queued"] is True
 
 
 def test_a_dry_run_routes_a_held_node_where_the_launch_routes_it(
