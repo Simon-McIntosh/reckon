@@ -22,6 +22,8 @@
 
   <ul id="wave3-clive-anchored-a-report-is-kept-only-when-p-s4-cases">
     <li>31-day unreferenced item removed; 29-day item kept.</li>
+    <li>The real reports store is unchanged by a sweep in the synthetic home,
+    measured on this project's own path before and after.</li>
     <li>29-day item named for a closed plan removed; for an open plan kept; 31-day item of an open plan removed at the ceiling.</li>
     <li>29-day item attributed through a ledger run's report path removed on that plan's close; a 29-day unattributable item kept whatever any plan's status.</li>
     <li>Kept at 90 days: a persisted item, a directly cited item, an item cited only through a file inside it, one cited from a research document, one cited from an evidence fragment, and one named by a live pointer.</li>
@@ -34,7 +36,9 @@
     Negative control: with the citation branch of <code>classify_item</code>
     disabled, <code>test_every_keeper_survives_ninety_days</code> fails
     (1 failed, 11 passed), showing the citation check is what keeps the cited
-    item rather than incidental age.
+    item rather than incidental age. The real-store case is falsifiable the same
+    way: taking its before-snapshot after the removable item exists fails it
+    (1 failed), so the comparison detects a removal rather than always passing.
   </p>
 
   <p id="wave3-clive-anchored-a-report-is-kept-only-when-p-s4-outside">
