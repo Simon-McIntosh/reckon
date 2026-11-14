@@ -1,0 +1,66 @@
+<section id="qwnw-a-declared-write-path-fences-nothing-landing">
+  <h2>A declared write path is a hint on every surface</h2>
+
+  <p><strong>What changed.</strong> Two surfaces still treated a node's declared
+  write paths as a fence. Promotion refused a run that changed a file beside the
+  one it declared until a coordinator named the companion path with
+  <code>--accept-path</code>, and the write-time manifest audit reported a
+  companion source path as "changed paths outside the write scope", which makes
+  a delivered manifest fail the check its own worker runs itself. Both now defer
+  to one rule. A declaration still says what a run intends, and it is still
+  readable on the request, but only a path whose class a merge cannot reconcile
+  needs a coordinator: a plan document, generated state, a cumulative evidence
+  record, a figure topic directory, a dependency lock or a binary receipt.</p>
+
+  <p>The rule has one implementation. <code>reckon/crew/promotion_scope.py</code>
+  asks <code>_shared_write_paths(...).exclusive_pattern(path)</code>, the same
+  question a claim and a worker fence already ask, so promotion and the
+  write-time audit refuse one set of paths rather than two spellings of it.</p>
+
+  <h3 id="qwnw-a-declared-write-path-fences-nothing-measured">Measured</h3>
+
+  <p>Every case enters the project's real entry against a temporary repository
+  and crew home. The dispatch cases go through <code>crew.dispatch</code>, the
+  promotion case through <code>crew.complete</code>, and the audit case through
+  <code>audit_manifest</code>.</p>
+
+  <table id="qwnw-a-declared-write-path-fences-nothing-arms">
+    <caption>Each arm is a log whose first lines name the revision, tree and
+    command and whose last line reads <code>EXIT=&lt;code&gt;</code>.</caption>
+    <thead><tr><th>arm</th><th>revision</th><th>result</th></tr></thead>
+    <tbody>
+      <tr><td>the node's five cases</td>
+        <td><code>78752b3438</code>, working tree</td>
+        <td>5 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>the node's five cases, base arm</td>
+        <td><code>eab925a7ce</code>, extraction</td>
+        <td>2 passed, 3 failed, <code>EXIT=1</code></td></tr>
+      <tr><td>the manifest audit, base arm</td>
+        <td><code>eab925a7ce</code>, extraction</td>
+        <td><code>changed paths outside the write scope: "b.py"</code> on a
+        delivery of <code>a.py</code> and <code>b.py</code>, <code>EXIT=1</code></td></tr>
+      <tr><td>focused gate, base</td><td><code>eab925a7ce</code>, extraction</td>
+        <td>16 failed, 131 passed, <code>EXIT=1</code></td></tr>
+      <tr><td>focused gate, head</td><td><code>78752b3438</code>, working tree</td>
+        <td>12 failed, 137 passed, <code>EXIT=1</code>. The same twelve failures
+        the base revision carries at that revision; no failure is added and four
+        base failures are fixed</td></tr>
+    </tbody>
+  </table>
+
+  <h3 id="qwnw-a-declared-write-path-fences-nothing-control">Negative control</h3>
+
+  <p>The three cases that assert the new behaviour fail against the base
+  revision, and each fails for the reason the node exists for: promotion raises
+  <code>run 'r-undeclared-companion' changed paths outside its declared write
+  scope: b.py</code>, and the audit on the same delivery reports
+  <code>changed paths outside the write scope: "b.py"</code>. The dispatch
+  cases pass at base. That is not a fault in the
+  test: dispatch, queue admission and live claims already asked the merge
+  question, so the two remaining surfaces were the whole of the defect, and the
+  negative control names which half of the done-when was already true.</p>
+
+  <p>The gate is red on both arms for reasons outside this node. Every one of
+  the twelve remaining failures was reproduced against the base revision before
+  the change and is recorded in the run's <code>outside_scope</code>.</p>
+</section>
