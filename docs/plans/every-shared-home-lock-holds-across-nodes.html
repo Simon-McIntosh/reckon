@@ -20,12 +20,12 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-depends-on" content="a-plan-state-lock-holds-on-every-node">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;implementable&quot;}">
   <meta name="plan-section-depends-on" content="{&quot;s3&quot;:[&quot;every-shared-home-lock-holds-across-nodes#s2&quot;],&quot;s4&quot;:[&quot;every-shared-home-lock-holds-across-nodes#s2&quot;],&quot;s5&quot;:[&quot;every-shared-home-lock-holds-across-nodes#s2&quot;],&quot;s6&quot;:[&quot;every-shared-home-lock-holds-across-nodes#s3&quot;,&quot;every-shared-home-lock-holds-across-nodes#s4&quot;,&quot;every-shared-home-lock-holds-across-nodes#s5&quot;]}">
   <title>Every shared-home lock holds across nodes | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="6">
+<meta name="plan-version" content="7">
 <meta name="plan-modified" content="2026-11-14">
 </head>
 <body>
@@ -136,7 +136,7 @@
 <p><strong>Write paths.</strong> The nine modules named above, the guard test file, and new test files under <code>tests/</code>.</p>
 
     <h2 id="s5">§5 — Lane, budget and picker locks exclude across nodes</h2>
-<section data-reckon="section" data-id="s5" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+<section data-reckon="section" data-id="s5" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="done" data-links=""></section>
 <p><strong>Deliverable.</strong> These five locks take the cross-node lock:</p>
 <ul>
   <li><code>reckon/crew/budget_reset.py</code> <code>_locked</code>;</li>
@@ -188,6 +188,9 @@
 </div>
 <div class="r-comment" data-section="s5" data-id="c-run-r-20261114T185131299174-review-of-lane-budget-picker-locks-cross-node-4634a0bd4d16" data-who="reckon-build" data-when="2026-11-14T19:08:49.699Z">
     <div class="r-comment-body"><p>independent review of r-20261114T135814761240-lane-budget-picker-locks-cross-node at base 65431adf17b56c3a1fb04f32971d7729e4108dcc, head 4634a0bd4d16c9182934d7cff27798cc6df68ec3; six dimensions scored 19/19/20/17/19/19 (total 113); added_failure_count 0; two non-blocking findings.</p></div>
+</div>
+<div class="r-comment" data-section="s5" data-id="c-close-s5" data-who="reckon-build" data-when="2026-11-14T19:30:00Z">
+    <div class="r-comment-body"><p>§5 landed: five lane, budget and picker locks moved onto <code>exclusive_lock</code> (commits <code>786228ab9d</code>, <code>4634a0bd4d</code>). The cross-node tests fail at base. Review scored 113 of 120. <a href="/reckon/evidence/archive/every-shared-home-lock-holds-across-nodes-landed.html#s5-lane-budget-picker-landed">evidence</a></p></div>
 </div>
 </section>
 </main>
