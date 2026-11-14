@@ -424,13 +424,13 @@ def test_replacement_refuses_a_scheduler_that_cannot_be_asked(
 
 
 def test_the_roster_refuses_the_worker_past_the_cap_on_the_memory_axis() -> None:
-    assert placement.reservation_roster_refusal(24) is None
+    cap = placement.RESERVATION_ROSTER_LIMIT
+    assert placement.reservation_roster_refusal(cap - 1) is None
 
-    refusal = placement.reservation_roster_refusal(25)
+    refusal = placement.reservation_roster_refusal(cap)
 
     assert refusal is not None
-    assert "25" in refusal
-    assert str(placement.RESERVATION_ROSTER_LIMIT) == "25"
+    assert str(cap) in refusal
     # Sized on memory per worker against reserved memory, never a core count:
     # naming cores would invite raising the cap by counting the axis that does
     # not bind.
@@ -445,12 +445,13 @@ def test_the_dispatch_admission_refuses_past_the_roster_cap(
     _isolate(monkeypatch, tmp_path)
     placement.publish_reservation({"job_id": "1274051"})
     placed = {"placement": {"scheduler": "srun", "options": ["--partition=all"]}}
-    occupying = [{"run_id": f"r-{index}", **placed} for index in range(25)]
+    cap = placement.RESERVATION_ROSTER_LIMIT
+    occupying = [{"run_id": f"r-{index}", **placed} for index in range(cap)]
 
     with pytest.raises(runs.CrewError) as refused:
         dispatch_module._refuse_over_reservation_roster(_placed_backend(), occupying)
 
-    assert "25" in str(refused.value)
+    assert str(cap) in str(refused.value)
     assert "resident memory per worker" in str(refused.value)
 
 
@@ -477,29 +478,32 @@ def test_the_roster_counts_placed_runs_across_every_project(
     placement.publish_reservation({"job_id": "1274051"})
 
     placed = {"placement": {"scheduler": "srun", "options": ["--partition=all"]}}
+    cap = placement.RESERVATION_ROSTER_LIMIT
+    alpha = (cap - 1) // 2
+    beta = cap - 1 - alpha
     occupying = (
         [
             {"run_id": f"r-alpha-{index}", "project": "alpha", **placed}
-            for index in range(12)
+            for index in range(alpha)
         ]
         + [
             {"run_id": f"r-beta-{index}", "project": "beta", **placed}
-            for index in range(12)
+            for index in range(beta)
         ]
         + [{"run_id": f"r-gamma-{index}", "project": "gamma"} for index in range(12)]
     )
 
-    # Twenty four placed runs of two projects sit one below the cap of twenty
-    # five; the twelve runs that were never placed hold no seat.
+    # The placed runs of two projects sit one below the cap; the twelve runs
+    # that were never placed hold no seat.
     dispatch_module._refuse_over_reservation_roster(_placed_backend(), occupying)
 
-    # The twenty fifth placed run, from either project, is refused.
+    # One more placed run, from either project, is refused.
     with pytest.raises(runs.CrewError) as refused:
         dispatch_module._refuse_over_reservation_roster(
             _placed_backend(),
-            [*occupying, {"run_id": "r-beta-12", "project": "beta", **placed}],
+            [*occupying, {"run_id": f"r-beta-{beta}", "project": "beta", **placed}],
         )
-    assert "25" in str(refused.value)
+    assert str(cap) in str(refused.value)
 
 
 def test_the_one_record_is_read_by_every_project(
@@ -535,7 +539,7 @@ def test_a_placed_backend_is_bounded_by_the_shared_roster(
     placed = {"placement": {"scheduler": "srun", "options": ["--partition=all"]}}
     occupying = [
         {"run_id": f"r-beta-{index}", "project": "beta", **placed}
-        for index in range(25)
+        for index in range(placement.RESERVATION_ROSTER_LIMIT)
     ]
     with pytest.raises(runs.CrewError):
         dispatch_module._refuse_over_reservation_roster(_placed_backend(), occupying)

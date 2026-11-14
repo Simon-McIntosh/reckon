@@ -80,12 +80,16 @@ DEBUG_JOB_TIME_CEILING = "01:00:00"
 # rather than a job of its own. These are the variables it must not inherit.
 SLURM_JOB_ENVIRONMENT_ROOTS = ("SLURM_JOB", "SLURM_STEP")
 
-# The roster cap and the axis it is measured on. Twenty-five is the concurrency
-# the serve was observed delivering throughput for; the binding quantity is
+# The roster cap and the axis it is measured on. The serve's own router gate
+# bounds the requests that reach the cards, so a launched worker past that
+# width waits in the router's queue holding no card, and the roster only guards
+# the fleet allocation's memory against a runaway launch. The quantity is
 # resident memory per worker against the reservation's reserved memory, never a
-# core count, so the cap is raised by reading memory across a wave rather than
-# by counting cores.
-RESERVATION_ROSTER_LIMIT = 25
+# core count: 25 placed workers measured 2.5 GB resident in all on 14 November
+# (median 80 MB, largest 410 MB) on a node with 125 GB, so eighty workers stay
+# well inside it even at the largest worker's size. Raise it by reading memory
+# across a wave, never by counting cores.
+RESERVATION_ROSTER_LIMIT = 80
 
 # The seats the local lane leaves free inside the reservation. The admit
 # service launches a queued local request the moment a seat frees, while a
