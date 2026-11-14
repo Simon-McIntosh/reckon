@@ -2219,7 +2219,9 @@ def _no_lane_reason(
 # from the run, so it is free to be re-routed; an attempt a lane actually
 # carried and dropped is demoted by :func:`_failed_review_backend` instead, and
 # the two records answer different questions.
-HELD_REVIEW_DISPATCH_STATUSES = frozenset({"lane-paused", "awaiting-lane"})
+HELD_REVIEW_DISPATCH_STATUSES = frozenset(
+    {"lane-paused", "awaiting-lane", "roster-full"}
+)
 
 
 def _zero_slot_held_lane(
@@ -3533,7 +3535,7 @@ def _dispatch_composed_review(
         return {"run_id": run_id, "dispatched": False, "reason": reason}
 
     dispatch_module = importlib.import_module("reckon.crew.dispatch")
-    from reckon.crew.dispatch import BudgetHold, LaneHeld, LanePaused
+    from reckon.crew.dispatch import BudgetHold, LaneHeld, LanePaused, RosterFull
     from reckon.crew.node import TaskNode
 
     resolved = _resolved_review_config(project, config)
@@ -3887,6 +3889,64 @@ def _dispatch_composed_review(
         if queued:
             report["queued"] = dict(queued)
         return report
+    except RosterFull as exc:
+        # The placement reservation's roster is at its cap: every seat the
+        # allocation was sized for is held by a resident worker, so no worker
+        # for this review can be placed right now. A seat is freed when one of
+        # those workers ends, which is what the queued request waits for — the
+        # review is written as a queued request and launches from the brief its
+        # composed directory already holds, rather than being refused and
+        # costing the run it reviews the review it is owed.
+        gate = {
+            "detail": str(exc),
+            "reason": (
+                "the placement reservation's roster is full "
+                f"({exc.occupancy}/{exc.limit})"
+            ),
+        }
+        try:
+            queued = _queue_router_held_review(
+                record,
+                node=node,
+                fields=fields,
+                config=resolved,
+                backend=backend,
+                gate=gate,
+                allow_unreconciled_runs=allow_unreconciled_runs,
+            )
+        except (CrewError, OSError) as exc2:
+            # The reflex is a sweep: a refused or failed queue write is
+            # reported here rather than ending the project's whole review pass.
+            reason = f"the roster-full review could not be queued: {exc2}"
+            record_dispatch(
+                status="refused",
+                reason=reason,
+                backend=backend,
+                reviewed_head=fields["head"],
+            )
+            return {
+                "run_id": run_id,
+                "dispatched": False,
+                "refused": True,
+                "backend": backend,
+                "reason": reason,
+            }
+        reason = str(gate["reason"])
+        record_dispatch(
+            status="roster-full",
+            reason=reason,
+            backend=backend,
+            reviewed_head=fields["head"],
+        )
+        return {
+            "run_id": run_id,
+            "dispatched": False,
+            "backend": backend,
+            "error": "lane-paused",
+            "lane_gate": gate,
+            "queued": dict(queued or {}),
+            "reason": reason,
+        }
     except CrewError as exc:
         # Scope, member, follower, context-fit, plan visibility and competence
         # refusals all arrive here. The automatic path must not be the one place
