@@ -19,6 +19,7 @@ from __future__ import annotations
 
 import re
 from typing import Any
+from unittest import mock
 
 from reckon.crew import recovery_watch
 from reckon.crew import ticker as ticker_module
@@ -43,7 +44,7 @@ def plain(line: str) -> str:
     return ESCAPES.sub("", line)
 
 
-def _snapshot(run_id: str, state: str, *, stuck: bool = False) -> dict[str, Any]:
+def _snapshot(run_id: str, state: str) -> dict[str, Any]:
     """One live pointer cut down to the facts the partition and the row read."""
     return {
         "run_id": run_id,
@@ -61,33 +62,51 @@ def _snapshot(run_id: str, state: str, *, stuck: bool = False) -> dict[str, Any]
         "alias": "",
         "lane": "",
         "session": SESSION,
-        # The one stuck verdict writes its reason on the row, or nothing.
-        "stuck": {"run_id": run_id, "phase": state, "kind": state} if stuck else None,
     }
 
 
-def _fleet(*, stuck: bool = False) -> dict[str, dict[str, Any]]:
-    """The session's four parked requests, its queued one stuck when asked."""
-    return {
-        run_id: _snapshot(run_id, state, stuck=stuck and run_id == "r-queued")
-        for run_id, state in PARKED
-    }
+def _fleet() -> dict[str, dict[str, Any]]:
+    """The session's four parked requests, one per parked phase."""
+    return {run_id: _snapshot(run_id, state) for run_id, state in PARKED}
 
 
 def _reading(*, stuck: bool = False, colour: bool = False) -> tuple[Any, ...]:
-    """The producer's counts, its event, and the row a follower draws."""
-    fleet = _fleet(stuck=stuck)
-    counts = recovery_watch._transition_counts(fleet)
-    event = recovery_watch._watch_transition(
-        "reckon",
-        kind="baseline",
-        snapshot=fleet["r-queued"],
-        previous=None,
-        current="queued",
-        counts=counts,
-        spend_runs=[],
-        rate_statuses={},
-    )
+    """The producer's counts, its event, and the row a follower draws.
+
+    The stuck figure reaches the row through the same two calls the producer
+    makes -- the snapshot wrapper that attaches the verdict, and the one
+    verdict function it reads -- so a figure supplied straight onto a row by
+    this helper would prove nothing about either. Only the verdict's own
+    inputs are stubbed, because whether a request is stuck on the clock and
+    its pass history is the verdict module's question, not this file's.
+    """
+
+    def verdict(pointer, *, passes=None, now=None):
+        if stuck and pointer["run_id"] == "r-queued":
+            return {
+                "run_id": pointer["run_id"],
+                "phase": pointer["state"],
+                "kind": "waiting",
+                "reason": "parked past its bound",
+            }
+        return None
+
+    with mock.patch.object(recovery_watch.runs, "stuck_verdict", verdict):
+        fleet = {
+            run_id: recovery_watch._with_stuck_verdict(row, row, passes=[])
+            for run_id, row in _fleet().items()
+        }
+        counts = recovery_watch._transition_counts(fleet)
+        event = recovery_watch._watch_transition(
+            "reckon",
+            kind="baseline",
+            snapshot=fleet["r-queued"],
+            previous=None,
+            current="queued",
+            counts=counts,
+            spend_runs=[],
+            rate_statuses={},
+        )
     grid = ticker_module.Ticker(width=WIDTH, theme=THEME, color=colour)
     return counts, event, grid.render(event)
 

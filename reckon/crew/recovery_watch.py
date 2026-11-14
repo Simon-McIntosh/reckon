@@ -1589,7 +1589,10 @@ def _compute_watch_snapshot(
 
 
 def _with_stuck_verdict(
-    snapshot: Mapping[str, Any], pointer: Mapping[str, Any]
+    snapshot: Mapping[str, Any],
+    pointer: Mapping[str, Any],
+    *,
+    passes: Sequence[Mapping[str, Any]] | None = None,
 ) -> dict[str, Any]:
     """Attach the one stuck verdict to a snapshot, read from its live pointer.
 
@@ -1599,11 +1602,14 @@ def _with_stuck_verdict(
     age crosses the stuck phase's bound on the clock, and the admission pass log
     appends between polls. A stuck cell reading either of those an hour stale
     would report an alarm that has cleared, or miss one that has just started.
-    The pass history is memoised by the reader that owns it, so each row costs a
-    stat rather than a re-parse.
+    ``passes`` is the caller's own read of the pass history, taken once for the
+    whole beat and handed to every row. Left unset, each call reads the log
+    itself, which suits a single-row caller and not a sweep: the reader's own
+    contract is one reading per view, so a sweep that omitted it would read the
+    log once per row per beat.
     """
     verdict = dict(snapshot)
-    verdict["stuck"] = runs.stuck_verdict(pointer)
+    verdict["stuck"] = runs.stuck_verdict(pointer, passes=passes)
     return verdict
 
 
@@ -1614,6 +1620,7 @@ def _watch_snapshot(
     stall_seconds: int,
     cache: dict[str, tuple[str, dict[str, Any]]] | None = None,
     pointers: Sequence[Mapping[str, Any]] | None = None,
+    passes: Sequence[Mapping[str, Any]] | None = None,
 ) -> dict[str, Any]:
     """Reduce one pointer to the state and reason a ticker compares.
 
@@ -1649,6 +1656,7 @@ def _watch_snapshot(
             return _with_stuck_verdict(
                 _refresh_snapshot(stored, moment=moment, stall_seconds=stall_seconds),
                 pointer,
+                passes=passes,
             )
     snapshot = _compute_watch_snapshot(
         pointer, moment=moment, stall_seconds=stall_seconds, pointers=pointers
@@ -1656,7 +1664,7 @@ def _watch_snapshot(
     refreshed = _refresh_snapshot(snapshot, moment=moment, stall_seconds=stall_seconds)
     if run_id and key is not None:
         _remember_snapshot(run_id, key, refreshed, cache=store)
-    return _with_stuck_verdict(refreshed, pointer)
+    return _with_stuck_verdict(refreshed, pointer, passes=passes)
 
 
 #: How far past its declared allowance a still-running worker is before it is
@@ -2931,9 +2939,14 @@ def _live_project_session_counts(project: str, session: str) -> dict[str, int]:
     stall_seconds = parse_duration(DEFAULT_WATCH_STALL_WINDOW)
     moment = _utc_seconds()
     pointers = runs._list_live_records(project=project)
+    passes = runs.admission_pass_history()
     current = {
         str(pointer.get("run_id") or ""): _watch_snapshot(
-            pointer, moment=moment, stall_seconds=stall_seconds, pointers=pointers
+            pointer,
+            moment=moment,
+            stall_seconds=stall_seconds,
+            pointers=pointers,
+            passes=passes,
         )
         for pointer in pointers
         if pointer.get("run_id")
@@ -3205,6 +3218,7 @@ def _quiet_beat_snapshots(
     exists to leave unread.
     """
     current: dict[str, dict[str, Any]] = {}
+    passes = runs.admission_pass_history()
     for pointer in runs._tick_pointers(pointers):
         run_id = str(pointer.get("run_id") or "")
         if not run_id:
@@ -3218,6 +3232,7 @@ def _quiet_beat_snapshots(
                 stall_seconds=stall_seconds,
                 cache=cache,
                 pointers=pointers,
+                passes=passes,
             )
             continue
         if _fresh_liveness(pointer) != (
@@ -3231,10 +3246,13 @@ def _quiet_beat_snapshots(
                 stall_seconds=stall_seconds,
                 cache=cache,
                 pointers=pointers,
+                passes=passes,
             )
         else:
-            current[run_id] = _refresh_snapshot(
-                stored, moment=moment, stall_seconds=stall_seconds
+            current[run_id] = _with_stuck_verdict(
+                _refresh_snapshot(stored, moment=moment, stall_seconds=stall_seconds),
+                pointer,
+                passes=passes,
             )
     return current
 
@@ -3544,6 +3562,7 @@ def watch_ticker(
                         gate_seen = _sweep_gate_rows(project, gate_seen)
                     moment = _utc_seconds()
                     if sweep:
+                        beat_passes = runs.admission_pass_history()
                         current = {
                             str(pointer.get("run_id") or ""): _watch_snapshot(
                                 pointer,
@@ -3551,6 +3570,7 @@ def watch_ticker(
                                 stall_seconds=stall_seconds,
                                 cache=snapshot_cache,
                                 pointers=pointers,
+                                passes=beat_passes,
                             )
                             for pointer in runs._tick_pointers(pointers)
                             if pointer.get("run_id")

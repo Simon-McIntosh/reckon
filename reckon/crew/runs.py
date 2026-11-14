@@ -2801,9 +2801,7 @@ def _admissible_unlaunched_passes(
 _LAUNCHED_VERDICTS = frozenset({"launched", "routed", "moved"})
 
 
-def _stuck_wait_started(
-    pointer: Mapping[str, Any], phase: str
-) -> datetime | None:
+def _stuck_wait_started(pointer: Mapping[str, Any], phase: str) -> datetime | None:
     """When the request entered the phase whose wait is being judged."""
     hold = pointer.get("queue_hold")
     if not isinstance(hold, Mapping):
@@ -3401,9 +3399,14 @@ def _watch_stream_snapshots(
     moment = _utc_seconds()
     stall_seconds = parse_duration(stall_window)
     pointers = list(records)
+    passes = admission_pass_history()
     return {
         str(record.get("run_id") or ""): _watch_snapshot(
-            record, moment=moment, stall_seconds=stall_seconds, pointers=pointers
+            record,
+            moment=moment,
+            stall_seconds=stall_seconds,
+            pointers=pointers,
+            passes=passes,
         )
         for record in _tick_pointers(pointers)
         if record.get("run_id")
