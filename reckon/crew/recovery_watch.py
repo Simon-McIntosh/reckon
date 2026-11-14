@@ -160,7 +160,38 @@ def _read_git_answer_store() -> dict[str, Any]:
     one, because the only answers offered are ones a previous git run gave for
     these exact object ids. Anything the reader does not recognise is treated
     as corrupt rather than guessed at.
+
+    The parsed store is held for as long as the file's own identity holds. One
+    sweep asks this store for nearly every citation it composes, and a fresh
+    read of the file per question is the read the census named: a steady
+    station opened the same file hundreds of times in one tick to learn that no
+    other process had written it. The identity is the stat identity, so a write
+    by another process — which rewrites the file through a rename — drops the
+    held copy on the next read.
     """
+    signature = _git_answer_store_signature()
+    held = _GIT_ANSWER_STORE_MEMO[0]
+    if held is not None and held[0] == signature:
+        return held[1]
+    store = _parse_git_answer_store()
+    _GIT_ANSWER_STORE_MEMO[0] = (signature, store)
+    return store
+
+
+# The parsed answer store, with the file identity it was parsed from. A single
+# module-level cell, replaced whole, so a reader never sees a half-updated pair.
+_GIT_ANSWER_STORE_MEMO: list[tuple[str, dict[str, Any]] | None] = [None]
+
+
+def _git_answer_store_signature() -> str:
+    try:
+        info = _git_answer_store_path().stat()
+    except OSError:
+        return "absent"
+    return f"{info.st_dev}:{info.st_ino}:{info.st_size}:{info.st_mtime_ns}"
+
+
+def _parse_git_answer_store() -> dict[str, Any]:
     try:
         payload = json.loads(_git_answer_store_path().read_text(encoding="utf-8"))
     except (OSError, ValueError, UnicodeDecodeError):
@@ -246,13 +277,20 @@ def _update_git_answer_store(mutate: Callable[[dict[str, Any]], None]) -> None:
     with lock:
         try:
             fcntl.flock(lock.fileno(), fcntl.LOCK_EX)
-            store = _read_git_answer_store()
+            store = _parse_git_answer_store()
             mutate(store)
             _bound_git_answer_store(store)
             payload = json.dumps(store, sort_keys=True)
             temporary = path.with_name(f".{path.name}.{os.getpid()}.tmp")
             temporary.write_text(payload, encoding="utf-8")
             os.replace(temporary, path)
+            # The write is this process's own, so the copy it just persisted is
+            # the one a later read should hold rather than re-parsing it. A path
+            # that cannot be stat'd after the rename holds nothing to key on, and
+            # is left for the next read to parse.
+            signature = _git_answer_store_signature()
+            if signature != "absent":
+                _GIT_ANSWER_STORE_MEMO[0] = (signature, store)
         except OSError:
             return
         finally:

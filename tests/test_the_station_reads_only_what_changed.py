@@ -17,6 +17,7 @@ the memos cleared.
 from __future__ import annotations
 
 import importlib
+import io
 import json
 import os
 import re
@@ -49,6 +50,7 @@ ledger_module = importlib.import_module("reckon.ledger")
 obligations_module = importlib.import_module("reckon.crew.obligations")
 recovery_module = importlib.import_module("reckon.crew.recovery")
 promotion_checks_module = importlib.import_module("reckon.crew.promotion_checks")
+promotion_module = importlib.import_module("reckon.crew.promotion")
 store_module = importlib.import_module("reckon._store")
 
 PROJECT = "recompute-fixture"
@@ -290,6 +292,75 @@ def test_a_steady_tick_recomputes_nothing(
         f"the second tick rewrote classification memos: {memo_writes.memo_writes()}"
     )
     assert payload["obligations"], "the payload the second tick built is empty"
+
+
+def test_a_steady_promotion_reads_no_git_and_a_moved_head_re_reads(
+    fleet: dict[str, Any],
+) -> None:
+    """The committed range is read once per head, and re-read when the head moves."""
+    run_id = "run-01"
+    record = json.loads(runs.pointer_path(run_id).read_text(encoding="utf-8"))
+    first = promotion_module._promotion_commits(record, [])
+    assert first, "the fixture run names no committed range to promote"
+
+    with _GitCounter() as git_calls:
+        again = promotion_module._promotion_commits(record, [])
+    assert again == first
+    assert git_calls.calls == 0, (
+        f"a steady promotion read ran {git_calls.calls} git processes with no head move"
+    )
+
+    moved = _commit(fleet["worktrees"][run_id], "moved-range.txt", "moved\n")
+    after = promotion_module._promotion_commits(record, [])
+    assert after == [*first, moved], (
+        f"the moved head was not re-read: {after} (expected {[*first, moved]})"
+    )
+
+
+def test_a_steady_answer_store_read_parses_once_and_a_write_re_reads(
+    fleet: dict[str, Any], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The shared answer file is read once while unchanged, again after a write."""
+    tree = fleet["worktrees"]["run-00"]
+    # A revision without the held parse has no memo cell; the test then fails on
+    # the read counts below rather than on a missing attribute.
+    memo = getattr(recovery_watch, "_GIT_ANSWER_STORE_MEMO", None)
+    if memo is not None:
+        memo[0] = None
+    recovery_watch._remember_commit_answer(tree, "first-candidate", "1" * 40)
+    path = recovery_watch._git_answer_store_path()
+
+    reads: list[str] = []
+    real_open = io.open
+
+    def counting_open(file: Any, *args: Any, **kwargs: Any) -> Any:
+        if str(file) == str(path):
+            reads.append(str(file))
+        return real_open(file, *args, **kwargs)
+
+    monkeypatch.setattr(io, "open", counting_open)
+    for _ in range(5):
+        assert recovery_watch._stored_commit_answer(tree, "first-candidate") == "1" * 40
+    assert reads == [], (
+        f"five steady reads opened the unchanged answer store {len(reads)} times "
+        "with nothing written between them"
+    )
+
+    # Another process rewrites the shared file through its own rename, which
+    # changes the identity the held copy was keyed on.
+    payload = json.loads(real_open(path, encoding="utf-8").read())
+    payload["commits"].setdefault(str(tree), {})["second-candidate"] = "2" * 40
+    temporary = path.with_name(f".{path.name}.external.tmp")
+    temporary.write_text(json.dumps(payload, sort_keys=True), encoding="utf-8")
+    os.replace(temporary, path)
+
+    assert recovery_watch._stored_commit_answer(tree, "second-candidate") == "2" * 40, (
+        "a read after another process wrote the store still served the held copy"
+    )
+    assert len(reads) == 1, (
+        f"the read after the write opened the store {len(reads)} times "
+        "(expected exactly one)"
+    )
 
 
 def test_moving_one_head_recomputes_only_that_run(

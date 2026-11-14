@@ -452,20 +452,51 @@ def _landing_checkout(
     )
 
 
+#: The committed ranges already read, keyed by the tree, the base and the
+#: manifest citations, with the tree's own head identity carried beside each
+#: answer. A tick that rebuilds every session's duties asks this for every run
+#: it owes a promotion, and the answer only moves when the tree's head does:
+#: without the store, a steady station ran one git process per live run per
+#: tick to learn that nothing had changed.
+_PROMOTION_COMMITS_MEMO: dict[
+    tuple[str, str, tuple[str, ...]], tuple[str, list[str]]
+] = {}
+_PROMOTION_COMMITS_LIMIT = 1024
+
+
 def _promotion_commits(
     record: Mapping[str, Any], manifest_commits: Sequence[Any]
 ) -> list[str]:
-    """Read the run's committed range even when a repair cleared its citations."""
+    """Read the run's committed range even when a repair cleared its citations.
+
+    The range is ``base..HEAD`` in the run's own tree, so a tree whose head has
+    not moved answers from the previous read. The head is resolved as files
+    rather than by spawning git, so the check itself costs no process; when the
+    head cannot be read the answer is not stored, because an unreadable head is
+    not a stable one.
+    """
+    from .recovery_memo import _worktree_head_identity
     from .recovery_review_subject import _review_tree, reviewed_commits
 
-    history = reviewed_commits(
-        _review_tree(record),
-        str(record.get("base_sha") or record.get("base") or "").strip(),
-        "HEAD",
+    tree = _review_tree(record)
+    base = str(record.get("base_sha") or record.get("base") or "").strip()
+    citations = tuple(str(sha) for sha in manifest_commits)
+    key = (str(tree) if tree is not None else "", base, citations)
+    head_identity = _worktree_head_identity(tree)
+    cached = _PROMOTION_COMMITS_MEMO.get(key)
+    if cached is not None and cached[0] == head_identity:
+        return list(cached[1])
+    history = reviewed_commits(tree, base, "HEAD")
+    commits = (
+        [sha for sha, _subject in history]
+        if history
+        else [str(sha) for sha in manifest_commits]
     )
-    if history:
-        return [sha for sha, _subject in history]
-    return [str(sha) for sha in manifest_commits]
+    if head_identity not in {"no-tree", "no-git", "no-head"}:
+        _PROMOTION_COMMITS_MEMO[key] = (head_identity, commits)
+        while len(_PROMOTION_COMMITS_MEMO) > _PROMOTION_COMMITS_LIMIT:
+            _PROMOTION_COMMITS_MEMO.pop(next(iter(_PROMOTION_COMMITS_MEMO)))
+    return commits
 
 
 def _default_gate_evidence_from_manifest(
