@@ -292,6 +292,103 @@ def _finish(request: Mapping[str, Any], phase: str, **result: Any) -> dict[str, 
     return receipt
 
 
+def _reviewed_run_id(request: Mapping[str, Any]) -> str:
+    """The run a queued review promotion reviews, or empty for any other request.
+
+    A review run's node id carries the run it scored, so the queue can tell a
+    review's own promotion from the promotion of the work being reviewed. The
+    check on the node id's prefix comes first because it settles most requests
+    without touching the store: only a review request pays for a lookup.
+    """
+    from reckon.crew.recovery_vocabulary import REVIEW_NODE_PREFIX
+
+    node_id = str(request.get("node") or "")
+    if not node_id.startswith(REVIEW_NODE_PREFIX):
+        return ""
+    from reckon.crew.recovery_review_delivery import _resolved_reviewed_run_id
+
+    try:
+        return _resolved_reviewed_run_id(
+            {"node": {"id": node_id}, "project": str(request.get("project") or "")},
+            str(request.get("project") or ""),
+        )
+    except Exception:  # noqa: BLE001 — ordering must never stop the drain
+        return ""
+
+
+def _pending_requests() -> list[dict[str, Any]]:
+    """Every queued request, in the order a drain takes them up.
+
+    A run whose review is queued beside it can only be refused for the absent
+    review, and that refusal sends a coordinator back to re-request work that
+    was about to become promotable. So a review's own promotion goes ahead of
+    the run it reviews whenever that run is waiting too; every other request
+    keeps the plain name order the queue has always drained in.
+    """
+    pending = []
+    for path in sorted(_requests_dir().glob("*.json")):
+        request = _read(path)
+        if request.get("phase") in PENDING:
+            pending.append(request)
+    waiting = {str(request.get("run_id") or "") for request in pending}
+    review_first = {
+        str(request.get("run_id") or "")
+        for request in pending
+        if _reviewed_run_id(request) in waiting
+    }
+    return sorted(
+        pending,
+        key=lambda request: (
+            str(request.get("run_id") or "") not in review_first,
+            str(request.get("run_id") or ""),
+        ),
+    )
+
+
+def _defer_to_a_queued_review(
+    request: Mapping[str, Any], refusal: BaseException | str
+) -> bool:
+    """Requeue a run refused only for a review that is itself still queued.
+
+    The refusal is true when it is written and wrong a minute later: the review
+    the run needs is in this same queue, so the promotion is waiting on the
+    queue rather than on the coordinator. Writing the request back as waiting
+    keeps it in the drain, where the pass after the review promotes it without
+    anyone re-requesting it. A run refused for anything else, or one
+    whose review is neither queued nor stored, is refused exactly as before.
+
+    The refusal itself is passed rather than its text: an aggregated refusal
+    carries the parts it was composed from, and a run refused for a failing
+    suite beside a missing review must be refused, not requeued. Flattening the
+    message first would hide the second reason inside one string.
+    """
+    from reckon.crew.promotion_checks import refusal_awaits_a_review
+
+    if not refusal_awaits_a_review(refusal):
+        return False
+    run_id = str(request["run_id"])
+    if not any(
+        other.get("phase") in PENDING and _reviewed_run_id(other) == run_id
+        for other in (_read(path) for path in _requests_dir().glob("*.json"))
+    ):
+        return False
+    with runs._pointer_lock(f"promotion-request-{run_id}"):
+        current = _read(_request_path(run_id))
+        if current.get("request_id") != request["request_id"]:
+            # A newer request owns the run now; it decides for itself.
+            return True
+        requeued = {
+            **current,
+            "phase": REQUESTED,
+            "deferred_at": _now(),
+            "deferred_reason": str(refusal),
+        }
+        requeued.pop("started_at", None)
+        runs._write_json(_request_path(run_id), requeued)
+        _mark_pointer(requeued, REQUESTED)
+    return True
+
+
 def _promoted_commits(result: Mapping[str, Any]) -> list[str]:
     promoted = result.get("promotion") or result
     record = promoted.get("record") or {}
@@ -385,15 +482,16 @@ class PromotionService:
                 _CLAIMS.discard(str(lease.path.parent.parent / lease.path.stem))
 
     def tick(self) -> list[str]:
-        """Start available requests without waiting for any promotion."""
+        """Start available requests without waiting for any promotion.
+
+        Requests are taken in the order :func:`_pending_requests` gives, so a
+        review starts ahead of the run it reviews when both are waiting.
+        """
         self._threads = [thread for thread in self._threads if thread.is_alive()]
         if self._draining:
             return []
         launched: list[str] = []
-        for path in sorted(_requests_dir().glob("*.json")):
-            request = _read(path)
-            if request.get("phase") not in PENDING:
-                continue
+        for request in _pending_requests():
             waiting, reason = _review_self_waits(request)
             if waiting:
                 # Nothing is owed here yet, so this request takes no slot and
@@ -464,16 +562,19 @@ class PromotionService:
                 or result.get("promoted") is False
                 or result.get("ok") is False
             ):
+                reason = str(
+                    result.get("reason")
+                    or result.get("error")
+                    or result.get("detail")
+                    or "promotion refused"
+                )
+                if _defer_to_a_queued_review(request, reason):
+                    return
                 _finish(
                     request,
                     REFUSED,
                     ok=False,
-                    error=str(
-                        result.get("reason")
-                        or result.get("error")
-                        or result.get("detail")
-                        or "promotion refused"
-                    ),
+                    error=reason,
                     result=result,
                 )
                 return
@@ -481,6 +582,8 @@ class PromotionService:
             _finish(request, PROMOTED, result=result, commits=commits)
         except Exception as exc:  # noqa: BLE001 - retain every run's own failure
             phase = REFUSED if isinstance(exc, CrewError) else FAILED
+            if isinstance(exc, CrewError) and _defer_to_a_queued_review(request, exc):
+                return
             _finish(request, phase, ok=False, error=f"{type(exc).__name__}: {exc}")
         finally:
             for renewer in renewers:

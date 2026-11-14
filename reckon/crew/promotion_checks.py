@@ -1495,6 +1495,36 @@ def _require_gate_check_precondition(
         )
 
 
+# The two spellings an absent review is refused under, kept as constants so a
+# reader below matches the text the refusal writes rather than a copy of it that
+# drifts. The first means no review is stored at all; the second means the store
+# holds a review of a different revision.
+MISSING_REVIEW_REFUSAL = "no complete independent review is stored"
+STALE_REVIEW_REFUSAL = "no review of the promoted revision is stored"
+
+
+def refusal_awaits_a_review(refusal: BaseException | str) -> bool:
+    """Whether every reason a promotion gave for refusing is an absent review.
+
+    A run refused only because the review that would licence it is not stored
+    yet is waiting, not failing: its review may be queued behind the same
+    promotion service. Callers that keep such a request queued need to separate
+    that case from a run refused for anything else, and from one whose refusal
+    carries several reasons of which the absent review is only the first.
+
+    The reasons are read from the aggregated refusal's own parts when it carries
+    them, so a refusal raised for a stale suite beside a missing review is not
+    mistaken for a run waiting on its review.
+    """
+    parts = list(getattr(refusal, "refusals", ()) or ())
+    if not parts:
+        parts = [refusal]
+    missing = (MISSING_REVIEW_REFUSAL, STALE_REVIEW_REFUSAL)
+    return bool(parts) and all(
+        any(text in str(part) for text in missing) for part in parts
+    )
+
+
 def _unreviewed_refusal(
     run_id: str,
     review_action: str,
@@ -1522,10 +1552,9 @@ def _unreviewed_refusal(
     """
     revision = (
         f"the stored review read revision {stale_head[:12]} and this promotion "
-        f"asserts {promoted_head[:12]}: no review of the promoted revision is "
-        "stored"
+        f"asserts {promoted_head[:12]}: {STALE_REVIEW_REFUSAL}"
         if stale_head and promoted_head
-        else "no complete independent review is stored"
+        else MISSING_REVIEW_REFUSAL
     )
     citation = (
         " The manifest's own commit list predates the revision the review read: "
