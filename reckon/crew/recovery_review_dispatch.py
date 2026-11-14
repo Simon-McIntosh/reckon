@@ -3075,6 +3075,65 @@ def claim_refusal_still_holds(claim: Mapping[str, Any]) -> bool:
     return bool(claim_disposition(pointer).binding)
 
 
+def _release_delivered_review_claim(
+    record: Mapping[str, Any],
+    fields: Mapping[str, Any],
+    *,
+    config: Mapping[str, Any] | None = None,
+) -> list[dict[str, Any]]:
+    """End each delivered review run whose claim fences this dispatch's paths.
+
+    A later review of the same run names the headless record path the earlier
+    review declared, so a finished review's claim on that path refuses the
+    dispatch that follows it — and a finished review's recorded worktree is
+    gone, so the claim reads as work nobody can inspect and stands until
+    somebody ends the run by hand. A review's whole deliverable is the record
+    it stored, so once that record parses and its own manifest reads complete
+    the run has nothing left to write: it is ended here by the very promotion
+    its self-promotion sweep would reach, in the order the dispatch needs it —
+    before this dispatch's scope is judged. A reviewer that has not delivered
+    has not reached that state, keeps its claim, and the refusal stands.
+    """
+    from reckon.crew.node import claim_disposition
+    from reckon.crew.recovery_review_acceptance import promote_review_run_itself
+
+    project = str(record.get("project") or "")
+    if not project:
+        return []
+    wanted = {
+        Path(str(path)).expanduser().resolve().as_posix()
+        for path in fields.get("write_paths") or ()
+    }
+    released: list[dict[str, Any]] = []
+    for pointer in list_live(project=project):
+        if not _is_review_run(pointer):
+            continue
+        node = pointer.get("node")
+        declared = {
+            Path(str(path)).expanduser().resolve().as_posix()
+            for path in (node.get("write_paths") if isinstance(node, Mapping) else ())
+            or ()
+        }
+        if not declared & wanted:
+            continue
+        if not claim_disposition(pointer).binding:
+            continue
+        promotion = promote_review_run_itself(pointer, config=config)
+        if not promotion or not promotion.get("promoted"):
+            continue
+        released.append(
+            {
+                "run_id": str(pointer.get("run_id") or ""),
+                "record_path": str(promotion.get("record_path") or ""),
+                "reason": (
+                    "its record is complete and stored, so it has nothing left "
+                    "to write and its claim was released"
+                ),
+            }
+        )
+    return released
+
+
 def stored_claim_refusal(record: Mapping[str, Any]) -> dict[str, Any] | None:
     """The hold a refused review dispatch still stands under, or None.
 
@@ -3658,6 +3717,17 @@ def _dispatch_composed_review(
                 authority_error=review_authority_error,
             )
 
+    # A later review of the same run names the record path an earlier review
+    # declared, so a finished review whose own run has not ended yet would
+    # refuse the dispatch its successor exists to make. A dry run promises to
+    # write nothing, so it reports the claim it would meet rather than ending
+    # the run underneath it.
+    released_reviews = (
+        []
+        if dry_run
+        else _release_delivered_review_claim(record, fields, config=resolved)
+    )
+
     if dry_run:
         # The plan review's brief is composed rather than given, so a preview
         # holds its text while a dispatch writes it. The resolver reads the
@@ -3856,6 +3926,7 @@ def _dispatch_composed_review(
         "scope": fields.get("scope"),
         "review_tier": fields.get("review_tier"),
         "reason": f"dispatched the composed review as run {review_run_id}",
+        **({"released_reviews": released_reviews} if released_reviews else {}),
         **({"dispatch": launched} if record.get("subject") == "plan" else {}),
     }
 
