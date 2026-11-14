@@ -46,6 +46,14 @@ from reckon.crew_follow_commands import _FOLLOWER_SOURCE_ROOT_ENV as SOURCE_ROOT
 # else in the fleet moved.
 SWEEP_BEAT_SECONDS = resumption.DEFAULT_SWEEP_SECONDS
 
+# How many sessions' sweeps run at once. Every sweep runs on the station's one
+# interpreter, so its CPU work is serialised by the interpreter lock whatever
+# the thread count, and each extra thread only takes a further share from the
+# tick that wakes sessions: with one thread per session, about eighteen sweeps
+# left the tick a few percent of the interpreter and a pass of over ten
+# minutes. Four keep a sweep's storage waits overlapped with another's work.
+SWEEP_CONCURRENCY = 4
+
 # The sweep's own record of who ran it. The station is not a follower and has
 # no session of its own, so it takes the shared slot a hand-run pass uses
 # rather than a follower's per-session entry.
@@ -303,6 +311,11 @@ class SweepBeat:
     It may outlast a tick, so the station hands it to its own thread. A session
     already sweeping keeps one pending request when its inputs change; otherwise
     a delivery during that sweep can be missed until some later tick.
+
+    At most ``concurrency`` sweeps run at once. A due sweep beyond the bound
+    waits in arrival order, keeping the newest moment it was asked for, and a
+    thread that finishes its session takes the next waiting one, so the thread
+    count never passes the bound.
     """
 
     def __init__(
@@ -311,8 +324,14 @@ class SweepBeat:
         sweep: Callable[..., Any] | None = None,
         start: Callable[[Callable[[], None]], None] | None = None,
         beat_seconds: float = SWEEP_BEAT_SECONDS,
+        concurrency: int | None = None,
     ) -> None:
         self.on_report: Callable[[str, str, Mapping[str, Any]], None] | None = None
+        self.concurrency = max(
+            1, SWEEP_CONCURRENCY if concurrency is None else int(concurrency)
+        )
+        self._running = 0
+        self._waiting: dict[tuple[str, str], datetime] = {}
         self.sweep = resumption.sweep if sweep is None else sweep
         self.beat_seconds = beat_seconds
         self._start = _start_thread if start is None else start
@@ -342,10 +361,23 @@ class SweepBeat:
                 # change arrived. Keep one follow-up pass for the newest tick.
                 self._pending[key] = moment
                 return False
+            if key in self._waiting:
+                # Already queued: the pass it waits for reads the newest tick.
+                self._waiting[key] = moment
+                return False
             self._last[key] = stamp
+            if self._running >= self.concurrency:
+                self._waiting[key] = moment
+                return True
             self._in_flight.add(key)
+            self._running += 1
         self._start(lambda: self._run(project, session, key, moment))
         return True
+
+    def waiting(self) -> list[tuple[str, str]]:
+        """The sessions whose due sweep waits for a free slot, oldest first."""
+        with self._lock:
+            return list(self._waiting)
 
     def _run(
         self, project: str, session: str, key: tuple[str, str], moment: datetime
@@ -378,8 +410,16 @@ class SweepBeat:
                 pending = self._pending.pop(key, None)
                 if pending is None:
                     self._in_flight.discard(key)
-                    return
-                moment = pending
+                    if not self._waiting:
+                        self._running -= 1
+                        return
+                    # This thread's slot passes to the oldest waiting session.
+                    key = next(iter(self._waiting))
+                    moment = self._waiting.pop(key)
+                    project, session = key
+                    self._in_flight.add(key)
+                else:
+                    moment = pending
                 self._last[key] = moment.timestamp()
 
 
