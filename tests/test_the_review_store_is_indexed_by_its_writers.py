@@ -247,7 +247,7 @@ def test_the_change_log_names_exactly_the_run_written(stored) -> None:
 
 def test_a_foreign_write_is_found_by_one_listing_of_names(stored) -> None:
     directory, run_ids, _home = stored
-    review_records.store_index_document(directory)
+    version = review_records.store_index_document(directory)["version"]
     foreign = directory / f"{run_ids[3]}.at-{'e' * 40}.json"
     foreign.write_text(json.dumps(_payload(run_ids[3], 77)), encoding="utf-8")
 
@@ -263,9 +263,8 @@ def test_a_foreign_write_is_found_by_one_listing_of_names(stored) -> None:
         for item in counted
         if item.startswith("stat:") and item != "stat:directory"
     ]
-    assert run_ids[3] in review_records.store_index_changed_runs(directory, 0) or (
-        foreign.name in review_records.store_index_document(directory)["entries"]
-    ), "the foreign record was not indexed"
+    assert review_records.store_index_changed_runs(directory, version) == {run_ids[3]}
+    assert foreign.name in review_records.store_index_document(directory)["entries"]
     assert len(listings) == 1, f"the foreign write cost {len(listings)} listings"
     assert record_stats == [], (
         "the foreign write re-stat'ed records the index already held: "
@@ -363,3 +362,66 @@ def test_the_stations_misfiled_and_stored_record_reads_cost_no_store_scan(
         "the read pass stat'ed records outside the run it selected: "
         f"{len(other_runs)} stats, first {other_runs[:4]}"
     )
+
+
+def test_reconciliation_reads_only_atomically_replaced_records(stored, monkeypatch):
+    directory, run_ids, _home = stored
+    run_id = run_ids[3]
+    before = review_records.store_index_document(directory)
+    version = before["version"]
+    path = directory / f"{run_id}.json"
+    original_inode = before["entries"][path.name]["inode"]
+    payload = _payload(run_id, 77)
+    payload["scores"]["goal_fidelity"] = 9
+    temporary = directory / "replacement.pending"
+    temporary.write_text(json.dumps(payload))
+    temporary.replace(path)
+    assert path.stat().st_ino != original_inode
+    reads = []
+    read_bytes = Path.read_bytes
+
+    def counting_read(candidate):
+        if candidate.parent == directory and candidate.suffix == ".json":
+            reads.append(candidate.name)
+        return read_bytes(candidate)
+
+    monkeypatch.setattr(Path, "read_bytes", counting_read)
+    counted, restore = _count_store_reads(directory)
+    try:
+        after = review_records.store_index_document(directory)
+    finally:
+        restore()
+
+    assert reads == [path.name]
+    assert after["entries"][path.name]["inode"] == path.stat().st_ino
+    assert after["runs"][run_id] != before["runs"][run_id]
+    assert review_records.store_index_changed_runs(directory, version) == {run_id}
+    assert [item for item in counted if item.startswith(("scandir", "glob"))] == [
+        "scandir"
+    ]
+    assert not [
+        item
+        for item in counted
+        if item.startswith("stat:") and item != "stat:directory"
+    ]
+    _, found = review_records.stored_record(PROJECT, run_id)
+    assert found["scores"]["goal_fidelity"] == 9
+
+
+def test_a_same_inode_external_rewrite_is_seen_at_rebuild():
+    directory = _store_directory()
+    path = directory / "misfiled.json"
+    first_run, second_run = "first-reviewed-run", "second-reviewed-run"
+    directory.mkdir(parents=True)
+    path.write_text(json.dumps(_payload(first_run, 1)))
+    assert review_records._store_index(directory)[first_run]
+    initial_inode = path.stat().st_ino
+    path.write_text(json.dumps(_payload(second_run, 2)))
+    assert path.stat().st_ino == initial_inode
+    assert not review_records._store_index(directory).get(second_run)
+
+    # A rebuild changes its generation even when the entry count stays equal.
+    review_records._index_document_path(directory).unlink()
+    rebuilt = review_records._store_index(directory)
+    assert not rebuilt.get(first_run)
+    assert [entry["path"] for entry in rebuilt[second_run]] == [path]

@@ -1248,7 +1248,7 @@ _STORE_INDEXES: dict[
 _DOCUMENT_MAPS: dict[
     Path,
     tuple[
-        int,
+        tuple[str, int],
         dict[str, list[dict[str, Any]]],
         dict[str, list[dict[str, Any]]],
     ],
@@ -1806,8 +1806,8 @@ def _revalidated_entries(entries: Iterable[dict[str, Any]]) -> list[dict[str, An
     for entry in entries:
         if entry.get("indexed"):
             # An entry the store's own index holds is already current: a write
-            # by a known writer advanced the version, and a write by any other
-            # moved the directory mtime the document is probed against.
+            # by a known writer advanced the version, and a foreign replacement
+            # moved the directory identity the document is probed against.
             refreshed.append(entry)
             continue
         path = entry["path"]
@@ -1887,13 +1887,13 @@ def _store_index(directory: Path) -> dict[str, list[dict[str, Any]]]:
 # This index replaces that freshness key with the writers themselves. One
 # document lives inside the store directory, beside the records and on the
 # shared home, so a writer on any node advances a version every node reads. Per
-# record it holds the SHA-256 of the bytes written; per run a digest over that
+# record it holds the inode and SHA-256 of the bytes written; per run a digest over that
 # run's (name, hash) pairs; per store a monotonic version, a bounded change log
-# of (version, run id) and the directory mtime as of the last indexed write.
+# of (version, run id) and the directory identity at the indexed write.
 #
 # A reader consults the version and the run digest. It never lists the store and
 # never stats a record: an unchanged run costs one comparison. A record written
-# outside the writer path is found by listing names only -- never by stat-ing
+# outside the writer path is found by listing names and inodes -- never by stat-ing
 # the records the index already holds -- and a missing or foreign-stamped
 # document is rebuilt from one listing and one hash of each record.
 
@@ -2038,26 +2038,25 @@ def _entry_facts(name: str, record: Mapping[str, Any], data: bytes) -> dict[str,
 
 
 def _entries_from_listing(directory: Path) -> dict[str, Any]:
-    """Build every entry from one listing of names and one read of each record."""
+    """Build entries from directory-entry inodes and one read of each record."""
     entries: dict[str, Any] = {}
     try:
         with os.scandir(directory) as scanned:
             names = sorted(
-                entry.name
+                (entry.name, entry.inode())
                 for entry in scanned
                 if entry.name.endswith(".json") and not entry.name.startswith(".")
             )
     except OSError:
         return entries
-    for name in names:
+    for name, inode in names:
         if _review._INCOMPLETE_RECORD_MARK in name:
             continue
         path = directory / name
         try:
             data = path.read_bytes()
         except OSError:
-            entries[name] = _entry_facts(name, {}, b"")
-            continue
+            data = b""
         try:
             record = json.loads(data)
         except ValueError:
@@ -2065,6 +2064,7 @@ def _entries_from_listing(directory: Path) -> dict[str, Any]:
         if not isinstance(record, Mapping):
             record = {}
         entries[name] = _entry_facts(name, record, data)
+        entries[name]["inode"] = inode
     return entries
 
 
@@ -2077,7 +2077,7 @@ def _directory_mtime_ns(directory: Path) -> int | None:
 
 def _rebuild_index_document(directory: Path) -> dict[str, Any]:
     """Rebuild the whole document from one listing of the store."""
-    mtime = _directory_mtime_ns(directory)
+    identity = _store_directory_identity(directory)
     entries = _entries_from_listing(directory)
     runs = {run: _run_digest(entries, run) for run in _runs_of(entries)}
     for index, name in enumerate(sorted(entries), start=1):
@@ -2086,6 +2086,7 @@ def _rebuild_index_document(directory: Path) -> dict[str, Any]:
         "code_stamp": _index_code_stamp(),
         "store": _resolved(directory),
         "version": len(entries),
+        "generation": _sha256_hex(json.dumps(entries, sort_keys=True).encode()),
         "log": [
             [index, entry["reviewed_run_id"]]
             for index, entry in enumerate(
@@ -2094,7 +2095,8 @@ def _rebuild_index_document(directory: Path) -> dict[str, Any]:
         ],
         "entries": entries,
         "runs": runs,
-        "dir_mtime_ns": mtime,
+        "directory_identity": identity,
+        "dir_mtime_ns": identity[3] if identity is not None else None,
     }
 
 
@@ -2108,10 +2110,13 @@ def _index_stored_record(path: Path, record: Mapping[str, Any]) -> None:
     if not _indexable(directory):
         return
     try:
-        data = path.read_bytes()
+        with path.open("rb") as handle:
+            data = handle.read()
+            inode = os.fstat(handle.fileno()).st_ino
     except OSError:
         return
     entry = _entry_facts(path.name, record, data)
+    entry["inode"] = inode
     with _index_lock(directory):
         doc = _read_index_document(directory)
         if doc is None:
@@ -2119,16 +2124,21 @@ def _index_stored_record(path: Path, record: Mapping[str, Any]) -> None:
         version = int(doc.get("version") or 0) + 1
         doc["version"] = version
         entries = doc.setdefault("entries", {})
+        previous = entries.get(path.name)
+        touched = {entry["reviewed_run_id"]}
+        if previous is not None:
+            touched.add(str(previous.get("reviewed_run_id") or ""))
         entry["entry_version"] = version
         entries[path.name] = entry
         runs = doc.setdefault("runs", {})
-        runs[str(entry["reviewed_run_id"])] = _run_digest(
-            entries, entry["reviewed_run_id"]
-        )
         log = doc.setdefault("log", [])
-        log.append([version, entry["reviewed_run_id"]])
+        for run_id in sorted(touched):
+            runs[run_id] = _run_digest(entries, run_id)
+            log.append([version, run_id])
         del log[:-_INDEX_LOG_LIMIT]
-        doc["dir_mtime_ns"] = _directory_mtime_ns(directory)
+        identity = _store_directory_identity(directory)
+        doc["directory_identity"] = identity
+        doc["dir_mtime_ns"] = identity[3] if identity is not None else None
         _persist_index_document(directory, doc)
 
 
@@ -2157,29 +2167,30 @@ def record_written(path: Path, record: Mapping[str, Any]) -> None:
 
 
 def reconcile_foreign_write(directory: Path) -> int:
-    """Pick up records written outside the writer path, listing names only.
+    """Pick up added, removed or atomically replaced records without file stats.
 
     A writer that bypassed :func:`record_written` moved the directory's mtime
     without moving the index, so the two disagree and the store must be looked
-    at. The look is one listing of names: a name the index lacks is hashed and
-    entered, a name the listing no longer holds is dropped, and every record the
-    index already knows is left alone -- never stat'ed, never read.
+    at. Directory entries supply their inodes without stat-ing the files.
+    Only added or replaced names are read; removed names are dropped. An
+    external rewrite retaining its inode becomes visible at the next rebuild.
     """
     doc = _read_index_document(directory)
     if doc is None:
         return 0
-    mtime = _directory_mtime_ns(directory)
-    if mtime is None or mtime == doc.get("dir_mtime_ns"):
+    identity = _store_directory_identity(directory)
+    if identity is None or identity == tuple(doc.get("directory_identity") or ()):
         return 0
     changed = 0
     with _index_lock(directory):
         doc = _read_index_document(directory) or doc
-        if mtime == doc.get("dir_mtime_ns"):
+        identity = _store_directory_identity(directory)
+        if identity is None or identity == tuple(doc.get("directory_identity") or ()):
             return 0
         try:
             with os.scandir(directory) as scanned:
                 present = {
-                    entry.name
+                    entry.name: entry.inode()
                     for entry in scanned
                     if entry.name.endswith(".json") and not entry.name.startswith(".")
                 }
@@ -2189,7 +2200,12 @@ def reconcile_foreign_write(directory: Path) -> int:
         runs = doc.setdefault("runs", {})
         log = doc.setdefault("log", [])
         touched: set[str] = set()
-        for name in sorted(present - set(entries)):
+        moved = {
+            name
+            for name, inode in present.items()
+            if name not in entries or entries[name].get("inode") != inode
+        }
+        for name in sorted(moved):
             if _review._INCOMPLETE_RECORD_MARK in name:
                 continue
             path = directory / name
@@ -2204,13 +2220,20 @@ def reconcile_foreign_write(directory: Path) -> int:
             if not isinstance(record, Mapping):
                 record = {}
             entry = _entry_facts(name, record, data)
+            entry["inode"] = present[name]
+            previous = entries.get(name)
             doc["version"] = int(doc.get("version") or 0) + 1
             entry["entry_version"] = doc["version"]
             entries[name] = entry
             log.append([doc["version"], entry["reviewed_run_id"]])
             touched.add(entry["reviewed_run_id"])
+            if previous is not None:
+                previous_run = str(previous.get("reviewed_run_id") or "")
+                if previous_run != entry["reviewed_run_id"]:
+                    log.append([doc["version"], previous_run])
+                    touched.add(previous_run)
             changed += 1
-        for name in sorted(set(entries) - present):
+        for name in sorted(set(entries) - present.keys()):
             gone = entries.pop(name)
             run_id = str(gone.get("reviewed_run_id") or "")
             doc["version"] = int(doc.get("version") or 0) + 1
@@ -2220,7 +2243,8 @@ def reconcile_foreign_write(directory: Path) -> int:
         for run_id in touched:
             runs[run_id] = _run_digest(entries, run_id)
         del log[:-_INDEX_LOG_LIMIT]
-        doc["dir_mtime_ns"] = mtime
+        doc["directory_identity"] = identity
+        doc["dir_mtime_ns"] = identity[3]
         _persist_index_document(directory, doc)
     return changed
 
@@ -2228,10 +2252,10 @@ def reconcile_foreign_write(directory: Path) -> int:
 def store_index_document(directory: Path) -> dict[str, Any] | None:
     """The store's index document, as current as its writers have left it.
 
-    The document is probed against the store directory's mtime, which is the one
-    stat a writer-maintained index costs: a known writer records the mtime its
+    The document is probed against the store directory's identity, which is the
+    one stat a writer-maintained index costs: a known writer records the identity its
     own write left, so its write settles the probe and no listing follows. Only
-    a write the index did not make moves the mtime away from the recorded one,
+    a write the index did not make moves the identity away from the recorded one,
     and that is answered by :func:`reconcile_foreign_write`, which lists names.
     A missing or unusable document is rebuilt from one listing.
     """
@@ -2250,15 +2274,15 @@ def _settled_index_document(directory: Path) -> dict[str, Any] | None:
     """Read the document and bring it up to date with the store it describes."""
     document = _read_index_document(directory)
     if document is not None:
-        mtime = _directory_mtime_ns(directory)
-        if mtime is not None and mtime == document.get("dir_mtime_ns"):
+        # Several directory writes can share one filesystem clock tick. Size
+        # and ctime are part of the same stat and keep a new name observable.
+        identity = _store_directory_identity(directory)
+        if identity is not None and identity == tuple(
+            document.get("directory_identity") or ()
+        ):
             return document
-        if reconcile_foreign_write(directory):
-            refreshed = _read_index_document(directory)
-            if refreshed is not None:
-                return refreshed
-        document["dir_mtime_ns"] = mtime
-        return document
+        reconcile_foreign_write(directory)
+        return _read_index_document(directory) or document
     try:
         if not directory.is_dir():
             return None
@@ -2299,21 +2323,21 @@ def _document_index_maps(
     directory: Path, document: Mapping[str, Any]
 ) -> tuple[dict[str, list[dict[str, Any]]], dict[str, list[dict[str, Any]]]]:
     """Build the two run maps from the document, reusing them until it moves."""
-    version = int(document.get("version") or 0)
+    key = (str(document.get("generation") or ""), int(document.get("version") or 0))
     tick_indexes = _TICK_REVIEW_INDEXES.get()
     if tick_indexes is not None:
         held = tick_indexes.get(directory)
-        if isinstance(held, tuple) and len(held) == 3 and held[0] == version:
+        if isinstance(held, tuple) and len(held) == 3 and held[0] == key:
             return held[1], held[2]
     else:
         held = _DOCUMENT_MAPS.get(directory)
-        if held is not None and held[0] == version:
+        if held is not None and held[0] == key:
             return held[1], held[2]
     reviewed, review_runs = _index_maps(_document_entries(directory, document))
     if tick_indexes is not None:
-        tick_indexes[directory] = (version, reviewed, review_runs)
+        tick_indexes[directory] = (key, reviewed, review_runs)
     else:
-        _DOCUMENT_MAPS[directory] = (version, reviewed, review_runs)
+        _DOCUMENT_MAPS[directory] = (key, reviewed, review_runs)
     return reviewed, review_runs
 
 
@@ -2393,7 +2417,7 @@ class _IndexedStat:
     def __init__(self, entry: Mapping[str, Any]) -> None:
         self.st_mode = stat.S_IFREG | 0o644
         self.st_dev = 0
-        self.st_ino = 0
+        self.st_ino = int(entry.get("inode") or 0)
         self.st_size = int(entry.get("size") or 0)
         # Write order, in the field the store's selection orders by.
         self.st_mtime_ns = int(entry.get("entry_version") or 0)

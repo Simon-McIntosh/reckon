@@ -165,7 +165,7 @@ def test_a_cold_reader_of_an_undisturbed_store_stats_nothing_per_record(
 
     counts = {"records": 0, "directories": 0}
     record_stat = records_module._record_stat
-    directory_identity = records_module._directory_mtime_ns
+    directory_identity = records_module._store_directory_identity
 
     def counting_record_stat(path: Path) -> Any:
         counts["records"] += 1
@@ -177,7 +177,7 @@ def test_a_cold_reader_of_an_undisturbed_store_stats_nothing_per_record(
 
     monkeypatch.setattr(records_module, "_record_stat", counting_record_stat)
     monkeypatch.setattr(
-        records_module, "_directory_mtime_ns", counting_directory_identity
+        records_module, "_store_directory_identity", counting_directory_identity
     )
 
     entries = records_module._store_index(store).get("r-stored-00003")

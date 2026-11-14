@@ -146,14 +146,11 @@ def _plant_truncated_record(fleet: dict[str, Path]) -> Path:
     head = _write_pointer(fleet, RUN_ID)
     _store_valid_review(RUN_ID, head)
     truncated = review_module.review_path(PROJECT, RUN_ID)
-    before = truncated.parent.stat()
     truncated.write_text(
         f'{{"project": "{PROJECT}", "reviewed_run_id": "{RUN_ID}", '
         '"scores": {"goal_fidelity": 19, "evid',
         encoding="utf-8",
     )
-    # Give the foreign write a distinct directory clock tick.
-    os.utime(truncated.parent, ns=(before.st_atime_ns, before.st_mtime_ns + 1_000_000))
     assert truncated.is_file()
     return truncated
 
@@ -267,9 +264,7 @@ def test_a_read_outside_a_sweep_leaves_the_next_sweep_free(
         "the read must answer from the valid record beside the truncated one"
     )
 
-    before = truncated.parent.stat()
     truncated.unlink()
-    os.utime(truncated.parent, ns=(before.st_atime_ns, before.st_mtime_ns + 1_000_000))
     assert _sweep(fleet), "the next sweep publishes"
     assert _findings_in(fleet) == [], (
         "a read outside a sweep must not reach a later sweep's findings"

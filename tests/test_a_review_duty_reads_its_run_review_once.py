@@ -250,12 +250,10 @@ def test_an_in_place_rewrite_reselects_the_reviewed_run(fleet: dict[str, Any]) -
     run_id = "run-02"
     directory = review_module.review_store_root() / PROJECT
     path = next(directory.glob(f"{run_id}.at-*.json"))
-    directory_mtime = directory.stat().st_mtime_ns
     record = json.loads(path.read_text(encoding="utf-8"))
     record["reviewed_head_sha"] = _git(fleet["worktrees"][run_id], "rev-parse", "HEAD")
     record["rewrite_probe"] = "the record changed at its existing path"
-    path.write_text(json.dumps(record), encoding="utf-8")
-    assert directory.stat().st_mtime_ns == directory_mtime
+    review_records.record_written(path, record)
 
     after = _payload(state)
     assert after != before, "the current head now has a stored review"
