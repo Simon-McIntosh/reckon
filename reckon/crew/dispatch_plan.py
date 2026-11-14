@@ -1652,9 +1652,39 @@ def _dispatch_lane_allowance(
         return _lane_allowance_unknown(
             f"lane document {str(path)!r} is not a JSON object"
         )
-    return _lane_worker_allowance(
+    decision = _lane_worker_allowance(
         payload, session=session, weights_configured=weights_configured
     )
+    return _advisory_unless_paused(decision, backend)
+
+
+def _advisory_unless_paused(
+    decision: dict[str, Any], backend: Mapping[str, Any]
+) -> dict[str, Any]:
+    """Release a lane hold the backend declares advisory, except a pause.
+
+    A backend whose ``lane_allowance`` is ``advisory`` sends every request past
+    the router's width to wait in the router's own queue, where the gate keeps
+    it off the engine. Holding the dispatch as well would keep that queue
+    shallow, so the lane drains as soon as its coordinators stop feeding it.
+    The figures stay on the decision for every reader. A paused gate admits
+    nothing in either mode, so a pause still holds.
+    """
+    if str(backend.get("lane_allowance") or "").strip() != "advisory":
+        return decision
+    if not decision.get("held") or str(decision.get("verdict") or "") == "paused":
+        return decision
+    reason = (
+        f"{decision.get('reason')}; the backend's lane allowance is advisory, "
+        "so the request waits in the router's queue rather than here"
+    )
+    return {
+        **decision,
+        "held": False,
+        "state": "advisory",
+        "reason": reason,
+        "detail": reason,
+    }
 
 
 def _carry_declared_gate_documents(

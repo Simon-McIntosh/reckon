@@ -463,6 +463,16 @@ slots:
       over the network.
     range: string
 
+  lane_allowance:
+    description: >-
+      How a dispatch treats the worker allowance its lane document publishes:
+      `binding` (the default) holds a dispatch while the router grants no extra
+      workers, and `advisory` records the figure but never holds on it, so
+      every request past the router's width waits in the router's own queue
+      rather than in the dispatcher's. A paused gate still holds in both modes.
+      User data; set per backend in the host layer.
+    range: string
+
   gate_document:
     description: >-
       Optional absolute path to the JSON gate file that decides whether a
@@ -1352,6 +1362,7 @@ classes:
       - catalog
       - endpoints_document
       - lane_document
+      - lane_allowance
       - gate_document
       - environment
       - model
