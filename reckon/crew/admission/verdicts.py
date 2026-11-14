@@ -14,6 +14,7 @@ from .shared import (
     READINESS_REF_PREFIX,
     STALL_AFTER_SECONDS,
     STALL_VERDICT,
+    TERMINAL_VERDICTS,
     WAITING_UPSTREAM_PHASES,
     Any,
     Callable,
@@ -176,7 +177,11 @@ def _record_stalls(
         if str(pointer.get("phase") or "") in NOT_ADMISSIBLE_PHASES:
             continue
         last_verdict = _last_verdict_of(run_id)
-        if last_verdict == STALL_VERDICT or last_verdict in HOLD_VERDICTS:
+        if (
+            last_verdict == STALL_VERDICT
+            or last_verdict in HOLD_VERDICTS
+            or last_verdict in TERMINAL_VERDICTS
+        ):
             continue
         queued_at = parse_utc(pointer.get("queued_at"))
         if queued_at is None:

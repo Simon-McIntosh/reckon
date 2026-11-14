@@ -15,6 +15,7 @@ from .shared import (
     HOLD_VERDICTS,
     LAUNCH_FAILED_PHASE,
     QUEUED_PHASE,
+    TERMINAL_VERDICTS,
     Any,
     BudgetHold,
     Callable,
@@ -752,7 +753,7 @@ def admit_once(
         held_this_pass = {
             str(row.get("run_id") or "")
             for row in result["verdicts"]
-            if str(row.get("verdict") or "") in HOLD_VERDICTS
+            if str(row.get("verdict") or "") in HOLD_VERDICTS | TERMINAL_VERDICTS
         }
         held_this_pass.update(result.get("restore_failure_detail", {}))
         result["stalls"] = _verdicts._record_stalls(

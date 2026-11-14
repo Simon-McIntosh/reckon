@@ -14,7 +14,7 @@ import json
 import os
 import subprocess
 from collections.abc import Callable
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 import pytest
@@ -232,6 +232,40 @@ def _delivered_manifest(run_id: str) -> Path:
     return manifest
 
 
+def _backdate_queued(run_id: str, seconds: float) -> None:
+    """Age a queued request past the stall threshold, as a slow pass sees it."""
+    path = runs.pointer_path(run_id)
+    record = json.loads(path.read_text(encoding="utf-8"))
+    record["queued_at"] = (datetime.now(UTC) - timedelta(seconds=seconds)).isoformat()
+    runs._write_json(path, record)
+
+
+def _stall_rows_in_log(run_id: str) -> int:
+    """How many stall rows the verdict log records for this request in total."""
+    path = runs.crew_home() / queue_admission.ADMISSION_VERDICT_LOG
+    try:
+        lines = path.read_text(encoding="utf-8").splitlines()
+    except OSError:
+        return 0
+    count = 0
+    for line in lines:
+        try:
+            record = json.loads(line)
+        except ValueError:
+            continue
+        for row in record.get("pointers") or ():
+            if (
+                str(row.get("run_id") or "") == run_id
+                and str(row.get("verdict") or "") == "stalled"
+            ):
+                count += 1
+    return count
+
+
+def _rows(result: dict, run_id: str) -> list[dict]:
+    return [row for row in result["verdicts"] if row.get("run_id") == run_id]
+
+
 def _verdict(result: dict, run_id: str) -> dict:
     for row in result["verdicts"]:
         if row.get("run_id") == run_id:
@@ -309,3 +343,42 @@ def test_an_unchanged_queued_request_is_launched(
     assert len(recorded) == 1
     assert result["launched"] == [RUN_ID]
     assert _verdict(result, RUN_ID)["verdict"] == "launched"
+
+
+def test_a_refused_request_records_one_verdict_that_does_not_become_a_stall(
+    crew_checkout: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A refusal is the pass's verdict for that request, not a wait it repeats.
+
+    The request has waited past the stall threshold on a lane with room, so a
+    pass that did not recognise the refusal would record a stall beside it in
+    the same pass, and read that refusal on the next pass as a request still
+    waiting and append another. Its stall count would then grow with every pass
+    while nothing about it changed.
+    """
+    _, resolve = _config_for()
+    runs.queue_dispatch(_queued_request(crew_checkout, run_id=RUN_ID))
+    _backdate_queued(RUN_ID, 1200.0)
+    _delivered_manifest(RUN_ID)
+    _after_the_pass_reads_the_queue(monkeypatch, lambda: None)
+
+    first = queue_admission.admit_once(config_for=resolve, launcher=_launcher([]))
+    first_rows = [row["verdict"] for row in _rows(first, RUN_ID)]
+    queue_admission._record_pass_verdicts(first, lane="local", code_stamp="test")
+    stalls_after_first = _stall_rows_in_log(RUN_ID)
+
+    second = queue_admission.admit_once(config_for=resolve, launcher=_launcher([]))
+    second_rows = [row["verdict"] for row in _rows(second, RUN_ID)]
+    queue_admission._record_pass_verdicts(second, lane="local", code_stamp="test")
+    stalls_after_second = _stall_rows_in_log(RUN_ID)
+
+    assert (first_rows, second_rows, stalls_after_first, stalls_after_second) == (
+        ["refused-before-launch"],
+        ["refused-before-launch"],
+        0,
+        0,
+    ), (
+        "one refusal per pass and never a stall row beside it: "
+        f"{first_rows} then {second_rows}, "
+        f"stall rows recorded {stalls_after_first} then {stalls_after_second}"
+    )
