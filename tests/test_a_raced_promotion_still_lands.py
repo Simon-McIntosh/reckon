@@ -178,6 +178,29 @@ def _a_resume_started_the_run(monkeypatch: pytest.MonkeyPatch, pointer: dict) ->
     return newer
 
 
+def _the_station_requests_the_promotion(
+    monkeypatch: pytest.MonkeyPatch, pointer: dict
+) -> dict:
+    """Rewrite the live pointer to promotion-requested as the promotion commits.
+
+    The station marks a run for promotion while a promotion may already be
+    running, so the pointer identity has to carry the attempt rather than the
+    phase the station rewrote.
+    """
+    requested = dict(pointer)
+    requested["phase"] = promotion_requests.REQUESTED
+    requested["promotion_status"] = promotion_requests.REQUESTED
+    real_commit = promotion._commit_landing_writes
+
+    def commit_then_request(*args: Any, **kwargs: Any) -> Any:
+        written = real_commit(*args, **kwargs)
+        _write_json(pointer_path(RUN_ID), requested)
+        return written
+
+    monkeypatch.setattr(promotion, "_commit_landing_writes", commit_then_request)
+    return requested
+
+
 def test_the_losing_promotion_returns_and_lands_the_head(
     raced_run: dict[str, Any], monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -197,10 +220,8 @@ def test_the_losing_promotion_returns_and_lands_the_head(
         "the case must start with the reviewed head off the branch"
     )
 
-    stranded = dict(delivered)
-    stranded["phase"] = promotion_requests.REQUESTED
-    stranded["promotion_status"] = promotion_requests.REQUESTED
-    _write_json(pointer_path(run["run_id"]), stranded)
+    _write_json(pointer_path(run["run_id"]), delivered)
+    _the_station_requests_the_promotion(monkeypatch, delivered)
 
     second = _complete_land(run)
     assert second.exit_code == 0, second.output
