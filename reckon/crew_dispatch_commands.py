@@ -1107,6 +1107,7 @@ def _queue_dispatch_batch(
     pretty: bool,
 ) -> None:
     """Queue a batch file's entries as one call, naming a row for each."""
+    from reckon import ledger
     from reckon.crew.dispatch_batch import queue_batch, read_batch_entries
     from reckon.crew.node import CrewError
 
@@ -1128,13 +1129,18 @@ def _queue_dispatch_batch(
                 raise CrewError(str(exc)) from exc
         return configs[project_name]
 
-    result = queue_batch(
-        entries,
-        session=str(session or ""),
-        config_for=config_for,
-        repo_root=root,
-        launch_kind=launch_kind,
-    )
+    # Every entry reads the same project's ledger, and queuing writes no ledger
+    # row, so the index decoded for the first entry answers the rest. Without
+    # the region the index is rebuilt and decoded once per entry, which is the
+    # dominant cost of a batch on a large history.
+    with ledger.index_reuse():
+        result = queue_batch(
+            entries,
+            session=str(session or ""),
+            config_for=config_for,
+            repo_root=root,
+            launch_kind=launch_kind,
+        )
     _emit_crew_result(result, pretty)
 
 

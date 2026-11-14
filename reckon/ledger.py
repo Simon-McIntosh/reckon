@@ -1672,6 +1672,30 @@ def _active_records(records: Iterable[Any], boundary: float) -> list[dict[str, A
     ]
 
 
+def _payload_slot(
+    connection: sqlite3.Connection,
+    *,
+    headers_only: bool,
+    activity_since: float | None,
+) -> tuple[
+    dict[tuple[str, bool, float | None], tuple[dict[str, Any], int]] | None,
+    tuple[str, bool, float | None] | None,
+    tuple[dict[str, Any], int] | None,
+]:
+    """The read pass's slot for this read, and what it already holds.
+
+    One owner for the key, so the refreshing read and the read-pass reader
+    cannot disagree about what counts as the same payload. Outside a region
+    there is no slot and every read decodes the index for itself.
+    """
+    region = _PAYLOAD_REGION.get()
+    if region is None:
+        return None, None, None
+    database = connection.execute("PRAGMA database_list").fetchone()[2]
+    key = (str(database), bool(headers_only), activity_since)
+    return region, key, region.get(key)
+
+
 def _index_payload(
     connection: sqlite3.Connection,
     meta: Mapping[str, str],
@@ -1684,6 +1708,13 @@ def _index_payload(
 
     Shared by the refreshing read and the last-good read, so a mtime-moved
     index is decoded by exactly the same rules as a freshly refreshed one.
+
+    Inside :func:`index_reuse` the decode is held in the read pass: a reader
+    asking for the picker projection is answered from a payload an earlier
+    reader already decoded, so one batch that reads history through the picker
+    and again in full pays for a single decode rather than one per projection.
+    The full payload carries every field the picker keeps, so the projection is
+    derived from it with :func:`picker_record` rather than read again.
     """
     data = json.loads(meta["header"])
     if not isinstance(data, dict) or not all(
@@ -1694,7 +1725,12 @@ def _index_payload(
     if headers_only and activity_since is None:
         data["runs"] = [{"run_id": run_id} for run_id in _index_membership(connection)]
         return data, version
-    column = "picker" if picker_only else "payload"
+    region, key, held = _payload_slot(
+        connection, headers_only=headers_only, activity_since=activity_since
+    )
+    if held is not None:
+        return _project_payload(held, picker_only=picker_only)
+    column = "payload" if region is not None or not picker_only else "picker"
     # Select by an indexed scalar before fetching payload overflow pages.
     parameters = () if activity_since is None else (activity_since,)
     aggregate_filter = "" if activity_since is None else " WHERE activity >= ?"
@@ -1731,7 +1767,58 @@ def _index_payload(
         data["runs"].sort(key=promotion_order_key)
     if headers_only:
         data["runs"] = [{"run_id": row["run_id"]} for row in data["runs"]]
+    if region is not None and key is not None:
+        region[key] = (data, version)
+        if picker_only:
+            return _project_payload((data, version), picker_only=True)
     return data, version
+
+
+def _decode_payload(
+    connection: sqlite3.Connection,
+    meta: Mapping[str, str],
+    *,
+    headers_only: bool,
+    picker_only: bool,
+    activity_since: float | None = None,
+) -> tuple[dict[str, Any], int]:
+    """Decode an index payload once per read pass, however it is projected.
+
+    A read pass that asks for the same index twice — once through the picker
+    projection and once in full — is answered by one decode. A held full
+    payload already carries every field the picker keeps, so the projection is
+    derived from it instead of decoding the index again.
+    """
+    _, _, held = _payload_slot(
+        connection, headers_only=headers_only, activity_since=activity_since
+    )
+    if held is not None:
+        return _project_payload(held, picker_only=picker_only)
+    return _index_payload(
+        connection,
+        meta,
+        headers_only=headers_only,
+        picker_only=picker_only,
+        **({"activity_since": activity_since} if activity_since is not None else {}),
+    )
+
+
+def _project_payload(
+    held: tuple[dict[str, Any], int], *, picker_only: bool
+) -> tuple[dict[str, Any], int]:
+    """Answer one read from a payload another read in the region decoded.
+
+    A full decode answers both projections: the picker keeps a subset of the
+    fields a full row carries, so the projection is derived rather than read
+    from the index again. The projected result is rebuilt here rather than
+    mutating the held payload, because the same decode answers later readers.
+    """
+    data, version = held
+    if not picker_only:
+        return data, version
+    projected = {name: value for name, value in data.items() if name != "runs"}
+    projected["runs"] = [picker_record(row) for row in data["runs"]]
+    return projected, version
 
 
 def _indexed_damaged_paths(
@@ -1796,7 +1883,10 @@ def _last_good_index_data(
     except (sqlite3.Error, OSError, ValueError, KeyError, TypeError):
         return None
     _report_damaged_run_records(project, damaged)
-    return data, version, max(0.0, time.time() - refreshed_at)
+    # Copied before the caller stamps its age on the result: inside a reuse
+    # region the payload is shared with every other reader of the pass, and a
+    # key one caller adds must not reach the next.
+    return dict(data), version, max(0.0, time.time() - refreshed_at)
 
 
 # A derivation reads the ledger from several of its steps, and each read rebuilt
@@ -1812,6 +1902,13 @@ _INDEX_REGION: ContextVar[
     | None
 ] = ContextVar("ledger_index_region", default=None)
 
+#: One read pass's decoded payloads, keyed by the index database, the header
+#: projection and the activity bound. The picker projection is not in the key:
+#: it is a subset of a full payload, so one full decode answers both.
+_PAYLOAD_REGION: ContextVar[
+    dict[tuple[str, bool, float | None], tuple[dict[str, Any], int]] | None
+] = ContextVar("ledger_payload_region", default=None)
+
 
 @contextlib.contextmanager
 def index_reuse() -> Iterable[
@@ -1825,6 +1922,11 @@ def index_reuse() -> Iterable[
     A nested region joins the cache already open rather than starting a fresh
     one, so a read made while slicing a session's payload is served the index
     the derivation built.
+
+    The pass also shares the pass's decoded payload, so a batch that reads
+    history through the picker projection and again in full decodes the index
+    once rather than once per projection. The payload cache is dropped with the
+    region, so a read afterwards sees the index as it then stands.
     """
     active = _INDEX_REGION.get()
     if active is not None:
@@ -1834,9 +1936,11 @@ def index_reuse() -> Iterable[
         tuple[str, str, bool, bool, float | None], tuple[dict[str, Any], int]
     ] = {}
     token = _INDEX_REGION.set(cache)
+    payload_token = _PAYLOAD_REGION.set({})
     try:
         yield cache
     finally:
+        _PAYLOAD_REGION.reset(payload_token)
         _INDEX_REGION.reset(token)
 
 
@@ -2048,7 +2152,7 @@ def _indexed_data(
                         "INSERT OR REPLACE INTO metadata VALUES (?, ?)",
                         (member, value),
                     )
-            result = _index_payload(
+            result = _decode_payload(
                 connection,
                 meta,
                 headers_only=headers_only,
