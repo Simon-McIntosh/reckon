@@ -269,15 +269,8 @@ class _PlanReviewRecord:
         self.refusals = refusals
         from reckon.crew import plan_review
 
-        self.design = max(
-            (
-                record
-                for record in all_records
-                if record.get("plan_slug") == plan_slug
-                and plan_review.is_design_review(record)
-            ),
-            key=lambda record: int(record.get("plan_version") or 0),
-            default=None,
+        self.design = plan_review.newest_design_review(
+            project, plan_slug, records=all_records
         )
         self.gate: dict[tuple[str, bool], str | None] = {}
         self._document_is_contract: bool | None = None

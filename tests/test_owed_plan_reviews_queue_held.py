@@ -73,6 +73,56 @@ def _queue(repo):
     )
 
 
+def test_admission_uses_the_design_review_owner(two_section_plan, monkeypatch):
+    from reckon.crew.admission import reviews
+
+    _, _, path = two_section_plan
+    _reviewed(path)
+    select = plan_review.newest_design_review
+    cached_reads = []
+
+    def shared_selector(project, plan_slug, **kwargs):
+        if kwargs.get("records") is not None:
+            cached_reads.append(kwargs["records"])
+        return select(project, plan_slug, **kwargs)
+
+    monkeypatch.setattr(plan_review, "newest_design_review", shared_selector)
+    evidence = reviews._build_plan_review_record(
+        path, project="sample", plan_slug="fixture"
+    )
+
+    assert len(cached_reads) == 1, "admission must use the shared design selector"
+    assert cached_reads[0] is evidence.all_records
+    assert evidence.design["review_run_id"] == "review-design"
+
+
+def test_design_review_owner_accepts_cached_project_records(monkeypatch):
+    earlier = {
+        "plan_slug": "fixture",
+        "rubric": "plan_design_review",
+        "plan_version": "2",
+    }
+    newest = {"plan_slug": "fixture", "rubric": "design", "plan_version": "10"}
+    content = {"plan_slug": "fixture", "rubric": "content", "plan_version": "999"}
+    other = {"plan_slug": "another", "rubric": "design", "plan_version": "1000"}
+    store_reads = []
+
+    def stored(project, plan_slug, **kwargs):
+        store_reads.append((project, plan_slug))
+        return [earlier, newest, content]
+
+    monkeypatch.setattr(plan_review, "list_plan_reviews", stored)
+    assert plan_review.newest_design_review("sample", "fixture") is newest
+    assert (
+        plan_review.newest_design_review(
+            "sample", "fixture", records=iter([earlier, content, other, newest])
+        )
+        is newest
+    )
+    assert plan_review.newest_design_review("sample", "fixture", records=[]) is None
+    assert store_reads == [("sample", "fixture")]
+
+
 @pytest.fixture
 def review_launcher(two_section_plan, monkeypatch):
     """Persist review pointers without starting a worker or touching live state."""

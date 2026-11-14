@@ -1816,7 +1816,8 @@ def newest_design_review(
     plan_slug: str,
     *,
     base_dir: str | Path | None = None,
-) -> dict[str, Any] | None:
+    records: Iterable[Mapping[str, Any]] | None = None,
+) -> Mapping[str, Any] | None:
     """The newest stored design review of a plan at any version, or None.
 
     A plan carries one prior-art and depth review before its first
@@ -1824,14 +1825,19 @@ def newest_design_review(
     is a revision of a design already searched against the codebase, which the
     content review that covers it reads. So any version counts here, while
     coverage of the content about to be built is judged separately.
+
+    ``records`` supplies reviews already read for this project. The selector
+    narrows them to this plan without reading the store again; an explicit
+    empty iterable selects nothing.
     """
-    records = [
-        record
-        for record in list_plan_reviews(project, plan_slug, base_dir=base_dir)
-        if is_design_review(record)
-    ]
+    if records is None:
+        records = list_plan_reviews(project, plan_slug, base_dir=base_dir)
+    else:
+        records = (record for record in records if record.get("plan_slug") == plan_slug)
     return max(
-        records, key=lambda record: int(record.get("plan_version") or 0), default=None
+        (record for record in records if is_design_review(record)),
+        key=lambda record: int(record.get("plan_version") or 0),
+        default=None,
     )
 
 
