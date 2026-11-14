@@ -24,7 +24,7 @@
   <title>Work Flows To The Lane | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="222">
+<meta name="plan-version" content="223">
 <meta name="plan-modified" content="2026-11-14">
 </head>
 <body>
@@ -570,6 +570,9 @@
 </div>
 <div class="r-comment" data-section="s22" data-id="c-s22-rescope" data-who="reckon-build" data-when="2026-11-13T08:55:00Z">
     <div class="r-comment-body"><p>The first attempt, <code>r-20261113T004159988510-node-needs-no-write-paths</code>, was discarded on 13 November. Its head, <code>6d78a3a75a</code>, eight commits in a worktree kept because it is the only copy, made a node with no write paths fenced, claimed and armed from its diff, but added 322 importer failures, 100 of them in <code>tests/test_crew.py</code>, because it changed how every dispatch with declared paths behaves. Since then §33 has landed, retiring claims on every path git can merge. That removes most of what made declared write paths a cost. Re-scope this section against the post-§33 code before dispatching it again: keep the diff-derived arming and fencing for a node that declares no paths, and leave a node that declares paths exactly as it is now.</p></div>
+</div>
+<div class="r-comment" data-section="s22" data-id="c-run-r-20261114T094504765564-review-of-a-node-needs-no-write-paths-605eb2475a47" data-who="reckon-build" data-when="2026-11-14T10:12:37.222Z">
+    <div class="r-comment-body"><p>Reviewed run r-20261114T082527387026-a-node-needs-no-write-paths at head 605eb2475a against base 6cb753ef86: goal, done_when and manifest hold and the gate measures the named test, but the change reddens two existing suites and the added test-path regex duplicates the repository&#x27;s owner; scores goal_fidelity 17, evidence 15, scope_discipline 14, durability 15, fit 14, reuse 4.</p></div>
 </div>
 <div class="r-comment" data-section="s23" data-id="c-run-r-20261112T172053766852-review-of-split-queue-admission-94d44a667163" data-who="reckon-build" data-when="2026-11-12T17:35:53Z">
     <div class="r-comment-body"><p>Independent review of af0c29f3b7e8856b078aee1f9fcbdaaa75ba9670 through 94d44a66716315b28c4ea35db88cffb654c2e23f is parsed: all six dimensions 20/20, no findings, zero added armed-gate failures and identical 128-failure importer sets; both granted records validate.</p></div>
