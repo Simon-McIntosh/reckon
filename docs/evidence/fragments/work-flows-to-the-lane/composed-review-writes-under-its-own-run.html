@@ -28,18 +28,18 @@
     with its <code>EXIT=</code> line.</caption>
     <thead><tr><th>Arm</th><th>Command and result</th></tr></thead>
     <tbody>
-      <tr><td>Base at <code>3b1cb4603e</code> (job 1315179)</td>
-        <td><code>PYTHONPATH=. .venv/bin/python -m pytest
-        -p no:cacheprovider -q tests/test_staged_write_inventory.py</code> —
-        51 passed in 11.74 s; <code>EXIT=0</code></td></tr>
-      <tr><td>After at <code>3a3c47cd7f</code> (job 1315182)</td>
-        <td><code>PYTHONPATH=. .venv/bin/python -m pytest
-        -p no:cacheprovider -q
+      <tr><td>Base at <code>3b1cb4603e</code> (job 1315192)</td>
+        <td><code>&lt;python&gt; -m pytest -p no:cacheprovider -q
+        tests/test_staged_write_inventory.py</code> over the extracted base
+        tree — 51 passed in 10.36 s; <code>EXIT=0</code></td></tr>
+      <tr><td>After at <code>3a3c47cd7f</code> (job 1315191)</td>
+        <td><code>&lt;python&gt; -m pytest -p no:cacheprovider -q
         tests/test_composed_review_writes_under_its_own_run.py
-        tests/test_staged_write_inventory.py</code> — 53 passed in 12.80 s;
+        tests/test_staged_write_inventory.py</code> over the worktree — 53
+        passed in 11.52 s;
         <code>EXIT=0</code> (two new cases)</td></tr>
       <tr><td>Negative control: promotion reads only the run id</td>
-        <td>1 failed in 3.32 s; <code>EXIT=1</code>, refusing
+        <td>1 failed, 1 passed in 1.91 s; <code>EXIT=1</code>, refusing
         <code>the review run stored no readable record for the plan it read: no
         delivered report under .../reports/sample/plan-review/fixture names
         it</code> where the delivered report is present and parsed</td></tr>
