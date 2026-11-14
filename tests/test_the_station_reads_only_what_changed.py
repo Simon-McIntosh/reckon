@@ -34,7 +34,7 @@ from unittest.mock import patch
 
 import pytest
 
-from reckon import ledger
+from reckon import file_memo, ledger
 from reckon.crew import (
     obligation_snapshot,
     plan_review,
@@ -322,11 +322,7 @@ def test_a_steady_answer_store_read_parses_once_and_a_write_re_reads(
 ) -> None:
     """The shared answer file is read once while unchanged, again after a write."""
     tree = fleet["worktrees"]["run-00"]
-    # A revision without the held parse has no memo cell; the test then fails on
-    # the read counts below rather than on a missing attribute.
-    memo = getattr(recovery_watch, "_GIT_ANSWER_STORE_MEMO", None)
-    if memo is not None:
-        memo[0] = None
+    file_memo.clear()
     recovery_watch._remember_commit_answer(tree, "first-candidate", "1" * 40)
     path = recovery_watch._git_answer_store_path()
 

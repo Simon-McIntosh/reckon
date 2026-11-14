@@ -46,6 +46,7 @@ from reckon import (
     _store,
     capabilities,
     clones,
+    file_memo,
     flight,
     ledger,
     review_tiers,
@@ -452,16 +453,9 @@ def _landing_checkout(
     )
 
 
-#: The committed ranges already read, keyed by the tree, the base and the
-#: manifest citations, with the tree's own head identity carried beside each
-#: answer. A tick that rebuilds every session's duties asks this for every run
-#: it owes a promotion, and the answer only moves when the tree's head does:
-#: without the store, a steady station ran one git process per live run per
-#: tick to learn that nothing had changed.
-_PROMOTION_COMMITS_MEMO: dict[
-    tuple[str, str, tuple[str, ...]], tuple[str, list[str]]
-] = {}
-_PROMOTION_COMMITS_LIMIT = 1024
+#: The committed range a run's promotion cites moves only when the tree's own
+#: head does, so a steady tick must not run one git process per live run to
+#: learn that nothing has changed.
 
 
 def _promotion_commits(
@@ -481,22 +475,20 @@ def _promotion_commits(
     tree = _review_tree(record)
     base = str(record.get("base_sha") or record.get("base") or "").strip()
     citations = tuple(str(sha) for sha in manifest_commits)
+
+    def read() -> list[str]:
+        history = reviewed_commits(tree, base, "HEAD")
+        return (
+            [sha for sha, _subject in history]
+            if history
+            else [str(sha) for sha in manifest_commits]
+        )
+
     key = (str(tree) if tree is not None else "", base, citations)
     head_identity = _worktree_head_identity(tree)
-    cached = _PROMOTION_COMMITS_MEMO.get(key)
-    if cached is not None and cached[0] == head_identity:
-        return list(cached[1])
-    history = reviewed_commits(tree, base, "HEAD")
-    commits = (
-        [sha for sha, _subject in history]
-        if history
-        else [str(sha) for sha in manifest_commits]
-    )
-    if head_identity not in {"no-tree", "no-git", "no-head"}:
-        _PROMOTION_COMMITS_MEMO[key] = (head_identity, commits)
-        while len(_PROMOTION_COMMITS_MEMO) > _PROMOTION_COMMITS_LIMIT:
-            _PROMOTION_COMMITS_MEMO.pop(next(iter(_PROMOTION_COMMITS_MEMO)))
-    return commits
+    if head_identity in {"no-tree", "no-git", "no-head"}:
+        return read()
+    return file_memo.memoized_key("promotion_commits", (*key, head_identity), read)
 
 
 def _default_gate_evidence_from_manifest(

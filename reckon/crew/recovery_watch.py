@@ -14,6 +14,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Callable, Iterable, Iterator, Mapping, Sequence
 
+from reckon import file_memo
 from reckon._timestamps import parse_utc
 from reckon.crew import metering, obligation_snapshot, quota_weight, runs
 from reckon.crew.host_lease import LEASE_RENEW_SECONDS
@@ -110,6 +111,7 @@ _GIT_ANSWER_STORE_FILENAME = "git-object-answers.json"
 _GIT_ANSWER_STORE_VERSION = 1
 _GIT_ANSWER_STORE_WORKTREES = 256
 _GIT_ANSWER_STORE_CANDIDATES = 512
+_GIT_ANSWER_STORE_KIND = "git_answer_store"
 
 
 def _git_answer_store_path() -> Path:
@@ -161,34 +163,17 @@ def _read_git_answer_store() -> dict[str, Any]:
     these exact object ids. Anything the reader does not recognise is treated
     as corrupt rather than guessed at.
 
-    The parsed store is held for as long as the file's own identity holds. One
-    sweep asks this store for nearly every citation it composes, and a fresh
-    read of the file per question is the read the census named: a steady
-    station opened the same file hundreds of times in one tick to learn that no
-    other process had written it. The identity is the stat identity, so a write
-    by another process — which rewrites the file through a rename — drops the
-    held copy on the next read.
+    The parsed copy lives in the shared file memo under the file's own identity.
+    One sweep asks this store for nearly every citation it composes, and a fresh
+    read of the file per question is the read the census named: a steady station
+    opened the same file hundreds of times in one tick to learn that no other
+    process had written it. The identity is the stat identity, so a write by
+    another process — which rewrites the file through a rename — misses the held
+    copy on the next read.
     """
-    signature = _git_answer_store_signature()
-    held = _GIT_ANSWER_STORE_MEMO[0]
-    if held is not None and held[0] == signature:
-        return held[1]
-    store = _parse_git_answer_store()
-    _GIT_ANSWER_STORE_MEMO[0] = (signature, store)
-    return store
-
-
-# The parsed answer store, with the file identity it was parsed from. A single
-# module-level cell, replaced whole, so a reader never sees a half-updated pair.
-_GIT_ANSWER_STORE_MEMO: list[tuple[str, dict[str, Any]] | None] = [None]
-
-
-def _git_answer_store_signature() -> str:
-    try:
-        info = _git_answer_store_path().stat()
-    except OSError:
-        return "absent"
-    return f"{info.st_dev}:{info.st_ino}:{info.st_size}:{info.st_mtime_ns}"
+    return file_memo.memoized(
+        _GIT_ANSWER_STORE_KIND, _git_answer_store_path(), _parse_git_answer_store
+    )
 
 
 def _parse_git_answer_store() -> dict[str, Any]:
@@ -288,9 +273,7 @@ def _update_git_answer_store(mutate: Callable[[dict[str, Any]], None]) -> None:
             # the one a later read should hold rather than re-parsing it. A path
             # that cannot be stat'd after the rename holds nothing to key on, and
             # is left for the next read to parse.
-            signature = _git_answer_store_signature()
-            if signature != "absent":
-                _GIT_ANSWER_STORE_MEMO[0] = (signature, store)
+            file_memo.memoized(_GIT_ANSWER_STORE_KIND, path, lambda: store)
         except OSError:
             return
         finally:

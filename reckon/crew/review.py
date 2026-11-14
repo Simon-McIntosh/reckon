@@ -71,7 +71,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any, NamedTuple
 
-from reckon import _store
+from reckon import _store, file_memo
 
 # ── The schema: six dimensions, one maximum ────────────────────────────────
 # A dimension added later is added in exactly one place. The mirror lives in
@@ -465,23 +465,13 @@ _FIGURE_REVIEW_PROMPT_PATH = (
 # Prompt text, held against the identity of the file it was read from. A tick
 # asks for a rubric once per run it classifies, so a steady tick re-read the
 # same unchanged bytes hundreds of times. The identity is the stat identity, so
-# an edit changes it and the next call reads the new text; a path that cannot be
-# stat'd falls through to a plain read and caches nothing.
-_PROMPT_TEXT: dict[Path, tuple[tuple[int, int, int, int], str]] = {}
+# an edit changes it and the next call reads the new text.
 
 
 def _prompt_text(path: Path) -> str:
-    try:
-        info = path.stat()
-    except OSError:
-        return path.read_text(encoding="utf-8")
-    identity = (info.st_dev, info.st_ino, info.st_size, info.st_mtime_ns)
-    held = _PROMPT_TEXT.get(path)
-    if held is not None and held[0] == identity:
-        return held[1]
-    text = path.read_text(encoding="utf-8")
-    _PROMPT_TEXT[path] = (identity, text)
-    return text
+    return file_memo.memoized(
+        "review_prompt", path, lambda: path.read_text(encoding="utf-8")
+    )
 
 
 def _sha_from(value: Any) -> str | None:
