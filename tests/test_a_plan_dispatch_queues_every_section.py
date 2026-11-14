@@ -12,7 +12,7 @@ from click.testing import CliRunner
 
 from reckon import crew_dispatch_commands
 from reckon.cli import main
-from reckon.crew import runs
+from reckon.crew import dispatch_batch, runs
 from tests.test_a_batch_queues_the_chosen_sections import CONFIG, PROJECT, SESSION
 from tests.test_a_batch_queues_the_chosen_sections import batch_repo as _batch_repo
 
@@ -48,7 +48,7 @@ def plan_repo(tmp_path, monkeypatch):
     return batch_repo
 
 
-def _call(repository: Path, *extra: str):
+def _call(repository: Path, *extra: str, expected_exit: int = 0):
     result = CliRunner().invoke(
         main,
         [
@@ -65,7 +65,7 @@ def _call(repository: Path, *extra: str):
             *extra,
         ],
     )
-    assert result.exit_code == 0, result.output
+    assert result.exit_code == expected_exit, result.output
     return json.loads(result.output)
 
 
@@ -106,7 +106,7 @@ def test_a_missing_done_when_refuses_only_its_row(plan_repo):
         "<p><strong>Done when.</strong> The component test passes.</p>", "", 1
     )
     path.write_text(text)
-    result = _call(plan_repo)
+    result = _call(plan_repo, expected_exit=1)
     assert result["refused"] == 1
     assert result["queued"] == 4
     refused = next(row for row in result["results"] if row["status"] == "refused")
@@ -188,3 +188,39 @@ def test_a_whole_plan_dry_run_writes_no_requests(plan_repo):
     assert result.exit_code != 0
     assert "dry-run" in result.output
     assert list(runs.list_live(project=PROJECT)) == []
+
+
+def test_a_malformed_section_contract_refuses_only_its_row(plan_repo):
+    path = plan_repo / "docs/plans/whole-plan.html"
+    path.write_text(
+        path.read_text().replace("<code>s1.py</code>", "<code>../escape.py</code>")
+    )
+    result = _call(plan_repo, expected_exit=1)
+    assert result["refused"] == 1
+    assert result["queued"] == 4
+    row = result["results"][0]
+    assert row["status"] == "refused"
+    assert "parent-directory segment" in row["reason"]
+
+
+def test_a_request_deduplicated_during_queueing_names_its_session(
+    plan_repo, monkeypatch
+):
+    original = dispatch_batch.queue_batch
+
+    def raced(*args, **kwargs):
+        result = original(*args, **kwargs)
+        row = result["results"][0]
+        runs._mutate_pointer(
+            row["run_id"], lambda pointer: {**pointer, "session": "racing-session"}
+        )
+        row["status"] = "already-queued"
+        return result
+
+    monkeypatch.setattr(dispatch_batch, "queue_batch", raced)
+    result = _call(plan_repo)
+    assert result["queued"] == 4
+    row = result["results"][0]
+    assert row["status"] == "skipped"
+    assert row["session"] == "racing-session"
+    assert "racing-session" in row["reason"]

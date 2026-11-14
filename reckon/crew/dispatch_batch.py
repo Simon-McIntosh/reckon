@@ -821,7 +821,12 @@ def queue_plan(
         row.update(queued)
         row["index"] = index
         if row["status"] == "already-queued":
-            row.update(status="skipped", reason=f"existing run {row['run_id']}")
+            held_session = str(runs.read_pointer(row["run_id"]).get("session") or "")
+            row.update(
+                status="skipped",
+                session=held_session,
+                reason=f"existing run {row['run_id']} of session {held_session}",
+            )
         else:
             row.setdefault("reason", row["status"])
     results = list(rows.values())

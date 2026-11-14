@@ -1109,7 +1109,7 @@ def _queue_dispatch_batch(
     project: str = "",
     plan: str = "",
 ) -> None:
-    """Queue a batch file's entries as one call, naming a row for each."""
+    """Queue a batch file or a plan's declared sections, naming each row."""
     from reckon import ledger
     from reckon.crew.dispatch_batch import queue_batch, queue_plan, read_batch_entries
     from reckon.crew.node import CrewError
