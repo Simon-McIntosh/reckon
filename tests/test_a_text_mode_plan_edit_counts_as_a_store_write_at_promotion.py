@@ -267,3 +267,21 @@ def test_text_rollback_preserves_content_added_after_its_snapshot(
         assert "Unparsed peer prose." in restored
         with pytest.raises(_plan_html.UnparsedSectionWriteError, match="would empty"):
             _plan_html.write_state(restored, state)
+
+
+def test_a_failed_receipt_restores_the_plan(repository: Path, monkeypatch) -> None:
+    path = _seed_prose(repository)
+    before = path.read_bytes()
+
+    def refuse_receipt(*args):
+        raise OSError("receipt storage is read-only")
+
+    monkeypatch.setattr(_store, "_record_plan_text_write", refuse_receipt)
+
+    with pytest.raises(OSError, match="receipt storage is read-only"):
+        _edit_text(repository, ORIGINAL, REVISED)
+
+    assert path.read_bytes() == before
+    assert not _store.recorded_plan_text_write(
+        path, before.decode(), before.decode().replace(ORIGINAL, REVISED)
+    )

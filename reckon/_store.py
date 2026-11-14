@@ -2521,7 +2521,9 @@ def plan_text_projection(document: str) -> tuple[str, list[tuple[int, str]]]:
 
 def _plan_text_receipt_path(path: Path) -> Path:
     key = hashlib.sha256(os.fsencode(path.resolve())).hexdigest()
-    return _state_root() / "_text_writes" / f"{key}.json"
+    # Workers can write the plan lock namespace while the shared state root
+    # remains sealed. The receipt shares that coordination grant.
+    return _config_home() / "locks" / "plan-text-writes" / f"{key}.json"
 
 
 def _plan_text_receipts(path: Path) -> dict[str, list[str]]:
@@ -2756,8 +2758,14 @@ def _replace_plan_text(
                 )
             except OpError as exc:
                 raise ValueError(str(exc)) from exc
-        _record_plan_text_write(html_file, text, rendered)
         write_atomically(html_file, lambda handle: handle.write(rendered))
+        try:
+            _record_plan_text_write(html_file, text, rendered)
+        except Exception:
+            # A failed receipt must neither license an unwritten edit nor
+            # leave a successful edit without its promotion provenance.
+            write_atomically(html_file, lambda handle: handle.write(text))
+            raise
         return current_version + 1, html_file
 
 
