@@ -1,0 +1,17 @@
+<section id="wave4-codex-anchored-the-crew-does-its-own-bo-s19-launch-receipt">
+<h3>A resume reports the advice its launch carried</h3>
+<p>The successful resume receipt now includes <code>advice</code> alongside its run id, pid, log path and resumed turn. The existing guard already exempts the launching process. The regression keeps the first CLI call inside its launcher seam and issues a second call before the first records its attempt: the first reports success, and the overlapping request is refused with the run id and <code>already has a resume launching</code>. The seam launches no external worker.</p>
+<p>At base <code>de40d35123a47a5b72910de5571132678b023a4f</code>, both regression cases reached the launch and failed with <code>KeyError: 'advice'</code>. Source commit <code>49858037058e5ef5bb9d3fc146a5d5d7b4d54bdc</code> adds the missing receipt field without replacing the working guard. The test also checks that the advice reaches the launch plan and prompt, only one launch occurs, and the successful attempt advances the pointer to working and clears the launch marker.</p>
+<table>
+<thead><tr><th>Measure</th><th>Result</th></tr></thead>
+<tbody>
+<tr><td>Scoped base arm</td><td>55 passed</td></tr>
+<tr><td>Scoped repaired arm</td><td>57 passed</td></tr>
+<tr><td>Own-process exemption removed in scratch</td><td>2 failed; the single call refuses itself and names the launching pid</td></tr>
+<tr><td>Importer base, 23 files</td><td>41 failed, 443 passed</td></tr>
+<tr><td>Importer head, 24 files</td><td>41 failed, 445 passed; identical failing ids, zero added failures</td></tr>
+<tr><td>Scoped Ruff checks</td><td>No findings; both Python files already formatted</td></tr>
+</tbody>
+</table>
+<p>All pytest arms ran sequentially in all_debug partition jobs with four workers, from git archives extracted into job-local temporary trees. Logs record their revisions, literal commands, imported module paths, resolved working directories and exit statuses; the four follower variables were unset. An initial archive-only baseline lacked the Git metadata its inventory fixture requires; that scaffolding log is preserved separately, and the corrected base arm passes. The manifest retains the importer failure ids for coordinator handling and the final committed-head scoped verification. Shared plan state is left to the coordinator.</p>
+</section>
