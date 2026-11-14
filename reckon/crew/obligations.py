@@ -1359,7 +1359,32 @@ def _classified_rows(project: str) -> list[dict[str, Any]]:
             and str(pointer.get("phase") or "") == queue_admission.QUEUED_PHASE
         ):
             subject = {**pointer, "phase": ""}
-        row = recovery.classify_pointer(subject)
+        try:
+            row = recovery.classify_pointer(subject)
+        except Exception as error:  # noqa: BLE001 - one run must not fail the fleet
+            # A classification that raises would otherwise take the whole
+            # project's derivation with it, so no session's obligations are
+            # published and every reader serves a snapshot hours old. A run
+            # whose pointer is gone ended while it was being read, and owes
+            # nothing; one still present is shown unreadable, naming the error,
+            # so the failure reaches its coordinator instead of hiding.
+            run_id = str(pointer.get("run_id") or "")
+            if not run_id or not runs.pointer_path(run_id).exists():
+                continue
+            print(
+                f"obligations-classify-failure: {run_id}: {error!r}",
+                file=sys.stderr,
+                flush=True,
+            )
+            row = {
+                "run_id": run_id,
+                "session": str(pointer.get("session") or ""),
+                "project": str(pointer.get("project") or ""),
+                "node": str((pointer.get("node") or {}).get("id") or ""),
+                "classification": "blocked",
+                "recovery_classification": "unreadable",
+                "detail": f"the run could not be classified: {error}",
+            }
         refusal = _queued_contract_refusal(pointer, row)
         if refusal is not None:
             row["contract_refusal"] = refusal
