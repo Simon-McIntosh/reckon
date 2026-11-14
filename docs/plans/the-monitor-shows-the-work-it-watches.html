@@ -26,7 +26,7 @@
   <title>The Monitor Shows The Work It Watches | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="857">
+<meta name="plan-version" content="858">
 <meta name="plan-modified" content="2026-11-14">
 <meta name="plan-supersedes" content="a-follower-keeps-your-work-in-view,monitor-renders-what-it-is-given,a-follower-lives-as-long-as-its-session">
 </head>
@@ -1439,6 +1439,9 @@ Both cases run under the file's existing temporary crew home.</li>
 <div class="r-comment" data-section="s104" data-id="c-run-r-20261113T015234088676-ready-the-monitor-shows-the-work-i-s104" data-who="reckon-build" data-when="2026-11-13T05:41:20.627Z">
     <div class="r-comment-body"><p>The read-time settlement answers three further duty kinds from the run's current live pointer — a review-missing row is dropped once a launched reviewer's granted &lt;run&gt;.at-&lt;head&gt;.json record names the head the row does (a queued or delivered reviewer answers nothing), a review-ready or promotable-stale row is dropped once the pointer reads a phase other than complete, and a blocked or review-missing row is dropped once the run has been resumed after the manifest the row was built from; the new tests/test_a_held_duty_is_settled_against_the_pointer.py passes seven cases (7 passed at f110705f3c) and the declared negative control fails the first and third cases (3 failed, 4 passed).</p></div>
 </div>
+<div class="r-comment" data-section="s104" data-id="c-run-r-20261114T115906142461-review-of-pointer-settlement-onto-main-s104-a2241d4fce1b" data-who="reckon-build" data-when="2026-11-14T12:48:51.000Z">
+    <div class="r-comment-body"><p>Independent review of r-20261114T094542374628-pointer-settlement-onto-main-s104 landed a parsed record at reviewed_base_sha 465c2df0f495d270143ab87b0a0fbb5cc04390b4 and reviewed_head_sha a2241d4fce1ba6f7eb33d2acb4e39f8381f6c59a, scoring goal_fidelity 19, evidence 19, scope_discipline 20, durability 17, fit 19, reuse 5, with added_failure_count 0 and one non-blocking reuse finding.</p></div>
+</div>
 <div class="r-comment" data-section="s107" data-id="c-run-r-20261108T040736422647-review-of-a-follower-runs-current-code-48d3aba14c4d" data-who="reckon-build" data-when="2026-11-08T04:22:04.239Z">
     <div class="r-comment-body"><p>review of r-20261108T032830784659-a-follower-runs-current-code at head 48d3aba14c4db3b6e8c2a6212f769951639179cb; parsed record scores goal_fidelity 19, evidence 13, scope_discipline 19, durability 10, fit 18, reuse 18, added_failure_count 0, and carries three non-blocking findings — the subscriber delivery's reloader is not guarded by any added test, the first negative control was applied to the test's own builder rather than the subscriber path, and the base-arm breadth clause of the done_when (62 importing test files) was not run.</p></div>
 </div>
@@ -1624,6 +1627,9 @@ Both cases run under the file's existing temporary crew home.</li>
 </div>
 <div class="r-comment" data-section="s132" data-id="c-run-r-20261113T083458879621-needs-you-replaces-halted" data-who="reckon-build" data-when="2026-11-13T13:36:51Z">
     <div class="r-comment-body"><p>§132 — the pane draws `needs you` where it drew `halted`, with counter letter `n` and one `SUPERSEDED_PANE_WORDS` mapping that reads a stored `halted` as `needs you` on both the grid's remembered-word path and the pipe re-arm's delivered-state path. This round repairs the population the first pass under-selected: three tests that reach the pane without importing ticker on a line of its own still pinned the old word and the retired letter, and each now reads what the pane draws. `tests/test_the_pane_speaks_seven_words.py` names the pane's whole word set and both counter tables; `tests/test_the_pane_shows_every_state_change.py:145` asserted `halted → in review` on the in-review row; `tests/test_a_pane_counts_its_session_across_projects.py` asserted the old counter letter in the per-session block.</p></div>
+</div>
+<div class="r-comment" data-section="s134" data-id="c-run-r-20261114T124142467273-review-of-follower-outlives-arming-shell-s134-ee25b58b3cd5" data-who="reckon-build" data-when="2026-11-14T12:58:07.091Z">
+    <div class="r-comment-body"><p>review of r-20261114T101135327049-follower-outlives-arming-shell-s134 at head ee25b58b3cd5: parsed, scores goal_fidelity 15, evidence 9, scope_discipline 19, durability 18, fit 14, reuse 11; added_failure_count 0 against its base arm; 3 blocking and 5 non-blocking findings.</p></div>
 </div>
 <div class="r-comment" data-section="s14" data-id="c-run-r-20261014T175600248310-a-replacement-producer-publishes-transitions" data-who="reckon-build" data-when="2026-10-14T17:57:10Z">
     <div class="r-comment-body"><p>launch failed before the worker started: bwrap could not bind-mount ~/.claude.json, which the harness was rewriting at that instant (present again at 19:57 local); zero stream records, clean worktree, no commits; redispatched as a new node</p></div>
@@ -2668,9 +2674,6 @@ Both cases run under the file's existing temporary crew home.</li>
 </div>
 <div class="r-comment" data-section="s99" data-id="c-run-r-20261105T131501961323-reland-the-reviewed-change-that-keeps-a-neverlaunched" data-who="reckon-build" data-when="2026-11-05T14:36:18.629Z">
     <div class="r-comment-body"><p>Re-landed the reviewed parked-request budget fix unchanged on base cd5edbd573 (patch byte-identical to git diff 98d07499d1 918894481d); elapsed now charges from launch, a never-launched pointer reports no elapsed/overrun and carries waiting_seconds (declared in LIVE_CLASSIFICATION_FIELDS); gate 23 passed at head effb92dc47 against 16 passed at base, importers 86 passed both sides, declared negative control EXIT=1 with the awaiting-upstream case failing on the overrun assertion.</p></div>
-</div>
-<div class="r-comment" data-section="s134" data-id="c-run-r-20261114T124142467273-review-of-follower-outlives-arming-shell-s134-ee25b58b3cd5" data-who="reckon-build" data-when="2026-11-14T12:58:07.091Z">
-    <div class="r-comment-body"><p>review of r-20261114T101135327049-follower-outlives-arming-shell-s134 at head ee25b58b3cd5: parsed, scores goal_fidelity 15, evidence 9, scope_discipline 19, durability 18, fit 14, reuse 11; added_failure_count 0 against its base arm; 3 blocking and 5 non-blocking findings.</p></div>
 </div>
 </section>
 <section data-reckon="gates" id="gates" class="r-gates">

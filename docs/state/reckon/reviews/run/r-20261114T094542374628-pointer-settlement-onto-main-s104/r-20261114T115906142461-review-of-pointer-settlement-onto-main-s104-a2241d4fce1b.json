@@ -1,0 +1,62 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own gate logs: baseline_suite.log records 49 passed and 2 errors at revision 465c2df0f4 with ids test_every_staged_write_reaches_the_owner and test_claim_move_aside_is_not_a_staged_write, and after_suite.log records 58 passed EXIT=0 at a2241d4fce with no failure ids, so the set difference is empty (0). The wider arm pair on disk agrees: base-failures.txt carries 26 ids over the 69-file base arm and head-failures.txt 22 over the 70-file head arm, and comm yields no id present at head and absent at base; the four base-only ids are test_hook_installer.py (2) and test_staged_write_inventory.py (2), which fail or error in the scratch base tree and pass at head.",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/hooks/coordinator_obligations.py:1543 recheck_worktree_held_rows calls without_departed_run_duties",
+    "reckon/hooks/coordinator_obligations.py:1357,1368,1381,1409,1642,1649 recheck_worktree_held_rows is called on the prompt-hook and stop-hook paths",
+    "reckon/mcp_views.py:4618 calls without_departed_run_duties for the crew view"
+  ],
+  "completed_at": "2026-11-14T12:48:51.000Z",
+  "dispatched_at": "2026-11-14T12:30:10Z",
+  "findings": [
+    {
+      "file": "reckon/crew/obligation_snapshot.py",
+      "line": "1264",
+      "severity": "non-blocking",
+      "text": "non-blocking: the added _resume_instant duplicates the capability already owned by reckon/crew/recovery_review_dispatch.py:216 _latest_resume_at - the same newest of auto_resume.at and resume_superseded_head.at over the same two pointer slots - rather than extending it. The duplication is defensible because obligation_snapshot.py is loaded by path on the prompt hook and must import no derivation module, and recovery_review_dispatch imports ledger, clones and review_tiers, so a shared home would be a new small module; recording it so a third resume slot is added in one place, not two."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "read both commits against base 465c2df0f4: 904f512209 adds 104 lines of settlement and constants plus an 11-line hook docstring update and a 352-line test, and a2241d4fce adds 92 lines of evidence HTML; the re-application drops the original granted-write-path reviewer recognition because main already settles review-missing from the run's recorded review_dispatch, which the manifest names as an adaptation.",
+    "done_when": "the evidence fence names a hand re-application, one set of pointer-read helpers, the restored test and fragment, base and head arms over the importing test files on all_debug with at most -n 4, and no ruff findings added; the manifest records all of these, base-arm.log and head-arm.log carry the literal -n 4 commands with revision headers and EXIT= footers, base-failures.txt/head-failures.txt differ by zero added ids, and I re-ran ruff check and format --check at the head tree to confirm the only two findings are the pre-existing S105 at coordinator_obligations.py:616,619.",
+    "goal": "the node goal is to re-apply the held-duty pointer settlement from f110705f3c onto current main reconciled with main's review-duty settlement; reckon/crew/obligation_snapshot.py:1147-1420 adds PROMOTION_DUTY_KINDS and RESUME_ANSWERED_DUTY_KINDS with _resume_instant and _resume_answers_the_manifest, keeps the pre-existing _review_duty_survives_read dispatch reading at line 1150, and so carries both intents in one settlement function.",
+    "manifest": "read; it reports status complete, commits 904f512209 and a2241d4fce, base arm 24 failed/479 passed/2 errors against head arm 22 failed/490 passed with zero added ids, the negative control at 2 failed/5 passed, seven passes in the restored test, and names every log on disk; reck crew check --manifest on the reviewed run returns ok true with no findings.",
+    "write_paths": "the declared paths are reckon/crew/obligation_snapshot.py, reckon/hooks/coordinator_obligations.py, tests/test_a_held_duty_is_settled_against_the_pointer.py and the two evidence fragments; git diff --stat 465c2df0f4..a2241d4fce touches exactly those five files (obligation_snapshot.py, coordinator_obligations.py, the new test, and the two fragments) with no path outside the fence."
+  },
+  "justifications": {
+    "durability": "negative-control.log shows the POINTER_ANSWERED_DUTY_KINDS block disabled reddens test_a_resume_answers_the_promotion_and_the_halt and test_a_review_missing_row_is_answered_by_a_resume_too, so the new readings are guarded; the two review-missing dispatch cases in the restored test guard main's pre-existing settlement and pass at base, so they add no guard for this change.",
+    "evidence": "base-arm.log and head-arm.log record the literal -n 4 pytest commands at revisions 465c2df0f4 and 904f512209 over the 69/70 importing test files with EXIT=1 footers, and comm over base-failures.txt and head-failures.txt yields zero added ids, so the arm result is recorded rather than claimed.",
+    "fit": "the added constants and helpers at reckon/crew/obligation_snapshot.py:1147-1315 are named by what they read, follow the module's existing upper-snake constant and underscore-helper idiom, and carry no plan, sprint or ticket identifier in symbol, comment or commit subject.",
+    "goal_fidelity": "reckon/crew/obligation_snapshot.py:1379-1395 drops a review-ready or promotable-stale row when the run's pointer phase is non-empty and not complete, and drops a blocked or review-missing row when _resume_answers_the_manifest sees a working phase with a resume instant later than the manifest mtime, which is exactly the promotion and resume settlement the goal asks for.",
+    "reuse": "reckon/crew/obligation_snapshot.py:1264 _resume_instant recomputes the same newest-resume-instant value that reckon/crew/recovery_review_dispatch.py:216 _latest_resume_at already owns, without extending that owner, because the hook-side module may import no derivation module.",
+    "scope_discipline": "every path in git diff --stat 465c2df0f4..a2241d4fce is one of the declared write paths and the two evidence fragments are additions with no deletions."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to re-apply the user-visible held-duty pointer settlement onto current main reconciled with main's review-duty settlement; reckon/crew/obligation_snapshot.py:1147-1420 adds the promotion and resume readings beside the pre-existing _review_duty_survives_read dispatch reading, so the goal is met.\nVERDICT done_when: the evidence fence names the hand re-application, the restored test and fragment, base and head arms over the importing test files on all_debug at -n 4 with no added failure and no added ruff finding; base-arm.log and head-arm.log carry those literal commands and revision headers ending EXIT=, base-failures.txt versus head-failures.txt differ by zero added ids, and a fresh ruff run at the head tree shows only the two pre-existing S105 findings at coordinator_obligations.py:616,619.\nVERDICT write_paths: the declared paths are reckon/crew/obligation_snapshot.py, reckon/hooks/coordinator_obligations.py and the new test plus the two evidence fragments; git diff --stat 465c2df0f4..a2241d4fce touches exactly those five files and nothing outside the fence.\nVERDICT manifest: read; it reports complete, commits 904f512209 and a2241d4fce, base arm 24 failed/479 passed/2 errors against head 22 failed/490 passed with zero added ids, the negative control at 2 failed/5 passed, and names every log; crew check --manifest on the reviewed run returns ok true with no findings.\nVERDICT diff: read both commits against base 465c2df0f4; 904f512209 adds the settlement constants and helpers plus an 11-line hook docstring update and a 352-line test, a2241d4fce adds 92 lines of evidence HTML, and the granted-write-path reviewer recognition from the original branch is dropped in favour of main's recorded-dispatch reading, as the manifest states.\nCALL_SITES: reckon/hooks/coordinator_obligations.py:1543 recheck_worktree_held_rows calls without_departed_run_duties, reckon/hooks/coordinator_obligations.py:1357,1368,1381,1409,1642,1649 recheck_worktree_held_rows on the prompt-hook and stop-hook paths, reckon/mcp_views.py:4618 for the crew view\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/obligation_snapshot.py:1379-1395 drops a review-ready or promotable-stale row when the pointer phase is non-empty and not complete, and drops a blocked or review-missing row when _resume_answers_the_manifest sees a working phase with a resume instant later than the manifest mtime.\nSCORE evidence: 19\nJUSTIFICATION evidence: base-arm.log and head-arm.log record the literal -n 4 pytest commands at revisions 465c2df0f4 and 904f512209 over the 69 and 70 importing test files with EXIT=1 footers, and comm over base-failures.txt and head-failures.txt yields zero added ids.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in git diff --stat 465c2df0f4..a2241d4fce is one of the declared write paths, and the two evidence fragments are additions with no deletions.\nSCORE durability: 17\nJUSTIFICATION durability: negative-control.log shows the POINTER_ANSWERED_DUTY_KINDS block disabled reddens test_a_resume_answers_the_promotion_and_the_halt and test_a_review_missing_row_is_answered_by_a_resume_too, while the two review-missing dispatch cases guard main's pre-existing settlement and pass at base.\nSCORE fit: 19\nJUSTIFICATION fit: the added names in reckon/crew/obligation_snapshot.py:1147-1315 name what they read and follow the module's existing constant and helper idiom, with no plan or ticket identifier in symbol, comment or subject.\nSCORE reuse: 5\nJUSTIFICATION reuse: reckon/crew/obligation_snapshot.py:1264 _resume_instant recomputes the newest resume instant that reckon/crew/recovery_review_dispatch.py:216 _latest_resume_at already owns, without extending it, because the hook-side module may import no derivation module.\nFINDING reckon/crew/obligation_snapshot.py:1264 non-blocking: _resume_instant duplicates the capability already owned by reckon/crew/recovery_review_dispatch.py:216 _latest_resume_at over the same auto_resume.at and resume_superseded_head.at slots; the import boundary makes the duplication defensible, but a third resume slot must then be added in two places.",
+  "review_node": "review-of-pointer-settlement-onto-main-s104-a2241d4fce1b",
+  "review_run_id": "r-20261114T115906142461-review-of-pointer-settlement-onto-main-s104-a2241d4fce1b",
+  "reviewed_base_sha": "465c2df0f495d270143ab87b0a0fbb5cc04390b4",
+  "reviewed_head_sha": "a2241d4fce1ba6f7eb33d2acb4e39f8381f6c59a",
+  "reviewed_run_id": "r-20261114T094542374628-pointer-settlement-onto-main-s104",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash",
+    "reviewer_run_id": "r-20261114T115906142461-review-of-pointer-settlement-onto-main-s104-a2241d4fce1b"
+  },
+  "scores": {
+    "durability": 17,
+    "evidence": 19,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 5,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-14T13:31:27.898807+00:00",
+  "total": 99
+}
