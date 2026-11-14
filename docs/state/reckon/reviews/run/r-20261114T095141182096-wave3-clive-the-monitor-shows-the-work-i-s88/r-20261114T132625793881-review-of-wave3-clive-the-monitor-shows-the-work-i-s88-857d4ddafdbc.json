@@ -1,0 +1,57 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/crew/recovery.py:classify_pointer",
+    "reckon/crew/obligations.py:obligations"
+  ],
+  "completed_at": "2026-11-14T13:32:38.877Z",
+  "dispatched_at": "2026-11-14T13:29:30Z",
+  "findings": [
+    {
+      "file": "reckon/crew/recovery_classification.py",
+      "line": 1081,
+      "severity": "non-blocking",
+      "summary": "The file is edited by the diff but is absent from the run's recorded write_paths; the manifest itself records this under outside_scope."
+    },
+    {
+      "file": "tests/test_a_worker_that_ends_its_first_turn_without_acting_is_named_as_such.py",
+      "line": 196,
+      "severity": "non-blocking",
+      "summary": "No case pins the first-turn-error regex branch taken from assistant text alone with no result record; the error case's stream also carries an is_error result record, so either path satisfies it."
+    }
+  ],
+  "justifications": {
+    "durability": "Tests: test_a_single_turn_that_never_acted_reads_as_a_premature_end fails if the premature-end arm is removed, and logs/negative-control.log shows that mutation turning the case red.",
+    "evidence": "logs/head.log runs the three named cases with exit 0 and logs/base.log records the baseline arm, both cited by the manifest.",
+    "fit": "reckon/crew/recovery_classification.py:1081-1105 follows the module's existing constant-plus-docstring and small-private-helper idiom.",
+    "goal_fidelity": "reckon/crew/recovery_classification.py:2545 sets the premature-end reading only when the process is gone and the stream holds one tool-less message.",
+    "reuse": "The new reading extends the existing classify_pointer arm chain at reckon/crew/recovery_classification.py:2545 rather than forking a classifier; no parallel owner of run-stream classification exists.",
+    "scope_discipline": "The diff touches only the three paths the manifest lists, but recovery_classification.py is absent from the run's recorded write_paths (manifest outside_scope)."
+  },
+  "notes": "Assertions read: the recovery_classification equality fails if the new arm is deleted; the recovery-verb equality fails if the verb mapping is reverted; the third case's abandoned assertion is independent of the input fixture. The detail containment check is a propagation check: the fixture text is supplied to the code and compared against its output.",
+  "project": "reckon",
+  "review_run_id": "r-20261114T132625793881-review-of-wave3-clive-the-monitor-shows-the-work-i-s88-857d4ddafdbc",
+  "reviewed_base_sha": "3d4c92834c759745650c2d0eda93fbb68becca7e",
+  "reviewed_head_sha": "857d4ddafdbc5149f22c099a6f2a881c9b212a3b",
+  "reviewed_run_id": "r-20261114T095141182096-wave3-clive-the-monitor-shows-the-work-i-s88",
+  "scores": {
+    "durability": 15,
+    "evidence": 15,
+    "fit": 17,
+    "goal_fidelity": 17,
+    "reuse": 18,
+    "scope_discipline": 11
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-14T15:06:44.628920+00:00",
+  "total": 93,
+  "verdicts": {
+    "diff": "Read commit by commit from 3d4c928 to 857d4dd: b058eaa9 adds the classifier arm and its test, 857d4dd adds the evidence fragment; 457 insertions over three files.",
+    "done_when": "The done_when asks that a worker ending its first turn without acting be named as such; the gate at logs/head.log runs the three named cases and the manifest records exit 0.",
+    "goal": "The node's goal is to name a worker whose first turn ends without acting as a premature end rather than as halted; reckon/crew/recovery_classification.py:2545 adds the alive-is-false arm and :1081 names ENDED_WITHOUT_ACTING, and the new test asserts the reading on both the classified row and the obligations duty.",
+    "manifest": "Read; it states status complete, names all three commits, records baseline_suite and after_suite with exit 0 and zero failures each, and cites logs/head.log, base.log and negative-control.log.",
+    "write_paths": "The manifest's orientation_write_paths name recovery_classification.py, the test file and the evidence fragment; the diff touches exactly those three, but the manifest's own outside_scope records that the recorded write_paths list omitted recovery_classification.py."
+  }
+}
