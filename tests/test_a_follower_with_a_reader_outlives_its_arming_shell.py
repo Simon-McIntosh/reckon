@@ -39,6 +39,7 @@ import contextlib
 import hashlib
 import os
 import re
+import socket
 import subprocess
 import sys
 import time
@@ -48,6 +49,7 @@ import pytest
 
 from reckon import cli
 from reckon.crew import runs
+from reckon.crew_follow_commands import _stdout_has_reader
 
 REPO_ROOT = Path(cli.__file__).resolve().parents[1]
 
@@ -238,6 +240,104 @@ def _armed(home: Path, sessions: tuple[str, ...] = (SESSION_A, SESSION_B)):
             reader.kill()
             with contextlib.suppress(subprocess.TimeoutExpired):
                 reader.communicate(timeout=EXIT_WITHIN_SECONDS)
+
+
+@contextlib.contextmanager
+def _armed_to_device(home: Path, device: Path, session: str = SESSION_A):
+    """Arm one follower whose stdout is ``device``, from a shell that exits.
+
+    The shell starts the follower as a background job with its own stdout
+    redirected to the device, then exits, so the follower is re-parented with
+    a dead owner and a stdout that is not a pipe.
+    """
+    pid_dir = home / "pids"
+    pid_dir.mkdir(parents=True, exist_ok=True)
+
+    environment = {
+        **os.environ,
+        "PYTHONPATH": str(REPO_ROOT),
+        "RECKON_HOME": str(home),
+        "FOLLOWER_TEST_PROJECT": PROJECT,
+        "FOLLOWER_TEST_PID_DIR": str(pid_dir),
+        "FOLLOWER_TEST_LAUNCH": _LAUNCH,
+        "FOLLOWER_TEST_PYTHON": sys.executable,
+    }
+    environment.pop(OWNER_ENV, None)
+
+    script = _arm_script((session,)).replace(" &", f" > {device} 2>&1 &")
+    shell = subprocess.Popen(
+        ["bash", "-c", script],
+        stdin=subprocess.DEVNULL,
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.PIPE,
+        text=True,
+        env=environment,
+        cwd=str(REPO_ROOT),
+    )
+    pid = 0
+    try:
+        try:
+            shell.wait(timeout=ARM_WITHIN_SECONDS)
+        except subprocess.TimeoutExpired:
+            pytest.fail("the arming shell did not exit")
+        pid = _wait_for_pid(pid_dir, session)
+        yield pid
+    finally:
+        if pid and not _exited(pid):
+            with contextlib.suppress(ProcessLookupError):
+                os.kill(pid, 9)
+
+
+def test_a_follower_writing_into_a_device_with_no_reader_ends(home) -> None:
+    """A device that discards its writes holds no reader, so the follower ends.
+
+    ``/dev/null`` accepts every write and delivers it nowhere, so a follower
+    whose output goes there can never discover a lost reader by a failed
+    write. Left as a reader by the descriptor-kind rule it would outlive its
+    owner indefinitely and hold its session's registration, refusing every
+    dispatch from that session.
+    """
+    real_dir = _real_follower_dir(PROJECT)
+    before = _tree(real_dir)
+
+    with _armed_to_device(home, Path(os.devnull)) as pid:
+        _wait_until_exited(pid, tag=SESSION_A)
+
+    state = runs.follower_state(PROJECT, SESSION_A)
+    assert state["registered"] is False, (
+        "the registration must be free once a follower writing into a device "
+        f"that nobody reads has ended; it still reads {state['follower']!r}"
+    )
+    assert _tree(real_dir) == before == set()
+
+
+def test_the_reader_question_answers_by_descriptor_kind(tmp_path) -> None:
+    """Each descriptor kind answers the reader question the way it delivers.
+
+    A regular file and a character device deliver to nobody while the command
+    runs; a socket carries its peer and a terminal has a screen attached, so
+    both reach someone. This is the branch a follower's ending turns on, and
+    it is invisible to a case that only ever arms the follower with a pipe.
+    """
+    with open(tmp_path / "log.txt", "w", encoding="utf-8") as handle:
+        assert _stdout_has_reader(1, handle) is False, "a regular file has no reader"
+    with open(os.devnull, "w", encoding="utf-8") as handle:
+        assert _stdout_has_reader(1, handle) is False, "/dev/null has no reader"
+
+    master, slave = os.openpty()
+    try:
+        with os.fdopen(master, "wb") as handle:
+            assert _stdout_has_reader(1, handle) is True, "a terminal has a reader"
+    finally:
+        with contextlib.suppress(OSError):
+            os.close(slave)
+
+    peer, ours = socket.socketpair()
+    try:
+        with os.fdopen(ours.fileno(), "wb") as handle:
+            assert _stdout_has_reader(1, handle) is True, "a socket has a peer"
+    finally:
+        peer.close()
 
 
 def test_two_followers_outlive_the_shell_that_armed_them(home) -> None:

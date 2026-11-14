@@ -1724,11 +1724,13 @@ def _follow_watch_lines(
         caller still holds the pipe's read end, and its rows are still being
         read. So an arming whose owner has gone ends only when its stdout has
         lost its reader, which for a pipe is the same moment a write would
-        fail. An arming whose output goes to a file or a terminal keeps the
-        owner-only rule: nothing holds those open to a reader, so an orphan
-        writing into one delivers to nobody and would hold the registration
-        against the session's next follower, refusing every dispatch from the
-        session ``watcher-required`` until someone kills it by hand.
+        fail. An arming whose output goes to a file, or to a device that
+        discards what is written to it, keeps the owner-only rule: nothing
+        reads those, so an orphan writing into one delivers to nobody and
+        would hold the registration against the session's next follower,
+        refusing every dispatch from the session ``watcher-required`` until
+        someone kills it by hand. A terminal and a socket still reach someone,
+        so they keep the reader rule with the pipe.
 
         This runs on every wait pass, whether or not the follower holds the
         registration: a read-only follower holds no lock and still outlives its
@@ -2673,7 +2675,9 @@ def _stdout_has_reader(owner_pid: int, stream=None, *, confirmed=False) -> bool:
     follower at all.
 
     A socket and a terminal carry a reader by construction, so they answer yes.
-    A piped output is followed to the process holding its read end: the pids
+    A character device does not: ``/dev/null`` accepts every write and delivers
+    it nowhere, so an orphan writing into one ends like an orphan writing into
+    a file. A piped output is followed to the process holding its read end: the pids
     holding that end answer whether anyone reads it, and the follower keeps
     streaming when one of them is not the process that started it. A parent
     holding an unread pipe for a dead armed owner is an in-process harness — a
@@ -2689,10 +2693,15 @@ def _stdout_has_reader(owner_pid: int, stream=None, *, confirmed=False) -> bool:
         target = stream or click.get_text_stream("stdout")
         descriptor = target.fileno()
         info = os.fstat(descriptor)
-        if stat.S_ISREG(info.st_mode):
-            return False
         if not stat.S_ISFIFO(info.st_mode):
-            return True
+            # A socket carries its peer by construction and a terminal has a
+            # screen attached, so both reach someone. Every other kind of
+            # descriptor — a regular file, and a character device such as
+            # /dev/null whose writes always succeed — delivers to nobody while
+            # the command runs, so an orphan writing into one ends.
+            return stat.S_ISSOCK(info.st_mode) or (
+                stat.S_ISCHR(info.st_mode) and os.isatty(descriptor)
+            )
         poller = select.poll()
         poller.register(descriptor, select.POLLERR)
         if any(mask & select.POLLERR for _event, mask in poller.poll(0)):
