@@ -131,6 +131,7 @@ def _node(section: str = "s2") -> TaskNode:
         done_when="The section contract check passes.",
         write_paths=[f"{section}.py"],
         time_budget="20m",
+        spec_level="exact",
         manifest_path=str(runs.run_dir(f"build-{section}") / "manifest.md"),
     )
 
