@@ -1,0 +1,177 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="plan">
+  <meta name="plan-slug" content="every-shared-home-lock-holds-across-nodes">
+  <meta name="plan-title" content="Every shared-home lock holds across nodes">
+  <meta name="plan-summary" content="21 locks on the shared home are flock, which excludes nothing across nodes; move them onto the cross-node lock and refuse any new bare flock.">
+  <meta name="plan-status" content="active">
+  <meta name="plan-roi" content="high">
+  <meta name="plan-effort-hours" content="9.0">
+  <meta name="plan-capability-version" content="1.0">
+  <meta name="plan-capability-class" content="general">
+  <meta name="plan-capability-reasoning" content="deep">
+  <meta name="plan-capability-verification" content="strict">
+  <meta name="plan-capability-risk" content="elevated">
+  <meta name="plan-sprint" content="S27">
+  <meta name="plan-owner" content="Simon McIntosh">
+  <meta name="plan-tags" content="crew,reckon-tooling">
+  <meta name="plan-depends-on" content="a-plan-state-lock-holds-on-every-node">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-depends-on" content="{&quot;s3&quot;:[&quot;every-shared-home-lock-holds-across-nodes#s2&quot;],&quot;s4&quot;:[&quot;every-shared-home-lock-holds-across-nodes#s2&quot;],&quot;s5&quot;:[&quot;every-shared-home-lock-holds-across-nodes#s2&quot;],&quot;s6&quot;:[&quot;every-shared-home-lock-holds-across-nodes#s3&quot;,&quot;every-shared-home-lock-holds-across-nodes#s4&quot;,&quot;every-shared-home-lock-holds-across-nodes#s5&quot;]}">
+  <title>Every shared-home lock holds across nodes | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <h2 id="s1">§1 — Why: most shared-home locks exclude only their own node</h2>
+<section data-reckon="section" data-id="s1" data-effort-hours="0.25" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="standard" data-capability-risk="low" data-status="done" data-links=""></section>
+<p><code>fcntl.flock</code> is granted by the local kernel. On the GPFS home, a holder on one node therefore does not block a holder on another. <a href="/reckon/a-plan-state-lock-holds-on-every-node">a-plan-state-lock-holds-on-every-node</a> measured this on 2026-11-13. It added <code>reckon.node_exclusive_lock.exclusive_lock</code>, whose POSIX record lock the file server holds, and measured that lock excluding across nodes. It moved only the plan-state locks onto it.</p>
+<p>The same plan's census, <a href="/reckon/evidence/fragments/a-plan-state-lock-holds-on-every-node/every-flock-is-accounted-for">every flock is accounted for</a>, read every lock-taking <code>flock</code> under <code>reckon/</code> at <code>7d8ca3f</code>. Of 43 sites, 10 are node-local by design and 13 have their cross-node case decided by a lease. The other 20 guard shared state that a process on another node can reach, and nothing else decides that case. Among them:</p>
+<ul>
+  <li>the per-run pointer lock that keeps a resume and a promotion from interleaving;</li>
+  <li>the admit lock that launches a queued run once;</li>
+  <li>the landing-pass lock;</li>
+  <li>the ledger write lock;</li>
+  <li>the placement reservation.</li>
+</ul>
+<p>Today the fleet node and the login node both run crew commands, and the admit service can run on either.</p>
+<p>The coordinator re-read the tree at <code>03b18d9</code> on 2026-11-14 and found 45 sites, two of them new:</p>
+<ul>
+  <li><code>review_records._index_lock</code>, added the day before, guards the review store index. Its docstring says the lock "serialises against every other node's writer", which the census disproved for <code>flock</code>. This makes 21 shared-home sites.</li>
+  <li><code>watch_unit._seat_is_held</code> probes a producer seat, which the host lease decides.</li>
+</ul>
+<p>So new bare <code>flock</code> calls arrive faster than a census can follow them, and the first deliverable is a guard rather than a migration.</p>
+<p>The coordinator also prototyped a migration on 2026-11-14. Its patch and logs are under <code>~/.cache/reckon-lock-proto/</code>. Two measurements bear on the endpoints:</p>
+<ul>
+  <li><strong>A record lock is dropped when its process closes any descriptor for the file.</strong> In <code>probe-98dci4-clu-2001.log</code>, a second process sees the lock <code>held</code> inside <code>exclusive_lock</code>. After the holder opened and closed the same file once more inside the block, the second process sees it <code>free</code>. A lock that guards a file the body also opens (the picker's holds log locks the very file it appends to) is therefore released mid-body. So is a lock whose file anything else in the process opens: a probe, a gc pass, a reader on another thread.</li>
+  <li><strong>The cost is negligible.</strong> One <code>exclusive_lock</code> cycle on the GPFS home took a median of 0.10 ms (p95 0.11 ms), against 0.02 ms for <code>flock</code> alone, over 200 cycles.</li>
+</ul>
+
+    <h2 id="s2">§2 — A guard refuses any bare flock that is neither judged nor pending</h2>
+<section data-reckon="section" data-id="s2" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+<p><strong>Deliverable.</strong> A repository test, <code>tests/test_every_shared_home_lock_holds_across_nodes.py</code>, holds two tables. Each table entry keys one lock-taking <code>flock</code> call under <code>reckon/</code> by file and qualified enclosing function, never by line.</p>
+<ul>
+  <li>The <em>judged</em> table records why a site is safe on one node: the lock file lives on one host, or a named lease decides the foreign-host case.</li>
+  <li>The <em>pending</em> table names the 21 shared-home sites from §1 that have not yet moved.</li>
+</ul>
+<p>The test fails in three cases:</p>
+<ul>
+  <li>a site that is in neither table;</li>
+  <li>a table entry with no such call left;</li>
+  <li>an entry in both tables.</li>
+</ul>
+<p>Its failure message names the cross-node lock as the remedy.</p>
+<p><strong>Done when.</strong></p>
+<ul>
+  <li>The test passes on the delivered head.</li>
+  <li>The judged table carries every site the census and §1 found safe (24 calls at <code>03b18d9</code>), keyed as they stand at the head.</li>
+  <li>The pending table carries the 21 sites.</li>
+  <li>Three negative controls are logged in the run directory, each with its failing output:
+    <ul>
+      <li>a scratch module under a temporary <code>reckon/</code> tree with one bare <code>flock</code> is reported by file and function;</li>
+      <li>deleting one judged entry fails the test, naming that site;</li>
+      <li>adding an entry for a function with no <code>flock</code> fails the test, naming the stale entry.</li>
+    </ul>
+  </li>
+  <li>The new file passes <code>ruff check</code> and <code>ruff format --check</code>.</li>
+</ul>
+<p><strong>Write paths.</strong> <code>tests/test_every_shared_home_lock_holds_across_nodes.py</code>.</p>
+
+    <h2 id="s3">§3 — Run, queue, landing and ledger locks exclude across nodes</h2>
+<section data-reckon="section" data-id="s3" data-effort-hours="2.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="implementable" data-links=""></section>
+<p><strong>Deliverable.</strong> These seven locks take the cross-node lock:</p>
+<ul>
+  <li>in <code>reckon/crew/runs.py</code>: <code>_pointer_lock</code>, <code>queue_dispatch</code> and <code>update_watch_registration</code>;</li>
+  <li><code>reckon/ledger.py</code> <code>_ledger_write_lock</code>;</li>
+  <li><code>reckon/crew/queue_landing.py</code> <code>land_once</code>;</li>
+  <li><code>reckon/crew/admission/service.py</code> <code>_admit_lock</code>;</li>
+  <li><code>reckon/crew/placement.py</code> <code>_reservation_hold_lock</code>.</li>
+</ul>
+<p>Each keeps the answer its callers get when the lock is held. A non-blocking pointer take still raises <code>PointerLockHeldError</code>, and a held landing pass still returns its busy result. Each site's row leaves the guard's pending table.</p>
+<p><strong>Done when.</strong></p>
+<ul>
+  <li>The guard passes with these seven rows removed from pending.</li>
+  <li>For the pointer lock and the landing-pass lock, a test holds the lock's record lock from a second process and shows the non-blocking take reporting it held. With the lock still held, the same test shows that a <code>flock</code>-only take from that second process cannot see it. That second run is the negative control: it must fail to observe the holder.</li>
+  <li>Each of the seven lock files is opened in <code>reckon/</code> only through <code>exclusive_lock</code>. The manifest lists every other reference to each path (gc and pruning included) and states why none opens the file.</li>
+  <li>The focused tests that import the changed modules add no failures against the stated base.</li>
+</ul>
+<p><strong>Write paths.</strong> <code>reckon/crew/runs.py</code>, <code>reckon/ledger.py</code>, <code>reckon/crew/queue_landing.py</code>, <code>reckon/crew/admission/service.py</code>, <code>reckon/crew/placement.py</code>, the guard test file, and new test files under <code>tests/</code>.</p>
+
+    <h2 id="s4">§4 — Store, review and recovery locks exclude across nodes</h2>
+<section data-reckon="section" data-id="s4" data-effort-hours="2.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="implementable" data-links=""></section>
+<p><strong>Deliverable.</strong> These nine locks take the cross-node lock:</p>
+<ul>
+  <li><code>reckon/_store.py</code> <code>_serialized_path_lock</code>;</li>
+  <li><code>reckon/compliance.py</code> <code>_locked</code>;</li>
+  <li><code>reckon/crew/review_records.py</code> <code>_index_lock</code>;</li>
+  <li><code>reckon/crew/recovery_review_dispatch.py</code> <code>_dispatch_text_review_for_run</code>;</li>
+  <li><code>reckon/crew/recovery_watch.py</code> <code>_update_git_answer_store</code>;</li>
+  <li><code>reckon/crew/obligations.py</code> <code>_record_index_lag</code>;</li>
+  <li><code>reckon/crew/resumption.py</code> <code>_lane_probe_lock</code> and <code>_sweep_status_lock</code>;</li>
+  <li><code>reckon/crew/dispatch_peer.py</code> <code>_update_peer_index</code>.</li>
+</ul>
+<p>Each keeps the answer its callers get when the lock is held or cannot be taken:</p>
+<ul>
+  <li>the plan-review dispatch still moves on with "another sweep is composing this plan's review now";</li>
+  <li>a review index that cannot hold its lock still reports <code>False</code> and writes unlocked;</li>
+  <li>an unwritable crew home still leaves the index-lag record best effort.</li>
+</ul>
+<p>Each site's row leaves the guard's pending table.</p>
+<p><strong>Done when.</strong></p>
+<ul>
+  <li>The guard passes with these nine rows removed from pending.</li>
+  <li>For the plan-review dispatch lock, a test holds the record lock from a second process and shows the dispatch returning its moved-on result without launching. With the lock still held, the same test shows that a <code>flock</code>-only take from the second process cannot observe the holder.</li>
+  <li>The review index docstring describes the lock the code takes.</li>
+  <li>Each lock file is opened in <code>reckon/</code> only through <code>exclusive_lock</code>, evidenced as in §3.</li>
+  <li>The focused tests that import the changed modules add no failures against the stated base.</li>
+</ul>
+<p><strong>Write paths.</strong> The nine modules named above, the guard test file, and new test files under <code>tests/</code>.</p>
+
+    <h2 id="s5">§5 — Lane, budget and picker locks exclude across nodes</h2>
+<section data-reckon="section" data-id="s5" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+<p><strong>Deliverable.</strong> These five locks take the cross-node lock:</p>
+<ul>
+  <li><code>reckon/crew/budget_reset.py</code> <code>_locked</code>;</li>
+  <li><code>reckon/crew/model_catalogue.py</code> <code>_refresh_lock</code>;</li>
+  <li><code>reckon/crew/paid_lanes.py</code> <code>refresh_reserved_window</code> and <code>publish_document</code>;</li>
+  <li><code>reckon/crew/picker/outcomes.py</code> <code>record_picker_hold</code>.</li>
+</ul>
+<p>Each keeps its held answer. A catalogue refresh that cannot take the lock still reads the snapshot on disk instead of fetching. The picker's holds log stops locking the file it appends to, because §1 measured that closing any descriptor for a record-locked file drops the lock. Its lock is a file that nothing else opens. Each site's row leaves the guard's pending table.</p>
+<p><strong>Done when.</strong></p>
+<ul>
+  <li>The guard passes with these five rows removed from pending.</li>
+  <li>A test records two picker holds from two processes, one holding the lock while the other waits, and finds two whole lines in the log.</li>
+  <li>A test holds the catalogue lock's record lock from a second process and shows a refresh reading the snapshot rather than fetching.</li>
+  <li>Each lock file is opened in <code>reckon/</code> only through <code>exclusive_lock</code>, evidenced as in §3.</li>
+  <li>The focused tests that import the changed modules add no failures against the stated base.</li>
+</ul>
+<p><strong>Write paths.</strong> The five modules named above, the guard test file, and new test files under <code>tests/</code>.</p>
+
+    <h2 id="s6">§6 — The pending table is empty and one migrated lock holds across two nodes</h2>
+<section data-reckon="section" data-id="s6" data-effort-hours="1.25" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+<p><strong>Deliverable.</strong> The guard's pending table is gone or empty, so every bare lock-taking <code>flock</code> left under <code>reckon/</code> is a judged one. The plan's landed record <code>docs/evidence/archive/every-shared-home-lock-holds-across-nodes-landed.html</code> gains a cross-node measurement. One migrated lock, the run pointer lock, is held by a process on the fleet node. A non-blocking take of it is made by a job on a different node, submitted to <code>rigel</code>.</p>
+<p><strong>Done when.</strong></p>
+<ul>
+  <li>The guard passes with no pending rows.</li>
+  <li>The two-node run records both hostnames and the contender's answer, which is held.</li>
+  <li>The negative control in the same job is a <code>flock</code>-only take of that file from the second node while the holder still holds it. It reports free, which shows that the measurement can tell the two primitives apart.</li>
+  <li>The run's log is on GPFS and cited from the landed record.</li>
+</ul>
+<p><strong>Write paths.</strong> The guard test file, <code>docs/evidence/archive/every-shared-home-lock-holds-across-nodes-landed.html</code> (a cumulative record: splice, never rewrite), and a log directory under <code>~/.cache/reckon-lock-proto/</code>.</p>
+
+    <section data-reckon="followups" id="followups" class="r-followups">
+<h2><span class="sec">§</span> Followups</h2>
+<article class="r-fu" data-id="f-eshl-001" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-create" data-written-at="2026-11-14" data-recommends-skill="/reckon-build every-shared-home-lock-holds-across-nodes §2">
+    <h4 class="r-fu-title">Guard first, then three migration waves</h4>
+    <div class="r-fu-body"><p>§2 lands the guard. §3, §4 and §5 then run together, each removing its rows from the pending table. §6 closes the table and measures one lock across two nodes. A content review and a design review are owed before dispatch.</p></div>
+    <pre class="r-fu-prompt">/reckon-build every-shared-home-lock-holds-across-nodes §2</pre>
+</article>
+    </section>
+  </main>
+</body>
+</html>
