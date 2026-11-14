@@ -1,0 +1,32 @@
+<section id="worker-writes-anywhere-but-unmergeable-paths-evidence">
+  <h2>A worker's fence admits its whole worktree but the paths git cannot merge</h2>
+  <p>A node that declares no write paths is granted its whole worktree, because a
+  worktree isolates every edit and the merge reconciles them. What remains sealed
+  is the set git cannot merge textually: a plan document, generated state, a
+  cumulative evidence record, a figure topic directory and a dependency lock. The
+  fence overlays each of those read-only <em>after</em> the run's writable grants,
+  since a grant is the last word on its own path, and the composed launch records
+  the pattern that governs each sealed path so a refusal can name it. A node that
+  declares write paths seals none of them, and its fence is composed exactly as
+  before. Dispatch and both resume paths pass the patterns only when the node
+  declares nothing.</p>
+  <table>
+    <thead><tr><th>Measure</th><th>Recorded result</th><th>Receipt</th></tr></thead>
+    <tbody>
+      <tr><td>Head arm on <code>all_debug</code> at <code>8e5f6679ab75</code></td>
+        <td>59 passed in 16.98s; EXIT=0</td><td><code>logs/head-arm.log</code></td></tr>
+      <tr><td>Baseline arm at <code>9c8632ca0b99</code> in a scratch tree</td>
+        <td>49 passed, 2 errors in 0.72s; EXIT=1</td><td><code>logs/baseline-arm.log</code></td></tr>
+      <tr><td>Negative control: worktree grant removed</td>
+        <td>2 failed, 6 passed in 5.27s; EXIT=1</td><td><code>logs/negative-control.log</code></td></tr>
+    </tbody>
+  </table>
+  <p>The baseline arm's two errors are pre-existing at the base revision and not
+  introduced here. The head arm passes all 59 collected tests, eight of them new:
+  the source-file and new-test writes succeed, one write per exclusive category
+  is refused as read-only and the refusal's pattern is named by the composed
+  launch's <code>unmergeable_seals</code> map, a declared node's worktree is left
+  unsealed, and the initial control case passes. The negative control removes the
+  worktree write grant and the run is red on two ids the head arm does not fail,
+  which is what shows the source write's success is that grant doing its work.</p>
+</section>

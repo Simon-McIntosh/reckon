@@ -130,6 +130,7 @@ from reckon._worker_fence import (  # noqa: F401
     resolved_destination,
     seed_harness_home,
     seed_write_lock_namespace,
+    unmergeable_seals,
     worktree_git_write_roots,
     write_lock_directory,
 )
@@ -448,6 +449,10 @@ class LaunchPlan:
     prompt: str = ""
     anchored_edit: bool = False
     anchored_edit_reason: str | None = "disabled"
+    # The worktree paths this launch may not write, each with the exclusive
+    # pattern that governs it. Empty for a node that declares write paths: its
+    # fence is composed exactly as it was before these were sealed at all.
+    unmergeable_seals: dict[str, str] = field(default_factory=dict)
 
     def as_dict(self) -> dict[str, Any]:
         """Return the plan as sorted JSON-ready data, prompt text excluded."""
@@ -455,6 +460,7 @@ class LaunchPlan:
             "argv": list(self.argv),
             "anchored_edit": self.anchored_edit,
             "anchored_edit_reason": self.anchored_edit_reason,
+            "unmergeable_seals": dict(sorted(self.unmergeable_seals.items())),
             "backend": self.backend,
             "backend_search_path": list(self.backend_search_path),
             "cwd": self.cwd,
@@ -2925,6 +2931,7 @@ def launch_plan(
     fence_config: Mapping[str, Any] | None = None,
     fence_waiver: str | None = None,
     masked_paths: Iterable[str | Path] = (),
+    unmergeable_patterns: Iterable[str] = (),
 ) -> LaunchPlan:
     """Translate one backend plus one node's prompt into a runnable invocation.
 
@@ -3148,7 +3155,14 @@ def launch_plan(
     # worktree's git directory and the shared object store, so a fenced worker
     # cannot commit until those are granted writable; and its harness home does
     # not yet carry the operator's hooks or instruction files.
+    unmergeable: dict[str, str] = {}
     if fence:
+        # A node with no declared write paths is free of its whole worktree, so
+        # the exclusive patterns reach the fence here and nothing else does: a
+        # node that declares write paths seals none of them, and its fence is
+        # composed exactly as it was before any of this existed.
+        for target, pattern in unmergeable_seals(worktree_path, unmergeable_patterns):
+            unmergeable[str(target)] = pattern
         credential_binds = _harness_credential_binds(dialect, harness, fence_home)
         # The login's size is recorded before the fence opens, so the post-run
         # reading has a before-size to compare against; see
@@ -3166,6 +3180,7 @@ def launch_plan(
             read_write_binds=credential_binds,
             config=fence_config,
             masked_paths=masked_paths,
+            unmergeable_paths=tuple(unmergeable.items()),
         )
     return LaunchPlan(
         backend=backend_name,
@@ -3181,6 +3196,7 @@ def launch_plan(
         prompt=prompt,
         anchored_edit=anchored_edit,
         anchored_edit_reason=anchored_edit_reason,
+        unmergeable_seals=unmergeable,
     )
 
 

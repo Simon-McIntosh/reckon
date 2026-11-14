@@ -706,6 +706,8 @@ def _launch_dispatch(
                 preflight_launch_command(
                     backend_name, backend, fence=compose_fence, facts=dispatch_host
                 )
+                from reckon.crew.runs import unmergeable_patterns
+
                 fence_roots = _fence_write_roots(
                     backend=backend,
                     repository=repo_root,
@@ -728,6 +730,15 @@ def _launch_dispatch(
                         fence=compose_fence,
                         fence_config=config,
                         fence_waiver=fence_waiver or None,
+                        # A node with no declared write paths is free of its
+                        # whole worktree, so the paths git cannot merge are
+                        # what its fence must seal; a declared node seals none
+                        # of them.
+                        unmergeable_patterns=(
+                            ()
+                            if node.write_paths
+                            else unmergeable_patterns(project, Path(repo_root))
+                        ),
                         masked_paths=(
                             paired_masks
                             if paired_masks is not None

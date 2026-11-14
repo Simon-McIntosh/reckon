@@ -59,6 +59,7 @@ from reckon.crew.runs import (
     read_pointer,
     record_process_alive,
     run_dir,
+    unmergeable_patterns,
 )
 
 
@@ -1364,6 +1365,7 @@ def resume_plan(
             images=(record.get("node") or {}).get("images") or (),
             fence=FENCE_WORKERS,
             fence_config=config,
+            unmergeable_patterns=_resume_unmergeable_patterns(record),
             masked_paths=_shadow_masks_for_record(record),
         )
     )
@@ -1883,6 +1885,7 @@ def change_lane(
                 images=(record.get("node") or {}).get("images") or (),
                 fence=FENCE_WORKERS,
                 fence_config=config,
+                unmergeable_patterns=_resume_unmergeable_patterns(record),
                 masked_paths=_shadow_masks_for_record(record),
             )
         )
@@ -2609,3 +2612,18 @@ from .dispatch_sections import (  # noqa: E402
     project_mount_repository,
     resolve_project_repository,
 )
+
+
+def _resume_unmergeable_patterns(record: Mapping[str, Any]) -> tuple[str, ...]:
+    """The patterns a resumed worker's fence seals when it declares no writes.
+
+    A resumed attempt runs where its dispatch ran, so it is fenced the same way:
+    a node that declared write paths seals none of them, and a node that
+    declared none seals the paths git cannot merge inside its own worktree.
+    """
+    if (record.get("node") or {}).get("write_paths"):
+        return ()
+    return unmergeable_patterns(
+        str(record.get("project") or "") or None,
+        Path(str(record.get("repo") or ".")),
+    )
