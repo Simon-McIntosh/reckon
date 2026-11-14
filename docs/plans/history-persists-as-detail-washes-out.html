@@ -23,9 +23,8 @@
   <title>History Persists As Detail Washes Out | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="21">
+<meta name="plan-version" content="22">
 <meta name="plan-modified" content="2026-11-14">
-<meta name="plan-impl" content="0.75">
 <meta name="plan-section-declarations" content="{&quot;s20&quot;:&quot;implementable&quot;}">
 </head>
 <body>
@@ -356,8 +355,8 @@
     <h2 id="s20">§20 — Map every ledger reader and writer that must leave git</h2>
 <section data-reckon="section" data-id="s20" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
 <p><strong>Why.</strong> The lead locked <code>committed-export-scope</code> as "none": the run ledger leaves git, and the run store in the crew home becomes its only store. Untracking <code>docs/state/&lt;project&gt;/crew.json</code> and <code>docs/state/&lt;project&gt;/runs/*.json</code> reaches every path that reads or writes them. That includes promotion commits that stage ledger files, release commits, landing records, the open-run and ledger indexes, velocity and pace readers, and the SPA's state payload. Cutting nodes before those are known would strand a writer that still commits a file nobody tracks.</p>
-<p><strong>Deliverable.</strong> An investigation, which changes no product code. It produces a table of every module that reads or writes the ledger aggregate or a per-run ledger file, with the function, whether it reads or writes, and whether it stages or commits the file. It states which already go through the run store and which read the files directly. It names the one-time migration the untracking needs (git rm --cached, .gitignore, history kept in the store, an export path outside git). It ends with a proposed split into implementation sections, each with a write scope disjoint from the others, ordered so that no promotion is ever left unable to record a run.</p>
-<p><strong>Done when.</strong> The fragment <code>docs/evidence/fragments/history-persists-as-detail-washes-out/ledger-leaves-git-map.html</code> carries the table, found by <code>git grep</code> over <code>reckon/</code> for the ledger's path helpers and for literal <code>crew.json</code> and <code>runs/</code> uses. Each claimed caller is cited by file and line from the committed blob at the base revision. It also carries the migration steps and the proposed sections, each with a done-when. A positive control shows the grep finds <code>reckon/ledger.py</code>'s own writer. Write paths: the fragment only.</p>
+<p><strong>Deliverable.</strong> An investigation, which changes no product code. It produces a table of every module that reads or writes the ledger aggregate or a per-run ledger file, with the function, whether it reads or writes, and whether it stages or commits the file. Throughout this section, <em>the run store</em> means the embedded SQLite database under the crew config home that §2 defines, which no commit carries. The table states which callers already read or write through that database and which open the committed files directly. It names the one-time migration the untracking needs (<code>git rm --cached</code>, <code>.gitignore</code>, history kept in the store, an export path outside git). It ends with a proposed split into implementation sections, each with a write scope disjoint from the others, ordered so that no promotion is ever left unable to record a run. Sections §2–§7 were written before the decision and are restated from this map, not built from their current text.</p>
+<p><strong>Done when.</strong> The fragment <code>docs/evidence/fragments/history-persists-as-detail-washes-out/ledger-leaves-git-map.html</code> carries the table, found by <code>git grep</code> over the whole repository at the base revision (every tracked path, <code>docs/</code> and <code>scripts/</code> included, with test files listed in a separate group) for the ledger's path helpers and for literal <code>crew.json</code> and <code>runs/</code> uses. Each claimed caller is cited by file and line from the committed blob at the base revision. It also carries the migration steps and the proposed sections, each with a done-when. A positive control shows the grep finds <code>reckon/ledger.py</code>'s own writer and the committed reader at <code>docs/figures/plan-review-cycles/measure_review_cycles.py</code>. Write paths: the fragment only.</p>
 
     <section data-reckon="decisions" id="decisions" class="r-decisions">
 <h2><span class="sec">§</span> Decisions</h2>
@@ -400,10 +399,16 @@
     <pre class="r-fu-prompt">/reckon-build history-persists-as-detail-washes-out</pre>
     <p class="r-fu-outcome"><p>Superseded. The lead locked <code>committed-export-scope</code> to durable rows committed as one file per run, which makes the committed files the record and the database an index. A read-back of this plan (report at <code>~/.config/reckon/crew/reports/reckon/ship-s19-20260922/review-of-history-persists-as-detail-washes-out/read-back.md</code>) found 50 sentences in §2–§4 and §7 that read two ways under that decision, 43 of them load-bearing, because §1–§6 were written for the database-as-store direction. The per-run ledger work therefore moves to its own plan, <code>the-ledger-is-one-file-per-run</code>, and the expand and dual-write order this followup named is not executed. What stays here is rotation (§5) and the open <code>detail-horizon</code> decision, both re-read against per-run files when they are taken up.</p></p>
     </article>
-<article class="r-fu" data-id="f-hpdw-002" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-ship" data-written-at="2026-09-23" data-recommends-skill="/reckon-build the-ledger-is-one-file-per-run" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-hpdw-002" data-status="resolved" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-ship" data-written-at="2026-09-23" data-recommends-skill="/reckon-build the-ledger-is-one-file-per-run" data-resolved-at="2026-11-14T19:15:35+00:00" data-resolved-by="reckon-a6">
     <h4 class="r-fu-title">The per-run ledger is carried by its own plan</h4>
     <div class="r-fu-body"><p>Pointer. The ledger write, read, split and roster work now lives in <code>the-ledger-is-one-file-per-run</code>. Rotation (§5) and <code>detail-horizon</code> stay here and are taken up after that plan's §3 split, restated for per-run files.</p></div>
     <pre class="r-fu-prompt">/reckon-build the-ledger-is-one-file-per-run</pre>
+    <p class="r-fu-outcome">Superseded by the 2026-11-14 decision committed-export-scope = none: the per-run committed files that the-ledger-is-one-file-per-run builds toward no longer stay in git. The next step is §20's map, carried by f-hpdw-009.</p>
+    </article>
+<article class="r-fu" data-id="f-hpdw-009" data-status="open" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-written-by="reckon-a6" data-written-at="2026-11-14T19:20:00Z" data-recommends-skill="" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Map every ledger reader and writer before the ledger leaves git</h4>
+    <div class="r-fu-body"><p>§20 maps every reader and writer of the committed ledger files across the whole repository and proposes the implementation sections that untrack them, in an order that never leaves a promotion unable to record a run.</p></div>
+    <pre class="r-fu-prompt">/reckon-build history-persists-as-detail-washes-out §20</pre>
     </article>
 </section>
 
