@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="work-flows-to-the-lane">
+  <meta name="plan-title" content="Work flows to the lane">
+  <meta name="plan-summary" content="A review run promoted while its pointer moves retires its pointer instead of being kept for a landing repair it can never receive, and a review pointer already stuck marked for a pending landing is retired by the next sweep with its ledger row untouched.">
+  <meta name="plan-evidence-for" content="reckon:work-flows-to-the-lane">
+  <meta name="plan-verifies" content="reckon:work-flows-to-the-lane#s50">
+  <meta name="plan-recorded-at" content="2026-11-14">
+  <meta name="plan-verdict" content="passed">
+  <title>A promoted review run is never held for a landing repair | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article id="promoted-review-never-held-for-landing-repair-record" data-node="promoted-review-never-held-for-landing-repair" data-reckon="landed">
+  <h2 id="promoted-review-never-held-for-landing-repair-outcome">A promoted review run is never held for a landing repair</h2>
+  <p>At assigned base <code>b8ea8f9f21006af8668ef0cc226799ae50bf966a</code>, the new regression
+  reproduces the reported defect. A review run promoted while its live pointer moves is refused with
+  <q>run 'r-20261113T140142834510-promoted-review' changed while promotion ran; its promotion is
+  recorded and its pointer is kept, marked pending_landing_repair, so the next landing pass finishes
+  the merge of its reviewed head</q>. The declared-mutation log records <code>1 failed, 1 passed in
+  7.36s</code>, <code>EXIT=1</code>, with the marked pointer left in place — the exact hold §50
+  reported. A review has no head to merge, so that mark is a hold nothing lifts.</p>
+  <p><code>reckon/crew/promotion.py</code> now retires a moved pointer when the promotion's record is
+  a review run: its ledger row and any committed review record are already written, so the pointer is
+  removed rather than marked. <code>reckon/crew/pending_landing.py</code> adds
+  <code>retire_stuck_review_pointers</code>, called at the head of the landing pass
+  <code>finish_pending_landings</code>. It retires a marked pointer whose run is a review, whose
+  ledger row is present, whose promotion is not still pending and whose lease is not held, removing
+  only the attempt the mark names. The ledger row is never rewritten and nothing is re-promoted.</p>
+  <p><code>tests/test_promoted_review_never_held_for_landing_repair.py</code> holds the two cases the
+  section names, on a temporary repository and crew home: a review promoted under a moved pointer
+  reads its pointer retired with its ledger row present; a review pointer planted in the stuck state
+  beside its row is retired by one sweep, and the row's bytes are unchanged.</p>
+  <table>
+    <thead><tr><th>Measurement on all_debug, one arm at a time</th><th>Runner summary</th></tr></thead>
+    <tbody>
+      <tr><td>Armed baseline; new test absent</td><td>51 passed in 10.23s; EXIT=0</td></tr>
+      <tr><td>Product head; two new cases plus staged-write inventory</td><td>53 passed in 10.57s; EXIT=0</td></tr>
+      <tr><td>Declared mutation: keep every changed run for a pending landing</td><td>1 failed, 1 passed in 7.36s; EXIT=1</td></tr>
+    </tbody>
+  </table>
+  <p>The declared control disables only the review-run branch in
+  <code>_remove_promoted_pointer_or_defer</code>, so every changed run is still marked for a pending
+  landing. The first case then fails at the assertion that the pointer is gone, leaving it at
+  <code>promotion-requested</code> carrying <code>pending_landing_repair</code>; the sweep case still
+  passes. The head arm passes both. Ruff check and format check report no finding on the staged
+  paths.</p>
+  <p>Durable receipts live under
+  <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261114T081014193672-promoted-review-never-held-for-landing-repair/</code>:
+  <code>gate-base.log</code>, <code>gate-head.log</code> and <code>gate.sh</code>, each arm's log
+  naming its revision, tree, imported module, resolved working directory, literal command and final
+  <code>EXIT=</code> line, and <code>negative-control.log</code>.</p>
+</article>
+</body>
+</html>
