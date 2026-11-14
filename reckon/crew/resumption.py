@@ -627,14 +627,22 @@ def _request_lane_availability(
     log_path = directory / f"{safe_backend}-{stamp}.jsonl"
     stderr_path = directory / f"{safe_backend}-{stamp}.stderr.log"
     final_path = directory / f"{safe_backend}-{stamp}.final.txt"
+    from reckon.crew.dispatch_launch import resolve_launch_executable
+
     try:
-        plan = _backends.launch_plan(
-            backend_name=backend_name,
-            backend=backend,
-            prompt=AVAILABILITY_PROBE_PROMPT,
-            worktree=worktree,
-            final_message_path=final_path,
-            fence=False,
+        # The probe runs the backend's own command, so it runs the one the
+        # backend's resolution found: a composed argv carries the bare name, and
+        # a launcher whose PATH omits a declared directory would die here and
+        # read as a lane that is down.
+        plan = resolve_launch_executable(
+            _backends.launch_plan(
+                backend_name=backend_name,
+                backend=backend,
+                prompt=AVAILABILITY_PROBE_PROMPT,
+                worktree=worktree,
+                final_message_path=final_path,
+                fence=False,
+            )
         )
         completed = subprocess.run(
             plan.argv,
