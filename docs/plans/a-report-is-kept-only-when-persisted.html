@@ -20,12 +20,12 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="crew,reckon-tooling,spa">
   <meta name="plan-after" content="crew-state-stays-bounded">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;done&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;done&quot;}">
   <meta name="plan-section-depends-on" content="{&quot;s3&quot;:[&quot;a-report-is-kept-only-when-persisted#s2&quot;,&quot;a-report-is-kept-only-when-persisted#s4&quot;],&quot;s4&quot;:[&quot;a-report-is-kept-only-when-persisted#s2&quot;],&quot;s5&quot;:[&quot;a-report-is-kept-only-when-persisted#s3&quot;,&quot;a-report-is-kept-only-when-persisted#s4&quot;]}">
   <title>A report is kept only when persisted | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="16">
+<meta name="plan-version" content="17">
 <meta name="plan-modified" content="2026-11-14">
 </head>
 <body>
@@ -83,7 +83,7 @@
 <p>Tests covering CLI help, the verb registry and the MCP tool schema gain the new verb and the records field, and keep their base results otherwise. Negative control: routing the HTTP endpoint through a second implementation that omits the data records makes the agreement case fail. Ruff adds no findings on the staged paths. Write paths: the CLI module that registers crew verbs, the <code>records</code> view in the MCP crew tool, the served <code>/crew</code> route, and the new test.</p>
 
     <h2 id="s4">§4 — An unpersisted report expires at its plan's close or after 30 days</h2>
-<section data-reckon="section" data-id="s4" data-effort-hours="4.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="implementable" data-links=""></section>
+<section data-reckon="section" data-id="s4" data-effort-hours="4.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="done" data-links=""></section>
 <p><strong>Deliverable.</strong> The existing pass that removes report trees, <code>_run_report_trees</code> in <code>reckon/crew/routing.py</code> (run from <code>garbage_collect</code> by the hourly retention sweep, <a href="/reckon/crew-state-stays-bounded#s7">crew-state-stays-bounded §7</a>), is extended with the rules below. No second pass is added. Its item rule replaces the run-tree rule for the reports store, so the 30-day run-tree rule can never remove a cited or persisted item first. <code>_plan_review_raw_reports</code> keeps its own rule for raw plan-review text.</p>
 <p><strong>One classifier.</strong> A new module, <code>reckon/crew/report_retention.py</code>, owns the judgement. Its one <code>classify</code> function returns an item's class (<code>persisted</code>, <code>cited</code> or <code>working</code>), its expiry and the reason. The pass calls it, and so does §3's listing, so the listing never shows an item as retained while the pass removes it. The citation scan reuses the existing document walk: <code>iter_resources</code> (<code>reckon/resources.py</code>) for the plan, research and evidence documents, <code>_LINK_ATTR_RE</code> for <code>href</code> and <code>src</code> targets, and <code>audit_links</code> / <code>_link_record</code> (<code>reckon/doccheck.py</code>) for extraction. No third document walk is written.</p>
 <p><strong>Expiry rule.</strong> A report item that is neither persisted nor cited expires at whichever comes first:</p>
@@ -208,7 +208,7 @@
     <div class="r-comment-body"><p>§2 lands: persisting copies a figure and any named data files into the project's declared reports.persist_root, verifies each copy's byte count and content hash before appending one record per copy to a new persisted_items project resource (filterable by plan and kind), and refuses by name when the project is unmounted, declares no persist root, or declares one inside the crew home; the gate is tests/test_a_persisted_item_has_a_record.py at 8 passed.</p></div>
 </div>
 <div class="r-comment" data-section="s4" data-id="c-run-r-20261114T095120038520-wave3-clive-anchored-a-report-is-kept-only-when-p-s4" data-who="reckon-build" data-when="2026-11-14T13:06:49Z">
-    <div class="r-comment-body"><p>report item retention rule landed — classify_item keeps persisted, cited and live-pointer items and expires the rest at plan close or 30 days; the sweep reads each item&#x27;s newest write once through _newest_mtime and passes it into classify_item.</p></div>
+    <div class="r-comment-body"><p>report item retention rule landed — classify_item keeps persisted, cited and live-pointer items and expires the rest at plan close or 30 days; the sweep reads each item's newest write once through _newest_mtime and passes it into classify_item.</p></div>
 </div>
 </section>
 </main>
