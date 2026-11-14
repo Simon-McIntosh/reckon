@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="docs-project" content="reckon">
+<meta name="reckon-type" content="evidence">
+<meta name="plan-slug" content="wave3-clive-anchored-a-plan-is-reviewed-before-it-s39">
+<meta name="plan-title" content="A plan review staged after its run promoted is still committed">
+<meta name="plan-evidence-for" content="a-plan-is-reviewed-before-it-is-built">
+<meta name="plan-verifies" content="a-plan-is-reviewed-before-it-is-built#s39">
+<meta name="plan-recorded-at" content="2026-11-14">
+<meta name="plan-verdict" content="passed">
+<meta name="plan-commits" content="800747f1a0">
+<title>A plan review staged after its run promoted is still committed | reckon</title>
+<link rel="stylesheet" href="/_shared/foundation.css">
+<link rel="stylesheet" href="/_shared/dashboard.css">
+</head><body><main class="plan-doc">
+<section id="wave3-clive-anchored-a-plan-is-reviewed-before-it-s39-verification">
+<h1>A plan review staged after its run promoted is still committed</h1>
+<table><thead><tr><th>Measure</th><th>Result</th><th>Receipt or qualification</th></tr></thead><tbody>
+<tr><td>Late record reaches the committed store</td><td>Staged after the run's row exists, and found at <code>docs/state/sample/reviews/plan/fixture/&lt;review-run&gt;.json</code></td><td>New test, case <code>test_a_record_stored_after_its_run_promoted_reaches_the_committed_store</code>; the file is committed to the checkout, proved by <code>git ls-files --error-unmatch</code></td></tr>
+<tr><td>A record stored before promotion</td><td>Left staged, exactly as at base</td><td>Case <code>test_a_record_stored_before_its_run_promoted_stays_staged</code>; no committed copy, so the run's own promotion remains the one write that commits it</td></tr>
+<tr><td>Base arm</td><td>51 passed in 20.59s; EXIT=0</td><td>base-arm.log; revision <code>3d4c92834c759745650c2d0eda93fbb68becca7e</code>, git checkout under the run scratch, four follower variables unset, <code>-n 8</code>, <code>tests/test_staged_write_inventory.py</code> (the new test does not exist at base)</td></tr>
+<tr><td>Head arm</td><td>53 passed in 82.08s; EXIT=0</td><td>head-arm.log; revision <code>800747f1a0</code>, the same two files including the new test; 0 added failures against base</td></tr>
+<tr><td>Declared negative control</td><td>1 failed, 1 passed in 12.80s; EXIT=1</td><td>negative-control.log; with the late-commit call removed at the head, the late record stays staged and <code>test_a_record_stored_after_its_run_promoted_reaches_the_committed_store</code> fails; the before-promotion case still passes</td></tr>
+<tr><td>Scoped lint and format</td><td>0 findings; both files formatted</td><td><code>ruff check</code> and <code>ruff format --check</code> on <code>reckon/crew/plan_review.py</code> and the new test</td></tr>
+</tbody></table>
+<h2>The pass that wrote the record late</h2>
+<p>The staging record is written by the plan-review store's delivered-report pass, <code>store_delivered_reviews</code> in <code>reckon/crew/plan_review.py</code> (through <code>_store_deliveries</code> and <code>_store_delivered_report</code>). Both call sites named in the section reach that one pass: a later dispatch on the same plan runs it from <code>routing.require_plan_reviewed</code> (<code>reckon/crew/routing.py:2949</code>), and promotion's own delivery read runs it from <code>promotion_checks._plan_review_promotion_outcome</code> and <code>promotion_checks._plan_review_record_for_promoting_run</code>. Neither caller changes; the guard is fixed in the one writer they share.</p>
+<h2>What changed</h2>
+<p><code>_store_delivered_report</code> now calls <code>_commit_record_when_run_promoted</code> after it has written a plan review's staging record. The helper resolves the crew run that produced the record through <code>review._plan_review_crew_run_id</code> — the one owner of the composed-id-to-run join — and asks <code>open_run_index.has_row</code> whether that run already holds a ledger row. Only then does it write the committed record through <code>review_records.store_committed_review</code>, the same committed writer the promotion uses, and commit it with <code>review_records.commit_record_write</code>. A run with no ledger row leaves the record in the staging store for its own promotion to commit, so the before-promotion path is unchanged and nothing is committed twice.</p>
+<p><code>reckon/crew/promotion.py</code> needed no change: its guard is correct for the write it makes, which happens before the ledger row exists. The gap was that nothing committed a record written after that row landed.</p>
+<h2>Durable receipts</h2>
+<ul>
+<li><code>base-arm.log</code>, <code>head-arm.log</code>, <code>negative-control.log</code> — each starts with its revision, tree, imported module path and literal command, and ends in a bare <code>EXIT=</code> line, under the run directory.</li>
+<li>Arms are git clones of the worktree under the run's own scratch directory, each checked out at its arm's revision.</li>
+</ul>
+</section>
+</main></body></html>
