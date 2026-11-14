@@ -25,7 +25,7 @@
   <title>The Monitor Reads Each Fact Once | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="258">
+<meta name="plan-version" content="259">
 <meta name="plan-modified" content="2026-11-14">
 </head>
 <body>
@@ -1119,6 +1119,15 @@ staged paths.</p>
 <div class="r-comment" data-section="s44" data-id="c-run-r-20261113T064549026332-review-duties-are-derived-off-the-tick-thread" data-who="reckon-build" data-when="2026-11-13T16:15:46Z">
     <div class="r-comment-body"><p>§44 landed: review-duty derivation now runs on a station-owned worker (DutyBeat) and never twice for one project, so the tick publishes each project's run-phase transitions on its own interval; no derivation reaches the review store while a tick is committing transitions, so the ordering §42 promises is enforced by the class rather than by call order. Gate test_review_duties_are_derived_off_the_tick_thread.py passes and the synchronous-tick mutation fails it by name (1 failed, EXIT=1); the ordering case is green 20 of 20 at a3989001ca</p></div>
 </div>
+<div class="r-comment" data-section="s45" data-id="c-run-r-20261113T170730343255-review-of-the-review-store-is-indexed-by-its-writers-e31ada22c117" data-who="reckon-build" data-when="2026-11-13T17:31:31.882Z">
+    <div class="r-comment-body"><p>The review of r-20261113T082959041438-the-review-store-is-indexed-by-its-writers is stored under its run directory at review-records/, scoring all six dimensions (goal_fidelity 12, evidence 13, scope_discipline 20, durability 13, fit 15, reuse 5) against revision eb36ed61..e31ada22, with two blocking findings (the node's test writes into the environment-resolved crew home; reconcile_foreign_write has no production caller so a foreign write is never seen by a read) and five non-blocking findings, zero added failures from its own matched arms.</p></div>
+</div>
+<div class="r-comment" data-section="s45" data-id="c-run-r-20261114T074257191532-review-of-the-review-store-is-indexed-by-its-writers-6cd345913642" data-who="reckon-build" data-when="2026-11-14T08:01:37.669Z">
+    <div class="r-comment-body"><p>Reviewed r-20261113T082959041438-the-review-store-is-indexed-by-its-writers at head 6cd3459136 against base eb36ed61; verdict parsed with all six dimensions scored (goal_fidelity 18, evidence 16, scope_discipline 14, durability 16, fit 17, reuse 18) and five non-blocking findings, no blocking finding.</p></div>
+</div>
+<div class="r-comment" data-section="s45" data-id="c-run-r-20261113T082959041438-the-review-store-is-indexed-by-its-writers" data-who="reckon-build" data-when="2026-11-13T17:57:21Z">
+    <div class="r-comment-body"><p>The review store keeps exactly one index -- the document its writers maintain under a lock on the shared home -- and every staging-store read answers from it: a run&#x27;s records, the per-tick store view, the non-tick path listing, the changed-run query, the station&#x27;s misfiled-review candidate search and stored_record list nothing and stat no record outside the one run they select, where the pre-change readers on the station&#x27;s main thread listed and stat&#x27;ed every record of the store.</p></div>
+</div>
 <div class="r-comment" data-section="s5" data-id="c-run-r-20261023T170707287094-the-station-store-is-node-local" data-who="reckon-build" data-when="2026-10-23T18:59:58Z">
     <div class="r-comment-body"><p>station_store adds the node-local SQLite store at the node-local runtime root: pointer and stream identity is file_memo.file_signature's, day files hold the events and an out-of-window day file is unlinked with its rows, and a root reached only through TMPDIR or on a shared mount is refused; tests/test_the_station_store_is_node_local.py is 15 passed EXIT=0, and both declared mutations turn their case red (1 failed and 8 failed).</p></div>
 </div>
@@ -1196,12 +1205,6 @@ staged paths.</p>
 </div>
 <div class="r-comment" data-section="s9" data-id="c-run-r-20261027T042852990093-obligations-read-the-station" data-who="reckon-build" data-when="2026-10-27T13:28:42Z">
     <div class="r-comment-body"><p>The station computes each live session's obligations once per change into its node-local store and exports one change-only snapshot per project at most every 10 s, with the carried station heartbeat republished once it has moved and the file is 90 s old so a quiet station never reads as stopped; the prompt hook and the crew obligations view both answer from it, in that order ahead of the derivation, and a station heartbeat past the 120 s window is reported stale with its age.</p></div>
-</div>
-<div class="r-comment" data-section="s45" data-id="c-run-r-20261113T170730343255-review-of-the-review-store-is-indexed-by-its-writers-e31ada22c117" data-who="reckon-build" data-when="2026-11-13T17:31:31.882Z">
-    <div class="r-comment-body"><p>The review of r-20261113T082959041438-the-review-store-is-indexed-by-its-writers is stored under its run directory at review-records/, scoring all six dimensions (goal_fidelity 12, evidence 13, scope_discipline 20, durability 13, fit 15, reuse 5) against revision eb36ed61..e31ada22, with two blocking findings (the node's test writes into the environment-resolved crew home; reconcile_foreign_write has no production caller so a foreign write is never seen by a read) and five non-blocking findings, zero added failures from its own matched arms.</p></div>
-</div>
-<div class="r-comment" data-section="s45" data-id="c-run-r-20261114T074257191532-review-of-the-review-store-is-indexed-by-its-writers-6cd345913642" data-who="reckon-build" data-when="2026-11-14T08:01:37.669Z">
-    <div class="r-comment-body"><p>Reviewed r-20261113T082959041438-the-review-store-is-indexed-by-its-writers at head 6cd3459136 against base eb36ed61; verdict parsed with all six dimensions scored (goal_fidelity 18, evidence 16, scope_discipline 14, durability 16, fit 17, reuse 18) and five non-blocking findings, no blocking finding.</p></div>
 </div>
 </section>
 </main>
