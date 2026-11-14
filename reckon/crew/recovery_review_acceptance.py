@@ -776,6 +776,27 @@ _PRE_LAUNCH_PHASES = frozenset({"queued", "awaiting-upstream", "starting"})
 REVIEW_SELF_REFUSED = "refused"
 
 
+def _plan_review_delivery(
+    record: Mapping[str, Any], project: str
+) -> Mapping[str, Any] | None:
+    """The delivered report a plan review left, read where promotion joins it.
+
+    A plan review's report directory is named for the composed review id, so
+    the crew run that produced it does not name the record. The directory's
+    ``dispatch.json`` is the join between the two, and promotion already
+    resolves a promoting plan review through it. Reading that same join here
+    keeps this reader and the store step from disagreeing about where a plan
+    review's record is.
+    """
+    from reckon.crew import promotion_checks
+
+    plan_slug = _plan_review_pointer_slug(record)
+    run_id = str(record.get("run_id") or "")
+    if not (plan_slug and run_id):
+        return None
+    return promotion_checks._delivered_plan_review_for_run(project, plan_slug, run_id)
+
+
 def review_self_state(
     pointer: Mapping[str, Any],
 ) -> tuple[str, str, Path | None]:
@@ -837,6 +858,26 @@ def review_self_state(
             ),
             None,
         )
+    plan_slug = _plan_review_pointer_slug(pointer)
+    if plan_slug:
+        # A plan review's record is the report it wrote under the composed
+        # directory its brief named, so it is read through the join the store
+        # step uses rather than through a run-review's head-keyed path.
+        delivered = _plan_review_delivery(pointer, project)
+        if delivered is None:
+            from reckon.crew import plan_review
+
+            root = plan_review._plan_review_report_root(project, plan_slug)
+            return (
+                REVIEW_SELF_REFUSED,
+                (
+                    "the review run stored no readable record for the plan it "
+                    f"read: no delivered report under {root} names it, so it "
+                    "has nothing a coordinator would not add"
+                ),
+                None,
+            )
+        return REVIEW_SELF_READY, "", Path(str(delivered.get("report_path") or ""))
     stored = _delivered_review_record(pointer, project)
     if stored is None:
         named = f" for head {declares[1]}" if declares is not None else ""
@@ -1351,6 +1392,7 @@ from .recovery_repair_dispatch import (  # noqa: E402
     dispatch_repair_for_run,
 )
 from .recovery_review_dispatch import (  # noqa: E402
+    _plan_review_pointer_slug,
     _record_review_dispatch,
     _review_head_and_tree,
     dispatch_review_for_run,
