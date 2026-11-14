@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="the-monitor-shows-the-work-it-watches">
+  <meta name="plan-evidence-for" content="reckon:the-monitor-shows-the-work-it-watches">
+  <meta name="plan-verifies" content="reckon:the-monitor-shows-the-work-it-watches#s72">
+  <title>A completed reload is not reported as a stop — landing</title>
+</head>
+<body>
+
+<article id="wave4-clive-anchored-the-monitor-shows-the-wo-s72-landing"
+         data-node="wave4-clive-anchored-the-monitor-shows-the-wo-s72"
+         data-reckon="landed">
+  <h2>A completed reload is not reported as a stop</h2>
+
+  <p>The follower reported <code>producer &lt;project&gt; stopped during its
+  reload begun &lt;stamp&gt;</code> whenever a poll found the seat not live
+  while the seat record still carried <code>reload_started_at</code>. That
+  marker is written by the producer just before it replaces its own image, and
+  the replacement clears it by rewriting the record, so a poll landing inside
+  the replacement reads the record mid-write and finds no producer. The branch
+  now reports only a reload whose window has elapsed, or one the producer's own
+  log records as failed.</p>
+
+  <p>What counts is the <em>current</em> reload. The producer's log keeps its
+  lines across reloads, so a failure recorded for an earlier attempt was still
+  in the four-kilobyte tail while a later reload was inside its window, and the
+  follower reported that later attempt at once for it. The failure line is now
+  accepted only when its own timestamp — the prefix the log writer adds to
+  every line — is at or after the stamp the seat record carries. A line with no
+  such prefix cannot be dated and is read as the current attempt rather than
+  withheld, so a log written without the prefix keeps its earlier behaviour.</p>
+
+  <h3 id="wave4-clive-anchored-the-monitor-shows-the-wo-s72-which-reading">Which
+  liveness reading turns false</h3>
+  <p>Measured, not inferred. A real <code>crew watch</code> producer was armed
+  from a copied source tree and forced to reload in place while a poller read
+  <code>runs.producer_live</code> and each reading it consults every 5 ms:
+  2000 polls across the reload, and the answer was <strong>False on none of
+  them</strong> — the pid reading and <code>record_process_alive</code> stayed
+  live, and the record kept its pid and its marker. The reading that does turn
+  false is the transition stream's freshness
+  (<code>_seat_stream_fresh</code>). A record that is momentarily unreadable or
+  names another host is judged by exactly that reading, so
+  <code>producer_live</code> answers False for the reload's whole length. A
+  record rewrite is <code>truncate</code> then write, and a concurrent reader
+  sees the empty window in <strong>156 of 173</strong> rewrites (156 empty reads
+  in 199,993).</p>
+
+  <h3 id="wave4-clive-anchored-the-monitor-shows-the-wo-s72-measures">Measures</h3>
+  <table>
+    <tr><th>Measure</th><th>Result</th></tr>
+    <tr><td>new test, four cases</td><td>4 passed</td></tr>
+    <tr><td>base arm at <code>50cf9e4e</code> (window and inventory tests, <code>-n 4</code>, compute node)</td>
+        <td>1 failed, 54 passed — the module-window case only</td></tr>
+    <tr><td>after arm at <code>b99ba42e</code> (this node's test, window and inventory tests)</td>
+        <td>1 failed, 58 passed — the same module-window case, and four added cases passing</td></tr>
+    <tr><td>failure ids added at head</td><td>none; the same single failure at both arms</td></tr>
+    <tr><td>follow population, earlier arms</td>
+        <td>at <code>-n 4</code> 50 failed against 49 with identical sets, and 49 against 49 in place at <code>-n 8</code></td></tr>
+    <tr><td>negative control for the stale failure line</td>
+        <td>with the stamp binding removed, the stale-line case alone fails (1 failed, 3 passed)</td></tr>
+    <tr><td>negative control: window check removed, first case</td>
+        <td>1 reload-failure row (the case fails)</td></tr>
+    <tr><td>ruff check / format --check</td>
+        <td>no added findings (2 pre-existing, identical at base)</td></tr>
+  </table>
+
+  <h3 id="wave4-clive-anchored-the-monitor-shows-the-wo-s72-window">The module
+  window clause is wider than this node</h3>
+  <p><code>tests/test_every_module_fits_a_worker_window.py</code> fails at
+  both arms, and this node cannot close it: 13 modules breach the 50,000 bound
+  at the base revision, and <code>reckon/crew_follow_commands.py</code> is one
+  of them at <strong>50,277</strong> tokens before this change and
+  <strong>51,026</strong> after it (+749 for eight helpers and the report
+  branch). The plan expected the follower at about 42,400 after the reloader
+  family moved out; landings since then have grown it past the bound, so the
+  clause needs a node of its own whose scope covers those modules. The
+  49 failures shared by both arms are the same ids, and none is added here.</p>
+</article>
+
+</body>
+</html>
