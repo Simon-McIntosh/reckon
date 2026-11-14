@@ -61,11 +61,8 @@ JUDGED: dict[str, str] = {
 # removes its rows from here and adds judged rows where a site stays bare.
 PENDING: frozenset[str] = frozenset(
     {
-        "reckon/_store.py::_serialized_path_lock",
-        "reckon/compliance.py::_locked",
         "reckon/crew/admission/service.py::_admit_lock",
         "reckon/crew/budget_reset.py::_locked",
-        "reckon/crew/dispatch_peer.py::_update_peer_index",
         "reckon/crew/model_catalogue.py::_refresh_lock",
         "reckon/crew/obligations.py::_record_index_lag",
         "reckon/crew/paid_lanes.py::publish_document",
@@ -77,7 +74,6 @@ PENDING: frozenset[str] = frozenset(
         "reckon/crew/recovery_watch.py::_update_git_answer_store",
         "reckon/crew/resumption.py::_lane_probe_lock",
         "reckon/crew/resumption.py::_sweep_status_lock",
-        "reckon/crew/review_records.py::_index_lock",
         "reckon/crew/runs.py::_pointer_lock",
         "reckon/crew/runs.py::queue_dispatch",
         "reckon/crew/runs.py::update_watch_registration",
