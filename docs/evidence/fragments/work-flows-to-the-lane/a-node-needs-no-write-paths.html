@@ -48,9 +48,23 @@
       <tr><td>a declared node is queued with its own paths</td><td>stored fence is exactly what the entry declared</td></tr>
     </tbody>
   </table>
+  <p>The two suites that still asserted the superseded behaviour were updated
+  to assert the new one: the batch suite reads the entry whose section states
+  no write-paths sentence as queued with an empty fence, and the ship contract
+  suite looks for the refusal a path-less node actually gets — the test file
+  its done-when names — rather than the scoped message that is gone. The
+  done-when read reuses the repair round's one owner of "a test path a text
+  names" instead of a second pattern.</p>
   <p>Both suite arms ran on <code>all_debug</code> over an extraction of
-  their own revision. The after arm at <code>868f65ccc</code> reports
-  <em>6 passed</em> and exits zero; the base arm at <code>6cb753ef86</code> collects no test at all, because this node's test file is created by the change, so it measures nothing rather than passing something.</p>
+  their own revision, the batch suite, this node's test file, the ship
+  contract suite and the staged-write inventory. The after arm at
+  <code>b706f47528</code> reports 128 passed; the base arm at
+  <code>6cb753ef86</code> reports 122 passed and cannot collect this node's
+  test file at all, because the change creates it. Both arms carry the same
+  two failures and two errors in the contract and inventory suites, so the
+  delta is the six new cases and no regression; those four are present at
+  the base revision. Measured on its own, this node's file reports
+  <em>6 passed</em> and exits zero.</p>
   <p>The declared negative control was applied and reverted: restoring the
   requirement that a section state a write-paths sentence reddens four cases,
   naming <code>test_a_batch_entry_with_no_write_paths_is_queued</code>,
