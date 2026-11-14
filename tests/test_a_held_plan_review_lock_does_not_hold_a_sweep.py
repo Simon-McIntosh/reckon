@@ -36,7 +36,7 @@ def composed(home, monkeypatch: pytest.MonkeyPatch) -> list[dict]:
         calls.append(dict(record))
         return {"dispatched": True, "run_id": record["run_id"]}
 
-    monkeypatch.setattr(dispatch, "_standing_plan_review", lambda *_a: None)
+    monkeypatch.setattr(dispatch, "_standing_plan_review", lambda *_a, **_k: None)
     monkeypatch.setattr(dispatch, "_review_dispatch_fields", lambda *_a, **_k: {})
     monkeypatch.setattr(dispatch, "_dispatch_composed_review", compose)
     return calls

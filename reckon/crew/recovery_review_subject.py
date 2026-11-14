@@ -16,7 +16,7 @@ from reckon.crew.node import (
     parse_duration,
 )
 from reckon.crew.prompts import render_review_check
-from reckon.crew.repair import round_node_id
+from reckon.crew.repair import PLAN_REVIEW_RUBRIC_SUFFIX, round_node_id
 
 
 # The role a read-only investigation is dispatched under. A run carrying it
@@ -937,6 +937,20 @@ def materialize_run_review_brief(source: str | Path) -> bool:
     return True
 
 
+def _plan_review_node_id(slug: str, rubric: str) -> str:
+    """The node id a plan review of ``rubric`` composes under.
+
+    A plan review's node id names the plan, so every store reader keyed on the
+    prefix finds the review whatever rubric it was composed under. The design
+    rubric names itself after the plan because two reviews of one plan read it
+    independently and must be able to run together, while dispatch answers a
+    second live run of one node id with the first; the content rubric keeps the
+    bare id every stored pointer and store reader already carries.
+    """
+    node_id = f"{PLAN_REVIEW_NODE_PREFIX}{slug}"
+    return f"{node_id}{PLAN_REVIEW_RUBRIC_SUFFIX}" if rubric == "design" else node_id
+
+
 def _review_dispatch_fields(
     record: Mapping[str, Any],
     *,
@@ -1077,7 +1091,7 @@ def _review_dispatch_fields(
             "plan": "",
             "section": "",
             "source_node": slug,
-            "node_id": f"{PLAN_REVIEW_NODE_PREFIX}{slug}",
+            "node_id": _plan_review_node_id(slug, rubric),
             "session": record["session"],
             "time_budget": "20m",
             "brief": str(brief),

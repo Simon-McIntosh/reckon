@@ -28,6 +28,7 @@ from reckon.crew import (
     recovery_review_dispatch,
     recovery_watch,
 )
+from reckon.crew.repair import PLAN_REVIEW_RUBRIC_SUFFIX
 from tests.test_review_plan_command import CONFIG
 from tests.test_review_plan_command import project as project  # noqa: PLC0414
 
@@ -129,5 +130,7 @@ def test_review_still_composes_a_review_on_demand(project):
     )
     assert result.exit_code == 0, result.output
     payload = json.loads(result.stdout)
-    assert payload["node"]["id"] == "plan-review-of-fixture"
+    # A dry run with no rubric names the design rubric, which composes under the
+    # plan's id with the rubric suffix so the content review can run beside it.
+    assert payload["node"]["id"] == f"plan-review-of-fixture{PLAN_REVIEW_RUBRIC_SUFFIX}"
     assert payload["node"]["role"] == "review"
