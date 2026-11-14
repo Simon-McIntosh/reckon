@@ -24,7 +24,7 @@
   <title>Work Flows To The Lane | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="212">
+<meta name="plan-version" content="213">
 <meta name="plan-modified" content="2026-11-14">
 </head>
 <body>
@@ -818,6 +818,9 @@
 <div class="r-comment" data-section="s45" data-id="c-run-r-20261113T161424570358-review-promoted-before-its-run" data-who="reckon-build" data-when="2026-11-13T18:57:06Z">
     <div class="r-comment-body"><p>§45 — the promotion drain starts a run's queued review ahead of the run it reviews, requeues a run refused only for that still-queued review, and keeps the primary branch's review-self wait in the same loop; merged with primary main at 9b88b8b4 with both intents resolved.</p></div>
 </div>
+<div class="r-comment" data-section="s46" data-id="c-run-r-20261114T083113550541-review-of-promotion-queue-drains-at-slot-speed-5cb42dbbe22c" data-who="reckon-build" data-when="2026-11-14T08:54:25.115Z">
+    <div class="r-comment-body"><p>review of r-20261113T161430369224-promotion-queue-drains-at-slot-speed at head 5cb42dbbe22c read as fd2c43f7..5cb42db: scores goal_fidelity 15, evidence 14, scope_discipline 18, durability 15, fit 14, reuse 4 (total 80), added_failure_count 0, seven findings of which one is blocking (the refill thread's tick races the admission loop's begin_drain, so a promotion can start after the reload decision and fall outside wait_for_in_flight before the reexec cuts it off).</p></div>
+</div>
 <div class="r-comment" data-section="s47" data-id="c-run-r-20261113T181455587947-review-of-compose-not-answered-with-older-review-707e6684b2d8" data-who="reckon-build" data-when="2026-11-13T18:37:56.432Z">
     <div class="r-comment-body"><p>Reviewed r-20261113T164852121047-compose-not-answered-with-older-review at head 707e6684b2: parsed record scoring goal_fidelity 18, evidence 19, scope_discipline 20, durability 15, fit 18, reuse 15, three non-blocking findings, no blocking finding.</p></div>
 </div>
@@ -893,8 +896,8 @@
 <div class="r-comment" data-section="s8" data-id="c-close-s8" data-who="reckon-build" data-when="2026-11-12T02:20:00Z">
     <div class="r-comment-body"><p>§8 landed at <code>ff797f0c45</code>. <a href="/reckon/evidence/archive/work-flows-to-the-lane-landed.html#s8-re-review-need-in-shadow">evidence</a></p></div>
 </div>
-<div class="r-comment" data-section="s46" data-id="c-run-r-20261114T083113550541-review-of-promotion-queue-drains-at-slot-speed-5cb42dbbe22c" data-who="reckon-build" data-when="2026-11-14T08:54:25.115Z">
-    <div class="r-comment-body"><p>review of r-20261113T161430369224-promotion-queue-drains-at-slot-speed at head 5cb42dbbe22c read as fd2c43f7..5cb42db: scores goal_fidelity 15, evidence 14, scope_discipline 18, durability 15, fit 14, reuse 4 (total 80), added_failure_count 0, seven findings of which one is blocking (the refill thread&#x27;s tick races the admission loop&#x27;s begin_drain, so a promotion can start after the reload decision and fall outside wait_for_in_flight before the reexec cuts it off).</p></div>
+<div class="r-comment" data-section="s50" data-id="c-run-r-20261114T083851987719-review-of-promoted-review-never-held-for-landing-repair-fa334babcdbb" data-who="reckon-build" data-when="2026-11-14T08:57:18.287Z">
+    <div class="r-comment-body"><p>§50 review stored: parsed record at base b8ea8f9f21006af8668ef0cc226799ae50bf966a, head fa334babcdbbb09d830587f15eca7fc18905b57c; scores goal_fidelity 19, evidence 17, scope_discipline 20, durability 18, fit 18, reuse 17; three non-blocking findings (unconditional pointer unlink at promotion.py:291, the run&#x27;s pending-landing record not cleared at pending_landing.py:460, negative-control.log header naming the base revision).</p></div>
 </div>
 </section>
 </main>

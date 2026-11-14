@@ -1,0 +1,53 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "Derived from the reviewed run's own gate logs, not claimed: gate-base.log records 51 passed with failure_ids [] and completed true, gate-head.log records 53 passed with failure_ids [] and completed true, both EXIT=0, so no test id failed in the head arm that the base arm passed and added_failure_count is 0 with no ids rather than an unmeasured zero.",
+  "call_sites": [
+    "reckon/crew/promotion.py:1445",
+    "reckon/crew/promotion.py:2122",
+    "reckon/crew_run_commands.py:3618",
+    "reckon/crew/queue_landing.py:1897"
+  ],
+  "completed_at": "2026-11-14T08:57:18.287Z",
+  "dispatched_at": "2026-11-14T08:45:20Z",
+  "findings": [
+    "non-blocking: reckon/crew/promotion.py:291 _retire_review_pointer unlinks whatever pointer is live for the run unless the unlink itself raises OSError, without the attempt comparison that both other pointer removals apply (promotion.py:223-251 _remove_promoted_pointer compares attempt, attempt_kind, phase, pid and pid_start_time; reckon/crew/pending_landing.py:196-206 _release_marked_pointer compares pointer_attempt against the attempt the mark names). The path is entered precisely when the pointer moved, and a moved pointer can be a newer attempt written by a resume, so a promotion that finishes after a reviewer is resumed deletes that live attempt's pointer and leaves the resumed worker with nothing to complete with.",
+    "non-blocking: reckon/crew/pending_landing.py:460 retire_stuck_review_pointers retires the live pointer but never calls clear_pending, so a review run promoted with --land leaves its pending-dir record (written at reckon/crew_run_commands.py:3653) behind; the same finish_pending_landings pass then reads that record in the loop below at pending_landing.py:470 onward, finds the ledger row present and no live pointer, and either re-attempts a landing at the review's cited head or leaves the record on disk indefinitely, while the no-live-pointer branch at pending_landing.py:545 no longer short-circuits it.",
+    "non-blocking: negative-control.log line 1 names revision b8ea8f9f21006af8668ef0cc226799ae50bf966a while line 2 names the head worktree at .../promoted-review-never-held-for-landing-repair, so the declared mutation's header names the base revision although the control ran against the head tree; the failing test id and the 1 failed / 1 passed summary are sound, but a reader cannot tell from the header which code the control ran on."
+  ],
+  "justifications": {
+    "durability": "tests/test_promoted_review_never_held_for_landing_repair.py:152 reads the pointer from disk and reddens when promotion.py:311 is not taken, as negative-control.log shows with 1 failed, 1 passed, and :179-181 reddens if the sweep's _release_marked_pointer call at pending_landing.py:460 is removed, though that second path carries no declared control.",
+    "evidence": "gate-base.log records 51 passed and gate-head.log 53 passed with EXIT=0 against revisions b8ea8f9f21 and 692bf59a1b, and the sbatch --wait --partition=all_debug invocation is recorded in the run's stream, but negative-control.log:1 names the base revision while its tree line names the head worktree.",
+    "fit": "reckon/crew/pending_landing.py:427-463 follows the surrounding pass's shape (local imports inside the function, the _promoted_row / _promotion_lease_held / _release_marked_pointer helpers) and every added name states a mechanism, retire_stuck_review_pointers and _retire_review_pointer, with no plan or ticket identifier.",
+    "goal_fidelity": "reckon/crew/promotion.py:310-312 retires a review run's moved pointer and reckon/crew/pending_landing.py:427-463 retires a pointer already left marked, which are the two routes the section's deliverable names.",
+    "reuse": "reckon/crew/pending_landing.py:460 reuses _release_marked_pointer, _promoted_row, _promotion_lease_held and _is_review_run rather than forking them, while promotion.py:278-292 re-implements the unlink body of _remove_promoted_pointer at promotion.py:223-251 instead of extending it with an attempt-agnostic mode.",
+    "scope_discipline": "git diff --name-only b8ea8f9f21 fa334babcd returns exactly the four paths promotion.py, pending_landing.py, the new test and the evidence fragment, each named in the manifest's write paths."
+  },
+  "notes": "Read: the plan section 50 body, the source manifest, both commits (692bf59a1b, fa334babcd) and their full diff against b8ea8f9f21006af8668ef0cc226799ae50bf966a, the new test file, gate-base.log, gate-head.log, negative-control.log, gate.sh, lint.log, the committed evidence fragment, and the production call sites at promotion.py:1445/:2122, crew_run_commands.py:3619, queue_landing.py:1897. Open outside the diff as the reuse read: promotion.py:223-251 (_remove_promoted_pointer), pending_landing.py:169-206 (pointer_attempt, mark_pending_landing_repair, _release_marked_pointer), recovery_review_delivery.py:45 (_is_review_run) and the whole finish_pending_landings loop. Not re-derived: the gate arms were not re-run. No file in the reviewed worktree was modified; this review wrote only its two records.",
+  "project": "reckon",
+  "review_run_id": "r-20261114T083851987719-review-of-promoted-review-never-held-for-landing-repair-fa334babcdbb",
+  "reviewed_base_sha": "b8ea8f9f21006af8668ef0cc226799ae50bf966a",
+  "reviewed_head_sha": "fa334babcdbbb09d830587f15eca7fc18905b57c",
+  "reviewed_run_id": "r-20261114T081014193672-promoted-review-never-held-for-landing-repair",
+  "scores": {
+    "durability": 18,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 17,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-14T08:57:31.794788+00:00",
+  "total": 109,
+  "verdicts": {
+    "call_sites": "VERDICT call_sites: the changed paths are reached from reckon/crew/promotion.py:1445 and :2122 (_remove_promoted_pointer_or_defer, the promotion route), reckon/crew_run_commands.py:3618 (finish_pending_landings(only_run=run_id)) and reckon/crew/queue_landing.py:1897 (finish_pending_landings()), and all four were opened and read.",
+    "diff": "VERDICT diff: read commit by commit against b8ea8f9f21006af8668ef0cc226799ae50bf966a; 692bf59a1b changes promotion.py and pending_landing.py, fa334babcd adds the evidence fragment, and the tree adds tests/test_promoted_review_never_held_for_landing_repair.py, four files and 308 insertions with three deletions, all inside the declared scope.",
+    "done_when": "VERDICT done_when: the done-when names two tests, a review promoted under a moved pointer reading its pointer retired with its ledger row present and a planted stuck pointer retired by one sweep with its row unchanged, plus a negative control leaving the first pointer at promotion-requested; tests/test_promoted_review_never_held_for_landing_repair.py:127-152 and :155-181 are those two cases and negative-control.log records 1 failed, 1 passed with EXIT=1 under the declared mutation.",
+    "goal": "VERDICT goal: the node goal is that a run with nothing to land, which covers every review run, is never kept for a pending-landing repair; reckon/crew/promotion.py:297-315 retires a moved pointer for a review run and reckon/crew/pending_landing.py:427-463 adds the sweep that retires a pointer already marked, so both halves of the goal are landed.",
+    "manifest": "VERDICT manifest: read at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261114T081014193672-promoted-review-never-held-for-landing-repair/manifest.md; it reads status complete, records the gate on all_debug with base 51 passed and head 53 passed, and names all four logs under the run directory.",
+    "write_paths": "VERDICT write_paths: the manifest declares reckon/crew/promotion.py, reckon/crew/pending_landing.py, reckon/crew/resumption.py, the new test, the evidence fragment and a figures directory; the diff touches promotion.py, pending_landing.py, tests/test_promoted_review_never_held_for_landing_repair.py and docs/evidence/fragments/work-flows-to-the-lane/promoted-review-never-held-for-landing-repair.html, every one inside that list, and resumption.py is untouched."
+  },
+  "verified_ancestry": "git cat-file -t returns commit for both b8ea8f9f21006af8668ef0cc226799ae50bf966a and fa334babcdbbb09d830587f15eca7fc18905b57c; the reviewed head is not an ancestor of this reviewer's base 314d44813c, so the range was read from the objects rather than from a merged tree."
+}
