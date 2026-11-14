@@ -1,0 +1,56 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/crew/station.py:1073",
+    "reckon/crew_follow_commands.py:1638"
+  ],
+  "completed_at": "2026-11-14T22:08:37.156Z",
+  "dispatched_at": "2026-11-14T21:41:45Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/the-monitor-reads-each-fact-once/a-tick-walks-the-process-table-once.html",
+      "line": 28,
+      "severity": "non-blocking",
+      "summary": "The fragment says the head arm ran at 2640003b86, while after-suite.log's own header names revision 00645a9bd9758cef463748229bbdd35cfc72411a, so the citation cannot be reconciled with the log it points to; the measurement still stands because the two revisions differ only in this docs fragment."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261114T174544423075-a-tick-walks-the-process-table-once/after-suite.log",
+      "line": 5,
+      "severity": "non-blocking",
+      "summary": "The matched arms collect only the new test plus tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py, neither of which imports station_subscriber, while thirteen test files do, so the done_when clause that the importing test files add no failure against base is not demonstrated; the coordinator should widen the suite fence, since the node's own fence generated this command."
+    }
+  ],
+  "justifications": {
+    "durability": "tests/test_a_tick_walks_the_process_table_once.py:309 fails with 40 walks as negative-control-base.log shows when the region is absent, so removing station_subscriber.py:352 reddens it.",
+    "evidence": "tests/test_a_tick_walks_the_process_table_once.py:304-310 asserts one walk and gate-tick-walk.log records 1 passed EXIT=0, but the matched arms in after-suite.log:5 cover none of the thirteen test files that import station_subscriber.",
+    "fit": "reckon/crew/station_subscriber.py:352 reuses the same region idiom already used at reckon/crew/obligation_snapshot.py:1631 and adds no plan or ticket name.",
+    "goal_fidelity": "reckon/crew/station_subscriber.py:352-357 wraps the whole terminal-duty loop in process_signal.process_table_walk_once(), so the pass takes one table for every pointer it classifies.",
+    "reuse": "The change calls the existing process_table_walk_once owner at reckon/crew/process_signal.py:309 rather than adding a second walk-sharing mechanism; no duplicate definition was found.",
+    "scope_discipline": "Every path in git diff b8530ec5..00645a9b lies inside the manifest's declared write paths, and the docs commit 00645a9b touches only the fragment."
+  },
+  "project": "reckon",
+  "review_run_id": "r-20261114T212556245162-review-of-a-tick-walks-the-process-table-once-00645a9bd975",
+  "reviewed_base_sha": "b8530ec5e1ce2a40bffbc7e1b440684411dae923",
+  "reviewed_head_sha": "00645a9bd9758cef463748229bbdd35cfc72411a",
+  "reviewed_run_id": "r-20261114T174544423075-a-tick-walks-the-process-table-once",
+  "scores": {
+    "durability": 19,
+    "evidence": 16,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-14T22:14:18.900996+00:00",
+  "total": 114,
+  "verdicts": {
+    "diff": "Read commit by commit: 441765e4 opens the existing walk region in station_subscriber.py, 2640003b repairs the test's assertion message and final newline, and 00645a9b adds the evidence fragment; no file outside the declared scope changed.",
+    "done_when": "The done_when names tests/test_a_tick_walks_the_process_table_once.py over 40 terminal pointers with a recording stand-in and a beat-stepping clock; the test asserts one walk, equal populations and a 40-walk base arm, and gate-tick-walk.log records 1 passed EXIT=0.",
+    "goal": "The node's goal is that one pass of live_work_populations walks the process table at most once; reckon/crew/station_subscriber.py:352 now opens process_signal.process_table_walk_once() around the terminal-duty loop, which is that bound.",
+    "manifest": "Read; it records status complete, the three commits, the gate at EXIT=0, the base negative control at EXIT=1 counting 40 walks, and matched arms of 55 passed at base and 56 passed at head.",
+    "write_paths": "The declared write paths are reckon/crew/station_subscriber.py, tests/test_a_tick_walks_the_process_table_once.py and the node's fragment; git diff b8530ec5..00645a9b touches exactly those three paths."
+  }
+}

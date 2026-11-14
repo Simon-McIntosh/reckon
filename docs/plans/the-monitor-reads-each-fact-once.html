@@ -25,7 +25,7 @@
   <title>The Monitor Reads Each Fact Once | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="291">
+<meta name="plan-version" content="292">
 <meta name="plan-modified" content="2026-11-14">
 </head>
 <body>
@@ -1210,6 +1210,9 @@ staged paths.</p>
 <div class="r-comment" data-section="s48" data-id="c-s48-landed" data-who="reckon-build" data-when="">
     <div class="r-comment-body"><p>Landed by reckon-a6 as <code>4b91a3c96d</code> (merged in <code>d41a48f1b8</code>). <code>reconcile_foreign_write</code> takes the index lock with <code>LOCK_NB</code> (<code>reckon/crew/review_records.py:2209</code>), and a reader finding it held serves the persisted document. Its test, <code>tests/test_a_review_index_reader_never_waits_or_rewrites.py</code>, is red at base. The review_records importers read 6 failed and 199 passed at base against 6 failed and 201 passed at head. The same commit makes an unchanged reconcile write nothing and memoise the identity in-process; §49 replaces that memo with the persisted stamp.</p></div>
 </div>
+<div class="r-comment" data-section="s49" data-id="c-run-r-20261114T211432583899-review-of-review-index-stamp-s49-d89c36e124bf" data-who="reckon-build" data-when="2026-11-14T22:07:37.916Z">
+    <div class="r-comment-body"><p>The independent review of r-20261114T170847087917-review-index-stamp-s49 at d89c36e124bf scores goal_fidelity 18, evidence 12, scope_discipline 18, durability 19, fit 17, reuse 5, records zero added failures from the node's own arms, and raises one blocking finding (the change deletes review_records._SETTLED_IDENTITIES, which tests/test_a_review_index_reader_never_waits_or_rewrites.py:30 still clears, so two tests error at setup at the reviewed head where base passes) plus two non-blocking reuse findings on the stamp helpers.</p></div>
+</div>
 <div class="r-comment" data-section="s5" data-id="c-run-r-20261023T170707287094-the-station-store-is-node-local" data-who="reckon-build" data-when="2026-10-23T18:59:58Z">
     <div class="r-comment-body"><p>station_store adds the node-local SQLite store at the node-local runtime root: pointer and stream identity is file_memo.file_signature's, day files hold the events and an out-of-window day file is unlinked with its rows, and a root reached only through TMPDIR or on a shared mount is refused; tests/test_the_station_store_is_node_local.py is 15 passed EXIT=0, and both declared mutations turn their case red (1 failed and 8 failed).</p></div>
 </div>
@@ -1300,8 +1303,8 @@ staged paths.</p>
 <div class="r-comment" data-section="s9" data-id="c-run-r-20261027T042852990093-obligations-read-the-station" data-who="reckon-build" data-when="2026-10-27T13:28:42Z">
     <div class="r-comment-body"><p>The station computes each live session's obligations once per change into its node-local store and exports one change-only snapshot per project at most every 10 s, with the carried station heartbeat republished once it has moved and the file is 90 s old so a quiet station never reads as stopped; the prompt hook and the crew obligations view both answer from it, in that order ahead of the derivation, and a station heartbeat past the 120 s window is reported stale with its age.</p></div>
 </div>
-<div class="r-comment" data-section="s49" data-id="c-run-r-20261114T211432583899-review-of-review-index-stamp-s49-d89c36e124bf" data-who="reckon-build" data-when="2026-11-14T22:07:37.916Z">
-    <div class="r-comment-body"><p>The independent review of r-20261114T170847087917-review-index-stamp-s49 at d89c36e124bf scores goal_fidelity 18, evidence 12, scope_discipline 18, durability 19, fit 17, reuse 5, records zero added failures from the node&#x27;s own arms, and raises one blocking finding (the change deletes review_records._SETTLED_IDENTITIES, which tests/test_a_review_index_reader_never_waits_or_rewrites.py:30 still clears, so two tests error at setup at the reviewed head where base passes) plus two non-blocking reuse findings on the stamp helpers.</p></div>
+<div class="r-comment" data-section="s53" data-id="c-run-r-20261114T212556245162-review-of-a-tick-walks-the-process-table-once-00645a9bd975" data-who="reckon-build" data-when="2026-11-14T22:08:37.156Z">
+    <div class="r-comment-body"><p>review of r-20261114T174544423075-a-tick-walks-the-process-table-once stored parsed at its review-records directory (base b8530ec5e1, head 00645a9bd9), scores recorded, 0 added failures, 2 non-blocking findings</p></div>
 </div>
 </section>
 </main>
