@@ -1,0 +1,77 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_basis": "the reviewed run was dispatched suite-unarmed (its brief carries 'FENCE - SUITE (unarmed for this node)'), its manifest declares no baseline_suite or after_suite block, and its run directory holds no suite pair log; the only logs are the reproduction arms and the guard log under repro/. The zero is therefore 'no suite arm was declared', not 'a suite ran green'.",
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "bc3ddd4f3c75d37bc880f3ba90d6191a1df02e45",
+  "call_site_count": 6,
+  "call_sites": [
+    "reckon/evidence.py:744 composes the fragment into the plan record by node-named file",
+    "reckon/crew_follow_commands.py:1896 _tick calls _check_consumer",
+    "reckon/crew_follow_commands.py:2161 _subscriber_pass calls _tick",
+    "reckon/crew_follow_commands.py:2240 _follow_watch_lines calls _tick",
+    "reckon/crew_follow_commands.py:2501 second loop calls _tick",
+    "reckon/crew_follow_commands.py:2164 loop guard reads consumer_gone"
+  ],
+  "completed_at": "2026-11-13T18:21:03.089Z",
+  "dimension_dispositions": {},
+  "dispatched_at": "2026-11-13T18:13:54Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/the-monitor-shows-the-work-it-watches/two-followers-one-pipe.html",
+      "line": "1",
+      "severity": "non-blocking",
+      "text": "non-blocking: the file is named two-followers-one-pipe.html while its ledger node is monitor-two-followers-one-pipe-s131-writable, and reckon/evidence.py:744 matches a node's fragment by f\"{node}.html\", so this fragment never matches its own promotion row - it is composed last in filename order instead of at its promotion position, and a redispatch that writes the correctly-named file would leave both accounts composed."
+    },
+    {
+      "file": "docs/evidence/fragments/the-monitor-shows-the-work-it-watches/two-followers-one-pipe.html",
+      "line": "89",
+      "severity": "non-blocking",
+      "text": "non-blocking: the paragraph claims each arm log names the revision, the tree imported and the literal command, but repro/mutant-all-debug.log:6 records a description rather than a command and its :2 tree header names repro/.scratch/base-d325cb9 rather than the mutant tree its command names, so a later reader can take the wrong tree for the arm that carries the load-bearing mutation."
+    }
+  ],
+  "head_log_revision": "ade23094ad7b0c1707b0dcfab42377aaacbeeb00",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified the production paths that can reach the landed change: reckon/evidence.py:744 composes the fragment into the plan record, and the documented mechanism's sites are _check_consumer at reckon/crew_follow_commands.py:1896 via _tick at :2161, :2240, :2501 with the loop guard at :2164.",
+    "diff": "read both commits against base d325cb9fe1 and the gained commit bc3ddd4f3c..ade23094ad in full; the delta adds one guard paragraph and rewrites the evidence paragraph, and reckon/crew_follow_commands.py carries blob 9556492a9d at all three revisions.",
+    "done_when": "the done_when asks for the first process to exit, its exit status, the responsible line, a log starting with the revision and literal command and ending EXIT=, a one-project positive control and a mutation arm; repro/guard-all-debug.log records baseline 7 passed, head-arm tree 7 passed, mutant 5 failed 2 passed, with script EXIT=0.",
+    "goal": "the node's goal is to name the process whose exit ends a two-follower pipe stream, with its line; two-followers-one-pipe.html:1-14 names the follower and cites reckon/crew_follow_commands.py:1718-1719 (blob d325cb9fe1) and :2164, and the gained commit ade23094ad narrows the goal to its durability at :65-81.",
+    "manifest": "read; status complete, commits bc3ddd4f3c and ade23094ad, changed_paths the one fragment, negative_control_log naming repro/guard-all-debug.log, and a negative_control_note giving the three arms; baseline_suite and after_suite are absent because the node was dispatched suite-unarmed.",
+    "write_paths": "the fence declared two-followers-one-pipe.html, monitor-two-followers-one-pipe-s131-writable.html and a figures directory; git diff --stat bc3ddd4f3c..ade23094ad touches only the first at 27 insertions and 3 deletions."
+  },
+  "justifications": {
+    "durability": "the gained commit adds no assertion of its own, but the tests it names at two-followers-one-pipe.html:66-67 are real in-tree guards and the measured mutant arm reddens 5 of 7 when the check at reckon/crew_follow_commands.py:1718 is made to return first.",
+    "evidence": "repro/guard-all-debug.log:5-29 carries the three arms and script EXIT=0, but the claim at two-followers-one-pipe.html:89 that each arm log names the literal command does not hold for the mutant arm.",
+    "fit": "the added paragraph follows the sibling fragment form used by docs/evidence/fragments/the-monitor-shows-the-work-it-watches/a-follower-runs-current-code.html, though line 72 loses the paragraph's two-space indent.",
+    "goal_fidelity": "two-followers-one-pipe.html:65-81 answers the durability gap the previous review raised by naming the two test modules, giving the re-run command, and recording the three measured verdicts.",
+    "reuse": "the delta adds no function, class or module; it cites _check_consumer() at reckon/crew_follow_commands.py:1690 and the two test modules as the existing owners of the mechanism.",
+    "scope_discipline": "git diff --stat bc3ddd4f3c..ade23094ad lists exactly docs/evidence/fragments/the-monitor-shows-the-work-it-watches/two-followers-one-pipe.html at 27 insertions and 3 deletions."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to name the process whose exit ends a two-follower pipe stream, with its line; docs/evidence/fragments/the-monitor-shows-the-work-it-watches/two-followers-one-pipe.html:1-14 names the follower and cites reckon/crew_follow_commands.py:1718-1719 (blob d325cb9fe1) and :2164, and the gained commit ade23094ad narrows the goal to its durability by naming the two suite files that guard the claim at :65-81.\nVERDICT done_when: the done_when asks for the first process to exit, its exit status, the responsible line, a log starting with the revision and literal command and ending EXIT=, a one-project positive control and a mutation arm; repro/guard-all-debug.log:5-29 records baseline 7 passed, head-arm tree 7 passed, mutant 5 failed 2 passed, with script EXIT=0.\nVERDICT write_paths: the fence declared two-followers-one-pipe.html, monitor-two-followers-one-pipe-s131-writable.html and a figures directory; git diff --stat bc3ddd4f3c..ade23094ad touches only the first at 27 insertions and 3 deletions, so the delta is inside the fence.\nVERDICT manifest: read; status complete, commits bc3ddd4f3c and ade23094ad, changed_paths the one fragment, negative_control_log naming repro/guard-all-debug.log, and a negative_control_note giving the three arms; baseline_suite and after_suite are absent because the node was dispatched suite-unarmed, which its brief states.\nVERDICT diff: read both commits against base d325cb9fe1 and the gained commit bc3ddd4f3c..ade23094ad in full; the delta adds one guard paragraph at :65-81 and rewrites the evidence paragraph at :83-94, changing no product code, and reckon/crew_follow_commands.py carries blob 9556492a9d at all three revisions.\nCALL_SITES: reckon/evidence.py:744 composes this fragment into the plan record by node-named file, reckon/crew_follow_commands.py:1896 _tick calls _check_consumer, reckon/crew_follow_commands.py:2161 _subscriber_pass calls _tick, reckon/crew_follow_commands.py:2240 _follow_watch_lines calls _tick, reckon/crew_follow_commands.py:2501 second loop calls _tick, reckon/crew_follow_commands.py:2164 loop guard reads consumer_gone\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: two-followers-one-pipe.html:65-81 answers the durability gap the previous review raised by naming tests/test_follower_checks_its_owner.py and tests/test_orphaned_follower_releases.py, giving the re-run command, and recording the three measured verdicts.\nSCORE evidence: 16\nJUSTIFICATION evidence: repro/guard-all-debug.log:5-29 carries the three arms and script EXIT=0, but the gained paragraph's claim at two-followers-one-pipe.html:89 that each arm log names the literal command does not hold for the mutant arm, whose log:6 gives a description and whose :2 tree header names the base tree rather than the mutated one.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: git diff --stat bc3ddd4f3c..ade23094ad lists exactly docs/evidence/fragments/the-monitor-shows-the-work-it-watches/two-followers-one-pipe.html at 27 insertions and 3 deletions, inside the declared fence.\nSCORE durability: 17\nJUSTIFICATION durability: the gained commit adds no assertion of its own, but the two tests it names at two-followers-one-pipe.html:66-67 are real in-tree guards and the measured mutant arm reddens 5 of 7 when the check at reckon/crew_follow_commands.py:1718 is made to return first.\nSCORE fit: 18\nJUSTIFICATION fit: the added paragraph follows the sibling fragment form of docs/evidence/fragments/the-monitor-shows-the-work-it-watches/a-follower-runs-current-code.html, though line 72 loses the paragraph's two-space indent.\nSCORE reuse: 20\nJUSTIFICATION reuse: the delta adds no function, class or module; it cites _check_consumer() at reckon/crew_follow_commands.py:1690 and the two test modules as the existing owners of the mechanism.\nFINDING docs/evidence/fragments/the-monitor-shows-the-work-it-watches/two-followers-one-pipe.html:1 non-blocking: the file is named two-followers-one-pipe.html while its ledger node is monitor-two-followers-one-pipe-s131-writable, and reckon/evidence.py:744 matches a node's fragment by f\"{node}.html\", so this fragment never matches its own promotion row - it is composed last in filename order instead of at its promotion position, and a redispatch that writes the correctly-named file would leave both accounts composed.\nFINDING docs/evidence/fragments/the-monitor-shows-the-work-it-watches/two-followers-one-pipe.html:89 non-blocking: the paragraph claims each arm log names the revision, the tree imported and the literal command, but repro/mutant-all-debug.log:6 records a description rather than a command and its :2 tree header names repro/.scratch/base-d325cb9 rather than the mutant tree its command names, so a later reader can take the wrong tree for the arm that carries the load-bearing mutation.",
+  "review_run_id": "r-20261113T181012350926-review-of-monitor-two-followers-one-pipe-s131-writable-ade23094ad7b",
+  "reviewed_base_sha": "bc3ddd4f3c75d37bc880f3ba90d6191a1df02e45",
+  "reviewed_head_sha": "ade23094ad7b0c1707b0dcfab42377aaacbeeb00",
+  "reviewed_run_id": "r-20261113T154544279755-monitor-two-followers-one-pipe-s131-writable",
+  "reviewer": {
+    "backend": "clive",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash",
+    "reviewer_run_id": "r-20261113T181012350926-review-of-monitor-two-followers-one-pipe-s131-writable-ade23094ad7b"
+  },
+  "reviewer_run_id": "r-20261113T181012350926-review-of-monitor-two-followers-one-pipe-s131-writable-ade23094ad7b",
+  "scores": {
+    "durability": 17,
+    "evidence": 16,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-14T07:46:46.395768+00:00",
+  "total": 109
+}
