@@ -72,7 +72,6 @@ from pathlib import Path
 from typing import Any, NamedTuple
 
 from reckon import _store
-from reckon._store import write_atomically
 
 # ── The schema: six dimensions, one maximum ────────────────────────────────
 # A dimension added later is added in exactly one place. The mirror lives in
@@ -3667,9 +3666,9 @@ def repair_run_review(
     if not preserved.exists():
         preserved.write_bytes(original)
     filed = store_review(body)
-    write_atomically(
-        source, lambda handle: handle.write(rewritten), binary=True, fsync=False
-    )
+    from reckon.crew import review_records
+
+    review_records.record_written(source, body, serialized=rewritten)
     if in_committed and project:
         from reckon.crew.review_records import commit_record_write
 
@@ -3995,10 +3994,8 @@ FINDING_DISPOSITIONS_KEY = "finding_dispositions"
 def _write_record(path: Path, record: Mapping[str, Any]) -> None:
     """Write one record to ``path`` atomically through the shared writer.
 
-    The caller has already materialised ``path``'s parent, so the writer is
-    asked not to create it: a missing parent is a caller error here, not a
-    directory to resurrect. The record is indented and key-sorted as before,
-    and the parent keeps its previous mode rather than taking a private one.
+    The shared writer creates the parent when needed, preserves its mode,
+    and publishes the record's content hash in the staging index.
     """
     from reckon.crew import review_records
 

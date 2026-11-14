@@ -2730,9 +2730,7 @@ def record_response(
         # answer invisible to every committed-first reader, so the committed copy
         # is rewritten and committed in one commit through the same helper a
         # promotion uses.
-        write_json_atomically(
-            committed, updated, indent=2, sort_keys=True, fsync=False, mode=None
-        )
+        _review_store.record_written(committed, updated)
         _commit_record_write(str(updated.get("project") or ""), committed)
         from reckon.crew.findings import note_record_written
 
@@ -2894,9 +2892,7 @@ def accept_edits(
     updated[ACCEPTED_EDITS_KEY] = accepted
     committed = _committed_copy_of(updated)
     if committed is not None:
-        write_json_atomically(
-            committed, updated, indent=2, sort_keys=True, fsync=False, mode=None
-        )
+        _review_store.record_written(committed, updated)
         _commit_record_write(project, committed)
         return committed
     return store_plan_review(updated, base_dir=base_dir)
@@ -5974,9 +5970,7 @@ def store_code_review(
         stored["timestamp"] = datetime.now(UTC).isoformat()
     path = code_review_path(project, key, base_dir)
     path.parent.mkdir(parents=True, exist_ok=True)
-    write_json_atomically(
-        path, stored, indent=2, sort_keys=True, fsync=False, mode=None
-    )
+    _review_store.record_written(path, stored)
     from reckon.crew.findings import note_record_written
 
     note_record_written(path, project=project)
