@@ -1,0 +1,57 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/_backends.py:3174",
+    "reckon/crew/dispatch_admission.py:2292",
+    "reckon/crew/dispatch_sessions.py:1355",
+    "reckon/crew/dispatch_sessions.py:1874",
+    "reckon/crew/dispatching/launch.py:711"
+  ],
+  "completed_at": "2026-11-14T13:34:51.886Z",
+  "dispatched_at": "2026-11-14T13:24:07Z",
+  "findings": [
+    {
+      "file": "tests/test_a_worker_cannot_remove_the_nodes_temporary_files.py",
+      "id": "f83109e924b",
+      "line": "235",
+      "severity": "blocking",
+      "text": "The landed composition reddens three tests in this file at its own head \u2014 test_a_fenced_run_cannot_remove_a_file_outside_its_scratch (:317, which requires the outside write to exit non-zero with 'Read-only file system'), test_a_probe_written_directly_into_the_node_tmp_root_is_refused (:348) and test_the_composed_fence_argv_for_a_fixed_root_set_is_literal (:457) \u2014 because a write into the node tmp root now lands in the run's scratch instead of meeting the seal, so merging this turns the suite red until those assertions are updated to the superseding behaviour; the file is outside this node's write scope and no node in this section owns it."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "reckon/_backends.py:3174 composes fence_argv for every dispatch, resume and lane change, reached from reckon/crew/dispatch_admission.py:2292 and reckon/crew/dispatching/launch.py:711, each of which hands the run's own scratch through _fence_write_roots.",
+    "diff": "Read commit by commit: f420eb11bf adds worker_tmp_mount_source and the mount emission, 58786c1206 and e543aa06d8 move the fixture's base outside the node tmp, b543b3702b adds the 57-line landing fragment.",
+    "done_when": "Section 59's done-when names three executed cases plus a negative control, and tests/test_fenced_worker_tmp_is_its_scratch.py:382, :419 and :447 execute exactly those, with the refusal proved by RECKON_TEST_TMP_MOUNT_NEGATIVE=1 in gate-negative.log.",
+    "goal": "The node goal is 'A fenced worker's /tmp is its own scratch'; reckon/_worker_fence.py:1736 emits --bind <run scratch> <node tmp> and worker_tmp_mount_source:1352 selects the run's own directory from the handed writable roots.",
+    "manifest": "The manifest records commits f420eb11bf, 58786c1206, e543aa06d8 and b543b3702b, both arms with exit 0, the negative control with exit 1, and the three sibling tests it reports under outside_scope; the arm figures reconcile with the three gate logs on disk.",
+    "write_paths": "The declared write paths are reckon, the new test file, the landing fragment and its figure directory; the diff of the four commits stays inside the first three and creates no figure."
+  },
+  "justifications": {
+    "durability": "tests/test_fenced_worker_tmp_is_its_scratch.py:346 asserts the mount names the run's own scratch and is emitted after the seal, and :382/:419 assert the /tmp write and the mkdtemp directory land in that scratch, so dropping the mount (returning None) reddens them; gate-negative.log is that regression reinstated and shows the first executed test failing.",
+    "evidence": "All three arms are on disk with revision, tree, command and a bare EXIT line (gate-base.log 51 passed EXIT=0, gate-head.log 56 passed EXIT=0, gate-negative.log 1 failed EXIT=1), though the negative arm additionally shows /tmp/probe: Read-only file system at line 26; the head arm's file list omits tests/test_a_worker_cannot_remove_the_nodes_temporary_files.py, so its green does not see three sibling tests the change reddens.",
+    "fit": "The new helper sits beside worker_scratch_seal_root at reckon/_worker_fence.py:1382 in the same resolved_destination idiom, carries no plan or ticket label, and ruff check plus ruff format --check are clean on both changed files.",
+    "goal_fidelity": "reckon/_worker_fence.py:1736 binds the run's own scratch over the node tmp after the seal and before the grants, so a literal /tmp path and tempfile with TMPDIR=/tmp land in the scratch while a sibling's scratch and an outsider's file read as absent.",
+    "reuse": "No owner of 'which handed root is the run's own scratch' exists \u2014 worker_scratch_seal_root returns the shared root and worker_scratch_dir needs a run id \u2014 so reckon/_worker_fence.py:1352 extends the existing scratch machinery over resolved_destination and worker_scratch_root rather than forking a path-resolution or mount-composition mechanism.",
+    "scope_discipline": "git diff a01e2b9a..b543b3702b touches only reckon/_worker_fence.py, tests/test_fenced_worker_tmp_is_its_scratch.py and the landing fragment, every one inside the declared write paths, with no plan, index or figure edit."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that a fenced worker's /tmp is its own scratch; reckon/_worker_fence.py:1736 binds the run's own scratch directory over the node tmp and :1352 selects it from the handed writable roots.\nVERDICT done_when: section 59's done-when asks for three executed cases and a negative control; tests/test_fenced_worker_tmp_is_its_scratch.py:382, :419 and :447 execute those three and gate-negative.log records the control failing with /tmp/probe: Read-only file system.\nVERDICT write_paths: the declared scope is reckon, tests/test_fenced_worker_tmp_is_its_scratch.py, the landing fragment and a figure directory; the four commits touch the first three only.\nVERDICT manifest: read; it names the four commits, both arms at exit 0, the negative control at exit 1, and reports the three sibling tests it could not repair under outside_scope.\nVERDICT diff: read commit by commit against a01e2b9a; f420eb11bf carries the 68-line production change and the new 463-line test, 58786c1206 and e543aa06d8 repair the fixture's placement, b543b3702b adds the 57-line fragment.\nCALL_SITES: reckon/_backends.py:3174, reckon/crew/dispatch_admission.py:2292, reckon/crew/dispatch_sessions.py:1355, reckon/crew/dispatch_sessions.py:1874, reckon/crew/dispatching/launch.py:711\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/_worker_fence.py:1736 mounts the run's own scratch over the node tmp, so a literal /tmp write and tempfile with TMPDIR=/tmp land in the scratch while a sibling's scratch and an outsider's file read as absent.\nSCORE evidence: 15\nJUSTIFICATION evidence: gate-head.log records 56 passed EXIT=0 and gate-negative.log 1 failed EXIT=1 with /tmp/probe: Read-only file system, but the head arm's file list omits tests/test_a_worker_cannot_remove_the_nodes_temporary_files.py so its green cannot see the three tests this change reddens.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every path in git diff a01e2b9a..b543b3702b is inside the manifest's declared write paths, and no plan, index or figure file is touched.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_fenced_worker_tmp_is_its_scratch.py:346 fails if the mount is absent, emitted before the seal, or names another directory, and gate-negative.log is that regression reinstated and caught by the first executed test.\nSCORE fit: 18\nJUSTIFICATION fit: worker_tmp_mount_source at reckon/_worker_fence.py:1352 follows worker_scratch_seal_root's resolved_destination idiom beside it, with no plan or ticket label and clean ruff check and format on both changed files.\nSCORE reuse: 18\nJUSTIFICATION reuse: the search over reckon/ found worker_scratch_seal_root returns the shared root and worker_scratch_dir needs a run id, so no owner of 'the run's own scratch among the handed roots' exists and reckon/_worker_fence.py:1352 extends that machinery rather than forking it.\nFINDING tests/test_a_worker_cannot_remove_the_nodes_temporary_files.py:235 blocking: three tests in this file (:317, :348, :457) assert the superseded composition and fail at this head, so merging reddens the suite until they are updated; the file is outside this node's write scope and no node in this section owns it.",
+  "review_run_id": "r-20261114T132031512928-review-of-fenced-worker-tmp-is-its-scratch-b543b3702bf8",
+  "reviewed_base_sha": "a01e2b9afcc862321403374ebd3dd42949df1121",
+  "reviewed_head_sha": "b543b3702bf8893f356921af4d3805c0bcf1be89",
+  "reviewed_run_id": "r-20261114T112605744964-fenced-worker-tmp-is-its-scratch",
+  "scores": {
+    "durability": 19,
+    "evidence": 15,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 18,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-14T14:06:21.766265+00:00",
+  "total": 108
+}
