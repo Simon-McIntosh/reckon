@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-evidence-for" content="reckon:the-monitor-reads-each-fact-once">
+  <title>Review-store index compatibility repair</title>
+</head>
+<body>
+<article id="the-review-store-index-keeps-the-suite-green-landing" data-node="the-review-store-index-keeps-the-suite-green" data-reckon="landing">
+  <h2>Review-store index compatibility repair</h2>
+  <p>The shared writer creates the directory for a project's first review.
+  Readers retain unreadable names for diagnostics, use indexed hashes for
+  content identities, and keep staging-index files out of committed review
+  trees. A rebuild captures directory freshness before listing and has a
+  generation key, so rebuilding an equal-sized store cannot reuse stale maps.</p>
+  <table>
+    <thead><tr><th>Write</th><th>Visibility guarantee</th></tr></thead>
+    <tbody>
+      <tr><td>Through <code>record_written</code></td><td>The writer updates the
+      entry, affected run digests and version; the next lookup sees it.</td></tr>
+      <tr><td>External atomic replacement</td><td>A changed directory identity
+      triggers one <code>os.scandir</code> listing. <code>DirEntry.inode()</code>
+      identifies replacements without per-record stats; only added or replaced
+      names are reread, and removed names are dropped.</td></tr>
+      <tr><td>External rewrite retaining its inode</td><td>The rewrite is seen
+      only at the next rebuild. Immediate visibility requires the indexed
+      writer.</td></tr>
+    </tbody>
+  </table>
+  <p>The parallel truncated-record defect reproduced in <strong>43 of 128
+  cases</strong>. Failure traces showed the correct temporary store and an
+  unindexed filename, while the directory mtime equalled the index's recorded
+  mtime. Several writes had shared a filesystem clock tick. Comparing the full
+  directory stat identity includes size and ctime at the same one-stat cost;
+  the unchanged test then passed <strong>128 of 128 cases</strong>.</p>
+  <p>The focused repair gate passed <strong>35 tests</strong>. The strengthened
+  rebuild and writer-format gate passed <strong>11 tests</strong>, retaining
+  one-record rereads, reselect and reclassify assertions, the whole-store-pass
+  bound, two-space JSON indentation, sorted keys and process-default modes.
+  The original atomic-replacement test keeps its direct replacement operation
+  and its one-listing expectation.</p>
+  <p>Run <code>r-20261114T090705769742-the-review-store-index-keeps-the-suite-green</code>
+  holds the matched scoped and population arm receipts, exact revisions and
+  commands, negative controls, lint comparison and final quantitative outcome
+  in its manifest under <code>/home/ITER/mcintos/.config/reckon/crew/runs/</code>.
+  Shared plan state and merged-head verification belong to the coordinator.</p>
+</article>
+</body>
+</html>

@@ -1,27 +1,13 @@
-"""The misfiled-review index answers from each record file's own identity.
+"""Indexed rewrites at the same path reselect a misfiled review.
 
-The store index exists so a per-turn reader does not read the whole store for
-every pointer with no review. It is held per store directory and per process,
-and it is valid only while the facts it read still describe the files on disk.
-A record rewritten in place -- a disposition recorded on a stored review, a
-record re-filed under another run id -- keeps its name, its inode and the
-store's directory entries, so the directory's stat identity does not move while
-the record's content does. Keying the index's validity on the directory alone
-therefore answers a lookup from facts that are no longer true, and a lookup
-naming the new head or the new run selects nothing.
-
-A run can also hold a record of its own at one head while a record of the same
-run sits at another reviewer's path at the head a caller asks about. A lookup
-that stops at the run's own files misses it.
-
-Every store is built under ``tmp_path``; nothing touches the operator's store,
-and every cost the timing case measures is paid against a synthesised store on
-node-local disk.
+The store's writer advances the record identity and both run maps together.
+A record may change its reviewed head or run without changing its filename;
+lookups must find that new subject and preserve the one-store-pass budget.
+An external same-inode write becomes visible only when the index is rebuilt.
 """
 
 from __future__ import annotations
 
-import json
 import time
 from pathlib import Path
 from typing import Any
@@ -60,10 +46,9 @@ def _record(
     return record
 
 
-def _write_in_place(path: Path, payload: dict[str, Any]) -> None:
-    """Rewrite ``path`` keeping its inode, as a disposition write does."""
-    with path.open("w", encoding="utf-8") as handle:
-        handle.write(json.dumps(payload))
+def _write_record(path: Path, payload: dict[str, Any]) -> None:
+    """Rewrite one path through the store's indexed writer."""
+    records_module.record_written(path, payload)
 
 
 @pytest.fixture()
@@ -78,19 +63,19 @@ def store(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
 
 
 def test_a_record_rewritten_in_place_is_found_at_its_new_head(store: Path) -> None:
-    """A head that moved in place is answered on the next lookup."""
+    """A head rewritten through the writer is answered on the next lookup."""
     path = store / f"{REVIEWER_RUN}.json"
-    _write_in_place(path, _record(REVIEWED_RUN, HEAD_ONE, review_run_id=REVIEWER_RUN))
+    _write_record(path, _record(REVIEWED_RUN, HEAD_ONE, review_run_id=REVIEWER_RUN))
     first = review_module.stored_record(
         PROJECT, REVIEWED_RUN, reviewed_head_sha=HEAD_ONE
     )
     assert first[1] is not None
 
-    _write_in_place(path, _record(REVIEWED_RUN, HEAD_TWO, review_run_id=REVIEWER_RUN))
+    _write_record(path, _record(REVIEWED_RUN, HEAD_TWO, review_run_id=REVIEWER_RUN))
     found_path, found = review_module.stored_record(
         PROJECT, REVIEWED_RUN, reviewed_head_sha=HEAD_TWO
     )
-    assert found is not None, "the rewrite in place is seen on the next lookup"
+    assert found is not None, "the indexed rewrite is seen on the next lookup"
     assert found_path == path
     assert found["reviewed_head_sha"] == HEAD_TWO
     assert found.get(review_module.MISFILED_KEY) is True
@@ -99,10 +84,10 @@ def test_a_record_rewritten_in_place_is_found_at_its_new_head(store: Path) -> No
 def test_a_record_rewritten_in_place_is_found_at_its_new_run(store: Path) -> None:
     """A record re-filed onto another reviewed run is answered by that run."""
     path = store / f"{REVIEWER_RUN}.json"
-    _write_in_place(path, _record(REVIEWED_RUN, HEAD_ONE, review_run_id=REVIEWER_RUN))
+    _write_record(path, _record(REVIEWED_RUN, HEAD_ONE, review_run_id=REVIEWER_RUN))
     assert review_module.stored_record(PROJECT, REVIEWED_RUN)[1] is not None
 
-    _write_in_place(path, _record(OTHER_RUN, HEAD_ONE, review_run_id=REVIEWER_RUN))
+    _write_record(path, _record(OTHER_RUN, HEAD_ONE, review_run_id=REVIEWER_RUN))
     found_path, found = review_module.stored_record(PROJECT, OTHER_RUN)
     assert found is not None, "a rewrite naming another run is seen on the next lookup"
     assert found_path == path
@@ -113,12 +98,12 @@ def test_a_record_at_the_asked_head_is_found_beside_the_runs_own_file(
     store: Path,
 ) -> None:
     """A run's own file at another head does not hide a record at this one."""
-    _write_in_place(
+    _write_record(
         store / f"{REVIEWED_RUN}.json",
         _record(REVIEWED_RUN, HEAD_OWN, review_run_id=REVIEWED_RUN),
     )
     misfiled = store / f"{REVIEWER_RUN}.json"
-    _write_in_place(
+    _write_record(
         misfiled, _record(REVIEWED_RUN, HEAD_ASKED, review_run_id=REVIEWER_RUN)
     )
 
@@ -145,8 +130,7 @@ def test_a_two_hundred_run_session_pays_one_whole_store_pass(
 
     Every run of the session has its review filed under another reviewer's run
     id, which is the shape that reaches the store's index, and the session's
-    last lookup is for a record rewritten in place -- the case the index exists
-    to keep cheap and the case the directory's stat identity cannot see. The
+    last lookup is for a record rewritten through the indexed writer. The
     stubbed arm removes the fallback entirely, so the difference between the two
     arms is what the fallback costs the session.
     The whole-store revalidation is paid once and named: a second pass per miss
@@ -158,13 +142,13 @@ def test_a_two_hundred_run_session_pays_one_whole_store_pass(
     ]
     rewritten = store / f"{REVIEWER_RUN}-rewritten.json"
     for index, run_id in enumerate(runs):
-        _write_in_place(
+        _write_record(
             store / f"{REVIEWER_RUN}-{index:03d}.json",
             _record(
                 run_id, f"{index:040x}", review_run_id=f"{REVIEWER_RUN}-{index:03d}"
             ),
         )
-    _write_in_place(
+    _write_record(
         rewritten,
         _record(runs[-1], "e" * 40, review_run_id=REVIEWER_RUN),
     )
@@ -178,8 +162,8 @@ def test_a_two_hundred_run_session_pays_one_whole_store_pass(
     head_elapsed = time.perf_counter() - started
 
     # The session's index is warm now, which is the state a per-turn reader is
-    # in: a record rewritten in place has to be seen from it.
-    _write_in_place(rewritten, _record(runs[-1], "f" * 40, review_run_id=REVIEWER_RUN))
+    # in: an indexed rewrite at the same path has to be seen from it.
+    _write_record(rewritten, _record(runs[-1], "f" * 40, review_run_id=REVIEWER_RUN))
     assert (
         review_module.stored_record(PROJECT, runs[-1], reviewed_head_sha="f" * 40)[1]
         is not None
