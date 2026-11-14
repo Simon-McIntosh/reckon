@@ -205,7 +205,7 @@ def test_a_failed_advance_leaves_the_next_read_walking(tmp_path, monkeypatch):
     ledger.load(PROJECT, root)
     assert ledger.ledger_generation(PROJECT) is not None
 
-    monkeypatch.setattr(_store, "advance_write_generation", lambda project: None)
+    monkeypatch.setattr(_store, "advance_ledger_write_generation", lambda project: None)
 
     target = ledger.run_path(PROJECT, str(_run_record(0)["run_id"]), root)
     before = target.stat()
