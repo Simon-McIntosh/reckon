@@ -79,26 +79,31 @@
   <p id="run-landing-ledger-locks-cross-node-guard">The guard's pending table drops these seven rows
   and adds no judged rows, because no <code>flock</code> call is left at any of the seven sites.
   At the delivery head the census read 35 sites and 38 lock-taking calls: 21 judged keys, unchanged,
-  and 14 pending. After the merge below, a concurrent lane-and-picker migration also leaves the
-  tree, so the repaired head reads 30 sites and 33 calls, still 21 judged and now 9 pending. Both
-  censuses classify every site: none is in neither table and no judged or pending row is stale. The
-  four guard tests pass at the repaired head.</p>
+  and 14 pending. The concurrent migrations merged in later each remove their own rows, so the
+  repaired head reads 23 sites and 26 calls, still 21 judged and now 2 pending. Every census
+  classifies every site: none is in neither table and no judged or pending row is stale. The four
+  guard tests pass at the repaired head.</p>
 
-  <p id="run-landing-ledger-locks-cross-node-merge">A landing merge against primary
-  <code>a946964dd3</code> conflicted on this node's guard file alone, where both sides edit the same
-  pending table. Each side removes rows for the sites it migrated and neither restores the other's,
-  so the resolution keeps both removals: this node's seven plus the five the merged work migrated
-  (<code>budget_reset.py</code>, <code>model_catalogue.py</code>, the two
-  <code>paid_lanes.py</code> sites and <code>picker/outcomes.py</code>). No row is left for a site that now takes the record lock, and
-  the guard passes with that table. The merge head is <code>1d0e64557b</code>; the delivery commits
-  <code>a355eac555</code>, <code>bcbe687be0</code> and <code>e48cf2ab3b</code> remain its ancestors.</p>
+  <p id="run-landing-ledger-locks-cross-node-merge">Two landing merges against primary conflicted on
+  this node's guard file alone, because it is the one file every lock migration edits. Each side
+  removes rows for the sites it migrated and neither restores the other's, so each resolution keeps
+  both removals. The first, against <code>a946964dd3</code>, left the table at 30 sites and 33 calls
+  with 9 pending; the second, against <code>6eff5826</code>, leaves 23 sites and 26 calls with 2
+  pending, the two sites no node has migrated yet. No row survives for a site that now takes the
+  record lock, and the guard passes with that table at the repaired merge head
+  <code>d260dbcaa9</code>; the delivery commits <code>a355eac555</code>, <code>bcbe687be0</code> and
+  <code>e48cf2ab3b</code>, and the first merge head <code>1d0e64557b</code>, remain its ancestors.</p>
 
   <p id="run-landing-ledger-locks-cross-node-focused">The wider population is the 261 test files that
-  name one of the five changed modules, run on a compute partition in both arms. The base arm reads
-  160 failed and 2676 passed; the head arm reads 158 failed, 2731 passed and 3 skipped. Compared as
-  failed ids, the head adds none and drops two — both are tests that compare a revision against the
-  base, so they fail at base by construction. The failure list is therefore unchanged by this
-  node's edit, and the remaining 158 are the same in both arms.</p>
+  name one of the five changed modules, run on a compute partition with sixteen workers in both
+  arms: 260 files at the base revision, the difference being this node's new test. The base arm
+  reads 165 failed, 2720 passed and 2 errors; the head arm reads 169 failed and 2723 passed. Two
+  base-arm errors are the staged-write inventory in a scratch extraction that is not a git
+  repository, and that file passes in both suite arms. Compared as failed ids the head adds seven
+  and drops five. Six of the seven fail identically at the merge target when run there directly in
+  a small attribution arm, and the seventh passes at both revisions: it appears only in the
+  full-population arm, so it is load-induced rather than a property of this head. What the head
+  adds, then, is nothing the merge target did not already fail.</p>
 
   <p id="run-landing-ledger-locks-cross-node-gate">The suite arms resolve the template over each
   tree: the base arm carries the guard and the staged-write inventory
