@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>A composed review waits for a roster slot — landing record</title>
+<meta name="plan" content="work-flows-to-the-lane">
+<meta name="node" content="composed-review-waits-for-a-roster-slot">
+</head>
+<body>
+<section id="composed-review-waits-for-a-roster-slot-record" data-reckon="evidence">
+<h2 id="composed-review-waits-for-a-roster-slot-heading">A composed review waits for a placement-roster seat</h2>
+
+<p id="composed-review-waits-for-a-roster-slot-defect">
+A plan review is composed before the lane admits it: the report directory, its
+brief, the plan snapshot and the sidecar are written first, and the dispatch then
+asks the placement reservation for a worker. When every seat the allocation was
+sized for was held, that question ended the composition in a refusal and left no
+pointer, so the run the review was owed waited until a coordinator composed the
+review again by hand once a seat freed. The refusal was raised as a bare
+<code>CrewError</code>, indistinguishable from a standing refusal of the work.
+</p>
+
+<p id="composed-review-waits-for-a-roster-slot-change">
+The roster cap is now its own held condition — <code>RosterFull</code>, carrying
+the occupancy the decision was taken on and the seats that produced it — and the
+review reflex catches it where it already catches a router hold. The review is
+written as a queued request through the dispatch's own record builder and the
+queue's own writer, so the admission pass launches it exactly as it launches any
+other queued request: from the brief the composed directory already holds, once a
+resident worker ends and frees a seat. That directory is kept rather than
+discarded, because a queued pointer names its brief. The recorded dispatch status
+<code>roster-full</code> joins the held statuses, since a roster hold took no work
+from the run and so may be re-routed like the other held attempts.
+</p>
+
+<table id="composed-review-waits-for-a-roster-slot-measures">
+<caption>Measures</caption>
+<thead><tr><th>Measure</th><th>Command</th><th>Result</th></tr></thead>
+<tbody>
+<tr id="composed-review-waits-for-a-roster-slot-gate">
+<td>Gate on <code>all_debug</code> (job 1315386), head <code>6c4c0fa916</code></td>
+<td><code>pytest -q tests/test_composed_review_waits_for_a_roster_slot.py tests/test_staged_write_inventory.py</code></td>
+<td>53 passed, <code>EXIT=0</code></td>
+</tr>
+<tr id="composed-review-waits-for-a-roster-slot-base">
+<td>Base arm at <code>f9ef714581</code></td>
+<td><code>pytest -q tests/test_staged_write_inventory.py</code> (the new test file does not exist there)</td>
+<td>51 passed, <code>EXIT=0</code></td>
+</tr>
+<tr id="composed-review-waits-for-a-roster-slot-negative-control">
+<td>Negative control: the roster refusal left a bare <code>CrewError</code> again, so it refuses instead of queueing</td>
+<td><code>pytest -q tests/test_composed_review_waits_for_a_roster_slot.py</code></td>
+<td>2 failed, <code>EXIT=1</code> — both tests fail, naming
+<code>test_a_composed_review_on_a_full_roster_leaves_a_queued_pointer</code> and
+<code>test_a_freed_seat_admits_the_queued_review</code></td>
+</tr>
+</tbody>
+</table>
+
+<p id="composed-review-waits-for-a-roster-slot-tests">
+The gate's own summary line is its last line before <code>EXIT=0</code>:
+<em>53 passed in 11.34s</em>. The first test fills every seat the cap grants with
+placed live runs whose worker is the test process, composes a review and reads a
+queued pointer whose brief sits in the composed directory, which survives. The
+second frees one seat and runs one admission pass over the named queued request,
+reading the launched node id equal to the queued request's node and the launched
+run's pointer stamped with its admission time. The refusal message keeps its
+existing shape and names the population the guard counted, so a reader of a plain
+dispatch refusal still sees the seats.
+</p>
+</section>
+</body>
+</html>
