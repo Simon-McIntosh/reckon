@@ -299,7 +299,7 @@ def test_a_promoted_conflict_reports_pending_and_never_landed(delivery, monkeypa
     assert snapshot["state"] != "promoted"
     week = runs._drain_week_view(PROJECT, [pointer])
     assert week["project"]["phases"]["landed"] == 0
-    assert week["plans"][PLAN]["phases"]["landed"] == 0
+    assert week["plans"].get(PLAN, {"phases": {"landed": 0}})["phases"]["landed"] == 0
     from reckon.crew.promotion_requests import _settled_state
     from reckon.crew.recovery_watch import _ledger_run_id_reader
 
@@ -351,3 +351,10 @@ def test_a_gate_failure_after_promotion_is_not_bypassed_by_recovery(
     assert retried[0]["status"] == "failed", retried
     assert "test_merge_contract" in retried[0]["error"]
     assert not _on_primary(delivery)
+
+
+def test_a_weekly_view_can_omit_a_plan_without_landed_work(delivery):
+    assert ledger.runs(PROJECT) == []
+    week = runs._drain_week_view(PROJECT, [])
+    assert PLAN not in week["plans"]
+    assert week["plans"].get(PLAN, {"phases": {"landed": 0}})["phases"]["landed"] == 0
