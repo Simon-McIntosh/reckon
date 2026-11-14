@@ -289,7 +289,13 @@ def test_a_full_promotion_reads_no_unbounded_working_tree(
     assert result.exit_code == 0, result.output
     assert recorder.calls, "the instrument saw no git call at all"
     unbounded = _unbounded_working_tree_reads(recorder.calls)
-    assert unbounded == [], unbounded
+    # The residue save is the one whole-tree reader a promotion is right to
+    # make: it preserves whatever the tree holds before the removal, so a
+    # bounded read there would drop work that no run declared. It is counted
+    # rather than excused — exactly one, and nothing else unbounded.
+    residue = [argv for argv in unbounded if argv[1:3] == ["status", "--porcelain=v1"]]
+    assert [argv for argv in unbounded if argv not in residue] == [], unbounded
+    assert len(residue) == 1, residue
     status_calls = [argv for argv in recorder.calls if "status" in argv]
     assert status_calls, "no status call at all, so nothing was measured"
     assert all("--" in argv for argv in status_calls), status_calls
