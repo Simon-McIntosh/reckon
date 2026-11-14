@@ -159,9 +159,9 @@ That reuse map stays in the brief. The plan states the endpoint and names no
 module, function or file to extend, so a plan that does is a review finding
 rather than something to implement.
 
-**Queue the work you have chosen in one beat.** Decide which sections need doing
-now, often a few from each of several plans whose review rounds are answered.
-Size each into nodes and queue all of them in one beat with one
+**Queue every reviewed plan at its full width, in one beat.** Once a plan's
+review round is answered, size every implementable section into nodes and queue
+all of them in one beat with one
 `reckon crew dispatch --batch <file>` call, naming no lane so the picker routes
 each request. One entry per chosen section, naming its project, plan, section,
 node id and goal; every field an entry omits — the done-when, the write paths,
@@ -170,10 +170,13 @@ entry by its node id. The call prints one row per entry: queued,
 awaiting-upstream, already queued, or refused with its reason, and a refused
 entry does not stop the rest. Queueing this way costs one plan read per plan
 rather than one dispatch per section, so never write one call per section. The set may include sections whose upstream has not
-landed. Never load a plan wholesale: choose each section, and steer the queue as
-earlier results come back. A declared section wait parks its node
-`awaiting-upstream` until the upstream lands, with no further coordinator
-dispatch. The queue orders only waits declared in `plan-section-depends-on`.
+landed. Do not ration (lead directive 2026-11-14): a deep queue keeps the lane
+full overnight and after coordinators stop, and the router holds work past its
+gate width off the cards. The DAG is the gate: a declared section wait parks
+its node `awaiting-upstream` until the upstream has passed its review and gate
+and landed, with no further coordinator dispatch, so nothing builds on work
+that has not passed. Bring urgent work to the top with
+`reckon crew queue reprioritise`, and steer the queue as earlier results come back. The queue orders only waits declared in `plan-section-depends-on`.
 Read progress through `crew view live` and steer the queue rather than feeding it:
 change a queued request's brief, done-when, write paths, time budget or route with
 `reckon crew queue edit --run <id>`; pause it with
