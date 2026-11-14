@@ -1626,6 +1626,39 @@ def _upstream_hold_item(
         )
     elif waits:
         item["next_command"] = "waiting upstream: " + ", ".join(waits)
+    return apply_stuck_verdict(item, pointer, now=now)
+
+
+def apply_stuck_verdict(
+    item: dict[str, Any],
+    pointer: Mapping[str, Any],
+    *,
+    passes: Sequence[Mapping[str, Any]] | None = None,
+    now: datetime | None = None,
+) -> dict[str, Any]:
+    """Write the one stuck verdict onto the row a coordinator reads.
+
+    The verdict is the drain view's own function, imported lazily here for the
+    same reason the derivation imports this module lazily: ``runs`` imports
+    this module at module scope, so a module-scope import back would close the
+    loop. ``passes`` is the caller's own single read of the verdict log; a
+    caller that passes none has the log read through the reader's memo, so a
+    view composing many rows still parses it once while every row is judged
+    from the same reading.
+    """
+    from reckon.crew import runs as runs_module
+
+    verdict = runs_module.stuck_verdict(pointer, passes=passes, now=now)
+    if verdict is None:
+        return item
+    item["stuck_kind"] = verdict["kind"]
+    item["stuck_reason"] = verdict["reason"]
+    item["next_command"] = f"stuck: {verdict['reason']}"
+    # A stuck request is not a wait the checklist may count and leave out of the
+    # printed lines: it is the one row whose wait cannot resolve. A kind of
+    # its own is what puts the reason in the hook's text, which reads the
+    # kind to decide whether a row is printed or counted.
+    item["kind"] = f"run-{verdict['kind']}"
     return item
 
 
@@ -1729,6 +1762,16 @@ def payload_for(state: FleetState, session: str) -> dict[str, Any]:
         kind = _duty_kind(module, row)
         if kind:
             items.append(module._live_item(row, kind=kind, now=state.now))
+    # One read of the pass history for the whole payload, then one stuck
+    # verdict per row, so every row a coordinator reads is judged from the
+    # same reading the drain view and the live view judge by.
+    from reckon.crew import runs as runs_module
+
+    passes = runs_module.admission_pass_history()
+    for item in items:
+        pointer = state.pointers.get(str(item.get("run_id") or ""))
+        if pointer is not None:
+            apply_stuck_verdict(item, pointer, passes=passes, now=state.now)
     items.extend(state.sub_floor.get(session, []))
     items.extend(state.held_worktrees.get(session, []))
     from reckon.crew.promotion_requests import failure_obligations
