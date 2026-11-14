@@ -755,9 +755,12 @@ def test_a_recorded_state_the_live_fleet_denies_is_not_announced(home) -> None:
 
     The stream's last word for RUN_A is ``stalled``, at a stamp in the past, but
     the live pointer still classifies RUN_A as ``working``. The two disagree, so
-    the replayed row keeps the live state and the fleet's own clock: a row never
-    announces a state the live fleet denies. The stream's stamp is kept only
-    where the stream's last state agrees with the live one.
+    the replayed row keeps the live state: a row never announces a state the
+    live fleet denies. Its clock is still the stream's, because a pointer records
+    no time for its phase change and the log's last transition for the run is the
+    only stamp either source holds, so the row names when the run last moved on
+    the record rather than the hour the pane attached. The word and the time
+    answer different questions and the log's word does not overrule the fleet's.
     """
     _two_live_runs(home)
     with runs._project_watch_claim(PROJECT, "1h") as (acquired, seat):
@@ -788,9 +791,9 @@ def test_a_recorded_state_the_live_fleet_denies_is_not_announced(home) -> None:
     assert str(by_run[RUN_A]["to_state"]) == "completed_unpromoted", (
         f"the live classification is the authority; got {by_run[RUN_A]!r}"
     )
-    assert str(by_run[RUN_A]["observed_at"]) != stalled, (
-        f"a state the live fleet denies must not carry the stream's time; got "
-        f"{by_run[RUN_A]!r}"
+    assert str(by_run[RUN_A]["observed_at"]) == stalled, (
+        f"a replayed row is dated by the last transition the log records, whatever "
+        f"word that transition used; got {by_run[RUN_A]!r}"
     )
     assert str(by_run[RUN_B]["to_state"]) == "completed_unpromoted", by_run[RUN_B]
 
