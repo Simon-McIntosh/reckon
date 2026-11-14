@@ -3701,8 +3701,31 @@ def _publish_watch_stream(project: str, records: Iterable[Mapping[str, Any]]) ->
         transition_fired = _publish_watch_transitions(project, producer, records)
     finally:
         _SWEEP_LOCAL.in_transition = False
+    _start_obligation_sweep(project, transition_fired=transition_fired)
+
+
+def _start_obligation_sweep(project: str, *, transition_fired: bool) -> bool:
+    """Start one obligations sweep, or report that one is already in flight.
+
+    Both triggers take this one path: the change gate folds its transitions and
+    then starts a sweep that knows whether a transition fired, and the
+    producer's own beat starts one with no transition at all. One sweep runs at
+    a time, and a trigger arriving while a sweep is in flight is skipped rather
+    than queued — the sweep's floor interval decides whether that pass writes,
+    so a skipped trigger costs no freshness.
+
+    A trigger raised from inside a running sweep is left to that sweep. This is
+    load-bearing rather than defensive: the derivation lists the fleet through
+    the same call that publishes this stream, so re-entering here would publish
+    a second stream from within the first.
+    """
+    if getattr(_SWEEP_LOCAL, "in_sweep", False):
+        return False
+    producer = _WATCH_STREAM_PRODUCERS.get(project)
+    if producer is None:
+        return False
     if not producer.sweep_lock.acquire(blocking=False):
-        return
+        return False
     producer.sweep_thread = threading.Thread(
         target=_run_obligation_sweep,
         args=(project, producer, transition_fired),
@@ -3710,6 +3733,7 @@ def _publish_watch_stream(project: str, records: Iterable[Mapping[str, Any]]) ->
         daemon=True,
     )
     producer.sweep_thread.start()
+    return True
 
 
 def publish_obligations_on_beat(project: str) -> bool:
@@ -3728,19 +3752,7 @@ def publish_obligations_on_beat(project: str) -> bool:
     Reports whether a sweep was started. A sweep already in flight is skipped
     rather than queued, exactly as a trigger from the change gate is.
     """
-    if getattr(_SWEEP_LOCAL, "in_sweep", False):
-        return False
-    producer = _WATCH_STREAM_PRODUCERS.get(project)
-    if not producer.sweep_lock.acquire(blocking=False):
-        return False
-    producer.sweep_thread = threading.Thread(
-        target=_run_obligation_sweep,
-        args=(project, producer, False),
-        name=f"reckon-obligations-sweep-{project}",
-        daemon=True,
-    )
-    producer.sweep_thread.start()
-    return True
+    return _start_obligation_sweep(project, transition_fired=False)
 
 
 def _run_obligation_sweep(

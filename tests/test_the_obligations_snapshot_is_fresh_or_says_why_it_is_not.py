@@ -11,10 +11,12 @@ report only the age of the reading, never who held the seat.
 
 These cases pin both halves: a beat on a quiet fleet republishes the snapshot
 within one producer interval without listing the fleet again, and a snapshot
-that is still stale names the seat holder's pid, host and last write. The third
-case is the negative control: with the beat's own publication removed, the same
-beats leave the snapshot where it was, ageing past the freshness window — so
-the first case cannot pass on some other trigger.
+that is still stale names the seat holder's pid, host and last write. A third
+case holds the crew home's fingerprint still so the change gate opens once and
+shuts, and shows a later beat reaching the publisher anyway. The negative
+control removes the beat's own publication: the same beats then leave the
+snapshot where it was, ageing past the freshness window, so the first case
+cannot pass on some other trigger.
 
 Every case synthesises its fleet under a temporary configuration home and
 drives the ticker in this process, so no case reads or writes the operator's
@@ -318,6 +320,61 @@ def test_the_negative_control_leaves_the_snapshot_ageing(
 
     assert _age_seconds(SESSION) > FRESHNESS, (
         "with the repair removed the snapshot must age past the interval"
+    )
+
+
+def test_the_publisher_is_reached_on_a_beat_the_change_gate_skips(
+    fleet: dict[str, Any], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """An unchanged change token must not stand between a beat and the publish.
+
+    The gate that lists the fleet opens only when the crew home's fingerprint
+    moves, which a quiet fleet never does. Pinning that fingerprint to one value
+    makes the case the reported condition exactly: the first beat opens the gate
+    and every later beat is skipped by it. The second beat must still reach the
+    publisher, and what it publishes must be a snapshot newer than the one the
+    case aged before it.
+    """
+    listing = _quiet_ticker(monkeypatch)
+    monkeypatch.setattr(
+        recovery_watch, "_crew_home_change_token", lambda project, pointers: "still"
+    )
+    published: list[str] = []
+    starts_sweep = runs.publish_obligations_on_beat
+
+    def counted(project: str) -> bool:
+        published.append(project)
+        return starts_sweep(project)
+
+    monkeypatch.setattr(runs, "publish_obligations_on_beat", counted)
+
+    with runs.follower_registration(PROJECT, SESSION, delivery="stream"):
+        stream = recovery_watch.watch_ticker(
+            PROJECT, poll_interval=0, sleeper=_beats(3)
+        )
+        try:
+            next(stream)
+            _wait_for_sweep()
+            at_first_beat = len(published)
+            assert at_first_beat == 1, "the first beat reaches the publisher once"
+
+            _age_the_snapshot(SESSION, seconds=FRESHNESS + 60)
+            assert _age_seconds(SESSION) > FRESHNESS
+
+            with pytest.raises(_BeatStreamClosedError):
+                list(stream)
+            _wait_for_sweep()
+        finally:
+            stream.close()
+
+    assert len(published) > at_first_beat, (
+        "a beat the change gate skips must still reach the publisher"
+    )
+    assert listing.call_count == 1, (
+        "the gate must have opened once and then stayed shut, or the case is not quiet"
+    )
+    assert _age_seconds(SESSION) <= FRESHNESS, (
+        "the publish on the later beat must refresh the snapshot"
     )
 
 

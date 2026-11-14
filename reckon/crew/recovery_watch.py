@@ -3477,24 +3477,25 @@ def watch_ticker(
                         # running until the next unrelated change. Best-effort on the
                         # same terms as its neighbours.
                         gate_seen = _sweep_gate_rows(project, gate_seen)
-                        # A session's snapshot ages whether or not a document
-                        # moves, so keeping it fresh is the fourth duty due on
-                        # the clock. The change gate above is the sweep's other
-                        # producer-side trigger, and a quiet fleet never opens
-                        # it: the seat holder stays healthy and goes on drawing
-                        # rows while its sessions' snapshots age out of the
-                        # freshness window. The sweep's own floor interval is
-                        # what decides whether this beat publishes, so a fleet
-                        # that is moving costs nothing here. Best-effort on the
-                        # same terms as its neighbours, and skipped by any
-                        # process that is not this project's producer.
-                        try:
-                            runs.publish_obligations_on_beat(project)
-                        except Exception as exc:  # noqa: BLE001 - one bad pass ends nothing
-                            print(
-                                f"obligation-beat-failure: {project}: {exc}",
-                                flush=True,
-                            )
+                    # A session's snapshot ages whether or not a document
+                    # moves, so keeping it fresh is a duty of every beat rather
+                    # than of the cadence above. The change gate is the sweep's
+                    # other producer-side trigger, and a quiet fleet never opens
+                    # it: the seat holder stays healthy and goes on drawing rows
+                    # while its sessions' snapshots age out of the freshness
+                    # window. Reaching the sweep on every beat costs a thread
+                    # start and a stat identity; the sweep's own floor interval
+                    # is what decides whether the beat publishes, so a fleet
+                    # that is moving writes no more than it did. Best-effort on
+                    # the same terms as its neighbours, and skipped by any
+                    # process that is not this project's producer.
+                    try:
+                        runs.publish_obligations_on_beat(project)
+                    except Exception as exc:  # noqa: BLE001 - one bad pass ends nothing
+                        print(
+                            f"obligation-beat-failure: {project}: {exc}",
+                            flush=True,
+                        )
                     moment = _utc_seconds()
                     if sweep:
                         current = {
