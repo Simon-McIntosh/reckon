@@ -1,0 +1,68 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-14T12:52:26.857Z",
+  "dispatched_at": "2026-11-14T12:45:35Z",
+  "findings": [
+    {
+      "anchor": "reckon/interface_counts.py:615",
+      "id": "reuse_search-1",
+      "reason": "the plan asks for the endpoint (a test that names an unlisted call by file and function) and names no module, so the reuse belongs in the node brief, which should name `interface_counts.definitions` and `read_trees` as the mechanism to extend.",
+      "text": "\u00a72 proposes a new test with its own scan of `reckon/` keyed by file and qualified enclosing function, but `interface_counts.definitions` (reckon/interface_counts.py:74) already walks a tree to exactly that (path, qualified name, is_public) row, `interface_counts.read_trees` (:615) already parses a revision's modules through git so a census reads a named revision rather than a dirty working tree, and `tests/test_staged_write_inventory.py:24` is the existing worked example of the same pattern, an `ast`-derived inventory set compared against a literal table carrying a comment per entry \u2014 a fresh scanner repeats the qualified-name resolution and the revision read the owner already solves, and the revision read is the part most easily got wrong by hand",
+      "type": "reuse_search",
+      "would_change": false
+    },
+    {
+      "anchor": "reckon/crew/admission/service.py:41",
+      "id": "thin_wrapper-1",
+      "reason": "the plan names no module or helper, so the keep-or-delete decision is the node brief's to state, and this finding's job is to put the census and the redundancy in that brief.",
+      "text": "`_admit_lock` here, `reckon/crew/budget_reset.py:90` `_locked`, `reckon/compliance.py:145` `_locked` and `reckon/_store.py:400` `_serialized_path_lock` are each `mkdir` + `open` + `flock` + `yield` over one derived path and nothing else, so migrating them leaves a helper whose entire remaining body is `exclusive_lock(path)`, while `exclusive_lock` already creates the parent directory (reckon/node_exclusive_lock.py:59) \u2014 the honest change is to call `exclusive_lock(<derived path>)` at those call sites and delete the wrapper, and \u00a73\u2013\u00a75 do not say which shape they take",
+      "type": "thin_wrapper",
+      "would_change": false
+    },
+    {
+      "anchor": "docs/state/reckon/flight.yaml:130",
+      "id": "duplicate_owner-1",
+      "reason": "\u00a72's write paths must include `docs/state/reckon/flight.yaml` and its done-when must show the guard running inside a scoped command that carries product source, or every later section's guard condition is unmeasured.",
+      "text": "the endpoint of \u00a72, and the acceptance condition of \u00a73, \u00a74, \u00a75 and \u00a76, is a guard over the whole tree, but the owner of \"a census test runs in every product gate\" is the flight file's `census_tests` list (declared at reckon/_flight_schema.py:666, resolved by reckon/crew/promotion_records.py:769 `_census_tests` and appended to a scoped command only when a node writes product source); this repository declares only `tests/test_staged_write_inventory.py` there and the plan's \u00a72 write paths name the test file alone, so the new guard is reachable only from a full-suite run, which no node in \u00a73\u2013\u00a75 performs \u2014 leaving \"the guard passes with these rows removed\" satisfied by a test the gate did not execute",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/node_exclusive_lock.py:50",
+      "id": "duplicate_owner-2",
+      "reason": "the plan asks only that the held answer be kept, not that the wrapper's process lock be kept or dropped, so the brief should tell the node to drop the redundant registry and say why the single owner suffices.",
+      "text": "`exclusive_lock` already keeps a process-local lock per path (`_PROCESS_LOCKS`) so two threads or two opens in one process cannot release each other's record lock, but `reckon/crew/budget_reset.py:100` takes its own module-level `Lock` around the same file, so migrating that site leaves two independent process-local registries guarding one path, and the second buys nothing",
+      "type": "duplicate_owner",
+      "would_change": false
+    }
+  ],
+  "plan_commit": "166e92c41d9698681dcfb6e6dfb5ef995fab72e7",
+  "plan_fingerprint": "fad01d13d46d6d5358e8796106111d4a26da39587b12a306a249932c78ce3a80",
+  "plan_slug": "every-shared-home-lock-holds-across-nodes",
+  "plan_version": 0,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261114T123930356023-plan-review-of-every-shared-home-lock-holds-across-nodes",
+  "reviewed_blob_sha": "a59a666b8b6aaeabd3925d115d684b4be9bca31d",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 one deep module, `reckon.node_exclusive_lock.exclusive_lock`, hides the flock+lockf pairing, the process-local registry and the parent-directory creation behind a single context manager, and every section extends that one interface rather than adding a parallel one.",
+    "duplicate_owner": "a finding \u2014 the guard is a whole-tree census test but is not declared in `docs/state/reckon/flight.yaml:130` `census_tests`, the owner that decides which census tests run inside a node's scoped gate, so \u00a73\u2013\u00a75's \"the guard passes with these rows removed\" would rest on a test the gate never runs; and `reckon/crew/budget_reset.py:100` keeps a second process-local lock registry beside the one `exclusive_lock` already owns.",
+    "interface_budget": "pass \u2014 public_definitions 2677, cli_options 486, mcp_views 15, refusal_families 25; no section adds a public definition, a CLI option, an MCP view or a refusal family \u2014 \u00a72 adds one test file, \u00a73\u2013\u00a75 change call bodies inside existing functions, and \u00a76 adds an evidence page and a log directory, so nothing is added that needs a retirement or merge named.",
+    "reuse_search": "a finding \u2014 the guard's whole-tree flock census re-derives the AST census that `reckon/interface_counts.py` already owns (`definitions`/`read_trees`/`count_revision_cached`), which `tests/test_staged_write_inventory.py` already uses as the inventory-table pattern.",
+    "thin_wrapper": "a finding \u2014 four per-site lock helpers are pure path-derivation plus flock, and after migration each becomes a two-line forwarder to `exclusive_lock` (which already creates the parent directory and keeps its own process-local lock), with no statement of why the wrapper survives."
+  },
+  "section_digests": {
+    "_document": "4d38e92acdabfa19f6f7f3a12c8a74da360c239446c9e8cdc24207433b4ffe3e",
+    "s1": "a02debebccd4d64f6536e1a0ab6547d1ffff0e82e11bde685bee5597667314bd",
+    "s2": "408bb42b0ac82fd1dfa77cd72911b5e45d9885e373d4be943971b7788e7fac89",
+    "s3": "c9acd50b7af1658c8f2692494104722ac201867f0cf36b0dfb92e4b78bcd6e43",
+    "s4": "7514a505ea5928cae351a5061f696a72400228a93232a83a24414996895f5428",
+    "s5": "3cae2d2f888cb54e14fbf0528c916db8163f7b7fd6a5fdc5e03a03c32992f499",
+    "s6": "0b940b56b8b52c5769f4f6eaf09bdae842b04973c399f3e2ec476aa51d9036fb"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-14T13:41:07.297430+00:00",
+  "total": null
+}
