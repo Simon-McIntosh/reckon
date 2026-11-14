@@ -10,7 +10,7 @@
   <meta name="plan-summary" content="A refused promotion request whose run has since been promoted, landed, discarded or has no live pointer raises no duty and is recorded as settled; a promotion that succeeds in the caller's process settles the run's queued request; crew ack defers a row for a run with no live pointer.">
   <meta name="plan-evidence-for" content="reckon:work-flows-to-the-lane">
   <meta name="plan-verifies" content="reckon:work-flows-to-the-lane#s52">
-  <meta name="plan-commits" content="81c3e9d10c9346949a6cc24098d7e272d75ad9a9">
+  <meta name="plan-commits" content="81c3e9d10c9346949a6cc24098d7e272d75ad9a9, 54c4af532658c3b0f2291ba252af6a78aa8a29c2, e1ea7e5841fc4f03db69a0d46003fd0219a495fb">
   <meta name="plan-recorded-at" content="2026-11-14">
   <meta name="plan-verdict" content="recorded">
   <title>A refused promotion request settles | reckon</title>
@@ -50,30 +50,34 @@ FAILED test_ack_defers_a_row_for_a_run_with_no_live_pointer
   <table>
     <thead><tr><th>Measurement</th><th>Observed result</th></tr></thead>
     <tbody>
-      <tr><td>Base arm at <code>9c8632ca0b99</code> on <code>all_debug</code> (the node's test is absent there)</td><td>51 passed in 13.26s; EXIT=0</td></tr>
-      <tr><td>After arm at <code>81c3e9d10c93</code> on <code>all_debug</code></td><td>54 passed in 10.84s; EXIT=0</td></tr>
-      <tr><td>Negative control: every refused request projected into duties (<code>all_debug</code>)</td><td>1 failed in 1.99s; EXIT=1 — <code>FAILED test_a_promoted_run_settles_its_refused_request</code>, the in-process promoted run listed as a duty</td></tr>
+      <tr><td>Base arm at <code>9c8632ca0b99</code> on <code>all_debug</code> (the node's own test is absent there)</td><td>73 passed in 130.89s; EXIT=0</td></tr>
+      <tr><td>After arm at <code>e1ea7e5841fc</code> on <code>all_debug</code></td><td>78 passed in 132.58s; EXIT=0</td></tr>
+      <tr><td>Negative control: every refused request projected into duties (<code>all_debug</code>)</td><td>1 failed in 3.29s; EXIT=1 — <code>FAILED test_a_promoted_run_settles_its_refused_request</code>, the in-process promoted run listed as a duty</td></tr>
     </tbody>
   </table>
   <h3 id="refused-promotion-request-settles-gate">Gate log</h3>
   <p>The gate runs the node's declared test files on <code>all_debug</code>; the arms are recorded in
   the run's directory, and for each the log's first lines name the revision, tree and command, and
   its last line is the bare exit status read below.</p>
-  <pre id="refused-promotion-request-settles-gate-head"><code># revision: 81c3e9d10c9346949a6cc24098d7e272d75ad9a9
+  <pre id="refused-promotion-request-settles-gate-head"><code># revision: e1ea7e5841fc4f03db69a0d46003fd0219a495fb
 # tree: .../8e41a6d3-d0e0-4927-afd1-771942ebfe6a/refused-promotion-request-settles
-# command: PYTHONPATH=. /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_refused_promotion_request_settles.py tests/test_staged_write_inventory.py
-54 passed in 10.84s
+# command: PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_no_caller_waits_on_a_promotion.py tests/test_refused_promotion_request_settles.py tests/test_staged_write_inventory.py
+78 passed in 132.58s
 EXIT=0</code></pre>
   <pre id="refused-promotion-request-settles-gate-base"><code># revision: 9c8632ca0b992790566bc487862f2c9be6f8906d
 # tree: a node-local extraction of that revision, committed so the inventory test can read HEAD
-# command: PYTHONPATH=$D /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py
-51 passed in 13.26s
+# command: PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_no_caller_waits_on_a_promotion.py tests/test_staged_write_inventory.py
+73 passed in 130.89s
 EXIT=0</code></pre>
-  <p>One test outside this node's write scope still encodes the behaviour this section retires:
-  <code>tests/test_no_caller_waits_on_a_promotion.py::test_a_missing_review_pointer_needs_its_own_promoted_row</code>
-  (four parametrisations) asserts that a refused request for a run whose live pointer has been removed
-  raises a duty. That is now the settled case, and the assertion must read the refusal as settled
-  instead. It is reported under <code>outside_scope</code> rather than edited here.</p>
+  <p>The sibling test that asserted the retired behaviour now asserts the settled one. With the
+  pointer gone and no promoted row naming its own run, a refusal used to raise a duty; it now reads
+  <code>promotion-settled</code> as <code>gone</code> and keeps the refusal's recorded error, in all
+  four parametrisations. That file was reported as an outside-scope finding in the first delivery and
+  was brought into this node's write paths for the repair round.</p>
+  <p>The settlement reads the ledger row before the pointer, so a run that landed and whose pointer
+  has since gone is recorded <code>landed</code> rather than <code>gone</code>. Two tests hold it: one
+  for the landed row with no pointer, one for a run with neither a record nor a pointer settling as
+  <code>gone</code>.</p>
 </article>
 </body>
 </html>
