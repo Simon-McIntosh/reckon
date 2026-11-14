@@ -1,0 +1,47 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "",
+  "dispatched_at": "2026-11-14T10:48:56Z",
+  "findings": [
+    {
+      "file": "reckon/crew/plan_review.py",
+      "id": "facfb82c4ff",
+      "line": 5367,
+      "severity": "non-blocking",
+      "summary": "bare except swallows a failed commit and leaves the record staged silently"
+    },
+    {
+      "file": "reckon/crew/plan_review.py",
+      "id": "f858c6648b8",
+      "line": 5319,
+      "severity": "non-blocking",
+      "summary": "behavioural change lands outside the declared write path reckon/crew/promotion.py"
+    },
+    {
+      "file": "manifest.md",
+      "id": "fa68ad0a233",
+      "line": 20,
+      "severity": "non-blocking",
+      "summary": "after_suite JSON is malformed and unparseable"
+    }
+  ],
+  "project": "reckon",
+  "review_run_id": "r-20261114T121150734618-review-of-wave3-clive-anchored-a-plan-is-reviewed-before-it-s39-898a95dbfacd",
+  "reviewed_base_sha": "3d4c92834c759745650c2d0eda93fbb68becca7e",
+  "reviewed_head_sha": "898a95dbfacd13f5ba8fd905520b1002a3a5dd23",
+  "reviewed_run_id": "r-20261114T095134283939-wave3-clive-anchored-a-plan-is-reviewed-before-it-s39",
+  "rubric_text": "VERDICT goal: reckon/crew/plan_review.py:5319 now commits a staging record whose delivering crew run already holds a ledger row, which is the late-delivery defect the node set out to close.\nVERDICT done_when: the gate is the node's own test set; head-arm.log records 53 passed EXIT=0 at 898a95dbfa against base-arm.log 51 passed EXIT=0 at 3d4c92834c.\nVERDICT write_paths: the declared paths were reckon/crew/promotion.py, the new test and the evidence fragment; the landed source change is in reckon/crew/plan_review.py, which the fence did not name.\nVERDICT manifest: read; it claims complete, names both gate logs and the negative control, but its after_suite JSON is malformed at manifest.md:20 and cannot be parsed.\nVERDICT diff: read both commits against base 3d4c92834c; three files, 255 insertions, the behavioural change confined to _commit_record_when_run_promoted in reckon/crew/plan_review.py.\nCALL_SITES: reckon/crew/routing.py:2949, reckon/crew/promotion_checks.py:1690, reckon/crew/promotion_checks.py:2988, reckon/crew_dispatch_commands.py:2901, reckon/crew_dispatch_commands.py:2963\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/plan_review.py:5319 commits the late record through review_records.store_committed_review, the writer a promotion uses.\nSCORE evidence: 15\nJUSTIFICATION evidence: head-arm.log and base-arm.log are recorded with EXIT lines and the negative control reddens, but manifest.md:20 carries unparseable after_suite JSON.\nSCORE scope_discipline: 9\nJUSTIFICATION scope_discipline: the source change lands in reckon/crew/plan_review.py while the declared fence named only reckon/crew/promotion.py, which the diff leaves untouched.\nSCORE durability: 19\nJUSTIFICATION durability: removing the _commit_record_when_run_promoted call reddens the committed-store assertion in the new test and leaves the staged case green, as negative-control.log records.\nSCORE fit: 18\nJUSTIFICATION fit: the helper follows the surrounding lazy-import and docstring idiom of reckon/crew/plan_review.py:5313 and introduces no plan or ticket identifier.\nSCORE reuse: 20\nJUSTIFICATION reuse: the addition calls review_records.store_committed_review and commit_record_write rather than forking the committed-store writer, and a search over reckon/crew found no other late-delivery commit path.\nFINDING reckon/crew/plan_review.py:5367 non-blocking: the commit is wrapped in a bare except (OSError, ValueError) returning None, so a failed commit silently leaves the record staged, reproducing the exact outcome the node fixes with no log or refusal.\nFINDING reckon/crew/plan_review.py:5319 non-blocking: the behavioural change lands in plan_review.py, outside the declared write path reckon/crew/promotion.py; the manifest's evidence_inputs explains the move, but the fence was violated rather than extended.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261114T095134283939-wave3-clive-anchored-a-plan-is-reviewed-before-it-s39/manifest.md:20 non-blocking: after_suite is not valid JSON because the command string is truncated and carries an embedded comma before log_path, so a reader cannot parse the after arm from the manifest and must fall back to the log.\n",
+  "scores": {
+    "durability": 19,
+    "evidence": 15,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 9
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-14T12:23:16.352981+00:00",
+  "total": 100
+}
