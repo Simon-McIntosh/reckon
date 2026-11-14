@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="every-shared-home-lock-holds-across-nodes-landed">
+  <meta name="plan-title" content="Every shared-home lock holds across nodes — landed record">
+  <meta name="plan-summary" content="Landing record for Every shared-home lock holds across nodes: evidence appended by section.">
+  <meta name="plan-evidence-for" content="every-shared-home-lock-holds-across-nodes">
+  <title>Every shared-home lock holds across nodes — landed record | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+ <main class="plan-doc">
+  <h1>Every shared-home lock holds across nodes — landed record</h1>
+  <p>Landing record for Every shared-home lock holds across nodes: evidence appended by section.</p>
+
+
+   <section id="s2-guard-landed" data-evidence-origin="append">
+    <h2>§2 — the guard refuses any unjudged bare flock</h2>
+    <p>Commit <code>0f5f2f180b</code> (run <code>r-20261114T135621152111-shared-home-lock-guard</code>) adds <code>tests/test_every_shared_home_lock_holds_across_nodes.py</code> and declares it in <code>docs/state/reckon/flight.yaml</code> <code>census_tests</code>. At the delivered head it reads 45 lock-taking <code>flock</code> calls across 42 file::function keys: 24 calls over 21 keys judged safe, 21 shared-home sites pending. After arm: 55 passed, EXIT=0, at <code>0f5f2f180b</code>; baseline arm green at <code>06485f75</code>.</p><p>Negative controls, each logged with EXIT=1 in the run directory: a scratch <code>reckon/</code> module holding one bare <code>flock</code> is reported as <code>reckon/fresh.py::write_shared</code>; deleting a judged entry fails naming the site; a stale entry fails naming the entry.</p><p>Independent review <code>r-20261114T143208131355</code> scored 16–20 with no added failures. Its one non-blocking finding, that the guard compares keys and not call counts, so a second <code>flock</code> inside a judged function passes, is folded into the §6 node.</p>
+  </section>
+
+</main>
+</body>
+</html>

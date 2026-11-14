@@ -20,12 +20,12 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-depends-on" content="a-plan-state-lock-holds-on-every-node">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;}">
   <meta name="plan-section-depends-on" content="{&quot;s3&quot;:[&quot;every-shared-home-lock-holds-across-nodes#s2&quot;],&quot;s4&quot;:[&quot;every-shared-home-lock-holds-across-nodes#s2&quot;],&quot;s5&quot;:[&quot;every-shared-home-lock-holds-across-nodes#s2&quot;],&quot;s6&quot;:[&quot;every-shared-home-lock-holds-across-nodes#s3&quot;,&quot;every-shared-home-lock-holds-across-nodes#s4&quot;,&quot;every-shared-home-lock-holds-across-nodes#s5&quot;]}">
   <title>Every shared-home lock holds across nodes | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="3">
+<meta name="plan-version" content="4">
 <meta name="plan-modified" content="2026-11-14">
 </head>
 <body>
@@ -55,7 +55,7 @@
 </ul>
 
     <h2 id="s2">§2 — A guard refuses any bare flock that is neither judged nor pending</h2>
-<section data-reckon="section" data-id="s2" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+<section data-reckon="section" data-id="s2" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="done" data-links=""></section>
 <p><strong>Deliverable.</strong> A repository test, <code>tests/test_every_shared_home_lock_holds_across_nodes.py</code>, holds two tables. Each table entry keys one lock-taking <code>flock</code> call under <code>reckon/</code> by file and qualified enclosing function, never by line.</p>
 <ul>
   <li>The <em>judged</em> table records why a site is safe on one node: the lock file lives on one host, or a named lease decides the foreign-host case.</li>
@@ -178,7 +178,10 @@
 </section>
   <section data-reckon="comments" id="comments" class="r-comments">
 <div class="r-comment" data-section="s2" data-id="c-run-r-20261114T143208131355-review-of-shared-home-lock-guard-0f5f2f180bb5" data-who="reckon-build" data-when="2026-11-14T15:10:54.123Z">
-    <div class="r-comment-body"><p>Review of §2 (shared-home-lock-guard, r-20261114T135621152111) stored at the reviewed run&#x27;s review-records/ path; base 06485f75c143, head 0f5f2f180bb5; parsed record scoring goal_fidelity 18, evidence 19, scope_discipline 20, durability 16, fit 19, reuse 20 (total 112); added_failure_count 0 (baseline 51 passed, after 55 passed, both EXIT=0); one non-blocking finding that the guard asserts key sets and never per-site call counts.</p></div>
+    <div class="r-comment-body"><p>Review of §2 (shared-home-lock-guard, r-20261114T135621152111) stored at the reviewed run's review-records/ path; base 06485f75c143, head 0f5f2f180bb5; parsed record scoring goal_fidelity 18, evidence 19, scope_discipline 20, durability 16, fit 19, reuse 20 (total 112); added_failure_count 0 (baseline 51 passed, after 55 passed, both EXIT=0); one non-blocking finding that the guard asserts key sets and never per-site call counts.</p></div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-close-s2" data-who="reckon-build" data-when="2026-11-14T15:20:00Z">
+    <div class="r-comment-body"><p>§2 landed: the guard keys every lock-taking flock under reckon/ by file and function, judged (24 calls) or pending (21 sites), and runs in every product gate as a census test (commit <code>0f5f2f180b</code>). <a href="/reckon/evidence/archive/every-shared-home-lock-holds-across-nodes-landed.html#s2-guard-landed">evidence</a></p></div>
 </div>
 </section>
 </main>
