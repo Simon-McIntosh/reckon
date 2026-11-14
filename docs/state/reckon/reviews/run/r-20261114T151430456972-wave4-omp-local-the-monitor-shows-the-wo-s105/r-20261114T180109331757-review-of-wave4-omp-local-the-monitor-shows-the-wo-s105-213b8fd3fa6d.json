@@ -1,0 +1,80 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/crew/recovery_classification.py:1780",
+    "reckon/crew/obligations.py:3865",
+    "reckon/crew/obligation_snapshot.py:1855",
+    "reckon/hooks/coordinator_obligations.py:258",
+    "reckon/mcp_views.py"
+  ],
+  "completed_at": "2026-11-14T18:10:46.625Z",
+  "dispatched_at": "2026-11-14T18:06:58Z",
+  "findings": [
+    {
+      "detail": "The manifest's rubric.delta line states the importer set's failures fall from 21 at the base revision to 6 with this change, but the two arm logs it names (logs/arm-base.log, logs/arm-after.log) each end '62 failed, 420 passed, 2 errors' with an identical 64-id failure set: the delta is 0 added and 0 removed, not 21 to 6. The measure still passes on the recorded arms, but the stated figure is contradicted by the evidence it cites.",
+      "file": "manifest.md",
+      "line": 0,
+      "severity": "non-blocking"
+    },
+    {
+      "detail": "The new test file lies outside the node's declared write paths, which name only reckon/crew/obligations.py, reckon/hooks/coordinator_obligations.py, reckon/crew/recovery_classification.py and the evidence fragment; the node was fenced to a scope that contained no test path.",
+      "file": "tests/test_a_queued_row_names_its_own_hold.py",
+      "line": 1,
+      "severity": "non-blocking"
+    },
+    {
+      "detail": "The liveness suppression is written as an empty 'if unlaunched and stuck is None: pass' branch ahead of the existing 'elif stuck is not None'; the condition is correct and commented, but the no-op branch restates the fall-through rather than folding into the elif chain, which is harder to read than the surrounding guards.",
+      "file": "reckon/crew/recovery_classification.py",
+      "line": 1791,
+      "severity": "non-blocking"
+    }
+  ],
+  "justifications": {
+    "durability": "tests/test_a_queued_row_names_its_own_hold.py:179 fails when the scope branch is removed and line 210 fails when the age rule is dropped, both shown red in logs/negative-controls.log.",
+    "evidence": "tests/test_a_queued_row_names_its_own_hold.py records 4 passed and logs/arm-base.log against arm-after.log give a zero-id failure delta, but the manifest's own delta figure of 21 to 6 is contradicted by those logs.",
+    "fit": "reckon/crew/obligations.py:1512 follows the _live_item shape of its neighbours and names the kind by mechanism; the empty branch at reckon/crew/recovery_classification.py:1791 is the one rough edge.",
+    "goal_fidelity": "reckon/crew/recovery_classification.py:386-405 publishes no command for a scope claim and names the holder and path, which is the section's deliverable.",
+    "reuse": "reckon/crew/recovery_classification.py:172 extracts the existing ScopeConflict walk for reuse instead of duplicating it, and _scope_claim_holder reuses recorded_pass_hold from reckon/crew/queue_admission.py.",
+    "scope_discipline": "reckon/crew/obligations.py and the fragment are within the declared paths, while tests/test_a_queued_row_names_its_own_hold.py:1 is outside them."
+  },
+  "project": "reckon",
+  "review_run_id": "r-20261114T180109331757-review-of-wave4-omp-local-the-monitor-shows-the-wo-s105-213b8fd3fa6d",
+  "reviewed_base_sha": "9fcf1375abfdb1148fa3086ead9cdb64c87ed544",
+  "reviewed_head_sha": "213b8fd3fa6d8e332f6baae98cafa3a140ef13fb",
+  "reviewed_run_id": "r-20261114T151430456972-wave4-omp-local-the-monitor-shows-the-wo-s105",
+  "scores": {
+    "durability": 18,
+    "evidence": 15,
+    "fit": 17,
+    "goal_fidelity": 18,
+    "reuse": 19,
+    "scope_discipline": 13
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-14T18:57:54.064619+00:00",
+  "total": 100,
+  "verdicts": [
+    {
+      "item": "goal",
+      "text": "The source goal is 'Deliver section s105 of the-monitor-shows-the-work-it-watches as its done-when states'; the diff at 213b8fd3fa implements it \u2014 reckon/crew/recovery_classification.py:386-405 reads a ScopeConflict's holder and path and returns a command-less remedy, reckon/crew/obligations.py:1500-1516 renders it as SCOPE_HELD_DUTY_KIND, and the kind joins both non-blocking sets."
+    },
+    {
+      "item": "done_when",
+      "text": "The section's done-when (a queued row names its own hold, no command is published for a peer run's claim, and the hook holds no stop for it) is asserted by tests/test_a_queued_row_names_its_own_hold.py:126-232 across four cases with a positive control at line 175; the manifest records 4 passed."
+    },
+    {
+      "item": "write_paths",
+      "text": "Declared paths are reckon/crew/obligations.py, reckon/hooks/coordinator_obligations.py, reckon/crew/recovery_classification.py, the evidence fragment and a figures dir; the diff's three source paths and the fragment are inside them, while tests/test_a_queued_row_names_its_own_hold.py is not."
+    },
+    {
+      "item": "manifest",
+      "text": "Read; status complete, landing on 213b8fd3fa, gate '4 passed in 4.35s', two negative controls logged at logs/negative-controls.log, and a stated failure delta of 21 to 6 that its own arm logs contradict."
+    },
+    {
+      "item": "diff",
+      "text": "Read commit by commit against base 9fcf1375ab: one change, five files, 415 insertions and 16 deletions, all within the node's subject apart from the out-of-scope test file."
+    }
+  ]
+}

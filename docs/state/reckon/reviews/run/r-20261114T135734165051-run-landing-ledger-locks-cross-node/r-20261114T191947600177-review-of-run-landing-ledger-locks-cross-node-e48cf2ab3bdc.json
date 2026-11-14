@@ -1,0 +1,84 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/crew/promotion.py",
+    "reckon/crew/promotion_requests.py",
+    "reckon/crew/promotion_release.py",
+    "reckon/crew/resumption.py",
+    "reckon/crew/dispatch_launch.py",
+    "reckon/crew/dispatch_claims.py",
+    "reckon/crew/dispatch_picker.py",
+    "reckon/crew/queue_edit.py",
+    "reckon/crew/gc.py",
+    "reckon/crew/routing.py",
+    "reckon/crew/pending_landing.py",
+    "reckon/crew/admission/launching.py",
+    "reckon/crew/admission/selection.py",
+    "reckon/crew/admission/landing.py",
+    "reckon/crew/dispatching/requests.py",
+    "reckon/crew/dispatching/preparation.py",
+    "reckon/crew/recovery_review_dispatch.py",
+    "reckon/crew/recovery_watch.py",
+    "reckon/crew/terminal_cleanup.py",
+    "reckon/ledger.py"
+  ],
+  "completed_at": "2026-11-14T19:38:48.033Z",
+  "dispatched_at": "2026-11-14T19:23:37Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/every-shared-home-lock-holds-across-nodes/run-landing-ledger-locks-cross-node.html",
+      "line": 57,
+      "severity": "non-blocking",
+      "text": "the fragment cites the ledger take as ledger.py:2629, which at the reviewed head is a docstring line; the take is at ledger.py:2634, so a reader following the citation opens the wrong line."
+    },
+    {
+      "file": "manifest.md",
+      "line": 27,
+      "severity": "non-blocking",
+      "text": "section 3's done_when asks the manifest to list every other reference to each of the seven lock paths and why none opens the file; rubric.paths claims this answered but the enumeration exists only in the evidence fragment, so the named record carries the claim without the list it asserts."
+    },
+    {
+      "file": "reckon/node_exclusive_lock.py",
+      "line": 32,
+      "severity": "non-blocking",
+      "text": "_PROCESS_LOCKS keeps one threading.Lock per distinct lock path forever; routing every per-run pointer take (run, promotion, promotion-request, roster-registration names) through the helper makes that registry grow without bound in the long-lived station and admit-service processes."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "Verified 20 production call sites that reach the seven locks; the pointer lock is reached from promotion, resumption, dispatch, queue-edit, gc and admission paths, and the landing, ledger, placement and admit locks from their own modules' entry points.",
+    "diff": "Read commit by commit (a355eac555 source, bcbe687be0 and e48cf2ab3b evidence): eight files, five source modules, two tests, one evidence fragment, all inside scope.",
+    "done_when": "The gate names the guard plus the new cross-node tests and its result is in suite-after.log (57 passed, EXIT=0), with the base arm in suite-base.log (55 passed, EXIT=0) and the base-revision negative control in negative-control.log (2 failed, EXIT=1).",
+    "goal": "The goal is seven shared-home locks taking the cross-node lock; reckon/crew/runs.py:492, ledger.py:2634, queue_landing.py:1892, admission/service.py:41 and placement.py:159 each call exclusive_lock.",
+    "manifest": "Read; it states the seven migrations, the 35-site/38-call census, the two-arm suite result, the focused arms with zero added failing ids, and names its logs.",
+    "write_paths": "Read the manifest's declared paths; every changed path in git diff 63b51b83..e48cf2ab is inside them, including the two test files and the evidence fragment."
+  },
+  "justifications": {
+    "durability": "tests/test_run_and_landing_locks_hold_across_nodes.py:69 and :85 fail at base 63b51b8337 where the sites take only flock, which the logged negative-control run shows as DID NOT RAISE and busy is None; they pass at the head.",
+    "evidence": "The gate in the manifest ran tests/test_every_shared_home_lock_holds_across_nodes.py, tests/test_run_and_landing_locks_hold_across_nodes.py and tests/test_staged_write_inventory.py (suite-after.log: 57 passed, EXIT=0), and the negative control fails the two new ids at base (negative-control.log: 2 failed, EXIT=1).",
+    "fit": "The modules follow the surrounding idiom, docstrings are rewritten to name the record lock (reckon/ledger.py:2628), and no plan label or ticket reference appears; the surviving thin _admit_lock wrapper (reckon/crew/admission/service.py:40) is a recorded out-of-scope carry-over.",
+    "goal_fidelity": "All seven named sites (_pointer_lock, queue_dispatch, update_watch_registration in reckon/crew/runs.py, _ledger_write_lock in reckon/ledger.py, land_once in reckon/crew/queue_landing.py, _admit_lock in reckon/crew/admission/service.py, _reservation_hold_lock in reckon/crew/placement.py) now take exclusive_lock and each keeps its held answer.",
+    "reuse": "The change extends the existing owner reckon/node_exclusive_lock.py:exclusive_lock at all seven sites and adds no second lock implementation.",
+    "scope_discipline": "Every path in the diff (five modules, the guard test, tests/test_run_and_landing_locks_hold_across_nodes.py, and the evidence fragment) is inside the manifest's declared write paths."
+  },
+  "node": "run-landing-ledger-locks-cross-node",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is that seven run, queue, landing and ledger locks take the cross-node lock; reckon/crew/runs.py:492 (_pointer_lock), runs.py:884 (queue_dispatch), runs.py:3317 (update_watch_registration), ledger.py:2634, queue_landing.py:1892, admission/service.py:41 and placement.py:159 each now call reckon.node_exclusive_lock.exclusive_lock.\nVERDICT done_when: the done_when asks for the guard minus seven pending rows, a second-process POSIX record-lock holder observed by the pointer and landing-pass takes, the base-revision negative control, and no added focused failures; the manifest runs that gate and the logs confirm it (suite-base.log 55 passed EXIT=0, suite-after.log 57 passed EXIT=0, negative-control.log 2 failed EXIT=1, focused2 arms 0 added ids).\nVERDICT write_paths: the manifest declares the five modules, the guard test, a new test file and the evidence fragment, and every path in git diff 63b51b83..e48cf2ab is inside them.\nVERDICT manifest: read; it records the seven migrations, the 35-site/38-call census at the head, the two suite arms, the base-revision negative control, and the 261-file focused arms with zero added failing ids and two dropped.\nVERDICT diff: read commit by commit against the base; a355eac555 changes runs.py, ledger.py, queue_landing.py, admission/service.py and placement.py and removes seven pending rows, and bcbe687be0 plus e48cf2ab3b add the evidence fragment; no file outside the declared scope changed.\nCALL_SITES: reckon/crew/promotion.py, reckon/crew/promotion_requests.py, reckon/crew/promotion_release.py, reckon/crew/resumption.py, reckon/crew/dispatch_launch.py, reckon/crew/dispatch_claims.py, reckon/crew/dispatch_picker.py, reckon/crew/queue_edit.py, reckon/crew/gc.py, reckon/crew/routing.py, reckon/crew/pending_landing.py, reckon/crew/admission/launching.py, reckon/crew/admission/selection.py, reckon/crew/admission/landing.py, reckon/crew/dispatching/requests.py, reckon/crew/dispatching/preparation.py, reckon/crew/recovery_review_dispatch.py, reckon/crew/recovery_watch.py, reckon/crew/terminal_cleanup.py, reckon/ledger.py\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: all seven named sites take exclusive_lock and each keeps its held answer, as reckon/crew/runs.py:492 and reckon/crew/queue_landing.py:1892 show.\nSCORE evidence: 17\nJUSTIFICATION evidence: the gate and the negative control are recorded in /home/ITER/mcintos/.config/reckon/crew/runs/r-20261114T135734165051-run-landing-ledger-locks-cross-node/suite-after.log, but section 3's done_when also asked the manifest itself to list the seven lock paths' other references.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every changed path in the diff, down to docs/evidence/fragments/every-shared-home-lock-holds-across-nodes/run-landing-ledger-locks-cross-node.html, is a declared write path.\nSCORE durability: 20\nJUSTIFICATION durability: tests/test_run_and_landing_locks_hold_across_nodes.py:69 would fail if _pointer_lock reverted to flock, and the logged base-revision run shows exactly that failure.\nSCORE fit: 18\nJUSTIFICATION fit: the docstrings and imports match the surrounding style of reckon/ledger.py:2628; the one misfit is the retained thin wrapper at reckon/crew/admission/service.py:41, recorded under outside_scope.\nSCORE reuse: 20\nJUSTIFICATION reuse: every site extends reckon/node_exclusive_lock.py:exclusive_lock and no second lock primitive is added.\nFINDING docs/evidence/fragments/every-shared-home-lock-holds-across-nodes/run-landing-ledger-locks-cross-node.html:57 non-blocking: the fragment cites the ledger take as ledger.py:2629, a docstring line, where the take is ledger.py:2634 and a reader following it opens the wrong line.\nFINDING manifest.md:27 non-blocking: section 3's done_when asks the manifest to list every other reference to each of the seven lock paths; rubric.paths claims this answered but the enumeration is only in the evidence fragment.\nFINDING reckon/node_exclusive_lock.py:32 non-blocking: _PROCESS_LOCKS keeps one threading.Lock per distinct lock path forever, and routing every per-run pointer take through the helper makes that registry grow without bound in the long-lived station and admit-service processes.\n",
+  "review_run_id": "r-20261114T191947600177-review-of-run-landing-ledger-locks-cross-node-e48cf2ab3bdc",
+  "reviewed_base_sha": "63b51b8337c4d61f3fc0b93d25ffb048273ed293",
+  "reviewed_head_sha": "e48cf2ab3bdc45a1fc582c95ee117d1b328885f1",
+  "reviewed_run_id": "r-20261114T135734165051-run-landing-ledger-locks-cross-node",
+  "rubric": "landed_node",
+  "scores": {
+    "durability": 20,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-14T19:43:12.837306+00:00",
+  "total": 115
+}

@@ -20,11 +20,11 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="reckon-tooling,crew">
   <meta name="plan-section-depends-on" content="{&quot;s4&quot;:[&quot;concurrent-edits-meet-at-the-merge#s2&quot;,&quot;concurrent-edits-meet-at-the-merge#s3&quot;],&quot;s5&quot;:[&quot;concurrent-edits-meet-at-the-merge#s2&quot;],&quot;s6&quot;:[&quot;concurrent-edits-meet-at-the-merge#s2&quot;]}">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;done&quot;,&quot;s14&quot;:&quot;implementable&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;done&quot;,&quot;s14&quot;:&quot;implementable&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;}">
   <title>Concurrent Edits Meet At The Merge | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="82">
+<meta name="plan-version" content="84">
 <meta name="plan-modified" content="2026-11-14">
 </head>
 <body>
@@ -131,7 +131,7 @@
     <code>reckon/crew/recovery_repair_dispatch.py</code> and the new test.</p>
 
     <h2 id="s4">§4 — Parallel nodes on one module land, measured on the fleet</h2>
-    <section data-reckon="section" data-id="s4" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+    <section data-reckon="section" data-id="s4" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="done" data-links=""></section>
     <p><strong>Deliverable.</strong> A measurement once §2 and §3 are on main and the admit service
     has reloaded onto them. The writer trims <code>~/.config/reckon/crew/admission-verdicts.jsonl</code> to 1 MiB on every
     append (<code>reckon/crew/queue_admission.py:2453–2454</code>, bound <code>ADMISSION_VERDICT_LOG_MAX_BYTES</code> at <code>:103</code>), so it holds a bounded tail: on 9 November that was about 80 minutes (790 rows from 20:46Z to 22:06Z), not a day. The
@@ -293,6 +293,9 @@
 </div>
 <div class="r-comment" data-section="s4" data-id="c-s4-measured-pairs-hold-unmeasured" data-who="reckon-build" data-when="">
     <div class="r-comment-body"><p>Measured on 10–11 November by r-20261109T074919528432 (fragment landed, head e65fa698dd). <strong>Pair arm: measured.</strong> Eleven distinct run pairs held concurrent claims on one shared-root file over the 15 h ledger window, and every one landed cleanly; a pair once counted as open proved non-concurrent on per-run ancestry and conflict-marker checks. <strong>Hold arm: unmeasured.</strong> One covered-hour exposure against the floor of five, with zero shared-root holds, which the floor does not let count as a pass. The before window showed 263 shared-root held file claims. The section stays open: re-take the hold arm when the retained verdict copies cover hours with at least five concurrent shared-root admissions.</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-run-r-20261114T144956227503-parallel-nodes-on-one-module-land-measured" data-who="reckon-build" data-when="2026-11-14T16:51:10.810Z">
+    <div class="r-comment-body"><p>Shared-root claim measurement re-taken with one instrument: the before snapshot holds 296 held-on-claim verdicts (157 on shared-root file paths, the negative control) against zero held-on-claim verdicts in 265 admission passes over 8h32m on 2026-11-14, in which 27 runs were admitted with 47 shared-root file-claim exposures while a peer held the same file; the ledger window after holds 137 concurrent same-file pairs, all accounted for (57 landed cleanly, 208 open while the wave ran, 5 for one run with a pending landing repair, 4 for one coordinator-discarded run).</p></div>
 </div>
 <div class="r-comment" data-section="s5" data-id="c-run-r-20261109T122853994663-review-of-fragment-claim-never-blocks-a-sibling-8ecbbfcf8701" data-who="reckon-build" data-when="2026-11-09T13:00:22Z">
     <div class="r-comment-body"><p>Independent review of 8ecbbfcf8701806f63af95263cc1e43bd3504af1 is parsed: goal_fidelity=20, evidence=10, scope_discipline=20, durability=20, fit=20, reuse=20; two blocking evidence findings require a valid base receipt and complete importer comparison within the declared worker limit.</p></div>

@@ -1,0 +1,64 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/dispatching/launch.py:282",
+    "reckon/crew/routing.py:2456",
+    "reckon/crew/dispatch_launch.py:3037"
+  ],
+  "completed_at": "2026-11-14T19:04:29.412Z",
+  "dispatched_at": "2026-11-14T18:50:05Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "exempted",
+      "reason": "test-strength: the run_id half of the guard is unexercised by the silent reference; the dispatch_seconds half, which the earlier finding asked for, is held",
+      "recorded_at": "2026-11-14T19:15:46.476438+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "tests/test_dispatch_returns_without_worker.py",
+      "line": "1043",
+      "severity": "non-blocking",
+      "text": "non-blocking: _SilentReference.output always returns run_id 'run-silent', so the 'not output.get(\"run_id\")' half of the guard at line 975 is never exercised - deleting that clause leaves both parametrizations of test_a_preparation_reference_that_recorded_no_time_is_refused green, so a regression that drops the run-id check would pass; add a case whose output carries a positive dispatch_seconds and no run id."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read both gained commits by file: 88cdb3b1b adds the guard at tests/test_dispatch_returns_without_worker.py:975 and the parametrized case at line 1010 plus three fragment bullets; 4a47f1bef1 is text only, adding the base whole-file arm row at fragment line 41, the claim-mapping paragraph at line 45 and the reverted-guard control paragraph at line 50; no production module is touched by either.",
+    "done_when": "the done_when names five clauses; the delta records the arms honestly rather than closing them - the fragment at line 45 now says the 20-of-20 is a positive result and not a head-versus-base separation, the new base whole-file row at fragment line 41 matches logs/base-arm.log (2 failed, 6 passed, supervisor case a TypeError at reckon/crew/promotion_scope.py:820), and the join-the-supervisor mutation is recorded at the committed head, but the -n 8 shape and the 'main contended runs fail at least once' clause are still not met.",
+    "goal": "the goal is to derive the dispatch-exit bound from a reference that includes the dispatch work the current reference omits; the gained commits do not change the derivation but make its input un-collapsible at tests/test_dispatch_returns_without_worker.py:975, and the preparation work it covers is real at reckon/crew/routing.py:2472 (subprocess.run of worktree_fleet.py create inside _create_worktree at routing.py:2456, reached from reckon/crew/dispatching/launch.py:282).",
+    "manifest": "read; it answers all four of round 1's findings, names logs/base-repair.log and logs/after-repair.log which both exist, and the 'rekon' typo now survives only inside the quoted correction at lines 15 and 32, while after_suite.log_path names this round's arm at logs/after-repair.log.",
+    "write_paths": "the manifest declares tests/test_dispatch_returns_without_worker.py, the evidence fragment and a figures directory; both commits stay inside those two files, git diff --stat e2ee6d785a 4a47f1bef1b9 reading 73 insertions and 3 deletions across them, and the declared figures directory is untouched."
+  },
+  "justifications": {
+    "durability": "tests/test_dispatch_returns_without_worker.py:1057 fails with DID NOT RAISE once the refusal at line 975 is replaced by 'if False:' (logs/negative-control-reverted-guard.log, 2 failed, EXIT=1), but the fake at line 1043 always supplies run_id, so the 'not output.get(\"run_id\")' half of the same guard has no case that reddens without it.",
+    "evidence": "logs/negative-control-join-supervisor.log was re-taken at rev 88cdb3b1b7 (1 failed in 67.50 s, EXIT=1) and logs/negative-control-reverted-guard.log shows the new case red with DID NOT RAISE at EXIT=1, but the done_when's -n 8 and 'main contended runs fail at least once' clauses remain unmet and the 20-of-20 reports under logs/contended-head/ were generated at 16:01, before the 17:15 commit e2ee6d785a.",
+    "fit": "the new case at tests/test_dispatch_returns_without_worker.py:1010 follows the module's existing construction style, reuses _tail and _finish at lines 905 and 875, and its comment states the mechanism without plan, phase or ticket labels.",
+    "goal_fidelity": "tests/test_dispatch_returns_without_worker.py:975 refuses a preparation reference that recorded no positive time or no run id, so the goal's own derived term can no longer collapse to zero and restore the pre-change bound silently.",
+    "reuse": "_SilentReference at tests/test_dispatch_returns_without_worker.py:1036 is the file's first dispatch double and monkeypatches the existing _start_dispatch factory at line 698; the capability it stands in for has no repository owner to extend, and neither gained commit adds a production definition.",
+    "scope_discipline": "git diff --stat e2ee6d785a 4a47f1bef1b9 lists only tests/test_dispatch_returns_without_worker.py and docs/evidence/fragments/a-dispatch-returns-without-its-worker/the-dispatch-exit-bound-holds-at-working-load.html, both inside the declared write paths, and 4a47f1bef1b9 touches the fragment alone."
+  },
+  "project": "reckon",
+  "raw_text": "Reviewed run: r-20261114T143528943618-the-dispatch-exit-bound-holds-at-working-load\nReviewed base: e2ee6d785a3d2636e36041dcfa35a3470099eae2\nReviewed head: 4a47f1bef1b9ea04542bb4b312acbf877b26d892\n\nVERDICT goal: the goal is to derive the dispatch-exit bound from a reference that includes the dispatch work the current reference omits; the gained commits do not change the derivation but make its input un-collapsible at tests/test_dispatch_returns_without_worker.py:975, and the preparation work it covers is real at reckon/crew/routing.py:2472 (subprocess.run of worktree_fleet.py create inside _create_worktree at routing.py:2456, reached from reckon/crew/dispatching/launch.py:282).\nVERDICT done_when: the done_when names five clauses; the delta records the arms honestly rather than closing them - the fragment at line 45 now says the 20-of-20 is a positive result and not a head-versus-base separation, the new base whole-file row at fragment line 41 matches logs/base-arm.log (2 failed, 6 passed, supervisor case a TypeError at reckon/crew/promotion_scope.py:820), and the join-the-supervisor mutation is recorded at the committed head, but the -n 8 shape and the 'main contended runs fail at least once' clause are still not met.\nVERDICT write_paths: the manifest declares tests/test_dispatch_returns_without_worker.py, the evidence fragment and a figures directory; both commits stay inside those two files, git diff --stat e2ee6d785a 4a47f1bef1b9 reading 73 insertions and 3 deletions across them, and the declared figures directory is untouched.\nVERDICT manifest: read; it answers all four of round 1's findings, names logs/base-repair.log and logs/after-repair.log which both exist, and the 'rekon' typo now survives only inside the quoted correction at lines 15 and 32, while after_suite.log_path names this round's arm at logs/after-repair.log.\nVERDICT diff: read both gained commits by file: 88cdb3b1b adds the guard at tests/test_dispatch_returns_without_worker.py:975 and the parametrized case at line 1010 plus three fragment bullets; 4a47f1bef1 is text only, adding the base whole-file arm row at fragment line 41, the claim-mapping paragraph at line 45 and the reverted-guard control paragraph at line 50; no production module is touched by either.\nCALL_SITES: reckon/crew/dispatching/launch.py:282, reckon/crew/routing.py:2456, reckon/crew/dispatch_launch.py:3037\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: tests/test_dispatch_returns_without_worker.py:975 refuses a preparation reference that recorded no positive time or no run id, so the goal's own derived term can no longer collapse to zero and restore the pre-change bound silently.\nSCORE evidence: 15\nJUSTIFICATION evidence: logs/negative-control-join-supervisor.log was re-taken at rev 88cdb3b1b7 (1 failed in 67.50 s, EXIT=1) and logs/negative-control-reverted-guard.log shows the new case red with DID NOT RAISE at EXIT=1, but the done_when's -n 8 and 'main contended runs fail at least once' clauses remain unmet and the 20-of-20 reports under logs/contended-head/ were generated at 16:01, before the 17:15 commit e2ee6d785a.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: git diff --stat e2ee6d785a 4a47f1bef1b9 lists only tests/test_dispatch_returns_without_worker.py and docs/evidence/fragments/a-dispatch-returns-without-its-worker/the-dispatch-exit-bound-holds-at-working-load.html, both inside the declared write paths, and 4a47f1bef1b9 touches the fragment alone.\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_dispatch_returns_without_worker.py:1057 fails with DID NOT RAISE once the refusal at line 975 is replaced by 'if False:' (logs/negative-control-reverted-guard.log, 2 failed, EXIT=1), but the fake at line 1043 always supplies run_id, so the 'not output.get(\"run_id\")' half of the same guard has no case that reddens without it.\nSCORE fit: 18\nJUSTIFICATION fit: the new case at tests/test_dispatch_returns_without_worker.py:1010 follows the module's existing construction style, reuses _tail and _finish at lines 905 and 875, and its comment states the mechanism without plan, phase or ticket labels.\nSCORE reuse: 19\nJUSTIFICATION reuse: _SilentReference at tests/test_dispatch_returns_without_worker.py:1036 is the file's first dispatch double and monkeypatches the existing _start_dispatch factory at line 698; the capability it stands in for has no repository owner to extend, and neither gained commit adds a production definition.\nFINDING tests/test_dispatch_returns_without_worker.py:1043 non-blocking: _SilentReference.output always returns run_id 'run-silent', so the 'not output.get(\"run_id\")' half of the guard at line 975 is never exercised - deleting that clause leaves both parametrizations of test_a_preparation_reference_that_recorded_no_time_is_refused green, so a regression that drops the run-id check would pass; add a case whose output carries a positive dispatch_seconds and no run id.\n",
+  "review_run_id": "r-20261114T184709172065-review-of-the-dispatch-exit-bound-holds-at-working-load-4a47f1bef1b9",
+  "reviewed_base_sha": "e2ee6d785a3d2636e36041dcfa35a3470099eae2",
+  "reviewed_head_sha": "4a47f1bef1b9ea04542bb4b312acbf877b26d892",
+  "reviewed_run_id": "r-20261114T143528943618-the-dispatch-exit-bound-holds-at-working-load",
+  "scores": {
+    "durability": 17,
+    "evidence": 15,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 19,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-14T19:08:00.593366+00:00",
+  "total": 106
+}
