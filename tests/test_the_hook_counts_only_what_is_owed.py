@@ -112,7 +112,12 @@ def _rendered(payload: dict) -> str:
 
 
 def _write_pointer(
-    repository: Path, tmp_path: Path, *, run_id: Path | str, phase: str = "working"
+    repository: Path,
+    tmp_path: Path,
+    *,
+    run_id: Path | str,
+    phase: str = "working",
+    **extra: object,
 ) -> None:
     """Record one live pointer for the fixture session, in ``phase``."""
     root = tmp_path / "manifests"
@@ -142,6 +147,7 @@ def _write_pointer(
                 "time_budget": "20m",
                 "write_paths": ["seed.txt"],
             },
+            **extra,
         },
     )
 
@@ -293,5 +299,60 @@ def test_a_session_with_no_runs_and_no_producer_is_told_nothing(
     working = _drive(repository)
 
     line = _injected(working)
+    assert "no producer" in line, line
+    assert f"reckon crew watch --ensure --project {PROJECT}" in line, line
+
+
+@pytest.mark.parametrize(
+    ("phase", "extra"),
+    [
+        ("launch-failed", {}),
+        ("complete", {"manifest_path": None}),
+        ("stopped", {"promoted_revision": "0" * 40}),
+    ],
+)
+def test_a_settled_run_never_earns_the_absent_producer_line(
+    repository: Path,
+    tmp_path: Path,
+    phase: str,
+    extra: dict,
+) -> None:
+    """A pointer that never launched, or ended owing nothing, is not live work.
+
+    The fleet's population rule excludes both populations, so a session whose
+    pointers are all in one of them holds nothing a producer was publishing and
+    is told nothing. Each case is driven separately, so a silence in one cannot
+    stand for the others.
+    """
+    with runs.follower_registration(PROJECT, SESSION):
+        pass
+    _write_pointer(repository, tmp_path, run_id=f"run-{phase}", phase=phase, **extra)
+
+    completed = _drive(repository)
+
+    assert completed.returncode == 0
+    assert completed.stdout == "", completed.stdout
+
+
+def test_an_ended_run_owing_a_promotion_still_earns_the_line(
+    repository: Path, tmp_path: Path
+) -> None:
+    """The exclusion is the settled population, not every ended pointer.
+
+    A completed run holding its delivery manifest owes a promotion, which is
+    work its coordinator may need the absent producer for; the same pointer
+    without the manifest earns silence in the case above.
+    """
+    with runs.follower_registration(PROJECT, SESSION):
+        pass
+    _write_pointer(
+        repository,
+        tmp_path,
+        run_id="run-complete-unpromoted",
+        phase="complete",
+    )
+
+    line = _injected(_drive(repository))
+
     assert "no producer" in line, line
     assert f"reckon crew watch --ensure --project {PROJECT}" in line, line

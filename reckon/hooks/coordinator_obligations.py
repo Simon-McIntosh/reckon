@@ -1076,14 +1076,56 @@ def producer_seat_holder(project: str) -> tuple[int | None, str]:
     return named_pid, str(host) if isinstance(host, str) else ""
 
 
-def session_holds_live_work(project: str, session: str) -> bool:
-    """Whether a live pointer records work this session is answerable for.
+# A pointer in one of these phases records a run that has ended; a pointer in
+# the launch-failed phase records a run that never reached a worker. Neither is
+# work a session still holds, and the fleet's population rule excludes both
+# (``live_work_populations`` in ``reckon/crew/station_subscriber.py``, the one
+# statement of which pointers a pane must be shown). That rule cannot be
+# imported on this path: the module costs about a second and loads 525 modules,
+# ``reckon.ledger`` and ``reckon._plan_html`` among them, which is the
+# derivation cost the prompt hook exists to avoid and what
+# ``tests/test_obligations_hook_reads_the_snapshot.py`` forbids. So the two
+# exclusions are stated here for the one question this hook asks -- does this
+# session hold unsettled work -- and that question is narrower than the pane
+# population: a settled run is not a session's outstanding work, whether or not
+# a pane would still draw its row.
+_ENDED_POINTER_PHASES = frozenset({"complete", "failed", "stopped", "interrupted"})
+_NEVER_LAUNCHED_POINTER_PHASE = "launch-failed"
 
-    Read from the pointers themselves rather than from a derivation: a
-    session's live work is exactly the runs whose pointers record it, and this
-    is asked only on the path where no snapshot answers the turn. A pointer
-    whose owner cannot be read is not evidence that the session is idle, so an
-    unreadable or malformed document counts as work and the reading is kept.
+
+def _pointer_owes_its_session(document: Mapping[str, Any]) -> bool:
+    """Whether an ended pointer still records work nobody has settled.
+
+    The same two facts the population rule reads from a terminal pointer: a
+    completed run carrying its delivery manifest still owes a promotion, and a
+    review dispatch that was not withdrawn still owes a review. A pointer with
+    neither is settled.
+    """
+    if document.get("promoted_revision"):
+        return False
+    if (
+        str(document.get("phase") or "") == "complete"
+        and document.get("manifest_path")
+    ):
+        return True
+    return any(
+        isinstance(entry, Mapping)
+        and str(entry.get("status") or "") not in ("", "withdrawn")
+        for entry in (
+            document.get("review_dispatch"),
+            document.get("figure_review_dispatch"),
+        )
+    )
+
+
+def session_holds_live_work(project: str, session: str) -> bool:
+    """Whether a pointer records unsettled work this session is answerable for.
+
+    Read from the pointers themselves rather than from a derivation: the cost is
+    one directory walk and one small JSON read per pointer, on the path where no
+    snapshot answers the turn. A pointer whose owner cannot be read is not
+    evidence that the session is idle, so an unreadable or malformed document
+    counts as work and the reading is kept.
     """
     directory = snapshot_module().crew_home() / "live"
     if not directory.is_dir():
@@ -1095,6 +1137,11 @@ def session_holds_live_work(project: str, session: str) -> bool:
             return True
         if not isinstance(document, Mapping):
             return True
+        phase = str(document.get("phase") or "")
+        if phase == _NEVER_LAUNCHED_POINTER_PHASE:
+            continue
+        if phase in _ENDED_POINTER_PHASES and not _pointer_owes_its_session(document):
+            continue
         if str(document.get("project") or "") != project:
             continue
         if str(document.get("session") or "") == session:
