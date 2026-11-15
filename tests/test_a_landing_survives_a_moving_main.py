@@ -252,8 +252,11 @@ def delivery(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
     )
     _register_run(RUN, repo=repo, worktree=worktree, base=base, head=head)
     _accept(base=base, head=head)
+    # The stubbed checkouts stand in for a tree the measurement reads through
+    # the repository's object store, so the tree is a real detached worktree of
+    # the fixture repository.
     prepared = tmp_path / "prepared-tree"
-    prepared.mkdir()
+    _git(repo, "worktree", "add", "-q", "--detach", str(prepared), "HEAD")
     monkeypatch.setattr(
         landing_measure,
         "base_checkout",
