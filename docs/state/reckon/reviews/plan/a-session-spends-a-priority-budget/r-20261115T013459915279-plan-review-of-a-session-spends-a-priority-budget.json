@@ -1,0 +1,95 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-15T01:58:23.917Z",
+  "dispatched_at": "2026-11-15T01:38:11Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-session-spends-a-priority-budget.html:115",
+      "id": "wiring-1",
+      "reason": "the followup is what a coordinator dispatches from, and it names a section the declaration map closes, so either the followup text or the descope must change for the plan to state one build order.",
+      "text": "the driving followup instructs \"build \u00a72 and \u00a75 together\" and its body calls \u00a72 and \u00a75 independent \u2014 a build order for a section the same document declares `descoped` at line 23 with a lead-decision reason on the section record, so a coordinator taking the followup's order dispatches work the plan has dropped",
+      "type": "wiring",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-session-spends-a-priority-budget.html:13",
+      "id": "reasoning-1",
+      "reason": "the figure is the `effort_hours` that `reckon/roadmap.py:525` scales by progress into remaining effort and schedule path length, so a coordinator sizing or sequencing off it plans for dropped work.",
+      "text": "`plan-effort-hours` 12.0 is the sum of the five sections' declared hours including \u00a75's 4.0, which the same change descoped, so the plan now overstates its remaining work by about four hours against the 7.75 its buildable sections declare",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "5045ab3b3966816fe0abd85475f57cf47658075f",
+  "plan_fingerprint": "b9618e9944c54b5f703a44632fc13c3a4b6e52cc0d7a678557ee2f7ae9ca1a26",
+  "plan_slug": "a-session-spends-a-priority-budget",
+  "plan_version": 1,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "6e66b6bdeaf86991ae451e18f15b419de4d54500",
+      "commit_basis": "edit",
+      "finding": "wiring-1",
+      "note": "the driving followup now names only \u00a72, \u00a73 and \u00a74 and states \u00a75 is descoped by the lead's decision",
+      "reason": "",
+      "when": "2026-11-15T02:12:32.873628+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "6e66b6bdeaf86991ae451e18f15b419de4d54500",
+      "commit_basis": "edit",
+      "finding": "reasoning-1",
+      "note": "plan-effort-hours is now 8.0, the buildable sections' total without the descoped \u00a75",
+      "reason": "",
+      "when": "2026-11-15T02:12:50.834602+00:00"
+    }
+  ],
+  "responses": {
+    "reasoning-1": {
+      "action": "acted",
+      "by": "",
+      "commit": "6e66b6bdeaf86991ae451e18f15b419de4d54500",
+      "commit_basis": "edit",
+      "note": "plan-effort-hours is now 8.0, the buildable sections' total without the descoped \u00a75",
+      "reason": "",
+      "when": "2026-11-15T02:12:50.834602+00:00"
+    },
+    "wiring-1": {
+      "action": "acted",
+      "by": "",
+      "commit": "6e66b6bdeaf86991ae451e18f15b419de4d54500",
+      "commit_basis": "edit",
+      "note": "the driving followup now names only \u00a72, \u00a73 and \u00a74 and states \u00a75 is descoped by the lead's decision",
+      "reason": "",
+      "when": "2026-11-15T02:12:32.873628+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/Code/reckon/docs/state/reckon/reviews/plan/a-session-spends-a-priority-budget/r-20261115T013459915279-plan-review-of-a-session-spends-a-priority-budget.json",
+  "review_run_id": "r-20261115T013459915279-plan-review-of-a-session-spends-a-priority-budget",
+  "reviewed_blob_sha": "5871b93dfd1807f3a3d309554587e288a935edf4",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 cited commit `1ad29c422c` resolves (`git cat-file -t` \u2192 commit), `reckon.crew.queue_order.admission_order_details` exists at `reckon/crew/queue_order.py:283`, the `crew dispatch`, `crew review` and `crew queue reprioritise` verbs exist, and the evidence destinations follow the per-plan fragments convention.",
+    "done_when": "pass \u2014 each buildable section names measurable tests and a base-revision negative control: \u00a72's cross-session case, \u00a73's promotion-order case, \u00a74's base-revision arm reads no queue view or MCP read, and each control can fail on the unfixed tree; \u00a75 carries one and is descoped, so it is not built.",
+    "evidence_paths": "pass \u2014 \u00a72\u2013\u00a75 each name a durable fragment path under `docs/evidence/fragments/a-session-spends-a-priority-budget/`, the directory the repository's other plans use, and no gate log is left to a scratchpad.",
+    "naming": "pass \u2014 no plan label, stage name or ticket number reaches a symbol, and the section ids stay in the plan's own metadata.",
+    "reasoning": "a finding \u2014 `plan-effort-hours` at `plan.html:13` reads 12.0, which is the sum of all five sections' declared hours (11.75); \u00a75's 4.0 of those is descoped, so the declared effort no longer reconciles with the work the plan's own declarations leave buildable (7.75).",
+    "single_goal": "pass \u2014 \u00a72 delivers one change (a session's points bound its unlaunched requests, and priority enters the existing lane order), \u00a73 one (a run's priority carries to its review and promotion), \u00a74 one (a single queue read served three ways); \u00a75 is descoped.",
+    "wiring": "a finding \u2014 the three declared depends-on edges are correct (s3\u2192s2, s4\u2192s2, no other section consumes another's output), but the driving followup at `plan.html:115` states a build order that includes \u00a75, which the declaration map at `plan.html:23` declares `descoped`."
+  },
+  "section_digests": {
+    "_document": "918d84de6a145905588c49c15b53f8dc995eaa13e47796f1e9bd1dd25986cee3",
+    "s1": "9129508a68c3f0a27ffb0621e389dc4500399b17ee841c29c79988113c1612f1",
+    "s2": "74a61091b42b9d4e6109437affd94883f61b3c5deb4543907b471bf7355b42f2",
+    "s3": "4958667ab753c206cfd1b106adb8206692beb62257209fe45687fc015efa7f41",
+    "s4": "969203a52e9ff67c218bcc06af4a5ef51b04c2abe3e142ff1681f59dd0c0a8b5",
+    "s5": "1efdbf1e7215af983f4f1cf73b869a075b3684b1986156982973c865d25d5ce3"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-15T02:05:45.753173+00:00",
+  "total": null
+}

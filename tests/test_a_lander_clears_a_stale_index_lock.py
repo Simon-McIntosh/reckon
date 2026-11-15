@@ -232,3 +232,23 @@ def test_a_lock_younger_than_the_age_bound_refuses_and_survives(
         f"the refusal names the age: {message}"
     )
     assert lock.exists(), "a lock younger than the bound must survive"
+
+
+def test_a_three_minute_lock_is_cleared_under_a_shorter_bound(tmp_path: Path) -> None:
+    """The bound the landing accepts is the bound the judgement applies.
+
+    This lock is younger than the default ten minute bound, so it would refuse
+    on its own; clearing it here shows the caller's ``stale_lock_seconds``
+    reaches the staleness judgement rather than being recorded and ignored.
+    """
+    _, work = _init_checkout(tmp_path)
+    head = _reviewed_head(work)
+    lock = _aged_lock(work, 180.0)
+
+    report = _land(
+        work, head, attempts=3, retry_seconds=0.02, stale_lock_seconds=120.0
+    )
+
+    assert not lock.exists(), "a lock past the caller's bound is removed"
+    assert len(report["stale_index_lock_removed"]) == 1
+    assert _git(work, "rev-parse", "HEAD") == report["commit"]

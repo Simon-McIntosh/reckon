@@ -46,6 +46,7 @@ from reckon import (
     _store,
     capabilities,
     clones,
+    file_memo,
     flight,
     ledger,
     review_tiers,
@@ -452,20 +453,42 @@ def _landing_checkout(
     )
 
 
+#: The committed range a run's promotion cites moves only when the tree's own
+#: head does, so a steady tick must not run one git process per live run to
+#: learn that nothing has changed.
+
+
 def _promotion_commits(
     record: Mapping[str, Any], manifest_commits: Sequence[Any]
 ) -> list[str]:
-    """Read the run's committed range even when a repair cleared its citations."""
+    """Read the run's committed range even when a repair cleared its citations.
+
+    The range is ``base..HEAD`` in the run's own tree, so a tree whose head has
+    not moved answers from the previous read. The head is resolved as files
+    rather than by spawning git, so the check itself costs no process; when the
+    head cannot be read the answer is not stored, because an unreadable head is
+    not a stable one.
+    """
+    from .recovery_memo import _worktree_head_identity
     from .recovery_review_subject import _review_tree, reviewed_commits
 
-    history = reviewed_commits(
-        _review_tree(record),
-        str(record.get("base_sha") or record.get("base") or "").strip(),
-        "HEAD",
-    )
-    if history:
-        return [sha for sha, _subject in history]
-    return [str(sha) for sha in manifest_commits]
+    tree = _review_tree(record)
+    base = str(record.get("base_sha") or record.get("base") or "").strip()
+    citations = tuple(str(sha) for sha in manifest_commits)
+
+    def read() -> list[str]:
+        history = reviewed_commits(tree, base, "HEAD")
+        return (
+            [sha for sha, _subject in history]
+            if history
+            else [str(sha) for sha in manifest_commits]
+        )
+
+    key = (str(tree) if tree is not None else "", base, citations)
+    head_identity = _worktree_head_identity(tree)
+    if head_identity in {"no-tree", "no-git", "no-head"}:
+        return read()
+    return file_memo.memoized_key("promotion_commits", (*key, head_identity), read)
 
 
 def _default_gate_evidence_from_manifest(
@@ -490,6 +513,23 @@ def _default_gate_evidence_from_manifest(
         commits=commits,
         no_commit_reason=no_commit_reason,
     )
+
+
+def _run_plan_slug(record: Mapping[str, Any], node: Mapping[str, Any]) -> str:
+    """The plan a run works on, named by its node or by its own subject.
+
+    An implementation run carries its plan on the node. A plan-review run names
+    the plan as its subject instead and leaves the node's plan empty, so the
+    slug is read from the pointer's node id through the reader that owns that
+    grammar; taking only the node's plan would file the review's row with no
+    plan and no reader could tell which plan was reviewed.
+    """
+    plan = str(node.get("plan") or record.get("plan") or "").strip()
+    if plan:
+        return plan
+    from reckon.crew.recovery_review_dispatch import _plan_review_pointer_slug
+
+    return _plan_review_pointer_slug(record)
 
 
 @operational_read
@@ -1453,8 +1493,9 @@ def _complete_locked(
     # uncommitted edit into its commit. The check runs here, before either
     # store is written, so a refusal leaves no ledger row and no plan comment
     # for the next promotion to read as an unrelated edit.
+    plan_text_edits = {}
     if not shadow:
-        _refuse_unrelated_plan_edit(
+        plan_text_edits = _refuse_unrelated_plan_edit(
             project=project,
             plan=str(node.get("plan") or ""),
             root=ledger_root,
@@ -1508,6 +1549,7 @@ def _complete_locked(
                 )
                 landing_check = _report_landing_check(
                     _commit_landing_writes(
+                        plan_text_edits=plan_text_edits,
                         run_id=run_id,
                         verdict=str(gate).strip().lower(),
                         checkout=checkout,
@@ -1825,7 +1867,7 @@ def _complete_locked(
         run = ledger.build_record(
             run_id=run_id,
             project=project,
-            plan=str(node.get("plan") or ""),
+            plan=_run_plan_slug(record, node),
             section=str(node.get("section") or ""),
             brief=brief_block,
             plan_link=str((brief_owner or {}).get("plan_link") or ""),
@@ -2178,6 +2220,7 @@ def _complete_locked(
         _stop_at_stage_boundary("the promotion commit")
         landing_check = _report_landing_check(
             _commit_landing_writes(
+                plan_text_edits=plan_text_edits,
                 run_id=run_id,
                 verdict=str(gate).strip().lower(),
                 checkout=checkout,

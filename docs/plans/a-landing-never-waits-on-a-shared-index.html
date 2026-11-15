@@ -20,13 +20,13 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="reckon-tooling,crew">
   <meta name="plan-after" content="the-monitor-reads-each-fact-once">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;implementable&quot;,&quot;s12&quot;:&quot;implementable&quot;,&quot;s2&quot;:&quot;descoped&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;}">
-  <meta name="plan-section-depends-on" content="{&quot;s4&quot;:[&quot;a-landing-never-waits-on-a-shared-index#s3&quot;]}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;implementable&quot;,&quot;s12&quot;:&quot;implementable&quot;,&quot;s13&quot;:&quot;implementable&quot;,&quot;s2&quot;:&quot;descoped&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;}">
+  <meta name="plan-section-depends-on" content="{&quot;s4&quot;:[&quot;a-landing-never-waits-on-a-shared-index#s3&quot;,&quot;a-landing-never-waits-on-a-shared-index#s13&quot;]}">
   <title>A Landing Never Waits On A Shared Index | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="51">
-<meta name="plan-modified" content="2026-11-14">
+<meta name="plan-version" content="59">
+<meta name="plan-modified" content="2026-11-15">
 </head>
 <body>
   <main class="plan-doc">
@@ -58,7 +58,7 @@
     <code>HEAD</code> afterwards. Negative control: today's staging path must fail with the held lock.</p>
 
     <h2 id="s3">§3 — Promotion checks read only what moved</h2>
-<section data-reckon="section" data-id="s3" data-effort-hours="3.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="implementable" data-links=""></section>
+<section data-reckon="section" data-id="s3" data-effort-hours="3.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="done" data-links=""></section>
     <p>The ledger index is loaded once per promotion and shared by every check that reads it. The
     repository-boundary check reads the paths the run's commits touch, not a snapshot of the whole tree.
     The PNG-twin check reads the run's own commits since its base, not every path added since an older base.</p>
@@ -115,6 +115,10 @@
 <p><strong>Deliverable.</strong> The stale-lock check calls the one holder scan and the one lock-age function, extended where it needs a capability they lack. Every caller of the wait helper passes the removal callback, so each clearing is named with the lock's age wherever it happens.</p>
 <p><strong>Done when.</strong> <code>git grep</code> at head finds one definition of the holder scan and one of the lock-age function. A test drives each wait-helper caller through a proven-stale lock and finds one line naming the lock and its age in that caller's record. §10's four stale-lock cases still pass, and the importers of the touched modules add no failure against the base, run on all_debug one arm at a time with at most <code>-n 4</code>. Write paths: <code>reckon/crew/merge.py</code>, <code>reckon/crew/gc.py</code>, <code>reckon/crew/promotion_scope.py</code>, <code>reckon/ledger.py</code> and the new test.</p>
 
+    <h2 id="s13">§13 — A landing commit retries a lock released before it looked</h2>
+<section data-reckon="section" data-id="s13" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+<p><strong>Why.</strong> §4's measurement at 1d16388a31 (run r-20261114T143927859241, evidence <code>docs/evidence/fragments/a-landing-never-waits-on-a-shared-index/a-promotion-lands-in-under-a-minute-with-peers.html</code>) started three promotions together against one checkout, four times. Eleven of twelve landed in 4.70 to 16.47 s. The twelfth refused at its landing commit after 4.87 s with <code>fatal: Unable to create '.../.git/index.lock': File exists</code>, leaving its reviewed head off the primary branch. At that revision the landing commit's retry bound is 130 attempts half a second apart, about 65 s (<code>_INDEX_LOCK_RETRY_ATTEMPTS</code>, <code>reckon/crew/promotion_scope.py:2080</code>). The fragment attributes the refusal to a six-second bound, but §9 had already replaced that bound, so the retry never ran. The wait helper <code>_run_waiting_out_a_held_index_lock</code> (<code>reckon/crew/merge.py:796</code>) retries only while <code>_index_lock_held(repo)</code> is true after the failed call. A peer's commit holds the lock for milliseconds, so the lock can be released between the failed git call and that check. The helper then returns the failure after one attempt.</p><p><strong>Deliverable.</strong> A git call that failed because this checkout's index lock existed is retried up to the same bound whether or not the lock is still present when the helper looks. A failure that names another repository's lock, or has any other cause, is returned at once, as today.</p><p><strong>Done when</strong> a new test <code>tests/test_a_landing_commit_retries_a_released_lock.py</code> drives the wait helper with a git call that fails on this checkout's held index lock while a second process creates the lock and removes it within 50 ms of the failure. The call is retried and succeeds, and the retry is recorded through <code>on_retry</code>. A call failing for another reason, such as an unknown revision, returns after one attempt. A failure naming another repository's <code>index.lock</code> returns after one attempt. A lock this checkout keeps held for the whole call is retried exactly the bound's number of attempts and then refuses, with the attempt count recorded, so a retry without a bound fails the gate. The negative control is the base revision, where the released-lock case returns the failure after one attempt. The test files importing <code>reckon/crew/merge.py</code> add no failure against the base revision, run on all_debug one arm at a time with at most -n 4, through <code>env -u SLURM_JOB_ID -u SLURM_JOBID sbatch</code>, never on the fleet node. Every log is under the run directory, starts with its revision and the literal command, and ends in <code>EXIT=</code>. Ruff check and ruff format --check add no findings on the staged paths. Write paths: <code>reckon/crew/merge.py</code> and <code>tests/test_a_landing_commit_retries_a_released_lock.py</code>.</p>
+
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
 <article class="r-fu" data-id="f-alnw-001" data-status="resolved" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-create" data-written-at="2026-10-22" data-recommends-skill="/reckon-build a-landing-never-waits-on-a-shared-index §2" data-resolved-at="2026-11-06T08:48:44+00:00" data-resolved-by="">
@@ -163,6 +167,11 @@
     <div class="r-fu-body"><p>A coordinator's promotion racing the station's left §104 unmerged as a pending landing on 14 November.</p></div>
     <pre class="r-fu-prompt">/reckon-build a-landing-never-waits-on-a-shared-index §11</pre>
     </article>
+<article class="r-fu" data-id="f-alnw-013" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-c0" data-written-at="2026-11-15" data-recommends-skill="/reckon-build a-landing-never-waits-on-a-shared-index §13" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Build §13, then re-measure §4</h4>
+    <div class="r-fu-body"><p>§4's measurement found one of twelve concurrent promotions refused at its landing commit because the lock-wait helper retries only a lock it still sees. §13 retries a lock released before the helper looked. §4 is measured again once §13 lands.</p></div>
+    <pre class="r-fu-prompt">/reckon-build a-landing-never-waits-on-a-shared-index §13</pre>
+    </article>
 </section>
   <section data-reckon="comments" id="comments" class="r-comments">
 <div class="r-comment" data-section="_top" data-id="c-close-s5" data-who="reckon-build" data-when="2026-11-08T20:40:00Z">
@@ -177,8 +186,17 @@
 <div class="r-comment" data-section="s10" data-id="c-run-r-20261114T174207045976-stale-index-lock-cleared-s10" data-who="reckon-build" data-when="2026-11-14T19:29:49.831Z">
     <div class="r-comment-body"><p>docs/evidence/fragments/a-landing-never-waits-on-a-shared-index/stale-index-lock-cleared-s10.html</p></div>
 </div>
+<div class="r-comment" data-section="s10" data-id="c-run-r-20261114T145817665395-wave4-clive-a-landing-never-waits-on-s10" data-who="reckon-build" data-when="2026-11-15T00:42:31Z">
+    <div class="r-comment-body"><p>A lander clears an index.lock proven stale past its retries (at least ten minutes old, size and mtime unmoved across the retry window, no process on this host holding it open), retrying the landing once and recording the removal and the age; the checkout lock's age now has a single reader in the merge module, which the staging module imports.</p></div>
+</div>
 <div class="r-comment" data-section="s11" data-id="c-run-r-20261114T201232009152-review-of-raced-promotion-lands-s11-02421ad1ad92" data-who="reckon-build" data-when="2026-11-14T20:22:38Z">
     <div class="r-comment-body"><p>Independent review at 02421ad1ad929fd5a9975ef5c940ed8d98283ff6 stores all six scores 13/10/20/14/17/5, zero added failures in the recorded 55-to-57-test arms, four blocking findings and three non-blocking findings; repair is required before the source node lands.</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20261114T203051455649-review-of-promotion-checks-read-only-what-moved-52e6182f1f8a" data-who="reckon-build" data-when="2026-11-15T00:53:08.156Z">
+    <div class="r-comment-body"><p>independent review of r-20261114T143749419652-promotion-checks-read-only-what-moved at head 52e6182f1f: goal_fidelity 17, evidence 14, scope_discipline 19, durability 17, fit 18, reuse 17, added_failure_count 0, three non-blocking findings.</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20261114T143749419652-promotion-checks-read-only-what-moved" data-who="reckon-build" data-when="2026-11-14T19:47:10Z">
+    <div class="r-comment-body"><p>a promotion reads only what its run declared — the figure-twin check reads the run's own commits (one `diff-tree` per cited commit, one `cat-file` per candidate SVG) instead of a base-to-head diff plus `ls-tree -r HEAD`; the commitless-work guard and the worktree audit's two status reads take the run's declared roots as literal pathspecs; the ledger loader runs once over a 2,000-row ledger and a 5,000-file checkout.</p></div>
 </div>
 <div class="r-comment" data-section="s5" data-id="c-run-r-20261106T134612700154-review-of-retry-a-held-index-lock-in-a-promotions-commit-and-restore-5568106b9358" data-who="reckon-build" data-when="2026-11-06T13:57:16.941Z">
     <div class="r-comment-body"><p>review of r-20261106T124416537003-retry-a-held-index-lock-in-a-promotions-commit-and-restore at 5568106b9358 stored parsed with scores goal_fidelity 16, evidence 12, scope_discipline 18, durability 17, fit 18, reuse 20 (total 101), one blocking finding at tests/test_rollback_asks_head.py:117 and two non-blocking findings.</p></div>
@@ -224,6 +242,12 @@
 </div>
 <div class="r-comment" data-section="s9" data-id="c-run-r-20261113T024814201130-a-landing-write-outlasts-a-briefly-held-index-lock" data-who="reckon-build" data-when="2026-11-13T03:25:49.353Z">
     <div class="r-comment-body"><p>A landing's staging, commit and rollback now wait out a shared index lock another writer holds for up to a minute (130 attempts 0.5 s apart, a 64.5 s span, up from 12 attempts and a 5.5 s span) and refuse only on a lock that outlasts it, naming the lock's age and the bound; gate 53 passed at head 50493b22a8, base arm 51 passed, and the negative control is 2 failed at cb25b41dfd with the 20 s hold rolling the promotion back.</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-run-r-20261115T023840531008-review-of-a-promotion-lands-in-under-a-minute-with-peers-897549cbc445" data-who="reckon-build" data-when="2026-11-15T03:34:09.684Z">
+    <div class="r-comment-body"><p>Reviewed r-20261114T143927859241-a-promotion-lands-in-under-a-minute-with-peers at base 1d16388a31..897549cbc4 (one commit, 77 inserted lines, one file): scores goal_fidelity 16, evidence 12, scope_discipline 19, durability 5, fit 17, reuse 20; the timings and the eleven-of-twelve landing result are accurate and reconcile with the run's stream, but one blocking finding stands — the fragment at :41 attributes the refused promotion to a six-second landing-commit retry bound that the named revision does not define (reckon/crew/promotion_scope.py:2080-2081 sets 130 attempts at 0.5 s, and the refused promotion ran 4.87 s in full).</p></div>
+</div>
+<div class="r-comment" data-section="s13" data-id="c-run-r-20261115T045402525342-review-of-a-landing-commit-retries-a-released-lock-efeb0d0d4339" data-who="reckon-build" data-when="2026-11-15T05:21:02.986Z">
+    <div class="r-comment-body"><p>reviewed r-20261115T031844233655-a-landing-commit-retries-a-released-lock from base 251cb1cd058784974614ba8cc292d665b7ca7dc1 to head efeb0d0d4339cb0ed0700c01957f488ae99aef12: scores goal_fidelity 18, evidence 18, scope_discipline 16, durability 14, fit 15, reuse 18; added_failure_count 0 over an added_failure_ids of []; one blocking finding at reckon/crew/merge.py:867, where the retry loop dropped its result.returncode != 0 guard and so retries a successful step whenever the checkout&#x27;s index.lock exists at the check.</p></div>
 </div>
 </section>
 </main>

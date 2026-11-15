@@ -2,6 +2,7 @@ import contextlib
 import functools
 import json
 import sys
+import traceback
 from collections.abc import Iterator, Mapping
 from pathlib import Path
 from typing import Any
@@ -11,6 +12,40 @@ import click
 from reckon._store import write_json_atomically
 from reckon.cli_entry import main
 from reckon.crew.tombstones import tombstone_command
+
+# Verbs whose stdout is one JSON document on every exit path, success and
+# refusal alike: a caller decodes the whole stream, so an exit that writes
+# nothing leaves it with nothing.
+_ONE_DOCUMENT_VERBS = frozenset({"dispatch", "review", "complete"})
+
+
+def _emit_failure_document(exc: BaseException) -> int:
+    """Answer a failure with one JSON document, and return its exit code.
+
+    The document is the caller's channel; the human sentence goes to stderr, so
+    a person at a terminal still reads the refusal while a caller piping the
+    verb reads one decodable object. A refusal click raised itself keeps its own
+    exit code, so the branchable codes the group documents still hold.
+    """
+    from reckon.crew.node import CrewError
+
+    if isinstance(exc, click.ClickException):
+        detail = exc.format_message()
+        code = exc.exit_code
+        kind = "usage-error" if isinstance(exc, click.UsageError) else "refused"
+        exc.show(file=click.get_text_stream("stderr"))
+    elif isinstance(exc, CrewError):
+        detail = str(exc)
+        code = 1
+        kind = "refused"
+        click.echo(f"Error: {detail}", err=True)
+    else:
+        detail = f"{type(exc).__name__}: {exc}"
+        code = 1
+        kind = "error"
+        traceback.print_exception(exc, file=sys.stderr)
+    _emit({"ok": False, "error": kind, "detail": detail}, False)
+    return code
 
 
 class _CrewGroup(click.Group):
@@ -28,6 +63,27 @@ class _CrewGroup(click.Group):
         if command is not None:
             return command
         return tombstone_command(cmd_name)
+
+    def invoke(self, ctx: click.Context):
+        """Answer a JSON verb's failure with the one document its caller reads.
+
+        A verb whose stdout is decoded as a document cannot leave that stream
+        empty: a parsing refusal and a raised error both take the exit before
+        the verb's own emission, so the caller is left with nothing to read.
+        The failure is therefore answered here, where it covers a refusal
+        raised while the arguments are parsed as well as one raised from the
+        verb's own body. A verb outside the JSON family keeps click's handling
+        of a refusal, and an :class:`click.exceptions.Exit` a command raised
+        after its own emission is passed through untouched.
+        """
+        try:
+            return super().invoke(ctx)
+        except click.exceptions.Exit:
+            raise
+        except Exception as exc:  # the caller's document outranks the traceback
+            if str(ctx.invoked_subcommand) not in _ONE_DOCUMENT_VERBS:
+                raise
+            raise click.exceptions.Exit(_emit_failure_document(exc)) from exc
 
 
 @main.group(name="crew", cls=_CrewGroup)
@@ -389,14 +445,20 @@ def _emit_held_result(
     if queued:
         phase = str(queued.get("phase") or "queued")
         run_id = str(queued.get("run_id") or "")
-        queued_now = phase == "queued"
+        # A request this call stored is an acceptance whether it waits on an
+        # upstream section or sits in the admission order, so it reports itself
+        # as queued; only a run that existed before the call is answered back.
+        created = bool(queued.get("created"))
+        queued_now = created or phase == "queued"
         backend = str(queued.get("backend") or "")
         lane_label = f"backend {backend!r}" if backend else "the local lane"
-        detail = (
-            f"{lane_label} queued run {run_id} at position {queued.get('position')}"
-            if queued_now
-            else f"run {run_id} is already {phase} for this {noun}"
-        )
+        if phase == "queued":
+            position = queued.get("position")
+            detail = f"{lane_label} queued run {run_id} at position {position}"
+        elif created:
+            detail = f"{lane_label} created run {run_id}, which is {phase}"
+        else:
+            detail = f"run {run_id} is already {phase} for this {noun}"
         result = {
             "ok": True,
             "queued": queued_now,
@@ -1106,18 +1168,29 @@ def _queue_dispatch_batch(
     overrides,
     launch_kind: str,
     pretty: bool,
+    project: str = "",
+    plan: str = "",
 ) -> None:
-    """Queue a batch file's entries as one call, naming a row for each."""
+    """Queue a batch file or a plan's declared sections, naming each row."""
     from reckon import ledger
-    from reckon.crew.dispatch_batch import queue_batch, read_batch_entries
+    from reckon.crew.dispatch_batch import queue_batch, queue_plan, read_batch_entries
     from reckon.crew.node import CrewError
 
     try:
-        entries = read_batch_entries(batch_path)
+        entries = read_batch_entries(batch_path) if batch_path else []
     except (CrewError, OSError) as exc:
         raise click.ClickException(str(exc)) from exc
     _crew_module, flight_module = _crew_modules()
-    root = Path(repo).expanduser().resolve() if repo else Path.cwd().resolve()
+    from reckon.crew.dispatch_sections import project_mount_repository
+
+    root = (
+        Path(repo).expanduser().resolve()
+        if repo
+        else project_mount_repository(project)
+        if project
+        else Path.cwd().resolve()
+    )
+    root = root or Path.cwd().resolve()
     configs: dict[str, dict] = {}
 
     def config_for(project_name: str) -> dict:
@@ -1135,8 +1208,10 @@ def _queue_dispatch_batch(
     # the region the index is rebuilt and decoded once per entry, which is the
     # dominant cost of a batch on a large history.
     with ledger.index_reuse():
-        result = queue_batch(
-            entries,
+        queue = queue_plan if plan else queue_batch
+        arguments = (project, plan) if plan else (entries,)
+        result = queue(
+            *arguments,
             session=str(session or ""),
             config_for=config_for,
             repo_root=root,
@@ -1600,6 +1675,23 @@ def crew_dispatch(
         raise click.UsageError(
             "--project is required unless --batch names the work to queue"
         )
+    if plan_slug and not section and not brief_path:
+        if dry_run:
+            raise click.UsageError(
+                "--dry-run cannot queue a whole plan; name --section to preview one node"
+            )
+        _queue_dispatch_batch(
+            None,
+            project=project,
+            plan=plan_slug,
+            session=session,
+            repo=repo,
+            checkout_path=checkout_path,
+            overrides=overrides,
+            launch_kind="cli",
+            pretty=pretty,
+        )
+        return
     if not node_id:
         raise click.UsageError("--node is required unless --batch names the work")
     from reckon.crew.dispatch import (

@@ -2684,6 +2684,7 @@ def audit_manifest(
     worktree: Path | None = None,
     repository: Path | None = None,
     manifest_path: Path | None = None,
+    project: str = "",
 ) -> dict[str, Any]:
     """Judge a delivered manifest: is it complete, and does it stay in scope?"""
     shape_findings: list[str] = []
@@ -2848,6 +2849,7 @@ def audit_manifest(
                 tuple(node.write_paths or ()),
                 worktree=worktree,
                 repository=repository,
+                project=project,
             )
         )
     findings.extend(
@@ -2866,6 +2868,7 @@ def _write_scope_findings(
     *,
     worktree: Path | None,
     repository: Path | None,
+    project: str = "",
 ) -> list[str]:
     """Report changed paths outside the write scope, naming a joined list as one.
 
@@ -2897,7 +2900,11 @@ def _write_scope_findings(
             item, declared, worktree=worktree, repository=repository
         ):
             separated.add(item)
-        else:
+        elif _merge_unsafe(item, project=project, repository=repository):
+            # A declared write path is a hint, so delivering a file beside the
+            # declared one is not a scope defect: the worktree isolates the edit
+            # and the merge reconciles it. Only the class git cannot reconcile
+            # is reported here, which is the same set promotion refuses.
             stray.add(item)
     findings = [
         f"changed_paths reads {item!r} as a single item because list fields are "
@@ -2913,6 +2920,23 @@ def _write_scope_findings(
             + ", ".join(f'"{path}"' for path in sorted(stray))
         )
     return findings
+
+
+def _merge_unsafe(path: str, *, project: str, repository: Path | None) -> bool:
+    """Whether a changed path belongs to a class a merge cannot reconcile.
+
+    Read through the module that decides the same question for a claim and a
+    fence, so the write-time audit and promotion refuse one set of paths rather
+    than two spellings of it. A path the repository cannot place — an absolute
+    declaration written outside it — is reported, because nothing establishes
+    that it shares.
+    """
+    from reckon.crew.runs import _shared_write_paths
+
+    if repository is None:
+        return True
+    shared = _shared_write_paths(project, Path(repository).resolve())
+    return bool(shared.exclusive_pattern(path))
 
 
 def _is_space_separated_scope_item(

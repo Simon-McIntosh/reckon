@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="queued-work-needs-no-workaround">
+  <meta name="plan-evidence-for" content="queued-work-needs-no-workaround">
+  <title>A repair round's advice carries every finding disposed into it | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <header>
+      <p class="eyebrow">Execution evidence &middot; fragment</p>
+      <h1>A repair round's advice carries every finding disposed into it</h1>
+      <p class="lead">A repair round composed its advice from the review's open blocking
+      findings and its sub-floor dimensions. A finding the coordinator disposed as
+      <code>folded:&lt;node&gt;</code> is a closing disposition, so the filter that selects open
+      work dropped it before the advice was written, and the node the finding was folded
+      into was composed with no account of it. The advice now lists those findings beside
+      the open ones, names their ids in its done-when and exposes them on the composed
+      node, while the round that blocks nothing still composes no repair.</p>
+    </header>
+
+    <section id="qwnw-a-repair-round-s-advice-carries-every-finding-di-mechanism">
+      <h2>Why the fold was dropped</h2>
+      <p><code>compose_repair_node</code> built its list from
+      <code>blocking_findings(review) + sub_floor_repair_findings(review, floors)</code>
+      (<code>reckon/crew/repair.py:772</code> at the base revision), and
+      <code>blocking_findings</code> (<code>repair.py:226</code>) keeps a finding only when
+      its disposition reads <code>open</code>. A fold is a closing disposition
+      (<code>reckon/crew/findings.py:60</code>), so the finding was removed from the one
+      list the brief, the done-when ids and the composed node are all built from.</p>
+      <table>
+        <thead>
+          <tr><th>Finding</th><th>Severity</th><th>Disposition</th><th>In the advice, base</th><th>In the advice, head</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>the <code>reuse</code> dimension under its floor</td><td>blocking</td><td>open</td><td>yes</td><td>yes</td></tr>
+          <tr><td><code>reckon/crew/ticker.py:88</code> the request key is built twice</td><td>follow-on</td><td>folded:&lt;run's node&gt;</td><td><strong>no</strong></td><td>yes</td></tr>
+          <tr><td><code>reckon/crew/obligations.py:412</code> the row is sorted twice</td><td>nit</td><td>folded:&lt;run's node&gt;</td><td><strong>no</strong></td><td>yes</td></tr>
+        </tbody>
+      </table>
+      <p>The composer returns nothing at all when no blocking finding remains
+      (<code>repair.py:776</code>), which is the deliberate shape of a decline-only round:
+      a review whose findings were all non-blocking composes no repair. The change therefore
+      widens the advice, not that gate, so a decline-only round behaves exactly as before.</p>
+    </section>
+
+    <section id="qwnw-a-repair-round-s-advice-carries-every-finding-di-change">
+      <h2>What changed</h2>
+      <ul>
+        <li><code>folded_findings(review, *, node_ids)</code> reads each finding's disposition
+        through <code>finding_disposition</code> and <code>parse_finding_disposition</code>
+        and returns the findings folded into the reviewed run's node or into the repair node
+        composed for the round. A fold naming another node, an exemption and an open finding
+        are not carried.</li>
+        <li><code>compose_repair_brief</code> takes a <code>folded</code> sequence and lists
+        those findings under a sentence saying they were folded into this node and are
+        answered the same way as the open work.</li>
+        <li><code>compose_repair_node</code> composes the brief with the folded list, builds
+        the done-when ids over blocking plus folded, and exposes
+        <code>folded_findings</code> on the returned node. A folded finding adds no write
+        path, because the scope stays what <code>repair_write_scope</code> grants.</li>
+        <li><code>tests/test_repair_advice_carries_every_finding.py</code> stores a review
+        whose only blocking finding is a dimension under its floor, folds two non-blocking
+        findings into the run's node, and reads all three ids and texts out of the advice.
+        Two further cases hold the boundary: a fold naming another node stays out, and an
+        exempted finding carries no work.</li>
+      </ul>
+    </section>
+
+    <section id="qwnw-a-repair-round-s-advice-carries-every-finding-di-measure">
+      <h2>Measure</h2>
+      <p>Run on <code>all_debug</code> as job 1316123, over two scratch trees extracted at
+      their own revisions and snapshotted as repositories so the inventory test's
+      <code>git ls-tree</code> reads the tree it was given.</p>
+      <p>The declared suite pair
+      (<code>PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q
+      tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py</code>)
+      reads <strong>55 passed</strong> at the base revision
+      (<code>f042a0e9f437fbb35dfcc5d7c89f99222ad1fe9d</code>) and <strong>55 passed</strong>
+      at the delivered head (<code>1b95373eed</code>), both <code>EXIT=0</code>.</p>
+      <p>The node's own gate at the head, the suite pair plus
+      <code>tests/test_repair_advice_carries_every_finding.py</code>, reads
+      <strong>58 passed, 0 failed</strong>, <code>EXIT=0</code>.</p>
+      <p>The negative control ran the new test module against the base revision's own
+      <code>repair.py</code>, with the node's test copied in: it failed
+      <strong>2 of 3</strong> cases, <code>EXIT=1</code>, naming
+      <code>test_advice_carries_the_dimension_and_both_folded_findings</code> and
+      <code>test_an_exempted_finding_carries_no_work</code>. The third case asserts a fold
+      naming another node is left out, which the base revision also satisfies — for the
+      wrong reason, since it is a filter that drops every fold — and it is kept because the
+      head must satisfy it for the right one.</p>
+    </section>
+
+    <section id="qwnw-a-repair-round-s-advice-carries-every-finding-di-notes">
+      <h2>Notes for the coordinator</h2>
+      <ul>
+        <li><strong>Which node id a fold must name.</strong> The reader matches the reviewed
+        run's node id, the value the dispatch path passes as <code>source_node</code>, and
+        the repair node composed for the round. A coordinator folding onto some other
+        spelling would still drop the finding; the test pins the three-carrying case against
+        the run's node, so a later change to that contract fails there.</li>
+        <li><strong>Folded ids sit in the done-when, not in the scope.</strong> A repair that
+        answers a folded finding must report it by id, but it is not granted that finding's
+        path unless the finding blocks or the run's own fence carries it — the scope rule is
+        unchanged.</li>
+        <li><strong>Scratch trees left no trace in the worktree.</strong> Both arms ran on
+        <code>all_debug</code> in temporary trees the job removed on exit; the logs, the
+        candidate patch and the gate script are under the run directory.</li>
+      </ul>
+    </section>
+  </main>
+</body>
+</html>

@@ -35,7 +35,6 @@ rather than averaging it in silently.
 from __future__ import annotations
 
 import contextlib
-import fcntl
 import hashlib
 import json
 import logging
@@ -61,6 +60,7 @@ from reckon import _store, file_memo
 from reckon._plan_html import SECTION_NUMBER_PATTERN
 from reckon._timestamps import parse_utc
 from reckon.git_head import _common_git_directory, _git_directory
+from reckon.node_exclusive_lock import exclusive_lock
 
 _LOG = logging.getLogger(__name__)
 _DAMAGED_RUN_RECORDS: ContextVar[tuple[str, tuple[Path, ...]]] = ContextVar(
@@ -2625,19 +2625,14 @@ def _ledger_write_lock(project: str):
     is refused before it writes anything, and any restore it performs can only
     concern files it wrote itself.
 
-    The lock is advisory and process-scoped (``flock``), which is the scope of
-    the hazard: every writer here is a command in a separate process. It is
-    released when the file handle closes, so a writer that dies mid-write
-    cannot strand the lock.
+    The lock excludes across nodes because it is taken through
+    :func:`reckon.node_exclusive_lock.exclusive_lock`, whose POSIX record lock
+    the file server holds for a holder on another node; ``flock`` alone is
+    granted by the local kernel and would not. It is released when the handle
+    closes, so a writer that dies mid-write cannot strand it.
     """
-    path = ledger_lock_path(project)
-    path.parent.mkdir(parents=True, exist_ok=True)
-    with path.open("a+b") as handle:
-        fcntl.flock(handle.fileno(), fcntl.LOCK_EX)
-        try:
-            yield
-        finally:
-            fcntl.flock(handle.fileno(), fcntl.LOCK_UN)
+    with exclusive_lock(ledger_lock_path(project)):
+        yield
 
 
 def write(

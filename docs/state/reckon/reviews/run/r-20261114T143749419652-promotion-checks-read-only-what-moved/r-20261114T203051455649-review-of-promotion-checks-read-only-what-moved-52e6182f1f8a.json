@@ -1,0 +1,87 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own arm logs: base-arm-final.log at 2dd0f93dc2 records 55 passed EXIT=0 and no FAILED line; head-suite.log at 52e6182f1f records 59 passed EXIT=0 and no FAILED line, so the set difference is empty (0).",
+  "call_sites": [
+    "reckon/crew/promotion.py:849 (_require_commits_beyond_base)",
+    "reckon/crew/promotion.py:893 (_require_no_png_twin_of_an_svg)",
+    "reckon/crew/promotion_release.py:529 (_worktree_audit)",
+    "reckon/crew/promotion_release.py:456 (_inspect_workspace)",
+    "reckon/crew/promotion_records.py:1371 (_inspect_workspace)",
+    "reckon/crew/routing.py:2409 (_inspect_workspace)",
+    "reckon/crew/gc.py:909 (_inspect_workspace)"
+  ],
+  "completed_at": "2026-11-15T00:53:08.156Z",
+  "dispatched_at": "2026-11-14T23:30:32Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "exempted",
+      "reason": "fragment wording overstates by the one residue-save status the manifest already records under outside_scope; the gate test is the authority and measures it exactly",
+      "recorded_at": "2026-11-15T01:03:51.010696+00:00"
+    },
+    "1": {
+      "kind": "exempted",
+      "reason": "the completion passes all six commits explicitly, 00e1b1380a included, so the landed record carries the full set",
+      "recorded_at": "2026-11-15T01:03:56.203350+00:00"
+    },
+    "2": {
+      "kind": "exempted",
+      "reason": "an under-declared commit is the manifest-integrity check's concern, not the twin scan's; widening the scan to rev-list base..head would re-add the whole-history read this section removed",
+      "recorded_at": "2026-11-15T01:04:04.857739+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/a-landing-never-waits-on-a-shared-index/promotion-checks-read-only-what-moved.html",
+      "line": "22",
+      "severity": "non-blocking",
+      "text": "the measure bullet says no git status, ls-files, ls-tree or working-tree diff runs without a pathspec in a full promotion, but the gate at tests/test_promotion_checks_read_only_what_moved.py:296 counts exactly one whole-tree git status --porcelain=v1 (the residue save, which the manifest records under outside_scope), so the fragment overstates the measured result by one whole-tree read."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261114T143749419652-promotion-checks-read-only-what-moved/manifest.md",
+      "line": "7",
+      "severity": "non-blocking",
+      "text": "the commits line lists five of the run's six commits and omits 00e1b1380a, the run's first commit (perf(crew): read a promotion's figure twins from the run's own commits), so the record understates the landed work."
+    },
+    {
+      "file": "reckon/crew/promotion_checks.py",
+      "line": "637",
+      "severity": "non-blocking",
+      "text": "_png_twin_findings_in_run_commits reads only the commits the durable manifest declares, so a commit the run made but omitted from that field is never scanned for a PNG twin; this run's own manifest shows a run can under-declare, and the promotion path closes the gap only because _require_commits_beyond_base separately refuses a manifest without commits."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "verified 7 production call sites: promotion.py:849 and :893 on the promotion checks, promotion_release.py:529 for the worktree audit and :456, promotion_records.py:1371, routing.py:2409 and gc.py:909 for _inspect_workspace.",
+    "diff": "read all six commits from 2dd0f93dc2 to 52e6182f1f; 523 insertions and 29 deletions over four source modules, the new test and the evidence fragment, every path inside the declared scope.",
+    "done_when": "the done_when asks for 2,000 ledger rows, 5,000 files, one ledger loader call and no whole-tree git command; the new test at lines 166 and 276 asserts the ledger count and the bounded reads, but line 296 exempts the residue save, so the gate meets the measure modulo one whole-tree status read; head-suite.log records 59 passed EXIT=0.",
+    "goal": "the node goal is to make a promotion's checks read only the paths its commits touch and the ledger once; promotion_checks.py:618 reads the figure-twin question from each cited commit and promotion_evidence.py:271 bounds the commitless-work guard to declared roots, so the goal is met with two whole-tree reads kept deliberately.",
+    "manifest": "read; status complete, both arms 0 failures and EXIT=0, and negative-control.log reproduces the reinstated base-to-head check reddening on diff --name-only and ls-tree -r --name-only HEAD; its commits line at line 7 omits 00e1b1380a.",
+    "write_paths": "the fence named promotion_checks.py, promotion.py, the new test and the evidence fragment, and resume-1-advice.txt records that crew widen added promotion_evidence.py, routing.py and promotion_records.py; every path in the diff is inside that union."
+  },
+  "justifications": {
+    "durability": "test_promotion_checks_read_only_what_moved.py:361 fails if the base-to-head diff/ls-tree check is restored, as negative-control.log shows, and line 298 fails if the audit status read loses its pathspec because the residue count would become two.",
+    "evidence": "test_promotion_checks_read_only_what_moved.py:296 counts the one whole-tree residue status instead of the done_when's literal zero, and head-suite.log records 59 passed EXIT=0 at 52e6182f1f against 55 passed at 2dd0f93dc2.",
+    "fit": "the new functions follow the docstring and helper style of promotion_checks.py:587-615, and no new name carries a plan or stage label.",
+    "goal_fidelity": "promotion_checks.py:618-659 answers the figure-twin question from the run's own commits, and routing.py:843-857 threads untracked_roots into the worktree audit, so a promotion no longer walks the tree for either.",
+    "reuse": "a search over reckon/crew for a per-commit added-path reader found inline diff-tree use in promotion_scope.py:1155 and base-to-head readers in reports.py:1725 and 1756, none of them a shared owner of the one-commit added-paths capability; the addition forked no owner.",
+    "scope_discipline": "the six diff paths are all inside the fence plus the coordinator's crew widen grant recorded in resume-1-advice.txt."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to make a promotion's checks read only the paths its commits touch and the ledger once; promotion_checks.py:618 reads the figure-twin question from each cited commit and promotion_evidence.py:271 bounds the commitless-work guard to declared roots, so the goal is met with two whole-tree reads kept deliberately.\nVERDICT done_when: the done_when asks for 2,000 ledger rows, 5,000 files, one ledger loader call and no whole-tree git command; the new test at lines 166 and 276 asserts the ledger count and the bounded reads, but line 296 exempts the residue save, so the gate meets the measure modulo one whole-tree status read; head-suite.log records 59 passed EXIT=0.\nVERDICT write_paths: the fence named promotion_checks.py, promotion.py, the new test and the evidence fragment, and resume-1-advice.txt records that crew widen added promotion_evidence.py, routing.py and promotion_records.py; every path in the diff is inside that union.\nVERDICT manifest: read; status complete, both arms 0 failures and EXIT=0, and negative-control.log reproduces the reinstated base-to-head check reddening on diff --name-only and ls-tree -r --name-only HEAD; its commits line at line 7 omits 00e1b1380a.\nVERDICT diff: read all six commits from 2dd0f93dc2 to 52e6182f1f; 523 insertions and 29 deletions over four source modules, the new test and the evidence fragment, every path inside the declared scope.\nCALL_SITES: reckon/crew/promotion.py:849 (_require_commits_beyond_base), reckon/crew/promotion.py:893 (_require_no_png_twin_of_an_svg), reckon/crew/promotion_release.py:529 (_worktree_audit), reckon/crew/promotion_release.py:456 (_inspect_workspace), reckon/crew/promotion_records.py:1371 (_inspect_workspace), reckon/crew/routing.py:2409 (_inspect_workspace), reckon/crew/gc.py:909 (_inspect_workspace)\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: promotion_checks.py:618-659 answers the figure-twin question from the run's own commits, and routing.py:843-857 threads untracked_roots into the worktree audit, so a promotion no longer walks the tree for either.\nSCORE evidence: 14\nJUSTIFICATION evidence: test_promotion_checks_read_only_what_moved.py:296 counts the one whole-tree residue status instead of the done_when's literal zero, and head-suite.log records 59 passed EXIT=0 at 52e6182f1f against 55 passed at 2dd0f93dc2.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: the six diff paths are all inside the fence plus the coordinator's crew widen grant recorded in resume-1-advice.txt.\nSCORE durability: 17\nJUSTIFICATION durability: test_promotion_checks_read_only_what_moved.py:361 fails if the base-to-head diff/ls-tree check is restored, as negative-control.log shows, and line 298 fails if the audit status read loses its pathspec because the residue count would become two.\nSCORE fit: 18\nJUSTIFICATION fit: the new functions follow the docstring and helper style of promotion_checks.py:587-615, and no new name carries a plan or stage label.\nSCORE reuse: 17\nJUSTIFICATION reuse: a search over reckon/crew for a per-commit added-path reader found inline diff-tree use in promotion_scope.py:1155 and base-to-head readers in reports.py:1725 and 1756, none of them a shared owner of the one-commit added-paths capability; the addition forked no owner.\nFINDING docs/evidence/fragments/a-landing-never-waits-on-a-shared-index/promotion-checks-read-only-what-moved.html:22 non-blocking: the measure bullet says no git status, ls-files, ls-tree or working-tree diff runs without a pathspec in a full promotion, but the gate at tests/test_promotion_checks_read_only_what_moved.py:296 counts exactly one whole-tree git status --porcelain=v1 (the residue save, which the manifest records under outside_scope), so the fragment overstates the measured result by one whole-tree read.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261114T143749419652-promotion-checks-read-only-what-moved/manifest.md:7 non-blocking: the commits line lists five of the run's six commits and omits 00e1b1380a, the run's first commit (perf(crew): read a promotion's figure twins from the run's own commits), so the record understates the landed work.\nFINDING reckon/crew/promotion_checks.py:637 non-blocking: _png_twin_findings_in_run_commits reads only the commits the durable manifest declares, so a commit the run made but omitted from that field is never scanned for a PNG twin; this run's own manifest shows a run can under-declare, and the promotion path closes the gap only because _require_commits_beyond_base separately refuses a manifest without commits.\n",
+  "review_run_id": "r-20261114T203051455649-review-of-promotion-checks-read-only-what-moved-52e6182f1f8a",
+  "reviewed_base_sha": "2dd0f93dc260b990c23abe191793ad91088e6a37",
+  "reviewed_head_sha": "52e6182f1f8a799ecb65fa58e76ac463e0489df5",
+  "reviewed_run_id": "r-20261114T143749419652-promotion-checks-read-only-what-moved",
+  "scores": {
+    "durability": 17,
+    "evidence": 14,
+    "fit": 18,
+    "goal_fidelity": 17,
+    "reuse": 17,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-15T01:02:42.199855+00:00",
+  "total": 102
+}

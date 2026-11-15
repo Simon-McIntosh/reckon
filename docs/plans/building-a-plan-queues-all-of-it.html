@@ -20,13 +20,13 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-after" content="queued-work-needs-no-workaround">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;}">
   <meta name="plan-section-depends-on" content="{&quot;s4&quot;:[&quot;building-a-plan-queues-all-of-it#s2&quot;,&quot;building-a-plan-queues-all-of-it#s3&quot;]}">
   <title>Building a plan queues all of it | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="3">
-<meta name="plan-modified" content="2026-11-14">
+<meta name="plan-version" content="6">
+<meta name="plan-modified" content="2026-11-15">
 </head>
 <body>
   <main class="plan-doc">
@@ -41,7 +41,7 @@
 <p>The admission pass already holds a queued request whose section is not covered by a stored review, as <code>plan-review-owed</code>, and releases it when the review is stored. Waits declared in <code>plan-section-depends-on</code> already park a request until its upstream has passed review and landed. What is missing is the call that puts the whole plan into that queue at once, and a dispatch that queues held rather than refusing when the review is owed.</p>
 
     <h2 id="s2">§2 — One call queues every implementable section of a plan</h2>
-<section data-reckon="section" data-id="s2" data-effort-hours="3.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="implementable" data-links=""></section>
+<section data-reckon="section" data-id="s2" data-effort-hours="3.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="done" data-links=""></section>
 <p><strong>Deliverable.</strong> <code>reckon crew dispatch --project &lt;p&gt; --plan &lt;slug&gt; --session &lt;s&gt;</code> with no <code>--section</code> queues one node for every section the plan declares implementable, in one call, naming no lane.</p>
 <ul>
   <li>Each node takes its fields from its section and its waits from <code>plan-section-depends-on</code>, as a batch entry naming only its section does.</li>
@@ -86,6 +86,12 @@
     </article>
 </section>
   <section data-reckon="comments" id="comments" class="r-comments">
+<div class="r-comment" data-section="s2" data-id="c-run-r-20261114T233005952152-review-of-bpq-one-call-queues-a-plan-98da3bf8578e" data-who="reckon-build" data-when="2026-11-15T00:37:33.698Z">
+    <div class="r-comment-body"><p>Independent review of bpq-one-call-queues-a-plan at 98da3bf8578e against base c8848a4efe: goal fidelity, evidence, scope, durability, fit and reuse all scored 19/15/17/18/19/20; four non-blocking findings (unformatted and host-less gate receipt, an unguarded pointer read, and a test that can pass on the wrong mechanism); no blocking defect.</p></div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-run-r-20261114T194410792693-bpq-one-call-queues-a-plan" data-who="reckon-build" data-when="2026-11-14T20:16:54Z">
+    <div class="r-comment-body"><p>Whole-plan dispatch now enumerates implementable sections through queue_batch and enforces resolved coordinator ownership; all_debug focused gate passed 15 tests, yielding 3 queued plus 2 awaiting-upstream rows and 0 new requests on repeat (5 existing runs named).</p></div>
+</div>
 <div class="r-comment" data-section="s3" data-id="c-run-r-20261114T212914369770-review-of-bpq-owed-review-queues-held-6632bc8e5dd2" data-who="reckon-build" data-when="2026-11-14T21:54:13Z">
     <div class="r-comment-body"><p>Parsed review records stored at the stable run path and revision-specific path for head 6632bc8e5dd2b75a2ed5326bc25b865450060fb1.</p></div>
 </div>

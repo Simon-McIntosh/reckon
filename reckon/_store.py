@@ -66,7 +66,7 @@ import os
 import re
 import secrets
 from collections import Counter
-from collections.abc import Callable, Mapping, Sequence
+from collections.abc import Callable, Iterable, Mapping, Sequence
 from contextlib import ExitStack, contextmanager, suppress
 from contextvars import ContextVar
 from datetime import UTC, date, datetime
@@ -1052,6 +1052,19 @@ def _consume_write_effects(kind: str, data: dict[str, Any]) -> list[dict[str, st
     return list(pending[1])
 
 
+def _pending_evidence_plans(working: dict[str, Any]) -> set[str]:
+    """Plan slugs this batch's queued evidence appends will reach.
+
+    Effects are collected out of band while the ops run and written after the
+    batch is validated, so a later op's guard that reads the record from disk
+    cannot see them yet. This is how that guard sees its own batch's evidence.
+    """
+    pending = _WRITE_EFFECTS["evidence_appends"].get()
+    if pending is None or pending[0] is not working:
+        return set()
+    return {str(request.get("plan") or "") for request in pending[1]}
+
+
 def _forged_plan_structure(body: str) -> str | None:
     """Name what a body would forge, or ``None`` when it is authored prose alone.
 
@@ -1755,7 +1768,13 @@ def _write_state_locked(
         _require_transition_verdict(new_data, "plan-terminal")
         if requested_status in _LANDED_STATUSES:
             _require_every_section_ticked(new_data, text)
-        _require_terminal_evidence(project, slug, requested_status, root)
+        _require_terminal_evidence(
+            project,
+            slug,
+            requested_status,
+            root,
+            {str(request.get("plan") or "") for request in evidence_appends},
+        )
     if state_type == "plan":
         _validate_decision_transitions(new_data, cur_state)
     new_data.pop("_version", None)  # never allow the old JSON key in the state
@@ -1794,9 +1813,7 @@ def _write_state_locked(
             # The reasons map is a head meta too, rewritten from the mapping
             # already on the page so a write lands its own sections and leaves
             # its siblings' reasons alone.
-            source_text = _apply_descope_reason_edits(
-                source_text, descope_reason_edits
-            )
+            source_text = _apply_descope_reason_edits(source_text, descope_reason_edits)
         if meta_removals:
             source_text = _store_section_ops.apply_meta_removals(
                 source_text, meta_removals
@@ -2437,6 +2454,146 @@ def _refuse_immutable_snapshot(resource) -> None:
         )
 
 
+PLAN_BOOKKEEPING_ATTRIBUTES = frozenset(
+    {"data-effort-hours", "data-attempts", "data-status", "data-links"}
+)
+
+
+def plan_text_projection(document: str) -> tuple[str, list[tuple[int, str]]]:
+    """Separate canonical authored HTML from the store's owned regions.
+
+    Each owned region retains its offset in the authored stream, so a landing
+    can carry the current bookkeeping while leaving pending prose with its
+    editor. Attribute slots preserve bookkeeping on otherwise authored tags.
+    """
+    from bs4 import BeautifulSoup, NavigableString
+
+    soup = BeautifulSoup(document, "html.parser")
+    token = secrets.token_hex(16)
+    while token in document:
+        token = secrets.token_hex(16)
+    owned: dict[str, str] = {}
+
+    def mark(content: str) -> str:
+        marker = f"reckon_{token}_{len(owned)}"
+        owned[marker] = content
+        return marker
+
+    for element in list(soup.find_all(True)):
+        if element.parent is None:
+            continue
+        state_meta = element.name == "meta" and str(
+            element.get("name") or ""
+        ).lower().startswith("plan-")
+        if (
+            state_meta
+            or element.has_attr("data-reckon")
+            or "r-comment" in (element.get("class") or [])
+        ):
+            element.replace_with(NavigableString(mark(str(element))))
+            continue
+        attributes = {
+            key: element.attrs.pop(key)
+            for key in list(element.attrs)
+            if key in PLAN_BOOKKEEPING_ATTRIBUTES or key.startswith("data-capability-")
+        }
+        if attributes:
+            rendered = str(soup.new_tag("span", attrs=attributes))[5:-8]
+            marker = mark(rendered)
+            attribute = f"data-reckon-projection-{token}"
+            element[attribute] = marker
+            owned[f' {attribute}="{marker}"'] = owned.pop(marker)
+    masked = str(soup)
+    if not owned:
+        return masked, []
+    pattern = re.compile("|".join(re.escape(marker) for marker in owned))
+    chunks: list[str] = []
+    slots: list[tuple[int, str]] = []
+    cursor = length = 0
+    for match in pattern.finditer(masked):
+        chunk = masked[cursor : match.start()]
+        chunks.append(chunk)
+        length += len(chunk)
+        slots.append((length, owned[match.group()]))
+        cursor = match.end()
+    chunks.append(masked[cursor:])
+    authored = "".join(chunks)
+    whitespace = list(re.finditer(r"(?<=>)\s+(?=<)", authored))
+    slots = [
+        (
+            offset
+            - sum(
+                min(max(offset - match.start(), 0), match.end() - match.start())
+                for match in whitespace
+            ),
+            content,
+        )
+        for offset, content in slots
+    ]
+    return re.sub(r"(?<=>)\s+(?=<)", "", authored), slots
+
+
+def _plan_text_receipt_path(path: Path) -> Path:
+    key = hashlib.sha256(os.fsencode(path.resolve())).hexdigest()
+    # Workers can write the plan lock namespace while the shared state root
+    # remains sealed. The receipt shares that coordination grant.
+    return _config_home() / "locks" / "plan-text-writes" / f"{key}.json"
+
+
+def _plan_text_receipts(path: Path) -> dict[str, list[str]]:
+    try:
+        data = json.loads(_plan_text_receipt_path(path).read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return {}
+    if not isinstance(data, dict) or any(
+        not isinstance(key, str)
+        or not isinstance(values, list)
+        or any(not isinstance(value, str) for value in values)
+        for key, values in data.items()
+    ):
+        return {}
+    return data
+
+
+def _plan_text_digest(document: str) -> str:
+    authored, _slots = plan_text_projection(document)
+    return hashlib.sha256(authored.encode("utf-8")).hexdigest()
+
+
+def _record_plan_text_write(path: Path, before: str, after: str) -> None:
+    """Record a content-bound edge under the plan writer's existing lock."""
+    receipts = _plan_text_receipts(path)
+    source = _plan_text_digest(before)
+    destination = _plan_text_digest(after)
+    targets = receipts.setdefault(source, [])
+    if destination not in targets:
+        targets.append(destination)
+    receipt_path = _plan_text_receipt_path(path)
+    receipt_path.parent.mkdir(parents=True, exist_ok=True)
+    write_json_atomically(receipt_path, receipts)
+
+
+def recorded_plan_text_write(path: Path, before: str, after: str) -> bool:
+    """Whether recorded text writes connect these exact authored contents."""
+    start = _plan_text_digest(before)
+    destination = _plan_text_digest(after)
+    if start == destination:
+        return False
+    receipts = _plan_text_receipts(path)
+    pending = [start]
+    visited = set()
+    while pending:
+        current = pending.pop()
+        if current in visited:
+            continue
+        visited.add(current)
+        for target in receipts.get(current, []):
+            if target == destination:
+                return True
+            pending.append(target)
+    return False
+
+
 def replace_plan_text(
     project: str,
     slug: str,
@@ -2616,6 +2773,13 @@ def _replace_plan_text(
             except OpError as exc:
                 raise ValueError(str(exc)) from exc
         write_atomically(html_file, lambda handle: handle.write(rendered))
+        try:
+            _record_plan_text_write(html_file, text, rendered)
+        except Exception:
+            # A failed receipt must neither license an unwritten edit nor
+            # leave a successful edit without its promotion provenance.
+            write_atomically(html_file, lambda handle: handle.write(text))
+            raise
         return current_version + 1, html_file
 
 
@@ -2884,6 +3048,22 @@ def _gen_id(prefix: str) -> str:
     from datetime import timezone
 
     return f"{prefix}-{_dt.now(tz=timezone.utc):%Y%m%dT%H%M%S%f}"
+
+
+_DEFAULT_FOLLOWUP_AUTHOR = "reckon-edit"
+
+
+def _default_followup_provenance(item: dict) -> None:
+    """Fill a followup's author and date when the caller names neither.
+
+    The append examples carry a title, a body and a prompt and no provenance,
+    so a record built from one is dated today and attributed to the editing
+    surface rather than refused for two fields the caller was never shown.
+    """
+    if not str(item.get("written_by") or "").strip():
+        item["written_by"] = _DEFAULT_FOLLOWUP_AUTHOR
+    if not str(item.get("written_at") or "").strip():
+        item["written_at"] = _dt.now(tz=UTC).date().isoformat()
 
 
 def _validate_new_followup_prompt(value: Any) -> str:
@@ -4122,6 +4302,7 @@ def _apply_append(working: dict, op: dict, is_index: bool, warnings: list[str]) 
             raise OpError("append followups requires an item object")
         required = {"id", "written_by", "written_at", "title", "body", "prompt"}
         fu = dict(item)
+        _default_followup_provenance(fu)
         _refuse_deferred_work_term(str(fu.get("body") or ""), subject="followups body")
         if fu.get("tier") and not fu.get("capability"):
             raise OpError("new followups must use capability instead of legacy tier")
@@ -4300,7 +4481,9 @@ def _apply_accept(working: dict, op: dict, is_index: bool, warnings: list[str]) 
     }
 
 
-def _apply_withdraw(working: dict, op: dict, is_index: bool, warnings: list[str]) -> None:
+def _apply_withdraw(
+    working: dict, op: dict, is_index: bool, warnings: list[str]
+) -> None:
     """Withdraw an unlocked decision, keeping its reason and date in the plan.
 
     A withdrawal takes a decision out of the wait without pretending anyone
@@ -4971,7 +5154,14 @@ def validate_landing_patch(
         project = str(state.get("project") or "")
         slug = str(state.get("slug") or "")
         if project and slug:
-            guard(_require_terminal_evidence, project, slug, requested_status)
+            guard(
+                _require_terminal_evidence,
+                project,
+                slug,
+                requested_status,
+                None,
+                _pending_evidence_plans(state),
+            )
     if (
         requested_status in _LANDED_STATUSES
         and not continuation_present(state)
@@ -4988,10 +5178,18 @@ def _require_terminal_evidence(
     slug: str,
     status: str,
     root: str | Path | None = None,
+    pending_plans: Iterable[str] = (),
 ) -> None:
-    """Refuse closure until a typed evidence resource claims the plan."""
+    """Refuse closure until a typed evidence resource claims the plan.
+
+    ``pending_plans`` names the plans this batch's own queued evidence appends
+    will reach. They are not on disk yet, and a close batched behind them must
+    still see them, so appending the evidence and closing the plan is one write.
+    """
     from reckon import ledger
 
+    if slug in pending_plans:
+        return
     if ledger.evidence_records_for_plan(project, slug, root):
         return
     expected = f"docs/evidence/archive/{slug}-landed.html"

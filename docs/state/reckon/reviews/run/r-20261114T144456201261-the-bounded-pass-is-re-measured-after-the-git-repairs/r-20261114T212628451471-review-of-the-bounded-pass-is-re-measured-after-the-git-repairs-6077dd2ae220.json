@@ -1,0 +1,74 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failure_note": "the reviewed node ran unarmed: its manifest carries no baseline_suite and no after_suite key and states under suite_fence that no test file lies in its write scope, so no suite pair exists from which to derive an added-failure delta; the required integer is recorded as 0 and means no arms ran, not a measured delta of zero.",
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/evidence.py:694 compose_evidence_record",
+    "reckon/serve.py:2694 serve a cumulative record with its fragments composed in",
+    "reckon/compliance.py:107 glob a verdict's fragment directory",
+    "reckon/doccheck.py:1954 read a record through its composition",
+    "reckon/resources.py:69 EVIDENCE_FRAGMENTS_SUBTREE"
+  ],
+  "completed_at": "2026-11-14T23:57:12.675Z",
+  "dispatched_at": "2026-11-14T23:19:41Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "exempted",
+      "reason": "evidence wording: the record says two driver logs where three exist, all carrying the header; the measurement stands",
+      "recorded_at": "2026-11-15T00:16:30.655587+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/a-read-answers-inside-its-deadline/the-bounded-pass-is-re-measured-after-the-git-repairs.html",
+      "line": "24",
+      "severity": "non-blocking",
+      "summary": "provenance sentence names two sbatch driver logs where report/logs holds three",
+      "text": "the sentence says \"The two sbatch driver logs carry job, host, revisions and corpus paths per phase\", but report/logs holds three such driver logs (sbatch-probe-1315575.out, sbatch-prof2-1315583.out and sbatch-store-removed.out), all three carrying that phase/job/host/revision header, so the provenance enumeration omits the driver of the reference pass the same fragment reports one paragraph earlier at :22."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "reckon/evidence.py:694 composes the fragment, reckon/serve.py:2694 serves it composed, reckon/compliance.py:107 enumerates a verdict's fragments, reckon/doccheck.py:1954 reads a record through its composition, reckon/resources.py:69 names the fragment subtree.",
+    "diff": "read the single commit 6077dd2ae2 against base 17ba33c7ca: one file, +5/-4, all inside the fragment body.",
+    "done_when": "the done_when asks medians, slowest passes, A/A spreads and both verdicts plus four counts and a profile of a miss; the manifest's `tests:` line is the literal sbatch probe whose log report/logs/pass-node-after-1-j1315575.log ends EXIT=124, so the gate measures the early stop and the counts at :21 come from report/profile-counts.txt.",
+    "goal": "the goal is to re-measure the bounded pass after the git-call repairs against both bounds; report/logs/pass-node-after-1-j1315575.log:5-6 records 200.037 s and 104.155 s against the 10 s bound and the same log ends EXIT=124 inside sweep 1, and the delta commit 6077dd2ae2 makes the fragment say exactly that at :20.",
+    "manifest": "read; status complete, commits names 17ba33c7ca and 6077dd2ae2, changed_paths the one fragment, artifacts cites profile-counts.txt whose posix.stat line I verified on disk at :7, and test_logs resolves.",
+    "write_paths": "the fence was docs/evidence/fragments/a-read-answers-inside-its-deadline/the-bounded-pass-is-re-measured-after-the-git-repairs.html and `git diff --name-only 17ba33c7ca..6077dd2ae2` names that file alone."
+  },
+  "justifications": {
+    "durability": "the delta adds no assertion and the fragment has none, so nothing fails if the counts at the-bounded-pass-is-re-measured-after-the-git-repairs.html:21 drift from report/logs again; the reconciliation that caught the original defect is manual.",
+    "evidence": "every corrected figure at the-bounded-pass-is-re-measured-after-the-git-repairs.html:21-22 reconciles with the log it cites: 2077566239 at report/logs/sbatch-probe-1315575.out:6, and 2,776 / 456.304 s at report/logs/prof-node-after-j1315583.log:23.",
+    "fit": "the edit keeps the shape of the sibling docs/evidence/fragments/a-read-answers-inside-its-deadline/a-cold-read-parses-each-plan-once.html and introduces no symbol; the fragment's plan-verdict \"failed\" at :12 is an outlier among its siblings (passed/verified) but reckon/evidence.py:544 overwrites that meta on composition.",
+    "goal_fidelity": "the delta's edit at docs/evidence/fragments/a-read-answers-inside-its-deadline/the-bounded-pass-is-re-measured-after-the-git-repairs.html:20 reports bound 1 at 200.037 s from report/logs/pass-node-after-1-j1315575.log:5 and states bound 2 has no reading at all, which is what report/report.md records.",
+    "reuse": "the change defines no mechanism; the fragment is consumed by the existing composer at reckon/evidence.py:694, and a search of docs/evidence/fragments (136 plan directories) found the fragment shape already owned there.",
+    "scope_discipline": "`git diff --stat 17ba33c7ca..6077dd2ae2` lists only docs/evidence/fragments/a-read-answers-inside-its-deadline/the-bounded-pass-is-re-measured-after-the-git-repairs.html, the single declared path."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to re-measure the bounded pass after the git-call repairs against both bounds, and the delta commit 6077dd2ae2 changes only the landed fragment docs/evidence/fragments/a-read-answers-inside-its-deadline/the-bounded-pass-is-re-measured-after-the-git-repairs.html:19-24, correcting its figures to match report/logs; I checked the corrected readings against their logs and each one reconciles (200.037 s and 104.155 s at report/logs/pass-node-after-1-j1315575.log:5-6, 2077566239 bytes at report/logs/sbatch-probe-1315575.out:6, 177.632 s / 98.315 s / 105.631 s at report/logs/pass-node-after-1-j1315996.log:5,6,8).\nVERDICT done_when: the done_when asks for the medians, the slowest passes, the A/A spreads and the two bounds' verdicts plus the four counts and a profile of the miss; the gate that ran is the literal sbatch probe recorded in the manifest's `tests:` line, its log report/logs/pass-node-after-1-j1315575.log ends EXIT=124 at the 420 s timeout inside sweep 1, so it measures the early stop, and the fragment now states at :20 that bound 2 has no reading at all instead of calling it missed.\nVERDICT write_paths: the declared write path is docs/evidence/fragments/a-read-answers-inside-its-deadline/the-bounded-pass-is-re-measured-after-the-git-repairs.html, and `git diff --stat 17ba33c7ca1421dee0619802dda9b3b14b728b8e..6077dd2ae2206c322a77c289dda71ee79bf9620d` lists exactly that one file with 5 insertions and 4 deletions.\nVERDICT manifest: read the manifest at the run directory; status is complete, commits names 17ba33c7ca and 6077dd2ae2, its `artifacts` claim about posix.stat's 259,379 calls is true on disk at report/profile-counts.txt:7, and its `test_logs` path report/logs/pass-node-after-1-j1315575.log resolves and ends EXIT=124.\nVERDICT diff: read the one commit 6077dd2ae2 against base 17ba33c7ca commit by commit; it rewrites the heading at :19, replaces the byte figure with 2,077,566,239 and adds the profile counts and the \u00a744 store-* reference pass at :21-22, then rewrites the log-provenance sentence at :24, and carries no product code, no test and no figure.\nFINDING docs/evidence/fragments/a-read-answers-inside-its-deadline/the-bounded-pass-is-re-measured-after-the-git-repairs.html:24 non-blocking: the sentence says \"The two sbatch driver logs carry job, host, revisions and corpus paths per phase\", but report/logs holds three such driver logs (sbatch-probe-1315575.out, sbatch-prof2-1315583.out and sbatch-store-removed.out), all three carrying that phase/job/host/revision header, so the provenance enumeration omits the driver of the reference pass the same fragment reports one paragraph earlier at :22.",
+  "review_run_id": "r-20261114T212628451471-review-of-the-bounded-pass-is-re-measured-after-the-git-repairs-6077dd2ae220",
+  "reviewed_base_sha": "17ba33c7ca1421dee0619802dda9b3b14b728b8e",
+  "reviewed_head_sha": "6077dd2ae2206c322a77c289dda71ee79bf9620d",
+  "reviewed_run_id": "r-20261114T144456201261-the-bounded-pass-is-re-measured-after-the-git-repairs",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash",
+    "note": "re-review of one delta commit over an already-reviewed head",
+    "reviewer_run_id": "r-20261114T212628451471-review-of-the-bounded-pass-is-re-measured-after-the-git-repairs-6077dd2ae220"
+  },
+  "scores": {
+    "durability": 10,
+    "evidence": 19,
+    "fit": 17,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-15T00:32:00Z",
+  "total": 104
+}

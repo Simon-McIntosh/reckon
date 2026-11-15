@@ -156,6 +156,24 @@ def gc(repo: Path, *, apply: bool, run: str | None = None) -> dict:
     return json.loads(result.output)
 
 
+def gc_unscoped(repo: Path, *, apply: bool) -> dict:
+    """A pass over every local ledger, the arm that reclaims across the home."""
+    result = CliRunner().invoke(
+        cli.main,
+        [
+            "crew",
+            "gc",
+            "--repo",
+            str(repo),
+            "--retention-days",
+            str(RETENTION),
+            *(["--apply"] if apply else []),
+        ],
+    )
+    assert result.exit_code == 0, result.output
+    return json.loads(result.output)
+
+
 def planted_stores(repo: Path):
     """Plant one past-retention, one fresh and one live-run entry per row set."""
     report_old = write_report_tree(
@@ -202,7 +220,9 @@ def _rows(report: dict) -> list[dict]:
 
 def test_gc_reports_and_removes_each_unbounded_store(tmp_path, monkeypatch):
     """Each row set lists exactly its one past-retention entry without a live
-    run, and ``--apply`` removes exactly those, printing each path and size."""
+    run. A scoped ``--apply`` removes the report tree and the lock and keeps
+    the run directory, which names no project; an unscoped pass then removes
+    that directory too."""
     monkeypatch.setenv("RECKON_HOME", str(tmp_path / "config"))
     repo = repository(tmp_path)
     stores = planted_stores(repo)
@@ -223,10 +243,13 @@ def test_gc_reports_and_removes_each_unbounded_store(tmp_path, monkeypatch):
 
     # One past-retention lock, and only that one.
     assert {row["path"] for row in dry["lock_files"]} == {str(stores["lock_old"])}
-    # One unledgered run directory, and only that one.
+    # One unledgered run directory, and only that one, reported kept: it names
+    # no project, and a scoped pass reclaims only its own project's entries.
     assert {row["path"] for row in dry["unledgered_run_directories"]} == {
         str(stores["dir_old"])
     }
+    assert dry["unledgered_run_directories"][0]["action"] == "keep"
+    assert dry["unledgered_run_directories"][0]["project"] == "unknown"
 
     # Exactly the three past-retention entries without a live run, each stating
     # its path and its size, and the dry run removed nothing.
@@ -247,10 +270,17 @@ def test_gc_reports_and_removes_each_unbounded_store(tmp_path, monkeypatch):
     applied = gc(repo, apply=True)
 
     removed = [row for row in _rows(applied) if row["removed"]]
-    assert len(removed) == 3
+    # Report trees and locks are not scoped by project, so both are removed;
+    # the run directory names no project, so the scoped pass keeps it.
+    assert len(removed) == 2
     assert not raw_old.is_file()
     assert not stores["lock_old"].exists()
-    assert not stores["dir_old"].exists()
+    assert stores["dir_old"].is_dir()
+    kept = [
+        row for row in applied["unledgered_run_directories"] if row["action"] == "keep"
+    ]
+    assert [row["path"] for row in kept] == [str(stores["dir_old"])]
+    assert kept[0]["project"] == "unknown"
     # Only the raw report text is pruned: the sidecar and snapshot that a
     # coverage read depends on stay beside it.
     assert (report_old / plan_review._REVIEW_SIDECAR_NAME).is_file()
@@ -262,6 +292,12 @@ def test_gc_reports_and_removes_each_unbounded_store(tmp_path, monkeypatch):
     assert stores["lock_live"].is_file()
     assert stores["dir_fresh"].is_dir()
     assert stores["dir_live"].is_dir()
+
+    # Without --project the pass reclaims across the crew home, which is the
+    # arm that still removes an entry no project can be named for.
+    unscoped = gc_unscoped(repo, apply=True)
+    assert any(row["removed"] for row in unscoped["unledgered_run_directories"])
+    assert not stores["dir_old"].exists()
 
 
 def test_a_live_run_holds_its_lock_and_run_directory(tmp_path, monkeypatch):
@@ -405,9 +441,10 @@ def gc_for(repo: Path, project: str, *, apply: bool) -> dict:
 
 
 def test_gc_keeps_a_peer_projects_run_directory(tmp_path, monkeypatch):
-    """gc from project A offers only the past-retention run directory that no
-    registered project's ledger holds, leaving a peer project's directory on
-    disk even though A's own ledger carries no row for it."""
+    """gc from project A reports only the past-retention run directory that no
+    registered project's ledger holds, keeps it because it names no project,
+    and leaves a peer project's directory on disk even though A's own ledger
+    carries no row for it."""
     monkeypatch.setenv("RECKON_HOME", str(tmp_path / "config"))
     repo_a = repository_named(tmp_path, "project-a")
     repo_b = repository_named(tmp_path, "project-b")
@@ -427,13 +464,17 @@ def test_gc_keeps_a_peer_projects_run_directory(tmp_path, monkeypatch):
     dir_none = write_run_dir("held-by-none", age_days=OLD_DAYS)
 
     dry = gc_for(repo_a, "project-a", apply=False)
-    assert {row["path"] for row in dry["unledgered_run_directories"]} == {str(dir_none)}
+    rows = {row["path"]: row for row in dry["unledgered_run_directories"]}
+    assert set(rows) == {str(dir_none)}
+    assert rows[str(dir_none)]["action"] == "keep"
+    assert rows[str(dir_none)]["project"] == "unknown"
 
     applied = gc_for(repo_a, "project-a", apply=True)
     assert {row["path"] for row in applied["unledgered_run_directories"]} == {
         str(dir_none)
     }
-    assert not dir_none.exists()
+    # It names no project, so the scoped pass keeps it on disk.
+    assert dir_none.is_dir()
     # A's own ledger row spares its directory; B's ledger row, read across the
     # mount, spares B's. The peer's run directory stays on disk.
     assert dir_a.is_dir()

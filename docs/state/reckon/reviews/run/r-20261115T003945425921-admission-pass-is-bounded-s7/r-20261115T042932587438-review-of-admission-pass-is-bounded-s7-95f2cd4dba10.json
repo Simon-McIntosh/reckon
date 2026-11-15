@@ -1,0 +1,82 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own arm logs on disk: after_suite (head-focus.log at 95f2cd4dba) records 58 passed with no FAILED line and baseline_suite (base-focus.log at 1d16388a) records 55 passed with no FAILED line, so the set difference is empty. Cross-checked over the wider admission-importing population the manifest also reports: base-admission.log at 1d16388a carries 165 distinct FAILED ids and head-admission.log at 95f2cd4dba carries 164; comm of the two id sets yields no id present at the head and absent at the base, and one id fixed.",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/admission/service.py:259",
+    "reckon/crew/admission/service.py:300",
+    "reckon/crew_run_commands.py:5128"
+  ],
+  "completed_at": "2026-11-15T04:59:32.276Z",
+  "dimension_dispositions": {
+    "reuse": {
+      "kind": "folded",
+      "node": "repair-of-admission-pass-is-bounded-s7-95f2cd4dba10",
+      "recorded_at": "2026-11-15T05:41:19.718122+00:00"
+    }
+  },
+  "dispatched_at": "2026-11-15T04:34:28Z",
+  "findings": [
+    {
+      "file": "tests/test_an_admission_pass_is_bounded.py",
+      "line": "100",
+      "severity": "non-blocking",
+      "summary": "the recorded-budget assertion cannot tell the caller's budget from the default",
+      "text": "non-blocking: the assertion compares launch_budget_seconds against BUDGET, the constant the test itself handed in, and BUDGET is 60.0 while DEFAULT_ADMISSION_PASS_BUDGET_SECONDS at reckon/flight.py:198 is also 60.0, so it holds even if admit_once ignored its budget_seconds argument and fell through to the flight default; it reddens only on total absence of the key. An independent check needs a budget that is not the default, such as 45.0, which would also be the only end-to-end exercise of the flight-config path."
+    },
+    {
+      "file": "tests/test_an_admission_pass_is_bounded.py",
+      "line": "70",
+      "severity": "non-blocking",
+      "summary": "a module-level config is mutated instead of copied",
+      "text": "non-blocking: the resolver binds config = fixtures.CONFIG and then writes the lane path into it, so the write lands on the module-level dict declared at tests/test_each_admission_pass_records_its_verdict.py:30 and survives into every later test in the same process that reads CONFIG without copying it; the existing owner is tests/test_each_admission_pass_records_its_verdict.py:140 _config_with_lane, which deep-copies at line 141, and this helper re-implements it minus the copy."
+    },
+    {
+      "file": "docs/evidence/fragments/the-escape-lane-and-reviews-keep-pace/bounded-pass.html",
+      "line": "125",
+      "severity": "non-blocking",
+      "summary": "the profile artefact the done_when names is not in the file",
+      "text": "non-blocking: the node's done_when names the 120 s py-spy record --idle of the live admit service after landing as an artefact kept in this file; the section at lines 123-145 states the profile was not taken because the change is not landed and the restart belongs to the coordinator, so the absence is disclosed and a 93-pass verdict measurement stands in, but the named artefact is absent."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "read commit by commit against 1d16388a: 239f5365ab adds the budget seam and per-launch timing (selection.py +65, verdicts.py +18/-1, flight.py +35), 6ad35c91e8 and 2f636237ae add the two evidence fragments, and 95f2cd4dba is a whitespace-only reformat of the budget lookup; 480 insertions and 1 deletion across six files.",
+    "done_when": "the done_when names three things: new tests failing at the base revision, no added failure over the admission-importing population on all_debug, and a 120 s py-spy profile of the live service in bounded-pass.html; the first two are asserted and recorded, base-newtests.log showing all three new tests failing at 1d16388a and the two arms differing by no added id, while the third is absent and disclosed at bounded-pass.html:123-145.",
+    "goal": "the node goal is to bound each admission pass by a flight time budget and record each launch's duration and slowest step; reckon/crew/admission/selection.py:316-325 resolves the budget from the argument, else flight, else 60 s, reads one deadline and breaks the launch loop on it, and selection.py:775-785 attaches launch_seconds, slowest_step and slowest_step_seconds to every launched verdict row, so the goal is met.",
+    "manifest": "read; it reports status complete, the change at 239f5365ab with evidence at 6ad35c91e8 and 2f636237ae, focused gates of 55 passed at 1d16388a and 58 passed at 95f2cd4dba, both recorded with log paths I reopened and confirmed, one cancelled arm under retry_failures, and the live-profile gap under outside_scope.",
+    "write_paths": "the declared paths are reckon/crew/admission/selection.py, reckon/crew/admission/service.py, reckon/crew/admission/verdicts.py, reckon/flight.py, tests/test_an_admission_pass_is_bounded.py, two evidence fragments under the escape-lane fragment directory, and a figures directory; the diff touches four source files plus the two fragments and no path outside them."
+  },
+  "justifications": {
+    "durability": "negative-control.log shows the deadline-removal mutation reddening two of the three tests at exit 1, which does falsify the main guard, but tests/test_an_admission_pass_is_bounded.py:100 asserts a value equal to the default it was handed and so cannot redden on a regression to the flight-config path.",
+    "evidence": "base-newtests.log at 1d16388a records 3 failed and head-focus.log at 95f2cd4dba records 58 passed, and the arms show no added failure id, but the profile artefact the done_when names is not in bounded-pass.html:125.",
+    "fit": "reckon/flight.py:1294 admission_pass_budget_seconds mirrors the namespace and fallback shape of queue_repick_after_seconds at flight.py:1272, and the optional verdict keys at verdicts.py:64-69 follow the add-only row shape already used by retry_at and failure.",
+    "goal_fidelity": "reckon/crew/admission/selection.py:316-325 reads one deadline and breaks the launch loop on it, and selection.py:771-788 puts launch_seconds and slowest_step on every launched row, matching the goal exactly.",
+    "reuse": "the production additions extend their owners, but tests/test_an_admission_pass_is_bounded.py:69-75 re-implements tests/test_each_admission_pass_records_its_verdict.py:140 _config_with_lane without extending it, and does so by mutating the shared CONFIG rather than copying it.",
+    "scope_discipline": "every one of the six files in the diff, being selection.py, verdicts.py, flight.py, the new test and the two evidence fragments, is inside the eight declared write paths, and no path outside them changed."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to bound each admission pass by a flight time budget and record each launch's duration and slowest step; reckon/crew/admission/selection.py:316-325 resolves the budget from the argument, else flight, else 60 s, reads one deadline and breaks the launch loop on it, and selection.py:775-785 attaches launch_seconds, slowest_step and slowest_step_seconds to every launched verdict row, so the goal is met.\nVERDICT done_when: the done_when names three things: new tests failing at the base revision, no added failure over the admission-importing population on all_debug, and a 120 s py-spy profile of the live service in bounded-pass.html; the first two are asserted and recorded, base-newtests.log showing all three new tests failing at 1d16388a and the two arms differing by no added id, while the third is absent and disclosed at bounded-pass.html:123-145.\nVERDICT write_paths: the declared paths are reckon/crew/admission/selection.py, reckon/crew/admission/service.py, reckon/crew/admission/verdicts.py, reckon/flight.py, tests/test_an_admission_pass_is_bounded.py, two evidence fragments under the escape-lane fragment directory, and a figures directory; the diff touches four source files plus the two fragments and no path outside them.\nVERDICT manifest: read; it reports status complete, the change at 239f5365ab with evidence at 6ad35c91e8 and 2f636237ae, focused gates of 55 passed at 1d16388a and 58 passed at 95f2cd4dba, both recorded with log paths I reopened and confirmed, one cancelled arm under retry_failures, and the live-profile gap under outside_scope.\nVERDICT diff: read commit by commit against 1d16388a: 239f5365ab adds the budget seam and per-launch timing (selection.py +65, verdicts.py +18/-1, flight.py +35), 6ad35c91e8 and 2f636237ae add the two evidence fragments, and 95f2cd4dba is a whitespace-only reformat of the budget lookup; 480 insertions and 1 deletion across six files.\nCALL_SITES: reckon/crew/admission/service.py:259, reckon/crew/admission/service.py:300, reckon/crew_run_commands.py:5128\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/admission/selection.py:316-325 reads one deadline and breaks the launch loop on it, and selection.py:771-788 puts launch_seconds and slowest_step on every launched row, matching the goal exactly.\nSCORE evidence: 15\nJUSTIFICATION evidence: base-newtests.log at 1d16388a records 3 failed and head-focus.log at 95f2cd4dba records 58 passed, and the arms show no added failure id, but the profile artefact the done_when names is not in bounded-pass.html:125.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every one of the six files in the diff, being selection.py, verdicts.py, flight.py, the new test and the two evidence fragments, is inside the eight declared write paths, and no path outside them changed.\nSCORE durability: 15\nJUSTIFICATION durability: negative-control.log shows the deadline-removal mutation reddening two of the three tests at exit 1, which does falsify the main guard, but tests/test_an_admission_pass_is_bounded.py:100 asserts a value equal to the default it was handed and so cannot redden on a regression to the flight-config path.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/flight.py:1294 admission_pass_budget_seconds mirrors the namespace and fallback shape of queue_repick_after_seconds at flight.py:1272, and the optional verdict keys at verdicts.py:64-69 follow the add-only row shape already used by retry_at and failure.\nSCORE reuse: 5\nJUSTIFICATION reuse: the production additions extend their owners, but tests/test_an_admission_pass_is_bounded.py:69-75 re-implements tests/test_each_admission_pass_records_its_verdict.py:140 _config_with_lane without extending it, and does so by mutating the shared CONFIG rather than copying it.\nFINDING tests/test_an_admission_pass_is_bounded.py:100 non-blocking: the assertion compares launch_budget_seconds against BUDGET, the constant the test itself handed in, and BUDGET is 60.0 while DEFAULT_ADMISSION_PASS_BUDGET_SECONDS at reckon/flight.py:198 is also 60.0, so it holds even if admit_once ignored its budget_seconds argument and fell through to the flight default; it reddens only on total absence of the key. An independent check needs a budget that is not the default, such as 45.0, which would also be the only end-to-end exercise of the flight-config path.\nFINDING tests/test_an_admission_pass_is_bounded.py:70 non-blocking: the resolver binds config = fixtures.CONFIG and then writes the lane path into it, so the write lands on the module-level dict declared at tests/test_each_admission_pass_records_its_verdict.py:30 and survives into every later test in the same process that reads CONFIG without copying it; the existing owner is tests/test_each_admission_pass_records_its_verdict.py:140 _config_with_lane, which deep-copies at line 141, and this helper re-implements it minus the copy.\nFINDING docs/evidence/fragments/the-escape-lane-and-reviews-keep-pace/bounded-pass.html:125 non-blocking: the node's done_when names the 120 s py-spy record --idle of the live admit service after landing as an artefact kept in this file; the section at lines 123-145 states the profile was not taken because the change is not landed and the restart belongs to the coordinator, so the absence is disclosed and a 93-pass verdict measurement stands in, but the named artefact is absent.\n",
+  "review_node": "review-of-admission-pass-is-bounded-s7-95f2cd4dba10",
+  "review_run_id": "r-20261115T042932587438-review-of-admission-pass-is-bounded-s7-95f2cd4dba10",
+  "reviewed_base_sha": "1d16388a3150f88b31788d00cedaf4055f75f431",
+  "reviewed_head_sha": "95f2cd4dba10c7803e1f6d062ea16d84ffd5bd3d",
+  "reviewed_run_id": "r-20261115T003945425921-admission-pass-is-bounded-s7",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash",
+    "reviewer_run_id": "r-20261115T042932587438-review-of-admission-pass-is-bounded-s7-95f2cd4dba10"
+  },
+  "scores": {
+    "durability": 15,
+    "evidence": 15,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 5,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-15T04:59:58.290202+00:00",
+  "total": 92
+}

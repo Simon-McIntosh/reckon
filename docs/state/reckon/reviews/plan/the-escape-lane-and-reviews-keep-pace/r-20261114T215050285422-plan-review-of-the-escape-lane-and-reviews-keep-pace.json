@@ -1,0 +1,258 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-15T00:05:46.310Z",
+  "dispatched_at": "2026-11-14T23:31:06Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/the-escape-lane-and-reviews-keep-pace.html:56",
+      "id": "reuse_search-1",
+      "reason": "the arm must name an unbuilt case (the metered-lane queue) as the arm, or \u00a75 must state the override is reused and drop it.",
+      "text": "\u00a75's second case (\"a local request with a priority override launches ahead of an earlier local request without one\") is already implemented: priorities_first at reckon/crew/admission/ordering.py:106-146 hoists every request carrying queue_order._override (reckon/crew/queue_order.py:240-241, pointer key priority_override, written by `crew queue reprioritise`) ahead of the rest of the lane, _project_rank disambiguates by the same override at queue_order.py:333-339 and 360-361, and queued_placements reports it at ordering.py:259-265. That case cannot fail at base, which is the one thing a done-when arm must do.",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/the-escape-lane-and-reviews-keep-pace.html:62",
+      "id": "reuse_search-2",
+      "reason": "\u00a76 is left with only the seat-share rule, so it should state the delivered-review head is reused and reduce the section to the unbuilt share.",
+      "text": "\u00a76's \"among reviews the review of a delivered run goes first\" also already ships: _is_review_run is the run-role classifier (reckon/crew/recovery_review_delivery.py:45), _project_rank sorts reviews ahead at reckon/crew/queue_order.py:336, admission_order_details names the reason \"delivered review\" at queue_order.py:356-357, and priorities_first keeps a delivered review at the head of the lane at ordering.py:143-146.",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/reckon/crew/admission/ordering.py:70",
+      "id": "duplicate_owner-1",
+      "reason": "the endpoint is \"a share\", and the design must say one interleaver carries both dimensions rather than two that fight.",
+      "text": "\u00a76's per-role seat share is a weighted interleaving of one ordered list by a key, which weighted_project_order already does for project weights (deficit round robin, ordering.py:70-103, applied at ordering.py:169-172 and 247-250). A second interleaver over roles, applied after the project one, reorders what the first established and can take seats from the deep project the weights exist to protect \u2014 reintroducing cross-project starvation as an unnamed regression.",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/reckon/crew/admission/ordering.py:192",
+      "id": "duplicate_owner-2",
+      "reason": "\u00a78 should state the pane depth derives from the existing place reader and index; a second census makes the pane the second ordering.",
+      "text": "\u00a78's fleet-wide queue depth has two existing owners: queued_placements is documented as the one ordering every place-reporting surface reads so two surfaces \"do not come to disagree about which request goes first\" (ordering.py:199-207), and the per-project run census \u00a78 wants is the open_run_index sqlite read (reckon/crew/open_run_index.py:397 read_rows) that the admission pass already wraps for operational reads (open_run_index.py:61).",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/reckon/crew/admission/service.py:145",
+      "id": "duplicate_owner-3",
+      "reason": "the section should name one bounded pass reporting per-launch cost from the existing stage split; a parallel timer would double-count the same seconds.",
+      "text": "\u00a77's per-launch duration and \u00a77's pass budget both extend instruments that exist: _record_stage_timings already records release_seconds, waits_seconds and launch_seconds per pass (service.py:145-170), and selection.py:305 is the whole-order loop with no deadline, so the two deliverables are one instrument (a clock and an interruption on the existing loop, plus a finer stage split), not a new timer beside it.",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/reckon/crew/admission/selection.py:305",
+      "id": "deep_module-1",
+      "reason": "the endpoint is one bounded pass that reports its own cadence; the design must end the pass through one exit that settles its result, or a bounded pass returns a result with its verdict set half recorded.",
+      "text": "\u00a76 and \u00a77 both land inside the `for index, pointer in enumerate(order)` loop at selection.py:305-751, which today iterates the entire order with no deadline and has nine `continue` exits each following its own remaining/verdicts bookkeeping. A budget check, a role share and a per-launch timer threaded through those nine paths is three shallow edits to the branch-densest function in the package, and any new early exit skips the bookkeeping that follows it.",
+      "type": "deep_module",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/reckon/crew/dispatching/preparation.py:1027",
+      "id": "thin_wrapper-1",
+      "reason": "a node briefed from \u00a75 as written can build a parallel queue path; the plan should say one existing gate widens.",
+      "text": "\u00a75's \"stored as a queued request exactly as a held local dispatch is\" is already the shape of the code: the roster refusal is caught at preparation.py:1027-1040 and the queue write follows at :1051-1053 behind `is_local and not shadow_lineage`, and a metered lane's budget hold queues at :665-703. The change is to widen those two `is_local` gates (:1027, :1052); a second queue path beside them is a wrapper with no justification.",
+      "type": "thin_wrapper",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/reckon/crew/dispatch_admission.py:225",
+      "id": "thin_wrapper-2",
+      "reason": "the package is contradictory, so \u00a75 must settle it or the node will diffuse a behaviour change a message already promises.",
+      "text": "the roster refusal already tells the caller \"A request queued behind this cap launches then\" while preparation.py:1027 only queues for `is_local`, so the message and the behaviour disagree today for every non-local lane; \u00a75 should state which of the two moves rather than leave a node to pick.",
+      "type": "thin_wrapper",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "cdeddd1227232606e0e8ab1276cfd968be04e55f",
+  "plan_fingerprint": "36b2ae76ce61f74f3165aaad4e63b917b8287743879a5c1cce40b1ad65237f49",
+  "plan_slug": "the-escape-lane-and-reviews-keep-pace",
+  "plan_version": 1,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "1684fc4865032648ec56ec5b2480998af87605ec",
+      "commit_basis": "edit",
+      "finding": "reuse_search-1",
+      "note": "\u00a75's priority-override case was removed in the content round; priorities_first already serves it",
+      "reason": "",
+      "when": "2026-11-15T00:25:44.755300+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "1684fc4865032648ec56ec5b2480998af87605ec",
+      "commit_basis": "edit",
+      "finding": "reuse_search-2",
+      "note": "\u00a76's delivered-review-first clause was removed in the content round; _project_rank already sorts it",
+      "reason": "",
+      "when": "2026-11-15T00:25:50.521990+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "1684fc4865032648ec56ec5b2480998af87605ec",
+      "commit_basis": "edit",
+      "finding": "duplicate_owner-1",
+      "note": "\u00a76's share now extends weighted_project_order's deficit round-robin within each project's slice, computed in ordering, not a second interleaver",
+      "reason": "",
+      "when": "2026-11-15T00:25:56.032873+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "1684fc4865032648ec56ec5b2480998af87605ec",
+      "commit_basis": "edit",
+      "finding": "duplicate_owner-2",
+      "note": "\u00a78 now reads queued_placements for order and open_run_index.read_rows for the census, adding no third reader",
+      "reason": "",
+      "when": "2026-11-15T00:26:01.475645+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "1684fc4865032648ec56ec5b2480998af87605ec",
+      "commit_basis": "edit",
+      "finding": "duplicate_owner-3",
+      "note": "\u00a77 now extends _record_stage_timings and puts one deadline at the launch loop's head",
+      "reason": "",
+      "when": "2026-11-15T00:26:07.844026+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "1684fc4865032648ec56ec5b2480998af87605ec",
+      "commit_basis": "edit",
+      "finding": "deep_module-1",
+      "note": "\u00a76's share moves into ordering before the loop, and \u00a77's budget is a single deadline read at the loop head; nothing is threaded through the loop's exit paths",
+      "reason": "",
+      "when": "2026-11-15T00:26:13.424811+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "1684fc4865032648ec56ec5b2480998af87605ec",
+      "commit_basis": "edit",
+      "finding": "thin_wrapper-1",
+      "note": "\u00a75 now widens the two is_local gates in dispatching/preparation.py and adds no second queue path",
+      "reason": "",
+      "when": "2026-11-15T00:26:19.469209+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "1684fc4865032648ec56ec5b2480998af87605ec",
+      "commit_basis": "edit",
+      "finding": "thin_wrapper-2",
+      "note": "\u00a75 settles it: the behaviour moves, queueing every lane, so the roster refusal's promise becomes true",
+      "reason": "",
+      "when": "2026-11-15T00:26:25.702011+00:00"
+    }
+  ],
+  "responses": {
+    "deep_module-1": {
+      "action": "acted",
+      "by": "",
+      "commit": "1684fc4865032648ec56ec5b2480998af87605ec",
+      "commit_basis": "edit",
+      "note": "\u00a76's share moves into ordering before the loop, and \u00a77's budget is a single deadline read at the loop head; nothing is threaded through the loop's exit paths",
+      "reason": "",
+      "when": "2026-11-15T00:26:13.424811+00:00"
+    },
+    "duplicate_owner-1": {
+      "action": "acted",
+      "by": "",
+      "commit": "1684fc4865032648ec56ec5b2480998af87605ec",
+      "commit_basis": "edit",
+      "note": "\u00a76's share now extends weighted_project_order's deficit round-robin within each project's slice, computed in ordering, not a second interleaver",
+      "reason": "",
+      "when": "2026-11-15T00:25:56.032873+00:00"
+    },
+    "duplicate_owner-2": {
+      "action": "acted",
+      "by": "",
+      "commit": "1684fc4865032648ec56ec5b2480998af87605ec",
+      "commit_basis": "edit",
+      "note": "\u00a78 now reads queued_placements for order and open_run_index.read_rows for the census, adding no third reader",
+      "reason": "",
+      "when": "2026-11-15T00:26:01.475645+00:00"
+    },
+    "duplicate_owner-3": {
+      "action": "acted",
+      "by": "",
+      "commit": "1684fc4865032648ec56ec5b2480998af87605ec",
+      "commit_basis": "edit",
+      "note": "\u00a77 now extends _record_stage_timings and puts one deadline at the launch loop's head",
+      "reason": "",
+      "when": "2026-11-15T00:26:07.844026+00:00"
+    },
+    "reuse_search-1": {
+      "action": "acted",
+      "by": "",
+      "commit": "1684fc4865032648ec56ec5b2480998af87605ec",
+      "commit_basis": "edit",
+      "note": "\u00a75's priority-override case was removed in the content round; priorities_first already serves it",
+      "reason": "",
+      "when": "2026-11-15T00:25:44.755300+00:00"
+    },
+    "reuse_search-2": {
+      "action": "acted",
+      "by": "",
+      "commit": "1684fc4865032648ec56ec5b2480998af87605ec",
+      "commit_basis": "edit",
+      "note": "\u00a76's delivered-review-first clause was removed in the content round; _project_rank already sorts it",
+      "reason": "",
+      "when": "2026-11-15T00:25:50.521990+00:00"
+    },
+    "thin_wrapper-1": {
+      "action": "acted",
+      "by": "",
+      "commit": "1684fc4865032648ec56ec5b2480998af87605ec",
+      "commit_basis": "edit",
+      "note": "\u00a75 now widens the two is_local gates in dispatching/preparation.py and adds no second queue path",
+      "reason": "",
+      "when": "2026-11-15T00:26:19.469209+00:00"
+    },
+    "thin_wrapper-2": {
+      "action": "acted",
+      "by": "",
+      "commit": "1684fc4865032648ec56ec5b2480998af87605ec",
+      "commit_basis": "edit",
+      "note": "\u00a75 settles it: the behaviour moves, queueing every lane, so the roster refusal's promise becomes true",
+      "reason": "",
+      "when": "2026-11-15T00:26:25.702011+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/Code/reckon/docs/state/reckon/reviews/plan/the-escape-lane-and-reviews-keep-pace/r-20261114T215050285422-plan-review-of-the-escape-lane-and-reviews-keep-pace.json",
+  "review_run_id": "r-20261114T215050285422-plan-review-of-the-escape-lane-and-reviews-keep-pace",
+  "reviewed_blob_sha": "b1a114b71a5b0dce9d2a3a04eb4faa7393152366",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "a finding \u2014 \u00a76's share, \u00a77's budget and \u00a77's per-launch timer all land inside the one unbounded loop at reckon/crew/admission/selection.py:305, whose nine `continue` paths each settle their own bookkeeping, so three added checks there are surface, not depth.",
+    "duplicate_owner": "a finding \u2014 \u00a76 re-implements interleaving that weighted_project_order owns at reckon/crew/admission/ordering.py:70, and \u00a78 a fleet census that queued_placements (ordering.py:192) and open_run_index.read_rows (open_run_index.py:397) own.",
+    "interface_budget": "pass \u2014 public_definitions 2717, cli_options 488, mcp_views 15, refusal_families 25; \u00a75 reuses the existing `crew queue reprioritise` override, \u00a76 adds a named constant, \u00a77 a flight key, \u00a74 a phase name, \u00a78 a fragment, so no section adds to any counted family and none owes a retirement.",
+    "reuse_search": "a finding \u2014 \u00a75's priority hoist and \u00a76's delivered-review head already ship at reckon/crew/admission/ordering.py:106 (priorities_first) and reckon/crew/queue_order.py:336/356, so two done-when arms cannot fail at base.",
+    "thin_wrapper": "a finding \u2014 \u00a75's queueing is the existing roster-refusal path at reckon/crew/dispatching/preparation.py:1027/1051 behind two `is_local` gates, so widening those gates is the change and a parallel queue path is the wrapper."
+  },
+  "section_digests": {
+    "_document": "a3d6f4d9c4fa3d589c140abcc2155781dc1198d2dd1ccb967d8e228d3bdbd092",
+    "s1": "460515675b1365ba18831bd6e2d3283eb66aa144bd7a4d9c88634d85188535aa",
+    "s2": "1c1291a10bbf3182487496ef153e5873681ea3827c7bacc16efddf88c7cca128",
+    "s3": "2a0e0fabbd2ee502c5a7928a8fa608b66f83d3ad3fe304a31a05b66f0cb3d688",
+    "s4": "4a85c23ac81214a3af1b59e1888c579b2e2525eb2a2346a965b291cee79651b7",
+    "s5": "f82ced3c0349795da58992f19fdc3d8606bd6c90d2759d495a9ab90d77996ae9",
+    "s6": "1c5ea8e6a993804e60dcc9f12c2598642c1a389c0745d3faf803b410c15be695",
+    "s7": "4dc593db4aeccf5844f132968ca56f1af6f6ab7c79b3213e2bb16b2a982bd7c1",
+    "s8": "6a7621885cab3c2ff3b333803eb00aeed2fa1101ecb72f10d8aaeacffe0cf812"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-15T00:00:56.879854+00:00",
+  "total": null
+}

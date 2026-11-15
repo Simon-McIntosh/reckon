@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="plan">
+  <meta name="plan-slug" content="a-landing-is-recorded-once">
+  <meta name="plan-title" content="A Landing Is Recorded Once">
+  <meta name="plan-summary" content="A node leaves a landing line, a run record and a figure where one applies; one sourced overview is written when a plan or sprint closes.">
+  <meta name="plan-status" content="draft">
+  <meta name="plan-roi" content="mid">
+  <meta name="plan-effort-hours" content="9.25">
+  <meta name="plan-capability-version" content="1.0">
+  <meta name="plan-capability-class" content="general">
+  <meta name="plan-capability-reasoning" content="standard">
+  <meta name="plan-capability-verification" content="strict">
+  <meta name="plan-capability-risk" content="moderate">
+  <meta name="plan-owner" content="Simon McIntosh">
+  <meta name="plan-tags" content="reckon-tooling,evidence">
+  <meta name="plan-section-depends-on" content="{&quot;s3&quot;: [&quot;a-landing-is-recorded-once#s2&quot;], &quot;s5&quot;: [&quot;a-landing-is-recorded-once#s3&quot;], &quot;s6&quot;: [&quot;a-landing-is-recorded-once#s3&quot;, &quot;a-landing-is-recorded-once#s4&quot;]}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;deferred&quot;}">
+  <title>A Landing Is Recorded Once | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <h2 id="s1">§1 — Why: one landing is written four times</h2>
+<section data-reckon="section" data-id="s1" data-effort-hours="0.25" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="done" data-links=""></section>
+    <p>A section that lands is recorded in a fragment the worker writes, a landing line copied to the plan, an anchor the coordinator splices into the plan's landed record, and the run record the promotion writes. The landing line and the run record carry what happened and how it was checked; the other two restate them in prose.</p>
+    <p>The research document <a href="/reckon/research/per-node-evidence-costs-and-closure-overview.html">What per-node evidence costs</a> measured this. Over the 30 days to 2026-11-14, 3,873 of 24,788 commits touched <code>docs/evidence</code>. A worker spends a median 7.1% of its run writing the fragment, and 489 of 1,923 fragments were opened by an agent afterwards. A prototype overview built without reading any fragment kept 47 of 60 sampled fragment claims with every sentence sourced; the 13 it lost were durations, pass counts, hashes and identifiers.</p>
+    <p>Plan <code>landed-record-at-closure</code> ruled in October that a node makes one write and the landed document is built once at closure. The per-node fragment later returned as a requirement. This plan restores that ruling and adds the two things the lead asked for: a figure where a section has something to show, and one concise sourced overview at closure. This plan is a draft, built only when the lead adopts it. §2 to §5 hold whichever way the two decisions below go. §6 is deferred until the first decision is settled, because its endpoint depends on the answer.</p>
+
+    <h2 id="s2">§2 — A node with something to show leaves a figure</h2>
+<section data-reckon="section" data-id="s2" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+    <p><strong>Deliverable.</strong> A node whose result is a measurement, a comparison or a rendered surface writes one figure under <code>docs/figures/&lt;plan&gt;/</code> and names it on a <code>figures:</code> line in its manifest. A node with nothing to show names none; there is no quota. The worker contract states this rule, and the manifest check holds a named figure to it.</p>
+    <p><strong>Done when</strong> a new test file shows, in a temporary repository: a manifest naming a figure that the run's commits carry under the plan's figure directory passes the manifest check; a manifest naming a figure the commits do not carry is refused, naming the path; a manifest naming a figure outside <code>docs/figures/</code> is refused; a manifest naming a figure committed under another plan's figure directory is refused; a manifest with no <code>figures:</code> line passes; and the composed implementation prompt states the rule. Negative control: with the new check removed, the missing-figure manifest passes. The test files that import the manifest check add no failure against the base revision, and <code>ruff check</code> and <code>ruff format --check</code> add no finding on the staged paths.</p>
+
+    <h2 id="s3">§3 — A closing plan gets one sourced overview</h2>
+<section data-reckon="section" data-id="s3" data-effort-hours="3.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+    <p><strong>Deliverable.</strong> <code>reckon evidence synthesize</code> writes a plan's closure overview from the plan's sections and done-whens, its section landing comments, its committed run records, its stored reviews and the figures its runs named. It reads no fragment. The overview holds, in order: one paragraph per section giving what the section set out to do, its landing line verbatim, and the measured result; one table with one row per landed node; every named figure with its caption; and totals for runs, attempts per landed section, review findings and their disposal, and worker hours against declared effort. A section with no landing gets one sentence giving its declaration and that nothing landed. Every factual sentence and every table row carries its source: a commit, a run id, a gate command with its exit status, a gate log path, or a figure path.</p>
+    <p><strong>Done when</strong> a new test file shows, over a temporary repository with a ledger, one figure and a three-section plan of which two sections landed: the overview carries one paragraph per section and each quotes that section's landing comment; no factual sentence lacks a source element; a node with three attempts renders one table row that states three attempts; the gate command, its exit status, the tests-added count and the suite failure count held on a run record each appear in the overview with that run's id as source; the section that did not land renders one sourced sentence stating its declaration and no landing line; the figure appears with a project-absolute <code>src</code> and its caption; a marker string placed only in a fragment file does not appear in the overview; and the overview passes <code>reckon audit-doc</code>. Negative controls: a renderer that emits a sentence with no source fails the second case, one row per run fails the third, a renderer that omits the run record's figures fails the fourth, and a renderer that skips an unlanded section fails the fifth. The test files that import <code>reckon.evidence</code> add no failure against the base revision, and ruff adds no finding on the staged paths.</p>
+
+    <h2 id="s4">§4 — A plan does not close over a section with no landing line</h2>
+<section data-reckon="section" data-id="s4" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+    <p><strong>Deliverable.</strong> Without fragments, the landing line is the only prose account of a section. The <code>close</code> operation refuses a plan that holds a section which states a done-when, is declared <code>done</code>, and has neither a landing comment nor a run record, and names each such section. A section that states no done-when, such as a section giving the plan's reasons, is outside the rule. A section that was done before this rule can be given its landing comment through the ordinary comment operation.</p>
+    <p><strong>Done when</strong> a new test file shows: closing a plan whose done sections each have a landing comment succeeds; closing one with a done section that states a done-when and has neither a landing comment nor a run record is refused and the refusal names the section; adding the comment lets the same close succeed; and a done section that states no done-when and has no comment does not stop a close. Negative controls: with the check removed, the second close succeeds, and a check that ignores whether the section states a done-when refuses the fourth. The new refusal is also run against the live store, and the count of open plans it would refuse is recorded in the manifest. The test files that import the close operation add no failure against the base revision.</p>
+
+    <h2 id="s5">§5 — A closing sprint gets one page</h2>
+<section data-reckon="section" data-id="s5" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+    <p><strong>Deliverable.</strong> Closing a sprint writes one page with a row per member plan (status, sections landed, runs, worker hours and the plan's headline result) and the figures those plans' overviews carry. Every link on the page resolves.</p>
+    <p><strong>Done when</strong> a new test file shows, over a temporary project with a three-plan sprint: the page has three rows whose counts equal those in each plan's overview; a plan with no overview is listed with its status and no broken link; every <code>href</code> and <code>src</code> on the page resolves to a file in the repository; and the page passes <code>reckon audit-doc</code>. Negative control: a row linking a plan with no overview fails the third case. The test files that import the sprint close add no failure against the base revision.</p>
+
+    <h2 id="s6">§6 — A landing writes no fragment</h2>
+<section data-reckon="section" data-id="s6" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="deferred" data-links=""></section>
+    <p><strong>Deferred</strong> until the per-node-fragment decision is settled. The endpoint below is written for the answer that no node writes a fragment; another answer changes it before this section is built.</p>
+    <p><strong>Deliverable.</strong> An implementation node is no longer asked for a per-node evidence fragment, and a landing no longer splices one into the plan's landed record. A node leaves its landing line, its run record, its gate log and any figure §2 asks for. The worker contract, the build skill and its references, and the edit, create and sprint skills state this, and none of them asks for a per-node fragment or a per-landing splice. Fragments and landed records already on disk stay readable and are not rewritten; what becomes of them is the second decision below.</p>
+    <p><strong>Done when</strong> a new test file shows: the composed implementation prompt names no fragment path; a manifest with a landing line and no fragment passes the manifest check; a promotion of such a run succeeds and records the landing; and an existing fragment still renders through the served page. A search of the skill files for the fragment requirement and the per-landing splice returns none, and its output is in the gate log. Negative control: with the fragment clause restored to the prompt, the first case fails. The test files that import the prompt composer or the manifest check add no failure against the base revision, and ruff adds no finding on the staged paths.</p>
+
+    <section data-reckon="decisions" id="decisions" class="r-decisions">
+      <h2><span class="sec">§</span> Decisions</h2>
+      <div class="r-dec" data-key="per-node-fragment" data-choice="" data-by="" data-when="">
+        <p class="r-dec-q">Should any node still write a per-node fragment?</p>
+        <p class="r-dec-opts">
+          <button class="r-opt" data-value="none">No node writes one</button>
+          <button class="r-opt" data-value="optional">Optional, for a negative result or a mechanism that does not fit a landing line</button>
+          <button class="r-opt" data-value="keep">Keep the requirement as it is</button>
+        </p>
+        <p class="r-dec-rat"></p>
+      </div>
+      <div class="r-dec" data-key="existing-fragments" data-choice="" data-by="" data-when="">
+        <p class="r-dec-q">What becomes of the 1,923 fragments and 213 landed records already on disk?</p>
+        <p class="r-dec-opts">
+          <button class="r-opt" data-value="leave">Leave them in place, frozen</button>
+          <button class="r-opt" data-value="archive">Move fragments of closed plans to the archive</button>
+          <button class="r-opt" data-value="replace">Replace each closed plan's record with a closure overview, then remove its fragments</button>
+        </p>
+        <p class="r-dec-rat"></p>
+      </div>
+    </section>
+
+    <section data-reckon="followups" id="followups" class="r-followups">
+      <h2><span class="sec">§</span> Followups</h2>
+      <article class="r-fu" data-id="f-alro-001" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-create" data-written-at="2026-11-15" data-recommends-skill="/reckon-build a-landing-is-recorded-once" data-resolved-at="" data-resolved-by="">
+        <h4 class="r-fu-title">Build once the lead adopts the plan and settles both decisions</h4>
+        <div class="r-fu-body"><p>§2, §3 and §4 are independent. §3 waits on §2 for the figures a run names, §4 is independent, and §5 waits on §3. §6 is deferred until the per-node-fragment decision is settled, and then waits on §3 and §4, so the fragment requirement is removed only after the overview and the closure guard exist.</p></div>
+        <pre class="r-fu-prompt">/reckon-build a-landing-is-recorded-once</pre>
+      </article>
+    </section>
+  </main>
+</body>
+</html>

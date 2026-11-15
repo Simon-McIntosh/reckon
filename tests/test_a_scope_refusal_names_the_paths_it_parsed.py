@@ -12,9 +12,10 @@ The audit names the reading instead: when a stray item's own whitespace-separate
 parts each lie within the declared write scope, it is a space-separated list, and
 one finding names the field, the single item parsed and the comma rule, in place
 of a scope finding for that item. The parse is unchanged, so the space-separated
-value stays a defect the worker fixes. A genuinely stray path still draws a scope
-finding, and every stray path is quoted, so a single path can never read as
-several.
+value stays a defect the worker fixes. A stray path of a class a merge cannot
+reconcile still draws a scope finding, and every stray path is quoted, so a
+single path can never read as several. A companion source path draws none: the
+declaration is a hint rather than a fence.
 
 The accepted forms are asserted beside the refusal: the same three paths written
 comma-separated raise no scope finding, and a path outside the declaration that
@@ -45,8 +46,13 @@ DECLARED_PATHS = (
 SPACE_SEPARATED = " ".join(DECLARED_PATHS)
 COMMA_SEPARATED = ", ".join(DECLARED_PATHS)
 
-# A path the node never declared, and so never wrote.
+# A path the node never declared, and so never wrote. It is a source file, and a
+# source file is advisory, so it draws no scope finding at all.
 STRAY_PATH = "src/power_convertor/switched_circuit.py"
+
+# A path whose class a merge cannot reconcile, so an undeclared one is still a
+# stray the audit reports. A figure topic is replaced wholesale.
+MERGE_UNSAFE_STRAY = "docs/figures/another-topic/plot.svg"
 
 SCOPE_PREFIX = "changed paths outside the write scope:"
 
@@ -110,21 +116,32 @@ def test_the_same_paths_comma_separated_draw_no_finding(tmp_path: Path) -> None:
     assert _scope_findings(audit["findings"]) == []
 
 
-def test_a_genuinely_stray_path_is_reported_quoted(tmp_path: Path) -> None:
-    # A path outside the declaration is a stray, and the scope finding quotes it,
-    # so a single path can never read as several.
+def test_a_merge_unsafe_stray_path_is_reported_quoted(tmp_path: Path) -> None:
+    # An undeclared path whose class a merge cannot reconcile is a stray, and the
+    # scope finding quotes it, so a single path can never read as several.
+    audit = _audit(MERGE_UNSAFE_STRAY, tmp_path)
+    assert _separation_findings(audit["findings"]) == []
+    assert _scope_findings(audit["findings"]) == [
+        f'{SCOPE_PREFIX} "{MERGE_UNSAFE_STRAY}"'
+    ]
+
+
+def test_a_companion_source_path_draws_no_scope_finding(tmp_path: Path) -> None:
+    # A declaration is a hint. A source file beside the declared ones is not a
+    # stray: the worktree isolates the edit and the merge reconciles it.
     audit = _audit(STRAY_PATH, tmp_path)
     assert _separation_findings(audit["findings"]) == []
-    assert _scope_findings(audit["findings"]) == [f'{SCOPE_PREFIX} "{STRAY_PATH}"']
+    assert _scope_findings(audit["findings"]) == []
 
 
-def test_a_joined_item_naming_a_path_outside_the_scope_stays_a_stray(
+def test_a_joined_item_naming_companion_source_paths_draws_no_scope_finding(
     tmp_path: Path,
 ) -> None:
-    # A joined value whose parts are not all in scope is not a space-separated
-    # list of declared paths, so it is refused as the stray item it is, quoted
-    # whole.
+    # The parser splits a space-separated value on whitespace, so the audit never
+    # receives one joined item; its parts are both source paths here, so neither
+    # is a stray and the audit reports nothing. The space-separated branch of
+    # _write_scope_findings is therefore unreachable from changed_paths.
     joined = f"{DECLARED_PATHS[0]} {STRAY_PATH}"
     audit = _audit(joined, tmp_path)
     assert _separation_findings(audit["findings"]) == []
-    assert _scope_findings(audit["findings"]) == [f'{SCOPE_PREFIX} "{joined}"']
+    assert _scope_findings(audit["findings"]) == []

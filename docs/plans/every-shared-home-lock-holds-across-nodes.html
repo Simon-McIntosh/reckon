@@ -20,13 +20,13 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-depends-on" content="a-plan-state-lock-holds-on-every-node">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;implementable&quot;}">
   <meta name="plan-section-depends-on" content="{&quot;s3&quot;:[&quot;every-shared-home-lock-holds-across-nodes#s2&quot;],&quot;s4&quot;:[&quot;every-shared-home-lock-holds-across-nodes#s2&quot;],&quot;s5&quot;:[&quot;every-shared-home-lock-holds-across-nodes#s2&quot;],&quot;s6&quot;:[&quot;every-shared-home-lock-holds-across-nodes#s3&quot;,&quot;every-shared-home-lock-holds-across-nodes#s4&quot;,&quot;every-shared-home-lock-holds-across-nodes#s5&quot;]}">
   <title>Every shared-home lock holds across nodes | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="17">
-<meta name="plan-modified" content="2026-11-14">
+<meta name="plan-version" content="22">
+<meta name="plan-modified" content="2026-11-15">
 </head>
 <body>
   <main class="plan-doc">
@@ -86,7 +86,7 @@
 <p><strong>Write paths.</strong> <code>tests/test_every_shared_home_lock_holds_across_nodes.py</code> and <code>docs/state/reckon/flight.yaml</code>.</p>
 
     <h2 id="s3">§3 — Run, queue, landing and ledger locks exclude across nodes</h2>
-<section data-reckon="section" data-id="s3" data-effort-hours="2.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="implementable" data-links=""></section>
+<section data-reckon="section" data-id="s3" data-effort-hours="2.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="done" data-links=""></section>
 <p><strong>Deliverable.</strong> These seven locks take the cross-node lock:</p>
 <ul>
   <li>in <code>reckon/crew/runs.py</code>: <code>_pointer_lock</code>, <code>queue_dispatch</code> and <code>update_watch_registration</code>;</li>
@@ -106,7 +106,7 @@
 <p><strong>Write paths.</strong> <code>reckon/crew/runs.py</code>, <code>reckon/ledger.py</code>, <code>reckon/crew/queue_landing.py</code>, <code>reckon/crew/admission/service.py</code>, <code>reckon/crew/placement.py</code>, the guard test file, and new test files under <code>tests/</code>.</p>
 
     <h2 id="s4">§4 — Store, review and recovery locks exclude across nodes</h2>
-<section data-reckon="section" data-id="s4" data-effort-hours="2.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="implementable" data-links=""></section>
+<section data-reckon="section" data-id="s4" data-effort-hours="2.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="done" data-links=""></section>
 <p><strong>Deliverable.</strong> These nine locks take the cross-node lock:</p>
 <ul>
   <li><code>reckon/_store.py</code> <code>_serialized_path_lock</code>;</li>
@@ -190,7 +190,13 @@
     <div class="r-comment-body"><p>independent review of r-20261114T135734165051-run-landing-ledger-locks-cross-node at base 63b51b8337c4d61f3fc0b93d25ffb048273ed293, head e48cf2ab3bdc45a1fc582c95ee117d1b328885f1; six dimensions scored goal_fidelity 20, evidence 17, scope_discipline 20, durability 20, fit 18, reuse 20 (total 115); added_failure_count 0; three non-blocking findings.</p></div>
 </div>
 <div class="r-comment" data-section="s3" data-id="c-run-r-20261114T212841353303-review-of-run-landing-ledger-locks-cross-node-4279e96a28ab" data-who="reckon-build" data-when="2026-11-14T22:09:01.346Z">
-    <div class="r-comment-body"><p>Review of run r-20261114T135734165051-run-landing-ledger-locks-cross-node at base 63b51b8337c4d61f3fc0b93d25ffb048273ed293 and head 4279e96a28abb976573dd48694d4595a2b0d9207: all six dimensions scored (goal_fidelity 20, evidence 15, scope_discipline 20, durability 20, fit 18, reuse 18), five non-blocking findings, added_failure_count 0 from the reviewed run&#x27;s baseline_suite and after_suite arms (both EXIT=0); verdict: the seven locks do take the cross-node lock and the refusal/busy answers are preserved and shown to fail at base, with record-accuracy findings only.</p></div>
+    <div class="r-comment-body"><p>Review of run r-20261114T135734165051-run-landing-ledger-locks-cross-node at base 63b51b8337c4d61f3fc0b93d25ffb048273ed293 and head 4279e96a28abb976573dd48694d4595a2b0d9207: all six dimensions scored (goal_fidelity 20, evidence 15, scope_discipline 20, durability 20, fit 18, reuse 18), five non-blocking findings, added_failure_count 0 from the reviewed run's baseline_suite and after_suite arms (both EXIT=0); verdict: the seven locks do take the cross-node lock and the refusal/busy answers are preserved and shown to fail at base, with record-accuracy findings only.</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-close-s3" data-who="reckon-build" data-when="2026-11-15T00:20:00Z">
+    <div class="r-comment-body"><p>Landed: the seven run, queue, landing and ledger lock sites take the cross-node lock, and their pending rows are gone. Re-review r-20261114T212841353303 found nothing blocking. Evidence is at anchor s3-run-landing-ledger-landed.</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20261114T135734165051-run-landing-ledger-locks-cross-node" data-who="reckon-build" data-when="2026-11-14T22:50:42Z">
+    <div class="r-comment-body"><p>Run, queue, watch-registration, landing-pass, admission-pass, reservation and ledger-write locks now take the cross-node record lock, and the guard's seven rows for them are gone. A second process holding only the record lock refuses the pointer take and makes the landing pass busy, where the base revision sees the lock free and fails both. The repaired merge head is d260dbcaa9, after merges against primary a946964dd3 and 6eff5826; the delivery commits a355eac555, bcbe687be0 and e48cf2ab3b remain its ancestors.</p></div>
 </div>
 <div class="r-comment" data-section="s4" data-id="c-run-r-20261114T191620527558-review-of-git-answer-and-resumption-locks-cross-node-3766d298f9ef" data-who="reckon-build" data-when="2026-11-14T19:35:56.210Z">
     <div class="r-comment-body"><p>Independent review of run r-20261114T140151869239-git-answer-and-resumption-locks-cross-node at head 3766d298f9ef572879b95d0d7b2bf2be14cca8b0 against base ffcba6679c7cb5812709911217e6cf43ebbe9870 scored goal_fidelity 20, evidence 19, scope_discipline 20, durability 19, fit 13, reuse 19, with added_failure_count 0 and one non-blocking finding (four blank lines left in reckon/crew/resumption.py where the deleted lock context managers stood, so ruff format --check regresses on that file).</p></div>
@@ -213,6 +219,12 @@
 <div class="r-comment" data-section="s4" data-id="c-run-r-20261114T205443513907-review-of-review-dispatch-and-index-lag-locks-cross-node-edd2e01e1ee9" data-who="reckon-build" data-when="2026-11-14T22:07:19.988Z">
     <div class="r-comment-body"><p>Review at edd2e01e1ee9 parsed and stored: six dimensions scored 19/14/16/18/18/20 (total 105), 0 added failures, two non-blocking findings (the review_records.py index-lock docstring still overclaims cross-node serialisation; the source manifest undercounts the tests that open dispatch.lock).</p></div>
 </div>
+<div class="r-comment" data-section="s4" data-id="c-run-r-20261114T140123157216-review-dispatch-and-index-lag-locks-cross-node" data-who="reckon-build" data-when="2026-11-14T22:21:59Z">
+    <div class="r-comment-body"><p>§4: the review dispatch lock and the index-lag seen-set lock take reckon.node_exclusive_lock.exclusive_lock; a second-process record-lock holder makes the dispatch return its moved-on result without launching (after arm 57 passed, baseline 55 passed, negative control 1 failed at base), and both rows leave the guard's pending table.</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-close-s4" data-who="reckon-build" data-when="2026-11-15T00:45:00Z">
+    <div class="r-comment-body"><p>Landed in three nodes: git answer and resumption, store and review index, and review dispatch and index lag. Every §4 lock site takes the cross-node lock, and the guard's pending table is empty on main. Evidence is at anchor s4-store-review-recovery-landed.</p></div>
+</div>
 <div class="r-comment" data-section="s5" data-id="c-run-r-20261114T185131299174-review-of-lane-budget-picker-locks-cross-node-4634a0bd4d16" data-who="reckon-build" data-when="2026-11-14T19:08:49.699Z">
     <div class="r-comment-body"><p>independent review of r-20261114T135814761240-lane-budget-picker-locks-cross-node at base 65431adf17b56c3a1fb04f32971d7729e4108dcc, head 4634a0bd4d16c9182934d7cff27798cc6df68ec3; six dimensions scored 19/19/20/17/19/19 (total 113); added_failure_count 0; two non-blocking findings.</p></div>
 </div>
@@ -221,6 +233,9 @@
 </div>
 <div class="r-comment" data-section="s5" data-id="c-run-r-20261114T135814761240-lane-budget-picker-locks-cross-node" data-who="reckon-build" data-when="2026-11-14T18:45:14.240Z">
     <div class="r-comment-body"><p>moved the banked-reset, model-catalogue refresh, paid-lane document and picker-hold locks onto reckon.node_exclusive_lock.exclusive_lock and removed their five rows from the guard's pending table; the guard passes, and a second-process POSIX record-lock holder makes the picker's hold wait and the catalogue refresh read the snapshot instead of fetching (both fail at the base revision).</p></div>
+</div>
+<div class="r-comment" data-section="s6" data-id="c-run-r-20261115T024642936328-review-of-pending-table-empty-and-two-node-measure-3f78bafccf36" data-who="reckon-build" data-when="2026-11-15T03:43:25.110Z">
+    <div class="r-comment-body"><p>review of r-20261114T143516235536-pending-table-empty-and-two-node-measure at base fd241e76aa31cb94279d0bfd6d20861df6f353c1 head 3f78bafccf36041a94747a651f359d830cd4de01; scores goal_fidelity 19, evidence 19, scope_discipline 20, durability 17, fit 18, reuse 18; added_failure_count 0; two non-blocking findings, both about assertion strength</p></div>
 </div>
 </section>
 </main>

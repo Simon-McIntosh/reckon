@@ -41,10 +41,10 @@ from reckon.crew.repair import round_node_source
 from reckon.crew.reports import (
     TERMINAL_MANIFEST_STATUSES,
     ManifestParseError,
-    _png_twin_findings_for_base,
     parse_manifest,
 )
 from reckon.crew.routing import (
+    _git,
     _signal_process_group,
     run_directory_of,
 )
@@ -610,6 +610,81 @@ def _require_no_manifest_fault(run_id: str, record: Mapping[str, Any]) -> None:
     raise CrewError(f"run {run_id!r} cannot be promoted: " + "; ".join(reasons))
 
 
+def _commit_added_paths(tree: Path, commit: str) -> tuple[str, ...]:
+    """The paths one commit adds, read from that commit's own diff.
+
+    A commit's diff names the paths the commit moved, so the read costs the
+    change rather than the tree's whole file list, which is what a base-to-head
+    listing costs on a repository carrying thousands of files.
+    """
+    result = _git(
+        tree,
+        "diff-tree",
+        "--no-commit-id",
+        "--no-renames",
+        "--diff-filter=A",
+        "--name-only",
+        "-r",
+        commit,
+        check=False,
+    )
+    if result.returncode:
+        return ()
+    return tuple(line.strip() for line in result.stdout.splitlines() if line.strip())
+
+
+def _commit_holds_path(tree: Path, commit: str, path: str) -> bool:
+    """Whether ``commit``'s own tree carries ``path``."""
+    return _git(tree, "cat-file", "-e", f"{commit}:{path}", check=False).returncode == 0
+
+
+def _png_twin_findings_in_run_commits(record: Mapping[str, Any]) -> list[str]:
+    """The PNG twins this run's own commits add beside an SVG of the same stem.
+
+    The twin is judged on the commits the run cites rather than on everything
+    that appeared since its base: a peer's commit, or the content a merge
+    brought from the integration branch, is not this run's work, and a
+    base-to-head diff charges all of it, so a run is refused for a copy it
+    never made. Each cited commit is read through its own diff, and the SVG is
+    looked for in that same commit, so neither the tree's whole file list nor
+    any other run's paths are consulted.
+
+    A run that cites no commit adds nothing to a commit, so it carries no twin
+    to find. A record naming no readable tree measures no commit either: the
+    diff belongs to the run's own tree, and the directory the promotion happens
+    to run in cannot supply it.
+    """
+    tree = _record_tree(record)
+    if tree is None:
+        return []
+    declared = [
+        str(entry).strip()
+        for entry in _declared_manifest_commits(record)
+        if str(entry).strip()
+    ]
+    if not declared:
+        return []
+    resolved = _resolve_commits(
+        cwd=tree, revisions=declared, run_id=str(record.get("run_id") or "")
+    )
+    findings: list[str] = []
+    for commit in resolved:
+        pngs = [
+            path for path in _commit_added_paths(tree, commit) if path.endswith(".png")
+        ]
+        for png in sorted(pngs):
+            svg = png[:-4] + ".svg"
+            if not _commit_holds_path(tree, commit, svg):
+                continue
+            findings.append(
+                f"{png} adds a PNG twin of the SVG figure {svg} in the same "
+                "directory; the figure rule keeps one SVG per figure and bans a "
+                "PNG copy beside it, because the page renders the SVG and the copy "
+                f"drifts out of step, so remove {png}"
+            )
+    return findings
+
+
 def _require_no_png_twin_of_an_svg(run_id: str, record: Mapping[str, Any]) -> None:
     """Refuse a promotion whose commits add a PNG twin of an SVG figure.
 
@@ -617,26 +692,12 @@ def _require_no_png_twin_of_an_svg(run_id: str, record: Mapping[str, Any]) -> No
     because the reckon page renders the SVG and the copy drifts out of step. A
     worker that rasterises its SVG to look at it leaves exactly that copy in the
     tree, and the same finding reaches the worker through ``crew check
-    --manifest`` while it can still remove it. The check reads the run's commits
-    from its base to its head rather than the working tree, so a PNG the run
-    rendered and never committed is not a finding; a PNG already present at base
-    is not one either.
-
-    The base is the revision the run was dispatched from, which is the same
-    revision the manifest records at orientation, so the check and the audit
-    judge one diff.
+    --manifest`` while it can still remove it. The check reads the commits the
+    run cites rather than the working tree, so a PNG the run rendered and never
+    committed is not a finding, and a PNG a peer's commit or a merged branch
+    brought in is not charged to this run.
     """
-    base = str(record.get("base_sha") or "").strip()
-    if not base:
-        manifest = _fresh_manifest(record)
-        if manifest is None:
-            return
-        base = str(manifest.get("orientation_base_sha") or "").strip()
-    worktree = Path(str(record["worktree"])) if record.get("worktree") else None
-    repository = Path(str(record["repo"])) if record.get("repo") else worktree
-    findings = _png_twin_findings_for_base(
-        base, worktree=worktree, repository=repository
-    )
+    findings = _png_twin_findings_in_run_commits(record)
     if findings:
         raise CrewError(f"run {run_id!r} cannot be promoted: " + "; ".join(findings))
 
@@ -2679,9 +2740,16 @@ def _landing_scope_products(
                     f"run {run_id!r} records an invalid claim before accepted paths"
                 )
             declared = before_acceptance
-        outside = _outside_declared_scope(
-            cumulative.paths,
-            declared,
+        # The declaration is a hint: only a path whose class a merge cannot
+        # reconcile needs a coordinator's acceptance, so a companion source file
+        # beside the declared one lands on its own.
+        outside = _changed_artifacts_needing_acceptance(
+            _outside_declared_scope(
+                cumulative.paths,
+                declared,
+                record=record,
+                tree=tree,
+            ),
             record=record,
             tree=tree,
         )
@@ -3443,8 +3511,10 @@ from reckon.crew.promotion_release import (
 )
 from reckon.crew.promotion_scope import (
     _accepted_scope_exceptions,
+    _changed_artifacts_needing_acceptance,
     _changed_paths_declare_no_paths,
     _changed_paths_inside_repository,
+    _declared_manifest_commits,
     _is_shadow,
     _outside_declared_scope,
     _require_committable_checkout,

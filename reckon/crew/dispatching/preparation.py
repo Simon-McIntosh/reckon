@@ -931,6 +931,11 @@ def dispatch(
         )
         held = LaneHeld({"detail": hold["detail"], "reason": hold["reason"]})
         held.queued = {
+            # A node with no stored request is created by this call, so the
+            # answer reports it as created rather than naming the run back as
+            # one that was already waiting.
+            "created": existing is None,
+            "backend": backend_name,
             "run_id": str(queued["run_id"]),
             "position": position,
             # A request the writer could not move off ``queued`` is reported

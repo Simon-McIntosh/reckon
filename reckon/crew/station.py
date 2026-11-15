@@ -19,6 +19,7 @@ from reckon import checkout_trust, flight
 from reckon.crew import (
     census,
     dispatch_claims,
+    follower_registration,
     follower_reload,
     obligation_snapshot,
     recovery,
@@ -58,6 +59,22 @@ SWEEP_CONCURRENCY = 4
 # no session of its own, so it takes the shared slot a hand-run pass uses
 # rather than a follower's per-session entry.
 SWEEP_WRITER = {"kind": "other", "key": "station"}
+
+# How often the station clears follower registrations whose session has ended.
+# A released registration is dead as soon as its follower exits, so an hourly
+# pass bounds a registry that otherwise grows by one file per session that ever
+# followed a project. The pass opens every registration in every project to take
+# its lock, which is too much for the five-second beat, so the station records
+# when it last ran rather than reusing a single session's change signal: no
+# session's departures are what make a registry grow.
+FOLLOWER_PRUNE_BEAT_SECONDS = 60 * 60
+
+# How old a released registration must be before the station removes it. The
+# lock, not the age, is what keeps a delivering follower: a follower armed in
+# the morning and still delivering at night survives whatever its file says. The
+# day keeps a session that released and re-armed moments later, as at a
+# re-exec, from being removed between the two.
+FOLLOWER_REGISTRATION_RETENTION_SECONDS = 24 * 60 * 60
 
 
 class StationHeldError(RuntimeError):
@@ -767,6 +784,9 @@ def station_lease(root: Path) -> HostLease:
 #: The station value under which each project's announced reset ids are kept.
 _ANNOUNCED_RESETS_KEY = "announced-resets"
 
+#: The station value holding when the follower registries were last pruned.
+_FOLLOWER_PRUNE_KEY = "followers-pruned-at"
+
 
 class StationReloader:
     """Replace the station with a proved image from the node's runtime root."""
@@ -980,6 +1000,48 @@ class Station:
             f"{_ANNOUNCED_RESETS_KEY}:{project}", json.dumps(sorted(announced))
         )
 
+    def _prune_released_followers(self, moment: datetime) -> list[dict[str, Any]]:
+        """Remove each project's registrations for sessions that ended long ago.
+
+        Called from the tick's maintenance stage, never from a read path: the
+        sweep takes each registration's lock before unlinking it, and doing that
+        on a read path races a follower opening the same path. The sweep's own
+        non-blocking lock is the liveness check — a held lock means a follower
+        is delivering now, whatever its file's age — so only a registration
+        feeding an ended session and older than a day is a candidate at all.
+
+        The registries grow one file per session that has ever followed a
+        project, which no single session's change announces, so the pass is due
+        on the station's own hourly clock rather than on a fleet change.
+        """
+        last = self.store.station_value(_FOLLOWER_PRUNE_KEY)
+        if last is not None:
+            try:
+                since = moment.timestamp() - datetime.fromisoformat(last).timestamp()
+            except ValueError:
+                since = None
+            if since is not None and since < FOLLOWER_PRUNE_BEAT_SECONDS:
+                return []
+        removed: list[dict[str, Any]] = []
+        for project in sorted(self.projects()):
+            removed.extend(
+                follower_registration.sweep_released_followers(
+                    project,
+                    stale_after_seconds=FOLLOWER_REGISTRATION_RETENTION_SECONDS,
+                    now=moment.timestamp(),
+                )
+            )
+        self.store.set_station_value(
+            _FOLLOWER_PRUNE_KEY, moment.astimezone(UTC).isoformat()
+        )
+        for entry in removed:
+            print(
+                f"station-pruned-follower: {entry['project']}/{entry['session']}: "
+                f"{entry['path']}",
+                flush=True,
+            )
+        return removed
+
     @operational_read
     def tick(self, *, now: datetime | None = None) -> list[dict[str, Any]]:
         """Publish every new transition, then move the heartbeat."""
@@ -1107,6 +1169,7 @@ class Station:
                 )
         self._enter(stages[4])
         self.store.sweep_retention(now=moment)
+        self._prune_released_followers(moment)
         # The finish stamp is what closes the tick for a reader: until it is
         # later than the start, a stage on record is a tick still running.
         self.store.set_station_value(

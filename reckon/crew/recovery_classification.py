@@ -185,10 +185,13 @@ def _wait_refusal_classes() -> frozenset[str]:
     """The refusals that leave a queued request waiting rather than in debt.
 
     ``QueueFull`` says the session already holds its share of queued
-    dispatches, and a ``ScopeConflict`` says a live run claims a write path the
-    request needs. A slot opens, or that run ends, whichever the refusal names;
-    nothing the session arms clears either, so both keep the waiting reading
-    and the retry back-off they are stored with.
+    dispatches, ``RosterFull`` that the placement reservation's seats are all
+    taken, and a ``ScopeConflict`` says a live run claims a write path the
+    request needs. A slot or a seat opens, or that run ends, whichever the
+    refusal names; nothing the session arms clears any of them, so they keep
+    the waiting reading and the retry back-off they are stored with. The roster
+    refusal quotes ``reckon crew complete`` for an occupying run, which read as
+    the request's own duty on every coordinator's checklist.
 
     The class family is walked rather than typed out, because a coarser claim
     kind — a directory claim overlapping a peer's exact path — is the same wait
@@ -196,9 +199,10 @@ def _wait_refusal_classes() -> frozenset[str]:
     guidance quotes a dispatch command and reads as a session duty. All of them
     name the session or quote commands, so none is legible from its text alone.
     """
+    from reckon.crew.dispatch_admission import RosterFull
     from reckon.crew.runs import QueueFull
 
-    return frozenset({QueueFull.__name__}) | _scope_claim_classes()
+    return frozenset({QueueFull.__name__, RosterFull.__name__}) | _scope_claim_classes()
 
 
 def _remedy_command_stated_by(text: str) -> str | None:
@@ -1748,7 +1752,20 @@ def classify_pointer(
     # exactly as the drain view and the stop hook judge it.
     stuck = _stuck_verdict_for(record) if phase else None
 
-    if phase in WAITING_UPSTREAM_PHASES:
+    # A pre-spawn launch past its bound with its holder gone is not waiting to
+    # start: the liveness arms read it as a failed launch, which the admission
+    # pass then releases or returns to the queue.
+    pre_spawn_waiting = phase in _PRE_SPAWN_PHASES and not _stranded_launch(
+        record, now_seconds=moment
+    )
+    # A parked phase is the launcher's statement that the request is waiting to
+    # start, and it means that only while the pointer records no worker: a pid
+    # or a launch clock on a queued request is a request that has launched, and
+    # its liveness rather than its old label decides the reading. Without this
+    # a phase label could not be left behind, and a launched request whose
+    # label had not yet advanced read as the wait it had already passed.
+    launched = bool(record.get("pid")) or bool(record.get("launched_at"))
+    if phase in WAITING_UPSTREAM_PHASES and not launched:
         classification = phase
         # A request held on a section it waits for is stored, not launched, and
         # no lane slot will release it: what releases it is the upstream section
@@ -1767,7 +1784,7 @@ def classify_pointer(
                 f"waiting for {waiting_on} to land"
             )
             action = f"wait for {waiting_on} to land"
-    elif phase == HELD_PHASE:
+    elif phase == HELD_PHASE and not launched:
         classification = HELD_PHASE
         hold = record.get("queue_hold")
         reason = str(hold.get("reason") or "") if isinstance(hold, Mapping) else ""
@@ -1775,7 +1792,7 @@ def classify_pointer(
         if reason:
             detail += f": {reason}"
         action = f"reckon crew queue release --run {run_id}"
-    elif phase == QUEUED_PHASE:
+    elif phase == QUEUED_PHASE and not launched:
         classification = "queued"
         session_refusal = _queued_failure_remedy(record)
         if session_refusal is not None:
@@ -1784,12 +1801,28 @@ def classify_pointer(
         else:
             detail = str(record.get("reason") or "waiting for a local lane slot")
             action = "wait for a local lane slot"
+    elif pre_spawn_waiting:
+        # Claimed by its launcher with no worker yet: the phase reading stands,
+        # as it does for a queued request, and it is reported as running, the
+        # reading such a run carried before the liveness arms were skipped for
+        # it. Without a classification here the arms below were skipped too,
+        # and the read raised for every row of the project.
+        classification = "running"
+        detail = (
+            f"the launcher has claimed this run ({phase}) and has not started "
+            "its worker yet"
+        )
+        action = f"reckon crew observe --run {run_id}"
     # A request that has not launched has no process, no stream and no manifest
     # for the arms below to read, and reading that absence as evidence would
     # report a stored request as a run. Its phase reading stands instead; the
     # stuck verdict still speaks, because it is about the wait rather than
     # about a worker.
-    unlaunched = phase in {QUEUED_PHASE, HELD_PHASE} or phase in _PRE_SPAWN_PHASES
+    unlaunched = (
+        phase in {QUEUED_PHASE, HELD_PHASE}
+        or phase in WAITING_UPSTREAM_PHASES
+        or pre_spawn_waiting
+    ) and not launched
     if unlaunched and stuck is None:
         pass
     elif stuck is not None:

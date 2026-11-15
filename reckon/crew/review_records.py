@@ -77,7 +77,16 @@ def _tick_store(directory: Path) -> dict[Path, os.stat_result] | None:
     # freshness of a writer-maintained index costs.
     document = store_index_document(directory)
     if document is not None:
-        return _document_stat_view(directory, document, stores)
+        key = (str(document.get("generation") or ""), int(document.get("version") or 0))
+        held = _DOCUMENT_STAT_VIEWS.get(directory)
+        if held is not None and held[0] == key:
+            files = held[1]
+            if stores is not None:
+                stores[directory] = files
+            return files
+        files = _document_stat_view(directory, document, stores)
+        _DOCUMENT_STAT_VIEWS[directory] = (key, files)
+        return files
     selected = open_run_index.review_paths(directory)
     if selected is not None:
         files = {}
@@ -108,6 +117,13 @@ def _tick_store(directory: Path) -> dict[Path, os.stat_result] | None:
             pass
         stores[directory] = files
     return stores[directory]
+
+
+# One stat view per store, replaced when its writer advances the document.
+# Generation distinguishes a rebuilt index whose version repeats a prior one.
+_DOCUMENT_STAT_VIEWS: dict[
+    Path, tuple[tuple[str, int], dict[Path, os.stat_result]]
+] = {}
 
 
 def _document_stat_view(

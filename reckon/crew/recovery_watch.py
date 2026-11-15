@@ -14,6 +14,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Callable, Iterable, Iterator, Mapping, Sequence
 
+from reckon import file_memo
 from reckon._timestamps import parse_utc
 from reckon.crew import metering, obligation_snapshot, quota_weight, runs
 from reckon.crew.host_lease import LEASE_RENEW_SECONDS
@@ -111,6 +112,7 @@ _GIT_ANSWER_STORE_FILENAME = "git-object-answers.json"
 _GIT_ANSWER_STORE_VERSION = 1
 _GIT_ANSWER_STORE_WORKTREES = 256
 _GIT_ANSWER_STORE_CANDIDATES = 512
+_GIT_ANSWER_STORE_KIND = "git_answer_store"
 
 
 def _git_answer_store_path() -> Path:
@@ -161,7 +163,21 @@ def _read_git_answer_store() -> dict[str, Any]:
     one, because the only answers offered are ones a previous git run gave for
     these exact object ids. Anything the reader does not recognise is treated
     as corrupt rather than guessed at.
+
+    The parsed copy lives in the shared file memo under the file's own identity.
+    One sweep asks this store for nearly every citation it composes, and a fresh
+    read of the file per question is the read the census named: a steady station
+    opened the same file hundreds of times in one tick to learn that no other
+    process had written it. The identity is the stat identity, so a write by
+    another process — which rewrites the file through a rename — misses the held
+    copy on the next read.
     """
+    return file_memo.memoized(
+        _GIT_ANSWER_STORE_KIND, _git_answer_store_path(), _parse_git_answer_store
+    )
+
+
+def _parse_git_answer_store() -> dict[str, Any]:
     try:
         payload = json.loads(_git_answer_store_path().read_text(encoding="utf-8"))
     except (OSError, ValueError, UnicodeDecodeError):
@@ -241,13 +257,20 @@ def _update_git_answer_store(mutate: Callable[[dict[str, Any]], None]) -> None:
     lock_path = path.with_name(f"{path.name}.lock")
     try:
         with exclusive_lock(lock_path):
-            store = _read_git_answer_store()
+            # Parsed fresh under the lock: the held copy may predate another
+            # process's write, and a change applied to it would drop that write.
+            store = _parse_git_answer_store()
             mutate(store)
             _bound_git_answer_store(store)
             payload = json.dumps(store, sort_keys=True)
             temporary = path.with_name(f".{path.name}.{os.getpid()}.tmp")
             temporary.write_text(payload, encoding="utf-8")
             os.replace(temporary, path)
+            # The write is this process's own, so the copy it just persisted is
+            # the one a later read should hold rather than re-parsing it. A path
+            # that cannot be stat'd after the rename holds nothing to key on, and
+            # is left for the next read to parse.
+            file_memo.memoized(_GIT_ANSWER_STORE_KIND, path, lambda: store)
     except OSError:
         return
 
@@ -2262,16 +2285,24 @@ def fleet_transitions(
             (departed, str(known[run_id]["state"]), _departure_word(run_id, recorded))
         )
     for run_id in (item for item in current if item not in known):
+        # A launched run still opens as a dispatch, so the pane's arrival and
+        # start rows keep the pair they were built around. A request that has
+        # not launched opens in the state its own pointer supports instead:
+        # painting every arrival as dispatched drew held and parked work as a
+        # worker that had started.
+        observed = str(current[run_id].get("state") or "")
+        arrival_state = "dispatched" if observed in FLEET_WORKING_STATES else observed
+        arrival_state = arrival_state or "dispatched"
         changes.append(
             (
                 {
                     **current[run_id],
-                    "state": "dispatched",
+                    "state": arrival_state,
                     "detail": "",
                     "needs_help_complete": None,
                 },
                 None,
-                "dispatched",
+                arrival_state,
             )
         )
     for run_id in (item for item in current if item in known):

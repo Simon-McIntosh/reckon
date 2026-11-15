@@ -1,0 +1,84 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/crew_follow_commands.py:1929 (_check_consumer on the follower's wait pass)",
+    "reckon/crew_follow_commands.py:3780 (BrokenPipeError catch around the follow stream)",
+    "reckon/crew_follow_commands.py:3191 (@crew.command follow, the production entry)",
+    "reckon/crew/session_host.py:376 (builds the crew follow argv the host runs)",
+    "reckon/crew/watch_unit.py:1621 (launches follow) ",
+    "reckon/crew/follower_registration.py:137 (_pipe_reader_pids, the read-end walk the probe calls)"
+  ],
+  "completed_at": "2026-11-15T01:04:00.303Z",
+  "dispatched_at": "2026-11-15T00:06:07Z",
+  "findings": [
+    {
+      "file": "tests/test_a_follower_with_a_reader_outlives_its_arming_shell.py",
+      "line": "363",
+      "severity": "non-blocking",
+      "text": "the first case proves survival, not streaming: it asserts the follower process is alive (:363, :369) and holds a registration naming its pid (:374), and its own docstring (:353) states no row is observed because there is no producer. The deliverable is 'keeps streaming', and scratch/both.log records an earlier arm that measured wait passes and failed at 0 passes, which is the measurement that would have shown the stream loop walking; it was removed. The second case (:391) does show the loop notices the reader closing within 8.5 s, so the loop is running, but no assertion in the file shows a produced row reaching the reader."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261114T101135327049-follower-outlives-arming-shell-s134/manifest.md",
+      "line": "10",
+      "severity": "non-blocking",
+      "text": "the population delta (0 added, 0 removed, 14 identical ids) is measured at c7de78b608, which is two commits before the reviewed head; the final source commit d607ab56c0 changes the descriptor-kind branch that a population test arming a follower could reach. The done_when asks for the population arm to add no failure, and the receipt predates the change it is offered for."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261114T101135327049-follower-outlives-arming-shell-s134/scratch/head-gate-partition.log",
+      "line": "1",
+      "severity": "non-blocking",
+      "text": "the two sibling guard files the done_when requires to still pass were last measured at b1438940532c (this log, 60 passed, EXIT=0), and d607ab56c0 is the later source commit that narrows the non-FIFO branch to False. The guards arm their followers with a regular-file stdout, which the narrowed rule answers with the base behaviour, so they are expected to pass; expected is not measured, and no log records them at the reviewed head."
+    },
+    {
+      "file": "docs/evidence/fragments/the-monitor-shows-the-work-it-watches/follower-outlives-arming-shell-s134.html",
+      "line": "43",
+      "severity": "non-blocking",
+      "text": "the fragment states that ruff check reports only SIM103 and SIM115 and that the module's format differences are pre-existing, but the only ruff receipt (scratch/ruff-head.log) runs 'ruff check' alone, so the done_when's 'ruff format --check add no findings' item has no log. Re-running both at a9dba71c37 confirms the claim: 34 format hunks at base and 34 at head with none inside the added block, and the two check findings move 95->98 and 1182->1185 with the three added imports."
+    },
+    {
+      "file": "docs/evidence/fragments/the-monitor-shows-the-work-it-watches/follower-outlives-arming-shell-s134.html",
+      "line": "34",
+      "severity": "non-blocking",
+      "text": "the fragment's table labels c7de78b608 the 'final head', but two commits follow it (b143894053, d607ab56c0) and d607ab56c0 changes source. A reader taking the table as the record of the delivered revision is reading a pre-head arm as the final one."
+    },
+    {
+      "file": "reckon/crew_follow_commands.py",
+      "line": "2662",
+      "severity": "non-blocking",
+      "text": "_stdout_has_reader re-implements the descriptor classification that reckon/crew/follower_registration.py:161 (_descriptor_kind) and :198 (delivery_mode, with its TTL'd cache and chain walk) already own, rather than extending that owner; the /proc walk itself is now properly reused through the imported _pipe_reader_pids (:25). The two policies also disagree on a character device that is not a terminal: _descriptor_kind calls every S_ISCHR 'terminal' while this function distinguishes them, so the repository now holds two answers to 'does this stdout reach a reader'."
+    }
+  ],
+  "justifications": {
+    "durability": "scratch/negative-control.log and scratch/negative-control-device.log restore the previous predicates and redden the first case and the device/descriptor-kind cases respectively, so those assertions fail if the change regresses.",
+    "evidence": "the base arm, the head gate and two negative controls are recorded with EXIT lines, but two done_when items are measured only at pre-head revisions and ruff format --check has no receipt.",
+    "fit": "reckon/crew_follow_commands.py:2662 follows the module's existing private-helper style and names only what it measures; no plan or ticket identifier appears.",
+    "goal_fidelity": "reckon/crew_follow_commands.py:1743-1755 now gates the ending on the owner being gone AND _stdout_has_reader reporting none, which is the goal's two-part rule.",
+    "reuse": "reckon/crew_follow_commands.py:2662 wraps the repository's read-end walk (follower_registration._pipe_reader_pids) but re-implements the descriptor-kind classification that follower_registration._descriptor_kind (:161) and delivery_mode (:198) already own.",
+    "scope_discipline": "git diff --stat 47d4d53612..a9dba71c37 touches only reckon/crew_follow_commands.py, the new test file and one evidence fragment, all inside the declared write paths."
+  },
+  "project": "reckon",
+  "review_run_id": "r-20261114T220839868264-review-of-follower-outlives-arming-shell-s134-a9dba71c3724",
+  "reviewed_base_sha": "47d4d536120a2e6d4356124856be6285061e6806",
+  "reviewed_head_sha": "a9dba71c37241e601ffced2e4ad4ec68fcec2173",
+  "reviewed_run_id": "r-20261114T101135327049-follower-outlives-arming-shell-s134",
+  "scores": {
+    "durability": 17,
+    "evidence": 15,
+    "fit": 16,
+    "goal_fidelity": 17,
+    "reuse": 12,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-15T01:07:13.897043+00:00",
+  "total": 96,
+  "verdicts": {
+    "diff": "read commit by commit from 47d4d53612 to a9dba71c37: 2bcfdec2f5 adds the reader substitution and the test, ee25b58b3c and b143894053 and a9dba71c37 record evidence, 686080dde6 judges re-parenting against the recorded owner, c7de78b608 widens the kind rule to sockets and terminals, d607ab56c0 narrows it back for character devices that are not terminals; three files, 582 insertions, 9 deletions.",
+    "done_when": "the done_when names tests/test_a_follower_with_a_reader_outlives_its_arming_shell.py, the two sibling guard files, a base arm, a negative control, a population arm on all_debug, and ruff. scratch/base-arm.log records the first case failing at 47d4d53612 with 'a follower ended inside the plan span' and EXIT=1; scratch/after-arm.log records 55 passed EXIT=0 at the final source revision d607ab56c0; scratch/negative-control.log records 1 failed EXIT=1 with the owner-only check restored; scratch/negative-control-device.log records 2 failed EXIT=1 with the pre-repair predicate restored; scratch/population-base.log and scratch/population-head.log record identical 14 failed / 516 passed id sets at -n 4 on all_debug (jobs 1315708, 1315721); scratch/head-gate-partition.log records the two sibling guards plus the new test at 60 passed EXIT=0, but at b143894053 which is one source commit before the final head; ruff check is logged at head (scratch/ruff-head.log, SIM103 and SIM115 only) and ruff format --check is not logged at all.",
+    "goal": "the source goal is that a follower whose arming shell has exited keeps streaming while its stdout still has a reader; reckon/crew_follow_commands.py:1741-1755 ends the arming only when the recorded owner has gone AND _stdout_has_reader (:2662) finds no reader, so the pipe case in the plan's reproduction now survives and an arming with no reader still ends as before.",
+    "manifest": "read in full: status complete, seven commits, a tests field holding the literal gate command, both suite records carrying failure_count and completed, both population arms, a subreaper experiment recorded as non-discriminating rather than claimed as evidence, and negative_control_log holding one bare path. The record the prior review refused on (a described negative_control_log, prose tests field) has been repaired.",
+    "write_paths": "the source node was fenced to reckon/crew_follow_commands.py, tests/test_a_follower_with_a_reader_outlives_its_arming_shell.py, docs/evidence/fragments/the-monitor-shows-the-work-it-watches/follower-outlives-arming-shell-s134.html and an (unused) figures directory; git diff --stat 47d4d53612..a9dba71c37 touches exactly the first three and nothing else."
+  }
+}

@@ -1,0 +1,64 @@
+<section id="wftl-a-run-s-review-is-promoted-before-the-run-and-a-landing">
+  <h2>A run waiting on a review that is promoted from this queue is not refused</h2>
+
+  <p>The queue already promoted a run's review ahead of the run when both were
+  waiting, and already requeued a run refused only for that still-queued
+  review. One state escaped both: a review whose record the reviewer is still
+  writing is parked in the
+  <code>promotion-waiting</code> phase, which sits outside the pending set, so
+  the run's requeue test saw no queued review and refused the run. The refusal
+  was then permanent, and a coordinator had to re-request work that was one
+  stored record from promoting.</p>
+
+  <p>The test below reproduces exactly that: the review's request is parked
+  while its record is written, the run is drained first (the run's id sorts
+  before the review's), and the run's receipt reads <code>promotion-refused</code>
+  where it must read <code>promotion-requested</code>. With the queued set
+  widened to include the waiting phase the run keeps its request; once the
+  review's record lands and its request leaves the waiting phase, the review is
+  promoted and the run follows it, with no second request.</p>
+
+  <p>A run with no review anywhere is still refused for the missing review, so
+  the widening does not soften the guard it protects. Two negative controls show
+  the guards fire rather than merely pass: the node's new test against the base
+  revision's module refuses the run, and the earlier review-first ordering
+  removed makes the review-order test take the run up first.</p>
+
+  <p>Commit: <code>9b3fc61ddcf95d3fc0e897e1c0b8fa7ffb20dab9</code>. Paths:
+  <code>reckon/crew/promotion_requests.py</code>,
+  <code>tests/test_review_promoted_before_its_run.py</code>.</p>
+
+  <table id="wftl-a-run-s-review-is-promoted-before-the-run-and-a-measures">
+    <caption>Measurements retained in the assigned run directory. Each gate log
+    names its revision, tree, literal command, the module imported and its
+    working directory, and ends in a bare <code>EXIT=</code> line.</caption>
+    <thead><tr><th>Measurement</th><th>Recorded result</th></tr></thead>
+    <tbody>
+      <tr><td>Head arm at <code>9b3fc61d</code>, <code>all_debug</code> job
+        1316440: the eight test files that import the changed module</td>
+        <td>3 failed, 51 passed in 166.43 s; <code>EXIT=1</code>. The three
+        failures are the same ids at the base arm, so none is added by this
+        node.</td></tr>
+      <tr><td>Base arm at <code>8410843a</code>, same job and same file list
+        resolved over the base tree</td>
+        <td>3 failed, 50 passed in 169.91 s; <code>EXIT=1</code>. The one-test
+        difference is the test this node adds, absent at base.</td></tr>
+      <tr><td>Negative control: the node's new test against the base revision's
+        module</td>
+        <td>1 failed in 2.57 s; <code>EXIT=1</code>; the run reads
+        <code>promotion-refused</code> where it must read
+        <code>promotion-requested</code>.</td></tr>
+      <tr><td>Negative control: the review-first ordering key removed, then the
+        review-order test</td>
+        <td>1 failed in 3.09 s; <code>EXIT=1</code>; the run is taken up before
+        the review, so the review-first order is what the test measures.</td></tr>
+    </tbody>
+  </table>
+
+  <p>Gate logs:
+  <code>gate-head-9b3fc61d.log</code>,
+  <code>gate-base-8410843a.log</code>,
+  <code>negative-control-base-revision.log</code> and
+  <code>negative-control-plain-name-order.log</code>, all under the node's run
+  directory.</p>
+</section>
