@@ -5055,56 +5055,14 @@ def _require_every_section_ticked(
     )
 
 
-#: The sections that were already done when the landing-rule guard landed, per
-#: project and plan. A section listed here owes no landing account: the guard
-#: refuses only a section marked done after the rule, and this record is what
-#: says which sections came before it. It is a migration record and not a rule
-#: about any project — the project and plan names are the store's own identities
-#: at the moment the rule landed (27 plans, 48 sections), and it is data
-#: the guard reads, never a name its logic branches on.
-#:
-#: A section listed here stays exempt however its plan is later edited, because
-#: the exemption is recorded rather than derived: nothing about the plan's
-#: present text can promote a section into or out of this table.
-_LANDING_RULE_EXEMPTIONS: dict[str, dict[str, tuple[str, ...]]] = {
-    'imas-ambix': {
-        'a-recorded-field-is-one-that-was-measured': ('s4',),
-    },
-    'imas-codex': {
-        'codac-uda-signals': ('s15', 's4', 's5'),
-        'sn-definitions-by-construction': ('s5',),
-    },
-    'imas-efit': {
-        'continuous-boundary-level': ('s18', 's7'),
-        'west-chain-readiness': ('s8',),
-    },
-    'nova': {
-        'dd-cocos-ingest': ('s5',),
-        'iron-core-magnetisation': ('s2',),
-        'kernel-compile-barrier': ('s5',),
-        'nova-portfolio-replan': ('s5',),
-        'sub-millisecond-forward-path': ('s1',),
-    },
-    'reckon': {
-        'a-brief-should-not-cost-what-it-names': ('s7',),
-        'a-dispatch-returns-without-its-worker': ('s16', 's18', 's9'),
-        'a-dry-run-must-resolve-what-the-real-call-resolves': ('s5',),
-        'a-read-costs-what-changed': ('s24', 's25', 's26', 's27', 's28', 's29', 's30', 's31', 's32', 's33', 's34'),
-        'a-report-is-kept-only-when-persisted': ('s6',),
-        'a-worker-is-charged-to-a-job': ('s8',),
-        'consumers-read-reckon-through-verbs': ('s5',),
-        'crew-observability-truth': ('s30',),
-        'crew-runtime-positive-controls': ('s2',),
-        'new-work-gets-a-new-worker': ('s8',),
-        'scoring-should-stop-a-promotion': ('s2c', 's4b', 's5b'),
-        'the-escape-lane-and-reviews-keep-pace': ('s2', 's4'),
-        'the-monitor-reads-each-fact-once': ('s18', 's48', 's52'),
-        'the-monitor-shows-the-work-it-watches': ('s13', 's133'),
-        'the-page-paints-from-an-index': ('s9',),
-        'the-restarted-server-meets-its-shipped-measures': ('s2',),
-        'work-scheduling-surface': ('s9',),
-    },
-}
+#: The instant the landing-account rule landed. A section whose last recorded
+#: activity predates it was already done when the rule arrived and owes no
+#: account; a section recorded at or after it is refused while it holds none,
+#: and one with no recorded activity at all predates the record and is exempt
+#: for the same reason. A fixed instant and not the clock, so the verdict reads
+#: the same on every later day and a fixture's expectation cannot expire.
+LANDING_ACCOUNT_ENFORCED_FROM = "2026-11-15T10:05:58Z"
+
 
 def _require_every_landed_section_answered(
     state: dict[str, Any], html_text: str | None = None
@@ -5120,13 +5078,14 @@ def _require_every_landed_section_answered(
     plan's reasons states no measure, so no node could have landed it and it
     owes no account.
 
-    The rule applies to a section marked done after it landed. A section that
-    was already done when the rule landed is exempt and stays exempt however its
-    plan is later edited, so the exemption is read from
-    :data:`_LANDING_RULE_EXEMPTIONS` — a record of the store as it stood then —
-    rather than from the plan's present text or from any clock. Reading it from
-    the clock would exempt a section forever or not at all depending on the day
-    the check ran, which is the defect this record exists to avoid.
+    The rule applies to a section marked done after it landed. A section
+    already done when the rule landed is exempt, and the exemption is read from
+    the section's own recorded activity — the newest comment on it, or the
+    completion time of a run whose record names it — compared against
+    :data:`LANDING_ACCOUNT_ENFORCED_FROM`, one fixed instant. A section the
+    store records nothing about predates the record and is exempt for the same
+    reason. Neither side of that comparison consults the
+    clock, so a plan edited today does not change what the rule owed yesterday.
 
     The rule needs the plan's document to read that prose, and a caller without
     one gets no check rather than a refusal: the document is what distinguishes
@@ -5199,20 +5158,75 @@ def _states_a_done_when(prose: dict[str, str], section: str) -> bool:
 def _landed_before_the_rule(state: dict[str, Any], section: str) -> bool:
     """Whether a section was already done when the landing rule landed.
 
-    Read from the migration record alone, so a section's exemption neither
-    expires with the calendar nor depends on what its plan's prose says today.
-    The record's section spellings are compared through the one candidate set,
-    so a recorded dotted spelling and the hyphenated declaration key name the same
-    section.
+    Read from the section's own recorded activity and one fixed instant, so the
+    verdict neither expires with the calendar nor depends on what the plan's
+    prose says today. A section the store records nothing about predates the
+    record and is exempt; one recorded at or after the instant is not.
     """
+    recorded = _section_last_recorded_at(state, section)
+    if recorded is None:
+        return True
+    return recorded < _rule_landed_at()
+
+
+def _rule_landed_at() -> datetime:
+    """The instant the landing-account rule landed, as an aware datetime."""
+    return datetime.fromisoformat(LANDING_ACCOUNT_ENFORCED_FROM)
+
+
+def _section_last_recorded_at(state: dict[str, Any], section: str) -> datetime | None:
+    """The newest moment the store records something about one section, or None.
+
+    Two stores hold a per-section time: the plan's comment log and the run
+    ledger's completion times. The newest of them is the section's last recorded
+    activity, which is what the rule compares against its one fixed instant. A
+    section both stores are silent about yields None, and a record whose stamp
+    cannot be read contributes nothing — an unreadable stamp is not evidence
+    that the section was touched late.
+    """
+    from reckon import ledger
     from reckon._plan_html import section_id_candidates
 
+    wanted = section_id_candidates(section)
+    stamps: list[datetime | None] = [
+        _readable_instant((record or {}).get("when"))
+        for identity, records in (state.get("comments") or {}).items()
+        if section_id_candidates(str(identity)) & wanted
+        for record in records or []
+    ]
     project = str(state.get("project") or "")
     slug = str(state.get("slug") or "")
-    known: set[str] = set()
-    for spelling in _LANDING_RULE_EXEMPTIONS.get(project, {}).get(slug, ()):
-        known |= section_id_candidates(spelling)
-    return bool(known and section_id_candidates(section) & known)
+    if project and slug:
+        try:
+            records = ledger.runs(project, plan=slug)
+        except ledger.LedgerError as exc:
+            raise OpError(
+                f"cannot read the run ledger for project {project!r} while checking "
+                f"section {section!r}: {exc}"
+            ) from exc
+        stamps.extend(
+            _readable_instant(record.get("completed_at"))
+            for record in records
+            if section_id_candidates(record.get("section")) & wanted
+        )
+    readable = [stamp for stamp in stamps if stamp is not None]
+    return max(readable) if readable else None
+
+
+def _readable_instant(value: Any) -> datetime | None:
+    """One stored stamp as an aware UTC datetime, or None when it does not parse."""
+    if value is None:
+        return None
+    text = str(value).strip()
+    if not text:
+        return None
+    try:
+        parsed = datetime.fromisoformat(text)
+    except ValueError:
+        return None
+    if parsed.tzinfo is None:
+        parsed = parsed.replace(tzinfo=UTC)
+    return parsed.astimezone(UTC)
 
 
 def _section_holds_a_landing(state: dict[str, Any], section: str) -> bool:

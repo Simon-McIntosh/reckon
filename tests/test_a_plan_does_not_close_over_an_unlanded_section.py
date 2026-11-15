@@ -7,6 +7,12 @@ neither, and names every unfurnished section it refuses on.
 
 A done section that states no done-when is outside the rule: it gives the plan's
 reasons, so no node could have landed it and it owes no account.
+
+The rule applies to a section marked done after it landed. The store records no
+per-section tick time, so the mark is read from the section's own last recorded
+activity — a comment on it, or the completion time of a run naming it — held
+against one fixed instant. A section recorded before that instant, or recorded
+nowhere at all, was already done when the rule landed and owes nothing.
 """
 
 from __future__ import annotations
@@ -20,6 +26,11 @@ from reckon import _plan_html, _store
 
 PROJECT = "landing-account"
 SLUG = "landing-account-guard"
+
+#: Stamps on either side of the rule's fixed instant, so a fixture states which
+#: side of the rule its section was marked done on without reading the clock.
+DONE_BEFORE_THE_RULE = "2026-11-14T09:00:00Z"
+DONE_AFTER_THE_RULE = "2026-11-15T12:00:00Z"
 
 CLOSE = {
     "op": "close",
@@ -40,6 +51,22 @@ DOCUMENT = f"""<!doctype html><html><head>
 """
 
 
+def _activity(when: str) -> dict:
+    """A comment on the section that is not a landing comment.
+
+    It records that the store wrote something about the section at ``when``,
+    which is what the rule reads to place the section either side of its fixed
+    instant. Its id carries no close prefix, so it is never mistaken for the
+    landing account.
+    """
+    return {
+        "id": "c-run-r-fixture-review-of-the-section",
+        "who": "reckon-build",
+        "when": when,
+        "body": "A review of the section.",
+    }
+
+
 def _plan_state(**overrides: object) -> dict:
     state = {
         "project": PROJECT,
@@ -49,7 +76,9 @@ def _plan_state(**overrides: object) -> dict:
         "status": "active",
         "version": 1,
         "section_declarations": {"s1": "done", "s2": "done"},
-        "comments": {},
+        # Recorded after the rule landed, so s1 is inside the rule and owes an
+        # account. A fixture about the pre-rule side replaces this stamp.
+        "comments": {"s1": [_activity(DONE_AFTER_THE_RULE)]},
         "followups": [],
     }
     state.update(overrides)
@@ -161,17 +190,14 @@ def test_a_done_section_that_states_no_done_when_does_not_stop_a_close(
 
 
 def test_a_section_done_before_the_rule_does_not_stop_a_close(
-    mounted_plan: Path, monkeypatch: pytest.MonkeyPatch
+    mounted_plan: Path,
 ) -> None:
-    # The migration record names this section, which is the only thing that
-    # makes it pre-rule: nothing about the plan's present text says so, and no
-    # clock is consulted, so the exemption cannot change meaning with the day.
-    monkeypatch.setattr(
-        _store,
-        "_LANDING_RULE_EXEMPTIONS",
-        {PROJECT: {SLUG: ("s1",)}},
-    )
+    # The only difference from the refused case is the stamp: this section's
+    # last recorded activity predates the rule's fixed instant, so it was
+    # already done when the rule landed and owes no account. No clock is read,
+    # so the expectation holds on any later day.
     state = _read_state()
+    state["comments"] = {"s1": [_activity(DONE_BEFORE_THE_RULE)]}
 
     _store.apply_ops(state, [CLOSE], False)
 
@@ -179,16 +205,12 @@ def test_a_section_done_before_the_rule_does_not_stop_a_close(
 
 
 def test_a_section_marked_done_after_the_rule_is_still_refused(
-    mounted_plan: Path, monkeypatch: pytest.MonkeyPatch
+    mounted_plan: Path,
 ) -> None:
-    # The record covers a different section of this plan, so s1 was marked done
-    # after the rule landed and owes its landing account like any other.
-    monkeypatch.setattr(
-        _store,
-        "_LANDING_RULE_EXEMPTIONS",
-        {PROJECT: {SLUG: ("s9",)}},
-    )
+    # This section's last recorded activity is after the rule's fixed instant,
+    # so it was marked done under the rule and owes its landing account.
     state = _read_state()
+    assert state["comments"], "the fixture records activity on s1"
 
     with pytest.raises(_store.OpError) as refusal:
         _store.apply_ops(state, [CLOSE], False)
@@ -207,7 +229,14 @@ def test_a_run_record_for_the_section_answers_for_it(
     monkeypatch.setattr(
         ledger,
         "runs",
-        lambda *_a, **_k: [{"run_id": "r-x", "plan": SLUG, "section": "§1"}],
+        lambda *_a, **_k: [
+            {
+                "run_id": "r-x",
+                "plan": SLUG,
+                "section": "\u00a71",
+                "completed_at": DONE_AFTER_THE_RULE,
+            }
+        ],
     )
     state = _read_state()
 
