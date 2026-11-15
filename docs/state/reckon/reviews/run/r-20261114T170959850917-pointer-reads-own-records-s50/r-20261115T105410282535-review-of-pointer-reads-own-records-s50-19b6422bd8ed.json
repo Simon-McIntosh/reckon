@@ -1,0 +1,68 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/recovery_classification.py:1242",
+    "reckon/crew/recovery_watch.py:1328",
+    "reckon/crew/recovery_memo.py:630"
+  ],
+  "completed_at": "2026-11-15T11:26:38.779Z",
+  "dispatched_at": "2026-11-15T10:55:22Z",
+  "findings": [
+    {
+      "file": "reckon/crew/review_records.py",
+      "line": "2639",
+      "severity": "non-blocking",
+      "text": "non-blocking: `review_run_record_names` re-implements the per-reviewed-run name grouping the module already owns. `_index_maps` (reckon/crew/review_records.py:1516) builds `reviewed: dict[run_id, list[entry]]` with each entry's `name`, `_document_index_maps` (line 2560) caches it per document generation and version, and `_store_index` (line 1903) exposes it; `_misfiled_review_candidates` (reckon/crew/recovery_memo.py:415) already answers this exact question through it, at a cost bounded by that run's records. The landed change instead adds a second, persisted grouping, `run_names`, carrying every record name again inside an index document that plan sections 61 and 62 already name as the station's memory pressure, and that three writers must keep in step with `entries`. It duplicates the capability rather than extending its owner."
+    },
+    {
+      "file": "reckon/crew/review_records.py",
+      "line": "2339",
+      "severity": "non-blocking",
+      "text": "non-blocking: the incremental maintenance of `run_names` is covered by no test in this diff. `tests/test_a_pointer_reads_only_its_runs_records.py` writes its records directly to disk and then indexes them through `store_index_document`, so only `_rebuild_index_document` (reckon/crew/review_records.py:2238) is exercised. A regression in `_move_run_name` at line 2339 in `_index_stored_record` or line 2455 in `reconcile_foreign_write`, or in `_drop_run_name` at line 2466, would leave `run_names` naming a removed record or missing a rewritten one while every assertion in the case still passes, because the case never writes or removes a record after indexing."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261114T170959850917-pointer-reads-own-records-s50/manifest.md",
+      "line": "19",
+      "severity": "non-blocking",
+      "text": "non-blocking: the manifest records the two arms as `all_debug job 1317161 (base)` and `1317164 (after)` in its tests and evidence_inputs lines, while the logs it cites carry different job ids in their own header lines: logs/suite-base.log and logs/negative-control-base.log read `job: 1317265` and `job: 1317273`, and logs/suite-after.log reads `job: 1317268`. The logs are complete and self-consistent, but the manifest's provenance line names jobs that appear in no log it cites, so a reader cannot reconcile the receipt against the report without noticing the contradiction."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call sites",
+    "diff": "read commit by commit against e02fcb57c82fa6686df286dde11028130d3e4cf8; 31bcea85e5 adds `_run_name_map`, `_move_run_name`, `_drop_run_name`, `review_run_record_names`, the rebuild and writer calls that maintain the map, the memo routing in `_own_review_record_exists` and `_review_input_identities`, and the 230-line case; 19b6422bd8 adds the 38-line fragment at docs/evidence/fragments/the-monitor-reads-each-fact-once/pointer-reads-own-records-s50.html.",
+    "done_when": "the done_when names tests/test_a_pointer_reads_only_its_runs_records.py, two indexed stores of 2,000 and 20,000 records, equal counts for the same 200 pointers, a bound of the classified runs' own records, and a base rate of at least ten times; the case fixes SMALL_RUNS, LARGE_RUNS and RECORDS_PER_RUN at exactly those figures (tests/test_a_pointer_reads_only_its_runs_records.py:60-71), asserts `large_total == small_total` and `small_total <= belonging` (lines 214-229), and logs/negative-control-base.log records the base counts as 12,000,000 against 1,200,000.",
+    "goal": "the goal is that a pointer's record names come from the store index's per-run map and cost that run's records rather than the store's size; reckon/crew/review_records.py:2639 adds `review_run_record_names` reading the document's `run_names`, and reckon/crew/recovery_memo.py:456-459 routes `_review_input_identities` through it, so that path calls neither `_tick_store` nor `_store_paths` and examines 2,000 names for 200 pointers against both stores.",
+    "manifest": "the manifest at runs/r-20261114T170959850917-pointer-reads-own-records-s50/manifest.md reports 53 passed with 2 errors at base and 54 passed with 2 errors after, the one added pass being this node's case; those figures reconcile with logs/suite-base.log (`53 passed, 2 errors`) and logs/suite-after.log (`54 passed, 2 errors`), both carrying the same two `staged_write_inventory` scaffolding error ids and no FAILED id, while its evidence_inputs line names all_debug jobs 1317161 and 1317164 where the cited logs record 1317265, 1317268 and 1317273.",
+    "write_paths": "the manifest declares reckon/crew/review_records.py, reckon/crew/recovery_memo.py, tests/test_a_pointer_reads_only_its_runs_records.py, the fragment and its figure directory; `git diff --stat` over the two commits touches exactly four files, every one of them inside that scope."
+  },
+  "justifications": {
+    "durability": "the equality assertion at tests/test_a_pointer_reads_only_its_runs_records.py:218 reddens at the base revision, which logs/negative-control-base.log records as `12000000 against 1200000` with `EXIT=1`, so reinstating the regression reddens it rather than merely passing here; the score is held down because the three incremental `run_names` maintainers at reckon/crew/review_records.py:2339, 2455 and 2466 are exercised by no test in the diff.",
+    "evidence": "logs/suite-base.log and logs/suite-after.log carry their revisions, literal commands, module under test and a bare `EXIT=` line, and the two counts the done_when asks for are recorded in logs/negative-control-base.log, but the manifest's provenance line names jobs its own logs contradict.",
+    "fit": "reckon/crew/review_records.py:2639 follows the accessor family of `store_index_run_digest` at line 2627 in the same module and carries a module-idiomatic docstring, and no added name carries a plan, stage or ticket label.",
+    "goal_fidelity": "reckon/crew/review_records.py:2639 and reckon/crew/recovery_memo.py:456 make one pointer's classification read that run's own names from the index document, which is the per-pointer cost independence the goal states.",
+    "reuse": "reckon/crew/review_records.py:2639 duplicates the per-run grouping `_index_maps` (line 1516) already owns, exposed through `_document_index_maps` (line 2560) and `_store_index` (line 1903) and already called for this purpose at reckon/crew/recovery_memo.py:415, and extends none of them.",
+    "scope_discipline": "every path in `git diff --stat e02fcb57c8..19b6422bd8` -- reckon/crew/review_records.py, reckon/crew/recovery_memo.py, tests/test_a_pointer_reads_only_its_runs_records.py and docs/evidence/fragments/the-monitor-reads-each-fact-once/pointer-reads-own-records-s50.html -- is one of the paths the manifest declares."
+  },
+  "project": "reckon",
+  "review_run_id": "r-20261115T105410282535-review-of-pointer-reads-own-records-s50-19b6422bd8ed",
+  "reviewed_base_sha": "e02fcb57c82fa6686df286dde11028130d3e4cf8",
+  "reviewed_head_sha": "19b6422bd8ed3b7231e021bc0d2569f2d257e6ab",
+  "reviewed_run_id": "r-20261114T170959850917-pointer-reads-own-records-s50",
+  "scores": {
+    "durability": 14,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 5,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-15T11:30:52.043796+00:00",
+  "total": 92
+}
