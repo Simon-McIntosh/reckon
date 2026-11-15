@@ -454,3 +454,33 @@ def test_a_delivered_word_is_read_only_with_its_attempts_own_receipt(
     assert (
         dispatch_launch_module._terminal_attempt_phase(directory, attempt) == "stopped"
     ), "a stopped attempt still reads as terminal without an exit receipt"
+
+
+def test_a_receipt_for_another_run_does_not_end_this_attempt(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A file standing where this attempt's receipt goes is judged on its run.
+
+    The two exit files are read through the one owner of that payload under its
+    strict reading, so a receipt that names a different run is absent rather
+    than this attempt's ending — the failure a hand-rolled reader, which judged only
+    the attempt number, could not see.
+    """
+    fixture = _fixture(tmp_path, monkeypatch)
+    directory = fixture["directory"]
+    attempt = {"attempt": 2}
+    runs._mutate_pointer(
+        RUN_ID, lambda record: {**record, "attempt": 2, "phase": "complete"}
+    )
+    receipt_path = directory / "attempt-2-exit.json"
+    receipt_path.write_text(
+        json.dumps({"attempt": 2, "run_id": "r-someone-else"}), encoding="utf-8"
+    )
+    assert dispatch_launch_module._terminal_attempt_phase(directory, attempt) == "", (
+        "a receipt for another run must not end this attempt"
+    )
+
+    receipt_path.write_text(json.dumps({"attempt": 2, "run_id": RUN_ID}), encoding="utf-8")
+    assert (
+        dispatch_launch_module._terminal_attempt_phase(directory, attempt) == "complete"
+    ), "the same receipt naming this run does end it"

@@ -4781,15 +4781,7 @@ def _record_step_wait(run_directory: Path, client_pid: int) -> None:
     )
 
 
-# The two phase words a delivery writes. Both are summaries another writer can
-# restore — a promotion drain writes back the phase its request found before the
-# run was resumed, a fold reads the superseded attempt's stream — so a stored
-# word is read as this attempt's only beside the receipt that attempt's own
-# ending wrote.
-_DELIVERED_RUN_PHASES = frozenset({"complete", "failed"})
-
-
-def _attempt_ending_receipt(run_directory: Path, attempt: Mapping[str, Any]) -> bool:
+def _attempt_ending_receipt(record: Mapping[str, Any], attempt: Mapping[str, Any]) -> bool:
     """Whether this attempt holds the exit receipt its own ending wrote.
 
     The supervisor that ends an attempt writes ``attempt-<n>-exit.json`` for it,
@@ -4799,22 +4791,22 @@ def _attempt_ending_receipt(run_directory: Path, attempt: Mapping[str, Any]) -> 
     runs while working, because a writer had restored ``complete`` — the word
     their earlier delivery left — onto the live attempt's pointer. The receipt is
     immutable and belongs to one attempt; the word belongs to whoever wrote it
-    last.
+    last. Both files are read through the one owner of that payload,
+    ``_run_exit_record``, under its strict reading, so this guard and every other
+    reader of an attempt's end cannot answer on different terms.
     """
+    from reckon.crew.recovery_liveness import _run_exit_record
+
     try:
         number = max(1, int(attempt.get("attempt") or 1))
     except (TypeError, ValueError):
         return False
-    candidates = [
-        _attempt_artifact_path(run_directory, EXIT_RECORD_NAME, number),
-        run_directory / EXIT_RECORD_NAME,
-    ]
-    for path in candidates:
-        payload = _read_reservation(path)
-        if payload is None:
+    for name in (f"attempt-{number}-{EXIT_RECORD_NAME}", EXIT_RECORD_NAME):
+        receipt = _run_exit_record(record, name, require_run_id=True)
+        if receipt is None:
             continue
         try:
-            recorded = int(payload["attempt"])
+            recorded = int(receipt["attempt"])
         except (TypeError, ValueError, KeyError):
             continue
         if recorded == number:
@@ -4833,8 +4825,10 @@ def _terminal_attempt_phase(run_directory: Path, attempt: Mapping[str, Any]) -> 
         return ""
     if not _record_is_this_attempt(pointer, attempt):
         return ""
-    if phase in _DELIVERED_RUN_PHASES and not _attempt_ending_receipt(
-        run_directory, attempt
+    # The two words a delivery writes are this module's own delivery statuses,
+    # read here from the owner rather than restated beside the guard.
+    if phase in _WORKER_DONE_MANIFEST_STATUSES and not _attempt_ending_receipt(
+        pointer, attempt
     ):
         # The word arrived from somewhere other than this attempt's ending, so
         # this attempt has not delivered and the phase describes an earlier one.
@@ -4875,11 +4869,11 @@ def _reopen_a_live_attempt_phase(
             except CrewError:
                 return
             attempt["reopened_pointer_mtime_ns"] = mtime_ns
-            if str(record.get("phase") or "") not in _DELIVERED_RUN_PHASES:
+            if str(record.get("phase") or "") not in _WORKER_DONE_MANIFEST_STATUSES:
                 return
             if not _record_is_this_attempt(record, attempt):
                 return
-            if _attempt_ending_receipt(run_directory, attempt):
+            if _attempt_ending_receipt(record, attempt):
                 return
             record["phase"] = "working"
             _write_existing_pointer(run_directory.name, record)
