@@ -18,24 +18,28 @@
   "findings": [
     {
       "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T085741072175-rorp-s5/manifest.md",
+      "id": "fe02b3d2aff",
       "line": "23",
       "severity": "blocking",
       "text": "blocking: after_suite records revision d74954f74dc9 with exit_status 1 and three failure_ids (the new test file's three cases), while the reviewed head is 0a2d1f8e672b with no suite pair recorded at it. The recorded pair therefore derives added_failure_count 3, and reckon/crew/queue_landing.py:1428 refuses the manifest's own after_suite on its exit status alone; the repair that makes the three pass (repair-head.log, 8b98c51, 3 passed EXIT=0) is recorded beside the arm rather than as the arm. Repair: record the head suite arm at the reviewed head, or record those ids as retired by name in the manifest's own fields."
     },
     {
       "file": "docs/evidence/fragments/a-read-only-run-promotes-as-delivered/rorp-s5.html",
+      "id": "fcf24e3aa3c",
       "line": "66",
       "severity": "non-blocking",
       "text": "non-blocking: the suite-arm paragraph carries literal \\u2014 escape text at lines 66 and 68 instead of an em dash, so the page renders 'the same 8 of those 9 \\u2014 five in' with the escape visible; the same paragraph's dash at line 59 is a real em dash."
     },
     {
       "file": "reckon/ledger.py",
+      "id": "fb2cf7a9ed6",
       "line": "3862",
       "severity": "non-blocking",
       "text": "non-blocking: read_records now passes headers_only=with_figures and activity_since is None, an optimisation of the figures path that the node goal does not ask for (the goal's read is ledger.runs(..., plan=...), with figures off). No test exercises the changed call, and it is the one line in the diff whose effect the timing gate does not measure."
     },
     {
       "file": "reckon/ledger.py",
+      "id": "f734a797bed",
       "line": "1670",
       "severity": "non-blocking",
       "text": "non-blocking: _row_plan is the third private copy of the same one-line capability, beside _record_plan at reckon/sprint_liveness.py:176 and reckon/crew/dispatch_sessions.py:457, and read_records:3882 still inlines str(record.get(\"plan\") or \"\") instead of calling it, so the consolidation the diff starts is left half done."
@@ -73,6 +77,6 @@
   },
   "status": "parsed",
   "times_source": "run-record",
-  "timestamp": "2026-11-15T12:29:35.125184+00:00",
+  "timestamp": "2026-11-15T12:29:02.042151+00:00",
   "total": 96
 }
