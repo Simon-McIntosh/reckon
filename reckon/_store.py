@@ -3031,6 +3031,22 @@ def _gen_id(prefix: str) -> str:
     return f"{prefix}-{_dt.now(tz=timezone.utc):%Y%m%dT%H%M%S%f}"
 
 
+_DEFAULT_FOLLOWUP_AUTHOR = "reckon-edit"
+
+
+def _default_followup_provenance(item: dict) -> None:
+    """Fill a followup's author and date when the caller names neither.
+
+    The append examples carry a title, a body and a prompt and no provenance,
+    so a record built from one is dated today and attributed to the editing
+    surface rather than refused for two fields the caller was never shown.
+    """
+    if not str(item.get("written_by") or "").strip():
+        item["written_by"] = _DEFAULT_FOLLOWUP_AUTHOR
+    if not str(item.get("written_at") or "").strip():
+        item["written_at"] = _dt.now(tz=UTC).date().isoformat()
+
+
 def _validate_new_followup_prompt(value: Any) -> str:
     """Return one canonical session invocation or raise at the write boundary."""
     prompt = str(value)
@@ -4267,6 +4283,7 @@ def _apply_append(working: dict, op: dict, is_index: bool, warnings: list[str]) 
             raise OpError("append followups requires an item object")
         required = {"id", "written_by", "written_at", "title", "body", "prompt"}
         fu = dict(item)
+        _default_followup_provenance(fu)
         _refuse_deferred_work_term(str(fu.get("body") or ""), subject="followups body")
         if fu.get("tier") and not fu.get("capability"):
             raise OpError("new followups must use capability instead of legacy tier")

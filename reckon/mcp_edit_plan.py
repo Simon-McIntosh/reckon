@@ -22,6 +22,7 @@ from reckon._schema import (
 from reckon._store import (
     OpError,
     VersionConflict,
+    _default_followup_provenance,
     _docs_dir_for_project,
     _find_by_id,
     _mounts_path,
@@ -236,14 +237,16 @@ def _append_followup(
 ) -> dict[str, Any]:
     """Append a followup record to data.followups.
 
-    The followup dict must include: id, written_by, written_at, title, body, prompt.
-    The prompt field is one ``/reckon-build`` invocation line; the plan owns all
-    semantic guidance.
+    The followup dict must include: id, title, body, prompt. An omitted
+    written_by and written_at default to the editing surface and today, since
+    the documented append example carries neither. The prompt field is one
+    ``/reckon-build`` invocation line; the plan owns all semantic guidance.
     """
     refusal = _run_scoped_write_guard(project, slug)
     if refusal is not None:
         return refusal
-    required = {"id", "written_by", "written_at", "title", "body", "prompt"}
+    required = {"id", "title", "body", "prompt"}
+    _default_followup_provenance(followup)
     missing = required - set(followup.keys())
     if missing:
         return {
