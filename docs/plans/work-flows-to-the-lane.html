@@ -24,7 +24,7 @@
   <title>Work Flows To The Lane | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="277">
+<meta name="plan-version" content="278">
 <meta name="plan-modified" content="2026-11-15">
 </head>
 <body>
@@ -915,6 +915,9 @@
 </div>
 <div class="r-comment" data-section="s45" data-id="c-run-r-20261115T024149320974-review-of-wftl-a-run-s-review-is-promoted-before-the-run-and-a-d12711bf1b77" data-who="reckon-build" data-when="2026-11-15T03:34:32.486Z">
     <div class="r-comment-body"><p>Reviewed run r-20261114T202656098331-wftl-a-run-s-review-is-promoted-before-the-run-and-a over base 8410843a23f2c73105ff6d9ba46e6c47287b4e70 and head d12711bf1b7777046a9152d382e90500c0b41568; parsed record scoring goal_fidelity 18, evidence 18, scope_discipline 20, durability 17, fit 19, reuse 20, added_failure_count 0, one non-blocking finding that the deferral re-attempts the run with no throttle while its review sits in promotion-waiting.</p></div>
+</div>
+<div class="r-comment" data-section="s45" data-id="c-run-r-20261114T202656098331-wftl-a-run-s-review-is-promoted-before-the-run-and-a" data-who="reckon-build" data-when="2026-11-15T02:35:11.496Z">
+    <div class="r-comment-body"><p>The drain counts a review parked while its record is written (promotion-waiting) as queued, so a run waiting on that review keeps its request and is promoted after it instead of being refused; 5 tests pass, both all_debug arms read 3 failed (identical ids) with 51 passed at head against 50 at base, and the node&#x27;s new test is red at base.</p></div>
 </div>
 <div class="r-comment" data-section="s46" data-id="c-run-r-20261114T083113550541-review-of-promotion-queue-drains-at-slot-speed-5cb42dbbe22c" data-who="reckon-build" data-when="2026-11-14T08:54:25.115Z">
     <div class="r-comment-body"><p>review of r-20261113T161430369224-promotion-queue-drains-at-slot-speed at head 5cb42dbbe22c read as fd2c43f7..5cb42db: scores goal_fidelity 15, evidence 14, scope_discipline 18, durability 15, fit 14, reuse 4 (total 80), added_failure_count 0, seven findings of which one is blocking (the refill thread's tick races the admission loop's begin_drain, so a promotion can start after the reload decision and fall outside wait_for_in_flight before the reexec cuts it off).</p></div>
