@@ -1147,22 +1147,31 @@ def run_ids(project: str, root: str | Path | None = None) -> set[str]:
     this made before the index existed. A run file whose own record the index
     could not decode still counts by its name, because membership and not the
     row's contents is what this answers.
+
+    The run store answers its membership from its id columns alone, so a run
+    this project has but no document names still counts, and counting it costs
+    no payload decode. An index built while a project held no documents is
+    current and empty, which is why the store's ids join the answer rather
+    than being gated behind it.
     """
-    # A project answering from the run store has no documents for the index to
-    # describe, so an index built while it held none is current and empty: the
-    # store's own membership is what names it, and only the union read sees it.
-    if store_answers(project, root):
-        data, _version = load(project, root, headers_only=True)
-    else:
-        current = _indexed_run_ids(project, root)
-        if current is not None:
-            return current
-        data, _version = _load_aggregate(project, root)
-    return {
-        str(record["run_id"])
-        for record in data["runs"]
-        if isinstance(record, Mapping) and record.get("run_id")
-    } | {path.stem for path in _run_files(project, root)}
+    stored = _stored_run_ids(project)
+    current = _indexed_run_ids(project, root)
+    if current is not None:
+        return stored | current
+    data, _version = (
+        load(project, root, headers_only=True)
+        if _run_index_path(project, root).is_file()
+        else _load_aggregate(project, root)
+    )
+    return (
+        stored
+        | {
+            str(record["run_id"])
+            for record in data["runs"]
+            if isinstance(record, Mapping) and record.get("run_id")
+        }
+        | {path.stem for path in _run_files(project, root)}
+    )
 
 
 # The index stores file-derived values only. Every access checks file metadata,
@@ -2228,11 +2237,6 @@ def run_directory_holds_records(project: str, root: str | Path | None) -> bool:
     )
 
 
-def _store_archive_path(path: Path) -> Path:
-    """The separate database a store retires its older rows into."""
-    return path.with_name(f"{path.stem}.archive{path.suffix}")
-
-
 def _stored_run_rows(project: str) -> list[dict[str, Any]]:
     """Every run the run store holds for one project, its detail re-joined.
 
@@ -2247,83 +2251,56 @@ def _stored_run_rows(project: str) -> list[dict[str, Any]]:
     path = run_store.store_path()
     if not path.is_file():
         return []
-    query = (
-        "SELECT r.run_id, r.payload, d.detail FROM {table}.runs r "
-        "LEFT JOIN {table}.run_details d ON r.run_id = d.run_id "
-        "WHERE r.project = ?"
-    )
-    try:
-        connection = sqlite3.connect(f"{path.as_uri()}?mode=ro", uri=True, timeout=0)
-    except (OSError, sqlite3.Error):
-        return []
-    try:
-        tables = ["main"]
-        archive = _store_archive_path(path)
-        if archive.is_file():
-            try:
-                connection.execute(
-                    "ATTACH DATABASE ? AS archive",
-                    (f"{archive.as_uri()}?mode=ro",),
-                )
-            except (OSError, sqlite3.Error):
-                pass
-            else:
-                tables.append("archive")
-        rows: list[tuple[Any, ...]] = []
-        for table in tables:
-            try:
-                rows.extend(connection.execute(query.format(table=table), (project,)))
-            except sqlite3.Error:
-                # A store that never carried the auxiliary tables holds no run
-                # this reader can answer for.
-                continue
-    finally:
-        connection.close()
-    records = []
-    for _run_id, payload, detail in rows:
-        try:
-            record = json.loads(payload)
-            if detail:
-                record.update(json.loads(detail))
-        except (TypeError, ValueError):
-            continue
-        records.append(normalize_outside_scope_paths(record))
-    return records
+    # The store owns its layout: a record is split across two tables and the
+    # retired rows live in an attached database whose name it chooses. Its own
+    # record read joins those back and normalises an out-of-scope path exactly
+    # as a write stored it, so reaching for the tables from here would be a
+    # second copy of that layout — one a store change breaks silently. That
+    # read is not project-scoped (one config home serves every project), so
+    # the filter is this caller's.
+    with run_store.RunStore(path) as store:
+        records = store._indexed_records(include_archive=True)
+    return [row for row in records.values() if row.get("project") == project]
 
 
-def store_answers(project: str, root: str | Path | None) -> bool:
-    """Whether the run store is this project's source for its run rows.
+def _stored_run_ids(project: str) -> set[str]:
+    """The run ids the store holds for one project, from its id columns alone.
 
-    The documents answer while the project holds any; the store answers once it
-    holds none and holds at least one run row of its own. A reader that answers
-    membership rather than rows checks this before taking a full read.
+    ``indexed_run_ids`` reads the ids on a read-only connection, hot and retired
+    rows together, without decoding a payload. Membership is the one question a
+    station tick asks once per delivered run, so it must not cost a decode.
     """
-    if run_directory_holds_records(project, root):
-        return False
-    return bool(_stored_run_rows(project))
+    from reckon import run_store
+
+    return set(run_store.indexed_run_ids(project) or ())
+
+
+def store_answers(project: str) -> bool:
+    """Whether the run store holds at least one run of this project's."""
+    return bool(_stored_run_ids(project))
 
 
 def _merge_stored_rows(
     project: str,
-    root: str | Path | None,
     data: dict[str, Any],
     *,
     headers_only: bool = False,
     picker_only: bool = False,
     activity_since: float | None = None,
 ) -> bool:
-    """Answer from the run store where no per-run document answers.
+    """Add the runs the store holds that no document answers for.
 
-    The store is the ledger's only store once the per-run directory has gone,
-    so a read of a project still holding documents answers from those files
-    and leaves the store unread. A read of a project without them gains every
-    run the store holds that the aggregate and the documents did not name. A
-    row both sources carry stays as the file-derived one: the store holds the
-    durable half and drops the promotion record, so where a file survives it is
-    the fuller record.
+    The documents cover the store rather than replacing it, so the merge is by
+    the run id and never by project. A project whose run directory is intact
+    answers from its files, one whose directory is gone answers from the
+    store, and a half-migrated project — one document left beside many stored
+    runs — answers both. Choosing one source for the whole project would
+    shorten that project's history to whichever file survived, silently.
+
+    A run id both sources carry stays as the file-derived row: a document
+    carries the promotion record and any wide detail a rotation has since
+    washed out of the store, so where a file survives it is the fuller record.
     """
-    if run_directory_holds_records(project, root):
-        return False
     held = {
         str(record["run_id"])
         for record in data["runs"]
@@ -2432,7 +2409,6 @@ def load(
                 data, version, age = stale
                 _merge_stored_rows(
                     project,
-                    root,
                     data,
                     headers_only=headers_only,
                     picker_only=picker_only,
@@ -2445,7 +2421,6 @@ def load(
         else:
             _merge_stored_rows(
                 project,
-                root,
                 data,
                 headers_only=headers_only,
                 picker_only=picker_only,
@@ -2455,7 +2430,7 @@ def load(
     else:
         data, version = _load_aggregate(project, root)
         _merge_run_documents(project, root, data, refuse=True)
-    _merge_stored_rows(project, root, data)
+    _merge_stored_rows(project, data)
     if activity_since is not None:
         data["runs"] = _active_records(data["runs"], activity_since)
     if picker_only:

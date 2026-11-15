@@ -16,6 +16,8 @@ from __future__ import annotations
 
 import json
 import shutil
+import sqlite3
+from datetime import UTC, datetime
 
 import pytest
 
@@ -179,6 +181,122 @@ def test_the_store_answers_with_no_aggregate(aggregate, reader):
         assert result == sorted(_ids())
         return
     assert [row["run_id"] for row in result] == _ids()
+
+
+def test_run_ids_decodes_no_stored_payload(aggregate, monkeypatch):
+    """Membership is the store's id column, so answering it parses no record.
+
+    A station tick asks this once per delivered run, so ``run_ids`` reading the
+    id column is the whole point. The instrument is the store's JSON parser: any
+    payload decode raises, and the answer must still name every run the store
+    holds, including one no document names.
+    """
+    rows = _rows()
+    extra = {
+        "run_id": "r-2026-01-05T000000Z-node-5",
+        "project": PROJECT,
+        "member": "worker-5",
+        "node": "node-5",
+        "completed_at": "2026-01-05T01:00:00Z",
+    }
+    write_aggregate()
+    write_documents(rows)
+    ledger.load(PROJECT)
+    fill_store([*rows, extra])
+
+    class NoDecode:
+        def __init__(self, module):
+            self._module = module
+
+        def __getattr__(self, name):
+            return getattr(self._module, name)
+
+        def loads(self, *args, **kwargs):
+            raise AssertionError("run_ids decoded a stored payload")
+
+    monkeypatch.setattr(run_store, "json", NoDecode(json))
+    assert ledger.run_ids(PROJECT) == {*_ids(), extra["run_id"]}
+
+
+def test_one_document_beside_many_store_rows_answers_both(aggregate):
+    """The documents cover the store rather than replacing it, run id by run id.
+
+    A half-migrated project holds one surviving document and many stored runs.
+    Choosing a source for the whole project would answer only the document, so
+    the surviving row must not hide the store's rows — and for the run id they
+    both carry, the document is the fuller record and wins.
+    """
+    rows = _rows()
+    stored = [{**row, "member": "store-member"} for row in rows]
+    surviving = {**rows[0], "member": "document-member"}
+    write_aggregate()
+    write_documents([surviving])
+    fill_store(stored)
+
+    data, _version = ledger.load(PROJECT)
+    answered = {row["run_id"]: row for row in data["runs"]}
+    assert sorted(answered) == _ids()
+    assert answered[surviving["run_id"]]["member"] == "document-member"
+    assert ledger.run_ids(PROJECT) == set(_ids())
+
+
+def test_a_retired_row_still_answers_with_its_detail(aggregate):
+    """Retirement moves a run out of the hot store, not out of its history.
+
+    The retired row lives in the store's own attached archive, so a history
+    reader must reach it there — and reach its detail with it, since a
+    retirement is not a rotation and drops no wide field.
+    """
+    rows = _rows()
+    write_aggregate()
+    fill_store(rows)
+    with run_store.RunStore() as store:
+        store.retire(
+            before=datetime(2026, 2, 1, tzinfo=UTC),
+            protected=set(),
+            projects={PROJECT},
+            apply=True,
+        )
+        assert store.archive_path.is_file()
+
+    data, _version = ledger.load(PROJECT)
+    by_id = {row["run_id"]: row for row in data["runs"]}
+    assert sorted(by_id) == _ids()
+    assert all(row["worktree_retention"] is True for row in by_id.values())
+    assert ledger.run_ids(PROJECT) == set(_ids())
+
+
+def test_a_rotated_detail_still_answers_the_durable_half(aggregate):
+    """A rotation washes detail out of the store, so the two arms are not equal.
+
+    The durable half of a record is what the store keeps permanently; its wide
+    detail may be removed once a derived value exists. A reader answered by the
+    store must then name the run and its durable fields with the detail absent,
+    which is exactly the answer a lossless fixture cannot distinguish.
+    """
+    rows = _rows()
+    write_aggregate()
+    write_documents(rows)
+    fill_store(rows)
+
+    from_documents = {row["run_id"]: row for row in ledger.load(PROJECT)[0]["runs"]}
+    rotated = rows[1]["run_id"]
+    assert from_documents[rotated]["worktree_retention"] is True
+
+    shutil.rmtree(ledger.ledger_path(PROJECT).parent / "runs")
+    reset_open_index()
+    connection = sqlite3.connect(run_store.store_path())
+    try:
+        with connection:
+            connection.execute("DELETE FROM run_details WHERE run_id = ?", (rotated,))
+    finally:
+        connection.close()
+
+    answered = {row["run_id"]: row for row in ledger.load(PROJECT)[0]["runs"]}
+    assert sorted(answered) == _ids()
+    assert answered[rotated]["member"] == rows[1]["member"]
+    assert "worktree_retention" not in answered[rotated]
+    assert ledger.run_ids(PROJECT) == set(_ids())
 
 
 def test_a_store_deleted_and_rebuilt_returns_an_equal_answer_set(aggregate):

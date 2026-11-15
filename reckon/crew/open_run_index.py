@@ -336,7 +336,7 @@ def _ensure(project: str, root=None) -> Path:
                     has_rows = (
                         aggregate.exists()
                         or ledger.run_directory_holds_records(project, root)
-                        or ledger.store_answers(project, root)
+                        or ledger.store_answers(project)
                     )
                     if not has_rows:
                         data, _version = {"runs": []}, 0
