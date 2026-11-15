@@ -30,7 +30,6 @@ import pytest
 from reckon import ledger
 from reckon.crew import promotion, recovery
 from reckon.crew import promotion_requests as requests
-from reckon.crew import recovery_review_acceptance as acceptance
 from reckon.crew.runs import _write_json, pointer_path, read_pointer, run_dir
 from tests import test_review_acceptance_promotes as fixture
 
@@ -42,7 +41,8 @@ REAL_LIVE = Path.home() / ".config" / "reckon" / "crew" / "live"
 #: The refusal the base revision states for this defect. The retry must not
 #: reword it, because the sentence is what a coordinator reads on the row that
 #: refused the run.
-INPUTS_MOVED = acceptance.INPUTS_MOVED_REASON
+INPUTS_MOVED = "the run or its acceptance inputs changed while it was judged"
+INPUTS_MOVED_ATTEMPTS = 3
 
 
 @pytest.fixture(autouse=True)
@@ -181,7 +181,7 @@ def test_a_run_whose_inputs_keep_moving_is_reported_after_its_attempts(
     seen = _move_inputs_on_judgement(monkeypatch, moves=99)
 
     receipts = []
-    for _ in range(acceptance.INPUTS_MOVED_ATTEMPTS + 2):
+    for _ in range(INPUTS_MOVED_ATTEMPTS + 2):
         _sweep()
         _drain()
         receipts.append(_receipt())
@@ -193,7 +193,7 @@ def test_a_run_whose_inputs_keep_moving_is_reported_after_its_attempts(
 
     assert attempts[:3] == [1, 2, 3], attempts
     assert retries[:3] == [True, True, None], retries
-    assert seen["judgements"] == acceptance.INPUTS_MOVED_ATTEMPTS, seen
+    assert seen["judgements"] == INPUTS_MOVED_ATTEMPTS, seen
     assert receipts[-1]["phase"] == requests.REFUSED, receipts[-1]
     assert "pointer.attempt" in receipts[-1]["error"], receipts[-1]
     # The budget is spent, so the later sweeps report the same refusal rather
@@ -256,9 +256,7 @@ def _stand_a_repair_attempt(*, ended: bool = False) -> None:
         },
     )
     if ended:
-        (run_dir(REPAIR_RUN_ID) / "exit.json").parent.mkdir(
-            parents=True, exist_ok=True
-        )
+        (run_dir(REPAIR_RUN_ID) / "exit.json").parent.mkdir(parents=True, exist_ok=True)
         (run_dir(REPAIR_RUN_ID) / "exit.json").write_text(
             json.dumps({"run_id": REPAIR_RUN_ID, "exit_code": 0}), encoding="utf-8"
         )
