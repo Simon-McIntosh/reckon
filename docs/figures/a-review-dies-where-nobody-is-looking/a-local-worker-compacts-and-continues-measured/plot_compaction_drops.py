@@ -10,7 +10,6 @@ usage: plot_compaction_drops.py <run-dir>
 
 import json
 import os
-import re
 import sys
 
 import matplotlib
@@ -49,7 +48,7 @@ def draw(points):
         'xtick.labelsize': 14,
         'ytick.labelsize': 14,
         'font.family': 'sans-serif',
-        'svg.fonttype': 'none',
+        'svg.fonttype': 'path',
         'axes.spines.top': False,
         'axes.spines.right': False,
         'axes.grid': False,
@@ -113,9 +112,15 @@ def main(argv):
                 print('OVERLAP %r %r' % (l1, l2))
                 return 2
     fig.savefig(SVG, format='svg')
-    svg = open(SVG).read()
-    svg = re.sub(r"font-family:[^;]*", 'font-family:sans-serif', svg)
-    open(SVG, 'w').write(svg)
+    emitted = open(SVG).read()
+    if '<text' in emitted:
+        print('TEXT ELEMENTS in the emitted svg: a renderer without fonts '
+              'draws none of the fourteen labels')
+        return 3
+    paths = emitted.count('<path')
+    if paths < 40:
+        print('only %d paths: the label outlines are missing' % paths)
+        return 3
     print('OK %d boundaries, %d text artists, %s' % (len(points), len(boxes), SVG))
     return 0
 
