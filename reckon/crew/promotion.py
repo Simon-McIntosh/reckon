@@ -607,33 +607,67 @@ def _landing_checkout(
 #: learn that nothing has changed.
 
 
+def _shared_branch_revision(record: Mapping[str, Any]) -> str:
+    """The revision the shared checkout's primary branch carries, or "".
+
+    A run's citations are what it made beyond its base, and a repair tells a
+    worker to merge the shared branch into its worktree. The commits that merge
+    brought in were made by peers and by already-landed runs, so the inference
+    subtracts this revision's history and cites only what the run itself made.
+
+    Read from the checkout the run was dispatched from, through the reader the
+    classification sweep already uses, because that reader answers for a whole
+    pass from one git process rather than one per live run. A record naming no
+    readable checkout answers empty, and the caller then cites the plain range:
+    an unknown shared branch is not evidence that its commits are the run's.
+    """
+    repository_raw = str(record.get("repo") or "").strip()
+    if not repository_raw:
+        return ""
+    repository = Path(repository_raw).expanduser()
+    if not repository.is_dir():
+        return ""
+    from .recovery_classification import _primary_branch_revision
+
+    return _primary_branch_revision(repository, time.monotonic())
+
+
 def _promotion_commits(
     record: Mapping[str, Any], manifest_commits: Sequence[Any]
 ) -> list[str]:
     """Read the run's committed range even when a repair cleared its citations.
 
-    The range is ``base..HEAD`` in the run's own tree, so a tree whose head has
-    not moved answers from the previous read. The head is resolved as files
-    rather than by spawning git, so the check itself costs no process; when the
-    head cannot be read the answer is not stored, because an unreadable head is
-    not a stable one.
+    The range is ``base..HEAD`` in the run's own tree, less the history the
+    shared branch reaches, so a run that merged the shared branch into its
+    worktree cites its own commit and that merge and not the commits the merge
+    brought in. A run that merged no shared branch is unaffected, because every
+    commit in its range is one neither the base nor the shared branch reaches.
+
+    The range is answered from the previous read until the tree's own head or
+    the shared branch moves, and both are resolved as files or by one cached
+    read rather than by a git process per live run. When the head cannot be
+    read the answer is not stored.
     """
+    from .merge import commits_between
     from .recovery_memo import _worktree_head_identity
-    from .recovery_review_subject import _review_tree, reviewed_commits
+    from .recovery_review_subject import _review_tree
 
     tree = _review_tree(record)
     base = str(record.get("base_sha") or record.get("base") or "").strip()
     citations = tuple(str(sha) for sha in manifest_commits)
+    shared = _shared_branch_revision(record)
 
     def read() -> list[str]:
-        history = reviewed_commits(tree, base, "HEAD")
+        if tree is None:
+            return [str(sha) for sha in manifest_commits]
+        history = commits_between(tree, base, "HEAD", excluding=shared)
         return (
             [sha for sha, _subject in history]
             if history
             else [str(sha) for sha in manifest_commits]
         )
 
-    key = (str(tree) if tree is not None else "", base, citations)
+    key = (str(tree) if tree is not None else "", base, citations, shared)
     head_identity = _worktree_head_identity(tree)
     if head_identity in {"no-tree", "no-git", "no-head"}:
         return read()
