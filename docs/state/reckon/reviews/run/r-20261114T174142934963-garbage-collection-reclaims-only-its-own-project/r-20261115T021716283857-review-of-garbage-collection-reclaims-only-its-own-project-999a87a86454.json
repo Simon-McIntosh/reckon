@@ -1,0 +1,73 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "042d4a27f832e268397b3fe68bde21964c2327a2",
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/crew_run_commands.py:2154 crew retention-sweep --project -> gc.retention_sweep(project=)",
+    "reckon/crew/gc.py:2209 retention_sweep -> _orphan_ledger_indexes(project=, repo=roots.get(project))",
+    "reckon/crew/gc.py:1249 garbage_collect -> _unledgered_run_directories(project=, repo=)",
+    "reckon/crew/gc.py:1262 garbage_collect -> _orphan_ledger_indexes(project=, repo=)",
+    "reckon/crew/routing.py:2185 _unledgered_run_directories -> _manifest_project"
+  ],
+  "completed_at": "2026-11-15T03:00:50.770Z",
+  "dispatched_at": "2026-11-15T02:20:21Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261114T174142934963-garbage-collection-reclaims-only-its-own-project/manifest.md",
+      "line": "19",
+      "severity": "non-blocking",
+      "text": "non-blocking: after_suite declares revision 0e8c37f2dd while the cited gates/after-suite.log header reads revision 999a87a864, so the record names a revision the log was not run at; only the evidence fragment differs between them, but a reader comparing revisions against promotion cannot tell that this is why, and the earlier review of this run raised the same defect at this field."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261114T174142934963-garbage-collection-reclaims-only-its-own-project/manifest.md",
+      "line": "14",
+      "severity": "non-blocking",
+      "text": "non-blocking: measurement_module and measurement_cwd (lines 14-15) name /tmp/mcintos-gcgate-XBAVfW/base, while every cited gate log was run in /tmp/mcintos-gcgate-GAkPMC/base, so the scratch tree the base arm is said to have measured is not the tree the logs came from."
+    },
+    {
+      "file": "tests/test_gc_reaches_every_crew_store.py",
+      "line": "159",
+      "severity": "non-blocking",
+      "text": "non-blocking: this file and tests/test_gc_sweeps_ledger_indexes.py lie outside the node's declared write paths (routing.py, gc.py, tests/test_gc_reclaims_only_its_own_project.py) and are edited here to keep the scoped contract green after the prior review's blocking finding; the manifest discloses it under scope_note and asks for ratification with crew complete --accept-path, so it is recorded rather than silently carried."
+    }
+  ],
+  "head_log_revision": "999a87a8645469ea0a14247944294968a4d39462",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified five production call sites: crew retention-sweep --project at crew_run_commands.py:2154 into gc.retention_sweep, the retention sweep's index pass at gc.py:2209 now passing project and roots.get(project), the two garbage_collect sweeps at gc.py:1249 and gc.py:1262, and _unledgered_run_directories' manifest read at routing.py:2185 into _manifest_project.",
+    "diff": "read both commits against base 5414c5de36: 0e8c37f2dd changes gc.py by 8 lines (retention_sweep now passes project and the resolved checkout to _orphan_ledger_indexes), routing.py by 20 (_manifest_project now delegates to reports.parse_manifest instead of a second tolerant parser), and three test files by 158 lines (the new retention-sweep test, two unscoped helpers, and the scoped expectations replacing the old unscoped ones); 999a87a864 changes only the evidence fragment, 2 lines.",
+    "done_when": "the done-when is the whole-node one at prompt.txt:163, naming tests/test_gc_reclaims_only_its_project.py, gc --apply --project reckon, the base-revision negative control, and no added failure from the importing test files; gates/after-suite.log reads 57 passed EXIT=0 at 999a87a864, gates/negative-control.log reads 2 failed EXIT=1 at 042d4a27f, and gates/sibling-head.log reads 1 failed/12 passed against the same 1 failed/12 passed at gates/sibling-base.log, so the importing files add no failure.",
+    "goal": "the goal is to scope gc's unledgered, ledger-index and run-lock sweeps to the project it runs for; the one remaining gap the previous review named, retention_sweep reaching the index sweep with no project (gc.py:2209), is closed, and the run-lock sweep remains scoped through the ledgered set as the plan's \u00a714 states.",
+    "manifest": "read; status complete, commits e4f4dbf2c7, 5414c5de36, 0e8c37f2dd and 999a87a864, tests and test_logs naming five logs, negative_control_log set, baseline_suite and after_suite recorded, and outside_scope naming the single sibling failure that reproduces identically at base.",
+    "write_paths": "read prompt.txt:81-85: routing.py, gc.py, tests/test_gc_reclaims_only_its_project.py, the evidence fragment and a figures directory; the increment touches those plus tests/test_gc_reaches_every_crew_store.py and tests/test_gc_sweeps_ledger_indexes.py, the two files the prior review's blocking finding required be realigned."
+  },
+  "justifications": {
+    "durability": "tests/test_gc_reclaims_only_its_project.py:139-166 asserts the peer index's action stays 'keep' while its own is removed, so deleting the project= and repo= arguments at reckon/crew/gc.py:2209 returns project=None, prunes the peer index, and turns the peer index's action assertion red at that line.",
+    "evidence": "gates/after-suite.log reads 57 passed EXIT=0 at 999a87a864 and the negative control is red (gates/negative-control.log, 2 failed EXIT=1), but that control runs against 042d4a27f and fails on a missing 'project' key before reaching the retention-path behaviour, and the manifest's after_suite revision disagrees with its own log header.",
+    "fit": "the change extends the module's existing private-helper idiom: a lazy import inside the function at reckon/crew/routing.py:2138, docstrings in the same voice as routing.py:2098, and no plan, ticket or stage identifier in any added name, comment or test.",
+    "goal_fidelity": "reckon/crew/gc.py:2209 now passes project=project and repo=roots.get(project) into _orphan_ledger_indexes, so 'crew retention-sweep --project P --apply' keeps a peer project's orphan index instead of pruning it.",
+    "reuse": "reckon/crew/routing.py:2138-2150 now delegates the manifest read to reckon/crew/reports.py:318 parse_manifest, folding the prior review's reuse finding rather than forking the tolerant parser a second time.",
+    "scope_discipline": "the increment stays inside the node's declared source scope for routing.py and gc.py, and the two extra test files are outside prompt.txt:81-85 but disclosed under the manifest's scope_note and required to be realigned by the prior review."
+  },
+  "project": "reckon",
+  "review_run_id": "r-20261115T021716283857-review-of-garbage-collection-reclaims-only-its-own-project-999a87a86454",
+  "reviewed_base_sha": "5414c5de3637340709d543ba43fa55fad148e829",
+  "reviewed_head_sha": "999a87a8645469ea0a14247944294968a4d39462",
+  "reviewed_run_id": "r-20261114T174142934963-garbage-collection-reclaims-only-its-own-project",
+  "reviewer_run_id": "r-20261115T021716283857-review-of-garbage-collection-reclaims-only-its-own-project-999a87a86454",
+  "scores": {
+    "durability": 18,
+    "evidence": 15,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 16
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-15T03:05:06.133036+00:00",
+  "total": 106
+}

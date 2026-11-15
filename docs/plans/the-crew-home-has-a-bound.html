@@ -25,7 +25,7 @@
   <title>The Crew Home Has A Bound | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="132">
+<meta name="plan-version" content="133">
 <meta name="plan-modified" content="2026-11-15">
 <meta name="plan-section-depends-on" content="{&quot;s13&quot;:[&quot;the-crew-home-has-a-bound#s11&quot;],&quot;s5&quot;:[&quot;the-crew-home-has-a-bound#s14&quot;]}">
 </head>
@@ -305,6 +305,12 @@
 <div class="r-comment" data-section="s13" data-id="c-run-r-20261113T022155260577-ready-the-crew-home-has-a-bound-s13" data-who="reckon-build" data-when="2026-11-13T09:50:33Z">
     <div class="r-comment-body"><p>§13 landed: crew gc sweeps the persisted-memo directories, removing entries older than PERSISTED_MEMO_MAX_AGE_DAYS = 7, announcing each removal on stderr so the pass's stdout stays a parseable JSON report; the new test proves an applied pass removes an aged entry and keeps one inside the window, base arm 51 passed / head arm 51 passed on tests/test_staged_write_inventory.py.</p></div>
 </div>
+<div class="r-comment" data-section="s14" data-id="c-run-r-20261114T213611373537-review-of-garbage-collection-reclaims-only-its-own-project-5414c5de3637" data-who="reckon-build" data-when="2026-11-14T23:56:31.261Z">
+    <div class="r-comment-body"><p>review of r-20261114T174142934963-garbage-collection-reclaims-only-its-own-project at 5414c5de36 scored 14/11/19/18/18/5 across goal_fidelity, evidence, scope_discipline, durability, fit, reuse; two blocking findings — the ledger-index sweep is still unscoped on the retention-sweep path (reckon/crew/gc.py:2209), and three pre-existing tests that import the changed modules fail at head (gates/sibling-head.log 4 failed against 1 at base).</p></div>
+</div>
+<div class="r-comment" data-section="s14" data-id="c-run-r-20261115T021716283857-review-of-garbage-collection-reclaims-only-its-own-project-999a87a86454" data-who="reckon-build" data-when="2026-11-15T03:00:50.770Z">
+    <div class="r-comment-body"><p>reviewed 5414c5de3637340709d543ba43fa55fad148e829..999a87a8645469ea0a14247944294968a4d39462 (two commits gained since the prior review) and stored a parsed record scoring goal_fidelity 19, evidence 15, scope_discipline 16, durability 18, fit 18, reuse 20, with added_failure_count 0 and three non-blocking findings and no blocking one.</p></div>
+</div>
 <div class="r-comment" data-section="s2" data-id="c-run-r-20261011T002644790277-gc-sweeps-ledger-indexes" data-who="reckon-build" data-when="2026-10-11T01:11:49.247Z">
     <div class="r-comment-body"><p>crew gc now sweeps ledger indexes whose checkout is gone: each run index records the resolved ledger path it serves in its metadata table, and gc reports, and under --apply removes, every ledger-*.sqlite in the pick-input cache root whose recorded path no longer exists or which records no path and has not been opened for seven days, leaving picker-*.json inputs and any index a live process holds — the record sits at docs/evidence/fragments/the-crew-home-has-a-bound/gc-sweeps-ledger-indexes.html</p></div>
 </div>
@@ -448,9 +454,6 @@
 </div>
 <div class="r-comment" data-section="s9" data-id="c-run-r-20261017T141450191818-cache-guard-whole-suite-at-merge-2" data-who="reckon-build" data-when="2026-10-17T15:06:46.086Z">
     <div class="r-comment-body"><p>two-arm whole-suite measurement under the cache-root guard - base a5d6f187de73b70a4b803e52f2ef8a1d29cc130f 36F/14166P, candidate 04be2a6dc06aecaf72f2b88777e4d37389037171 32F/14170P, zero added failing ids, guard names no test resolving the real cache; no repository path changed by this node</p></div>
-</div>
-<div class="r-comment" data-section="s14" data-id="c-run-r-20261114T213611373537-review-of-garbage-collection-reclaims-only-its-own-project-5414c5de3637" data-who="reckon-build" data-when="2026-11-14T23:56:31.261Z">
-    <div class="r-comment-body"><p>review of r-20261114T174142934963-garbage-collection-reclaims-only-its-own-project at 5414c5de36 scored 14/11/19/18/18/5 across goal_fidelity, evidence, scope_discipline, durability, fit, reuse; two blocking findings — the ledger-index sweep is still unscoped on the retention-sweep path (reckon/crew/gc.py:2209), and three pre-existing tests that import the changed modules fail at head (gates/sibling-head.log 4 failed against 1 at base).</p></div>
 </div>
 </section>
 <section data-reckon="decisions" id="decisions" class="r-decisions">
