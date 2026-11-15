@@ -1,0 +1,32 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-11-15T11:24:49.780Z",
+  "dispatched_at": "2026-11-15T11:00:46Z",
+  "findings": [
+    {
+      "file": "reckon/crew/reports.py",
+      "line": 1957,
+      "severity": "non-blocking",
+      "text": "the commit half reads only paths the head adds since base, because _committed_paths_added_since uses git diff --diff-filter=A, so a node that redraws a figure already present at its base is refused as not carried although its commit carries the path"
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to hold a manifest's named figure to the figure the worker contract requires; reckon/crew/reports.py:1896 adds _figure_findings, called from audit_manifest at reckon/crew/reports.py:2942, enforcing the docs/figures/<plan>/ location and the committed-path fact, and reckon/crew/prompts.py:198 states the figures: rule in the composed implementation prompt.\nVERDICT done_when: the done_when names a new test file with six cases plus a negative control, a base-revision arm on the test files that import the manifest check, and ruff on the staged paths; tests/test_a_manifest_names_its_figure.py carries the six cases and the manifest records both arms with EXIT=0.\nVERDICT write_paths: the declared write paths are reckon/crew/reports.py, reckon/crew/prompts.py, tests/test_a_manifest_names_its_figure.py, docs/evidence/fragments/a-landing-is-recorded-once/alro-s2.html and docs/figures/a-landing-is-recorded-once/alro-s2; git diff --stat over bb45282b..d545600d3c touches exactly reports.py, prompts.py, the test file and the fragment; the figure directory is claimed but carries no figure, which the rule permits.\nVERDICT manifest: read; it records status complete, commits 54b35a5808 and d545600d3c, both suite arms at 0 failures with EXIT=0, the negative-control log path, and a rubric self-check per dimension.\nVERDICT diff: read commit by commit against bb45282b; 54b35a5808 adds the check, the _revision_is_committed helper, the prompt clause and the test file (352 insertions), and d545600d3c adds the landing fragment; no path outside the declared scope and nothing the goal does not imply.\nCALL_SITES: reckon/crew_run_commands.py:1349 (crew check --manifest calls audit_manifest with the run's node, worktree and repository), reckon/crew.py:203 (audit_manifest re-export)\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/reports.py:1896 holds a named figure to location, plan directory and committed path, and reckon/crew/prompts.py:198 states the same rule to the worker.\nSCORE evidence: 16\nJUSTIFICATION evidence: the gate is tests/test_a_manifest_names_its_figure.py, whose 61-passed/0-failed head arm and 55-passed/0-failed base arm are recorded in after-arm.log and base-arm.log with their EXIT lines; the manifest records no ruff run though the done_when asks for one, and an independent ruff pass over the staged paths shows clean formatting and one S608 finding present identically at base.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every path in git diff --stat bb45282b..d545600d3c lies inside the five declared write paths, reports.py, prompts.py, the test file, the fragment and the claimed figure directory.\nSCORE durability: 18\nJUSTIFICATION durability: negative-control.log shows .FFF.., so with the check removed the location, plan-directory and uncommitted-figure assertions at tests/test_a_manifest_names_its_figure.py:128,143,158 redden, and test_the_composed_implementation_prompt_states_the_rule asserts the prompt clause.\nSCORE fit: 19\nJUSTIFICATION fit: _figure_findings at reckon/crew/reports.py:1896 mirrors the neighbouring _png_twin_findings signature and docstring idiom, and no plan, section or ticket identifier appears in a symbol, filename or comment.\nSCORE reuse: 18\nJUSTIFICATION reuse: the check reuses _as_list, _citation_stores, _run_diff_store and _committed_paths_added_since in reckon/crew/reports.py; the only new helper, _revision_is_committed at reckon/crew/reports.py:1789, has a loose analogue in reckon/crew/merge.py:1008 but no shared owner exists.\nFINDING reckon/crew/reports.py:1957 non-blocking: the commit half reads only paths the head adds since base, because _committed_paths_added_since uses git diff --diff-filter=A, so a node that redraws a figure already present at its base is refused as not carried although its commit carries the path.",
+  "review_run_id": "r-20261115T105522695767-review-of-alro-s2-d545600d3c6c",
+  "reviewed_base_sha": "bb45282b57f827630da06fea40073de11631f69f",
+  "reviewed_head_sha": "d545600d3c6c4865f1750f93da01be470341a844",
+  "reviewed_run_id": "r-20261115T085705240649-alro-s2",
+  "scores": {
+    "durability": 18,
+    "evidence": 16,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 18,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-15T11:25:40.392932+00:00",
+  "total": 109
+}
