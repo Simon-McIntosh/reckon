@@ -20,12 +20,12 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="reckon-tooling,crew">
   <meta name="plan-after" content="the-monitor-reads-each-fact-once">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;implementable&quot;,&quot;s12&quot;:&quot;implementable&quot;,&quot;s13&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;descoped&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;implementable&quot;,&quot;s13&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;descoped&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;}">
   <meta name="plan-section-depends-on" content="{&quot;s4&quot;:[&quot;a-landing-never-waits-on-a-shared-index#s3&quot;,&quot;a-landing-never-waits-on-a-shared-index#s13&quot;]}">
   <title>A Landing Never Waits On A Shared Index | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="70">
+<meta name="plan-version" content="72">
 <meta name="plan-modified" content="2026-11-15">
 </head>
 <body>
@@ -104,7 +104,7 @@
 <p><strong>Done when.</strong> A new test <code>tests/test_a_lander_clears_a_stale_index_lock.py</code> covers four cases. A temporary repository with an index lock aged eleven minutes, unchanged and held open by no process, is merged by <code>crew merge</code>, and its record names the removal and the age. The same lock held open by a live child process refuses, and the file survives. A lock whose mtime is touched during the retries refuses and survives. A lock aged five minutes refuses and survives. At the base revision the first case refuses. Removing the mtime condition fails the third case, and removing the holder check fails the second. The test files importing <code>reckon/crew/merge.py</code> or <code>reckon/crew/promotion_scope.py</code> add no failure against the base, run on the all_debug partition (<code>env -u SLURM_JOB_ID -u SLURM_JOBID sbatch --partition=all_debug</code>) one arm at a time with at most <code>-n 4</code>. Each log is under the run directory, starts with its revision and the literal command, and ends in <code>EXIT=</code>. Ruff check and ruff format --check add no findings on the staged paths. Write paths: the module that defines <code>_run_waiting_out_a_held_index_lock</code>, <code>reckon/crew/merge.py</code>, and the new test.</p>
 
     <h2 id="s11">§11 — Two promotions of one implementation never strand it</h2>
-<section data-reckon="section" data-id="s11" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="implementable" data-links=""></section>
+<section data-reckon="section" data-id="s11" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="done" data-links=""></section>
 <p><strong>Why.</strong> On 14 November a coordinator's <code>crew complete --land --wait</code> for an implementation, r-20261114T094542374628 (§104 of the-monitor-shows-the-work-it-watches), raced the station's own promotion of the same run. The second writer met "the ledger row for run ... is already written; do not re-promote", and the pointer was kept as <code>pending_landing_repair</code> with its reviewed head unmerged. The pending-landing pass did not finish it, so the run sat delivered until a coordinator merged the head by hand. The same race stranded two review runs that day. reckon-f2's work-flows-to-the-lane §50 retires a promoted review run's pointer. This section covers implementations, and was handed to this plan by reckon-f2.</p>
 <p><strong>Deliverable.</strong> A promotion that finds the other writer's ledger row already written treats that row as its own success and finishes the landing of the reviewed head it names itself, through the same merge the winning writer would run. It then retires the live pointer. The run is never left delivered with its head off main.</p>
 <p><strong>Done when.</strong> A new test <code>tests/test_a_raced_promotion_still_lands.py</code> runs two promotions of one reviewed implementation against a temporary repository, the second starting after the first has written the ledger row. When the second call returns, the reviewed head is an ancestor of main, the live pointer is gone, and neither call raised. At the base revision the head is not on main and the pointer reads <code>pending_landing_repair</code>. The negative control removes the loser's landing step and fails the case. The test files importing <code>reckon/crew/promotion.py</code> or <code>reckon/crew/pending_landing.py</code> add no failure against the base, run on the all_debug partition one arm at a time with at most <code>-n 4</code>. Each log is under the run directory, starts with its revision and the literal command, and ends in <code>EXIT=</code>. Ruff check and ruff format --check add no findings on the staged paths. Write paths: <code>reckon/crew/promotion.py</code>, <code>reckon/crew/pending_landing.py</code> and the new test.</p>
@@ -157,20 +157,27 @@
     <pre class="r-fu-prompt">/reckon-build a-landing-never-waits-on-a-shared-index §9</pre>
     <p class="r-fu-outcome">§9 is done: its landing is recorded in the s9 comment of 2026-11-13T03:25.</p>
     </article>
-<article class="r-fu" data-id="f-alnw-007" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-a6" data-written-at="2026-11-14" data-recommends-skill="" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-alnw-007" data-status="resolved" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-a6" data-written-at="2026-11-14" data-recommends-skill="" data-resolved-at="2026-11-15T10:17:17+00:00" data-resolved-by="reckon-a6">
     <h4 class="r-fu-title">Build §10: a lander clears an index lock whose holder is proven gone</h4>
     <div class="r-fu-body"><p>A stale lock with no holder blocked every landing for 16 minutes on 14 November.</p></div>
     <pre class="r-fu-prompt">/reckon-build a-landing-never-waits-on-a-shared-index §10</pre>
+    <p class="r-fu-outcome"><p>§10 landed: a lander clears an index lock whose holder is proven gone; its declaration is done.</p></p>
     </article>
-<article class="r-fu" data-id="f-alnw-008" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-a6" data-written-at="2026-11-14" data-recommends-skill="" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-alnw-008" data-status="resolved" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-a6" data-written-at="2026-11-14" data-recommends-skill="" data-resolved-at="2026-11-15T10:17:17+00:00" data-resolved-by="reckon-a6">
     <h4 class="r-fu-title">Build §11: two promotions of one implementation never strand it</h4>
     <div class="r-fu-body"><p>A coordinator's promotion racing the station's left §104 unmerged as a pending landing on 14 November.</p></div>
     <pre class="r-fu-prompt">/reckon-build a-landing-never-waits-on-a-shared-index §11</pre>
+    <p class="r-fu-outcome"><p>§11 landed at <code>e3ba3a2b59</code>: a promotion that loses the race to a concurrent promotion of the same reviewed head completes the landing; five tests over a temporary origin drive two real <code>crew complete --land --wait</code> promotions.</p></p>
     </article>
 <article class="r-fu" data-id="f-alnw-013" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-c0" data-written-at="2026-11-15" data-recommends-skill="/reckon-build a-landing-never-waits-on-a-shared-index §13" data-resolved-at="" data-resolved-by="">
     <h4 class="r-fu-title">Build §13, then re-measure §4</h4>
     <div class="r-fu-body"><p>§4's measurement found one of twelve concurrent promotions refused at its landing commit because the lock-wait helper retries only a lock it still sees. §13 retries a lock released before the helper looked. §4 is measured again once §13 lands.</p></div>
     <pre class="r-fu-prompt">/reckon-build a-landing-never-waits-on-a-shared-index §13</pre>
+    </article>
+<article class="r-fu" data-id="f-alnw-009" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-a6" data-written-at="2026-11-15 11:20" data-recommends-skill="/reckon-build a-landing-never-waits-on-a-shared-index §12" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Build §12</h4>
+    <div class="r-fu-body"><p>§10 and §11 have landed; §12 is the remaining implementable section.</p></div>
+    <pre class="r-fu-prompt">/reckon-build a-landing-never-waits-on-a-shared-index §12</pre>
     </article>
 </section>
   <section data-reckon="comments" id="comments" class="r-comments">
@@ -199,7 +206,7 @@
     <div class="r-comment-body"><p>the review of r-20261114T174337281611-raced-promotion-lands-s11 at base d6476cf68cf1 and head 8cf6206f201d scores goal_fidelity 19, evidence 17, scope_discipline 20, durability 15, fit 16 and reuse 19, adds no failure (0 added ids, by test id across the run's own importer arms), and files three non-blocking findings against the evidence fragment's companion-log description, the append-race case's conditional exit-code assertion, and its caller-name keying.</p></div>
 </div>
 <div class="r-comment" data-section="s11" data-id="c-run-r-20261114T174337281611-raced-promotion-lands-s11" data-who="reckon-build" data-when="2026-11-15T04:37:11Z">
-    <div class="r-comment-body"><p>a promotion that meets another writer&#x27;s ledger row now treats that row as its own success and lands the reviewed head itself through the caller&#x27;s merge, retiring the live pointer only while its identity fields still name the attempt this promotion read, and leaving a pointer a newer attempt owns exactly as it is.</p></div>
+    <div class="r-comment-body"><p>a promotion that meets another writer's ledger row now treats that row as its own success and lands the reviewed head itself through the caller's merge, retiring the live pointer only while its identity fields still name the attempt this promotion read, and leaving a pointer a newer attempt owns exactly as it is.</p></div>
 </div>
 <div class="r-comment" data-section="s13" data-id="c-run-r-20261115T045402525342-review-of-a-landing-commit-retries-a-released-lock-efeb0d0d4339" data-who="reckon-build" data-when="2026-11-15T05:21:02.986Z">
     <div class="r-comment-body"><p>reviewed r-20261115T031844233655-a-landing-commit-retries-a-released-lock from base 251cb1cd058784974614ba8cc292d665b7ca7dc1 to head efeb0d0d4339cb0ed0700c01957f488ae99aef12: scores goal_fidelity 18, evidence 18, scope_discipline 16, durability 14, fit 15, reuse 18; added_failure_count 0 over an added_failure_ids of []; one blocking finding at reckon/crew/merge.py:867, where the retry loop dropped its result.returncode != 0 guard and so retries a successful step whenever the checkout's index.lock exists at the check.</p></div>
