@@ -53,6 +53,36 @@ class _Duties:
         return None
 
 
+class _Reflex:
+    """The station's review-reflex arm, without the thread it starts."""
+
+    def start(self) -> None:
+        return None
+
+    def stop(self) -> None:
+        return None
+
+
+class _Station:
+    """A station that records the arms it was constructed with.
+
+    ``run_station`` starts beats, claims a lease and ticks on its own threads,
+    so the stand-in answers the calls the loop makes around a tick and nothing
+    else.
+    """
+
+    def __init__(self, store, **kwargs) -> None:
+        self.store = store
+        self.maintenance = kwargs.get("maintenance")
+        self.clock = lambda: MOMENT
+        self.duties = _Duties()
+        self.reflex = _Reflex()
+        self.ticked = 0
+
+    def tick(self, now=None) -> None:
+        self.ticked += 1
+
+
 class _Scheduler:
     """A scheduler that records each submitted script without running it."""
 
@@ -231,6 +261,55 @@ def test_the_pass_is_submitted_through_the_fleet_nodes_own_form(
     assert len(calls) == 1, calls
     assert calls[0]["partition"] == "all_debug", calls
     assert str(repository) in calls[0]["script"], calls
+
+
+def test_the_station_the_running_service_builds_carries_the_schedule(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The station the fleet service starts holds a maintenance sweep.
+
+    The tests around this one hand the station a sweep of their own, so the
+    construction that gives the *running* station one is this test's subject:
+    without it every other schedule test stays green while a station started
+    from the command line packs nothing. The station itself is replaced,
+    because a real one ticks over the operator's own crew home.
+    """
+
+    from reckon.crew import dispatch_launch, station, station_store
+    from reckon.crew import repository_maintenance as maintenance
+
+    built: list[_Station] = []
+    adopted: list[str] = []
+
+    class _Recording(_Station):
+        def __init__(self, store, **kwargs) -> None:
+            super().__init__(store, **kwargs)
+            built.append(self)
+
+    monkeypatch.setattr(station, "Station", _Recording)
+    monkeypatch.setattr(
+        dispatch_launch,
+        "_adopt_launched_workers_from_reexec",
+        lambda: adopted.append("adopted"),
+    )
+
+    def runtime_root() -> station_store.StationStore:
+        return station_store.StationStore(tmp_path / "runtime")
+
+    monkeypatch.setattr(
+        station_store.StationStore, "at_runtime_root", staticmethod(runtime_root)
+    )
+
+    station.run_station(once=True)
+
+    assert adopted == ["adopted"], adopted
+    assert len(built) == 1, built
+    active = built[0]
+    assert isinstance(active.maintenance, maintenance.MaintenanceSweep), (
+        active.maintenance
+    )
+    # The sweep is asked on the tick, which is the whole point of wiring it.
+    assert active.ticked == 1
 
 
 def test_a_refused_submission_is_reported_and_does_not_stop_the_tick(
