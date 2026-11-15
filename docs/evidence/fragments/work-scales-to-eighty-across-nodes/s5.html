@@ -39,6 +39,8 @@
 
   <p id="s5-negative-control"><strong>What stands in the control's place.</strong> The red log this node declares is the repair's own mutation: with the memo removed from <code>reckon/crew/recovery_wait.py</code>, the quiet-tick case fails on the 230 streams it reads (2 failed, EXIT=1), and passes with the memo restored. That is a control over the mechanism the node repaired, not over the section's time bound, and it is recorded as such.</p>
 
+  <p id="s5-gate"><strong>The gate both arms ran.</strong> <code>PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py</code> — the template with this node's write scope resolved over each arm's own tree. Base <code>0f519315992f429fae018708f84eba960b99fb15</code> exits 0 with 58 passed; head <code>1b8e50f1f13eed6c6772d1267223d3085a88ee74</code> exits 0 with 58 passed.</p>
+
   <p id="s5-logs"><strong>The logs.</strong> Under <code>logs/</code> in the run whose id names this node: <code>tick-base-all_debug.log</code> and <code>tick-head-all_debug.log</code> (the two arms above, each with its JSON), <code>tick-base-1mb.log</code> and <code>tick-head-1mb.log</code> (the same measure on the run's own node: base max 18.319 s, head max 13.643 s, both arms 0 readings over bound), and <code>negative-control.log</code>, the repair removed and the quiet-tick case failing.</p>
 </article>
 
