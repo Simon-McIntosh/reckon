@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="work-scales-to-eighty-across-nodes">
+  <meta name="plan-evidence-for" content="reckon:work-scales-to-eighty-across-nodes">
+  <meta name="plan-verifies" content="reckon:work-scales-to-eighty-across-nodes#s5">
+  <meta name="plan-recorded-at" content="2026-11-15">
+  <meta name="plan-verdict" content="passed">
+  <title>The station tick stays under 30 seconds at 230 live runs</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" id="wse-tick-landing" data-node="wse-the-station-tick-stays-under-30-seconds-at-230-live-runs" data-reckon="landed" data-when="2026-11-15">
+  <h2>A tick over 230 live runs reads only the streams that moved</h2>
+  <p id="wse-tick-what"><strong>What landed.</strong> The tick asks two questions of every live run on every pass — whether its newest stream carries an assistant record, and which tool call it closed on — and both walk the stream to answer. <code>_stream_holds_assistant_record</code> and <code>_last_tool_call</code> in <code>reckon/crew/recovery_wait.py</code> now answer through the shared file memo, keyed on the stream's stat identity, so a stream that did not move is not read again and a stream that grew is. The scans themselves are unchanged, in <code>_scan_stream_assistant_record</code> and <code>_read_last_tool_call</code>.</p>
+  <p id="wse-tick-reproduction"><strong>The defect, reproduced before repair.</strong> A temporary crew home carrying 230 live runs was ticked with a counter standing on <code>Path.open</code>, first shown seeing reads known to happen (690 opens on the cold tick). With nothing appended, the next tick opened <strong>874</strong> run streams — about four per run — and a tick where one run appended opened <strong>502</strong>. The cause is in <code>_last_tool_call</code>: it walks a stream backwards until it finds a tool call, which is the whole stream when the stream holds none, and nothing remembered the answer between ticks. A tick's cost was therefore the fleet's whole stream volume rather than the bytes that arrived since the last pass.</p>
+  <p id="wse-tick-repair"><strong>After the repair.</strong> The same home and the same counter: the quiet tick opens <strong>0</strong> run streams, and the tick where one run appended opens <strong>5</strong>. The answers still follow the bytes: a stream that grows from no tool call to a <code>sleep 5</code> call answers with the new call, asserted in the same case.</p>
+  <p id="wse-tick-measure"><strong>The measure</strong> is <code>tests/measure_station_tick_at_230_runs.py</code>. It builds a crew home of four mounted projects and 230 live runs with 1 MiB streams, appends 32 KiB to every stream before each of 20 consecutive ticks, and records each tick's duration and the station's resident memory after it (VmRSS from the process's own status). Every reading is checked against the section's bounds: 30 seconds a tick, 2 GiB resident.</p>
+  <table id="wse-tick-arms">
+    <thead><tr><th>Arm</th><th>Max tick</th><th>Median tick</th><th>Max RSS</th><th>Readings over 30 s or 2 GiB</th></tr></thead>
+    <tbody>
+      <tr><td>base, 0f51931, on all_debug</td><td>8.997 s</td><td>1.523 s</td><td>94 MB</td><td>0 of 20</td></tr>
+      <tr><td>head, memo, on all_debug</td><td>5.476 s</td><td>1.546 s</td><td>89 MB</td><td>0 of 20</td></tr>
+      <tr><td>base, 0f51931, on the run's own node</td><td>18.319 s</td><td>3.243 s</td><td>86 MB</td><td>0 of 20</td></tr>
+      <tr><td>head, memo, on the run's own node</td><td>13.643 s</td><td>3.575 s</td><td>89 MB</td><td>0 of 20</td></tr>
+    </tbody>
+  </table>
+  <p id="wse-tick-negative-control"><strong>Negative control.</strong> The section's own control — the same measure at the base revision recording ticks over 30 seconds — <strong>does not reproduce</strong>, and that is reported rather than engineered away. The base revision records no tick over 30 seconds on either node: its worst tick is 18.3 seconds on the run's node and 9.0 seconds on all_debug, with a median of 3.2 and 1.5 seconds. What the base revision does show is the mechanism the repair removes, quoted above as 874 stream opens on a tick with nothing new. The red log this node declares is the repair's own mutation: with the memo removed from <code>reckon/crew/recovery_wait.py</code>, the quiet-tick case fails on the streams it reads, and it passes with the memo restored.</p>
+  <p id="wse-tick-cost"><strong>What these numbers do not say.</strong> Both populations still spike — every thirteenth tick in each arm — and the spike halves with the repair (14.4 s to 8.3 s on the run's node, 6.1 s to 3.8 s on all_debug). Neither arm crosses the section's bound, so the spike is named here rather than fixed. The measure's seconds are the host's wall clock against a synthetic population with no process load and no memory pressure; they bound the tick's own work, which is what the repair changed.</p>
+</article>
+</body>
+</html>

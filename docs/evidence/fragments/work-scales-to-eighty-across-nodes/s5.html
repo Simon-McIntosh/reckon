@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="work-scales-to-eighty-across-nodes">
+  <meta name="plan-evidence-for" content="reckon:work-scales-to-eighty-across-nodes">
+  <meta name="plan-verifies" content="reckon:work-scales-to-eighty-across-nodes#s5">
+  <meta name="plan-recorded-at" content="2026-11-15">
+  <meta name="plan-verdict" content="passed">
+  <title>The station tick at 230 live runs, both arms</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+
+<article class="r-note" id="s5-measure" data-reckon="evidence" data-when="2026-11-15">
+  <h2>The station tick at 230 live runs: 20 ticks, both arms</h2>
+
+  <p id="s5-instrument"><strong>The instrument.</strong> <code>tests/measure_station_tick_at_230_runs.py</code> builds a temporary crew home: four mounted projects, each a real repository, and 230 live runs spread across them, each with a 1 MiB stream. Before each of 20 consecutive ticks it appends 32 KiB to every run's stream, as a live fleet's producers do; after each tick it records the tick's duration and the station's resident set size, read from the process's own <code>VmRSS</code>. A reading that reaches 30 seconds or 2 GiB makes the run exit non-zero.</p>
+
+  <p id="s5-arms"><strong>Both arms.</strong> Two revisions were measured through the same instrument, each in its own tree on the <code>all_debug</code> partition: the base revision <code>0f519315992f429fae018708f84eba960b99fb15</code> in a scratch extraction, and the run's head <code>325e19aa9644320fae50fb747b55b9bfd82ef6ba</code> in its worktree. The scratch extraction carries the measure module copied in, so both arms run the same instrument against their own <code>reckon</code> tree.</p>
+
+  <table id="s5-table">
+    <thead><tr><th>Arm</th><th>Ticks</th><th>Max</th><th>Median</th><th>Max RSS</th><th>Over bound</th><th>Exit</th></tr></thead>
+    <tbody>
+      <tr><td>base 0f51931</td><td>20</td><td>8.997 s</td><td>1.523 s</td><td>94 MB</td><td>0</td><td>0</td></tr>
+      <tr><td>head 325e19a</td><td>20</td><td>5.476 s</td><td>1.546 s</td><td>89 MB</td><td>0</td><td>0</td></tr>
+    </tbody>
+  </table>
+
+  <p id="s5-readings"><strong>Every reading.</strong> Base, seconds: 2.966, 8.997, 1.453, 1.456, 1.471, 1.451, 1.493, 1.467, 1.501, 1.489, 1.519, 1.494, 1.613, 6.081, 1.543, 1.528, 1.566, 1.54, 1.571, 1.546. Head, seconds: 2.81, 5.476, 1.542, 1.475, 1.513, 1.482, 1.512, 1.476, 1.519, 1.521, 1.549, 1.516, 1.547, 3.789, 2.033, 1.547, 2.165, 1.546, 1.585, 1.561. Resident memory after each tick: base 87 to 94 MB, head 77 to 89 MB.</p>
+
+  <p id="s5-negative-control"><strong>Negative control.</strong> The section's control is the same measure at the base revision recording ticks over 30 seconds. It <strong>does not reproduce</strong> at this population: the base arm's worst tick is 8.997 s and its median is 1.523 s. The base revision of this worktree already carries the earlier stream work, so the 2 to 6 minute ticks recorded on the fleet node are not reproducible from 230 live runs alone — they also depended on the node's memory pressure, which a synthetic population does not carry. What the base revision does show is the mechanism this node repaired: a tick over 230 live runs with nothing new read 874 run streams before the repair and reads none after it.</p>
+
+  <p id="s5-logs"><strong>The logs.</strong> Under <code>logs/</code> in the run whose id names this node: <code>tick-base-all_debug.log</code> and <code>tick-head-all_debug.log</code> (the two arms above, each with its JSON), <code>tick-base-1mb.log</code> and <code>tick-head-1mb.log</code> (the same measure on the run's own node: base max 18.319 s, head max 13.643 s, both arms 0 readings over bound), and <code>negative-control.log</code>, the repair removed and the quiet-tick case failing.</p>
+</article>
+
+</body>
+</html>
