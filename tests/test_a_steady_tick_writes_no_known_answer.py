@@ -1,12 +1,12 @@
 """A steady tick stores no git answer the store already holds.
 
-The crew home's git answer store is one file shared by every process reading it,
-and its write is an exclusive lock plus a whole-file rewrite through a rename.
-``_resolve_commit`` is called uncached while a tick composes each run's review
-subject, so every tick re-resolved the same citations and rewrote the store with
-the values it already carried: the lock was taken once per citation, and each
-rewrite handed the file a new stat identity, which is what stopped a reader's
-held copy from matching.
+The crew home's git answer store keeps one file per tree, shared by every process
+reading it, and its write is an exclusive lock plus a whole-file rewrite through
+a rename. ``_resolve_commit`` is called uncached while a tick composes each run's
+review subject, so every tick re-resolved the same citations and rewrote the same
+tree's file with the values it already carried: the lock was taken once per
+citation, and each rewrite handed the file a new stat identity, which is what
+stopped a reader's held copy from matching.
 
 The store holds answers that are functions of immutable object ids, so an answer
 already present is the answer the caller is about to store. Only a new or
@@ -51,12 +51,12 @@ def tick(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
     shas = _seed_commits(tree, 20)
 
     writes: list[str] = []
-    store_path = watch._git_answer_store_path()
+    store_path = watch._git_answer_tree_path(tree)
     store_writer = watch._update_git_answer_store
 
-    def recording(mutate: Callable[[dict[str, Any]], None]) -> None:
-        writes.append(str(store_path))
-        store_writer(mutate)
+    def recording(updated_tree: Path, mutate: Callable[[dict[str, Any]], None]) -> None:
+        writes.append(str(watch._git_answer_tree_path(updated_tree)))
+        store_writer(updated_tree, mutate)
 
     monkeypatch.setattr(watch, "_update_git_answer_store", recording)
     return tree, shas, writes
@@ -70,7 +70,7 @@ def test_a_second_pass_over_stored_answers_writes_nothing(tick):
     assert first == shas
     assert len(writes) == 20
 
-    store_path = watch._git_answer_store_path()
+    store_path = watch._git_answer_tree_path(tree)
     assert store_path.is_file()
     before = store_path.stat()
 
