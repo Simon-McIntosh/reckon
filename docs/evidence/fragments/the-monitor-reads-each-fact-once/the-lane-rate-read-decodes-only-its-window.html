@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="the-monitor-reads-each-fact-once">
+  <meta name="plan-evidence-for" content="reckon:the-monitor-reads-each-fact-once">
+  <meta name="plan-verifies" content="reckon:the-monitor-reads-each-fact-once#s61">
+  <meta name="plan-recorded-at" content="2026-11-15">
+  <meta name="plan-verdict" content="passed">
+  <title>The lane rate read decodes only its window</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+
+<article class="r-note" id="the-lane-rate-read-decodes-only-its-window-landing" data-node="the-lane-rate-read-decodes-only-its-window" data-reckon="landed" data-when="2026-11-15">
+  <h2>A lane rate read bounded by its window rather than by the ledger</h2>
+
+  <p id="the-lane-rate-read-decodes-only-its-window-what"><strong>What landed.</strong> <code>recovery_stream._lane_reference_rates</code> passed the window it judges against to the ledger read instead of reading past it. It now calls <code>ledger.load(project, activity_since=start)</code>, which the run index serves from its own indexed activity scalar, so a warm index fetches only the rows whose newest stamp is no older than the seven-day window's start. <code>run_activity_seconds</code> takes the maximum over the created, dispatched, launched and completion stamps, and a completion inside the window is one of those stamps, so the bound admits a superset of the rows the function can use: the rates it returns are the same ones the unbounded read returned. The ledger module itself needed no change; the bound it already publishes was simply not being asked for.</p>
+
+  <p id="the-lane-rate-read-decodes-only-its-window-gate"><strong>Gate.</strong> <code>tests/test_the_lane_rate_read_decodes_only_its_window.py</code> builds a 2,030-row ledger shaped like the live one — 2,000 completed more than eight days before the fixture's own instant, 30 inside the window across two lanes — warms its on-disk index with one read, then calls the function once for a new bucket. A recording stand-in on the per-row decode counts the payload records the call decodes, and the case asserts at most 60, that the recorded rows are exactly the in-window ones, and that the per-lane medians equal the unbounded read's medians for the same ledger.</p>
+
+  <p id="the-lane-rate-read-decodes-only-its-window-counts"><strong>The two counts.</strong> At the head revision the call decodes <strong>30</strong> payload records of 2,030 rows. At the base revision (<code>e278e8f173</code>) the same case decodes <strong>2,030</strong> and fails the bound, which is the declared negative control.</p>
+
+  <p id="the-lane-rate-read-decodes-only-its-window-live"><strong>The live ledger, measured on <code>all_debug</code>.</strong> One call for a fresh bucket against the operator's reckon ledger (10,794 rows, 3 lanes), both arms in one job: at the base revision it decodes <strong>10,794</strong> rows in <strong>5.79 s</strong> at a peak RSS of <strong>1.67 GB</strong> (from 102 MB); at the station's head revision it decodes <strong>1,691</strong> rows — the live history's own seven-day population — in <strong>1.30 s</strong> at a peak of <strong>419 MB</strong> (from 97 MB). The read now scales with the window's population rather than the ledger's length. Both arms returned the same 3 lanes.</p>
+
+  <p id="the-lane-rate-read-decodes-only-its-window-arms"><strong>Matched arms.</strong> Two arms ran on the <code>all_debug</code> partition over the test files importing the changed module, each arm resolved over its own tree, each log opening with its revision and literal command and ending in its own <code>EXIT=</code>. The base arm collects no failure the head arm does not; the after arm adds this node's case. The counts are in the node's manifest beside the log paths.</p>
+</article>
