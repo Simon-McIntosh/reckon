@@ -2088,7 +2088,7 @@ def _document_is_usable(directory: Path, doc: Any) -> bool:
     entries = doc.get("entries")
     if not isinstance(entries, dict):
         return False
-    return isinstance(doc.get("runs"), dict)
+    return isinstance(doc.get("runs"), dict) and isinstance(doc.get("run_names"), dict)
 
 
 def _fresh_index_document(directory: Path) -> dict[str, Any] | None:
@@ -2235,6 +2235,7 @@ def _rebuild_index_document(directory: Path) -> dict[str, Any]:
         ],
         "entries": entries,
         "runs": runs,
+        "run_names": _run_name_map(entries),
         "directory_identity": identity,
         "dir_mtime_ns": identity[3] if identity is not None else None,
     }
@@ -2242,6 +2243,71 @@ def _rebuild_index_document(directory: Path) -> dict[str, Any]:
 
 def _runs_of(entries: Mapping[str, Any]) -> set[str]:
     return {str(entry.get("reviewed_run_id") or "") for entry in entries.values()}
+
+
+def _run_name_map(entries: Mapping[str, Any]) -> dict[str, list[str]]:
+    """The record names each run holds, keyed by the run the record reviews.
+
+    A staging record is named after the run it reviews, so this map answers
+    "which names are this run's records" without walking the store. Keeping the
+    names beside the run digest lets a reader classify a pointer by looking at
+    that pointer's own records rather than at the whole store.
+    """
+    names: dict[str, list[str]] = {}
+    for name, entry in entries.items():
+        run_id = str(entry.get("reviewed_run_id") or "")
+        if run_id:
+            names[run_id] = [*names.get(run_id, []), str(name)]
+    for held in names.values():
+        held.sort()
+    return names
+
+
+def _move_run_name(
+    doc: dict[str, Any],
+    name: str,
+    previous: Mapping[str, Any] | None,
+    entry: Mapping[str, Any],
+) -> None:
+    """Keep one run's name list in step with a write or removal of ``name``.
+
+    The map is advanced from the entry that changed rather than rebuilt, so a
+    write costs the run's own record count and never the store's size. A record
+    rewritten under a different reviewed run moves between the two lists.
+    """
+    run_names = doc.setdefault("run_names", {})
+    if not isinstance(run_names, dict):
+        return
+    new_run = str(entry.get("reviewed_run_id") or "")
+    if previous is not None:
+        old_run = str(previous.get("reviewed_run_id") or "")
+        if old_run and old_run != new_run:
+            held = run_names.get(old_run)
+            if isinstance(held, list) and name in held:
+                held.remove(name)
+                if not held:
+                    run_names.pop(old_run, None)
+    if new_run:
+        held = run_names.get(new_run)
+        if not isinstance(held, list):
+            held = []
+            run_names[new_run] = held
+        if name not in held:
+            held.append(name)
+            held.sort()
+
+
+def _drop_run_name(doc: dict[str, Any], name: str, entry: Mapping[str, Any]) -> None:
+    """Remove a deleted record's name from the run that held it."""
+    run_names = doc.get("run_names")
+    if not isinstance(run_names, dict):
+        return
+    run_id = str(entry.get("reviewed_run_id") or "")
+    held = run_names.get(run_id)
+    if isinstance(held, list) and name in held:
+        held.remove(name)
+        if not held:
+            run_names.pop(run_id, None)
 
 
 def _index_stored_record(path: Path, record: Mapping[str, Any]) -> None:
@@ -2270,6 +2336,7 @@ def _index_stored_record(path: Path, record: Mapping[str, Any]) -> None:
             touched.add(str(previous.get("reviewed_run_id") or ""))
         entry["entry_version"] = version
         entries[path.name] = entry
+        _move_run_name(doc, path.name, previous, entry)
         runs = doc.setdefault("runs", {})
         log = doc.setdefault("log", [])
         for run_id in sorted(touched):
@@ -2385,6 +2452,7 @@ def reconcile_foreign_write(directory: Path) -> int:
             doc["version"] = int(doc.get("version") or 0) + 1
             entry["entry_version"] = doc["version"]
             entries[name] = entry
+            _move_run_name(doc, name, previous, entry)
             log.append([doc["version"], entry["reviewed_run_id"]])
             touched.add(entry["reviewed_run_id"])
             if previous is not None:
@@ -2395,6 +2463,7 @@ def reconcile_foreign_write(directory: Path) -> int:
             changed += 1
         for name in sorted(set(entries) - present.keys()):
             gone = entries.pop(name)
+            _drop_run_name(doc, name, gone)
             run_id = str(gone.get("reviewed_run_id") or "")
             doc["version"] = int(doc.get("version") or 0) + 1
             log.append([doc["version"], run_id])
@@ -2565,6 +2634,27 @@ def store_index_run_digest(directory: Path, run_id: str) -> str | None:
     if not isinstance(runs, Mapping):
         return None
     return runs.get(run_id)
+
+
+def review_run_record_names(directory: Path, run_id: str) -> list[str] | None:
+    """The record names one run holds, read from the index's per-run map.
+
+    This is the lookup a classification asks: a store that keeps an index
+    document answers with the run's own names and never looks at another run's
+    record, so the cost is the run's record count and not the store's size. A
+    directory that keeps no index -- the committed reviews tree, or a store the
+    writer index does not own -- answers ``None``, and the caller lists it.
+    """
+    document = store_index_document(directory)
+    if document is None:
+        return None
+    run_names = document.get("run_names")
+    if not isinstance(run_names, Mapping):
+        return None
+    names = run_names.get(run_id)
+    if isinstance(names, list):
+        return [str(name) for name in names]
+    return []
 
 
 class _IndexedStat:
