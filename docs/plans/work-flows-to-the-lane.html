@@ -24,7 +24,7 @@
   <title>Work Flows To The Lane | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="357">
+<meta name="plan-version" content="358">
 <meta name="plan-modified" content="2026-11-15">
 </head>
 <body>
@@ -1282,6 +1282,9 @@
 </div>
 <div class="r-comment" data-section="s76" data-id="c-run-r-20261115T152105901404-review-of-wftl-a-producer-restarts-without-linger-994d51ee3a16" data-who="reckon-build" data-when="2026-11-15T15:30:21.662Z">
     <div class="r-comment-body"><p>an independent review of 994d51ee3a is stored under the reviewed run's review-records: six dimensions goal_fidelity 15, evidence 15, scope_discipline 20, durability 16, fit 18, reuse 13 (total 97), two non-blocking findings (the reviewed manifest's after_suite command and log_path are mangled shell fragments at manifest.md:21; the new test file restates the poll/pid helpers and the parametric kill case owned by tests/test_a_crashed_producer_is_restarted.py), added_failure_count 0 derived from the reviewed run's logs/s76-base-arm.log (0 failures, 2 passed at 8863ecb4f369) and logs/s76-after-arm.log (0 failures, 2 passed at 994d51ee3a); both record files pass `crew check --review` with ok true, EXIT=0.</p></div>
+</div>
+<div class="r-comment" data-section="s76" data-id="c-run-r-20261115T124306832456-wftl-a-producer-restarts-without-linger" data-who="reckon-build" data-when="2026-11-15T14:47:34.989Z">
+    <div class="r-comment-body"><p>no product change was needed — `reckon/crew/dispatch_watch.py`&#x27;s arming supervisor has restarted a crashed fallback producer since 4152e8c57b, so a SIGKILL lands in its crash branch; added `tests/test_a_killed_producer_is_restarted_without_linger.py`, whose killed-producer case reads a new live producer writing a snapshot after the kill at 2 passed in 9.54s at base and 2 passed in 2.68s on all_debug, and whose ensure case calls ensure five times and counts one pid record</p></div>
 </div>
 <div class="r-comment" data-section="s77" data-id="c-run-r-20261115T134710064745-review-of-wftl-an-admission-pass-fills-free-slots-codex-2b3759efa9b3" data-who="reckon-build" data-when="2026-11-15T13:55:27Z">
     <div class="r-comment-body"><p>Independent review stored for d09b356e177f5cd9f4b92669d912a69c3b75fa26..2b3759efa9b31bba4615cb58cda3e784e0f4041d; six dimensions scored, zero added gate failures, one blocking finding for the missing one-hour occupancy measure.</p></div>
