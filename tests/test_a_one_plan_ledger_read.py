@@ -90,7 +90,7 @@ def _decoded_plans():
 def test_a_one_plan_read_decodes_no_other_plans_documents(store: Path) -> None:
     """The measured read costs its own plan's payloads and no others."""
     with _decoded_plans() as decoded:
-        rows, _version = ledger.runs(PROJECT, store, plan=SELECTED)
+        rows = ledger.runs(PROJECT, store, plan=SELECTED)
 
     assert len(rows) == RUNS_PER_PLAN, (
         f"the read returns the plan's own rows: {len(rows)} of {RUNS_PER_PLAN}"
@@ -105,7 +105,7 @@ def test_a_one_plan_read_decodes_no_other_plans_documents(store: Path) -> None:
 def test_the_unfiltered_read_decodes_every_plan(store: Path) -> None:
     """The positive control: the instrument sees every plan when unfiltered."""
     with _decoded_plans() as decoded:
-        rows, _version = ledger.runs(PROJECT, store)
+        rows = ledger.runs(PROJECT, store)
 
     assert len(rows) == PLAN_COUNT * RUNS_PER_PLAN
     seen = {plan for plan in decoded if plan}
@@ -117,8 +117,8 @@ def test_the_unfiltered_read_decodes_every_plan(store: Path) -> None:
 
 def test_the_filtered_read_is_the_unfiltered_read_filtered(store: Path) -> None:
     """Pushing the filter into the query changes which rows cost, not which return."""
-    filtered, _filtered_version = ledger.runs(PROJECT, store, plan=SELECTED)
-    everything, _version = ledger.runs(PROJECT, store)
+    filtered = ledger.runs(PROJECT, store, plan=SELECTED)
+    everything = ledger.runs(PROJECT, store)
     expected = [
         record for record in everything if str(record.get("plan") or "") == SELECTED
     ]
