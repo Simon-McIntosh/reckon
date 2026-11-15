@@ -1,0 +1,205 @@
+"""The station submits the maintenance pass, so no hand command is needed.
+
+A user systemd timer cannot carry the schedule: this cluster refuses lingering,
+so a timer stops at logout while the fleet's own long-running service runs for
+as long as the fleet does. The station therefore submits a packing pass, as a
+scheduler job on a compute partition, for every managed repository whose
+recorded pass is older than a day, and submits nothing for one whose pass is
+younger.
+"""
+
+from __future__ import annotations
+
+import subprocess
+from datetime import UTC, datetime, timedelta
+from pathlib import Path
+
+import pytest
+
+MOMENT = datetime(2026, 11, 15, 6, 30, tzinfo=UTC)
+A_DAY = timedelta(days=1)
+TWO_DAYS = 2 * A_DAY
+AN_HOUR = timedelta(hours=1)
+
+
+class _Sweeps:
+    """The station's review-sweep arm, answered without starting a thread."""
+
+    def __call__(self, project: str, *, session: str | None = None, **kwargs) -> dict:
+        return {}
+
+
+class _Duties:
+    """The station's derivation arm, without the worker threads it starts.
+
+    A real derivation runs on a daemon thread that outlives the tick. In this
+    process it would still be writing when the interpreter shuts down, and a
+    daemon thread caught mid-write is what turns a passing run into a crash at
+    exit. The tick's calls are recorded instead.
+    """
+
+    def __init__(self) -> None:
+        self.requests: list[tuple] = []
+
+    def committing(self):
+        from contextlib import nullcontext
+
+        return nullcontext()
+
+    def request(self, *args, **kwargs) -> None:
+        self.requests.append((args, kwargs))
+
+    def drain(self, timeout=None) -> None:
+        return None
+
+
+class _Scheduler:
+    """A scheduler that records each submitted script without running it."""
+
+    def __init__(self) -> None:
+        self.scripts: list[str] = []
+        self.argv: list[str] = []
+
+    def __call__(self, argv, **kwargs) -> subprocess.CompletedProcess[str]:
+        self.argv.append(list(argv))
+        self.scripts.append(str(kwargs.get("input") or ""))
+        return subprocess.CompletedProcess(
+            args=list(argv), returncode=0, stdout="4242;cluster\n", stderr=""
+        )
+
+
+def _git(repository: Path, *args: str) -> None:
+    subprocess.run(
+        ["git", "-C", str(repository), *args],
+        capture_output=True,
+        text=True,
+        check=True,
+    )
+
+
+def _repository(root: Path, name: str) -> Path:
+    """A managed repository, with the docs directory a project is mounted at."""
+
+    repository = root / name
+    (repository / "docs").mkdir(parents=True)
+    _git(repository, "init", "-q", "-b", "main")
+    _git(repository, "config", "user.email", "fixture@example.invalid")
+    _git(repository, "config", "user.name", "fixture")
+    _git(repository, "config", "gc.auto", "0")
+    (repository / "README.md").write_text("reachable\n", encoding="utf-8")
+    _git(repository, "add", "README.md")
+    _git(repository, "commit", "-qm", "the history")
+    return repository
+
+
+def _station(root: Path, home: Path, projects: dict[str, Path], sweep):
+    from reckon.crew import station, station_store
+
+    store = station_store.StationStore(root / "station")
+    beat = station.SweepBeat(sweep=_Sweeps(), start=lambda action: action())
+    return station.Station(
+        store,
+        home=home,
+        projects=lambda: projects,
+        sweeps=beat,
+        duties=_Duties(),
+        maintenance=sweep,
+    )
+
+
+def test_only_the_repository_whose_pass_is_old_is_submitted(tmp_path: Path, home: Path):
+    from reckon.crew import repository_maintenance as maintenance
+
+    stale = _repository(tmp_path, "stale")
+    fresh = _repository(tmp_path, "fresh")
+    # Each repository's own record says when its last pass ran.
+    maintenance.maintenance_pass(stale, home=home, now=MOMENT - TWO_DAYS)
+    maintenance.maintenance_pass(fresh, home=home, now=MOMENT - AN_HOUR)
+
+    scheduler = _Scheduler()
+    sweep = maintenance.MaintenanceSweep(
+        home=home,
+        clock=lambda: MOMENT,
+        submit=lambda repository: maintenance.submit_pass(
+            repository, home=home, runner=scheduler
+        ),
+    )
+    node = _station(
+        tmp_path,
+        home,
+        {"stale-project": stale / "docs", "fresh-project": fresh / "docs"},
+        sweep,
+    )
+
+    node.tick(now=MOMENT)
+
+    assert len(scheduler.scripts) == 1, scheduler.scripts
+    script = scheduler.scripts[0]
+    assert str(stale) in script
+    assert str(fresh) not in script
+    # The job is submitted to a compute partition, never to the node the fleet
+    # holds: a packing pass is the heavy work this schedule exists to place.
+    partitions = [
+        line.split("--partition=", 1)[1].split()[0]
+        for line in script.splitlines()
+        if line.startswith("#SBATCH --partition=")
+    ]
+    assert partitions == [maintenance.MAINTENANCE_PARTITION], script
+    assert partitions[0].endswith("_debug"), partitions
+
+
+def test_a_repository_with_no_record_is_submitted_once(tmp_path: Path, home: Path):
+    """A repository never packed has no record, and the first tick submits it."""
+
+    from reckon.crew import repository_maintenance as maintenance
+
+    repository = _repository(tmp_path, "never-packed")
+    scheduler = _Scheduler()
+    sweep = maintenance.MaintenanceSweep(
+        home=home,
+        clock=lambda: MOMENT,
+        submit=lambda path: maintenance.submit_pass(path, home=home, runner=scheduler),
+    )
+    node = _station(tmp_path, home, {"never": repository / "docs"}, sweep)
+
+    node.tick(now=MOMENT)
+
+    assert len(scheduler.scripts) == 1, scheduler.scripts
+    # A second tick inside the sweep's own check interval submits nothing.
+    node.tick(now=MOMENT + timedelta(minutes=2))
+    assert len(scheduler.scripts) == 1, scheduler.scripts
+
+
+def test_a_refused_submission_is_reported_and_does_not_stop_the_tick(
+    tmp_path: Path, home: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """One repository's refused job leaves the other's pass submitted."""
+
+    from reckon.crew import repository_maintenance as maintenance
+
+    first = _repository(tmp_path, "first")
+    second = _repository(tmp_path, "second")
+    submitted: list[str] = []
+
+    def submit(path: Path) -> dict:
+        if path.name == "first":
+            raise OSError("sbatch refused the maintenance pass: invalid partition")
+        submitted.append(str(path))
+        return {"repository": str(path), "job_id": "1"}
+
+    sweep = maintenance.MaintenanceSweep(home=home, clock=lambda: MOMENT, submit=submit)
+    node = _station(
+        tmp_path, home, {"first": first / "docs", "second": second / "docs"}, sweep
+    )
+
+    node.tick(now=MOMENT)
+
+    assert submitted == [str(second)]
+    lines = [
+        line
+        # The row is printed, so a coordinator reading the station's stream
+        # learns a repository went unpacked without reading the scheduler.
+        for line in capsys.readouterr().out.splitlines()
+        if line.startswith("station-maintenance:")
+    ]
+    assert any("'ok': False" in line and str(first) in line for line in lines), lines
