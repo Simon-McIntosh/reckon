@@ -26,7 +26,7 @@
   <title>The Monitor Shows The Work It Watches | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="898">
+<meta name="plan-version" content="900">
 <meta name="plan-modified" content="2026-11-15">
 <meta name="plan-supersedes" content="a-follower-keeps-your-work-in-view,monitor-renders-what-it-is-given,a-follower-lives-as-long-as-its-session">
 </head>
@@ -2756,6 +2756,12 @@ Both cases run under the file's existing temporary crew home.</li>
 </div>
 <div class="r-comment" data-section="s99" data-id="c-run-r-20261105T131501961323-reland-the-reviewed-change-that-keeps-a-neverlaunched" data-who="reckon-build" data-when="2026-11-05T14:36:18.629Z">
     <div class="r-comment-body"><p>Re-landed the reviewed parked-request budget fix unchanged on base cd5edbd573 (patch byte-identical to git diff 98d07499d1 918894481d); elapsed now charges from launch, a never-launched pointer reports no elapsed/overrun and carries waiting_seconds (declared in LIVE_CLASSIFICATION_FIELDS); gate 23 passed at head effb92dc47 against 16 passed at base, importers 86 passed both sides, declared negative control EXIT=1 with the awaiting-upstream case failing on the overrun assertion.</p></div>
+</div>
+<div class="r-comment" data-section="s137" data-id="c-run-r-20261114T174601341774-station-prunes-dead-registrations-s137" data-who="reckon-build" data-when="2026-11-14T22:53:40.217Z">
+    <div class="r-comment-body"><p>The station prunes released follower registrations older than a day from its tick maintenance stage at most once an hour, printing one line per removal; tests/test_the_station_prunes_dead_registrations.py passes 3/3, head arm 58 passed EXIT=0, base arm 53 passed with 2 scaffolding errors, and the station/follower_registration import population adds no failure (17 failed on both arms).</p></div>
+</div>
+<div class="r-comment" data-section="s137" data-id="c-run-r-20261114T233128471265-review-of-station-prunes-dead-registrations-s137-c6bf07a5ba10" data-who="reckon-build" data-when="2026-11-15T00:57:22.910Z">
+    <div class="r-comment-body"><p>Review of r-20261114T174601341774-station-prunes-dead-registrations-s137 at c6bf07a5ba: all six dimensions scored (total 113 of 120), zero added failures against the base gate logs, two non-blocking findings (registry of an unmounted project never swept; the gate logs record no partition).</p></div>
 </div>
 </section>
 <section data-reckon="gates" id="gates" class="r-gates">
