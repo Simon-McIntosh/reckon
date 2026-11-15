@@ -1,0 +1,176 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-15T00:04:27.880Z",
+  "dispatched_at": "2026-11-14T23:37:02Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/queued-work-needs-no-workaround.html:280",
+      "id": "done_when-1",
+      "reason": "as written the node's central verdict is passable before it writes a line, and a red base arm for the timing measure (or a stated post-fix profile) is what makes the ten-second claim a measurement instead of a coincidence.",
+      "text": "\u00a716's headline measure is \"every one is under ten seconds\", but its only negative control is the classifier count, and the section itself states that 277 of the 402 samples were rebuilding read-only views of the review store's index document and that \"That rebuild is fixed separately: the view is now shared per stored value\" (reckon/crew/obligations.py:2870: \"The read-only region shares parsed document views without copying them\"), so the timing arm can pass on the base revision and cannot show this node's change caused it rather than the landed fix",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/queued-work-needs-no-workaround.html:280",
+      "id": "done_when-2",
+      "reason": "a measure that mutates the live fleet and spends worker seats is not repeatable at will and can start work nobody asked for, so the section must name how the dispatch requests are dropped, held, or routed to a scratch crew home before the node can run it five times.",
+      "text": "\u00a716 requires \"five real dispatches that are queued\" against \"the real store\" on the fleet node, with no statement that the resulting requests are dropped or held, so the measure writes five live queued requests into the operator's project queue; once \u00a717 lands, a queued request is launched when a seat frees, so the timing measure itself puts five real workers on the fleet",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/queued-work-needs-no-workaround.html:290",
+      "id": "wiring-1",
+      "reason": "the followup is the plan's only build instruction, so a range that stops at \u00a715 leaves \u00a716 (dispatch latency) and \u00a717 (placement-bound queueing) unqueued unless the coordinator overrides the plan's own text.",
+      "text": "the plan's single driving followup says \"\u00a72\u2013\u00a715 are independent ... queue them all in one batch\", while \u00a716 and \u00a717 are declared implementable in plan-section-declarations and carry no other wire, so the batch instruction a coordinator follows excludes the two newest sections",
+      "type": "wiring",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/queued-work-needs-no-workaround.html:284",
+      "id": "wiring-2",
+      "reason": "the seat-free launch on a metered lane has no owning section and no tested case, so a queueing-only implementation of \u00a717 passes its own gate while the request still never runs, which is the workaround the section exists to remove.",
+      "text": "\u00a717's deliverable says a placement-bound dispatch \"is stored as a queued request ... and is launched when a seat frees\" and then hands launching to \u00a77, but \u00a77 delivers only \"An awaiting-upstream request on a metered lane is launched by admission when its upstream lands\" with a single done-when case for that trigger, and the plan declares every section independent (plan.html:57) with no depends-on or informs edge between them",
+      "type": "wiring",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/queued-work-needs-no-workaround.html:284",
+      "id": "done_when-3",
+      "reason": "the tested set shrinks to cases the change is meant to eliminate, so the gate can sing on the queued path a dangling run id that no case reads.",
+      "text": "\u00a717's deliverable requires that \"A printed run id always names a pointer that exists\", but the only case testing it is \"No refused dispatch leaves a printed run id without a pointer\", scoped to refused dispatches, while at the delivered head the placement-bound dispatch is queued rather than refused and is exactly the path that prints an id without a pointer",
+      "type": "done_when",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "3a525b463e0643fa813cc77009a74d84d94493b3",
+  "plan_fingerprint": "a420df9700a8b62dae6f69fe488a46b228dfe2066208f31542d970e67f40b946",
+  "plan_slug": "queued-work-needs-no-workaround",
+  "plan_version": 1,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "a4583d4478340e4f87f86473244cc3de3d4556dc",
+      "commit_basis": "edit",
+      "finding": "done_when-1",
+      "note": "\u00a716 adds a second negative control: the same timing measure at the base revision records dispatches over ten seconds, so the headline bound is shown failing before the change",
+      "reason": "",
+      "when": "2026-11-15T00:55:07.344062+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "a4583d4478340e4f87f86473244cc3de3d4556dc",
+      "commit_basis": "edit",
+      "finding": "done_when-2",
+      "note": "\u00a716's five queued requests are held as created and dropped once timed, and the evidence must show none launched",
+      "reason": "",
+      "when": "2026-11-15T00:55:18.220446+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "a4583d4478340e4f87f86473244cc3de3d4556dc",
+      "commit_basis": "edit",
+      "finding": "wiring-1",
+      "note": "the driving followup now names \u00a72\u2013\u00a716 and \u00a718 and says \u00a717 is descoped into the-escape-lane-and-reviews-keep-pace \u00a75",
+      "reason": "",
+      "when": "2026-11-15T00:55:34.464204+00:00"
+    },
+    {
+      "action": "declined",
+      "by": "",
+      "finding": "wiring-2",
+      "reason": "\u00a717 is descoped: folded into the-escape-lane-and-reviews-keep-pace \u00a75, whose owner carries its cases and launches named-lane requests itself, so no edge to \u00a77 is needed here",
+      "when": "2026-11-15T00:55:48.075203+00:00"
+    },
+    {
+      "action": "declined",
+      "by": "",
+      "finding": "done_when-3",
+      "reason": "\u00a717 is descoped into the-escape-lane-and-reviews-keep-pace \u00a75; the printed-id case was handed to that section's owner, scoped to every dispatch that prints an id",
+      "when": "2026-11-15T00:55:57.054185+00:00"
+    }
+  ],
+  "responses": {
+    "done_when-1": {
+      "action": "acted",
+      "by": "",
+      "commit": "a4583d4478340e4f87f86473244cc3de3d4556dc",
+      "commit_basis": "edit",
+      "note": "\u00a716 adds a second negative control: the same timing measure at the base revision records dispatches over ten seconds, so the headline bound is shown failing before the change",
+      "reason": "",
+      "when": "2026-11-15T00:55:07.344062+00:00"
+    },
+    "done_when-2": {
+      "action": "acted",
+      "by": "",
+      "commit": "a4583d4478340e4f87f86473244cc3de3d4556dc",
+      "commit_basis": "edit",
+      "note": "\u00a716's five queued requests are held as created and dropped once timed, and the evidence must show none launched",
+      "reason": "",
+      "when": "2026-11-15T00:55:18.220446+00:00"
+    },
+    "done_when-3": {
+      "action": "declined",
+      "by": "",
+      "reason": "\u00a717 is descoped into the-escape-lane-and-reviews-keep-pace \u00a75; the printed-id case was handed to that section's owner, scoped to every dispatch that prints an id",
+      "when": "2026-11-15T00:55:57.054185+00:00"
+    },
+    "wiring-1": {
+      "action": "acted",
+      "by": "",
+      "commit": "a4583d4478340e4f87f86473244cc3de3d4556dc",
+      "commit_basis": "edit",
+      "note": "the driving followup now names \u00a72\u2013\u00a716 and \u00a718 and says \u00a717 is descoped into the-escape-lane-and-reviews-keep-pace \u00a75",
+      "reason": "",
+      "when": "2026-11-15T00:55:34.464204+00:00"
+    },
+    "wiring-2": {
+      "action": "declined",
+      "by": "",
+      "reason": "\u00a717 is descoped: folded into the-escape-lane-and-reviews-keep-pace \u00a75, whose owner carries its cases and launches named-lane requests itself, so no edge to \u00a77 is needed here",
+      "when": "2026-11-15T00:55:48.075203+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/plan-queued-work-needs-no-workaround.v1.json",
+  "review_run_id": "r-20261114T215510289481-plan-review-of-queued-work-needs-no-workaround",
+  "reviewed_blob_sha": "e6dd8af5a65e98f93db6bcbd490d816c0be46905",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 neither changed section cites a file, section or commit anchor, and every href in the unchanged head resolves under the surface's `<path>.html` convention.",
+    "done_when": "findings \u2014 \u00a716's ten-second timing measure never shows it fails on the base revision and the plan records the dominant cost as already fixed elsewhere (plan.html:280), while \u00a717 widens the run-id guarantee in its deliverable and narrows the tested case to refused dispatches only (plan.html:284).",
+    "evidence_paths": "pass \u2014 both changed sections write their gate logs to docs/evidence/fragments/queued-work-needs-no-workaround/s16.html and s17.html, the per-plan fragment directory the repository already uses, and the snapshot's _document revision bbf8327015.",
+    "naming": "pass \u2014 no plan label, stage name, ticket number or version tag reaches code in either new section; the defect ids they cite are plan-register data, which belongs to the plan.",
+    "reasoning": "pass \u2014 \u00a716's root cause matches its evidence (overdue_unreconciled_runs in reckon/crew/recovery_watch.py:527 takes no session argument and lists every live pointer in the project, obligations.py:2870 records the shared-view fix it says is separate), \u00a717's endpoint is obtainable from the admission path it describes, and neither section prescribes a code path, step sequence or function.",
+    "single_goal": "pass \u2014 \u00a716 names one deliverable (dispatch cost independent of peer-session pointers, with the ten-second figure as its outcome) and \u00a717 names one (a placement-bound dispatch is queued rather than refused), the run-id and reroute clauses being output guarantees of that same change.",
+    "wiring": "findings \u2014 the plan's own build instruction names \u00a72\u2013\u00a715 while \u00a716 and \u00a717 are declared implementable (plan.html:290), and \u00a717 hands its metered-lane launch to \u00a77 although \u00a77 declares only an upstream-triggered launch (plan.html:284)."
+  },
+  "section_digests": {
+    "_document": "00634fc0352ad1bbc6e0bc46fc20560292a1a6034a7797ce185650a8d4baf93a",
+    "s1": "965e293bc718e24bc6e0b306c2e31f4694e8d3d1f2aafc97e86aac0ccdc0eb46",
+    "s10": "501d0d72406c2fda4dc47939b9700d2c42eb9011387b4df7abdfcc55d906d345",
+    "s11": "4dc7e37e7c9ff6d074c540a19ff75d7db784999f7b811a999a052a00fcbacb39",
+    "s12": "cf244a99091ee04721474e6caad0adad1fb1c907edc99e9fd73b86fb3251685c",
+    "s13": "8cdf1aaa77a692163d0b36bc751a206e8f6c96460d0e44b85d9feb5a76f99659",
+    "s14": "e033ab0daa427195a357d93c3b5969c3fae24f311a8dafa8b2a6bad8db0b518e",
+    "s15": "c271f7bcaa272ebd4bf87d7b1e7153251ec38aa5863fd8a3d7f12cdf1c66bd06",
+    "s16": "0adf90e7d52402272357bac14f7410d10cbfb9ad489eb38f3e08cccafdd94994",
+    "s17": "dd6b738e7e017fe3bc312e85841a1a6a4b4d5dc818c618040249040acf51ff19",
+    "s2": "872b1ec9c49f32d972d450016002b1265e846673cd1aef42c41aaccc50583998",
+    "s3": "2a385591edce8d1cb26d41f176fb084cd634d113eb130d2581ce97000bcb3eea",
+    "s4": "0116c3c4a34b6e607b2564cc4300d3784ba5d7596a0000d0b59c40e1801dcd1a",
+    "s5": "81cc22db14da433d65d2cbfd466e233d778e9b5d50552dc7a013e94a3b25ad15",
+    "s6": "91849d1cd49d8e783c893b01272f0e0f505aed67e379d52d354011a619270a1d",
+    "s7": "0eb7720abb0f46f8d48d47fcf646be85ae58c8a5cc37c98f7ad06ac2f9deb6ff",
+    "s8": "5dcf0f324a6b831b76a043e465731eff46456979ae084bcfc764ff0d40816359",
+    "s9": "b22a82394cfc2b7163b7fbd8be1087fdb6ec66a16524e9d194431d418894d798"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-15T00:26:01.556934+00:00",
+  "total": null
+}
