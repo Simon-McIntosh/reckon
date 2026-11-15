@@ -46,14 +46,17 @@
     returned by the plan-selected read.
   </p>
   <p>
-    Live pass, read-only against the committed store from a batch job with the
+Live pass, read-only against the committed store from a batch job with the
     index published to scratch: the plan-selected read returns
     <strong>0</strong> rows for <code>a-read-only-run-promotes-as-delivered</code>
     and <strong>0</strong> for <code>a-landing-is-recorded-once</code> at the
-    base revision, against 11,006 rows in the store and 5,414 of them carrying
+    base revision, against 11,007 rows in the store and 5,415 of them carrying
     no top-level plan; at the head it returns <strong>15</strong> and
-    <strong>14</strong>. A plan the read already found is printed beside them as
-    the check that the instrument sees a plan before a zero is reported, and a
-    slug no run names reads 0 in both arms.
+    <strong>14</strong>. The instrument is checked before the zero is reported:
+    two plans whose runs were dispatched without a brief read <strong>59</strong>
+    and <strong>69</strong> at the base and <strong>59</strong> and
+    <strong>69</strong> at the head, so the change adds the missing rows and
+    takes none from another plan, and a slug no run names reads
+    <strong>0</strong> in both arms.
   </p>
 </section>
