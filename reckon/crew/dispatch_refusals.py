@@ -257,7 +257,7 @@ def record_launch_refusal(
     payload = {
         "version": LAUNCH_REFUSAL_VERSION,
         "run_id": str(run_id),
-        "reason": str(LAUNCH_REFUSAL_REASON),
+        "reason": LAUNCH_REFUSAL_REASON,
         "recorded_at": _utc_now(),
         "step": str(step or ""),
         "holder": dict(holder or {}),
@@ -313,8 +313,8 @@ def launch_refusal(
 # attempt: a request the release put back in the queue launches again under the
 # same id, and it publishes a claim of its own, registering it afresh, before it
 # reaches the reservation the fence guards. So the release names the abandoned
-# attempt by these fields, and the fence admits any claim of the run that names
-# another one.
+# attempt by these fields, and a release that put its request back in the queue
+# admits a claim of the run that names another one.
 ATTEMPT_FIELDS = ("claim_registered_at", "holder_pid", "holder_host")
 
 # How long a release fences the attempt it abandoned. A launch slowed by
@@ -340,25 +340,18 @@ def _live_launch_claim(
 ) -> dict[str, Any]:
     """The claim the run's live claim file holds, or an empty record.
 
-    The directory is resolved from the crew home this module was handed rather
-    than from the process's own, so a reader pointed at one home never answers
-    about a run of another.
+    Read through the claim module's own reader, so a claim belonging to another
+    run and an unreadable file answer here as they do everywhere else, and the
+    directory is resolved from the crew home this module was handed rather than
+    from the process's own, so a reader pointed at one home never answers about
+    a run of another.
     """
-    if home is not None:
-        directory = _home(home) / "runs" / str(run_id)
-    else:
-        from reckon.crew import runs
+    from reckon.crew import dispatch_claims, runs
 
-        directory = runs.run_dir(run_id)
-    try:
-        claim = json.loads((directory / "claim.json").read_text(encoding="utf-8"))
-    except (OSError, ValueError):
-        return {}
-    if not isinstance(claim, Mapping):
-        return {}
-    if str(claim.get("run_id") or "") != str(run_id):
-        return {}
-    return dict(claim)
+    directory = (
+        runs.run_dir(run_id) if home is None else _home(home) / "runs" / str(run_id)
+    )
+    return dispatch_claims.read_claim(directory, str(run_id))
 
 
 def _names_the_released_attempt(
