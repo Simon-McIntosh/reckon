@@ -10,52 +10,12 @@ sees the lock free and proceeds.
 
 from __future__ import annotations
 
-import subprocess
-import sys
-from collections.abc import Iterator
-from contextlib import contextmanager
 from pathlib import Path
 
 import pytest
 
 from reckon.crew import queue_landing, runs
-
-# Held by the stand-in: the record lock alone, then it waits to be released.
-_RECORD_LOCK_HOLDER = """
-import fcntl
-import sys
-
-handle = open(sys.argv[1], "a+b")
-fcntl.lockf(handle.fileno(), fcntl.LOCK_EX)
-sys.stdout.write("held\\n")
-sys.stdout.flush()
-sys.stdin.read()
-"""
-
-
-@contextmanager
-def record_lock_held_elsewhere(path: Path) -> Iterator[None]:
-    """Hold the record lock of ``path`` from another process for the block.
-
-    The process takes no ``flock``, so only a record-lock take can observe it.
-    """
-    path.parent.mkdir(parents=True, exist_ok=True)
-    holder = subprocess.Popen(
-        [sys.executable, "-c", _RECORD_LOCK_HOLDER, str(path)],
-        stdin=subprocess.PIPE,
-        stdout=subprocess.PIPE,
-        text=True,
-    )
-    try:
-        assert holder.stdout is not None
-        assert holder.stdout.readline().strip() == "held", (
-            "the stand-in process never took the record lock"
-        )
-        yield
-    finally:
-        if holder.stdin is not None:
-            holder.stdin.close()
-        holder.wait(timeout=30)
+from tests.cross_node_lock_holder import record_lock_held_elsewhere
 
 
 @pytest.fixture

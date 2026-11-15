@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="every-shared-home-lock-holds-across-nodes">
+  <meta name="plan-title" content="Every shared-home lock holds across nodes">
+  <meta name="plan-evidence-for" content="reckon:every-shared-home-lock-holds-across-nodes">
+  <meta name="plan-verifies" content="reckon:every-shared-home-lock-holds-across-nodes#s6">
+  <meta name="plan-recorded-at" content="2026-11-15">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-tags" content="locks,flock,exclusive_lock,two-node,cross-node">
+  <title>Pending table empty and one lock held across two nodes — evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+</head>
+<body>
+<article class="r-note" data-node="pending-table-empty-and-two-node-measure" data-reckon="landed" data-when="2026-11-15">
+  <h2 id="pending-table-empty-and-two-node-measure-head">The pending table is empty and one migrated lock holds across two nodes</h2>
+
+  <p id="pending-table-empty-and-two-node-measure-what">The shared-home lock guard's pending table
+  is <code>frozenset()</code>, so every lock-taking <code>flock</code> left under <code>reckon/</code>
+  is a judged one. The guard now also carries two facts it did not: each judged entry records the
+  number of lock-taking calls it accounts for, and a migrated table names every site that left
+  pending and requires each to take <code>reckon.node_exclusive_lock.exclusive_lock</code>.</p>
+
+  <p id="pending-table-empty-and-two-node-measure-counts">The counts close the finding that a
+  second bare <code>flock</code> added inside an already judged function passed the guard, because
+  it compared sets of keys and discarded each key's call count. A mutation that adds one
+  <code>flock</code> to <code>reckon/crew/watch_unit.py</code> <code>watch_state</code> makes the
+  guard fail naming <code>reckon/crew/watch_unit.py::watch_state</code> with
+  <code>recorded: 1, found: 2</code> (<code>EXIT=1</code>, log
+  <code>~/.cache/reckon-lock-proto/two-node/guard-negative-control-second-flock.log</code>).</p>
+
+  <p id="pending-table-empty-and-two-node-measure-migrated">The migrated table closes the finding
+  that an emptied pending table could hide a site that dropped its lock instead of migrating it.
+  Deleting the take from <code>reckon/crew/budget_reset.py</code> <code>_locked</code> in a scratch
+  copy makes the guard fail naming <code>reckon/crew/budget_reset.py::_locked</code>
+  (<code>EXIT=1</code>, log
+  <code>~/.cache/reckon-lock-proto/two-node/guard-negative-control-migrated-siteless.log</code>).</p>
+
+  <p id="pending-table-empty-and-two-node-measure-registry">The process-local lock registry in
+  <code>reckon/node_exclusive_lock.py</code> kept one <code>threading.Lock</code> per distinct path
+  forever, so a long-lived station or admit service accumulated one entry per run ever touched. A
+  path now carries an entry only while some thread holds or waits on it:
+  <code>tests/test_node_exclusive_lock_registry_is_bounded.py</code> takes and releases the lock on
+  2000 distinct paths and requires an empty registry, and starts a second thread on a held path and
+  requires it to wait for the first. At base <code>fd241e76aa</code> the same test fails with
+  <code>the registry kept 2000 of 2000 entries for paths no thread holds</code>
+  (<code>EXIT=1</code>, log <code>~/.cache/reckon-lock-proto/two-node/registry-negative-control-base.log</code>).</p>
+
+  <p id="pending-table-empty-and-two-node-measure-measure">The two-node measurement holds one
+  migrated lock, the run pointer lock, on the fleet node and takes it from a second node. A holder
+  process on <code>98dci4-clu-2001</code> takes the lock through
+  <code>reckon.crew.runs._pointer_lock</code> and keeps holding. A job submitted to
+  <code>rigel</code> runs on <code>98dci4-clu-2019</code> and makes two takes of the same file
+  while the holder still holds: the migrated site's non-blocking take answers
+  <code>pointer_take=held</code>, and a bare <code>flock</code> take of that file answers
+  <code>flock_only_take=free</code>. The second answer is the negative control and shows the
+  measurement can tell the two primitives apart while the holder is provably still holding; the
+  first would be <code>free</code> if the guard still rested on <code>flock</code>. Both hostnames
+  and both answers are in the run log on GPFS,
+  <code>~/.cache/reckon-lock-proto/two-node/two-node-run.log</code>, with contender job
+  <code>1316463</code> writing <code>EXIT=0</code>; the scratch lock file and the release marker
+  were removed afterwards and the removal is printed in that log.</p>
+
+  <p id="pending-table-empty-and-two-node-measure-formatting">Two further review findings close
+  here. The two cross-node lock tests shared a copy each of the record-lock holder; they now use one
+  <code>tests/cross_node_lock_holder.py</code>, and both tests still pass. Deleting the lane-probe
+  lock and the sweep-status wrapper had left extra blank lines in
+  <code>reckon/crew/resumption.py</code>; <code>ruff format --check</code> now exits 0 there and the
+  change is whitespace only (4 lines removed).</p>
+
+
+</article>
+</body>
+</html>
