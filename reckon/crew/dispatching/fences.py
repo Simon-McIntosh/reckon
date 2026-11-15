@@ -352,14 +352,15 @@ def _recorded_backlog(
     A session's unreconciled runs do not hold new work back: they are owed
     duties, listed by the obligations view, and dispatch records them on the
     run it writes rather than refusing. Only this session's own rows are named;
-    another session's backlog is neither counted nor copied.
+    another session's backlog is neither counted nor copied, and is not read at
+    all: the fence is scoped to the dispatching session so its cost is that
+    session's own rows rather than the fleet's queue.
     """
-    from reckon.crew.recovery import _partition_session_rows, overdue_unreconciled_runs
+    from reckon.crew.recovery import overdue_unreconciled_runs
 
     grace = str((config.get("fences") or {}).get("unreconciled_run_grace") or "")
-    unreconciled, _peer_unreconciled = _partition_session_rows(
-        overdue_unreconciled_runs(project=project, grace=grace),
-        session,
+    unreconciled = overdue_unreconciled_runs(
+        project=project, grace=grace, session=session
     )
     if not unreconciled:
         return None
