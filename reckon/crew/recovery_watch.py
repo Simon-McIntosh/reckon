@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import fcntl
 import functools
+import hashlib
 import json
 import math
 import os
@@ -108,21 +109,49 @@ def _remember_commits(key: tuple[str, str], head: str, count: int) -> None:
 # count between two revisions never changes, a full revision resolves to the
 # same commit forever, and the reachability of one commit from three others
 # never changes with time, so an entry keyed on those ids cannot go stale.
-_GIT_ANSWER_STORE_FILENAME = "git-object-answers.json"
-_GIT_ANSWER_STORE_VERSION = 1
+#
+# The answers are kept one file per tree rather than in one file for the home.
+# A single file made every new answer rewrite every other tree's answers, and a
+# per-tree cap on its entries made one tree's next answer evict an answer the
+# same tick would need again: each eviction cost a git call, a lock and a
+# rewrite that gave the file a new identity, so every reader in every process
+# parsed the whole store again. An answer keyed by an abbreviation in a tree is
+# immutable while the tree exists, so a tree's file holds them with no
+# per-candidate cap, and a reader holds each tree's file under that file's own
+# stat identity, so a write to one tree leaves every other tree's held copy
+# valid.
+_GIT_ANSWER_STORE_DIRNAME = "git-object-answers"
+_GIT_ANSWER_LEGACY_FILENAME = "git-object-answers.json"
+_GIT_ANSWER_TREE_VERSION = 1
+_GIT_ANSWER_LEGACY_VERSION = 1
 _GIT_ANSWER_STORE_WORKTREES = 256
-_GIT_ANSWER_STORE_CANDIDATES = 512
-_GIT_ANSWER_STORE_KIND = "git_answer_store"
+_GIT_ANSWER_TREE_KIND = "git_answer_tree"
+# The legacy single-file stores this process has already moved onto the
+# per-tree layout, so the one-time migration costs no read after it has run.
+_LEGACY_GIT_ANSWER_MIGRATED: set[str] = set()
 
 
-def _git_answer_store_path() -> Path:
-    """Where git's answers about immutable object ids are kept between runs."""
-    return runs.crew_home() / _GIT_ANSWER_STORE_FILENAME
+def _git_answer_store_dir() -> Path:
+    """The directory holding one answer file per tree."""
+    return runs.crew_home() / _GIT_ANSWER_STORE_DIRNAME
 
 
-def _empty_git_answer_store() -> dict[str, Any]:
+def _git_answer_tree_path(tree: Path) -> Path:
+    """The answer file for ``tree``, named from a digest of the tree's path."""
+    digest = hashlib.sha256(str(tree).encode("utf-8")).hexdigest()
+    return _git_answer_store_dir() / f"{digest[:32]}.json"
+
+
+def _git_answer_legacy_path() -> Path:
+    """The single-file store an earlier layout kept every tree's answers in."""
+    return runs.crew_home() / _GIT_ANSWER_LEGACY_FILENAME
+
+
+def _empty_git_answer_tree(tree: Path) -> dict[str, Any]:
+    """One tree's answers, empty, in the shape its file carries them in."""
     return {
-        "version": _GIT_ANSWER_STORE_VERSION,
+        "version": _GIT_ANSWER_TREE_VERSION,
+        "tree": str(tree),
         "commits": {},
         "counts": {},
         "unreachable": {},
@@ -155,8 +184,8 @@ def _git_answer_pairs(bucket: str, answers: Mapping[str, Any]) -> dict[str, Any]
     }
 
 
-def _read_git_answer_store() -> dict[str, Any]:
-    """The stored git answers, or an empty store when none can be read.
+def _read_git_answer_tree(tree: Path) -> dict[str, Any]:
+    """One tree's stored git answers, or an empty store when none can be read.
 
     A store that is absent, half-written or corrupt yields no answer at all,
     which costs one git call and rewrites the entry; it can never offer a wrong
@@ -169,41 +198,100 @@ def _read_git_answer_store() -> dict[str, Any]:
     read of the file per question is the read the census named: a steady station
     opened the same file hundreds of times in one tick to learn that no other
     process had written it. The identity is the stat identity, so a write by
-    another process — which rewrites the file through a rename — misses the held
-    copy on the next read.
+    another process — which rewrites that tree's file through a rename — misses
+    the held copy on the parsed read that follows, and a write to another tree's
+    file leaves this tree's held copy matching.
     """
+    _migrate_legacy_git_answer_store()
+    path = _git_answer_tree_path(tree)
     return file_memo.memoized(
-        _GIT_ANSWER_STORE_KIND, _git_answer_store_path(), _parse_git_answer_store
+        _GIT_ANSWER_TREE_KIND,
+        path,
+        functools.partial(_parse_git_answer_tree, path, tree),
     )
 
 
-def _parse_git_answer_store() -> dict[str, Any]:
+def _parse_git_answer_tree(path: Path, tree: Path) -> dict[str, Any]:
     try:
-        payload = json.loads(_git_answer_store_path().read_text(encoding="utf-8"))
+        payload = json.loads(path.read_text(encoding="utf-8"))
     except (OSError, ValueError, UnicodeDecodeError):
-        return _empty_git_answer_store()
+        return _empty_git_answer_tree(tree)
     if (
         not isinstance(payload, dict)
-        or payload.get("version") != _GIT_ANSWER_STORE_VERSION
+        or payload.get("version") != _GIT_ANSWER_TREE_VERSION
+        or payload.get("tree") != str(tree)
     ):
-        return _empty_git_answer_store()
-    raw: dict[str, Mapping[str, Any]] = {}
+        return _empty_git_answer_tree(tree)
+    store = _empty_git_answer_tree(tree)
     for bucket in _GIT_ANSWER_BUCKETS:
         answers = payload.get(bucket)
         if not isinstance(answers, dict):
             if bucket in ("commits", "counts"):
-                return _empty_git_answer_store()
+                return _empty_git_answer_tree(tree)
             continue
-        raw[bucket] = answers
-    store = _empty_git_answer_store()
-    for bucket, answers in raw.items():
+        kept = _git_answer_pairs(bucket, answers)
+        if kept:
+            store[bucket] = kept
+    return store
+
+
+def _legacy_git_answer_trees(path: Path) -> dict[str, dict[str, dict[str, Any]]]:
+    """The answers a single-file store holds, grouped by the tree they are about."""
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError, UnicodeDecodeError):
+        return {}
+    if (
+        not isinstance(payload, dict)
+        or payload.get("version") != _GIT_ANSWER_LEGACY_VERSION
+    ):
+        return {}
+    trees: dict[str, dict[str, dict[str, Any]]] = {}
+    for bucket in _GIT_ANSWER_BUCKETS:
+        answers = payload.get(bucket)
+        if not isinstance(answers, dict):
+            continue
         for tree, entries in answers.items():
             if not isinstance(tree, str) or not isinstance(entries, dict):
                 continue
             kept = _git_answer_pairs(bucket, entries)
             if kept:
-                store[bucket][tree] = kept
-    return store
+                trees.setdefault(tree, {})[bucket] = kept
+    return trees
+
+
+def _legacy_answer_merge(
+    buckets: Mapping[str, Mapping[str, Any]],
+) -> Callable[[dict[str, Any]], None]:
+    """A change that lays one tree's legacy answers over its per-tree file."""
+
+    def merge(store: dict[str, Any]) -> None:
+        for bucket, entries in buckets.items():
+            store[bucket].update(entries)
+
+    return merge
+
+
+def _migrate_legacy_git_answer_store() -> None:
+    """Move a single-file store's answers onto the per-tree layout, once.
+
+    The single file is read as a migration source and removed: an answer it
+    holds is immutable, so writing it into its own tree's file loses nothing,
+    and leaving the file behind would make every process read 22 MB of answers
+    it has already placed. A migration that cannot write an answer's file is
+    not an error — the answer is one git call away — but the source is kept in
+    that case, so the next process tries again rather than losing the answers.
+    """
+    legacy = _git_answer_legacy_path()
+    if str(legacy) in _LEGACY_GIT_ANSWER_MIGRATED:
+        return
+    if not legacy.is_file():
+        return
+    _LEGACY_GIT_ANSWER_MIGRATED.add(str(legacy))
+    for tree_value, buckets in _legacy_git_answer_trees(legacy).items():
+        _update_git_answer_store(Path(tree_value), _legacy_answer_merge(buckets))
+    with suppress(OSError):
+        legacy.unlink()
 
 
 def _live_pointer_worktrees() -> set[str] | None:
@@ -217,51 +305,95 @@ def _live_pointer_worktrees() -> set[str] | None:
     return named
 
 
-def _bound_git_answer_store(store: dict[str, Any]) -> None:
-    """Keep the store bounded by the fleet it describes.
+def _git_answer_file_tree(path: Path) -> str:
+    """The tree one answer file says it belongs to, or empty if unreadable."""
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError, UnicodeDecodeError):
+        return ""
+    if not isinstance(payload, dict):
+        return ""
+    tree = payload.get("tree")
+    return tree if isinstance(tree, str) else ""
 
-    An entry whose worktree is gone can never be read again, so it is dropped
-    first. Past the ceiling, entries whose worktree no live pointer names are
-    dropped, and only then are the oldest trees evicted, so a long-lived
-    producer carries a store bounded by the fleet rather than by every worktree
-    it has ever classified.
+
+def _drop_git_answer_file(path: Path) -> bool:
+    """Remove one answer file; False when it is already gone or unreadable."""
+    try:
+        path.unlink()
+    except OSError:
+        return False
+    return True
+
+
+def _bound_git_answer_store() -> None:
+    """Keep the store bounded by the fleet it describes, removing whole files.
+
+    An answer is never evicted on its own: a tree's file holds every answer
+    about that tree, because an answer keyed by an abbreviation is immutable
+    while the tree exists, and evicting one answer while keeping the rest is
+    what made a steady tick ask git for an answer it had already been given. So
+    the bound removes whole files, in the order that costs the least: a file
+    whose tree is gone can never be read again; then the files of trees no live
+    pointer cites; and only then the oldest files. The sweep runs only past the
+    ceiling, so a fleet under it never pays for the walk.
     """
-    for bucket in _GIT_ANSWER_BUCKETS:
-        for tree in [tree for tree in store[bucket] if not Path(tree).is_dir()]:
-            del store[bucket][tree]
-    largest = max(len(store[bucket]) for bucket in _GIT_ANSWER_BUCKETS)
-    if largest > _GIT_ANSWER_STORE_WORKTREES:
+    try:
+        files = [
+            entry
+            for entry in _git_answer_store_dir().iterdir()
+            if entry.suffix == ".json"
+        ]
+    except OSError:
+        return
+    if len(files) <= _GIT_ANSWER_STORE_WORKTREES:
+        return
+    named: dict[Path, tuple[str, int]] = {}
+    for path in files:
+        try:
+            named[path] = (_git_answer_file_tree(path), path.stat().st_mtime_ns)
+        except OSError:
+            named[path] = ("", 0)
+    for path, (tree, _) in list(named.items()):
+        if len(named) <= _GIT_ANSWER_STORE_WORKTREES:
+            return
+        if (not tree or not Path(tree).is_dir()) and _drop_git_answer_file(path):
+            del named[path]
+    if len(named) > _GIT_ANSWER_STORE_WORKTREES:
         live = _live_pointer_worktrees()
         if live is not None:
-            for bucket in _GIT_ANSWER_BUCKETS:
-                for tree in [tree for tree in store[bucket] if tree not in live]:
-                    del store[bucket][tree]
-    for bucket in _GIT_ANSWER_BUCKETS:
-        entries = store[bucket]
-        while len(entries) > _GIT_ANSWER_STORE_WORKTREES:
-            entries.pop(next(iter(entries)), None)
-        for answers in entries.values():
-            while len(answers) > _GIT_ANSWER_STORE_CANDIDATES:
-                answers.pop(next(iter(answers)), None)
+            for path, (tree, _) in list(named.items()):
+                if len(named) <= _GIT_ANSWER_STORE_WORKTREES:
+                    return
+                if tree not in live and _drop_git_answer_file(path):
+                    del named[path]
+    for path, _ in sorted(named.items(), key=lambda item: item[1][1]):
+        if len(named) <= _GIT_ANSWER_STORE_WORKTREES:
+            return
+        if _drop_git_answer_file(path):
+            del named[path]
 
 
-def _update_git_answer_store(mutate: Callable[[dict[str, Any]], None]) -> None:
-    """Apply one change to the store under an exclusive lock.
+def _update_git_answer_store(
+    tree: Path, mutate: Callable[[dict[str, Any]], None]
+) -> None:
+    """Apply one change to ``tree``'s answer file, under that file's own lock.
 
-    The store is shared by every process reading this crew home, so the read,
-    the change and the write happen under one lock; a lost update would cost a
-    git call, but a torn file would cost one on every read. A home that cannot
-    be written is not an error: the answer is still returned to the caller.
+    One tree's answers live in one file, so a new answer rewrites that tree's
+    file and nothing else, and the lock it takes excludes only a write to the
+    same tree. The read, the change and the write happen under that lock: a
+    lost update would cost a git call, but a torn file would cost one on every
+    read. A home that cannot be written is not an error — the answer is still
+    returned to the caller.
     """
-    path = _git_answer_store_path()
+    path = _git_answer_tree_path(tree)
     lock_path = path.with_name(f"{path.name}.lock")
     try:
         with exclusive_lock(lock_path):
             # Parsed fresh under the lock: the held copy may predate another
             # process's write, and a change applied to it would drop that write.
-            store = _parse_git_answer_store()
+            store = _parse_git_answer_tree(path, tree)
             mutate(store)
-            _bound_git_answer_store(store)
             payload = json.dumps(store, sort_keys=True)
             temporary = path.with_name(f".{path.name}.{os.getpid()}.tmp")
             temporary.write_text(payload, encoding="utf-8")
@@ -270,16 +402,15 @@ def _update_git_answer_store(mutate: Callable[[dict[str, Any]], None]) -> None:
             # the one a later read should hold rather than re-parsing it. A path
             # that cannot be stat'd after the rename holds nothing to key on, and
             # is left for the next read to parse.
-            file_memo.memoized(_GIT_ANSWER_STORE_KIND, path, lambda: store)
+            file_memo.memoized(_GIT_ANSWER_TREE_KIND, path, lambda: store)
     except OSError:
         return
+    _bound_git_answer_store()
 
 
 def _stored_commit_answer(tree: Path, candidate: str) -> str:
     """The commit a stored answer resolves ``candidate`` to, or empty."""
-    return str(
-        _read_git_answer_store()["commits"].get(str(tree), {}).get(candidate, "")
-    )
+    return str(_read_git_answer_tree(tree)["commits"].get(candidate, ""))
 
 
 def _remember_commit_answer(tree: Path, candidate: str, sha: str) -> None:
@@ -288,12 +419,12 @@ def _remember_commit_answer(tree: Path, candidate: str, sha: str) -> None:
     An unresolved candidate is never stored: an object the repository does not
     hold yet it may hold later, so "names no commit" is not an immutable fact.
 
-    An answer the store already holds is not written again. The store is one
-    file shared by every process reading this home, and its write is a lock
-    plus a whole-file rewrite, so rewriting it to store the value it already
-    carries costs the lock every tick and hands the file a new identity — which
-    is what stops a reader's held copy from matching. Only a new or different
-    answer changes the file.
+    An answer the store already holds is not written again. A tree's file is
+    shared by every process reading this home, and its write is a lock plus a
+    whole-file rewrite, so rewriting it to store the value it already carries
+    costs the lock every tick and hands the file a new identity — which is what
+    stops a reader's held copy from matching. Only a new or different answer
+    changes the file.
     """
     if not sha:
         return
@@ -301,15 +432,15 @@ def _remember_commit_answer(tree: Path, candidate: str, sha: str) -> None:
         return
 
     def mutate(store: dict[str, Any]) -> None:
-        store["commits"].setdefault(str(tree), {})[candidate] = sha
+        store["commits"][candidate] = sha
 
-    _update_git_answer_store(mutate)
+    _update_git_answer_store(tree, mutate)
 
 
 def _stored_count_answer(tree: Path, head: str, base: str) -> int | None:
     """The stored count for this worktree head and base, or None."""
     key = _count_answer_key(head, base)
-    answer = _read_git_answer_store()["counts"].get(str(tree), {}).get(key)
+    answer = _read_git_answer_tree(tree)["counts"].get(key)
     return answer if isinstance(answer, int) else None
 
 
@@ -326,9 +457,9 @@ def _remember_count_answer(tree: Path, head: str, base: str, count: int) -> None
     key = _count_answer_key(head, base)
 
     def mutate(store: dict[str, Any]) -> None:
-        store["counts"].setdefault(str(tree), {})[key] = count
+        store["counts"][key] = count
 
-    _update_git_answer_store(mutate)
+    _update_git_answer_store(tree, mutate)
 
 
 def _count_answer_key(head: str, base: str) -> str:
@@ -346,8 +477,7 @@ def _stored_unreachable_answer(
     cannot reach, and that answer is as reusable as any other.
     """
     key = _unreachable_answer_key(head, merged, base)
-    answers = _read_git_answer_store()["unreachable"].get(str(tree)) or {}
-    answer = answers.get(key)
+    answer = _read_git_answer_tree(tree)["unreachable"].get(key)
     return answer if isinstance(answer, str) else None
 
 
@@ -358,9 +488,9 @@ def _remember_unreachable_answer(
     key = _unreachable_answer_key(head, merged, base)
 
     def mutate(store: dict[str, Any]) -> None:
-        store["unreachable"].setdefault(str(tree), {})[key] = answer
+        store["unreachable"][key] = answer
 
-    _update_git_answer_store(mutate)
+    _update_git_answer_store(tree, mutate)
 
 
 def _unreachable_answer_key(head: str, merged: str, base: str) -> str:
