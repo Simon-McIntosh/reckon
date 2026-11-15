@@ -1794,9 +1794,7 @@ def _write_state_locked(
             # The reasons map is a head meta too, rewritten from the mapping
             # already on the page so a write lands its own sections and leaves
             # its siblings' reasons alone.
-            source_text = _apply_descope_reason_edits(
-                source_text, descope_reason_edits
-            )
+            source_text = _apply_descope_reason_edits(source_text, descope_reason_edits)
         if meta_removals:
             source_text = _store_section_ops.apply_meta_removals(
                 source_text, meta_removals
@@ -2437,6 +2435,146 @@ def _refuse_immutable_snapshot(resource) -> None:
         )
 
 
+PLAN_BOOKKEEPING_ATTRIBUTES = frozenset(
+    {"data-effort-hours", "data-attempts", "data-status", "data-links"}
+)
+
+
+def plan_text_projection(document: str) -> tuple[str, list[tuple[int, str]]]:
+    """Separate canonical authored HTML from the store's owned regions.
+
+    Each owned region retains its offset in the authored stream, so a landing
+    can carry the current bookkeeping while leaving pending prose with its
+    editor. Attribute slots preserve bookkeeping on otherwise authored tags.
+    """
+    from bs4 import BeautifulSoup, NavigableString
+
+    soup = BeautifulSoup(document, "html.parser")
+    token = secrets.token_hex(16)
+    while token in document:
+        token = secrets.token_hex(16)
+    owned: dict[str, str] = {}
+
+    def mark(content: str) -> str:
+        marker = f"reckon_{token}_{len(owned)}"
+        owned[marker] = content
+        return marker
+
+    for element in list(soup.find_all(True)):
+        if element.parent is None:
+            continue
+        state_meta = element.name == "meta" and str(
+            element.get("name") or ""
+        ).lower().startswith("plan-")
+        if (
+            state_meta
+            or element.has_attr("data-reckon")
+            or "r-comment" in (element.get("class") or [])
+        ):
+            element.replace_with(NavigableString(mark(str(element))))
+            continue
+        attributes = {
+            key: element.attrs.pop(key)
+            for key in list(element.attrs)
+            if key in PLAN_BOOKKEEPING_ATTRIBUTES or key.startswith("data-capability-")
+        }
+        if attributes:
+            rendered = str(soup.new_tag("span", attrs=attributes))[5:-8]
+            marker = mark(rendered)
+            attribute = f"data-reckon-projection-{token}"
+            element[attribute] = marker
+            owned[f' {attribute}="{marker}"'] = owned.pop(marker)
+    masked = str(soup)
+    if not owned:
+        return masked, []
+    pattern = re.compile("|".join(re.escape(marker) for marker in owned))
+    chunks: list[str] = []
+    slots: list[tuple[int, str]] = []
+    cursor = length = 0
+    for match in pattern.finditer(masked):
+        chunk = masked[cursor : match.start()]
+        chunks.append(chunk)
+        length += len(chunk)
+        slots.append((length, owned[match.group()]))
+        cursor = match.end()
+    chunks.append(masked[cursor:])
+    authored = "".join(chunks)
+    whitespace = list(re.finditer(r"(?<=>)\s+(?=<)", authored))
+    slots = [
+        (
+            offset
+            - sum(
+                min(max(offset - match.start(), 0), match.end() - match.start())
+                for match in whitespace
+            ),
+            content,
+        )
+        for offset, content in slots
+    ]
+    return re.sub(r"(?<=>)\s+(?=<)", "", authored), slots
+
+
+def _plan_text_receipt_path(path: Path) -> Path:
+    key = hashlib.sha256(os.fsencode(path.resolve())).hexdigest()
+    # Workers can write the plan lock namespace while the shared state root
+    # remains sealed. The receipt shares that coordination grant.
+    return _config_home() / "locks" / "plan-text-writes" / f"{key}.json"
+
+
+def _plan_text_receipts(path: Path) -> dict[str, list[str]]:
+    try:
+        data = json.loads(_plan_text_receipt_path(path).read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return {}
+    if not isinstance(data, dict) or any(
+        not isinstance(key, str)
+        or not isinstance(values, list)
+        or any(not isinstance(value, str) for value in values)
+        for key, values in data.items()
+    ):
+        return {}
+    return data
+
+
+def _plan_text_digest(document: str) -> str:
+    authored, _slots = plan_text_projection(document)
+    return hashlib.sha256(authored.encode("utf-8")).hexdigest()
+
+
+def _record_plan_text_write(path: Path, before: str, after: str) -> None:
+    """Record a content-bound edge under the plan writer's existing lock."""
+    receipts = _plan_text_receipts(path)
+    source = _plan_text_digest(before)
+    destination = _plan_text_digest(after)
+    targets = receipts.setdefault(source, [])
+    if destination not in targets:
+        targets.append(destination)
+    receipt_path = _plan_text_receipt_path(path)
+    receipt_path.parent.mkdir(parents=True, exist_ok=True)
+    write_json_atomically(receipt_path, receipts)
+
+
+def recorded_plan_text_write(path: Path, before: str, after: str) -> bool:
+    """Whether recorded text writes connect these exact authored contents."""
+    start = _plan_text_digest(before)
+    destination = _plan_text_digest(after)
+    if start == destination:
+        return False
+    receipts = _plan_text_receipts(path)
+    pending = [start]
+    visited = set()
+    while pending:
+        current = pending.pop()
+        if current in visited:
+            continue
+        visited.add(current)
+        for target in receipts.get(current, []):
+            if target == destination:
+                return True
+            pending.append(target)
+    return False
+
+
 def replace_plan_text(
     project: str,
     slug: str,
@@ -2616,6 +2754,13 @@ def _replace_plan_text(
             except OpError as exc:
                 raise ValueError(str(exc)) from exc
         write_atomically(html_file, lambda handle: handle.write(rendered))
+        try:
+            _record_plan_text_write(html_file, text, rendered)
+        except Exception:
+            # A failed receipt must neither license an unwritten edit nor
+            # leave a successful edit without its promotion provenance.
+            write_atomically(html_file, lambda handle: handle.write(text))
+            raise
         return current_version + 1, html_file
 
 
@@ -4300,7 +4445,9 @@ def _apply_accept(working: dict, op: dict, is_index: bool, warnings: list[str]) 
     }
 
 
-def _apply_withdraw(working: dict, op: dict, is_index: bool, warnings: list[str]) -> None:
+def _apply_withdraw(
+    working: dict, op: dict, is_index: bool, warnings: list[str]
+) -> None:
     """Withdraw an unlocked decision, keeping its reason and date in the plan.
 
     A withdrawal takes a decision out of the wait without pretending anyone
