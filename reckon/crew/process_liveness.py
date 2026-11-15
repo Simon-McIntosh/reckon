@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import os
 import shutil
+import socket
 import subprocess
 from collections.abc import Callable, Iterable, Mapping
 from dataclasses import dataclass
@@ -233,6 +234,32 @@ def _record_is_placed(record: Mapping[str, Any] | None) -> bool:
     return isinstance(placement, Mapping) and bool(placement)
 
 
+def _srun_client_ended(
+    record: Mapping[str, Any], probe: Callable[[Any], bool | None]
+) -> bool:
+    """Whether an srun placement with no job id has observably ended.
+
+    An ``srun`` client lives exactly as long as the step it launched, so on the
+    host that started it the client's absence is the step's end. A placement
+    whose job id was never declared cannot be asked of the scheduler at all,
+    and without this reading such a run's end could never be observed: on 15
+    November two runs sat "liveness unknown" with their client pids gone from
+    their own launch host, and no resume could rest on an end nobody saw. Only
+    a dead answer on the launch host counts; a live client, an unreadable one,
+    or one launched elsewhere leaves the reading unknown as before.
+    """
+    placement = record.get("placement")
+    if not isinstance(placement, Mapping):
+        return False
+    if str(placement.get("scheduler") or "") != "srun" or record.get("job_id"):
+        return False
+    host = record.get("launcher_host")
+    if host is None or str(host) != socket.gethostname():
+        return False
+    pid = record.get("pid")
+    return bool(pid) and probe(pid) is False
+
+
 def placement_job_alive(
     record: Mapping[str, Any] | None,
     runner: Callable[[list[str]], str | None] | None = None,
@@ -385,6 +412,8 @@ def record_process_liveness(
             job_id=str(record.get("job_id") or ""),
         )
     if _record_is_placed(record):
+        if _srun_client_ended(record, process_alive if alive is None else alive):
+            return LivenessReading(LIVENESS_DEAD, False)
         # The scheduler could not be asked, and a placed run's recorded pid is
         # the scheduler client's: probing it would answer about a process that
         # is not the worker. The arm stays placed with liveness unknown, which
