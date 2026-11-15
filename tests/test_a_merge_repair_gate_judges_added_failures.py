@@ -58,7 +58,15 @@ def repair(tmp_path):
     return evidence
 
 
-def _write(repair, *, primary_ids, head_ids, arm_revision=None, arm_command=COMMAND):
+def _write(
+    repair,
+    *,
+    primary_ids,
+    head_ids,
+    arm_revision=None,
+    arm_command=COMMAND,
+    completed=True,
+):
     """Write the repair's manifest and both gate logs; return its pointer."""
     primary_log = repair.tmp / "primary-gate.log"
     primary_log.write_text(_pytest_log(repair.primary, primary_ids))
@@ -73,6 +81,10 @@ def _write(repair, *, primary_ids, head_ids, arm_revision=None, arm_command=COMM
         "failure_count": len(primary_ids),
         "failure_ids": list(primary_ids),
     }
+    if completed is None:
+        del arm["completed"]
+    else:
+        arm["completed"] = completed
     repair.manifest.write_text(
         "status: complete\n"
         f"tests: {COMMAND}\n"
@@ -93,9 +105,7 @@ def _gate(repair, pointer):
     unchanged behaviour read the same refusal through either shape.
     """
     arguments = (pointer, repair.head, repair.repository)
-    if "primary" in inspect.signature(
-        pending_landing._require_repair_gate
-    ).parameters:
+    if "primary" in inspect.signature(pending_landing._require_repair_gate).parameters:
         arguments += (repair.primary,)
     pending_landing._require_repair_gate(*arguments)
 
@@ -153,3 +163,49 @@ def test_a_green_gate_needs_no_primary_arm(repair):
     )
     pointer = {"manifest_path": str(repair.manifest), "repo": str(repair.repository)}
     _gate(repair, pointer)
+
+
+@pytest.mark.parametrize("completed", [None, "yes"])
+def test_a_primary_arm_not_declared_complete_is_refused(repair, completed):
+    """Only a literal ``True`` declares the arm's run complete, as the owner reads it."""
+    pointer = _write(
+        repair, primary_ids=[PRIMARY_RED], head_ids=[PRIMARY_RED], completed=completed
+    )
+    with pytest.raises(runs.CrewError) as refused:
+        _gate(repair, pointer)
+    assert "does not declare its run complete" in str(refused.value)
+
+
+def test_a_delivered_repair_judges_against_the_conflict_records_primary(
+    repair, monkeypatch
+):
+    """The gate is handed the primary revision the conflict record names."""
+    from reckon.crew import merge, queue_landing, recovery, recovery_repair_dispatch
+
+    monkeypatch.setattr(
+        recovery_repair_dispatch, "_reviewed_run_is_busy", lambda pointer: False
+    )
+    monkeypatch.setattr(
+        recovery,
+        "classify_pointer",
+        lambda pointer: {"manifest_status": "complete", "manifest_commits": []},
+    )
+    monkeypatch.setattr(
+        recovery, "_review_head_and_tree", lambda pointer: (repair.head, "")
+    )
+    monkeypatch.setattr(
+        queue_landing, "_delivered_revision", lambda commits: repair.head
+    )
+    monkeypatch.setattr(recovery, "same_revision", lambda a, b: a == b)
+    monkeypatch.setattr(merge, "_is_ancestor", lambda repository, parent, head: True)
+    seen = []
+    monkeypatch.setattr(
+        pending_landing,
+        "_require_repair_gate",
+        lambda pointer, head, repository, primary="": seen.append(primary),
+    )
+    head = pending_landing._delivered_repair(
+        {}, repair.base, {"main_revision": repair.primary}, repair.repository
+    )
+    assert head == repair.head
+    assert seen == [repair.primary]

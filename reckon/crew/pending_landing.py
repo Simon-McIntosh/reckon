@@ -539,7 +539,7 @@ def _repair_primary_arm(
             f"{revision or 'no revision'}, not primary {primary}, so the "
             "failures it added are unmeasured"
         )
-    if arm.get("completed") is False:
+    if arm.get("completed") is not True:
         raise runs.CrewError(
             "repair gate is red and its baseline_suite arm does not declare its "
             f"run complete, so its failures at primary {primary} are unmeasured"
