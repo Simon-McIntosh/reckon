@@ -84,6 +84,17 @@ def backfill() -> Any:
     return derive_run_figures
 
 
+def durability_counts() -> Any:
+    """Import the durability instrument from ``scripts/`` beside the repository."""
+
+    scripts = str(ROOT / "scripts")
+    if scripts not in sys.path:
+        sys.path.insert(0, scripts)
+    import count_uncommitted_ledger_figures
+
+    return count_uncommitted_ledger_figures
+
+
 def git(repo: Path, *args: str) -> str:
     done = subprocess.run(
         ["git", *args], cwd=repo, check=True, capture_output=True, text=True
@@ -91,8 +102,8 @@ def git(repo: Path, *args: str) -> str:
     return done.stdout.strip()
 
 
-def repository(tmp_path: Path) -> Path:
-    repo = tmp_path / "repo"
+def repository(tmp_path: Path, name: str = "repo") -> Path:
+    repo = tmp_path / name
     repo.mkdir(parents=True)
     git(repo, "init", "-q", "-b", "main")
     git(repo, "config", "user.name", "Test User")
@@ -230,3 +241,86 @@ def test_a_row_with_no_recorded_figure_is_withheld(tmp_path: Path, monkeypatch) 
     done = backfill().backfill_run_figures(PROJECT, root=repo)
     assert done["rows_filled"] == 1
     assert retention_rows(repo)["unfilled"]["action"] == "prune"
+
+
+def ledger_file(repo: Path) -> Path:
+    return repo / "docs" / "state" / repo.name / "crew.json"
+
+
+def write_ledger(repo: Path, runs: list[dict[str, Any]]) -> None:
+    path = ledger_file(repo)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps({"data": {"runs": runs}}, indent=2) + "\n")
+    git(repo, "add", str(path.relative_to(repo)))
+    git(repo, "commit", "-q", "-m", "test: ledger rows")
+
+
+def test_the_durability_count_reads_the_figures_from_their_owner(
+    tmp_path: Path, capsys
+) -> None:
+    """A row recorded only in the working tree is counted, and exits 1.
+
+    The figures counted are the ones routing declares, read through routing's
+    own retention rule, so a table of field names declared again here — or a
+    count taken by a second rule — cannot pass.
+    """
+
+    repo = repository(tmp_path, name="durable")
+    write_ledger(repo, [{"run_id": "r1", "tool_steps": 7.0}])
+    tree = [
+        {"run_id": "r1", "tool_steps": 7.0},
+        {"run_id": "r2", "tool_steps": 4.0, "orientation_input_tokens": 1200.0},
+    ]
+    ledger_file(repo).write_text(json.dumps({"data": {"runs": tree}}) + "\n")
+
+    counts = durability_counts()
+    report = counts.report(repo)
+    assert report["project"] == "durable"
+    assert routing.STREAM_DERIVED_FIELDS
+    assert sorted(report["fields"]) == sorted(routing.STREAM_DERIVED_FIELDS)
+    assert report["fields"]["tool_steps"] == {
+        "at_head": 1,
+        "in_working_tree": 2,
+        "only_in_working_tree": 1,
+        "only_at_head": 0,
+    }
+    assert report["fields"]["orientation_input_tokens"]["in_working_tree"] == 1
+    assert report["fields"]["orientation_input_tokens"]["at_head"] == 0
+
+    assert counts.main([str(repo), "--require-durable"]) == 1
+    printed = capsys.readouterr().out
+    assert "UNCOMMITTED durable tool_steps: 1 row(s)" in printed
+    assert "UNCOMMITTED durable orientation_input_tokens: 1 row(s)" in printed
+
+
+def test_a_head_ahead_of_the_working_tree_is_reported_as_such(
+    tmp_path: Path, capsys
+) -> None:
+    """More rows at HEAD than in the tree is its own fact, never a negative.
+
+    Requiring durability asks about figures the working tree holds and no
+    commit does, so a tree behind HEAD is not a failure — and must not be
+    printed as one row short of zero.
+    """
+
+    repo = repository(tmp_path)
+    write_ledger(
+        repo,
+        [{"run_id": "r1", "tool_steps": 7.0}, {"run_id": "r2", "tool_steps": 4.0}],
+    )
+    ledger_file(repo).write_text(
+        json.dumps({"data": {"runs": [{"run_id": "r1", "tool_steps": 7.0}]}}) + "\n"
+    )
+
+    counts = durability_counts()
+    field = counts.report(repo)["fields"]["tool_steps"]
+    assert field["at_head"] == 2
+    assert field["in_working_tree"] == 1
+    assert field["only_at_head"] == 1
+    assert field["only_in_working_tree"] == 0
+
+    assert counts.main([str(repo), "--require-durable"]) == 0
+    printed = capsys.readouterr().out
+    assert "AHEAD_OF_WORKING_TREE repo tool_steps: 1 row(s)" in printed
+    assert "UNCOMMITTED" not in printed
+    assert "-1" not in printed

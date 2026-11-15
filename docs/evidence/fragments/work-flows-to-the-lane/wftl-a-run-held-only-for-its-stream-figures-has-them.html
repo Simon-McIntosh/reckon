@@ -71,16 +71,25 @@
   <p><strong>What remains.</strong> The ledger writes are <strong>uncommitted</strong>: they live only in
   each project's working tree under <code>docs/state/&lt;project&gt;/</code>, and this run's git grant
   reaches its own worktree alone, so a mutating git verb aimed at another checkout is refused. Counting
-  the rows that carry a non-null figure gives, at each checkout's <code>HEAD</code> against its working
-  tree, nova 828 vs 2,126, imas-codex 278 vs 1,359, imas-ambix 273 vs 599 and imas-standard-names
-  3 vs 7 — differences of exactly the per-project fill counts above. Those counts come from <code>scripts/count_uncommitted_ledger_figures.py</code>, whose
+  the rows routing's own retention rule finds each figure recorded on gives, at each checkout's
+  <code>HEAD</code> against its working tree: <code>tool_steps</code> nova 828 vs 2,126, imas-codex
+  278 vs 1,359, imas-ambix 273 vs 599, imas-standard-names 3 vs 7; and
+  <code>orientation_input_tokens</code> 418 vs 556, 150 vs 302, 124 vs 140 and 0 vs 1. The <code>tool_steps</code> pairs differ by exactly
+  the per-project fill counts above; the charged-token pairs differ by 138, 152, 16 and 1, the
+  subset of those rows whose stream carried a charge before the derivation's cut point. Those counts come
+  from <code>scripts/count_uncommitted_ledger_figures.py</code>, which reads the figure list and the
+  retention rule from <code>reckon/crew/routing.py</code> rather than declaring either, whose
   <code>--require-durable</code> run is logged as <code>ledger-durability.log</code> and exits 1 while
-  any project still holds a figure only in its working tree. Until those four commits land, a
-  reclaim of any of those working trees loses the fill and retention withholds the rows again. Each
-  commit stages only <code>docs/state/&lt;project&gt;/</code> with a conventional subject and a body. Logs:
-  <code>gate-{base-arm,head-arm,negative-control,census,fill,resample,retention}.log</code> and
-  <code>ledger-durability.log</code> under the
-  run directory.</p>
+  any project still holds a figure only in its working tree, and which reports a checkout ahead of its
+  working tree as its own count rather than a negative one. The instrument is exercised by
+  <code>tests/test_a_held_runs_stream_figures_are_recorded.py</code> against a temporary repository,
+  and <code>ledger-durability-negative-control.log</code> records that test reddening both with the
+  field list emptied and with the row count forced to zero. Until those four commits land, a
+  reclaim of any of those working trees loses the fill and retention withholds the rows again.
+  Each commit stages only <code>docs/state/&lt;project&gt;/</code> with a conventional subject and a
+  body. Logs: <code>gate-{base-arm,head-arm,negative-control,census,fill,resample,retention}.log</code>,
+  <code>ledger-durability.log</code> and
+  <code>ledger-durability-negative-control.log</code> under the run directory.</p>
 </article>
 </body>
 </html>
