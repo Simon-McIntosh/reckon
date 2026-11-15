@@ -242,14 +242,14 @@ def _collect(monkeypatch: pytest.MonkeyPatch, into: list[tuple[str, str, str]]) 
     monkeypatch.setattr(obligations_module, "_review_duty_item", duty)
 
 
-def _base_standing_review(pointer: Any, recogniser: Any, read_pointers: Any) -> str:
+def _base_standing_review(pointer: Any, read_pointers: Any) -> str:
     """The base read path: one live sweep for each pointer that asks."""
     launched = [
         candidate
         for candidate in read_pointers(str(pointer.get("project") or ""))
         if str(candidate.get("phase") or "") != queue_admission.QUEUED_PHASE
     ]
-    return recogniser(pointer, launched)
+    return obligations_module._in_flight_review(pointer, launched)
 
 
 def test_a_duty_pass_reads_reviews_in_flight_once(
@@ -257,7 +257,6 @@ def test_a_duty_pass_reads_reviews_in_flight_once(
 ) -> None:
     """One pass pays one search per live pointer and one in-flight walk."""
     assert len(fleet["pointers"]) == LIVE_POINTERS, "the fixture's fleet moved"
-    recogniser = obligations_module._in_flight_review
     read_pointers = obligations_module._live_pointers
 
     searches = _count_searches(monkeypatch)
@@ -265,6 +264,10 @@ def test_a_duty_pass_reads_reviews_in_flight_once(
     rows: list[tuple[str, str, str]] = []
     _collect(monkeypatch, rows)
     populations = station_subscriber.live_work_populations(fleet["pointers"])
+    print(
+        f"head: searches={len(searches)} walks={len(walks)} "
+        f"live_pointers={LIVE_POINTERS} duties={len(rows)}"
+    )
 
     assert len(searches) <= LIVE_POINTERS, (
         f"a pass made {len(searches)} in-flight searches for {LIVE_POINTERS} live "
@@ -285,9 +288,10 @@ def test_a_duty_pass_reads_reviews_in_flight_once(
     monkeypatch.setattr(
         obligations_module,
         "_standing_review",
-        lambda pointer: _base_standing_review(pointer, recogniser, read_pointers),
+        lambda pointer: _base_standing_review(pointer, read_pointers),
     )
     base_populations = station_subscriber.live_work_populations(fleet["pointers"])
+    print(f"base read path: searches={len(searches)} duties={len(rows)}")
     assert base_populations == populations, "the population reading moved"
     assert rows == head_rows, "the duty rows moved with the read path"
     assert len(searches) > head_searches, (
