@@ -5055,6 +5055,111 @@ def _require_every_section_ticked(
     )
 
 
+def _require_every_landed_section_answered(
+    state: dict[str, Any], html_text: str | None = None
+) -> None:
+    """Refuse closure while a landed section holds no account of its landing.
+
+    A section declared ``done`` is one a node landed, and the landing line is
+    the only prose account of that node. Two things supply it: a landing comment
+    on the section, or a committed run record naming the section. A done section
+    with neither closes the plan with nothing on record about the work.
+
+    Only a section that states a done-when is in the rule. A section giving the
+    plan's reasons states no measure, so no node could have landed it and it
+    owes no account.
+
+    The rule needs the plan's document to read that prose, and a caller without
+    one gets no check rather than a refusal: the document is what distinguishes
+    a section that owes an account from one that does not, and refusing every
+    done section in its absence would refuse exactly the sections the rule
+    carves out. The declaration-map shape beside this check degrades the same
+    way, for the same reason.
+    """
+    from reckon import _plan_html
+
+    declarations = state.get("section_declarations") or {}
+    landed = [
+        str(identity)
+        for identity, classification in declarations.items()
+        if str(classification or "").strip() == _plan_html.SECTION_DECLARATION_DONE
+    ]
+    if not landed:
+        return
+    if html_text is None:
+        html_text = _plan_html_text(state)
+    if not html_text:
+        return
+    prose = _section_prose_by_identity(html_text)
+    unanswered = [
+        section
+        for section in landed
+        if _states_a_done_when(prose, section)
+        and not _section_holds_a_landing(state, section)
+    ]
+    if not unanswered:
+        return
+    raise OpError(
+        "terminal status refused: "
+        f"{len(unanswered)} landed section(s) with no account of their landing "
+        f"({', '.join(unanswered)}) — each section declared done that states a "
+        "done-when needs a landing comment naming it, or a committed run record "
+        "for it, before the plan can close"
+    )
+
+
+def _section_prose_by_identity(html_text: str) -> dict[str, str]:
+    """Each authored section's prose, joined in document order, keyed by identity."""
+    from reckon import _plan_html
+
+    collected: dict[str, list[str]] = {}
+    for identity, prose in _plan_html.section_prose(html_text):
+        collected.setdefault(str(identity), []).append(prose or "")
+    return {identity: " ".join(parts) for identity, parts in collected.items()}
+
+
+def _states_a_done_when(prose: dict[str, str], section: str) -> bool:
+    """Whether one authored section's prose carries a done-when.
+
+    The locator is the review module's, so a section counts as stating a measure
+    here exactly when the review judge reads one there; a second regex over the
+    same prose is how the two would come to disagree about which sections hold a
+    measure. Imported here rather than at module scope because the review module
+    reads this one.
+    """
+    from reckon._plan_html import section_id_candidates
+    from reckon.crew.plan_review import _done_when_paragraph
+
+    text = " ".join(
+        prose.get(candidate, "") for candidate in sorted(section_id_candidates(section))
+    )
+    return _done_when_paragraph(text) is not None
+
+
+def _section_holds_a_landing(state: dict[str, Any], section: str) -> bool:
+    """Whether a landing comment or a committed run record names one section."""
+    from reckon import _plan_html, ledger
+
+    if _plan_html._closing_comment(state, section) is not None:
+        return True
+    project = str(state.get("project") or "")
+    slug = str(state.get("slug") or "")
+    if not (project and slug):
+        return False
+    try:
+        records = ledger.runs(project, plan=slug)
+    except ledger.LedgerError as exc:
+        raise OpError(
+            f"cannot read the run ledger for project {project!r} while checking "
+            f"section {section!r}: {exc}"
+        ) from exc
+    wanted = _plan_html.section_id_candidates(section)
+    return any(
+        _plan_html.section_id_candidates(record.get("section")) & wanted
+        for record in records
+    )
+
+
 def _plan_html_text(state: dict[str, Any]) -> str | None:
     """The plan's own HTML as it stands on disk, or None if it is not one.
 
@@ -5119,10 +5224,10 @@ def validate_landing_patch(
     without the document still gets the declaration-map check.
 
     This is the one guard list for a terminal transition: the guards below are
-    the section-ticked check, the appended hiding followup, the pending
-    transition gate, the terminal evidence record and the continuation. Both
-    writers route through it, so a guard added here reaches the merge-patch
-    writer and the op writer alike.
+    the appended hiding followup, the section-ticked check, the landed-section
+    account, the pending transition gate, the terminal evidence record and the
+    continuation. Both writers route through it, so a guard added here reaches
+    the merge-patch writer and the op writer alike.
 
     With ``report_all`` the guards are collected rather than raised at the
     first, and the failures come back as a list — the close op's mode, so one
@@ -5150,6 +5255,8 @@ def validate_landing_patch(
     if requested_status in _LANDED_STATUSES and prior_status not in TERMINAL_STATUSES:
         guard(_require_every_section_ticked, state, html_text)
     if requested_status in TERMINAL_STATUSES:
+        if prior_status not in TERMINAL_STATUSES:
+            guard(_require_every_landed_section_answered, state, html_text)
         guard(_require_transition_verdict, state, "plan-terminal")
         project = str(state.get("project") or "")
         slug = str(state.get("slug") or "")
