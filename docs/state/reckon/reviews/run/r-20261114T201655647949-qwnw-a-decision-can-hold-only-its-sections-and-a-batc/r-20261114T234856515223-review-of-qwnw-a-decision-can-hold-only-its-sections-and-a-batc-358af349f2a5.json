@@ -1,0 +1,59 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/mcp_edit_plan.py:1973",
+    "reckon/_store.py:4604",
+    "reckon/_store.py:1609",
+    "reckon/_store.py:5012"
+  ],
+  "completed_at": "2026-11-15T01:22:33.445Z",
+  "dispatched_at": "2026-11-15T00:11:05Z",
+  "findings": [
+    {
+      "file": "tests/test_a_decision_scopes_and_a_batch_sees_its_own_ops.py",
+      "id": "ff00ec08d27",
+      "line": "187",
+      "severity": "non-blocking",
+      "text": "non-blocking: the close case (:162) asserts ok, the terminal status, the resolved followup and the appended anchor, but never asserts the write landed once, so an implementation that closed the plan in a second write would still pass the done-when's one-write claim; asserting the plan's version is 1 after the single call would guard it."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "read commit by commit against a346fba4aa0e53481a816fc06d92e48db899d60a; 2b0ae20cea adds _pending_evidence_plans and threads pending_plans through both guard call sites, and 358af349f2 adds the evidence fragment, with the test file carrying both cases.",
+    "done_when": "tests/test_a_decision_scopes_and_a_batch_sees_its_own_ops.py:106 scopes a decision to s2 and reads the plan HTML and the roadmap row, and :162 drives [append_evidence, close] through _edit_plan; the manifest records 2 passed at the head and the base-arm refusal, and I reproduced both arms.",
+    "goal": "reckon/_store.py:5012 gives _require_terminal_evidence a pending_plans arm fed by the batch's own queued evidence appends, so a close batched behind the append that satisfies it lands in one call; the decision-scope half already held at the base revision and is verified by a new test rather than reimplemented.",
+    "manifest": "read; it states both node tests passed at the head, the base arm failed at refused_op_index 1, and both suite arms read 55 passed exit 0; every figure reconciles with the log it cites.",
+    "write_paths": "the manifest declares reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround and skills; the diff touches only reckon/_store.py, tests/test_a_decision_scopes_and_a_batch_sees_its_own_ops.py and the fragment page under docs/evidence/fragments/, all inside that scope."
+  },
+  "justifications": {
+    "durability": "at a346fba4aa0e53481a816fc06d92e48db899d60a the close case reddens with the refusal at refused_op_index 1, which I reproduced in a scratch base tree, while the decision case is green at both arms.",
+    "evidence": "tests/test_a_decision_scopes_and_a_batch_sees_its_own_ops.py:187 asserts only ok, the terminal status, the resolved followup and the record's anchor, so a close that landed over two writes would pass the done-when's one-write claim.",
+    "fit": "tests/test_a_decision_scopes_and_a_batch_sees_its_own_ops.py:45 sets _MOUNTS_FILE and calls reload_mcp_family like tests/test_a_plan_closes_in_one_op.py:40, and _pending_evidence_plans repeats the identity check _consume_write_effects makes at reckon/_store.py:1048.",
+    "goal_fidelity": "reckon/_store.py:5027 returns early only for a slug the batch's own live effect collection names, which is the refusal the goal names, and the landing record is still written by _apply_evidence_appends at reckon/_store.py:1834.",
+    "reuse": "the helper reads the existing _WRITE_EFFECTS collection at reckon/_store.py:1062 rather than opening a second channel, and the test calls the existing decision_sections and build_roadmap owners instead of re-deriving either.",
+    "scope_discipline": "every path in the two commits is under a declared write path, and no file outside reckon/, tests/ and docs/evidence/fragments/ changed."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: reckon/_store.py:5012 gives _require_terminal_evidence a pending_plans arm fed by the batch's own queued evidence appends, so a close batched behind the append that satisfies it lands in one call; the decision-scope half already held at the base revision and is verified by a new test rather than reimplemented.\nVERDICT done_when: tests/test_a_decision_scopes_and_a_batch_sees_its_own_ops.py:106 scopes a decision to s2 and reads the plan HTML and the roadmap row, and :162 drives [append_evidence, close] through _edit_plan; the manifest records 2 passed at the head and the base-arm refusal, and I reproduced both arms.\nVERDICT write_paths: the manifest declares reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround and skills; the diff touches only reckon/_store.py, tests/test_a_decision_scopes_and_a_batch_sees_its_own_ops.py and the fragment page under docs/evidence/fragments/, all inside that scope.\nVERDICT manifest: read; it states both node tests passed at the head, the base arm failed at refused_op_index 1, and both suite arms read 55 passed exit 0; every figure reconciles with the log it cites.\nVERDICT diff: read commit by commit against a346fba4aa0e53481a816fc06d92e48db899d60a; 2b0ae20cea adds _pending_evidence_plans and threads pending_plans through both guard call sites, and 358af349f2 adds the evidence fragment, with the test file carrying both cases.\nCALL_SITES: reckon/mcp_edit_plan.py:1973, reckon/_store.py:4604, reckon/_store.py:1609, reckon/_store.py:5012\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/_store.py:5027 returns early only for a slug the batch's own live effect collection names, which is the refusal the goal names, and the landing record is still written by _apply_evidence_appends at reckon/_store.py:1834.\nSCORE evidence: 15\nJUSTIFICATION evidence: tests/test_a_decision_scopes_and_a_batch_sees_its_own_ops.py:187 asserts only ok, the terminal status, the resolved followup and the record's anchor, so a close that landed over two writes would pass the done-when's one-write claim.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in the two commits is under a declared write path, and no file outside reckon/, tests/ and docs/evidence/fragments/ changed.\nSCORE durability: 17\nJUSTIFICATION durability: at a346fba4aa0e53481a816fc06d92e48db899d60a the close case reddens with the refusal at refused_op_index 1, which I reproduced in a scratch base tree, while the decision case is green at both arms.\nSCORE fit: 19\nJUSTIFICATION fit: tests/test_a_decision_scopes_and_a_batch_sees_its_own_ops.py:45 sets _MOUNTS_FILE and calls reload_mcp_family like tests/test_a_plan_closes_in_one_op.py:40, and _pending_evidence_plans repeats the identity check _consume_write_effects makes at reckon/_store.py:1048.\nSCORE reuse: 20\nJUSTIFICATION reuse: the helper reads the existing _WRITE_EFFECTS collection at reckon/_store.py:1062 rather than opening a second channel, and the test calls the existing decision_sections and build_roadmap owners instead of re-deriving either.\nFINDING tests/test_a_decision_scopes_and_a_batch_sees_its_own_ops.py:187 non-blocking: the close case (:162) asserts ok, the terminal status, the resolved followup and the appended anchor, but never asserts the write landed once, so an implementation that closed the plan in a second write would still pass the done-when's one-write claim; asserting the plan's version is 1 after the single call would guard it.\n",
+  "review_run_id": "r-20261114T234856515223-review-of-qwnw-a-decision-can-hold-only-its-sections-and-a-batc-358af349f2a5",
+  "reviewed_base_sha": "a346fba4aa0e53481a816fc06d92e48db899d60a",
+  "reviewed_head_sha": "358af349f2a54aedb4ddfde99816b618708d6219",
+  "reviewed_run_id": "r-20261114T201655647949-qwnw-a-decision-can-hold-only-its-sections-and-a-batc",
+  "scores": {
+    "durability": 17,
+    "evidence": 15,
+    "fit": 19,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-15T01:22:39.860731+00:00",
+  "total": 109
+}
