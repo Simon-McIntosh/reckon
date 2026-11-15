@@ -264,7 +264,12 @@ def test_the_pass_admits_the_placed_requests_and_names_the_unplaceable_one(
     # read from the marker each launched run carries back to the request it was
     # admitted from rather than from the ids themselves.
     admitted_from = [
-        str(runs.read_pointer(run_id).get("admit_request", {}).get("run_id") or "")
+        str(
+            runs.dispatch_field(runs.read_pointer(run_id), "admit_request", {}).get(
+                "run_id"
+            )
+            or ""
+        )
         for run_id in result["launched"]
     ]
     assert admitted_from == [PLACED_OLDER, PLACED_NEWER], admitted_from
