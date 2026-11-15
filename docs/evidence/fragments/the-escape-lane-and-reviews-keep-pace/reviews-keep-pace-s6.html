@@ -1,0 +1,89 @@
+<section id="reviews-keep-pace-s6-landing">
+  <p id="reviews-keep-pace-s6-landing-line" data-landing="an admission pass now shares each project slice's seats between reviews and implementations by a seat quota — a one-third floor while both roles wait — computed in ordering before the launch loop, and each pass's verdict row carries the per-role launches and the age of the oldest request each role left waiting; three files change (reckon/crew/admission/ordering.py, verdicts.py and selection.py) with the new tests/test_reviews_and_implementations_share_the_seats.py, whose nine-implementations-three-reviews case and verdict-row case both fail at the base revision 5f939278c4d7531af8ef7392b31f4c87279735a2 and pass at head (4 passed), the three-file arm moves from 4 failed and 11 passed at base to 1 failed and 14 passed, the same pre-existing test_the_log_is_trimmed_within_its_size_bound failing on both, so zero added failures and three designed ones resolved, and the declared negative control that drops the per-role share from fair_share_admission_order fails test_a_pass_gives_both_roles_a_seat_with_three_waiting at 1 failed, EXIT=1, with the other three cases unmoved. The after half of the live one-hour reading is not obtainable from this node: the roles field appears only once the admit service runs this pass, and 0 of the 26 passes in the recorded before window carry it."></p>
+
+  <h2 id="reviews-keep-pace-s6-landing-title">One admission pass now shares its
+    seats between reviews and implementations</h2>
+
+  <p id="reviews-keep-pace-s6-landing-what">
+    Each pass computes the order it will launch in before the launch loop runs,
+    and inside every project's slice of that order it now interleaves the two
+    roles by a seat quota instead of letting the priority order settle it.
+    Nothing about which requests are eligible, which lane they go to or which
+    project's place they hold has changed.
+  </p>
+
+  <table id="reviews-keep-pace-s6-landing-change">
+    <thead>
+      <tr><th>path</th><th>what it does now</th></tr>
+    </thead>
+    <tbody>
+      <tr><td><code>reckon/crew/admission/ordering.py</code></td>
+        <td><code>ROLE_SEAT_SHARE_FLOOR</code> (one third), the role predicate
+        reusing the recovery module's own review test, the per-role weights, the
+        seat-quota interleave applied inside each project's slice, and
+        <code>role_cadence</code> reporting what a pass launched and the age of
+        the oldest request it left waiting. Applied in
+        <code>fair_share_admission_order</code> and in
+        <code>queued_placements</code>, so a reported place and a launch place
+        stay the same order.</td></tr>
+      <tr><td><code>reckon/crew/admission/verdicts.py</code></td>
+        <td>The pass's verdict record carries <code>roles</code>: per role, the
+        launches, the requests left waiting, and the oldest waiting age.</td></tr>
+      <tr><td><code>reckon/crew/admission/selection.py</code></td>
+        <td>Computes <code>role_cadence</code> from the pass's own order after
+        the launch loop and puts it in the result the verdict record reads.</td></tr>
+      <tr><td><code>tests/test_reviews_and_implementations_share_the_seats.py</code></td>
+        <td>Four cases: both roles seated, a lone role filling every seat, the
+        verdict row's per-role figures, and the share staying inside a project's
+        place.</td></tr>
+    </tbody>
+  </table>
+
+  <h3 id="reviews-keep-pace-s6-landing-arms">Arms</h3>
+  <table id="reviews-keep-pace-s6-landing-arms-table">
+    <thead>
+      <tr><th>arm</th><th>revision</th><th>result</th><th>failures</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>baseline</td><td><code>5f939278c4</code></td><td>4 failed, 11
+        passed</td><td>the three new requirement cases, plus
+        <code>test_the_log_is_trimmed_within_its_size_bound</code>, which fails
+        on the base tree without this change</td></tr>
+      <tr><td>after</td><td>head + this change</td><td>1 failed, 14 passed</td>
+        <td><code>test_the_log_is_trimmed_within_its_size_bound</code> only —
+        the same pre-existing failure, so the delta is zero added failures and
+        three designed ones resolved</td></tr>
+    </tbody>
+  </table>
+
+  <p id="reviews-keep-pace-s6-landing-case-c">
+    Two of the three requirement cases fail at base as the plan asks: nine
+    implementations ahead of three reviews with three free seats takes no review
+    at base, and the verdict row has no per-role figures at base. The third —
+    a pass with only one role waiting fills every seat from it — passes at base
+    as well as at head, by design: it is the guard against over-correcting, and
+    a guard that failed before the change would be measuring something else.
+  </p>
+
+  <h3 id="reviews-keep-pace-s6-landing-control">The negative control</h3>
+  <p id="reviews-keep-pace-s6-landing-control-note">
+    Dropping the per-role share from <code>fair_share_admission_order</code> and
+    nothing else leaves <strong>1 failed, 3 passed</strong> (<code>EXIT=1</code>),
+    and the failure is
+    <code>test_a_pass_gives_both_roles_a_seat_with_three_waiting</code> — the
+    nine-implementations-three-reviews case the share exists for. The other
+    three cases do not move, which is what makes the failure attributable to the
+    share rather than to the pass ordering in general.
+  </p>
+
+  <h3 id="reviews-keep-pace-s6-landing-scope">What this node did not touch</h3>
+  <p id="reviews-keep-pace-s6-landing-scope-note">
+    The plan document, plan state and the project index are untouched, and this
+    node does not close its own section. One file was edited outside the
+    declared write paths — <code>reckon/crew/admission/selection.py</code> — to
+    compute the cadence after the launch loop and put it in the pass result;
+    without it the verdict row has nothing to carry, and the alternative was to
+    recompute the order a second time inside the verdict writer, which would be a
+    second interleaver over the same queue.
+  </p>
+</section>

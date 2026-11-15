@@ -396,6 +396,7 @@ def _pass_verdict_record(
         "code_stamp": code_stamp,
         "gate": result.get("gate"),
         "admissible_age_seconds": result.get("admissible_age_seconds"),
+        "roles": result.get("role_cadence"),
         "stalls": list(result.get("stalls") or ()),
         "pointers": list(verdicts),
         "retired": list(result.get("retired") or ()),

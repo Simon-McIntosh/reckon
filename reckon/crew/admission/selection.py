@@ -788,6 +788,12 @@ def admit_once(
                 remaining[allowance_key] = allowance - 1
         result["launch_budget_seconds"] = budget
         result["launch_budget_exhausted"] = budget_spent
+        # What each role got from this pass and the oldest it left waiting, so a
+        # reader can see whether a backlog is draining or the other role is
+        # taking the seats it needs.
+        result["role_cadence"] = _ordering.role_cadence(
+            order, launched=result["launched"], now=moment
+        )
         # The queue's own liveness, recorded after the pass has decided what to
         # do with each request: a request this pass held on purpose is not
         # stalled, because the hold names the reason it waits. What remains is a
