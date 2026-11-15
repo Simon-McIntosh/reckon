@@ -75,6 +75,7 @@ from typing import Any
 from reckon import _plan_html, file_memo
 from reckon._plan_html import DOCUMENT_UNIT, landed_section_ids
 from reckon._store import write_json_atomically
+from reckon.crew import domain_rules as _domain_rules
 from reckon.crew import review as _review_store
 from reckon.crew import review_need, runs
 from reckon.served_code import neighbourhood
@@ -5736,16 +5737,6 @@ def _named_finding_roots(named: Iterable[str]) -> list[str]:
     return roots
 
 
-def _finding_is_beneath(row_path: str, roots: Iterable[str]) -> bool:
-    """Whether a stored finding's path lies at, or beneath, one of the roots."""
-    for root in roots:
-        if not root:
-            continue
-        if row_path == root or row_path.startswith(root + "/"):
-            return True
-    return False
-
-
 def _open_findings_for(subject: Mapping[str, Any]) -> list[dict[str, Any]] | None:
     """The open findings the stored reviews carry against the named paths.
 
@@ -5767,7 +5758,10 @@ def _open_findings_for(subject: Mapping[str, Any]) -> list[dict[str, Any]] | Non
     return [
         row
         for group in grouped.get("paths") or ()
-        if _finding_is_beneath(str(group.get("path")) or "", roots)
+        if any(
+            _domain_rules.path_at_or_beneath(str(group.get("path")) or "", root)
+            for root in roots
+        )
         for row in group.get("rows") or ()
         if row.get("disposition") == "open"
     ]

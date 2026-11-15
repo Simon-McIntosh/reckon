@@ -32,6 +32,9 @@ BENEATH = (
 )
 # A finding on a file above the named directory, which is not beneath it.
 ABOVE = ("reckon/top.py", "3", "unrelated sibling finding", "blocking")
+# A finding on a sibling whose name merely begins with the directory's: a bare
+# string prefix counts it as beneath ``reckon/sub``, a path boundary does not.
+SIBLING = ("reckon/subtle.py", "5", "sibling at the prefix", "blocking")
 
 
 def _line(brief: str, prefix: str) -> str:
@@ -93,6 +96,7 @@ def repo(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     (sub / "parallel.py").write_text(
         "import reckon.sub.other\n\n\nP = reckon.sub.other.X\n", encoding="utf-8"
     )
+    (package / "subtle.py").write_text("S = 2\n", encoding="utf-8")
     (root / "docs").mkdir()
     for args in (
         ["init", "-q", "-b", "main"],
@@ -106,7 +110,7 @@ def repo(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
 
 
 def _all_findings() -> list[tuple[str, str, str, str]]:
-    return [*BENEATH, ABOVE]
+    return [*BENEATH, ABOVE, SIBLING]
 
 
 def _brief(repo: Path, *paths: str) -> str:
@@ -137,8 +141,11 @@ def test_a_named_directory_carries_every_open_finding_beneath_it(repo: Path) -> 
     carried = "\n".join(bullets)
     for _, _, text, _ in BENEATH:
         assert text in carried, brief
-    # The finding on the file above the directory is not stored beneath it.
+    # Neither a file above the directory nor a sibling whose name merely begins
+    # with the directory's is stored beneath it, and the view agrees: both read
+    # the one containment rule, so the counts match rather than drift.
     assert ABOVE[2] not in carried
+    assert SIBLING[2] not in carried
 
 
 def test_a_named_file_carries_only_that_files_findings(repo: Path) -> None:

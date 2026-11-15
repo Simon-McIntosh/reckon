@@ -36,6 +36,7 @@ from pathlib import Path
 from typing import Any
 
 from reckon import _store, file_memo
+from reckon.crew import domain_rules as _domain_rules
 from reckon.crew import repair as _repair
 from reckon.crew import review as _review
 from reckon.crew import runs as _runs
@@ -1099,7 +1100,7 @@ def findings_by_path(
     )
     stored_rows, records_read = _indexed_rows(project, root_path)
     for row in stored_rows:
-        if prefix and not row["path"].startswith(prefix):
+        if prefix and not _domain_rules.path_at_or_beneath(row["path"], prefix):
             continue
         all_rows.append(row)
         if row["scope"] == SCOPE_ARTEFACT:
