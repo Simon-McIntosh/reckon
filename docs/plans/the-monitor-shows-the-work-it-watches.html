@@ -26,7 +26,7 @@
   <title>The Monitor Shows The Work It Watches | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="929">
+<meta name="plan-version" content="930">
 <meta name="plan-modified" content="2026-11-15">
 <meta name="plan-supersedes" content="a-follower-keeps-your-work-in-view,monitor-renders-what-it-is-given,a-follower-lives-as-long-as-its-session">
 </head>
@@ -1748,6 +1748,12 @@ Both cases run under the file's existing temporary crew home.</li>
 <div class="r-comment" data-section="s140" data-id="c-run-r-20261114T175233987360-full-the-monitor-shows-the-work-it--s140" data-who="reckon-build" data-when="2026-11-14T20:48:31.008Z">
     <div class="r-comment-body"><p>A held obligations answer is settled at read time, so a duty for a run whose live pointer has gone is dropped, a run whose pointer reads a working phase is drawn working, and a promotion-failed or sweep-failed row for a run that has released its pointer and already has a ledger record no longer blocks the stop hook.</p></div>
 </div>
+<div class="r-comment" data-section="s144" data-id="c-run-r-20261115T154112504384-review-of-follower-draws-after-producer-returns-s144-15f4387d952e" data-who="reckon-build" data-when="2026-11-15T15:48:53.751Z">
+    <div class="r-comment-body"><p>Reviewed r-20261115T103831438354-follower-draws-after-producer-returns-s144 at 15f4387d952e against base 3bc474f926: §144 lands both halves (StationStore.reconnect_if_replaced plus StationSubscriber._adopt_replaced_store, and a follower-emission record on stderr) with a real guarding test; scores goal_fidelity 19, evidence 16, scope_discipline 15, durability 16, fit 18, reuse 20, and four non-blocking findings (untested same-identity branch, an inert session-host-log env seam, one assertion coupled to the same wake call's output, an evidence fragment outside the declared write paths).</p></div>
+</div>
+<div class="r-comment" data-section="s144" data-id="c-run-r-20261115T103831438354-follower-draws-after-producer-returns-s144" data-who="reckon-build" data-when="2026-11-15T13:55:11Z">
+    <div class="r-comment-body"><p>Landed §144: reckon/crew/station_store.py records the identity of the database its handle opened and reopens when the store at that path is replaced (database_identity, reconnect_if_replaced), gives each store a name of its own when first opened (store_identity under STORE_IDENTITY_KEY), and opens a new store&#x27;s sequence after the highest id its surviving day files hold (_opening_sequence); reckon/crew/station_subscriber.py adopts the reopened store&#x27;s own place only when it wears a different name, so a restored copy repeats nothing, and records every row it yields on the follower&#x27;s session-host log (stderr) as follower-emission with its sequence number, the row&#x27;s time, run and transition.</p></div>
+</div>
 <div class="r-comment" data-section="s15" data-id="c-run-r-20261013T054419434294-a-held-request-stays-queued" data-who="reckon-build" data-when="2026-10-13T07:11:56.297Z">
     <div class="r-comment-body"><p>admit_once in reckon/crew/queue_admission.py asks the lane's gate document (_dispatch_lane_gate) and a dependency-and-back-off guard before releasing a queued pointer, so a request kept by the lane or by a not-yet-aged non-lane-hold failure keeps its run id and queued phase and appends no transition; the guard fingerprints the request's brief, its plan and the flight configuration layers (reckon.flight host and project layers), never the router's republished lane document; the first failure records failure_reported_at and appends one row to the project's watch stream, once; tests/test_a_held_request_stays_queued.py 6 passed, negative control 2 failed (EXIT=1).</p></div>
 </div>
@@ -2794,9 +2800,6 @@ Both cases run under the file's existing temporary crew home.</li>
 </div>
 <div class="r-comment" data-section="s99" data-id="c-run-r-20261105T131501961323-reland-the-reviewed-change-that-keeps-a-neverlaunched" data-who="reckon-build" data-when="2026-11-05T14:36:18.629Z">
     <div class="r-comment-body"><p>Re-landed the reviewed parked-request budget fix unchanged on base cd5edbd573 (patch byte-identical to git diff 98d07499d1 918894481d); elapsed now charges from launch, a never-launched pointer reports no elapsed/overrun and carries waiting_seconds (declared in LIVE_CLASSIFICATION_FIELDS); gate 23 passed at head effb92dc47 against 16 passed at base, importers 86 passed both sides, declared negative control EXIT=1 with the awaiting-upstream case failing on the overrun assertion.</p></div>
-</div>
-<div class="r-comment" data-section="s144" data-id="c-run-r-20261115T154112504384-review-of-follower-draws-after-producer-returns-s144-15f4387d952e" data-who="reckon-build" data-when="2026-11-15T15:48:53.751Z">
-    <div class="r-comment-body"><p>Reviewed r-20261115T103831438354-follower-draws-after-producer-returns-s144 at 15f4387d952e against base 3bc474f926: §144 lands both halves (StationStore.reconnect_if_replaced plus StationSubscriber._adopt_replaced_store, and a follower-emission record on stderr) with a real guarding test; scores goal_fidelity 19, evidence 16, scope_discipline 15, durability 16, fit 18, reuse 20, and four non-blocking findings (untested same-identity branch, an inert session-host-log env seam, one assertion coupled to the same wake call&#x27;s output, an evidence fragment outside the declared write paths).</p></div>
 </div>
 </section>
 <section data-reckon="gates" id="gates" class="r-gates">
