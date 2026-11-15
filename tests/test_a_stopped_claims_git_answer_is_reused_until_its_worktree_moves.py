@@ -172,10 +172,10 @@ def test_a_fresh_process_answers_the_commit_question_from_the_store(
     tree and is still asked, which is what proves git is reachable in this run
     rather than disabled.
     """
-    _, _, pointer = _stopped_claim(tmp_path)
+    _, worktree, pointer = _stopped_claim(tmp_path)
     node_module.claim_disposition(pointer)
     stored = json.loads(
-        (home / "crew" / "git-object-answers.json").read_text(encoding="utf-8")
+        recovery_watch._git_answer_tree_path(worktree).read_text(encoding="utf-8")
     )
     assert stored["unreachable"], "the commit answer was never stored"
 

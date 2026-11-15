@@ -387,14 +387,34 @@ def _delivered_repair(
         merge._is_ancestor(repository, parent, head) for parent in (original, primary)
     ):
         return ""
-    _require_repair_gate(pointer, head, repository)
+    _require_repair_gate(pointer, head, repository, primary)
     return head
 
 
 def _require_repair_gate(
-    pointer: Mapping[str, Any], head: str, repository: Path
+    pointer: Mapping[str, Any], head: str, repository: Path, primary: str = ""
 ) -> None:
-    """Require the fresh repair manifest's passing capture for this exact head."""
+    """Require the fresh repair manifest's capture to add no failing test.
+
+    A gate that exited zero passes on its own receipt. A red gate is judged
+    against the same command's own arm at the primary revision the merge
+    conflict named, and refuses only on a failing id the primary does not
+    fail. Absolute green made a repair whose gate files were already red on
+    the primary branch unlandable however clean its own change, which is the
+    opposite of what a repair round exists for: the fault it must clear is
+    the one this run introduced, and the primary's redness is not this run's
+    to fix. The delivery measure already decides a landing this way, and the
+    comparison here reuses its reader rather than restating the rule.
+
+    The primary arm is the fresh manifest's ``baseline_suite``: it is the arm
+    the run records for the revision it measured before its change, and a
+    repair round records it at the primary revision the conflict names. So
+    the two sides are one command at two revisions. A refusal names the added
+    ids and both logs, because the remedy is either the primary arm or the
+    head's new failure, and a message naming neither leaves nothing to
+    compare. ``primary`` is empty only for a caller holding no conflict
+    record, and such a caller has no primary to compare against.
+    """
     from reckon import ledger
     from reckon.crew.promotion_evidence import (
         _commit_canonical_id,
@@ -413,14 +433,10 @@ def _require_repair_gate(
     missing = ledger.gate_check_missing_fields(check)
     if missing:
         raise runs.CrewError("repair gate is missing " + ", ".join(missing))
-    if check["exit_status"] != 0:
-        raise runs.CrewError("repair gate did not pass")
     try:
         text = Path(check["log_path"]).read_text(encoding="utf-8")
     except (KeyError, OSError, UnicodeError) as exc:
         raise runs.CrewError("repair gate requires a readable captured log") from exc
-    if _recorded_exit_status(text) != 0:
-        raise runs.CrewError("repair gate log must end with EXIT=0")
     recorded_command = _command_from_gate_log(text)
     if _normalized_command(recorded_command) != _normalized_command(check["command"]):
         declared_command = _manifest_declared_command(pointer)
@@ -433,6 +449,131 @@ def _require_repair_gate(
     revisions = (match.group(1) for match in _GATE_LOG_REVISION.finditer(first_line))
     if not any(_commit_canonical_id(repository, rev) == head for rev in revisions):
         raise runs.CrewError(f"repair gate log must name repaired revision {head}")
+    recorded_exit = _recorded_exit_status(text)
+    if recorded_exit is None:
+        raise runs.CrewError("repair gate log must end with EXIT=0")
+    if recorded_exit == 0 and check["exit_status"] == 0:
+        return
+    if check["exit_status"] == 0:
+        raise runs.CrewError("repair gate did not pass")
+    _require_no_added_repair_failures(pointer, primary, text, check, repository)
+
+
+def _require_no_added_repair_failures(
+    pointer: Mapping[str, Any],
+    primary: str,
+    head_text: str,
+    check: Mapping[str, Any],
+    repository: Path,
+) -> None:
+    """Refuse a red repair gate only on a failing id the primary does not fail.
+
+    The head's failing ids come from the log the gate read; the primary's from
+    its own recorded arm, read again from that arm's log rather than taken from
+    its ``failure_ids`` summary. Both sides go through the review reader's
+    comparison, which knows that one test is written as a bare name in a
+    summary and as a qualified node id in a ``FAILED`` line.
+    """
+    from reckon.crew import review
+
+    primary_log, primary_ids = _repair_primary_arm(pointer, primary, check, repository)
+    head_ids = review.gate_log_failure_ids(head_text)
+    if head_ids is None:
+        raise runs.CrewError(
+            "repair gate log records no failing test id in a form the gate can "
+            f"read, so the failures it added against primary {primary} are "
+            f"unmeasured; log {check['log_path']!r}"
+        )
+    added = sorted(review.failure_ids_covered(primary_ids, head_ids))
+    if not added:
+        return
+    raise runs.CrewError(
+        f"repair gate adds failures primary {primary} does not fail: "
+        f"{', '.join(added)}; head log {str(check['log_path'])!r}, "
+        f"primary log {str(primary_log)!r}"
+    )
+
+
+def _repair_primary_arm(
+    pointer: Mapping[str, Any],
+    primary: str,
+    check: Mapping[str, Any],
+    repository: Path,
+) -> tuple[Path, set[str]]:
+    """The primary revision's own arm for the gate command, and its failures.
+
+    The arm is read from the fresh manifest's ``baseline_suite``, which must
+    name the conflict's primary revision, run the same command and declare
+    its run complete. Each is refused by name rather than defaulted, because
+    a comparison against an arm taken somewhere else is not the comparison
+    the refusal reports: it would admit a head whose failures the primary
+    never ran, and the log it names would be evidence of the wrong tree.
+    """
+    from reckon.crew import review
+    from reckon.crew.promotion_checks import _fresh_manifest
+    from reckon.crew.promotion_evidence import _commit_canonical_id
+    from reckon.crew.promotion_records import (
+        _command_from_gate_log,
+        _manifest_relative_path,
+        _normalized_command,
+    )
+
+    if not primary:
+        raise runs.CrewError(
+            "repair gate is red and the conflict records no primary revision to "
+            "compare it with, so the failures it added are unmeasured"
+        )
+    manifest = _fresh_manifest(pointer) or {}
+    manifest_path = str(pointer.get("manifest_path") or "")
+    arm = manifest.get("baseline_suite")
+    if not isinstance(arm, Mapping):
+        raise runs.CrewError(
+            "repair gate is red and the manifest records no baseline_suite arm "
+            f"at primary {primary}, so the failures it added are unmeasured"
+        )
+    revision = str(arm.get("revision") or "").strip()
+    named = _commit_canonical_id(repository, revision) if revision else None
+    if named is None or named != _commit_canonical_id(repository, primary):
+        raise runs.CrewError(
+            "repair gate is red and its baseline_suite arm names "
+            f"{revision or 'no revision'}, not primary {primary}, so the "
+            "failures it added are unmeasured"
+        )
+    if arm.get("completed") is not True:
+        raise runs.CrewError(
+            "repair gate is red and its baseline_suite arm does not declare its "
+            f"run complete, so its failures at primary {primary} are unmeasured"
+        )
+    declared_log = str(arm.get("log_path") or "").strip()
+    if not declared_log:
+        raise runs.CrewError(
+            "repair gate is red and its baseline_suite arm names no log, so the "
+            f"failures it added at primary {primary} are unmeasured"
+        )
+    log_path = _manifest_relative_path(declared_log, manifest_path=manifest_path)
+    try:
+        arm_text = log_path.read_text(encoding="utf-8")
+    except (OSError, UnicodeError) as exc:
+        raise runs.CrewError(
+            "repair gate requires a readable primary arm log: "
+            f"{str(log_path)!r} could not be read"
+        ) from exc
+    arm_command = _command_from_gate_log(arm_text) or str(arm.get("command") or "")
+    if _normalized_command(arm_command) != _normalized_command(check["command"]):
+        raise runs.CrewError(
+            "repair gate is red and its primary arm log records "
+            f"{arm_command or 'no command'!r} rather than the gate's "
+            f"{str(check['command'])!r}, so the two arms are not one command"
+        )
+    ids = review.gate_log_failure_ids(arm_text)
+    if ids is None:
+        raise runs.CrewError(
+            "repair gate requires a readable primary arm log: "
+            f"{str(log_path)!r} records no failing test id in a form the gate "
+            f"can read, so the failures it added at primary {primary} are "
+            "unmeasured"
+        )
+    return log_path, ids
 
 
 def _manifest_declared_command(pointer: Mapping[str, Any]) -> str:

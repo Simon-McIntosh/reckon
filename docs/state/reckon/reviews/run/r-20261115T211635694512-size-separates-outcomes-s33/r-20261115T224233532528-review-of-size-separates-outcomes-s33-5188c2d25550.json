@@ -1,0 +1,67 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own manifest: baseline_suite and after_suite are both absent because its FENCE - SUITE was unarmed (no test file in its write scope), recorded as failure_attribution {\"suite-unarmed\": \"scaffolding: ...\"}; its gate.log carries EXIT=0 and no failing test ids, so no failure was added against a base arm.",
+  "completed_at": "2026-11-15T22:44:40.607Z",
+  "dispatched_at": "2026-11-15T22:44:00Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "exempted",
+      "reason": "a 38-row discrepancy in the absent-hours count between the document and the manifest; it does not change any verdict, since estimated_hours separates no cell either way",
+      "recorded_at": "2026-11-15T23:00:35.518297+00:00"
+    },
+    "1": {
+      "kind": "exempted",
+      "reason": "a dated measurement section is a record at its stated revision and time, not a regenerated artefact; no drift check is owed",
+      "recorded_at": "2026-11-15T23:00:40.373589+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "docs/research/what-sizes-a-node.html",
+      "line": "61",
+      "severity": "non-blocking",
+      "text": "the document reports estimated_hours absent on 4,689 of 5,193 rows while the run's own manifest evidence_inputs records 4,651, so a reader reconciling the report against what shipped cannot tell which absent-row count was measured."
+    },
+    {
+      "file": "docs/research/what-sizes-a-node.html",
+      "line": "67",
+      "severity": "non-blocking",
+      "text": "the reproduction section names the script and command but no check would catch the committed HTML drifting from size-signals.json; measure_size_signals.py writes its tables to a path outside the tree and is never re-asserted at promotion."
+    }
+  ],
+  "item_verdicts": {},
+  "justifications": {
+    "durability": "the only guard is the run-directory verify_instrument.py; no repository test reddens if docs/research/what-sizes-a-node.html:61 drifts from the JSON.",
+    "evidence": "gate.log:6 records rows 5193 / cells 112 / separating 15 and the recount arm prints AGREE with EXIT=0.",
+    "fit": "docs/research/what-sizes-a-node.html:6-13 carries the research meta block the doc surface reads and the fragment follows the surrounding data-node id idiom.",
+    "goal_fidelity": "docs/research/what-sizes-a-node.html:39 states the population, cutoff, matching predicates and totals.",
+    "reuse": "the rows are matched through reckon/crew/picker/snapshot.py:_candidates_scan's own predicates and no owner of a signal-separates-outcome measurement exists under reckon/crew.",
+    "scope_discipline": "git diff --stat b7198dce..5188c2d255 lists only the two files inside the declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is \"Deliver section s33 of lane-and-model-routing as its done-when states\"; the landed change is docs/research/what-sizes-a-node.html plus its evidence fragment, a measurement of five dispatch-time size signals and one control over 5,193 committed run rows.\nVERDICT done_when: the done-when requires one table per signal including the control with its own reported result and suppression rule, counts at a stated revision and time, the script path and command, and no file outside the write paths; the manifest records gate.log running measure_size_signals.py then verify_instrument.py, whose last lines read AGREE / EXIT=0.\nVERDICT write_paths: the node's fence was docs/research/what-sizes-a-node.html, docs/evidence/fragments/lane-and-model-routing/size-separates-outcomes-s33.html and docs/figures/lane-and-model-routing/size-separates-outcomes-s33; git diff b7198dce..5188c2d255 adds only the first two, both inside the fence, and no figure directory.\nVERDICT manifest: read; status complete, commits 5188c2d255, changed_paths the two landed files, tests the literal measure_size_signals.py command, test_logs gate.log/instrument-check.log/measure-run.log, and failure_attribution {\"suite-unarmed\": \"scaffolding: this node's write scope holds no test file, so no suite pair exists to measure\"} - so baseline_suite and after_suite are absent because the suite was unarmed, and added_failure_count is derived as 0 with no ids.\nVERDICT diff: read the single commit 5188c2d255 against base b7198dce; it is 128 insertions in two new files and no deletion, and the figures read at each project's stated revision match gate.log's per_project block (imas-codex 518, imas-efit 321, imas-standard-names 25, nova 751, power_convertor 886, reckon 2692, total 5,193).\nCALL_SITES: none (documentation and evidence only; no module, function or class is added, and docs/research/what-sizes-a-node.html is reached by the docs SPA loader rather than by runtime Python)\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: docs/research/what-sizes-a-node.html:39 states the population, cutoff, matching predicates and totals, and its 6 of 15 verdict cells are carried into docs/evidence/fragments/lane-and-model-routing/size-separates-outcomes-s33.html.\nSCORE evidence: 16\nJUSTIFICATION evidence: gate.log:6 records the measure line {\"cells\": 112, \"rows\": 5193, \"separating\": 15} and its recount arm prints AGREE / EXIT=0, so both counts the document quotes are recorded results rather than claims, though no arm compares the committed HTML against size-signals.json.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat b7198dce..5188c2d255 lists only the two files named in the manifest's changed_paths, both inside the declared write paths, with nothing outside the goal.\nSCORE durability: 8\nJUSTIFICATION durability: the only added guard is the run-directory script verify_instrument.py, which recount rows 5,193 against 5,193 and flags 5 run ids recorded under two projects, and no test in the repository reddens if docs/research/what-sizes-a-node.html:61 drifts from size-signals.json.\nSCORE fit: 17\nJUSTIFICATION fit: docs/research/what-sizes-a-node.html:1-19 carries the research meta block the reckon doc surface expects (docs-project, reckon-type, plan-slug, plan-status), and the evidence fragment follows the surrounding data-node/data-slug id idiom in docs/evidence/fragments/lane-and-model-routing/.\nSCORE reuse: 18\nJUSTIFICATION reuse: the document reports that its rows are matched by calling reckon/crew/picker/snapshot.py:_candidates_scan's own _recorded_requirement and _picked_backend_away rather than re-implementing there predicates, and no owner for a signal-separation measurement exists in reckon/crew (searched for existing outcome-vs-size bucketing and found none).\nFINDING docs/research/what-sizes-a-node.html:61 non-blocking: the document reports estimated_hours absent on 4,689 of 5,193 rows while the run's own manifest evidence_inputs records 4,651, and the landed file is the deliverable, so a reader reconciling the report against what shipped cannot tell which absent-row count was measured.\nFINDING docs/research/what-sizes-a-node.html:67 non-blocking: the reproduction section names the script and command but no check would catch the committed HTML drifting from size-signals.json; measure_size_signals.py writes the tables to a path outside the tree and is never re-asserted at promotion.",
+  "review_run_id": "r-20261115T224233532528-review-of-size-separates-outcomes-s33-5188c2d25550",
+  "reviewed_base_sha": "b7198dce594f30c382cfa4343a5e708eca6436bc",
+  "reviewed_head_sha": "5188c2d25550e537c9552e9f3f7f0722f934fc34",
+  "reviewed_run_id": "r-20261115T211635694512-size-separates-outcomes-s33",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash",
+    "reviewer_run_id": "r-20261115T224233532528-review-of-size-separates-outcomes-s33-5188c2d25550"
+  },
+  "reviewer_run_id": "r-20261115T224233532528-review-of-size-separates-outcomes-s33-5188c2d25550",
+  "rubric": "text",
+  "scores": {
+    "durability": 8,
+    "evidence": 16,
+    "fit": 17,
+    "goal_fidelity": 18,
+    "reuse": 18,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-15T22:59:28.314509+00:00",
+  "total": 97
+}

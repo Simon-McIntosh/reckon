@@ -1,0 +1,98 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "Derived with reckon.crew.review.added_failures_from_gate_logs over the reviewed run's own gate logs named in its manifest baseline_suite and after_suite: arms/base.log reports FAILED case1, case2 and case5, arms/head.log reports FAILED case5 only, both are pytest format and both arms were reduced against their own # cwd: header, so the added set is empty and the count 0.",
+  "call_site_count": 6,
+  "call_sites": [
+    "reckon/crew/promotion_records.py:385 (_default_gate_evidence_from_manifest)",
+    "reckon/crew/promotion.py:817 (promotion fill)",
+    "reckon/crew/promotion.py:1358 (dry-run invocation report)",
+    "reckon/crew/queue_landing.py:537 (_gate_log_cited_by_manifest)",
+    "reckon/crew/recovery_review_acceptance.py:205",
+    "reckon/crew/pending_landing.py:410"
+  ],
+  "completed_at": "2026-11-15T20:20:42.572Z",
+  "dispatched_at": "2026-11-15T20:18:03Z",
+  "findings": [
+    {
+      "file": "reckon/crew/promotion_records.py",
+      "line": "294",
+      "severity": "non-blocking",
+      "text": "non-blocking: the check's own call site was rewritten in a module the node was not fenced to (prompt.txt:85-90 declares promotion_checks.py, promotion_evidence.py, recovery_review_delivery.py and the test file only); reckon/crew/promotion_scope.py:454 lands a companion source file without acceptance so the promotion is not held, but the declaration the dispatch gave said \"nothing outside them\"."
+    },
+    {
+      "file": "reckon/crew/promotion_evidence.py",
+      "line": "1225",
+      "severity": "non-blocking",
+      "text": "non-blocking: the pytest-program predicate inside the out-of-scope case5 guard was narrowed from `\\bpytest\\b` to a word-basename match, which was needed only because the test writes its record under a `pytest-of-<user>` temp home \u2014 arms/base.log quotes that cited record path \u2014 so the section's \"leave that guard unrelaxed\" is bent; case5 still refuses, so only the strict direction is verified."
+    },
+    {
+      "file": "reckon/crew/promotion.py",
+      "line": "1358",
+      "severity": "non-blocking",
+      "text": "non-blocking: the dry-run invocation report runs the same fill, so `crew complete --dry-run` on a review run writes review-gate.log into the run directory although no row will cite it, which is why the claim at promotion_records.py:308 that the log is captured \"only where the promotion will cite it\" does not hold on that path."
+    }
+  ],
+  "gate_evidence": {
+    "after_suite": {
+      "completed": true,
+      "exit_status": 1,
+      "failure_count": 1,
+      "failure_ids": [
+        "tests/test_a_review_runs_promotion_derives_its_own_gate.py::test_case5_an_explicit_gate_check_is_kept"
+      ],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T075735569432-review-promotion-derives-gate-s1/arms/head.log",
+      "revision": "c1a5111bc06f912a7d1a56574379b7d43151104b"
+    },
+    "baseline_suite": {
+      "completed": true,
+      "exit_status": 1,
+      "failure_count": 3,
+      "failure_ids": [
+        "tests/test_a_review_runs_promotion_derives_its_own_gate.py::test_case1_no_gate_flags_with_a_json_list_tests_field",
+        "tests/test_a_review_runs_promotion_derives_its_own_gate.py::test_case2_six_scores_and_no_total",
+        "tests/test_a_review_runs_promotion_derives_its_own_gate.py::test_case5_an_explicit_gate_check_is_kept"
+      ],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T075735569432-review-promotion-derives-gate-s1/arms/base.log",
+      "revision": "39c52edbf709fb345de519ffbdd6d477aa2a88ef"
+    }
+  },
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 6 production call site(s)",
+    "diff": "Read c1a5111bc06 and 3e144f8875 against base 39c52edbf7 commit by commit: c1a5111bc06 changes reckon/crew/promotion_evidence.py (+101/-4: `_command_runs_pytest` replacing `_PYTEST_COMMAND`, and `_derived_review_gate_log`) and reckon/crew/promotion_records.py (+53/-14: `run_id` on the evidence, the check now capturing its log, and `capture_log` on the fill), and 3e144f88 adds only the nine-line evidence fragment docs/evidence/fragments/the-crew-does-its-own-bookkeeping/review-promotion-derives-gate-s1.html.",
+    "done_when": "The measure is the four-case head arm with case5 still red on the unrelaxed guard; arms/base.log at 39c52edbf709fb345de519ffbdd6d477aa2a88ef reports 3 FAILED (case1, case2, case5) with \"3 failed, 62 passed\" and EXIT=1, arms/head.log at c1a5111bc06f912a7d1a56574379b7d43151104b reports exactly one FAILED (case5, on the same \"reaches no pytest summary\" guard) with \"1 failed, 64 passed\" and EXIT=1, so cases 1-4 pass at the head, case5 still fails on that guard, and the done_when's four named cases are exactly what the gate asserts.",
+    "goal": "The goal is to deliver section s1 as its done_when states \u2014 a review run's promotion derives the gate it carries rather than citing the JSON record as its own log; reckon/crew/promotion_records.py:294 `_review_record_check` now delegates to `_derived_review_gate_log` at reckon/crew/promotion_evidence.py:1588, which evaluates `test -s` over the delivered record and writes `review-gate.log` ending in a terminal `EXIT=<n>` line, so the check is performed and captured instead of cited.",
+    "manifest": "Read manifest.md in full \u2014 status complete, commits c1a5111bc06 and 3e144f8875, changed_paths naming three files, a literal tests: command, both arm logs under test_logs, baseline_suite/after_suite with revision, command, exit_status, completed, failure_count and ids, and negative_control_log at negative-control.log; its quoted figures \"1 failed, 64 passed\" and \"3 failed, 62 passed\" are the summary lines of arms/head.log and arms/base.log.",
+    "write_paths": "Read the declared paths in prompt.txt:85-90 and the same list in dispatch-detail.json node.write_paths (reckon/crew/promotion_checks.py, promotion_evidence.py, recovery_review_delivery.py, tests/test_a_review_runs_promotion_derives_its_own_gate.py, the s1 evidence fragment and its figure directory); the diff changes reckon/crew/promotion_evidence.py and reckon/crew/promotion_records.py and adds the fragment, so promotion_records.py:294 is the one path outside the nodes declaration, disclosed in manifest.md rubric.scope_discipline."
+  },
+  "justifications": {
+    "durability": "negative-control.log reinstates the defect by returning the check to citing the stored record as its own log (the base form at promotion_records.py:302-306) and case1 reddens there with \"carries no terminal EXIT=<n> line\", an id absent from arms/head.log, while case5 holds the pytest-summary guard's strict direction.",
+    "evidence": "arms/head.log ends in EXIT=1 with \"1 failed, 64 passed\" and arms/base.log in EXIT=1 with \"3 failed, 62 passed\", each header naming its revision, tree, module and cwd, and manifest.md records both arms in baseline_suite and after_suite rather than claiming them.",
+    "fit": "the additions are private, docstringed helpers beside their neighbours at reckon/crew/promotion_evidence.py:1225 and :1588, use the module's own lazy-import idiom at promotion_records.py:316, and introduce no name outside the existing `_PYTEST_*`/`_REVIEW_*` private conventions.",
+    "goal_fidelity": "reckon/crew/promotion_evidence.py:1631-1654 evaluates the `test -s` check itself rather than reporting a fixed exit status 0 as promotion_records.py:302-306 did at base, and the log it writes carries the `# command:` header the readers at promotion_evidence.py:1788-1800 parse.",
+    "reuse": "searched reckon/crew for a writer of the gate-log capture shape and an existing pytest-program test \u2014 promotion_gate.py:_write_replay_log owns the re-run form of the same header+EXIT write and dispatch_watch.py:69 owns the `pytest-of-<user>` knowledge, and while neither is the owner of \"capture a review's own check\" (no such owner exists), `_derived_review_gate_log` also does not reuse `_write_replay_log`'s write, so it duplicates that shape.",
+    "scope_discipline": "every hunk is in reckon/crew/promotion_evidence.py or the fragment except reckon/crew/promotion_records.py:286-331 and :460-470, which the declared write paths at prompt.txt:85-90 do not name."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The goal is to deliver section s1 as its done_when states \u2014 a review run's promotion derives the gate it carries rather than citing the JSON record as its own log; reckon/crew/promotion_records.py:294 `_review_record_check` now delegates to `_derived_review_gate_log` at reckon/crew/promotion_evidence.py:1588, which evaluates `test -s` over the delivered record and writes `review-gate.log` ending in a terminal `EXIT=<n>` line, so the check is performed and captured instead of cited.\nVERDICT done_when: The measure is the four-case head arm with case5 still red on the unrelaxed guard; arms/base.log at 39c52edbf709fb345de519ffbdd6d477aa2a88ef reports 3 FAILED (case1, case2, case5) with \"3 failed, 62 passed\" and EXIT=1, arms/head.log at c1a5111bc06f912a7d1a56574379b7d43151104b reports exactly one FAILED (case5, on the same \"reaches no pytest summary\" guard) with \"1 failed, 64 passed\" and EXIT=1, so cases 1-4 pass at the head, case5 still fails on that guard, and the done_when's four named cases are exactly what the gate asserts.\nVERDICT write_paths: Read the declared paths in prompt.txt:85-90 and the same list in dispatch-detail.json node.write_paths (reckon/crew/promotion_checks.py, promotion_evidence.py, recovery_review_delivery.py, tests/test_a_review_runs_promotion_derives_its_own_gate.py, the s1 evidence fragment and its figure directory); the diff changes reckon/crew/promotion_evidence.py and reckon/crew/promotion_records.py and adds the fragment, so promotion_records.py:294 is the one path outside the nodes declaration, disclosed in manifest.md rubric.scope_discipline.\nVERDICT manifest: Read manifest.md in full \u2014 status complete, commits c1a5111bc06 and 3e144f8875, changed_paths naming three files, a literal tests: command, both arm logs under test_logs, baseline_suite/after_suite with revision, command, exit_status, completed, failure_count and ids, and negative_control_log at negative-control.log; its quoted figures \"1 failed, 64 passed\" and \"3 failed, 62 passed\" are the summary lines of arms/head.log and arms/base.log.\nVERDICT diff: Read c1a5111bc06 and 3e144f8875 against base 39c52edbf7 commit by commit: c1a5111bc06 changes reckon/crew/promotion_evidence.py (+101/-4: `_command_runs_pytest` replacing `_PYTEST_COMMAND`, and `_derived_review_gate_log`) and reckon/crew/promotion_records.py (+53/-14: `run_id` on the evidence, the check now capturing its log, and `capture_log` on the fill), and 3e144f88 adds only the nine-line evidence fragment docs/evidence/fragments/the-crew-does-its-own-bookkeeping/review-promotion-derives-gate-s1.html.\nCALL_SITES: reckon/crew/promotion_records.py:385 (_default_gate_evidence_from_manifest), reckon/crew/promotion.py:817 (promotion fill), reckon/crew/promotion.py:1358 (dry-run invocation report), reckon/crew/queue_landing.py:537 (_gate_log_cited_by_manifest), reckon/crew/recovery_review_acceptance.py:205, reckon/crew/pending_landing.py:410\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/promotion_evidence.py:1631-1654 evaluates the `test -s` check itself rather than reporting a fixed exit status 0 as promotion_records.py:302-306 did at base, and the log it writes carries the `# command:` header the readers at promotion_evidence.py:1788-1800 parse.\nSCORE evidence: 17\nJUSTIFICATION evidence: arms/head.log ends in EXIT=1 with \"1 failed, 64 passed\" and arms/base.log in EXIT=1 with \"3 failed, 62 passed\", each header naming its revision, tree, module and cwd, and manifest.md records both arms in baseline_suite and after_suite rather than claiming them.\nSCORE scope_discipline: 14\nJUSTIFICATION scope_discipline: every hunk is in reckon/crew/promotion_evidence.py or the fragment except reckon/crew/promotion_records.py:286-331 and :460-470, which the declared write paths at prompt.txt:85-90 do not name.\nSCORE durability: 17\nJUSTIFICATION durability: negative-control.log reinstates the defect by returning the check to citing the stored record as its own log (the base form at promotion_records.py:302-306) and case1 reddens there with \"carries no terminal EXIT=<n> line\", an id absent from arms/head.log, while case5 holds the pytest-summary guard's strict direction.\nSCORE fit: 16\nJUSTIFICATION fit: the additions are private, docstringed helpers beside their neighbours at reckon/crew/promotion_evidence.py:1225 and :1588, use the module's own lazy-import idiom at promotion_records.py:316, and introduce no name outside the existing `_PYTEST_*`/`_REVIEW_*` private conventions.\nSCORE reuse: 16\nJUSTIFICATION reuse: searched reckon/crew for a writer of the gate-log capture shape and an existing pytest-program test \u2014 promotion_gate.py:_write_replay_log owns the re-run form of the same header+EXIT write and dispatch_watch.py:69 owns the `pytest-of-<user>` knowledge, and while neither is the owner of \"capture a review's own check\" (no such owner exists), `_derived_review_gate_log` also does not reuse `_write_replay_log`'s write, so it duplicates that shape.\nFINDING reckon/crew/promotion_records.py:294 non-blocking: the check's own call site was rewritten in a module the node was not fenced to (prompt.txt:85-90 declares promotion_checks.py, promotion_evidence.py, recovery_review_delivery.py and the test file only); reckon/crew/promotion_scope.py:454 lands a companion source file without acceptance so the promotion is not held, but the declaration the dispatch gave said \"nothing outside them\".\nFINDING reckon/crew/promotion_evidence.py:1225 non-blocking: the pytest-program predicate inside the out-of-scope case5 guard was narrowed from `\\bpytest\\b` to a word-basename match, which was needed only because the test writes its record under a `pytest-of-<user>` temp home \u2014 arms/base.log quotes that cited record path \u2014 so the section's \"leave that guard unrelaxed\" is bent; case5 still refuses, so only the strict direction is verified.\nFINDING reckon/crew/promotion.py:1358 non-blocking: the dry-run invocation report runs the same fill, so `crew complete --dry-run` on a review run writes review-gate.log into the run directory although no row will cite it, which is why the claim at promotion_records.py:308 that the log is captured \"only where the promotion will cite it\" does not hold on that path.",
+  "review_run_id": "r-20261115T201241778851-review-of-review-promotion-derives-gate-s1-3e144f8875f6",
+  "reviewed_base_sha": "39c52edbf709fb345de519ffbdd6d477aa2a88ef",
+  "reviewed_head_sha": "3e144f8875f638d521d58822ab99a745cb72f41a",
+  "reviewed_run_id": "r-20261115T075735569432-review-promotion-derives-gate-s1",
+  "rubric": "review",
+  "scores": {
+    "durability": 17,
+    "evidence": 17,
+    "fit": 16,
+    "goal_fidelity": 18,
+    "reuse": 16,
+    "scope_discipline": 14
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-15T21:24:25.944018+00:00",
+  "total": 98
+}

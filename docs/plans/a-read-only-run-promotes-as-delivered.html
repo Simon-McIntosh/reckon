@@ -8,7 +8,7 @@
   <meta name="plan-slug" content="a-read-only-run-promotes-as-delivered">
   <meta name="plan-title" content="A Read-Only Run Promotes As Delivered">
   <meta name="plan-summary" content="An investigation or review run that carries a brief is reviewed, checked and promoted without hand repair, and one plan&#x27;s run records read in seconds.">
-  <meta name="plan-status" content="active">
+  <meta name="plan-status" content="done">
   <meta name="plan-roi" content="mid">
   <meta name="plan-effort-hours" content="5.25">
   <meta name="plan-capability-version" content="1.0">
@@ -19,11 +19,11 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="reckon-tooling,crew">
   <meta name="plan-informs" content="a-landing-is-recorded-once">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;}">
   <title>A Read-Only Run Promotes As Delivered | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="17">
+<meta name="plan-version" content="20">
 <meta name="plan-modified" content="2026-11-15">
 </head>
 <body>
@@ -48,7 +48,7 @@
     <p><strong>Done when</strong> a new test file shows, using the repository's shared test isolation: an investigate run carrying a brief and no plan, and a plan-review run, each with the manifest line above, pass the manifest check and promote with the no-commit form, and each run record names the base revision and no commit; the same with bare <code>none</code>; a run stating <code>none</code> with a commit beyond its base is refused, naming that commit; and the composed prompt for each role states the line. Negative control: the manifest names which case fails at the base revision and quotes its refusal. If every case passes at the base revision, the node reports the commit that changed the behaviour since 2026-11-14 and changes no product source. The test files that import the manifest check or the promotion evidence check add no failure against the base revision, and <code>ruff check</code> and <code>ruff format --check</code> add no finding on the staged paths.</p>
 
     <h2 id="s3">§3 — A claims review record passes the review check</h2>
-<section data-reckon="section" data-id="s3" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+<section data-reckon="section" data-id="s3" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="done" data-links=""></section>
     <p><strong>Deliverable.</strong> <code>crew check --review</code> judges a review record by the rubric the record names. A record under the claims rubric is complete when every claim it was asked to check carries a verdict; it is not asked for the six text scores. A record under a scored rubric that omits its scores is still refused.</p>
     <p><strong>Done when</strong> a new test file shows: a claims-rubric record with a verdict for every claim and no scores passes <code>crew check --review</code>; a claims-rubric record missing one claim's verdict is refused, naming the claim; a scored-rubric record without scores is refused as it is at the base revision; and the two claims-rubric records stored for this session's census and prototype reviews, copied into the test as fixtures, pass. Negative control: at the base revision the first case fails with a missing-scores refusal. The test files that import the review record check add no failure against the base revision, and <code>ruff check</code> and <code>ruff format --check</code> add no finding on the staged paths.</p>
 
@@ -66,10 +66,11 @@
 
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
-<article class="r-fu" data-id="f-rorp-001" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-create" data-written-at="2026-11-15" data-recommends-skill="/reckon-build a-read-only-run-promotes-as-delivered" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-rorp-001" data-status="resolved" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-create" data-written-at="2026-11-15" data-recommends-skill="/reckon-build a-read-only-run-promotes-as-delivered" data-resolved-at="2026-11-15T21:52:48+00:00" data-resolved-by="reckon-build">
     <h4 class="r-fu-title">Build the four repairs</h4>
     <div class="r-fu-body"><p>§2 to §5 are independent of each other and wait on nothing.</p></div>
     <pre class="r-fu-prompt">/reckon-build a-read-only-run-promotes-as-delivered</pre>
+    <p class="r-fu-outcome">All five sections landed on the primary branch, each through an independently reviewed run: a read-only run that commits nothing promotes with the no-commit form, a claims review record passes the review check and a missing claim verdict is refused by name, and the remaining two repairs landed with their tests. The landed record is docs/evidence/archive/a-read-only-run-promotes-as-delivered-landed.html. Done — no followup.</p>
     </article>
 </section>
   <section data-reckon="comments" id="comments" class="r-comments">
@@ -98,7 +99,13 @@
     <div class="r-comment-body"><p>A claims record is now judged by one folded field and one rule: with_canonical_claims folds the hand-written claim_verdicts spelling onto the parser's claims key on the store's read path and in the delivery check, so the check, the classifier and the promotion gate read the same field and the stored nova record — three verdicts plus a summary that agrees — passes both. 75 tests pass at the repair head, the four importer files included.</p></div>
 </div>
 <div class="r-comment" data-section="s3" data-id="c-run-r-20261115T151741541448-review-of-rorp-s3b-e356e5d8d79b" data-who="reckon-build" data-when="2026-11-15T15:30:20.206Z">
-    <div class="r-comment-body"><p>Independent review of r-20261115T134041037707-rorp-s3b at e356e5d8d79b (base 1d760ac0): six dimensions scored (goal_fidelity 19, evidence 16, scope_discipline 20, durability 18, fit 19, reuse 20; total 20/20 satisfied on scope and reuse, 112 summed), added_failure_count 0 derived from the reviewed run&#x27;s baseline_suite (65 passed EXIT=0) and after_suite (69 passed EXIT=0), two non-blocking findings — the ruff clause of the section&#x27;s done_when carries no gate log, and the two revert probes stamp the base revision for runs made on the head worktree.</p></div>
+    <div class="r-comment-body"><p>Independent review of r-20261115T134041037707-rorp-s3b at e356e5d8d79b (base 1d760ac0): six dimensions scored (goal_fidelity 19, evidence 16, scope_discipline 20, durability 18, fit 19, reuse 20; total 20/20 satisfied on scope and reuse, 112 summed), added_failure_count 0 derived from the reviewed run's baseline_suite (65 passed EXIT=0) and after_suite (69 passed EXIT=0), two non-blocking findings — the ruff clause of the section's done_when carries no gate log, and the two revert probes stamp the base revision for runs made on the head worktree.</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20261115T134041037707-rorp-s3b" data-who="reckon-build" data-when="2026-11-15T14:46:42.754Z">
+    <div class="r-comment-body"><p>A claims record refused for a skipped re-run now names the ranked claims it left unanswered instead of reporting a count, and the two raw-record readers — the store's completeness rank behind `_select_stored_record` and the classifier's `_filed_review_record` — fold `review.with_canonical_claims` before judging. Head arm 69 passed EXIT=0 over the node test file and its four importers, base arm 65 passed EXIT=0 over the same five files at 1d760ac0; both new guards fail when their fold is reverted.</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-close-s3" data-who="reckon-build" data-when="2026-11-15T17:35:00Z">
+    <div class="r-comment-body"><p>§3 landed in two nodes. The first (run <code>r-20261115T085739372396-rorp-s3</code>, head <code>e064f4e3fc</code>) made a claims review record pass the review check. The follow-up (run <code>r-20261115T134041037707-rorp-s3b</code>, head <code>e356e5d8d7</code>) makes a claims record missing one claim's verdict be refused naming the claim, and folds the claim-verdict spelling at the two remaining readers. Base arm 65 passed, head arm 69 passed over the same five test files, no added failure; two revert probes each fail the test that guards them. Its review raised two non-blocking findings about receipts in the run directory, both exempted.</p></div>
 </div>
 <div class="r-comment" data-section="s4" data-id="c-run-r-20261115T085739228283-rorp-s4" data-who="reckon-build" data-when="2026-11-15T11:38:40Z">
     <div class="r-comment-body"><p>the duty pass already composes a review for a delivered brief-carried run, measured by the probe log at probe-rorp-s4.log (classification scoring, review id minted, launch reached and refused only at fixture backend preflight).</p></div>

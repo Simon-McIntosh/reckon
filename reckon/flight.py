@@ -97,6 +97,13 @@ DEFAULT_SPRINT_RECENT_DAYS = 14
 # whether the project's own ``.mcp.json`` servers start at all.
 WORKER_MCP_SERVERS_KEY = "worker_mcp_servers"
 
+# The named MCP sets a flight declares, each a list of servers, keyed by the
+# name a plan section or a brief gives for its node. Reckon-owned in the same
+# sense as the flat list above and stripped from the copy the provider-neutral
+# schema validates, because a set is what a launch reads to decide which
+# servers a worker may start.
+MCP_SETS_KEY = "mcp_sets"
+
 # The per-project report store. A project persists a report item into a root it
 # names itself. Reckon ships no default: a project that has not declared one
 # persists nothing, which is the refusal its own caller reports rather than a
@@ -459,6 +466,7 @@ def _schema_view(data: Mapping[str, Any]) -> dict[str, Any]:
     cleaned.pop(HARNESS_HOME_ADJACENT_FILES, None)
     cleaned.pop(SPRINT_RECENT_DAYS_KEY, None)
     cleaned.pop(WORKER_MCP_SERVERS_KEY, None)
+    cleaned.pop(MCP_SETS_KEY, None)
     cleaned.pop(PICKER_RESERVED_LANES_KEY, None)
     cleaned.pop(REPORTS_KEY, None)
     cleaned.pop("landing", None)
@@ -913,6 +921,25 @@ def _validate_worker_mcp_servers(data: Mapping[str, Any], source: str | Path) ->
         _declared_worker_mcp_servers(data)
     except WorkerMcpServersError as exc:
         raise FlightConfigError(source, WORKER_MCP_SERVERS_KEY, exc.constraint) from exc
+
+
+def _validate_mcp_sets(data: Mapping[str, Any], source: str | Path) -> None:
+    """Check the reckon-owned MCP set table, which the schema omits.
+
+    Absence is the shipped default: a flight that declares no set has no name
+    for a node to ask for. A present value must be a mapping from set name to a
+    list of server names, checked by the reader the launch uses, so a malformed
+    set is refused at the layer rather than seeding a worker with servers the
+    flight never named.
+    """
+    if MCP_SETS_KEY not in data:
+        return
+    from reckon._worker_fence import WorkerMcpSetsError, _declared_mcp_sets
+
+    try:
+        _declared_mcp_sets(data)
+    except WorkerMcpSetsError as exc:
+        raise FlightConfigError(source, MCP_SETS_KEY, exc.constraint) from exc
 
 
 def _validate_picker_reserved_lanes(
@@ -1625,6 +1652,7 @@ def validate_layer(
 
     _validate_sprint_recent_days(data, source)
     _validate_worker_mcp_servers(data, source)
+    _validate_mcp_sets(data, source)
     _validate_picker_reserved_lanes(data, source)
 
     for backend_name, backend in (data.get("backends") or {}).items():

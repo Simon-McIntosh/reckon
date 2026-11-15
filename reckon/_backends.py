@@ -87,6 +87,8 @@ from reckon._worker_fence import (  # noqa: F401
     UNPROTECTED_PATHS_KEY,
     WORKER_MCP_SERVERS,
     BackendError,
+    WorkerMcpSetError,
+    WorkerMcpSetsError,
     _await_protected_sources,
     _bind_reckon_hook_commands,
     _copy_tree_without_overwrite,
@@ -133,6 +135,7 @@ from reckon._worker_fence import (  # noqa: F401
     seed_harness_home,
     seed_write_lock_namespace,
     unmergeable_seals,
+    worker_mcp_selection,
     worktree_git_write_roots,
     write_lock_directory,
 )
@@ -455,6 +458,14 @@ class LaunchPlan:
     # pattern that governs it. Empty for a node that declares write paths: its
     # fence is composed exactly as it was before these were sealed at all.
     unmergeable_seals: dict[str, str] = field(default_factory=dict)
+    # The MCP set this run connected under, and the servers in it. Resolved
+    # once, at composition, from the flight configuration and the node's own
+    # declaration: the launch seeds the harness and the record survives on the
+    # run, so a coordinator reading what a worker could reach reads the same
+    # fact the harness was handed rather than re-deriving it from a config file
+    # that may have moved since. An empty name means the node named no set.
+    mcp_set: str = ""
+    worker_mcp_servers: tuple[str, ...] = ()
 
     def as_dict(self) -> dict[str, Any]:
         """Return the plan as sorted JSON-ready data, prompt text excluded."""
@@ -469,7 +480,9 @@ class LaunchPlan:
             "dialect": self.dialect,
             "final_message_path": self.final_message_path,
             "fence_waiver": self.fence_waiver,
+            "mcp_set": self.mcp_set,
             "resumed_session": self.resumed_session,
+            "worker_mcp_servers": list(self.worker_mcp_servers),
         }
 
 
@@ -1920,6 +1933,8 @@ _OMP_THINKING_LEVELS = frozenset({"low", "high", "max"})
 # project server is discovered and traces an error; with it disabled the same
 # server is never discovered and the run's trace log names it zero times.
 OMP_WORKER_OVERLAY = """\
+async:
+  printWake: true
 mcp:
   enableProjectConfig: false
 task:
@@ -2966,6 +2981,26 @@ def _prompt_without_figure_listing(prompt: str) -> str:
     return f"{head.rstrip()}\n\n{remainder}"
 
 
+def _resolve_worker_mcp(
+    fence_config: Mapping[str, Any] | None, worker_mcp_set: str
+) -> tuple[str, list[str] | None]:
+    """Return the MCP set a launch connects under, and the servers in that set.
+
+    ``None`` for the servers means the launch carries no flight declaration at
+    all — a bare composition or a preview — so it seeds no server and writes no
+    record, which an empty list would misreport as a flight that named none.
+    A node naming a set its flight does not declare is refused here, as a
+    backend error, because the launch cannot compose a runnable invocation for
+    work whose servers it cannot resolve.
+    """
+    if fence_config is None and not worker_mcp_set:
+        return "", None
+    try:
+        return worker_mcp_selection(fence_config, worker_mcp_set)
+    except (WorkerMcpSetError, WorkerMcpSetsError) as exc:
+        raise BackendError(str(exc)) from exc
+
+
 def launch_plan(
     *,
     backend_name: str,
@@ -2980,11 +3015,19 @@ def launch_plan(
     fence: bool = True,
     fence_home: str | Path | None = None,
     fence_config: Mapping[str, Any] | None = None,
+    worker_mcp_set: str = "",
     fence_waiver: str | None = None,
     masked_paths: Iterable[str | Path] = (),
     unmergeable_patterns: Iterable[str] = (),
 ) -> LaunchPlan:
     """Translate one backend plus one node's prompt into a runnable invocation.
+
+    ``worker_mcp_set`` is the set the node names. It is resolved here, before
+    anything is written, so a name the flight does not declare refuses the
+    launch rather than seeding a harness home with servers nobody asked for;
+    the resolved set and its servers ride the returned plan, which is where the
+    run's record reads what the worker could reach. A launch handed no flight
+    configuration resolves no set, because there is no declaration to read.
 
     Raises :class:`BackendError` for an in-harness backend: reckon cannot spawn
     the calling harness's own delegation primitive on its behalf, and silently
@@ -2997,6 +3040,9 @@ def launch_plan(
             "backend can be spawned — an in-harness backend is dispatched by "
             "the calling harness against a prepared directive"
         )
+    resolved_mcp_set, resolved_mcp_servers = _resolve_worker_mcp(
+        fence_config, worker_mcp_set
+    )
     from reckon.flight import expand_backend_environment
 
     environment = expand_backend_environment(backend_name, backend)
@@ -3101,11 +3147,10 @@ def launch_plan(
             # A resolved flight configuration states which project this run
             # belongs to and so which servers its harness should start; a bare
             # composition carries none, so it names no project and seeds no
-            # MCP record.
+            # MCP record. The node's own set, already resolved above, is what
+            # the run home is seeded with.
             worker_mcp_servers=(
-                _declared_worker_mcp_servers(fence_config)
-                if fence_config is not None
-                else None
+                resolved_mcp_servers if fence_config is not None else None
             ),
         )
         # Only the claude arm's treatment is decided by the seeding step: it
@@ -3174,7 +3219,7 @@ def launch_plan(
             else operator / ".codex",
             Path(worktree_path).resolve(),
             [
-                *_declared_worker_mcp_servers(fence_config),
+                *(resolved_mcp_servers or ()),
                 *(
                     [ANCHORED_EDIT_SERVER]
                     if backend.get("anchored_edit") is True
@@ -3187,9 +3232,7 @@ def launch_plan(
         mcp_config = claude_worker_mcp_config(
             harness if harness is not None and adopts_harness_home else operator,
             Path(worktree_path),
-            _declared_worker_mcp_servers(fence_config)
-            if fence_config is not None
-            else None,
+            resolved_mcp_servers,
             anchored_edit=backend.get("anchored_edit") is True,
         )
         # Server declarations can carry credentials: keep them off process argv.
@@ -3284,6 +3327,8 @@ def launch_plan(
         anchored_edit=anchored_edit,
         anchored_edit_reason=anchored_edit_reason,
         unmergeable_seals=unmergeable,
+        mcp_set=resolved_mcp_set,
+        worker_mcp_servers=tuple(resolved_mcp_servers or ()),
     )
 
 

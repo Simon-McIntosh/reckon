@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="the-monitor-shows-the-work-it-watches">
+  <meta name="plan-evidence-for" content="reckon:the-monitor-shows-the-work-it-watches">
+  <meta name="plan-verifies" content="reckon:the-monitor-shows-the-work-it-watches#s143">
+  <meta name="plan-recorded-at" content="2026-11-15">
+  <meta name="plan-verdict" content="passed">
+  <title>The pane and obligations view share the repair-round verdict | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" id="pane-repair-count-asks-owner-s143-landing" data-node="pane-repair-count-asks-owner-s143" data-reckon="landed" data-when="2026-11-15">
+  <h2>The pane and obligations view share the repair-round verdict</h2>
+  <p><code>obligations._repair_round_in_flight</code> now owns the complete reading: the dispatch must be in an opening status, carry a round id, and have a process known to be alive. The watch snapshot and obligations view both pass the process reading to this predicate, so a round whose worker has died is no longer added to the pane's working count while the obligations view omits it.</p>
+  <p><strong>Gate.</strong> <code>tests/test_the_pane_repair_count_asks_the_owner.py</code> drives a dead attempt, a live identified attempt, and a live attempt with no round id through the watch snapshot and obligations view. At base <code>a4085603a2cabb227db10167e8a0305ab84599e5</code>, the dead-attempt case failed with <code>assert True is False</code>, while the two controls passed. At the committed head, the three cases passed; the required after suite passed <strong>61 tests</strong> with <code>EXIT=0</code>.</p>
+  <p><strong>Negative control.</strong> Forcing the pane to pass <code>process_alive=True</code> fails <code>test_pane_repair_count_uses_the_owner_verdict[dead-attempt]</code> while the two controls pass: <strong>1 failed, 2 passed</strong>, <code>EXIT=1</code>. The base and after importer arms each passed 1,223 tests, failed 91 and had 3 errors; all 94 failure/error ids matched, for zero added failures. Ruff formatting passed, and Ruff finding counts on the changed modules matched their base counts.</p>
+</article>
+</body>
+</html>

@@ -17,7 +17,7 @@ from pathlib import Path
 from typing import Any
 
 from reckon import checkout_trust, ledger
-from reckon.crew import landing_measure, recovery, runs
+from reckon.crew import landing_measure, recovery, reports, runs
 from reckon.crew.node import CrewError
 from reckon.crew.open_run_index import operational_read
 from reckon.crew.recovery_review_acceptance import _review_accepts_promotion
@@ -1392,25 +1392,30 @@ def _after_suite_arm(after: Any) -> tuple[Mapping[str, Any] | None, str]:
     A head arm that is absent, that does not declare its run complete, or that
     records no exit status states no gate result at all, so it is no evidence
     rather than clean evidence.
+
+    Which values are observations at all is asked of the check's own reader, so
+    a pair the check accepts is a pair this guard reads: while each kept its own
+    test, the two judged the same bytes and reached opposite verdicts.
     """
-    if not isinstance(after, Mapping):
+    observation = reports.suite_observation(after)
+    if observation is None:
         return None, (
             f"{RED_SUITE_GUARD}: the manifest records no after_suite observation "
             "of the delivered head, so the run states no gate result"
         )
-    if after.get("completed") is not True:
+    if observation.get("completed") is not True:
         return None, (
             f"{RED_SUITE_GUARD}: the manifest's after_suite does not declare "
-            f"completed: true (it records {after.get('completed')!r}), so its "
+            f"completed: true (it records {observation.get('completed')!r}), so its "
             "list of failures is not the set it measured"
         )
-    exit_status = after.get("exit_status")
+    exit_status = observation.get("exit_status")
     if _plain_int(exit_status) is None:
         return None, (
             f"{RED_SUITE_GUARD}: the manifest's after_suite records no "
             "exit_status, so the run states no gate result"
         )
-    return after, ""
+    return observation, ""
 
 
 def _after_suite_exit_guard(after: Mapping[str, Any]) -> str:

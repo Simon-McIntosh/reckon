@@ -152,37 +152,46 @@ def test_cycle_through_existing_requests_still_refuses(
         )
 
 
-def test_blocked_request_does_not_bind_but_launched_run_does(
-    dispatch_repo: Path, monkeypatch: pytest.MonkeyPatch
+@pytest.mark.parametrize("path", [scope_cases.SHARED, "docs/figures/shared"])
+def test_only_launched_unmergeable_paths_bind(
+    dispatch_repo: Path, monkeypatch: pytest.MonkeyPatch, path: str
 ) -> None:
     scope_cases._configure(dispatch_repo, monkeypatch, session_slots=4)
     scope_cases._live(
         dispatch_repo,
         "r-blocked",
         phase="blocked-upstream",
-        write_paths=[scope_cases.SHARED],
+        write_paths=[path],
     )
-    allowed = scope_cases._dispatch(dispatch_repo, "ready", paths=(scope_cases.SHARED,))
+    allowed = scope_cases._dispatch(dispatch_repo, "ready", paths=(path,))
     assert allowed.exit_code == 0, allowed.output
-    assert scope_cases._payload(allowed)["phase"] == "starting"
-    runs.pointer_path(scope_cases._payload(allowed)["run_id"]).unlink()
+    allowed_payload = json.loads(allowed.stdout)
+    assert allowed_payload["phase"] == "starting"
+    runs.pointer_path(allowed_payload["run_id"]).unlink()
     scope_cases._live(
         dispatch_repo,
         "r-launched",
         phase="starting",
-        write_paths=[scope_cases.SHARED],
+        write_paths=[path],
     )
-    refused = scope_cases._dispatch(
-        dispatch_repo, "another", paths=(scope_cases.SHARED,)
-    )
-    assert refused.exit_code == 7, refused.output
-    assert scope_cases._payload(refused)["error"] == "scope-conflict"
+    answer = scope_cases._dispatch(dispatch_repo, "another", paths=(path,))
+    payload = json.loads(answer.stdout)
+    if path == scope_cases.SHARED:
+        assert answer.exit_code == 0, answer.output
+        assert payload["phase"] == "starting"
+        assert payload["run_id"] != "r-launched"
+    else:
+        assert answer.exit_code == 7, answer.output
+        assert payload["error"] == "scope-conflict"
+        assert "r-launched" in payload["detail"]
+        assert path in payload["detail"]
 
 
 def test_queued_pointer_survives_refused_launch_and_own_launch_proceeds(
     dispatch_repo: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     config = scope_cases._configure(dispatch_repo, monkeypatch, session_slots=4)
+    shared = "docs/figures/shared"
     dependent_config = json.loads(json.dumps(config))
     dependent_lane = dispatch_repo.parent / "dependent-lane.json"
     dependent_lane.write_text(
@@ -197,7 +206,7 @@ def test_queued_pointer_survives_refused_launch_and_own_launch_proceeds(
         node_id="queued",
         run_id="r-queued",
         session=scope_cases.SESSION_A,
-        write_paths=[scope_cases.SHARED],
+        write_paths=[shared],
         queued_at=scope_cases.START.isoformat(),
     )
     runs.queue_dispatch(pointer)
@@ -205,7 +214,7 @@ def test_queued_pointer_survives_refused_launch_and_own_launch_proceeds(
         dispatch_repo,
         "r-peer",
         phase="starting",
-        write_paths=[scope_cases.SHARED],
+        write_paths=[shared],
     )
     real_dispatch = dispatch_module.dispatch
     observed: list[bool] = []
@@ -246,7 +255,7 @@ def test_queued_pointer_survives_refused_launch_and_own_launch_proceeds(
         return real_dispatch(**kwargs)
 
     monkeypatch.setattr(dispatch_module, "dispatch", observed_dispatch)
-    with pytest.raises(ScopeConflict):
+    with pytest.raises(ScopeConflict, match="r-peer"):
         queue_admission._launch_queued(
             pointer, launcher=scope_cases._launcher([]), config_for=lambda _: config
         )

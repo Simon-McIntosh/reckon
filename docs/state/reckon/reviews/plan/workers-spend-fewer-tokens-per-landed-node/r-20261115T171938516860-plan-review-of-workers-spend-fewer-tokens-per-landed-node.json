@@ -1,0 +1,104 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-15T17:24:29.674Z",
+  "dispatched_at": "2026-11-15T17:23:58Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/workers-spend-fewer-tokens-per-landed-node.html:129",
+      "id": "anchors_resolve-1",
+      "reason": "without a resolvable path the node's fence refuses the one file it must edit, and the lander skip cannot be implemented at all.",
+      "text": "s13's write-path list ends with \"the lander module that selects landing candidates\", which is a description rather than a path; the dispatch fence is derived from a node's write paths, so an entry that names no file grants no write and the node cannot change the lander",
+      "type": "anchors_resolve",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/workers-spend-fewer-tokens-per-landed-node.html:133",
+      "id": "reasoning-1",
+      "reason": "the population is the input to the whole replay, and a filter that selects nothing makes the record unobtainable until the plan states which ledger facts constitute having landed.",
+      "text": "s14 defines its population as \"the ledger rows with a landed outcome\", but `outcome` on a committed ledger record is free prose, not a landed flag: of the 112 rows dispatched by session `829e5a4a-6870-4aec-876d-ba2efb1b5ecf` that carry a plan, all 112 record `outcome: \"\"`, and a sampled landed implement row (`r-20261111T182122414790-anchored-server-starts-inside-the-snapshot`, plan workers-spend-fewer-tokens-per-landed-node, section \u00a710) carries `outcome: \"\"` with `gate: \"passed\"` and a landed commit, so a filter on a \"landed outcome\" returns no rows and the ten-section draw has no population",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "6ed27d3a885d90b34edec9b08517d4ad5898b657",
+  "plan_fingerprint": "ac5c4670ec1a024b157cd990509a21a95f663769a4bad54adc1c3aa6de496565",
+  "plan_slug": "workers-spend-fewer-tokens-per-landed-node",
+  "plan_version": 73,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "6ed27d3a885d90b34edec9b08517d4ad5898b657",
+      "commit_basis": "edit",
+      "finding": "anchors_resolve-1",
+      "note": "\u00a713's write paths now name reckon/crew/queue_landing.py, the lander pass that selects and holds landing candidates, in place of the description",
+      "reason": "",
+      "when": "2026-11-15T20:14:17.959246+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "6ed27d3a885d90b34edec9b08517d4ad5898b657",
+      "commit_basis": "edit",
+      "finding": "reasoning-1",
+      "note": "\u00a714's population is now defined by ledger facts: implement rows of the session and plans named whose gate is passed and whose last listed commit is an ancestor of the primary branch; outcome prose is not read",
+      "reason": "",
+      "when": "2026-11-15T20:14:22.337534+00:00"
+    }
+  ],
+  "responses": {
+    "anchors_resolve-1": {
+      "action": "acted",
+      "by": "",
+      "commit": "6ed27d3a885d90b34edec9b08517d4ad5898b657",
+      "commit_basis": "edit",
+      "note": "\u00a713's write paths now name reckon/crew/queue_landing.py, the lander pass that selects and holds landing candidates, in place of the description",
+      "reason": "",
+      "when": "2026-11-15T20:14:17.959246+00:00"
+    },
+    "reasoning-1": {
+      "action": "acted",
+      "by": "",
+      "commit": "6ed27d3a885d90b34edec9b08517d4ad5898b657",
+      "commit_basis": "edit",
+      "note": "\u00a714's population is now defined by ledger facts: implement rows of the session and plans named whose gate is passed and whose last listed commit is an ancestor of the primary branch; outcome prose is not read",
+      "reason": "",
+      "when": "2026-11-15T20:14:22.337534+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/plan-workers-spend-fewer-tokens-per-landed-node.v73.json",
+  "review_run_id": "r-20261115T171938516860-plan-review-of-workers-spend-fewer-tokens-per-landed-node",
+  "reviewed_blob_sha": "7df752299485a391be8faae3f2c697cfb7b14987",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "a finding \u2014 s13's write paths include \"the lander module that selects landing candidates\", which names no path and so resolves to no file.",
+    "done_when": "pass \u2014 s13 names two negative controls (lander skip removed \u2192 landing attempt; reflex skip removed \u2192 a review composed, proving the run review-eligible), and s14's control is a replicate clive run whose same-arm paired interval must be reported and which forces a \"not separated\" verdict for any overlapping arm.",
+    "evidence_paths": "pass \u2014 s14's record, assignment file and figure directory sit under `docs/evidence/fragments/workers-spend-fewer-tokens-per-landed-node/` and `docs/figures/paired-replay`, and each log lives under the run directory; no scratch or node-local temporary path is named.",
+    "naming": "pass \u2014 the flag `--measure-only` and the `measured` ledger outcome describe the mechanism, and no plan label, section number or ticket identifier is carried into a symbol or file name.",
+    "reasoning": "a finding \u2014 s14's population is \"ledger rows with a landed outcome\", but the ledger's `outcome` field is free prose and is empty on every landed row of the named session, so the stated query selects nothing.",
+    "single_goal": "pass \u2014 s13 delivers the measurement-run mode and s14 delivers the paired replay record; each closes on one verdict, and s14's sixty dispatches are the means to its record rather than a second deliverable.",
+    "wiring": "pass \u2014 s14's `depends-on` names s13 and the declaration carries it (`plan-section-depends-on` maps `s14` to `workers-spend-fewer-tokens-per-landed-node#s13`); s13 declares no upstream it needs, because the dispatch flag, reflex skip and lander skip are all built inside it."
+  },
+  "section_digests": {
+    "_document": "6deb0de345b528a7558d14bbbad8e3a707688f73279eb9056783189db637ef3b",
+    "s1": "27efb946331b363cf3b48ca57f6009092461d2d586c980ec04683af290acb176",
+    "s10": "57c0e4bc790984e6470018cb7d1d811c93595c29bd68880d123ca24701f03432",
+    "s11": "1875a6d7d71c4631394fabd2dff8760a85b806148eac48ac293dabf4ad0940a8",
+    "s12": "48a1b1ca3c1b9a452478d7a70d3068987dfb74666027f6d7f9b5fc1f22a5f307",
+    "s13": "a66a081570890e6d0734203e3f55ad0ac77384167f304390c7a056cd303447ea",
+    "s14": "633ea895697a2c0db81c7eed19366ebd736ad3d9fd68579f1770686294444995",
+    "s2": "18a630a087c36f00788ca9ae4eba2d68e6b53ce5b7125f0da1af4e80b79bdf11",
+    "s3": "27f3ab4633055716703b5c5dc0489fd76b40de28c824267138496901afdd6ab4",
+    "s4": "cfaa23bf173d4d6871264740465b4cfe8419b64a4f662678500d625d859bc62d",
+    "s5": "c9183ce2a232ac782857e41634ee80387efd76e2fdd6a54bb8d09a4daed96e21",
+    "s6": "f3f3ac6fa716bf7bfc694dc026651c7f5e8c3c995720f26ec8e52dadcf7dee82",
+    "s7": "ad03def51d9b50982dddda60fabd711d849eb149f7c7aedc838f37c64f572076",
+    "s8": "66f3d05813353c3b9b7232c9a3f26c9cb8635cd0a0f84b70d4c0bd390630c805",
+    "s9": "2b2876c321e5725696c3622c225b7a81b3403379688687af5b7f98042c6c79a5"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-15T17:32:07.158239+00:00",
+  "total": null
+}

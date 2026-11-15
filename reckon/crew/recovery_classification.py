@@ -4,6 +4,7 @@ from __future__ import annotations
 import contextlib
 import hashlib
 import json
+from reckon.crew.recovery_cut_off import cut_off_detail, omp_cut_off
 import re
 import shlex
 import subprocess
@@ -476,7 +477,11 @@ def _filed_review_record(
     record, and a run of any other role files none. The record named is the
     first store entry :func:`_review_is_complete` accepts — a stored review
     holding every measurement its rubric demands, read through the one
-    predicate that owns that question rather than a spelling of its own — keyed
+    predicate that owns that question rather than a spelling of its own, and
+    with its claim verdicts folded to the canonical key first by the same
+    :func:`reckon.crew.review.with_canonical_claims` the store's read path
+    applies, so a claims record a reviewer wrote by hand is read on the answers
+    it gave — keyed
     on the attempt the run's own marker names so a record filed by a superseded
     attempt cannot stand in for the attempt running now. Returns the receipt's
     path and the store record's path, or None when nothing eligible is filed.
@@ -491,6 +496,7 @@ def _filed_review_record(
     # Imported here rather than at module scope: the supervisor's module reaches
     # back into the recovery package, so a top-level import would close the loop.
     from reckon.crew.dispatch_launch import REVIEW_FILED_RECORD_NAME
+    from reckon.crew.review import with_canonical_claims
 
     filed_path = (
         _run_directory(record) / f"attempt-{attempt}-{REVIEW_FILED_RECORD_NAME}"
@@ -513,7 +519,9 @@ def _filed_review_record(
             stored = json.loads(stored_path.read_text(encoding="utf-8"))
         except (OSError, ValueError):
             continue
-        if isinstance(stored, Mapping) and _review_is_complete(stored):
+        if isinstance(stored, Mapping) and _review_is_complete(
+            with_canonical_claims(stored)
+        ):
             return filed_path, stored_path
     return None
 
@@ -1915,6 +1923,17 @@ def classify_pointer(
             "attempt the pointer still names"
         )
         action = f"reckon crew observe --run {run_id}"
+    elif (
+        cut_off := omp_cut_off(
+            record, manifest_status=manifest_status, exit_record=ended_exit, stream=log
+        )
+    ) is not None:
+        classification = "cut-off"
+        detail = (
+            f"the omp worker {_exit_record_end_phrase(ended_exit)} before its "
+            f"manifest reached an outcome; last tool call: {cut_off_detail(cut_off)}"
+        )
+        action = f"reckon crew resume --run {run_id} --advice 'continue the unfinished work'"
     elif interruption is not None:
         classification = INTERRUPTED_RUN_PHASE
         signal_name = interruption.get("signal_name")

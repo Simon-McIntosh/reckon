@@ -1,0 +1,74 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/_backends.py:3058",
+    "reckon/_backends.py:3304",
+    "reckon/crew/dispatch_launch.py:4091",
+    "reckon/crew/dispatch_sessions.py:1904",
+    "reckon/crew/dispatch_sessions.py:1344",
+    "reckon/crew/dispatching/launch.py:739"
+  ],
+  "completed_at": "2026-11-15T21:24:29.113Z",
+  "dispatched_at": "2026-11-15T21:23:28Z",
+  "findings": [
+    {
+      "file": "tests/test_a_worker_on_a_compute_node_leaves_no_fleet_scratch.py",
+      "line": 128,
+      "severity": "non-blocking",
+      "text": "the placed-step test supplies expected=(owned,) itself and then asserts that the same value comes back, so the production wiring at reckon/crew/dispatch_launch.py:4091 is guarded by no test: deleting the argument that passes the run's TMPDIR into step_node_directories leaves all three tests green."
+    },
+    {
+      "file": "tests/test_a_worker_on_a_compute_node_leaves_no_fleet_scratch.py",
+      "line": 149,
+      "severity": "non-blocking",
+      "text": "the TMPDIR equality at line 149 compares the code's output against worker_scratch_dir(RUN_ID) resolved through the same helper the production branch uses, so both sides move together and it holds whichever branch ran; only the is_dir() line at :150 can fail on the branch-selection regression this test names."
+    },
+    {
+      "file": "reckon/_worker_fence.py",
+      "line": 1498,
+      "severity": "non-blocking",
+      "text": "worker_scratch_write_roots restates the handed-root membership rule already implemented inline at worker_scratch_seal_root:1384 and again inside worker_tmp_mount_source:1540, so one rule has three copies in this module and a later change to what counts as a run's own scratch directory fixes at most one."
+    },
+    {
+      "file": "reckon/crew/dispatch_launch.py",
+      "line": 1057,
+      "severity": "non-blocking",
+      "text": "placed_step_argv restates the srun-argv-names-a-job predicate owned at reckon/crew/process_signal.py:677 (_run_uses_step) and partly at reckon/nested_launch.py:119 (_names_a_job) instead of extending either owner, so which argvs count as a placed step is decided in three places."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "reckon/_backends.py:3058; reckon/_backends.py:3304; reckon/crew/dispatch_launch.py:4091; reckon/crew/dispatch_sessions.py:1904; reckon/crew/dispatch_sessions.py:1344; reckon/crew/dispatching/launch.py:739",
+    "diff": "Read the one commit 2b04fe6263 against dafd87495f, five files and +315/-12: reckon/_backends.py:3058, reckon/_worker_fence.py:1475 and :1923, reckon/crew/dispatch_launch.py:1057, :1097 and :4091, tests/test_a_worker_on_a_compute_node_leaves_no_fleet_scratch.py and the evidence fragment.",
+    "done_when": "The done_when this node was handed is the plan's section measure at docs/plans/work-scales-to-eighty-across-nodes.html:64 \u2014 a 20-worker rehearsal, a fleet memory delta under 2 GB and a negative control whose readings are logged to s4.html \u2014 while the gate at logs/after_arm.log measures only its third clause, and measures that over a composed argv rather than over a worker on a compute node.",
+    "goal": "The node goal is that a dispatched worker runs on a compute node while coordination stays on the fleet node; reckon/_backends.py:3058 stops the composing host creating the run's scratch and reckon/crew/dispatch_launch.py:1097 hands a placed step a scratch path its own node makes, which is the fleet-side defect this goal was still failing on, though the debug-partition route the manifest names under outside_scope still has no creator.",
+    "manifest": "Read the run's manifest.md; it records status complete, commit 2b04fe6263, after arm 61 passed EXIT=0, base arm 58 passed EXIT=0 and a negative control of 1 failed EXIT=1, and the three logs it names carry exactly those summaries.",
+    "write_paths": "The run declares reckon, tests and docs/evidence/fragments/work-scales-to-eighty-across-nodes; git diff --name-only dafd87495f..2b04fe6263 lists exactly five paths and every one of them lies inside those declarations."
+  },
+  "justifications": {
+    "durability": "tests/test_a_worker_on_a_compute_node_leaves_no_fleet_scratch.py:110 genuinely reddens \u2014 logs/negative_control_scratch_on_composer.log records 1 failed with EXIT=1 when the pre-change rule is restored \u2014 but line 128 supplies the expected value it asserts and so never reaches the production call at reckon/crew/dispatch_launch.py:4091.",
+    "evidence": "logs/after_arm.log records 61 passed with EXIT=0 and logs/baseline_arm.log 58 passed with EXIT=0, so the gate never touches the 20-worker rehearsal, the under-2 GB fleet memory delta or the 0.4 GB-per-worker control that docs/plans/work-scales-to-eighty-across-nodes.html:64 sets as the measure.",
+    "fit": "reckon/crew/dispatch_launch.py:1057 follows the module's docstring idiom but names a predicate as a noun where reckon/crew/process_signal.py:677 names one as a clause.",
+    "goal_fidelity": "reckon/_backends.py:3058 skips the run's scratch while the seal still re-binds it and reckon/crew/dispatch_launch.py:1097 gives a placed step the path its wrapper creates, but the debug-partition route the manifest records under outside_scope still has no creator and no test.",
+    "reuse": "reckon/_worker_fence.py:1475 adds worker_scratch_write_roots without extending worker_scratch_seal_root:1384 or worker_tmp_mount_source:1540, which carry the same membership rule inline.",
+    "scope_discipline": "every path in git diff --name-only dafd87495f..2b04fe6263 lies inside the declared write paths, and the commit is one change with one test."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The node goal is that a dispatched worker runs on a compute node while coordination stays on the fleet node; reckon/_backends.py:3058 stops the composing host creating the run's scratch and reckon/crew/dispatch_launch.py:1097 hands a placed step a scratch path its own node makes, which is the fleet-side defect this goal was still failing on, though the debug-partition route the manifest names under outside_scope still has no creator.\nVERDICT done_when: The done_when this node was handed is the plan's section measure at docs/plans/work-scales-to-eighty-across-nodes.html:64 \u2014 a 20-worker rehearsal, a fleet memory delta under 2 GB and a negative control whose readings are logged to s4.html \u2014 while the gate at logs/after_arm.log measures only its third clause, and measures that over a composed argv rather than over a worker on a compute node.\nVERDICT write_paths: The run declares reckon, tests and docs/evidence/fragments/work-scales-to-eighty-across-nodes; git diff --name-only dafd87495f..2b04fe6263 lists exactly five paths and every one of them lies inside those declarations.\nVERDICT manifest: Read the run's manifest.md; it records status complete, commit 2b04fe6263, after arm 61 passed EXIT=0, base arm 58 passed EXIT=0 and a negative control of 1 failed EXIT=1, and the three logs it names carry exactly those summaries.\nVERDICT diff: Read the one commit 2b04fe6263 against dafd87495f, five files and +315/-12: reckon/_backends.py:3058, reckon/_worker_fence.py:1475 and :1923, reckon/crew/dispatch_launch.py:1057, :1097 and :4091, tests/test_a_worker_on_a_compute_node_leaves_no_fleet_scratch.py and the evidence fragment.\nCALL_SITES: reckon/_backends.py:3058, reckon/_backends.py:3304, reckon/crew/dispatch_launch.py:4091, reckon/crew/dispatch_sessions.py:1904, reckon/crew/dispatch_sessions.py:1344, reckon/crew/dispatching/launch.py:739\nSCORE goal_fidelity: 15\nJUSTIFICATION goal_fidelity: reckon/_backends.py:3058 skips the run's scratch while the seal still re-binds it and reckon/crew/dispatch_launch.py:1097 gives a placed step the path its wrapper creates, but the debug-partition route the manifest records under outside_scope still has no creator and no test.\nSCORE evidence: 8\nJUSTIFICATION evidence: logs/after_arm.log records 61 passed with EXIT=0 and logs/baseline_arm.log 58 passed with EXIT=0, so the gate never touches the 20-worker rehearsal, the under-2 GB fleet memory delta or the 0.4 GB-per-worker control that docs/plans/work-scales-to-eighty-across-nodes.html:64 sets as the measure.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every path in git diff --name-only dafd87495f..2b04fe6263 lies inside the declared write paths, and the commit is one change with one test.\nSCORE durability: 13\n\nJUSTIFICATION durability: tests/test_a_worker_on_a_compute_node_leaves_no_fleet_scratch.py:110 genuinely reddens \u2014 logs/negative_control_scratch_on_composer.log records 1 failed with EXIT=1 when the pre-change rule is restored \u2014 but line 128 supplies the expected value it asserts and so never reaches the production call at reckon/crew/dispatch_launch.py:4091.\nSCORE fit: 16\nJUSTIFICATION fit: reckon/crew/dispatch_launch.py:1057 follows the module's docstring idiom but names a predicate as a noun where reckon/crew/process_signal.py:677 names one as a clause.\nSCORE reuse: 10\nJUSTIFICATION reuse: reckon/_worker_fence.py:1475 adds worker_scratch_write_roots without extending worker_scratch_seal_root:1384 or worker_tmp_mount_source:1540, which carry the same membership rule inline.\nFINDING tests/test_a_worker_on_a_compute_node_leaves_no_fleet_scratch.py:128 non-blocking: the placed-step test supplies expected=(owned,) itself and then asserts that the same value comes back, so the production wiring at reckon/crew/dispatch_launch.py:4091 is guarded by no test: deleting the argument that passes the run's TMPDIR into step_node_directories leaves all three tests green.\nFINDING tests/test_a_worker_on_a_compute_node_leaves_no_fleet_scratch.py:149 non-blocking: the TMPDIR equality at line 149 compares the code's output against worker_scratch_dir(RUN_ID) resolved through the same helper the production branch uses, so both sides move together and it holds whichever branch ran; only the is_dir() line at :150 can fail on the branch-selection regression this test names.\nFINDING reckon/_worker_fence.py:1498 non-blocking: worker_scratch_write_roots restates the handed-root membership rule already implemented inline at worker_scratch_seal_root:1384 and again inside worker_tmp_mount_source:1540, so one rule has three copies in this module and a later change to what counts as a run's own scratch directory fixes at most one.\nFINDING reckon/crew/dispatch_launch.py:1057 non-blocking: placed_step_argv restates the srun-argv-names-a-job predicate owned at reckon/crew/process_signal.py:677 (_run_uses_step) and partly at reckon/nested_launch.py:119 (_names_a_job) instead of extending either owner, so which argvs count as a placed step is decided in three places.\n",
+  "review_run_id": "r-20261115T211853440360-review-of-wse-workers-run-on-compute-nodes-2b04fe6263d1",
+  "reviewed_base_sha": "dafd87495fc749997947105eec1e2e0992fb8941",
+  "reviewed_head_sha": "2b04fe6263d131b553141fa4f290321974c13c94",
+  "reviewed_run_id": "r-20261115T200804650837-wse-workers-run-on-compute-nodes",
+  "scores": {
+    "durability": 13,
+    "evidence": 8,
+    "fit": 16,
+    "goal_fidelity": 15,
+    "reuse": 10,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-15T21:55:31.125238+00:00",
+  "total": 81
+}

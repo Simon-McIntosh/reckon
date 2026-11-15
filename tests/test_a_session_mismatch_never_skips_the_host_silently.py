@@ -5,7 +5,8 @@ session is refused by ``_request_host_follower``'s name guard: the host that
 would follow the run is named for the calling process, so a pair belonging to
 another session is never asked of it. A refusal with nothing beside it leaves
 the caller's pane with no run and no reason, so the dispatch hands the run to
-the calling session's waiting host and prints one line naming both sessions.
+its own session's live host, and only to the calling session's waiting host when
+that session has none, unmarked, and prints one line naming both sessions.
 
 The cases run against a temporary crew home and a stub host on the session-host
 FIFO. Two drive the hand-off directly: a mismatched dispatch writes its request
@@ -136,12 +137,13 @@ def stub_host(claude_session: Path):
     stub.stop()
 
 
-def test_a_mismatched_dispatch_hands_the_run_to_the_calling_host(
+def test_a_mismatched_dispatch_with_no_owning_host_goes_to_the_caller_unmarked(
     home: Path,
     claude_session: Path,
     stub_host: _StubSessionHost,
     capsys: pytest.CaptureFixture[str],
 ) -> None:
+    """A session with no live host is shown by the caller, never marked its own."""
     handoff = dispatch_watch.hand_off_mismatched_session(PROJECT, OTHER_SESSION)
 
     stub_host.wait_for(1)
@@ -149,16 +151,76 @@ def test_a_mismatched_dispatch_hands_the_run_to_the_calling_host(
         "requested_session": OTHER_SESSION,
         "calling_session": CALLING_SESSION,
         "handed_to_host": True,
+        "handed_to": "calling-session",
     }
     assert len(stub_host.lines) == 1, "the run's request never reached the host"
     request = json.loads(stub_host.lines[0])
     assert request["project"] == PROJECT
     assert request["session"] == OTHER_SESSION
-    assert request["owner_checked"] is True
+    # The caller's host does not own the session, so a restart must not keep it.
+    assert request["owner_checked"] is False
     captured = capsys.readouterr()
     line = captured.out + captured.err
     assert OTHER_SESSION in line and CALLING_SESSION in line
-    assert "took the run" in line
+    assert "has no live host" in line
+
+
+def test_a_mismatched_dispatch_goes_to_the_owning_sessions_host(
+    home: Path,
+    claude_session: Path,
+    stub_host: _StubSessionHost,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    """A run of another live session reaches that session's host, not the caller's."""
+    from reckon.crew import session_host
+
+    owner = subprocess.Popen(["sleep", "60"])
+    try:
+        start = session_host.process_start_time(owner.pid)
+        state = Path(os.environ["RECKON_SESSION_HOST_STATE_DIR"])
+        state.mkdir(parents=True, exist_ok=True)
+        (state / f"{owner.pid}-{start}.json").write_text(
+            json.dumps(
+                {
+                    "owner": {"pid": owner.pid, "start_time": start},
+                    "pid": owner.pid,
+                    "children": [],
+                }
+            ),
+            encoding="utf-8",
+        )
+        sessions = tmp_path / "harness-sessions"
+        sessions.mkdir()
+        (sessions / f"{owner.pid}.json").write_text(
+            json.dumps({"pid": owner.pid, "sessionId": OTHER_SESSION}),
+            encoding="utf-8",
+        )
+        monkeypatch.setenv("RECKON_HARNESS_SESSIONS_DIR", str(sessions))
+        owner_fifo = dispatch_watch._session_host_fifo_path((owner.pid, str(start)))
+        assert owner_fifo is not None
+        owner_fifo.parent.mkdir(parents=True, exist_ok=True)
+        os.mkfifo(owner_fifo)
+        owning_host = _StubSessionHost(owner_fifo)
+        owning_host.start()
+        try:
+            handoff = dispatch_watch.hand_off_mismatched_session(PROJECT, OTHER_SESSION)
+            owning_host.wait_for(1)
+        finally:
+            owning_host.stop()
+    finally:
+        owner.kill()
+        owner.wait()
+
+    assert handoff["handed_to"] == "owning-session", handoff
+    assert len(owning_host.lines) == 1, "the owning host never received the run"
+    request = json.loads(owning_host.lines[0])
+    assert request["session"] == OTHER_SESSION
+    assert request["owner_checked"] is True
+    assert stub_host.lines == [], "the caller's host was handed another session"
+    captured = capsys.readouterr()
+    assert "own host took the run" in captured.out + captured.err
 
 
 def test_a_mismatched_dispatch_with_no_waiting_host_says_so(
@@ -170,6 +232,7 @@ def test_a_mismatched_dispatch_with_no_waiting_host_says_so(
         "requested_session": OTHER_SESSION,
         "calling_session": CALLING_SESSION,
         "handed_to_host": False,
+        "handed_to": "",
     }
     captured = capsys.readouterr()
     line = captured.out + captured.err
@@ -326,7 +389,7 @@ def test_a_real_dispatch_with_a_mismatched_session_reaches_the_record(
     assert len(stub_host.lines) == 1, "the dispatch wrote nothing to the calling host"
     request = json.loads(stub_host.lines[0])
     assert request["session"] == OTHER_SESSION
-    assert request["owner_checked"] is True
+    assert request["owner_checked"] is False
     captured = capsys.readouterr()
     line = captured.out + captured.err
     assert OTHER_SESSION in line and CALLING_SESSION in line
@@ -334,5 +397,6 @@ def test_a_real_dispatch_with_a_mismatched_session_reaches_the_record(
         "requested_session": OTHER_SESSION,
         "calling_session": CALLING_SESSION,
         "handed_to_host": True,
+        "handed_to": "calling-session",
     }
     assert record["watch"]["delivery"] == "host"

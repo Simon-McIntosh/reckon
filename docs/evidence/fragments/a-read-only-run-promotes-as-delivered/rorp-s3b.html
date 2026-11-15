@@ -1,0 +1,41 @@
+<section id="rorp-s3b" data-reckon="evidence-fragment">
+  <h2 id="rorp-s3b-heading">The claims refusal names the claim, and both raw readers fold</h2>
+  <p id="rorp-s3b-summary">A claims review record refused for a skipped re-run
+  now names the ranked claims it left unanswered rather than reporting a count,
+  and the two production readers that still judged a raw record — the store's
+  completeness rank behind <code>_select_stored_record</code> and the
+  classifier's filed-record read — apply the hand-written
+  <code>with_canonical_claims</code> fold first. A complete claims record
+  written under either spelling now reads complete through every reader.</p>
+  <p id="rorp-s3b-defect">Reproduced before repair. At the base revision
+  <code>1d760ac0</code> a record carrying ranks 1 and 3 was refused with
+  <code>review record carries too few claim verdicts: … the record owes 3 of
+  them …</code> and no claim named, and the test accepted that generic text.
+  Both raw readers judged a record stating its verdicts under
+  <code>claim_verdicts</code> as incomplete: with the two folds reverted the new
+  reader tests fail at
+  <code>assert False = _record_reads_complete({… 'claim_verdicts': […]})</code>
+  and <code>assert None == (filed_path, stored_path)</code>, which is the
+  receipt that the guards were added rather than merely green.</p>
+  <table id="rorp-s3b-cases">
+    <thead><tr><th>Case</th><th>Reader</th><th>At base revision</th><th>At head</th></tr></thead>
+    <tbody>
+      <tr><td>complete claims record, no scores</td><td><code>crew check --review</code></td><td><strong>fail</strong> — missing-scores refusal</td><td>pass</td></tr>
+      <tr><td>claims record missing rank 2's verdict</td><td><code>crew check --review</code></td><td><strong>fail</strong> — <code>too few claim verdicts</code>, no claim named</td><td>pass — names <code>claim 2</code></td></tr>
+      <tr><td>complete record under <code>claim_verdicts</code></td><td><code>_record_reads_complete</code> / <code>_select_stored_record</code></td><td><strong>fail</strong> — ranks incomplete</td><td>pass — selected over its incomplete sibling</td></tr>
+      <tr><td>complete record under <code>claim_verdicts</code></td><td><code>_filed_review_record</code> (classifier)</td><td><strong>fail</strong> — <code>None</code></td><td>pass — names the receipt it read</td></tr>
+      <tr><td>record under <code>claim_verdicts</code> missing a claim</td><td><code>_filed_review_record</code></td><td>refused</td><td>refused — the fold admits answers, not records</td></tr>
+    </tbody>
+  </table>
+  <p id="rorp-s3b-gate">Gate at head: <code>69 passed in 10.75s</code> over this
+  node's test file plus the four files that import the review record check.
+  Baseline arm of the same five files at <code>1d760ac0</code>:
+  <code>65 passed in 79.62s</code>; the four added tests are this node's. The
+  declared mutation — the message change reverted — fails with
+  <code>2 failed, 22 deselected in 1.54s</code>, <code>EXIT=1</code>, naming
+  <code>test_a_claims_record_missing_a_claim_is_refused_naming_the_claim</code>
+  and <code>test_the_refusal_names_every_claim_left_unanswered</code>; neither
+  fails at head. Reverting both folds instead fails the two reader tests, so
+  each guard is load-bearing. <code>ruff check</code> reports no finding and
+  <code>ruff format --check</code> reports all four staged files formatted.</p>
+</section>

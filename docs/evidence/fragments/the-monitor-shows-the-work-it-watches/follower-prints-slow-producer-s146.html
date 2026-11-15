@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="the-monitor-shows-the-work-it-watches">
+  <meta name="plan-evidence-for" content="reckon:the-monitor-shows-the-work-it-watches">
+  <meta name="plan-verifies" content="reckon:the-monitor-shows-the-work-it-watches#s146">
+  <meta name="plan-recorded-at" content="2026-11-15">
+  <meta name="plan-verdict" content="passed">
+  <title>A follower prints the slow-producer sentence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" id="follower-prints-slow-producer-s146-landing" data-node="follower-prints-slow-producer-s146" data-reckon="landed" data-when="2026-11-15">
+  <h2>A producer-slow event renders as its sentence, and pane_line still silences it</h2>
+  <p>The follower's renderer in <code>reckon/crew_follow_commands.py</code> hands producer-health events to the sentence path only for the names its producer-health branch lists. <code>producer-slow</code> was not in that list when this work was briefed, so at the base revision a slow-tick notice fell through to the transition painter and drew <code>--:--:--  ?  unknown  new → help</code>. The listing itself landed earlier as <code>933066eb43</code>, which makes <code>producer-slow</code> a member beside <code>producer-lost</code> and <code>producer-restored</code>; what no case held was the follower's own output path in this file, so a later edit dropping the name would have gone uncaught here. This node adds the missing cases rather than reimplementing a working guard, and leaves the source file untouched.</p>
+  <p><strong>Gate.</strong> Three cases in <code>tests/test_a_slow_tick_is_not_a_lost_producer.py</code> drive one <code>producer-slow</code> event through <code>reckon crew follow</code> with <code>_follow_watch_lines</code> replaced: the text case finds the sentence printed once and nothing else on the pane (so no run row), the <code>pane_line=False</code> case finds the pane silent, and the JSON case finds one emitted object carrying the event's <code>project</code>, <code>session</code>, <code>stage</code>, <code>line</code>, <code>age_seconds</code>, <code>bound_seconds</code> and a null <code>run_id</code>. Base arm at <code>5cf298bc</code> collected the five cases the file had then, all passing; the head arm passes. Ruff check and format are clean on the changed test path.</p>
+  <p><strong>Negative control.</strong> Removing <code>"producer-slow"</code> from the follower's producer-health list turns the text case red: 2 failed, 1 passed, <code>EXIT=1</code>, with <code>test_a_slow_notice_prints_its_sentence_once_and_draws_no_row</code> failing on that unknown-run row. The mutation was restored and the source file is byte-identical to HEAD. Log under the run directory: <code>negative-control.log</code>.</p>
+</article>
+</body>
+</html>

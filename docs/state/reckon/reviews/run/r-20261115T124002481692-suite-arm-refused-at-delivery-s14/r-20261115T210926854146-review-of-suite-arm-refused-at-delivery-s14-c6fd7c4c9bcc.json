@@ -1,0 +1,88 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "3bc474f9263c2bc01bc34638128dd5834ede7baf",
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew_run_commands.py:1383",
+    "reckon/crew/queue_landing.py:1478"
+  ],
+  "completed_at": "2026-11-15T21:21:42.443Z",
+  "dispatched_at": "2026-11-15T21:20:19Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/a-landing-never-waits-on-a-shared-index/suite-arm-refused-at-delivery-s14.html",
+      "line": "44",
+      "severity": "non-blocking",
+      "text": "non-blocking: the after-arm (:44), negative-control (:53) and head-population (:66) rows name 75b7e58aee, but the logs they cite each name a different revision in their own header -- c6fd7c4c9b for the after arm, dda364977e (mutated) for the negative control, and b81b1d4e5e for the head population -- so the revision column cannot be reconciled with the receipt it points at, although every number quoted does match that receipt's summary line."
+    },
+    {
+      "file": "docs/evidence/fragments/a-landing-never-waits-on-a-shared-index/suite-arm-refused-at-delivery-s14.html",
+      "line": "66",
+      "severity": "non-blocking",
+      "text": "non-blocking: the head-population cell states no failure id the base arm did not name and in the same sentence names the two ids that differ, one of which (tests/test_crew.py::test_second_project_watch_reports_the_live_watcher, a TimeoutError) appears only in the head arm, so the manifest's artifacts line carries a flat no-failure-id-added claim its own logs contradict; that id is a pre-existing watcher timeout the same file passes in logs/test-crew-head-alone.log, so the change is not implicated."
+    },
+    {
+      "file": "reckon/crew/reports.py",
+      "line": "2822",
+      "severity": "non-blocking",
+      "text": "non-blocking: _run_was_armed_a_suite imports read_pointer function-locally from reckon.crew.runs, a module reports.py:73 already imports runs_dir from, so the lazy edge buys no cycle and leaves one module's imports split across two places."
+    },
+    {
+      "file": "reckon/crew/reports.py",
+      "line": "2914",
+      "severity": "non-blocking",
+      "text": "non-blocking: the refusal names the field but not the keys a readable arm needs, while plan s14's deliverable says the check names the field and the keys missing; the worker's outside_scope names tests/test_a_suite_record_is_flat.py::test_a_prose_not_run_statement_keeps_its_present_treatment as the pin on that exact message, so the second half of the deliverable is reported rather than delivered."
+    },
+    {
+      "file": "tests/test_a_suite_arm_is_refused_at_delivery.py",
+      "line": "171",
+      "severity": "non-blocking",
+      "text": "non-blocking: assert observation == _observation(HEAD_REVISION) compares the parsed arm against the value the test itself serialised into the manifest, so it holds for any reader that returns the mapping unchanged, including the pre-change passthrough, and cannot redden on the mutation this node declares; the refusal's durability rests on :128 and :145, which the negative control does redden."
+    }
+  ],
+  "head_log_revision": "c6fd7c4c9bcceb7c5180d1fb4ccc4bfd79cfa5ab",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read all three commits against 3bc474f926: 75b7e58aee adds reports.suite_observation (reckon/crew/reports.py:1172) and _run_was_armed_a_suite (:2802), routes audit_manifest's arm-shape loop and armed branch (:2900-:2914) and queue_landing._after_suite_arm (reckon/crew/queue_landing.py:1384) through that one reader, and adds the 171-line test; dda364977e adds the evidence fragment and c6fd7c4c9b fills in its population rows.",
+    "done_when": "the done_when asks for two refusal cases red at the base revision, a third pinning the JSON arm, an unchanged lander message and no added failure across the importer population; logs/base-new-tests.log records 2 failed 1 passed EXIT=1 at 3bc474f926 quoting ok:true with findings [] for both refusal cases, logs/after-arm.log 61 passed EXIT=0 at c6fd7c4c9b, logs/base-arm.log 58 passed EXIT=0, and the population arms 56 failed 754 passed against 54 failed 756 passed, which answers every clause except the flat no-failure-id-added reading.",
+    "goal": "the node's goal is that crew check --manifest refuses a suite arm that is not the inline JSON observation; reckon/crew/reports.py:2913-2914 now refuses a complete manifest's non-object arm with \"after_suite must be an inline JSON object\" whenever _run_was_armed_a_suite (reckon/crew/reports.py:2802) reads a resolved suite command from the run's own live pointer, and a run whose pointer resolves none keeps the verdict it had.",
+    "manifest": "read; its tests: line is the literal command logs/after-arm.log repeats in its own header, it records the base arm, the base-revision reproduction, the declared negative control and both population arms, and its outside_scope names tests/test_a_suite_record_is_flat.py::test_a_prose_not_run_statement_keeps_its_present_treatment as the pre-existing pin that stopped the refusal message being widened.",
+    "write_paths": "the node declared five paths -- reckon/crew/reports.py, reckon/crew/queue_landing.py, tests/test_a_suite_arm_is_refused_at_delivery.py, docs/evidence/fragments/a-landing-never-waits-on-a-shared-index/suite-arm-refused-at-delivery-s14.html and a docs/figures directory -- and git diff --stat 3bc474f926..c6fd7c4c9b changes exactly the four source, test and fragment paths, all declared, with the figures directory unused."
+  },
+  "justifications": {
+    "durability": "the declared mutation in logs/negative-control.log reddens tests/test_a_suite_arm_is_refused_at_delivery.py:128 and :145 because removing the pointer inference makes the check answer ok:true, while :171 compares the parsed arm against the value the test itself supplied and cannot redden on that mutation.",
+    "evidence": "logs/base-new-tests.log shows the check answering ok:true with findings [] for both refusal cases at 3bc474f926 and logs/after-arm.log records 61 passed EXIT=0, but the manifest's artifacts line claims no failure id was added while logs/importer-population-head.log carries one the base arm does not, so the last clause of the done_when rests on an admission inside a denial.",
+    "fit": "reckon/crew/reports.py:1172 and :2802 follow the surrounding docstring-and-early-return idiom and introduce no forbidden name, but :2822 imports read_pointer function-locally from a module reports.py:73 already imports runs_dir from.",
+    "goal_fidelity": "reckon/crew/reports.py:2913-2914 refuses a non-object after_suite once the run's pointer records a resolved suite command, which is the node goal exactly, though the message names only the field and not the keys plan s14 also promises.",
+    "reuse": "suite_observation at reckon/crew/reports.py:1172 replaces two separate value-class tests with one reader the check and the lander now share, and a search of reckon/crew for an existing run-arming predicate found only landing_measure.py:461 armed_argv, which splits an already-resolved command rather than answering whether the run has one.",
+    "scope_discipline": "git diff --stat 3bc474f926..c6fd7c4c9b touches only reckon/crew/reports.py, reckon/crew/queue_landing.py, tests/test_a_suite_arm_is_refused_at_delivery.py and the node's own fragment, every path declared and every change implied by the goal."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that crew check --manifest refuses a suite arm that is not the inline JSON observation; reckon/crew/reports.py:2913-2914 now refuses a complete manifest's non-object arm with \"after_suite must be an inline JSON object\" whenever _run_was_armed_a_suite (reckon/crew/reports.py:2802) reads a resolved suite command from the run's own live pointer, and a run whose pointer resolves none keeps the verdict it had.\nVERDICT done_when: the done_when asks for two refusal cases red at the base revision, a third pinning the JSON arm, an unchanged lander message and no added failure across the importer population; logs/base-new-tests.log records 2 failed 1 passed EXIT=1 at 3bc474f926 quoting ok:true with findings [] for both refusal cases, logs/after-arm.log 61 passed EXIT=0 at c6fd7c4c9b, logs/base-arm.log 58 passed EXIT=0, and the population arms 56 failed 754 passed against 54 failed 756 passed, which answers every clause except the flat no-failure-id-added reading.\nVERDICT write_paths: the node declared five paths -- reckon/crew/reports.py, reckon/crew/queue_landing.py, tests/test_a_suite_arm_is_refused_at_delivery.py, docs/evidence/fragments/a-landing-never-waits-on-a-shared-index/suite-arm-refused-at-delivery-s14.html and a docs/figures directory -- and git diff --stat 3bc474f926..c6fd7c4c9b changes exactly the four source, test and fragment paths, all declared, with the figures directory unused.\nVERDICT manifest: read; its tests: line is the literal command logs/after-arm.log repeats in its own header, it records the base arm, the base-revision reproduction, the declared negative control and both population arms, and its outside_scope names tests/test_a_suite_record_is_flat.py::test_a_prose_not_run_statement_keeps_its_present_treatment as the pre-existing pin that stopped the refusal message being widened.\nVERDICT diff: read all three commits against 3bc474f926: 75b7e58aee adds reports.suite_observation (reckon/crew/reports.py:1172) and _run_was_armed_a_suite (:2802), routes audit_manifest's arm-shape loop and armed branch (:2900-:2914) and queue_landing._after_suite_arm (reckon/crew/queue_landing.py:1384) through that one reader, and adds the 171-line test; dda364977e adds the evidence fragment and c6fd7c4c9b fills in its population rows.\nCALL_SITES: reckon/crew_run_commands.py:1383, reckon/crew/queue_landing.py:1478\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/reports.py:2913-2914 refuses a non-object after_suite once the run's pointer records a resolved suite command, which is the node goal exactly, though the message names only the field and not the keys plan s14 also promises.\nSCORE evidence: 17\nJUSTIFICATION evidence: logs/base-new-tests.log shows the check answering ok:true with findings [] for both refusal cases at 3bc474f926 and logs/after-arm.log records 61 passed EXIT=0, but the manifest's artifacts line claims no failure id was added while logs/importer-population-head.log carries one the base arm does not, so the last clause of the done_when rests on an admission inside a denial.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat 3bc474f926..c6fd7c4c9b touches only reckon/crew/reports.py, reckon/crew/queue_landing.py, tests/test_a_suite_arm_is_refused_at_delivery.py and the node's own fragment, every path declared and every change implied by the goal.\nSCORE durability: 18\nJUSTIFICATION durability: the declared mutation in logs/negative-control.log reddens tests/test_a_suite_arm_is_refused_at_delivery.py:128 and :145 because removing the pointer inference makes the check answer ok:true, while :171 compares the parsed arm against the value the test itself supplied and cannot redden on that mutation.\nSCORE fit: 17\nJUSTIFICATION fit: reckon/crew/reports.py:1172 and :2802 follow the surrounding docstring-and-early-return idiom and introduce no forbidden name, but :2822 imports read_pointer function-locally from a module reports.py:73 already imports runs_dir from.\nSCORE reuse: 19\nJUSTIFICATION reuse: suite_observation at reckon/crew/reports.py:1172 replaces two separate value-class tests with one reader the check and the lander now share, and a search of reckon/crew for an existing run-arming predicate found only landing_measure.py:461 armed_argv, which splits an already-resolved command rather than answering whether the run has one.\nFINDING docs/evidence/fragments/a-landing-never-waits-on-a-shared-index/suite-arm-refused-at-delivery-s14.html:44 non-blocking: the after-arm (:44), negative-control (:53) and head-population (:66) rows name 75b7e58aee, but the logs they cite each name a different revision in their own header -- c6fd7c4c9b for the after arm, dda364977e (mutated) for the negative control, and b81b1d4e5e for the head population -- so the revision column cannot be reconciled with the receipt it points at, although every number quoted does match that receipt's summary line.\nFINDING docs/evidence/fragments/a-landing-never-waits-on-a-shared-index/suite-arm-refused-at-delivery-s14.html:66 non-blocking: the head-population cell states no failure id the base arm did not name and in the same sentence names the two ids that differ, one of which (tests/test_crew.py::test_second_project_watch_reports_the_live_watcher, a TimeoutError) appears only in the head arm, so the manifest's artifacts line carries a flat no-failure-id-added claim its own logs contradict; that id is a pre-existing watcher timeout the same file passes in logs/test-crew-head-alone.log, so the change is not implicated.\nFINDING reckon/crew/reports.py:2822 non-blocking: _run_was_armed_a_suite imports read_pointer function-locally from reckon.crew.runs, a module reports.py:73 already imports runs_dir from, so the lazy edge buys no cycle and leaves one module's imports split across two places.\nFINDING reckon/crew/reports.py:2914 non-blocking: the refusal names the field but not the keys a readable arm needs, while plan s14's deliverable says the check names the field and the keys missing; the worker's outside_scope names tests/test_a_suite_record_is_flat.py::test_a_prose_not_run_statement_keeps_its_present_treatment as the pin on that exact message, so the second half of the deliverable is reported rather than delivered.\nFINDING tests/test_a_suite_arm_is_refused_at_delivery.py:171 non-blocking: assert observation == _observation(HEAD_REVISION) compares the parsed arm against the value the test itself serialised into the manifest, so it holds for any reader that returns the mapping unchanged, including the pre-change passthrough, and cannot redden on the mutation this node declares; the refusal's durability rests on :128 and :145, which the negative control does redden.\n",
+  "review_run_id": "r-20261115T210926854146-review-of-suite-arm-refused-at-delivery-s14-c6fd7c4c9bcc",
+  "reviewed_base_sha": "3bc474f9263c2bc01bc34638128dd5834ede7baf",
+  "reviewed_head_sha": "c6fd7c4c9bcceb7c5180d1fb4ccc4bfd79cfa5ab",
+  "reviewed_run_id": "r-20261115T124002481692-suite-arm-refused-at-delivery-s14",
+  "reviewer": {
+    "backend": "omp-local",
+    "effort": "unspecified",
+    "model": "deepseek-v4.1-flash",
+    "reviewer_run_id": "r-20261115T210926854146-review-of-suite-arm-refused-at-delivery-s14-c6fd7c4c9bcc"
+  },
+  "scores": {
+    "durability": 18,
+    "evidence": 17,
+    "fit": 17,
+    "goal_fidelity": 18,
+    "reuse": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-15T21:49:51.931744+00:00",
+  "total": 109
+}
