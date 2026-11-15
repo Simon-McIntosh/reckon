@@ -14,8 +14,8 @@
   plan-review and plan-design rubrics &mdash; so a rubric that measures verdicts
   owes no text scores and a rubric added later is exempt by being listed there,
   not by a second check beside the first. The delivery contract then holds a
-  claims record to the measurement it does owe: a verdict for each of the ranks
-  <code>1..CLAIMS_REQUIRED</code> and one for the report's own summary line.
+  claims record to the measurement it does owe: a verdict for each of the claims
+  it was asked to re-run and one for the report's own summary line.
   <code>CLAIM_VERDICT_FIELDS</code> reads either spelling a record may state its
   per-claim verdicts under (<code>claims</code>, and the
   <code>claim_verdicts</code> a hand-written record uses), so a complete record
@@ -59,9 +59,56 @@
   <code>CLAIM_VERDICT_FIELDS</code> exists: a refusal there would have reported a
   review that answered all three claims as one that answered none.</p>
 
+  <h3 id="rorp-s3-repair">Repair: one rule, asked by both readers</h3>
+
+  <p>A review found that the first cut split the claims measures in two. The
+  delivery check restated the completeness rule beside the promotion reader's
+  copy, and it read the <code>claim_verdicts</code> spelling that neither the
+  store nor the promotion rule reads. A record stating its verdicts under that
+  key therefore passed <code>crew check --review</code> and was then refused as
+  incomplete at promotion; in the other direction a record whose two claims
+  carried the same rank read complete to promotion while the check refused it.
+  A rule must not answer differently depending on which reader asks.</p>
+
+  <p><code>claims_verdict_refusals</code> now calls
+  <code>_claims_missing_measures</code> — the declared single owner, imported at
+  call time because its module reads this one — and does nothing but word each
+  measure it reports from <code>CLAIMS_MISSING_MESSAGES</code>. The second
+  spelling is gone with the second rule, so nothing is admitted here that
+  promotion will refuse.</p>
+
+  <table id="rorp-s3-repair-rows">
+    <thead><tr><th>arm</th><th>result</th></tr></thead>
+    <tbody>
+      <tr><td>after suite at the repair head</td>
+        <td><strong>73 passed</strong>, <code>EXIT=0</code></td></tr>
+      <tr><td>four importer test files the earlier gate skipped</td>
+        <td><strong>45 passed</strong>, <code>EXIT=0</code></td></tr>
+      <tr><td>baseline suite at <code>bb45282b</code></td>
+        <td>55 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>negative control: the test file at <code>bb45282b</code></td>
+        <td>10 failed, 8 passed, <code>EXIT=1</code></td></tr>
+      <tr><td>guided control: the check mutated to admit every record</td>
+        <td>4 failed, 1 passed, <code>EXIT=1</code> — the complete record still
+        agrees, the four incomplete shapes do not</td></tr>
+    </tbody>
+  </table>
+
+  <p><strong>The stored corpus, asked of both readers.</strong> All
+  <code>23</code> stored claims records were put to the delivery check and to
+  the promotion rule: <strong>both admit 22, both refuse the same one, zero
+  disagreements</strong>. The probe and its output live in the run directory
+  (<code>split-probe.py</code>, <code>split-probe.json</code>) rather than in a
+  scratch path, so a reader can re-run it. The earlier corpus figure rested on
+  <code>/tmp</code> artifacts that no longer existed; this one does not.</p>
+
+  <p><strong>Not moved.</strong> The rule's owner lives in
+  <code>reckon/crew/recovery_review_subject.py</code>, outside this node's write
+  paths, so it stays where it is and the check calls it. That is the same
+  single-answer outcome without an out-of-scope edit.</p>
+
   <p><strong>Not done here.</strong> The stored census and prototype records are
   copied into the test as fixtures rather than re-derived from the run
-  directories, the claims-rank rule assumes the report's ranks start at 1 as the
-  claims prompt asks. A record whose reviewer ranked its claims from zero would be
-  refused naming claim 1; no such record exists in the store.</p>
+  directories, so they measure the shapes live reviewers wrote rather than the
+  store as it moves.</p>
 </section>
