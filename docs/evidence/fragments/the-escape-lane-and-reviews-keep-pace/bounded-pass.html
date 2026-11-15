@@ -1,0 +1,140 @@
+<section id="admission-pass-is-bounded-s7-bounded-pass">
+  <h2>A pass ends when its launch budget is spent, and every launch says what it cost</h2>
+
+  <p><strong>Why a pass needs an end.</strong> An admission pass launches until
+  its queue is empty, and while it runs it holds every seat it has freed, so a
+  request that becomes admissible half a second after the pass started waits for
+  the whole pass to finish. The verdict log says how long that is. Across the 93
+  pass records the live admit service wrote between
+  <code>2026-11-14T20:02:00Z</code> and <code>2026-11-15T03:09:48Z</code> — a
+  window of 25,668 s, all on the <code>clive</code> lane with the gate open, over
+  several code stamps because the service reloads between passes — the launch
+  stage accounts for 10,810 s, 42% of the window, and one pass spent 1,413.7 s
+  in it. Every one of those records predates this node's commit, so every one
+  describes the unbounded pass.</p>
+
+  <table id="admission-pass-is-bounded-s7-bounded-pass-launch">
+    <caption>Launch stage (<code>launch_seconds</code>) over the 93 recorded
+    passes, compared with the land stage of the same passes.</caption>
+    <thead><tr><th>measure</th><th>launch stage</th><th>land stage</th></tr></thead>
+    <tbody>
+      <tr><td>total over 93 passes</td><td>10,810 s</td><td>16,777 s</td></tr>
+      <tr><td>median pass</td><td>2.1 s</td><td>201.7 s</td></tr>
+      <tr><td>90th percentile</td><td>235.7 s</td><td>311.4 s</td></tr>
+      <tr><td>longest pass</td><td>1,413.7 s</td><td>482.2 s</td></tr>
+      <tr><td>passes over 60 s</td><td>14</td><td>—</td></tr>
+      <tr><td>passes over 300 s</td><td>10</td><td>—</td></tr>
+      <tr><td>passes over 600 s</td><td>8</td><td>—</td></tr>
+      <tr><td>passes over 900 s</td><td>7</td><td>—</td></tr>
+    </tbody>
+  </table>
+
+  <table id="admission-pass-is-bounded-s7-bounded-pass-slowest">
+    <caption>The five slowest recorded passes, with the launches each one
+    started. A pass's launch stage is everything the pass spent launching and
+    settling launches — <code>ended - released - waits</code> — so it is long
+    even when few launches were started.</caption>
+    <thead><tr><th>pass ended (UTC)</th><th>launches started</th><th>launch stage</th></tr></thead>
+    <tbody>
+      <tr><td>2026-11-14T22:55:24</td><td>10</td><td>1,413.7 s</td></tr>
+      <tr><td>2026-11-14T22:30:44</td><td>3</td><td>1,372.7 s</td></tr>
+      <tr><td>2026-11-14T22:06:01</td><td>1</td><td>1,219.7 s</td></tr>
+      <tr><td>2026-11-15T01:18:44</td><td>4</td><td>1,176.4 s</td></tr>
+      <tr><td>2026-11-14T21:14:17</td><td>0</td><td>1,046.7 s</td></tr>
+    </tbody>
+  </table>
+
+  <p>Eighty-one of the 93 passes started no launch at all and 43 launches were
+  started across the other twelve, so the stage that dominates the window is
+  mostly not spawning: it is one queue drain holding the seats it freed to
+  itself until it ends. The pass ending 22:55:24Z started ten launches and held
+  each freed seat for the remaining 23 minutes of the pass.</p>
+
+  <h3 id="admission-pass-is-bounded-s7-bounded-pass-what-is-bounded">What the budget bounds, precisely</h3>
+
+  <p><code>admit_once</code> reads the deadline once at the head of its launch
+  loop and stops starting launches when it has passed, so a pass spends at most
+  its budget beginning launches and leaves the rest of the queue untouched — no
+  attempt, no hold, no verdict row — for the next pass. A launch already in
+  flight still runs to completion, so a pass ends within one launch of its
+  budget rather than at the deadline; with the budget read at the loop head this
+  is the population most exposed now, because a single launch is tens of seconds
+  and the longest passes begin many of them.</p>
+
+  <p>The budget comes from flight: <code>admission.pass_budget_seconds</code>,
+  defaulting to 60 when the key is absent, read through
+  <code>flight.admission_pass_budget_seconds</code>,
+  which falls back to the default for anything that is not a finite positive
+  number. The pass result carries <code>launch_budget_seconds</code> and
+  <code>launch_budget_exhausted</code> into the pass verdict record, and each
+  <code>launched</code> row carries <code>launch_seconds</code>,
+  <code>slowest_step</code> and <code>slowest_step_seconds</code> from per-step
+  accumulation over <code>handover</code>, <code>dispatch</code> and
+  <code>stamp</code>. Nothing was added to the schema, so the new keys ride the
+  existing verdict rows.</p>
+
+  <h3 id="admission-pass-is-bounded-s7-bounded-pass-arms">Arms</h3>
+
+  <table id="admission-pass-is-bounded-s7-bounded-pass-arms-table">
+    <caption>One arm at a time, on <code>all_debug</code>; each log's header
+    names its revision, tree and command and its last line is a bare
+    <code>EXIT=&lt;code&gt;</code>.</caption>
+    <thead><tr><th>arm</th><th>revision</th><th>result</th></tr></thead>
+    <tbody>
+      <tr><td>this node's new tests over the base tree</td>
+        <td><code>1d16388a31</code></td>
+        <td>3 failed, <code>EXIT=1</code> — <code>admit_once</code> takes no
+        <code>clock</code> or <code>budget_seconds</code>, and
+        <code>reckon.flight</code> carries no
+        <code>admission_pass_budget_seconds</code></td></tr>
+      <tr><td>the focused template set (the two declared files)</td>
+        <td><code>1d16388a31</code></td>
+        <td>55 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>the focused set plus the new file</td>
+        <td><code>239f5365ab</code></td>
+        <td>58 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>admission-importing population, 124 files, <code>-n 4</code></td>
+        <td><code>1d16388a31</code></td>
+        <td>165 failed, 694 passed, <code>EXIT=1</code></td></tr>
+      <tr><td>the same population plus the new file, 125 files</td>
+        <td><code>239f5365ab</code></td>
+        <td>164 failed, 698 passed, <code>EXIT=1</code> — no failure id added
+        against the base</td></tr>
+      <tr><td>declared negative control: the deadline read removed from the
+        loop head</td>
+        <td><code>239f5365ab</code> + mutation</td>
+        <td>2 failed, 1 passed, <code>EXIT=1</code> — the
+        three-launches-per-pass case and the duration case both red</td></tr>
+    </tbody>
+  </table>
+
+  <p>The population's 164 remaining failures are the checkout's own
+  dispatch-and-contention population under four workers, and they are identical
+  file-for-file between the arms, which is the delta that matters. One failure
+  present at the base and absent at the head is not this node's repair: that
+  case runs <code>git show 2c04e1a4da11c68694631b3297694c611bbad839</code>
+  against the tree it sits in, and the base arm's tree is an extraction that does
+  not carry that object, so it fails there for want of history.</p>
+
+  <h3 id="admission-pass-is-bounded-s7-bounded-pass-profile">The live profile of the service</h3>
+
+  <p><strong>The 120 s <code>py-spy record --idle</code> of the live admit
+  service after landing is not in this fragment. This node cannot produce it,
+  for two reasons that are both properties of the deployment rather than of the
+  work.</strong> The change is not landed — a worker commits to its worktree and
+  the coordinator lands and restarts — so a profile taken now would sample the
+  unbounded pass and say nothing about this change. And the live service is not
+  on the host this node runs on: the fleet allocation is job 1313886 on
+  <code>98dci4-clu-2001</code>, no process with <code>admit</code> in its argv
+  runs on that node, and the verdict file is nevertheless written continuously
+  (last pass ended <code>2026-11-15T03:25:49Z</code>, file modified 20 s before
+  it was read), so the service belongs to another node and possibly another
+  session's process.</p>
+
+  <p>What stands in for it is the 93-pass measurement above: the pass verdict
+  records are the service's own account of where each pass spent its time, at the
+  stage granularity this node extends to individual launches. The profile the
+  done-when asks for should be recorded after the restart, by whoever lands the
+  change, against the pid owning the restarting service — <code>py-spy record
+  --idle</code> is not runnable against a process this session cannot see.</p>
+</section>
