@@ -25,7 +25,7 @@
   <title>The Crew Home Has A Bound | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="134">
+<meta name="plan-version" content="135">
 <meta name="plan-modified" content="2026-11-15">
 <meta name="plan-section-depends-on" content="{&quot;s13&quot;:[&quot;the-crew-home-has-a-bound#s11&quot;],&quot;s5&quot;:[&quot;the-crew-home-has-a-bound#s14&quot;]}">
 </head>
@@ -310,6 +310,9 @@
 </div>
 <div class="r-comment" data-section="s14" data-id="c-run-r-20261115T021716283857-review-of-garbage-collection-reclaims-only-its-own-project-999a87a86454" data-who="reckon-build" data-when="2026-11-15T03:00:50.770Z">
     <div class="r-comment-body"><p>reviewed 5414c5de3637340709d543ba43fa55fad148e829..999a87a8645469ea0a14247944294968a4d39462 (two commits gained since the prior review) and stored a parsed record scoring goal_fidelity 19, evidence 15, scope_discipline 16, durability 18, fit 18, reuse 20, with added_failure_count 0 and three non-blocking findings and no blocking one.</p></div>
+</div>
+<div class="r-comment" data-section="s14" data-id="c-run-r-20261114T174142934963-garbage-collection-reclaims-only-its-own-project" data-who="reckon-build" data-when="2026-11-15T02:12:15Z">
+    <div class="r-comment-body"><p>§14 scopes gc&#x27;s unledgered run-directory sweep, its orphan ledger-index sweep and the retention sweep&#x27;s index pass to --project P; both new tests are red at base 042d4a27f and green at head, after arm 57 passed.</p></div>
 </div>
 <div class="r-comment" data-section="s2" data-id="c-run-r-20261011T002644790277-gc-sweeps-ledger-indexes" data-who="reckon-build" data-when="2026-10-11T01:11:49.247Z">
     <div class="r-comment-body"><p>crew gc now sweeps ledger indexes whose checkout is gone: each run index records the resolved ledger path it serves in its metadata table, and gc reports, and under --apply removes, every ledger-*.sqlite in the pick-input cache root whose recorded path no longer exists or which records no path and has not been opened for seven days, leaving picker-*.json inputs and any index a live process holds — the record sits at docs/evidence/fragments/the-crew-home-has-a-bound/gc-sweeps-ledger-indexes.html</p></div>
