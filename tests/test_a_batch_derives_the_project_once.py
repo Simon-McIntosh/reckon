@@ -10,6 +10,13 @@ checkout.
 This counts the derivations a batch of three entries costs when it runs from a
 worktree whose docs tree is a different directory from the mount. The count is
 one; the base revision, entries derived under the checkout's own key, is two.
+
+The same checkout answers the companion test: a dispatch reads no git history
+and no last-modified date. Those are two queries bounded at ten seconds each,
+so a dispatch that makes them can wait twenty seconds on a large repository
+under load. The count is zero on the dispatch path, and the same counter reads
+nonzero on a discovery without the suppression, so a green result cannot come
+from an instrument that records nothing.
 """
 
 from __future__ import annotations
@@ -165,3 +172,40 @@ def test_a_batch_from_a_worktree_derives_the_project_once(
         str((pointer.get("node") or {}).get("id") or "")
         for pointer in runs.list_live(project=PROJECT)
     ) == sorted(f"{slug}-{SECTION}" for slug in PLANS)
+
+
+def test_a_dispatch_reads_no_git_history(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    import reckon.serve as serve
+
+    main, worktree = _checkout(tmp_path, monkeypatch)
+    docs_dir = main / "docs"
+
+    called: list[str] = []
+    for name in ("_git_first_committed", "_git_last_committed"):
+        original = getattr(serve, name)
+
+        def counted(*arguments: object, _name: str = name, _original=original):
+            called.append(_name)
+            return _original(*arguments)
+
+        monkeypatch.setattr(serve, name, counted)
+
+    # The control: a discovery outside the suppression makes both queries, so a
+    # zero below the dispatch is a measurement rather than a dead counter.
+    unsuppressed = serve.discover_plans(docs_dir, PROJECT, None)
+    assert unsuppressed["inventory"], "the control discovery reads the plans"
+    control_calls = list(called)
+    assert "_git_first_committed" in control_calls, control_calls
+    assert "_git_last_committed" in control_calls, control_calls
+    called.clear()
+
+    result = _queue(worktree)
+
+    assert result["refused"] == 0, result["results"]
+    assert result["queued"] == len(PLANS)
+    assert called == [], (
+        "a batch dispatch reads no git history and no last-modified date, each "
+        f"of which is bounded at ten seconds: {called}"
+    )

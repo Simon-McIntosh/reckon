@@ -39,6 +39,7 @@ POST versioned write contract — see reckon/serve.py for full details.
 from __future__ import annotations
 
 import contextlib
+import contextvars
 import gzip
 import hashlib
 import html.parser
@@ -1556,7 +1557,9 @@ def edge_row(rec: Mapping[str, object]) -> dict[str, list]:
 #: last commit are display values there, and asking git for them costs up to a
 #: ten-second bound each on a large repository under load. Suppressing the
 #: queries answers the same inventory from the working tree's own times.
-_DISCOVERY_WITHOUT_GIT_DATES = False
+_DISCOVERY_WITHOUT_GIT_DATES: contextvars.ContextVar[bool] = (
+    contextvars.ContextVar("discovery_without_git_dates", default=False)
+)
 
 #: Appended to a discovery cache key while history queries are suppressed, so
 #: an answer built without them is never served to a reader that needs them.
@@ -1568,15 +1571,15 @@ def discovery_without_git_dates() -> Iterator[None]:
     """Answer discovery from the working tree, never from git history.
 
     Reentrant: an inner entry keeps the caller's setting, so a batch that wraps
-    its entries and a preview that wraps one resolution compose.
+    its entries and a preview that wraps one resolution compose. The flag is a
+    :class:`contextvars.ContextVar` so a suppression one caller entered is not
+    visible to a concurrent reader on another path.
     """
-    global _DISCOVERY_WITHOUT_GIT_DATES
-    previous = _DISCOVERY_WITHOUT_GIT_DATES
-    _DISCOVERY_WITHOUT_GIT_DATES = True
+    token = _DISCOVERY_WITHOUT_GIT_DATES.set(True)
     try:
         yield
     finally:
-        _DISCOVERY_WITHOUT_GIT_DATES = previous
+        _DISCOVERY_WITHOUT_GIT_DATES.reset(token)
 
 
 def discover_plans(docs_dir: Path, project: str, state_root: Path | None) -> dict:
@@ -1587,7 +1590,7 @@ def discover_plans(docs_dir: Path, project: str, state_root: Path | None) -> dic
     signature so an unchanged docs tree returns instantly.
     """
     cache_key = (project, str(docs_dir.resolve()))
-    if _DISCOVERY_WITHOUT_GIT_DATES:
+    if _DISCOVERY_WITHOUT_GIT_DATES.get():
         # An answer built without history queries is a different answer from
         # one built with them, so it lives under its own key and a reader that
         # needs the commit times never receives the working-tree approximation
@@ -1620,7 +1623,7 @@ def _discover_plans_uncached(
     # Batch git first-commit lookup — gives true creation time for tracked files.
     # Falls back to inode ctime when a file is untracked or git is unavailable.
     repo_dir = docs_dir.parent
-    if _DISCOVERY_WITHOUT_GIT_DATES:
+    if _DISCOVERY_WITHOUT_GIT_DATES.get():
         # The caller asked for document stamps without a history query: a
         # dispatch builds a roadmap to rank and place work, and each history
         # query costs up to its ten-second bound on a large repository under
