@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="artifact-kind" content="evidence">
+  <meta name="plan-slug" content="queued-work-needs-no-workaround">
+  <meta name="plan-title" content="Queued Work Needs No Workaround">
+  <meta name="plan-evidence-for" content="reckon:queued-work-needs-no-workaround">
+  <meta name="plan-verifies" content="reckon:queued-work-needs-no-workaround#s21">
+  <meta name="evidence-verdict" content="blocked">
+  <meta name="evidence-date" content="2026-11-15">
+  <title>Dispatch discovery cost, reproduced | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" data-node="qwnw-a-dispatch-answers-in-ten-seconds-whole" data-reckon="blocked" data-when="2026-11-15">
+  <h2 id="qwnw-a-dispatch-answers-in-ten-seconds-whole-title">Dispatch discovery cost, reproduced at the base revision</h2>
+
+  <p>This record reproduces the two defects §21 names, at revision
+  <code>d45930c3b8272ba50691f1f0bd2f38dd5ed3e9f6</code>, on the fleet node
+  <code>98dci4-clu-2001</code> (job 1313886). It does <strong>not</strong> claim
+  the section's change: the implementation the done-when requires lies in
+  <code>reckon/serve.py</code> and <code>reckon/crew/dispatch_batch.py</code>,
+  and in a test file, none of which this node may write.</p>
+
+  <p id="qwnw-a-dispatch-answers-in-ten-seconds-whole-defect-1"><strong>Defect 1 — project discovery dominates the dispatch.</strong>
+  <code>_discover_project</code> over the real reckon project, run from the
+  main checkout with the shared environment's interpreter, took
+  <strong>23.11 s</strong> and returned 1068 inventory rows at load average
+  73.60. The scan calls <code>_git_first_committed</code> and
+  <code>_git_last_committed</code> at <code>reckon/serve.py:1589-1590</code>;
+  each spawns git under a 10 s bound (<code>reckon/git_dates.py:190</code>).
+  Measured warm here: 0.60 s over 19,060 paths and 0.04 s over 19,123 paths.
+  Those figures are a warm lower bound and not a refutation — the plan's own
+  profile recorded two of three such lookups reaching their 10 s timeout under
+  load, and this node measured at load 22.30 a dry-run dispatch of one section
+  at <strong>12.39 s</strong>.</p>
+
+  <p id="qwnw-a-dispatch-answers-in-ten-seconds-whole-defect-2"><strong>Defect 2 — a batch derives the project once per docs directory.</strong>
+  <code>_built_once</code> keys its one-derivation cache on
+  <code>(project, resolved docs dir)</code>
+  (<code>reckon/crew/dispatch_batch.py:219-223</code>). Driving the wrapper
+  with two readers naming the main checkout's docs dir and a worktree's docs
+  dir for the same project called <code>_discover_project</code>
+  <strong>twice</strong>:</p>
+
+  <pre id="qwnw-a-dispatch-answers-in-ten-seconds-whole-repro"><code>discovery_calls 2
+[('reckon', '/home/ITER/mcintos/Code/reckon'),
+ ('reckon', '.../qwnw-a-dispatch-answers-in-ten-seconds-whole')]</code></pre>
+
+  <p>That is the §21 sentence — "a batch's one-derivation cache is keyed on
+  the resolved docs directory and the worktree's mount resolves to another
+  tree" — reproduced at the function, without a dispatch.</p>
+
+  <p id="qwnw-a-dispatch-answers-in-ten-seconds-whole-why-blocked"><strong>Why this node cannot close the section.</strong> Two independent
+  limits, both structural rather than judgement calls:</p>
+
+  <ul>
+    <li>The node's declared write paths are its evidence fragment and its
+    figures directory. The fix belongs in source and in a test, so delivering
+    it would write outside the fence and promotion's scope check would refuse
+    the run.</li>
+    <li>The node's fence mounts the main checkout and the crew home read-only.
+    A dry-run dispatch already fails on write attempts to
+    <code>~/.config/reckon/crew/watch/*.lock</code> and
+    <code>~/.config/reckon/crew/budget-resets.json.lock</code>, and a real
+    queued dispatch must create a live pointer, a queue entry and a worktree —
+    all outside the writable set). The done-when's measure — five real queued
+    dispatches, each held and dropped, from the main checkout and from a
+    worktree, against the real store — cannot be run under this fence, and a
+    measure run in a scratch replica would not answer the question the measure
+    asks.</li>
+  </ul>
+
+  <p>The next dispatch should carry <code>reckon/serve.py</code>,
+  <code>reckon/crew/dispatch_batch.py</code> and a test path in its write
+  scope, and should run its timing measure outside the worker fence — from a
+  coordinator session, or from a dispatch whose
+  <code>docs/state</code> home is writable.</p>
+</article>
+</body>
+</html>
