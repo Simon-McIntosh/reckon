@@ -1109,7 +1109,7 @@ class ProducerSnapshotNotices:
         ]
 
     def _notice(
-        self, details: Mapping[str, Any], *, age: Any, bound: float
+        self, details: Mapping[str, Any], *, age: int, bound: float
     ) -> dict[str, Any]:
         """One producer-health row, in the shape every notice on this channel has."""
         return {

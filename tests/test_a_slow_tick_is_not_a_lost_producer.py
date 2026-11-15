@@ -255,3 +255,40 @@ def test_a_stale_beat_with_no_tick_running_is_still_a_loss(
         reading is not None and reading["state"] == obligation_snapshot.STATION_STOPPED
     )
     assert reading["tick_age_seconds"] is None, reading
+
+
+def test_a_station_that_answers_the_session_reports_the_same_slow_tick(
+    clock: Clock, tmp_path: Path
+) -> None:
+    """The row does not depend on which of the two reads produced the slow tick.
+
+    A pane the station store can answer takes no fallback, and the answer it
+    gets already names the tick. Were the slow verdict drawn only on the
+    fallback branch, the pane that could read the store would stay silent in
+    the same minute the pane that could not drew the slow row -- the same
+    divergence, inverted.
+    """
+    store = _slow_tick_fixture(clock, tmp_path)
+    store.write_obligation(
+        SESSION,
+        {
+            "document": {
+                "project": PROJECT,
+                "computed_at": _stamp(clock, 0),
+                "obligations": [],
+            }
+        },
+        changed_at=INSTANT + timedelta(seconds=clock()),
+    )
+    answer = obligation_snapshot.read_station_answer(PROJECT, SESSION)
+    assert answer is not None and answer["source"] == "station", answer
+    assert answer["state"] == obligation_snapshot.STATION_SLOW, answer
+
+    check = ProducerSnapshotNotices(PROJECT, SESSION, clock=clock)
+    rows = check.poll()
+    assert [row["event"] for row in rows] == ["producer-slow"], rows
+    assert STAGE in rows[0]["line"] and SLOW_SPAN in rows[0]["line"], rows[0]
+    assert rows[0]["age_seconds"] == TICK_RUNNING_SECONDS, rows[0]
+
+    clock.value += SAMPLE + 1
+    assert check.poll() == []
