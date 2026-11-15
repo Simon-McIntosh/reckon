@@ -1,0 +1,63 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew/station.py:1270",
+    "reckon/crew/station.py:1172"
+  ],
+  "completed_at": "2026-11-15T00:57:22.910Z",
+  "dispatched_at": "2026-11-15T00:15:55Z",
+  "findings": [
+    {
+      "file": "reckon/crew/station.py",
+      "line": "1026",
+      "severity": "non-blocking",
+      "text": "non-blocking: the sweep enumerates only self.projects() while this tick's own project set at reckon/crew/station.py:1068 unions self.store.recorded_projects(), so a registry left by a project since unmounted is never pruned and keeps growing."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261114T174601341774-station-prunes-dead-registrations-s137/manifest.md",
+      "line": "41",
+      "severity": "non-blocking",
+      "text": "non-blocking: no gate log records the all_debug partition the done_when names, so the partition requirement is unverified from the artefacts."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read commit by commit; b1edbb6369 adds 63 lines to reckon/crew/station.py and the 149-line test, c6bf07a5ba adds the 38-line evidence fragment, and nothing else changed.",
+    "done_when": "the done_when names tests/test_the_station_prunes_dead_registrations.py with four cases and an import-population arm; the manifest records that run (3 passed, re-verified here) and both gate arms.",
+    "goal": "the node's goal is to prune released follower registrations older than a day from the station's maintenance step; reckon/crew/station.py:1003 adds `_prune_released_followers`, called from the maintenance stage at reckon/crew/station.py:1172.",
+    "manifest": "read; it reports 3/3 on the new test, head arm 58 passed at exit 0, base arm 53 passed with 2 git-archive scaffolding errors, and an import-population pair of 17 failed on both arms with identical ids.",
+    "write_paths": "the declared paths are station.py, the new test, and an evidence fragment under docs/evidence/fragments/the-monitor-shows-the-work-it-watches/; every path in the diff is inside them."
+  },
+  "justifications": {
+    "durability": "tests/test_the_station_prunes_dead_registrations.py:116-121 fails when the tick's prune call is removed, as negative-control.log shows with 2 failed 1 passed.",
+    "evidence": "the gate logs at arm-node-base.log and arm-node-after.log carry revision, module, command and EXIT=, and the import-population pair differs by zero ids, though no log records the partition the done_when names.",
+    "fit": "the added constants and docstrings at reckon/crew/station.py:63-77 follow the module's existing prose-and-constant idiom and carry no plan or ticket label.",
+    "goal_fidelity": "reckon/crew/station.py:1003 prunes released registrations with a one-day threshold on an hourly station clock, selecting projects only from self.projects() at reckon/crew/station.py:1026.",
+    "reuse": "the station calls the pre-existing follower_registration.sweep_released_followers at reckon/crew/follower_registration.py:837 rather than forking a sweep of the registry.",
+    "scope_discipline": "the diff touches only reckon/crew/station.py, the new test and the evidence fragment granted in the manifest's write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to prune released follower registrations older than a day from the station's maintenance step; reckon/crew/station.py:1003 adds `_prune_released_followers`, called from the maintenance stage at reckon/crew/station.py:1172.\nVERDICT done_when: the done_when names tests/test_the_station_prunes_dead_registrations.py with four cases and an import-population arm; the manifest records that run (3 passed, re-verified here) and both gate arms.\nVERDICT write_paths: the declared paths are station.py, the new test, and an evidence fragment under docs/evidence/fragments/the-monitor-shows-the-work-it-watches/; every path in the diff is inside them.\nVERDICT manifest: read; it reports 3/3 on the new test, head arm 58 passed at exit 0, base arm 53 passed with 2 git-archive scaffolding errors, and an import-population pair of 17 failed on both arms with identical ids.\nVERDICT diff: read commit by commit; b1edbb6369 adds 63 lines to reckon/crew/station.py and the 149-line test, c6bf07a5ba adds the 38-line evidence fragment, and nothing else changed.\nCALL_SITES: reckon/crew/station.py:1270, reckon/crew/station.py:1172\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/station.py:1003 prunes released registrations with a one-day threshold on an hourly station clock, selecting projects only from self.projects() at reckon/crew/station.py:1026.\nSCORE evidence: 17\nJUSTIFICATION evidence: the gate logs at arm-node-base.log and arm-node-after.log carry revision, module, command and EXIT=, and the import-population pair differs by zero ids, though no log records the partition the done_when names.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff touches only reckon/crew/station.py, the new test and the evidence fragment granted in the manifest's write paths.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_the_station_prunes_dead_registrations.py:116-121 fails when the tick's prune call is removed, as negative-control.log shows with 2 failed 1 passed.\nSCORE fit: 19\nJUSTIFICATION fit: the added constants and docstrings at reckon/crew/station.py:63-77 follow the module's existing prose-and-constant idiom and carry no plan or ticket label.\nSCORE reuse: 20\nJUSTIFICATION reuse: the station calls the pre-existing follower_registration.sweep_released_followers at reckon/crew/follower_registration.py:837 rather than forking a sweep of the registry.\nFINDING reckon/crew/station.py:1026 non-blocking: the sweep enumerates only self.projects() while this tick's own project set at reckon/crew/station.py:1068 unions self.store.recorded_projects(), so a registry left by a project since unmounted is never pruned and keeps growing.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261114T174601341774-station-prunes-dead-registrations-s137/manifest.md:41 non-blocking: no gate log records the all_debug partition the done_when names, so the partition requirement is unverified from the artefacts.",
+  "review_run_id": "r-20261114T233128471265-review-of-station-prunes-dead-registrations-s137-c6bf07a5ba10",
+  "reviewed_base_sha": "0f9b0b5bcbdd6bc7a9a5a34de5f4508616779997",
+  "reviewed_head_sha": "c6bf07a5ba107e868de6551025820247cf7d15e4",
+  "reviewed_run_id": "r-20261114T174601341774-station-prunes-dead-registrations-s137",
+  "rubric": "",
+  "scores": {
+    "durability": 19,
+    "evidence": 17,
+    "fit": 19,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-15T01:03:10.917324+00:00",
+  "total": 113
+}
