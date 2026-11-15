@@ -97,6 +97,48 @@ arm runs its replacement and this node's new file. Both arms are green: the afte
 the difference is this node's two test files. No failure in either arm is
 this node's to attribute.</p>
 
+<h3 id="qwnw-a-batch-entry-takes-every-field-a-single-dispatc-repair">The repair round, measured again after the merge</h3>
+
+<p>Primary <code>main</code> advanced past this node's delivery head, so the bridge
+was rebuilt on top of it in two merges. The first brought in
+<code>be9806d420928dc19d2ff16b3aff5ce63d70397e</code> and conflicted on
+<code>reckon/crew_dispatch_commands.py</code>; the conflict was resolved to the
+union of both intents — the batch file or plan the dispatch queues, and the four
+per-node options a single dispatch carries — with
+<code>reckon/crew/dispatch_batch.py</code> forwarding those options through
+<code>queue_plan</code> as well as <code>queue_batch</code>, so the merged caller
+cannot raise a <code>TypeError</code> on either path. The second brought in the
+current <code>42d85567a28c7898ededcd78adccd4ec6d294474</code>, which merged
+cleanly. The repaired head is <code>b412a2d72856c8475c1331c1224cd79a5da03f69</code>.</p>
+
+<p>After the merge the node's own gate was re-run on <code>all_debug</code>, each
+arm resolved over its own tree with the main checkout's interpreter
+(<code>PYTHONPATH=. &lt;root&gt;/.venv/bin/python -m pytest -p no:cacheprovider
+-q</code>):</p>
+
+<ul>
+  <li>Fenced baseline arm at <code>1ba716cf0aeb500f4cf9bc0192d6927e11f9d6b2</code>:
+  <code>55 passed in 25.57s</code>, <code>EXIT=0</code>
+  (<code>gate-baseline.log</code>).</li>
+  <li>Fenced arm at the fence's head <code>ec3f17e99482da85ac137e939a22de9726e60c76</code>:
+  <code>55 passed in 25.24s</code>, <code>EXIT=0</code>
+  (<code>gate-fencehead.log</code>).</li>
+  <li>Fenced arm at the repaired head <code>b412a2d72856c8475c1331c1224cd79a5da03f69</code>:
+  <code>55 passed in 23.76s</code>, <code>EXIT=0</code>
+  (<code>gate-repaired.log</code>).</li>
+  <li>This node's own fifteen targets at the repaired head:
+  <code>98 passed in 8.77s</code>, <code>EXIT=0</code>
+  (<code>gate-nodegate.log</code>) — the same count as the pre-merge arm, so the
+  merge changed nothing this node measured.</li>
+</ul>
+
+<p>The two extracted arms are built as real repositories rather than plain
+<code>git archive</code> exports: one case in
+<code>tests/test_staged_write_inventory.py</code> shells out to
+<code>git ls-tree HEAD</code>, and an export has no <code>HEAD</code> to read, so
+the first attempt at those arms reported two setup errors in both trees — a
+defect in the fixture, not in either revision.</p>
+
 <h3 id="qwnw-a-batch-entry-takes-every-field-a-single-dispatc-control">The negative control, executed</h3>
 
 <p>This node's new test file is copied into the base extraction and run there, so
