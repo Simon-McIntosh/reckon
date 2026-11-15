@@ -1,0 +1,18 @@
+<section id="a-dispatch-loads-the-ledger-once-evidence">
+  <h3>Single-dispatch ledger snapshot — partial result</h3>
+  <p>The CLI and direct dispatch entry points share one ledger snapshot with the bounded picker thread. Header and picker projections are derived before copying, and the snapshot is released on success or refusal. Reads outside a dispatch remain live. This result is blocked: the live timing criterion is unmet, and the batch-entry lifetime is not implemented.</p>
+  <table>
+    <thead><tr><th>Measure</th><th>Base</th><th>Delivered head</th></tr></thead>
+    <tbody>
+      <tr><td>Ledger loads in the 200-row, three-plan Click fixture</td><td>4</td><td>1</td></tr>
+      <tr><td>Aggregate-file stats in that fixture</td><td>10</td><td>1</td></tr>
+      <tr><td>Armed suite</td><td>58 passed</td><td>63 passed</td></tr>
+      <tr><td>Median of three live dry runs on all_debug</td><td>26.480099 s</td><td>29.985815 s</td></tr>
+      <tr><td>Required head median</td><td colspan="2">At most 8.826700 s; not achieved</td></tr>
+      <tr><td>Mutation restoring a ledger load per reader</td><td colspan="2">Regression fails with 4 loads against the required 1</td></tr>
+    </tbody>
+  </table>
+  <p>The five focused checks cover one-load and one-stat behavior, equality with a frozen live-read reference, a row added between dry runs, isolation while a snapshot is open, release after refusal, and propagation into the picker thread. The index is primed before counting repeated reads. The actual base product source was also run with the regression test overlaid; it reports four loads and ten aggregate stats.</p>
+  <p>The initial snapshot implementation had a 93.144849 s live median. Profiling attributed 175.169 s of a 211.486 s profiled dispatch to copying the retained history before projection. Moving projection ahead of copying removed that regression, but the repeated three-sample arm still misses the required ceiling. Both failed timing attempts are retained, and the node's two-failure rule stops further implementation.</p>
+  <p>The batch preparation and result loop is owned by <code>reckon/crew/dispatch_batch.py</code>. That path was requested but has not been granted; it remains unchanged. The final importer comparison is still running. Detailed commands, revisions, logs, failure ids and the recovery checkpoint are recorded in the assigned run manifest.</p>
+</section>
