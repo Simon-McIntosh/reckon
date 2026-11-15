@@ -8,7 +8,7 @@ from datetime import UTC, datetime
 import pytest
 
 from reckon import _store, budget, ledger, run_store
-from reckon.crew import promotion_records, routing
+from reckon.crew import promotion_gate, promotion_records, routing
 
 PROJECT = "fixture-project"
 NOW = datetime(2026, 5, 20, tzinfo=UTC)
@@ -50,8 +50,8 @@ def roster(tmp_path, monkeypatch):
 
 
 def _snapshot(root):
-    data, version = ledger.load(PROJECT, root=root)
-    return data["members"], version, data["holds"]
+    data, file_version = ledger.load(PROJECT, root=root)
+    return data["members"], data.get("auxiliary_version", file_version), data["holds"]
 
 
 def _tracked(root):
@@ -257,3 +257,56 @@ def test_unscoped_auxiliary_tables_migrate_without_losing_payloads(tmp_path):
             {"id": "member", "harness": "test"}
         ]
         assert store._auxiliary_rows("")["members"] == [{"id": "member"}]
+
+
+@pytest.mark.parametrize("mutation", ["register", "hold", "reap"])
+def test_aggregate_gate_update_uses_its_file_version_after_roster_mutation(
+    roster, monkeypatch, mutation
+):
+    root, path = roster
+    envelope = json.loads(path.read_text())
+    envelope["data"]["runs"] = [{"run_id": "aggregate-run", "gate": "passed"}]
+    path.write_text(json.dumps(envelope))
+    original_members = envelope["data"]["members"]
+    original_holds = envelope["data"]["holds"]
+    if mutation == "register":
+        ledger.register_member(PROJECT, "registered", harness="test", root=root)
+    elif mutation == "hold":
+        budget.record_checks(
+            PROJECT, [{"backend": "test", "held": True}], root=root, now=NOW
+        )
+    else:
+        assert routing.reap_idle_session_members(PROJECT, root=root, now=NOW)[
+            "reaped"
+        ] == ["session-idle"]
+    auxiliary, auxiliary_version = ledger.load_auxiliary(PROJECT, root)
+    assert auxiliary_version == 8
+    report = {"ok": True, "integrated_verdict": "passed", "exit_status": 0}
+    monkeypatch.setattr(
+        promotion_gate, "rerun_gate_at_integrated_revision", lambda **kwargs: report
+    )
+    monkeypatch.setattr(promotion_gate, "_commit_landing_writes", lambda **kwargs: {})
+    monkeypatch.setattr(promotion_gate, "_report_landing_check", lambda receipt: {})
+    # The real production read/write pair patches an aggregate-held run twice.
+    for expected_file_version in (8, 9):
+        receipt = promotion_gate.record_gate_rerun_at_integrated_revision(
+            project=PROJECT, run_id="aggregate-run", repository=root
+        )
+        assert receipt["ok"] is True
+        assert receipt["ledger_version"] == expected_file_version
+        aggregate, version = ledger.load_aggregate(PROJECT, root)
+        assert version == expected_file_version
+        assert aggregate["runs"][0]["integrated_gate_check"] == report
+        assert aggregate["members"] == original_members
+        assert aggregate["holds"] == original_holds
+        assert ledger.load_auxiliary(PROJECT, root) == (auxiliary, auxiliary_version)
+    data, file_version = ledger.load(PROJECT, root)
+    assert file_version == 9
+    assert data["auxiliary_version"] == auxiliary_version == 8
+    # A subsequent reap must pair the roster with its store version, not the file's.
+    if mutation != "reap":
+        assert routing.reap_idle_session_members(PROJECT, root=root, now=NOW)[
+            "reaped"
+        ] == ["session-idle"]
+    with pytest.raises(ledger.LedgerError, match="moved from version"):
+        ledger.write(PROJECT, data, 7, root)

@@ -3473,7 +3473,8 @@ def reap_idle_session_members(
 
     reaped: list[str] = []
     for attempt in range(max(1, attempts)):
-        data, version = ledger.load(project, root=root)
+        data, _aggregate_version = ledger.load(project, root=root)
+        roster, version = ledger.load_auxiliary(project, root=root)
         last_dispatch: dict[str, datetime] = {}
         for record in [*data["runs"], *pointers]:
             member_id = str(record.get("member") or "")
@@ -3487,7 +3488,7 @@ def reap_idle_session_members(
             ):
                 last_dispatch[member_id] = stamp
         candidates = []
-        for entry in data["members"]:
+        for entry in roster["members"]:
             member_id = str(entry.get("id") or "")
             if not member_id.startswith("session-") or member_id in protected:
                 continue
@@ -3516,13 +3517,13 @@ def reap_idle_session_members(
         reaped = sorted(set(candidates) - newly_protected)
         if not reaped:
             return {"reaped": [], "idle_window": idle_window}
-        data["members"] = [
-            entry for entry in data["members"] if str(entry.get("id")) not in reaped
+        retained_members = [
+            entry for entry in roster["members"] if str(entry.get("id")) not in reaped
         ]
         try:
             ledger.write_members(
                 project,
-                data["members"],
+                retained_members,
                 version,
                 root=root,
                 allow_member_removal=True,

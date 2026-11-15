@@ -23,4 +23,23 @@
   store failure without a file fallback, disposable retirement, and migration of
   unscoped auxiliary tables. The separately captured armed after gate is the
   delivery receipt; merged-head verification remains with the coordinator.</p>
+  <section id="members-and-holds-in-store-s23-version-pairs">
+    <h4>Aggregate updates and mutable updates keep separate version pairs</h4>
+    <p>The production integrated-gate update was reproduced after registration,
+    a hold check and reaping: all three cases refused with “moved from version
+    8 to 7” because the mutable store had advanced while the file had not.
+    History reads now return the file version for aggregate writes and expose
+    the mutable projection's version as <code>auxiliary_version</code>.
+    Roster writes read their own state/version pair through
+    <code>load_auxiliary</code>, including idle-member reaping.</p>
+    <p>Three regression cases drive the real production gate-recording caller
+    twice, advancing the aggregate from version 7 to 8 to 9 while the store's
+    version remains 8. They assert that both stores keep their own roster and
+    hold values, that a subsequent reap uses the store version and that an
+    actually stale aggregate write is still refused. These three cases failed
+    before repair and pass with the repair; the repair-base armed gate passed
+    70 checks. The manifest carries the final armed result and a negative
+    control that reverses the answering product change while retaining these
+    assertions.</p>
+  </section>
 </section>

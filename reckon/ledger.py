@@ -2291,8 +2291,14 @@ def load(
     headers_only: bool = False,
     activity_since: float | None = None,
 ) -> tuple[dict[str, Any], int]:
-    """Read run history with the store's current roster, holds and version."""
-    data, _version = _load_file_history(
+    """Read history paired with its aggregate version and mutable projections.
+
+    The returned version belongs to the committed aggregate and pairs with
+    :func:`write`. ``auxiliary_version`` belongs to the projected roster and
+    holds; mutations pair the state and version from :func:`load_auxiliary`
+    with :func:`write_members` or the hold writer instead.
+    """
+    data, aggregate_version = _load_file_history(
         project,
         root,
         picker_only,
@@ -2300,8 +2306,12 @@ def load(
         headers_only=headers_only,
         activity_since=activity_since,
     )
-    auxiliary, version = load_auxiliary(project, root)
-    return {**data, **auxiliary}, version
+    auxiliary, auxiliary_version = load_auxiliary(project, root)
+    return {
+        **data,
+        **auxiliary,
+        "auxiliary_version": auxiliary_version,
+    }, aggregate_version
 
 
 def _load_file_history(
@@ -2840,14 +2850,23 @@ def _write_state(
     # it performs can only put back a file it wrote itself. Held across the
     # roster commit too, because that commit is the last step of the same write.
     with _ledger_write_lock(project):
-        incoming_members = list(data.get("members", []))
+        aggregate, _aggregate_version = _load_aggregate(project, root)
+        # A history read projects the live mutable collections for consumers.
+        # A run update preserves the aggregate's own copies instead of copying
+        # that projection back into the file or judging it as a roster removal.
+        projected_auxiliary = "auxiliary_version" in data
+        incoming_members = list(
+            aggregate["members"] if projected_auxiliary else data.get("members", [])
+        )
+        incoming_holds = list(
+            aggregate["holds"] if projected_auxiliary else data.get("holds", [])
+        )
         incoming_runs = list(data.get("runs", []))
         stored, stored_version = _load_file_history(project, root)
         # The guard below measures the incoming rows against the aggregate's own
         # rows, never against the union load() returns: the union is the reader's
         # view, and the per-run files it folds in are rows this write must leave
         # where they are.
-        aggregate, _aggregate_version = _load_aggregate(project, root)
         current_view = expected_version == stored_version
         dropped = (
             dropped_member_ids(stored["members"], incoming_members)
@@ -2914,7 +2933,7 @@ def _write_state(
                 key=lambda member: str(member.get("id", "")),
             ),
             "runs": list(data.get("runs", [])),
-            "holds": list(data.get("holds", [])),
+            "holds": incoming_holds,
         }
         # The per-run files are made consistent with the rows they copy before
         # the aggregate envelope advances, never after. If one of them cannot
