@@ -1,0 +1,91 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-15T08:13:39.041Z",
+  "dispatched_at": "2026-11-15T07:54:40Z",
+  "findings": [
+    {
+      "anchor": "reckon/crew/promotion_evidence.py:490",
+      "id": "reuse_search-1",
+      "reason": "the section should ask for the reproducing branch inside `_commitless_raw_field`/`_COMMITLESS_ROLES` to be repaired, not for a declaration parser and a complete-time form that already ship.",
+      "text": "\u00a72 asks for a read-only run to be allowed `commits: none (reason)` and to promote, but that machinery already exists and already has the raw-field parser the section would otherwise duplicate: `_declares_absent_commits` (promotion_evidence.py:490) reads the declaration before the parenthesis, `_commitless_raw_field` (:758) reads the raw line only for `_COMMITLESS_ROLES = {\"review\", \"investigate\"}` (:506), `_opens_with_an_absence_word` (:535) enforces the word boundary, and `--no-commit` already exists on `crew complete` (reckon/crew_run_commands.py:3256). The observed refusal therefore is a defect inside a narrower branch \u2014 most likely the role gate at :780 or the citation refusal at :1101 \u2014 not a missing feature.",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/review.py:382",
+      "id": "reuse_search-2",
+      "reason": "the plan should describe extending the rubric-selects-completeness rule that exists, rather than introducing a second claims check beside reckon/crew/review_records.py:378-412.",
+      "text": "\u00a73 asks for a claims review record to pass without the six text scores, but the claims rubric and the score exemption already exist: `CLAIMS_RUBRIC = \"claims\"` (review.py:382-393) is composed and parsed (review.py:1061, :1303) and the completeness check already exempts one non-scored rubric at review.py:972-976 (`_review_record_rubric(record) != FIGURE_REVIEW_RUBRIC`). The section's real change is to make that predicate a set of verdict-per-item rubrics rather than one hard-coded name.",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/recovery_review_subject.py:416",
+      "id": "reuse_search-3",
+      "reason": "the section sends a worker to build a duty pass that is already built, when the work is finding which precondition keeps the existing composer from firing.",
+      "text": "\u00a74 asks that a delivered brief-carried run with no plan owe and receive a review, but both halves already exist: `_review_reads_a_report` (recovery_review_subject.py:432-451) already classifies a brief-carried node that committed nothing as a claims review, and `_claims_review_done_when` (:453) already composes that review's brief. \u00a74 therefore is a classification defect \u2014 a brief-only delivered run not reaching `promotable`/`scoring` in reckon/crew/recovery_review_dispatch.py's duty input \u2014 not a new dispatch path.",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/ledger.py:3805",
+      "id": "reuse_search-4",
+      "reason": "the section should name the decode-before-filter defect that reproduces at the base revision, because as written it reads as a new read path beside an index that already filters.",
+      "text": "\u00a75 asks for a one-plan read that costs nothing for other plans' runs, but `read_records(project, root, plan=...)` already implements a plan selection and already applies `activity_since` inside the index query (ledger.py:1710-1790, `aggregate_filter`/`document_filter`), while `with_figures=False` already avoids the whole-history figure pass. The measurable defect to reproduce is the post-filter at :3812 running after the full decode, which is a filter-pushdown to the existing query rather than a new read.",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/run_store.py:649",
+      "id": "duplicate_owner-1",
+      "reason": "the plan should extend the index query with a plan predicate rather than add a parallel filtered read, and should name both post-filter sites so one pass repairs them.",
+      "text": "\u00a75 would place a per-plan read beside the run index that already owns filtered reads: `RunStore._indexed_records`/`records` (reckon/run_store.py:649, :781) and `ledger._index_payload` (reckon/ledger.py:1710) are the single owner of decoding and filtering run documents, and `activity_since` is pushed into SQL there. A new reader that filters by plan after `read_records`'s decode duplicates that owner, and the census of the same defect is two sites today: ledger.py:3812 (`read_records`) and ledger.py:3880 (`review_scores`) both post-filter `plan` after the rows are decoded.",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/run_record.py:663",
+      "id": "duplicate_owner-2",
+      "reason": "the section should state that the promotion writes the existing `base_sha` beside the existing `no_commit`, not a new pair on the run record.",
+      "text": "\u00a72 asks that \"the run record carries the run's base revision and an empty commit list\", but the run record already carries both: `record.setdefault(\"no_commit\", None)` at run_record.py:663 is the empty-commit registration, and `base_sha` is read from the record by promotion_evidence.py:1062 as the revision a commitless run is measured against. A second field would give two owners of one fact.",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "tests/conftest.py:95",
+      "id": "duplicate_owner-3",
+      "reason": "the done-when should require the new tests to run under the existing isolation fixtures, so the four nodes cannot each build a private one.",
+      "text": "all four sections ask for \"a new test file \u2026 in a temporary repository\" and \u00a74 for \"isolated crew state\", but the isolation the repository relies on is owned by tests/conftest.py: the cache-root guard (`install_cache_root_guard`, conftest.py:95), the autouse `without_dispatch_identity` (:289), `no_live_jev` (:352) and `no_live_account_probe` (:534). Four new test files that each invent their own temp-state isolation would fork that guard rather than inherit it.",
+      "type": "duplicate_owner",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "",
+  "plan_fingerprint": "fdfac084eb6d2618885ba639415272eca2f9ab840c7b220f4ff29cde22c39526",
+  "plan_slug": "a-read-only-run-promotes-as-delivered",
+  "plan_version": 0,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261115T075234690275-plan-review-of-a-read-only-run-promotes-as-delivered",
+  "reviewed_blob_sha": "25a345d230b5037f33f4ca21413baab30a41c23b",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 each section pushes its rule into an existing deep module (promotion evidence, review-record rubric selection, review-duty derivation, the run index) rather than exposing new surface, provided the sections extend those owners as the findings below require.",
+    "duplicate_owner": "a finding \u2014 \u00a75 re-implements a filtered read beside the SQLite run index that already pushes `activity_since` into the query, and \u00a72 adds a run-record field that run_record.py already carries.",
+    "interface_budget": "pass \u2014 public_definitions 2737, cli_options 488, mcp_views 15, refusal_families 25; no section adds to a counted family, since \u00a72's \"no-commit form of `crew complete`\" is the existing `--no-commit` flag, \u00a73 and \u00a75 relax or narrow existing behaviour, and \u00a74 only adds a duty kind to an existing obligations view.",
+    "reuse_search": "a finding \u2014 every mechanism the four sections ask for already exists in whole or in part: commitless declarations in reckon/crew/promotion_evidence.py, the claims rubric in reckon/crew/review.py, the brief-carried review composer in reckon/crew/recovery_review_subject.py, and a plan-filtered read in reckon/ledger.py::read_records.",
+    "thin_wrapper": "pass \u2014 no section proposes a wrapper module; the four changes are predicate extensions to existing owners, and the closest wrapper shape (\u00a72's \"run record carries the base revision\") is already covered under duplicate_owner."
+  },
+  "section_digests": {
+    "_document": "7f32fc29349a8078f16cb1229291700efec13952724771c28085a1a632256f7a",
+    "s1": "1ac5c3ff651b7f880ad97052b1c7a97f1b684ac58d2345c03e86b901db0aeb6f",
+    "s2": "697ea07c3926fd0b11a269f86dcc0461d5f37eed50d5b3abf3161acafd845e1c",
+    "s3": "93496d13e4c5fdec1c59a0771cf4815bb91a6b1bc1ea0ad624e497da4d5e0c95",
+    "s4": "22b861e472701f960ec0b8c2d2aefabbf203ecab18a2a2b55684f0ae2426a8d0",
+    "s5": "979aff410a33ce026335ae5a752e62889a1afe8f8a6e5dc025efcc8648f60c77"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-15T08:13:51.325965+00:00",
+  "total": null
+}
