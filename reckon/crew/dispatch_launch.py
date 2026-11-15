@@ -3885,6 +3885,8 @@ def _worker_record_payload(
         "attempt": attempt,
         "pid": pid,
         "pid_start_time": _process_start_time(pid),
+        "supervisor_pid": os.getpid(),
+        "supervisor_pid_start_time": _process_start_time(os.getpid()),
         "launched_at": launched_at,
         "claim_registered_at": registered_at,
         "backend": str(spec["plan"].get("backend") or ""),
@@ -3946,6 +3948,10 @@ def _without_this_supervisor(record: Mapping[str, Any]) -> Mapping[str, Any]:
     cleared.pop("pid", None)
     cleared.pop("pid_start_time", None)
     return cleared
+
+
+class _SupersededSupervisorError(CrewError):
+    """A delayed supervisor no longer owns the attempt it was asked to spawn."""
 
 
 def _supervisor_spawn_worker(spec: Mapping[str, Any]) -> int:
@@ -4026,36 +4032,67 @@ def _supervisor_spawn_worker(spec: Mapping[str, Any]) -> int:
         if node_directories:
             environment[STEP_NODE_DIRS_ENV] = os.pathsep.join(node_directories)
 
+    writer = _worker_record_writer(spec)
+
     def attempt() -> subprocess.Popen:
-        with (
-            open(str(spec["prompt_path"]), "rb") as stdin,
-            open(str(spec["log_path"]), "wb") as stdout,
-            open(str(spec["stderr_path"]), "wb") as stderr,
-        ):
-            return subprocess.Popen(
-                argv,
-                cwd=plan.get("cwd"),
-                env=_worker_process_environment(
-                    environment,
-                    dialect=str(plan.get("dialect") or ""),
-                ),
-                stdin=stdin,
-                stdout=stdout,
-                stderr=stderr,
-                start_new_session=False,
-                # The worker must start with the default signal dispositions
-                # rather than the supervisor's own handlers, so a stop aimed at
-                # the group ends the worker. This runs in the supervisor's
-                # single-threaded child as it starts.
-                preexec_fn=_worker_default_signals,  # noqa: PLW1509
-            )
+        with _pointer_lock(run_id):
+            current = read_pointer(run_id)
+            current_attempt = int(current.get("attempt") or 1)
+            spawning_attempt = int(spec.get("attempt") or current_attempt)
+            if current.get("phase") == "queued" or (
+                current_attempt >= spawning_attempt
+                and current.get("attempt_started_at")
+                and spec.get("attempt_started_at")
+                and current["attempt_started_at"] != spec["attempt_started_at"]
+            ):
+                raise _SupersededSupervisorError(
+                    f"run {run_id!r} no longer names this supervisor's launch attempt"
+                )
+            prior = _without_this_supervisor(current)
+            holder = live_worker_reading(prior)
+            if _launch_refused_by(prior, holder):
+                raise CrewError(
+                    _live_worker_refusal(
+                        run_id,
+                        holder,
+                        "a launch that started now would run a second worker beside it; "
+                        "observe or stop it before launching again",
+                        prior,
+                    )
+                )
+            with (
+                open(str(spec["prompt_path"]), "rb") as stdin,
+                open(str(spec["log_path"]), "wb") as stdout,
+                open(str(spec["stderr_path"]), "wb") as stderr,
+            ):
+                process = subprocess.Popen(
+                    argv,
+                    cwd=plan.get("cwd"),
+                    env=_worker_process_environment(
+                        environment,
+                        dialect=str(plan.get("dialect") or ""),
+                    ),
+                    stdin=stdin,
+                    stdout=stdout,
+                    stderr=stderr,
+                    start_new_session=False,
+                    # The worker must start with the default signal dispositions
+                    # rather than the supervisor's own handlers, so a stop aimed at
+                    # the group ends the worker. This runs in the supervisor's
+                    # single-threaded child as it starts.
+                    preexec_fn=_worker_default_signals,  # noqa: PLW1509
+                )
+                # Recovery takes the same lock, so it sees either no spawn or its
+                # receipt. A delayed supervisor re-reads the attempt before spawning.
+                if writer is not None:
+                    writer(process)
+                return process
 
     process = _spawn_worker_retrying_a_vanished_bind(
         attempt,
         argv=argv,
         stderr_path=Path(str(spec["stderr_path"])),
         log_path=Path(str(spec["log_path"])),
-        on_spawn=_worker_record_writer(spec),
     )
     # A poll of a child that has already exited collects its status, and the
     # retry's startup check is such a poll. The status is carried on the pid
@@ -4304,6 +4341,14 @@ def _record_stop_before_spawn() -> threading.Event:
 
 def _record_is_this_attempt(record: Mapping[str, Any], spec: Mapping[str, Any]) -> bool:
     """Whether a live pointer still names the attempt this supervisor runs as."""
+    if record.get("phase") == "queued":
+        return False
+    if (
+        record.get("attempt_started_at")
+        and spec.get("attempt_started_at")
+        and record["attempt_started_at"] != spec["attempt_started_at"]
+    ):
+        return False
     try:
         return int(record.get("attempt") or 1) == int(spec.get("attempt") or 1)
     except (TypeError, ValueError):
@@ -5112,6 +5157,11 @@ def _run_supervisor(spec_path: Path) -> int:
             # to init, where its exit would be uncollectable.
             _become_child_subreaper()
             pid = _supervisor_spawn_worker(spec)
+        except _SupersededSupervisorError as exc:
+            # This supervisor owns no current records. A launch-failure receipt
+            # here would overwrite the replacement attempt's canonical exit.
+            print(str(exc), file=sys.stderr, flush=True)
+            return 0
         except (OSError, ValueError, KeyError, CrewError) as exc:
             evidence = _launch_failure_evidence(
                 str(spec.get("run_id") or ""), run_directory

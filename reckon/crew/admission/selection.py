@@ -95,6 +95,9 @@ def admit_once(
         review_read_pass(),
         _reviews.plan_review_pass(),
     ):
+        from . import interrupted
+
+        result["recovered"] = interrupted.recover()
         if run_id:
             selected = runs.read_pointer(run_id)
             if selected.get("phase") != QUEUED_PHASE:
@@ -135,7 +138,6 @@ def admit_once(
             result["promoted_upstream"] = upstream["promoted"]
             result["blocked_upstream"] = upstream["blocked"]
             result["upstream_obligations"] = upstream["obligations"]
-            runs.sweep_handovers(str(pointer.get("run_id") or "") for pointer in live)
             queued = [
                 pointer for pointer in live if pointer.get("phase") == QUEUED_PHASE
             ]
@@ -661,7 +663,8 @@ def admit_once(
                     )
                 # The launch outcome is settled here: either the run's own
                 # pointer names the node, or the request has been written back.
-                runs.clear_handover(pointer)
+                if record is None and restore_error is None:
+                    runs.clear_handover(pointer)
             if (
                 record is None
                 and competence_refusal is not None
@@ -770,6 +773,7 @@ def admit_once(
             _launching._stamp_admission(
                 str(record["run_id"]), snapshot, admitted_at=_service._utc_now()
             )
+            runs.clear_handover(pointer)
             _add_step(launch_steps, "stamp", tick() - step_at)
             slowest = _slowest_step(launch_steps)
             verdicts.append(
