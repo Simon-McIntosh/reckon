@@ -25,7 +25,7 @@
   <title>The Monitor Reads Each Fact Once | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="300">
+<meta name="plan-version" content="301">
 <meta name="plan-modified" content="2026-11-15">
 </head>
 <body>
@@ -878,7 +878,10 @@ staged paths.</p>
     <div class="r-comment-body"><p>figure review is recorded read-only at review-records/&lt;reviewed-run&gt;.figure.json and .figure.at-39808f174fa457339e46959edab9fb82243a83af.json; all six rubric items pass, one non-blocking finding exempted, no blocking findings, no plan edit made.</p></div>
 </div>
 <div class="r-comment" data-section="s13" data-id="c-run-r-20261114T174819483569-the-station-tick-reads-only-what-changed" data-who="reckon-build" data-when="2026-11-15T00:40:58Z">
-    <div class="r-comment-body"><p>the-station-tick-reads-only-what-changed: a steady tick holds a promotion&#x27;s committed range against its tree head, the shared git answer store against the file&#x27;s stat identity, and the six rubric prompts against their own, so an unchanged fact is read once instead of once per tick; all three now share one bounded memo, which hands a caller a copy rather than the stored value (785fbc2eaf, 522174404f, 05e58f1c3c). The census of one tick at 145 live pointers attributes 1.24 GB to ten readers led by the stream cache (499.1 MB, 40.3%) and the review-record listing (333.0 MB, 26.9%), and an uninstrumented 60 s window at 148 pointers measures one tick at 98.003 s and 106.41 s of CPU, so the plan&#x27;s 20 MB/min and 5% bounds are not met and are not claimed (1ddefc0fea).</p></div>
+    <div class="r-comment-body"><p>the-station-tick-reads-only-what-changed: a steady tick holds a promotion's committed range against its tree head, the shared git answer store against the file's stat identity, and the six rubric prompts against their own, so an unchanged fact is read once instead of once per tick; all three now share one bounded memo, which hands a caller a copy rather than the stored value (785fbc2eaf, 522174404f, 05e58f1c3c). The census of one tick at 145 live pointers attributes 1.24 GB to ten readers led by the stream cache (499.1 MB, 40.3%) and the review-record listing (333.0 MB, 26.9%), and an uninstrumented 60 s window at 148 pointers measures one tick at 98.003 s and 106.41 s of CPU, so the plan's 20 MB/min and 5% bounds are not met and are not claimed (1ddefc0fea).</p></div>
+</div>
+<div class="r-comment" data-section="s13" data-id="c-run-r-20261115T004502028582-review-of-the-station-tick-reads-only-what-changed-39808f174fa4" data-who="reckon-build" data-when="2026-11-15T01:59:50.548Z">
+    <div class="r-comment-body"><p>review-of-the-station-tick-reads-only-what-changed-39808f174f: the three commits gained since the prior review (05e58f1c3c, e62935bc64, 39808f174f) move the three held reads onto reckon/file_memo.py&#x27;s memoized and memoized_key, which retires the prior review&#x27;s three reuse findings and keys every hold on st_ctime_ns, and the evidence fragment records the paired-id study that classifies the 38 added suite ids; scores 15 evidence 14 scope_discipline 11 durability 19 fit 19 reuse 20, no blocking finding, three non-blocking findings (scope ratification, the unmet live cost bound, the unchanged answer-store ineffectiveness fleet-wide).</p></div>
 </div>
 <div class="r-comment" data-section="s14" data-id="c-run-r-20261108T053351721397-review-of-a-sessions-duties-run-while-its-follower-is-alive-3aec564ad491" data-who="reckon-build" data-when="2026-11-08T05:46:04Z">
     <div class="r-comment-body"><p>Independent review of base fdfcd7d77a7347a068604e52f00696e3c338eb15 to head 3aec564ad491f6d9d6dde4606786f2a68bc78231 stored parsed scores 14, 7, 20, 14, 19, 20, zero observed added failure IDs, and three blocking findings.</p></div>
