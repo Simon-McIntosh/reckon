@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="the-monitor-shows-the-work-it-watches">
+  <meta name="plan-evidence-for" content="reckon:the-monitor-shows-the-work-it-watches">
+  <meta name="plan-verifies" content="reckon:the-monitor-shows-the-work-it-watches#s141">
+  <meta name="plan-recorded-at" content="2026-11-15">
+  <meta name="plan-verdict" content="passed">
+  <title>The pane says help where it needs you, and waiting where the run lifts itself | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" id="help-word-and-waiting-states-s141-landing" data-node="help-word-and-waiting-states-s141" data-reckon="landed" data-when="2026-11-15">
+  <h2>The pane says <code>help</code> where it needs you, and <code>waiting</code> where the run lifts itself</h2>
+  <p><strong>What changed.</strong> The <code>needs you</code> bucket held two different situations: runs that cannot move until the coordinator acts, and runs that move on their own once other work finishes. "you" did not say who, so the bucket read as work for a reader that nothing was waiting on. The bucket is now <code>help</code>, counted under <code>h</code>, and <code>blocked-upstream</code>, <code>held</code>, <code>interrupted</code> and <code>ready</code> moved to <code>waiting</code>, counted under <code>q</code>. <code>SUPERSEDED_PANE_WORDS</code> reads a stored <code>needs you</code> — and the older <code>halted</code> — as <code>help</code>, so a pane restored from history draws the new word and a record whose only change is the word draws no row. <code>CARRIED_PANE_WORDS</code>, which gates whether a row is drawn at all, carries <code>help</code>. No word set in <code>ticker.py</code> names <code>needs you</code> except the superseded mapping.</p>
+  <p><strong>The fleet partition moved with it.</strong> <code>recovery_watch.WAITING_STATES</code> gained the same four states, so a row's word and a counter's letter name the same population: a held run now draws <code>→ waiting</code> and counts under <code>q</code> instead of drawing <code>→ needs you</code> beside a <code>q</code> figure that already counted it. <code>skills/reckon-build/SKILL.md</code> names <code>help</code> and <code>h</code> and states which four states <code>waiting</code> holds.</p>
+  <p><strong>Gate.</strong> <code>tests/test_a_run_that_needs_help_reads_help.py</code>, driven through the producer's own partition and transition builder so every figure asserted is the figure a pane receives: a blocked run draws <code>→ help</code> and counts <code>1h</code>; a <code>blocked-upstream</code> run and a held run each draw <code>→ waiting</code> and count <code>1q</code>, not <code>1h</code>; a stored <code>needs you</code> word restores as <code>help</code> (and so does <code>halted</code>); and every state in <code>FLEET_BLOCKED_STATES</code> draws <code>→ help</code>, with no word the pane emits or counts still naming the old one. Against the base tree with only the test added: <strong>4 failed</strong>, <code>EXIT=1</code> — each of the four cases fails, the first three on the old word and letter the pane drew (<code>new → needs you</code>, <code>0w 0r 1n 0d 0q 0s</code>) and the fourth on <code>KeyError: 'help'</code>.</p>
+  <p><strong>Negative control.</strong> Removing the superseded-word mapping — <code>SUPERSEDED_PANE_WORDS</code> left empty — fails exactly the restore case, <code>test_a_stored_needs_you_word_restores_as_help</code> (<code>assert '' == 'help'</code>), with the other three passing: <strong>1 failed, 3 passed</strong>, <code>EXIT=1</code>. Log <code>negative-control.log</code> under the run directory.</p>
+  <p><strong>Suite arms.</strong> The node's own test set plus the repository's two invariant tests, run one arm at a time on the <code>all_debug</code> partition at <code>-n 4</code>: base <code>889f7e78</code> <strong>58 passed</strong>, <code>EXIT=0</code>; head <code>3efa649f</code> <strong>62 passed</strong>, <code>EXIT=0</code>.</p>
+</article>
+</body>
+</html>

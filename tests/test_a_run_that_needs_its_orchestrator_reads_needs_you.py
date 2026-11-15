@@ -1,9 +1,9 @@
-"""The pane draws ``needs you`` where it drew ``halted``.
+"""The pane draws ``help`` where it drew ``halted``.
 
 Every run in the halted group is the orchestrator's move next: blocked,
 needs-help, held, stalled, stopped, failed, abandoned, a launch refused at
 admission, and the rest of the group's states. ``halted`` read as a state the
-run sits in by itself, so the pane draws ``needs you`` and labels that counter
+run sits in by itself, so the pane draws ``help`` and labels that counter
 ``n``, which no other counter uses.
 
 A checkpoint, a stored history and a delivered-state record hold the word the
@@ -67,32 +67,31 @@ def _line(event: dict) -> str:
     )
 
 
-def test_a_blocked_transition_renders_needs_you() -> None:
+def test_a_blocked_transition_renders_help() -> None:
     line = _line(_event())
 
-    assert "new → needs you" in line, line
+    assert "new → help" in line, line
     assert OLD_WORD not in line, line
 
 
-def test_the_counter_block_labels_the_bucket_n() -> None:
+def test_the_counter_block_labels_the_bucket_h() -> None:
     line = _line(_event())
 
-    # The bucket carries the blocked count and its letter. The letter is ``n``,
+    # The bucket carries the blocked count and its letter. The letter is ``h``,
     # which no other counter uses, so a reader cannot confuse the column with
     # the working or delivered one.
-    assert " 0w  0r  1n  0d  0q" in line, line
-    assert "1h" not in line, line
-    assert ticker_module.STAT_LETTER["needs you"] == "n"
+    assert " 0w  0r  1h  0d  0q" in line, line
+    assert ticker_module.STAT_LETTER["help"] == "h"
 
 
 def test_a_pane_memory_seeded_with_the_old_word_reads_the_word_it_draws() -> None:
     # The grid maps a remembered word on the way in, so a memory seeded from a
     # record written before the rename holds the word the pane draws now.
-    assert ticker_module._remembered_word(OLD_WORD) == "needs you"
+    assert ticker_module._remembered_word(OLD_WORD) == "help"
 
     policy = ticker_module.RowPolicy()
     policy.seed(RUN_ID, OLD_WORD)
-    assert policy._shown[RUN_ID] == "needs you"
+    assert policy._shown[RUN_ID] == "help"
 
 
 @pytest.fixture()
