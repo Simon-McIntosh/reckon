@@ -594,9 +594,9 @@ def _require_no_manifest_fault(run_id: str, record: Mapping[str, Any]) -> None:
     not repair, so the refusal here repeats the reason the check emits rather
     than describing the same defect a second way: the rule is asked once and its
     own text is carried forward, with the run id in front of it. The faults this
-    covers are the ones judged from the manifest alone — a commit entry that is
-    not one revision, an arm revision that is a spelling, a gate command naming
-    an absolute path under the temporary directory.
+    covers are the ones judged from the manifest alone — an arm revision that is
+    prose or the beginning of an object id, and a gate command naming an
+    absolute path under the temporary directory.
 
     A manifest that is absent or not fresh has no verdict to judge and is left
     to the arms that read its absence.

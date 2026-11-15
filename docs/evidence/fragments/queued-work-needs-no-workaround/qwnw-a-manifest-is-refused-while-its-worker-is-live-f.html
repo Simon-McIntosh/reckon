@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="queued-work-needs-no-workaround">
+  <meta name="plan-title" content="A manifest is refused while its worker is live for anything promotion would refuse">
+  <meta name="plan-summary" content="The delivery check and promotion read one set of manifest rules, so a fault is refused to the worker that can still repair it, and an arm can be re-pointed through the repair verb that keeps the as-delivered file.">
+  <meta name="plan-evidence-for" content="reckon:queued-work-needs-no-workaround">
+  <meta name="plan-verifies" content="reckon:queued-work-needs-no-workaround#s11">
+  <meta name="plan-recorded-at" content="2026-11-15">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-tags" content="crew,manifest,delivery-check,promotion,suite-arms">
+  <title>A manifest is refused while its worker is live for anything promotion would refuse — evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" data-node="qwnw-a-manifest-is-refused-while-its-worker-is-live-f" data-reckon="landed" data-when="2026-11-15" id="qwnw-a-manifest-is-refused-while-its-worker-is-live-f-record">
+  <h2>A manifest is refused while its worker is live for anything promotion would refuse</h2>
+  <p>The rules a delivered manifest can fail are stated once, in <code>reckon/crew/manifest_faults.py</code>, and both readers ask that module: the pre-delivery check appends each reason to its findings, and promotion raises the same reason in front of the run id. The reasons are therefore one string rather than two descriptions that drift. They cover the two faults the check previously passed and promotion refused: a suite arm whose revision is prose or an abbreviation of an object id, and a gate command naming an absolute path under the temporary directory. An unrecognised <code>status</code> is refused by both through the manifest reader.</p>
+  <p>A manifest whose only test file is absent at the base now reads as a <em>complete</em> base arm with zero failures when the base tree holds none of the node's test files and the suite is the scoped form: an empty suite is a measurement of nothing failing, not missing evidence. The same absent arm beside a base tree that does not hold them is still refused.</p>
+  <p>A suite arm can be re-pointed by a coordinator through <code>crew repair --run &lt;id&gt; --arm baseline_suite|after_suite --revision &lt;sha&gt; --reason &lt;text&gt;</code>. The verb writes <code>manifest.md.asdelivered</code> once, rewrites the arm line in place, records the previous arm and the reason in <code>arm-repair.json</code>, and refuses a revision that is still not an object id, an arm the manifest does not carry, and a missing reason.</p>
+  <p>A commit citation written as the revision and the subject it was committed under is not refused by either reader: the delivery check already resolved the ids an entry carries, so promotion now resolves an entry the same way rather than refusing it whole. That row of the fault list converges in the accepting direction, where a worker pasting its own <code>git log</code> output is honest and no run is refused.</p>
+  <p>Node gate at <code>41bbcbc6871237eb3999312e34e0878c3c04b8e2</code>: <code>pytest -q</code> over <code>tests/test_a_manifest_is_refused_for_what_promotion_refuses.py</code> and <code>tests/test_a_suite_arm_is_repointed_keeping_the_delivered_file.py</code>, 18 passed, <code>EXIT=0</code>. The table drives each fault through both readers and asserts the shared reason appears verbatim in both outputs; separate tests promote a run whose only new test file has no base arm and re-point an arm through the verb, reading the as-delivered file kept.</p>
+  <p id="qwnw-a-manifest-is-refused-while-its-worker-is-live-f-arms">Affected selection (69 test files) at both arms: base <code>a346fba4aa</code> 110 failed, 833 passed; head <code>41bbcbc687</code> 110 failed, 851 passed. The 109 distinct failing ids are the same set at both revisions, so the node adds no failure; the head arm passes 18 more tests because the change adds them. The 109 fail identically at both revisions under this checkout's shared environment (they report scratch paths and log locations resolved outside the run directory), so the failure count is read as a difference of failing ids rather than as absolute green.</p>
+  <p id="qwnw-a-manifest-is-refused-while-its-worker-is-live-f-control">Negative control: the same table row read by the base revision's own code. Its delivery check reports <code>ok=True</code> for the prose-arm row, while its promotion refuses the same file with <code>missing baseline_suite.revision_matches_base_sha</code>. At this revision the same delivery's check reports the shared reason instead. This gate measures only this node's own change; verifying the merged result belongs to a separately dispatched test node.</p>
+</article>
+</body>
+</html>
