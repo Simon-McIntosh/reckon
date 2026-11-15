@@ -1,0 +1,83 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-15T18:19:55.847Z",
+  "dispatched_at": "2026-11-15T18:19:30Z",
+  "findings": [
+    {
+      "anchor": "plan.html:177",
+      "id": "reasoning-1",
+      "reason": "a worker confined to the named paths would repair the pane's word and its verb while the phase stays `blocked-upstream`, so \"stays waiting and names the live run\" could not be met and the node would close on an unfixed mechanism.",
+      "text": "s19 states \"The wait reader in `reckon/crew/recovery_classification.py` read one failed run as the section failing\" and puts that module, `recovery_vocabulary.py` and `ticker.py` in its write paths, but recovery_classification.py only formats the detail string for a stored `blocked-upstream` phase (reckon/crew/recovery_classification.py:1823) and holds no section-liveness logic at all; the phase is decided in the admission pass: `_dead_sections` (reckon/crew/admission/release.py:38-59) puts `(plan, section)` in the dead set for any live pointer whose phase is in `DEAD_RUN_PHASES = frozenset({\"failed\"})` (reckon/crew/admission/shared.py:188) with no check for a sibling run of the same section, `_wait_state` returns ABANDONED on that membership (reckon/crew/admission/readiness.py:1316), and `resolve_waits` returns `BLOCKED_UPSTREAM_PHASE` the moment any ref is ABANDONED (release.py:137) \u2014 so the three named write paths reach the drawing and vocabulary layers and cannot make the section's first done-when true",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "plan.html:177",
+      "id": "anchors_resolve-1",
+      "reason": "an earlier review raised exactly this for \u00a74 and \u00a76 and the author's remedy was to state the reproduction as a condition and drop dead ids; keeping the unopenable ids leaves the section's only evidence for the false needs-you rows uncheckable.",
+      "text": "of the three run ids cited as the reproduction (`r-20261115T081846316772-icm-scripts-cleanup`, `r-20261114T144536248146`, `r-20261114T144521862249`) only the first has a directory, under `/home/ITER/mcintos/.config/reckon/crew/runs/`, while the two waiters resolve nowhere \u2014 the same root holds 2477 run directories and `archive/runs/` 1408, and no entry in either matches `20261114T144536248146` or `20261114T144521862249` \u2014 so the two records the section's whole symptom rests on cannot be opened by a later reader",
+      "type": "anchors_resolve",
+      "would_change": true
+    },
+    {
+      "anchor": "plan.html:178",
+      "id": "done_when-1",
+      "reason": "the section must split the preservation clause from the failing pair, as \u00a74 and \u00a712 were corrected, or a worker meeting the wording literally is asked for a red test that the base cannot produce.",
+      "text": "s19 states \"New tests, each failing at the base revision\", yet its third clause (\"a section none of whose runs can still land ... still reads 'can no longer land' and offers that remedy\") describes behaviour that already holds at base: `_wait_state` already returns ABANDONED for a section whose only pointer carries a failed phase (readiness.py:1316 with release.py:55), and the remedy text \"recover or drop this request\" is already emitted (recovery_classification.py:1823), so that clause can be written as a test that passes at base, contradicting the section's own negative control",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "plan.html:10",
+      "id": "reasoning-2",
+      "reason": "an earlier review's finding on this count was answered in \u00a71 alone, so the summary now states the superseded figure and a one-word edit makes the header agree with the evidence it summarises.",
+      "text": "`plan-summary` says the defects are those \"fourteen sessions reported on 15 November\", while \u00a71 (`plan.html:28`) says fifteen sessions answered and names fifteen, so the declaration a sprint or index surface shows carries a population count its own section contradicts",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "1b511018738456c0ae25b326ce8a938fe800c2af",
+  "plan_fingerprint": "76eef3561dd8847ff11da570ec4d838a5686377c81f301ad1908f5d9c720ae82",
+  "plan_slug": "the-monitor-tells-the-truth-under-load",
+  "plan_version": 9,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261115T181801525667-plan-review-of-the-monitor-tells-the-truth-under-load",
+  "reviewed_blob_sha": "666c33371eb704eb01ac08ec181650ac9c24191a",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "a finding \u2014 two of the three run ids cited at `plan.html:177` have no directory under the crew runs root.",
+    "done_when": "a finding \u2014 s19's Done when (`plan.html:178`) declares that every new test fails at the base revision while its third clause describes behaviour that already holds there.",
+    "evidence_paths": "pass \u2014 s19 sends its evidence to the repository's tests and an all_debug arm, and names no scratch path, temporary directory or session-local log.",
+    "naming": "pass \u2014 s19 introduces no plan label, ticket number or version tag; `iron-core-magnetisation \u00a75` is cited as a reproduction site rather than carried into any symbol.",
+    "reasoning": "two findings \u2014 s19 names `reckon/crew/recovery_classification.py` as the reader that judged one failed run as the section failing, which that module does not do; and `plan-summary` counts a different session population from \u00a71.",
+    "single_goal": "pass \u2014 s19 carries one endpoint: a wait reads as landable while any run of its upstream section can still land, and as blocked only when none can.",
+    "wiring": "pass \u2014 `plan-section-declarations` carries s19 as implementable and the section it adds sits inside `main.plan-doc` ahead of the followups block; the relationship set (`plan-informs`) is unchanged in this review's units, and the followup-chain shortfall was raised in earlier reviews and is unchanged since."
+  },
+  "section_digests": {
+    "_document": "c5652c30f55622a7caeb5c82a0047168aa73b076a6426343b1989c7bfb452a6d",
+    "s1": "7df70e005850ec7773b3db8cdf1384c5422e6cbfac994a1cfc3bdeca2fd47ef2",
+    "s10": "b83b287b25ce35ab03c105da8c02eec999809dbdea6073436eae2dc72bb0055d",
+    "s11": "db2972ed7155bc484ac98ce58f8c119ab201e99f5a53c1af54606eb6564a66e4",
+    "s12": "93d79e3e452ecd1f5c10186fc7eb1781f5e7455324237438f574fbc699447b31",
+    "s13": "79271d44153e341633146df7233120d46939c41b1ca66de6bac074c2472ea991",
+    "s14": "c0f58bcc6da33e5ff402ec71bef199b31de1619824a04f6db8d415d9669a38d7",
+    "s15": "3d6257718e450fda1363e42a9394f2cb631579e92f2cf0dbdaca2f25c62d6537",
+    "s16": "9c67ebb9a89d3b566da303e2866877a636f868c501bf32f08ff80e2c7a7f26da",
+    "s17": "229d1aee2b054a2680acdd7883f3d6cd8216513f31305ff21ed874c51b1af3a7",
+    "s18": "4a5429fac53529c64918e90d1bc4d47480e08689bea9601336332ce330c82e49",
+    "s19": "2c5221a4ae96e98fb88bc383a2c2044f101f3f2cf3568815b4a7a2213a236677",
+    "s2": "a065d657377c24ca69329c265d4a0a821a0104c7df8d1140dec9c3b9d1c6edf2",
+    "s3": "f3cf9279ee0efc6c6e7b55dede5b9ff68ee3db1e40edd78b825098ecee64d396",
+    "s4": "739bbbd316f3b5138d938c01abaac59b3f08e1231effa6dc1e416fb46b9b34b1",
+    "s5": "2806db9da94cd21c23ef92806d85a99f15d28df20b272f97173d332fba5a1587",
+    "s6": "a8a7d00ef50ab0ca240bc59bb917ff62442d6f3567da095cb913cd5860246056",
+    "s7": "9f299f30b0fda7b1f5bbc9f6d7cf6b936604181068a2c9a8363b64e58ace0fd6",
+    "s8": "30f0e740e2caee5b735cc3bdc83d5eaa23eac7eeaae780899f811d7a1c32956c",
+    "s9": "56c122a4d4057a2e12e9ebbaae0a53fb955938f47dbe9275cdf2dd5566896f78"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-15T18:27:13.810784+00:00",
+  "total": null
+}
