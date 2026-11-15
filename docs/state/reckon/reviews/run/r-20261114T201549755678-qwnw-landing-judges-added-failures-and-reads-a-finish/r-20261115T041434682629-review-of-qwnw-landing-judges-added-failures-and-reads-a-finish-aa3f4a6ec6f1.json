@@ -1,0 +1,63 @@
+{
+  "absent": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/cli.py:435",
+    "reckon/crew/queue_landing.py:1787",
+    "reckon/crew/promotion_requests.py:353 _execute_command",
+    "reckon/crew/promotion.py:443 complete",
+    "reckon/crew/promotion_records.py:1207 _evaluate_suite_delta",
+    "reckon/crew/promotion_checks.py:2843 _require_declared_negative_control"
+  ],
+  "completed_at": "2026-11-15T04:54:53.407Z",
+  "dispatched_at": "2026-11-15T04:19:18Z",
+  "findings": [
+    {
+      "severity": "blocking",
+      "text": "reckon/crew_run_commands.py:3516 blocking: the pop list gained `driven` but not `REQUESTED`, which the change's own import at :3505 brought into the function's scope, so the snapshot of locals() that becomes the queued request's options carries a REQUESTED key; the drain passes those options to crew_complete through context.invoke (reckon/crew/promotion_requests.py:353-356), which forwards unknown keywords to the callback, so every default (non --wait) crew complete queues a promotion that fails with TypeError: crew_complete() got an unexpected keyword argument 'REQUESTED'. Reproduced on the reviewed tree: a first queuing call exits 0 with REQUESTED among the stored options, and promotion_requests._execute_command(options) raises that TypeError."
+    },
+    {
+      "severity": "non-blocking",
+      "text": "tests/test_a_landing_judges_the_head_by_its_suite.py:325 non-blocking: the repeat case asserts only the `driven` flag the branch sets and never drains the queued request or reads a PROMOTED receipt or ledger row, so a driven path that promoted nothing would pass, and the undrainable request above passes this very case."
+    },
+    {
+      "severity": "non-blocking",
+      "text": "tests/test_a_review_of_the_asserted_head_counts.py:71 non-blocking: the negative control armed one of the three node test files, so the four cases in this file and tests/test_an_evidence_only_node_lands_on_its_declared_check.py were never measured at a346fba4aa, and the manifest's '6 of them fail at the base revision' does not say that those two plan cases were already satisfied; measured here, all four pass at a346fba4aa, so the node adds coverage for them rather than a repair, which the record should state."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "pass read the runtime callers; reckon/cli.py:435 registers crew_complete, reckon/crew/queue_landing.py:1790 builds its context, and reckon/crew/promotion_requests.py:353 hands the queued options back to it.",
+    "diff": "fail read the six commits against a346fba4aa: the change is four production files and five test files, and one production line (reckon/crew_run_commands.py:3516) makes every queued promotion undrainable.",
+    "done_when": "pass the done_when asks for the cases landed by tests plus a base-revision negative control; node-gate.log records 11 passed at aa3f4a6ec6 and negative-control.log records 6 failed at a346fba4aa.",
+    "goal": "pass read the node goal against the diff; the added-failure judgement and the review-at-head read are present, though a side effect breaks the default promotion path.",
+    "manifest": "pass read; it records status complete, the 11-case gate, the negative-control log path and the armed pair, the after arm being fence-head.log with 55 passed and EXIT=0.",
+    "write_paths": "pass read the declared paths; every changed path is inside them."
+  },
+  "justifications": {
+    "durability": "tests/test_a_landing_judges_the_head_by_its_suite.py:325 asserts only the driven flag on the receipt, so the TypeError that reckon/crew_run_commands.py:3516 puts on every queued promotion passes the case added to cover it.",
+    "evidence": "tests/test_a_landing_judges_the_head_by_its_suite.py passes 11/11 at aa3f4a6ec6 and its negative-control run (negative-control.log) is red by 6 ids at a346fba4aa, but gate.sh armed only that one of the three node test files.",
+    "fit": "reckon/crew/promotion_records.py:684 reads as the guard beside it (_arm_revision_mismatch), and the new names state a mechanism with no plan label.",
+    "goal_fidelity": "reckon/crew/promotion_records.py:1207 judges a landing by the failures the head added to its base, but the same commit's reckon/crew_run_commands.py:3516 leaves every default (non --wait) complete unable to be promoted.",
+    "reuse": "no existing owner for judging which paths a suite reads: a search of reckon/ for reach, import and collect path machinery found only reckon/agent_context.py:362 _imports_canonical, an unrelated entrypoint check, so _suite_reaching_paths is the first owner.",
+    "scope_discipline": "every path in git diff --name-only a346fba4aa aa3f4a6ec6 is under one of the four declared write paths; no plan edit and no push."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that a landing judges added failures and reads a finished review at the head; reckon/crew/promotion_records.py:1207 does the first and the review read is covered, but reckon/crew_run_commands.py:3516 breaks the default promotion path the same change touches.\nVERDICT done_when: the done_when asks for tests over a temporary repository and crew home plus a base-revision negative control; node-gate.log records 11 passed at aa3f4a6ec6 and negative-control.log records 6 failed and 1 passed at a346fba4aa.\nVERDICT write_paths: read the declared paths reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround and skills; every path in the diff is inside them.\nVERDICT manifest: read; it records status complete, the 11-case gate command, the negative-control log path and the armed pair, fence-base.log with 53 passed and 2 errors against fence-head.log with 55 passed, EXIT=0.\nVERDICT diff: read the six commits against a346fba4aa; the added-failure judgement, the doc-only after-arm exemption, the dry-run measure guard and the review-at-head coverage are present, and reckon/crew_run_commands.py:3516 leaves a queued request the drain cannot execute.\nCALL_SITES: reckon/cli.py:435, reckon/crew/queue_landing.py:1787, reckon/crew/promotion_requests.py:353 _execute_command, reckon/crew/promotion.py:443 complete, reckon/crew/promotion_records.py:1207 _evaluate_suite_delta, reckon/crew/promotion_checks.py:2843 _require_declared_negative_control\nSCORE goal_fidelity: 14\nJUSTIFICATION goal_fidelity: reckon/crew/promotion_records.py:1207 judges a landing by the failures the head added to its base, but the same commit's reckon/crew_run_commands.py:3516 leaves every default (non --wait) complete unable to be promoted.\nSCORE evidence: 15\nJUSTIFICATION evidence: tests/test_a_landing_judges_the_head_by_its_suite.py passes 11/11 at aa3f4a6ec6 and its negative-control run is red by 6 ids at a346fba4aa, but gate.sh armed only that one of the three node test files.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in the diff is under one of the four declared write paths, with no plan edit and no push.\nSCORE durability: 8\nJUSTIFICATION durability: tests/test_a_landing_judges_the_head_by_its_suite.py:325 asserts only the driven flag, so the TypeError that reckon/crew_run_commands.py:3516 puts on every queued promotion passes the case added to cover it.\nSCORE fit: 17\nJUSTIFICATION fit: reckon/crew/promotion_records.py:684 reads as the guards beside it and the new names state a mechanism with no plan label.\nSCORE reuse: 20\nJUSTIFICATION reuse: no existing owner for judging which paths a suite reads; the search over reckon/ for reach, import and collect path machinery found only reckon/agent_context.py:362 _imports_canonical, an unrelated entrypoint check.\nFINDING reckon/crew_run_commands.py blocking: 3516 blocking: the pop list gained `driven` but not `REQUESTED`, which the change's own import at :3505 brought into the function's scope, so the snapshot of locals() that becomes the queued request's options carries a REQUESTED key; the drain passes those options to crew_complete through context.invoke (reckon/crew/promotion_requests.py:353-356), which forwards unknown keywords to the callback, so every default (non --wait) crew complete queues a promotion that fails with TypeError: crew_complete() got an unexpected keyword argument 'REQUESTED'. Reproduced on the reviewed tree: a first queuing call exits 0 with REQUESTED among the stored options, and promotion_requests._execute_command(options) raises that TypeError.\nFINDING tests/test_a_landing_judges_the_head_by_its_suite.py non-blocking: 325 non-blocking: the repeat case asserts only the `driven` flag the branch sets and never drains the queued request or reads a PROMOTED receipt or ledger row, so a driven path that promoted nothing would pass, and the undrainable request above passes this very case.\nFINDING tests/test_a_review_of_the_asserted_head_counts.py non-blocking: 71 non-blocking: the negative control armed one of the three node test files, so the four cases in this file and tests/test_an_evidence_only_node_lands_on_its_declared_check.py were never measured at a346fba4aa, and the manifest's '6 of them fail at the base revision' does not say that those two plan cases were already satisfied; measured here, all four pass at a346fba4aa, so the node adds coverage for them rather than a repair, which the record should state.",
+  "review_run_id": "r-20261115T041434682629-review-of-qwnw-landing-judges-added-failures-and-reads-a-finish-aa3f4a6ec6f1",
+  "reviewed_base_sha": "a346fba4aa0e53481a816fc06d92e48db899d60a",
+  "reviewed_head_sha": "aa3f4a6ec6f1320c3e15bb312c3d8ba50961d9ac",
+  "reviewed_run_id": "r-20261114T201549755678-qwnw-landing-judges-added-failures-and-reads-a-finish",
+  "scores": {
+    "durability": 8,
+    "evidence": 15,
+    "fit": 17,
+    "goal_fidelity": 14,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-15T04:55:30.428417+00:00",
+  "total": 94
+}
