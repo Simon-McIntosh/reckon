@@ -492,6 +492,23 @@ def _default_gate_evidence_from_manifest(
     )
 
 
+def _run_plan_slug(record: Mapping[str, Any], node: Mapping[str, Any]) -> str:
+    """The plan a run works on, named by its node or by its own subject.
+
+    An implementation run carries its plan on the node. A plan-review run names
+    the plan as its subject instead and leaves the node's plan empty, so the
+    slug is read from the pointer's node id through the reader that owns that
+    grammar; taking only the node's plan would file the review's row with no
+    plan and no reader could tell which plan was reviewed.
+    """
+    plan = str(node.get("plan") or record.get("plan") or "").strip()
+    if plan:
+        return plan
+    from reckon.crew.recovery_review_dispatch import _plan_review_pointer_slug
+
+    return _plan_review_pointer_slug(record)
+
+
 @operational_read
 def complete(
     run_id: str,
@@ -1821,7 +1838,7 @@ def _complete_locked(
         run = ledger.build_record(
             run_id=run_id,
             project=project,
-            plan=str(node.get("plan") or ""),
+            plan=_run_plan_slug(record, node),
             section=str(node.get("section") or ""),
             brief=brief_block,
             plan_link=str((brief_owner or {}).get("plan_link") or ""),

@@ -561,6 +561,7 @@ def _section_run_unlanded(
     from reckon.crew import runs as runs_module
     from reckon.crew.dispatch_sections import project_mount_repository
     from reckon.crew.promotion_scope import _revision_is_ancestor
+    from reckon.crew.recovery_review_delivery import _is_review_run
 
     wanted = section_record_id(section)
 
@@ -605,6 +606,8 @@ def _section_run_unlanded(
         ):
             continue
         if _release._discarded(run_id):
+            continue
+        if _is_review_run(pointer):
             continue
         candidates.append((run_id, str(pointer.get("promoted_revision") or "").strip()))
 
@@ -1232,6 +1235,29 @@ def unmet_waits(
     return dispatch_waits(node, repo_root=repo_root, project=project, live=live)[2]
 
 
+def _whole_plan_wait_satisfied(
+    item: Mapping[str, Any],
+    docs_dir: Path | None,
+    project: str,
+    slug: str,
+) -> bool:
+    """Whether a whole-plan wait is met, by the roadmap's own rule.
+
+    A plan-level dependency clears when the plan is complete, or once every
+    section it declares is done or descoped — the plan's status stays active
+    until it is closed, which is later than its work is spent, so reading the
+    status alone parks dependents on a finished plan. The derivation is the one
+    the roadmap reports its own dependency rows from, so a wait and a ready
+    section edge cannot disagree about the same plan.
+    """
+    from reckon.roadmap import _plan_dependency_satisfied
+
+    try:
+        return bool(_plan_dependency_satisfied(dict(item), docs_dir, project, slug))
+    except Exception:  # noqa: BLE001 - an unreadable plan holds the wait
+        return False
+
+
 def _ref_state(
     ref: str,
     *,
@@ -1270,7 +1296,9 @@ def _ref_state(
         return PENDING
     status = str(item.get("workflow_status") or item.get("status") or "")
     if not section:
-        if status in COMPLETED_STATUSES:
+        if status in COMPLETED_STATUSES or _whole_plan_wait_satisfied(
+            item, docs_dir, target_project, slug
+        ):
             return SATISFIED
         if status in TERMINAL_STATUSES:
             return ABANDONED
