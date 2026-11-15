@@ -1,0 +1,38 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-11-15T00:51:27.724Z",
+  "dispatched_at": "2026-11-14T23:56:07Z",
+  "findings": [
+    {
+      "file": "reckon/crew/recovery_review_acceptance.py",
+      "line": 1432,
+      "severity": "non-blocking",
+      "text": "The receipt-collection path appends a refused promotion to the sweep's failed list without claiming the signature in _REPORTED_REFUSALS, so a refusal first observed there (a request that settles to promotion-refused before the sweep re-read the receipt) is logged once by that path and again by the settled path on the next sweep, giving two station lines where the change promises one. The node test drains between sweeps, so its request returns promotion-requested and the measured 2-to-1 line count never exercises this order."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261114T174722930584-a-refused-review-is-retried-only-when-it-moves/manifest.md",
+      "line": 16,
+      "severity": "non-blocking",
+      "text": "The tests field names a bare path rather than the literal gate command the record contract requires; promotion fills its gate receipt from that line and a path cannot be re-run. The two suite arms and the node-test log each carry their literal command in their own header, so the evidence is recoverable and the remedy is a one-line correction."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to remember a no-record review refusal until its pointer or run directory changes; reckon/crew/recovery_review_acceptance.py:781 derives the pair's identity with file_memo.file_signature and :807 shares the record read under it through file_memo.memoized_key, which is the goal implemented as stated.\nVERDICT done_when: the done_when names tests/test_a_refused_review_is_retried_only_when_it_moves.py and the gate asserts its measure; head-node-test.log records 1 search over three sweeps, 2 after the run directory moved and 1 station failure line with 1 passed EXIT=0, while negative-control-base.log records 6 and 8 with EXIT=1, so the declared base count of three is not matched and the manifest and evidence fragment say so.\nVERDICT write_paths: the reviewed run's prompt.txt:80-84 declares four paths and the diff touches three of them \u2014 reckon/crew/recovery_review_acceptance.py, tests/test_a_refused_review_is_retried_only_when_it_moves.py and docs/evidence/fragments/the-monitor-reads-each-fact-once/a-refused-review-is-retried-only-when-it-moves.html \u2014 with nothing outside them.\nVERDICT manifest: read; it records both suite arms as zero added failures with their log paths and digests as well as the negative-control log, the 1/2/1 head counts with the 6/8/2 base counts, and commits 09079a5ef6 and eec6e60d56.\nVERDICT diff: read commit by commit against base 1e767410b3; 09079a5ef6 adds the pointer-and-directory signature, the memoised delivery read, the once-per-signature refusal set and the 253-line test, and eec6e60d56 adds the 38-line evidence fragment, every hunk inside the declared scope.\nCALL_SITES: reckon/crew/resumption.py:2808, reckon/crew/promotion_requests.py:306, reckon/crew/recovery_review_acceptance.py:932, reckon/crew/station.py:396\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/recovery_review_acceptance.py:965 keys the shared read on the pointer's and the run directory's stat identity, which is exactly the \"until its pointer or its run directory changes\" the goal names.\nSCORE evidence: 15\nJUSTIFICATION evidence: tests/test_a_refused_review_is_retried_only_when_it_moves.py:249 asserts the three head counts and both suite arms are logged, but the done_when's declared base record-search figure is 3 and the measured base is 6.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every hunk of 09079a5ef6 and eec6e60d56 lies in one of the three declared paths, and the fourth declared path, the figure directory under docs/figures/, was not needed.\nSCORE durability: 18\nJUSTIFICATION durability: lines 249-253 of the test redden on a reverted memo (base logs 6 searches) and on a removed once-per-signature claim (base logs 2 station lines against the head's 1), and no assertion compares a value against the same variable the test itself passed in.\nSCORE fit: 18\nJUSTIFICATION fit: the new helpers at reckon/crew/recovery_review_acceptance.py:781-870 use the module's lazy-import idiom and file_memo's public API, and carry no plan, ticket or version label in source or comments.\nSCORE reuse: 18\nJUSTIFICATION reuse: the change extends reckon/file_memo.py:277 and :445 rather than forking them, and no owner exists for a per-identity refusal report \u2014 the search over reckon/crew found only review_records.py:192, a bespoke identity for a different read.\nFINDING reckon/crew/recovery_review_acceptance.py:1432 non-blocking: the receipt-collection path appends a refused promotion to failed without claiming its signature in _REPORTED_REFUSALS, so a refusal first observed there is logged once by that path and again by the settled path on the next sweep, giving two station lines where the change promises one.\nFINDING manifest.md:16 non-blocking: the tests field names a bare path instead of the literal gate command, which promotion cannot re-run as its gate receipt; the suite arms and the node-test log each carry their literal command in their own header, so the evidence is recoverable.",
+  "review_run_id": "r-20261114T215435518194-review-of-a-refused-review-is-retried-only-when-it-moves-eec6e60d5637",
+  "reviewed_base_sha": "1e767410b31149ecdabbecc716d8ef157b7a1b70",
+  "reviewed_head_sha": "eec6e60d5637c9b8d996ed6272449898945aee3b",
+  "reviewed_run_id": "r-20261114T174722930584-a-refused-review-is-retried-only-when-it-moves",
+  "scores": {
+    "durability": 18,
+    "evidence": 15,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 18,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-15T01:02:43.141341+00:00",
+  "total": 107
+}
