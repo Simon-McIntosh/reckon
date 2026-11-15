@@ -8,7 +8,7 @@ import signal
 import subprocess
 import sys
 import time
-from contextlib import nullcontext
+from contextlib import contextmanager, nullcontext
 from pathlib import Path
 
 import pytest
@@ -163,14 +163,27 @@ def test_registration_is_not_overwritten_after_a_successor_takes_the_seat(
     assert runs.read_watch_registration("sample").get("exit_record") is None
 
 
-def test_ticker_exit_records_the_actual_wait_stage(crew_home):
+@pytest.mark.parametrize("expose_record", [True, False])
+def test_ticker_exit_records_the_actual_wait_stage(
+    crew_home, monkeypatch, expose_record
+):
+    if not expose_record:
+        original = recovery_watch._watch_registration
+
+        @contextmanager
+        def registration(project, *args, **kwargs):
+            with original(project, *args, **kwargs) as (acquired, _watcher):
+                yield acquired, project
+
+        monkeypatch.setattr(recovery_watch, "_watch_registration", registration)
+
     def interrupted(_interval):
         raise RuntimeError("wait interrupted")
 
     with pytest.raises(RuntimeError, match="wait interrupted"):
         list(recovery_watch.watch_ticker("sample", sleeper=interrupted))
     receipt = runs.read_watch_registration("sample")["exit_record"]
-    assert receipt["last_stage"] == "waiting"
+    assert receipt["last_stage"] == ("waiting" if expose_record else "registered")
     assert receipt["exit_status"] == 1
     assert receipt["reason"] == "RuntimeError: wait interrupted"
 
