@@ -60,7 +60,11 @@ from reckon.crew.process_liveness import (
     LIVENESS_UNKNOWN,
     LivenessReading,
 )
-from reckon.crew.process_signal import _run_uses_step, signal_pending_step_client
+from reckon.crew.process_signal import (
+    _run_uses_step,
+    argv_uses_step,
+    signal_pending_step_client,
+)
 from reckon.crew.runs import (
     _mutate_pointer,
     _pointer_lock,
@@ -1054,21 +1058,6 @@ def remove_worker_scratch(
     return result
 
 
-def placed_step_argv(argv: Any) -> bool:
-    """Whether a launch argv runs as a step inside a held allocation.
-
-    A step's worker runs on the node the allocation is held on, which need not
-    be the host that composed the argv: a dispatch composes on the fleet node
-    and ``srun --jobid=...`` runs the worker beside the fleet job. So the
-    decision that used to be made by re-reading the argv at the launch site is
-    named once here, and the scratch directory's own rule is read from it.
-    """
-    words = [str(word) for word in (argv or ())]
-    if not words or Path(words[0]).name != "srun":
-        return False
-    return any(word.startswith("--jobid=") for word in words[1:])
-
-
 def _worker_runtime_environment(
     environment: Mapping[str, str] | None,
     *,
@@ -1135,7 +1124,7 @@ def _worker_runtime_plan(
             attempt_started_at=attempt_started_at,
             coordinator_session=coordinator_session,
             claude_headers=plan.dialect == "claude",
-            placed_step=placed_step_argv(plan.argv),
+            placed_step=argv_uses_step(plan.argv),
         ),
     )
 
@@ -1380,6 +1369,42 @@ def step_node_directories(
             continue
         index += 1
     return found
+
+
+def step_launch_environment(
+    environment: Mapping[str, str],
+    argv: Iterable[str],
+    *,
+    run_directory: str | Path,
+) -> dict[str, str]:
+    """The environment a placed step's worker is launched with.
+
+    A step's worker runs on the node the allocation is held on, not on the host
+    that composes the launch, so two facts have to reach the step's own wrapper
+    rather than the composer's disk: the record it writes its scheduler identity
+    to, which a stop addresses the task through, and the node-local directories
+    it creates before the fence is exec'd — among them the run's own scratch
+    directory, which the composing host deliberately does not create and the
+    fence grants anyway (see
+    :func:`reckon._worker_fence.worker_scratch_write_roots`). Composed here, in
+    one function, so the wiring that names the scratch is exercised by the same
+    call a launch makes and cannot be dropped unnoticed.
+
+    A launch that is not a step is returned unchanged: it runs on this host, and
+    that launch is what makes its own scratch directory.
+    """
+    staged = dict(environment or {})
+    if not argv_uses_step(argv):
+        return staged
+    step_record = Path(str(run_directory)) / "step-task.txt"
+    step_record.unlink(missing_ok=True)
+    staged["RECKON_STEP_RECORD"] = str(step_record)
+    node_directories = step_node_directories(
+        argv, expected=(staged.get("TMPDIR", ""),)
+    )
+    if node_directories:
+        staged[STEP_NODE_DIRS_ENV] = os.pathsep.join(node_directories)
+    return staged
 
 
 def apply_backend_placement(
@@ -4072,7 +4097,7 @@ def _supervisor_spawn_worker(spec: Mapping[str, Any]) -> int:
             )
         )
     argv = [str(word) for word in plan["argv"]]
-    step_placed = placed_step_argv(argv)
+    step_placed = argv_uses_step(argv)
     environment = _worker_runtime_environment(
         plan.get("environment") or {},
         run_id=str(spec["run_id"]),
@@ -4082,19 +4107,9 @@ def _supervisor_spawn_worker(spec: Mapping[str, Any]) -> int:
         claude_headers=str(plan.get("dialect") or "") == "claude",
         placed_step=step_placed,
     )
-    if step_placed:
-        step_record = Path(str(spec["run_directory"])) / "step-task.txt"
-        step_record.unlink(missing_ok=True)
-        environment["RECKON_STEP_RECORD"] = str(step_record)
-        # The run's own scratch directory is one of the fence's node-local bind
-        # sources and this host has deliberately not created it — it belongs to
-        # the node that runs the worker — so it is named here as a source the
-        # step's wrapper must make before the fence is exec'd.
-        node_directories = step_node_directories(
-            argv, expected=(environment["TMPDIR"],)
-        )
-        if node_directories:
-            environment[STEP_NODE_DIRS_ENV] = os.pathsep.join(node_directories)
+    environment = step_launch_environment(
+        environment, argv, run_directory=spec["run_directory"]
+    )
 
     writer = _worker_record_writer(spec)
 

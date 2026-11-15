@@ -12,12 +12,14 @@ step is told to make it on its own node before the fence is exec'd.
 
 from __future__ import annotations
 
+import os
+import subprocess
 from pathlib import Path
 
 import pytest
 
 from reckon import _backends
-from reckon.crew import dispatch_launch
+from reckon.crew import dispatch_launch, process_signal
 
 RUN_ID = "r-20261115T201500000000-place-owner"
 
@@ -118,17 +120,80 @@ def test_composing_a_launch_creates_no_scratch_for_a_worker_elsewhere(
     assert (str(owned), str(owned)) in grants
 
 
-def test_a_placed_step_is_told_to_make_its_scratch_on_its_own_node() -> None:
-    """The run's scratch reaches the step's wrapper even though it is absent here."""
-    owned = dispatch_launch.worker_scratch_dir(RUN_ID)
-    argv = _step_argv(owned)
+def test_a_placed_step_is_told_to_make_its_scratch_on_its_own_node(
+    tmp_path: Path, scratch_root: Path
+) -> None:
+    """The launch's own composition names the scratch, and the wrapper makes it.
 
+    Driven through ``step_launch_environment`` — the call a launch makes — so
+    the wiring that passes the run's scratch to ``step_node_directories`` is
+    what is under test, not a value the test hands to itself.
+    """
+    owned = dispatch_launch.worker_scratch_dir(RUN_ID)
+    run_directory = tmp_path / "crew" / "runs" / RUN_ID
+    run_directory.mkdir(parents=True)
+    environment = dispatch_launch.step_launch_environment(
+        {"TMPDIR": str(owned)},
+        _step_argv(owned),
+        run_directory=run_directory,
+    )
+
+    assert owned.parent == scratch_root
     assert not owned.exists()
-    named = dispatch_launch.step_node_directories(argv, expected=(owned,))
-    assert str(owned) in named
-    # Named by construction, not by observation: read only from this host's
-    # disk the scratch directory is absent, so nothing would name it.
-    assert dispatch_launch.step_node_directories(argv) == []
+    assert str(owned) in environment[dispatch_launch.STEP_NODE_DIRS_ENV].split(
+        os.pathsep
+    )
+    assert environment["RECKON_STEP_RECORD"] == str(run_directory / "step-task.txt")
+
+    # The wrapper the step runs is what creates it, so run the composed value
+    # and read the directory it leaves behind: the effect a source-only
+    # assertion cannot show.
+    completed = subprocess.run(
+        [
+            "/bin/sh",
+            "-c",
+            dispatch_launch._STEP_TASK_WRAPPER,
+            "sh",
+            "/bin/sh",
+            "-c",
+            'test -d "$1" && echo "made"',
+            "sh",
+            str(owned),
+        ],
+        env={**os.environ, **environment},
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert "made" in completed.stdout, completed.stderr
+    assert owned.is_dir()
+
+
+def test_the_step_question_has_one_owner(tmp_path: Path) -> None:
+    """Dispatch asks ``process_signal`` whether an argv is a step, and has
+    no second copy to fall out of step with it.
+
+    The signal path asks the same question of the argv a run recorded, so the
+    predicate lives there. A copy beside the composition would answer by its own
+    rule after the owner changed, and nothing else compares the two: this reads
+    the object dispatch reaches and the wording it decides on.
+    """
+    assert dispatch_launch.argv_uses_step is process_signal.argv_uses_step
+
+    run_directory = tmp_path / "crew" / "runs" / RUN_ID
+    run_directory.mkdir(parents=True)
+    environment = {"TMPDIR": str(dispatch_launch.worker_scratch_dir(RUN_ID))}
+
+    assert (
+        dispatch_launch.step_launch_environment(
+            environment, ["srun", "--overlap"], run_directory=run_directory
+        )
+        == environment
+    )
+    staged = dispatch_launch.step_launch_environment(
+        environment, ["srun", "--overlap", "--jobid=4242"], run_directory=run_directory
+    )
+    assert "RECKON_STEP_RECORD" in staged
 
 
 def test_a_worker_launched_as_the_launcher_child_still_gets_its_scratch(
