@@ -507,7 +507,10 @@ def _mutate_pointer(
     with _pointer_lock(run_id):
         previous = read_pointer(run_id)
         previous_attempt = int(previous.get("attempt") or 1)
+        previous_state = _acknowledgement_run_state(previous)
         record = mutation(previous)
+        if _acknowledgement_run_state(record) != previous_state:
+            record.pop(ACKNOWLEDGEMENT_FIELD, None)
         current_attempt = int(record.get("attempt") or 1)
         if current_attempt > previous_attempt:
             record["attempt_budget_seconds"] = _attempt_budget_seconds(run_id, record)
@@ -2112,6 +2115,52 @@ def record_run_disposition(
 ACKNOWLEDGEMENT_FIELD = "acknowledgement"
 
 
+def _acknowledgement_run_state(pointer: Mapping[str, Any]) -> dict[str, Any]:
+    """The lifecycle identity a deferral excuses, excluding observation times."""
+    return {
+        "phase": str(pointer.get("phase") or ""),
+        "attempt": int(pointer.get("attempt") or 1),
+    }
+
+
+def _acknowledgement_condition(value: Any) -> dict[str, Any] | None:
+    """Validate one named file or probe condition using the wait vocabulary."""
+    if value is None:
+        return None
+    from reckon.crew import recovery_wait
+
+    if isinstance(value, str):
+        try:
+            value = json.loads(value)
+        except ValueError as exc:
+            raise CrewError(
+                "--until-condition must be a JSON condition object"
+            ) from exc
+    if not isinstance(value, Mapping) or not str(value.get("condition") or "").strip():
+        raise CrewError("--until-condition requires a non-empty condition name")
+    files = recovery_wait._wait_file_paths(value.get("files"))
+    probe = recovery_wait._wait_probe(value.get("probe"))
+    terminal = recovery_wait._wait_terminal_values(value.get("terminal"))
+    if bool(files) == bool(probe):
+        raise CrewError(
+            "--until-condition requires either files or a probe with terminal states"
+        )
+    if files:
+        refusal = recovery_wait._wait_file_shape_refusal(value.get("files"))
+    else:
+        refusal = recovery_wait._wait_probe_shape_refusal(value.get("probe"))
+        if not terminal:
+            refusal = "a condition probe requires terminal states"
+    if refusal:
+        raise CrewError(f"--until-condition: {refusal}")
+    return {
+        "condition": str(value["condition"]).strip(),
+        "files": files,
+        "probe": probe,
+        "terminal": terminal,
+    }
+
+
 def record_run_acknowledgement(
     run_id: str,
     reason: str,
@@ -2119,6 +2168,7 @@ def record_run_acknowledgement(
     *,
     project: str | None = None,
     session: str | None = None,
+    until_condition: Any = None,
 ) -> dict[str, Any]:
     """Record a deliberate deferral of one run's obligations.
 
@@ -2144,6 +2194,10 @@ def record_run_acknowledgement(
         "until": deadline.isoformat(),
         "recorded_at": _utc_now(),
     }
+    condition = _acknowledgement_condition(until_condition)
+    if condition is not None:
+        deferral["until_condition"] = condition
+        deferral["worktree"] = str(Path.cwd().resolve())
     if not pointer_path(run_id).exists():
         return _record_promoted_acknowledgement(run_id, deferral, project=project)
 
@@ -2160,7 +2214,11 @@ def record_run_acknowledgement(
                 f"live run {run_id!r} belongs to session {pointer_session!r}, "
                 f"not {session!r}"
             )
-        pointer[ACKNOWLEDGEMENT_FIELD] = deferral
+        pointer[ACKNOWLEDGEMENT_FIELD] = {
+            **deferral,
+            "run_state": _acknowledgement_run_state(pointer),
+            "worktree": str(pointer.get("worktree") or Path.cwd().resolve()),
+        }
         return pointer
 
     return _mutate_pointer(run_id, record)
@@ -2401,7 +2459,31 @@ def _record_promoted_acknowledgement(
 def run_acknowledgement(pointer: Mapping[str, Any]) -> dict[str, Any] | None:
     """Return one pointer's recorded deferral, or None when it has none."""
     recorded = pointer.get(ACKNOWLEDGEMENT_FIELD)
+    if (
+        isinstance(recorded, Mapping)
+        and "run_state" in recorded
+        and recorded["run_state"] != _acknowledgement_run_state(pointer)
+    ):
+        return None
     return dict(recorded) if isinstance(recorded, Mapping) else None
+
+
+def release_run_acknowledgement(
+    run_id: str, expected: Mapping[str, Any], *, promoted: bool = False
+) -> None:
+    """End only the deferral observed by the reader, preserving a concurrent ack."""
+    with _pointer_lock(run_id):
+        path = acknowledgement_path(run_id) if promoted else pointer_path(run_id)
+        try:
+            payload = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            return
+        if promoted:
+            if payload == expected:
+                path.unlink()
+        elif payload.get(ACKNOWLEDGEMENT_FIELD) == expected:
+            payload.pop(ACKNOWLEDGEMENT_FIELD)
+            _write_json(path, payload)
 
 
 STATUS_REPAIR_RECORD_NAME = "status-repair.json"
