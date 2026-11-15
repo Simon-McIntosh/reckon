@@ -25,7 +25,7 @@
   <title>The Monitor Reads Each Fact Once | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="303">
+<meta name="plan-version" content="304">
 <meta name="plan-modified" content="2026-11-15">
 </head>
 <body>
@@ -1260,6 +1260,9 @@ staged paths.</p>
 </div>
 <div class="r-comment" data-section="s55" data-id="c-run-r-20261115T013130038919-review-of-a-classify-pass-walks-the-process-table-once-79d3951c37f3" data-who="reckon-build" data-when="2026-11-15T02:25:00.052Z">
     <div class="r-comment-body"><p>reviewed 287b37eb72..79d3951c37 against b8abf8233c: classify_tick now opens the existing process_table_walk_once region, the gate measures 1 walk over 40 pointers at head against 40 at base, and the record scores 19/18/20/19/19/20 with no findings.</p></div>
+</div>
+<div class="r-comment" data-section="s55" data-id="c-run-r-20261114T211925581758-a-classify-pass-walks-the-process-table-once" data-who="reckon-build" data-when="2026-11-15T01:14:18.675Z">
+    <div class="r-comment-body"><p>classify_tick opens process_signal.process_table_walk_once around the whole pass, so the environment scan behind a dead-looking pointer lists /proc once per pass rather than once per pointer: the gate measures 1 walk over 40 live pointers at head against 40 at base, with every verdict equal to the base revision&#x27;s and the live-carrier pointer alive in both arms.</p></div>
 </div>
 <div class="r-comment" data-section="s6" data-id="c-run-r-20261024T125322878212-the-station-ingests-only-new-bytes" data-who="reckon-build" data-when="2026-10-24T13:09:00.668Z">
     <div class="r-comment-body"><p>stream ingest reads only bytes past its stored offset with a 64-byte tail anchor and a stored last-read size, refolding on a changed inode, a size below the consumed offset, a size below the last-read size, or a moved anchor; five recorded streams replayed as 93 appends fold equal to a full fold with 0 per-tick byte-bound violations, descriptors equal across 50 event writes, gate 24 passed exit 0 against base 15 passed exit 0</p></div>
