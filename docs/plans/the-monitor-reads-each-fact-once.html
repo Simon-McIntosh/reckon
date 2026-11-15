@@ -25,7 +25,7 @@
   <title>The Monitor Reads Each Fact Once | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="324">
+<meta name="plan-version" content="325">
 <meta name="plan-modified" content="2026-11-15">
 </head>
 <body>
@@ -1276,6 +1276,9 @@ staged paths.</p>
 </div>
 <div class="r-comment" data-section="s50" data-id="c-run-r-20261115T105410282535-review-of-pointer-reads-own-records-s50-19b6422bd8ed" data-who="reckon-build" data-when="2026-11-15T11:26:38.779Z">
     <div class="r-comment-body"><p>review of r-20261114T170959850917-pointer-reads-own-records-s50 (base e02fcb57c82fa6686df286dde11028130d3e4cf8, head 19b6422bd8ed3b7231e021bc0d2569f2d257e6ab) stored as a parsed record scoring goal_fidelity 18, evidence 17, scope_discipline 20, durability 14, fit 18, reuse 5, with added_failure_count 0 and three non-blocking findings (one reuse duplication, one untested maintenance path, one manifest job-id mismatch).</p></div>
+</div>
+<div class="r-comment" data-section="s50" data-id="c-run-r-20261114T170959850917-pointer-reads-own-records-s50" data-who="reckon-build" data-when="2026-11-15T10:28:23.367Z">
+    <div class="r-comment-body"><p>reckon/crew/review_records.py maintains a per-run name map in the staging store&#x27;s index document and answers review_run_record_names() from it, and recovery_memo._review_input_identities() asks that map first, so a pointer examines its own records&#x27; names and never lists or stat-views the store.</p></div>
 </div>
 <div class="r-comment" data-section="s51" data-id="c-run-r-20261114T145903203877-review-of-an-unchanged-index-is-parsed-once-47fa61555489" data-who="reckon-build" data-when="2026-11-14T15:39:21.676Z">
     <div class="r-comment-body"><p>review of r-20261114T134655530222 stored parsed at the source run's review-records, six dimensions scored (total 94/120), added_failure_count 0 from its own population arms and a head re-run, with two non-blocking reuse findings at review_records.py:2004 and :2053.</p></div>
