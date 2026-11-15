@@ -1,0 +1,53 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": "reckon/crew/promotion.py:_complete_locked, reckon/crew/pending_landing.py:_reviewed_head",
+  "completed_at": "2026-11-15T10:37:36.520Z",
+  "dispatched_at": "2026-11-15T10:08:17Z",
+  "findings": [
+    {
+      "file": "reckon/crew/promotion.py",
+      "line": 339,
+      "severity": "non-blocking",
+      "text": "_retire_the_landed_pointer is a one-line forwarder to pending_landing.retire_the_landed_pointer; the indirection adds a module hop for a capability the owner already exposes."
+    },
+    {
+      "file": "reckon/crew/pending_landing.py",
+      "line": 272,
+      "severity": "non-blocking",
+      "text": "finish_a_promoted_head calls merge._rev_parse, merge._is_ancestor and merge._current_branch, all private to reckon/crew/merge.py; a rename there breaks this silently, since no test exercises the private-name contract directly."
+    }
+  ],
+  "justifications": {
+    "durability": "logs/negative-control.log shows tests/test_a_raced_promotion_still_lands.py::test_two_promotions_of_one_implementation_land_it_once failing in 2.18s when the landing step is no-op'd, so the assertion reddens on the regression rather than tracking a value the test itself supplied.",
+    "evidence": "logs/baseline-arm.log (afca608a, 4 failed 10 passed) and logs/after-arm.log (2aac3ecc, 4 failed 11 passed) record the two arms, and logs/base-new-test.log shows the new test failing at base in 2.35s with the pending_landing_repair CrewError.",
+    "fit": "reckon/crew/pending_landing.py:243 follows the surrounding module's style and helper naming; reckon/crew/promotion.py:339 adds a forwarder beside the guard it decorates.",
+    "goal_fidelity": "reckon/crew/promotion.py:2300 calls _finish_the_landing_the_row_owed on the already_promoted path, which is the raced-promotion state the goal names.",
+    "reuse": "reckon/crew/pending_landing.py:272 delegates the merge to merge.land and the pointer retirement to runs.pointer_path/_pointer_lock, extending the owning modules rather than reimplementing them.",
+    "scope_discipline": "every path in git diff afca608a..4d589adac is one of the four declared write paths; no unrelated file is touched."
+  },
+  "project": "reckon",
+  "review_run_id": "r-20261115T100656544555-review-of-wave4-clive-anchored-a-landing-never-waits-on-s11-4d589adaccc6",
+  "reviewed_base_sha": "afca608a195eb2df7d2f4b5f5262cee0712aba6e",
+  "reviewed_head_sha": "4d589adaccc60f9f244e23d002094d0f689c2f21",
+  "reviewed_run_id": "r-20261114T151341994124-wave4-clive-anchored-a-landing-never-waits-on-s11",
+  "scores": {
+    "durability": 19,
+    "evidence": 18,
+    "fit": 16,
+    "goal_fidelity": 19,
+    "reuse": 19,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-15T10:38:41.630208+00:00",
+  "total": 110,
+  "verdicts": {
+    "diff": "VERDICT diff: read commit by commit against base afca608a; 2aac3ecc adds the landing helpers and the test, 4d589adac records the evidence fragment, 440 insertions across 4 files.",
+    "done_when": "VERDICT done_when: the done_when names a two-promotion case; tests/test_a_raced_promotion_still_lands.py:test_two_promotions_of_one_implementation_land_it_once asserts the second promotion lands the head and retires the pointer.",
+    "goal": "VERDICT goal: the goal is that a racing promotion lands the reviewed head its row names; reckon/crew/promotion.py:_finish_the_landing_the_row_owed does exactly that on the already_promoted path.",
+    "manifest": "VERDICT manifest: read; it states the after-arm log and the base-arm log and a negative control, and the logs on disk carry the same revisions and exit codes.",
+    "write_paths": "VERDICT write_paths: the declared paths are promotion.py, pending_landing.py, the raced-promotion test and the evidence fragment; all four files in the diff are inside that scope."
+  }
+}
