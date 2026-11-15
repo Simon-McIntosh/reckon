@@ -29,7 +29,7 @@ import pytest
 from click.testing import CliRunner
 
 from reckon.cli import main
-from reckon.crew import review
+from reckon.crew import review, review_records
 
 PROJECT = "claims-review-fixture"
 REVIEWED_RUN = "r-read-only-fixture"
@@ -100,17 +100,33 @@ def test_every_claims_record_stored_for_this_session_passes(tmp_path: Path) -> N
         assert _findings(result) == []
 
 
-def test_a_claims_record_missing_a_claim_is_refused(tmp_path: Path) -> None:
-    """A skipped re-run is refused, and the promotion rule refuses it too."""
+def test_a_claims_record_missing_a_claim_is_refused_naming_the_claim(
+    tmp_path: Path,
+) -> None:
+    """A skipped re-run is named by rank, and the promotion rule refuses it too."""
     record = _claims_record()
     record["claims"] = [claim for claim in record["claims"] if claim["rank"] != "2"]
     result = _check(record, tmp_path)
     assert result.exit_code == 1, result.output
-    assert any("too few claim verdicts" in f for f in _findings(result)), _findings(
-        result
-    )
+    # The refusal names the claim the reviewer skipped, so the repair brief can
+    # say which re-run is owed rather than how many verdicts are missing.
+    assert any(
+        "claim 2" in finding and "no verdict for" in finding
+        for finding in _findings(result)
+    ), _findings(result)
     assert not any("report's summary" in f for f in _findings(result))
     assert not _review_is_complete(record)
+
+
+def test_the_refusal_names_every_claim_left_unanswered(tmp_path: Path) -> None:
+    """Two skipped re-runs are named one by one, not counted."""
+    record = _claims_record()
+    record["claims"] = [claim for claim in record["claims"] if claim["rank"] == "1"]
+    result = _check(record, tmp_path)
+    assert result.exit_code == 1, result.output
+    assert any(
+        "no verdict for claims 2, 3" in finding for finding in _findings(result)
+    ), _findings(result)
 
 
 def _review_is_complete(record: dict) -> bool:
@@ -194,6 +210,81 @@ def test_a_claims_record_missing_its_summary_verdict_is_refused(tmp_path: Path) 
         "no verdict for the report's summary" in finding
         for finding in _findings(result)
     )
+
+
+# ── Both remaining readers fold the spelling before judging the record ──────
+
+
+def _stored(path: Path, record: dict) -> Path:
+    path.write_text(json.dumps(record), encoding="utf-8")
+    return path
+
+
+def test_the_store_selects_a_hand_written_record_as_complete(tmp_path: Path) -> None:
+    """The store's completeness rank folds the spelling before it judges."""
+    incomplete = _stored(tmp_path / "a.json", _claims_record(claims=[]))
+    complete_record = _claims_record()
+    complete_record["claim_verdicts"] = complete_record.pop("claims")
+    complete = _stored(tmp_path / "b.json", complete_record)
+
+    # Read the way the store reads them, then rank them the way it ranks them.
+    assert review_records._record_reads_complete(json.loads(complete.read_text()))
+    selected, _record = review_records._select_stored_record(
+        [incomplete, complete], BASE_SHA
+    )
+    assert selected == complete
+
+
+def test_the_classifier_reads_a_hand_written_claims_record_as_delivered(
+    home: Path,
+) -> None:
+    """An exited review whose filed record is a claims record reads delivered."""
+    from reckon.crew import recovery_classification, runs
+    from reckon.crew.dispatch_launch import REVIEW_FILED_RECORD_NAME
+
+    directory = Path(runs.run_dir(REVIEW_RUN))
+    directory.mkdir(parents=True, exist_ok=True)
+    (directory / "attempt.json").write_text(
+        json.dumps({"run_id": REVIEW_RUN, "attempt": 2}), encoding="utf-8"
+    )
+    record = dict(_HAND_WRITTEN_SPELLING_RECORD)
+    assert "claims" not in record
+    stored = _stored(directory / "filed-review-2.json", record)
+    filed = directory / f"attempt-2-{REVIEW_FILED_RECORD_NAME}"
+    filed.write_text(
+        json.dumps({"run_id": REVIEW_RUN, "attempt": 2, "filed": [str(stored)]}),
+        encoding="utf-8",
+    )
+    pointer = {"run_id": REVIEW_RUN, "role": "review", "project": PROJECT}
+
+    assert recovery_classification._filed_review_record(pointer, alive=False) == (
+        filed,
+        stored,
+    )
+
+
+def test_the_classifier_still_refuses_a_hand_written_record_missing_a_claim(
+    home: Path,
+) -> None:
+    """The fold admits an answered record, not any record under that spelling."""
+    from reckon.crew import recovery_classification, runs
+    from reckon.crew.dispatch_launch import REVIEW_FILED_RECORD_NAME
+
+    directory = Path(runs.run_dir(REVIEW_RUN))
+    directory.mkdir(parents=True, exist_ok=True)
+    (directory / "attempt.json").write_text(
+        json.dumps({"run_id": REVIEW_RUN, "attempt": 2}), encoding="utf-8"
+    )
+    skipped = _claims_record(claims=[])
+    skipped["claim_verdicts"] = skipped.pop("claims")
+    stored = _stored(directory / "filed-review-2.json", skipped)
+    (directory / f"attempt-2-{REVIEW_FILED_RECORD_NAME}").write_text(
+        json.dumps({"run_id": REVIEW_RUN, "attempt": 2, "filed": [str(stored)]}),
+        encoding="utf-8",
+    )
+    pointer = {"run_id": REVIEW_RUN, "role": "review", "project": PROJECT}
+
+    assert recovery_classification._filed_review_record(pointer, alive=False) is None
 
 
 # ── The scored contract is unchanged ────────────────────────────────────────

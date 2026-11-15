@@ -476,7 +476,11 @@ def _filed_review_record(
     record, and a run of any other role files none. The record named is the
     first store entry :func:`_review_is_complete` accepts — a stored review
     holding every measurement its rubric demands, read through the one
-    predicate that owns that question rather than a spelling of its own — keyed
+    predicate that owns that question rather than a spelling of its own, and
+    with its claim verdicts folded to the canonical key first by the same
+    :func:`reckon.crew.review.with_canonical_claims` the store's read path
+    applies, so a claims record a reviewer wrote by hand is read on the answers
+    it gave — keyed
     on the attempt the run's own marker names so a record filed by a superseded
     attempt cannot stand in for the attempt running now. Returns the receipt's
     path and the store record's path, or None when nothing eligible is filed.
@@ -491,6 +495,7 @@ def _filed_review_record(
     # Imported here rather than at module scope: the supervisor's module reaches
     # back into the recovery package, so a top-level import would close the loop.
     from reckon.crew.dispatch_launch import REVIEW_FILED_RECORD_NAME
+    from reckon.crew.review import with_canonical_claims
 
     filed_path = (
         _run_directory(record) / f"attempt-{attempt}-{REVIEW_FILED_RECORD_NAME}"
@@ -513,7 +518,9 @@ def _filed_review_record(
             stored = json.loads(stored_path.read_text(encoding="utf-8"))
         except (OSError, ValueError):
             continue
-        if isinstance(stored, Mapping) and _review_is_complete(stored):
+        if isinstance(stored, Mapping) and _review_is_complete(
+            with_canonical_claims(stored)
+        ):
             return filed_path, stored_path
     return None
 
