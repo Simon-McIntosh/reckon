@@ -268,10 +268,29 @@ def _remove_promoted_pointer(run_id: str, record: Mapping[str, Any]) -> bool:
         return False
     if outcome != pending_landing.POINTER_RETIRED:
         raise CrewError(
-            f"run {run_id!r} changed while promotion ran; "
-            "its pointer and workspace are preserved; retry promotion"
+            f"run {run_id!r} changed while promotion ran"
+            f"{_newer_attempt_named(run_id, record)}; its pointer and "
+            "workspace are preserved; retry promotion"
         )
     return True
+
+
+def _newer_attempt_named(run_id: str, record: Mapping[str, Any]) -> str:
+    """Name the attempt a later launch recorded, for a refusal that kept it.
+
+    A cleanup that found the pointer belonging to another attempt preserves it,
+    and the attempt number is what tells a coordinator which launch owns the run.
+    The refusal says which field moved, so a pointer that changed for any other
+    reason still reads as the generic mismatch it is.
+    """
+    try:
+        current = read_pointer(run_id)
+    except CrewError:
+        return ""
+    attempt = current.get("attempt")
+    if attempt is None or attempt == record.get("attempt"):
+        return ""
+    return f": attempt {attempt} was recorded after this promotion read the pointer"
 
 
 def _keep_pointer_for_pending_landing(run_id: str) -> bool:
@@ -2640,6 +2659,11 @@ def discard(run_id: str, *, allowed_phases: Sequence[str] = ()) -> dict[str, Any
     phases, tested against the record re-read under the lock, so a caller whose
     own pre-check raced a test sees a launch as the refusal it is rather than
     removing a run that has started.
+
+    A run whose attempt is still in flight is refused for the same reason: a
+    reservation names the launch the pointer has not recorded yet, and an
+    attempt that has ended — an exit receipt, or a supervisor this host
+    probes dead — holds nothing, so only a live one refuses.
     """
     with _promotion_lock(run_id), _pointer_lock(run_id):
         record = read_pointer(run_id)
@@ -2656,6 +2680,21 @@ def discard(run_id: str, *, allowed_phases: Sequence[str] = ()) -> dict[str, Any
             raise CrewError(
                 f"cannot discard live run {run_id!r}: recorded pid {pid} is alive"
             )
+        # The pointer's pid is one account of what holds the run and it is not
+        # always the worker's: a resume's attempt is recorded on its
+        # reservation before the pointer learns the pid, and a supervisor that
+        # exited early takes the pointer's pid with it. The attempt's own
+        # reservation is the other account, and an attempt that has recorded
+        # either its end or a process this host probes gone holds nothing, so
+        # only a live attempt refuses here.
+        from reckon.crew.dispatch_launch import (
+            _reservation_refusal,
+            held_launch_reservation,
+        )
+
+        held = held_launch_reservation(run_dir(run_id))
+        if held is not None:
+            raise _reservation_refusal(run_id, held)
         path = pointer_path(run_id)
         # Before the pointer goes: a reader that sees the absence must find the
         # record behind it, and a record written afterwards leaves a window in

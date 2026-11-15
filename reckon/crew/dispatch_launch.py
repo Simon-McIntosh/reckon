@@ -2610,15 +2610,33 @@ def reservation_in_flight(
 
     Before one is recorded, the reserving process itself is the launch, and
     while it lives the launch is in flight, including a launch still waiting for
-    a scheduler slot. A live reserving process is not by itself enough to hold
-    the attempt forever, though: an attempt that recorded no supervisor and
-    left no worker record and is older than
-    :data:`UNREACHED_LAUNCH_BOUND_SECONDS` never reached its worker, and its
-    reservation stops holding the run so a relaunch can be admitted. Age frees
-    only that shape — a reservation naming a supervisor, or one whose attempt
-    left a worker record, is held on its liveness alone.
+    a scheduler slot.
+
+    The attempt's own exit receipt answers for all of it: a reservation whose
+    attempt recorded its end holds nothing, whatever process it names, because
+    the launch that receipt describes is over.
+
+    A live reserving process is not by itself enough to hold the attempt
+    forever, though: an attempt that recorded no supervisor and left no worker
+    record and is older than :data:`UNREACHED_LAUNCH_BOUND_SECONDS` never
+    reached its worker, so age frees that shape too — a reservation naming a
+    supervisor, or one whose attempt left a worker record, is otherwise held on
+    its liveness alone.
     """
     if not isinstance(payload, Mapping):
+        return False
+    # An attempt that recorded its own end holds nothing, whatever process the
+    # reservation names. The hold scan asks this as well, but a launch also
+    # asks about one attempt at a time — the reservation standing where it is
+    # about to write its own, or an attempt a caller names on its own — and
+    # those questions never reach that scan, so an ended attempt still refused
+    # them.
+    reserved = attempt if isinstance(attempt, int) else _attempt_number(payload)
+    if (
+        run_directory is not None
+        and reserved is not None
+        and _reserved_attempt_ended(run_directory, reserved)
+    ):
         return False
     holder_running = _reservation_holder_running(payload)
     if payload.get("supervisor_pid") is not None:
@@ -2700,19 +2718,26 @@ def _reserved_attempt_ended(run_directory: Path, attempt: int) -> bool:
     written to shared storage, and it is the same fact a launch on another host
     is freed by.
 
-    Read through the strict exit-receipt reader: a truncated receipt, or one
-    naming no run, is not this attempt's account of its end and frees nothing.
-    """
-    from reckon.crew.recovery_liveness import _run_exit_record
+    Read from the directory the caller holds, never from one resolved again out
+    of this process's own crew home: the launcher hands a door the run
+    directory it is working in, and a process whose crew home is elsewhere — the
+    station's overlay home, a reader inspecting a peer's run afterwards — would
+    otherwise report every receipt absent and refuse the launch the receipt was
+    written for.
 
-    return (
-        _run_exit_record(
-            {"run_id": run_directory.name},
-            f"attempt-{attempt}-exit.json",
-            require_run_id=True,
+    Read under the strict rule the exit-record owner applies: a truncated
+    receipt, or one naming no run, is not this attempt's account of its end and
+    frees nothing.
+    """
+    try:
+        payload = json.loads(
+            (run_directory / f"attempt-{attempt}-exit.json").read_text(encoding="utf-8")
         )
-        is not None
-    )
+    except (OSError, ValueError):
+        return False
+    if not isinstance(payload, Mapping):
+        return False
+    return str(payload.get("run_id") or "") == run_directory.name
 
 
 def held_launch_reservation(
