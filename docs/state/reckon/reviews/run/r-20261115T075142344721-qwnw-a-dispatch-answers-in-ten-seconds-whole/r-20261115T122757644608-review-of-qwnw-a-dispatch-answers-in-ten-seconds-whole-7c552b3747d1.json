@@ -1,0 +1,88 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "d45930c3b8272ba50691f1f0bd2f38dd5ed3e9f6",
+  "call_site_count": 6,
+  "call_sites": [
+    "reckon/crew_run_commands.py:2589 change_lane (crew lane move)",
+    "reckon/crew/dispatch_sessions.py:1679 change_lane",
+    "reckon/crew/dispatch_sessions.py:1741 re-plan enters discovery_without_git_dates",
+    "reckon/crew/dispatch_batch.py:873 queue_batch enters it",
+    "reckon/crew/dispatching/fences.py:290 dispatch preview enters it",
+    "reckon/serve.py:1593 and :1626 discover_plans reads the flag"
+  ],
+  "completed_at": "2026-11-15T12:55:23.661Z",
+  "dimension_dispositions": {},
+  "dispatched_at": "2026-11-15T12:32:14Z",
+  "findings": [
+    {
+      "file": "tests/test_a_batch_derives_the_project_once.py",
+      "line": "208",
+      "severity": "non-blocking",
+      "text": "non-blocking: the added assertion exercises a batch dispatch, which the preceding commit already suppressed, so it does not guard this delta; removing the scope in reckon/crew/dispatch_sessions.py:1741, or reverting the flag at reckon/serve.py:1561 to a module global, leaves every test green, and a test that drove change_lane and counted the two git lookups as a mutation detector would fail on either."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-a-dispatch-answers-in-ten-seconds-whole.html",
+      "line": "66",
+      "severity": "non-blocking",
+      "text": "non-blocking: the timing table measures ten previews that all answered a scope-conflict refusal, not the five queued dispatches and five dry runs the done_when names, and its own limit paragraph at :89 concedes discovery reads zero on that path, so the arm cannot support a claim about a dispatch's ten-second bound."
+    },
+    {
+      "file": "new-tests-head.log",
+      "line": "1",
+      "severity": "non-blocking",
+      "text": "non-blocking: the head receipt's rev line names c64eda538257 from a hardcoded argument in the run's decorate-logs.sh rather than from the tree it ran, and the test it reports green (test_a_dispatch_reads_no_git_history) does not exist at that revision, so the receipt cannot be reproduced from the revision it names; after-suite-head-2.log:1 has the same defect."
+    },
+    {
+      "file": "manifest.md",
+      "line": "tests",
+      "severity": "non-blocking",
+      "text": "non-blocking: the tests line carries an unsubstituted arm-tree placeholder and names tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py, which the new test never ran under; the literal command that ran the new test is the one in new-tests-head.log and is not this line."
+    },
+    {
+      "file": "manifest.md",
+      "line": "changed_paths",
+      "severity": "non-blocking",
+      "text": "non-blocking: the manifest declares complete while its changed_paths omits tests/test_a_batch_derives_the_project_once.py and both commits under review (654a6c8b9c, 7c552b3747), and its after_suite revision is c64eda5382, so the suite arm it records covers neither of them."
+    }
+  ],
+  "head_log_revision": "c64eda538257dfdc343c4bf9b2c049877da600d5",
+  "item_aggregate": "six items read; five verdicts plus the call-site read, no item absent.",
+  "item_verdicts": {
+    "diff": "read 654a6c8b9c and 7c552b3747 against base c64eda538257; the first wraps change_lane's plan_dispatch call in discovery_without_git_dates() and replaces the module global with a ContextVar at reckon/serve.py:1561, the second rewrites the fragment with the ten-preview table, the bound-not-met statement and a profile of the residual; no other file changes.",
+    "done_when": "the done_when asks for five queued dispatches and five dry runs with every wall time under ten seconds plus a worktree batch counting one derivation; the fragment at :66 substitutes ten previews that all answered a scope-conflict refusal, so the timing clause measures a path that derives no project, while the batch clause is met by tests/test_a_batch_derives_the_project_once.py:167.",
+    "goal": "the delta from c64eda5382 to 7c552b3747 closes the last path that bypassed the history suppression and makes the suppression flag context-local; reckon/crew/dispatch_sessions.py:1741 now wraps the lane-change re-plan, but the node goal of a dispatch answering in under ten seconds is still unmet, and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-a-dispatch-answers-in-ten-seconds-whole.html:89 records all ten previews at 10.88-17.04 s.",
+    "manifest": "read at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T075142344721-qwnw-a-dispatch-answers-in-ten-seconds-whole/manifest.md; it reports status complete and names its logs, but its tests line carries an unsubstituted arm-tree placeholder and names a pair of files that excludes the new test, and its after_suite revision is c64eda5382, so no suite gate covers the two commits under review.",
+    "write_paths": "the manifest declares docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-a-dispatch-answers-in-ten-seconds-whole.html and the figures directory; the four files the two commits under review touch (the fragment, reckon/crew/dispatch_sessions.py, reckon/serve.py, tests/test_a_batch_derives_the_project_once.py) are inside the node's granted scope, though the manifest's own changed_paths lists neither the test file nor these two commits."
+  },
+  "justifications": {
+    "durability": "tests/test_a_batch_derives_the_project_once.py:208 guards only the batch suppression, so removing the scope at reckon/crew/dispatch_sessions.py:1741 or reverting the ContextVar at reckon/serve.py:1561 reddens no test.",
+    "evidence": "the timing arm at docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-a-dispatch-answers-in-ten-seconds-whole.html:66 runs ten previews that answer a scope-conflict refusal rather than the queued dispatches the done_when names, and the head receipt new-tests-head.log:1 stamps revision c64eda5382 on a run of a test that does not exist at that revision.",
+    "fit": "the function-level import at reckon/crew/dispatch_sessions.py:1732 matches the shape already used at reckon/crew/dispatch_batch.py:867 and reckon/crew/dispatching/fences.py:285, and its comment states the mechanism without a plan label.",
+    "goal_fidelity": "reckon/crew/dispatch_sessions.py:1741 removes the last bypass of the suppression, which is the node goal's mechanism, but the record at docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-a-dispatch-answers-in-ten-seconds-whole.html:89 shows 10.88-17.04 s, so the under-ten-second goal is not reached.",
+    "reuse": "the change extends the existing owner serve.discovery_without_git_dates rather than adding a second suppression mechanism; a search of reckon/ for history-suppression and git-date entry points found only that scope and its three enterers.",
+    "scope_discipline": "both commits touch only docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-a-dispatch-answers-in-ten-seconds-whole.html, reckon/crew/dispatch_sessions.py, reckon/serve.py and tests/test_a_batch_derives_the_project_once.py, all inside the node's granted scope."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the delta from c64eda5382 to 7c552b3747 closes the last path that bypassed the history suppression and makes the suppression flag context-local; reckon/crew/dispatch_sessions.py:1741 now wraps the lane-change re-plan, but the node goal of a dispatch answering in under ten seconds is still unmet, and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-a-dispatch-answers-in-ten-seconds-whole.html:89 records all ten previews at 10.88-17.04 s.\nVERDICT done_when: the done_when asks for five queued dispatches and five dry runs with every wall time under ten seconds plus a worktree batch counting one derivation; the fragment at :66 substitutes ten previews that all answered a scope-conflict refusal, so the timing clause measures a path that derives no project, while the batch clause is met by tests/test_a_batch_derives_the_project_once.py:167.\nVERDICT write_paths: the manifest declares docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-a-dispatch-answers-in-ten-seconds-whole.html and the figures directory; the four files the two commits under review touch (the fragment, reckon/crew/dispatch_sessions.py, reckon/serve.py, tests/test_a_batch_derives_the_project_once.py) are inside the node's granted scope, though the manifest's own changed_paths lists neither the test file nor these two commits.\nVERDICT manifest: read at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T075142344721-qwnw-a-dispatch-answers-in-ten-seconds-whole/manifest.md; it reports status complete and names its logs, but its tests line carries an unsubstituted arm-tree placeholder and names a pair of files that excludes the new test, and its after_suite revision is c64eda5382, so no suite gate covers the two commits under review.\nVERDICT diff: read 654a6c8b9c and 7c552b3747 against base c64eda538257; the first wraps change_lane's plan_dispatch call in discovery_without_git_dates() and replaces the module global with a ContextVar at reckon/serve.py:1561, the second rewrites the fragment with the ten-preview table, the bound-not-met statement and a profile of the residual; no other file changes.\nCALL_SITES: reckon/crew_run_commands.py:2589 change_lane (crew lane move), reckon/crew/dispatch_sessions.py:1679 change_lane, reckon/crew/dispatch_sessions.py:1741 re-plan enters discovery_without_git_dates, reckon/crew/dispatch_batch.py:873 queue_batch enters it, reckon/crew/dispatching/fences.py:290 dispatch preview enters it, reckon/serve.py:1593 and :1626 discover_plans reads the flag\nSCORE goal_fidelity: 13\nJUSTIFICATION goal_fidelity: reckon/crew/dispatch_sessions.py:1741 removes the last bypass of the suppression, which is the node goal's mechanism, but the record at docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-a-dispatch-answers-in-ten-seconds-whole.html:89 shows 10.88-17.04 s, so the under-ten-second goal is not reached.\nSCORE evidence: 9\nJUSTIFICATION evidence: the timing arm at docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-a-dispatch-answers-in-ten-seconds-whole.html:66 runs ten previews that answer a scope-conflict refusal rather than the queued dispatches the done_when names, and the head receipt new-tests-head.log:1 stamps revision c64eda5382 on a run of a test that does not exist at that revision.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: both commits touch only docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-a-dispatch-answers-in-ten-seconds-whole.html, reckon/crew/dispatch_sessions.py, reckon/serve.py and tests/test_a_batch_derives_the_project_once.py, all inside the node's granted scope.\nSCORE durability: 8\nJUSTIFICATION durability: tests/test_a_batch_derives_the_project_once.py:208 guards only the batch suppression, so removing the scope at reckon/crew/dispatch_sessions.py:1741 or reverting the ContextVar at reckon/serve.py:1561 reddens no test.\nSCORE fit: 18\nJUSTIFICATION fit: the function-level import at reckon/crew/dispatch_sessions.py:1732 matches the shape already used at reckon/crew/dispatch_batch.py:867 and reckon/crew/dispatching/fences.py:285, and its comment states the mechanism without a plan label.\nSCORE reuse: 20\nJUSTIFICATION reuse: the change extends the existing owner serve.discovery_without_git_dates rather than adding a second suppression mechanism; a search of reckon/ for history-suppression and git-date entry points found only that scope and its three enterers.\nFINDING tests/test_a_batch_derives_the_project_once.py:208 non-blocking: the added assertion exercises a batch dispatch, which the preceding commit already suppressed, so it does not guard this delta; removing the scope in reckon/crew/dispatch_sessions.py:1741, or reverting the flag at reckon/serve.py:1561 to a module global, leaves every test green, and a test that drove change_lane and counted the two git lookups as a mutation detector would fail on either.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-a-dispatch-answers-in-ten-seconds-whole.html:66 non-blocking: the timing table measures ten previews that all answered a scope-conflict refusal, not the five queued dispatches and five dry runs the done_when names, and its own limit paragraph at :89 concedes discovery reads zero on that path, so the arm cannot support a claim about a dispatch's ten-second bound.\nFINDING new-tests-head.log:1 non-blocking: the head receipt's rev line names c64eda538257 from a hardcoded argument in the run's decorate-logs.sh rather than from the tree it ran, and the test it reports green (test_a_dispatch_reads_no_git_history) does not exist at that revision, so the receipt cannot be reproduced from the revision it names; after-suite-head-2.log:1 has the same defect.\nFINDING manifest.md:tests non-blocking: the tests line carries an unsubstituted arm-tree placeholder and names tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py, which the new test never ran under; the literal command that ran the new test is the one in new-tests-head.log and is not this line.\nFINDING manifest.md:changed_paths non-blocking: the manifest declares complete while its changed_paths omits tests/test_a_batch_derives_the_project_once.py and both commits under review (654a6c8b9c, 7c552b3747), and its after_suite revision is c64eda5382, so the suite arm it records covers neither of them.",
+  "review_run_id": "r-20261115T122757644608-review-of-qwnw-a-dispatch-answers-in-ten-seconds-whole-7c552b3747d1",
+  "reviewed_base_sha": "c64eda538257dfdc343c4bf9b2c049877da600d5",
+  "reviewed_head_sha": "7c552b3747d1afc608a7afc81c002f7314e9e128",
+  "reviewed_run_id": "r-20261115T075142344721-qwnw-a-dispatch-answers-in-ten-seconds-whole",
+  "reviewer": "review-of-qwnw-a-dispatch-answers-in-ten-seconds-whole-7c552b3747d1",
+  "reviewer_run_id": "r-20261115T122757644608-review-of-qwnw-a-dispatch-answers-in-ten-seconds-whole-7c552b3747d1",
+  "scores": {
+    "durability": 8,
+    "evidence": 9,
+    "fit": 18,
+    "goal_fidelity": 13,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-15T13:00:02.318031+00:00",
+  "total": 88
+}
