@@ -1,0 +1,89 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-15T14:01:23.763Z",
+  "dispatched_at": "2026-11-15T14:01:05Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/history-persists-as-detail-washes-out.html:382",
+      "id": "done_when-1",
+      "reason": "as written the node's only measure cannot be executed, so the worker must invent the reference arm (the last revision that tracked the files, or a materialised overlay) and the gate then proves whatever that constructed reference happened to contain, not the claim the section states.",
+      "text": "s24's done-when requires that, at a revision \"whose runs/ directory is absent\", velocity's figures \"equal those the same revision gives with the files present\", but a commit's tree is fixed, so one revision cannot carry both an absent runs/ directory and the files present, and the population it requires to be \"nonzero and equals the ledger's at that revision\" is empty by that same premise: velocity reads the ledger at a revision through `_read_ledger`, which returns `{}, None` with the documented consequence that a revision \"whose tree carries no ledger reads as a ledger with no runs and reports no digest rather than aborting\" (reckon/velocity.py:740-752), so the ledger's count at a revision without the ledger is zero and the equality arm has no reference to compare against",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/history-persists-as-detail-washes-out.html:402",
+      "id": "done_when-2",
+      "reason": "this control decides which marker the worker substitutes for index.json, and the plan names one that would reintroduce the defect being repaired while leaving the post-\u00a726 regression unguarded.",
+      "text": "s28's positive control, \"a repository with a run store and no tracked crew.json is still recognised\", names a marker no repository holds and no guard reads: the store resolves to `<config-home>/crew/run_store.db`, shared across projects (reckon/run_store.py:171-182), while both guards and the CLI entry key on repository-local `docs/state/<project>` markers only and say so deliberately \u2014 \"Reads only repository-local state \u2026 unaffected by what else is mounted here\" (reckon/hooks/native_agent_guard.py:84-105, reckon/hooks/worker_message_guard.py:47-60, reckon/cli_entry.py:377-388) \u2014 so the control is either vacuous or is met by adding host-level state to a repository-local predicate, which is the same class of false positive s28 exists to remove, while the false-negative direction it fences (a crew project carrying neither crew.json nor flight.yaml once \u00a726 removes the ledger) goes untested",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/history-persists-as-detail-washes-out.html:401",
+      "id": "reasoning-1",
+      "reason": "the sentence is background with no done-when requirement attached, so deleting it changes no deliverable a worker builds.",
+      "text": "s28's Why reports that \"repository_root's docstring still describes the two-file test the change replaced\", but the only definition, reckon/hooks/native_agent_guard.py:107-119, describes the upward walk and the `.git` boundary with no two-file wording, and no matching text survives in reckon/hooks/worker_message_guard.py, reckon/cli_entry.py or reckon/crew/dispatching/comparisons.py",
+      "type": "reasoning",
+      "would_change": false
+    }
+  ],
+  "plan_commit": "1b35ee68cc9495959be36ab98ff917b1a90d077d",
+  "plan_fingerprint": "2f794e1b69e7f6fd775be2112f7feb6c1ed8750eb1e6b743c9a5770c83a2e6d5",
+  "plan_slug": "history-persists-as-detail-washes-out",
+  "plan_version": 38,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "noted",
+      "by": "plan-review-reflex",
+      "finding": "reasoning-1",
+      "reason": "the sentence is background with no done-when requirement attached, so deleting it changes no deliverable a worker builds.",
+      "when": "2026-11-15T14:18:12.061350+00:00"
+    }
+  ],
+  "responses": {
+    "reasoning-1": {
+      "action": "noted",
+      "by": "plan-review-reflex",
+      "reason": "the sentence is background with no done-when requirement attached, so deleting it changes no deliverable a worker builds.",
+      "when": "2026-11-15T14:18:12.061350+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/plan-history-persists-as-detail-washes-out.v38.at-a2f6b404-r-20261115T134136376035-plan-review-of-h.json",
+  "review_run_id": "r-20261115T134136376035-plan-review-of-history-persists-as-detail-washes-out",
+  "reviewed_blob_sha": "a2f6b404d9899a85dd23b41c54a2ccc0a4bcc706",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 commit 0d421c7f75 resolves and is the \u00a725 landing; the members and holds tables in `_AUX_SCHEMA` (reckon/run_store.py:100-112), reap_idle_session_members (reckon/crew/routing.py:3461), record_hold_checks (reckon/ledger.py:4192) reached from reckon/budget.py:1936, reckon/velocity.py, docs/figures/plan-review-cycles/measure_review_cycles.py:333 and the map's three scripts/ readers all exist.",
+    "done_when": "a finding \u2014 s24's comparison at plan.html:382 asks one revision to carry both an absent runs/ directory and the files present, and s28's positive control at plan.html:402 names a run store as a repository-local marker.",
+    "evidence_paths": "pass \u2014 the three changed sections require new tests in the repository suite and cite committed fragments and run records; no evidence or gate log is placed on a session-scratch or node-local path.",
+    "naming": "pass \u2014 no plan label, ticket number or version tag enters a symbol, filename or comment in the changed text; every function the Why cites is a pre-existing symbol.",
+    "reasoning": "a finding \u2014 s28's Why at plan.html:401 records a repository_root docstring defect that does not reproduce in the reviewed tree.",
+    "single_goal": "pass \u2014 s23 delivers roster and holds storage, s24 revision-scoped history reads, s28 the docs-only false positive; s28's docstring sentence carries no done-when and adds no second deliverable.",
+    "wiring": "pass \u2014 s26's depends-on now lists s28 beside s21\u2013s25 (plan.html:29) and every listed id resolves to a section that exists, with s27 still waiting on s26."
+  },
+  "section_digests": {
+    "_document": "6a43111590c490cb96fbdbd1efbc232ec22261c8c21397d2d76e96d30f35b73d",
+    "s1": "16a4b0ff613308f968af13a86453cdda7611fbb4a0b662f0998319199f08c1f2",
+    "s2": "81ea5591beea9f0bfe0621b90127946f5c732b8471e2c5373404a592fa5daefe",
+    "s20": "469126d7a8d70994107c002b967dbf9da3c5237e4a3d05823281a9885c92731d",
+    "s21": "b2ec3716b6dd37a6a203c9b9d7c0be1209c9fa8d48d83ddcdf537eb47428cd4c",
+    "s22": "44eee72b2eb1fba73278d19280640ae85ab4fef9d1625113ca2a3cba0ae32c22",
+    "s23": "5f979f2ac2c694c8465c9b3b76743b70a3df967a1496488ebe45e96a41451c59",
+    "s24": "51b59458e8cd81fa0f4ec50949abfbbc28a66011e8947a787340b10893d1248e",
+    "s25": "6e50b703cae5c188d1fb24250a943eb5f654fc5c26334335a3a7288120690168",
+    "s26": "37c27b0d54e7bf1a99e322e08776a72ffa748c2b88388aaa51f267a1db5c358a",
+    "s27": "9d55fe84f9ee617248a7eec57379797bd44bc1cb050fc378d20ac1b3da8152b2",
+    "s28": "6ae02ae01b43f1f7c194f7fe938d7caf58443c655ee63273d4bd0252985569e4",
+    "s3": "3422a7a0a23c318e54716e2fbbaf99599e0142f7bbc74d9eb45f924541cd8ccf",
+    "s4": "6beff7af8378d0a3be80a490fb73cc8c5e6a8ee94449c98de40a252d2f57fcd5",
+    "s5": "0cd70cc30708f232bf564bff0e7825d783d5f5ab455747bfac40ebe742ea0ed3",
+    "s6": "5181e894e8b3823f366d0b459a48ecc8e236e645ca5b1f02071dfc0fdae47681",
+    "s7": "6173f16d89316af11f74c75b5bec44f90742582abf47efd7e72af7af3bb31b50"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-15T14:18:06.573117+00:00",
+  "total": null
+}
