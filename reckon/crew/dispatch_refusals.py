@@ -271,6 +271,27 @@ def record_launch_refusal(
     return path
 
 
+def mark_launch_requeued(run_id: str, *, home: str | Path | None = None) -> bool:
+    """Record that the request behind this release is back in the queue.
+
+    The release writes its record before it knows whether the launch came from a
+    queued request, so the re-queue — which is what authorises a second attempt
+    of that same request — marks the record once it lands. A release with the
+    mark admits a later attempt of the run; one without it fences the run for
+    the whole bound. The answer is whether a record was there to mark: a launch
+    the release gave back had no request to re-queue and holds nothing.
+    """
+    path = launch_refusal_path(run_id, home=home)
+    stored = launch_refusal(run_id, home=home)
+    if stored is None:
+        return False
+    stored["requeued"] = True
+    write_json_atomically(
+        path, stored, indent=2, sort_keys=True, mode=0o600, ensure_ascii=True
+    )
+    return True
+
+
 def launch_refusal(
     run_id: str, *, home: str | Path | None = None
 ) -> dict[str, Any] | None:
@@ -345,17 +366,21 @@ def _names_the_released_attempt(
 ) -> bool:
     """Whether the launch reaching its reservation now is the released attempt.
 
-    A release names the attempt whose claim it took: its registration, the
-    holder that published it, and the run's live claim is compared with that
-    name. A different claim of the same run is a later attempt — the request
-    the release put back in the queue, launching again — and is admitted. No
-    claim at all is the released attempt's own run: the requeue takes the claim
-    with it and nothing else publishes one for that attempt, so a launch that
-    resumes before a later attempt does is refused. A record written before the
-    attempt was named cannot be compared and holds for the whole fence.
+    A release names the attempt whose claim it took: its registration and the
+    holder that published it. A different claim of the same run is a later
+    attempt — the request the release put back in the queue, launching again —
+    and is admitted, but only for a release that recorded that re-queue: the
+    mark is what says a second attempt of this request was authorised, so a
+    launch of a released run the port gave back still waits out the whole bound.
+    No claim at all is the released attempt's own run: the requeue takes the
+    claim with it and nothing else publishes one for that attempt, so a launch
+    that resumes before a later attempt does is refused. A record written before
+    the attempt was named cannot be compared and holds as it did before.
     """
     named = refusal.get("attempt")
     if not isinstance(named, Mapping) or not named:
+        return True
+    if refusal.get("requeued") is not True:
         return True
     claim = _live_launch_claim(run_id, home=home)
     if not claim:

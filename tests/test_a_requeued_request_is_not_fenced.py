@@ -140,6 +140,18 @@ def test_the_requeued_request_s_next_attempt_is_admitted(crew_home):
     ).is_file()
 
 
+def test_a_release_with_no_requeue_still_fences_the_run(crew_home):
+    """A launch the release gave back authorises no second attempt, so a fresh
+    dispatch of the same id is refused as it was before."""
+    pointer, now = _stranded_request()
+    runs.clear_handover(pointer)
+    queue_admission._release_stranded_launches([pointer], now_seconds=now)
+    assert dispatch_refusals.launch_refusal(RUN_ID).get("requeued") is None
+    _next_attempt_publishes_its_claim(registered=time.time() + 1)
+    with pytest.raises(CrewError, match="released as a stranded launch"):
+        dispatch_refusals.refuse_a_released_launch(RUN_ID)
+
+
 def test_a_fence_that_names_no_attempt_holds_the_whole_run(crew_home):
     """A record written before attempts were named cannot be compared."""
     pointer, now = _stranded_request()

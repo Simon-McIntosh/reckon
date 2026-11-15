@@ -577,7 +577,10 @@ def _release_stranded_launches(
         )
         if _requeue_stranded_request(run_id, step=step):
             # A request this pass took from the queue goes back to it, with its
-            # brief and steering: nothing else would dispatch it again.
+            # brief and steering: nothing else would dispatch it again. The
+            # record says so, so its fence admits that request's next attempt
+            # while it still refuses the launch the release abandoned.
+            dispatch_refusals.mark_launch_requeued(run_id)
             released.append(run_id)
             if verdicts is not None:
                 verdicts.append(
