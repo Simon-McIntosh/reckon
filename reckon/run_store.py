@@ -291,6 +291,48 @@ def _split_durable(project: str, record: Mapping[str, Any]) -> tuple[str, dict, 
     return run_id, payload, detail
 
 
+def _auxiliary_rows(
+    connection: sqlite3.Connection, project: str
+) -> dict[str, list[dict[str, Any]]]:
+    return {
+        table: [
+            json.loads(row[0])
+            for row in connection.execute(
+                f'SELECT "payload" FROM "{table}" WHERE "project" = ? ORDER BY rowid',  # noqa: S608 - fixed auxiliary table names
+                (project,),
+            )
+        ]
+        for table in ("members", "holds")
+    }
+
+
+def read_auxiliary(project: str) -> tuple[dict[str, Any], int] | None:
+    """Read an imported mutable snapshot without creating or migrating a store.
+
+    An absent import marker leaves the aggregate as the readable projection.
+    Explicit mutable access imports it before any registration or hold write.
+    """
+    path = store_path()
+    if not path.is_file():
+        return None
+    connection = sqlite3.connect(f"{path.resolve().as_uri()}?mode=ro", uri=True)
+    try:
+        connection.execute("BEGIN")
+        if not connection.execute(
+            "SELECT 1 FROM sqlite_master WHERE name = 'store_meta'"
+        ).fetchone():
+            return None
+        found = connection.execute(
+            'SELECT "value" FROM "store_meta" WHERE "key" = ?',
+            (f"auxiliary:{project}",),
+        ).fetchone()
+        if found is None:
+            return None
+        return _auxiliary_rows(connection, project), int(found[0])
+    finally:
+        connection.close()
+
+
 class RunStore:
     """One embedded SQLite store, creating its schema on first use."""
 
@@ -376,16 +418,7 @@ class RunStore:
                 self._conn.execute(f'DROP TABLE "unscoped_{table}"')
 
     def _auxiliary_rows(self, project: str) -> dict[str, list[dict[str, Any]]]:
-        return {
-            table: [
-                json.loads(row[0])
-                for row in self._conn.execute(
-                    f'SELECT "payload" FROM "{table}" WHERE "project" = ? ORDER BY rowid',  # noqa: S608 - fixed auxiliary table names
-                    (project,),
-                )
-            ]
-            for table in ("members", "holds")
-        }
+        return _auxiliary_rows(self._conn, project)
 
     def _replace_auxiliary(self, project: str, data: Mapping[str, Any]) -> None:
         for table, identity, field in (

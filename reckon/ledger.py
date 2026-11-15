@@ -2482,8 +2482,15 @@ def load(
         use_index=use_index,
         headers_only=headers_only,
         activity_since=activity_since,
+        plan=plan,
     )
-    auxiliary, auxiliary_version = load_auxiliary(project, root)
+    from reckon import run_store
+
+    stored_auxiliary = run_store.read_auxiliary(project)
+    auxiliary, auxiliary_version = stored_auxiliary or (
+        {"members": data["members"], "holds": data["holds"]},
+        aggregate_version,
+    )
     return {
         **data,
         **auxiliary,
@@ -2499,6 +2506,7 @@ def _load_file_history(
     use_index: bool = True,
     headers_only: bool = False,
     activity_since: float | None = None,
+    plan: str | None = None,
 ) -> tuple[dict[str, Any], int]:
     """Read the union of aggregate and per-run records, refusing disagreements.
 
@@ -2600,7 +2608,7 @@ def _load_file_history(
     else:
         data, version = _load_aggregate(project, root)
         _merge_run_documents(project, root, data, refuse=True)
-    _merge_stored_rows(project, data, root=root)
+    _merge_stored_rows(project, data, root=root, plan=plan)
     if activity_since is not None:
         data["runs"] = _active_records(data["runs"], activity_since)
     if plan:

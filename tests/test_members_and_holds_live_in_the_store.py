@@ -50,8 +50,12 @@ def roster(tmp_path, monkeypatch):
 
 
 def _snapshot(root):
-    data, file_version = ledger.load(PROJECT, root=root)
-    return data["members"], data.get("auxiliary_version", file_version), data["holds"]
+    data, _file_version = ledger.load(PROJECT, root=root)
+    auxiliary, version = ledger.load_auxiliary(PROJECT, root=root)
+    assert data["members"] == auxiliary["members"]
+    assert data["holds"] == auxiliary["holds"]
+    assert data["auxiliary_version"] == version
+    return data["members"], version, data["holds"]
 
 
 def _tracked(root):
@@ -310,3 +314,61 @@ def test_aggregate_gate_update_uses_its_file_version_after_roster_mutation(
         ] == ["session-idle"]
     with pytest.raises(ledger.LedgerError, match="moved from version"):
         ledger.write(PROJECT, data, 7, root)
+
+
+@pytest.mark.parametrize("path_kind", ["uncached", "indexed", "stale"])
+def test_plan_selection_reaches_file_and_store_history(roster, monkeypatch, path_kind):
+    root, path = roster
+    envelope = json.loads(path.read_text())
+    envelope["data"]["runs"] = [
+        {"run_id": "file-selected", "plan": "selected"},
+        {"run_id": "file-other", "plan": "other"},
+    ]
+    path.write_text(json.dumps(envelope))
+    run_store.append(PROJECT, {"run_id": "store-selected", "plan": "selected"})
+    run_store.append(PROJECT, {"run_id": "store-other", "plan": "other"})
+    if path_kind == "stale":
+        ledger.load(PROJECT, root=root, plan="selected")
+
+        def unavailable(*args, **kwargs):
+            raise sqlite3.OperationalError("fixture index unavailable")
+
+        monkeypatch.setattr(ledger, "_indexed_data", unavailable)
+    merge = ledger._merge_stored_rows
+    selections = []
+
+    def merge_selected(project, data, **kwargs):
+        selections.append((kwargs.get("root"), kwargs.get("plan")))
+        return merge(project, data, **kwargs)
+
+    monkeypatch.setattr(ledger, "_merge_stored_rows", merge_selected)
+    data, version = ledger.load(
+        PROJECT, root=root, plan="selected", use_index=path_kind != "uncached"
+    )
+    assert sorted(row["run_id"] for row in data["runs"]) == [
+        "file-selected",
+        "store-selected",
+    ]
+    assert version == 7
+    assert selections == [(root, "selected")]
+
+
+def test_history_read_never_imports_or_migrates_mutable_state(roster, monkeypatch):
+    root, _path = roster
+    store_path = run_store.store_path()
+    assert not store_path.exists()
+    data, version = ledger.load(PROJECT, root=root)
+    assert data["members"] and data["holds"] and version == 7
+    assert not store_path.exists()
+    expected = ledger.load_auxiliary(PROJECT, root)
+
+    def refuse(*args, **kwargs):
+        raise AssertionError("a history read tried to construct a writable store")
+
+    monkeypatch.setattr(run_store.RunStore, "__init__", refuse)
+    data, version = ledger.load(PROJECT, root=root)
+    assert (
+        {"members": data["members"], "holds": data["holds"]},
+        data["auxiliary_version"],
+    ) == expected
+    assert version == 7

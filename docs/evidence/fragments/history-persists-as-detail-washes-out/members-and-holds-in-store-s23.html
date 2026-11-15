@@ -42,4 +42,21 @@
     control that reverses the answering product change while retaining these
     assertions.</p>
   </section>
+  <section id="members-and-holds-in-store-s23-selected-history">
+    <h4>Selected history stays selected after integration</h4>
+    <p>The merge with the primary branch reproduced the missing selection
+    argument: the requested two-file gate reported 28 failures and 8 passes,
+    with <code>NameError: name 'plan' is not defined</code> on the history-reader
+    path. The public reader now passes <code>plan</code> to its history helper,
+    whose indexed, last-good-index and store-merge paths receive the same
+    selection and root, including the uncached fallback.</p>
+    <p>Three checks cover selected file and store rows through indexed, stale
+    and uncached reads. A fourth check forbids constructing a writable store
+    during a history read. Imported mutable rows and their version are read in
+    a read-only transaction; when no import exists, a history read projects the
+    aggregate without creating a database. Explicit roster access still imports
+    the mutable state before a mutation and preserves it after aggregate
+    removal. The manifest records both requested reader files and the armed
+    gate at the repaired merged head.</p>
+  </section>
 </section>
