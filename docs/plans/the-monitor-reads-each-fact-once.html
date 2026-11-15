@@ -25,7 +25,7 @@
   <title>The Monitor Reads Each Fact Once | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="353">
+<meta name="plan-version" content="354">
 <meta name="plan-modified" content="2026-11-15">
 </head>
 <body>
@@ -1398,7 +1398,7 @@ staged paths.</p>
     <div class="r-comment-body"><p>Review of c2826574d3..ee6a0bdb7e stored parsed at r-20261115T141917805306-a-tick-hands-its-freed-memory-back.at-ee6a0bdb7ece19eeb945f68b07d69cef740d0982.json: six scores 15/15/20/12/19/20, 0 added failures, 2 non-blocking findings, and the plain record beside it carries the same verdict.</p></div>
 </div>
 <div class="r-comment" data-section="s64" data-id="c-run-r-20261115T141917805306-a-tick-hands-its-freed-memory-back" data-who="reckon-build" data-when="2026-11-15T14:46:36Z">
-    <div class="r-comment-body"><p>Station.tick runs its pass and then calls release_freed_memory(), asking the C library for malloc_trim(0) in a finally so a raising tick releases too and skipping the call where the symbol is absent; six census ticks at head read RSS 440/502/475/480/491/497 MB against base&#x27;s 580/636/705/739/747/752 MB, a sixth-tick ratio of 0.66, so the at-most-half bound is not met</p></div>
+    <div class="r-comment-body"><p>Station.tick runs its pass and then calls release_freed_memory(), asking the C library for malloc_trim(0) in a finally so a raising tick releases too and skipping the call where the symbol is absent; six census ticks at head read RSS 440/502/475/480/491/497 MB against base's 580/636/705/739/747/752 MB, a sixth-tick ratio of 0.66, so the at-most-half bound is not met</p></div>
 </div>
 <div class="r-comment" data-section="s7" data-id="c-run-r-20261026T205710583680-one-station-per-node-runs-the-tick" data-who="reckon-build" data-when="2026-10-26T21:33:14Z">
     <div class="r-comment-body"><p>Station command holds one node lock, seeds new verdicts without an event, and resumes transitions and three stored stream offsets after a kill; 5 focused tests passed, importer failure delta 0 across 57 files, and the lock mutation failed the integration case as declared. Fragment: docs/evidence/fragments/the-monitor-reads-each-fact-once/one-station-per-node-runs-the-tick.html</p></div>
@@ -1462,6 +1462,9 @@ staged paths.</p>
 </div>
 <div class="r-comment" data-section="s65" data-id="c-run-r-20261115T185928788172-review-of-a-tick-decodes-only-what-changed-de9764617822" data-who="reckon-build" data-when="2026-11-15T19:10:33.855Z">
     <div class="r-comment-body"><p>reviewed run r-20261115T142458653959-a-tick-decodes-only-what-changed at 2780ddad207d0d96a00114169e6a5f9730752227..de976461782243487412795636699ea23efe4f3a: parsed record with scores goal_fidelity 17, evidence 15, scope_discipline 17, durability 16, fit 19, reuse 19; three non-blocking findings (uncovered dialect write on freshly ingested rows, figure script outside the declared write paths, non-discriminating 600 MB census clause)</p></div>
+</div>
+<div class="r-comment" data-section="s66" data-id="c-run-r-20261115T195706357871-review-of-an-answer-the-tick-reads-is-never-evicted-da84a8a125c2" data-who="reckon-build" data-when="2026-11-15T20:03:07.675Z">
+    <div class="r-comment-body"><p>review of r-20261115T184907801020-an-answer-the-tick-reads-is-never-evicted at da84a8a125 (base e83210b8) scores goal_fidelity 19, evidence 15, scope_discipline 18, durability 18, fit 19, reuse 18, added failures 0, with one blocking finding (three test modules still call the deleted _git_answer_store_path, measured 2 failed plus 2 errors at head against 19 passed at base) and three non-blocking findings (a tautological added assertion, a base-arm tally that contradicts its own log, and a migration that deletes the legacy source its docstring promises to keep).</p></div>
 </div>
 </section>
 </main>

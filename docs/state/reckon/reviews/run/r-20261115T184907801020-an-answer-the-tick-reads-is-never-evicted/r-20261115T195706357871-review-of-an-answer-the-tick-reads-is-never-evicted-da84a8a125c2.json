@@ -1,0 +1,82 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own gate logs on disk: baseline_suite cites arm-base.log at e83210b8, whose summary line is '7 failed, 64 passed, 2 errors in 5.16s' with EXIT=1, and after_suite cites arm-head.log at 9e14588486, whose summary line is '76 passed in 39.77s' with EXIT=0 and no FAILED line, so the after arm's failure set is empty and the set difference is 0. The three fresh-process ids the base arm fails are named as pre-existing at base in the manifest's failure_attribution.",
+  "call_site_count": 6,
+  "call_sites": [
+    "reckon/crew/recovery_classification.py:1242 (classify_pointer reaches _commits_beyond_base at :1375/:1748/:2486 and _canonical_commits)",
+    "reckon/crew/recovery_liveness.py:1673 (_commits_beyond_base over a record)",
+    "reckon/crew/recovery_watch.py:1516 and :3904 (the watch pass classifies pointers, reaching _resolve_commit)",
+    "reckon/crew/recovery_review_subject.py:337 (_resolve_commit calls _remember_commit_answer, whose store this change replaces)",
+    "reckon/crew/station_subscriber.py:144 (classify_pointer)",
+    "reckon/serve.py:902 (crew.classify_pointer on the served page path)"
+  ],
+  "completed_at": "2026-11-15T20:03:07.675Z",
+  "dispatched_at": "2026-11-15T20:01:41Z",
+  "findings": [
+    {
+      "file": "tests/test_a_steady_tick_writes_no_known_answer.py",
+      "line": "54",
+      "severity": "blocking",
+      "text": "blocking: this module, with tests/test_the_station_reads_only_what_changed.py:327 and tests/test_recovery_store_locks_hold_across_nodes.py:104, still calls recovery_watch._git_answer_store_path(), which commit 9e14588486 deletes. Measured in an extraction of da84a8a125, the three files give '2 failed, 15 passed, 2 errors' with AttributeError: module 'reckon.crew.recovery_watch' has no attribute '_git_answer_store_path', against '19 passed' for the same three files at e83210b8, so the node lands four red test ids in files it was fenced out of and the migration it records under outside_scope has to land with this change rather than after it."
+    },
+    {
+      "file": "tests/test_an_answer_the_tick_reads_is_never_evicted.py",
+      "line": "263",
+      "severity": "non-blocking",
+      "text": "non-blocking: 'assert written_bytes <= first_path.stat().st_size' compares the summed post-pass size of the files the pass wrote against the size of that same file read at assertion time. Only first_path is written, so both sides are that one post-write size and the assertion holds whatever the code does: it cannot redden on a regression and adds no coverage. The guard that does bite is 'list(written) == [str(first_path)]' at :260."
+    },
+    {
+      "file": "docs/evidence/fragments/the-monitor-reads-each-fact-once/an-answer-the-tick-reads-is-never-evicted.html",
+      "line": "30",
+      "severity": "non-blocking",
+      "text": "non-blocking: the landed evidence states the base arm ran '3 failed, 68 passed, 2 errors', and the manifest's baseline_suite records failure_count 3, while the arm-base.log both cite ends '7 failed, 64 passed, 2 errors in 5.16s' with EXIT=1. The four extra failures are tests/test_every_shared_home_lock_holds_across_nodes.py, failing on 'git ls-tree ... HEAD' exit 128 in a scratch tree that is not a repository, and failure_attribution maps only one of the five such ids, so the committed record and its evidence misstate the receipt they name. It does not change added_failure_count, which is 0 because the after arm has no failure at all."
+    },
+    {
+      "file": "reckon/crew/recovery_watch.py",
+      "line": "294",
+      "severity": "non-blocking",
+      "text": "non-blocking: _migrate_legacy_git_answer_store promises at :283-285 that the single file is kept when an answer's file cannot be written, but the loop calls _update_git_answer_store, which returns silently on OSError, and the legacy file is then unlinked unconditionally. A failure that leaves the directory writable but one tree's write failing loses that tree's answers with nothing recorded, which is the one behaviour the docstring claims it prevents."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "verified 6 production call site(s)",
+    "diff": "Read commit by commit against e83210b8: 9e14588486 replaces the single-file store in the recovery_watch block with per-tree files, a per-tree lock, a whole-file bound and a one-time legacy migration, and moves two existing tests onto the per-tree path while repairing a stale argv-prefix stand-in; da84a8a125 adds only the 38-line evidence fragment.",
+    "done_when": "The done_when names tests/test_an_answer_the_tick_reads_is_never_evicted.py over a temporary crew home and a 600-commit repository, two passes with the in-process cache cleared, per-file (path, st_ino, st_mtime_ns, size) snapshots and a recording subprocess stand-in; tests/test_an_answer_the_tick_reads_is_never_evicted.py:167-217 asserts exactly those measures and gate.log at da84a8a125 records '18 passed in 81.58s' EXIT=0, which I re-ran as that file alone in an extraction of da84a8a125: '3 passed in 4.88s' EXIT=0.",
+    "goal": "The node goal is that an answer a later pass reads again is never evicted, held as one answer file per tree: reckon/crew/recovery_watch.py:134 adds _git_answer_store_dir, :139 names each file from a sha256 of the module's own tree path, :377 writes it under that file's own lock through a pid-suffixed temporary and os.replace, :329 bounds storage by removing whole files past 256, and :275 migrates a legacy single-file store once and removes it, so no per-candidate cap remains anywhere.",
+    "manifest": "Read; it records status complete, commits 9e14588486 and da84a8a125, the 600-commit measure, matched arms on all_debug and a negative control red with the three declared symptoms, all of which I confirmed against gate.log, arm-head.log and negative-control.log, except the base-arm tally, stated as 3 failures where arm-base.log prints 7 failed and 2 errors.",
+    "write_paths": "The declared paths are reckon/crew/recovery_watch.py, reckon/crew/recovery_review_subject.py, the three named test files, the evidence fragment and a figures directory; git diff --stat e83210b8 da84a8a125 changes five files, all inside that list, and recovery_review_subject.py and the figures directory are untouched."
+  },
+  "justifications": {
+    "durability": "the negative control restores the base module over the head tree and reddens all three cases with the declared symptoms, and my extraction of da84a8a125 shows them green, so the guards bite; one added assertion at tests/test_an_answer_the_tick_reads_is_never_evicted.py:263 is tautological and carries no force.",
+    "evidence": "gate.log and arm-head.log at 9e14588486 record 18 and 76 passed with EXIT=0 and I reproduced the named file green at da84a8a125, but the base arm the record cites says '7 failed, 64 passed, 2 errors' where the manifest and the evidence fragment both state 3 failures.",
+    "fit": "the additions keep recovery_watch.py's private-helper and docstring idiom, reuse the module's _GIT_ANSWER_ prefix, and the new test module follows the sibling tests' fixture and assertion-message style.",
+    "goal_fidelity": "reckon/crew/recovery_watch.py:139 gives each tree its own digest-named file and :329 removes whole files only, so a tree's stored answer is never evicted on its own, which is the section's deliverable; the migration's failure path at :294 is the one clause it does not enforce.",
+    "reuse": "the change extends the owners the module already uses (file_memo.memoized at :205-210, node_exclusive_lock.exclusive_lock at :85, _live_pointer_worktrees at :299); a search for a path-digest or atomic-JSON-write owner found only ad-hoc digests (reckon/serve.py:2268) and reckon/_store.py:616 write_json_atomically, whose inline temp-and-replace was already in this function before the diff.",
+    "scope_discipline": "every path in git diff e83210b8 da84a8a125 is inside the declared write paths and the change carries nothing the goal does not imply, though deleting _git_answer_store_path leaves three out-of-fence test modules calling a name that no longer exists."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is that an answer a later pass reads again is never evicted, held as one answer file per tree; reckon/crew/recovery_watch.py:134 adds _git_answer_store_dir, :139 names each file from a sha256 of the tree path, :377 writes it under that file's own lock through a pid-suffixed temporary and os.replace, :329 bounds storage by removing whole files past 256, and :275 migrates a legacy single-file store once and removes it, so no per-candidate cap remains.\nVERDICT done_when: the done_when names tests/test_an_answer_the_tick_reads_is_never_evicted.py over a temporary crew home and a 600-commit repository with two passes, per-file identity snapshots and a recording stand-in; that file asserts exactly those measures and gate.log at da84a8a125 records 18 passed EXIT=0, and I re-ran the file alone in an extraction of da84a8a125 for 3 passed EXIT=0.\nVERDICT write_paths: the declared paths name recovery_watch.py, recovery_review_subject.py, three test files, the evidence fragment and a figures directory; the diff changes five files, all inside that list, with recovery_review_subject.py and the figures directory untouched.\nVERDICT manifest: read; it records status complete, commits 9e14588486 and da84a8a125, the 600-commit measure, matched arms and a red negative control with the three declared symptoms, all confirmed against the logs except the base-arm tally, stated as 3 failures where arm-base.log prints 7 failed and 2 errors.\nVERDICT diff: read commit by commit against e83210b8; 9e14588486 replaces the single-file store in the recovery_watch block with per-tree files, a per-tree lock, a whole-file bound and a one-time legacy migration, moves two existing tests onto the per-tree path and repairs a stale argv-prefix stand-in, and da84a8a125 adds only the evidence fragment.\nCALL_SITES: reckon/crew/recovery_classification.py:1242, reckon/crew/recovery_liveness.py:1673, reckon/crew/recovery_watch.py:1516, reckon/crew/recovery_watch.py:3904, reckon/crew/recovery_review_subject.py:337, reckon/crew/station_subscriber.py:144, reckon/serve.py:902\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/recovery_watch.py:139 gives each tree its own digest-named file and :329 removes whole files only, so a stored answer is never evicted on its own, except that the migration's failure path at :294 does not keep the source as its docstring claims.\nSCORE evidence: 15\nJUSTIFICATION evidence: gate.log and arm-head.log record 18 and 76 passed with EXIT=0 and I reproduced the named file green at da84a8a125, but the base arm the record cites says 7 failed and 2 errors where the manifest and evidence fragment both state 3 failures.\nSCORE scope_discipline: 18\nJUSTIFICATION scope_discipline: every path in git diff e83210b8 da84a8a125 is inside the declared write paths, though deleting _git_answer_store_path leaves three out-of-fence test modules calling a name that no longer exists.\nSCORE durability: 18\nJUSTIFICATION durability: the negative control restores the base module and reddens all three cases with the declared symptoms while my extraction of da84a8a125 shows them green, but the added assertion at tests/test_an_answer_the_tick_reads_is_never_evicted.py:263 is tautological.\nSCORE fit: 19\nJUSTIFICATION fit: the additions keep recovery_watch.py's private-helper and docstring idiom and reuse its _GIT_ANSWER_ prefix, and the new test module follows the sibling tests' fixture and assertion-message style.\nSCORE reuse: 18\nJUSTIFICATION reuse: the change extends file_memo.memoized at recovery_watch.py:205 and node_exclusive_lock.exclusive_lock at :85 rather than forking them, and a search for a path-digest or atomic-JSON-write owner found only ad-hoc digests and reckon/_store.py:616, whose inline temp-and-replace predates this diff.\nFINDING tests/test_a_steady_tick_writes_no_known_answer.py:54 blocking: this module, with tests/test_the_station_reads_only_what_changed.py:327 and tests/test_recovery_store_locks_hold_across_nodes.py:104, still calls recovery_watch._git_answer_store_path(), which commit 9e14588486 deletes; measured in an extraction of da84a8a125 the three files give 2 failed and 2 errors on that name against 19 passed at e83210b8.\nFINDING tests/test_an_answer_the_tick_reads_is_never_evicted.py:263 non-blocking: the assertion compares the summed post-pass size of the written files against the size of that same file read at assertion time, so both sides are one post-write size and it cannot redden on any regression; list(written) == [str(first_path)] at :260 is the guard that bites.\nFINDING docs/evidence/fragments/the-monitor-reads-each-fact-once/an-answer-the-tick-reads-is-never-evicted.html:30 non-blocking: the landed evidence and the manifest state the base arm ran 3 failed with 68 passed, while arm-base.log ends 7 failed, 64 passed, 2 errors, four of those in tests/test_every_shared_home_lock_holds_across_nodes.py from git ls-tree exit 128 and left unattributed.\nFINDING reckon/crew/recovery_watch.py:294 non-blocking: _migrate_legacy_git_answer_store promises at :283-285 that the source is kept when an answer's file cannot be written, but the loop's writes return silently on OSError and the legacy file is then unlinked unconditionally.\n",
+  "review_node": "review-of-an-answer-the-tick-reads-is-never-evicted-da84a8a125c2",
+  "review_run_id": "r-20261115T195706357871-review-of-an-answer-the-tick-reads-is-never-evicted-da84a8a125c2",
+  "reviewed_base_sha": "e83210b89b0172304e3a86b6cd949038eb06de16",
+  "reviewed_head_sha": "da84a8a125c2329a73f619515dd7ca8259911c2f",
+  "reviewed_run_id": "r-20261115T184907801020-an-answer-the-tick-reads-is-never-evicted",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash",
+    "reviewer_run_id": "r-20261115T195706357871-review-of-an-answer-the-tick-reads-is-never-evicted-da84a8a125c2"
+  },
+  "scores": {
+    "durability": 18,
+    "evidence": 15,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 18,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-15T20:19:01.618535+00:00",
+  "total": 107
+}
