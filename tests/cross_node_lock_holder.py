@@ -10,6 +10,7 @@ with ``flock`` alone sees the lock free and proceeds, where a site taking
 
 from __future__ import annotations
 
+import contextlib
 import subprocess
 import sys
 from collections.abc import Iterator
@@ -53,8 +54,6 @@ def record_lock_held_elsewhere(lock_path: Path) -> Iterator[subprocess.Popen[str
         yield holder
     finally:
         if holder.stdin is not None:
-            try:
+            with contextlib.suppress(BrokenPipeError, ValueError):
                 holder.stdin.close()
-            except (BrokenPipeError, ValueError):
-                pass
         holder.wait(timeout=60)
