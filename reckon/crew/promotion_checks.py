@@ -20,7 +20,7 @@ from reckon import (
 from reckon._plan_html import section_record_id
 from reckon._schema import is_implementable_section
 from reckon._timestamps import parse_iso
-from reckon.crew import plan_review, rollout
+from reckon.crew import manifest_faults, plan_review, rollout
 from reckon.crew import review as review_module
 from reckon.crew.dispatch import (
     _backend_settings,
@@ -585,6 +585,29 @@ def _require_recognised_manifest_status(run_id: str, record: Mapping[str, Any]) 
         raise ManifestParseError(
             f"run {run_id!r} cannot be promoted: {refusal}"
         ) from refusal
+
+
+def _require_no_manifest_fault(run_id: str, record: Mapping[str, Any]) -> None:
+    """Refuse a manifest fault the worker's own check already names.
+
+    A fault that is still in the file at promotion is a fault the worker could
+    not repair, so the refusal here repeats the reason the check emits rather
+    than describing the same defect a second way: the rule is asked once and its
+    own text is carried forward, with the run id in front of it. The faults this
+    covers are the ones judged from the manifest alone — a commit entry that is
+    not one revision, an arm revision that is a spelling, a gate command naming
+    an absolute path under the temporary directory.
+
+    A manifest that is absent or not fresh has no verdict to judge and is left
+    to the arms that read its absence.
+    """
+    manifest = _fresh_manifest(record)
+    if manifest is None:
+        return
+    reasons = [fault.reason for fault in manifest_faults.manifest_faults(manifest)]
+    if not reasons:
+        return
+    raise CrewError(f"run {run_id!r} cannot be promoted: " + "; ".join(reasons))
 
 
 def _require_no_png_twin_of_an_svg(run_id: str, record: Mapping[str, Any]) -> None:

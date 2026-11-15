@@ -60,6 +60,7 @@ import yaml
 
 from reckon import doccheck, ledger
 from reckon._plan_html import SECTION_NUMBER_PATTERN
+from reckon.crew import manifest_faults
 from reckon.crew import review as review_module
 from reckon.crew.node import (
     NEEDS_HELP_FIELDS,
@@ -2744,6 +2745,10 @@ def audit_manifest(
             shape = _flat_suite_record_finding(name, observation)
             if shape:
                 findings.append(shape)
+    # The faults promotion refuses with its own words hours later, read here
+    # while the worker still holds the turn that can repair them. The rules and
+    # their reasons live in one module so the two readers cannot drift apart.
+    findings.extend(fault.reason for fault in manifest_faults.manifest_faults(manifest))
     if status == "complete" and suite_armed:
         for name in ("baseline_suite", "after_suite"):
             observation = manifest.get(name)
