@@ -1195,6 +1195,8 @@ def armed_observations(
     timeout: float = DEFAULT_MEASURE_TIMEOUT_SECONDS,
     project: str = "",
     config: Mapping[str, Any] | None = None,
+    partition: str = "",
+    long_partition: str = "",
 ) -> dict[str, Any]:
     """Run the armed command at both revisions and return each as an observation.
 
@@ -1228,7 +1230,14 @@ def armed_observations(
 
         config = flight.resolve(project or None, checkout_path=str(tree)).config
     landing = config.get("landing") or {}
-    partition = str(landing.get("measure_partition") or "")
+    # A run whose gate declared its partition measures there, ahead of the
+    # project's own measure partition: the arms were only comparable on the
+    # partition the declaration names, so a measurement anywhere else would
+    # re-ask a question the declaration already answers.
+    partition = str(partition or landing.get("measure_partition") or "")
+    long_partition = str(
+        long_partition or landing.get("measure_long_partition") or "rigel"
+    )
     if partition:
         runner = _partition_runner(
             runner,
@@ -1237,7 +1246,7 @@ def armed_observations(
             base_sha=base_sha,
             head_sha=head_sha,
             partition=partition,
-            long_partition=str(landing.get("measure_long_partition") or "rigel"),
+            long_partition=long_partition,
             test_files=node_tests,
         )
         runner.partitioned = True
