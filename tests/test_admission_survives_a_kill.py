@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import collections
+import json
 import multiprocessing
 import os
 import signal
@@ -12,8 +13,12 @@ from pathlib import Path
 
 import pytest
 
-from reckon.crew import queue_admission, runs
+from reckon.crew import dispatch_launch, queue_admission, runs
+from reckon.crew.admission import interrupted
+from reckon.crew.admission import service as admission_service
+from reckon.crew.node import CrewError
 from tests import test_a_queued_launch_keeps_the_run_record as fixtures
+from tests import test_a_queued_run_launches_once as spawn_fixtures
 
 
 @pytest.fixture
@@ -65,6 +70,8 @@ def _interrupted_pass(stage, channel, resolve):
         return pid
 
     runs.write_handover = handover
+    if stage == "before-admission-stamp":
+        queue_admission._stamp_admission = lambda *args, **kwargs: barrier()
     queue_admission.admit_once(config_for=resolve, launcher=launch)
     channel.send("finished")
 
@@ -77,6 +84,7 @@ def _interrupted_pass(stage, channel, resolve):
         "during-launch",
         "worker-started",
         "missing-pointer",
+        "before-admission-stamp",
     ],
 )
 def test_a_killed_pass_keeps_every_request_and_launches_each_once(
@@ -139,6 +147,7 @@ def test_a_killed_pass_keeps_every_request_and_launches_each_once(
                     stage,
                     row,
                 )
+            assert runs.dispatch_field(row, "admit_request")["run_id"] == row["run_id"]
         assert collections.Counter(launches) == dict.fromkeys(request_ids, 1), (
             stage,
             launches,
@@ -159,3 +168,99 @@ def test_a_killed_pass_keeps_every_request_and_launches_each_once(
         for worker in workers:
             worker.terminate()
             worker.wait(timeout=10)
+
+
+@pytest.mark.parametrize("moved", ["queued", "new-attempt"])
+def test_a_delayed_supervisor_refuses_a_recovered_attempt(tmp_path, monkeypatch, moved):
+    directory = spawn_fixtures.queued_run.__wrapped__(tmp_path, monkeypatch)
+    spec = spawn_fixtures._spec(directory)
+    original = dispatch_launch._worker_runtime_environment
+
+    def recover_between_the_read_and_spawn(*args, **kwargs):
+        pointer = runs.read_pointer(spawn_fixtures.RUN_ID)
+        if moved == "queued":
+            pointer["phase"] = "queued"
+        else:
+            pointer["attempt_started_at"] = "2026-11-08T00:00:00Z"
+        runs._write_json(runs.pointer_path(spawn_fixtures.RUN_ID), pointer)
+        return original(*args, **kwargs)
+
+    monkeypatch.setattr(
+        dispatch_launch,
+        "_worker_runtime_environment",
+        recover_between_the_read_and_spawn,
+    )
+    stream = directory / "stream.jsonl"
+    stream.write_text("retained stream\n")
+    with pytest.raises(
+        CrewError, match="no longer names this supervisor's launch attempt"
+    ):
+        dispatch_launch._supervisor_spawn_worker(spec)
+    assert stream.read_text() == "retained stream\n"
+    assert not (directory / "worker.json").exists()
+
+
+@pytest.mark.parametrize("owner", ["live-local", "foreign"])
+def test_recovery_keeps_a_handover_whose_owner_it_cannot_prove_dead(admit_repo, owner):
+    request = fixtures._queued_request(admit_repo, node_id="owned", run_id="r-owned")
+    runs.queue_dispatch(request)
+    identity = admission_service._admitting_pass_identity()
+    if owner == "foreign":
+        identity.update(host="another-node.invalid", pid=999999999)
+    runs.write_handover(request, admitted_by=identity)
+    runs.pointer_path("r-owned").unlink()
+    assert interrupted.recover() == []
+    assert runs.find_handover("r-owned") is not None
+    assert not runs.pointer_path("r-owned").exists()
+
+
+def test_recovery_never_resurrects_a_recorded_discard(admit_repo):
+    from reckon.crew import promotion
+
+    request = fixtures._queued_request(
+        admit_repo, node_id="discarded", run_id="r-discarded"
+    )
+    runs.queue_dispatch(request)
+    identity = admission_service._admitting_pass_identity()
+    identity.update(pid=spawn_fixtures._dead_pid(), pid_start_time=None)
+    runs.write_handover(request, admitted_by=identity)
+    promotion._write_discard_record("r-discarded", request)
+    runs.pointer_path("r-discarded").unlink()
+    assert promotion.discard_recorded("r-discarded")
+    assert interrupted.recover() == []
+    assert not runs.pointer_path("r-discarded").exists()
+    assert runs.find_handover("r-discarded") is None
+
+
+def test_recovery_adopts_the_supervisors_process_group_from_the_worker_receipt(
+    tmp_path, monkeypatch
+):
+    directory = spawn_fixtures.queued_run.__wrapped__(tmp_path, monkeypatch)
+    run_id = spawn_fixtures.RUN_ID
+    request = runs.read_pointer(run_id)
+    request.update(phase="queued", queued_at=runs._utc_now())
+    request.pop("pid", None)
+    request.pop("pid_start_time", None)
+    identity = admission_service._admitting_pass_identity()
+    identity.update(pid=spawn_fixtures._dead_pid(), pid_start_time=None)
+    runs.write_handover(request, admitted_by=identity)
+    spec = spawn_fixtures._spec(directory)
+    spec["plan"]["argv"] = [
+        sys.executable,
+        "-c",
+        'import time; print(\'{"type":"thread.started"}\', flush=True); time.sleep(120)',
+    ]
+    pid = dispatch_launch._supervisor_spawn_worker(spec)
+    try:
+        worker = json.loads((directory / "worker.json").read_text())
+        assert worker["pid"] == pid
+        assert worker["supervisor_pid"] == os.getpid()
+        assert interrupted.recover() == [run_id]
+        adopted = runs.read_pointer(run_id)
+        assert adopted["pid"] == worker["supervisor_pid"]
+        assert adopted["pid_start_time"] == worker["supervisor_pid_start_time"]
+        assert adopted["phase"] == "working"
+        assert runs.find_handover(run_id) is None
+    finally:
+        os.kill(pid, signal.SIGTERM)
+        os.waitpid(pid, 0)
