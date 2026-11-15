@@ -111,4 +111,40 @@
   copied into the test as fixtures rather than re-derived from the run
   directories, so they measure the shapes live reviewers wrote rather than the
   store as it moves.</p>
+  <h3 id="rorp-s3-spelling-fold">Repair: the spelling is folded once, at the read boundary</h3>
+
+  <p>Calling the owner directly closed the split but left it reading only the
+  parser's <code>claims</code> key, so a stored record that states three
+  verdicts under <code>claim_verdicts</code> was refused as incomplete by both
+  readers — a review that answered every claim it was asked about, refused
+  twice. The folding belongs at the boundary the readers share, not in either
+  of them.</p>
+
+  <p><code>with_canonical_claims</code> folds the hand-written spelling onto the
+  parser's key once. The store's read path applies it, so every promotion
+  consumer — the classifier, the gate, the obligations pass — asks the same
+  field, and the delivery check applies the same function before calling the
+  rule. One fold, one rule, one answer.</p>
+
+  <table id="rorp-s3-fold-rows">
+    <thead><tr><th>arm</th><th>result</th></tr></thead>
+    <tbody>
+      <tr><td>after suite at the repair head</td>
+        <td><strong>75 passed</strong>, <code>EXIT=0</code></td></tr>
+      <tr><td>baseline suite at <code>bb45282b</code></td>
+        <td>55 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>negative control: the test file at <code>bb45282b</code></td>
+        <td><strong>13 failed, 7 passed, <code>EXIT=1</code></strong>, every
+        hand-written-spelling case among them</td></tr>
+      <tr><td>guided control: the fold removed from the check</td>
+        <td>2 failed, <code>EXIT=1</code> — the two hand-written-spelling tests
+        and nothing else</td></tr>
+    </tbody>
+  </table>
+
+  <p>The stored nova record is carried in the test as a fixture and passes the
+  delivery check on its own content. A second test stores it and reads it back
+  through <code>read_review</code>, asserting the promotion reader receives a
+  complete record — the fold is what admits it, not a second rule.</p>
+
 </section>
