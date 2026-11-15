@@ -1151,7 +1151,9 @@ def run_ids(project: str, root: str | Path | None = None) -> set[str]:
     current = _indexed_run_ids(project, root)
     if current is not None:
         return current
-    if _run_index_path(project, root).is_file():
+    if _run_index_path(project, root).is_file() or store_answers(project, root):
+        # A project answering from the run store has no aggregate rows and no
+        # membership to read from the index, so the union is what names it.
         data, _version = load(project, root, headers_only=True)
     else:
         data, _version = _load_aggregate(project, root)
@@ -2209,7 +2211,141 @@ def _ledger_holds_content(project: str, root: str | Path | None) -> bool:
     aggregate = ledger_path(project, root)
     if aggregate.exists():
         return True
-    return next((aggregate.parent / "runs").glob("*.json"), None) is not None
+    return run_directory_holds_records(project, root)
+
+
+def run_directory_holds_records(project: str, root: str | Path | None) -> bool:
+    """Whether the directory beside the aggregate carries any run document.
+
+    A ``runs`` directory that exists and holds no document carries no record:
+    it is the state of a project that has been initialised and never run a
+    worker, or one whose documents now answer from the run store.
+    """
+    return (
+        next((ledger_path(project, root).parent / "runs").glob("*.json"), None)
+        is not None
+    )
+
+
+def _store_archive_path(path: Path) -> Path:
+    """The separate database a store retires its older rows into."""
+    return path.with_name(f"{path.stem}.archive{path.suffix}")
+
+
+def _stored_run_rows(project: str) -> list[dict[str, Any]]:
+    """Every run the run store holds for one project, its detail re-joined.
+
+    The store splits a record into the durable payload and the wide detail it
+    keeps in a second table, and moves retired runs into a database of their
+    own. A history reader needs the record back as one mapping, retired runs
+    included: retirement bounds what the store keeps hot, and shortening the
+    history the ledger answers is not a thing it may do.
+    """
+    from reckon import run_store
+
+    path = run_store.store_path()
+    if not path.is_file():
+        return []
+    query = (
+        "SELECT r.run_id, r.payload, d.detail FROM {table}.runs r "
+        "LEFT JOIN {table}.run_details d ON r.run_id = d.run_id "
+        "WHERE r.project = ?"
+    )
+    try:
+        connection = sqlite3.connect(f"{path.as_uri()}?mode=ro", uri=True, timeout=0)
+    except (OSError, sqlite3.Error):
+        return []
+    try:
+        tables = ["main"]
+        archive = _store_archive_path(path)
+        if archive.is_file():
+            try:
+                connection.execute(
+                    "ATTACH DATABASE ? AS archive",
+                    (f"{archive.as_uri()}?mode=ro",),
+                )
+            except (OSError, sqlite3.Error):
+                pass
+            else:
+                tables.append("archive")
+        rows: list[tuple[Any, ...]] = []
+        for table in tables:
+            try:
+                rows.extend(connection.execute(query.format(table=table), (project,)))
+            except sqlite3.Error:
+                # A store that never carried the auxiliary tables holds no run
+                # this reader can answer for.
+                continue
+    finally:
+        connection.close()
+    records = []
+    for _run_id, payload, detail in rows:
+        try:
+            record = json.loads(payload)
+            if detail:
+                record.update(json.loads(detail))
+        except (TypeError, ValueError):
+            continue
+        records.append(normalize_outside_scope_paths(record))
+    return records
+
+
+def store_answers(project: str, root: str | Path | None) -> bool:
+    """Whether the run store is this project's source for its run rows.
+
+    The documents answer while the project holds any; the store answers once it
+    holds none and holds at least one run row of its own. A reader that answers
+    membership rather than rows checks this before taking a full read.
+    """
+    if run_directory_holds_records(project, root):
+        return False
+    return bool(_stored_run_rows(project))
+
+
+def _merge_stored_rows(
+    project: str,
+    root: str | Path | None,
+    data: dict[str, Any],
+    *,
+    headers_only: bool = False,
+    picker_only: bool = False,
+    activity_since: float | None = None,
+) -> bool:
+    """Answer from the run store where no per-run document answers.
+
+    The store is the ledger's only store once the per-run directory has gone,
+    so a read of a project still holding documents answers from those files
+    and leaves the store unread. A read of a project without them gains every
+    run the store holds that the aggregate and the documents did not name. A
+    row both sources carry stays as the file-derived one: the store holds the
+    durable half and drops the promotion record, so where a file survives it is
+    the fuller record.
+    """
+    if run_directory_holds_records(project, root):
+        return False
+    held = {
+        str(record["run_id"])
+        for record in data["runs"]
+        if isinstance(record, Mapping) and record.get("run_id")
+    }
+    added = [
+        record
+        for record in _stored_run_rows(project)
+        if record.get("run_id") and str(record["run_id"]) not in held
+    ]
+    if not added:
+        return False
+    if activity_since is not None:
+        added = _active_records(added, activity_since)
+    if headers_only:
+        added = [{"run_id": str(record["run_id"])} for record in added]
+    elif picker_only:
+        added = [picker_record(record) for record in added]
+    if not added:
+        return False
+    data["runs"].extend(added)
+    data["runs"].sort(key=promotion_order_key)
+    return True
 
 
 def indexed_headers(
@@ -2267,7 +2403,7 @@ def load(
     _report_damaged_run_records(project, ())
     if use_index and _ledger_holds_content(project, root):
         try:
-            return _indexed_data(
+            data, version = _indexed_data(
                 project,
                 root,
                 headers_only=headers_only,
@@ -2293,10 +2429,32 @@ def load(
             )
             if stale is not None:
                 data, version, age = stale
+                _merge_stored_rows(
+                    project,
+                    root,
+                    data,
+                    headers_only=headers_only,
+                    picker_only=picker_only,
+                    activity_since=activity_since,
+                )
                 data["index_age_seconds"] = round(age, 3)
                 return data, version
-    data, version = _load_aggregate(project, root)
-    _merge_run_documents(project, root, data, refuse=True)
+            data, version = _load_aggregate(project, root)
+            _merge_run_documents(project, root, data, refuse=True)
+        else:
+            _merge_stored_rows(
+                project,
+                root,
+                data,
+                headers_only=headers_only,
+                picker_only=picker_only,
+                activity_since=activity_since,
+            )
+            return data, version
+    else:
+        data, version = _load_aggregate(project, root)
+        _merge_run_documents(project, root, data, refuse=True)
+    _merge_stored_rows(project, root, data)
     if activity_since is not None:
         data["runs"] = _active_records(data["runs"], activity_since)
     if picker_only:
