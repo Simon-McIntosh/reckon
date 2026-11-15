@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="work-flows-to-the-lane">
+  <meta name="plan-evidence-for" content="reckon:work-flows-to-the-lane">
+  <meta name="plan-verifies" content="reckon:work-flows-to-the-lane#s77">
+  <meta name="plan-recorded-at" content="2026-11-15">
+  <title>Concurrent admission preserves the pass boundary | reckon</title>
+</head>
+<body>
+<article id="wftl-an-admission-pass-fills-free-slots-codex-record" data-node="wftl-an-admission-pass-fills-free-slots-codex" data-reckon="landed">
+  <h2>Concurrent admission and restart draining</h2>
+  <p>Admission reserves each router allowance before submitting independent
+  launches to a bounded pool. Launches inherit the pass's read context and
+  share readiness derivations under a lock. The admission thread combines
+  outcomes, returns refused reservations, and preserves queue order in its
+  report. All started work settles before the admission and service pass locks
+  are released. Requests from an exhausted session are reconsidered after all
+  other sessions' free slots have been visited.</p>
+  <table>
+    <thead><tr><th>Measure</th><th>Control</th><th>Concurrent pass</th></tr></thead>
+    <tbody>
+      <tr><td>Six launches, each delayed 20 seconds</td><td>120.221 seconds</td><td>20.094 seconds; all six complete</td></tr>
+      <tr><td>Pass boundary during a code restart</td><td>All six complete before permission to restart</td><td>All six complete before permission to restart</td></tr>
+      <tr><td>Actual managed admission service replacement</td><td>Existing boundary retained</td><td>Six begun, six completed before the service stops</td></tr>
+      <tr><td>Exhausted session ahead of another session</td><td>One failed request after the five-second event bound</td><td>Five launches, one allowance hold, zero failed requests</td></tr>
+    </tbody>
+  </table>
+  <p>The original six-launch test was run against
+  <code>d09b356e177f5cd9f4b92669d912a69c3b75fa26</code> with the added test
+  present: <code>negative.log</code> records <code>1 failed, 2 passed</code>
+  and <code>EXIT=1</code>. Its failed assertion reads
+  <code>120.22053277492523 &lt; 60</code>. The reported restart abandonment did
+  not reproduce at that base: its pass-lock guard already preserved in-flight
+  work, so this change retains that guard. The new service-process test records
+  <code>service_restart_began=6 completed=6</code>. The seven-case node gate
+  records <code>7 passed in 24.13s</code> on <code>all_debug</code>.</p>
+  <p>Additional cases exercise read-context propagation, reservation limits and
+  returning a refused reservation. Existing budget probes now measure candidate
+  validation time separately from overlapping launch time. The interruption
+  probe freezes peer launches at a controlled boundary and still proves that
+  recovery conserves each request and launches it once.</p>
+  <p>The focused compatibility comparison records the same 24 failure IDs at
+  base and head, with zero added IDs. Several concern stale queue-time fixtures
+  lacking manifest paths, mergeable-path claim expectations, and synchronous
+  landing expectations. Their identities and the final revision-labelled armed
+  receipts are retained in the delivery manifest and run logs.</p>
+  <p>Logs are under
+  <code>~/.config/reckon/crew/runs/r-20261115T125515240235-wftl-an-admission-pass-fills-free-slots-codex/</code>:
+  <code>negative.log</code>, <code>session-order-negative.log</code>,
+  <code>session-order-head.log</code>, the armed logs, and the corrected
+  compatibility logs. The timing log names the committed predecessor plus
+  working source; final armed receipts identify the delivery revision.</p>
+  <p><strong>Remaining measure:</strong> the one-hour fleet occupancy sample
+  has not been taken. This isolated worker cannot establish the effect of code
+  that is not yet integrated into the managed service. After integration, the
+  coordinator must deploy the service and sample the router every five minutes
+  for one hour with a full queue, requiring a median of at least 11 of 12.
+  This record does not claim that operational criterion passed.</p>
+</article>
+</body>
+</html>
