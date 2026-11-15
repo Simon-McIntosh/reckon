@@ -317,6 +317,36 @@ def non_blocking_findings(review: Mapping[str, Any]) -> list[dict[str, Any]]:
     return _findings_of_kind(review, _NON_BLOCKING)
 
 
+def folded_findings(
+    review: Mapping[str, Any], *, node_ids: Sequence[str] = ()
+) -> list[dict[str, Any]]:
+    """Return the findings disposed as folded into the node this round repairs.
+
+    A fold is the coordinator's decision that a finding belongs to a node's own
+    work rather than to a round of its own, and the node the fold names is where
+    that work lands. Advice composed for that round therefore carries the
+    finding: a fold that named the node and then vanished from the advice left
+    the repair holding the blocking findings alone, so the folded work was
+    disposed into a node that was never told about it.
+
+    A fold naming a node outside ``node_ids`` is that node's work and is not
+    carried here. An exemption answers a finding without work and a finding left
+    open is not disposed at all, so neither is carried.
+    """
+    from reckon.crew.findings import finding_disposition, parse_finding_disposition
+
+    targets = {str(node).strip() for node in node_ids if str(node).strip()}
+    carried: list[dict[str, Any]] = []
+    for index, finding in enumerate(review_findings(review)):
+        disposition = parse_finding_disposition(finding_disposition(review, index))
+        if disposition["kind"] != "folded":
+            continue
+        if targets and disposition["target"] not in targets:
+            continue
+        carried.append(finding)
+    return carried
+
+
 def repair_round_id(
     review: Mapping[str, Any], *, reviewed_run_id: str | None = None
 ) -> str:
@@ -671,6 +701,7 @@ def compose_repair_brief(
     unmarked: Sequence[Mapping[str, Any]] = (),
     diff: str = "",
     answers: Sequence[Mapping[str, Any]] = (),
+    folded: Sequence[Mapping[str, Any]] = (),
 ) -> str:
     """Return the brief listing every finding under its stable id.
 
@@ -703,6 +734,16 @@ def compose_repair_brief(
         f"('{DECLINED_ACTION} <id>: <reason>'). A finding left unanswered is not",
         "repaired.",
     ]
+    if folded:
+        lines += [
+            "",
+            "These findings were disposed as folded into this node, so they are",
+            "this round's work too and are answered the same way:",
+            *(
+                f"- [{finding['id']}] {_finding_location(finding)} {finding['text']}".rstrip()
+                for finding in folded
+            ),
+        ]
     if unmarked:
         lines += [
             "",
@@ -779,6 +820,11 @@ def compose_repair_node(
     run_id = str(review.get("reviewed_run_id") or reviewed_run_id or "").strip()
     project = str(review.get("project") or "").strip()
     node_id = repair_node_id(review, reviewed_run_id=run_id, source_node=source_node)
+    folded = folded_findings(
+        review,
+        node_ids=[str(source_node or run_id).strip(), node_id],
+    )
+    carried = [*findings, *folded]
     round_id = repair_round_id(review, reviewed_run_id=run_id)
     scope = repair_write_scope(review, run_record=run_record, fence=fence)
     brief = compose_repair_brief(
@@ -788,11 +834,12 @@ def compose_repair_node(
         unmarked=unmarked,
         diff=diff,
         answers=answers,
+        folded=folded,
     )
-    ids = ", ".join(finding["id"] for finding in findings)
+    ids = ", ".join(finding["id"] for finding in carried)
     done_when = (
         f"the repair for {round_id} commits a change answering each of the "
-        f"{len(findings)} finding(s) ({ids}) and its manifest names every "
+        f"{len(carried)} finding(s) ({ids}) and its manifest names every "
         f"finding by id — `{ACTED_ACTION} <id>: <commit>` for a finding it "
         f"answered and `{DECLINED_ACTION} <id>: <reason>` for one it declines "
         "— with no finding left unanswered"
@@ -818,6 +865,7 @@ def compose_repair_node(
         "brief": brief,
         "findings": findings,
         "unmarked_findings": unmarked,
+        "folded_findings": folded,
         "write_path": scope[0] if scope else "",
         "write_paths": scope,
         "done_when": done_when,
