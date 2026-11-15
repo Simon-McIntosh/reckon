@@ -1,0 +1,364 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_audit": [
+    {
+      "assertion": "set(result['launched']) == set(queued)",
+      "failure_condition": "Serializing six 20-second launches breaks the <60-second assertion; omitting, duplicating, or failing to publish launches breaks the independent expected queued IDs, count, and persisted phase assertions.",
+      "file": "tests/test_an_admission_pass_fills_free_slots.py",
+      "line": 57
+    },
+    {
+      "assertion": "len(completed) == 6",
+      "failure_condition": "Serializing six 20-second launches breaks the <60-second assertion; omitting, duplicating, or failing to publish launches breaks the independent expected queued IDs, count, and persisted phase assertions.",
+      "file": "tests/test_an_admission_pass_fills_free_slots.py",
+      "line": 58
+    },
+    {
+      "assertion": "max((at - started for _, at in completed)) < 60",
+      "failure_condition": "Serializing six 20-second launches breaks the <60-second assertion; omitting, duplicating, or failing to publish launches breaks the independent expected queued IDs, count, and persisted phase assertions.",
+      "file": "tests/test_an_admission_pass_fills_free_slots.py",
+      "line": 59
+    },
+    {
+      "assertion": "all((runs.read_pointer(run_id)['phase'] == 'working' for run_id in queued))",
+      "failure_condition": "Serializing six 20-second launches breaks the <60-second assertion; omitting, duplicating, or failing to publish launches breaks the independent expected queued IDs, count, and persisted phase assertions.",
+      "file": "tests/test_an_admission_pass_fills_free_slots.py",
+      "line": 60
+    },
+    {
+      "assertion": "stopped_after == [len(queued)]",
+      "failure_condition": "Allowing restart during service_pass makes the explicit refusal assertion fail or the reload marker disappear; releasing the pass before launch settlement leaves stopped_after below six; lost launches break the expected IDs.",
+      "file": "tests/test_an_admission_pass_fills_free_slots.py",
+      "line": 97
+    },
+    {
+      "assertion": "set(result['launched']) == set(queued)",
+      "failure_condition": "Allowing restart during service_pass makes the explicit refusal assertion fail or the reload marker disappear; releasing the pass before launch settlement leaves stopped_after below six; lost launches break the expected IDs.",
+      "file": "tests/test_an_admission_pass_fills_free_slots.py",
+      "line": 98
+    },
+    {
+      "assertion": "began.wait(15)",
+      "failure_condition": "Allowing restart during service_pass makes the explicit refusal assertion fail or the reload marker disappear; releasing the pass before launch settlement leaves stopped_after below six; lost launches break the expected IDs.",
+      "file": "tests/test_an_admission_pass_fills_free_slots.py",
+      "line": 78
+    },
+    {
+      "assertion": "not manager._pass_allows_restart('admit', os.getpid())",
+      "failure_condition": "Allowing restart during service_pass makes the explicit refusal assertion fail or the reload marker disappear; releasing the pass before launch settlement leaves stopped_after below six; lost launches break the expected IDs.",
+      "file": "tests/test_an_admission_pass_fills_free_slots.py",
+      "line": 79
+    },
+    {
+      "assertion": "path.with_suffix('.pass.reload').exists()",
+      "failure_condition": "Allowing restart during service_pass makes the explicit refusal assertion fail or the reload marker disappear; releasing the pass before launch settlement leaves stopped_after below six; lost launches break the expected IDs.",
+      "file": "tests/test_an_admission_pass_fills_free_slots.py",
+      "line": 80
+    },
+    {
+      "assertion": "not reloader.is_alive()",
+      "failure_condition": "Allowing restart during service_pass makes the explicit refusal assertion fail or the reload marker disappear; releasing the pass before launch settlement leaves stopped_after below six; lost launches break the expected IDs.",
+      "file": "tests/test_an_admission_pass_fills_free_slots.py",
+      "line": 91
+    },
+    {
+      "assertion": "len(result['launched']) == len(queued)",
+      "failure_condition": "Removing copy_context yields default None in each launch instead of the outer context value pass-read; missing launches break the expected fixture count.",
+      "file": "tests/test_an_admission_pass_fills_free_slots.py",
+      "line": 118
+    },
+    {
+      "assertion": "seen == ['pass-read'] * len(queued)",
+      "failure_condition": "Removing copy_context yields default None in each launch instead of the outer context value pass-read; missing launches break the expected fixture count.",
+      "file": "tests/test_an_admission_pass_fills_free_slots.py",
+      "line": 119
+    },
+    {
+      "assertion": "result['launched'] == queued[:2]",
+      "failure_condition": "Removing reservation decrement launches more than the independent router grant of two, changes the expected held IDs, and moves tail pointers out of queued.",
+      "file": "tests/test_an_admission_pass_fills_free_slots.py",
+      "line": 131
+    },
+    {
+      "assertion": "result['held'] == queued[2:]",
+      "failure_condition": "Removing reservation decrement launches more than the independent router grant of two, changes the expected held IDs, and moves tail pointers out of queued.",
+      "file": "tests/test_an_admission_pass_fills_free_slots.py",
+      "line": 132
+    },
+    {
+      "assertion": "len(completed) == 2",
+      "failure_condition": "Removing reservation decrement launches more than the independent router grant of two, changes the expected held IDs, and moves tail pointers out of queued.",
+      "file": "tests/test_an_admission_pass_fills_free_slots.py",
+      "line": 133
+    },
+    {
+      "assertion": "all((runs.read_pointer(identity)['phase'] == 'queued' for identity in queued[2:]))",
+      "failure_condition": "Removing reservation decrement launches more than the independent router grant of two, changes the expected held IDs, and moves tail pointers out of queued.",
+      "file": "tests/test_an_admission_pass_fills_free_slots.py",
+      "line": 134
+    },
+    {
+      "assertion": "result['failed'] == queued[:1]",
+      "failure_condition": "Removing allowance restitution leaves the second queued ID unlaunched; misclassifying or failing to restore the deliberately refused first launch breaks its failed ID, phase, and error text assertions.",
+      "file": "tests/test_an_admission_pass_fills_free_slots.py",
+      "line": 153
+    },
+    {
+      "assertion": "result['launched'] == queued[1:2]",
+      "failure_condition": "Removing allowance restitution leaves the second queued ID unlaunched; misclassifying or failing to restore the deliberately refused first launch breaks its failed ID, phase, and error text assertions.",
+      "file": "tests/test_an_admission_pass_fills_free_slots.py",
+      "line": 154
+    },
+    {
+      "assertion": "result['held'] == queued[2:]",
+      "failure_condition": "Removing allowance restitution leaves the second queued ID unlaunched; misclassifying or failing to restore the deliberately refused first launch breaks its failed ID, phase, and error text assertions.",
+      "file": "tests/test_an_admission_pass_fills_free_slots.py",
+      "line": 155
+    },
+    {
+      "assertion": "runs.read_pointer(queued[0])['phase'] == 'queued'",
+      "failure_condition": "Removing allowance restitution leaves the second queued ID unlaunched; misclassifying or failing to restore the deliberately refused first launch breaks its failed ID, phase, and error text assertions.",
+      "file": "tests/test_an_admission_pass_fills_free_slots.py",
+      "line": 156
+    },
+    {
+      "assertion": "'executable cannot be started' in result['failure_detail'][queued[0]]",
+      "failure_condition": "Removing allowance restitution leaves the second queued ID unlaunched; misclassifying or failing to restore the deliberately refused first launch breaks its failed ID, phase, and error text assertions.",
+      "file": "tests/test_an_admission_pass_fills_free_slots.py",
+      "line": 157
+    },
+    {
+      "assertion": "fleet.recorded_service_pid(runtime, 'admit') == pid",
+      "failure_condition": "Ignoring the pass lock lets supervise_once replace the original PID or create stopped.json early; failing to drain leaves the independently read stop receipt with incomplete began/completed IDs; removing the guard makes this test fail without changing its input.",
+      "file": "tests/test_an_admission_pass_fills_free_slots.py",
+      "line": 233
+    },
+    {
+      "assertion": "not (tmp_path / 'stopped.json').exists()",
+      "failure_condition": "Ignoring the pass lock lets supervise_once replace the original PID or create stopped.json early; failing to drain leaves the independently read stop receipt with incomplete began/completed IDs; removing the guard makes this test fail without changing its input.",
+      "file": "tests/test_an_admission_pass_fills_free_slots.py",
+      "line": 234
+    },
+    {
+      "assertion": "stopped == {'began': sorted(queued), 'completed': sorted(queued)}",
+      "failure_condition": "Ignoring the pass lock lets supervise_once replace the original PID or create stopped.json early; failing to drain leaves the independently read stop receipt with incomplete began/completed IDs; removing the guard makes this test fail without changing its input.",
+      "file": "tests/test_an_admission_pass_fills_free_slots.py",
+      "line": 240
+    },
+    {
+      "assertion": "result['failed'] == []",
+      "failure_condition": "Restoring the first concurrent implementation wait-before-considering-other-sessions causes the event wait to raise, places the first run in failed, and changes launched IDs; the recorded red arm demonstrates this.",
+      "file": "tests/test_an_admission_pass_fills_free_slots.py",
+      "line": 281
+    },
+    {
+      "assertion": "result['launched'] == [queued[0], *queued[2:]]",
+      "failure_condition": "Restoring the first concurrent implementation wait-before-considering-other-sessions causes the event wait to raise, places the first run in failed, and changes launched IDs; the recorded red arm demonstrates this.",
+      "file": "tests/test_an_admission_pass_fills_free_slots.py",
+      "line": 282
+    },
+    {
+      "assertion": "result['held'] == queued[1:2]",
+      "failure_condition": "Restoring the first concurrent implementation wait-before-considering-other-sessions causes the event wait to raise, places the first run in failed, and changes launched IDs; the recorded red arm demonstrates this.",
+      "file": "tests/test_an_admission_pass_fills_free_slots.py",
+      "line": 283
+    },
+    {
+      "assertion": "other_began.wait(5)",
+      "failure_condition": "Restoring the first concurrent implementation wait-before-considering-other-sessions causes the event wait to raise, places the first run in failed, and changes launched IDs; the recorded red arm demonstrates this.",
+      "file": "tests/test_an_admission_pass_fills_free_slots.py",
+      "line": 272
+    },
+    {
+      "assertion": "first['launched'] == run_ids[:2]",
+      "failure_condition": "Ignoring the selection deadline submits all four requests instead of two and writes verdicts or phases for deferred IDs; failing to resume retained requests breaks the second pass assertions.",
+      "file": "tests/test_an_admission_pass_is_bounded.py",
+      "line": 127
+    },
+    {
+      "assertion": "first['launch_budget_seconds'] == BUDGET",
+      "failure_condition": "Ignoring the selection deadline submits all four requests instead of two and writes verdicts or phases for deferred IDs; failing to resume retained requests breaks the second pass assertions.",
+      "file": "tests/test_an_admission_pass_is_bounded.py",
+      "line": 129
+    },
+    {
+      "assertion": "first['launch_budget_exhausted'] is True",
+      "failure_condition": "Ignoring the selection deadline submits all four requests instead of two and writes verdicts or phases for deferred IDs; failing to resume retained requests breaks the second pass assertions.",
+      "file": "tests/test_an_admission_pass_is_bounded.py",
+      "line": 130
+    },
+    {
+      "assertion": "{row['run_id'] for row in first['verdicts']}.isdisjoint(deferred)",
+      "failure_condition": "Ignoring the selection deadline submits all four requests instead of two and writes verdicts or phases for deferred IDs; failing to resume retained requests breaks the second pass assertions.",
+      "file": "tests/test_an_admission_pass_is_bounded.py",
+      "line": 139
+    },
+    {
+      "assertion": "second['launched'] == deferred",
+      "failure_condition": "Ignoring the selection deadline submits all four requests instead of two and writes verdicts or phases for deferred IDs; failing to resume retained requests breaks the second pass assertions.",
+      "file": "tests/test_an_admission_pass_is_bounded.py",
+      "line": 144
+    },
+    {
+      "assertion": "second['launch_budget_exhausted'] is False",
+      "failure_condition": "Ignoring the selection deadline submits all four requests instead of two and writes verdicts or phases for deferred IDs; failing to resume retained requests breaks the second pass assertions.",
+      "file": "tests/test_an_admission_pass_is_bounded.py",
+      "line": 145
+    },
+    {
+      "assertion": "pointer['phase'] == 'queued'",
+      "failure_condition": "Ignoring the selection deadline submits all four requests instead of two and writes verdicts or phases for deferred IDs; failing to resume retained requests breaks the second pass assertions.",
+      "file": "tests/test_an_admission_pass_is_bounded.py",
+      "line": 137
+    },
+    {
+      "assertion": "not pointer.get('last_admission')",
+      "failure_condition": "Ignoring the selection deadline submits all four requests instead of two and writes verdicts or phases for deferred IDs; failing to resume retained requests breaks the second pass assertions.",
+      "file": "tests/test_an_admission_pass_is_bounded.py",
+      "line": 138
+    },
+    {
+      "assertion": "len(launched) == 1",
+      "failure_condition": "Dropping duration accounting or charging the wrong span gives zero or a non-dispatch slowest step instead of the independently advanced 20-second launch clock; submitting zero or multiple launches breaks count one.",
+      "file": "tests/test_an_admission_pass_is_bounded.py",
+      "line": 166
+    },
+    {
+      "assertion": "row['launch_seconds'] == LAUNCH_SECONDS",
+      "failure_condition": "Dropping duration accounting or charging the wrong span gives zero or a non-dispatch slowest step instead of the independently advanced 20-second launch clock; submitting zero or multiple launches breaks count one.",
+      "file": "tests/test_an_admission_pass_is_bounded.py",
+      "line": 168
+    },
+    {
+      "assertion": "row['slowest_step'] == 'dispatch'",
+      "failure_condition": "Dropping duration accounting or charging the wrong span gives zero or a non-dispatch slowest step instead of the independently advanced 20-second launch clock; submitting zero or multiple launches breaks count one.",
+      "file": "tests/test_an_admission_pass_is_bounded.py",
+      "line": 169
+    },
+    {
+      "assertion": "row['slowest_step_seconds'] == LAUNCH_SECONDS",
+      "failure_condition": "Dropping duration accounting or charging the wrong span gives zero or a non-dispatch slowest step instead of the independently advanced 20-second launch clock; submitting zero or multiple launches breaks count one.",
+      "file": "tests/test_an_admission_pass_is_bounded.py",
+      "line": 170
+    },
+    {
+      "assertion": "result['launch_budget_seconds'] == BUDGET",
+      "failure_condition": "Ignoring the flight configuration changes the actual number launched away from two; the echoed launch_budget_seconds value alone is not independent behavioral evidence and is retained pre-existing coverage, not a new guard.",
+      "file": "tests/test_an_admission_pass_is_bounded.py",
+      "line": 184
+    },
+    {
+      "assertion": "result['launched'] == run_ids[:2]",
+      "failure_condition": "Ignoring the flight configuration changes the actual number launched away from two; the echoed launch_budget_seconds value alone is not independent behavioral evidence and is retained pre-existing coverage, not a new guard.",
+      "file": "tests/test_an_admission_pass_is_bounded.py",
+      "line": 185
+    },
+    {
+      "assertion": "before == fixtures.CONFIG",
+      "failure_condition": "Mutating shared config during launch changes its independently saved deep copy comparison.",
+      "file": "tests/test_an_admission_pass_is_bounded.py",
+      "line": 199
+    },
+    {
+      "assertion": "{path.stem for path in paths} == {*SURFACE, '__init__', 'interrupted', 'attempts'}",
+      "failure_condition": "Removing attempts from the module inventory or adding an unexpected module fails the explicit set; growing a module past 2000 lines fails the size bound.",
+      "file": "tests/test_queue_admission_split_keeps_its_surface.py",
+      "line": 403
+    },
+    {
+      "assertion": "len(path.read_text().splitlines()) <= 2000",
+      "failure_condition": "Removing attempts from the module inventory or adding an unexpected module fails the explicit set; growing a module past 2000 lines fails the size bound.",
+      "file": "tests/test_queue_admission_split_keeps_its_surface.py",
+      "line": 410
+    }
+  ],
+  "assertion_independence": "No newly added assertion was found to move both sides with an injected code argument; fixture IDs and completion receipts are independent expectations, while the pre-existing budget echo is supported by launched-count behavior.",
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/crew/admission/service.py:267",
+    "reckon/crew/admission/service.py:308",
+    "reckon/crew/admission/selection.py:323",
+    "reckon/crew/admission/selection.py:561",
+    "reckon/crew/admission/launching.py:324"
+  ],
+  "commits_reviewed": [
+    "cefc04e39f43b416a8a6ebca22decc9fc6afedc1",
+    "a8ae750ed66022a623f6334d3a27031345343f73",
+    "73a53cf34554b51b1b5701b3b8278debb1a7ec64",
+    "2b3759efa9b31bba4615cb58cda3e784e0f4041d"
+  ],
+  "completed_at": "2026-11-15T13:55:27Z",
+  "dispatched_at": "2026-11-15T13:49:34Z",
+  "failure_delta_evidence": {
+    "after": {
+      "completed": true,
+      "exit_status": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T125515240235-wftl-an-admission-pass-fills-free-slots-codex/delivery-armed-head.log",
+      "revision": "2b3759efa9b31bba4615cb58cda3e784e0f4041d",
+      "summary": "111 passed, 6 warnings in 92.89s (0:01:32)"
+    },
+    "baseline": {
+      "completed": true,
+      "exit_status": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T125515240235-wftl-an-admission-pass-fills-free-slots-codex/armed-base.log",
+      "revision": "d09b356e177f5cd9f4b92669d912a69c3b75fa26",
+      "summary": "104 passed, 6 warnings in 57.44s"
+    },
+    "derivation": "Read both manifest-selected logs through their summary and EXIT=0; head failure IDs minus baseline failure IDs is the empty set."
+  },
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/work-flows-to-the-lane/wftl-an-admission-pass-fills-free-slots-codex.html",
+      "line": "57",
+      "severity": "blocking",
+      "text": "blocking: The declared done_when requires one hour of router in-flight samples every five minutes with a full queue and median at least 11 of 12, but no such receipt exists; the source node cannot be accepted as fully measured until the coordinator deploys the candidate and records that result or explicitly revises the completion criterion."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 5 production call site(s)",
+    "diff": "Read cefc04e39f43b416a8a6ebca22decc9fc6afedc1, a8ae750ed66022a623f6334d3a27031345343f73, 73a53cf34554b51b1b5701b3b8278debb1a7ec64, and 2b3759efa9b31bba4615cb58cda3e784e0f4041d against d09b356e177f5cd9f4b92669d912a69c3b75fa26; changes comprise regression tests, concurrent admission with cache locking, cross-session scheduling, and an evidence fragment.",
+    "done_when": "Live plan work-flows-to-the-lane#s77 requires two isolated tests plus a one-hour occupancy median of at least 11/12; delivery-armed-head.log records the tests passing but the evidence fragment at line 57 explicitly leaves the occupancy measure undone.",
+    "goal": "The source live pointer node.goal requires free slots filled within a minute and restart survival; reckon/crew/admission/selection.py:323 now submits concurrent reserved launches and attempts.py:46 drains them before returning.",
+    "manifest": "The reviewed run's manifest.md names four verified commits and readable baseline_suite/after_suite receipts, accurately discloses the unmeasured fleet criterion, but labels the source run complete despite that remaining criterion.",
+    "write_paths": "The source live pointer node.write_paths grants reckon, tests, and the named evidence subtree; all eight paths in the base-to-head diff are inside those grants."
+  },
+  "justifications": {
+    "durability": "tests/test_an_admission_pass_fills_free_slots.py:59 reddens under serial launches as negative.log demonstrates, line 246 detects stopping before completion, and line 275 detects waiting on an exhausted session before considering another session, although no automated test asserts live fleet occupancy.",
+    "evidence": "The reviewed run's armed-base.log ends with 104 passed and EXIT=0 and delivery-armed-head.log with 111 passed and EXIT=0, while docs/evidence/fragments/work-flows-to-the-lane/wftl-an-admission-pass-fills-free-slots-codex.html:57 leaves the required one-hour occupancy measurement absent.",
+    "fit": "reckon/crew/admission/attempts.py extends the existing admission package with mechanism-named definitions, retains launching.py's dispatch owner, and readiness.py:87 adds locking at the existing readiness-cache owner.",
+    "goal_fidelity": "reckon/crew/admission/selection.py:323 and attempts.py:46 implement concurrency and drain all submitted work under the existing service boundary, with fleet effectiveness still unmeasured in the evidence fragment at line 57.",
+    "reuse": "Capability searches for concurrent pools, readiness caches, launch settlement, and duration helpers found no admission reservation-batch owner; attempts.py relocates the former selection.py launch handling and duration helpers, readiness.py extends its existing cache owner, and the inspected findings.py:444 pool only batches directory stats.",
+    "scope_discipline": "The eight changed paths, including reckon/crew/admission/attempts.py and tests/test_an_admission_pass_fills_free_slots.py, lie within node.write_paths and directly support concurrency, compatibility, or its evidence."
+  },
+  "negative_control_reading": {
+    "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T125515240235-wftl-an-admission-pass-fills-free-slots-codex/negative.log",
+    "reproduction": "E assert 120.22053277492523 < 60; 1 failed, 2 passed in 124.63s; EXIT=1",
+    "restart": "restart_completed_launches=[6] launched=6 already passes at base; preserving and exercising that working guard is appropriate.",
+    "session_order": "session-order-negative.log records test_an_exhausted_session_does_not_delay_another_sessions_slots failing; session-order-head.log records 7 passed in 24.13s."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The source live pointer node.goal requires free slots filled within a minute and restart survival; reckon/crew/admission/selection.py:323 now submits concurrent reserved launches and attempts.py:46 drains them before returning.\nVERDICT done_when: Live plan work-flows-to-the-lane#s77 requires two isolated tests plus a one-hour occupancy median of at least 11/12; delivery-armed-head.log records the tests passing but the evidence fragment at line 57 explicitly leaves the occupancy measure undone.\nVERDICT write_paths: The source live pointer node.write_paths grants reckon, tests, and the named evidence subtree; all eight paths in the base-to-head diff are inside those grants.\nVERDICT manifest: The reviewed run's manifest.md names four verified commits and readable baseline_suite/after_suite receipts, accurately discloses the unmeasured fleet criterion, but labels the source run complete despite that remaining criterion.\nVERDICT diff: Read cefc04e39f43b416a8a6ebca22decc9fc6afedc1, a8ae750ed66022a623f6334d3a27031345343f73, 73a53cf34554b51b1b5701b3b8278debb1a7ec64, and 2b3759efa9b31bba4615cb58cda3e784e0f4041d against d09b356e177f5cd9f4b92669d912a69c3b75fa26; changes comprise regression tests, concurrent admission with cache locking, cross-session scheduling, and an evidence fragment.\nCALL_SITES: reckon/crew/admission/service.py:267, reckon/crew/admission/service.py:308, reckon/crew/admission/selection.py:323, reckon/crew/admission/selection.py:561, reckon/crew/admission/launching.py:324\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/admission/selection.py:323 and attempts.py:46 implement concurrency and drain all submitted work under the existing service boundary, with fleet effectiveness still unmeasured in the evidence fragment at line 57.\nSCORE evidence: 13\nJUSTIFICATION evidence: The reviewed run's armed-base.log ends with 104 passed and EXIT=0 and delivery-armed-head.log with 111 passed and EXIT=0, while docs/evidence/fragments/work-flows-to-the-lane/wftl-an-admission-pass-fills-free-slots-codex.html:57 leaves the required one-hour occupancy measurement absent.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: The eight changed paths, including reckon/crew/admission/attempts.py and tests/test_an_admission_pass_fills_free_slots.py, lie within node.write_paths and directly support concurrency, compatibility, or its evidence.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_an_admission_pass_fills_free_slots.py:59 reddens under serial launches as negative.log demonstrates, line 246 detects stopping before completion, and line 275 detects waiting on an exhausted session before considering another session, although no automated test asserts live fleet occupancy.\nSCORE fit: 20\nJUSTIFICATION fit: reckon/crew/admission/attempts.py extends the existing admission package with mechanism-named definitions, retains launching.py's dispatch owner, and readiness.py:87 adds locking at the existing readiness-cache owner.\nSCORE reuse: 20\nJUSTIFICATION reuse: Capability searches for concurrent pools, readiness caches, launch settlement, and duration helpers found no admission reservation-batch owner; attempts.py relocates the former selection.py launch handling and duration helpers, readiness.py extends its existing cache owner, and the inspected findings.py:444 pool only batches directory stats.\nFINDING docs/evidence/fragments/work-flows-to-the-lane/wftl-an-admission-pass-fills-free-slots-codex.html:57 blocking: The declared done_when requires one hour of router in-flight samples every five minutes with a full queue and median at least 11 of 12, but no such receipt exists; the source node cannot be accepted as fully measured until the coordinator deploys the candidate and records that result or explicitly revises the completion criterion.\n",
+  "reuse_search": "Searched reckon/crew and reckon Python sources for ThreadPoolExecutor, copy_context, cache locks, launch settlement, _add_step, and _slowest_step; opened findings.py:444, launching.py:244, readiness.py:87 and former selection ownership; admission launch and timing code is moved rather than duplicated.",
+  "review_run_id": "r-20261115T134710064745-review-of-wftl-an-admission-pass-fills-free-slots-codex-2b3759efa9b3",
+  "reviewed_base_sha": "d09b356e177f5cd9f4b92669d912a69c3b75fa26",
+  "reviewed_head_sha": "2b3759efa9b31bba4615cb58cda3e784e0f4041d",
+  "reviewed_run_id": "r-20261115T125515240235-wftl-an-admission-pass-fills-free-slots-codex",
+  "scores": {
+    "durability": 19,
+    "evidence": 13,
+    "fit": 20,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-15T14:00:15.181323+00:00",
+  "total": 110
+}
