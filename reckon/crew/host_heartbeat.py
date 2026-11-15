@@ -14,10 +14,17 @@ published it lives, because a holder that is working must keep the evidence of
 its own host current: a beat written once and never refreshed lapses on a timer
 and a working holder's reservation would be released out from under it. The
 renewal is a thread the publishing process owns, so it ends when that process
-is gone, which is exactly the event the beat is meant to mark. A beat whose
-renewal stopped while its holder is still visible in this process table is not
-treated as a host that has gone: a stalled renewal is a slow host, not a dead
-one.
+is gone, which is exactly the event the beat is meant to mark.
+
+Which process publishes therefore decides how long the beat speaks for a run.
+The process that takes a reservation is not a run's holder: it records the
+launch and returns while the supervisor it started goes on supervising the
+supervisor's worker. So the beat is published from the supervisor as well, at
+its own start, and it then outlives the launcher by the length of the run.
+
+A beat whose renewal stopped while its holder is still visible in this process
+table is not treated as a host that has gone: a stalled renewal is a slow host,
+not a dead one.
 
 A beat's age is its file's own write time, refreshed rather than rewritten, so a
 reader never parses anything to answer how old it is.
@@ -32,7 +39,12 @@ import threading
 import time
 from pathlib import Path
 
-from reckon.crew.host_lease import _pid_namespace, _process_start, local_host
+from reckon.crew.host_lease import (
+    _pid_namespace,
+    _process_start,
+    local_host,
+    process_runs_here,
+)
 
 #: Directory under the crew home holding one beat per host.
 HEARTBEAT_DIRECTORY = "hosts"
@@ -136,14 +148,22 @@ def _start_renewing(home: Path, host: str) -> None:
 
 
 def _renew_until_stopped(home: Path, host: str, stop: threading.Event) -> None:
-    while not stop.wait(HEARTBEAT_RENEW_SECONDS):
-        try:
-            os.utime(host_heartbeat_path(home, host), None)
-        except OSError:
-            # The beat was removed, by a sweep or by a fresh crew home. A
-            # renewal has nothing to refresh, so it ends rather than writing a
-            # beat for a home this process may no longer be using.
-            break
+    try:
+        while not stop.wait(HEARTBEAT_RENEW_SECONDS):
+            try:
+                os.utime(host_heartbeat_path(home, host), None)
+            except OSError:
+                # The beat was removed, by a sweep or by a fresh crew home. A
+                # renewal has nothing to refresh, so it ends rather than writing
+                # a beat for a home this process may no longer be using.
+                break
+    finally:
+        # The key records that a renewer is running. Kept after the thread has
+        # ended, it tells a later publish that renewal is already under way, so
+        # a beat written from then on is never refreshed again.
+        with _RENEWERS_LOCK:
+            if _RENEWERS.get((str(home), host)) is stop:
+                del _RENEWERS[(str(home), host)]
 
 
 def stop_host_heartbeat(home: Path, host: str | None = None) -> bool:
@@ -176,21 +196,14 @@ def _holder_is_running_here(record: dict) -> bool:
 
     A renewal lapses while its process is busy or blocked, and a slow renewal is
     not a host that has gone. The reader can tell the two apart only when the
-    beat names a process in a process table it shares: the pid namespace must
-    match, and the start time must be the recorded one, so a pid the kernel has
-    reused does not read as the holder.
+    beat names a process in a process table it shares, which is the same
+    comparison the fleet's node lease makes against its holder.
     """
-    namespace = str(record.get("pid_namespace") or "")
-    started = str(record.get("pid_start") or "")
-    pid = record.get("pid")
-    if not namespace or not started:
-        return False
-    if namespace != _pid_namespace():
-        return False
-    target = int(pid) if isinstance(pid, int) else None
-    if target is None:
-        return False
-    return _process_start(target) == started
+    return process_runs_here(
+        pid=record.get("pid"),
+        pid_start=str(record.get("pid_start") or ""),
+        pid_namespace=str(record.get("pid_namespace") or ""),
+    )
 
 
 def host_is_live(home: Path, host: str, *, now: float | None = None) -> bool:

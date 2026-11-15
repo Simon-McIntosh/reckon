@@ -335,20 +335,106 @@ def test_a_coordinator_resume_supersedes_a_held_round(home: Path) -> None:
         _stop(door)
 
 
-def test_a_published_beat_stays_fresh_while_its_process_lives(
+_BEAT_CHILD = """
+import sys
+import time
+from pathlib import Path
+
+from reckon.crew import host_heartbeat
+
+home = Path(sys.argv[1])
+host = sys.argv[2]
+hold = float(sys.argv[3])
+host_heartbeat.HEARTBEAT_RENEW_SECONDS = 0.1
+host_heartbeat.publish_host_heartbeat(home, host)
+time.sleep(hold)
+"""
+
+
+def _beat_process(home: Path, host: str, hold: float) -> subprocess.Popen:
+    root = str(Path(__file__).resolve().parents[1])
+    environ = dict(
+        os.environ,
+        PYTHONPATH=os.pathsep.join(
+            [root, os.environ.get("PYTHONPATH", "")]
+        ).strip(os.pathsep),
+    )
+    return subprocess.Popen(
+        [sys.executable, "-c", _BEAT_CHILD, str(home), host, str(hold)],
+        env=environ,
+    )
+
+
+def _await(predicate, seconds: float = 15.0) -> bool:
+    deadline = time.monotonic() + seconds
+    while time.monotonic() < deadline:
+        if predicate():
+            return True
+        time.sleep(0.05)
+    return predicate()
+
+
+def test_a_beat_outlives_the_launcher_that_first_published_it(
     home: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """A working holder keeps its own beat current, so it cannot lapse."""
+    """A launcher that exits must not take the holder's beat with it.
+
+    A dispatch records its reservation and returns, while the supervisor it
+    started goes on working. A beat only the launcher renewed would lapse while
+    that holder was still there, so the freshness is measured across the
+    launcher's own exit: it publishes and ends, a second process keeps the beat
+    current, and the beat is read well past the stale window.
+    """
+    monkeypatch.setattr(host_heartbeat, "HEARTBEAT_STALE_SECONDS", 1.0)
+    crew_home = runs_module.crew_home()
+    launcher = _beat_process(crew_home, "renewing-host", 0.0)
+    launcher.wait(timeout=60)
+    assert launcher.poll() == 0, "the launcher did not exit cleanly"
+    holder = _beat_process(crew_home, "renewing-host", 120.0)
+    try:
+        assert _await(
+            lambda: host_heartbeat.host_heartbeat_path(
+                crew_home, "renewing-host"
+            ).exists()
+        )
+        time.sleep(2.5)
+        assert host_heartbeat.host_is_live(crew_home, "renewing-host") is True
+    finally:
+        _stop(holder)
+    assert _await(
+        lambda: host_heartbeat.host_is_live(crew_home, "renewing-host") is False,
+        seconds=6.0,
+    ), "the beat stayed live after its holder ended"
+
+
+def test_a_renewer_whose_beat_vanished_lets_the_next_publish_renew(
+    home: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A renewal that ended must not leave a key that suppresses renewal."""
     monkeypatch.setattr(host_heartbeat, "HEARTBEAT_RENEW_SECONDS", 0.05)
-    path = host_heartbeat.publish_host_heartbeat(
-        runs_module.crew_home(), "renewing-host"
-    )
+    crew_home = runs_module.crew_home()
+    key = (str(crew_home), "vanishing-host")
+    path = host_heartbeat.publish_host_heartbeat(crew_home, "vanishing-host")
+    path.unlink()
+    assert _await(
+        lambda: key not in host_heartbeat._RENEWERS,
+        seconds=10.0)
+    path = host_heartbeat.publish_host_heartbeat(crew_home, "vanishing-host")
     stale = time.time() - 600.0
     os.utime(path, (stale, stale))
-    deadline = time.monotonic() + 10
-    while time.monotonic() < deadline:
-        if host_heartbeat.host_is_live(runs_module.crew_home(), "renewing-host"):
-            break
-        time.sleep(0.02)
-    assert host_heartbeat.host_is_live(runs_module.crew_home(), "renewing-host")
-    assert host_heartbeat.stop_host_heartbeat(runs_module.crew_home(), "renewing-host")
+    assert _await(lambda: path.stat().st_mtime > stale + 1.0, seconds=10.0), (
+        "the second publication started no renewal"
+    )
+    assert host_heartbeat.stop_host_heartbeat(crew_home, "vanishing-host")
+
+
+def test_the_supervisor_publishes_the_beat_it_keeps_fresh(
+    home: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The process that outlives a launch is the one that publishes its beat."""
+    from reckon.crew.dispatch_peer import _supervisor_command
+
+    crew_home = runs_module.crew_home()
+    missing = home / "no-such-spec.json"
+    assert _supervisor_command(["--spec", str(missing)]) == 0
+    assert host_heartbeat.host_is_live(crew_home, host_heartbeat.heartbeat_host())

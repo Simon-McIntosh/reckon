@@ -5059,7 +5059,15 @@ def _run_supervisor(spec_path: Path) -> int:
     the supervisor survives one so it can write the exit a post-spawn stop
     caused, and it abandons the launch when the stop arrived before the worker
     existed.
+
+    This process outlives the launch that started it, and the launcher does not:
+    a CLI dispatch records its reservation and returns about two seconds later,
+    so a beat only the launcher renewed would lapse while this supervisor and
+    its worker were still working. The beat is published here, from the process
+    that stays for the whole run, so a holder's host reads as live for as long
+    as the run lives rather than for as long as its launcher.
     """
+    _publish_reservation_host()
     try:
         spec = json.loads(spec_path.read_text())
     except (OSError, ValueError):
