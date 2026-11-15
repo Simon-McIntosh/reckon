@@ -181,6 +181,11 @@ def test_a_done_section_that_states_no_done_when_does_not_stop_a_close(
     mounted_plan: Path,
 ) -> None:
     state = _read_state()
+    # s2 is worked on after the rule landed, so it is inside the rule's reach
+    # and only the absence of a done-when keeps it clear. Without this stamp
+    # s2 would also be exempt for having no recorded activity, and the case
+    # would pass even against a check that ignored the done-when entirely.
+    state["comments"]["s2"] = [_activity(DONE_AFTER_THE_RULE)]
 
     # s1 answers with a landing comment; s2 states no done-when and has none,
     # so the close owes it nothing.
