@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="doc">
+  <meta name="plan-slug" content="work-scales-to-eighty-across-nodes">
+  <title>§3 negative control | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <h1 id="wse-a-node-declares-the-mcp-set-it-needs-nc">Negative control: a node naming a set at the base revision</h1>
+    <p id="wse-a-node-declares-the-mcp-set-it-needs-nc-why">At revision <code>ece5cf0e3b5a23946e6b62e7d5d9d2b9a580b9e6</code> the flight layer declares no <code>mcp_sets</code> key and <code>launch_plan</code> carries no parameter that selects a set, so a node naming one is refused rather than connected to any server. Run against that revision, the node's whole test file fails with no passing case: 20 failed, 0 passed. At the run's head the same command reads 20 passed.</p>    <p id="wse-a-node-declares-the-mcp-set-it-needs-nc-how">The base arm was an extraction of the base revision under the run's scratch tree, with the node's own test file copied in, so the base revision's package is what the tests imported.</p>
+    <pre id="wse-a-node-declares-the-mcp-set-it-needs-nc-log"># revision ece5cf0e3b5a23946e6b62e7d5d9d2b9a580b9e6 tree=/tmp/reckon-crew-scratch/r-20261115T201217697164-wse-a-node-declares-the-mcp-set-it-needs/base-arm
+# command: PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_node_declares_its_mcp_set.py
+# module.__file__: /tmp/reckon-crew-scratch/r-20261115T201217697164-wse-a-node-declares-the-mcp-set-it-needs/base-arm/reckon/__init__.py
+# cwd: /tmp/reckon-crew-scratch/r-20261115T201217697164-wse-a-node-declares-the-mcp-set-it-needs/base-arm
+FAILED tests/test_a_node_declares_its_mcp_set.py::test_a_claude_launch_connects_to_exactly_its_set[first-set] - reckon.flight.FlightConfigError: &lt;override&gt;: mcp_sets: Extra inputs are not permitted
+FAILED tests/test_a_node_declares_its_mcp_set.py::test_a_codex_launch_connects_to_exactly_its_set[first-set] - reckon.flight.FlightConfigError: &lt;override&gt;: mcp_sets: Extra inputs are not permitted
+FAILED tests/test_a_node_declares_its_mcp_set.py::test_an_omp_launch_connects_to_exactly_its_set[first-set] - reckon.flight.FlightConfigError: &lt;override&gt;: mcp_sets: Extra inputs are not permitted
+FAILED tests/test_a_node_declares_its_mcp_set.py::test_a_node_naming_an_undeclared_set_is_refused - reckon.flight.FlightConfigError: &lt;override&gt;: mcp_sets: Extra inputs are not permitted
+FAILED tests/test_a_node_declares_its_mcp_set.py::test_a_malformed_set_table_is_refused_by_the_flight_layer[bare-string] - AttributeError: module 'reckon.flight' has no attribute 'MCP_SETS_KEY'
+FAILED tests/test_a_node_declares_its_mcp_set.py::test_the_reader_and_the_layer_refuse_the_same_table - AttributeError: module 'reckon._worker_fence' has no attribute 'WorkerMcpSetsError'. Did you mean: 'WorkerMcpServersError'?
+20 failed in 2.96s
+EXIT=1</pre>
+    <p id="wse-a-node-declares-the-mcp-set-it-needs-nc-rest">All twenty failing ids, in full, are in <code>negative-control.log</code> in the node's run directory; the excerpt above is one case per backend plus the two shape cases. Each failure names the absent declaration, not a defect in the assertion.</p>
+  </main>
+</body>
+</html>
