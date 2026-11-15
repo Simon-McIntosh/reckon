@@ -7,6 +7,7 @@ import os
 import threading
 import time
 from contextvars import ContextVar
+from pathlib import Path
 
 import pytest
 
@@ -116,3 +117,129 @@ def test_launches_inherit_the_pass_read_context(admission, monkeypatch):
         context.reset(token)
     assert len(result["launched"]) == len(queued)
     assert seen == ["pass-read"] * len(queued)
+
+
+def test_a_pass_reserves_the_router_allowance_before_launching(admission, monkeypatch):
+    resolve, queued = admission
+    lane = resolve({})["backends"]["clive"]["lane_document"]
+    fixtures._write_lane(Path(lane), fixtures._session_lane(2))
+    completed = []
+    monkeypatch.setattr(
+        queue_admission, "_launch_queued", _launch_after(0.2, completed)
+    )
+    result = queue_admission.admit_once(config_for=resolve)
+    assert result["launched"] == queued[:2]
+    assert result["held"] == queued[2:]
+    assert len(completed) == 2
+    assert all(
+        runs.read_pointer(identity)["phase"] == "queued" for identity in queued[2:]
+    )
+
+
+def test_a_refused_launch_returns_its_reserved_allowance(admission, monkeypatch):
+    resolve, queued = admission
+    lane = resolve({})["backends"]["clive"]["lane_document"]
+    fixtures._write_lane(Path(lane), fixtures._session_lane(1))
+    completed = []
+    launch = _launch_after(0.1, completed)
+
+    def refusing(pointer, **kwargs):
+        if pointer["run_id"] == queued[0]:
+            raise RuntimeError("the configured executable cannot be started")
+        return launch(pointer, **kwargs)
+
+    monkeypatch.setattr(queue_admission, "_launch_queued", refusing)
+    result = queue_admission.admit_once(config_for=resolve)
+    assert result["failed"] == queued[:1]
+    assert result["launched"] == queued[1:2]
+    assert result["held"] == queued[2:]
+    assert runs.read_pointer(queued[0])["phase"] == "queued"
+    assert "executable cannot be started" in result["failure_detail"][queued[0]]
+
+
+def test_the_admit_service_stops_after_its_launches_finish(
+    admission, tmp_path, monkeypatch
+):
+    import json
+    import sys
+
+    resolve, queued = admission
+    runtime = tmp_path / "runtime"
+    runtime.mkdir()
+    config_home = tmp_path / "supervisor-config"
+    (config_home / "fleet").mkdir(parents=True)
+    script = tmp_path / "admit_service.py"
+    script.write_text(
+        """
+import json, os, signal, sys, time
+from pathlib import Path
+from reckon.crew import queue_admission, runs
+root = Path(sys.argv[1])
+config = json.loads(sys.argv[2])
+def stop(*args):
+    (root / "stopped.json").write_text(json.dumps({
+        "began": sorted(p.name.removeprefix("began-") for p in root.glob("began-*")),
+        "completed": sorted(p.name.removeprefix("completed-") for p in root.glob("completed-*")),
+    }))
+    raise SystemExit(0)
+signal.signal(signal.SIGTERM, stop)
+def launch(pointer, **kwargs):
+    identity = pointer["run_id"]
+    (root / ("began-" + identity)).touch()
+    time.sleep(0.5)
+    record = runs._mutate_pointer(identity, lambda row: {**row, "phase": "working"})
+    (root / ("completed-" + identity)).touch()
+    return record
+queue_admission._launch_queued = launch
+queue_admission._admit_code_stamp = lambda: "running-image"
+queue_admission.admit_until_stopped(
+    interval=0.01, config_for=lambda pointer: config, lander=lambda: {}
+)
+"""
+    )
+    argv = [sys.executable, str(script), str(tmp_path), json.dumps(resolve({}))]
+    (config_home / "fleet" / "services.json").write_text(json.dumps({"admit": argv}))
+    environment = {
+        **os.environ,
+        "PYTHONPATH": str(Path(fleet.__file__).resolve().parents[2]),
+        "FLEET_RUNTIME_DIR": str(runtime),
+        "FLEET_STATE_DIR": str(tmp_path / "fleet-state"),
+        "XDG_CONFIG_HOME": str(config_home),
+    }
+    from types import SimpleNamespace
+
+    manager = fleet.DeclaredServices(
+        runtime,
+        environment,
+        code_stamp=lambda: "replacement-image",
+        checkout_trust=lambda: SimpleNamespace(trusted=True),
+        stop_grace=2,
+    )
+    monkeypatch.setattr(fleet, "all_process_cmdlines", dict)
+
+    def wait_for(predicate):
+        until = time.monotonic() + 15
+        while time.monotonic() < until:
+            if predicate():
+                return
+            time.sleep(0.01)
+        pytest.fail("admission service did not reach its requested boundary")
+
+    try:
+        manager.reload()
+        pid = fleet.recorded_service_pid(runtime, "admit")
+        wait_for(lambda: bool(list(tmp_path.glob("began-*"))))
+        manager.supervise_once()
+        assert fleet.recorded_service_pid(runtime, "admit") == pid
+        assert not (tmp_path / "stopped.json").exists()
+        wait_for(lambda: len(list(tmp_path.glob("completed-*"))) == len(queued))
+        wait_for(lambda: manager._pass_allows_restart("admit", pid))
+        manager.supervise_once()
+        wait_for((tmp_path / "stopped.json").exists)
+        stopped = json.loads((tmp_path / "stopped.json").read_text())
+        assert stopped == {"began": sorted(queued), "completed": sorted(queued)}
+        print(
+            f"service_restart_began={len(stopped['began'])} completed={len(stopped['completed'])}"
+        )
+    finally:
+        manager.stop_all()
