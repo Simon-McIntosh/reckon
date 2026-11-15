@@ -300,3 +300,52 @@ def test_an_unpromoted_review_still_files_its_request(
 
     assert report["self_promoted"] == [REVIEW_RUN_ID], report
     assert not pointer_path(REVIEW_RUN_ID).exists()
+
+
+def test_the_sweep_retires_a_promoted_pointer_through_the_landing_owner(
+    repository: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The mark is retired by the owner, not by a second retirement beside it."""
+    from reckon.crew import pending_landing
+
+    _deliver(repository, tmp_path, worker_pid=None)
+    current = json.loads(pointer_path(REVIEW_RUN_ID).read_text(encoding="utf-8"))
+    pending_landing.mark_promoted_pointer(REVIEW_RUN_ID, current)
+
+    sightings: list[str] = []
+    owner = pending_landing.retire_pointer_if
+
+    def recorded(run_id: str, matches) -> str:
+        sightings.append(run_id)
+        return owner(run_id, matches)
+
+    monkeypatch.setattr(pending_landing, "retire_pointer_if", recorded)
+
+    _sweep()
+
+    assert sightings == [REVIEW_RUN_ID], sightings
+    assert not pointer_path(REVIEW_RUN_ID).exists()
+
+
+def test_the_promotion_writes_its_mark_through_the_landing_owner(
+    repository: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The mark has one writer: the landing module's, as the landing mark has."""
+    from reckon.crew import pending_landing, promotion
+
+    _write_pointer(repository, tmp_path, worker_pid=None)
+
+    sightings: list[str] = []
+    owner = pending_landing.mark_promoted_pointer
+
+    def recorded(run_id: str, pointer) -> dict:
+        sightings.append(run_id)
+        return owner(run_id, pointer)
+
+    monkeypatch.setattr(pending_landing, "mark_promoted_pointer", recorded)
+
+    assert promotion._mark_promoted_pointer(REVIEW_RUN_ID) is True
+
+    assert sightings == [REVIEW_RUN_ID], sightings
+    written = json.loads(pointer_path(REVIEW_RUN_ID).read_text(encoding="utf-8"))
+    assert written.get("promoted") is True
