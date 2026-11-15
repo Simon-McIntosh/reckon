@@ -1,0 +1,303 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="research">
+  <meta name="plan-slug" content="per-node-evidence-costs-and-closure-overview">
+  <meta name="plan-title" content="What per-node evidence costs, and whether one closure overview can replace it">
+  <meta name="plan-summary" content="Every landing is recorded four times; the per-node fragment takes 7% of a worker run and three quarters are never read by an agent">
+  <meta name="plan-status" content="reference">
+  <meta name="plan-informs" content="an-evidence-record-counts-only-what-it-read,history-persists-as-detail-washes-out">
+  <meta name="plan-source" content="git history, docs/evidence, committed run records, 154 worker streams and 16 coordinator transcripts on this workstation">
+  <meta name="plan-source-quality" content="primary">
+  <meta name="plan-tags" content="evidence,crew,analysis">
+  <title>What per-node evidence costs, and whether one closure overview can replace it | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <h2 id="s1">§1 — The question and the answer so far</h2>
+    <p>
+      The lead asked whether requiring an evidence document for every section
+      implemented is overkill, and whether it would be better to ask each
+      section for a visual record where one applies and to write one concise,
+      sourced closure overview when a sprint or significant plan closes.
+    </p>
+    <p>
+      It is practical, and most of the machinery exists. Four findings support
+      it.
+    </p>
+    <ul>
+      <li>Every landing is written down four times (§2). Only two of the four
+        are needed to rebuild the other two.</li>
+      <li>The per-node fragment costs a worker a median 7% of its run, and
+        evidence accounts for one commit in six in this repository (§3).</li>
+      <li>Three quarters of fragments are never opened by an agent after they
+        are written (§4).</li>
+      <li>A closure overview built without reading any fragment kept 47 of 60
+        sampled fragment claims, with every sentence sourced. The 13 it lost
+        were test timings, pass counts, hashes and identifiers (§7).</li>
+    </ul>
+    <p>
+      The cost in worker time is smaller than the lead's sense of churn
+      suggests. The churn is real, and it sits mostly in commits, in the
+      coordinator's splice step and in the repository's size, not in the
+      worker's run.
+    </p>
+
+    <h2 id="s2">§2 — What one landing writes today</h2>
+    <p>
+      A section that lands leaves the same result in four places. The first two
+      are written by the worker, the third by the coordinator and the fourth by
+      the promotion.
+    </p>
+    <table>
+      <thead>
+        <tr><th>Record</th><th>Where</th><th>Written by</th><th>Holds</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Fragment</td>
+          <td><code>docs/evidence/fragments/&lt;plan&gt;/&lt;node&gt;.html</code></td>
+          <td>worker</td>
+          <td>prose account of what landed, with tables and sometimes a figure</td>
+        </tr>
+        <tr>
+          <td>Landing line</td>
+          <td>manifest <code>landing:</code>, copied to the plan as a <code>c-close</code> comment</td>
+          <td>worker, then coordinator</td>
+          <td>one sentence: what landed and the measured result</td>
+        </tr>
+        <tr>
+          <td>Landed record anchor</td>
+          <td><code>docs/evidence/archive/&lt;plan&gt;-landed.html</code></td>
+          <td>coordinator, by <code>append_evidence</code></td>
+          <td>the fragment, spliced into the plan's cumulative record</td>
+        </tr>
+        <tr>
+          <td>Run record</td>
+          <td><code>docs/state/reckon/runs/&lt;run-id&gt;.json</code></td>
+          <td>promotion</td>
+          <td>commits, gate command and verdict, tests added, changed lines,
+            negative control, suite delta, review scores, worker time</td>
+        </tr>
+      </tbody>
+    </table>
+    <p>
+      The landing line and the run record together carry what happened, who
+      checked it and how. The fragment and the landed record anchor restate
+      them in prose. The worker prompt makes the fragment mandatory for every
+      implementation node, and the build skill makes the splice one of three
+      operations in every landing.
+    </p>
+
+    <h2 id="s3">§3 — What it costs</h2>
+    <p>
+      Two measurements: the repository over the 30 days to 2026-11-14, and a
+      census of the worker and coordinator streams still on disk.
+    </p>
+    <table>
+      <thead>
+        <tr><th>Measure</th><th>Value</th><th>Denominator</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Commits touching <code>docs/evidence</code></td><td>3,873 (16%)</td><td>24,788 commits in 30 days</td></tr>
+        <tr><td>Commits touching <code>docs/research</code></td><td>40</td><td>same</td></tr>
+        <tr><td>Lines added under <code>docs/evidence</code></td><td>74,034</td><td>160,076 added under <code>reckon/</code> source</td></tr>
+        <tr><td>Fragment files</td><td>1,923 in 136 plan directories, 10.2 MB</td><td>median 6 per plan, largest 111</td></tr>
+        <tr><td>Landed records</td><td>213, 16.0 MB</td><td>largest 3.4 MB</td></tr>
+        <tr><td>Worker output spent writing evidence</td><td>median 7.1%, 90th percentile 18.3%</td><td>154 streamed implementation runs</td></tr>
+        <tr><td>Worker turns touching evidence</td><td>790 (5.3%)</td><td>14,781 turns</td></tr>
+        <tr><td>Coordinator turns touching evidence</td><td>1,190 (2.5%)</td><td>47,947 turns in 16 sessions</td></tr>
+        <tr><td>Coordinator <code>append_evidence</code> operations</td><td>264</td><td>16 sessions</td></tr>
+      </tbody>
+    </table>
+    <figure>
+      <img src="/reckon/figures/per-node-evidence-cost/share-of-run.svg"
+           alt="Histogram of the share of each worker run's tool output spent writing its evidence fragment">
+      <figcaption>
+        Share of a worker run's tool output spent writing its evidence
+        fragment, over the 154 implementation runs since 2026-10-15 whose
+        stream is still on disk. Share is measured in characters of tool-call
+        payload, because only four streams carry per-call token counts; those
+        four give a median of 6.1%. 149 of the 154 runs wrote a fragment.
+      </figcaption>
+    </figure>
+    <p>
+      The census could not count review or repair rounds caused by a defect in
+      the record itself, such as a duplicate element id or a document-check
+      finding on a fragment. 643 of 1,141 implementation records are retries,
+      but a run record keeps no prose cause, so none can be attributed to the
+      evidence record. That cost is unknown, not zero.
+    </p>
+
+    <h2 id="s4">§4 — Who reads it</h2>
+    <figure>
+      <img src="/reckon/figures/per-node-evidence-cost/stock-against-reads.svg"
+           alt="Three bar pairs: files on disk against files read by an agent, for node fragments, landed records and research documents">
+      <figcaption>
+        Files on disk against files an agent opened at least once, by class.
+        Reads are counted across the 154 worker streams and 16 coordinator
+        sessions, and a run reading the file it wrote does not count. The
+        stock is everything on disk; the reads cover 30 days, so the
+        percentages are a floor.
+      </figcaption>
+    </figure>
+    <ul>
+      <li><strong>Fragments:</strong> 489 of 1,923 were read, 729 read calls
+        in all. Coordinators made 483 of those calls, which is consistent with
+        a coordinator opening a fragment to verify and splice it, though the
+        census did not separate that from later reference.</li>
+      <li><strong>Landed records:</strong> 72 of 213 were read, 530 calls,
+        almost all by coordinators. Only 17 landed records are cited by a plan
+        other than their own.</li>
+      <li><strong>Research documents:</strong> 8 of 49 were read by an agent.
+        This undercounts their use: they are written for the lead, and 38 of
+        the 49 are cited by at least one plan.</li>
+    </ul>
+    <p>
+      This census counts agent reads only. It says nothing about which
+      documents the lead reads in the browser, which is the reader the lead's
+      question is about.
+    </p>
+
+    <h2 id="s5">§5 — This was decided once already</h2>
+    <p>
+      Plan <code>landed-record-at-closure</code>, shipped 2026-10-04, ruled
+      that a node makes one write, its plan comment, beside the run record, and
+      that the landed document is synthesised once at closure. It added the
+      closure guard that refuses a terminal status without an evidence record,
+      and <code>reckon evidence synthesize</code>, which builds a landed
+      record from plan comments and run records.
+    </p>
+    <p>
+      Fragments arrived on 2026-09-28 to stop workers colliding on one landed
+      file. Plan <code>worker-authors-its-own-record</code>, done 2026-10-13,
+      then made the fragment a requirement on every node. That restored the
+      per-node document the earlier plan had removed. Fragments have been added
+      at 79 to 499 a week since.
+    </p>
+
+    <h2 id="s6">§6 — Recommendation</h2>
+    <ol>
+      <li><strong>Drop the mandatory per-node fragment.</strong> A node leaves
+        its landing line, its run record and its gate log. This is the one
+        deletion: it removes the fragment rule from the worker prompt and the
+        build, edit and create skills, and the splice from the landing
+        beat.</li>
+      <li><strong>Ask for a figure where the section has something to
+        show.</strong> A node whose result is a measurement, a comparison or a
+        rendered surface writes one figure under
+        <code>docs/figures/&lt;plan&gt;/</code> and names it in its manifest. A
+        node with nothing to show writes none; there is no quota.</li>
+      <li><strong>Write one sourced overview at closure.</strong> When a plan
+        or sprint closes, build one page from the plan's done-whens, landing
+        lines, run records, stored reviews and figures. Every claim carries a
+        commit, a run id, a gate command with its exit status, or a figure
+        path. The existing synthesiser and closure guard are the starting
+        point.</li>
+      <li><strong>Leave research documents as they are.</strong> 40 commits in
+        30 days is no churn, and they are the class the lead reports using.</li>
+      <li><strong>Keep a place for what a run record cannot hold.</strong> A
+        negative result or an explanation of a mechanism belongs in the
+        landing line when it fits in a sentence, and in a research document
+        when it does not.</li>
+    </ol>
+    <p>
+      The prototype in §7 bears on item 5: nothing it lost was a finding, so
+      the landing line and the gate log are enough for routine nodes.
+    </p>
+
+    <h2 id="s7">§7 — What a closure overview loses</h2>
+    <p>
+      A prototype script built a closure overview for three shipped plans and
+      one closed sprint from the plan's sections and done-whens, its section
+      comments, its run records, its stored reviews and its figures. It was
+      barred from reading fragments or the existing landed record. Twenty
+      factual claims were then sampled from each plan's fragments (seed
+      20261114) and counted as lost when one of their numbers, commits or
+      test names appeared in none of the permitted sources.
+    </p>
+    <table>
+      <thead>
+        <tr><th>Plan</th><th>Fragments</th><th>Landed record</th><th>Overview</th><th>Claims lost of 20</th><th>Unsourced sentences</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><code>a-live-worker-can-be-reached</code></td><td>5</td><td>16 KB, 1,659 words</td><td>12 KB, 1,568 words</td><td>9</td><td>0 of 19</td></tr>
+        <tr><td><code>a-review-is-sized-to-its-risk</code></td><td>38</td><td>26 KB, 3,083 words</td><td>54 KB, 3,672 words</td><td>2</td><td>0 of 33</td></tr>
+        <tr><td><code>a-window-paces-the-lane</code></td><td>19</td><td>255 KB, 28,665 words</td><td>50 KB, 4,287 words</td><td>2</td><td>0 of 67</td></tr>
+      </tbody>
+    </table>
+    <ul>
+      <li><strong>What was lost is detail.</strong> The 13 lost claims are
+        suite durations (<code>68 passed in 37.12s</code>), pass counts of a
+        full-suite arm, two content hashes, a session id, a message file name
+        and two fixture values. For 12 of the 13 the overview still states
+        the claim and lacks only those tokens. The worker classed five of
+        them as negative results because they sit in a negative-control
+        sentence; the missing token in each is a duration or a count, and the
+        control's verdict survives in the run record.</li>
+      <li><strong>Little needs authoring.</strong> The script ran in 3.4
+        seconds for all four pages. Each section needed one authored headline
+        sentence, 24 across the three plans; everything else was
+        mechanical.</li>
+      <li><strong>An overview is not always shorter.</strong> For the
+        38-fragment plan it is twice the size of the landed record, because
+        its routine table has 114 rows, one per run. A closure overview
+        should fold retries into one row per landed node.</li>
+      <li><strong>A section with no landing line has no outcome.</strong> One
+        of the 24 sections, moved in from a followup, had neither a closing
+        comment nor a run row, and the overview could only say so. Without
+        fragments, the landing line is the only prose account, so the closure
+        guard should refuse a section that lacks one.</li>
+      <li><strong>Figures carry across.</strong> The plan overviews embed 6
+        and 21 existing figures, and the sprint page 26.</li>
+    </ul>
+    <p>
+      The sample is three plans, and the loss test is mechanical: it matches
+      tokens, so it cannot tell whether an explanation of a mechanism
+      survived in substance. No lost claim was classed as a mechanism
+      explanation, which is weak evidence that such prose is rare in
+      fragments, not proof.
+    </p>
+
+    <h2 id="s8">§8 — Limits of these measurements</h2>
+    <ul>
+      <li><strong>Rounds caused by record defects.</strong> Not recoverable
+        from run records (§3).</li>
+      <li><strong>Coverage.</strong> 987 of the 1,141 implementation runs in
+        the window have no stream on disk; retention moved them to an archive
+        store that keeps no stream. The stream measures rest on the other
+        154.</li>
+      <li><strong>Census review.</strong> An independent review re-ran the
+        census on a compute partition. The share-of-run and turn figures
+        reproduced exactly. The read counts came out under 1% higher (733
+        fragment reads over 493 files against 729 over 489) because the
+        coordinator transcripts are live files that grew between the two
+        passes.</li>
+      <li><strong>The prototype is unreviewed.</strong> Its figures are as
+        the worker delivered them.</li>
+    </ul>
+
+    <h2 id="s9">§9 — Sources</h2>
+    <ul>
+      <li>Repository counts: <code>git log</code> and file listings in the
+        reckon checkout, 30 days to 2026-11-14.</li>
+      <li>Census: run
+        <code>r-20261114T205946996208-evidence-writing-cost-census</code>,
+        measured at revision <code>1ba716cf0aeb</code>. Three stream formats
+        parsed (122, 28 and 4 runs), none unreadable. Positive control: a run
+        known to write a fragment was found by the same parser. The worker
+        also caught a parser fault that had hidden tool calls, which had
+        dropped the runs seen writing a fragment from 149 to 82.</li>
+      <li>Prototype: run
+        <code>r-20261114T211102171695-closure-overview-prototype</code>,
+        measured at revision <code>70272d915026</code>.</li>
+      <li>Prior decision: plan <code>landed-record-at-closure</code>.</li>
+    </ul>
+  </main>
+</body>
+</html>

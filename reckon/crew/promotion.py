@@ -492,6 +492,23 @@ def _default_gate_evidence_from_manifest(
     )
 
 
+def _run_plan_slug(record: Mapping[str, Any], node: Mapping[str, Any]) -> str:
+    """The plan a run works on, named by its node or by its own subject.
+
+    An implementation run carries its plan on the node. A plan-review run names
+    the plan as its subject instead and leaves the node's plan empty, so the
+    slug is read from the pointer's node id through the reader that owns that
+    grammar; taking only the node's plan would file the review's row with no
+    plan and no reader could tell which plan was reviewed.
+    """
+    plan = str(node.get("plan") or record.get("plan") or "").strip()
+    if plan:
+        return plan
+    from reckon.crew.recovery_review_dispatch import _plan_review_pointer_slug
+
+    return _plan_review_pointer_slug(record)
+
+
 @operational_read
 def complete(
     run_id: str,
@@ -1447,8 +1464,9 @@ def _complete_locked(
     # uncommitted edit into its commit. The check runs here, before either
     # store is written, so a refusal leaves no ledger row and no plan comment
     # for the next promotion to read as an unrelated edit.
+    plan_text_edits = {}
     if not shadow:
-        _refuse_unrelated_plan_edit(
+        plan_text_edits = _refuse_unrelated_plan_edit(
             project=project,
             plan=str(node.get("plan") or ""),
             root=ledger_root,
@@ -1502,6 +1520,7 @@ def _complete_locked(
                 )
                 landing_check = _report_landing_check(
                     _commit_landing_writes(
+                        plan_text_edits=plan_text_edits,
                         run_id=run_id,
                         verdict=str(gate).strip().lower(),
                         checkout=checkout,
@@ -1819,7 +1838,7 @@ def _complete_locked(
         run = ledger.build_record(
             run_id=run_id,
             project=project,
-            plan=str(node.get("plan") or ""),
+            plan=_run_plan_slug(record, node),
             section=str(node.get("section") or ""),
             brief=brief_block,
             plan_link=str((brief_owner or {}).get("plan_link") or ""),
@@ -2172,6 +2191,7 @@ def _complete_locked(
         _stop_at_stage_boundary("the promotion commit")
         landing_check = _report_landing_check(
             _commit_landing_writes(
+                plan_text_edits=plan_text_edits,
                 run_id=run_id,
                 verdict=str(gate).strip().lower(),
                 checkout=checkout,

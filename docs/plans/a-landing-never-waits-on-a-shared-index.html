@@ -20,13 +20,13 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="reckon-tooling,crew">
   <meta name="plan-after" content="the-monitor-reads-each-fact-once">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;implementable&quot;,&quot;s12&quot;:&quot;implementable&quot;,&quot;s2&quot;:&quot;descoped&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;implementable&quot;,&quot;s12&quot;:&quot;implementable&quot;,&quot;s2&quot;:&quot;descoped&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;}">
   <meta name="plan-section-depends-on" content="{&quot;s4&quot;:[&quot;a-landing-never-waits-on-a-shared-index#s3&quot;]}">
   <title>A Landing Never Waits On A Shared Index | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="51">
-<meta name="plan-modified" content="2026-11-14">
+<meta name="plan-version" content="55">
+<meta name="plan-modified" content="2026-11-15">
 </head>
 <body>
   <main class="plan-doc">
@@ -58,7 +58,7 @@
     <code>HEAD</code> afterwards. Negative control: today's staging path must fail with the held lock.</p>
 
     <h2 id="s3">§3 — Promotion checks read only what moved</h2>
-<section data-reckon="section" data-id="s3" data-effort-hours="3.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="implementable" data-links=""></section>
+<section data-reckon="section" data-id="s3" data-effort-hours="3.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="done" data-links=""></section>
     <p>The ledger index is loaded once per promotion and shared by every check that reads it. The
     repository-boundary check reads the paths the run's commits touch, not a snapshot of the whole tree.
     The PNG-twin check reads the run's own commits since its base, not every path added since an older base.</p>
@@ -177,8 +177,17 @@
 <div class="r-comment" data-section="s10" data-id="c-run-r-20261114T174207045976-stale-index-lock-cleared-s10" data-who="reckon-build" data-when="2026-11-14T19:29:49.831Z">
     <div class="r-comment-body"><p>docs/evidence/fragments/a-landing-never-waits-on-a-shared-index/stale-index-lock-cleared-s10.html</p></div>
 </div>
+<div class="r-comment" data-section="s10" data-id="c-run-r-20261114T145817665395-wave4-clive-a-landing-never-waits-on-s10" data-who="reckon-build" data-when="2026-11-15T00:42:31Z">
+    <div class="r-comment-body"><p>A lander clears an index.lock proven stale past its retries (at least ten minutes old, size and mtime unmoved across the retry window, no process on this host holding it open), retrying the landing once and recording the removal and the age; the checkout lock&#x27;s age now has a single reader in the merge module, which the staging module imports.</p></div>
+</div>
 <div class="r-comment" data-section="s11" data-id="c-run-r-20261114T201232009152-review-of-raced-promotion-lands-s11-02421ad1ad92" data-who="reckon-build" data-when="2026-11-14T20:22:38Z">
     <div class="r-comment-body"><p>Independent review at 02421ad1ad929fd5a9975ef5c940ed8d98283ff6 stores all six scores 13/10/20/14/17/5, zero added failures in the recorded 55-to-57-test arms, four blocking findings and three non-blocking findings; repair is required before the source node lands.</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20261114T203051455649-review-of-promotion-checks-read-only-what-moved-52e6182f1f8a" data-who="reckon-build" data-when="2026-11-15T00:53:08.156Z">
+    <div class="r-comment-body"><p>independent review of r-20261114T143749419652-promotion-checks-read-only-what-moved at head 52e6182f1f: goal_fidelity 17, evidence 14, scope_discipline 19, durability 17, fit 18, reuse 17, added_failure_count 0, three non-blocking findings.</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20261114T143749419652-promotion-checks-read-only-what-moved" data-who="reckon-build" data-when="2026-11-14T19:47:10Z">
+    <div class="r-comment-body"><p>a promotion reads only what its run declared — the figure-twin check reads the run's own commits (one `diff-tree` per cited commit, one `cat-file` per candidate SVG) instead of a base-to-head diff plus `ls-tree -r HEAD`; the commitless-work guard and the worktree audit's two status reads take the run's declared roots as literal pathspecs; the ledger loader runs once over a 2,000-row ledger and a 5,000-file checkout.</p></div>
 </div>
 <div class="r-comment" data-section="s5" data-id="c-run-r-20261106T134612700154-review-of-retry-a-held-index-lock-in-a-promotions-commit-and-restore-5568106b9358" data-who="reckon-build" data-when="2026-11-06T13:57:16.941Z">
     <div class="r-comment-body"><p>review of r-20261106T124416537003-retry-a-held-index-lock-in-a-promotions-commit-and-restore at 5568106b9358 stored parsed with scores goal_fidelity 16, evidence 12, scope_discipline 18, durability 17, fit 18, reuse 20 (total 101), one blocking finding at tests/test_rollback_asks_head.py:117 and two non-blocking findings.</p></div>

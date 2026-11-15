@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="every-shared-home-lock-holds-across-nodes">
+  <meta name="plan-title" content="Every shared-home lock holds across nodes">
+  <meta name="plan-evidence-for" content="reckon:every-shared-home-lock-holds-across-nodes">
+  <meta name="plan-verifies" content="reckon:every-shared-home-lock-holds-across-nodes#s4">
+  <meta name="plan-recorded-at" content="2026-11-14">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-tags" content="locks,flock,cross-node,store,review-index">
+  <title>Store and review-index locks exclude across nodes — evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+</head>
+<body>
+<article class="r-note" data-node="store-and-review-index-locks-cross-node" data-reckon="landed" data-when="2026-11-14">
+  <h2 id="store-and-review-index-locks-cross-node-head">The store, compliance, review-index and peer-index locks exclude across nodes</h2>
+
+  <p id="store-and-review-index-locks-cross-node-what">Four shared-home locks moved from
+  <code>fcntl.flock</code> onto <code>reckon.node_exclusive_lock.exclusive_lock</code>, whose POSIX
+  record lock the file server holds across nodes: <code>reckon/_store.py::_serialized_path_lock</code>,
+  <code>reckon/compliance.py::_locked</code>, <code>reckon/crew/review_records.py::_index_lock</code>
+  and <code>reckon/crew/dispatch_peer.py::_update_peer_index</code>. The store and compliance helpers keep only the
+  lock-path derivation (<code>_lock_path</code> is the new name in compliance); the review index
+  lock still yields <code>False</code> when the lock cannot be taken and <code>None</code> for a
+  reader whose non-blocking take finds a holder. The guard's pending table drops the four rows.</p>
+
+  <p id="store-and-review-index-locks-cross-node-measure">A holder in a second process takes
+  <em>only</em> the POSIX record lock (<code>fcntl.lockf</code>) on each lock file.
+  <code>tests/test_store_and_review_index_locks_hold_across_nodes.py</code> shows
+  <code>_index_lock(wait=False)</code> yielding <code>None</code> against that holder, and
+  <code>_serialized_path_lock</code> keeping a writer out until the holder closes the descriptor.
+  At the delivered head both pass; at base <code>65431adf17</code>, where the sites take only
+  <code>flock</code>, both fail because the record lock is invisible to them.</p>
+
+  <p id="store-and-review-index-locks-cross-node-lint">The four modules carry 20 pre-existing ruff
+  findings at base and the same 20 at head; the new test file is clean under
+  <code>ruff check</code> and <code>ruff format --check</code>. The focused 11-file gate reads
+  109 passed at head against 105 passed and 2 scaffolding errors at base, with the same single
+  pre-existing failure (<code>tests/test_crew_peers.py::test_peer_channel_does_not_relax_live_scope_refusal</code>) on both arms: zero added failures. The promotion suite arm reads 57 passed at head and 53 passed plus the same two scaffolding errors at base.</p>
+</article>
+</body>
+</html>

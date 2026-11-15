@@ -1,0 +1,93 @@
+<section id="qwnw-a-finished-upstream-releases-its-waiters-landing">
+  <h2>A finished upstream releases its waiters</h2>
+
+  <p><strong>What changed.</strong> A request waiting on a whole plan was judged by
+  that plan's own status alone, so a plan whose sections are all done but whose
+  status is still <code>active</code> held every dependent until someone closed it
+  by hand. <code>reckon/crew/admission/readiness.py</code> now decides that wait
+  through the roadmap's own reader, <code>roadmap._plan_dependency_satisfied</code>,
+  whose rule is that a plan-level dependency is met once every section of the
+  upstream plan is done or descoped. One predicate answers for the roadmap, the
+  batch and admission, so the plan-level wait can never disagree with the
+  roadmap about which sections count as done. An unreadable plan holds the wait
+  rather than releasing it.</p>
+
+  <p><strong>An input an upstream has yet to write is no longer a queue-time
+  refusal.</strong> <code>reckon/crew/dispatching/requests.py</code> resolves the
+  batch's waits before it judges each node, and drops the <code>inputs</code>
+  finding from a request that carries a wait. That absence is not a refusal at
+  queue time: the launch re-derives every input finding against the tree the work
+  will actually run in, so a request whose upstream has not written the file stays
+  parked, and one whose upstream has is launched.</p>
+
+  <p><strong>A review run is not an unlanded run of the section it reviews.</strong>
+  <code>_section_run_unlanded</code> in the same admission package treated every
+  live pointer as a holder, so a reviewer still working on a landed section kept
+  candidates parked for as long as the review ran. Candidates are now filtered
+  with <code>recovery_review_delivery._is_review_run</code>, the predicate that
+  already owns the difference between a run that has something to land and one
+  that has nothing.</p>
+
+  <p><strong>Every promoted row now carries its plan slug.</strong>
+  <code>reckon/crew/promotion.py</code> took the plan from the pointer's node
+  alone, and a plan review names its plan as its subject rather than on its node,
+  so the row it wrote recorded no plan at all. <code>_run_plan_slug</code> falls
+  back from the node's plan to the pointer's, and then to the plan slug of a
+  plan-review node id. The fallback reads that id through
+  <code>recovery_review_dispatch._plan_review_pointer_slug</code>, the reader that
+  owns the node-id grammar, so a design review's rubric is not folded into the
+  slug.</p>
+
+  <p><strong>A metered request already launched when its upstream landed.</strong>
+  That behaviour was measured on this node and found correct, so the missing test
+  was added rather than the working guard rewritten: the request queued
+  <code>awaiting-upstream</code> on the metered lane, and the release launched it
+  under that lane with the lane recorded on its pointer.</p>
+
+  <h3 id="qwnw-a-finished-upstream-releases-its-waiters-measured">Measured</h3>
+
+  <p>The reproductions were confirmed before any repair, on the base revision.
+  A release of a plan whose sections were all done, and whose status stayed
+  <code>active</code>, read
+  <code>{'candidates': ['r-waiter'], 'promoted': [], 'blocked': [], 'failed': {}}</code>:
+  the request stayed parked. A request naming an input its upstream had not yet
+  written was refused while it was still a request:</p>
+
+  <pre id="qwnw-a-finished-upstream-releases-its-waiters-refusal">CrewError: node 'n-waiter' is refused at queue time: the node declares
+upstream-output.txt as its inputs, and that path does not exist under the work
+repository</pre>
+
+  <p>A landed section carrying only a live review pointer promoted no waiter,
+  and a promoted plan review's ledger row asserted <code>'' == 'plan-a'</code>.
+  All nine tests pass on the working tree; five of them fail at the base
+  revision, which is the negative control below.</p>
+
+  <table id="qwnw-a-finished-upstream-releases-its-waiters-arms">
+    <caption>Every arm is a log whose first line names its revision, tree and
+    command and whose last line reads <code>EXIT=&lt;code&gt;</code>.</caption>
+    <thead><tr><th>arm</th><th>revision and tree</th><th>result</th></tr></thead>
+    <tbody>
+      <tr><td>node tests, after</td>
+        <td><code>1ba716cf</code> working tree</td>
+        <td><strong>9 passed</strong>, <code>EXIT=0</code></td></tr>
+      <tr><td>node tests, base (negative control)</td>
+        <td><code>1ba716cf</code> extracted tree, new test file added</td>
+        <td>5 failed, 4 passed, <code>EXIT=1</code> &mdash; the plan-level
+        release, the deferred input, the launch of that input, the live review
+        pointer and the plan-review row</td></tr>
+      <tr><td>node suite gate, base</td>
+        <td><code>1ba716cf</code> extracted tree</td>
+        <td>53 passed, 2 errors, <code>EXIT=1</code> &mdash; both errors are
+        <code>git ls-tree HEAD</code> in a tree extracted without git metadata,
+        in the two tests whose fixtures read a working tree's head</td></tr>
+      <tr><td>node suite gate, after</td>
+        <td>working tree</td>
+        <td><strong>55 passed</strong>, <code>EXIT=0</code></td></tr>
+      <tr><td>neighbouring tests, base and after</td>
+        <td>nine files around queue, landing and the ledger</td>
+        <td>10 failed and 53 passed at the head, all ten inside two of the base-arm
+        files, which fail the identical ten at the base revision; the other seven
+        pass</td></tr>
+    </tbody>
+  </table>
+</section>

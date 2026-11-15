@@ -839,6 +839,7 @@ def _inspect_workspace(
     *,
     raise_on_unavailable: bool = True,
     release_residue: bool = False,
+    untracked_roots: Iterable[Path] | None = None,
 ) -> dict[str, Any]:
     """Inspect one worktree's commits, residue and classification.
 
@@ -849,9 +850,11 @@ def _inspect_workspace(
     even when they are empty. A clean tree whose head is unreachable is
     measured as well as a dirty one: the commits a deliberately abandoned tree
     carries are what an explicit pin archives, and that list cannot be read off
-    the working-tree status.
+    the working-tree status. ``untracked_roots`` bounds the status read to the
+    roots a caller charges a change to, as :func:`_tree_state` describes;
+    ``None`` reads the whole working tree.
     """
-    state = _tree_state(path)
+    state = _tree_state(path, untracked_roots=untracked_roots)
     if not state.get("available"):
         detail = state.get("detail") or "tree is unavailable"
         if raise_on_unavailable:
@@ -3018,9 +3021,7 @@ def require_plan_reviewed(
         if design is None:
             missing = "carries no stored review under the design rubric"
         else:
-            missing = (
-                "carries a design review that left out an item of its rubric"
-            )
+            missing = "carries a design review that left out an item of its rubric"
         return _plan_review_verdict(
             enforce,
             f"plan {node.plan!r} in project {project!r} {missing}; "
@@ -3211,10 +3212,12 @@ def resolve_scope_repository(
     repositories: Iterable[str | Path],
 ) -> Path | None:
     """Resolve a declared path to its most specific containing repository."""
-    base = Path(base_repository).expanduser().resolve()
+    from reckon.crew.runs import resolved_path
+
+    base = resolved_path(Path(base_repository).expanduser())
     raw = Path(path).expanduser()
-    resolved = (raw if raw.is_absolute() else base / raw).resolve()
-    roots = {Path(root).expanduser().resolve() for root in repositories}
+    resolved = resolved_path(raw if raw.is_absolute() else base / raw)
+    roots = {resolved_path(Path(root).expanduser()) for root in repositories}
     roots.add(base)
     matches = [root for root in roots if resolved.is_relative_to(root)]
     return max(matches, key=lambda root: len(root.parts)) if matches else None
@@ -3717,9 +3720,7 @@ def _context_file_inputs(
     return file_tokens, {"write_paths": write_paths, "named_files": named_files}
 
 
-def pick_lane_document(
-    backend: Mapping[str, Any], cache: dict[str, Any]
-) -> Any:
+def pick_lane_document(backend: Mapping[str, Any], cache: dict[str, Any]) -> Any:
     """Parse one backend's published lane document once per pick.
 
     ``run_time_profile.local_lane_load`` reads the same published document for
@@ -3821,7 +3822,9 @@ def context_census(
     """
 
     def build() -> dict[str, Any]:
-        standing_tokens, standing = _standing_context_input(repo, backend_settings or {})
+        standing_tokens, standing = _standing_context_input(
+            repo, backend_settings or {}
+        )
         file_tokens, files = _context_file_inputs(repo, node, authority)
         return {
             "tokens": standing_tokens + file_tokens,
@@ -3830,14 +3833,16 @@ def context_census(
 
     def stamp_of(value: Mapping[str, Any]) -> list[Any]:
         return [
-            [path, capabilities.file_stamp(path)]
-            for path in (value.get("paths") or [])
+            [path, capabilities.file_stamp(path)] for path in (value.get("paths") or [])
         ]
 
     request_key = _census_request_key(node, repo, backend_settings, authority)
-    name = "context-census-" + hashlib.sha256(
-        json.dumps(request_key, sort_keys=True, default=str).encode()
-    ).hexdigest()
+    name = (
+        "context-census-"
+        + hashlib.sha256(
+            json.dumps(request_key, sort_keys=True, default=str).encode()
+        ).hexdigest()
+    )
     value = capabilities.cached_pick_input_stamped(
         name, request_key, stamp_of, build, root=root
     )

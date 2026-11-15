@@ -1,0 +1,47 @@
+{
+  "added_failure_count": 3,
+  "added_failure_ids": [
+    "tests/test_follow_rearm_continues.py::test_a_recorded_state_the_live_fleet_denies_is_not_announced",
+    "tests/test_follower_freshness.py::test_failed_reexec_reports_once_and_keeps_the_registration",
+    "tests/test_stale_producer_warning_waits_for_its_reload.py::test_a_reload_handed_through_crew_follow_defers_the_mismatch"
+  ],
+  "completed_at": "2026-11-14T23:58:52.191Z",
+  "dispatched_at": "2026-11-14T23:43:04Z",
+  "findings": [
+    {
+      "file": "tests/test_follow_rearm_continues.py",
+      "line": 791,
+      "severity": "non-blocking",
+      "text": "the clock assertion compares the row's observed_at against the same `stalled` value the test handed to its own fixture, so both sides move together and it holds whatever the code does; the durability it appears to give is not independent of the value under test."
+    },
+    {
+      "file": "manifest.md",
+      "line": 58,
+      "severity": "non-blocking",
+      "text": "baseline_suite and after_suite carry prose summaries rather than the armed JSON (revision, command, exit_status, log_path, completed, failure_count, failure_ids), so the added-failure set has to be re-derived from gate-base.log and gate-after.log instead of read; three added ids are recoverable and are recorded here."
+    },
+    {
+      "file": "tests/test_follow_rearm_continues.py",
+      "line": 755,
+      "severity": "non-blocking",
+      "text": "this file is outside the node's declared write path list (reckon/crew_follow_commands.py, reckon/crew/ticker.py, the new test, the evidence fragment and figure dir); the edit is disclosed in the manifest's scope_note and is legitimate because the old assertion encoded the superseded rule, but it is still an undeclared path."
+    }
+  ],
+  "project": "reckon",
+  "review_run_id": "r-20261114T234017380939-review-of-full-the-monitor-shows-the-work-it--s135-0efc69dbeca5",
+  "reviewed_base_sha": "191db600fea89eeceb839c5e8a4f259a0f5ecf54",
+  "reviewed_head_sha": "0efc69dbeca56627d2e07e9aed9e7e2fa05b9273",
+  "reviewed_run_id": "r-20261114T174816059241-full-the-monitor-shows-the-work-it--s135",
+  "scores": {
+    "durability": 16,
+    "evidence": 12,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 19,
+    "scope_discipline": 13
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-15T00:14:02.705769+00:00",
+  "total": 96
+}

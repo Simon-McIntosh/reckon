@@ -285,11 +285,12 @@ def test_a_dispatch_that_arms_or_finds_the_reservation_carries_its_reach(
 
 
 def test_the_reach_and_the_guard_count_the_same_population(home, tmp_path, monkeypatch):
-    """Twenty six placed runs across two backends are one roster and one reach.
+    """Placed runs across two backends are one roster and one reach.
 
-    Thirteen placed runs on each of two placing backends sit one over the cap
-    when counted together. The dispatch guard must refuse on all twenty six —
-    not on the dispatching backend's thirteen — and the reach must name exactly
+    Half the cap plus one placed run on each of two placing backends sits over
+    the cap when counted together, and under it on either backend alone. The
+    dispatch guard must refuse on the whole population, not on the dispatching
+    backend's half, and the reach must name exactly
     the projects of the runs the refusal counts, so a reader of the statement
     sees the same population the refusal was taken over.
     """
@@ -302,8 +303,9 @@ def test_the_reach_and_the_guard_count_the_same_population(home, tmp_path, monke
         }
     )
     project_of: dict[str, str] = {}
+    half = placement_module.RESERVATION_ROSTER_LIMIT // 2 + 1
     for backend, project in (("alpha-backend", "alpha"), ("beta-backend", "beta")):
-        for index in range(13):
+        for index in range(half):
             run_id = f"r-{backend}-{index}"
             _seed_placed_pointer(run_id, project, backend)
             project_of[run_id] = project
@@ -315,12 +317,12 @@ def test_the_reach_and_the_guard_count_the_same_population(home, tmp_path, monke
         )
 
     message = str(refused.value)
-    assert "26 workers already occupy" in message, message
+    assert f"{2 * half} workers already occupy" in message, message
     named = [
         item.strip()
         for item in message.split("Occupying runs: ", 1)[1].rstrip(".").split(",")
     ]
-    assert len(named) == 26
+    assert len(named) == 2 * half
 
     reach = placement_module._roster_reach()
     assert HOST_WIDE in reach["statement"]

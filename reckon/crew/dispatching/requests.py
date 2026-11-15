@@ -156,6 +156,7 @@ def queue_requests(
     """
     from reckon.crew import queue_admission
     from reckon.crew.dispatch_admission import (
+        INPUTS_PROPERTY,
         _require_write_paths_in_authority,
         admission_domain_findings,
         admission_refusals_and_warnings,
@@ -180,6 +181,18 @@ def queue_requests(
         for node in nodes
     }
     ceiling = resolved_time_ceiling(config)
+    # The waits are resolved before the node contract is judged, because a
+    # request that waits may name an input its upstream is still to write: that
+    # absence is not a refusal at queue time, and the launch re-checks every
+    # input against the tree the work will actually run in.
+    live = list_live()
+    refs_by_run, projects_by_run = queue_admission._validated_batch_waits(
+        nodes,
+        assigned_ids,
+        project=project,
+        repo_root=repo_root,
+        live=live,
+    )
     for node in nodes:
         # The whole node contract is judged here, beside the admission domain,
         # so a batch entry that a single dispatch would refuse is refused while
@@ -202,6 +215,16 @@ def queue_requests(
         findings = admission_domain_findings(
             node, project=project, repository=repo_root
         )
+        if refs_by_run.get(assigned_ids[node.id]):
+            # A request that waits may name a path its upstream creates, so an
+            # input the repository does not hold is deferred rather than
+            # refused: it is judged at the release, against the tree the launch
+            # reads, and refused there if it genuinely is still absent.
+            findings = [
+                finding
+                for finding in findings
+                if str(finding.get("property") or "") != INPUTS_PROPERTY
+            ]
         refusals, _warnings = admission_refusals_and_warnings(findings)
         verdict = validate_node(
             node,
@@ -215,14 +238,6 @@ def queue_requests(
                 f"node {node.id!r} is refused at queue time: "
                 + "; ".join(str(finding.get("detail") or "") for finding in refusals)
             )
-    live = list_live()
-    refs_by_run, projects_by_run = queue_admission._validated_batch_waits(
-        nodes,
-        assigned_ids,
-        project=project,
-        repo_root=repo_root,
-        live=live,
-    )
     stored: dict[str, Any] = {}
     cache: dict[str, Any] = {}
     # Queuing a request succeeds over its session's backlog exactly as a direct

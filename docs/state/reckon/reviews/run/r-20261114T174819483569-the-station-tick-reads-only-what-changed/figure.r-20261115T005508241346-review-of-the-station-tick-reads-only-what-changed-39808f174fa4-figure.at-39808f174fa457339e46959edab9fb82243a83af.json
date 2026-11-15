@@ -1,0 +1,37 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-11-15T01:38:38.660Z",
+  "dispatched_at": "2026-11-15T01:02:25Z",
+  "figure": "docs/figures/the-monitor-reads-each-fact-once/the-station-tick-reads-only-what-changed/census-readers.svg",
+  "findings": [
+    {
+      "disposition": "exempted",
+      "disposition_reason": "The figure is delivered with its caption in the same page and the caption already maps all ten symbols to human names and repeats their values, so relabelling the axis would restate a mapping the reader has beside the figure, on a figure whose numbers are correct and whose deletion would change nothing a reader needs.",
+      "file": "docs/figures/the-monitor-reads-each-fact-once/the-station-tick-reads-only-what-changed/census-readers.svg",
+      "line": null,
+      "severity": "non-blocking",
+      "summary": "The row labels are the instrument's own symbol names (_cached_stream_entry, _entries_from_listing, _load_json_envelope, _read_index_document, _read_index_envelope, _parse_git_answer_store, _read_dispatch_detail_file, measure_stream_tokens, read_document) rather than the reader each names. A reader of the image alone cannot tell which bar is the stream cache. The caption beneath the figure resolves every row in order with its value ('the stream cache 499.1, review records 333.0, the ledger run-record reader 65.9, ...'), so the mapping is available in the same view and the defect is one of extra cross-reading, not of missing information."
+    }
+  ],
+  "note": "The attached PNG is the render of the census figure above, opened and measured directly (1400x720, ink inside 16-1379 x 20-698). The ten printed values match the caption's list one for one in the same order, and the caption is explanatory, not a restatement of a title: the figure carries no title or suptitle, and the caption states the instrument's attribution rule, the window and population, and why the one bar is coloured. One observation that is not a figure defect and is therefore not a finding: the axis unit is MB per tick, while the section's bound is stated per minute, so the printed values cannot be compared against that bound from the figure alone; the evidence text carries that comparison.",
+  "project": "reckon",
+  "review_run_id": "r-20261115T005508241346-review-of-the-station-tick-reads-only-what-changed-39808f174fa4-figure",
+  "reviewed_base_sha": "ffcba6679c7cb5812709911217e6cf43ebbe9870",
+  "reviewed_head_sha": "39808f174fa457339e46959edab9fb82243a83af",
+  "reviewed_image": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T005508241346-review-of-the-station-tick-reads-only-what-changed-39808f174fa4-figure/image-0.png",
+  "reviewed_run_id": "r-20261114T174819483569-the-station-tick-reads-only-what-changed",
+  "rubric": "figure",
+  "rubric_items": {
+    "contrast": "Text is #333333 on white, measured 12.87:1 in the attached PNG. The grey bars sit at 3.12:1 against white, which reads as data rather than as a frame, and the single blue bar separates from the grey field without glare. No text sits on a bar or on any fill, so no label is lost to its background.",
+    "data_ink": "The ink is ten bars, ten value labels, ten row labels, the tick row and one axis title; every mark carries a distinct quantity. Bar length and the printed value agree with each other throughout (499.1 of an axis running just past 500, down to 12.8), and the ten drawn bars sum to 1103.6 MB against the caption's 1.24 GB attributed over the whole census, so the figure is the top-of-table slice it says it is.",
+    "decoration": "Flat fills only: a #929292 data grey for nine bars and one clean blue (#2E6F9E) for the subject. No gradient, no panel background fill, no frame, no shadow, no gridlines. Only the bottom and left spines are drawn; the field is otherwise white.",
+    "label_collision": "Nothing is clipped or overlapping. Measured on the attached PNG (1400x720): the ink bounding box is x 16-1379, y 20-698, so the margins are 16/20/20/21 px and no glyph touches an axis edge, including the 499.1 value label at the far right. Row labels right-align against the axis line with uniform row pitch, the longest (_cached_stream_entry) clears the left margin, and every value label is offset clear of its bar end. No label sits over a bar.",
+    "legibility": "Ten horizontal bars sorted descending by bytes read, one per reading function, each ending in its exact value (499.1 down to 12.8) so no reader has to interpolate against the axis. The axis title 'bytes read in one tick [MB]' names the quantity and its unit in one line, and the caption below the figure names the population (145 live pointers, compute-partition job 1316002) and the single highlighted reader. A reader takes the ranking and the dominant reader at a glance. What is not at a glance: the row labels are internal symbols (_cached_stream_entry, _entries_from_listing, _load_json_envelope), so the human name of each reader is reached only by cross-reading the caption, which lists every one of the ten with its value, so the pairing is complete rather than assumed.",
+    "table_form": "A ranked magnitude across ten categories is a comparison whose ordering is the point; the figure gives the descending rank and the relative size in one view, and the exact numbers are also printed on the bars. It is not a table drawn as a chart, and it is not substituting for a table: the per-path census behind it (17,040 paths, 90% of bytes in 7,515) is text, not this image."
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-15T01:39:58.858299+00:00",
+  "total": null
+}

@@ -24,7 +24,7 @@ import json
 import os
 import stat
 from collections.abc import Iterable, Iterator, Mapping
-from contextlib import contextmanager
+from contextlib import ExitStack, contextmanager
 from contextvars import ContextVar
 from datetime import UTC, datetime
 from fnmatch import fnmatchcase
@@ -33,6 +33,7 @@ from typing import Any
 
 from reckon import file_memo
 from reckon.crew import open_run_index
+from reckon.node_exclusive_lock import LockHeld, exclusive_lock
 
 # Each producer tick freezes the store's names and indexed content hashes.
 # Parsed bytes use the shared bounded memo; writer updates move the next tick's
@@ -76,7 +77,16 @@ def _tick_store(directory: Path) -> dict[Path, os.stat_result] | None:
     # freshness of a writer-maintained index costs.
     document = store_index_document(directory)
     if document is not None:
-        return _document_stat_view(directory, document, stores)
+        key = (str(document.get("generation") or ""), int(document.get("version") or 0))
+        held = _DOCUMENT_STAT_VIEWS.get(directory)
+        if held is not None and held[0] == key:
+            files = held[1]
+            if stores is not None:
+                stores[directory] = files
+            return files
+        files = _document_stat_view(directory, document, stores)
+        _DOCUMENT_STAT_VIEWS[directory] = (key, files)
+        return files
     selected = open_run_index.review_paths(directory)
     if selected is not None:
         files = {}
@@ -107,6 +117,13 @@ def _tick_store(directory: Path) -> dict[Path, os.stat_result] | None:
             pass
         stores[directory] = files
     return stores[directory]
+
+
+# One stat view per store, replaced when its writer advances the document.
+# Generation distinguishes a rebuilt index whose version repeats a prior one.
+_DOCUMENT_STAT_VIEWS: dict[
+    Path, tuple[tuple[str, int], dict[Path, os.stat_result]]
+] = {}
 
 
 def _document_stat_view(
@@ -1948,43 +1965,33 @@ def _index_holding(directory: Path) -> Path | None:
 def _index_lock(directory: Path, *, wait: bool = True) -> Iterator[bool | None]:
     """Hold the store's index lock, or report that it could not be taken.
 
-    The lock file sits beside the document so a writer on any node serialises
-    against every other node's writer. A directory that cannot hold the lock
-    file, or a filesystem without advisory locks, yields ``False`` and the
-    caller writes the document unlocked.
+    The lock is :func:`reckon.node_exclusive_lock.exclusive_lock`, whose POSIX
+    record lock the file server holds, so a writer on any node serialises
+    against every other node's writer rather than only this node's. A directory
+    that cannot hold the lock file, or a filesystem without advisory locks,
+    yields ``False`` and the caller writes the document unlocked.
 
     ``wait`` false is for a reader: a lock another process holds yields
     ``None`` at once rather than blocking, and the reader serves the document
     as last persisted. A producer, station or follower thread reading the store
     must never wait on another process's index write.
     """
-    import fcntl
-
     holding = _index_holding(directory)
     if holding is None:
         yield False
         return
-    try:
-        handle = (holding / _INDEX_LOCK_NAME).open("a")
-    except OSError:
-        yield False
-        return
-    with handle:
+    with ExitStack() as held:
         try:
-            fcntl.flock(
-                handle.fileno(),
-                fcntl.LOCK_EX if wait else fcntl.LOCK_EX | fcntl.LOCK_NB,
+            held.enter_context(
+                exclusive_lock(holding / _INDEX_LOCK_NAME, blocking=wait)
             )
-        except BlockingIOError:
+        except LockHeld:
             yield None
             return
         except OSError:
             yield False
             return
-        try:
-            yield True
-        finally:
-            fcntl.flock(handle.fileno(), fcntl.LOCK_UN)
+        yield True
 
 
 def _sha256_hex(data: bytes) -> str:

@@ -1,0 +1,37 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-11-15T00:14:08.685Z",
+  "dispatched_at": "2026-11-14T23:52:16Z",
+  "findings": [
+    {
+      "detail": "The rewrite removed the second holder scan and signature re-read that _clear_a_stale_index_lock performed immediately before unlink. _stale_index_lock_age_seconds now reads the signature, computes the age and scans /proc once, and the caller then unlinks at line 833 with no re-check, so a writer that takes index.lock between the scan and the unlink has its fresh lock deleted. The window is small and the old double-check narrowed rather than closed it, but the gained commit drops the narrowing.",
+      "file": "reckon/crew/merge.py",
+      "line": 833,
+      "severity": "non-blocking"
+    },
+    {
+      "detail": "promotion_scope now imports the private _git_dir from reckon.crew.merge and reconstructs the lock path at the call site (line 2043) instead of asking the owner for the lock's age from a checkout. The single-owner goal is met, but the path knowledge is still duplicated across the module boundary; a helper in merge taking a checkout would keep construction in one place.",
+      "file": "reckon/crew/promotion_scope.py",
+      "line": 2043,
+      "severity": "non-blocking"
+    }
+  ],
+  "project": "reckon",
+  "review_run_id": "r-20261114T234903494981-review-of-wave4-clive-a-landing-never-waits-on-s10-0bfb9a483af3",
+  "reviewed_base_sha": "c60be594ef623db14162bec589f8bdff66f74b47",
+  "reviewed_head_sha": "0bfb9a483af3c7f15b82adbb22ced91c6d35a980",
+  "reviewed_run_id": "r-20261114T145817665395-wave4-clive-a-landing-never-waits-on-s10",
+  "scores": {
+    "durability": 18,
+    "evidence": 18,
+    "fit": 17,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 17
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-15T00:18:42.652112+00:00",
+  "total": 109
+}

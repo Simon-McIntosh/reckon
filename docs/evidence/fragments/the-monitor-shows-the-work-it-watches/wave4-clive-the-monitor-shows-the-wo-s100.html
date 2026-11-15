@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="the-monitor-shows-the-work-it-watches">
+  <meta name="plan-evidence-for" content="reckon:the-monitor-shows-the-work-it-watches">
+  <meta name="plan-verifies" content="reckon:the-monitor-shows-the-work-it-watches#s100">
+  <meta name="plan-recorded-at" content="2026-11-14">
+  <title>Every parked request counts once, and the stuck ones read apart | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" id="wave4-clive-the-monitor-shows-the-wo-s100-landing" data-node="wave4-clive-the-monitor-shows-the-wo-s100" data-reckon="landed" data-when="2026-11-14">
+  <h2>Every parked request counts once, and a stuck one reads apart from the queue</h2>
+  <p>The pane's waiting figure counted queued requests and declared waits, so a request parked in <code>awaiting-upstream</code> or <code>blocked-upstream</code> fell into no cell at all. A session whose whole fleet sat behind an upstream section therefore read as an empty fleet, which is the one reading a coordinator must not be given: nothing was running, nothing was streaming, and no row said so.</p>
+  <p><code>_fleet_counts</code> now counts every parked phase exactly once in the waiting figure, whatever its phase word, and the one stuck verdict is carried beside the buckets rather than inside them. A stuck request keeps the pane's queue cell, because its phase is still what the request is doing; the new figure recounts rows the buckets already hold rather than moving one out of them. <code>_fleet_counts</code> keeps its sum over the fleet, and the per-session partition carries the same figure so a follower scoped to one session reads it. The ticker draws an <code>s</code> cell, painted in the block's alarm hue when it is above zero and dimmed to a zero when it is not, and the added cell keeps the block's fixed shape.</p>
+  <p><code>tests/test_the_pane_counts_parked_work.py</code> reads a session with one request in each parked phase through the producer's own partition and transition builder: it asserts four waiting and nothing stuck; then marks one request stuck and asserts one in the alarm colour with the queue still four; then clears it and asserts a dimmed zero in the same screen column, with the row inside the width bound. The two negative controls both fire: removing <code>awaiting-upstream</code> from the waiting bucket fails the first case, and dropping the branch that carries the verdict onto the event fails the second. The suite arms are recorded in the delivered manifest.</p>
+</article>
+</body>
+</html>

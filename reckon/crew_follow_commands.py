@@ -2,9 +2,11 @@ import hashlib
 import json
 import os
 import re
+import select
 import shutil
 import signal
 import socket
+import stat
 import sys
 import threading
 import time
@@ -20,6 +22,7 @@ import click
 # (re-exported) here so a caller reaching them through this module keeps working.
 from reckon import checkout_trust  # noqa: F401 - re-exported for callers
 from reckon._timestamps import parse_utc
+from reckon.crew.follower_registration import _pipe_reader_pids
 from reckon.crew.follower_reload import (  # noqa: F401 - re-exported for callers
     _FollowerReloader,
     _probe_retry_jitter,
@@ -507,25 +510,96 @@ FOLLOWER_PRODUCER_STOPPED_EVENT = "producer-stopped"
 
 
 
-def _logged_producer_stop(project: str) -> str | None:
-    """Read the producer's final reason without loading its long service log."""
+def _producer_log_tail(project: str) -> list[str]:
+    """The producer's last few kilobytes of output, without reading its whole log."""
     from reckon.crew import runs
 
     try:
         with runs.watch_log_path(project).open("rb") as stream:
             stream.seek(0, os.SEEK_END)
             stream.seek(max(0, stream.tell() - 4096))
-            lines = stream.read().decode("utf-8", errors="replace").splitlines()
+            return stream.read().decode("utf-8", errors="replace").splitlines()
     except OSError:
-        return None
-    for line in reversed(lines):
+        return []
+
+
+def _producer_log_message(line: str) -> str:
+    """One log line without the timestamp prefix the service journal adds."""
+    candidate = line.strip()
+    if candidate.startswith("[") and "] " in candidate:
+        candidate = candidate.split("] ", 1)[1]
+    return candidate
+
+
+def _logged_producer_stop(project: str) -> str | None:
+    """Read the producer's final reason without loading its long service log."""
+    for line in reversed(_producer_log_tail(project)):
         if line.strip():
             marker = "reckon crew watch stopped: "
-            candidate = line.strip()
-            if candidate.startswith("[") and "] " in candidate:
-                candidate = candidate.split("] ", 1)[1]
+            candidate = _producer_log_message(line)
             return candidate if candidate.startswith(marker) else None
     return None
+
+
+# What the producer's own log records when its reload cannot be completed. A
+# reload that runs out of time is a different state from one that failed, so
+# each phrase is a statement the producer made about that attempt rather than a
+# statement about the seat being quiet. The line must name the watch command,
+# so a follower's own deferral line in the same file never counts as the
+# producer's.
+_RELOAD_FAILURE_MARKERS = (
+    "could not reload itself",
+    "the new image does not import",
+)
+
+
+def _producer_log_stamp(line: str):
+    """The instant a log line was written, from the prefix its writer adds."""
+    candidate = line.strip()
+    if not (candidate.startswith("[") and "] " in candidate):
+        return None
+    return parse_utc(candidate[1 : candidate.index("] ")])
+
+
+def _logged_reload_failure(project: str, reload_started_at: Any) -> str | None:
+    """The producer's own record that this reload could not complete, or None.
+
+    The log keeps its lines across reloads, so a failure recorded for an
+    earlier attempt is still in the tail when a later one is in flight. Only a
+    line written at or after the stamp the seat record carries describes the
+    measure: a line dated before the marker belongs to a reload that has
+    already been superseded, and it is dated from the prefix the log writer
+    adds. A line carrying no such prefix cannot be dated, so it is read as the
+    current attempt rather than withheld.
+    """
+    started = parse_utc(reload_started_at)
+    for line in reversed(_producer_log_tail(project)):
+        candidate = _producer_log_message(line)
+        if not candidate.startswith("reckon crew watch"):
+            continue
+        if not any(marker in candidate for marker in _RELOAD_FAILURE_MARKERS):
+            continue
+        stamped = _producer_log_stamp(line)
+        if started is not None and stamped is not None and stamped < started:
+            continue
+        return candidate
+    return None
+
+
+def _reload_window_elapsed(reload_started_at: Any, window: float) -> bool:
+    """Report whether a reload marker is older than the production reload window.
+
+    The marker is a wall-clock UTC stamp written just before the image
+    replacement starts.
+
+    The seat record carries it, and the replacement clears it by rewriting the
+    record, so its presence says only that a replacement was begun — not that
+    it failed. A stamp that cannot be read is reported as expired, because an
+    unreadable marker is not evidence of a reload in flight."""
+    started = parse_utc(reload_started_at)
+    if started is None:
+        return True
+    return (time.time() - started.timestamp()) >= window
 
 
 def _read_seat_host(project: str) -> tuple[str, bool]:
@@ -1598,6 +1672,10 @@ def _follow_watch_lines(
     )
     lifetime_elapsed = False
     consumer_gone = False
+    # Settled once the follower's output has been shown to reach a reader the
+    # process that started it does not hold, so the walk that proves it runs
+    # once rather than on every wait pass.
+    reader_confirmed = False
     # The settle: a follower a settle-aware host runs ends once no live work
     # remains, printing one idle line. ``saw_live`` is the hinge -- a dispatch
     # asks the host for this follower before it publishes the run's pointer, so
@@ -1699,7 +1777,7 @@ def _follow_watch_lines(
             settled = True
 
     def _check_consumer() -> None:
-        """End this arming when the process it reports to has gone.
+        """End this arming when its arming process has gone and no reader holds it.
 
         The follower delivers to the session that armed it, and that owner is
         fixed once, at the follower's first start, as a pid plus the kernel
@@ -1709,10 +1787,21 @@ def _follow_watch_lines(
         init or a subreaper; and rather than from the registration record,
         because a second follower that takes the registration over rewrites
         that record from its own parent, so a record read back here could name
-        the wrong process. The owner having gone means the lines reach nobody,
-        so holding the registration only denies the session its next follower:
-        the orphan keeps the advisory lock, and every dispatch from the session
-        is refused ``watcher-required`` until someone kills it by hand.
+        the wrong process.
+
+        A dead owner is not on its own proof that the lines reach nobody. A
+        follower started as a background job of a shell that exits at once —
+        two followers piped into one reader, say — is re-parented while the
+        caller still holds the pipe's read end, and its rows are still being
+        read. So an arming whose owner has gone ends only when its stdout has
+        lost its reader, which for a pipe is the same moment a write would
+        fail. An arming whose output goes to a file, or to a device that
+        discards what is written to it, keeps the owner-only rule: nothing
+        reads those, so an orphan writing into one delivers to nobody and
+        would hold the registration against the session's next follower,
+        refusing every dispatch from the session ``watcher-required`` until
+        someone kills it by hand. A terminal and a socket still reach someone,
+        so they keep the reader rule with the pipe.
 
         This runs on every wait pass, whether or not the follower holds the
         registration: a read-only follower holds no lock and still outlives its
@@ -1722,15 +1811,19 @@ def _follow_watch_lines(
         is printed on this path: it is the one path whose whole point is that no
         reader is left.
         """
-        nonlocal consumer_gone
+        nonlocal consumer_gone, reader_confirmed
         if consumer_gone:
             return
         owner_pid, owner_start = runs.follower_owner()
-        if owner_pid <= 1 or runs.process_alive(owner_pid) is not True:
+        owner_running = owner_pid > 1 and runs.process_alive(owner_pid) is True
+        if owner_running and owner_start:
+            owner_running = runs._process_start_time(owner_pid) == owner_start
+        if owner_running:
+            return
+        if not _stdout_has_reader(owner_pid, confirmed=reader_confirmed):
             consumer_gone = True
             return
-        if owner_start and runs._process_start_time(owner_pid) != owner_start:
-            consumer_gone = True
+        reader_confirmed = True
 
     def _check_lifetime() -> None:
         """Mark this arming ended when its own deadline has passed.
@@ -2241,10 +2334,19 @@ def _follow_watch_lines(
             # down, so a scan on each pass would tax a follower that has
             # nothing to say.
             report_stop = bool(reason) and not producer_stop_reported
-            report_reload = (
-                bool(identity.get("reload_started_at"))
-                and not producer_reload_failure_reported
-            )
+            report_reload = False
+            if identity.get("reload_started_at") and not (
+                producer_reload_failure_reported
+            ):
+                # The marker is written just before the image replacement and
+                # cleared by the replacement that completes it, so a poll that
+                # lands inside the replacement reads the seat record mid-write
+                # and finds no producer. That is a reload in flight, not news:
+                # report only one whose window has elapsed, or one the
+                # producer's own log records as failed.
+                report_reload = _reload_window_elapsed(
+                    identity["reload_started_at"], reload_window
+                ) or _logged_reload_failure(project, identity["reload_started_at"])
             if report_stop or report_reload:
                 watched = _population_has_live_work(project, session=session)
             if report_stop:
@@ -2635,6 +2737,68 @@ def _follow_watch_lines(
             elapsed=clock() - started_at,
         )
 
+
+
+def _stdout_has_reader(owner_pid: int, stream=None, *, confirmed=False) -> bool:
+    """Whether this follower's output still reaches a reader that is not its parent.
+
+    A follower armed by a shell that exits — two followers piped into one
+    reader, as ``bash -c 'crew follow ... & crew follow ... &' | grep .`` does —
+    loses its owner but not its reader: the caller still holds the pipe's read
+    end, and the rows are read until that end closes. That is the delivery, so a
+    follower in that state keeps streaming.
+
+    The parent is not the owner here: the arming process is dead whatever
+    adopted the follower, so re-parenting is judged against the owner read from
+    :func:`reckon.crew.runs.follower_owner`, never by the parent's liveness —
+    under a live subreaper the parent is a running process that never armed the
+    follower at all.
+
+    A socket and a terminal carry a reader by construction, so they answer yes.
+    A character device does not: ``/dev/null`` accepts every write and delivers
+    it nowhere, so an orphan writing into one ends like an orphan writing into
+    a file. A piped output is followed to the process holding its read end: the pids
+    holding that end answer whether anyone reads it, and the follower keeps
+    streaming when one of them is not the process that started it. A parent
+    holding an unread pipe for a dead armed owner is an in-process harness — a
+    takeover, not an orphan — and the owner-only rule keeps its present job on
+    it. That probe costs a walk of ``/proc``, so once a reader has been found
+    ``confirmed`` asks only the cheap question: the pipe's read end is still
+    open, which ``POLLERR`` answers on the write end. A regular file is read by
+    whoever opens it later, which for a command that never exits is nobody:
+    those answer no, and an orphan writing into one still ends and frees the
+    registration instead of refusing every dispatch from its session.
+    """
+    try:
+        target = stream or click.get_text_stream("stdout")
+        descriptor = target.fileno()
+        info = os.fstat(descriptor)
+        if not stat.S_ISFIFO(info.st_mode):
+            # A socket carries its peer by construction and a terminal has a
+            # screen attached, so both reach someone. Every other kind of
+            # descriptor — a regular file, and a character device such as
+            # /dev/null whose writes always succeed — delivers to nobody while
+            # the command runs, so an orphan writing into one ends.
+            return stat.S_ISSOCK(info.st_mode) or (
+                stat.S_ISCHR(info.st_mode) and os.isatty(descriptor)
+            )
+        poller = select.poll()
+        poller.register(descriptor, select.POLLERR)
+        if any(mask & select.POLLERR for _event, mask in poller.poll(0)):
+            return False
+        if confirmed:
+            return True
+        parent = os.getppid()
+        # An owner of pid 1 or below is the re-parented marker rather than a
+        # process, so it cannot be compared with the parent.
+        if owner_pid > 1 and parent == owner_pid:
+            return False
+        readers = _pipe_reader_pids(info.st_ino, exclude=os.getpid())
+    except (AttributeError, OSError, ValueError):
+        # A stream this cannot inspect is treated as having no reader, which is
+        # the pre-existing rule: the pending registration is the costlier error.
+        return False
+    return any(pid != parent for pid in readers)
 
 
 def _echo_follow_line(line: str, *, stream=None) -> None:
@@ -3693,6 +3857,13 @@ def crew_follow(
             stream_events(registration)
     except runs_module.CrewError as exc:
         raise click.ClickException(str(exc)) from exc
+    except BrokenPipeError:
+        # The reader closed between the wait pass's probe and this write, so
+        # this is the ending the probe would have reached one pass later: the
+        # rows reach nobody and the registration is released by the block that
+        # took it. Ended here rather than raised through the caller, which
+        # would report a write nobody is left to read as a failure.
+        return
 
 
 

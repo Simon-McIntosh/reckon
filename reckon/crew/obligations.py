@@ -18,7 +18,6 @@ reports what is still owed.
 
 from __future__ import annotations
 
-import fcntl
 import hashlib
 import json
 import os
@@ -70,6 +69,7 @@ from reckon.crew.routing import (
 from reckon.crew.run_paths import crew_home
 from reckon.git_head import _common_git_directory, _git_directory, _head_identity
 from reckon.mcp_crew_actions import CREW_WRITE_ACTIONS
+from reckon.node_exclusive_lock import exclusive_lock
 from reckon.velocity import run_git
 
 CLASSIFICATION_DUTY_KINDS = {
@@ -257,6 +257,12 @@ QUEUED_AWAITING_SESSION_DUTY_KIND = "queued-awaiting-session"
 # how one project's sections sat dead for the better part of an hour.
 QUEUED_CONTRACT_REFUSED_DUTY_KIND = "queued-contract-refused"
 
+# A queued request whose refused launch named a live run's write claim. The
+# holder's landing releases it, so the row names the holder and the path and
+# carries no command: nothing this session runs shortens the wait, and the
+# listed duty is a wait rather than a debt a coordinator can discharge.
+SCOPE_HELD_DUTY_KIND = "scope-held"
+
 # The node-contract properties ``reckon crew queue edit`` can repair, with the
 # field the edit names for each. A refusal naming only these is cleared by an
 # edit that keeps the request's place in the queue; any other property belongs
@@ -346,6 +352,7 @@ NON_BLOCKING_DUTY_KINDS = frozenset(
         QUEUED_RUN_DUTY_KIND,
         STALLED_RUN_DUTY_KIND,
         INDEX_LAG_DUTY_KIND,
+        SCOPE_HELD_DUTY_KIND,
         REPAIR_ROUND_DUTY_KIND,
     }
 )
@@ -1553,6 +1560,26 @@ def _partition_acknowledged(
     return owed, deferred
 
 
+def _scope_held_item(
+    row: Mapping[str, Any],
+    *,
+    refusal: Mapping[str, Any],
+    now: datetime,
+) -> dict[str, Any]:
+    """The waiting duty one queued request owed a peer run's write claim.
+
+    The holder's landing releases the request, so the row names the holder and
+    the path it fences and publishes no command. ``next_command`` is emptied
+    rather than dropped because the stable shape carries it for every kind.
+    """
+    item = _live_item(row, kind=SCOPE_HELD_DUTY_KIND, now=now)
+    item["next_command"] = ""
+    item["reason"] = str(refusal.get("detail") or "")
+    item["holder_run_id"] = str(refusal.get("holder_run_id") or "")
+    item["held_path"] = str(refusal.get("held_path") or "")
+    return item
+
+
 def _live_item(
     row: Mapping[str, Any],
     *,
@@ -1953,6 +1980,9 @@ def _queued_row_item(
             awaited_review=awaited,
         )
     if row.get("session_refusal"):
+        refusal = row.get("session_refusal")
+        if isinstance(refusal, Mapping) and str(refusal.get("holder_run_id") or ""):
+            return _scope_held_item(row, refusal=refusal, now=now)
         return _live_item(row, kind=QUEUED_AWAITING_SESSION_DUTY_KIND, now=now)
     ordered = placements() if callable(placements) else placements
     return _queued_item(
@@ -3541,30 +3571,26 @@ def _record_index_lag(paths: Sequence[str], head: str, *, now: datetime) -> None
     ).hexdigest()
     try:
         home.mkdir(parents=True, exist_ok=True)
-        with (home / (INDEX_LAG_SEEN_NAME + ".lock")).open("a+b") as handle:
-            fcntl.flock(handle.fileno(), fcntl.LOCK_EX)
+        with exclusive_lock(home / (INDEX_LAG_SEEN_NAME + ".lock")):
+            seen_path = home / INDEX_LAG_SEEN_NAME
             try:
-                seen_path = home / INDEX_LAG_SEEN_NAME
-                try:
-                    seen = json.loads(seen_path.read_text(encoding="utf-8"))
-                except (OSError, ValueError):
-                    seen = {}
-                if not isinstance(seen, dict):
-                    seen = {}
-                if key in seen:
-                    return
-                stamp = now.astimezone(UTC).isoformat().replace("+00:00", "Z")
-                line = json.dumps({"at": stamp, "head": head, "paths": list(paths)})
-                with (home / INDEX_LAG_LOG_NAME).open("a", encoding="utf-8") as log:
-                    log.write(line + "\n")
-                seen[key] = stamp
-                pending = seen_path.with_name(seen_path.name + ".tmp")
-                pending.write_text(
-                    json.dumps(seen, sort_keys=True) + "\n", encoding="utf-8"
-                )
-                os.replace(pending, seen_path)
-            finally:
-                fcntl.flock(handle.fileno(), fcntl.LOCK_UN)
+                seen = json.loads(seen_path.read_text(encoding="utf-8"))
+            except (OSError, ValueError):
+                seen = {}
+            if not isinstance(seen, dict):
+                seen = {}
+            if key in seen:
+                return
+            stamp = now.astimezone(UTC).isoformat().replace("+00:00", "Z")
+            line = json.dumps({"at": stamp, "head": head, "paths": list(paths)})
+            with (home / INDEX_LAG_LOG_NAME).open("a", encoding="utf-8") as log:
+                log.write(line + "\n")
+            seen[key] = stamp
+            pending = seen_path.with_name(seen_path.name + ".tmp")
+            pending.write_text(
+                json.dumps(seen, sort_keys=True) + "\n", encoding="utf-8"
+            )
+            os.replace(pending, seen_path)
     except OSError:
         return
 

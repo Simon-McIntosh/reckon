@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-evidence-for" content="reckon:a-read-answers-inside-its-deadline">
+  <meta name="plan-verifies" content="reckon:a-read-answers-inside-its-deadline#s80">
+  <meta name="plan-recorded-at" content="2026-11-15">
+  <meta name="plan-verdict" content="passed">
+  <title>A fleet reading builds each store view once</title>
+</head>
+<body>
+<article id="a-fleet-reading-builds-each-store-view-once-landing" data-node="a-fleet-reading-builds-each-store-view-once" data-reckon="landed">
+  <h2>A fleet reading builds each store view once</h2>
+  <p><code>_tick_store</code> in <code>reckon/crew/review_records.py</code> reuses each store's indexed stat view while its document's generation and version hold. An indexed write advances the version; a rebuild changes the generation even when its version repeats. Tick readers adopt the same held view. Implementation commit: <code>a8b520dd310241cde39d272399385b9f261b5fff</code>.</p>
+  <table>
+    <thead><tr><th>Measure</th><th>Base</th><th>Head</th></tr></thead>
+    <tbody>
+      <tr><td>Stat-view builds, 30 pointers and 2,000 indexed entries, outside a tick</td><td>540</td><td>1</td></tr>
+      <tr><td>Same fixture inside a tick</td><td>1</td><td>1</td></tr>
+      <tr><td>Pointer classifications equal to base, in each mode</td><td>30 reference readings</td><td>30 equal</td></tr>
+      <tr><td>Armed suite</td><td>55 passed</td><td>60 passed</td></tr>
+      <tr><td>Existing tests importing the changed module</td><td>292 passed, 8 failed</td><td>292 passed, same 8 failed</td></tr>
+    </tbody>
+  </table>
+  <p>The five acceptance cases include next-read rebuilding after an indexed write, generation replacement at an unchanged version, and distinct-store isolation. The fixture asserts the counted store was reached. Running those cases against the base module produces three failures and two passes, including the outside-tick count of 540; the corresponding head cases pass. The initial reproduction also counted 181 outside-tick builds on the read after a write. Every classification was compared with the actual base arm's JUnit property, separately inside and outside a tick.</p>
+  <p>Base revision: <code>ee4121ee40ae170be3362898306a9447c85628da</code>. Both final arms ran as separate <code>all_debug</code> jobs. Logs and receipts are under <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T011612375017-a-fleet-reading-builds-each-store-view-once/</code>: <code>baseline-suite-valid.log</code>, <code>after-suite.log</code>, <code>baseline-regressions-valid.log</code>, <code>after-regressions.log</code>, <code>negative-control-final.log</code>, <code>classification-comparison.json</code> and <code>regression-comparison.json</code>. Gate logs record their revision, command, imported module and scratch working directory and end in <code>EXIT=</code>. Scoped Ruff check and format check pass in <code>lint.log</code>. Two initial helper defects, missing archive git metadata and selecting a test absent at base, were corrected before the final arms; their original logs remain in the run directory.</p>
+</article>
+</body>
+</html>
