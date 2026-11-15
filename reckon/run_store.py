@@ -20,7 +20,7 @@ import os
 import random
 import sqlite3
 import time
-from collections.abc import Callable, Mapping
+from collections.abc import Callable, Iterable, Mapping
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Self
@@ -1044,7 +1044,9 @@ def runs_for_node(node: str, *, project: str | None = None) -> list[dict[str, An
     return records
 
 
-def stored_run_rows(project: str) -> list[dict[str, Any]] | None:
+def stored_run_rows(
+    project: str, *, run_ids: Iterable[str] | None = None
+) -> list[dict[str, Any]] | None:
     """One project's stored runs, retired rows included, read without writing.
 
     ``None`` distinguishes an absent store from one holding no row of this
@@ -1080,19 +1082,32 @@ def stored_run_rows(project: str) -> list[dict[str, Any]] | None:
             else:
                 tables.append("archive")
         rows: list[tuple[Any, ...]] = []
+        # ``run_ids`` narrows the read to the named runs, so a caller that
+        # needs a few records decodes only those payloads.
+        selected = None if run_ids is None else sorted({str(r) for r in run_ids})
+        if selected is not None and not selected:
+            return []
+        batches: list[list[str] | None] = (
+            [None]
+            if selected is None
+            else [selected[i : i + 500] for i in range(0, len(selected), 500)]
+        )
         for table in tables:
-            try:
-                rows.extend(
-                    connection.execute(
-                        f"SELECT r.run_id, r.payload, d.detail FROM {table}.runs r "  # noqa: S608 - fixed table names
-                        f"LEFT JOIN {table}.run_details d ON r.run_id = d.run_id "
-                        "WHERE r.project = ?",
-                        (project,),
-                    )
+            for batch in batches:
+                query = (
+                    f"SELECT r.run_id, r.payload, d.detail FROM {table}.runs r "  # noqa: S608 - fixed table names
+                    f"LEFT JOIN {table}.run_details d ON r.run_id = d.run_id "
+                    "WHERE r.project = ?"
                 )
-            except sqlite3.Error:
-                # A store that never carried the run tables holds no row.
-                continue
+                params: list[Any] = [project]
+                if batch is not None:
+                    query += f" AND r.run_id IN ({','.join('?' * len(batch))})"
+                    params.extend(batch)
+                try:
+                    rows.extend(connection.execute(query, params))
+                except sqlite3.Error:
+                    # A store that never carried the run tables holds no row.
+                    break
     finally:
         connection.close()
     records: list[dict[str, Any]] = []

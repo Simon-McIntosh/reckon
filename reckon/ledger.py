@@ -2285,7 +2285,9 @@ def run_directory_holds_records(project: str, root: str | Path | None) -> bool:
     )
 
 
-def _stored_run_rows(project: str) -> list[dict[str, Any]]:
+def _stored_run_rows(
+    project: str, *, run_ids: set[str] | None = None
+) -> list[dict[str, Any]]:
     """Every run the run store holds for one project, read the store's own way.
 
     The store owns its layout — a record split across two tables, retired rows
@@ -2298,7 +2300,7 @@ def _stored_run_rows(project: str) -> list[dict[str, Any]]:
     """
     from reckon import run_store
 
-    return run_store.stored_run_rows(project) or []
+    return run_store.stored_run_rows(project, run_ids=run_ids) or []
 
 
 def _stored_run_ids(project: str) -> set[str]:
@@ -2322,6 +2324,8 @@ def _merge_stored_rows(
     project: str,
     data: dict[str, Any],
     *,
+    root: str | Path | None = None,
+    plan: str | None = None,
     headers_only: bool = False,
     picker_only: bool = False,
     activity_since: float | None = None,
@@ -2344,11 +2348,31 @@ def _merge_stored_rows(
         for record in data["runs"]
         if isinstance(record, Mapping) and record.get("run_id")
     }
+    # Membership is compared before anything is decoded. A read selected to
+    # one plan or to headers holds only part of the documents' rows in
+    # ``data``, so the documents' whole membership — the index's ids and the
+    # run files' names, neither of which decodes a payload — is what decides
+    # whether the store holds a run no document answers for. Only those runs
+    # are decoded; decoding the whole store on every load held tens of
+    # gigabytes across one roadmap build.
+    stored = _stored_run_ids(project)
+    if not stored:
+        return False
+    documented = (
+        held
+        | (_indexed_run_ids(project, root) or set())
+        | {path.stem for path in _run_files(project, root)}
+    )
+    missing = stored - documented
+    if not missing:
+        return False
     added = [
         record
-        for record in _stored_run_rows(project)
+        for record in _stored_run_rows(project, run_ids=missing)
         if record.get("run_id") and str(record["run_id"]) not in held
     ]
+    if plan:
+        added = [record for record in added if str(record.get("plan") or "") == plan]
     if not added:
         return False
     if activity_since is not None:
@@ -2457,6 +2481,8 @@ def load(
                 _merge_stored_rows(
                     project,
                     data,
+                    root=root,
+                    plan=plan,
                     headers_only=headers_only,
                     picker_only=picker_only,
                     activity_since=activity_since,
@@ -2469,6 +2495,8 @@ def load(
             _merge_stored_rows(
                 project,
                 data,
+                root=root,
+                plan=plan,
                 headers_only=headers_only,
                 picker_only=picker_only,
                 activity_since=activity_since,
@@ -2477,7 +2505,7 @@ def load(
     else:
         data, version = _load_aggregate(project, root)
         _merge_run_documents(project, root, data, refuse=True)
-    _merge_stored_rows(project, data)
+    _merge_stored_rows(project, data, root=root)
     if activity_since is not None:
         data["runs"] = _active_records(data["runs"], activity_since)
     if plan:
