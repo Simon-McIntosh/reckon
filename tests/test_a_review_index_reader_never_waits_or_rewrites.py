@@ -17,19 +17,10 @@ import os
 import threading
 import time
 
-import pytest
-
 from reckon.crew import review_records
 from tests import test_the_review_store_is_indexed_by_its_writers as indexed
 
 stored = indexed.stored
-
-
-@pytest.fixture(autouse=True)
-def fresh_settled_identities():
-    review_records._SETTLED_IDENTITIES.clear()
-    yield
-    review_records._SETTLED_IDENTITIES.clear()
 
 
 def _foreign_record(directory, run_id: str, index: int):
