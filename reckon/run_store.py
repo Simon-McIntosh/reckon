@@ -63,7 +63,11 @@ QUERY_KEYS = ("member", "node", "project", "completed_at", "backend")
 # question through it, so it is not a query key and carries no index; it is a
 # declared column of its own because it is a property of the tree rather than
 # of the record, and a reader that once read the file out of the tree needs it
-# to read the same file again out of history.
+# to read the same file again out of history. The record itself cannot supply
+# it: a promotion's ``promoted_revision`` is the tip of the run's own work,
+# while the commit that adds the record file is the promotion's own commit, so
+# the two are different commits by design. Only :func:`backfill_revisions`
+# writes the column, from the project's own history.
 ROW_REVISION = "revision"
 
 # The runs table built from QUERY_KEYS. Precomputed once at import so the
@@ -277,20 +281,6 @@ def _legacy_payload(row: Mapping[str, Any]) -> dict[str, Any]:
     )
 
 
-def _row_revision(record: Mapping[str, Any]) -> str | None:
-    """The commit a run's own record file entered the tree at, when it is known.
-
-    A promoted run's record names the revision it landed at, and the promotion
-    that writes the record commits it in the same revision, so that field is the
-    adding commit for a row a promotion writes. A row imported from a corpus
-    older than the column, or one whose promotion recorded no revision, answers
-    ``None`` and is left for :func:`backfill_revisions` to place from the
-    project's history.
-    """
-    value = record.get("promoted_revision")
-    return str(value) if value else None
-
-
 def _durable_record(project: str, record: Mapping[str, Any]) -> dict[str, Any]:
     """The durable content the store holds for a run record.
 
@@ -458,7 +448,7 @@ class RunStore:
                     (
                         json.dumps(record, sort_keys=True, separators=(",", ":")),
                         *(record.get(name) for name in QUERY_KEYS),
-                        _row_revision(record),
+                        None,
                         record["run_id"],
                     ),
                 )
@@ -493,7 +483,7 @@ class RunStore:
                 (
                     run_id,
                     *(payload.get(name) for name in QUERY_KEYS),
-                    _row_revision(record),
+                    None,
                     json.dumps(payload, sort_keys=True, separators=(",", ":")),
                 ),
             )
@@ -534,7 +524,7 @@ class RunStore:
                     (
                         run_id,
                         *(payload.get(name) for name in QUERY_KEYS),
-                        _row_revision(record),
+                        None,
                         encoded_payload,
                     ),
                 )
@@ -550,7 +540,7 @@ class RunStore:
                 (
                     encoded_payload,
                     *(payload.get(name) for name in QUERY_KEYS),
-                    _row_revision(record),
+                    None,
                     run_id,
                 ),
             )
@@ -805,7 +795,7 @@ class RunStore:
                                         payload, sort_keys=True, separators=(",", ":")
                                     ),
                                     *(payload.get(key) for key in QUERY_KEYS),
-                                    _row_revision(record),
+                                    None,
                                     run_id,
                                 ),
                             )
@@ -825,7 +815,7 @@ class RunStore:
                             (
                                 run_id,
                                 *(payload.get(key) for key in QUERY_KEYS),
-                                _row_revision(record),
+                                None,
                                 json.dumps(
                                     payload, sort_keys=True, separators=(",", ":")
                                 ),
@@ -952,9 +942,9 @@ class RunStore:
     def stamp_revisions(self, project: str, revisions: Mapping[str, str]) -> int:
         """Record each named revision on its own row, returning how many it set.
 
-        A row that already names a revision is left alone: the stamp repairs a
-        row that lacks one rather than overwriting a promotion's own record of
-        where it landed.
+        A row that already names a revision is left alone, so a repeated pass
+        costs nothing and history that has since moved never rewrites what an
+        earlier pass placed.
         """
         stamped = 0
         with self._conn:
@@ -1139,47 +1129,72 @@ def runs_for_node(node: str, *, project: str | None = None) -> list[dict[str, An
     return records
 
 
-def _record_file_revisions(checkout: Path, project: str) -> dict[str, str]:
-    """Map each run id to the commit its own record file entered the tree at.
+def record_file_additions(
+    checkout: str | Path,
+    project: str,
+    *,
+    base: str | None = None,
+    head: str | None = None,
+) -> list[tuple[str, str, int]]:
+    """Each commit that added a run's own record file, oldest first.
 
-    One path-limited log over the project's runs directory lists those
-    additions and generates no patch, so the one-time backfill costs one git
-    call per project rather than one per run. A checkout that cannot answer —
-    no git, or no history for the path — returns nothing, and the rows it would
-    have placed are reported as unresolved rather than stamped with a guess.
+    A run's ``docs/state/<project>/runs/<run_id>.json`` is added once, and a
+    path-limited log lists those additions without generating a patch, so this
+    is one git call for the whole question rather than one per run. The result
+    is ``(run_id, commit, epoch)`` per addition, in log order, where ``epoch``
+    is the adding commit's own timestamp: the backfill only needs the commit,
+    while a windowed reader compares the epoch against its bounds before it
+    trusts an appearance.
+
+    ``base`` and ``head`` narrow the log to ``base..head``; omitted, the whole
+    first-parent history is read. A checkout that cannot answer — no git, or no
+    history for the path — returns nothing, so a caller reports an unresolved
+    run rather than stamping a guess.
     """
-    completed = subprocess.run(
-        [
-            "git",
-            "-C",
-            str(checkout),
-            "log",
-            "--first-parent",
-            "--reverse",
-            "--format=%x1e%H",
-            "--diff-filter=A",
-            "--name-only",
-            "--",
-            f"docs/state/{project}/runs",
-        ],
-        capture_output=True,
-        text=True,
-        check=False,
-    )
+    argv = [
+        "git",
+        "-C",
+        str(checkout),
+        "log",
+        "--first-parent",
+        "--reverse",
+        "--diff-merges=first-parent",
+        "--format=%x1e%H%x09%ct",
+        "--diff-filter=A",
+        "--name-only",
+    ]
+    if base is not None and head is not None:
+        argv.append(f"{base}..{head}")
+    argv.extend(["--", f"docs/state/{project}/runs"])
+    completed = subprocess.run(argv, capture_output=True, text=True, check=False)
     if completed.returncode != 0:
-        return {}
-    revisions: dict[str, str] = {}
-    commit = None
+        return []
+    additions: list[tuple[str, str, int]] = []
+    commit, epoch = "", 0
     # Newlines only: ``str.splitlines`` also splits on the record separator the
     # format string leads each commit with, which would drop the marker the
     # commit sha sits behind.
     for line in completed.stdout.split("\n"):
         if line.startswith("\x1e"):
-            commit = line[1:].strip()
+            commit, value = line[1:].split("\t")
+            epoch = int(value)
             continue
         name = line.strip()
         if commit and name.endswith(".json"):
-            revisions.setdefault(name.rsplit("/", 1)[-1][: -len(".json")], commit)
+            additions.append((name.rsplit("/", 1)[-1][: -len(".json")], commit, epoch))
+    return additions
+
+
+def _record_file_revisions(checkout: Path, project: str) -> dict[str, str]:
+    """Map each run id to the commit its own record file entered the tree at.
+
+    The scan is :func:`record_file_additions`; this only keeps the first
+    appearance per run, which is the adding commit because the log runs
+    oldest first.
+    """
+    revisions: dict[str, str] = {}
+    for run_id, commit, _epoch in record_file_additions(checkout, project):
+        revisions.setdefault(run_id, commit)
     return revisions
 
 
@@ -1191,11 +1206,13 @@ def backfill_revisions(
 ) -> dict[str, Any]:
     """Stamp each stored run with the commit its own record file entered the tree at.
 
-    A row a promotion wrote already carries the revision it landed at, because
-    the promotion commits the record in the same revision. A row imported from
-    a corpus older than the column, or one whose promotion recorded none, does
-    not; the adding commit is a property of the project's history rather than
-    of the record, so it is read from the checkout and stamped on those rows.
+    No record can name it either: a promotion's ``promoted_revision`` is the tip
+    of the run's own work, and the promotion commits the record file in its own
+    commit, so the record and the tree name different commits by design. Every
+    row therefore starts empty and this pass, because the adding commit is a
+    property of the project's history rather than of the record, is the only
+    thing that writes the column — read from the checkout and stamped on those
+    rows.
     ``root`` names that checkout and falls back to the store's own routing for
     the project. Reads are idempotent: a row that already names a revision is
     left alone, so a repeated pass stamps nothing.

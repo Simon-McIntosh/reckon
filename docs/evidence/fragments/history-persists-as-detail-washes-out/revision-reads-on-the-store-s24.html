@@ -28,14 +28,21 @@ dispatch times with no crew.json: {}</pre>
 
   <p><strong>What the store now carries.</strong> The <code>runs</code> table
   gains a <code>revision</code> column: the commit the run's own record file
-  entered the tree at. A promotion stamps the revision it landed at, which is
-  the commit that carries the record. A row that cannot name one — an import of
-  a corpus older than the column — is placed by
-  <code>run_store.backfill_revisions</code>, one path-limited log per project
-  over <code>docs/state/&lt;project&gt;/runs</code> that generates no patch, so
-  the backfill costs one git call per project rather than one per run. Rows
-  whose file never entered the tree stay unresolved rather than being stamped
-  with a guess. The stamp never overwrites a revision a row already names.</p>
+  entered the tree at. No record can supply that value. A promotion's
+  <code>promoted_revision</code> is the tip of the run's own work, and the
+  promotion commits the run's record file in its own commit, so the two are
+  different commits by design; a column stamped from the record would name a
+  revision whose tree does not hold the file, and the reader would get the row
+  back as its own fallback with nothing failing. So every row starts empty and
+  one pass writes the column: <code>run_store.backfill_revisions</code> reads
+  <code>run_store.record_file_additions</code>, a single path-limited log over
+  <code>docs/state/&lt;project&gt;/runs</code> that generates no patch, so the
+  backfill costs one git call per project rather than one per run. The scan has
+  one owner: velocity's own placement of a run at its record file's adding
+  commit reads it too, narrowed to the window it is asking about. Rows whose
+  file never entered the tree the checkout can see stay unresolved rather than
+  being stamped with a guess, and a row that already names a revision is left
+  alone.</p>
 
   <p><strong>Velocity.</strong> While the tree at the window head still carries
   the ledger or any run document, nothing changes: those documents answer.
@@ -57,13 +64,13 @@ dispatch times with no crew.json: {}</pre>
   the read replaces.</p>
 
   <p><strong>The existing store keeps its rows.</strong> A store written under
-  the pre-change schema gains the column on open and keeps every row: the probe
-  builds a <code>runs</code> table without it, opens the store, and reads back
-  <code>{'r-legacy': 'abc1234'}</code> from the row's own
-  <code>promoted_revision</code>. An archive written under the older schema
-  gains the column too when the store attaches it, and a retirement through that
-  archive keeps the revision on both the retired row and the row already there.
-  Log: <code>logs/store-migration-probe.log</code>.</p>
+  the pre-change schema gains the column on open, keeps every row, and keeps its
+  payload verbatim: the probe builds a <code>runs</code> table without
+  <code>revision</code>, opens the store, and reads back the same record it
+  wrote while the column reads back empty — which is what the backfill is for.
+  An archive written under the older schema gains the column too when the store
+  attaches it, and a retirement through that archive keeps the rows it already
+  held. Log: <code>logs/store-migration-probe.log</code>.</p>
 
   <table id="revision-reads-on-the-store-s24-arms">
     <caption>The arms. Each log's first lines name its revision, tree and

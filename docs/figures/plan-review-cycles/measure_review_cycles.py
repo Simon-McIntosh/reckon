@@ -73,7 +73,8 @@ REPLAY_SETTLE_SECONDS = (1800, 3600)
 # replay rather than against the actual count. Every other mechanism must not
 # exceed the plan's actual count in its window, and would fail the run if it did.
 INVARIANT_EXEMPT = {
-    f"M4-settle-{window}s" for window in (BASE_SETTLE_SECONDS,) + REPLAY_SETTLE_SECONDS
+    f"M4-settle-{window}s"
+    for window in (BASE_SETTLE_SECONDS,) + REPLAY_SETTLE_SECONDS
 }
 
 CODE_PATH_RE = re.compile(
@@ -115,10 +116,7 @@ _ORIGINAL_DIGEST_STATE = plan_review._digest_state
 
 def _memo_digest_state(plan, *, keep_declarations=False):
     if isinstance(plan, str):
-        key = (
-            hashlib.sha1(plan.encode("utf-8", "replace")).digest(),
-            bool(keep_declarations),
-        )
+        key = (hashlib.sha1(plan.encode("utf-8", "replace")).digest(), bool(keep_declarations))
         if key not in _STATE_CACHE:
             _STATE_CACHE[key] = _ORIGINAL_DIGEST_STATE(
                 plan, keep_declarations=keep_declarations
@@ -331,11 +329,11 @@ def load_dispatch_times(projects):
     The times come from the run store rather than from a checkout's
     ``docs/state/<project>/crew.json``. That file is the ledger's old aggregate
     and leaves git at the cutover, so a reader keyed on it loses every dispatch
-    time the moment the file goes.
+    time the change it was measuring was dispatched under.
 
-    A store that is absent, unreadable, or holds no row of a project asked about
-    raises with the store's own path named. Answering an empty mapping there
-    would fold every plan's dispatch times out of the cadence figures with
+    A store that is absent, unreadable, or holding no row of a project asked
+    about raises with the store's own path named. Answering an empty mapping
+    there would fold every plan's dispatch times out of the cadence figures with
     nothing failing, which is the defect this read replaces.
     """
     times: dict[tuple[str, str], list[datetime]] = collections.defaultdict(list)
@@ -344,9 +342,9 @@ def load_dispatch_times(projects):
         rows = run_store.stored_run_rows(project)
         if not rows:
             raise RuntimeError(
-                f"no stored run rows for {project}: the review-cycle figure "
-                f"reads dispatch times from the run store {store}, which is "
-                "absent, unreadable or holds none of this project's runs"
+                f"no stored run rows for {project}: the review-cycle figure reads "
+                f"dispatch times from the run store {store}, which is absent, "
+                "unreadable or holds none of this project's runs"
             )
         for row in rows:
             if not row.get("plan") or row.get("role") == "review":
@@ -356,8 +354,8 @@ def load_dispatch_times(projects):
             )
             if moment is not None:
                 times[(project, str(row["plan"]))].append(moment)
-    for moments in times.values():
-        moments.sort()
+    for key in times:
+        times[key].sort()
     return times
 
 
@@ -550,9 +548,7 @@ def main():
                 if text is not None:
                     recovery["blob"] += 1
             if text is None:
-                before = [
-                    item for item in store.history(repo, relpath) if item[0] <= ts
-                ]
+                before = [item for item in store.history(repo, relpath) if item[0] <= ts]
                 if before:
                     text = store.blob_text(repo, before[-1][1])
                     if text is not None:
@@ -873,7 +869,9 @@ def main():
                     # it is lost only when the baseline would have read it and
                     # this window does not, so the count is the mechanism's
                     # own marginal effect rather than the model's gap.
-                    lost.extend(label_for(rv, f) for rv, f in acted_findings([review]))
+                    lost.extend(
+                        label_for(rv, f) for rv, f in acted_findings([review])
+                    )
             label = f"{key[0]}/{key[1]}"
             if window == BASE_SETTLE_SECONDS:
                 m4_baseline_fps[label] = set(reviewed_fps)
@@ -881,9 +879,7 @@ def main():
                 "reviews_run": count,
                 "reviews_actual": len(reviews),
                 "reviews_matched": matched,
-                "reviews_baseline_600s": len(baseline)
-                if window != BASE_SETTLE_SECONDS
-                else count,
+                "reviews_baseline_600s": len(baseline) if window != BASE_SETTLE_SECONDS else count,
             }
             plan_runs[f"M4-settle-{window}s"][label] = (count, len(reviews))
             if window == BASE_SETTLE_SECONDS:
@@ -903,8 +899,7 @@ def main():
     for window in REPLAY_SETTLE_SECONDS:
         mechanisms[f"M4-settle-{window}s"]["ratio_to_600s"] = (
             round(
-                mechanisms[f"M4-settle-{window}s"]["reviews_run"] / baseline_600,
-                2,
+                mechanisms[f"M4-settle-{window}s"]["reviews_run"] / baseline_600, 2,
             )
             if baseline_600
             else None
@@ -1074,7 +1069,7 @@ def main():
             color=COLOR_MAIN,
         )
         ax.tick_params(axis="x", labelsize=20)
-        ax.tick_params(axis="y", labelsize=20)
+        ax.tick_params(                    axis="y", labelsize=20)
     fig.tight_layout()
     fig.savefig(OUT_DIR / "fig-review-timeline.png", dpi=100)
     plt.close(fig)
@@ -1096,13 +1091,17 @@ def main():
     # M4); a "de-gated" finding is one still recorded but without gating force
     # (the gating-changing mechanisms M2, M3 and M5).
     stopped = [
-        mechanisms[name]["acted_lost"] + mechanisms[name]["acted_de_gated"]
+        mechanisms[name]["acted_lost"]
+        + mechanisms[name]["acted_de_gated"]
         for name in order
     ]
     category = [
-        "de-gated" if mechanisms[name]["acted_de_gated"] else "lost" for name in order
+        "de-gated" if mechanisms[name]["acted_de_gated"] else "lost"
+        for name in order
     ]
-    colors = [COLOR_DE_GATED if cat == "de-gated" else COLOR_ALT for cat in category]
+    colors = [
+        COLOR_DE_GATED if cat == "de-gated" else COLOR_ALT for cat in category
+    ]
 
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(14, 7))
     ys = list(range(len(order)))
@@ -1126,14 +1125,8 @@ def main():
 
     ax2.barh(ys, stopped, color=colors, height=0.62)
     for y, value, cat in zip(ys, stopped, category):
-        ax2.text(
-            value,
-            y,
-            f" {value} {cat}",
-            va="center",
-            fontsize=20,
-            color=COLOR_DE_GATED if cat == "de-gated" else COLOR_ALT,
-        )
+        ax2.text(value, y, f" {value} {cat}", va="center", fontsize=20,
+                 color=COLOR_DE_GATED if cat == "de-gated" else COLOR_ALT)
     ax2.set_yticks(ys)
     ax2.set_yticklabels([])
     ax2.set_xlabel("acted findings stopped", fontsize=22)
@@ -1159,9 +1152,7 @@ def main():
             f"{name}: run={row['reviews_run']} lost={row['acted_lost']} "
             f"de_gated={row['acted_de_gated']} actual={row['reviews_actual']}"
         )
-    disagree = [
-        label for label, row in m4_calibration_rows.items() if row["over_25pct"]
-    ]
+    disagree = [label for label, row in m4_calibration_rows.items() if row["over_25pct"]]
     total_actual = sum(row["actual"] for row in m4_calibration_rows.values())
     total_replayed = sum(row["replayed_600s"] for row in m4_calibration_rows.values())
     print(

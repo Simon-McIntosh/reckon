@@ -394,3 +394,55 @@ def test_the_figure_refuses_an_empty_store_rather_than_reporting_no_times(
     with pytest.raises(RuntimeError) as refused:
         module.load_dispatch_times({PROJECT})
     assert str(store) in str(refused.value)
+
+
+def test_a_promotion_row_names_no_revision_its_record_cannot_supply(history):
+    """``promoted_revision`` is the run's work tip, not its record's commit.
+
+    A promotion commits the run's record file in its own commit, and states that
+    commit's parent as ``promoted_revision``; a row written from such a record
+    therefore names a revision whose tree does not hold the file. The column is
+    the commit the file entered the tree at, so the promotion path stamps
+    nothing and the backfill reads the adding commit from history.
+    """
+    record = dict(history.records[2], promoted_revision="deadbeefcafe")
+    store = history.root / "promotion.db"
+    with run_store.RunStore(store) as opened:
+        opened.append(PROJECT, record)
+        assert opened.revisionless_rows(PROJECT) == {record["run_id"]}, (
+            "a row the promotion wrote claimed a revision its record could not supply"
+        )
+    assert record["run_id"] not in (run_store.stored_run_revisions(PROJECT, path=store) or {})
+
+    counts = run_store.backfill_revisions(PROJECT, root=history.repo, path=store)
+    assert counts == {"revision_stamped": 1, "revision_unresolved": 0}
+    revisions = run_store.stored_run_revisions(PROJECT, path=store)
+    assert revisions is not None
+    assert revisions[record["run_id"]] == history.additions[record["run_id"]]
+    assert revisions[record["run_id"]] != record["promoted_revision"]
+
+
+def test_a_store_row_counts_as_landed_from_the_record_the_branch_committed(history):
+    """The landed rule reads a promoted revision only from a committed record.
+
+    A store row is the store's copy of that same record, so a row re-served from
+    it — or from the revision the record file was read at — carries the marker
+    the rule wants; leaving those sources out under-counts landed nodes exactly
+    on the path that survives the ledger leaving git.
+    """
+    run = {
+        "run_id": history.records[0]["run_id"],
+        "project": PROJECT,
+        "promoted_revision": "deadbeefcafe",
+        "coordinator": {"runtime_session_id": "session-coordinator"},
+    }
+    for source in sorted(STORE_SOURCES):
+        cost = velocity.coordinator_cost(
+            [dict(run, record_source=source)], transcript_root=None
+        )
+        assert cost["sessions"][0]["landed_nodes"] == 1, source
+    cost = velocity.coordinator_cost(
+        [dict(run, record_source="record_without_a_committed_copy")],
+        transcript_root=None,
+    )
+    assert cost["sessions"][0]["landed_nodes"] == 0

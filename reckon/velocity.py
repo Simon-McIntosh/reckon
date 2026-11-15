@@ -1291,44 +1291,26 @@ def replay(commits):
     return births
 
 
-def _record_file_additions(repo, base, head, runs_path, candidates, found):
+def _record_file_additions(repo, base, head, project, candidates, found):
     """Place candidate runs at the commit that added their own record file.
 
-    A run's ``docs/state/<project>/runs/<run_id>.json`` is added once, and a
-    path-limited log lists those additions without generating a patch, so this
-    is far cheaper than the ledger search over the same window. The adding
-    commit is an upper bound on the run's durable appearance in the primary
-    branch, the same kind of value the search reports, so the two are told
-    apart by the ``source`` each records rather than by their shape. The
-    returned mapping is empty for a run whose file is absent from the range,
-    which then falls through to the search.
+    The scan itself is :func:`reckon.run_store.record_file_additions`, which is
+    the single owner of "the commit a run's record file entered the tree at";
+    this only narrows its answer to the candidates still missing and shapes it
+    as the appearance the search reports. The adding commit is an upper bound on
+    the run's durable appearance in the primary branch, the same kind of value
+    the search reports, so the two are told apart by the ``source`` each records
+    rather than by their shape. A run whose file is absent from the range stays
+    out of the mapping, which then falls through to the search.
     """
+    from reckon import run_store
+
     added = {}
-    raw = git(
-        repo,
-        "log",
-        "--first-parent",
-        "--reverse",
-        "--diff-merges=first-parent",
-        "--format=%x1e%H%x09%ct",
-        "--diff-filter=A",
-        "--name-only",
-        _rev_range(base, head),
-        "--",
-        runs_path,
-    )
-    commit, epoch = None, None
-    for line in raw.split(b"\n"):
-        if line.startswith(b"\x1e"):
-            commit, value = line[1:].decode().split("\t")
-            epoch = int(value)
-            continue
-        name = line.decode().strip()
-        if not name.endswith(".json"):
-            continue
-        rid = name.rsplit("/", 1)[-1][: -len(".json")]
-        if rid in candidates and rid not in found:
-            added[rid] = [
+    for run_id, commit, epoch in run_store.record_file_additions(
+        repo, project, base=base, head=head
+    ):
+        if run_id in candidates and run_id not in found:
+            added[run_id] = [
                 {
                     "sha": commit,
                     "epoch": epoch,
@@ -1408,7 +1390,7 @@ def recover_ledger_clocks(
             # source.
             runs_path = "docs/state/" + project["project"] + "/runs"
             for rid, appearance in _record_file_additions(
-                repo, base, head, runs_path, candidates, found
+                repo, base, head, project["project"], candidates, found
             ).items():
                 candidates[rid]["promotion_commits"] = appearance
                 recovered[rid] = appearance
@@ -1885,14 +1867,26 @@ def promotion_receipts(paths, *, window_start=START, window_end=END):
     return landed
 
 
+#: The sources whose rows carry a record the primary branch once committed: the
+#: pinned ledger's own snapshot, and the two ways a store row re-reads that same
+#: committed record. A promoted revision found on one of them is the marker the
+#: landing rule accepts; the durable row a store falls back to carries the same
+#: record, so it carries the same marker.
+COMMITTED_RECORD_SOURCES = frozenset(
+    ("committed_primary_snapshot", "run_store_record_revision", "run_store_row")
+)
+
+
 def _landed_in_window(run, receipts, start, end):
     """Census landed rule: an in-window promote commit, a committed marker, or a receipt.
 
     The promote commit must be on the primary first parent and carry the
     ``promote(<run>):`` colon subject; a bare ``promote(<run>)`` merged in from a
-    branch is not a landing on the primary line. A committed ``promoted_revision``
-    in the pinned ledger proves a promotion no later than the cutoff. A promotion
-    receipt in the coordinator transcript covers a node promoted without either.
+    branch is not a landing on the primary line. A ``promoted_revision`` on a row
+    whose record the primary branch committed — the pinned ledger's snapshot, or
+    a store row re-served from that same committed record — proves a promotion
+    no later than the cutoff. A promotion receipt in the coordinator transcript
+    covers a node promoted without either.
     """
     for promotion in run.get("promotion_commits") or []:
         epoch = promotion.get("epoch")
@@ -1900,8 +1894,8 @@ def _landed_in_window(run, receipts, start, end):
             continue
         if promotion.get("first_parent") and promotion.get("colon_subject"):
             return True
-    if run.get("promoted_revision") and (
-        run.get("record_source") == "committed_primary_snapshot"
+    if run.get("promoted_revision") and run.get("record_source") in (
+        COMMITTED_RECORD_SOURCES
     ):
         return True
     return run.get("run_id") in receipts
