@@ -20,7 +20,6 @@ axis that binds and cores are the cheap one.
 from __future__ import annotations
 
 import contextlib
-import fcntl
 import getpass
 import json
 import os
@@ -34,6 +33,7 @@ from typing import Any
 from reckon._store import write_json_atomically
 from reckon.crew.refusals import format_refusal
 from reckon.crew.runs import CrewError
+from reckon.node_exclusive_lock import exclusive_lock
 
 # The size the lead locked on 2026-09-20. Under --overlap the reservation is a
 # place to run rather than a quota, so the numbers are a place to run in and
@@ -80,12 +80,26 @@ DEBUG_JOB_TIME_CEILING = "01:00:00"
 # rather than a job of its own. These are the variables it must not inherit.
 SLURM_JOB_ENVIRONMENT_ROOTS = ("SLURM_JOB", "SLURM_STEP")
 
-# The roster cap and the axis it is measured on. Twenty-five is the concurrency
-# the serve was observed delivering throughput for; the binding quantity is
+# The roster cap and the axis it is measured on. The serve's own router gate
+# bounds the requests that reach the cards, so a launched worker past that
+# width waits in the router's queue holding no card, and the roster only guards
+# the fleet allocation's memory against a runaway launch. The quantity is
 # resident memory per worker against the reservation's reserved memory, never a
-# core count, so the cap is raised by reading memory across a wave rather than
-# by counting cores.
-RESERVATION_ROSTER_LIMIT = 25
+# core count: 25 placed workers measured 2.5 GB resident in all on 14 November
+# (median 80 MB, largest 410 MB) on a node with 125 GB, so eighty workers stay
+# well inside it even at the largest worker's size. Raise it by reading memory
+# across a wave, never by counting cores.
+RESERVATION_ROSTER_LIMIT = 80
+
+# The seats the local lane leaves free inside the reservation. The admit
+# service launches a queued local request the moment a seat frees, while a
+# dispatch naming another lane -- codex as the fast escape hatch, or any lane a
+# coordinator names because the work must run there -- is refused at a full
+# roster and cannot queue. With no reserve the local queue took every freed
+# seat first: on 14 November a codex review was refused seven times in thirty
+# minutes at 25 of 25. The local lane stops this many seats and cores short of
+# the bounds, so a named lane always finds room.
+LOCAL_LANE_RESERVE = 3
 RESERVATION_ROSTER_BASIS = (
     "resident memory per worker against the reservation's reserved memory, "
     "not a core count"
@@ -159,9 +173,11 @@ def reservation_lock_path() -> Path:
 def _reservation_hold_lock() -> Iterator[None]:
     """Hold the lock that makes holding the reservation idempotent under a race.
 
-    The claim is a POSIX advisory lock on a file beside the record — an
-    operation that is atomic between the separate processes dispatching on this
-    workstation, which a lock held inside one process is not. Several dispatches
+    The claim is a POSIX record lock on a file beside the record, taken through
+    :func:`reckon.node_exclusive_lock.exclusive_lock` — an operation that is
+    atomic between the separate processes dispatching on this workstation and
+    whose lock the file server also holds against a holder on another node,
+    neither of which a lock held inside one process is. Several dispatches
     starting at once therefore produce one allocation rather than one each:
     exactly one proceeds through the read, the probe and the submission while
     the rest block here, and each of those reads the record it published once
@@ -169,15 +185,8 @@ def _reservation_hold_lock() -> Iterator[None]:
     reservation is absent, and mints an allocation of its own — the per-worker
     minting this module exists to remove.
     """
-    path = reservation_lock_path()
-    path.parent.mkdir(parents=True, exist_ok=True)
-    handle = os.open(path, os.O_CREAT | os.O_RDWR, 0o600)
-    try:
-        fcntl.flock(handle, fcntl.LOCK_EX)
+    with exclusive_lock(reservation_lock_path()):
         yield
-    finally:
-        fcntl.flock(handle, fcntl.LOCK_UN)
-        os.close(handle)
 
 
 def project_reservation_path(project: str) -> Path:

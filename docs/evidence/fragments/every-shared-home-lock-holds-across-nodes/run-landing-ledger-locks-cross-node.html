@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="every-shared-home-lock-holds-across-nodes">
+  <meta name="plan-title" content="Every shared-home lock holds across nodes">
+  <meta name="plan-evidence-for" content="reckon:every-shared-home-lock-holds-across-nodes">
+  <meta name="plan-verifies" content="reckon:every-shared-home-lock-holds-across-nodes#s3">
+  <meta name="plan-recorded-at" content="2026-11-14">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-tags" content="locks,flock,record-lock,pointer,landing">
+  <title>Run, queue, landing and ledger locks exclude across nodes — evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+</head>
+<body>
+<article class="r-note" data-node="run-landing-ledger-locks-cross-node" data-reckon="landed" data-when="2026-11-14">
+  <h2 id="run-landing-ledger-locks-cross-node-head">Run, queue, landing and ledger locks exclude across nodes</h2>
+
+  <p id="run-landing-ledger-locks-cross-node-sites">Seven shared-home locks guarded
+  state that more than one node reads and writes, and each took only <code>flock</code>, which
+  the local kernel grants: a holder on the login node never excluded a taker on the fleet node.
+  They are the run pointer and the queued-dispatch and watch-registration locks in
+  <code>reckon/crew/runs.py</code>, the ledger write lock in <code>reckon/ledger.py</code>, the
+  landing pass lock in <code>reckon/crew/queue_landing.py</code>, the admission pass lock in
+  <code>reckon/crew/admission/service.py</code>, and the reservation hold lock in
+  <code>reckon/crew/placement.py</code>. Every one now takes
+  <code>reckon.node_exclusive_lock.exclusive_lock</code>, whose POSIX record lock the file server
+  holds for a holder on another node; <code>flock</code> is still taken first inside that helper,
+  so a holder running the previous primitive on this node is excluded exactly as before.</p>
+
+  <p id="run-landing-ledger-locks-cross-node-refusals">Each site keeps the answer its callers
+  already got. A non-blocking pointer take still raises <code>PointerLockHeldError</code> for a
+  held lock and nothing else, so a resume beside a promotion still refuses rather than waits. The
+  landing pass still returns <code>{"landed": [], "obligations": [], "deferred": [], "busy": true}</code>
+  rather than waiting. The pointer lock and the landing pass wrap the take in
+  <code>contextlib.ExitStack</code> and call <code>enter_context</code> inside the <code>try</code>,
+  so a <code>LockHeld</code> raised by the take is translated into the site's own refusal while a
+  <code>PointerLockHeldError</code> raised from inside the body is not caught and relabelled as a
+  lock refusal. The admission lock keeps its one-call-site helper name, because the call site and
+  the two tests that hold it sit outside this node's write scope; the helper body is now the single
+  <code>exclusive_lock</code> take.</p>
+
+  <p id="run-landing-ledger-locks-cross-node-paths">Every one of the seven lock files is opened
+  under <code>reckon/</code> only through <code>exclusive_lock</code>. The other references to
+  each path neither open nor write the file. The run pointer's
+  <code>locks/&lt;run-id&gt;.lock</code> is globbed by
+  <code>routing._stale_run_locks</code> and named by <code>routing._clear_run_lock</code>, both of
+  which only <code>stat</code> and <code>unlink</code>; <code>gc.py</code> imports and calls those
+  two and takes the pointer lock itself through <code>_pointer_lock</code>, so it opens the file
+  only through the helper. <code>queued-dispatch.lock</code> is constructed at
+  <code>runs.py:884</code> alone and is skipped by name in the prune. The
+  <code>ledger-write-&lt;project&gt;-&lt;digest&gt;.lock</code> path is constructed at
+  <code>ledger.py:2608</code> and taken at
+  <code>ledger.py:2629</code>; the prune's generic sweep only matches a stem that is a ledgered run
+  id, so a ledger-write lock is never offered. <code>landing-pass.lock</code>,
+  <code>placement/reservation.lock</code> and the project's
+  <code>watch/&lt;project&gt;.registration.lock</code> each appear once, at their own take, and
+  <code>ADMIT_LOCK_NAME</code> is a constant re-exported by name only. That exhausts the
+  references, and it matters because a POSIX record lock is dropped when the process closes any
+  descriptor for the file.</p>
+
+  <p id="run-landing-ledger-locks-cross-node-test">A second process stands in for the other node in
+  <code>tests/test_run_and_landing_locks_hold_across_nodes.py</code>: it takes <em>only</em> the
+  POSIX record lock on the lock file, never <code>flock</code>, and the two tests then read what
+  each site does. The non-blocking pointer take raises <code>PointerLockHeldError</code>, and the
+  landing pass returns its busy result with an empty landed list. Each test then repeats the call
+  with the stand-in gone: the pointer take succeeds and the pass is not busy, so the earlier
+  refusal is the holder and not a lock this process could never take.</p>
+
+  <p id="run-landing-ledger-locks-cross-node-control">Against the base revision
+  <code>63b51b8337</code>, where both sites take only <code>flock</code>, the same file fails both
+  tests: the pointer take saw a free lock and did not raise, and the landing pass ran with
+  <code>busy</code> absent from its result. That log is the node's negative control
+  (<code>negative-control.log</code>, <code>EXIT=1</code>, two failing ids).</p>
+
+  <p id="run-landing-ledger-locks-cross-node-guard">The guard's pending table drops these seven rows
+  and adds no judged rows, because no <code>flock</code> call is left at any of the seven sites.
+  At the delivery head the census read 35 sites and 38 lock-taking calls: 21 judged keys, unchanged,
+  and 14 pending. The concurrent migrations merged in later each remove their own rows, so the
+  repaired head reads 23 sites and 26 calls, still 21 judged and now 2 pending. Every census
+  classifies every site: none is in neither table and no judged or pending row is stale. The four
+  guard tests pass at the repaired head.</p>
+
+  <p id="run-landing-ledger-locks-cross-node-merge">Two landing merges against primary conflicted on
+  this node's guard file alone, because it is the one file every lock migration edits. Each side
+  removes rows for the sites it migrated and neither restores the other's, so each resolution keeps
+  both removals. The first, against <code>a946964dd3</code>, left the table at 30 sites and 33 calls
+  with 9 pending; the second, against <code>6eff5826</code>, leaves 23 sites and 26 calls with 2
+  pending, the two sites no node has migrated yet. No row survives for a site that now takes the
+  record lock, and the guard passes with that table at the repaired merge head
+  <code>d260dbcaa9</code>; the delivery commits <code>a355eac555</code>, <code>bcbe687be0</code> and
+  <code>e48cf2ab3b</code>, and the first merge head <code>1d0e64557b</code>, remain its ancestors.</p>
+
+  <p id="run-landing-ledger-locks-cross-node-focused">The wider population is the 261 test files that
+  name one of the five changed modules, run on a compute partition with sixteen workers in both
+  arms: 260 files at the base revision, the difference being this node's new test. The base arm
+  reads 165 failed, 2720 passed and 2 errors; the head arm reads 169 failed and 2723 passed. Two
+  base-arm errors are the staged-write inventory in a scratch extraction that is not a git
+  repository, and that file passes in both suite arms. Compared as failed ids the head adds seven
+  and drops five. Six of the seven fail identically at the merge target when run there directly in
+  a small attribution arm, and the seventh passes at both revisions: it appears only in the
+  full-population arm, so it is load-induced rather than a property of this head. What the head
+  adds, then, is nothing the merge target did not already fail.</p>
+
+  <p id="run-landing-ledger-locks-cross-node-gate">The suite arms resolve the template over each
+  tree: the base arm carries the guard and the staged-write inventory
+  (<code>55 passed</code>, <code>EXIT=0</code>), and the after arm at this head carries those plus
+  the new file (<code>57 passed</code>, <code>EXIT=0</code>).</p>
+</article>
+</body>
+</html>

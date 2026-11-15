@@ -25,8 +25,8 @@ WIDTH = 180
 # today: a fifth cell or a wider label fails on the literal. Each cell is two
 # right-aligned digits and its letter, one space between cells; a count above
 # two digits widens its own cell, which is why the counts here stay single.
-BLOCK = " 1w  0r  2n  0d  1q"
-BLOCK_WIDTH = 19
+BLOCK = " 1w  0r  2n  0d  1q  0s"
+BLOCK_WIDTH = 23
 
 
 def _snapshot(
@@ -98,9 +98,9 @@ def test_the_counter_block_keeps_five_cells_and_its_width() -> None:
     rows = _launch_failed_and_blocked()
     launch = rows["r-launch"]
 
-    # Five cells and four single-space gaps, at the width the module states
+    # Six cells and five single-space gaps, at the width the module states
     # for the block: the launch failure's number did not widen the block.
-    assert re.findall(r"\d[wrdqn]", launch) == ["1w", "0r", "2n", "0d", "1q"]
+    assert re.findall(r"\d[wrdqns]", launch) == ["1w", "0r", "2n", "0d", "1q", "0s"]
     assert BLOCK in launch
     assert launch.count("·") == 0
     assert len(BLOCK) == BLOCK_WIDTH == STATS

@@ -2,12 +2,14 @@ from __future__ import annotations
 
 # Imports below the definitions resolve sibling cycles after names are bound.
 # ruff: noqa: E402
+import difflib
 import html
 import json
 import os
 import re
 import subprocess
 import sys
+import tempfile
 import time
 from collections.abc import Callable, Iterable, Mapping, Sequence
 from contextlib import contextmanager
@@ -1696,14 +1698,7 @@ def _plan_differs_only_by_the_stores_own_writes(
     return left == right
 
 
-_RECORD_ATTRIBUTES = frozenset(
-    {
-        "data-effort-hours",
-        "data-attempts",
-        "data-status",
-        "data-links",
-    }
-)
+_RECORD_ATTRIBUTES = _store.PLAN_BOOKKEEPING_ATTRIBUTES
 
 
 def _strip_store_owned_content(soup) -> None:
@@ -1734,13 +1729,69 @@ def _collapse_inter_tag(text: str) -> str:
     return re.sub(r"(?<=>)\s+(?=<)", "", text)
 
 
+def _verified_plan_text_projection(checkout: Path, plan_file: Path) -> str | None:
+    """Project verified pending prose out while retaining current bookkeeping."""
+    relative = plan_file.resolve().relative_to(checkout.resolve()).as_posix()
+    head = _git(checkout, "show", f"HEAD:{relative}", check=False)
+    if head.returncode:
+        return None
+    disk = plan_file.read_text(encoding="utf-8")
+    if not _store.recorded_plan_text_write(plan_file, head.stdout, disk):
+        return None
+    authored, slots = _store.plan_text_projection(disk)
+    committed, _head_slots = _store.plan_text_projection(head.stdout)
+    prefix = len(os.path.commonprefix([authored, committed]))
+    suffix = len(
+        os.path.commonprefix([authored[prefix:][::-1], committed[prefix:][::-1]])
+    )
+    source_end, target_end = len(authored) - suffix, len(committed) - suffix
+    changes = difflib.SequenceMatcher(
+        None, authored[prefix:source_end], committed[prefix:target_end], autojunk=False
+    )
+    operations = [("equal", 0, prefix, 0, prefix)]
+    operations.extend(
+        (kind, left + prefix, right + prefix, start + prefix, end + prefix)
+        for kind, left, right, start, end in changes.get_opcodes()
+    )
+    operations.append(("equal", source_end, len(authored), target_end, len(committed)))
+    placements = []
+    for offset, content in slots:
+        mapped = next(
+            (
+                target_start + offset - source_start
+                for kind, source_start, source_end, target_start, _target_end in operations
+                if kind == "equal" and source_start <= offset <= source_end
+            ),
+            None,
+        )
+        if mapped is None:
+            for _kind, source_start, source_end, target_start, target_end in operations:
+                if offset == source_start:
+                    mapped = target_start
+                    break
+                if offset == source_end:
+                    mapped = target_end
+                    break
+        if mapped is None:
+            raise CrewError(
+                f"cannot separate a store-owned region from pending prose in {plan_file}"
+            )
+        placements.append((mapped, content))
+    projected = committed
+    for offset, content in reversed(placements):
+        projected = projected[:offset] + content + projected[offset:]
+    if _store.plan_text_projection(projected)[0] != committed:
+        raise CrewError(f"cannot preserve the authored content of HEAD for {plan_file}")
+    return projected
+
+
 def _refuse_unrelated_plan_edit(
     *,
     project: str,
     plan: str,
     root: str | Path | None,
     checkout: Path,
-) -> None:
+) -> dict[Path, str]:
     """Refuse a landing while the plan file carries an unrelated uncommitted
     change that the landing commit would sweep in.
 
@@ -1750,14 +1801,24 @@ def _refuse_unrelated_plan_edit(
     by the store's own writes, passes untouched.
     """
     if not str(plan):
-        return
+        return {}
     plan_file = _store._resolve_html_file(
         project, str(plan), root, artifact_type="plan"
     )
     if plan_file is None or not _path_differs_from_head(checkout, plan_file):
-        return
+        return {}
     if _plan_differs_only_by_the_stores_own_writes(checkout, plan_file):
-        return
+        return {}
+    if _verified_plan_text_projection(checkout, plan_file) is not None:
+        relative = plan_file.resolve().relative_to(checkout.resolve()).as_posix()
+        staged = _git(
+            checkout, "diff", "--cached", "--quiet", "--", relative, check=False
+        )
+        if staged.returncode:
+            raise CrewError(
+                f"{plan_file} has staged changes; unstage the pending prose before promotion"
+            )
+        return {plan_file: plan_file.read_text(encoding="utf-8")}
     raise CrewError(
         f"the plan file {plan_file} carries an uncommitted change that is not a "
         "plan-state write the store made (an impl or status move, a resolved "
@@ -2505,6 +2566,230 @@ def _stage_landing_writes(
     return staged
 
 
+def _remove_text_landing_comment(path: Path, before: str, run_id: str) -> None:
+    """Restore the captured comments section, retaining concurrent content."""
+    from bs4 import BeautifulSoup
+
+    from reckon import _plan_html
+
+    def section_text(document: str) -> str:
+        record = next(
+            (
+                item
+                for item in _plan_html._structural_spans(document)
+                if item.tag == "section" and item.kind == "comments"
+            ),
+            None,
+        )
+        return document[record.start : record.end] if record is not None else ""
+
+    def canonical(document: str, *, stamps: bool = True) -> str:
+        soup = BeautifulSoup(document, "html.parser")
+        if not stamps:
+            for element in soup.find_all("meta"):
+                if element.get("name") in {"plan-version", "plan-modified"}:
+                    element.decompose()
+        return _collapse_inter_tag(str(soup))
+
+    original = _plan_html.read_state(before)
+    comment_id = f"{RUN_COMMENT_PREFIX}{re.sub(r'[^A-Za-z0-9._-]+', '-', run_id)}"
+    if any(
+        row.get("id") == comment_id
+        for rows in (original.get("comments") or {}).values()
+        for row in rows
+    ):
+        return
+    current = path.read_text(encoding="utf-8")
+    state = _plan_html.read_state(current)
+    expected_comments = {
+        key: list(rows) for key, rows in (original.get("comments") or {}).items()
+    }
+    for key, rows in (state.get("comments") or {}).items():
+        for row in rows:
+            if row.get("id") == comment_id:
+                expected_comments.setdefault(key, []).append(row)
+    if expected_comments == (original.get("comments") or {}):
+        return
+    expected_state = {
+        **original,
+        "comments": expected_comments,
+        "version": state.get("version"),
+        "modified": state.get("modified"),
+    }
+    if original.get("status") in {"draft", "pending"}:
+        expected_state["status"] = "in-progress"
+    expected = _plan_html.write_state(
+        before, expected_state, drop_authored_impl_meta=True
+    )
+    if canonical(current) == canonical(expected):
+        restored = before
+    else:
+        current_section = section_text(current)
+        if canonical(current_section) == canonical(section_text(expected)):
+            replacement = section_text(before)
+        else:
+            section = BeautifulSoup(current_section, "html.parser")
+            for comment in section.select(".r-comment"):
+                if comment.get("data-id") == comment_id:
+                    comment.decompose()
+            replacement = str(section)
+        restored = _plan_html._splice_section(current, "comments", replacement)
+        if canonical(restored, stamps=False) == canonical(before, stamps=False):
+            restored = before
+    _store.write_atomically(path, lambda handle: handle.write(restored))
+
+
+def _commit_preserving_plan_text(
+    *,
+    run_id: str,
+    verdict: str,
+    checkout: Path,
+    targets: Sequence[Path],
+    text_edits: Mapping[Path, str],
+    subject: str | None,
+    body: str | None,
+    store_row_written: bool,
+) -> dict[str, Any]:
+    """Commit a private index projection without writing over the editor's prose."""
+    from contextlib import ExitStack
+
+    from reckon.crew.merge import _commit_tree, _run
+
+    subject = subject or f"promote({run_id}): {verdict}"
+    body = body or (
+        "Record the run and its landing comment while leaving pending authored "
+        "prose uncommitted for its editor."
+    )
+    head = _head_revision(checkout)
+    reversals = _staged_reversals(checkout)
+    blobs = {}
+    retained = {}
+    environment = {}
+
+    def private_git(*arguments: str, input: str | None = None):
+        result = _run(checkout, *arguments, input=input, env=environment)
+        if result.returncode:
+            raise CrewError(result.stderr.strip() or result.stdout.strip())
+        return result.stdout.strip()
+
+    def require_projection(path: Path) -> str:
+        projection = _verified_plan_text_projection(checkout, path)
+        if projection is None:
+            raise CrewError(f"the recorded text write no longer matches {path}")
+        return projection
+
+    with ExitStack() as locks:
+        for path in sorted(text_edits):
+            locks.enter_context(_store._serialized_path_lock(path, "plans"))
+        try:
+            projections = {}
+            for path in text_edits:
+                projections[path] = require_projection(path)
+                retained[path] = _worktree_blob(checkout, path)
+            with tempfile.TemporaryDirectory(prefix="reckon-landing-index-") as scratch:
+                environment = {
+                    **os.environ,
+                    "GIT_INDEX_FILE": str(Path(scratch) / "index"),
+                }
+
+                private_git("read-tree", head)
+                for path in targets:
+                    relative = path.relative_to(checkout).as_posix()
+                    private_git("add", "--", relative)
+                    entry = private_git("ls-files", "-s", "--", relative).split()
+                    mode, blob = entry[:2]
+                    if path in projections:
+                        blob = private_git(
+                            "hash-object", "-w", "--stdin", input=projections[path]
+                        )
+                        private_git(
+                            "update-index",
+                            "--add",
+                            "--cacheinfo",
+                            f"{mode},{blob},{relative}",
+                        )
+                    blobs[relative] = (mode, blob)
+                tree = private_git("write-tree")
+                if tree == private_git("rev-parse", f"{head}^{{tree}}"):
+                    return {
+                        "committed": False,
+                        "reason": "no_change",
+                        "landing_check": {
+                            "ok": True,
+                            "reversals": reversals,
+                            "mismatched": [],
+                            "pending_prose": [str(path) for path in text_edits],
+                        },
+                    }
+                revision = _commit_tree(
+                    checkout, tree, [head], f"{subject}\n\n{body}\n"
+                )
+                _git(checkout, "update-ref", "HEAD", revision, head)
+        except Exception as exc:
+            rollback = _restore_landing_writes(
+                checkout, [path for path in targets if path not in text_edits]
+            )
+            for path, before in text_edits.items():
+                _remove_text_landing_comment(path, before, run_id)
+                rollback[str(path)] = True
+            if store_row_written:
+                _discard_run_store_row(run_id)
+            _record_landing_refusal(
+                run_id,
+                step="text-commit",
+                message=str(exc),
+                checkout=checkout,
+                rollback=rollback,
+            )
+            raise _landing_refusal(
+                f"could not commit the landing while preserving pending prose: {exc}",
+                rollback,
+            ) from exc
+        entries = "".join(
+            f"{mode} {blob}\t{relative}\n" for relative, (mode, blob) in blobs.items()
+        )
+        updated, _retries = _run_waiting_out_a_held_index_lock(
+            checkout,
+            lambda _attempt: _run(
+                checkout, "update-index", "--index-info", input=entries
+            ),
+            attempts=_INDEX_LOCK_RETRY_ATTEMPTS,
+            retry_seconds=_INDEX_LOCK_RETRY_INTERVAL_SECONDS,
+        )
+        mismatched = [
+            row
+            for row in _landing_path_mismatches(checkout, targets)
+            if not (
+                checkout / row["path"] in text_edits
+                and row["head"] == row["index"] == blobs[row["path"]][1]
+                and row["worktree"] == retained[checkout / row["path"]]
+            )
+        ]
+        check = {
+            "ok": updated.returncode == 0 and not mismatched,
+            "reversals": reversals,
+            "mismatched": mismatched,
+            "pending_prose": [str(path) for path in text_edits],
+        }
+        _append_landing_record(
+            run_id,
+            {
+                "time": _utc_now(),
+                "step": "commit",
+                "committed": True,
+                "commit": revision,
+                "head_before": head,
+                "landing_check": check,
+            },
+        )
+        return {
+            "committed": True,
+            "subject": subject,
+            "paths": [str(path) for path in targets],
+            "landing_check": check,
+        }
+
+
 def _commit_landing_writes(
     *,
     run_id: str,
@@ -2514,6 +2799,7 @@ def _commit_landing_writes(
     subject: str | None = None,
     body: str | None = None,
     store_row_written: bool = False,
+    plan_text_edits: Mapping[Path, str] | None = None,
 ) -> dict[str, Any]:
     """Commit promotion's own store writes in one landing commit.
 
@@ -2561,6 +2847,20 @@ def _commit_landing_writes(
     )
     if not targets:
         return {"committed": False, "reason": "no_write"}
+    pending_text = {
+        path: text for path, text in (plan_text_edits or {}).items() if path in targets
+    }
+    if pending_text:
+        return _commit_preserving_plan_text(
+            run_id=run_id,
+            verdict=verdict,
+            checkout=checkout,
+            targets=targets,
+            text_edits=pending_text,
+            subject=subject,
+            body=body,
+            store_row_written=store_row_written,
+        )
     reversals = _staged_reversals(checkout)
     staged = _stage_landing_writes(run_id, checkout, targets)
     if staged.returncode != 0:

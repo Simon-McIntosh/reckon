@@ -1,0 +1,104 @@
+<section id="stale-index-lock-cleared-s10-landing">
+  <h2>A lock no live writer owns is cleared instead of refusing forever</h2>
+
+  <p><strong>What changed.</strong> A shared checkout is written from several
+  hosts, so a lock left by a writer that died is invisible to every other host's
+  retry: nothing on this host held for long enough to see it move, and nothing
+  will ever remove it. <code>reckon.crew.merge._run_waiting_out_a_held_index_lock</code>
+  reaches its bound, finds the lock still present, and now judges it before
+  refusing. The lock is stale only when all three hold: its mtime is at least
+  <code>STALE_INDEX_LOCK_AGE_SECONDS</code> (600 s) old; its
+  <code>(st_size, st_mtime_ns)</code> signature has not changed across the whole
+  retry window; and no process on this host has the file open, read by walking
+  <code>/proc/&lt;pid&gt;/fd</code>. A stale lock is unlinked, the attempt retried
+  once, and the landing's own record carries one line naming its age and the
+  removal.</p>
+
+  <p><strong>A refusal keeps its age, and an unreadable process table proves
+  nothing.</strong> A lock any process holds, one younger than the bound, or one
+  whose size or mtime moved refuses exactly as before, and the message now names
+  the lock's age: <em>the checkout's index.lock stayed held for N attempts (aged
+  Ns); nothing was written</em>. <code>_processes_holding</code> returns
+  <code>None</code> when <code>/proc</code> cannot be read, and
+  <code>_stale_index_lock_age_seconds</code> treats that as "not provably free",
+  so an unreadable process table can never be the reason a lock is cleared.</p>
+
+  <p><strong>Why one retry is enough.</strong> A writer that is alive but slow
+  would have changed the signature during the window, and is refused by the
+  unchanged-signature condition before age is even consulted. A file that has
+  not moved in ten minutes with no local holder is a dead writer's, and the one
+  retry exists only to let the step succeed now that the path is free; if it does
+  not, the step's own result is returned and the refusal path runs as before.</p>
+
+  <p><strong>Recorded, not silent.</strong> <code>land_merge</code> passes an
+  <code>on_stale_removed</code> callback into every wait it starts, including the
+  stale-landed-copy sweep, and the report carries
+  <code>stale_index_lock_removed</code>: a list of lines of the form
+  <em>removed &lt;lock&gt; after &lt;Ns&gt; unchanged with no process on this host
+  holding it</em>. The callback keeps the helper's
+  <code>(result, retries)</code> return unchanged for its other callers, and the
+  retry it spends is counted, so the reported remaining attempts do not overstate
+  the work left.</p>
+
+  <h3 id="stale-index-lock-cleared-s10-measured">Measured</h3>
+
+  <p>Four cases run against a temporary repository whose origin is a bare repo
+  in the test's own tree. Case one ages a lock eleven minutes and leaves it
+  untouched and unheld: the landing merges, the lock is gone, and the record
+  names the removal with an age in the six hundreds of seconds. Case two holds
+  the lock from a live child process: the landing refuses and the lock survives.
+  Case three touches the lock's mtime during the retry window: the landing
+  refuses and the lock survives. Case four ages a lock five minutes: the landing
+  refuses, the lock survives, and the message carries <code>aged 30Xs</code>.</p>
+
+  <table id="stale-index-lock-cleared-s10-arms">
+    <caption>Every arm is a log whose first lines name its revision, tree,
+    <code>module.__file__</code> and literal command, and whose last line reads
+    <code>EXIT=&lt;code&gt;</code>; each ran on the <code>all_debug</code>
+    partition, one arm at a time, at most <code>-n 4</code>.</caption>
+    <thead><tr><th>arm</th><th>revision and tree</th><th>result</th></tr></thead>
+    <tbody>
+      <tr><td>base arm (the node's gate test set over the base tree)</td>
+        <td><code>1ce60abb857f</code>,
+        <code>reckon/crew/merge.py</code> at the base revision in this worktree
+        and the node's new test removed</td>
+        <td>55 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>after arm (the same set over the head tree)</td>
+        <td><code>1ce60abb857f</code>, this worktree carrying the change</td>
+        <td><strong>59 passed</strong>, <code>EXIT=0</code> &mdash; the four
+        new cases on the same two census files as the base arm</td></tr>
+      <tr><td>negative control: the two conditions removed</td>
+        <td><code>1ce60abb857f</code>, this worktree; the holder check disabled
+        and the unchanged-size/mtime check disabled in the process</td>
+        <td><strong>2 failed</strong>, 2 passed, <code>EXIT=1</code> &mdash;
+        <code>test_a_lock_a_live_process_holds_refuses_and_survives</code> and
+        <code>test_a_lock_touched_during_the_retries_refuses_and_survives</code></td></tr>
+      <tr><td>importer population, base</td>
+        <td><code>1ce60abb857f</code>, base <code>merge.py</code>, the node's
+        test removed; 39 test files importing
+        <code>crew.merge</code>, <code>promotion_scope</code> or
+        <code>crew import merge</code></td>
+        <td>23 failed, 318 passed, 1 error, <code>EXIT=1</code></td></tr>
+      <tr><td>importer population, head</td>
+        <td><code>1ce60abb857f</code>, this worktree carrying the change; the
+        same 39 files plus the node's test</td>
+        <td>23 failed, <strong>322 passed</strong>, 1 error,
+        <code>EXIT=1</code>; the 23 failure ids and the one error are
+        <strong>identical</strong> to the base arm's, so the change adds no
+        failure</td></tr>
+    </tbody>
+  </table>
+
+  <p>The negative control is decisive because each removed condition is the only
+  thing standing between the test and a wrong answer: without the holder check
+  the live child looks like nobody, and without the signature check a lock that
+  is being rewritten looks unchanged. Both cases then clear a lock they must
+  keep, and both remove-cases still pass because their deadlines were never what
+  those two conditions proved.</p>
+
+  <p><strong>Scope of the record.</strong> Only <code>land_merge</code> records
+  the removal. The other promotion-path callers of the same helper clear a stale
+  lock but emit no line, because <code>reckon/crew/promotion_scope.py</code> is
+  outside this node's write scope; the helper accepts the callback and today they
+  pass none.</p>
+</section>

@@ -1,0 +1,56 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-11-14T23:49:26.383Z",
+  "dimension_dispositions": {
+    "scope_discipline": {
+      "kind": "exempted",
+      "reason": "the coordinator granted both reckon/_store.py and reckon/crew/promotion_scope.py through crew widen at 16:18Z after the worker blocked asking for them, so the changes there are inside the granted scope",
+      "recorded_at": "2026-11-15T00:00:06.330323+00:00"
+    }
+  },
+  "dispatched_at": "2026-11-14T23:23:31Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "exempted",
+      "reason": "non-blocking; carried to the plan's next health review",
+      "recorded_at": "2026-11-15T00:04:08.306844+00:00"
+    },
+    "1": {
+      "kind": "exempted",
+      "reason": "non-blocking; carried to the plan's next health review",
+      "recorded_at": "2026-11-15T00:04:13.109272+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "reckon/crew/promotion_scope.py",
+      "line": 1732,
+      "severity": "non-blocking",
+      "text": "a second module was changed where the evidence fence names promotion.py plus one module whose cause lay elsewhere; the receipt, projection and private-index commit helpers landed in promotion_scope.py as well as in reckon/_store.py, and the existing tests/test_a_refused_set_names_the_paths_that_work.py was edited rather than a new test added. The change is coherent and the manifest declares every path, but the declared scope does not name this file."
+    },
+    {
+      "file": "reckon/_store.py",
+      "line": 2519,
+      "severity": "non-blocking",
+      "text": "plan_text_projection inlines the inter-tag whitespace collapse twice (lines 2507 and 2519) as re.sub(r'(?<=>)\\s+(?=<)', '', ...), which reckon/crew/promotion_scope.py:1727 already owns as _collapse_inter_tag; two copies of that rule in one function will drift when the canonicalisation changes."
+    }
+  ],
+  "project": "reckon",
+  "review_run_id": "r-20261114T220103822982-review-of-wave4-codex-anchored-the-crew-does-its-own-bo-s18-9bd42f64f406",
+  "reviewed_base_sha": "9fcf1375abfdb1148fa3086ead9cdb64c87ed544",
+  "reviewed_head_sha": "9bd42f64f4069268e65fcaadb8ae10cbd61baec5",
+  "reviewed_run_id": "r-20261114T150759286619-wave4-codex-anchored-the-crew-does-its-own-bo-s18",
+  "scores": {
+    "durability": 18,
+    "evidence": 17,
+    "fit": 17,
+    "goal_fidelity": 18,
+    "reuse": 14,
+    "scope_discipline": 9
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-15T00:00:41.167223+00:00",
+  "total": 93
+}

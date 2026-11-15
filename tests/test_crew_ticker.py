@@ -228,18 +228,22 @@ def test_counter_cells_stay_apart_at_every_digit_width() -> None:
     width inside its cells shortens the block and has to fail here.
     """
     escapes = re.compile(r"\x1b\[[0-9;]*m")
-    counters = re.compile(r"(\d+)w\s+(\d+)r\s+(\d+)n\s+(\d+)d\s+(\d+)q")
+    counters = re.compile(
+        r"(\d+)w\s+(\d+)r\s+(\d+)n\s+(\d+)d\s+(\d+)q\s+(\d+)s"
+    )
 
     block_ends: set[int] = set()
     row_ends: set[int] = set()
     cases = (
-        (10, 12, 0, 0, 0),
-        (99, 99, 0, 0, 0),
-        (99, 99, 99, 99, 99),
-        (1, 0, 0, 0, 0),
-        (3, 4, 1, 0, 2),
+        (10, 12, 0, 0, 0, 0),
+        (99, 0, 99, 0, 0, 1),
+        (99, 99, 99, 99, 0, 12),
+        (1, 0, 0, 0, 0, 0),
+        (3, 4, 1, 0, 2, 99),
     )
-    for index, (working, reviewing, blocked, unpromoted, queued) in enumerate(cases):
+    for index, (working, reviewing, blocked, unpromoted, queued, stuck) in (
+        enumerate(cases)
+    ):
         # A grid per case: the renderer remembers the last destination state of
         # a run, so reusing one run id would suppress the rows after the first.
         grid = ticker_module.Ticker(width=180, color=False, model_aliases=())
@@ -253,6 +257,7 @@ def test_counter_cells_stay_apart_at_every_digit_width() -> None:
                     blocked=blocked,
                     unpromoted=unpromoted,
                     waiting=queued,
+                    stuck=stuck,
                 )
             ),
         )
@@ -271,15 +276,17 @@ def test_counter_cells_stay_apart_at_every_digit_width() -> None:
             str(blocked),
             str(unpromoted),
             str(queued),
+            str(stuck),
         ), row
         # Each count is its own whitespace-separated token, and no bucket's
         # letter is followed straight away by the next count's digits.
-        assert len(match.group(0).split()) == 5, row
+        assert len(match.group(0).split()) == 6, row
         for left, right, letter in (
             (working, reviewing, "w"),
             (reviewing, blocked, "r"),
             (blocked, unpromoted, "n"),
             (unpromoted, queued, "d"),
+            (queued, stuck, "q"),
         ):
             assert f"{left}{letter}{right}" not in row, row
         # Both ends of the block come off the rendered row itself. The block's
@@ -303,10 +310,12 @@ def test_a_count_above_the_fixed_width_widens_its_own_row() -> None:
     keeps one block width. A larger count is the case that forces a choice, and
     the renderer widens that one row instead of eliding the figure: a reader
     watching a queue pass a hundred needs the number, not a marker. The extra
-    column lengthens the row by one, and the counts stay five separate tokens.
+    column lengthens the row by one, and the counts stay six tokens.
     """
     escapes = re.compile(r"\x1b\[[0-9;]*m")
-    counters = re.compile(r"(\d+)w\s+(\d+)r\s+(\d+)n\s+(\d+)d\s+(\d+)q")
+    counters = re.compile(
+        r"(\d+)w\s+(\d+)r\s+(\d+)n\s+(\d+)d\s+(\d+)q\s+(\d+)s"
+    )
 
     def render(index: int, **counts: int) -> str:
         grid = ticker_module.Ticker(width=180, color=False, model_aliases=())
@@ -320,7 +329,7 @@ def test_a_count_above_the_fixed_width_widens_its_own_row() -> None:
     assert "100w" in widened, widened
     match = counters.search(widened)
     assert match is not None, widened
-    assert match.groups() == ("100", "0", "9", "0", "0"), widened
+    assert match.groups() == ("100", "0", "9", "0", "0", "0"), widened
 
     # The widening is the wide row's alone: it costs one column, and neither row
     # wraps — each ends within the pane's width.

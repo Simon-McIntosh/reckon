@@ -162,29 +162,32 @@ def test_the_roster_counts_placed_runs_across_every_project(
     unplaced = [
         {"run_id": f"r-unplaced-{index}", "project": "alpha"} for index in range(30)
     ]
+    cap = placement.RESERVATION_ROSTER_LIMIT
+    alpha = (cap - 1) // 2
+    beta = cap - 1 - alpha
     placed_runs = [
         {"run_id": f"r-alpha-{index}", "project": "alpha", **placed}
-        for index in range(12)
+        for index in range(alpha)
     ] + [
         {"run_id": f"r-beta-{index}", "project": "beta", **placed}
-        for index in range(12)
+        for index in range(beta)
     ]
 
-    # The thirty unplaced runs hold no seat: twenty four placed runs sit one
-    # below the cap and admit.
+    # The thirty unplaced runs hold no seat: the placed runs sit one below the
+    # cap and admit.
     dispatch_module._refuse_over_reservation_roster(
         _placed_backend(), unplaced + placed_runs
     )
 
-    # The twenty fifth placed run, dispatched by either project, is refused.
+    # One more placed run, dispatched by either project, is refused.
     with pytest.raises(runs.CrewError) as refused:
         dispatch_module._refuse_over_reservation_roster(
             _placed_backend(),
             unplaced
             + placed_runs
-            + [{"run_id": "r-beta-12", "project": "beta", **placed}],
+            + [{"run_id": f"r-beta-{beta}", "project": "beta", **placed}],
         )
-    assert "25" in str(refused.value)
+    assert str(cap) in str(refused.value)
 
 
 def test_a_backend_declaring_no_placement_is_untouched_and_unbounded(

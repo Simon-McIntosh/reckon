@@ -78,12 +78,6 @@ def _seed_live(run_id: str, *, placement: dict | None, backend: str = "clive") -
     crew._write_json(crew.pointer_path(run_id), pointer)
 
 
-def _refusal_message(backend: dict) -> str:
-    with pytest.raises(crew.CrewError) as excinfo:
-        _refuse_over_concurrency_ceiling("clive", backend)
-    return str(excinfo.value)
-
-
 def test_the_measured_clive_case_is_admitted(home):
     """Twenty live clive pointers, one placed live worker, a 28-core reservation.
 
@@ -109,32 +103,40 @@ def test_the_measured_clive_case_is_admitted(home):
     _refuse_over_concurrency_ceiling("clive", CLIVE)
 
 
-def test_twenty_eight_placed_workers_are_refused_naming_the_reservation(home):
-    """Twenty-eight placed live workers fill a 28-core reservation and refuse."""
+def test_twenty_eight_placed_workers_are_reported_and_admitted(home):
+    """Twenty-eight placed workers spend a 28-core reservation and still admit.
+
+    A placed worker spends most of its life waiting on the serve's router, so a
+    worker launched past the core count holds a router slot rather than a core.
+    The cores figure is reported for a reader and never refuses.
+    """
     _publish_reservation()
     options = CLIVE["placement"]
     for index in range(RESERVATION_CORES):
         _seed_live(f"r-20261001T0000000000{index:02d}-placed-{index}", placement=options)
 
-    message = _refusal_message(CLIVE)
-    assert "partition admitted cores" in message
-    assert "28 of 28 cores admitted (1 per worker)" in message
+    report = summary_module.fleet_bound_report(
+        CLIVE, occupancy=RESERVATION_CORES, reservation_occupancy=RESERVATION_CORES
+    )
+    bound = next(row for row in report["bounds"] if row["name"] == "partition-cores")
+    assert bound["value"] == "28 of 28 cores admitted (1 per worker)"
+    assert bound["admits_one_more"] is True
+    _refuse_over_concurrency_ceiling("clive", CLIVE)
 
 
-def test_a_four_core_worker_share_refuses_at_seven_and_admits_at_six(home):
-    """--cpus-per-task=4 makes seven workers overshoot 28 cores and six fit."""
+def test_a_four_core_worker_share_is_priced_in_the_reported_figure(home):
+    """--cpus-per-task=4 prices seven workers at all 28 cores, reported only."""
     _publish_reservation()
     options = {"scheduler": "srun", "options": ["--ntasks=1", "--cpus-per-task=4"]}
     backend = {"placement": options}
 
     for index in range(7):
         _seed_live(f"r-20261001T0000000000{index:02d}-seven-{index}", placement=options)
-    message = _refusal_message(backend)
-    assert "partition admitted cores" in message
-    assert "28 of 28 cores admitted (4 per worker)" in message
-
-    # One fewer worker fits inside the same 28 admitted cores.
-    crew.pointer_path("r-20261001T000000000006-seven-6").unlink()
+    report = summary_module.fleet_bound_report(
+        backend, occupancy=7, reservation_occupancy=7
+    )
+    bound = next(row for row in report["bounds"] if row["name"] == "partition-cores")
+    assert bound["value"] == "28 of 28 cores admitted (4 per worker)"
     _refuse_over_concurrency_ceiling("clive", backend)
 
 

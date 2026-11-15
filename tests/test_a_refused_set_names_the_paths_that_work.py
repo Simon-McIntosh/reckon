@@ -2,12 +2,9 @@
 
 A caller that misspells a settable path, or reaches for a keyed form the writer
 does not handle, is told what it can write instead: the settable top-level
-paths and the keyed forms, plus the nearest settable path when one is close. The
-base refusal names none of these, so every case below that reads a path out of
-the message fails there. A supported path still sets unchanged.
-
-The declared negative control restores the bare refusal, so the listed-paths
-case fails again.
+paths and the keyed forms, plus the nearest settable path when one is close.
+A supported path still sets. Refusal checks resolve the writer and exception
+from the same module as the settable table, including after a module reload.
 """
 
 from __future__ import annotations
@@ -17,7 +14,6 @@ import re
 import pytest
 
 from reckon import _store
-from reckon._store import OpError, apply_ops
 
 
 def _plan_state() -> dict:
@@ -31,13 +27,23 @@ def _plan_state() -> dict:
 
 
 def _refusal_message(path: str) -> str:
-    with pytest.raises(OpError) as excinfo:
-        apply_ops(
+    with pytest.raises(_store.OpError) as excinfo:
+        _store.apply_ops(
             _plan_state(),
             [{"op": "set", "path": path, "value": 1}],
             is_index=False,
         )
     return str(excinfo.value)
+
+
+def test_the_refusal_uses_the_live_store_exception(monkeypatch):
+    exception = type("OpError", (Exception,), {})
+    monkeypatch.setattr(_store, "OpError", exception)
+
+    message = _refusal_message("effort-hours")
+
+    assert "nearest settable path 'effort_hours'" in message
+    assert "gates.ID.FIELD" in message
 
 
 def test_the_refusal_lists_the_settable_paths_and_the_keyed_forms():
@@ -112,7 +118,7 @@ def test_every_suggested_path_is_one_the_writer_accepts_bare():
 def test_a_supported_path_still_sets():
     working = _plan_state()
 
-    apply_ops(
+    _store.apply_ops(
         working,
         [{"op": "set", "path": "effort_hours", "value": 3.5}],
         is_index=False,
