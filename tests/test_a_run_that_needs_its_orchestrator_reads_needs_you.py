@@ -4,7 +4,8 @@ Every run in the halted group is the orchestrator's move next: blocked,
 needs-help, held, stalled, stopped, failed, abandoned, a launch refused at
 admission, and the rest of the group's states. ``halted`` read as a state the
 run sits in by itself, so the pane draws ``help`` and labels that counter
-``n``, which no other counter uses.
+``h``. The bucket was called ``needs you`` before this node renamed it, and
+that word is what its filename still spells.
 
 A checkpoint, a stored history and a delivered-state record hold the word the
 pane drew when each was written, so a record written before the rename says
