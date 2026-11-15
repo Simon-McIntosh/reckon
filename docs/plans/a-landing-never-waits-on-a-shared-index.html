@@ -25,7 +25,7 @@
   <title>A Landing Never Waits On A Shared Index | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="75">
+<meta name="plan-version" content="76">
 <meta name="plan-modified" content="2026-11-15">
 </head>
 <body>
@@ -322,6 +322,9 @@
 </div>
 <div class="r-comment" data-section="s9" data-id="c-run-r-20261113T024814201130-a-landing-write-outlasts-a-briefly-held-index-lock" data-who="reckon-build" data-when="2026-11-13T03:25:49.353Z">
     <div class="r-comment-body"><p>A landing's staging, commit and rollback now wait out a shared index lock another writer holds for up to a minute (130 attempts 0.5 s apart, a 64.5 s span, up from 12 attempts and a 5.5 s span) and refuse only on a lock that outlasts it, naming the lock's age and the bound; gate 53 passed at head 50493b22a8, base arm 51 passed, and the negative control is 2 failed at cb25b41dfd with the 20 s hold rolling the promotion back.</p></div>
+</div>
+<div class="r-comment" data-section="s15" data-id="c-run-r-20261115T141619372523-review-of-repair-gate-judges-added-s15-135c9aaea946" data-who="reckon-build" data-when="2026-11-15T14:44:51.822Z">
+    <div class="r-comment-body"><p>Independent review of r-20261115T124004568066-repair-gate-judges-added-s15 at 135c9aae: parsed record scoring goal_fidelity 18, evidence 15, scope_discipline 19, durability 16, fit 18, reuse 17; added_failure_count 0 from the reviewed run&#x27;s own baseline_suite (3 failed/60 passed) and after_suite (63 passed) gate logs; two non-blocking findings (an arm-completion rule weaker than its owner, and the untested primary-argument wiring at pending_landing.py:390).</p></div>
 </div>
 </section>
 </main>
