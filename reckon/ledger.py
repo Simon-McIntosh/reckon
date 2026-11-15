@@ -1147,31 +1147,19 @@ def run_ids(project: str, root: str | Path | None = None) -> set[str]:
     this made before the index existed. A run file whose own record the index
     could not decode still counts by its name, because membership and not the
     row's contents is what this answers.
-
-    The run store answers its membership from its id columns alone, so a run
-    this project has but no document names still counts, and counting it costs
-    no payload decode. An index built while a project held no documents is
-    current and empty, which is why the store's ids join the answer rather
-    than being gated behind it.
     """
-    stored = _stored_run_ids(project)
     current = _indexed_run_ids(project, root)
     if current is not None:
-        return stored | current
-    data, _version = (
-        load(project, root, headers_only=True)
-        if _run_index_path(project, root).is_file()
-        else _load_aggregate(project, root)
-    )
-    return (
-        stored
-        | {
-            str(record["run_id"])
-            for record in data["runs"]
-            if isinstance(record, Mapping) and record.get("run_id")
-        }
-        | {path.stem for path in _run_files(project, root)}
-    )
+        return current
+    if _run_index_path(project, root).is_file():
+        data, _version = load(project, root, headers_only=True)
+    else:
+        data, _version = _load_aggregate(project, root)
+    return {
+        str(record["run_id"])
+        for record in data["runs"]
+        if isinstance(record, Mapping) and record.get("run_id")
+    } | {path.stem for path in _run_files(project, root)}
 
 
 # The index stores file-derived values only. Every access checks file metadata,
@@ -2269,123 +2257,7 @@ def _ledger_holds_content(project: str, root: str | Path | None) -> bool:
     aggregate = ledger_path(project, root)
     if aggregate.exists():
         return True
-    return run_directory_holds_records(project, root)
-
-
-def run_directory_holds_records(project: str, root: str | Path | None) -> bool:
-    """Whether the directory beside the aggregate carries any run document.
-
-    A ``runs`` directory that exists and holds no document carries no record:
-    it is the state of a project that has been initialised and never run a
-    worker, or one whose documents now answer from the run store.
-    """
-    return (
-        next((ledger_path(project, root).parent / "runs").glob("*.json"), None)
-        is not None
-    )
-
-
-def _stored_run_rows(
-    project: str, *, run_ids: set[str] | None = None
-) -> list[dict[str, Any]]:
-    """Every run the run store holds for one project, read the store's own way.
-
-    The store owns its layout — a record split across two tables, retired rows
-    in a database of its own — so this asks the store rather than reaching for
-    the tables, and the store scopes the query to this project and queries it
-    on a read-only connection. Both halves of that matter here: the store is
-    answered for on every load, so a read must decode only the project it was
-    asked about, and a read must create nothing. A store that is not there is
-    an empty answer, not an empty store to write.
-    """
-    from reckon import run_store
-
-    return run_store.stored_run_rows(project, run_ids=run_ids) or []
-
-
-def _stored_run_ids(project: str) -> set[str]:
-    """The run ids the store holds for one project, from its id columns alone.
-
-    ``indexed_run_ids`` reads the ids on a read-only connection, hot and retired
-    rows together, without decoding a payload. Membership is the one question a
-    station tick asks once per delivered run, so it must not cost a decode.
-    """
-    from reckon import run_store
-
-    return set(run_store.indexed_run_ids(project) or ())
-
-
-def store_answers(project: str) -> bool:
-    """Whether the run store holds at least one run of this project's."""
-    return bool(_stored_run_ids(project))
-
-
-def _merge_stored_rows(
-    project: str,
-    data: dict[str, Any],
-    *,
-    root: str | Path | None = None,
-    plan: str | None = None,
-    headers_only: bool = False,
-    picker_only: bool = False,
-    activity_since: float | None = None,
-) -> bool:
-    """Add the runs the store holds that no document answers for.
-
-    The documents cover the store rather than replacing it, so the merge is by
-    the run id and never by project. A project whose run directory is intact
-    answers from its files, one whose directory is gone answers from the
-    store, and a half-migrated project — one document left beside many stored
-    runs — answers both. Choosing one source for the whole project would
-    shorten that project's history to whichever file survived, silently.
-
-    A run id both sources carry stays as the file-derived row: a document
-    carries the promotion record and any wide detail a rotation has since
-    washed out of the store, so where a file survives it is the fuller record.
-    """
-    held = {
-        str(record["run_id"])
-        for record in data["runs"]
-        if isinstance(record, Mapping) and record.get("run_id")
-    }
-    # Membership is compared before anything is decoded. A read selected to
-    # one plan or to headers holds only part of the documents' rows in
-    # ``data``, so the documents' whole membership — the index's ids and the
-    # run files' names, neither of which decodes a payload — is what decides
-    # whether the store holds a run no document answers for. Only those runs
-    # are decoded; decoding the whole store on every load held tens of
-    # gigabytes across one roadmap build.
-    stored = _stored_run_ids(project)
-    if not stored:
-        return False
-    documented = (
-        held
-        | (_indexed_run_ids(project, root) or set())
-        | {path.stem for path in _run_files(project, root)}
-    )
-    missing = stored - documented
-    if not missing:
-        return False
-    added = [
-        record
-        for record in _stored_run_rows(project, run_ids=missing)
-        if record.get("run_id") and str(record["run_id"]) not in held
-    ]
-    if plan:
-        added = [record for record in added if str(record.get("plan") or "") == plan]
-    if not added:
-        return False
-    if activity_since is not None:
-        added = _active_records(added, activity_since)
-    if headers_only:
-        added = [{"run_id": str(record["run_id"])} for record in added]
-    elif picker_only:
-        added = [picker_record(record) for record in added]
-    if not added:
-        return False
-    data["runs"].extend(added)
-    data["runs"].sort(key=promotion_order_key)
-    return True
+    return next((aggregate.parent / "runs").glob("*.json"), None) is not None
 
 
 def indexed_headers(
@@ -2450,7 +2322,7 @@ def load(
     _report_damaged_run_records(project, ())
     if use_index and _ledger_holds_content(project, root):
         try:
-            data, version = _indexed_data(
+            return _indexed_data(
                 project,
                 root,
                 headers_only=headers_only,
@@ -2478,34 +2350,10 @@ def load(
             )
             if stale is not None:
                 data, version, age = stale
-                _merge_stored_rows(
-                    project,
-                    data,
-                    root=root,
-                    plan=plan,
-                    headers_only=headers_only,
-                    picker_only=picker_only,
-                    activity_since=activity_since,
-                )
                 data["index_age_seconds"] = round(age, 3)
                 return data, version
-            data, version = _load_aggregate(project, root)
-            _merge_run_documents(project, root, data, refuse=True)
-        else:
-            _merge_stored_rows(
-                project,
-                data,
-                root=root,
-                plan=plan,
-                headers_only=headers_only,
-                picker_only=picker_only,
-                activity_since=activity_since,
-            )
-            return data, version
-    else:
-        data, version = _load_aggregate(project, root)
-        _merge_run_documents(project, root, data, refuse=True)
-    _merge_stored_rows(project, data, root=root)
+    data, version = _load_aggregate(project, root)
+    _merge_run_documents(project, root, data, refuse=True)
     if activity_since is not None:
         data["runs"] = _active_records(data["runs"], activity_since)
     if plan:

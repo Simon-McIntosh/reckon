@@ -330,15 +330,9 @@ def _ensure(project: str, root=None) -> Path:
                 if not _current(connection, project, root):
                     generation = ledger.ledger_generation(project)
                     aggregate = ledger.ledger_path(project, root)
-                    # A project answers from its documents while it holds any,
-                    # and from the run store once it holds none, so all three
-                    # sources decide whether this project has rows at all.
-                    has_rows = (
-                        aggregate.exists()
-                        or ledger.run_directory_holds_records(project, root)
-                        or ledger.store_answers(project)
-                    )
-                    if not has_rows:
+                    if not aggregate.exists() and not any(
+                        (aggregate.parent / "runs").glob("*.json")
+                    ):
                         data, _version = {"runs": []}, 0
                     else:
                         token = _READERS.set(None)

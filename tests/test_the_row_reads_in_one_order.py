@@ -176,7 +176,7 @@ def test_the_stage_and_job_cells_hold_the_row_s_own_columns(grid):
     assert _cell(line, JOB_AT, ticker_module.NODE).strip() == "n-row-order"
 
 
-def test_the_counters_are_labelled_w_r_n_d_q(grid):
+def test_the_counters_are_labelled_w_r_h_d_q(grid):
     """The five counters carry one distinct lower-case letter each.
 
     The waiting bucket counts the runs the scheduler has admitted and not
@@ -187,13 +187,13 @@ def test_the_counters_are_labelled_w_r_n_d_q(grid):
     assert ticker_module.STAT_LETTER == {
         "working": "w",
         "in review": "r",
-        "needs you": "n",
+        "help": "h",
         "delivered": "d",
         "waiting": "q",
         "stuck": "s",
     }
     line = plain(grid.render(_event(working=3, blocked=1, unpromoted=7, waiting=2)))
-    assert "3w  0r  1n  7d  2q  0s" in line
+    assert "3w  0r  1h  7d  2q  0s" in line
 
 
 def test_a_review_shows_the_job_under_review_beside_its_stage(grid):

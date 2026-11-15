@@ -132,7 +132,7 @@ def test_a_delivered_run_with_a_live_repair_attempt_counts_as_working() -> None:
     assert idle["unpromoted"] == 1, idle
 
 
-def test_the_row_carries_six_right_aligned_cells_in_the_order_w_r_n_d_q_s() -> None:
+def test_the_row_carries_six_right_aligned_cells_in_the_order_w_r_h_d_q_s() -> None:
     """The row renders six counter cells, letters in order, at one fixed width.
 
     Every cell renders even on a fleet holding no review and no stuck request,
@@ -146,14 +146,14 @@ def test_the_row_carries_six_right_aligned_cells_in_the_order_w_r_n_d_q_s() -> N
         _snapshot("r-review", "review-of-r-work-abc123", "working", role="review"),
     )
     line = _render(rows[0])
-    assert re.findall(r"\d+([wrdqns])", line) == ["w", "r", "n", "d", "q", "s"], line
+    assert re.findall(r"\d+([wrhdqs])", line) == ["w", "r", "h", "d", "q", "s"], line
 
     plain, plain_rows = _reading(_snapshot("r-work", "north", "working"))
     assert plain.get("reviewing", 0) == 0
-    assert re.findall(r"\d+([wrdqns])", _render(plain_rows[0])) == [
+    assert re.findall(r"\d+([wrhdqs])", _render(plain_rows[0])) == [
         "w",
         "r",
-        "n",
+        "h",
         "d",
         "q",
         "s",
@@ -162,7 +162,7 @@ def test_the_row_carries_six_right_aligned_cells_in_the_order_w_r_n_d_q_s() -> N
     assert ticker_module._MAX_CELLS == (
         "working",
         "in review",
-        "needs you",
+        "help",
         "delivered",
         "waiting",
         "stuck",
@@ -185,7 +185,7 @@ def test_the_row_carries_six_right_aligned_cells_in_the_order_w_r_n_d_q_s() -> N
     assert texts == [
         f"{3:>{digits}}w",
         f"{2:>{digits}}r",
-        f"{1:>{digits}}n",
+        f"{1:>{digits}}h",
         f"{7:>{digits}}d",
         f"{4:>{digits}}q",
         f"{5:>{digits}}s",

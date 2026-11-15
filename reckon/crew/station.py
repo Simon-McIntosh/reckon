@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import functools
 import json
 import os
 import re
@@ -770,6 +771,43 @@ def _sessions_to_sweep(pointers: list[Mapping[str, Any]]) -> list[str]:
     return owned
 
 
+@functools.cache
+def _malloc_trim() -> Any:
+    """The C library's trim entry point, resolved once, or ``None`` without it.
+
+    The tick asks for the release every pass, and a platform whose C library has
+    no such symbol must not pay a lookup per tick to learn that again.
+    """
+    import ctypes
+
+    try:
+        library = ctypes.CDLL(None)
+    except OSError:
+        return None
+    return getattr(library, "malloc_trim", None)
+
+
+def release_freed_memory() -> bool:
+    """Hand heap pages the process has already freed back to the kernel.
+
+    The allocator keeps an emptied arena for the next request, which is the
+    right trade for a program whose allocations are steady and the wrong one for
+    a tick that decodes gigabytes and holds a few hundred megabytes: the arenas
+    the pass freed stay resident, so RSS tracks the largest tick ever run
+    instead of the memory the station still holds. ``malloc_trim`` is the C
+    library's own request to return those pages; where the library does not
+    offer it the call is skipped and the tick runs unchanged.
+
+    Returns whether the release was asked for, which is what a caller on a
+    platform without the call sees as ``False``.
+    """
+    trim = _malloc_trim()
+    if trim is None:
+        return False
+    trim(0)
+    return True
+
+
 def station_lease(root: Path) -> HostLease:
     """Name the one writer on this node through the shared lease mechanism."""
     return HostLease(
@@ -1069,6 +1107,20 @@ class Station:
 
     @operational_read
     def tick(self, *, now: datetime | None = None) -> list[dict[str, Any]]:
+        """Run one pass, then hand whatever the store freed back to the kernel."""
+        try:
+            return self._tick(now=now)
+        finally:
+            # After the pass, not inside it: a tick is the largest allocation
+            # the station makes, and the allocator keeps the arenas it frees
+            # the moment they empty. Unreleased, RSS tracks the largest decode
+            # any tick has run rather than the memory the station still holds,
+            # and that ratchet is what drove the fleet job to its cgroup limit.
+            # A raising pass still frees its memory, so the release lives in the
+            # finally and never in the returns below.
+            release_freed_memory()
+
+    def _tick(self, *, now: datetime | None = None) -> list[dict[str, Any]]:
         """Publish every new transition, then move the heartbeat."""
         moment = now or self.clock()
         stages = obligation_snapshot.STATION_TICK_STAGES

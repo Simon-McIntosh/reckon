@@ -27,7 +27,7 @@ from reckon import (
     _backends,
     _store,
 )
-from reckon.crew import host_heartbeat
+from reckon.crew import host_heartbeat, oom_priority
 from reckon.crew.dispatch_claims import (
     CLAIM_GRACE_OBSERVATIONS_NAME,
     CLAIM_GRACE_OBSERVATION_LIMIT,
@@ -1916,6 +1916,9 @@ def _spawn_detached_worker(
         stderr_path=Path(stderr_path),
         log_path=Path(log_path),
     )
+    # A detached worker takes the same place in the job's OOM ordering as a
+    # supervised one: above every service, so the kernel reaches for it first.
+    oom_priority.claim_worker(process.pid)
     launched = _launched_worker_record(plan, log_path, stderr_path)
     # A poll of a child that has already exited collects its status, and the
     # retry's startup check polls the child. A worker that died inside that
@@ -4098,6 +4101,13 @@ def _supervisor_spawn_worker(spec: Mapping[str, Any]) -> int:
                     # single-threaded child as it starts.
                     preexec_fn=_worker_default_signals,  # noqa: PLW1509
                 )
+                # The worker is the process the job can afford to lose, so it
+                # takes a strictly higher OOM score than the services that
+                # spawned it. The parent raises the child's adjustment: an
+                # unprivileged process may always raise another's, and the
+                # child keeps it across the exec into its harness, and its own
+                # children inherit it.
+                oom_priority.claim_worker(process.pid)
                 # Recovery takes the same lock, so it sees either no spawn or its
                 # receipt. A delayed supervisor re-reads the attempt before spawning.
                 if writer is not None:

@@ -246,7 +246,7 @@ def _built_once(
                 # reads who coordinates a critical-path link, so the build skips
                 # that resolution: it reads every run's ledger document, which
                 # was most of each entry's queue time.
-                with roadmap_build_scope(resolve_coordinators=False) as scope:
+                with roadmap_build_scope(resolve_coordinators=False, audit_landings=False) as scope:
                     discovered = _discover_project(
                         str(project), Path(resolved).parent if resolved else None
                     )

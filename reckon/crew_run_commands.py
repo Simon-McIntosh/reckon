@@ -553,6 +553,38 @@ def crew_directory(project, run_id, node_id, pretty):
     _emit_crew_result(result, pretty)
 
 
+@crew.group(name="decision")
+def crew_decision():
+    """Record a question for the lead; read with crew view decisions."""
+
+
+@crew_decision.command(name="record")
+@click.option(
+    "--record",
+    "record_file",
+    required=True,
+    type=click.File("r"),
+    help=(
+        "JSON record: question, context, options (value/label), recommended, "
+        "project, session, plan, section, held_requests, held_sections. "
+        "Use - for stdin."
+    ),
+)
+@click.option("--pretty", is_flag=True, help="Indent the JSON for reading.")
+def crew_decision_record(record_file, pretty):
+    """Persist an open decision with its owner and the work it holds."""
+    import json
+
+    from reckon.crew.lead_decisions import record_decision
+
+    try:
+        record = json.load(record_file)
+        _emit({"ok": True, "decision": record_decision(record)}, pretty)
+    except (OSError, ValueError, TypeError) as exc:
+        _emit({"ok": False, "error": "decision_error", "detail": str(exc)}, pretty)
+        raise click.exceptions.Exit(1) from exc
+
+
 @crew.command(name="view")
 @click.argument("name", required=False, default="summary")
 @click.option("--project", default=None, help="Project whose read view to serve.")
@@ -648,7 +680,9 @@ def crew_view(
     This is the transport for hooks and scripts, and the arrow every retired
     read verb names. It calls the one function the crew tool also calls, so the
     two surfaces cannot disagree about a view. NAME is a view name; `summary`
-    is served when none is given.
+    is served when none is given. `decisions` reads open questions for the lead
+    across every mounted project, ordered by held work, without needing
+    --project; name one to narrow the read.
     """
     _accept_a_matching_project(run_id, project)
     import json as _json

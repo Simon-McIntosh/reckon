@@ -190,7 +190,7 @@ DISPLAY_HUE = {
         "queued": 97,
         "working": 26,
         "waiting": 97,
-        "needs you": 124,
+        "help": 124,
         "delivered": 30,
         "in review": 30,
         "landed": 22,
@@ -202,7 +202,7 @@ DISPLAY_HUE = {
         "queued": 104,
         "working": 75,
         "waiting": 104,
-        "needs you": 203,
+        "help": 203,
         "delivered": 80,
         "in review": 80,
         "landed": 71,
@@ -446,21 +446,33 @@ PANE_STATES = {
             "gate-ended",
         }
     ),
-    # A request held on a section it waits for is not working and not halted: it
-    # sits in the waiting pane until its upstream lands, and is never released
-    # by a lane slot. One whose wait can no longer land asks for the decision a
-    # blocked run asks for, so it sits beside blocked.
-    "waiting": frozenset({"waiting", "paused", "wait-aged", "awaiting-upstream"}),
-    # A run the orchestrator whose pane this is must act on next: it is blocked,
-    # failed, stalled, stopped, abandoned, held, or its manifest is unreadable.
-    # The word says so rather than reading as a state the run sits in by
-    # itself, because every state below is the orchestrator's move.
-    "needs you": frozenset(
+    # A run that moves on its own once other work finishes, so nothing about it
+    # asks the coordinator for anything. A request held on a section it waits
+    # for is not working and not halted: it sits in the waiting pane until its
+    # upstream lands, and is never released by a lane slot. The same is true of
+    # a run held on a refusal, one interrupted mid-work and one ready to start:
+    # each changes state without a coordinator's hand, so each counts here.
+    "waiting": frozenset(
         {
+            "waiting",
+            "paused",
+            "wait-aged",
+            "awaiting-upstream",
             "blocked-upstream",
+            "held",
+            "interrupted",
+            "ready",
+        }
+    ),
+    # A run the orchestrator whose pane this is must act on next: it is blocked,
+    # failed, stalled, stopped, abandoned, or its manifest is unreadable. The
+    # word says so rather than reading as a state the run sits in by itself,
+    # because every state below is the orchestrator's move and none of them
+    # lifts without one.
+    "help": frozenset(
+        {
             "blocked",
             "needs-help",
-            "held",
             "stalled",
             "stopped",
             "abandoned",
@@ -471,8 +483,6 @@ PANE_STATES = {
             "ended-without-manifest",
             "launch-failed",
             "refused-at-admission",
-            "ready",
-            "interrupted",
             "lane-event",
             "unknown",
         }
@@ -510,7 +520,7 @@ PANE_STATES = {
 # follower's own end are carried by their own facts too:
 #
 #   delivered      a run of this session delivered and unpromoted;
-#   needs you      a run that reads as halted, which is blocked, failed,
+#   help           a run that reads as halted, which is blocked, failed,
 #                  stalled, or carried an unreadable manifest;
 #   in review      a run delivered whose review has started, drawn under the
 #                  reviewed run's node and naming the review run;
@@ -550,7 +560,7 @@ PANE_STATES = {
 # replay of a start, a re-arm or reload baseline, and a reload notice. The row
 # policy and the summary lines read the rule from here rather than restating it,
 # so a row the stream withholds is withheld by one decision.
-CARRIED_PANE_WORDS = frozenset({"delivered", "needs you", "in review", "seat moved"})
+CARRIED_PANE_WORDS = frozenset({"delivered", "help", "in review", "seat moved"})
 
 # The pane words of a run whose work is over: a written record, or a drop. A
 # landing is news only when the pane itself drew the delivery before it, and a
@@ -704,7 +714,7 @@ HIDDEN_AT_ATTACH = SETTLED_STATES - frozenset(
     {"completed_unpromoted", "failed", "abandoned"}
 )
 
-_CELLS = ("working", "in review", "needs you", "delivered")
+_CELLS = ("working", "in review", "help", "delivered")
 _WAIT_CELL = "waiting"
 # The stuck count is a figure beside the buckets rather than one of them: a
 # stuck request keeps the cell its phase belongs to, so this cell recounts
@@ -717,7 +727,7 @@ _STUCK_CELL = "stuck"
 # use pane words; a waiting count includes queued and externally waiting runs.
 _COUNT_FIELD = {
     "in review": "reviewing",
-    "needs you": "blocked",
+    "help": "blocked",
     "delivered": "unpromoted",
     "waiting": "waiting",
     "stuck": "stuck",
@@ -727,13 +737,13 @@ _COUNT_FIELD = {
 # waiting bucket holds queued runs as well as runs waiting on a declared
 # condition, and its label is ``q`` for the queued word. ``r`` is the review
 # bucket's letter, so a session whose only live run is a review reads as review
-# work rather than as an idle session. ``n`` is the needs-you bucket's letter,
-# and no other counter uses it, so no two labels share a letter and none needs a
+# work rather than as an idle session. ``h`` is the help bucket's letter, and
+# no other counter uses it, so no two labels share a letter and none needs a
 # case to tell it apart.
 STAT_LETTER = {
     "working": "w",
     "in review": "r",
-    "needs you": "n",
+    "help": "h",
     "delivered": "d",
     "waiting": "q",
     "stuck": "s",
@@ -967,7 +977,7 @@ def _bucket_of(state: Any, classification: Any) -> str | None:
     if word in FLEET_UNPROMOTED_STATES:
         return "delivered"
     if word in FLEET_BLOCKED_STATES:
-        return "needs you"
+        return "help"
     if word in FLEET_WAITING_STATES:
         return _WAIT_CELL
     if word in FLEET_WORKING_STATES:
@@ -1104,9 +1114,12 @@ def lane_mean_from_text(raw: str | None, *, now: datetime) -> float | str:
 # A pane word written before a state was renamed. A checkpoint, a stored
 # history and a delivered-state record all hold pane words, so a record written
 # by an earlier pane names the same state with the word it used then. The reader
-# takes such a word in as the word the pane draws now, so a run whose only
-# change since that record is the word draws no row.
-SUPERSEDED_PANE_WORDS = {"halted": "needs you"}
+# takes such a word in as the word the pane draws now, so a record whose only
+# change is the word draws no row: ``halted`` was the word before the group was
+# named for what it asks, and ``needs you`` was the word before the requirement
+# for help was told apart from waiting on other work. Both read as ``help``,
+# because a run in that group still needs its coordinator.
+SUPERSEDED_PANE_WORDS = {"halted": "help", "needs you": "help"}
 
 
 def _display_state(state: Any) -> str:
@@ -1128,7 +1141,7 @@ def _remembered_word(state: Any) -> str:
     a run live across a re-arm shows its pane word on the left.
 
     A state that is already one of the pane's words maps to itself. Five of
-    them — ``delivered``, ``needs you``, ``in review``, ``landed`` and
+    them — ``delivered``, ``help``, ``in review``, ``landed`` and
     ``dropped`` — are not also internal states, so ``_display_state`` blanks
     them; the identity is therefore taken first rather than falling through to
     the blank. A word a previous pane wrote for one of these states, such as
@@ -1402,12 +1415,12 @@ ARRIVAL_WINDOW = 90.0
 #
 # A run reaches ``working`` from ``dispatched`` on a fresh launch, from
 # ``starting`` on a relaunched attempt, and from any stop state the pane drew as
-# ``needs you`` when an attempt is resumed. All announce the same news — the run
+# ``help`` when an attempt is resumed. All announce the same news — the run
 # began doing the work — so all are starts. ``START_KIND`` is the fresh-launch
 # pair a reader names when it means the canonical start; ``RowPolicy`` reads the
 # set when it decides whether a row is a start. The stop states are read from
 # the pane's own vocabulary rather than listed here, so every state the pane
-# draws ``needs you`` — ``blocked``, ``exited-unfinished``, ``stalled``,
+# draws ``help`` — ``blocked``, ``exited-unfinished``, ``stalled``,
 # ``abandoned`` and the rest — pairs with ``working`` and a new one is a start
 # the moment it is drawn. The states the pane draws ``delivered`` or ``landed``
 # are excluded, because a producer re-reading a rewritten manifest as working
@@ -1425,7 +1438,7 @@ ARRIVAL_WINDOW = 90.0
 START_KIND: tuple[Any, Any] = ("dispatched", "working")
 START_KINDS: frozenset[tuple[Any, Any]] = frozenset(
     {START_KIND, ("starting", "working"), ("queued", "working"), (None, "working")}
-) | frozenset((state, "working") for state in PANE_STATES["needs you"])
+) | frozenset((state, "working") for state in PANE_STATES["help"])
 
 # ── The settle hold ───────────────────────────────────────────────────────────
 #
@@ -1609,17 +1622,17 @@ def stream_carries(event: Mapping[str, Any]) -> bool:
         # can steer the worker from the moment it starts, which is the news the
         # row exists to say and which no state transition carries.
         return True
-    if event.get("status_repair") and _pane_word(event) == "needs you":
-        # A transition into a needs-you word that a coordinator's own ``crew
+    if event.get("status_repair") and _pane_word(event) == "help":
+        # A transition into a help word that a coordinator's own ``crew
         # repair --status`` caused: the coordinator wrote the word itself, so
         # the row carries nothing it does not already know — the same reading a
         # ``landed`` or ``dropped`` row from its own merge or discard is given.
         # The repair is a duty the coordinator discharged, not one it owes, so
         # it is left to ``crew view`` and the pane history and prints nothing.
         # A repair not followed by a resume still leaves the run in the
-        # needs-you summary, so nothing actionable is lost with the row.
+        # help summary, so nothing actionable is lost with the row.
         #
-        # Only the needs-you word is withheld. This rule removes the row a halt
+        # Only the help word is withheld. This rule removes the row a halt
         # produces, not every row a repair causes: a repair that lands a run on
         # the other carried word, a delivery, is judged as any other row is, so
         # the rule cannot silence a delivery it did not itself complete.
@@ -1897,7 +1910,7 @@ class RowPolicy:
         The attempt's own memory decides once-only: a run the pane already
         shows ``working`` has had its launch drawn, so a replayed or
         re-announced start adds nothing and a resume, which leaves a word the
-        pane draws ``needs you``, prints its own.
+        pane draws ``help``, prints its own.
 
         A review run's launch is drawn under the reviewed run's node as the
         reviewed run's ``in review`` row, naming the review run in its own
@@ -1911,7 +1924,7 @@ class RowPolicy:
         # it already shows did not begin under it: the row is a re-derivation
         # after a reload, or a producer rewriting the state it had recorded, and
         # neither opens an attempt the reader is watching start. A resume, whose
-        # pair leaves a word the pane draws ``needs you``, is a launch either way.
+        # pair leaves a word the pane draws ``help``, is a launch either way.
         if (
             kind == START_KIND
             and run_id
