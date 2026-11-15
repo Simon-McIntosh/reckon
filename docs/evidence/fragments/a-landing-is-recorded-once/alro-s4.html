@@ -18,14 +18,24 @@ it; the refusal names every section it refuses on. A done section that states no
 done-when is outside the rule. The check is keyed to the transition into a terminal
 status, so a plan that has already landed stays editable.</p>
 
+<p id="alro-s4-exemption">The rule applies to a section marked done after it landed. The
+store records no per-section tick time, so the rule reads the section's own last
+recorded activity — the newest comment on it, or the completion time of a run whose
+ledger record names it, whichever is later — and compares that with one fixed instant,
+<code>2026-11-15T10:05:58Z</code>, held as <code>LANDING_ACCOUNT_ENFORCED_FROM</code>. A
+section recorded before it, or recorded nowhere at all, was already done when the rule
+landed and owes nothing; a plan edited afterwards cannot move a section across that
+line, and no side of the comparison reads the clock, so a fixture's expectation cannot
+expire with the calendar.</p>
+
 <table id="alro-s4-measures">
 <thead><tr><th>measure</th><th>result</th></tr></thead>
 <tbody>
-<tr><td>new tests, head arm</td><td>79 passed, exit 0 (5 of them new)</td></tr>
-<tr><td>close-operation tests at the base revision</td><td>74 passed, exit 0 — no added failure</td></tr>
-<tr><td>negative control: guard removed</td><td>2 failed (<code>test_a_close_is_refused_over_a_done_section_with_no_account</code>, <code>test_adding_the_landing_comment_lets_the_same_close_succeed</code>), exit 1</td></tr>
-<tr><td>negative control: done-when condition ignored</td><td>3 failed, including <code>test_a_done_section_that_states_no_done_when_does_not_stop_a_close</code></td></tr>
-<tr><td>live store</td><td>172 open plans read; 27 would be refused, naming 27 sections</td></tr>
+<tr><td>head arm at <code>022a25a68c0ad4ad0b713eefbbe9b33d85c38697</code></td><td>62 passed, exit 0 (7 of them this node's)</td></tr>
+<tr><td>base arm at <code>dffc9bccd5151443dbbb2d09f29ba30315298a30</code></td><td>55 passed, exit 0 — no added failure</td></tr>
+<tr><td>negative control: the guard's registration removed</td><td>3 failed, exit 1 — <code>test_a_close_is_refused_over_a_done_section_with_no_account</code>, <code>test_adding_the_landing_comment_lets_the_same_close_succeed</code>, <code>test_a_section_marked_done_after_the_rule_is_still_refused</code></td></tr>
+<tr><td>negative control: the done-when condition ignored</td><td>1 failed, exit 1 — <code>test_a_done_section_that_states_no_done_when_does_not_stop_a_close</code></td></tr>
+<tr><td>live store</td><td>174 open plans read across 18 mounted projects from 23,855 ledger records; 0 refused</td></tr>
 </tbody>
 </table>
 </body>
