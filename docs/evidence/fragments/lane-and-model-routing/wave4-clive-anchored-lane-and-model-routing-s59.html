@@ -1,0 +1,73 @@
+<article class="landed-report" data-node="wave4-clive-anchored-lane-and-model-routing-s59">
+  <h3 id="wave4-clive-anchored-lane-and-model-routing-s59-summary">
+    A dispatch waits for the router's answer, and a default route is never silent
+  </h3>
+  <p id="wave4-clive-anchored-lane-and-model-routing-s59-record">
+    A dispatch asked the picker inside a five-second bound, and on expiry it
+    placed the request on the configured default lane and returned a selection
+    that read as an ordinary fallback: a route the router never weighed,
+    indistinguishable from one it gave. Three things changed. The bound is 120 s
+    by default and a flight's <code>routing.picker_timeout_seconds</code> sets
+    it (<code>reckon/crew/dispatch_picker.py</code>,
+    <code>picker_dispatch_timeout</code>). The section's capability and declared
+    effort are resolved by the dispatcher before the ask
+    (<code>dispatcher_declared_difficulty</code>) and travel on
+    <code>PickRequest</code> as <code>capability</code> and
+    <code>estimated_hours</code>, so the pick's own difficulty step resolves
+    nothing inside the bound (<code>reckon/crew/picker/__init__.py</code>,
+    <code>_declared_difficulty</code> returns on the <code>"request"</code>
+    source). A pick still running at the bound now sets
+    <code>awaiting_pick</code> on the selection, and
+    <code>plan_dispatch</code> stores the request as a queued pointer with
+    <code>reason: awaiting-pick</code> and raises the lane hold that reports
+    where it waits, rather than routing it. A stored request whose pick never
+    answered is picked again at launch through the existing
+    <code>launch_route_*</code> decision, which reads its
+    <code>awaiting_pick</code> marker as a re-pick. A pick that fails rather than
+    expires still falls back, and the fallback carries
+    <code>route_defaulted</code> naming the step that ran out, so a default route
+    is reported with the work that produced it.
+  </p>
+  <p id="wave4-clive-anchored-lane-and-model-routing-s59-measure">
+    Measure: <code>tests/test_a_dispatch_waits_for_the_router.py</code> ran
+    <code>4 passed</code> in 10.36 s at this revision. Its four cases are, in
+    order, that the dispatcher resolves the section's deep capability and its 6
+    declared hours and the pick is handed both with no plan read on its
+    difficulty step (the plan resolver is replaced by a raiser and none fires);
+    that a pick answering after 8 s is routed where it answered, which the old
+    5 s bound could not do; that a pick that never answers leaves
+    <code>backend: null</code> with <code>awaiting_pick</code> at the bound and
+    the stored pointer reads <code>phase: queued</code>,
+    <code>reason: awaiting-pick</code>, and the launch decision calls
+    <code>repick</code> rather than replaying a default; and that a failing pick
+    carries <code>route_defaulted</code> naming its step and the failure's own
+    text. The negative control restores the 5 s bound with default routing, and
+    the second and third cases fail
+    (<code>3 failed, 1 passed, EXIT=1</code>, the third failure being the
+    fallback marker the same mutation removes).
+  </p>
+  <p id="wave4-clive-anchored-lane-and-model-routing-s59-arm">
+    Suite arm: the base revision <code>ed0ca92be6</code> and this head both ran
+    <code>7 failed, 61 passed, EXIT=1</code> over the six picker- and
+    dispatch-importing test files, with no failure id added at the head, so the
+    change adds no failure against its base. The node's own test file fails all
+    four cases at the base revision (<code>4 failed, EXIT=1</code>), which is
+    what makes it a measure of this change rather than of the tree.
+    <code>ruff check</code> reports <code>All checks passed!</code> and
+    <code>ruff format --check</code> reports the five declared paths already
+    formatted.
+  </p>
+  <p id="wave4-clive-anchored-lane-and-model-routing-s59-scope">
+    One deliverable is met short of its full surface. The fallback's
+    <code>route_defaulted</code> marker is recorded on the selection and reaches
+    the dispatch payload, but the obligations view does not yet list it as a
+    duty: that listing lives in
+    <code>reckon/crew/obligations.py</code> and
+    <code>reckon/crew/picker/recovery_classification.py</code>, which this node
+    does not hold. The flight key is read defensively from
+    <code>config["routing"]</code>; declaring it in
+    <code>reckon/flight.py</code> and the flight schema is likewise outside this
+    node's paths, so an undeclared key falls back to the 120 s default instead of
+    being refused.
+  </p>
+</article>
