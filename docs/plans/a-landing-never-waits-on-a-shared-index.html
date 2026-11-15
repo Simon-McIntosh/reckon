@@ -25,7 +25,7 @@
   <title>A Landing Never Waits On A Shared Index | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="52">
+<meta name="plan-version" content="53">
 <meta name="plan-modified" content="2026-11-15">
 </head>
 <body>
@@ -180,6 +180,12 @@
 <div class="r-comment" data-section="s11" data-id="c-run-r-20261114T201232009152-review-of-raced-promotion-lands-s11-02421ad1ad92" data-who="reckon-build" data-when="2026-11-14T20:22:38Z">
     <div class="r-comment-body"><p>Independent review at 02421ad1ad929fd5a9975ef5c940ed8d98283ff6 stores all six scores 13/10/20/14/17/5, zero added failures in the recorded 55-to-57-test arms, four blocking findings and three non-blocking findings; repair is required before the source node lands.</p></div>
 </div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20261114T203051455649-review-of-promotion-checks-read-only-what-moved-52e6182f1f8a" data-who="reckon-build" data-when="2026-11-15T00:53:08.156Z">
+    <div class="r-comment-body"><p>independent review of r-20261114T143749419652-promotion-checks-read-only-what-moved at head 52e6182f1f: goal_fidelity 17, evidence 14, scope_discipline 19, durability 17, fit 18, reuse 17, added_failure_count 0, three non-blocking findings.</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20261114T143749419652-promotion-checks-read-only-what-moved" data-who="reckon-build" data-when="2026-11-14T19:47:10Z">
+    <div class="r-comment-body"><p>a promotion reads only what its run declared — the figure-twin check reads the run&#x27;s own commits (one `diff-tree` per cited commit, one `cat-file` per candidate SVG) instead of a base-to-head diff plus `ls-tree -r HEAD`; the commitless-work guard and the worktree audit&#x27;s two status reads take the run&#x27;s declared roots as literal pathspecs; the ledger loader runs once over a 2,000-row ledger and a 5,000-file checkout.</p></div>
+</div>
 <div class="r-comment" data-section="s5" data-id="c-run-r-20261106T134612700154-review-of-retry-a-held-index-lock-in-a-promotions-commit-and-restore-5568106b9358" data-who="reckon-build" data-when="2026-11-06T13:57:16.941Z">
     <div class="r-comment-body"><p>review of r-20261106T124416537003-retry-a-held-index-lock-in-a-promotions-commit-and-restore at 5568106b9358 stored parsed with scores goal_fidelity 16, evidence 12, scope_discipline 18, durability 17, fit 18, reuse 20 (total 101), one blocking finding at tests/test_rollback_asks_head.py:117 and two non-blocking findings.</p></div>
 </div>
@@ -224,9 +230,6 @@
 </div>
 <div class="r-comment" data-section="s9" data-id="c-run-r-20261113T024814201130-a-landing-write-outlasts-a-briefly-held-index-lock" data-who="reckon-build" data-when="2026-11-13T03:25:49.353Z">
     <div class="r-comment-body"><p>A landing's staging, commit and rollback now wait out a shared index lock another writer holds for up to a minute (130 attempts 0.5 s apart, a 64.5 s span, up from 12 attempts and a 5.5 s span) and refuse only on a lock that outlasts it, naming the lock's age and the bound; gate 53 passed at head 50493b22a8, base arm 51 passed, and the negative control is 2 failed at cb25b41dfd with the 20 s hold rolling the promotion back.</p></div>
-</div>
-<div class="r-comment" data-section="s3" data-id="c-run-r-20261114T203051455649-review-of-promotion-checks-read-only-what-moved-52e6182f1f8a" data-who="reckon-build" data-when="2026-11-15T00:53:08.156Z">
-    <div class="r-comment-body"><p>independent review of r-20261114T143749419652-promotion-checks-read-only-what-moved at head 52e6182f1f: goal_fidelity 17, evidence 14, scope_discipline 19, durability 17, fit 18, reuse 17, added_failure_count 0, three non-blocking findings.</p></div>
 </div>
 </section>
 </main>
