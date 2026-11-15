@@ -25,7 +25,7 @@
   <title>The Monitor Reads Each Fact Once | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="350">
+<meta name="plan-version" content="352">
 <meta name="plan-modified" content="2026-11-15">
 </head>
 <body>
@@ -1452,7 +1452,13 @@ staged paths.</p>
     <div class="r-comment-body"><p>The station computes each live session's obligations once per change into its node-local store and exports one change-only snapshot per project at most every 10 s, with the carried station heartbeat republished once it has moved and the file is 90 s old so a quiet station never reads as stopped; the prompt hook and the crew obligations view both answer from it, in that order ahead of the derivation, and a station heartbeat past the 120 s window is reported stale with its age.</p></div>
 </div>
 <div class="r-comment" data-section="s65" data-id="c-run-r-20261115T142458653959-a-tick-decodes-only-what-changed" data-who="reckon-build" data-when="2026-11-15T14:46:41Z">
-    <div class="r-comment-body"><p>the station tick&#x27;s fold takes the stream path, backend and dialect from columns the pointer&#x27;s own ingest writes, so it no longer decodes the fleet&#x27;s pointer fields once per stream (base 96.5-132.4 MB and 1,934-2,693 decodes per tick, head none), and a tick over an unchanged fleet decodes nothing at all; gate 4 passed EXIT=0, base negative control 3 failed EXIT=1</p></div>
+    <div class="r-comment-body"><p>the station tick's fold takes the stream path, backend and dialect from columns the pointer's own ingest writes, so it no longer decodes the fleet's pointer fields once per stream (base 96.5-132.4 MB and 1,934-2,693 decodes per tick, head none), and a tick over an unchanged fleet decodes nothing at all; gate 4 passed EXIT=0, base negative control 3 failed EXIT=1</p></div>
+</div>
+<div class="r-comment" data-section="s65" data-id="c-run-r-20261115T190028036355-review-of-a-tick-decodes-only-what-changed-de9764617822-figure" data-who="reckon-build" data-when="2026-11-15T19:40:48Z">
+    <div class="r-comment-body"><p>figure review of r-20261115T142458653959-a-tick-decodes-only-what-changed at head de976461782243487412795636699ea23efe4f3a stores a parsed read-only rubric record: both attached PNGs show all six rubric items passing, and five non-blocking findings are recorded (gridlines in both figures; the base bar fill at 2.26:1; the unlabelled 1.49:1 "everything else" fill; a plural-agreement slip in the decode figure's subtitle; the 600 MB rule passing through the peak figure's legend margin)</p></div>
+</div>
+<div class="r-comment" data-section="s65" data-id="c-run-r-20261115T185928788172-review-of-a-tick-decodes-only-what-changed-de9764617822" data-who="reckon-build" data-when="2026-11-15T19:10:33.855Z">
+    <div class="r-comment-body"><p>reviewed run r-20261115T142458653959-a-tick-decodes-only-what-changed at 2780ddad207d0d96a00114169e6a5f9730752227..de976461782243487412795636699ea23efe4f3a: parsed record with scores goal_fidelity 17, evidence 15, scope_discipline 17, durability 16, fit 19, reuse 19; three non-blocking findings (uncovered dialect write on freshly ingested rows, figure script outside the declared write paths, non-discriminating 600 MB census clause)</p></div>
 </div>
 </section>
 </main>
