@@ -150,9 +150,12 @@ def _sweep_trash_directories(
         for entry in sorted(trash_root.iterdir()):
             if not entry.is_dir() or entry.is_symlink():
                 continue
-            if prefixes is not None and entry not in exact_owned:
-                if not any(entry.name.startswith(prefix) for prefix in prefixes):
-                    continue
+            if (
+                prefixes is not None
+                and entry not in exact_owned
+                and not any(entry.name.startswith(prefix) for prefix in prefixes)
+            ):
+                continue
             row: dict[str, Any] = {"path": str(entry), "removed": False}
             if apply:
                 try:
