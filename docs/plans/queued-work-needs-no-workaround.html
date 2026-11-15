@@ -24,7 +24,7 @@
   <title>Queued work needs no workaround | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="87">
+<meta name="plan-version" content="88">
 <meta name="plan-modified" content="2026-11-15">
 <meta name="plan-section-depends-on" content="{&quot;s24&quot;:[&quot;queued-work-needs-no-workaround#s23&quot;]}">
 </head>
@@ -407,6 +407,9 @@
 </div>
 <div class="r-comment" data-section="s6" data-id="c-run-r-20261115T093925736491-review-of-qwnw-a-section-a-run-has-delivered-is-not-ready-6048c47423fc" data-who="reckon-build" data-when="2026-11-15T10:16:18.247Z">
     <div class="r-comment-body"><p>reviewed run r-20261114T200936152763-qwnw-a-section-a-run-has-delivered-is-not-ready at head 6048c47423fc6424132265288a37dfe824a48167; parsed record scoring all six dimensions with one non-blocking finding on stale line references in the evidence record; added_failure_count 0.</p></div>
+</div>
+<div class="r-comment" data-section="s6" data-id="c-run-r-20261114T200936152763-qwnw-a-section-a-run-has-delivered-is-not-ready" data-who="reckon-build" data-when="2026-11-15T09:21:10Z">
+    <div class="r-comment-body"><p>readiness, batch dispatch and admission treat a section&#x27;s node as not ready while that node has a live, delivered, promoted or landed implement/test run, name that run, and report a section declared done whose promoting run&#x27;s head never reached the local integration branch. The promoted history is the ledger&#x27;s own indexed read, every row it returns is a completed promotion so a gate of passed, not-run or failed all hold their node, and a promoted row takes its node out of the free set so a pointer released after the delivery cannot re-offer it. The hold is computed once in reckon/crew/section_holds.py and reaches admission through the roadmap&#x27;s existing section verdict, so the three readers cannot drift. Code and tests 36defce82dcd09fab33eec9247e34811eae05979; evidence record 6048c47423fc6424132265288a37dfe824a48167.</p></div>
 </div>
 <div class="r-comment" data-section="s7" data-id="c-run-r-20261114T233718767945-review-of-qwnw-a-finished-upstream-releases-its-waiters-c089d76cf519" data-who="reckon-build" data-when="2026-11-15T00:47:26.092Z">
     <div class="r-comment-body"><p>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261114T201024333274-qwnw-a-finished-upstream-releases-its-waiters/review-records/r-20261114T201024333274-qwnw-a-finished-upstream-releases-its-waiters.at-c089d76cf519760750d055c471058532bc18f898.json</p></div>
