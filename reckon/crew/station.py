@@ -788,6 +788,17 @@ _ANNOUNCED_RESETS_KEY = "announced-resets"
 _FOLLOWER_PRUNE_KEY = "followers-pruned-at"
 
 
+def _reload_note(message: str) -> None:
+    """Write one reload decision to the station's log.
+
+    A reload that holds, defers or fires changes which code the whole fleet's
+    monitor runs, and a station that never reloads looks exactly like one that
+    reloaded onto code that did not help. Each decision is therefore written
+    where the station's own failures already go.
+    """
+    print(f"station-reload: {message}", file=sys.stderr, flush=True)
+
+
 class StationReloader:
     """Replace the station with a proved image from the node's runtime root."""
 
@@ -856,6 +867,10 @@ class StationReloader:
         now = time.monotonic()
         if self._held_since is None:
             self._held_since = now
+            _reload_note(
+                "holding a due reload until the derivations in flight land, "
+                f"for at most {RELOAD_HOLD_SECONDS:.0f}s"
+            )
         return idle or now - self._held_since >= RELOAD_HOLD_SECONDS
 
     def _replace(self, current: str) -> None:
@@ -865,11 +880,16 @@ class StationReloader:
         if not image.is_relative_to(self.runtime_root):
             os.close(pin)
             raise RuntimeError(f"station reload image escaped runtime root: {image}")
-        imports, _reason = checkout_trust.reckon_imports(image)
+        imports, reason = checkout_trust.reckon_imports(image)
         if not imports:
             self.deferred_identity = current
             os.close(pin)
+            _reload_note(
+                f"deferred the reload to {current}: its image does not import "
+                f"({reason}); the station keeps running {self.identity}"
+            )
             return
+        _reload_note(f"re-executing from {self.identity} onto {current}")
         environment = follower_reload.image_reexec_environment(
             self.source_root, current, pin
         )
