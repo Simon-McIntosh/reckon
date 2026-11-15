@@ -89,6 +89,45 @@ def test_live_view_carries_the_cause(tmp_path: Path, monkeypatch) -> None:
     assert row["budget_overrun_cause"] == "lane-saturated"
 
 
+#: The stamps the ledger index takes the maximum over when it stores a row's
+#: activity, which is the scalar its ``activity_since`` bound filters on.
+_ACTIVITY_KEYS = ("launched_at", "created_at", "dispatched_at", "completed_at")
+
+
+def _activity_seconds(row: dict) -> float | None:
+    """The newest usable stamp on a row, as the ledger's activity scalar reads it."""
+    moments = [
+        datetime.fromisoformat(str(row[key])).timestamp()
+        for key in _ACTIVITY_KEYS
+        if row.get(key)
+    ]
+    return max(moments) if moments else None
+
+
+def _load_stub(rows: list[dict]):
+    """Stand in for ``ledger.load``, honouring the window bound it publishes.
+
+    The real read may be bounded by ``activity_since``; a stub that took only
+    the project name would raise when the bound is passed, and a stub that
+    accepted and ignored it would answer a different question from the index.
+    So the bound is applied here the same way: keep the rows whose newest stamp
+    is no older than the boundary.
+    """
+
+    def load(project: str, activity_since: float | None = None, **unused):
+        selected = rows
+        if activity_since is not None:
+            selected = [
+                row
+                for row in rows
+                if (moment := _activity_seconds(row)) is not None
+                and moment >= activity_since
+            ]
+        return {"runs": selected}, 1
+
+    return load
+
+
 def test_reference_reads_recent_committed_rows_for_one_backend_and_model(
     monkeypatch,
 ) -> None:
@@ -105,7 +144,15 @@ def test_reference_reads_recent_committed_rows_for_one_backend_and_model(
     rows.append(
         {**rows[0], "backend": "other", "throughput": {"tokens_per_second": 900}}
     )
-    monkeypatch.setattr(ledger, "load", lambda project: ({"runs": rows}, 1))
+    monkeypatch.setattr(ledger, "load", _load_stub(rows))
+    # The stand-in must honour the bound, not merely accept it, or the read
+    # below would be answered by a wider row set than the index would serve.
+    after_the_rows = datetime(2026, 10, 3, 11, 0, 1, tzinfo=UTC).timestamp()
+    assert ledger.load("sample", activity_since=after_the_rows)[0]["runs"] == []
+    assert (
+        len(ledger.load("sample", activity_since=after_the_rows - 7200)[0]["runs"])
+        == 11
+    )
     recovery._historical_reference_rate.cache_clear()
     bucket = int(datetime(2026, 10, 3, 12, tzinfo=UTC).timestamp() // 300)
 
