@@ -638,10 +638,11 @@ def _promotion_commits(
     """Read the run's committed range even when a repair cleared its citations.
 
     The range is ``base..HEAD`` in the run's own tree, less the history the
-    shared branch reaches, so a run that merged the shared branch into its
-    worktree cites its own commit and that merge and not the commits the merge
-    brought in. A run that merged no shared branch is unaffected, because every
-    commit in its range is one neither the base nor the shared branch reaches.
+    shared branch reaches: imports through a merge belong to primary, while the
+    merge belongs to the run. A run that merged the shared branch into its
+    worktree therefore cites its own commit and that merge and not the commits
+    the merge brought in, and a commit it merged from any other branch stays
+    cited, so the citation guard still refuses that one.
 
     The range is answered from the previous read until the tree's own head or
     the shared branch moves, and both are resolved as files or by one cached
@@ -671,7 +672,9 @@ def _promotion_commits(
     head_identity = _worktree_head_identity(tree)
     if head_identity in {"no-tree", "no-git", "no-head"}:
         return read()
-    return file_memo.memoized_key("promotion_commits", (*key, head_identity), read)
+    return file_memo.memoized_key(
+        "promotion_commits_beyond_primary", (*key, head_identity), read
+    )
 
 
 def _default_gate_evidence_from_manifest(

@@ -19,11 +19,11 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="reckon-tooling,crew">
   <meta name="plan-informs" content="a-landing-is-recorded-once">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;}">
   <title>A Read-Only Run Promotes As Delivered | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="14">
+<meta name="plan-version" content="19">
 <meta name="plan-modified" content="2026-11-15">
 </head>
 <body>
@@ -48,7 +48,7 @@
     <p><strong>Done when</strong> a new test file shows, using the repository's shared test isolation: an investigate run carrying a brief and no plan, and a plan-review run, each with the manifest line above, pass the manifest check and promote with the no-commit form, and each run record names the base revision and no commit; the same with bare <code>none</code>; a run stating <code>none</code> with a commit beyond its base is refused, naming that commit; and the composed prompt for each role states the line. Negative control: the manifest names which case fails at the base revision and quotes its refusal. If every case passes at the base revision, the node reports the commit that changed the behaviour since 2026-11-14 and changes no product source. The test files that import the manifest check or the promotion evidence check add no failure against the base revision, and <code>ruff check</code> and <code>ruff format --check</code> add no finding on the staged paths.</p>
 
     <h2 id="s3">§3 — A claims review record passes the review check</h2>
-<section data-reckon="section" data-id="s3" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+<section data-reckon="section" data-id="s3" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="done" data-links=""></section>
     <p><strong>Deliverable.</strong> <code>crew check --review</code> judges a review record by the rubric the record names. A record under the claims rubric is complete when every claim it was asked to check carries a verdict; it is not asked for the six text scores. A record under a scored rubric that omits its scores is still refused.</p>
     <p><strong>Done when</strong> a new test file shows: a claims-rubric record with a verdict for every claim and no scores passes <code>crew check --review</code>; a claims-rubric record missing one claim's verdict is refused, naming the claim; a scored-rubric record without scores is refused as it is at the base revision; and the two claims-rubric records stored for this session's census and prototype reviews, copied into the test as fixtures, pass. Negative control: at the base revision the first case fails with a missing-scores refusal. The test files that import the review record check add no failure against the base revision, and <code>ruff check</code> and <code>ruff format --check</code> add no finding on the staged paths.</p>
 
@@ -58,7 +58,7 @@
     <p><strong>Done when</strong> a new test file shows, with isolated crew state: a delivered investigate run carrying a brief and no plan produces one review dispatch from the duty pass, whose brief names the run's brief; a second pass dispatches nothing more; the obligations view lists the duty before the dispatch and not after the review is stored; and a delivered run that carries a plan section is handled as at the base revision. Negative control: at the base revision the first case dispatches nothing, and the node's manifest quotes that result. If the first case already passes at the base revision, the node instead reports which condition kept this session's two runs from being reviewed, with the pointer fields that show it, and changes no product source. The test files that import the review duty pass add no failure against the base revision, and <code>ruff check</code> and <code>ruff format --check</code> add no finding on the staged paths.</p>
 
     <h2 id="s5">§5 — One plan's run records read in seconds</h2>
-<section data-reckon="section" data-id="s5" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+<section data-reckon="section" data-id="s5" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="done" data-links=""></section>
     <p><strong>Deliverable.</strong> Reading the run records of one plan through the ledger's own read, in a fresh process against the committed store of this repository, answers in under five seconds, and its cost does not grow with the number of runs that belong to other plans.</p>
     <p><strong>Done when</strong> one gate log, written to the node's run directory on shared storage by one job on the <code>rigel</code> partition, shows five fresh-process reads of one plan's run records against the committed store at the base revision and at the head, each timed, with the head's slowest read under five seconds and the base's times beside it; and a new test file shows that a one-plan read over a synthetic store of 2,000 runs across 50 plans decodes no run document of another plan and returns the same rows as the unfiltered read filtered afterwards. Negative control: at the base revision the decode-count case fails. If the base revision already reads under five seconds on <code>rigel</code>, the node reports the five timings and changes no product source. The test files that import the ledger read add no failure against the base revision, and <code>ruff check</code> and <code>ruff format --check</code> add no finding on the staged paths.</p>
 
@@ -97,6 +97,15 @@
 <div class="r-comment" data-section="s3" data-id="c-run-r-20261115T085738178021-rorp-s3" data-who="reckon-build" data-when="2026-11-15T13:01:43Z">
     <div class="r-comment-body"><p>A claims record is now judged by one folded field and one rule: with_canonical_claims folds the hand-written claim_verdicts spelling onto the parser's claims key on the store's read path and in the delivery check, so the check, the classifier and the promotion gate read the same field and the stored nova record — three verdicts plus a summary that agrees — passes both. 75 tests pass at the repair head, the four importer files included.</p></div>
 </div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20261115T151741541448-review-of-rorp-s3b-e356e5d8d79b" data-who="reckon-build" data-when="2026-11-15T15:30:20.206Z">
+    <div class="r-comment-body"><p>Independent review of r-20261115T134041037707-rorp-s3b at e356e5d8d79b (base 1d760ac0): six dimensions scored (goal_fidelity 19, evidence 16, scope_discipline 20, durability 18, fit 19, reuse 20; total 20/20 satisfied on scope and reuse, 112 summed), added_failure_count 0 derived from the reviewed run's baseline_suite (65 passed EXIT=0) and after_suite (69 passed EXIT=0), two non-blocking findings — the ruff clause of the section's done_when carries no gate log, and the two revert probes stamp the base revision for runs made on the head worktree.</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20261115T134041037707-rorp-s3b" data-who="reckon-build" data-when="2026-11-15T14:46:42.754Z">
+    <div class="r-comment-body"><p>A claims record refused for a skipped re-run now names the ranked claims it left unanswered instead of reporting a count, and the two raw-record readers — the store's completeness rank behind `_select_stored_record` and the classifier's `_filed_review_record` — fold `review.with_canonical_claims` before judging. Head arm 69 passed EXIT=0 over the node test file and its four importers, base arm 65 passed EXIT=0 over the same five files at 1d760ac0; both new guards fail when their fold is reverted.</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-close-s3" data-who="reckon-build" data-when="2026-11-15T17:35:00Z">
+    <div class="r-comment-body"><p>§3 landed in two nodes. The first (run <code>r-20261115T085739372396-rorp-s3</code>, head <code>e064f4e3fc</code>) made a claims review record pass the review check. The follow-up (run <code>r-20261115T134041037707-rorp-s3b</code>, head <code>e356e5d8d7</code>) makes a claims record missing one claim's verdict be refused naming the claim, and folds the claim-verdict spelling at the two remaining readers. Base arm 65 passed, head arm 69 passed over the same five test files, no added failure; two revert probes each fail the test that guards them. Its review raised two non-blocking findings about receipts in the run directory, both exempted.</p></div>
+</div>
 <div class="r-comment" data-section="s4" data-id="c-run-r-20261115T085739228283-rorp-s4" data-who="reckon-build" data-when="2026-11-15T11:38:40Z">
     <div class="r-comment-body"><p>the duty pass already composes a review for a delivered brief-carried run, measured by the probe log at probe-rorp-s4.log (classification scoring, review id minted, launch reached and refused only at fixture backend preflight).</p></div>
 </div>
@@ -114,6 +123,12 @@
 </div>
 <div class="r-comment" data-section="s5" data-id="c-run-r-20261115T132935525332-review-of-rorp-s5-f1faed9c964e-figure" data-who="reckon-build" data-when="2026-11-15T13:42:11.955Z">
     <div class="r-comment-body"><p>Figure review of rorp-s5: two non-blocking findings (faint base label, overlapping points)</p></div>
+</div>
+<div class="r-comment" data-section="s5" data-id="c-run-r-20261115T085741072175-rorp-s5" data-who="reckon-build" data-when="2026-11-15T14:16:58Z">
+    <div class="r-comment-body"><p>one plan's run records are selected inside the ledger's own index query, so a fresh-process read of one plan's 365 rows costs at most 1.5 s against 7.6-14.8 s at the base revision and decodes no other plan's documents; evidence and figure at docs/evidence/fragments/a-read-only-run-promotes-as-delivered/rorp-s5.html</p></div>
+</div>
+<div class="r-comment" data-section="s5" data-id="c-close-s5" data-who="reckon-build" data-when="2026-11-15T15:00:00Z">
+    <div class="r-comment-body"><p>§5 landed (run <code>r-20261115T085741072175-rorp-s5</code>, head <code>f1faed9c96</code>): one plan's run records are selected inside the ledger's own index query. Five fresh-process reads of one plan's 365 rows on <code>rigel</code> took 0.59 to 1.42 s at head against 7.58 to 14.82 s at the base revision, over a committed store of 3,124 runs across 133 plans; the decode-count test shows no other plan's run document is decoded. The head suite arm passes; the base arm's two errors come from the extracted base tree and are not added. Both reviews passed. The read-cost figure's faint base label and overlapping points are to be redrawn. <a href="/reckon/evidence/fragments/a-read-only-run-promotes-as-delivered/rorp-s5.html">fragment</a></p></div>
 </div>
 </section>
 </main>

@@ -20,12 +20,12 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="reckon-tooling,crew">
   <meta name="plan-after" content="the-monitor-reads-each-fact-once">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;implementable&quot;,&quot;s13&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;descoped&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s14&quot;:&quot;implementable&quot;,&quot;s15&quot;:&quot;implementable&quot;,&quot;s16&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;implementable&quot;,&quot;s13&quot;:&quot;done&quot;,&quot;s14&quot;:&quot;implementable&quot;,&quot;s15&quot;:&quot;done&quot;,&quot;s16&quot;:&quot;implementable&quot;,&quot;s2&quot;:&quot;descoped&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;}">
   <meta name="plan-section-depends-on" content="{&quot;s4&quot;:[&quot;a-landing-never-waits-on-a-shared-index#s3&quot;,&quot;a-landing-never-waits-on-a-shared-index#s13&quot;]}">
   <title>A Landing Never Waits On A Shared Index | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="75">
+<meta name="plan-version" content="80">
 <meta name="plan-modified" content="2026-11-15">
 </head>
 <body>
@@ -126,7 +126,7 @@
 <p><strong>Done when.</strong> New tests, the first two failing at the base revision: a manifest whose <code>after_suite</code> is a prose sentence fails <code>crew check --manifest</code> and names <code>after_suite</code>; one whose arm is a bare command string fails the same way. A third test, already green at base, pins what must not move: a manifest carrying the JSON observation passes, and the lander reads it as an observation. The lander's own refusal text is unchanged. The tests importing <code>reckon.crew.reports</code> or <code>reckon.crew.queue_landing</code> add no failure against the base on all_debug. Write paths: <code>reckon/crew/reports.py</code>, <code>reckon/crew/queue_landing.py</code> and the new test.</p>
 
     <h2 id="s15">A merge repair&#x27;s gate judges added failures, not absolute green</h2>
-<section data-reckon="section" data-id="s15" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="implementable" data-links=""></section>
+<section data-reckon="section" data-id="s15" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="done" data-links=""></section>
 <p><strong>Why.</strong> <code>_require_repair_gate</code> in <code>reckon/crew/pending_landing.py</code> refuses a merge repair unless its gate's exit status is 0 and its log ends <code>EXIT=0</code>. A run whose gate files are already red on the primary branch can therefore never land through its pending landing, however clean its own change. The monitor plan's review-cell run hit this on 15 November. Its 20 gate files carry 26 failure ids at main <code>e79530ca9f</code>, 19 of them in <code>tests/test_crew_recovery.py</code>, and the same 26 at main merged with the repaired head, none added. The repair gate refused with <code>repair gate did not pass</code>. The landing measure already judges added failures against the primary branch; the repair gate is the one landing path that demands absolute green.</p>
 <p><strong>Deliverable.</strong> The repair gate compares the repair's failure ids with the same command run at the primary revision the conflict record names, and refuses only on an id the primary does not fail. It names those ids and both logs.</p>
 <p><strong>Done when.</strong> New tests, the first two failing at the base revision: a repair whose gate is red on the primary branch with no added id lands through its pending landing; one that adds an id is refused naming it. A third test, already green at base, pins what must not move: a gate log that names another revision is still refused. The tests importing <code>reckon.crew.pending_landing</code> add no failure against the base on all_debug. Write paths: <code>reckon/crew/pending_landing.py</code> and the new test.</p>
@@ -257,6 +257,15 @@
 <div class="r-comment" data-section="s13" data-id="c-run-r-20261115T031844233655-a-landing-commit-retries-a-released-lock" data-who="reckon-build" data-when="2026-11-15T05:49:29Z">
     <div class="r-comment-body"><p>The landing wait helper decides whether to retry from the failure's own naming of this checkout's index.lock as well as from the file's presence, so a call refused by a lock a peer released within 50 ms is retried to the same bound instead of returning after one attempt — and the wait is asked only about a failed call, so a step that succeeded while a peer held the lock is run once and never over its own success. The gate reports 60 passed at head 8d32dce587 against a base arm reporting 55 passed at 251cb1cd, the base helper fails the released-lock case, and the revision the review raised fails only the successful-call case.</p></div>
 </div>
+<div class="r-comment" data-section="s15" data-id="c-run-r-20261115T141619372523-review-of-repair-gate-judges-added-s15-135c9aaea946" data-who="reckon-build" data-when="2026-11-15T14:44:51.822Z">
+    <div class="r-comment-body"><p>Independent review of r-20261115T124004568066-repair-gate-judges-added-s15 at 135c9aae: parsed record scoring goal_fidelity 18, evidence 15, scope_discipline 19, durability 16, fit 18, reuse 17; added_failure_count 0 from the reviewed run's own baseline_suite (3 failed/60 passed) and after_suite (63 passed) gate logs; two non-blocking findings (an arm-completion rule weaker than its owner, and the untested primary-argument wiring at pending_landing.py:390).</p></div>
+</div>
+<div class="r-comment" data-section="s15" data-id="c-run-r-20261115T124004568066-repair-gate-judges-added-s15" data-who="reckon-build" data-when="2026-11-15T13:53:37.616Z">
+    <div class="r-comment-body"><p>Judge a merge repair's gate by the failures it adds: a red gate is compared with the same command's arm at the primary revision the conflict names and refuses only on an added id, naming it and both logs. Base arm 3 failed/60 passed, head arm 63 passed, negative control 3 failed/2 passed.</p></div>
+</div>
+<div class="r-comment" data-section="s15" data-id="c-run-r-20261115T165651903623-review-of-repair-gate-judges-added-s15-8613b20d7476" data-who="reckon-build" data-when="2026-11-15T17:03:20.979Z">
+    <div class="r-comment-body"><p>Reviewed run r-20261115T124004568066-repair-gate-judges-added-s15 between 135c9aaea946 and 8613b20d7476: parsed record: goal_fidelity 19, evidence 16, scope_discipline 19, durability 18, fit 18, reuse 16, added failures 0, two non-blocking findings; both record paths pass crew check --review.</p></div>
+</div>
 <div class="r-comment" data-section="s3" data-id="c-run-r-20261114T203051455649-review-of-promotion-checks-read-only-what-moved-52e6182f1f8a" data-who="reckon-build" data-when="2026-11-15T00:53:08.156Z">
     <div class="r-comment-body"><p>independent review of r-20261114T143749419652-promotion-checks-read-only-what-moved at head 52e6182f1f: goal_fidelity 17, evidence 14, scope_discipline 19, durability 17, fit 18, reuse 17, added_failure_count 0, three non-blocking findings.</p></div>
 </div>
@@ -322,6 +331,9 @@
 </div>
 <div class="r-comment" data-section="s9" data-id="c-run-r-20261113T024814201130-a-landing-write-outlasts-a-briefly-held-index-lock" data-who="reckon-build" data-when="2026-11-13T03:25:49.353Z">
     <div class="r-comment-body"><p>A landing's staging, commit and rollback now wait out a shared index lock another writer holds for up to a minute (130 attempts 0.5 s apart, a 64.5 s span, up from 12 attempts and a 5.5 s span) and refuse only on a lock that outlasts it, naming the lock's age and the bound; gate 53 passed at head 50493b22a8, base arm 51 passed, and the negative control is 2 failed at cb25b41dfd with the 20 s hold rolling the promotion back.</p></div>
+</div>
+<div class="r-comment" data-section="s16" data-id="c-run-r-20261115T184551680088-review-of-merged-primary-run-lands-s16-eb4735ae3b44" data-who="reckon-build" data-when="2026-11-15T18:55:15.962Z">
+    <div class="r-comment-body"><p>placeholder</p></div>
 </div>
 </section>
 </main>

@@ -1920,6 +1920,8 @@ _OMP_THINKING_LEVELS = frozenset({"low", "high", "max"})
 # project server is discovered and traces an error; with it disabled the same
 # server is never discovered and the run's trace log names it zero times.
 OMP_WORKER_OVERLAY = """\
+async:
+  printWake: true
 mcp:
   enableProjectConfig: false
 task:

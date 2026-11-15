@@ -39,6 +39,7 @@ POST versioned write contract — see reckon/serve.py for full details.
 from __future__ import annotations
 
 import contextlib
+import contextvars
 import gzip
 import hashlib
 import html.parser
@@ -55,7 +56,7 @@ import subprocess
 import sys
 import threading
 import time
-from collections.abc import Mapping
+from collections.abc import Iterator, Mapping
 from dataclasses import dataclass
 from datetime import UTC, datetime, timezone
 from http import HTTPStatus
@@ -1551,6 +1552,36 @@ def edge_row(rec: Mapping[str, object]) -> dict[str, list]:
     return {field: list(rec.get(field) or []) for field in EDGE_ROW_FIELDS}
 
 
+#: Set while a caller that must not wait on history queries builds a discovery.
+#: A dispatch reads a project to rank and place work; a document's first and
+#: last commit are display values there, and asking git for them costs up to a
+#: ten-second bound each on a large repository under load. Suppressing the
+#: queries answers the same inventory from the working tree's own times.
+_DISCOVERY_WITHOUT_GIT_DATES: contextvars.ContextVar[bool] = (
+    contextvars.ContextVar("discovery_without_git_dates", default=False)
+)
+
+#: Appended to a discovery cache key while history queries are suppressed, so
+#: an answer built without them is never served to a reader that needs them.
+_SUPPRESSED_DATES_KEY_TAG = "\x00no-git-dates"
+
+
+@contextlib.contextmanager
+def discovery_without_git_dates() -> Iterator[None]:
+    """Answer discovery from the working tree, never from git history.
+
+    Reentrant: an inner entry keeps the caller's setting, so a batch that wraps
+    its entries and a preview that wraps one resolution compose. The flag is a
+    :class:`contextvars.ContextVar` so a suppression one caller entered is not
+    visible to a concurrent reader on another path.
+    """
+    token = _DISCOVERY_WITHOUT_GIT_DATES.set(True)
+    try:
+        yield
+    finally:
+        _DISCOVERY_WITHOUT_GIT_DATES.reset(token)
+
+
 def discover_plans(docs_dir: Path, project: str, state_root: Path | None) -> dict:
     """Return {inventory, sprints, milestones} by scanning HTML doc pages.
 
@@ -1559,6 +1590,12 @@ def discover_plans(docs_dir: Path, project: str, state_root: Path | None) -> dic
     signature so an unchanged docs tree returns instantly.
     """
     cache_key = (project, str(docs_dir.resolve()))
+    if _DISCOVERY_WITHOUT_GIT_DATES.get():
+        # An answer built without history queries is a different answer from
+        # one built with them, so it lives under its own key and a reader that
+        # needs the commit times never receives the working-tree approximation
+        # in place of them.
+        cache_key = (cache_key[0], cache_key[1] + _SUPPRESSED_DATES_KEY_TAG)
     if cache_key in _DISC_CACHE:
         with metadata_index.discovery_file_scope():
             _, result = _fresh_discovery(cache_key, docs_dir, project, state_root)
@@ -1586,8 +1623,17 @@ def _discover_plans_uncached(
     # Batch git first-commit lookup — gives true creation time for tracked files.
     # Falls back to inode ctime when a file is untracked or git is unavailable.
     repo_dir = docs_dir.parent
-    git_times = _git_first_committed(repo_dir, docs_dir)
-    git_last_times = _git_last_committed(repo_dir, docs_dir)
+    if _DISCOVERY_WITHOUT_GIT_DATES.get():
+        # The caller asked for document stamps without a history query: a
+        # dispatch builds a roadmap to rank and place work, and each history
+        # query costs up to its ten-second bound on a large repository under
+        # load, which a coordinator then waits through. An empty map makes the
+        # stamp rule fall back to the working tree's own times.
+        git_times: dict[str, int] = {}
+        git_last_times: dict[str, int] = {}
+    else:
+        git_times = _git_first_committed(repo_dir, docs_dir)
+        git_last_times = _git_last_committed(repo_dir, docs_dir)
 
     inventory: list[dict] = []
     with metadata_index.resource_candidate_scope():

@@ -1,0 +1,6 @@
+<section id="qwnw-a-run-that-merged-the-primary-branch-lands-codex-negative-control">
+<h3>Imported primary commit refused at the dispatch base</h3>
+<p>The temporary repository contains two worker commits, forty newer primary commits imported by a merge, and one final worker commit. At <code>de9cb49abfab034cdbadafcec9f46c3fc6b4fbaf</code>, the single completion call with no explicit commit list refused:</p>
+<pre>reckon.crew.CrewError: run &#x27;r-merged-history&#x27; cites d0fd5b8a45a9b5999d90276fa25b120b6b42621f, which is not a commit this run made beyond its base a3194994469e1d9984126e45527e366d7d301dc2: the run&#x27;s work is what it committed on top of the base, so this citation belongs to another branch or predates the run. Cite the run&#x27;s own commit, or pass --no-commit &#x27;&lt;why&gt;&#x27; when it produced none</pre>
+<p>The captured fixture inventory confirms that the named commit <code>d0fd5b8a45a9b5999d90276fa25b120b6b42621f</code> is one of its forty primary imports. <code>1 failed in 8.52s</code>; <code>EXIT=1</code>. The complete log, including its revision, imported module and resolved test command, is <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T151107926805-qwnw-a-run-that-merged-the-primary-branch-lands-codex/negative.log</code>. Execution partition: <code>all_debug</code>.</p>
+</section>

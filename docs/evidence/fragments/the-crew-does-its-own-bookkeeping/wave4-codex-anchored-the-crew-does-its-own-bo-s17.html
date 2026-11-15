@@ -1,0 +1,18 @@
+<section id="wave4-codex-anchored-the-crew-does-its-own-bo-s17-liveness">
+  <h3>Resume output keeps a live worker working</h3>
+  <p>The reported defect does not reproduce at <code>94b59ea85ec9e32b9b4537aaeae2701460385e71</code>.
+    The existing supervisor probe and newest-stream reader already handle it.
+    Three regression cases cover the behavior without changing production code.</p>
+  <table>
+    <thead><tr><th>Process and output</th><th>Observed state</th></tr></thead>
+    <tbody>
+      <tr><td>Live supervisor; first stream silent for 7200 s; resume stream written 1 s ago</td><td>working</td></tr>
+      <tr><td>Process on another host; resume stream written 1 s ago</td><td>working</td></tr>
+      <tr><td>No live process; both streams silent for 7200 s</td><td>abandoned (needs you)</td></tr>
+    </tbody>
+  </table>
+  <p>The base reproduction passes all three cases. The declared negative control makes the
+    liveness reader consider only the first stream: both fresh-resume cases then read
+    <code>stalled</code> and fail, while the dead-process control still passes
+    (2 failed, 1 passed). Gate receipts are held under the run directory.</p>
+</section>

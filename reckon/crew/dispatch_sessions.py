@@ -1729,29 +1729,35 @@ def change_lane(
             launch=launch,
             launcher=launcher,
         )
+    from reckon.serve import discovery_without_git_dates
+
     repository = Path(str(record.get("repo") or ".")).resolve()
     node = _recorded_task_node(record)
     if estimated_hours is not None:
         node.estimated_hours = float(estimated_hours)
-    resolution = plan_dispatch(
-        node=node,
-        config=config,
-        locked_decisions=node.requires_decisions,
-        run_id=run_id,
-        project=str(record.get("project") or ""),
-        repo=repository,
-        base=str(record.get("base_sha") or record.get("base") or "HEAD"),
-        execution_override=bool(
-            (record.get("execution_fit") or {}).get("override")
-            if isinstance(record.get("execution_fit"), Mapping)
-            else False
-        ),
-        backend_override=destination,
-        session=str(record.get("session") or ""),
-        # A lane change names its destination backend, so the picker has
-        # nothing to select and asking it would only be refused.
-        route="deterministic",
-    )
+    # This re-plan reads the project to place the run, exactly as a dispatch
+    # preview does, so it answers from the working tree rather than waiting on
+    # a history query: the document stamps it reads are display values.
+    with discovery_without_git_dates():
+        resolution = plan_dispatch(
+            node=node,
+            config=config,
+            locked_decisions=node.requires_decisions,
+            run_id=run_id,
+            project=str(record.get("project") or ""),
+            repo=repository,
+            base=str(record.get("base_sha") or record.get("base") or "HEAD"),
+            execution_override=bool(
+                (record.get("execution_fit") or {}).get("override")
+                if isinstance(record.get("execution_fit"), Mapping)
+                else False
+            ),
+            backend_override=destination,
+            session=str(record.get("session") or ""),
+            # A lane change names its destination backend, so the picker has
+            # nothing to select and asking it would only be refused.
+            route="deterministic",
+        )
     if not resolution.validation.ok:
         raise CrewError(
             f"run {run_id!r} cannot move to backend {destination!r} — "

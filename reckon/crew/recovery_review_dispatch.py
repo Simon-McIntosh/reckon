@@ -627,6 +627,7 @@ def _record_review_dispatch(
     review_run_id: str = "",
     backend: str = "",
     reviewed_head: str = "",
+    findings: Sequence[int] | None = None,
     asks: Sequence[Mapping[str, Any]] | None = None,
     claim: Mapping[str, Any] | None = None,
     rubric: str | None = None,
@@ -671,6 +672,14 @@ def _record_review_dispatch(
             # sweep can tell a refusal whose cause still stands from one the
             # release has already lifted: the holder's own pointer answers.
             entry["claim"] = dict(claim)
+        if findings is not None:
+            # A refusal that names the findings it was raised on lets a reader
+            # compose the command that lifts it without the stored review: the
+            # record the findings came from can be delivered away while the
+            # refusal still speaks, and a duty that named no command there
+            # would promise a dispatch the refusal's own reason says will not
+            # start.
+            entry["findings"] = [int(index) for index in findings]
         pointer[dispatch_field] = entry
         return pointer
 
@@ -3091,7 +3100,18 @@ def _open_review_refusal(
             f"review dispatched now would repeat them: {rendered}"
         )
         if not dry_run:
-            _record_review_dispatch(run_id, status="refused", reason=reason)
+            # The head is recorded because this refusal speaks for the revision
+            # the run carries now: an entry that named no head could not be told
+            # apart from one recorded against a revision the run has left, and
+            # a duty reading it would either answer for a head nobody refused or
+            # fall back to the reflex's window on a refusal that will repeat.
+            _record_review_dispatch(
+                run_id,
+                status="refused",
+                reason=reason,
+                reviewed_head=_run_head_for_review(record),
+                findings=[index for index, _finding in undisposed],
+            )
         return {
             "run_id": run_id,
             "dispatched": False,

@@ -1,0 +1,70 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-15T15:48:56.960Z",
+  "dispatched_at": "2026-11-15T15:48:35Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/work-scales-to-eighty-across-nodes.html:49",
+      "id": "reasoning-1",
+      "reason": "both nodes measure against the wrong quantity, so \u00a71 would be built to a bound no correct fleet satisfies and \u00a76 to a floor \u00a71 forbids; the plan must name the lane's total worker capacity (or the router's width in workers) rather than its remaining headroom.",
+      "text": "\u00a71's measure and deliverable cap live workers at \"the router's published worker slots plus two\", but the published `worker_slots` is \"the extra workers the gate can carry\" (reckon/crew/lane_document.py:484-485), i.e. headroom above the lane's current live runs, so the total live workers equal live runs plus that headroom and the guard fails on correct behaviour whenever the lane carries more than two live runs \u2014 the same figure makes \u00a76's \"at least 175 live worker processes\" (:74) against a router of width 80 unreachable on the \u00a71 fixed code",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/work-scales-to-eighty-across-nodes.html:74",
+      "id": "done_when-1",
+      "reason": "without a control that drives the count under 175 (a half-width window, or a deliberate cap), the clause is an assertion the record can only pass, and it is the clause the previous round introduced to replace the stand-in's self-reported median.",
+      "text": "the clause added by the last revision, \"a count of live worker processes across the nodes of at least 175 at every reading\", is falsified by no named control: the only control fires at a revision before \u00a71 lands, where a base behaviour that starts the harness early makes the process count higher, so the base arm cannot show this lower bound ever refuses, and no reading in the plan is required to come out below 175",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/work-scales-to-eighty-across-nodes.html:54",
+      "id": "done_when-2",
+      "reason": "the tolerance is undelimitable against the endpoint it guards; it needs a derivation from the per-worker budget at target scale, otherwise \u00a72 can be closed on a memory figure that grows with worker count.",
+      "text": "\u00a72 allows the server's median resident memory at 40 workers to sit 0.5 GB above its median at 5, while the plan's own table (:38) records that same server at \"0.42 GB mean\" \u2014 so the guard tolerates growth larger than the server's entire mean footprint and cannot distinguish \"does not grow with the number of workers it serves\" from a leak of about 13 MB per worker, which is roughly 2.2 GB at the 175 workers \u00a76 requires",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/work-scales-to-eighty-across-nodes.html:82",
+      "id": "wiring-1",
+      "reason": "the followup is the instruction the coordinator reads when it queues the batch, so the \u00a76 node would be gated on four of its five declared upstreams and could start before the MCP-set work \u00a73 lands.",
+      "text": "the s6 depends-on declaration (:22) and \u00a76's deliverable (:73) now name sections 1 to 5, but the followup that drives the dispatch still says \"\u00a76 is the scale rehearsal and waits on \u00a71, \u00a72, \u00a74 and \u00a75\", omitting \u00a73",
+      "type": "wiring",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "412873d2ab5ba6525363c6c9d3a42b6487379e70",
+  "plan_fingerprint": "a225bddb788150deceef780859e949d0c99a15ed864fc8bb64c2b039aefe60b4",
+  "plan_slug": "work-scales-to-eighty-across-nodes",
+  "plan_version": 2,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261115T153815958838-plan-review-of-work-scales-to-eighty-across-nodes",
+  "reviewed_blob_sha": "0e3ebf95a6333d94a1756c776cfa8dd1c4b4db69",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 the dependency work-flows-to-the-lane#s71 resolves (docs/plans/work-flows-to-the-lane.html:344), plan-after work-flows-to-the-lane resolves, and the cited evidence fragment paths are the deliverables themselves.",
+    "done_when": "a finding \u2014 \u00a76's new \"at least 175 live worker processes at every reading\" clause carries no control that can falsify it (docs/plans/work-scales-to-eighty-across-nodes.html:74), and \u00a72's 0.5 GB allowance exceeds the whole mean footprint the plan records for that server (:54).",
+    "evidence_paths": "pass \u2014 every section logs to docs/evidence/fragments/work-scales-to-eighty-across-nodes/s1..s6.html in the repository, no session scratchpad or node-local temporary path.",
+    "naming": "pass \u2014 no section names a symbol, file or function, and no plan label, stage name or ticket number appears in the plan's own vocabulary.",
+    "reasoning": "a finding \u2014 \u00a71 bounds live workers against \"the router's published worker slots\" (docs/plans/work-scales-to-eighty-across-nodes.html:49), a figure the repository defines as the gate's remaining headroom rather than the lane's total capacity, so the figure is the wrong quantity for both \u00a71's bound and \u00a76's floor.",
+    "single_goal": "pass \u2014 \u00a71 delivers a queued request holding no process (its base census is evidence for that one goal), \u00a72 one server per node, \u00a73 a declared MCP set, \u00a76 the lane held at 80.",
+    "wiring": "a finding \u2014 the followup f-wse-001 at docs/plans/work-scales-to-eighty-across-nodes.html:82 still has \u00a76 waiting on \u00a71, \u00a72, \u00a74 and \u00a75, while the s6 depends-on declaration names all five sections."
+  },
+  "section_digests": {
+    "_document": "f80e8d0e62711f6920ae07001a7b272c25d3e38028b40ada9c41ed23b1860ac3",
+    "s1": "76632e86a52dac0579866f8408c0333fa863721b6e548776f3824d2b45faa4af",
+    "s2": "e7ab9125d04ee8ad5982c0e491f21574e03a15bbee9fb839b1ed2a41fd73a2d7",
+    "s3": "f22248790479287f695147e18c4f3e13dd8f0b03f1cda6b3a77b5284feb852b0",
+    "s4": "ae154a71092b8f6272d33272371402d5b554e801d16353fcc09ca8a7e4cf014d",
+    "s5": "33b3b4524304e6061af49372e1982dd0563e5a3234ea869bda7623c10cd2fc7f",
+    "s6": "5c15b0444540684bd597fe9ff8bf4d01ed8ab43c0eed8211721ace1d051d1a20"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-15T16:20:40.236983+00:00",
+  "total": null
+}

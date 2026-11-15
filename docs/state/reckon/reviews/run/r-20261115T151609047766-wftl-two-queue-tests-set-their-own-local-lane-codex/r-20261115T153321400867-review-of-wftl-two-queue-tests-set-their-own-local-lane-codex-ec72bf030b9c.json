@@ -1,0 +1,58 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_review": "No added assertion expressions; all 15 + 13 existing expressions preserved. Exact expected order is derived independently from fixture timestamps (older before newer despite reverse creation order), and actual identities are read from persisted launch detail. Removing the flight setup or restoring inline detail access reproduces the recorded red assertions; neither assertion compares a function with its own supplied expected return.",
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-11-15T15:40:23Z",
+  "dispatched_at": "2026-11-15T15:35:19Z",
+  "failure_delta_evidence": {
+    "after_completed": true,
+    "after_failure_ids": [],
+    "after_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T151609047766-wftl-two-queue-tests-set-their-own-local-lane-codex/final-head.log",
+    "baseline_completed": true,
+    "baseline_failure_ids": [
+      "tests/test_a_queued_pointer_without_its_time_reads_no_place.py::test_the_live_view_lists_the_unplaceable_run_as_queued",
+      "tests/test_the_admission_pass_survives_a_pointer_without_its_time.py::test_the_pass_admits_the_placed_requests_and_names_the_unplaceable_one"
+    ],
+    "baseline_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T151609047766-wftl-two-queue-tests-set-their-own-local-lane-codex/baseline.log"
+  },
+  "findings": [],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "Read commits 2432e44b51ad612fbfe75187ea28f97207308689, 0957e6f9674d71d72e94c7c32f8803d8799fc70f and ec72bf030b9c7dcdaeacd765ec385f0a5caacc6b against c2dae66a4e0478ae6e0dc4983793c70739dda1d0; they add temporary-flight setup, use the existing detail accessor and preserve measured receipts without production changes.",
+    "done_when": "The source prompt.txt:160-161 requires both files passing on all_debug, the two named base failures, preserved assertions and clean scoped ruff; baseline.log records 2 failed/62 passed with the local_backend refusal, final-head.log records 64 passed, and validation.log records clean checks and 28 unchanged assertions.",
+    "goal": "The source prompt.txt:38 requests two self-contained local-flight fixtures; tests/test_a_queued_pointer_without_its_time_reads_no_place.py:63 and tests/test_the_admission_pass_survives_a_pointer_without_its_time.py:65 now create and select those temporary flights.",
+    "manifest": "The source manifest.md names all three commits, four changed files, complete suite arms and receipt paths, and its final-head.log result reconciles to 64 passed in 36.50s with EXIT=0.",
+    "write_paths": "The source prompt.txt:84-89 permits the two tests and the evidence-fragment directory; all four changed paths in the base-to-head diff lie within that scope."
+  },
+  "justifications": {
+    "durability": "No assertion is added or weakened; reverting the temporary flight setup makes tests/test_a_queued_pointer_without_its_time_reads_no_place.py:111 fail on missing local_backend, and reinstating inline detail lookup makes tests/test_the_admission_pass_survives_a_pointer_without_its_time.py:275 fail with empty identities, as the recorded baseline demonstrates.",
+    "evidence": "docs/evidence/fragments/work-flows-to-the-lane/queue-tests-local-lane.html:4-6 embeds the base and repaired-source receipts, while the source run's final-head.log independently identifies the reviewed head and records 64 passed with EXIT=0 against the baseline's two named failures.",
+    "fit": "Both fixtures retain the surrounding json.dumps, tmp_path and monkeypatch idiom at tests/test_a_queued_pointer_without_its_time_reads_no_place.py:63 and tests/test_the_admission_pass_survives_a_pointer_without_its_time.py:65, add no forbidden source names, and validation.log records clean scoped lint and formatting.",
+    "goal_fidelity": "tests/test_a_queued_pointer_without_its_time_reads_no_place.py:63-76 and tests/test_the_admission_pass_survives_a_pointer_without_its_time.py:65-67 explicitly bind their own temporary flight paths, while the accessor correction at the latter file:268 makes the remaining red test read its actual stored admission identity.",
+    "reuse": "No function, class or module is added; the fixture configuration uses the existing override owned by reckon/flight.py:543-552, and the identity read at tests/test_the_admission_pass_survives_a_pointer_without_its_time.py:268 calls the existing runs.dispatch_field owner at reckon/crew/runs.py:239-245 rather than duplicating pointer-detail recovery.",
+    "scope_discipline": "The two test paths and both docs/evidence/fragments/work-flows-to-the-lane HTML additions are inside the source prompt.txt:84-89 fence and directly support its fixture repair and evidence requirement."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The source prompt.txt:38 requests two self-contained local-flight fixtures; tests/test_a_queued_pointer_without_its_time_reads_no_place.py:63 and tests/test_the_admission_pass_survives_a_pointer_without_its_time.py:65 now create and select those temporary flights.\nVERDICT done_when: The source prompt.txt:160-161 requires both files passing on all_debug, the two named base failures, preserved assertions and clean scoped ruff; baseline.log records 2 failed/62 passed with the local_backend refusal, final-head.log records 64 passed, and validation.log records clean checks and 28 unchanged assertions.\nVERDICT write_paths: The source prompt.txt:84-89 permits the two tests and the evidence-fragment directory; all four changed paths in the base-to-head diff lie within that scope.\nVERDICT manifest: The source manifest.md names all three commits, four changed files, complete suite arms and receipt paths, and its final-head.log result reconciles to 64 passed in 36.50s with EXIT=0.\nVERDICT diff: Read commits 2432e44b51ad612fbfe75187ea28f97207308689, 0957e6f9674d71d72e94c7c32f8803d8799fc70f and ec72bf030b9c7dcdaeacd765ec385f0a5caacc6b against c2dae66a4e0478ae6e0dc4983793c70739dda1d0; they add temporary-flight setup, use the existing detail accessor and preserve measured receipts without production changes.\nCALL_SITES: none\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: tests/test_a_queued_pointer_without_its_time_reads_no_place.py:63-76 and tests/test_the_admission_pass_survives_a_pointer_without_its_time.py:65-67 explicitly bind their own temporary flight paths, while the accessor correction at the latter file:268 makes the remaining red test read its actual stored admission identity.\nSCORE evidence: 20\nJUSTIFICATION evidence: docs/evidence/fragments/work-flows-to-the-lane/queue-tests-local-lane.html:4-6 embeds the base and repaired-source receipts, while the source run's final-head.log independently identifies the reviewed head and records 64 passed with EXIT=0 against the baseline's two named failures.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: The two test paths and both docs/evidence/fragments/work-flows-to-the-lane HTML additions are inside the source prompt.txt:84-89 fence and directly support its fixture repair and evidence requirement.\nSCORE durability: 20\nJUSTIFICATION durability: No assertion is added or weakened; reverting the temporary flight setup makes tests/test_a_queued_pointer_without_its_time_reads_no_place.py:111 fail on missing local_backend, and reinstating inline detail lookup makes tests/test_the_admission_pass_survives_a_pointer_without_its_time.py:275 fail with empty identities, as the recorded baseline demonstrates.\nSCORE fit: 20\nJUSTIFICATION fit: Both fixtures retain the surrounding json.dumps, tmp_path and monkeypatch idiom at tests/test_a_queued_pointer_without_its_time_reads_no_place.py:63 and tests/test_the_admission_pass_survives_a_pointer_without_its_time.py:65, add no forbidden source names, and validation.log records clean scoped lint and formatting.\nSCORE reuse: 20\nJUSTIFICATION reuse: No function, class or module is added; the fixture configuration uses the existing override owned by reckon/flight.py:543-552, and the identity read at tests/test_the_admission_pass_survives_a_pointer_without_its_time.py:268 calls the existing runs.dispatch_field owner at reckon/crew/runs.py:239-245 rather than duplicating pointer-detail recovery.\n",
+  "review_run_id": "r-20261115T153321400867-review-of-wftl-two-queue-tests-set-their-own-local-lane-codex-ec72bf030b9c",
+  "reviewed_base_sha": "c2dae66a4e0478ae6e0dc4983793c70739dda1d0",
+  "reviewed_head_sha": "ec72bf030b9c7dcdaeacd765ec385f0a5caacc6b",
+  "reviewed_run_id": "r-20261115T151609047766-wftl-two-queue-tests-set-their-own-local-lane-codex",
+  "scores": {
+    "durability": 20,
+    "evidence": 20,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-15T15:43:12.474746+00:00",
+  "total": 120
+}

@@ -1,0 +1,78 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own arms: baseline_suite (fd2fe9c1, baseline-arm.log) completed true, failure_count 0, failure_ids []; after_suite (3a7041f2, after-arm.log) completed true, failure_count 0, failure_ids []; the set difference is empty.",
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew_run_commands.py:2334 crew_gc calls garbage_collect",
+    "reckon/crew/gc.py:1185 the run-scoped trash sweep with labels and owned",
+    "reckon/crew/gc.py:2254 the hourly retention pass still calling _sweep_trash_directories unscoped",
+    "reckon/crew/routing.py:4525 re-exports _sweep_worktree_trash (no other production caller)"
+  ],
+  "completed_at": "2026-11-15T18:06:03.584Z",
+  "dispatched_at": "2026-11-15T18:04:43Z",
+  "findings": [
+    {
+      "file": "reckon/crew/gc.py",
+      "line": "957",
+      "severity": "non-blocking",
+      "text": "non-blocking: `confined_to` is set to None before the labels are computed for the trash sweep, so a `crew gc --run X` whose tree was released in an earlier pass names only `run_id`, and the `<tree>-<stamp>` copy that earlier release left (the release at :1126 passes no run_id, so reckon/crew/routing.py:1555 labels it with the tree name) is no longer swept by that run's gc though base swept it; it survives until the unscoped hourly retention pass."
+    },
+    {
+      "file": "reckon/crew/gc.py",
+      "line": "155",
+      "severity": "non-blocking",
+      "text": "non-blocking: the `owned` clause has no assertion behind it \u2014 `mine_by_run` and `mine_by_tree` in tests/test_a_run_scoped_gc_touches_only_its_run.py:109-110 are already label-matched, so deleting `and entry not in exact_owned` leaves both tests green and the deferred-copy case the parameter exists for is unguarded."
+    },
+    {
+      "file": "reckon/crew/gc.py",
+      "line": "189",
+      "severity": "non-blocking",
+      "text": "non-blocking: `_trash_scope_labels` restates the `<label>-<stamp>` rule that reckon/crew/routing.py:1557 owns inline (`label = run_id or tree.name`) instead of reading it from a shared helper, so a change to the release's labelling would leave the matcher in a second place and the sweep would quietly stop matching its own trash."
+    },
+    {
+      "file": "reckon/crew/gc.py",
+      "line": "154",
+      "severity": "non-blocking",
+      "text": "non-blocking: the subject of commit 3a7041f2 calls the folded predicate a \"test\", but the commit changes no test file; its body describes gc.py correctly, so the subject mislabels the change a reader scanning the log would trust."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "read both commits against fd2fe9c17f80e5901236fb399cb7ac4831d2bcce \u2014 6fc17c63 scopes `_sweep_trash_directories` and threads `labels`/`owned` through `_sweep_worktree_trash` into `garbage_collect`, 3a7041f2 folds the scope predicate into one condition and adds the fragment; three files, 236 insertions, 4 deletions, all of it the goal and its test.",
+    "done_when": "the done_when asks for a new test failing at base that shows a `--run` pass removes only its own trash and prints every removal, plus an unscoped pass still sweeping all of it; tests/test_a_run_scoped_gc_touches_only_its_run.py:101 and :133 assert exactly those two directions and the run's own new-test-at-base.log records `1 failed, 1 passed` with the run-scoped case red.",
+    "goal": "the goal is to scope `crew gc --run` trash removal to that run; reckon/crew/gc.py:1185 now passes `_trash_scope_labels(run_id, confined_to)` plus this pass's own moved copies, and an unscoped pass still passes `labels=None`, so the destructive command no longer reaches a peer's trash while the hourly whole-root sweep is untouched.",
+    "manifest": "read at <run>/manifest.md; it reports status complete, base arm 58 passed EXIT=0 and head arm 60 passed EXIT=0, a red new-test-at-base log and a red negative-control log, names all four logs plus the scratch tree's module.__file__ and cwd, and every figure it states I re-read from the logs and found as claimed.",
+    "write_paths": "the declared scope is reckon/crew/gc.py, tests/test_a_run_scoped_gc_touches_only_its_run.py, the landing fragment under docs/evidence/fragments/the-monitor-tells-the-truth-under-load/, and an unused figures directory; the diff touches only the first three, every one inside the fence, and the fragment is the one artefact the brief always permits."
+  },
+  "justifications": {
+    "durability": "the two new tests redden on the reinstated regression as negative-control.log shows (`_trash_scope_labels` returning None gives 1 failed, 1 passed), but no assertion covers the `owned` clause at reckon/crew/gc.py:155 or the deregistered-tree state at :957.",
+    "evidence": "tests/test_a_run_scoped_gc_touches_only_its_run.py asserts both clauses of the done_when and new-test-at-base.log plus after-arm.log record them at their revisions, while the done_when's third clause was not in either arm and I measured its delta myself (gc-tests-at-head.log 29 passed at 3a7041f2, gc-tests-at-pre-change.log 29 passed on the change-free tree, EXIT=0 both).",
+    "fit": "`_trash_scope_labels` at reckon/crew/gc.py:174 follows the module's private-helper, keyword-only, long-docstring idiom, and no name it adds is one the repository's naming rules forbid.",
+    "goal_fidelity": "reckon/crew/gc.py:957 nulls `confined_to` when the run's tree is already deregistered, so `_trash_scope_labels` at :188 loses the tree label and a run-scoped pass stops reclaiming its own `<tree>-<stamp>` copy that reckon/crew/routing.py:1557 names from `tree.name`.",
+    "reuse": "a search of reckon/ for an existing trash-scope predicate (`grep startswith(f\"{`/label_prefix/scope_labels across reckon/) found none, but the label convention itself is owned inline at reckon/crew/routing.py:1557 and `_trash_scope_labels` re-encodes it rather than sharing it, so writer and matcher can drift apart silently.",
+    "scope_discipline": "the diff's three paths (reckon/crew/gc.py, the new test, the fragment) are all inside the orientation_write_paths fence, with no plan edit and no CLI surface change."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is to scope `crew gc --run` trash removal to that run; reckon/crew/gc.py:1185 now passes `_trash_scope_labels(run_id, confined_to)` plus this pass's own moved copies, and an unscoped pass still passes `labels=None`, so the destructive command no longer reaches a peer's trash while the hourly whole-root sweep is untouched.\nVERDICT done_when: the done_when asks for a new test failing at base that shows a `--run` pass removes only its own trash and prints every removal, plus an unscoped pass still sweeping all of it; tests/test_a_run_scoped_gc_touches_only_its_run.py:101 and :133 assert exactly those two directions and the run's own new-test-at-base.log records `1 failed, 1 passed` with the run-scoped case red.\nVERDICT write_paths: the declared scope is reckon/crew/gc.py, tests/test_a_run_scoped_gc_touches_only_its_run.py, the landing fragment under docs/evidence/fragments/the-monitor-tells-the-truth-under-load/, and an unused figures directory; the diff touches only the first three, every one inside the fence, and the fragment is the one artefact the brief always permits.\nVERDICT manifest: read at <run>/manifest.md; it reports status complete, base arm 58 passed EXIT=0 and head arm 60 passed EXIT=0, a red new-test-at-base log and a red negative-control log, names all four logs plus the scratch tree's module.__file__ and cwd, and every figure it states I re-read from the logs and found as claimed.\nVERDICT diff: read both commits against fd2fe9c17f80e5901236fb399cb7ac4831d2bcce \u2014 6fc17c63 scopes `_sweep_trash_directories` and threads `labels`/`owned` through `_sweep_worktree_trash` into `garbage_collect`, 3a7041f2 folds the scope predicate into one condition and adds the fragment; three files, 236 insertions, 4 deletions, all of it the goal and its test.\nCALL_SITES: reckon/crew_run_commands.py:2334 crew_gc calls garbage_collect, reckon/crew/gc.py:1185 the run-scoped trash sweep with labels and owned, reckon/crew/gc.py:2254 the hourly retention pass still calling _sweep_trash_directories unscoped, reckon/crew/routing.py:4525 re-exports _sweep_worktree_trash (no other production caller)\nSCORE goal_fidelity: 15\nJUSTIFICATION goal_fidelity: reckon/crew/gc.py:957 nulls `confined_to` when the run's tree is already deregistered, so `_trash_scope_labels` at :188 loses the tree label and a run-scoped pass stops reclaiming its own `<tree>-<stamp>` copy that reckon/crew/routing.py:1557 names from `tree.name`.\nSCORE evidence: 18\nJUSTIFICATION evidence: tests/test_a_run_scoped_gc_touches_only_its_run.py asserts both clauses of the done_when and new-test-at-base.log plus after-arm.log record them at their revisions, while the done_when's third clause was not in either arm and I measured its delta myself (gc-tests-at-head.log 29 passed at 3a7041f2, gc-tests-at-pre-change.log 29 passed on the change-free tree, EXIT=0 both).\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: the diff's three paths (reckon/crew/gc.py, the new test, the fragment) are all inside the orientation_write_paths fence, with no plan edit and no CLI surface change.\nSCORE durability: 15\nJUSTIFICATION durability: the two new tests redden on the reinstated regression as negative-control.log shows (`_trash_scope_labels` returning None gives 1 failed, 1 passed), but no assertion covers the `owned` clause at reckon/crew/gc.py:155 or the deregistered-tree state at :957.\nSCORE fit: 18\nJUSTIFICATION fit: `_trash_scope_labels` at reckon/crew/gc.py:174 follows the module's private-helper, keyword-only, long-docstring idiom, and no name it adds is one the repository's naming rules forbid.\nSCORE reuse: 13\nJUSTIFICATION reuse: a search of reckon/ for an existing trash-scope predicate (`grep startswith(f\"{`/label_prefix/scope_labels across reckon/) found none, but the label convention itself is owned inline at reckon/crew/routing.py:1557 and `_trash_scope_labels` re-encodes it rather than sharing it, so writer and matcher can drift apart silently.\nFINDING reckon/crew/gc.py:957 non-blocking: `confined_to` is set to None before the labels are computed for the trash sweep, so a `crew gc --run X` whose tree was released in an earlier pass names only `run_id`, and the `<tree>-<stamp>` copy that earlier release left (the release at :1126 passes no run_id, so reckon/crew/routing.py:1555 labels it with the tree name) is no longer swept by that run's gc though base swept it; it survives until the unscoped hourly retention pass.\nFINDING reckon/crew/gc.py:155 non-blocking: the `owned` clause has no assertion behind it \u2014 `mine_by_run` and `mine_by_tree` in tests/test_a_run_scoped_gc_touches_only_its_run.py:109-110 are already label-matched, so deleting `and entry not in exact_owned` leaves both tests green and the deferred-copy case the parameter exists for is unguarded.\nFINDING reckon/crew/gc.py:189 non-blocking: `_trash_scope_labels` restates the `<label>-<stamp>` rule that reckon/crew/routing.py:1557 owns inline (`label = run_id or tree.name`) instead of reading it from a shared helper, so a change to the release's labelling would leave the matcher in a second place and the sweep would quietly stop matching its own trash.\nFINDING reckon/crew/gc.py:154 non-blocking: the subject of commit 3a7041f2 calls the folded predicate a \"test\", but the commit changes no test file; its body describes gc.py correctly, so the subject mislabels the change a reader scanning the log would trust.",
+  "review_node": "review-of-gc-run-touches-only-its-run-s11-3a7041f20de3",
+  "review_run_id": "r-20261115T175928942166-review-of-gc-run-touches-only-its-run-s11-3a7041f20de3",
+  "reviewed_base_sha": "fd2fe9c17f80e5901236fb399cb7ac4831d2bcce",
+  "reviewed_head_sha": "3a7041f20de31dad90ca5bead20ac74f7b5232d8",
+  "reviewed_run_id": "r-20261115T145813189928-gc-run-touches-only-its-run-s11",
+  "scores": {
+    "durability": 15,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 15,
+    "reuse": 13,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-15T18:24:45.796164+00:00",
+  "total": 98
+}

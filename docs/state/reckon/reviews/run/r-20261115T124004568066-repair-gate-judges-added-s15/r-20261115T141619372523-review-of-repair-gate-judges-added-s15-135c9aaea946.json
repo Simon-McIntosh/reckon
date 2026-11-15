@@ -1,0 +1,62 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/crew/pending_landing.py:390 _delivered_repair",
+    "reckon/crew/pending_landing.py:798 finish_pending_landings",
+    "reckon/crew_run_commands.py:3682 crew_complete",
+    "reckon/crew/queue_landing.py:1899 land_once"
+  ],
+  "completed_at": "2026-11-15T14:44:51.822Z",
+  "dispatched_at": "2026-11-15T14:44:12Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "exempted",
+      "reason": "fixed on the run's head at 8613b20d74 with a failing-first test; after arm re-measured there (66 passed)",
+      "recorded_at": "2026-11-15T16:58:11.037716+00:00"
+    },
+    "1": {
+      "kind": "exempted",
+      "reason": "fixed on the run's head at 8613b20d74 with a failing-first test; after arm re-measured there (66 passed)",
+      "recorded_at": "2026-11-15T16:58:16.538885+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "reckon/crew/pending_landing.py",
+      "line": "542",
+      "severity": "non-blocking",
+      "text": "reckon/crew/pending_landing.py:542 reads a baseline_suite arm's completion as `arm.get(\"completed\") is False, so an arm that omits the key or carries null is trusted as a comparison base, while the repository's owner for that question (reckon/crew/promotion_checks.py:2314, `_baseline_suite_failure_ids`) treats anything other than a literal True as unreadable; the weaker rule is a second reading of one arm's readability, and its direction is safe only because a truncated arm log can only understate the primary's failures and so refuse more."
+    },
+    {
+      "file": "tests/test_a_merge_repair_gate_judges_added_failures.py",
+      "line": "88",
+      "severity": "non-blocking",
+      "text": "tests/test_a_merge_repair_gate_judges_added_failures.py:88 drives `_require_repair_gate` directly and supplies the primary revision itself, so the wiring the change adds at reckon/crew/pending_landing.py:390 \u2014 `primary = conflict[\"main_revision\"]` passed as the gate's fourth argument \u2014 is asserted by no test; reverting that call to the three-argument form leaves the whole file green and turns every red repair whose gate adds nothing into a refusal naming no primary."
+    }
+  ],
+  "project": "reckon",
+  "review_run_id": "r-20261115T141619372523-review-of-repair-gate-judges-added-s15-135c9aaea946",
+  "reviewed_base_sha": "3bc474f9263c2bc01bc34638128dd5834ede7baf",
+  "reviewed_head_sha": "135c9aaea946d9ad970da0e1b3ed57eeaec16d60",
+  "reviewed_run_id": "r-20261115T124004568066-repair-gate-judges-added-s15",
+  "scores": {
+    "durability": 16,
+    "evidence": 15,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 17,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-15T15:03:17.012958+00:00",
+  "total": 103,
+  "verdicts": {
+    "diff": "Read commit by commit: 7ddf36675c replaces the absolute-green refusal in `_require_repair_gate` with a comparison against the fresh manifest's baseline_suite arm (reckon/crew/pending_landing.py:394-580) and adds the test file; 135c9aaea9 adds only the evidence fragment.",
+    "done_when": "The done_when asks for two cases failing at the base, a third pin green at base, and no added failure against the base; base-arm.log records 3 failed/60 passed (all three failures in the new file) and head-arm.log records 63 passed, so the delta is measured.",
+    "goal": "The node goal is to judge a merge repair's gate by failure ids added against the primary revision; reckon/crew/pending_landing.py:462 `_require_no_added_repair_failures` compares the head log's failing ids with the arm recorded at the primary revision and raises only on an id the primary does not fail.",
+    "manifest": "Read; it records status complete, the three gate commands with their log paths, base arm 3 failed/60 passed at 3bc474f9 and head arm 63 passed at 7ddf36675c, and an unlogged smoke of two repair suites.",
+    "write_paths": "The declared write paths are reckon/crew/pending_landing.py, tests/test_a_merge_repair_gate_judges_added_failures.py and the landing fragment; `git diff --stat 3bc474f9 135c9aae` shows exactly those three files and no fourth."
+  }
+}
