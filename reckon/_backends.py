@@ -1162,6 +1162,10 @@ class Dialect:
     # process inherits an already-closed stdin.
     stdin_prompt = True
 
+    def serving_model(self, backend: Mapping[str, Any]) -> str | None:
+        """The checkpoint identifier an endpoints document publishes."""
+        return backend.get("model")
+
     def argv(
         self,
         *,
@@ -2017,6 +2021,11 @@ class _OmpDialect(Dialect):
     # The brief rides on argv, so the process is handed an already-closed
     # stdin rather than prompt text — see the class docstring.
     stdin_prompt = False
+
+    def serving_model(self, backend: Mapping[str, Any]) -> str | None:
+        """The harness selects provider/model; the endpoint publishes model."""
+        model = super().serving_model(backend)
+        return model.split("/", 1)[-1] if model else model
 
     def argv(
         self,
