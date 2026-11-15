@@ -20,11 +20,11 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-informs" content="the-monitor-shows-the-work-it-watches,the-monitor-reads-each-fact-once,a-landing-never-waits-on-a-shared-index,the-escape-lane-and-reviews-keep-pace">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;implementable&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;implementable&quot;,&quot;s13&quot;:&quot;done&quot;,&quot;s14&quot;:&quot;implementable&quot;,&quot;s15&quot;:&quot;implementable&quot;,&quot;s16&quot;:&quot;implementable&quot;,&quot;s17&quot;:&quot;implementable&quot;,&quot;s18&quot;:&quot;done&quot;,&quot;s19&quot;:&quot;implementable&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s20&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;implementable&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;done&quot;,&quot;s14&quot;:&quot;implementable&quot;,&quot;s15&quot;:&quot;implementable&quot;,&quot;s16&quot;:&quot;implementable&quot;,&quot;s17&quot;:&quot;implementable&quot;,&quot;s18&quot;:&quot;done&quot;,&quot;s19&quot;:&quot;implementable&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s20&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;implementable&quot;}">
   <title>The Monitor Tells The Truth Under Load | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="25">
+<meta name="plan-version" content="26">
 <meta name="plan-modified" content="2026-11-15">
 </head>
 <body>
@@ -103,7 +103,7 @@
     <p>The tests importing <code>reckon.crew.recovery_liveness</code> or <code>reckon.crew.recovery_classification</code> add no failure against the base on all_debug. Write paths: <code>reckon/crew/recovery_liveness.py</code>, <code>reckon/crew/recovery_classification.py</code>, <code>reckon/crew/recovery_watch.py</code>, <code>reckon/crew/recovery_wait.py</code> (which owns the probe and expected-horizon readings) and a new test.</p>
 
     <h2 id="s8">§8 — The pane emits only real transitions, in order, with a live age</h2>
-    <section data-reckon="section" data-id="s8" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+    <section data-reckon="section" data-id="s8" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="done" data-links=""></section>
     <p><strong>Why.</strong> Several sessions reported noise rows:</p>
     <ul>
       <li>X → X rows ("waiting → waiting", "in review → in review", "delivered → delivered") woke coordinators for nothing (imas-codex, nova-2e).</li>
@@ -138,7 +138,7 @@
     
 
     <h2 id="s12">An obligation held on purpose says so until its condition is met</h2>
-<section data-reckon="section" data-id="s12" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+<section data-reckon="section" data-id="s12" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="done" data-links=""></section>
 <p><strong>Why.</strong> Moved out of §5 at its review. nova-3c spent about 20 turns restating why two obligations were correctly left open: a promotion that must wait for a re-review, and a worktree holding the only copy of an unmerged commit. Each one blocked every stop, because a coordinator has no way to say "held on purpose until X". <code>crew ack --until</code> already records a reason and a deadline, shows the duty under <code>acknowledged</code> and keeps it from blocking a stop, but it can end only at a time: it cannot end when a named condition is met, and it is not released when the run's state changes.</p>
 <p><strong>Done when.</strong> New tests for the condition-based end and the release on a state change, each failing at the base revision; the reason, the deadline and the exclusion from a blocked stop already hold and need only stay green. An acknowledgement made with <code>crew ack</code> can carry an end condition as well as a time, through one added option and no new verb or store. While it holds, the hook shows the duty as acknowledged with its reason and does not count it toward blocking a stop. It returns to the open list when the condition is met or the time passes. An acknowledgement whose run changes state is released at once. The tests importing <code>reckon.crew.obligations</code> or <code>reckon.hooks.coordinator_obligations</code> add no failure against the base on all_debug. Write paths: <code>reckon/crew/obligations.py</code>, <code>reckon/hooks/coordinator_obligations.py</code>, <code>reckon/crew_run_commands.py</code> and a new test.</p>
 
@@ -209,6 +209,9 @@
 <div class="r-comment" data-section="s13" data-id="c-run-r-20261115T182449429955-due-reload-fires-in-bound-s13" data-who="reckon-build" data-when="2026-11-15T18:43:09.536Z">
     <div class="r-comment-body"><p>Reload hold dated from the last poll that found no reload owed (`_clear_since`) so a tick longer than `RELOAD_HOLD_SECONDS` can no longer move the deadline, plus a deferred image re-proved at the next poll with `RELOAD_DEFERRED_RETRY_SECONDS` spacing after that; base af516b3ac9 ran the new cases 3 failed / 1 passed, head fa156c22cb runs 4 passed (13 with test_a_reload_lets_derivations_land.py), the declared mutation turns the slow-tick case red again (1 failed / 3 passed / EXIT=1), and the gate is 62 passed EXIT=0.</p></div>
 </div>
+<div class="r-comment" data-section="s15" data-id="c-run-r-20261115T213148029737-review-of-resumed-repair-not-killed-s15-f57ec4874b64" data-who="reckon-build" data-when="2026-11-15T21:35:50.782Z">
+    <div class="r-comment-body"><p>Independent review of f57ec4874b against base 18d133b4 stored as parsed: goal_fidelity 19, evidence 13, scope_discipline 19, durability 18, fit 16, reuse 5; added_failure_count 0; four non-blocking findings.</p></div>
+</div>
 <div class="r-comment" data-section="s18" data-id="c-close-s18" data-who="reckon-a6" data-when="2026-11-15T15:30:00Z">
     <div class="r-comment-body"><p>§18 landed at <code>ee7fb80c4e</code>, taken in hand as a gate-safety fix. <code>_run_review_tier</code> now measures the cited commits plus every non-merge commit from the run's base to its head. The imas-codex reproduction now reads <code>light</code> when it cites only its docs-only evidence commit; before, it read <code>none</code>. Arms on all_debug over 145 test files: 92 failures and 8 errors at both base and head, none added, 2 more passes. The docs-only-citation test fails when the scope goes back to cited commits alone. The obligation's own guard (no <code>crew complete</code> offered for a run owing a review with none stored) follows from the corrected tier.</p></div>
 </div>
@@ -232,9 +235,6 @@
 </div>
 <div class="r-comment" data-section="s9" data-id="c-run-r-20261115T173941433645-review-of-hook-counts-what-is-owed-s9-215392550c93" data-who="reckon-build" data-when="2026-11-15T17:47:32.856Z">
     <div class="r-comment-body"><p>Independent review of r-20261115T145806650328-hook-counts-what-is-owed-s9 at head 215392550c against base fd2fe9c1 is stored as a parsed record scoring goal_fidelity 17, evidence 13, scope_discipline 20, durability 17, fit 16, reuse 4, with three non-blocking findings (the duplicated has-live-work rule at reckon/hooks/coordinator_obligations.py:1079, the trailer label at :954, and the done_when clause the gate never measured), added_failure_count 0.</p></div>
-</div>
-<div class="r-comment" data-section="s15" data-id="c-run-r-20261115T213148029737-review-of-resumed-repair-not-killed-s15-f57ec4874b64" data-who="reckon-build" data-when="2026-11-15T21:35:50.782Z">
-    <div class="r-comment-body"><p>Independent review of f57ec4874b against base 18d133b4 stored as parsed: goal_fidelity 19, evidence 13, scope_discipline 19, durability 18, fit 16, reuse 5; added_failure_count 0; four non-blocking findings.</p></div>
 </div>
 </section>
 </main>
