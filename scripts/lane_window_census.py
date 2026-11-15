@@ -17,11 +17,12 @@ empty result reads as empty rather than as a clean number.
 from __future__ import annotations
 
 import argparse
+import ast
+import contextlib
 import datetime as dt
 import json
 import os
 import re
-import sqlite3
 import statistics
 import sys
 from pathlib import Path
@@ -29,7 +30,6 @@ from pathlib import Path
 CREW_HOME = Path(
     os.environ.get("RECKON_CREW_HOME", "~/.config/reckon/crew")
 ).expanduser()
-RUN_STORE = CREW_HOME / "run_store.db"
 ADMISSION_LOG = CREW_HOME / "admission-verdicts.jsonl"
 CLAIMS_DIR = CREW_HOME / "claims"
 RUN_DIRS = (CREW_HOME / "runs", CREW_HOME / "archive" / "runs")
@@ -62,33 +62,60 @@ def role_of(payload: dict, node: str) -> str:
     )
 
 
-def load_runs() -> list[dict]:
-    if not RUN_STORE.exists():
-        raise SystemExit(f"the run ledger is not at {RUN_STORE}")
-    con = sqlite3.connect(f"file:{RUN_STORE}?mode=ro", uri=True)
+def load_runs(
+    path: Path | None = None, *, projects: set[str] | None = None
+) -> tuple[list[dict], dict]:
+    """Every run the store holds, hot and retired, flattened for the figures.
+
+    Rows come from the store's own readers rather than from raw SQL, so the
+    store decides where a run lives. ``records()`` answers the hot rows, and
+    ``durable_rows()`` answers one project's rows across both databases, so
+    retirement's archive file is read as well: a window older than the hot
+    table would otherwise read as an empty one rather than as an unmeasured one.
+    """
+    from reckon import flight, run_store
+
+    store_file = Path(path) if path is not None else run_store.store_path()
+    if not store_file.exists():
+        # The store creates itself on open, so an absent one would otherwise
+        # report every figure as zero rather than as unmeasured.
+        raise SystemExit(f"the run ledger is not at {store_file}")
+    with run_store.RunStore(store_file) as store:
+        hot = store.records()
+        if projects is None:
+            projects = {
+                str(record["project"])
+                for record in hot.values()
+                if record.get("project")
+            }
+            with contextlib.suppress(flight.FlightConfigError):
+                projects |= set(flight.mounted_project_docs())
+        stored: dict[str, dict] = {}
+        for project in sorted(projects):
+            stored.update(store.durable_rows(project, refresh=False))
+    merged = {**stored, **hot}
     runs = []
-    for run_id, project, node, completed, payload in con.execute(
-        "select run_id, project, node, completed_at, payload from runs"
-    ):
-        try:
-            data = json.loads(payload)
-        except (TypeError, ValueError):
-            continue
+    for run_id, data in merged.items():
+        node = data.get("node")
         worker = data.get("worker_exit") or {}
         runs.append(
             {
                 "run_id": run_id,
-                "project": project,
+                "project": data.get("project"),
                 "node": node,
                 "role": role_of(data, node),
                 "dispatched_at": data.get("dispatched_at"),
-                "completed_at": completed,
+                "completed_at": data.get("completed_at"),
                 "launched_at": worker.get("launched_at"),
                 "exited_at": worker.get("exited_at"),
             }
         )
-    con.close()
-    return runs
+    return runs, {
+        "run_store": str(store_file),
+        "runs_in_ledger": len(hot),
+        "runs_in_archive": len(merged) - len(hot),
+        "runs_read": len(merged),
+    }
 
 
 def worker_spans(runs: list[dict]) -> list[tuple[dt.datetime, dt.datetime, dict]]:
@@ -235,10 +262,33 @@ def shared_root(path_text: str) -> bool:
     return str(path).startswith(str(CREW_HOME) + os.sep)
 
 
+# A path in a hold's detail is written with repr(), which chooses the quote
+# style from the path itself: a path holding an apostrophe makes repr quote it
+# with double quotes. Matching a whole repr token after the wording that names
+# the path keeps it intact either way, where splitting on the quote character
+# shifts every later field and the hold then reads as unshared, silently.
+_REPR_QUOTED = r"""(?:'(?:[^'\\]|\\.)*'|"(?:[^"\\]|\\.)*")"""
+_HELD_PATH = re.compile(rf"\bholds\s+({_REPR_QUOTED})")
+_CLAIMED_PATH = re.compile(rf"\blive claim\s+({_REPR_QUOTED})")
+_CLAIMING_PATH = re.compile(rf"\bclaiming\s+({_REPR_QUOTED})")
+
+
 def claimed_path(detail: str) -> str:
-    """The path an admission hold's detail quotes, if it quotes one."""
-    quoted = detail.split("'")
-    return quoted[3] if len(quoted) > 3 else ""
+    """The claimed path an admission hold's detail names, if it names one.
+
+    Three wordings reach a hold pointer: a run holding a path, a write path
+    overlapping a live claim, and an accepted directory claim naming the path
+    it took over. Each names the path after its own words, so the wording is
+    what selects it rather than the position of a quote character.
+    """
+    for pattern in (_HELD_PATH, _CLAIMED_PATH, _CLAIMING_PATH):
+        match = pattern.search(detail or "")
+        if match:
+            try:
+                return str(ast.literal_eval(match.group(1)))
+            except (ValueError, SyntaxError):
+                return ""
+    return ""
 
 
 def admission_span() -> tuple[dt.datetime, dt.datetime] | None:
@@ -397,17 +447,16 @@ def main(argv: list[str]) -> int:
     if not chosen:
         chosen.append(("window", parse_window("/".join(WINDOW))))
 
-    runs = load_runs()
+    runs, source_counts = load_runs()
     spans = worker_spans(runs)
     stamps = landing_stamps()
     span = admission_span()
     report = {
         "read": {
-            "run_store": str(RUN_STORE),
             "admission_log": str(ADMISSION_LOG),
             "claims_dir": str(CLAIMS_DIR),
             "landing_records": len(stamps),
-            "runs_in_ledger": len(runs),
+            **source_counts,
             "admission_log_span": [span[0].isoformat(), span[1].isoformat()]
             if span
             else None,
