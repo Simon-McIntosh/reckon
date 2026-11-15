@@ -34,6 +34,7 @@ import pytest
 from reckon import _backends
 from reckon.crew import dispatch_launch as launch
 from reckon.crew import process_liveness, runs
+from reckon.crew.dispatch_watch import session_host_runtime_root
 from reckon.crew.node import CrewError
 
 RUN_ID = "r-station-pid"
@@ -100,9 +101,15 @@ def _write_pointer(run_id: str, **extra: object) -> None:
 
 
 def _write_station_lease(pid: int) -> None:
-    """Write this node's station lease naming ``pid``, as the station does."""
-    path = runs.station_lease_path()
-    assert path is not None, "the case set no node runtime root"
+    """Write this node's station lease naming ``pid``, as the station does.
+
+    The path is resolved the way the station resolves it — the node-local
+    runtime root, never this change's reader — so the case states where the
+    station writes rather than asking the code under test where to look.
+    """
+    root = session_host_runtime_root()
+    assert root is not None, "the case set no node runtime root"
+    path = Path(root) / "leases" / "station.json"
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(
         json.dumps(
@@ -224,11 +231,29 @@ def _sender_pids(directory: Path) -> list[int]:
 def test_a_launch_inside_the_station_records_the_supervisor_it_started(
     node: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """The attempt's process is the supervisor, and the door is recorded beside it."""
+    """The attempt's process is the reported one, and the door is recorded beside it."""
     _write_pointer(RUN_ID)
     # This process holds the node's station lease, so it is the station: the
     # long-lived door the reported reservation named.
     _write_station_lease(os.getpid())
+
+    # The reservation a launch takes before it has a supervisor names no
+    # process at all. This is the record the report was about: left standing by
+    # a worker that never spawned, it named the station, so it held the attempt
+    # for the station's whole life.
+    taken = launch.reserve_launch_attempt(node, RUN_ID, kind="resume")
+    try:
+        early = json.loads(taken.path.read_text(encoding="utf-8"))
+        assert early["pid"] is None, (
+            "the reservation names the process that launched it"
+        )
+        assert early.get("pid_start_time") is None
+        assert early["launcher_pid"] == os.getpid(), (
+            "the door that took the reservation is not recorded beside the attempt"
+        )
+    finally:
+        launch.release_launch_reservation(taken)
+
     supervisor = _live_child()
     monkeypatch.setattr(
         launch, "_start_supervisor", lambda *_args, **_kwargs: supervisor.pid
