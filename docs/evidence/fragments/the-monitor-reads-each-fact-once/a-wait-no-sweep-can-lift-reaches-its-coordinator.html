@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="the-monitor-reads-each-fact-once">
+  <meta name="plan-evidence-for" content="reckon:the-monitor-reads-each-fact-once">
+  <meta name="plan-verifies" content="reckon:the-monitor-reads-each-fact-once#s60">
+  <meta name="plan-recorded-at" content="2026-11-15">
+  <meta name="plan-verdict" content="passed">
+  <title>A wait no sweep can lift reaches its coordinator</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+
+<article class="r-note" id="a-wait-no-sweep-can-lift-reaches-its-coordinator-landing" data-node="a-wait-no-sweep-can-lift-reaches-its-coordinator" data-reckon="landed" data-when="2026-11-15">
+  <h2>A refused wait row names its missing key and its resume command</h2>
+
+  <p id="a-wait-no-sweep-can-lift-reaches-its-coordinator-what"><strong>What landed.</strong> The recovery classifier's refused-wait arm now derives, from the parsed declaration, the required keys a wait is missing, and its suggested action carries both that list and the command that moves the run: <code>reckon crew resume --run &lt;id&gt; --advice</code>. A manifest that declares <code>wait_condition</code>, <code>wait_terminal</code>, <code>wait_expected</code> and <code>resume_brief</code> but names no <code>wait_probe</code> or <code>wait_file</code> still classifies <code>unreadable</code>; the duty it raises now says the declaration lacks <code>wait_probe or wait_file</code> and offers the resume command, where before it said only "repair the waiting declaration".</p>
+
+  <p id="a-wait-no-sweep-can-lift-reaches-its-coordinator-why"><strong>Why it matters.</strong> A run parked about 12 h on a wait declaration the reader refused reached its coordinator as an <code>unreadable</code> duty with no remedy, so the session was told something was halted and had to reconstruct both the fault and the fix. The absent probe is the one field a reader can name, and the resume is the one command that carries the run past a declaration it cannot satisfy.</p>
+
+  <p id="a-wait-no-sweep-can-lift-reaches-its-coordinator-gate"><strong>Gate.</strong> <code>tests/test_a_wait_no_sweep_can_lift_reaches_its_coordinator.py</code> holds a live pointer in phase <code>working</code> whose recorded pid is a reaped process this host has seen, over a manifest that reads <code>status: waiting</code> with <code>wait_condition</code>, <code>wait_terminal</code>, <code>wait_expected: 1h</code> and <code>resume_brief</code> but no probe. Its first case asserts the owning session's obligation view holds exactly one row for the run, that the row's text names <code>wait_probe</code>, and that its suggested command is <code>reckon crew resume --run &lt;id&gt; --advice</code>. Its second case, with a <code>sacct</code>-shaped probe whose running state is not yet terminal, asserts the run raises no such row. The gate ran <strong>2 passed</strong>.</p>
+
+  <p id="a-wait-no-sweep-can-lift-reaches-its-coordinator-arms"><strong>Matched arms.</strong> Both ran on the <code>all_debug</code> partition in a job submitted with <code>env -u SLURM_JOB_ID -u SLURM_JOBID sbatch</code>, never on the fleet node; each log opens with its revision, tree, literal command, the absolute <code>module.__file__</code> it imported and its resolved cwd, and ends in its own <code>EXIT=</code>. The base arm (<code>784ffecbfd</code>) runs <code>tests/test_staged_write_inventory.py</code> and <code>tests/test_every_shared_home_lock_holds_across_nodes.py</code> over a git-initialised extraction of the base tree so the inventory fixture reads a real <code>HEAD</code>: <strong>55 passed</strong>, <code>EXIT=0</code>. The after arm (<code>0be01a1084</code>) runs those two plus this node's case in the worktree: <strong>57 passed</strong>, <code>EXIT=0</code>. The two-test difference is this node's case, and neither arm reports a <code>FAILED</code> id.</p>
+
+  <p id="a-wait-no-sweep-can-lift-reaches-its-coordinator-negative"><strong>Negative control.</strong> The head case was copied into the base tree and run against base source: it fails on <code>test_an_incomplete_wait_names_the_missing_key_and_the_resume_command</code>, because at base the row's suggested command reads "repair the waiting declaration in &lt;manifest&gt; before resuming" and names no <code>reckon crew resume --run</code>. The run records <strong>1 failed, 1 passed</strong> and <code>EXIT=1</code>.</p>
+</article>
+
+</body>
+</html>
