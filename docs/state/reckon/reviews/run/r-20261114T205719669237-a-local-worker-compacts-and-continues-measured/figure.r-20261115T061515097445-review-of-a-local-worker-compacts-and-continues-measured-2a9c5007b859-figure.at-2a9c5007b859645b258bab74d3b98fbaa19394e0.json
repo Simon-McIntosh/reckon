@@ -1,0 +1,70 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "caption_note": "The fragment's figcaption explains rather than repeats the figure's title: it says the closed marks are the size immediately before a boundary, the open marks the size immediately after, and the dotted line is the declared usable window of 230 144 tokens, which no compaction reached within less than 24 632 tokens. It is not recorded as a caption finding. That the caption has to carry numbers the figure itself cannot show is a consequence of the legibility finding.",
+  "completed_at": "",
+  "dispatched_at": "2026-11-15T06:16:32Z",
+  "findings": [
+    {
+      "file": "docs/figures/a-review-dies-where-nobody-is-looking/a-local-worker-compacts-and-continues-measured/compaction-drops.svg",
+      "id": "f7551bf7391",
+      "line": null,
+      "severity": "blocking",
+      "summary": "The rendered figure carries no text at all, so neither axis states what it measures and no value can be read off it. Of 1 007 280 pixels only 20 303 are non-white and every one belongs to a spine, a tick mark, the grey dashed rule or a blue stem: there is not one glyph pixel in the image. Both axes are drawn (left spine x 113-114 spanning y 23-627; bottom spine y 626-627 spanning x 104-1376), and both carry ordinary tick marks (five vertical at y 144/264/385/505/626, four horizontal at x 145/469/792/1116), but every tick value and axis title was dropped. A reader cannot tell the vertical scale is context in thousands of tokens running 0 to 250, cannot read any boundary's before or after size, and cannot attribute the dashed grey rule that sits near the top of the plot. The reviewed head claims this render carries axis titles, tick values and annotations; this render shows that claim is false for the renderer that produced it."
+    },
+    {
+      "file": "docs/figures/a-review-dies-where-nobody-is-looking/a-local-worker-compacts-and-continues-measured/plot_compaction_drops.py",
+      "id": "f31acf35ccc",
+      "line": 52,
+      "severity": "blocking",
+      "summary": "The head changed how the parent commit 46ee50fd emitted these labels and that change costs the figure all of them. 46ee50fd set this line to 'svg.fonttype' 'path' so the figure would carry its labels in any renderer, including one without the fonts matplotlib names; head 2a9c5007 replaces that with 'none' and rewrites every font-family to sans-serif, emitting the labels as live SVG text elements whose rendering is left to whatever rasterises the file. The artifact given to this review drew none of them. Every label is still declared in the code (x title line 82, y title line 83, four x tick labels line 80, five y tick values line 81, window annotation lines 68-69), so the loss is in emission. A redraw should restore glyph-path output, or prove the target renderer draws the text before the figure is accepted."
+    },
+    {
+      "file": "docs/figures/a-review-dies-where-nobody-is-looking/a-local-worker-compacts-and-continues-measured/plot_compaction_drops.py",
+      "id": "f0fe453ce09",
+      "line": 4,
+      "severity": "non-blocking",
+      "summary": "The module docstring still says 'Text is written as paths (svg.fonttype=path) so the figure carries its labels in any renderer'. Head 2a9c5007 changed the code to 'svg.fonttype' 'none', so the docstring now documents the opposite of what the script does and points a maintainer at the guarantee that was dropped."
+    },
+    {
+      "file": "docs/figures/a-review-dies-where-nobody-is-looking/a-local-worker-compacts-and-continues-measured/compaction-drops.svg",
+      "id": "f7551bf7391",
+      "line": null,
+      "severity": "non-blocking",
+      "summary": "Six records, each a before/after token pair, plus one declared threshold is naturally tabular, and the figure shows none of those values. Even with the labels restored a reader could only estimate heights against a linear axis; a six-row table would carry every number directly."
+    }
+  ],
+  "item_verdicts": {
+    "contrast": "not assessable as a text item - the render contains no text pixels at all, so no text can be found clearing or failing its background. The marks that are drawn do clear a text floor: the data blue rgb(47,111,191) is about 5.1:1 against white and the grey rule rgb(146,146,146) about 3.5:1. The absent text is recorded under legibility.",
+    "data_ink": "pass - the data carry essentially all of the ink. Of 1 007 280 pixels, 986 977 are white and about 18 150 are marks: six blue stems rgb(47,111,191) with filled and open endpoints, two axes, five y ticks, four x ticks and one grey dashed rule. No gradient, no shading. The ratio is high; the problem is that the ink is unlabelled.",
+    "decoration": "pass - plain white background, no gradient, band, shading or fill; the top and right spines are absent, leaving only the two axes that carry a scale.",
+    "label_collision": "pass, vacuously - no label is rendered, so none is clipped and none overlaps another label or the data. The stems are well separated: centres at x = 184.5, 449.0, 913.5, 1134.0, 1255.0 and 1302.5, the closest pair 47.5 px apart with markers about 12 px wide, so no mark overlaps another either. The defect is that labels are absent, not that they collide.",
+    "legibility": "defect - the rendered figure is not readable at a glance and carries no quantity a reader can name: no y-axis title, no y tick value, no x-axis title, no x tick value, no title, no annotation. Measured on the attached 1399x720 PNG, the y-axis-title strip (x 0-78) holds 0 non-white pixels of 56 160, the x-axis-title strip (y 640-720) holds 0 of 111 920, and the y-tick-label strip (x 78-108) holds 40 of 21 600, which is exactly the five tick marks in x 104-112 and no glyph.",
+    "table_form": "defect, recorded as a non-blocking finding - six records, each a before/after token pair, plus one declared threshold is naturally a table, and the figure shows none of those values."
+  },
+  "notes": "Read-only figure review of the single PNG named in this review. Only that PNG was opened, together with crops and pixel measurements taken from it; no SVG was opened, listed, searched or shown, and no image other than the named PNG was opened. Nothing was edited, created, moved, deleted, redrawn, relabelled or reformatted except this node's two declared record paths. No suite ran, so added_failure_count is 0 with an empty added_failure_ids; a figure review claims no suite delta.",
+  "project": "reckon",
+  "review_run_id": "r-20261115T061515097445-review-of-a-local-worker-compacts-and-continues-measured-2a9c5007b859-figure",
+  "reviewed_base_sha": "c1268f5d6ca969807f57b5f1b75fd29cbb4fab2d",
+  "reviewed_commits": [
+    "bbfc8256932e15cf26fbef66e280a9394611effd",
+    "46ee50fdc979235185e06d5eb379774a8e5b4056",
+    "2a9c5007b859645b258bab74d3b98fbaa19394e0"
+  ],
+  "reviewed_figures": [
+    {
+      "drawing_script": "docs/figures/a-review-dies-where-nobody-is-looking/a-local-worker-compacts-and-continues-measured/plot_compaction_drops.py",
+      "drawing_script_note": "The reviewed diff touches plot_compaction_drops.py, which draws this figure; findings 2 and 3 anchor to lines of it. Findings 1 and 4 anchor to the figure's repository path with a null line.",
+      "figure_path": "docs/figures/a-review-dies-where-nobody-is-looking/a-local-worker-compacts-and-continues-measured/compaction-drops.svg",
+      "image": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T061515097445-review-of-a-local-worker-compacts-and-continues-measured-2a9c5007b859-figure/image-0.png",
+      "image_dimensions": "1399x720"
+    }
+  ],
+  "reviewed_head_sha": "2a9c5007b859645b258bab74d3b98fbaa19394e0",
+  "reviewed_run_id": "r-20261114T205719669237-a-local-worker-compacts-and-continues-measured",
+  "rubric": "figure",
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-15T07:25:00Z",
+  "total": null
+}

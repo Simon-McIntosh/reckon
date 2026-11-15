@@ -1,0 +1,79 @@
+{
+  "added_failure_basis": "the reviewed run is unarmed at both revisions: its manifest records both suite arms as empty because git ls-tree over the node's write paths finds no test file at c1268f5d or at 2a9c5007, so no baseline_suite or after_suite gate log exists from which added failures could be derived",
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [],
+  "completed_at": "2026-11-15T06:40:17.816Z",
+  "dispatched_at": "2026-11-15T06:16:58Z",
+  "figure_check": {
+    "observed": "all 14 labels present as ink in the render: both axis titles, the 4 x tick labels, the 5 y tick labels, 'declared usable window 230 144', 'before' and 'after'; the six stems are visually separable including the two rightmost at records 7715 and 7788; no gridlines; top and right spines absent",
+    "render": "convert -density 140 on the delivered compaction-drops.svg, 1400x720-cm canvas at 200 dpi",
+    "rendered": "/tmp/rev/fig.png"
+  },
+  "findings": [
+    {
+      "file": "docs/figures/a-review-dies-where-nobody-is-looking/a-local-worker-compacts-and-continues-measured/plot_compaction_drops.py",
+      "line": 4,
+      "severity": "non-blocking",
+      "text": "non-blocking: the module docstring at plot_compaction_drops.py:4 still reads that text is written as paths under svg.fonttype=path, while :52 sets svg.fonttype to 'none' and the commit's whole purpose was to emit real text, so the file a reader opens to understand the figure describes the opposite of what it draws."
+    },
+    {
+      "file": "docs/figures/a-review-dies-where-nobody-is-looking/a-local-worker-compacts-and-continues-measured/check_compaction_evidence.py",
+      "line": 80,
+      "severity": "non-blocking",
+      "text": "non-blocking: the turn column the done_when names is parsed as _turn and discarded at check_compaction_evidence.py:80, so a future edit to that column reddens nothing even though :5 says the script re-derives every number; the six values are correct today, verified independently as 82, 102, 127, 141, 157 and 169."
+    },
+    {
+      "file": "docs/figures/a-review-dies-where-nobody-is-looking/a-local-worker-compacts-and-continues-measured/plot_compaction_drops.py",
+      "line": 95,
+      "severity": "non-blocking",
+      "text": "non-blocking: the clip and overlap refusal measures each text artist against fig.bbox at plot_compaction_drops.py:95-103 rather than against the axes box, so a label that leaves the axes but stays on the canvas passes; I confirmed the refusal fires for a label driven off the canvas (exit 2, 'CLIPPED before', via a copy with xytext 0,400)."
+    },
+    {
+      "file": "docs/figures/a-review-dies-where-nobody-is-looking/a-local-worker-compacts-and-continues-measured/plot_compaction_drops.py",
+      "line": 45,
+      "severity": "non-blocking",
+      "text": "non-blocking: the script calls plt.style.use('default') and hand-sets the sizes and spines the repository's data-ink sheet already carries, which docs/figures/a-project-reads-as-one-picture/work-in-flight-sits-on-its-section/section_row_readers.py:33 loads instead, so a restyle of the repository's figures does not reach this one."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "none",
+    "diff": "Read commit by commit against bbfc8256932e15cf26fbef66e280a9394611effd: 46ee50fdc9 corrects the death-signature sentence, the census-log reference and the unused-window margin and adds the two scripts; 2a9c5007 repoints the plot to records 5950-7900 and re-renders the delivered SVG as 14 sans-serif text elements with no path-based label left; no path outside the four appears.",
+    "done_when": "The done_when asks for the turn at which each boundary fired, the context size either side, and the last stream record's type on a death; I re-derived the turn column independently by counting assistant records before each boundary in stream.jsonl (82, 102, 127, 141, 157, 169) and it matches docs/evidence/fragments/a-review-dies-where-nobody-is-looking/a-local-worker-compacts-and-continues-measured.html:63-72, and the two announced-no-boundary streams' terminal types were re-read from the census and from each stream's own last record.",
+    "goal": "The node goal is to measure whether a local worker whose task outgrows the lane's window compacts and continues to a complete manifest; the gained range leaves that measurement in place and corrects it, and the fragment at docs/evidence/fragments/a-review-dies-where-nobody-is-looking/a-local-worker-compacts-and-continues-measured.html:63 records six automatic boundaries between 196 889 and 205 512 tokens against a 230 144-token window with all eight planted checksums intact.",
+    "manifest": "Read; it records commits bbfc825693, 46ee50fdc9 and 2a9c5007b8, states that both suite arms are empty because no test file lies in the node's write paths at either revision, and records the checker's negative control as five failures and exit 1 against the pre-repair fragment, which I reproduced exactly.",
+    "write_paths": "The manifest's orientation_write_paths name docs/evidence/fragments/a-review-dies-where-nobody-is-looking/a-local-worker-compacts-and-continues-measured.html and the figure directory, and all four files in bbfc825693..2a9c5007b8 lie inside that scope, with docs/figures/.../check_compaction_evidence.py and plot_compaction_drops.py being the two additions the repair needed."
+  },
+  "justifications": {
+    "durability": "check_compaction_evidence.py:113 reddens on the very defects the previous round found: run against the pre-repair fragment at bbfc825693 it reports five FAIL lines and exits 1, and run against a copy whose 24 632 was changed to 24 631 it reports 'unused-window figure 24 632 is not stated' and exits 1.",
+    "evidence": "The committed checker re-derives the six boundaries, their pre/post/dropped/duration figures and the eight planted checksums from stream.jsonl and the corpus; I re-ran it at the head and it exits 0 with 'OK 6 boundaries, 8 readings, unused-window margins 24632..33255 tokens'.",
+    "fit": "plot_compaction_drops.py:4 states the opposite of what the file does and plot_compaction_drops.py:45 uses plt.style.use('default') where the repository's newer figure scripts use the data-ink sheet.",
+    "goal_fidelity": "The gained range repairs the three passages the previous review reddened and makes the figure data-derived, so docs/evidence/fragments/a-review-dies-where-nobody-is-looking/a-local-worker-compacts-and-continues-measured.html:78 now states a measurement a reader can act on.",
+    "reuse": "No owner exists for reconciling a fragment's numbers against its run logs - reckon/doccheck.py:2 audits HTML against the SPA render contract and reckon/evidence.py composes landed records rather than verifying them - and the two per-topic validators under docs/figures are bespoke, so the checker follows the idiom rather than forking an owner.",
+    "scope_discipline": "Every one of the four paths in bbfc825693..2a9c5007b8 - the fragment, compaction-drops.svg, plot_compaction_drops.py and check_compaction_evidence.py - is inside the fragment's and the figure directory's declared write paths, and no fifth path appears."
+  },
+  "notes": "Read-only review of the two commits the run gained since bbfc825693. I read the diff through git objects rather than the run's own worktree, re-ran the node's committed checker (exit 0), reproduced its recorded negative control against the pre-repair fragment (five FAIL lines, exit 1) and against a one-digit perturbation (exit 1), re-rendered the plot script from a copy in /tmp and compared it with the delivered SVG (identical but for matplotlib's random id suffixes, 14 texts each), verified the turn column independently from stream.jsonl, and rendered the delivered SVG to PNG at 140 dpi and inspected it. No file in the reviewed worktree was modified.",
+  "project": "reckon",
+  "review_run_id": "r-20261115T061118685407-review-of-a-local-worker-compacts-and-continues-measured-2a9c5007b859",
+  "reviewed_base_sha": "bbfc8256932e15cf26fbef66e280a9394611effd",
+  "reviewed_commits": [
+    "bbfc8256932e15cf26fbef66e280a9394611effd",
+    "46ee50fdc979235185e06d5eb379774a8e5b4056",
+    "2a9c5007b859645b258bab74d3b98fbaa19394e0"
+  ],
+  "reviewed_head_sha": "2a9c5007b859645b258bab74d3b98fbaa19394e0",
+  "reviewed_run_id": "r-20261114T205719669237-a-local-worker-compacts-and-continues-measured",
+  "rubric": "run",
+  "scores": {
+    "durability": 15,
+    "evidence": 16,
+    "fit": 14,
+    "goal_fidelity": 19,
+    "reuse": 18,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-15T07:35:00Z",
+  "total": 102
+}
