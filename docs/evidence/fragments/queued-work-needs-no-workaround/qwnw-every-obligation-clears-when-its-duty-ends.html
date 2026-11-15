@@ -37,7 +37,7 @@
       <tr>
         <td><code>worktree-held</code></td>
         <td>raised from the project's retained ledger record, not from a pointer. All 21 live rows name a tree still on disk, so they are real duties to collect a tree.</td>
-        <td>deliberately kept; <code>test_a_ledger_evidenced_duty_survives_its_runs_missing_pointer</code> holds it</td>
+        <td>settled when the release has an owner: a row whose run has no live pointer and whose cleanup intent the terminal queue holds is withheld at read time. A row with no owner stays, because it is the only surface naming the run's tree</td>
       </tr>
       <tr>
         <td><code>sweep-failed</code></td>
@@ -52,15 +52,16 @@
   <p>The <code>sweep-failed</code> route was reproduced directly (<code>repro.log</code>, exit 0): a stored failure for a run with no live pointer and no ledger row still raised a row after one pass, because the failure list is durable per session and only that session's next completed sweep replaces it. The acknowledgement probe (<code>ack.log</code>, exit 0) showed the second half of the gap: a deferral for such a run was refused unless the caller passed <code>--project</code>, and a row's own command never carries one.</p>
 
   <h3>The change</h3>
-  <p>Three source files and one new test module, committed as <code>23441432588509b0e37d7f85a3cdf499bac2c476</code>:</p>
+  <p>Three source files and one new test module, committed as <code>23441432588509b0e37d7f85a3cdf499bac2c476</code>, with the held-tree settlement added by the repair round in <code>f34655ee</code>:</p>
   <ul>
     <li><code>reckon/crew/station_obligations.py</code> — <code>_ended_sweep_failures</code> keeps a failure only while its run holds a live pointer and has no ledger record; <code>_with_sweep_failures</code> publishes through it, and <code>prune_sweep_failures</code> applies the same reading to the durable per-session record, writing back only when an entry ended. The mount registry is read once for the whole list, so no ledger is decoded per row.</li>
     <li><code>reckon/crew/obligation_snapshot.py</code> — <code>sweep-failed</code> joins <code>LIVE_POINTER_DUTY_KINDS</code>, so an answer computed before the run ended stops naming it at read time. The module still reaches no derivation, plan, backend or ledger module.</li>
+    <li><code>reckon/crew/obligation_snapshot.py (repair round)</code> — the held-tree settlement the repair round adds: <code>worktree-held</code> is withheld once its run has no live pointer and the terminal cleanup queue holds an intent for it.</li>
     <li><code>reckon/crew/runs.py</code> — a deferral's project now falls back to the stored duty document that still raises the run's rows, after the caller's own <code>--project</code>, the ledger record and the promotion request have all failed to name one. A run nothing names is still refused.</li>
   </ul>
 
   <h3>The tests</h3>
-  <p><code>tests/test_a_duty_clears_when_its_run_ends.py</code> raises each case in a temporary crew home and reads it back through the station's own functions: a live run's failure is published (the positive control); both endings the station can see — no record left, and a ledger record — clear the row and the stored entry; one session's ended failure leaves another session's standing; a deferral reaches a run with neither pointer nor record and moves the row to acknowledged; and a run no record names is still refused.</p>
+  <p><code>tests/test_a_duty_clears_when_its_run_ends.py</code> raises each case in a temporary crew home and reads it back through the station's own functions: a live run's failure is published (the positive control); both endings the station can see — no record left, and a ledger record — clear the row and the stored entry; one session's ended failure leaves another session's standing; a deferral reaches a run with neither pointer nor record and moves the row to acknowledged; and a run no record names is still refused. The repair round adds the held-tree arms, which serve the same row with no cleanup intent and withhold it once the intent exists.</p>
   <p>The negative control runs the committed test module against the base revision's source (<code>negative_control.log</code>): <strong>4 of the 6 tests fail there</strong>, with the row still raised after its run ended and the deferral still refused. The two that pass are the positive control and the still-refused case, which the base also satisfies — an honest control has to pass where the behaviour was already right.</p>
 
   <h3>The suite arms</h3>
@@ -88,10 +89,18 @@
   </table>
   <p>The figure the section asks for is not zero, and the groups that make up the 25 are named here rather than averaged:</p>
   <ul>
-    <li><strong>22 are <code>worktree-held</code></strong> and are the stratum of 22 held trees still on disk. Their evidence is the tree, not the run's pointer, so a pointer stat cannot settle them and must not: settling them would hide a real duty.</li>
+    <li><strong>22 are <code>worktree-held</code></strong> and are the stratum of held trees still on disk, in sessions whose directories still exist. Their evidence is the tree, not the run's pointer, so a pointer stat cannot settle them; the next section measures which of them something else already owns.</li>
     <li><strong>2 are <code>blocked</code> whose run has gone,</strong> and <strong>1 <code>promotion-failed</code> whose run has landed.</strong> These settle in a derivation pass — <code>_settled_state</code> for the promotion request, the resume reading for a blocked row — not on the pointer stat the read path holds. The stored document is the station's last pass, and the installed station process still runs the code from before this commit, so nothing has re-derived them yet.</li>
   </ul>
   <p>So the change removes the route the section names — a durable failure list that outlived its run and could be cleared only by hand — and leaves the three rows above to the next pass with the fixed code, plus the 22 held trees, which are duties rather than defects.</p>
+
+  <h3>What owns a held tree</h3>
+  <p>A retained tree outlives the run that made it, so a missing pointer settles a <code>worktree-held</code> row on nothing: the row is the only surface naming the bytes. Two facts settle it instead, and the second is what the repair round adds. The derivation was read whole at <code>f34655ee</code> (<code>probe_held.log</code>, exit 0): <strong>102 held-tree duties</strong> across every project the crew home carries rows for, <strong>none of them with a live pointer</strong>, <strong>3 whose run the terminal cleanup queue holds an intent for</strong>, and <strong>99 with no owner at all</strong>. Every one names a tree that is still on disk.</p>
+  <p>So the duty a row names has three states rather than two. It is owed when the tree is on disk and nothing else owns the release; it is not a duty once the cleanup queue has written its intent, because that queue's release is already the scheduled work; and it is discharged when the tree is gone, which the derivation already reads. The settlement now applies the middle state: a row whose run has no live pointer and whose intent exists is withheld, and the arm that keeps it without an owner is the one that stops the other 99 trees from being hidden. Both arms are held by <code>test_a_held_tree_settles_once_its_release_has_an_owner</code>.</p>
+
+  <h3>What the repair round changed, and what it did not</h3>
+  <p>A review of the delivered head read <code>sweep-failed</code> joining the pointer kinds while <code>worktree-held</code> stayed out, and noted that the post-change census carried 22 held-tree rows whose run has a ledger record and no live pointer. Those rows are the held trees, and the finding is right that they do not settle on the run's ending. They do not, because the tree outlives the run: settling them there would leave 99 trees on this fleet with no surface naming them, measured in <code>probe_held.log</code> as duties with no live pointer and no owner.</p>
+  <p>What the round does settle is the middle state, a row whose release the terminal cleanup queue already owns, and that is a settlement the section changes rather than a papering over: the queue's release is the scheduled work, so the row names a duty somebody else is doing. The 99 with no owner stay, and so does the 22-row figure in this record, because the honest count is the one that reports a real held tree rather than the one that reads zero.</p>
 
   <h3>The done-when, item by item</h3>
   <table class="r-table">
@@ -99,7 +108,7 @@
     <tbody>
       <tr>
         <td>tests raise each of the four row kinds, settle the run each way, and read the view empty after one pass</td>
-        <td>raised and settled for <code>sweep-failed</code> in the new module, on both endings the station can see; <code>promotion-failed</code> settlement is held by <code>tests/test_refused_promotion_request_settles.py</code>; <code>review-in-flight</code> is derived from a live review pointer, so it is absent from the next derivation once that run ends; <code>worktree-held</code> is settled by collecting the tree and is held as a duty until then by <code>test_a_ledger_evidenced_duty_survives_its_runs_missing_pointer</code></td>
+        <td>raised and settled for <code>sweep-failed</code> in the new module, on both endings the station can see; <code>promotion-failed</code> settlement is held by <code>tests/test_refused_promotion_request_settles.py</code>; <code>review-in-flight</code> is derived from a live review pointer, so it is absent from the next derivation once that run ends; <code>worktree-held</code> is settled when the release has an owner, and stays a duty while nothing owns it</td>
       </tr>
       <tr>
         <td>a test acks a row for a run with no pointer and no ledger row, and reads it moved to acknowledged</td>
@@ -107,11 +116,11 @@
       </tr>
       <tr>
         <td>a census counts rows whose run has no live pointer or has landed, zero one pass after the delivered head runs</td>
-        <td>measured, and not zero: 25, of which 22 are held trees that are duties in their own right and 3 are rows a derivation pass settles. The route the section names is gone</td>
+        <td>measured, and not zero: 25 stored rows read that way at the delivered head, of which 22 are held trees and 3 are rows a derivation pass settles. The held-tree stratum is split by owner in the section above; the route the section names is gone, and the rows that remain name a tree nothing else owns</td>
       </tr>
       <tr>
         <td>negative control: the settled-by-promotion case against the base revision still lists the row</td>
-        <td><code>negative_control.log</code>: 4 of the 6 tests fail at the base revision, the row still raised and the deferral still refused</td>
+        <td><code>negative_control.log</code>: against the base revision the arms that expect a settled row fail there, with the row still raised and the deferral still refused</td>
       </tr>
     </tbody>
   </table>
