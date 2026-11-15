@@ -4236,6 +4236,7 @@ def _supervisor_exit_record(
     status: int | None,
     run_directory: Path,
     ended_pids: list[int] | None = None,
+    forced_exit: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Compose the one record written for a worker's exit or launch failure.
 
@@ -4272,6 +4273,8 @@ def _supervisor_exit_record(
         record.update({"exit_code": None, "signal": None, "signal_name": None})
     else:
         record.update(_wait_status_record(os.waitstatus_to_exitcode(status)))
+    if forced_exit:
+        record["forced_exit"] = dict(forced_exit)
     return record
 
 
@@ -4480,11 +4483,11 @@ _WORKER_DONE_MANIFEST_STATUSES = frozenset({"complete", "failed"})
 # ends it; a worker whose manifest is complete or failed should exit at once,
 # so the grace covers only the flush between the manifest write and the exit.
 TERMINAL_MANIFEST_GRACE_ENV = "RECKON_WORKER_TERMINAL_GRACE_SECONDS"
-TERMINAL_MANIFEST_GRACE_DEFAULT = 300.0
+TERMINAL_MANIFEST_GRACE_DEFAULT = 30.0
 # How often the supervisor rechecks a manifest while it waits for the worker.
 # Coarse on purpose: the file lives on shared storage, and a manifest the
 # worker has not written again cannot have changed its status, so poll often
-# enough to notice a delivery against a multi-minute grace without reading the
+# enough to notice a delivery inside its exit bound without reading the
 # manifest across the whole life of every worker.
 _WORKER_MANIFEST_POLL_SECONDS = 3.0
 _STEP_START_SETTLE_SECONDS = 30.0
@@ -4510,17 +4513,21 @@ _WORKER_MANIFEST_QUIET_SECONDS = 3.0
 # may defer its signal for at most this long; past it the whole read the
 # supervisor holds is taken as the delivery. An incomplete manifest is never
 # signalled on, at the ceiling or before it.
-_WORKER_MANIFEST_CEILING_SECONDS = 600.0
+_WORKER_MANIFEST_CEILING_SECONDS = 30.0
 
 
 def _terminal_manifest_grace_seconds() -> float:
     """The grace a finished worker is given to exit on its own, in seconds.
 
-    Read from the environment so a test can shorten it, and floored at zero so
-    a nonsensical value degrades to an immediate end rather than to no bound.
+    An override can shorten the grace but cannot extend the terminal run's
+    lifetime past its bound. Signal escalation and reaping have their own time
+    reserved after this grace.
     """
-    return read_duration_override(
-        TERMINAL_MANIFEST_GRACE_ENV, TERMINAL_MANIFEST_GRACE_DEFAULT, 0, True
+    return min(
+        TERMINAL_MANIFEST_GRACE_DEFAULT,
+        read_duration_override(
+            TERMINAL_MANIFEST_GRACE_ENV, TERMINAL_MANIFEST_GRACE_DEFAULT, 0, True
+        ),
     )
 
 
@@ -4757,6 +4764,20 @@ def _record_step_wait(run_directory: Path, client_pid: int) -> None:
     )
 
 
+def _terminal_attempt_phase(run_directory: Path, attempt: Mapping[str, Any]) -> str:
+    """The current attempt's terminal pointer phase, or an empty string."""
+    try:
+        pointer = read_pointer(run_directory.name)
+    except CrewError:
+        return ""
+    phase = str(pointer.get("phase") or "")
+    return (
+        phase
+        if phase in _TERMINAL_RUN_PHASES and _record_is_this_attempt(pointer, attempt)
+        else ""
+    )
+
+
 def _reap_worker_on_its_terminal_manifest(
     pid: int,
     *,
@@ -4767,6 +4788,7 @@ def _reap_worker_on_its_terminal_manifest(
     stop_requested: threading.Event | None = None,
     stop_grace_seconds: float = 0.0,
     ended_pids: list[int] | None = None,
+    terminal_state: dict[str, Any] | None = None,
 ) -> int | None:
     """Collect a worker's exit, ending it once its manifest is delivered or a stop arrives.
 
@@ -4802,6 +4824,12 @@ def _reap_worker_on_its_terminal_manifest(
     the last read, so an unchanged manifest is never reparsed and a manifest
     left by a previous attempt — a resumed run's own complete record — is not
     mistaken for this attempt's delivery.
+
+    A pointer already in a terminal phase is independently authoritative: its
+    exit deadline does not move when the manifest is rewritten. The clock and
+    signal receipt belong to the attempt and are carried through waits on
+    adopted children, so a child never receives a fresh grace after its parent
+    exits.
     """
     seen_mtime_ns: int | None = None
     written_at: float | None = None
@@ -4809,7 +4837,8 @@ def _reap_worker_on_its_terminal_manifest(
     is_done = False
     is_whole = False
     deadline: float | None = None
-    signalled_at: float | None = None
+    terminal_state = {} if terminal_state is None else terminal_state
+    signalled_at: float | None = terminal_state.get("signalled_at")
     stop_deadline: float | None = None
     stop_killed = False
     pending_step_since: float | None = None
@@ -4824,6 +4853,10 @@ def _reap_worker_on_its_terminal_manifest(
         if waited_pid == pid:
             return status
         now = time.monotonic()
+        phase = _terminal_attempt_phase(run_directory, terminal_state)
+        if phase:
+            terminal_state.setdefault("deadline", now + TERMINAL_MANIFEST_GRACE_DEFAULT)
+            terminal_state.setdefault("phase", phase)
         if (
             stop_requested is not None
             and stop_deadline is None
@@ -4911,6 +4944,8 @@ def _reap_worker_on_its_terminal_manifest(
         if settled or ceiling_due:
             age = time.time() - (mtime_ns / 1_000_000_000)
             deadline = now + grace_seconds - age
+            if ceiling_due:
+                deadline = min(deadline, terminal_at + grace_seconds)
         else:
             # Nothing whole, quiet and terminal is on disk: either the delivery
             # was withdrawn (the worker is working again, or has declared a wait
@@ -4919,6 +4954,12 @@ def _reap_worker_on_its_terminal_manifest(
             # on as before rather than ended on a withdrawn or half-written
             # delivery's clock.
             deadline = None
+        if "deadline" in terminal_state:
+            deadline = (
+                min(deadline, terminal_state["deadline"])
+                if deadline is not None
+                else terminal_state["deadline"]
+            )
         if (
             deadline is not None
             and signalled_at is None
@@ -4931,7 +4972,11 @@ def _reap_worker_on_its_terminal_manifest(
             delivered = signal_worker(
                 pid,
                 signal.SIGTERM,
-                reason="worker-lingered-after-terminal-manifest",
+                reason=(
+                    "worker-lingered-after-terminal-phase"
+                    if terminal_state.get("phase")
+                    else "worker-lingered-after-terminal-manifest"
+                ),
                 run_dir=run_directory,
                 run_id=run_directory.name,
                 reach_run=True,
@@ -4946,6 +4991,13 @@ def _reap_worker_on_its_terminal_manifest(
                 )
             if delivered:
                 signalled_at = now
+                terminal_state["signalled_at"] = now
+                terminal_state["forced_exit"] = {
+                    "reason": "terminal-run",
+                    "phase": terminal_state.get("phase")
+                    or _worker_manifest_done_status(manifest_path),
+                    "signalled_at": _utc_now(),
+                }
                 if wait_started_at is None:
                     wait_started_at = now
         elif (
@@ -5054,6 +5106,7 @@ def _reap_the_launched_worker(
     stop_requested: threading.Event | None = None,
     stop_grace_seconds: float = 0.0,
     ended_pids: list[int] | None = None,
+    terminal_state: dict[str, Any] | None = None,
 ) -> tuple[int, int | None]:
     """Collect the exit of the worker a launcher started and left behind.
 
@@ -5066,14 +5119,23 @@ def _reap_the_launched_worker(
     worker rather than a launcher's exit taken while the worker still runs.
     """
     worker_pid, worker_status = pid, status
-    if status is not None and os.WIFSIGNALED(status):
+    signalled = status is not None and os.WIFSIGNALED(status)
+    if signalled and not ended_pids:
         # A launcher hands the attempt to its worker by exiting; it is not
         # killed. A spawned child that ended by signal ended the attempt's own
-        # worker, and any descendants it leaves behind are leftovers of that
-        # worker rather than a worker still running the attempt. The signal is
-        # the fact the exit record carries, so it is written now rather than
-        # after a leftover ends.
-        return worker_pid, worker_status
+        # worker. A terminal attempt still owes cleanup of those descendants;
+        # a working attempt keeps its exit available for recovery immediately.
+        phase = _terminal_attempt_phase(run_directory, terminal_state or {})
+        try:
+            delivered = (
+                manifest_path.stat().st_mtime_ns > baseline_ns
+                and _worker_manifest_done_status(manifest_path)
+                and _worker_manifest_is_whole(manifest_path)
+            )
+        except OSError:
+            delivered = False
+        if not phase and not delivered:
+            return worker_pid, worker_status
     while True:
         children = _child_processes_of(os.getpid())
         if not children:
@@ -5088,10 +5150,13 @@ def _reap_the_launched_worker(
                 stop_requested=stop_requested,
                 stop_grace_seconds=stop_grace_seconds,
                 ended_pids=ended_pids,
+                terminal_state=terminal_state,
             )
-            if child_status is not None:
+            if child_status is not None and not signalled:
                 # The exit that ended the wait is the attempt's exit; a child
-                # reaped elsewhere leaves the one already held standing.
+                # reaped elsewhere leaves the one already held standing. An
+                # externally signalled harness keeps its own exit identity
+                # while its leftover descendants are collected.
                 worker_pid, worker_status = child, child_status
 
 
@@ -5223,13 +5288,8 @@ def _run_supervisor(spec_path: Path) -> int:
     # the poll carries none and is supervised exactly as before.
     status = getattr(pid, "collected_wait_status", None)
     ended: list[int] = []
-    if status is not None:
-        # The exit was collected from the worker itself, so it stands as the
-        # attempt's exit on its own: the worker has been reaped, so no child of
-        # this supervisor is a still-running worker whose later exit could be
-        # the one that ended the attempt.
-        worker_pid = pid
-    else:
+    terminal_state: dict[str, Any] = {"attempt": attempt}
+    if status is None:
         status = _reap_worker_on_its_terminal_manifest(
             pid,
             run_directory=run_directory,
@@ -5241,20 +5301,22 @@ def _run_supervisor(spec_path: Path) -> int:
             stop_requested=stop_requested,
             stop_grace_seconds=_stop_grace_seconds(),
             ended_pids=ended,
+            terminal_state=terminal_state,
         )
-        worker_pid, status = _reap_the_launched_worker(
-            pid,
-            status,
-            run_directory=run_directory,
-            manifest_path=_supervisor_manifest_path(run_id),
-            grace_seconds=_terminal_manifest_grace_seconds(),
-            baseline_ns=_supervisor_manifest_baseline_ns(
-                run_id, spec, supervisor_started_at=launched_at
-            ),
-            stop_requested=stop_requested,
-            stop_grace_seconds=_stop_grace_seconds(),
-            ended_pids=ended,
-        )
+    worker_pid, status = _reap_the_launched_worker(
+        pid,
+        status,
+        run_directory=run_directory,
+        manifest_path=_supervisor_manifest_path(run_id),
+        grace_seconds=_terminal_manifest_grace_seconds(),
+        baseline_ns=_supervisor_manifest_baseline_ns(
+            run_id, spec, supervisor_started_at=launched_at
+        ),
+        stop_requested=stop_requested,
+        stop_grace_seconds=_stop_grace_seconds(),
+        ended_pids=ended,
+        terminal_state=terminal_state,
+    )
     exit_record = _supervisor_exit_record(
         run_id=str(spec.get("run_id") or ""),
         attempt=attempt,
@@ -5263,6 +5325,7 @@ def _run_supervisor(spec_path: Path) -> int:
         status=status,
         run_directory=run_directory,
         ended_pids=ended,
+        forced_exit=terminal_state.get("forced_exit"),
     )
     _write_attempt_artifact(
         run_directory,
