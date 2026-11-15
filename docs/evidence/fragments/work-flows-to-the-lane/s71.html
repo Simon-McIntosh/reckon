@@ -31,3 +31,121 @@ FAILED tests/test_workers_start_without_reckon_mcp.py::test_worker_launch_exclud
 EXIT=1
 </pre>
 </section>
+
+<section id="wftl-a-worker-starts-no-reckon-mcp-server-codex-allowlist-control">
+<h3>Undeclared MCP inheritance reproduction</h3>
+<p>Before the allowlist repair, revision <code>aea34fce655e411645725289bbbd78da2ee31204</code> failed all four empty-declaration launch cases with the user servers reckon, imas-dd and lucy2, and an additional project server configured. This is the repair control; the earlier base-revision control remains above.</p>
+<pre># revision: aea34fce655e411645725289bbbd78da2ee31204 tree: /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/8e41a6d3-d0e0-4927-afd1-771942ebfe6a/wftl-a-worker-starts-no-reckon-mcp-server-codex command: PYTHONPATH=/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/8e41a6d3-d0e0-4927-afd1-771942ebfe6a/wftl-a-worker-starts-no-reckon-mcp-server-codex /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q --basetemp=/tmp/mcp-allowlist-control-mu7j9ipg/pytest /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/8e41a6d3-d0e0-4927-afd1-771942ebfe6a/wftl-a-worker-starts-no-reckon-mcp-server-codex/tests/test_worker_mcp_allowlist.py -k &#x27;undeclared and not True&#x27;
+# command: PYTHONPATH=/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/8e41a6d3-d0e0-4927-afd1-771942ebfe6a/wftl-a-worker-starts-no-reckon-mcp-server-codex /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q --basetemp=/tmp/mcp-allowlist-control-mu7j9ipg/pytest /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/8e41a6d3-d0e0-4927-afd1-771942ebfe6a/wftl-a-worker-starts-no-reckon-mcp-server-codex/tests/test_worker_mcp_allowlist.py -k &#x27;undeclared and not True&#x27;
+FFFF                                                                     [100%]
+=================================== FAILURES ===================================
+_______ test_undeclared_servers_do_not_reach_launch[False-False-claude] ________
+
+tmp_path = PosixPath(&#x27;/tmp/mcp-allowlist-control-mu7j9ipg/pytest/test_undeclared_servers_do_not0&#x27;)
+worker_setup = (PosixPath(&#x27;/tmp/mcp-allowlist-control-mu7j9ipg/pytest/test_undeclared_servers_do_not0/operator&#x27;), PosixPath(&#x27;/tmp/mcp-allowlist-control-mu7j9ipg/pytest/test_undeclared_servers_do_not0/checkout&#x27;))
+command = &#x27;claude&#x27;, fence = False, resume = False
+
+    @pytest.mark.parametrize(&quot;command&quot;, [&quot;claude&quot;, &quot;clive&quot;, &quot;codex&quot;, &quot;omp&quot;])
+    @pytest.mark.parametrize(&quot;fence&quot;, [True, False])
+    @pytest.mark.parametrize(&quot;resume&quot;, [False, True])
+    def test_undeclared_servers_do_not_reach_launch(tmp_path, worker_setup, command, fence, resume):
+        operator, _ = worker_setup
+        before = {p: p.read_bytes() for p in operator.rglob(&quot;*&quot;) if p.is_file()}
+        if resume:
+            launch(tmp_path, worker_setup, command, fence=fence)
+        plan = launch(tmp_path, worker_setup, command, fence=fence,
+                      resume_session=&quot;worker-session&quot; if resume else None)
+&gt;       assert active_servers(plan, worker_setup) == set()
+E       AssertionError: assert {&#x27;imas-dd&#x27;, &#x27;lucy2&#x27;} == set()
+E
+E         Extra items in the left set:
+E         &#x27;imas-dd&#x27;
+E         &#x27;lucy2&#x27;
+E         Use -v to get more diff
+
+tests/test_worker_mcp_allowlist.py:95: AssertionError
+________ test_undeclared_servers_do_not_reach_launch[False-False-clive] ________
+
+tmp_path = PosixPath(&#x27;/tmp/mcp-allowlist-control-mu7j9ipg/pytest/test_undeclared_servers_do_not1&#x27;)
+worker_setup = (PosixPath(&#x27;/tmp/mcp-allowlist-control-mu7j9ipg/pytest/test_undeclared_servers_do_not1/operator&#x27;), PosixPath(&#x27;/tmp/mcp-allowlist-control-mu7j9ipg/pytest/test_undeclared_servers_do_not1/checkout&#x27;))
+command = &#x27;clive&#x27;, fence = False, resume = False
+
+    @pytest.mark.parametrize(&quot;command&quot;, [&quot;claude&quot;, &quot;clive&quot;, &quot;codex&quot;, &quot;omp&quot;])
+    @pytest.mark.parametrize(&quot;fence&quot;, [True, False])
+    @pytest.mark.parametrize(&quot;resume&quot;, [False, True])
+    def test_undeclared_servers_do_not_reach_launch(tmp_path, worker_setup, command, fence, resume):
+        operator, _ = worker_setup
+        before = {p: p.read_bytes() for p in operator.rglob(&quot;*&quot;) if p.is_file()}
+        if resume:
+            launch(tmp_path, worker_setup, command, fence=fence)
+        plan = launch(tmp_path, worker_setup, command, fence=fence,
+                      resume_session=&quot;worker-session&quot; if resume else None)
+&gt;       assert active_servers(plan, worker_setup) == set()
+E       AssertionError: assert {&#x27;imas-dd&#x27;, &#x27;lucy2&#x27;} == set()
+E
+E         Extra items in the left set:
+E         &#x27;imas-dd&#x27;
+E         &#x27;lucy2&#x27;
+E         Use -v to get more diff
+
+tests/test_worker_mcp_allowlist.py:95: AssertionError
+________ test_undeclared_servers_do_not_reach_launch[False-False-codex] ________
+
+tmp_path = PosixPath(&#x27;/tmp/mcp-allowlist-control-mu7j9ipg/pytest/test_undeclared_servers_do_not2&#x27;)
+worker_setup = (PosixPath(&#x27;/tmp/mcp-allowlist-control-mu7j9ipg/pytest/test_undeclared_servers_do_not2/operator&#x27;), PosixPath(&#x27;/tmp/mcp-allowlist-control-mu7j9ipg/pytest/test_undeclared_servers_do_not2/checkout&#x27;))
+command = &#x27;codex&#x27;, fence = False, resume = False
+
+    @pytest.mark.parametrize(&quot;command&quot;, [&quot;claude&quot;, &quot;clive&quot;, &quot;codex&quot;, &quot;omp&quot;])
+    @pytest.mark.parametrize(&quot;fence&quot;, [True, False])
+    @pytest.mark.parametrize(&quot;resume&quot;, [False, True])
+    def test_undeclared_servers_do_not_reach_launch(tmp_path, worker_setup, command, fence, resume):
+        operator, _ = worker_setup
+        before = {p: p.read_bytes() for p in operator.rglob(&quot;*&quot;) if p.is_file()}
+        if resume:
+            launch(tmp_path, worker_setup, command, fence=fence)
+        plan = launch(tmp_path, worker_setup, command, fence=fence,
+                      resume_session=&quot;worker-session&quot; if resume else None)
+&gt;       assert active_servers(plan, worker_setup) == set()
+E       AssertionError: assert {&#x27;imas-dd&#x27;, &#x27;...roject-extra&#x27;} == set()
+E
+E         Extra items in the left set:
+E         &#x27;imas-dd&#x27;
+E         &#x27;lucy2&#x27;
+E         &#x27;project-extra&#x27;
+E         Use -v to get more diff
+
+tests/test_worker_mcp_allowlist.py:95: AssertionError
+_________ test_undeclared_servers_do_not_reach_launch[False-False-omp] _________
+
+tmp_path = PosixPath(&#x27;/tmp/mcp-allowlist-control-mu7j9ipg/pytest/test_undeclared_servers_do_not3&#x27;)
+worker_setup = (PosixPath(&#x27;/tmp/mcp-allowlist-control-mu7j9ipg/pytest/test_undeclared_servers_do_not3/operator&#x27;), PosixPath(&#x27;/tmp/mcp-allowlist-control-mu7j9ipg/pytest/test_undeclared_servers_do_not3/checkout&#x27;))
+command = &#x27;omp&#x27;, fence = False, resume = False
+
+    @pytest.mark.parametrize(&quot;command&quot;, [&quot;claude&quot;, &quot;clive&quot;, &quot;codex&quot;, &quot;omp&quot;])
+    @pytest.mark.parametrize(&quot;fence&quot;, [True, False])
+    @pytest.mark.parametrize(&quot;resume&quot;, [False, True])
+    def test_undeclared_servers_do_not_reach_launch(tmp_path, worker_setup, command, fence, resume):
+        operator, _ = worker_setup
+        before = {p: p.read_bytes() for p in operator.rglob(&quot;*&quot;) if p.is_file()}
+        if resume:
+            launch(tmp_path, worker_setup, command, fence=fence)
+        plan = launch(tmp_path, worker_setup, command, fence=fence,
+                      resume_session=&quot;worker-session&quot; if resume else None)
+&gt;       assert active_servers(plan, worker_setup) == set()
+E       AssertionError: assert {&#x27;imas-dd&#x27;, &#x27;lucy2&#x27;} == set()
+E
+E         Extra items in the left set:
+E         &#x27;imas-dd&#x27;
+E         &#x27;lucy2&#x27;
+E         Use -v to get more diff
+
+tests/test_worker_mcp_allowlist.py:95: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_worker_mcp_allowlist.py::test_undeclared_servers_do_not_reach_launch[False-False-claude]
+FAILED tests/test_worker_mcp_allowlist.py::test_undeclared_servers_do_not_reach_launch[False-False-clive]
+FAILED tests/test_worker_mcp_allowlist.py::test_undeclared_servers_do_not_reach_launch[False-False-codex]
+FAILED tests/test_worker_mcp_allowlist.py::test_undeclared_servers_do_not_reach_launch[False-False-omp]
+4 failed, 26 deselected in 0.90s
+EXIT=1
+</pre>
+</section>
