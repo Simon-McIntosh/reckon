@@ -61,17 +61,8 @@ plans' run documents: 49 plans, first ['plan-00', 'plan-01', 'plan-02',
 'plan-03', 'plan-04']</em> — while the row-equality case still passes, which is
 the point of the change: the base revision asked the right question and paid the
 whole store for it.</p>
-<p>Suite arms over the ledger-read files and the two fence files, base and change
-in one job: the base revision fails 9 of them and the change fails the same 8 of
-those 9 \u2014 five in <code>tests/test_ledger.py</code>, three in
-<code>tests/test_a_derivation_builds_the_ledger_index_once.py</code>, all
-pre-existing \u2014 so the change adds none of them. The ninth,
-<code>tests/test_a_batch_decodes_the_ledger_index_once.py::test_the_base_revision_writes_the_same_per_entry_results</code>,
-fails at base and passes here. That head arm also ran the three cases this change
-adds, and they failed on a writer's slip in the test file: it unpacked a
-<code>(records, version)</code> pair from <code>ledger.runs</code>, which returns
-a plain list, so each case raised before reaching its assertion. The unpacking
-is repaired and no assertion changed; the three pass at the commit above.</p>
+<p>Suite arms, one job, each over its own tree. At the base revision the two fence files give 53 passed and 2 errors, both from <code>tests/test_staged_write_inventory.py</code> shelling out to <code>git ls-tree</code> against an extracted tree that is not a repository; both pass at the head. At the reviewed head <code>0a2d1f8e672b95e4b0d558ea2225662c89153309</code> the arm promotion reads &#8212; this change's test file with the two fence files &#8212; gives 58 passed, exit 0.</p>
+<p>Over the ten ledger-read files, base fails 9 and the change fails the same 8 &#8212; five in <code>tests/test_ledger.py</code>, three in <code>tests/test_a_derivation_builds_the_ledger_index_once.py</code>, all pre-existing &#8212; so the change adds none; the ninth, <code>tests/test_a_batch_decodes_the_ledger_index_once.py::test_the_base_revision_writes_the_same_per_entry_results</code>, fails at base and passes here. The three cases this change adds failed on the first head arm from a slip in the test file itself &#8212; it unpacked a <code>(records, version)</code> pair from <code>ledger.runs</code>, which returns a plain list &#8212; and pass at the repair commit <code>8b98c517dcc5a1eb07df228571ffbd7b6a4c2af1</code>.</p>
 </main>
 </body>
 </html>
