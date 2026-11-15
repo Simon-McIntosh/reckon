@@ -1,0 +1,95 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures": [],
+  "added_failures_note": "Derived with reckon.crew.review.added_failures_from_gate_logs over the reviewed run's own arms: suite-base-arm.log (revision 6b7c8a2bf2b4, scratch tree, 58 passed, EXIT=0) and suite-after-arm.log (revision db04a33ee1, 58 passed, EXIT=0) report no failing id at either arm, so the head adds no failing test and the count is a measured 0 rather than an unmeasured one. The same helper over negative-control-base-all_debug.log (1 failed, EXIT=1) and gate-all_debug.log (18 passed, EXIT=0): also answers 0.",
+  "call_site_count": 8,
+  "call_sites": [
+    "reckon/crew/admission/service.py:267",
+    "reckon/crew/admission/service.py:316",
+    "reckon/crew/queue_admission.py:238",
+    "reckon/crew_run_commands.py:5551",
+    "reckon/crew/admission/verdicts.py:154",
+    "reckon/crew/admission/verdicts.py:229",
+    "reckon/crew/admission/verdicts.py:294",
+    "reckon/crew/admission/verdicts.py:340"
+  ],
+  "completed_at": "2026-11-15T22:34:30.186Z",
+  "dispatched_at": "2026-11-15T22:33:01Z",
+  "findings": [
+    {
+      "line": 30,
+      "path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T210614019724-wftl-a-full-reading-does-not-hold-queued-work/manifest.md",
+      "severity": "blocking",
+      "text": "The delivered manifest's baseline_suite (line 30) and after_suite (line 31) are not flat suite records: baseline_suite carries bare keys with the object never closed and after_suite is a placeholder, while negative_control_log at line 28 names docs/evidence/fragments/work-flows-to-the-lane/s79.html, a worktree HTML fragment rather than a log under the run directory. Running reports.audit_manifest over that text with suite_armed=True answers ok=false with five findings, so the two suite arms the run actually measured (58 passed at each arm, in suite-base-arm.log and suite-after-arm.log) are not recorded where promotion reads them and the node's promotion is refused until the record is repaired."
+    },
+    {
+      "line": 383,
+      "path": "reckon/crew/admission/selection.py",
+      "severity": "non-blocking",
+      "text": "The launches_by_key guard that 88635dbfdd added so a spent grant is not read as the lane's reading has no test that reddens without it: all three tests in tests/test_a_full_reading_does_not_hold_queued_work.py hand the lane a grant of REQUESTS=12 slots for 12 requests, so the allowance never reaches zero after a launch and deleting the guard at this line leaves every added assertion green, which is how the second helping of the same slots would return unnoticed."
+    },
+    {
+      "line": 751,
+      "path": "reckon/crew/admission/selection.py",
+      "severity": "non-blocking",
+      "text": "The wait's loop takes a full LANE_ROOM_POLL_SECONDS pause even when the pass deadline is nearer than a second, and the max(1, ...) at selection.py:750 guarantees at least one poll, so a pass with 0.2 s of budget left sleeps 1.0 s and overshoots the deadline the wait is documented to respect. The one test that measures the bound asserts elapsed < 10.0 on a 2 s budget, which a one second overshoot survives."
+    }
+  ],
+  "gate_evidence": {
+    "after_suite": {
+      "command": "env -u SLURM_JOB_ID PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T210614019724-wftl-a-full-reading-does-not-hold-queued-work/suite-after-arm.log",
+      "revision": "db04a33ee1647618e7c61fd889d6a769373ed55b"
+    },
+    "baseline_suite": {
+      "command": "cd /tmp/reckon-crew-scratch/r-20261115T210614019724-wftl-a-full-reading-does-not-hold-queued-work/base-suite && env -u SLURM_JOB_ID PYTHONPATH=. /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/8e41a6d3-d0e0-4927-afd1-771942ebfe6a/wftl-a-full-reading-does-not-hold-queued-work/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T210614019724-wftl-a-full-reading-does-not-hold-queued-work/suite-base-arm.log",
+      "revision": "6b7c8a2bf2b4772033d549be7346f3d913b10800"
+    }
+  },
+  "item_verdicts": {
+    "diff": "Read 2e70c8e8ad, 721fefc23f, 88635dbfdd and db04a33ee1 against 6b7c8a2bf2b4 commit by commit: 2e70c8e8ad adds _session_room_read to holds.py and _wait_for_lane_room plus the second-sweep deferral to selection.py, 721fefc23f reorders the test's assertions so the outcome is asserted before the mechanism and drops the test's import of LANE_ROOM_POLL_SECONDS, 88635dbfdd adds the launches_by_key guard, and db04a33ee1 adds the two evidence files and touches no code.",
+    "done_when": "Read the done_when at prompt.txt:170 against tests/test_a_full_reading_does_not_hold_queued_work.py:187 (all 12 of REQUESTS launched), :192 (the last launch under LAUNCH_BOUND_SECONDS=60 measured from the stand-in's own opened_at), :216-:221 (a paused lane launches nothing and takes no pause), with the arms recorded in gate-all_debug.log (18 passed, EXIT=0) and negative-control-base-all_debug.log (1 failed, 2 passed, EXIT=1 at 6b7c8a2, none launched).",
+    "goal": "Read the goal at prompt.txt:38 and plan section s79 at docs/plans/work-flows-to-the-lane.html:376-378 against the reviewed head; reckon/crew/admission/selection.py:696 _wait_for_lane_room re-reads the lane once per session per pass, bounded by min(LANE_ROOM_WAIT_SECONDS, the pass deadline), and a candidate deferred in the filling sweep reaches it at selection.py:373, so a queued request launches off the lane's later open reading inside the bound the goal names.",
+    "manifest": "Read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T210614019724-wftl-a-full-reading-does-not-hold-queued-work/manifest.md; it reports a green gate, a red base arm, both suite arms and a landing line, but reports.audit_manifest over that same text answers ok=false with five findings on the suite fields at manifest.md:30-31, the two gate logs' headers and the negative_control_log value at manifest.md:28.",
+    "write_paths": "Read the source fence at prompt.txt:84-89 (reckon, tests, the plan's fragments directory, its node fragment, the node's figures directory) and the file list of 6b7c8a2..db04a33e; all five changed paths sit inside that declaration, and docs/evidence/fragments/work-flows-to-the-lane/s79.html is the fragments artifact the done_when names for the red run."
+  },
+  "justifications": {
+    "durability": "Returning selection.py:373 to the base's one-reading pass reddens tests/test_a_full_reading_does_not_hold_queued_work.py:187 with an empty launched set, as negative-control-base-all_debug.log records, but the 88635dbfdd guard at selection.py:383 is not observable to any of the three tests.",
+    "evidence": "tests/test_a_full_reading_does_not_hold_queued_work.py:192 is the done_when's 60 second figure and gate-all_debug.log:1 names revision 88635dbfdd with 18 passed EXIT=0, but manifest.md:30-31 carries unreadable suite records and reports.audit_manifest answers ok=false on that same text.",
+    "fit": "reckon/crew/admission/selection.py:683-696 follows the module's documented-helper idiom beside _launch_budget_from_flight, though the pause at selection.py:751 can outlive a sub-second deadline by up to a second.",
+    "goal_fidelity": "reckon/crew/admission/selection.py:696 waits for the lane to publish room again and selection.py:379 replaces the pass's cached grant with the later reading, which removes the instant reading the goal names as the defect.",
+    "reuse": "reckon/crew/admission/holds.py:59 folds the read into _session_room_read and leaves _session_allowance_read a wrapper, while the only other wait owners, attempts.py:77 LaunchBatch.wait_for_allowance and service.py:327's pass cadence, wait on the pass's own launches and the service loop rather than on the lane's next reading.",
+    "scope_discipline": "Every changed path in 6b7c8a2..db04a33e lies inside prompt.txt:85-88, and the two evidence files are the artifacts the done_when and the delivery contract name."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: read the goal at prompt.txt:38 and plan section s79 at docs/plans/work-flows-to-the-lane.html:376-378 against the reviewed head; reckon/crew/admission/selection.py:696 _wait_for_lane_room re-reads the lane once per session per pass, bounded by min(LANE_ROOM_WAIT_SECONDS, the pass deadline), and a candidate deferred in the filling sweep reaches it at selection.py:373, so a queued request launches off the lane's later open reading inside the bound the goal names.\nVERDICT done_when: read the done_when at prompt.txt:170 against tests/test_a_full_reading_does_not_hold_queued_work.py:187 (all 12 of REQUESTS launched), :192 (the last launch under LAUNCH_BOUND_SECONDS=60 measured from the stand-in's own opened_at) and :216-:221 (a paused lane launches nothing and takes no pause), with the arms recorded in gate-all_debug.log (18 passed, EXIT=0) and negative-control-base-all_debug.log (1 failed, 2 passed, EXIT=1 at 6b7c8a2, none launched).\nVERDICT write_paths: read the source fence at prompt.txt:84-89 (reckon, tests, the plan's fragments directory, its node fragment, the plan's figures directory) and the file list of 6b7c8a2..db04a33e; all five changed paths sit inside that declaration, and docs/evidence/fragments/work-flows-to-the-lane/s79.html is the fragments artifact the done_when names for the red run.\nVERDICT manifest: read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T210614019724-wftl-a-full-reading-does-not-hold-queued-work/manifest.md; it reports a green gate, a red base arm, both suite arms and a landing line, but reports.audit_manifest over that same text answers ok=false with five findings on the suite fields at manifest.md:30-31, the two gate logs' headers and the negative_control_log value at manifest.md:28.\nVERDICT diff: read 2e70c8e8ad, 721fefc23f, 88635dbfdd and db04a33ee1 against 6b7c8a2bf2b4 commit by commit: 2e70c8e8ad adds _session_room_read to holds.py and _wait_for_lane_room plus the second-sweep deferral to selection.py, 721fefc23f reorders the test's assertions so the outcome is asserted before the mechanism and drops the test's import of LANE_ROOM_POLL_SECONDS, 88635dbfdd adds the launches_by_key guard, and db04a33ee1 adds the two evidence files and touches no code.\nCALL_SITES: reckon/crew/admission/service.py:267, reckon/crew/admission/service.py:316, reckon/crew/queue_admission.py:238, reckon/crew_run_commands.py:5551, reckon/crew/admission/verdicts.py:154, reckon/crew/admission/verdicts.py:229, reckon/crew/admission/verdicts.py:294, reckon/crew/admission/verdicts.py:340\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/admission/selection.py:696 waits for the lane to publish room again and selection.py:379 replaces the pass's cached grant with the later reading, which removes the instant reading the goal names as the defect.\nSCORE evidence: 13\nJUSTIFICATION evidence: tests/test_a_full_reading_does_not_hold_queued_work.py:192 is the done_when's 60 second figure and gate-all_debug.log:1 names revision 88635dbfdd with 18 passed EXIT=0, but manifest.md:30-31 carries unreadable suite records and reports.audit_manifest answers ok=false on that same text.\nSCORE scope_discipline: 18\nJUSTIFICATION scope_discipline: every changed path in 6b7c8a2..db04a33e lies inside prompt.txt:85-88, and the two evidence files are the artifacts the done_when and the delivery contract name.\nSCORE durability: 16\nJUSTIFICATION durability: returning selection.py:373 to the base's one-reading pass reddens tests/test_a_full_reading_does_not_hold_queued_work.py:187 with an empty launched set, as negative-control-base-all_debug.log records, but the 88635dbfdd guard at selection.py:383 is not observable to any of the three tests.\nSCORE fit: 17\nJUSTIFICATION fit: reckon/crew/admission/selection.py:683-696 follows the module's documented-helper idiom beside _launch_budget_from_flight, though the pause at selection.py:751 can outlive a sub-second deadline by up to a second.\nSCORE reuse: 19\nJUSTIFICATION reuse: reckon/crew/admission/holds.py:59 folds the read into _session_room_read and leaves _session_allowance_read a wrapper, while the only other wait owners, attempts.py:77 LaunchBatch.wait_for_allowance and service.py:327's pass cadence, wait on the pass's own launches and the service loop rather than on the lane's next reading.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T210614019724-wftl-a-full-reading-does-not-hold-queued-work/manifest.md:30 blocking: the delivered manifest's baseline_suite and after_suite are not flat suite records and negative_control_log at line 28 names a worktree HTML fragment rather than a log under the run directory, so reports.audit_manifest answers ok=false and the suite arms the run measured cannot be read from the record that claims them.\nFINDING reckon/crew/admission/selection.py:383 non-blocking: the launches_by_key guard 88635dbfdd added has no test that reddens without it, because all three tests grant 12 slots to 12 requests so the allowance never reaches zero after a launch.\nFINDING reckon/crew/admission/selection.py:751 non-blocking: the wait takes a full LANE_ROOM_POLL_SECONDS pause even when the pass deadline is nearer than a second, overshooting the deadline the wait is documented to respect.\n",
+  "review_run_id": "r-20261115T222820952097-review-of-wftl-a-full-reading-does-not-hold-queued-work-db04a33ee164",
+  "reviewed_base_sha": "6b7c8a2bf2b4772033d549be7346f3d913b10800",
+  "reviewed_head_sha": "db04a33ee1647618e7c61fd889d6a769373ed55b",
+  "reviewed_run_id": "r-20261115T210614019724-wftl-a-full-reading-does-not-hold-queued-work",
+  "rubric": "review",
+  "scores": {
+    "durability": 16,
+    "evidence": 13,
+    "fit": 17,
+    "goal_fidelity": 18,
+    "reuse": 19,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-15T22:57:27.273607+00:00",
+  "total": 101
+}
