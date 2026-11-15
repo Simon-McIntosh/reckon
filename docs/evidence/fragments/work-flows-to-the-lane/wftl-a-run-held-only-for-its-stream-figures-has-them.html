@@ -39,19 +39,23 @@
   first declared-scope edit, three completed tool items); the second has no stream and must record
   both figures as a present null rather than a zero, which retention then treats as reapable; the
   third is the negative control, where skipping the write leaves retention withholding the same
-  directory.</p>
+  directory. Two further cases plant a ledger in a temporary repository and run the durability
+  instrument over it: one counts the rows each declared figure is recorded on and exits 1 while the
+  working tree holds a figure its <code>HEAD</code> does not, the other reports a checkout whose
+  <code>HEAD</code> is ahead of its working tree as its own count and exits 0.</p>
   <table>
     <thead><tr><th>Measurement on all_debug, one arm at a time</th><th>Runner summary</th></tr></thead>
     <tbody>
       <tr><td>Base arm at <code>bc378cd9a3ce</code>, extracted to <code>/tmp</code></td><td>53 passed, 2 errors; EXIT=1</td></tr>
-      <tr><td>Head arm: the two template files plus this node's test</td><td>58 passed; EXIT=0</td></tr>
-      <tr><td>Declared mutation: the backfill's write removed</td><td>3 failed; EXIT=1</td></tr>
+      <tr><td>Head arm: the two template files plus this node's test</td><td>60 passed; EXIT=0</td></tr>
+      <tr><td>Declared mutation: the backfill's write removed</td><td>3 failed, 2 passed; EXIT=1</td></tr>
     </tbody>
   </table>
   <p>The base arm's two errors are <code>test_staged_write_inventory.py</code> requiring a git-backed
   tree, which a <code>git archive</code> extraction is not; both files pass in the head arm and the
   errors are identical at the base revision, so the node adds no failure. The mutation removes the
-  backfill's write and all three cases fail.</p>
+  backfill's write and all three cases that exercise it fail, while the two durability cases, which
+  do not touch the backfill, still pass.</p>
   <table>
     <thead><tr><th>Project</th><th>Rows lacking a figure</th><th>Stream on disk</th><th>No stream</th><th>Filled, first pass</th><th>Filled, full pass</th><th>Recorded absent</th></tr></thead>
     <tbody>
