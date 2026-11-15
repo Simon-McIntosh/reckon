@@ -25,7 +25,7 @@
   <title>The Crew Home Has A Bound | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="138">
+<meta name="plan-version" content="139">
 <meta name="plan-modified" content="2026-11-15">
 <meta name="plan-section-depends-on" content="{&quot;s13&quot;:[&quot;the-crew-home-has-a-bound#s11&quot;],&quot;s5&quot;:[&quot;the-crew-home-has-a-bound#s14&quot;]}">
 </head>
@@ -400,6 +400,9 @@
 </div>
 <div class="r-comment" data-section="s5" data-id="c-run-r-20261115T060244385394-review-of-the-existing-backlog-is-reclaimed-24aebfab5624" data-who="reckon-build" data-when="2026-11-15T06:21:09.495Z">
     <div class="r-comment-body"><p>Independent review stored for run r-20261114T174234407696-the-existing-backlog-is-reclaimed over base f2411f4dcbaffb5593221a3909b765f2a1497256 to head 24aebfab562433cf5863d2b3c820bf5c76f12d1c: parsed, all six dimensions scored 16, 16, 12, 14, 16, 15 (total 89), three non-blocking findings (one out-of-fence test path, four corrected statements left unasserted, a id-uniqueness case duplicating doccheck's audit), and zero added failures read from the reviewed run's own two gate logs.</p></div>
+</div>
+<div class="r-comment" data-section="s5" data-id="c-run-r-20261114T174234407696-the-existing-backlog-is-reclaimed" data-who="reckon-build" data-when="2026-11-15T05:59:12Z">
+    <div class="r-comment-body"><p>The project-scoped apply pass removed 4636 stale run locks, 3 expired report trees and 5 integrated trees, removed no run directory and no ledger index because the report named none reclaimable for this project, and its keep-guard check prints NO OVERLAP against 124 live pointers and 44 risky worktrees; run directories fell 5037 to 2627 and worktrees 67 to 63, of which the 4 net is the 5 the report named less 1 created during the pass.</p></div>
 </div>
 <div class="r-comment" data-section="s6" data-id="c-s6-gc-run-promoted-1013" data-who="reckon-build" data-when="2026-10-13T00:10:00Z">
     <div class="r-comment-body"><p>A further case for this section, measured on 2026-10-12 and 2026-10-13 on seven runs of session <code>67139f13</code>. The obligations hook's <code>worktree-held</code> remedy is <code>reckon crew gc --run &lt;id&gt; --apply</code>. For a run that has been promoted and released, that command exits 1 with "no record names a worktree for run …", although the run's merged, clean worktree still exists on disk. So the prescribed remedy can never discharge the obligation.</p><p>Each tree was released by hand instead, after re-checking that it was clean, that its head is on main, and that no live pointer claims it.</p><p>When this section is built, <code>gc --run</code> should find a promoted run's worktree from the ledger row or the worktree root, and release it under the same checks, or the hook should name a remedy that works.</p></div>
