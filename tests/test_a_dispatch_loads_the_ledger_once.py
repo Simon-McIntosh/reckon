@@ -148,14 +148,15 @@ def _record(monkeypatch, source):
 
 def test_one_dispatch_loads_the_ledger_once(populated, monkeypatch):
     repo, source = populated
+    with monkeypatch.context() as recording:
+        calls, stats = _record(recording, source)
+        payload = _invoke(repo)
     with monkeypatch.context() as live:
         if hasattr(ledger, "dispatch_snapshot"):
             live.setattr(
                 ledger, "dispatch_snapshot", lambda **_kwargs: contextlib.nullcontext()
             )
         expected = _invoke(repo)
-    calls, stats = _record(monkeypatch, source)
-    payload = _invoke(repo)
     print(f"ledger_loads={len(calls)} ledger_stats={dict(stats)}")
     print("DRY_RUN_DOCUMENT=" + json.dumps(payload, sort_keys=True))
     for call in calls:
@@ -220,4 +221,22 @@ def test_direct_dispatch_releases_its_snapshot_on_refusal(populated, monkeypatch
             session="probe",
         )
     assert observed == [True]
+    assert not ledger.dispatch_snapshot_active()
+
+
+def test_the_picker_thread_joins_the_dispatch_snapshot(populated, monkeypatch):
+    repo, source = populated
+    observed = []
+
+    def read_in_picker(*_args, **_kwargs):
+        observed.append(
+            (ledger.dispatch_snapshot_active(), len(ledger.picker_runs("proj", repo)))
+        )
+        return picker_cases.selection()
+
+    monkeypatch.setattr(picker, "pick", read_in_picker)
+    calls, _stats = _record(monkeypatch, source)
+    _invoke(repo)
+    assert observed == [(True, 200)]
+    assert len(calls) == 1
     assert not ledger.dispatch_snapshot_active()
