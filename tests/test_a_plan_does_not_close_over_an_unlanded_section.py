@@ -160,6 +160,42 @@ def test_a_done_section_that_states_no_done_when_does_not_stop_a_close(
     assert state["status"] == "done"
 
 
+def test_a_section_done_before_the_rule_does_not_stop_a_close(
+    mounted_plan: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # The migration record names this section, which is the only thing that
+    # makes it pre-rule: nothing about the plan's present text says so, and no
+    # clock is consulted, so the exemption cannot change meaning with the day.
+    monkeypatch.setattr(
+        _store,
+        "_LANDING_RULE_EXEMPTIONS",
+        {PROJECT: {SLUG: ("s1",)}},
+    )
+    state = _read_state()
+
+    _store.apply_ops(state, [CLOSE], False)
+
+    assert state["status"] == "done"
+
+
+def test_a_section_marked_done_after_the_rule_is_still_refused(
+    mounted_plan: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # The record covers a different section of this plan, so s1 was marked done
+    # after the rule landed and owes its landing account like any other.
+    monkeypatch.setattr(
+        _store,
+        "_LANDING_RULE_EXEMPTIONS",
+        {PROJECT: {SLUG: ("s9",)}},
+    )
+    state = _read_state()
+
+    with pytest.raises(_store.OpError) as refusal:
+        _store.apply_ops(state, [CLOSE], False)
+
+    assert "s1" in str(refusal.value)
+
+
 def test_a_run_record_for_the_section_answers_for_it(
     mounted_plan: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:

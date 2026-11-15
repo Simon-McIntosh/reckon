@@ -5055,6 +5055,57 @@ def _require_every_section_ticked(
     )
 
 
+#: The sections that were already done when the landing-rule guard landed, per
+#: project and plan. A section listed here owes no landing account: the guard
+#: refuses only a section marked done after the rule, and this record is what
+#: says which sections came before it. It is a migration record and not a rule
+#: about any project — the project and plan names are the store's own identities
+#: at the moment the rule landed (27 plans, 48 sections), and it is data
+#: the guard reads, never a name its logic branches on.
+#:
+#: A section listed here stays exempt however its plan is later edited, because
+#: the exemption is recorded rather than derived: nothing about the plan's
+#: present text can promote a section into or out of this table.
+_LANDING_RULE_EXEMPTIONS: dict[str, dict[str, tuple[str, ...]]] = {
+    'imas-ambix': {
+        'a-recorded-field-is-one-that-was-measured': ('s4',),
+    },
+    'imas-codex': {
+        'codac-uda-signals': ('s15', 's4', 's5'),
+        'sn-definitions-by-construction': ('s5',),
+    },
+    'imas-efit': {
+        'continuous-boundary-level': ('s18', 's7'),
+        'west-chain-readiness': ('s8',),
+    },
+    'nova': {
+        'dd-cocos-ingest': ('s5',),
+        'iron-core-magnetisation': ('s2',),
+        'kernel-compile-barrier': ('s5',),
+        'nova-portfolio-replan': ('s5',),
+        'sub-millisecond-forward-path': ('s1',),
+    },
+    'reckon': {
+        'a-brief-should-not-cost-what-it-names': ('s7',),
+        'a-dispatch-returns-without-its-worker': ('s16', 's18', 's9'),
+        'a-dry-run-must-resolve-what-the-real-call-resolves': ('s5',),
+        'a-read-costs-what-changed': ('s24', 's25', 's26', 's27', 's28', 's29', 's30', 's31', 's32', 's33', 's34'),
+        'a-report-is-kept-only-when-persisted': ('s6',),
+        'a-worker-is-charged-to-a-job': ('s8',),
+        'consumers-read-reckon-through-verbs': ('s5',),
+        'crew-observability-truth': ('s30',),
+        'crew-runtime-positive-controls': ('s2',),
+        'new-work-gets-a-new-worker': ('s8',),
+        'scoring-should-stop-a-promotion': ('s2c', 's4b', 's5b'),
+        'the-escape-lane-and-reviews-keep-pace': ('s2', 's4'),
+        'the-monitor-reads-each-fact-once': ('s18', 's48', 's52'),
+        'the-monitor-shows-the-work-it-watches': ('s13', 's133'),
+        'the-page-paints-from-an-index': ('s9',),
+        'the-restarted-server-meets-its-shipped-measures': ('s2',),
+        'work-scheduling-surface': ('s9',),
+    },
+}
+
 def _require_every_landed_section_answered(
     state: dict[str, Any], html_text: str | None = None
 ) -> None:
@@ -5068,6 +5119,14 @@ def _require_every_landed_section_answered(
     Only a section that states a done-when is in the rule. A section giving the
     plan's reasons states no measure, so no node could have landed it and it
     owes no account.
+
+    The rule applies to a section marked done after it landed. A section that
+    was already done when the rule landed is exempt and stays exempt however its
+    plan is later edited, so the exemption is read from
+    :data:`_LANDING_RULE_EXEMPTIONS` — a record of the store as it stood then —
+    rather than from the plan's present text or from any clock. Reading it from
+    the clock would exempt a section forever or not at all depending on the day
+    the check ran, which is the defect this record exists to avoid.
 
     The rule needs the plan's document to read that prose, and a caller without
     one gets no check rather than a refusal: the document is what distinguishes
@@ -5096,6 +5155,7 @@ def _require_every_landed_section_answered(
         for section in landed
         if _states_a_done_when(prose, section)
         and not _section_holds_a_landing(state, section)
+        and not _landed_before_the_rule(state, section)
     ]
     if not unanswered:
         return
@@ -5134,6 +5194,24 @@ def _states_a_done_when(prose: dict[str, str], section: str) -> bool:
         prose.get(candidate, "") for candidate in sorted(section_id_candidates(section))
     )
     return _done_when_paragraph(text) is not None
+
+
+def _landed_before_the_rule(state: dict[str, Any], section: str) -> bool:
+    """Whether a section was already done when the landing rule landed.
+
+    Read from the migration record alone, so a section's exemption neither
+    expires with the calendar nor depends on what its plan's prose says today.
+    The record's section spellings are compared through the one candidate set,
+    so a recorded ``§4`` and the declaration key ``s4`` name the same section.
+    """
+    from reckon._plan_html import section_id_candidates
+
+    project = str(state.get("project") or "")
+    slug = str(state.get("slug") or "")
+    known: set[str] = set()
+    for spelling in _LANDING_RULE_EXEMPTIONS.get(project, {}).get(slug, ()):
+        known |= section_id_candidates(spelling)
+    return bool(known and section_id_candidates(section) & known)
 
 
 def _section_holds_a_landing(state: dict[str, Any], section: str) -> bool:
