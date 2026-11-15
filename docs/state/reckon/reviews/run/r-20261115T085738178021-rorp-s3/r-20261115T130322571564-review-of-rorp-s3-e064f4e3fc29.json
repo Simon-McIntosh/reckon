@@ -1,0 +1,44 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-11-15T13:29:00.774Z",
+  "dispatched_at": "2026-11-15T13:08:32Z",
+  "findings": [
+    {
+      "file": "reckon/crew/review_records.py",
+      "line": "630",
+      "severity": "non-blocking",
+      "text": "Two production readers still judge a raw record without the fold this range adds. _record_reads_complete (reckon/crew/review_records.py:630) is reached from _select_stored_record's ranking over records read by _record_file (review_records.py:201), which json.loads the file with no with_canonical_claims; and the classification path that reads a filed record beside an exited run (reckon/crew/recovery_classification.py:516) does the same, calling _review_is_complete on a raw json.loads payload at :510. A claims record a reviewer wrote by hand under claim_verdicts therefore still reads incomplete on both, so the added paragraph at docs/evidence/fragments/a-read-only-run-promotes-as-delivered/rorp-s3.html:123-126 asserting that 'every promotion consumer - the classifier, the gate, the obligations pass - asks the same field' overstates the change. The gate and the delivery check are correctly folded; these two ranking and fallback readers are not."
+    },
+    {
+      "file": "tests/test_a_claims_review_record_passes_the_check.py",
+      "line": "109",
+      "severity": "non-blocking",
+      "text": "Plan section 3's done_when asks that a claims record missing one claim's verdict be refused 'naming the claim'. The assertion at tests/test_a_claims_review_record_passes_the_check.py:109 accepts the generic 'too few claim verdicts' substring, and the message at reckon/crew/review.py:434 names no rank, so the naming clause is unsatisfied and the gate does not measure it. Carried forward from the prior review of this run; the gained commits do not address it."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T085738178021-rorp-s3/manifest.md",
+      "line": "23",
+      "severity": "non-blocking",
+      "text": "The manifest's rubric.evidence line states '73 passed EXIT=0 at the repair head' while its artifacts line and the after_suite log at e064f4e3fc both state 75 passed; the 73 is a stale arm. The same line repeats the earlier round's '45 passed over the four importer files' figure that the prior review found to have no log under the run directory."
+    }
+  ],
+  "project": "reckon",
+  "review_run_id": "r-20261115T130322571564-review-of-rorp-s3-e064f4e3fc29",
+  "review_text": "VERDICT goal: the node's goal is that a claims review record is judged by the rubric it names on every path that judges it; the gained commits add with_canonical_claims (reckon/crew/review.py:309) and apply it at the store's read path (reckon/crew/review.py:4018) and in the delivery check (reckon/crew/review.py:1054).\nVERDICT done_when: plan section 3 asks that a complete claims record pass crew check --review, that one missing a claim be refused naming the claim, and that the two stored census and prototype records pass; tests/test_a_claims_review_record_passes_the_check.py asserts the first and third, while :109 accepts only the generic 'too few claim verdicts' text for the naming clause.\nVERDICT write_paths: the diff touches docs/evidence/fragments/a-read-only-run-promotes-as-delivered/rorp-s3.html, reckon/crew/review.py and tests/test_a_claims_review_record_passes_the_check.py, all inside the manifest's declared write paths; the declared figures directory is untouched.\nVERDICT manifest: read at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T085738178021-rorp-s3/manifest.md; status complete, six commits named, after_suite 75 passed EXIT=0 at e064f4e3fc and baseline 55 passed EXIT=0 at bb45282b.\nVERDICT diff: read commit by commit at 10c952bdd1..e064f4e3fc; two commits (3f6aa2867e fixes the fold, e064f4e3fc documents it) over three paths, +322/-6.\nCALL_SITES: reckon/crew/review.py:read_review, reckon/crew/promotion_checks.py:696, reckon/crew/recovery_review_subject.py:148, reckon/crew/recovery_review_dispatch.py:1298, reckon/crew/review_records.py:630, reckon/crew/recovery_classification.py:516\nSCORE goal_fidelity: 16\nJUSTIFICATION goal_fidelity: reckon/crew/review.py:4018 folds a stored hand-written record on the read path and I confirmed the real stored nova review now runs crew check --review with EXIT=0, though the fold does not reach every reader, which is the finding at reckon/crew/review_records.py:630.\nSCORE evidence: 15\nJUSTIFICATION evidence: /home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T085738178021-rorp-s3/after-suite-head3.log ends '75 passed in 34.99s' then EXIT=0 and baseline-suite-base3.log ends '55 passed' then EXIT=0, but the done_when's naming clause is asserted only as a substring at tests/test_a_claims_review_record_passes_the_check.py:109.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every path the two gained commits change is one of the manifest's declared write paths, and no source outside reckon/crew/review.py, its test file and the evidence fragment is touched.\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_a_claims_review_record_passes_the_check.py:172-184 reads the record back through review.read_review and fails on stored.get(\"claims\") if the fold at reckon/crew/review.py:4018 is removed, while the assertions at :157 and :169 supply with_canonical_claims as their own input and only catch a fold that returns the record unchanged.\nSCORE fit: 19\nJUSTIFICATION fit: with_canonical_claims at reckon/crew/review.py:309 mirrors with_normalised_findings at :297 in shape and docstring register, and no added name carries a plan or ticket label.\nSCORE reuse: 19\nJUSTIFICATION reuse: the fold reuses CLAIM_VERDICT_FIELDS (reckon/crew/review.py:426) and extends the module that already owns the claims rubric and the delivery check; the search over reckon/crew for an existing key-folding owner found only with_normalised_findings, a different capability, and no duplicate was introduced.\nFINDING reckon/crew/review_records.py:630 non-blocking: the completeness ranking and fallback readers call _review_is_complete on a raw json.loads record, so a hand-written claim_verdicts review still reads incomplete there while the fragment at rorp-s3.html:125 claims every promotion consumer reads one field.\nFINDING tests/test_a_claims_review_record_passes_the_check.py:109 non-blocking: the done_when's 'naming the claim' clause is asserted only as a generic substring, so the gate does not measure what plan section 3 asks.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T085738178021-rorp-s3/manifest.md:23 non-blocking: rubric.evidence reports 73 passed at the repair head where the after_suite log and the artifacts line report 75.",
+  "reviewed_base_sha": "10c952bdd1d2d4b1d2ffca72400d1546de0215b7",
+  "reviewed_head_sha": "e064f4e3fc29f630560c0ac0c1f22d993740702b",
+  "reviewed_run_id": "r-20261115T085738178021-rorp-s3",
+  "scores": {
+    "durability": 17,
+    "evidence": 15,
+    "fit": 19,
+    "goal_fidelity": 16,
+    "reuse": 19,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-15T13:37:00.194608+00:00",
+  "total": 105
+}
