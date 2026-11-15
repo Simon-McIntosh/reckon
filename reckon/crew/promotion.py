@@ -810,6 +810,7 @@ def complete(
                 accepted_paths=accepted_paths,
                 gate_check=gate_check,
                 require_gate_check=require_gate_check,
+                measure=not dry_run,
             )
 
         def _domain_gate() -> dict[str, Any] | None:

@@ -1,3 +1,4 @@
+import inspect
 import os
 import time
 from collections.abc import Mapping
@@ -3508,14 +3509,25 @@ def crew_complete(
     --dry-run reports the current guards without recording a request. Internal
     callback callers retain synchronous execution unless they request otherwise.
     """
-    from reckon.crew.promotion_requests import COMMAND_REPLY, request_promotion
+    from reckon.crew.promotion_requests import (
+        COMMAND_REPLY,
+        REQUESTED,
+        request_promotion,
+    )
 
     if land and not dry_run:
         _refuse_a_landing_without_its_pointer(run_id)
+    driven = False
     if not wait and not dry_run and COMMAND_REPLY.get() is None:
-        parameters = dict(locals())
-        for name in ("COMMAND_REPLY", "request_promotion"):
-            parameters.pop(name, None)
+        # The drain forwards every stored option as a keyword, so the snapshot
+        # carries only names this command declares: a name bound here by an
+        # import or a local reaches the drain as an unknown keyword and the
+        # queued promotion fails to run at all.
+        callback = getattr(crew_complete, "callback", crew_complete)
+        accepted = set(inspect.signature(callback).parameters)
+        parameters = {
+            name: value for name, value in locals().items() if name in accepted
+        }
         from reckon.crew.node import CrewError
 
         try:
@@ -3524,8 +3536,15 @@ def crew_complete(
             )
         except CrewError as exc:
             raise click.ClickException(str(exc)) from exc
-        _emit_crew_result(result, pretty)
-        return
+        if not (result.get("duplicate") and result.get("phase") == REQUESTED):
+            _emit_crew_result(result, pretty)
+            return
+        # A repeat finds its own request still queued. Answering that alone
+        # leaves the coordinator with a duplicate receipt and no progress, so
+        # the repeated command drives the queued promotion here instead: the
+        # request it found is the one this call then carries out, and the
+        # promotion settles it when it finishes.
+        driven = True
     _accept_a_matching_project(run_id, project)
     if candidate and not land:
         raise click.UsageError("--candidate requires --land")
@@ -3728,6 +3747,8 @@ def crew_complete(
         raise click.ClickException(detail) from exc
     except ledger_module.LedgerError as exc:
         raise click.ClickException(str(exc)) from exc
+    if driven and isinstance(result, dict):
+        result["driven"] = True
     if land:
         report, exit_code = _land_a_promoted_run(
             result,
