@@ -227,6 +227,23 @@ def _promotion_lock(run_id: str) -> Iterator[None]:
         yield
 
 
+@contextmanager
+def _promotion_coordination(run_id: str, *, dry_run: bool) -> Iterator[None]:
+    """Hold the promotion's claims, or none of them when nothing is written.
+
+    A real promotion takes the run's pointer lock and its cross-host claim
+    before its first write, so two hosts cannot land one run and a second
+    promotion waits rather than racing. A dry run writes nothing, so it takes
+    neither: the claim is itself a write, and a dry run that waits on one
+    answers as a write that timed out instead of the read it is.
+    """
+    if dry_run:
+        yield
+        return
+    with _promotion_lock(run_id), _promotion_host_lease(run_id):
+        yield
+
+
 #: The pointer fields a promotion must find a pointer it can remove, in the
 #: order the refusal message names them. The phase is among them because a
 #: promoted attempt whose phase moved is not the attempt this promotion read.
@@ -711,11 +728,17 @@ def complete(
     dry_run: bool = False,
     promoted_by: str = "",
     domain_waiver: str = "",
+    dry_run_state: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Promote a run, or finish cleanup when its record already landed.
 
     A run whose dispatch started an advisory pick asynchronously is waited for,
     up to the pick's own bound, so its answer reaches the committed row.
+
+    ``dry_run_state`` is where a dry run's own findings are written for the
+    report its caller assembles: the guards run in one order and a refusal
+    abandons the sweep, so a fact resolved before the refusal — the review the
+    run owes — would otherwise be lost with the local that held it.
     """
     verdict = str(gate).strip().lower()
     if verdict not in ledger.GATE_VERDICTS:
@@ -746,8 +769,12 @@ def complete(
         _await_in_flight_shadow_pick(run_id)
     # Checks and landing retain their own claim while pointer mutations remain
     # available to sweeps and resume. Pointer access holds only its own lock.
-    with _promotion_lock(run_id), _promotion_host_lease(run_id):
-        with _pointer_lock(run_id):
+    # A dry run takes neither: it writes nothing for a lock to protect, and a
+    # lock held by a promotion of the same run would make the read wait on it.
+    with _promotion_coordination(run_id, dry_run=dry_run):
+        with ExitStack() as _pointer_region:
+            if not dry_run:
+                _pointer_region.enter_context(_pointer_lock(run_id))
             record = _read_pointer_or_rebuild(run_id, root=root)
         record = {**record, **read_dispatch_detail(record)}
         # A dispatch whose launch was refused leaves a run that names no
@@ -874,6 +901,20 @@ def complete(
                 commit_list=gate_commits,
                 root=resolved.get("root", root),
             )
+            if dry_run_state is not None:
+                # The refusal below abandons the sweep, so the review this run
+                # owes is recorded before it is raised: the dry run's report
+                # states what is missing even when it also states why.
+                dry_run_state["reviews_owed"] = _reviews_the_dry_run_owes(
+                    run_id,
+                    record,
+                    verdict=verdict,
+                    classification=resolved["classification"],
+                    review=reviewed,
+                    review_tier=resolved["review_tier"],
+                    promoted_head=resolved["promoted_revision"],
+                    stale_head=stale_review_head,
+                )
             return _require_review_waiver(
                 run_id,
                 record,
@@ -1102,11 +1143,13 @@ def complete(
                     record,
                     verdict=verdict,
                     gate_check=gate_check,
-                    refusals=(),
+                    refusals=_dry_run_suite_refusals(suite_delta),
                     no_commit=no_commit,
                     no_impl_change=no_impl_change,
                     would_file_reviews=delivered_reviews,
                     would_wait_for_pick=awaiting_pick,
+                    suite_delta=suite_delta,
+                    reviews_owed=(dry_run_state or {}).get("reviews_owed") or (),
                 )
             result = _complete_locked(
                 run_id,
@@ -1265,6 +1308,47 @@ def _dry_run_invocation(
     return " ".join(parts)
 
 
+def _dry_run_suite_refusals(
+    suite_delta: Mapping[str, Any] | None,
+) -> tuple[str, ...]:
+    """The refusal a dry run reports for suite evidence it did not measure.
+
+    The landing takes a missing or mismatched arm pair itself by running the
+    armed command over the base and head trees, so a run in that state is not
+    yet promotable: whether it promotes depends on a measurement nobody has
+    taken, and one the landing cannot read is refused on exactly the fields the
+    run's arms are missing. A dry run that reported such a run promotable
+    because the landing *might* measure the pair answered a question the
+    coordinator had not asked, and the refusal it then met cost the round trip
+    the dry run existed to save. The measurement is named as the landing's and
+    not this call's, so the report never reads as evidence that was produced.
+
+    Every other state the evaluation returns — a measured pair, a waived pair,
+    a run that changed nothing — needs no refusal and adds none.
+    """
+    if not isinstance(suite_delta, Mapping):
+        return ()
+    if str(suite_delta.get("status") or "") != "would-measure":
+        return ()
+    missing = [str(name) for name in suite_delta.get("missing_fields") or ()]
+    detail = (
+        "armed promotion requires complete baseline and after suite evidence; "
+        "missing " + ", ".join(missing)
+    )
+    if "after_suite.revision_matches_head" in missing:
+        detail += (
+            ". The after arm is not recorded at the run's head: re-run the "
+            "armed command at that head and record the after arm at its revision"
+        )
+    detail += (
+        ". The landing would run the armed command over the base and head trees "
+        "itself, and this dry run measured nothing and starts nothing; a pair "
+        "that cannot be re-measured is waived with --waive-suite-delta '<why>', "
+        "which never waives an added failure"
+    )
+    return (detail,)
+
+
 def _dry_run_report(
     run_id: str,
     record: Mapping[str, Any],
@@ -1277,6 +1361,8 @@ def _dry_run_report(
     would_withdraw: bool = False,
     would_file_reviews: Sequence[str] = (),
     would_wait_for_pick: bool = False,
+    suite_delta: Mapping[str, Any] | None = None,
+    reviews_owed: Sequence[Mapping[str, Any]] = (),
 ) -> dict[str, Any]:
     """Report every refusal a promotion would raise, without writing any of it.
 
@@ -1292,6 +1378,13 @@ def _dry_run_report(
     into the store, and ``would_wait_for_pick`` for a deferred pick still to
     answer. A withdrawn run has nothing to invoke — its promotion writes no
     ledger row — so no command is offered for it.
+
+    ``suite_delta`` is the suite evaluation the promotion ran, and
+    ``would_measure`` names the one state it can be in where nothing was
+    measured: the landing would run the armed command over the base and head
+    trees itself. ``reviews_owed`` names the reviews a real promotion refuses
+    for want of, so an empty ``would_file_reviews`` — no record was delivered —
+    cannot be read as no review being needed.
     """
     messages = [str(refusal) for refusal in refusals]
     invocation = (
@@ -1317,6 +1410,12 @@ def _dry_run_report(
         "would_withdraw": would_withdraw,
         "would_file_reviews": [str(path) for path in would_file_reviews],
         "would_wait_for_pick": would_wait_for_pick,
+        "suite_delta": dict(suite_delta) if isinstance(suite_delta, Mapping) else None,
+        "would_measure": (
+            isinstance(suite_delta, Mapping)
+            and str(suite_delta.get("status") or "") == "would-measure"
+        ),
+        "reviews_owed": [dict(entry) for entry in reviews_owed],
     }
     if would_file_reviews:
         # The filing runs before the guards, so a review check that reads the
@@ -1341,10 +1440,11 @@ def complete_dry_run(run_id: str, **kwargs: Any) -> dict[str, Any]:
     """
     gate = str(kwargs.get("gate") or "")
     root = kwargs.get("root")
+    state: dict[str, Any] = {}
     try:
-        return complete(run_id, dry_run=True, **kwargs)
+        return complete(run_id, dry_run=True, dry_run_state=state, **kwargs)
     except _PromotionRefusalError as refusal:
-        refusals: Sequence[BaseException] = list(refusal.refusals)
+        refusals = list(refusal.refusals)
     except (CrewError, ledger.LedgerError) as refusal:
         refusals = [refusal]
     try:
@@ -1372,6 +1472,7 @@ def complete_dry_run(run_id: str, **kwargs: Any) -> dict[str, Any]:
         no_impl_change=str(kwargs.get("no_impl_change") or ""),
         would_file_reviews=_delivered_review_records(record),
         would_wait_for_pick=_shadow_pick_in_flight(run_id),
+        reviews_owed=state.get("reviews_owed") or (),
     )
 
 
@@ -3025,6 +3126,7 @@ from reckon.crew.promotion_checks import (
     _resolve_promotion_outcome,
     _review_changed_scope,
     _review_outcome_summary,
+    _reviews_the_dry_run_owes,
     _run_capability_risk,
     _run_review_tier,
     _staging_review_record_by_run,
