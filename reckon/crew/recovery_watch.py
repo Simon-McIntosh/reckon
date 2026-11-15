@@ -2285,16 +2285,24 @@ def fleet_transitions(
             (departed, str(known[run_id]["state"]), _departure_word(run_id, recorded))
         )
     for run_id in (item for item in current if item not in known):
+        # A launched run still opens as a dispatch, so the pane's arrival and
+        # start rows keep the pair they were built around. A request that has
+        # not launched opens in the state its own pointer supports instead:
+        # painting every arrival as dispatched drew held and parked work as a
+        # worker that had started.
+        observed = str(current[run_id].get("state") or "")
+        arrival_state = "dispatched" if observed in FLEET_WORKING_STATES else observed
+        arrival_state = arrival_state or "dispatched"
         changes.append(
             (
                 {
                     **current[run_id],
-                    "state": "dispatched",
+                    "state": arrival_state,
                     "detail": "",
                     "needs_help_complete": None,
                 },
                 None,
-                "dispatched",
+                arrival_state,
             )
         )
     for run_id in (item for item in current if item in known):

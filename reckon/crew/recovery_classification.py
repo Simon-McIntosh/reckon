@@ -1758,7 +1758,14 @@ def classify_pointer(
     pre_spawn_waiting = phase in _PRE_SPAWN_PHASES and not _stranded_launch(
         record, now_seconds=moment
     )
-    if phase in WAITING_UPSTREAM_PHASES:
+    # A parked phase is the launcher's statement that the request is waiting to
+    # start, and it means that only while the pointer records no worker: a pid
+    # or a launch clock on a queued request is a request that has launched, and
+    # its liveness rather than its old label decides the reading. Without this
+    # a phase label could not be left behind, and a launched request whose
+    # label had not yet advanced read as the wait it had already passed.
+    launched = bool(record.get("pid")) or bool(record.get("launched_at"))
+    if phase in WAITING_UPSTREAM_PHASES and not launched:
         classification = phase
         # A request held on a section it waits for is stored, not launched, and
         # no lane slot will release it: what releases it is the upstream section
@@ -1777,7 +1784,7 @@ def classify_pointer(
                 f"waiting for {waiting_on} to land"
             )
             action = f"wait for {waiting_on} to land"
-    elif phase == HELD_PHASE:
+    elif phase == HELD_PHASE and not launched:
         classification = HELD_PHASE
         hold = record.get("queue_hold")
         reason = str(hold.get("reason") or "") if isinstance(hold, Mapping) else ""
@@ -1785,7 +1792,7 @@ def classify_pointer(
         if reason:
             detail += f": {reason}"
         action = f"reckon crew queue release --run {run_id}"
-    elif phase == QUEUED_PHASE:
+    elif phase == QUEUED_PHASE and not launched:
         classification = "queued"
         session_refusal = _queued_failure_remedy(record)
         if session_refusal is not None:
@@ -1811,7 +1818,11 @@ def classify_pointer(
     # report a stored request as a run. Its phase reading stands instead; the
     # stuck verdict still speaks, because it is about the wait rather than
     # about a worker.
-    unlaunched = phase in {QUEUED_PHASE, HELD_PHASE} or pre_spawn_waiting
+    unlaunched = (
+        phase in {QUEUED_PHASE, HELD_PHASE}
+        or phase in WAITING_UPSTREAM_PHASES
+        or pre_spawn_waiting
+    ) and not launched
     if unlaunched and stuck is None:
         pass
     elif stuck is not None:
