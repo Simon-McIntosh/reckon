@@ -761,29 +761,6 @@ class StationSubscriber:
         self._store_identity = identity
         self._first_poll = True
 
-    def _emit(self, event: Mapping[str, Any], *, sink: Any = None) -> None:
-        """Record one row this follower emitted, on its session-host log.
-
-        A terminal is the one place the record would be read as a second copy of
-        the pane's own output, so it is skipped there; every other stderr is the
-        session host's log file or a caller's own capture, and gets the line.
-        A log that cannot be written must never end the pane: the record is
-        evidence about the follower, not its work.
-        """
-        self._emitted += 1
-        writer = sys.stderr if sink is None else sink
-        attached = getattr(writer, "isatty", None)
-        try:
-            if attached is not None and writer.isatty():
-                return
-            print(
-                _emission_record(event, sequence=self._emitted),
-                file=writer,
-                flush=True,
-            )
-        except (OSError, ValueError):
-            return
-
     def poll(self) -> list[Mapping[str, Any]]:
         """Every row this pane receives now, in the station's own order.
 
@@ -905,10 +882,14 @@ class StationSubscriber:
         """
         while stop is None or not stop.is_set():
             for event in self.poll():
-                self._emit(event, sink=sink)
+                self._emitted = _record_emission(
+                    event, sequence=getattr(self, "_emitted", 0), sink=sink
+                )
                 yield event
             for event in self.flush():
-                self._emit(event, sink=sink)
+                self._emitted = _record_emission(
+                    event, sequence=getattr(self, "_emitted", 0), sink=sink
+                )
                 yield event
             if each_pass is not None and not each_pass():
                 return
@@ -937,6 +918,33 @@ def _emission_record(event: Mapping[str, Any], *, sequence: int) -> str:
         },
         sort_keys=True,
     )
+
+
+def _record_emission(
+    event: Mapping[str, Any], *, sequence: int, sink: Any = None
+) -> int:
+    """Record one row this follower emitted, and return the sequence it took.
+
+    A terminal is the one place the record would be read as a second copy of the
+    pane's own output, so it is skipped there; every other stderr is the session
+    host's log file or a caller's own capture, and gets the line. A log that
+    cannot be written must never end the pane: the record is evidence about the
+    follower, not its work.
+    """
+    counted = int(sequence) + 1
+    writer = sys.stderr if sink is None else sink
+    attached = getattr(writer, "isatty", None)
+    try:
+        if attached is not None and writer.isatty():
+            return counted
+        print(
+            _emission_record(event, sequence=counted),
+            file=writer,
+        )
+        writer.flush()
+    except (OSError, ValueError):
+        return counted
+    return counted
 
 
 def _moment(*, at: float) -> datetime:
