@@ -1,0 +1,74 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-15T04:17:35.300Z",
+  "dispatched_at": "2026-11-15T03:54:54Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/queued-work-needs-no-workaround.html:288",
+      "id": "done_when-1",
+      "reason": "the node would build a case whose red arm passes at the base revision, then have to choose between reporting a false negative control and inventing a removal site the plan never named.",
+      "text": "\u00a718's first case says the queued review's dispatch \"meets the bound and is queued\", then removes \"the directory of the dispatch that met the bound\" and expects the queued request to launch reading its brief; but a composed run review's brief is composed into the *reviewed* run's directory (materialize_run_review_brief derives the run id from the path's parent and requires it to equal that run's run_dir) and a plan review's brief is copied into the request's own run directory as steering.md, so removing the bound-meeting dispatch's own directory either takes the very copy the deliverable adds \u2014 making the case unsatisfiable for a copy stored there \u2014 or takes nothing the brief depends on, making the base-revision red arm pass instead of failing with \"the brief \u2026 is not readable\". The Why describes the removed directory as an *earlier refused* dispatch's, so the case and the Why do not name the same directory and the negative control cannot fire as stated",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/queued-work-needs-no-workaround.html:288",
+      "id": "reasoning-1",
+      "reason": "stating a copy as the endpoint leaves the node to discover and resolve a conflict the plan never acknowledges, and the observable the plan actually wants (the request still launches after a directory it does not own is gone) needs no mechanism at all.",
+      "text": "the deliverable states the endpoint as a mechanism, \"a queued request holds a readable copy of its own brief\", applied to the three queued composed reviews the Why cites; the queue path (runs._write_steering, reached by queue_dispatch) deliberately leaves a run review's composed brief uncopied, recording that a queue-time copy \"would freeze the head it carried then\" and that launch re-composes the brief from the reviewed run's record. A copy and a re-composition are different briefs, and the section picks one for a population whose current design forbids it, so a node either freezes the head or deviates from the deliverable",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/queued-work-needs-no-workaround.html:288",
+      "id": "anchors_resolve-1",
+      "reason": "the finding is real but the defect is confirmed by the resolving run and by the reporting session's report, so dropping the dead id costs the plan nothing and changes no decision, and a vanished directory is the very condition the section is about.",
+      "text": "\u00a718's Why names two run ids as the evidence for the reported defect and only r-20261114T203628474513 resolves (as r-20261114T203628474513-review-of-diiid-edge-current-refusal-c981fafe8cde-figure); r-20261114T203447268664 matches no run directory under the crew home, so a reader checking the citation finds nothing",
+      "type": "anchors_resolve",
+      "would_change": false
+    }
+  ],
+  "plan_commit": "29280ce23f250aa9435dd5a988ea0cc21c850e75",
+  "plan_fingerprint": "c49a8de9d1d92f90170746f0f8d995988fe59547fa69f325ef9667cb4b89fab8",
+  "plan_slug": "queued-work-needs-no-workaround",
+  "plan_version": 28,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261115T034751971338-plan-review-of-queued-work-needs-no-workaround",
+  "reviewed_blob_sha": "0498a84e39514e319458ec5a2231d60e895c5f21",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "a finding \u2014 the second cited run id resolves as r-20261114T203628474513-review-of-diiid-edge-current-refusal-c981fafe8cde-figure, but r-20261114T203447268664 names no run directory or claimable record at all.",
+    "done_when": "a finding \u2014 the first case removes \"the directory of the dispatch that met the bound\", which is the queued review's own run directory, while a composed run review's brief lives in the reviewed run's directory, so the removal takes nothing and the case's red arm cannot be the brief-unreadable failure it claims.",
+    "evidence_paths": "pass \u2014 the gate log and the failing base-revision run go to docs/evidence/fragments/queued-work-needs-no-workaround/s18.html beside the section fragments already landed there, which is durable and openable.",
+    "naming": "pass \u2014 \u00a718 names no code path, symbol or comment, and the only label it carries (s18.html) is an evidence path, which is artifact data rather than code.",
+    "reasoning": "a finding \u2014 the deliverable fixes the mechanism (\"holds a readable copy of its own brief\") for the population the Why names, and the queue path deliberately declines to copy exactly that population because a queue-time copy would freeze the head a composed review re-composes at launch.",
+    "single_goal": "pass \u2014 \u00a718 delivers one outcome (a queued request's brief survives the loss of another run's directory, and an unreadable brief is named as such), and both done-when cases measure that one surface.",
+    "wiring": "pass \u2014 \u00a718 declares no dependency and needs none: the local-lane roster-cap queue it relies on exists at the base revision (dispatching/preparation.py queues a local dispatch whose lane allowance is held by the placement roster), so the batch that the driving followup names can run it independently."
+  },
+  "section_digests": {
+    "_document": "38d5f6135d7cd90e9e7b58fafcc38105d3e78b306a6c82afbfe4b74f45c2c2d0",
+    "s1": "965e293bc718e24bc6e0b306c2e31f4694e8d3d1f2aafc97e86aac0ccdc0eb46",
+    "s10": "501d0d72406c2fda4dc47939b9700d2c42eb9011387b4df7abdfcc55d906d345",
+    "s11": "4dc7e37e7c9ff6d074c540a19ff75d7db784999f7b811a999a052a00fcbacb39",
+    "s12": "cf244a99091ee04721474e6caad0adad1fb1c907edc99e9fd73b86fb3251685c",
+    "s13": "8cdf1aaa77a692163d0b36bc751a206e8f6c96460d0e44b85d9feb5a76f99659",
+    "s14": "e033ab0daa427195a357d93c3b5969c3fae24f311a8dafa8b2a6bad8db0b518e",
+    "s15": "c271f7bcaa272ebd4bf87d7b1e7153251ec38aa5863fd8a3d7f12cdf1c66bd06",
+    "s16": "602d6749db6121f7883dc3d46a2b53c64cc893e6c66690172b81927b2d35c37b",
+    "s17": "dd6b738e7e017fe3bc312e85841a1a6a4b4d5dc818c618040249040acf51ff19",
+    "s18": "96e46d9f9606f69d5e0b8dd9fea26e76dbbe3cebd81c9ed4be61f455a27049e0",
+    "s2": "872b1ec9c49f32d972d450016002b1265e846673cd1aef42c41aaccc50583998",
+    "s3": "2a385591edce8d1cb26d41f176fb084cd634d113eb130d2581ce97000bcb3eea",
+    "s4": "0116c3c4a34b6e607b2564cc4300d3784ba5d7596a0000d0b59c40e1801dcd1a",
+    "s5": "81cc22db14da433d65d2cbfd466e233d778e9b5d50552dc7a013e94a3b25ad15",
+    "s6": "91849d1cd49d8e783c893b01272f0e0f505aed67e379d52d354011a619270a1d",
+    "s7": "0eb7720abb0f46f8d48d47fcf646be85ae58c8a5cc37c98f7ad06ac2f9deb6ff",
+    "s8": "5dcf0f324a6b831b76a043e465731eff46456979ae084bcfc764ff0d40816359",
+    "s9": "b22a82394cfc2b7163b7fbd8be1087fdb6ec66a16524e9d194431d418894d798"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-15T04:14:03.588134+00:00",
+  "total": null
+}
