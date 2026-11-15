@@ -103,6 +103,15 @@
       (<code>0</code> added, <code>0</code> absent). The same 14 ids fail in this sandbox on
       both arms, so they are the environment rather than this change; verifying them on
       <code>all_debug</code> belongs to the separately dispatched test node.</p>
+      <p><strong>Repair.</strong> A review found the walk rebinding the holder pid to a
+      claim record inside the loop, so every claim after the first compared its holder
+      against a mapping, read as another process's, and was left standing: a probe over two
+      unlaunched claims released only <code>r-probe-first</code>, and the incident this
+      handback exists for orphaned seven at once. The pid now keeps its own name, and a case
+      publishes four unlaunched claims beside a running one and asserts all four are
+      released with the running claim kept. Reverting the repair makes that case fail
+      (<code>1 failed, 3 passed</code>, <code>EXIT=1</code>, the failing id naming the
+      four-claim case).</p>
       <p><strong>Negative control.</strong> Declared mutation: <em>a station that ignores
       SIGTERM in a long derivation fails the exit bound</em>. Applied by removing
       <code>stop_bound.arm()</code> from the SIGTERM handler, the run went red:
