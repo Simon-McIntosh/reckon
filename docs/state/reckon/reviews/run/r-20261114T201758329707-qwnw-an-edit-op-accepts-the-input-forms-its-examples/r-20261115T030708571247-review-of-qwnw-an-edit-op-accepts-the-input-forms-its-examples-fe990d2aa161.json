@@ -1,0 +1,65 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/mcp_edit_plan.py:_edit_plan",
+    "reckon/mcp_edit_plan.py:_edit_plan_tool",
+    "reckon/mcp.py:_edit_plan_tool registration",
+    "reckon/_store.py:_apply_append",
+    "reckon/mcp_edit_plan.py:_append_followup"
+  ],
+  "completed_at": "2026-11-15T04:05:04.195Z",
+  "dispatched_at": "2026-11-15T03:10:55Z",
+  "findings": [
+    {
+      "file": "tests/test_an_edit_op_accepts_its_example_forms.py",
+      "line": "128",
+      "severity": "blocking",
+      "text": "blocking: the sprint test calls create_project_state and write_resource before the append, performing the state write the reported defect names as the workaround, so it cannot distinguish an already-correct resolution from a test that applies the workaround, and the plan's third deliverable and negative control are unverified."
+    },
+    {
+      "file": "reckon/mcp_edit_plan.py",
+      "line": "249",
+      "severity": "non-blocking",
+      "text": "non-blocking: _append_followup now defaults followup provenance but no test drives it and it has no production caller beyond the mcp.py re-export, so that half of the change is unguarded."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 5 production call site(s)",
+    "diff": "Two commits land at fe990d2aa161, 1420174712 for the code and fe990d2aa161 for the evidence fragment; the code adds a PlanState before-validator at reckon/_schema.py:1407, a shared provenance helper at reckon/_store.py:3037, and two call sites, totalling 5 files and 187 insertions.",
+    "done_when": "The done_when asks for one test per case plus three base-revision negative controls; tests/test_an_edit_op_accepts_its_example_forms.py holds three tests, but the base arm logged at .../logs/base-arm.log records 2 failed and 1 passed, so only two of the three negative controls exist.",
+    "goal": "The node goal is that an edit op accepts the input forms its examples show. reckon/_schema.py:1407 accepts a boolean visibility flag and reckon/_store.py:4286 defaults a followup append's author and date; the third form (a sprint append of a committed plan) received no code change because tests/test_an_edit_op_accepts_its_example_forms.py:124 passes at base.",
+    "manifest": "The manifest at .../manifest.md reads complete, names the two gate logs, records 3 passed at head and 2 failed at base, and discloses in negative_control_note that the sprint case passed at base.",
+    "write_paths": "All five changed paths are inside the declared scope reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround, skills; the diff touches reckon/_schema.py, reckon/_store.py, reckon/mcp_edit_plan.py, tests/test_an_edit_op_accepts_its_example_forms.py, and the evidence fragment."
+  },
+  "justifications": {
+    "durability": "tests/test_an_edit_op_accepts_its_example_forms.py:70 and :96 would redden if the validator or the defaulting were reverted, while :124 guards pre-existing behaviour and reckon/mcp_edit_plan.py:249 is untested.",
+    "evidence": ".../logs/base-arm.log records 2 failed and 1 passed, so the plan's third required negative control is absent and the sprint case is asserted only by a test that passes unchanged at base.",
+    "fit": "reckon/_schema.py:1407 sits inside the existing \"Lenient normalisation\" block beside _norm_roi and _norm_type, and reckon/_store.py:3034 uses the corpus's existing \"reckon-edit\" author and date-only written_at convention.",
+    "goal_fidelity": "reckon/_schema.py:1407 and reckon/_store.py:4286 deliver two of the goal's three forms, but the sprint append at tests/test_an_edit_op_accepts_its_example_forms.py:124 has no code change and no reproduced defect behind it.",
+    "reuse": "reckon/_store.py:3037 provides one provenance helper shared by the append op and mcp_edit_plan._append_followup, extending the existing plan-state normalisation owner; no duplicate mechanism was found in reckon/_store.py or reckon/_schema.py.",
+    "scope_discipline": "every path in `git diff 52fca2a..fe990d2` is under the declared reckon, tests, and docs/evidence/fragments/queued-work-needs-no-workaround scopes; the mcp_edit_plan.py:249 change is idle surface but same capability."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The node goal is that an edit op accepts the input forms its examples show. reckon/_schema.py:1407 accepts a boolean visibility flag and reckon/_store.py:4286 defaults a followup append's author and date; the third form (a sprint append of a committed plan) received no code change because tests/test_an_edit_op_accepts_its_example_forms.py:124 passes at base.\nVERDICT done_when: The done_when asks for one test per case plus three base-revision negative controls; tests/test_an_edit_op_accepts_its_example_forms.py holds three tests, but the base arm logged at .../logs/base-arm.log records 2 failed and 1 passed, so only two of the three negative controls exist.\nVERDICT write_paths: All five changed paths are inside the declared scope reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround, skills; the diff touches reckon/_schema.py, reckon/_store.py, reckon/mcp_edit_plan.py, tests/test_an_edit_op_accepts_its_example_forms.py, and the evidence fragment.\nVERDICT manifest: The manifest at .../manifest.md reads complete, names the two gate logs, records 3 passed at head and 2 failed at base, and discloses in negative_control_note that the sprint case passed at base.\nVERDICT diff: Two commits land at fe990d2aa161, 1420174712 for the code and fe990d2aa161 for the evidence fragment; the code adds a PlanState before-validator at reckon/_schema.py:1407, a shared provenance helper at reckon/_store.py:3037, and two call sites, totalling 5 files and 187 insertions.\nCALL_SITES: reckon/mcp_edit_plan.py:_edit_plan, reckon/mcp_edit_plan.py:_edit_plan_tool, reckon/mcp.py:_edit_plan_tool registration, reckon/_store.py:_apply_append, reckon/mcp_edit_plan.py:_append_followup\nSCORE goal_fidelity: 16\nJUSTIFICATION goal_fidelity: reckon/_schema.py:1407 and reckon/_store.py:4286 deliver two of the goal's three forms, but the sprint append at tests/test_an_edit_op_accepts_its_example_forms.py:124 has no code change and no reproduced defect behind it.\nSCORE evidence: 13\nJUSTIFICATION evidence: .../logs/base-arm.log records 2 failed and 1 passed, so the plan's third required negative control is absent and the sprint case is asserted only by a test that passes unchanged at base.\nSCORE scope_discipline: 17\nJUSTIFICATION scope_discipline: every path in `git diff 52fca2a..fe990d2` is under the declared reckon, tests, and docs/evidence/fragments/queued-work-needs-no-workaround scopes; the mcp_edit_plan.py:249 change is idle surface but same capability.\nSCORE durability: 14\nJUSTIFICATION durability: tests/test_an_edit_op_accepts_its_example_forms.py:70 and :96 would redden if the validator or the defaulting were reverted, while :124 guards pre-existing behaviour and reckon/mcp_edit_plan.py:249 is untested.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/_schema.py:1407 sits inside the existing \"Lenient normalisation\" block beside _norm_roi and _norm_type, and reckon/_store.py:3034 uses the corpus's existing \"reckon-edit\" author and date-only written_at convention.\nSCORE reuse: 20\nJUSTIFICATION reuse: reckon/_store.py:3037 provides one provenance helper shared by the append op and mcp_edit_plan._append_followup, extending the existing plan-state normalisation owner; no duplicate mechanism was found in reckon/_store.py or reckon/_schema.py.\nFINDING tests/test_an_edit_op_accepts_its_example_forms.py:128 blocking: the sprint test calls create_project_state and write_resource before the append, performing the state write the reported defect names as the workaround, so it cannot distinguish an already-correct resolution from a test that applies the workaround, and the plan's third deliverable and negative control are unverified.\nFINDING reckon/mcp_edit_plan.py:249 non-blocking: _append_followup now defaults followup provenance but no test drives it and it has no production caller beyond the mcp.py re-export, so that half of the change is unguarded.",
+  "review_run_id": "r-20261115T030708571247-review-of-qwnw-an-edit-op-accepts-the-input-forms-its-examples-fe990d2aa161",
+  "reviewed_base_sha": "52fca2aaedfb8fe6909ab00fbfa2b1df59f0b2dd",
+  "reviewed_head_sha": "fe990d2aa161bc928e4da428336139c2ccd4f133",
+  "reviewed_run_id": "r-20261114T201758329707-qwnw-an-edit-op-accepts-the-input-forms-its-examples",
+  "scores": {
+    "durability": 14,
+    "evidence": 13,
+    "fit": 18,
+    "goal_fidelity": 16,
+    "reuse": 20,
+    "scope_discipline": 17
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-15T03:58:03.827243+00:00",
+  "total": 98
+}
