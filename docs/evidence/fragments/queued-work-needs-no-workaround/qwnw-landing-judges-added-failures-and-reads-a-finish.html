@@ -70,14 +70,26 @@
     the run kept no log for is named the same way.</li>
     <li>A repeated <code>crew complete</code> carries the request its first call
     queued.</li>
+    <li>A delivered review of the asserted head is read while its own run is
+    still promotion-requested; an earlier head's review is named stale.</li>
+    <li>A node whose only change is its evidence lands on its declared check,
+    and is refused beside that check answering failure.</li>
   </ul>
 
-  <p><strong>Not delivered here.</strong> Two cases of this section are not
-  covered by this node. A node whose done-when names no test landing on its
-  declared evidence check has no path in the tree this node read, and no case
-  for it was written. A delivered review of the asserted head counting before
-  its own run is promoted is true of the selection this node read — the store
-  reader keys on the reviewed revision and reads no phase of the review run —
-  but this node wrote no test for it, so it is recorded as unmeasured rather
-  than as shown.</p>
+  <p><strong>The two remaining cases.</strong> A delivered review of the
+  asserted head counts before its own run is promoted: the store reader selects
+  a record by the revision a review recorded reading and reads no phase of the
+  review run, so a review whose own request is still queued is evidence about
+  the diff being landed. The case stores both that record and an earlier head's
+  record — the earlier one written later, so a reader that took the newest file
+  would take the wrong one — and asserts the landing reads the asserted head
+  and names the earlier one as stale.</p>
+
+  <p>A node whose only change is its evidence names no test file, so no
+  baseline and after pair can measure it; the landing reads the check the node
+  declared instead, and the path that does so already existed at the plan's
+  base. The case delivers the fragment, passes its declared check and lands,
+  and its pair runs the same node beside the same check answering failure and
+  is refused — so the node lands because it meets its check, not because a run
+  with no test file is admitted whatever it says.</p>
 </section>
