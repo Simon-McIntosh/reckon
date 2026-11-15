@@ -167,13 +167,13 @@ def test_a_head_equal_to_the_worktree_merges_as_today(chain: dict) -> None:
     assert _git(chain["origin"], "show", "main:step4.txt") == "fourth"
 
 
-def test_a_released_worktree_merges_as_today(chain: dict) -> None:
-    """With the tree gone there is nothing to compare, so the merge proceeds.
+def test_a_released_worktree_merges_and_reports_the_release(chain: dict) -> None:
+    """With the tree gone there is nothing to compare and nothing to hold.
 
-    The overall status stays what a land has always returned for a run whose
-    worktree is no longer on disk: the release step withholds a tree it cannot
-    find. That is the release's verdict, not this guard's, so the merge is
-    asserted on the land step and on the remote.
+    A tree already removed leaves no duty behind: the release reports it
+    released, so the landing answers success rather than naming a tree no
+    command could free. The merge itself is unchanged, so it is asserted on
+    the land step and on the remote.
     """
     _git(chain["repository"], "worktree", "remove", "--force", str(chain["worktree"]))
     assert not chain["worktree"].exists()
@@ -186,7 +186,8 @@ def test_a_released_worktree_merges_as_today(chain: dict) -> None:
     assert land["pushed"] is True, land
     assert "worktree_head" not in land, land
     assert _git(chain["origin"], "show", "main:step3.txt") == "third"
-    assert report["steps"]["release"]["worktree_released"] is False, report["steps"][
+    assert report["steps"]["release"]["worktree_released"] is True, report["steps"][
         "release"
     ]
-    assert result.exit_code == 1, result.output
+    assert report["release"].get("worktree_absent") is True, report["release"]
+    assert result.exit_code == 0, result.output
