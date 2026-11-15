@@ -1284,7 +1284,105 @@ def plan_dispatch(
         if fence_warning is not None:
             resolution.warnings.append(fence_warning)
             _announce_fence_warning(resolution.run_id, fence_warning)
+    # A pick still running at its bound leaves the request with no route the
+    # router weighed. It is stored and asked again at launch rather than placed
+    # on the configured default: a dispatch that never asked is a dispatch that
+    # never routed, and the coordinator is told where it waits.
+    if (
+        route == "picker"
+        and isinstance(picker_selection, Mapping)
+        and picker_selection.get("awaiting_pick")
+        and resolution.validation.ok
+        and not report_live_conflicts
+    ):
+        raise _awaiting_pick_hold(
+            resolution,
+            picker_selection=picker_selection,
+            config=config,
+            repo=repo,
+            session=session,
+        )
     return resolution
+
+
+def _awaiting_pick_hold(
+    resolution: DispatchPlan,
+    *,
+    picker_selection: Mapping[str, Any],
+    config: Mapping[str, Any],
+    repo: str | Path | None,
+    session: str,
+    comment: str = "",
+) -> Exception:
+    """Store an unanswered pick's request and report where it waits.
+
+    The request is written as the queue stores any request, so the admission
+    pass launches it by the same path, with the unanswered pick on its record:
+    the launch reads that marker and asks the router again. The reported hold
+    carries the stored request, so a dispatch answers with a queued id rather
+    than an error for a pick that simply took longer than its bound.
+    """
+    from datetime import UTC, datetime
+
+    from reckon.crew.dispatch_admission import LaneHeld
+    from reckon.crew.runs import queue_dispatch as store_request
+
+    marker = dict(picker_selection.get("awaiting_pick") or {})
+    step = str(marker.get("step") or "pick")
+    detail = str(marker.get("detail") or "the pick did not answer at its bound")
+    from reckon.flight import queue_max_requests
+
+    node = resolution.node
+    now = datetime.now(UTC).isoformat()
+    options = {
+        "project": resolution.project,
+        "plan_slug": node.plan,
+        "section": node.section,
+        "session": session,
+        "comment": comment,
+        "route": "picker",
+        "picker_selection": dict(picker_selection),
+    }
+    record = {
+        "run_id": resolution.run_id,
+        "project": resolution.project,
+        "plan": node.plan,
+        "section": node.section,
+        "repo": str(repo or ""),
+        "session": session,
+        "node": node.as_dict(),
+        "backend": resolution.backend,
+        "launch": resolution.launch,
+        "local": bool(resolution.local),
+        "launcher_host": None,
+        "phase": "queued",
+        "queued_at": now,
+        "created_at": now,
+        "hold": {},
+        "reason": f"awaiting-pick: {detail}",
+        "dispatch_options": options,
+        "picker_selection": dict(picker_selection),
+    }
+    queued, position = store_request(record, max_requests=queue_max_requests(config))
+    held = LaneHeld(
+        {
+            "detail": (
+                f"awaiting-pick: the router had not answered at the "
+                f"{marker.get('bound_seconds')}s bound (step {step}); the "
+                "request is queued and picked again when it launches"
+            ),
+            "reason": "awaiting-pick",
+        }
+    )
+    held.queued = {
+        "run_id": str(queued.get("run_id") or resolution.run_id),
+        "position": position,
+        "phase": str(queued.get("phase") or "queued"),
+        "backend": resolution.backend,
+        "reason": "awaiting-pick",
+        "awaiting_pick": {"step": step, "detail": detail},
+    }
+    return held
 
 
 def _resolved_wave_id(project: str, session: str, requested: str) -> str:

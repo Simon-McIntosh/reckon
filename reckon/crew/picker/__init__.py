@@ -242,6 +242,11 @@ def _declared_difficulty(
         repository = plan.get("repository") if isinstance(plan, dict) else None
         return Path(str(repository)) if repository else repo
 
+    if request.capability and request.estimated_hours is not None:
+        # The dispatcher resolved both facts from the same plan before it asked,
+        # so this step has nothing to read: a resolved request costs no plan
+        # scan inside the pick's bound.
+        return request.capability, float(request.estimated_hours), "request"
     capability = request.capability or None
     # The plan is resolved once and serves both facts: the section record that
     # carries the effort, and the routing resolver that carries the capability.

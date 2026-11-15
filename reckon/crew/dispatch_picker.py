@@ -43,7 +43,93 @@ from reckon.crew.runs import (
 )
 
 
-PICKER_DISPATCH_TIMEOUT_SECONDS = 5.0
+#: How long a dispatch waits for the router's answer. Sized to a hung picker
+#: rather than to a quick reply: a dispatch already takes minutes, and a pick's
+#: first steps can outlive a few seconds on a loaded fleet node. A pick still
+#: unanswered here is a request the dispatcher queues rather than places.
+PICKER_DISPATCH_TIMEOUT_SECONDS = 120.0
+
+#: The flight key, under ``routing``, that sets the bound above for a host.
+PICKER_DISPATCH_TIMEOUT_KEY = "picker_timeout_seconds"
+
+
+def picker_dispatch_timeout(config: Mapping[str, Any] | None) -> float:
+    """How long a dispatch waits for the router's answer on this host.
+
+    Read from the resolved config's ``routing`` namespace. A bound holds only
+    while it is a positive number, so an unreadable or non-positive value falls
+    back to the shipped figure rather than making every dispatch queue.
+    """
+    routing = (config or {}).get("routing")
+    value = (
+        routing.get(PICKER_DISPATCH_TIMEOUT_KEY, PICKER_DISPATCH_TIMEOUT_SECONDS)
+        if isinstance(routing, Mapping)
+        else PICKER_DISPATCH_TIMEOUT_SECONDS
+    )
+    if isinstance(value, bool) or not isinstance(value, (int, float)) or value <= 0:
+        return PICKER_DISPATCH_TIMEOUT_SECONDS
+    return float(value)
+
+
+def dispatcher_declared_difficulty(
+    *,
+    node: TaskNode,
+    config: Mapping[str, Any],
+    project: str,
+    repo: Path,
+    authority: Mapping[str, Any] | None,
+) -> tuple[dict[str, Any], float | None]:
+    """The section capability and effort a dispatch resolves before it asks.
+
+    The pick reads both from the plan itself when it is handed neither, and
+    that read is what a loaded host spends the pick's whole bound on. Resolving
+    them here and handing them in leaves the pick's difficulty step nothing to
+    read. A node naming no plan section, or a read that fails, leaves the pair
+    empty so the pick resolves them its own way rather than carrying a wrong
+    figure.
+    """
+    if not (node.plan.strip() and node.section.strip()):
+        return {}, None
+    plan_repo = repo
+    plan = authority.get("plan") if isinstance(authority, Mapping) else None
+    repository = plan.get("repository") if isinstance(plan, Mapping) else None
+    if repository:
+        plan_repo = Path(str(repository))
+    capability: dict[str, Any] = {}
+    hours: float | None = None
+    try:
+        from reckon.crew.picker import _resolved_plan_path
+
+        plan_path = _resolved_plan_path(plan_repo / "docs", project, node.plan)
+        if plan_path is None:
+            from reckon import resources
+
+            resource = resources.resolve_resource(
+                plan_repo / "docs", project, node.plan, "plan", include_archived=False
+            )
+            plan_path = resource.path if resource is not None else None
+    except Exception:  # noqa: BLE001 - an unresolved plan leaves the pair empty
+        plan_path = None
+    try:
+        from reckon.crew.routing import _estimated_hours
+
+        hours, _provenance = _estimated_hours(plan_repo, project, node)
+    except Exception:  # noqa: BLE001 - the declaration is advisory to a pick
+        hours = None
+    if plan_path is not None:
+        try:
+            from reckon.crew.picker import _section_effort_hours
+            from reckon.crew.routing import resolve_section_routing
+
+            section_hours = _section_effort_hours(plan_path, node.section)
+            if section_hours is not None:
+                hours = section_hours
+            resolved = resolve_section_routing(config, node=node, plan_path=plan_path)
+            capability = dict(resolved.get("capability") or {})
+        except Exception:  # noqa: BLE001 - an unresolved capability stays empty
+            capability = {}
+    return capability, hours
+
 
 #: When a routed answer was chosen, recorded on the answer itself. A queued
 #: request stores this selection as its route, so the instant travels with the
@@ -177,6 +263,7 @@ def _picker_fallback(
     authority_error: str | None = None,
     stage_ms: Mapping[str, float | None] | None = None,
     snapshot_candidates: Sequence[Mapping[str, Any]] | None = None,
+    route_defaulted: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
     """The selection dispatch records when the picker did not decide one.
 
@@ -206,6 +293,7 @@ def _picker_fallback(
         "excluded": [],
         "comment": comment,
         **({"input_errors": dict(input_errors)} if input_errors else {}),
+        **({"route_defaulted": dict(route_defaulted)} if route_defaulted else {}),
         **({"authority_error": authority_error} if authority_error else {}),
         **(
             {"snapshot_candidates": list(snapshot_candidates)}
@@ -424,7 +512,7 @@ def dispatch_picker_selection(
     finished = threading.Event()
     result: dict[str, Any] = {}
     started = time.monotonic()
-    stages: dict[str, float | None] = {name: None for name in PICK_STAGES}
+    stages: dict[str, float | None] = dict.fromkeys(PICK_STAGES)
     if stage_ms:
         stages.update(stage_ms)
     elif (
@@ -575,6 +663,8 @@ def dispatch_picker_selection(
                 PickRequest(
                     project,
                     node,
+                    capability=request_capability,
+                    estimated_hours=request_hours,
                     comment=comment,
                     session=session,
                     estimated_context=estimated_context,
@@ -591,8 +681,16 @@ def dispatch_picker_selection(
         finally:
             finished.set()
 
+    # The section's capability and effort are resolved here, on the dispatch
+    # side, so the pick is handed both and its difficulty step reads no plan
+    # while the bound runs. A node whose plan section declares nothing, or a
+    # read that fails, leaves them empty and the pick resolves its own.
+    request_capability, request_hours = dispatcher_declared_difficulty(
+        node=node, config=config, project=project, repo=repo, authority=authority
+    )
+    bound_seconds = picker_dispatch_timeout(config)
     threading.Thread(target=ask, name="dispatch-picker", daemon=True).start()
-    if not finished.wait(PICKER_DISPATCH_TIMEOUT_SECONDS):
+    if not finished.wait(bound_seconds):
         result["error"] = "timeout"
     authority_error = result.get("authority_error")
     if "selection" in result and "error" not in result:
@@ -657,23 +755,44 @@ def dispatch_picker_selection(
         return _stamp_route_pick(_record_lifted_choice(selection))
     error = result.get("error") or "picker returned no selection"
     reason = error
+    step = ""
     if error == "timeout":
         # A step pick() marked while it ran is named in pick()'s vocabulary; a
         # pick that marked none keeps the bare reading, as does one that spent
         # the budget in a dispatcher stage instead.
         pick_step = pick_running["step"]
         if pick_step:
-            reason = f"timeout in pick:{pick_step}"
+            step = f"pick:{pick_step}"
         elif running["stage"]:
             reason = f"timeout in {running['stage']}"
-    return _picker_fallback(
+            step = str(running["stage"])
+        if step:
+            reason = f"timeout in {step}"
+    selection = _picker_fallback(
         reason,
         comment,
         latency_ms=round((time.monotonic() - started) * 1000, 3),
         authority_error=authority_error,
         stage_ms=stages,
         snapshot_candidates=result.get("snapshot_candidates"),
+        route_defaulted=(
+            {"reason": "route-defaulted", "step": step or "pick", "detail": reason}
+            if error != "timeout"
+            else None
+        ),
     )
+    if error == "timeout":
+        # An unanswered pick is a request dispatch has no route for: the
+        # dispatcher stores it and asks again when it launches, rather than
+        # placing it on the configured default from a picture the router never
+        # weighed.
+        selection["awaiting_pick"] = {
+            "reason": "awaiting-pick",
+            "step": step or "pick",
+            "bound_seconds": bound_seconds,
+            "detail": reason,
+        }
+    return selection
 
 
 # The specification levels a route must not be swallowed by at a lane granting
@@ -1408,6 +1527,18 @@ def launch_route_decision(
     ``keep`` also covers a request carrying no router answer at all, which
     launches the backend it was queued for as it always has.
     """
+    if isinstance(stored, Mapping) and stored.get("awaiting_pick"):
+        # The request was stored because the pick had not answered at its
+        # bound, not because the router placed it. It carries no route, so the
+        # launch asks the router again rather than launching the default.
+        return {
+            "decision": "repick",
+            "reason": "the pick was still running when the request was queued",
+            "previous_route": _route_selection_summary(stored),
+            "picked_at": None,
+            "age_seconds": None,
+            "repick_after_seconds": queue_repick_after_seconds(config),
+        }
     if not isinstance(stored, Mapping) or stored.get("action") != "route":
         return {
             "decision": "keep",
