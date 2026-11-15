@@ -377,32 +377,26 @@ def submit_pass(
 ) -> dict[str, Any]:
     """Submit one maintenance pass as a scheduler job, reporting where it went.
 
-    The submission does not wait: a station tick must not hold its heartbeat
+    The submission itself is the fleet node's, so this schedule cannot drift
+    from the form every other partitioned launch uses; the partition is named
+    on its argv because the station submits from inside the fleet's own
+    allocation, where a launch naming none is refused as an implicit nested
+    job. The call does not wait: a station tick must not hold its heartbeat
     behind a job's runtime, and the job's own record is what the next reader
     finds. A refusal from the scheduler is raised rather than reported as a
     submission, so a pass that never started is never recorded as due-done.
     """
 
+    from reckon.crew import fleet_node
+
     repo = Path(repository).expanduser().resolve()
     script = maintenance_job_script(
         repo, partition=partition, log_path=log_path, home=home
     )
-    run = subprocess.run if runner is None else runner
-    result = run(
-        # The partition is named on the argv as well as in the script: the
-        # station submits from inside the fleet's allocation, and a launch that
-        # names no partition there is refused as an implicit nested job whose
-        # width would be inherited from the allocation.
-        ["sbatch", "--parsable", f"--partition={partition}"],
-        input=script,
-        capture_output=True,
-        text=True,
-        check=False,
-    )
-    if result.returncode != 0:
-        detail = (result.stderr or result.stdout or "").strip()
-        raise OSError(f"sbatch refused the maintenance pass: {detail}")
-    job_id = (result.stdout or "").strip().split(";", maxsplit=1)[0]
+    try:
+        job_id = fleet_node.submit(script, partition=partition, runner=runner)
+    except fleet_node.FleetNodeError as error:
+        raise OSError(f"sbatch refused the maintenance pass: {error}") from error
     return {
         "repository": str(repo),
         "job_id": job_id,

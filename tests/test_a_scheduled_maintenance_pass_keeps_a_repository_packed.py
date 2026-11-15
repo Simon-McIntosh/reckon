@@ -128,7 +128,9 @@ def test_one_pass_packs_the_store_and_records_its_counts(
     assert record["loose_after"] == after["count"]
     stored = maintenance.read_record(repository, home=home)
     assert stored is not None
-    assert stored["threshold"] == threshold
+    # The record carries the threshold the repository declares, read against
+    # the fixture's own figure rather than against the same function again.
+    assert stored["threshold"] == THRESHOLD
     assert stored["loose_before"] == before["count"]
     assert stored["loose_after"] == after["count"]
     assert stored["before"]["count"] == before["count"]
