@@ -25,7 +25,7 @@
   <title>The Monitor Reads Each Fact Once | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="331">
+<meta name="plan-version" content="333">
 <meta name="plan-modified" content="2026-11-15">
 </head>
 <body>
@@ -1409,8 +1409,14 @@ staged paths.</p>
 <div class="r-comment" data-section="s57" data-id="c-run-r-20261115T105442225393-review-of-a-duty-pass-reads-reviews-in-flight-once-072c413f9a38" data-who="reckon-build" data-when="2026-11-15T11:38:27.315Z">
     <div class="r-comment-body"><p>review record at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T083214743713-a-duty-pass-reads-reviews-in-flight-once/review-records/r-20261115T083214743713-a-duty-pass-reads-reviews-in-flight-once.json — status parsed, six dimensions scored, one blocking and three non-blocking findings, reviewed base b18903b553b8ef06722f47fddebb893854b998b6 head 072c413f9a3828319ef468410e82fdbca60fde17.</p></div>
 </div>
+<div class="r-comment" data-section="s57" data-id="c-run-r-20261115T122436886142-review-of-a-duty-pass-reads-reviews-in-flight-once-3df34b2bb925" data-who="reckon-build" data-when="2026-11-15T12:43:04.933Z">
+    <div class="r-comment-body"><p>review record stored at review-records/r-20261115T083214743713-a-duty-pass-reads-reviews-in-flight-once.at-3df34b2bb9256dbafa7735f4a43540ba9c99538e.json and mirrored at the canonical path; `reckon crew check --review --record` returned ok on both.</p></div>
+</div>
 <div class="r-comment" data-section="s61" data-id="c-run-r-20261115T121310354910-review-of-the-lane-rate-read-decodes-only-its-window-74b398e5b74a" data-who="reckon-build" data-when="2026-11-15T12:36:12.228Z">
-    <div class="r-comment-body"><p>Review of r-20261115T101120987840-the-lane-rate-read-decodes-only-its-window at e278e8f173..74b398e5b74a: parsed record scoring goal_fidelity 20, evidence 18, scope_discipline 18, durability 20, fit 19, reuse 5 (total 100), added_failure_count 0, two non-blocking findings; the windowed read extends ledger.load&#x27;s existing activity_since bound and its gate is falsified at base by a recorded negative control counting 2,030 decodes against 30 at head.</p></div>
+    <div class="r-comment-body"><p>Review of r-20261115T101120987840-the-lane-rate-read-decodes-only-its-window at e278e8f173..74b398e5b74a: parsed record scoring goal_fidelity 20, evidence 18, scope_discipline 18, durability 20, fit 19, reuse 5 (total 100), added_failure_count 0, two non-blocking findings; the windowed read extends ledger.load's existing activity_since bound and its gate is falsified at base by a recorded negative control counting 2,030 decodes against 30 at head.</p></div>
+</div>
+<div class="r-comment" data-section="s61" data-id="c-run-r-20261115T101120987840-the-lane-rate-read-decodes-only-its-window" data-who="reckon-build" data-when="2026-11-15T12:45:17Z">
+    <div class="r-comment-body"><p>A lane rate read bounded by its window rather than by the ledger -- `_lane_reference_rates` passes the seven-day window&#x27;s start as the ledger index&#x27;s `activity_since` bound, so the call decodes 30 of 2,030 fixture rows (base: 2,030) and, on the live 10,794-row ledger, 1,691 rows in 1.30 s at a 419 MB peak (base: 10,794 rows, 5.79 s, 1.67 GB), returning the same three lanes&#x27; rates.</p></div>
 </div>
 </section>
 </main>
