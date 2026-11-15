@@ -70,6 +70,7 @@ def test_mutation_writes_no_committed_path(roster, operation):
         entry = ledger.register_member(
             PROJECT, "registered", harness="test", root=root, commit=True
         )
+        assert _tracked(root) == before, "registration rewrote a committed path"
         assert entry["id"] == "registered"
         assert ledger.member(PROJECT, "registered", root=root) == entry
     elif operation == "reap":

@@ -1,0 +1,26 @@
+<section id="members-and-holds-in-store-s23-landing">
+  <h3>Roster members and holds persist in the run store</h3>
+  <p>Roster registration, idle-member reaping and budget hold transitions now
+  replace project-scoped rows in the run store without changing committed paths.
+  Disposable-member retirement uses the same roster writer. A one-time import
+  preserves the aggregate's members, holds and version; subsequent reads use the
+  store, including when the roster is deliberately emptied or the aggregate is
+  removed. Compare-and-replace transactions refuse stale versions and roll back
+  both rows and version when a replacement fails.</p>
+  <table>
+    <thead><tr><th>Measurement</th><th>Observed result</th></tr></thead>
+    <tbody>
+      <tr><td>New tests against the base implementation</td><td>4 failed: all three mutations rewrite tracked state, and aggregate removal loses the roster, version and holds.</td></tr>
+      <tr><td>Focused implementation checks</td><td>12 passed, including equal roster/version/holds tuples before and after aggregate removal.</td></tr>
+      <tr><td>Tracked writes from registration, reaping and a hold check</td><td>0 paths changed; repository HEAD also stays equal.</td></tr>
+      <tr><td>Hold lifecycle</td><td>Repeated hold checks preserve the version; closing the fixture's hold records 90 seconds.</td></tr>
+      <tr><td>Declared negative control</td><td>Routing registration back through ledger.write fails the registration case with “registration rewrote a committed path”.</td></tr>
+      <tr><td>Existing armed baseline</td><td>58 passed; no failing baseline IDs.</td></tr>
+    </tbody>
+  </table>
+  <p>The new checks also cover colliding member and hold IDs in separate projects,
+  stale-write refusal, undeclared member-removal refusal, failed-write rollback,
+  store failure without a file fallback, disposable retirement, and migration of
+  unscoped auxiliary tables. The separately captured armed after gate is the
+  delivery receipt; merged-head verification remains with the coordinator.</p>
+</section>
