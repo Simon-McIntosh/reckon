@@ -112,10 +112,11 @@ def _pointer(
     node_id: str = "",
     pid: int | None = None,
     placement_record: dict | None = None,
+    project: str = PROJECT,
 ) -> dict:
     record = {
         "run_id": run_id,
-        "project": PROJECT,
+        "project": project,
         "session": "another-session",
         "repo": str(repository),
         "node": {
@@ -255,7 +256,7 @@ def test_the_local_lane_fills_the_cap_with_no_named_request_waiting(
     config = _config()
     backend = config["backends"][LOCAL]
 
-    assert preparation._local_lane_reserve(True, config=config, project=PROJECT) == 0
+    assert preparation._local_lane_reserve(True, config=config) == 0
     # The cap is one seat away and nothing is waiting for it: the local lane
     # takes it.
     dispatch_admission._refuse_over_concurrency_ceiling(
@@ -274,7 +275,7 @@ def test_the_local_lane_stops_at_the_reserve_when_a_named_request_waits(
         "r-codex-waiting", dispatch_repo, backend=NAMED, local=False, phase="queued"
     )
 
-    reserve = preparation._local_lane_reserve(True, config=config, project=PROJECT)
+    reserve = preparation._local_lane_reserve(True, config=config)
 
     assert reserve == RESERVE
     with pytest.raises(RosterFull):
@@ -291,6 +292,38 @@ def test_the_local_lane_stops_at_the_reserve_when_a_named_request_waits(
     dispatch_admission._refuse_over_concurrency_ceiling(
         NAMED, config["backends"][NAMED], PROJECT, reserve=0
     )
+
+
+def test_a_named_request_waiting_in_another_project_keeps_the_reserve(
+    dispatch_repo: Path,
+) -> None:
+    """One reservation seats every project, so another project's wait counts."""
+    config = _config()
+    _pointer(
+        "r-codex-elsewhere",
+        dispatch_repo,
+        backend=NAMED,
+        local=False,
+        phase="queued",
+        project="another-project",
+    )
+
+    assert preparation._local_lane_reserve(True, config=config) == RESERVE
+
+
+def test_a_queued_pointer_is_read_by_its_own_local_flag(dispatch_repo: Path) -> None:
+    """Another project's local backend need not share this project's name."""
+    config = _config()
+    _pointer(
+        "r-local-elsewhere",
+        dispatch_repo,
+        backend="another-local-lane",
+        local=True,
+        phase="queued",
+        project="another-project",
+    )
+
+    assert preparation._local_lane_reserve(True, config=config) == 0
 
 
 def test_a_local_dispatch_rerouted_on_context_fit_is_queued_naming_the_shortfall(

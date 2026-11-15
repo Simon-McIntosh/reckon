@@ -175,7 +175,6 @@ def _local_lane_reserve(
     is_local: bool,
     *,
     config: Mapping[str, Any] | None = None,
-    project: str | None = None,
 ) -> int:
     """The reservation seats a dispatch must leave free: the local lane's reserve.
 
@@ -195,7 +194,7 @@ def _local_lane_reserve(
 
     if config is None:
         return placement.LOCAL_LANE_RESERVE
-    if placement.named_lane_request_waiting(config, project):
+    if placement.named_lane_request_waiting(config):
         return placement.LOCAL_LANE_RESERVE
     return 0
 
@@ -1142,7 +1141,7 @@ def dispatch(
                 backend,
                 project,
                 exclude_run_ids=(run_id,),
-                reserve=_local_lane_reserve(is_local, config=config, project=project),
+                reserve=_local_lane_reserve(is_local, config=config),
             )
         except RosterFull as roster:
             reason = (
@@ -1336,7 +1335,7 @@ def dispatch(
             backend,
             project,
             exclude_run_ids=(run_id,),
-            reserve=_local_lane_reserve(is_local, config=config, project=project),
+            reserve=_local_lane_reserve(is_local, config=config),
         )
     except RosterFull as roster:
         reason = (
