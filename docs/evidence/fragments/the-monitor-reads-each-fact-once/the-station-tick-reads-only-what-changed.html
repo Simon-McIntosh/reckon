@@ -1,0 +1,113 @@
+<section id="the-station-tick-reads-only-what-changed-held-facts">
+  <h2>A steady station tick stops re-reading what did not change</h2>
+  <p>The station classifies every live run on every tick, and each tick re-read the same
+  unchanged facts for the runs that had not moved. A census of one tick against the live crew
+  home found the attributed reads concentrated in repeated reads of answers that change only
+  when something moves: the committed range a promotion cites, the shared file of git's answers
+  about immutable object ids, and the review rubric. Each was fetched as though it changed every
+  tick.</p>
+
+  <h3 id="the-station-tick-reads-only-what-changed-defects">The three defects, reproduced at base</h3>
+  <p>Commit <code>785fbc2eaf</code> holds a run's committed range against the head identity of
+  its tree, and holds the parsed answer store against the stat identity of the file it came
+  from. Commit <code>522174404f</code> holds the six rubric prompts the same way, and
+  <code>05e58f1c3ca5135718ab7857e67e05db32f55e5d</code> moves all three onto the repository's one
+  file memo, <code>reckon/file_memo.py</code>, so each shares one bounded cache and hands a
+  caller a copy rather than the stored value. The base
+  revision shows each defect as a count rather than an opinion, in
+  <code>negative-control-base.log</code>:</p>
+  <ul>
+    <li>"the second tick ran 6 git subprocesses with nothing moved" &mdash; one
+    <code>git log --reverse</code> per live run per tick.</li>
+    <li>"a steady promotion read ran 1 git processes with no head move" &mdash; the same read
+    isolated to a single run.</li>
+    <li>"five steady reads opened the unchanged answer store 5 times with nothing written
+    between them" &mdash; the answer file re-read against an unchanged identity.</li>
+    <li>"five steady reads opened the unchanged rubric 5 times (expected one, for the first)"
+    &mdash; the same few kilobytes of rubric text re-read per classification.</li>
+  </ul>
+  <p>At the head the same file reports <b>14 passed</b>; at base it reports <b>4 failed, 10
+  passed</b>. The held answers change what is read and not what is reported: one test asserts
+  every tick payload equals the payload the same state produces with the memos cleared, and
+  another asserts every verdict <code>classify_tick</code> returns equals a fresh
+  <code>recovery_watch._watch_snapshot</code> classification for the same pointer and
+  moment.</p>
+
+  <h3 id="the-station-tick-reads-only-what-changed-what-remains">What one tick still reads</h3>
+  <p>The census instrument wraps <code>io.open</code>, <code>builtins.open</code>,
+  <code>os.open</code> and <code>os.read</code>, counting every byte handed back and
+  attributing it to the first caller frame outside the interpreter and site-packages. Run as a
+  compute-partition job (<code>all_debug</code> 1316002) over one tick against 145 live
+  pointers, it attributed <b>1.24 GB</b> across 17,040 paths, with 90% of the bytes falling in
+  7,515 of them. The readers that remain dominant are named so the next node starts from
+  measurement rather than from a profile:</p>
+  <table>
+    <thead><tr><th>Reader</th><th>MB in one tick</th><th>Share</th></tr></thead>
+    <tbody>
+      <tr><td><code>_backends._cached_stream_entry</code> (run streams)</td><td>499.1</td><td>40.3%</td></tr>
+      <tr><td><code>review_records._entries_from_listing</code> (review records)</td><td>333.0</td><td>26.9%</td></tr>
+      <tr><td><code>ledger</code> run-record reader</td><td>65.9</td><td>5.3%</td></tr>
+      <tr><td><code>_store._load_json_envelope</code> (per-project <code>crew.json</code>)</td><td>56.8</td><td>4.6%</td></tr>
+      <tr><td><code>review_records._read_index_document</code></td><td>53.5</td><td>4.3%</td></tr>
+      <tr><td><code>metadata_index._read_index_envelope</code></td><td>41.2</td><td>3.3%</td></tr>
+      <tr><td><code>recovery_watch._parse_git_answer_store</code></td><td>37.4</td><td>3.0%</td></tr>
+      <tr><td><code>runs._read_dispatch_detail_file</code></td><td>31.0</td><td>2.5%</td></tr>
+      <tr><td><code>metering.measure_stream_tokens</code></td><td>20.4</td><td>1.7%</td></tr>
+      <tr><td><code>budget_lift.read_document</code></td><td>12.8</td><td>1.0%</td></tr>
+    </tbody>
+  </table>
+  <p>The stream reader already reads only appended bytes when it holds an entry, but its parsed
+  cache is bounded at 32 MB while the live population's streams are far larger, so an entry is
+  evicted before the next run asks for it and the file is read whole again: 26 opens of a
+  69.3 MB stream in one tick. That is a cache budget decision rather than an unchanged read, and
+  it is left to a node that can measure the memory cost.</p>
+  <p>The answer-store hold is correct where the file is quiet and ineffective where it is not.
+  Over ten seconds of this home the store carried 29 distinct stat identities at an unchanged
+  size, because peers rewrite it whole through <code>os.replace</code> each time one of them
+  adds an answer, and a new inode defeats an identity key even when no byte changed. The station
+  therefore re-parsed it 292 times in one tick, 37.4 MB. Making that hold effective fleet-wide
+  needs an append-only or per-process store rather than a stronger key.</p>
+  <p>Two repeated whole-file reads sit beside those: <code>_read_dispatch_detail_file</code>
+  opened each of 108 dispatch-detail files 14 times within one tick, and
+  <code>_entries_from_listing</code> opened 15,305 review records 61,668 times, about four opens
+  per record in one tick. Neither is memoised.</p>
+
+  <h3 id="the-station-tick-reads-only-what-changed-live-window">The live window the plan asks for</h3>
+  <p>The plan's bound of under 20 MB/min and under 5% of one core at the plan's default interval
+  is <b>not met and not claimed</b> by this node. Measured without any instrumentation, as a
+  compute-partition job (<code>all_debug</code> 1316025) over a 60 s window at 148 live
+  pointers, the station's own kernel accounting reports <b>one tick</b> in
+  <b>98.003 s</b> at <b>7.18 GB</b> of <code>rchar</code>, which is <b>4394.61 MB/min</b> and
+  <b>106.41 s</b> of CPU, or <b>108.58% of one core</b>. The instrumented census on the same
+  partition (job 1316002, 145 pointers, one tick in 161.001 s) reads 1.24 GB at the Python
+  level and 82.61% of one core, and the gap between the two is the reads the interpreter makes
+  outside a Python frame.</p>
+  <p>The tick outlasts the window, so the default one-second interval is not reached at all over
+  this home: a station cannot start its next tick before the previous one ends, and the figure a
+  per-minute rate implies is one long tick divided by its own duration rather than a steady
+  rate. The figures are recorded rather than smoothed, in <code>window-after.log</code>,
+  <code>census-final.log</code> and <code>census-python.json</code>.</p>
+
+  <h3 id="the-station-tick-reads-only-what-changed-gate">Gate</h3>
+  <p>Focused gate: <code>tests/test_the_station_reads_only_what_changed.py</code>, 14 passed at
+  the head against 10 passed and 4 failed at base. The three test files the section's review
+  names as its fence ran as two arms of one job (1316292), each arm a worktree of the same
+  repository at its own revision: at base 1 failed and 65 passed, failing on the reproduced
+  count ("the second tick ran 6 git subprocesses with nothing moved"), and at head 69 passed.</p>
+  <p>Matched suite arms also ran on <code>all_debug</code> at both revisions: job 1315897 at
+  base reports 823 failed, 20,409 passed and 33 errors, and job 1315898 at head reports 809
+  failed, 20,359 passed and 34 errors. The two arms were not comparable in one respect, so the
+  38 ids the comparison reported as failing only at the head were re-run as a paired study
+  (job 1316294), both arms built as worktrees at one moment. <b>All 38 pass at base; 37 pass at
+  the head.</b> The remaining id,
+  <code>tests/test_idle_producer_backs_off.py::test_idle_producer_backs_off_to_the_cap_and_returns_to_base</code>,
+  fails one repeat in three in <i>each</i> arm (jobs 1316302, three repeats per arm) &mdash; at
+  base on its never-reached-the-cap assertion, at head on a wake that saw a live run losing its
+  watch seat &mdash; so it is timing-sensitive at both revisions. No id fails only at the head in
+  the paired study. Both suites are environment-red rather than code-red, so their absolute
+  counts measure the environment and the comparison is by added id.</p>
+  <figure>
+    <img alt="Horizontal bars, one per reading function, of megabytes read in one tick: the stream cache 499.1, review records 333.0, the ledger run-record reader 65.9, the project store 56.8, the review index 53.5, the metadata index 41.2, the answer store 37.4, dispatch details 31.0, stream metering 20.4, and budget documents 12.8." src="/reckon/figures/the-monitor-reads-each-fact-once/the-station-tick-reads-only-what-changed/census-readers.svg">
+    <figcaption>Bytes read by one station tick, attributed to the first caller frame outside the interpreter, over the live crew home at 145 live pointers on 2026-11-14 (compute-partition job 1316002). The stream cache is drawn in the feature colour because it is the largest remaining reader; every other reader is grey. Ten readers are drawn of the 1.24 GB attributed across 17,040 paths, where 90% of the bytes fall in 7,515 paths.</figcaption>
+  </figure>
+</section>
