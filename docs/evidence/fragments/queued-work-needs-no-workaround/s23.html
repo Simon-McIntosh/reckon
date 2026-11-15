@@ -1,0 +1,72 @@
+# revision: 281c035950bf811367c61d92909c7089eaa05bba
+# tree: /tmp/reckon-crew-scratch/r-20261115T094551177324-qwnw-queued-requests-wait-only-over-unmergeable-paths/qwnw-base-2
+# command: PYTHONPATH=. /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/8e41a6d3-d0e0-4927-afd1-771942ebfe6a/qwnw-queued-requests-wait-only-over-unmergeable-paths/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_queued_hold_reads_only_unmergeable_paths.py
+# note: the test file is the one committed on this node, copied into a base-revision extraction; the source under it is the base revision
+# module: /tmp/reckon-crew-scratch/r-20261115T094551177324-qwnw-queued-requests-wait-only-over-unmergeable-paths/qwnw-base-2/reckon/crew/admission/holds.py
+# cwd: /tmp/reckon-crew-scratch/r-20261115T094551177324-qwnw-queued-requests-wait-only-over-unmergeable-paths/qwnw-base-2
+F..                                                                      [100%]
+=================================== FAILURES ===================================
+_______ test_two_requests_over_wide_source_directories_are_both_admitted _______
+
+admit_repo = PosixPath('/tmp/reckon-crew-scratch/r-20261115T094551177324-qwnw-queued-requests-wait-only-over-unmergeable-paths/pytest-of-mcintos/pytest-3/test_two_requests_over_wide_so0/checkout')
+tmp_path = PosixPath('/tmp/reckon-crew-scratch/r-20261115T094551177324-qwnw-queued-requests-wait-only-over-unmergeable-paths/pytest-of-mcintos/pytest-3/test_two_requests_over_wide_so0')
+
+    def test_two_requests_over_wide_source_directories_are_both_admitted(
+        admit_repo: Path, tmp_path: Path
+    ) -> None:
+        """One pass with two free slots launches both, in rank order."""
+        config = _two_slots(tmp_path)
+        runs.queue_dispatch(
+            _queue(
+                admit_repo,
+                node_id="earlier",
+                run_id="r-earlier",
+                session=SESSION_A,
+                write_paths=list(WIDE_PATHS),
+                queued_at="2026-10-14T11:58:00+00:00",
+            )
+        )
+        runs.queue_dispatch(
+            _queue(
+                admit_repo,
+                node_id="later",
+                session=SESSION_B,
+                run_id="r-later",
+                write_paths=list(WIDE_PATHS),
+                queued_at="2026-10-14T11:59:00+00:00",
+            )
+        )
+        recorded: list = []
+    
+        result = queue_admission.admit_once(
+            now=START, config_for=lambda _pointer: config, launcher=_launcher(recorded)
+        )
+    
+>       assert result["held"] == [], result["verdicts"]
+E       AssertionError: [{'run_id': 'r-earlier', 'session': 'coordinator-a', 'allowance': 1.0, 'allowance_source': "the session's own worker s...': 'r-later', 'session': 'coordinator-b', 'allowance': 1.0, 'allowance_source': "the session's own worker slots", ...}]
+E       assert ['r-later'] == []
+E         
+E         Left contains one more item: 'r-later'
+E         
+E         Full diff:
+E         - []
+E         + [
+E         +     'r-later',
+E         + ]
+
+tests/test_a_queued_hold_reads_only_unmergeable_paths.py:76: AssertionError
+----------------------------- Captured stderr call -----------------------------
+reckon: created run r-earlier
+=========================== short test summary info ============================
+FAILED tests/test_a_queued_hold_reads_only_unmergeable_paths.py::test_two_requests_over_wide_source_directories_are_both_admitted - AssertionError: [{'run_id': 'r-earlier', 'session': 'coordinator-a', 'allowance': 1.0, 'allowance_source': "the session's own worker s...': 'r-later', 'session': 'coordinator-b', 'allowance': 1.0, 'allowance_source': "the session's own worker slots", ...}]
+assert ['r-later'] == []
+  
+  Left contains one more item: 'r-later'
+  
+  Full diff:
+  - []
+  + [
+  +     'r-later',
+  + ]
+1 failed, 2 passed in 16.23s
+EXIT=1

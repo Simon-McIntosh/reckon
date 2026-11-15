@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>qwnw-queued-requests-wait-only-over-unmergeable-paths</title>
+</head>
+<body>
+<article class="r-evidence" id="qwnw-queued-requests-wait-only-over-unmergeable-paths-record">
+  <h2 id="qwnw-queued-requests-wait-only-over-unmergeable-paths-title">A queued request waits only over a path a merge cannot reconcile</h2>
+
+  <p id="qwnw-queued-requests-wait-only-over-unmergeable-paths-change">The admission pre-check compared two queued requests' declared write paths by
+  containment alone, whatever class those paths were, so a request declaring a repository-wide
+  directory such as <code>reckon</code> parked every request queued behind it. The pre-check now
+  reads the sharing rule the live-claim check, the fence and the write-time audit already use
+  (<code>runs._claim_paths_share</code>), so only the class git cannot reconcile holds one request
+  behind another: a plan document, generated state, a cumulative evidence record, a figure topic
+  directory, a dependency lock or a binary receipt. The pass's exclusive-path policy is resolved
+  once per request and handed to every comparison, so the pass keeps its one resolution per request.</p>
+
+  <table id="qwnw-queued-requests-wait-only-over-unmergeable-paths-cases">
+    <thead><tr><th>Case</th><th>Declared paths</th><th>Head</th><th>Base 281c0359</th></tr></thead>
+    <tbody>
+      <tr>
+        <td>two requests, two free slots</td>
+        <td><code>reckon</code>, <code>tests</code> on both</td>
+        <td>both launched on one pass, nothing held</td>
+        <td>second held behind the first</td>
+      </tr>
+      <tr>
+        <td>one plan document on both</td>
+        <td><code>docs/plans/plan-a.html</code> on both</td>
+        <td>second held, queued, no failure</td>
+        <td>second held (unchanged)</td>
+      </tr>
+      <tr>
+        <td>a plan document, then a directory covering it</td>
+        <td><code>docs/plans/plan-a.html</code>, then <code>docs</code></td>
+        <td>second held, queued, no failure</td>
+        <td>second held (unchanged)</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3 id="qwnw-queued-requests-wait-only-over-unmergeable-paths-negative-control">Negative control</h3>
+  <p id="qwnw-queued-requests-wait-only-over-unmergeable-paths-red">The first case run against a base-revision extraction, with the head's test file copied into that
+  tree, fails on <code>assert ['r-later'] == []</code>: the second request is held behind the first
+  although the two share only <code>reckon</code> and <code>tests</code>. The run is recorded at
+  <code>docs/evidence/fragments/queued-work-needs-no-workaround/s23.html</code>.</p>
+
+  <h3 id="qwnw-queued-requests-wait-only-over-unmergeable-paths-arms">Suite arms</h3>
+  <p id="qwnw-queued-requests-wait-only-over-unmergeable-paths-arms-body">Base 281c0359 over the two touched test files: 6 failed, 12 passed (the five dispatch-environment
+  failures and one claim-binding case, all red before this change). Head b4bcb3db over the same two
+  files plus the new one: 5 failed, 16 passed. The head's failures are a subset of the base's, so the
+  change adds none, and one base failure — the promoted-earlier case — now passes.</p>
+</article>
+</body>
+</html>
