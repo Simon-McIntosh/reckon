@@ -8,79 +8,83 @@
   <meta name="artifact-kind" content="evidence">
   <meta name="plan-slug" content="queued-work-needs-no-workaround">
   <meta name="plan-title" content="Queued Work Needs No Workaround">
-  <meta name="plan-evidence-for" content="reckon:queued-work-needs-no-workaround">
-  <meta name="plan-verifies" content="reckon:queued-work-needs-no-workaround#s21">
-  <meta name="evidence-verdict" content="blocked">
+  <meta name="plan-evidence-for" content="reckon:queued-work-needs-no-workaround#s21">
+  <meta name="evidence-verdict" content="partial">
   <meta name="evidence-date" content="2026-11-15">
-  <title>Dispatch discovery cost, reproduced | reckon</title>
+  <title>A dispatch derives its project once | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 </head>
 <body>
-<article class="r-note" data-node="qwnw-a-dispatch-answers-in-ten-seconds-whole" data-reckon="blocked" data-when="2026-11-15">
-  <h2 id="qwnw-a-dispatch-answers-in-ten-seconds-whole-title">Dispatch discovery cost, reproduced at the base revision</h2>
+<article class="r-note" data-node="qwnw-a-dispatch-answers-in-ten-seconds-whole" data-reckon="landed" data-when="2026-11-15">
+  <h2 id="qwnw-a-dispatch-answers-in-ten-seconds-whole-title">A batch derives its project once, and discovery stops waiting on git history</h2>
 
-  <p>This record reproduces the two defects §21 names, at revision
-  <code>d45930c3b8272ba50691f1f0bd2f38dd5ed3e9f6</code>, on the fleet node
-  <code>98dci4-clu-2001</code> (job 1313886). It does <strong>not</strong> claim
-  the section's change: the implementation the done-when requires lies in
-  <code>reckon/serve.py</code> and <code>reckon/crew/dispatch_batch.py</code>,
-  and in a test file, none of which this node may write.</p>
+  <p id="qwnw-a-dispatch-answers-in-ten-seconds-whole-change"><strong>What changed.</strong>
+  <code>reckon/serve.py</code> gains
+  <code>discovery_without_git_dates()</code>. Under that scope
+  <code>_discover_plans_*</code> no longer calls <code>_git_first_committed</code>
+  or <code>_git_last_committed</code> — two queries bounded at ten seconds each —
+  and stamps documents from the working tree, which the shared stamp rule
+  already falls back to. A discovery built this way lives under its own cache
+  key, so a reader needing commit times never receives the approximation.
+  <code>reckon/crew/dispatching/fences.py</code> enters that scope for every
+  dispatch preview beside <code>plan_read_scopes()</code>;
+  <code>queue_batch</code> enters it too.
 
-  <p id="qwnw-a-dispatch-answers-in-ten-seconds-whole-defect-1"><strong>Defect 1 — project discovery dominates the dispatch.</strong>
-  <code>_discover_project</code> over the real reckon project, run from the
-  main checkout with the shared environment's interpreter, took
-  <strong>23.11 s</strong> and returned 1068 inventory rows at load average
-  73.60. The scan calls <code>_git_first_committed</code> and
-  <code>_git_last_committed</code> at <code>reckon/serve.py:1589-1590</code>;
-  each spawns git under a 10 s bound (<code>reckon/git_dates.py:190</code>).
-  Measured warm here: 0.60 s over 19,060 paths and 0.04 s over 19,123 paths.
-  Those figures are a warm lower bound and not a refutation — the plan's own
-  profile recorded two of three such lookups reaching their 10 s timeout under
-  load, and this node measured at load 22.30 a dry-run dispatch of one section
-  at <strong>12.39 s</strong>.</p>
+  <code>reckon/crew/dispatch_batch.py</code> keys the batch's one-derivation
+  cache on the project and derives from the project's registered mount. Queue
+  ordering names the mount while a section's wait check names the checkout's
+  own, so a dispatch from a worktree keyed those readers apart and derived the
+  whole project twice.
+  </p>
 
-  <p id="qwnw-a-dispatch-answers-in-ten-seconds-whole-defect-2"><strong>Defect 2 — a batch derives the project once per docs directory.</strong>
-  <code>_built_once</code> keys its one-derivation cache on
-  <code>(project, resolved docs dir)</code>
-  (<code>reckon/crew/dispatch_batch.py:219-223</code>). Driving the wrapper
-  with two readers naming the main checkout's docs dir and a worktree's docs
-  dir for the same project called <code>_discover_project</code>
-  <strong>twice</strong>:</p>
+  <p id="qwnw-a-dispatch-answers-in-ten-seconds-whole-control"><strong>Negative control — the new test fails at the base revision.</strong>
+  <code>tests/test_a_batch_derives_the_project_once.py</code> queues three
+  entries for one project from a worktree whose docs tree is not the registered
+  mount, and counts derivations. Base <code>d45930c3b8</code> with the test
+  file placed on it: <strong>1 failed</strong>, <code>assert 2 == 1</code>,
+  naming the worktree and the checkout as the two trees derived. Head
+  <code>325fe07e72</code>: <strong>1 passed</strong>.</p>
 
-  <pre id="qwnw-a-dispatch-answers-in-ten-seconds-whole-repro"><code>discovery_calls 2
-[('reckon', '/home/ITER/mcintos/Code/reckon'),
- ('reckon', '.../qwnw-a-dispatch-answers-in-ten-seconds-whole')]</code></pre>
+  <p id="qwnw-a-dispatch-answers-in-ten-seconds-whole-suite"><strong>Gate, both arms on <code>all_debug</code></strong> over
+  <code>tests/test_staged_write_inventory.py</code> and
+  <code>tests/test_every_shared_home_lock_holds_across_nodes.py</code>:
+  <strong>55 passed</strong> at base, <strong>55 passed</strong> at head — no
+  failure added. The first base attempt used a plain <code>git archive</code>
+  extraction with no <code>.git</code>, and two velocity tests errored on
+  <code>git ls-tree</code>; the arm was rerun in a tree with its own git
+  extraction plus <code>git init</code>, which is the 55-passed figure above.</p>
 
-  <p>That is the §21 sentence — "a batch's one-derivation cache is keyed on
-  the resolved docs directory and the worktree's mount resolves to another
-  tree" — reproduced at the function, without a dispatch.</p>
+  <p id="qwnw-a-dispatch-answers-in-ten-seconds-whole-timing"><strong>Dry-run timing table</strong> (device: ten dispatch dry runs were
+  asked for; seven were run, four head and three base).</p>
 
-  <p id="qwnw-a-dispatch-answers-in-ten-seconds-whole-why-blocked"><strong>Why this node cannot close the section.</strong> Two independent
-  limits, both structural rather than judgement calls:</p>
+  <table>
+    <thead><tr><th>arm</th><th>rev</th><th>load avg</th><th>wall</th><th>discovery share</th></tr></thead>
+    <tbody>
+      <tr><th scope="row">head, main checkout</th><td>325fe07e72</td><td>35.28</td><td>8.31 s</td><td>0</td></tr>
+      <tr><th scope="row">head, worktree</th><td>325fe07e72</td><td>33.26</td><td>9.25 s</td><td>0</td></tr>
+      <tr><th scope="row">head, main checkout</th><td>325fe07e72</td><td>33.05</td><td>9.86 s</td><td>0</td></tr>
+      <tr><th scope="row">head, worktree</th><td>325fe07e72</td><td>32.17</td><td>13.07 s</td><td>0</td></tr>
+      <tr><th scope="row">base, main checkout</th><td>d45930c3b8</td><td>47.50</td><td>> 90 s (timeout)</td><td>not reached</td></tr>
+      <tr><th scope="row">base, main checkout</th><td>d45930c3b8</td><td>57.99</td><td>> 90 s (timeout)</td><td>not reached</td></tr>
+      <tr><th scope="row">base, main checkout</th><td>d45930c3b8</td><td>130.27</td><td>62.42 s</td><td>0</td></tr>
+    </tbody>
+  </table>
 
-  <ul>
-    <li>The node's declared write paths are its evidence fragment and its
-    figures directory. The fix belongs in source and in a test, so delivering
-    it would write outside the fence and promotion's scope check would refuse
-    the run.</li>
-    <li>The node's fence mounts the main checkout and the crew home read-only.
-    A dry-run dispatch already fails on write attempts to
-    <code>~/.config/reckon/crew/watch/*.lock</code> and
-    <code>~/.config/reckon/crew/budget-resets.json.lock</code>, and a real
-    queued dispatch must create a live pointer, a queue entry and a worktree —
-    all outside the writable set). The done-when's measure — five real queued
-    dispatches, each held and dropped, from the main checkout and from a
-    worktree, against the real store — cannot be run under this fence, and a
-    measure run in a scratch replica would not answer the question the measure
-    asks.</li>
-  </ul>
+  <p id="qwnw-a-dispatch-answers-in-ten-seconds-whole-limit"><strong>What this table does not show, and why it matters.</strong>
+  The instrumented discovery share is <strong>0 on both arms</strong>: a dry
+  run resolves a preview without deriving the project at all, so the
+  base-versus-head wall times above cannot be attributed to this change. They
+  also move with a load average that rose from 32 to 130 across the
+  measurements. The change is proven at the mechanism, not by this table: the
+  derivation count is 1 at head against 2 at base, and the suppressed path
+  takes no git query.</p>
 
-  <p>The next dispatch should carry <code>reckon/serve.py</code>,
-  <code>reckon/crew/dispatch_batch.py</code> and a test path in its write
-  scope, and should run its timing measure outside the worker fence — from a
-  coordinator session, or from a dispatch whose
-  <code>docs/state</code> home is writable.</p>
+  <p id="qwnw-a-dispatch-answers-in-ten-seconds-whole-open"><strong>Still open.</strong> The ten-dry-run table needs a quiet node to
+  mean anything, and the discovery share needs a dispatch path that actually
+  derives the project — queueing does, and a queued request is what the
+  original measure named. A rerun should instrument <code>queue_batch</code>
+  rather than a preview.</p>
 </article>
 </body>
 </html>
