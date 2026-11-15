@@ -2717,9 +2717,16 @@ def _landing_scope_products(
                     f"run {run_id!r} records an invalid claim before accepted paths"
                 )
             declared = before_acceptance
-        outside = _outside_declared_scope(
-            cumulative.paths,
-            declared,
+        # The declaration is a hint: only a path whose class a merge cannot
+        # reconcile needs a coordinator's acceptance, so a companion source file
+        # beside the declared one lands on its own.
+        outside = _changed_artifacts_needing_acceptance(
+            _outside_declared_scope(
+                cumulative.paths,
+                declared,
+                record=record,
+                tree=tree,
+            ),
             record=record,
             tree=tree,
         )
@@ -3481,6 +3488,7 @@ from reckon.crew.promotion_release import (
 )
 from reckon.crew.promotion_scope import (
     _accepted_scope_exceptions,
+    _changed_artifacts_needing_acceptance,
     _changed_paths_declare_no_paths,
     _changed_paths_inside_repository,
     _declared_manifest_commits,

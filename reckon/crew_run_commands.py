@@ -1346,7 +1346,11 @@ def crew_check_manifest(run_id, pretty):
             repository = Path(record["repo"]) if record.get("repo") else worktree
             findings = list(
                 crew_module.audit_manifest(
-                    text, node, worktree=worktree, repository=repository
+                    text,
+                    node,
+                    worktree=worktree,
+                    repository=repository,
+                    project=str(record.get("project") or ""),
                 )["findings"]
             )
             # A message a coordinator wrote is only delivered if the run's own

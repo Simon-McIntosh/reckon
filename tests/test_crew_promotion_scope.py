@@ -288,14 +288,17 @@ def test_two_commit_scope_escape_is_refused_before_ledger_write(
     _git(repository, "add", "allowed.txt")
     _git(repository, "commit", "-q", "-m", "test: update declared path")
     first = _git(repository, "rev-parse", "HEAD")
-    (repository / "outside.txt").write_text("undeclared\n", encoding="utf-8")
-    _git(repository, "add", "outside.txt")
+    (repository / "docs" / "plans").mkdir(parents=True, exist_ok=True)
+    (repository / "docs" / "plans" / "outside.html").write_text(
+        "<h2>outside</h2>\n", encoding="utf-8"
+    )
+    _git(repository, "add", "--", "docs/plans/outside.html")
     _git(repository, "commit", "-q", "-m", "test: update undeclared path")
     tip = _git(repository, "rev-parse", "HEAD")
     run_id = "r-scope-escape"
     _pointer(repository, run_id, base)
 
-    with pytest.raises(crew.CrewError, match=r"outside\.txt"):
+    with pytest.raises(crew.CrewError, match=r"docs/plans/outside\.html"):
         crew.complete(run_id, gate="passed", commits=[first, tip], root=repository)
 
     assert ledger.runs(PROJECT, root=repository) == []
