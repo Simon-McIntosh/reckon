@@ -4641,6 +4641,17 @@ def _budget_reset_reach() -> dict[str, Any]:
                 unreached.discard(name)
             elif name not in reached:
                 unreached.add(name)
+    # A live coordinator that never armed a follower holds no registration, so
+    # the fold above cannot see it: it is neither reached nor listed, and the
+    # report reads as near-total reach while that session is told nothing. The
+    # harness keeps one record per live session, so every live session absent
+    # from the reached set is named here as unreached, by the name a peer
+    # message addresses.
+    names: dict[str, str] = {}
+    for session_id, name in _live_harness_sessions():
+        names[session_id] = name
+        if session_id not in reached:
+            unreached.add(session_id)
     reached_sessions = sorted(reached)
     unreached_sessions = sorted(unreached)
     total = len(reached_sessions) + len(unreached_sessions)
@@ -4657,8 +4668,51 @@ def _budget_reset_reach() -> dict[str, Any]:
     return {
         "reached": reached_sessions,
         "unreached": unreached_sessions,
+        "unreached_names": {
+            session: names[session] for session in unreached_sessions if session in names
+        },
         "detail": detail,
     }
+
+
+#: Where the harness keeps one record per live session; a test points it at a
+#: directory of its own so nothing reads this host's real sessions.
+HARNESS_SESSIONS_DIR_ENV = "RECKON_HARNESS_SESSIONS_DIR"
+
+
+def _live_harness_sessions() -> list[tuple[str, str]]:
+    """Every live harness session as (session id, name), from its own records.
+
+    Each record names the session's process, and a record whose process has
+    ended is a session that has gone. Records this host cannot read are
+    skipped rather than guessed at.
+    """
+    import json
+
+    directory = Path(
+        os.environ.get(HARNESS_SESSIONS_DIR_ENV)
+        or Path.home() / ".claude" / "sessions"
+    )
+    sessions: list[tuple[str, str]] = []
+    try:
+        records = sorted(directory.glob("*.json"))
+    except OSError:
+        return sessions
+    for path in records:
+        try:
+            record = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            continue
+        if not isinstance(record, dict):
+            continue
+        session_id = str(record.get("sessionId") or "")
+        pid = record.get("pid")
+        if not session_id or not isinstance(pid, int):
+            continue
+        if not Path(f"/proc/{pid}").exists():
+            continue
+        sessions.append((session_id, str(record.get("name") or session_id)))
+    return sessions
 
 
 def _budget_reset_payload(
