@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="the-monitor-reads-each-fact-once">
+  <meta name="plan-evidence-for" content="reckon:the-monitor-reads-each-fact-once">
+  <meta name="plan-verifies" content="reckon:the-monitor-reads-each-fact-once#s57">
+  <meta name="plan-recorded-at" content="2026-11-15">
+  <meta name="plan-verdict" content="passed">
+  <title>A duty pass asks which runs have a review in flight once</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+
+<article class="r-note" id="a-duty-pass-reads-reviews-in-flight-once-landing" data-node="a-duty-pass-reads-reviews-in-flight-once" data-reckon="landed" data-when="2026-11-15">
+  <h2>One pass pays one recognition per live pointer, and every duty reads that answer</h2>
+
+  <p id="a-duty-pass-reads-reviews-in-flight-once-defect"><strong>The defect.</strong> The station evaluates every finished run's duty on every tick, and each duty asks the reflex's own recognition rule — <code>recovery_review_dispatch._review_in_flight</code>, reached through <code>obligations._in_flight_review</code> — which live reviewer stands for the run's head. That rule scans the launched pointers. The station already publishes the pass's pointer snapshot through <code>_VIEW_LIVE_POINTERS</code> and builds the session's in-flight set once, but the duties then asked the recognition rule again for themselves, so one pass over 40 live pointers made <strong>60</strong> recognition calls: two for each of the same 30 deliverables, one from the current-review predicate and one from the refused-delivery reader, and nothing shared between them.</p>
+
+  <p id="a-duty-pass-reads-reviews-in-flight-once-what-landed"><strong>What landed.</strong> <code>reckon/crew/obligations.py</code> memoises the in-flight answer beside the pointer snapshot a view or a tick publishes. <code>_sweep_reviews_in_flight</code> makes one walk of the launched pointers and returns the standing review for each run; <code>_reviews_in_flight</code> stores that map in <code>_VIEW_REVIEWS_IN_FLIGHT</code>, keyed on the identity of the snapshot object itself, so every later duty in the same derivation reuses it and a later pass never reads it. A reader outside a pass holds no snapshot, so it clears whatever map it finds and sweeps for itself: the answer never outlives the pointers it described. <code>_standing_review</code> is the single entry point. The two duty sites that asked the question — <code>_current_review_in_flight</code> and <code>_refused_delivered_review</code> — now read it. Both already excluded a queued reviewer from the candidates, and the sweep keeps that exclusion, so a review the lane accepted but has not launched still cannot answer for a head a working review is reading. The refused-delivery reader previously passed the whole live set and now passes the launched-only candidates the sweep builds; for a delivered or refused review the two are the same, because a queued review has no record a working review could stand in for, and it is the candidate set the in-flight predicate already used.</p>
+
+  <p id="a-duty-pass-reads-reviews-in-flight-once-harness"><strong>The harness.</strong> <code>tests/test_a_duty_pass_reads_reviews_in_flight_once.py</code> builds a temporary crew home and repository holding 30 delivered runs, 10 of them with a live reviewer working on the delivered head and 20 carrying a complete stored review, so the live directory holds 40 pointers. Recording stand-ins wrap the module attributes: <code>_in_flight_review</code> counts recognition calls, <code>_live_pointers</code> counts the walks taken inside the in-flight build, and <code>_review_duty_item</code> records each row's run id, kind and next command. The pass then runs a second time through the base read path, and the test requires the populations object and the recorded rows to be identical and the control's count to be strictly larger, so a comparison with nothing in it cannot pass. A second case removes the reviewer's pointer before the first pass and restores it before the second, and requires the later pass to see the review that started between them.</p>
+
+  <p id="a-duty-pass-reads-reviews-in-flight-once-gate"><strong>Gate.</strong> Base revision <strong>b18903b553</strong>, head <strong>8cc3f0b2dc</strong>. The gate at the head: <strong>2 passed, EXIT=0</strong>. A counts arm at <strong>d1709df2c3</strong>, a test-only change carrying the same assertions with the counts printed, reads <code>head: searches=40 walks=1 live_pointers=40 duties=30</code> and <code>base read path: searches=60 duties=30</code>: one recognition per live pointer, exactly one walk for the in-flight set, and the same 30 duty rows as the base read path. The walk count reads 0 in the base arm because it counts walks taken inside <code>_reviews_in_flight</code>, which does not exist at base; the figure that matters there is the search count.</p>
+
+  <p id="a-duty-pass-reads-reviews-in-flight-once-negative-control"><strong>Negative control.</strong> The head's test file against the base <code>obligations.py</code>: <strong>1 failed, 1 passed, EXIT=1</strong>, id <code>test_a_duty_pass_reads_reviews_in_flight_once</code>, with <code>a pass made 60 in-flight searches for 40 live pointers: it asks more than once per live pointer</code> and the count printed before the assertion. The second case passes at base, which is right: it tests that the answer is scoped to its pass, and the base has no answer to carry.</p>
+
+  <p id="a-duty-pass-reads-reviews-in-flight-once-deviation"><strong>Deviation from the plan's declared base count.</strong> The section predicts the base makes P walks and P&#215;P comparisons and calls its base search count "of the order of 40&#215;40". The measured count of <em>calls</em> to the recognition rule is <strong>60</strong>, not 1,600: two per delivered run, one from each duty site, and each call scans the launched list. What the sharing removes is the repetition of the question, and the comparisons fall with it from 60&#215;40 = 2,400 to 40&#215;40 = 1,600. <strong>The quadratic term is not removed</strong>: the sweep still calls the recognition rule once per live pointer, and each call is linear in the launched set. That is what this section's own done-when asks for, "at most 40 searches (one per live pointer)", so the section is met, but the 22.9% of the main thread the profile attributed to this path should fall by roughly a third rather than disappear. Returning the map from one pass over the reviewers, instead of one scan per pointer, is a different design and is not claimed here.</p>
+
+  <p id="a-duty-pass-reads-reviews-in-flight-once-suite"><strong>Suite.</strong> The node's case plus the two files that exercise the same module family. Base arm, which drops the node's case because it does not exist at base: <strong>55 passed, EXIT=0</strong>. After arm: <strong>57 passed, EXIT=0</strong>. Added failure ids: <strong>none</strong>. Both arms run on <code>all_debug</code> through <code>env -u SLURM_JOB_ID -u SLURM_JOBID sbatch</code>, never on the fleet node. The base arm's tree is a real detached worktree at the base revision carrying the node's test file, because <code>tests/test_staged_write_inventory.py</code> reads git metadata in its own root and an archive extraction has none.</p>
+
+  <p id="a-duty-pass-reads-reviews-in-flight-once-logs"><strong>Logs.</strong> <code>logs/gate-head.log</code>, <code>logs/negative-control.log</code>, <code>logs/after-suite.log</code>, <code>logs/gate-head-counts.log</code> and <code>logs/baseline-suite.log</code>, each headed with its revision, tree and literal command and ending in a bare <code>EXIT=</code> line. <code>ruff check</code> reports no finding on the two staged paths and <code>ruff format --check</code> reports both formatted.</p>
+</article>
+
+</body>
+</html>
