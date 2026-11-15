@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from collections import deque
+
 from reckon.crew.open_run_index import operational_read
 
 from . import holds as _holds
@@ -57,8 +59,9 @@ def admit_once(
     launches once; a caller already holding the admit lock passes ``lock=False``.
     ``run_id`` selects one queued request under that lock, skipping queue-wide
     release and recovery. Other pointers supply occupancy and claims only.
-    ``budget_seconds`` is the launch budget this pass spends before it ends; it
-    defaults to the flight config's ``admission.pass_budget_seconds``.
+    ``budget_seconds`` bounds scheduling further launches; every started launch
+    settles before the pass ends. It defaults to the flight config's
+    ``admission.pass_budget_seconds``.
     ``clock`` is the monotonic clock the budget and each launch's duration are
     measured on, defaulting to :func:`time.monotonic`.
     """
@@ -306,10 +309,9 @@ def admit_once(
                 moment=moment,
             )
 
-        # The pass spends at the most one budget launching, and the deadline is
-        # read once here rather than checked along each exit path: a freed seat
-        # is filled within one pass's budget, and a request the deadline leaves
-        # keeps its place, untouched, for the next pass.
+        # The deadline bounds starting additional launches. In-flight work is
+        # settled under the pass lock; requests left by the deadline keep their
+        # place for the next pass.
         budget = (
             budget_seconds
             if budget_seconds is not None
@@ -319,7 +321,17 @@ def admit_once(
         budget_spent = False
 
         with LaunchBatch(result, remaining) as launches:
-            for index, pointer in enumerate(order):
+            candidates = deque(enumerate(order))
+            deferred = []
+            filling = True
+            while candidates or deferred:
+                if not candidates:
+                    # Consider every session's free slots before waiting on a
+                    # reservation another launch may return after a refusal.
+                    candidates.extend(deferred)
+                    deferred.clear()
+                    filling = False
+                index, pointer = candidates.popleft()
                 launches.collect_ready()
                 launches.wait_for_capacity()
                 if tick() >= deadline:
@@ -333,8 +345,17 @@ def admit_once(
                     )
                     remaining[allowance_key] = read
                     allowance_sources[allowance_key] = source
-                launches.wait_for_allowance(allowance_key)
                 allowance = remaining[allowance_key]
+                if allowance is not None and allowance <= 0:
+                    if filling and launches.has_pending(allowance_key):
+                        deferred.append((index, pointer))
+                        continue
+                    if not filling:
+                        launches.wait_for_allowance(allowance_key)
+                        allowance = remaining[allowance_key]
+                        if tick() >= deadline:
+                            budget_spent = True
+                            break
                 allowance_source = allowance_sources[allowance_key]
                 landed_subject = _holds._landed_review_subject(pointer, live=live)
                 if landed_subject:

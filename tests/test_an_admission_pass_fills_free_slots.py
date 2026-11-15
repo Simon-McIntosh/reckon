@@ -243,3 +243,41 @@ queue_admission.admit_until_stopped(
         )
     finally:
         manager.stop_all()
+
+
+def test_an_exhausted_session_does_not_delay_another_sessions_slots(
+    admission, monkeypatch
+):
+    resolve, queued = admission
+    lane = Path(resolve({})["backends"]["clive"]["lane_document"])
+    payload = fixtures._session_lane(1)
+    payload["admission"]["sessions"]["another-session"] = {"worker_slots": 4}
+    fixtures._write_lane(lane, payload)
+    for identity in queued[2:]:
+        runs._mutate_pointer(
+            identity, lambda row: {**row, "session": "another-session"}
+        )
+    # Explicit priorities can place a session's tail before another session.
+    monkeypatch.setattr(
+        queue_admission,
+        "fair_share_admission_order",
+        lambda rows, *args, **kwargs: sorted(rows, key=lambda row: row["run_id"]),
+    )
+    other_began = threading.Event()
+    completed = []
+    plain = _launch_after(0, completed)
+
+    def launch(pointer, **kwargs):
+        if pointer["session"] == fixtures.SESSION:
+            assert other_began.wait(5), (
+                "another session waited behind an in-flight launch"
+            )
+        else:
+            other_began.set()
+        return plain(pointer, **kwargs)
+
+    monkeypatch.setattr(queue_admission, "_launch_queued", launch)
+    result = queue_admission.admit_once(config_for=resolve)
+    assert result["failed"] == []
+    assert result["launched"] == [queued[0], *queued[2:]]
+    assert result["held"] == queued[1:2]

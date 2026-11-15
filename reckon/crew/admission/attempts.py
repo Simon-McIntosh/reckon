@@ -71,6 +71,9 @@ class LaunchBatch:
             wait(self.pending, return_when=FIRST_COMPLETED)
             self.collect_ready()
 
+    def has_pending(self, key):
+        return key in self.pending.values()
+
     def wait_for_allowance(self, key):
         while self.remaining[key] is not None and self.remaining[key] <= 0:
             pending = [f for f, owner in self.pending.items() if owner == key]
