@@ -1,0 +1,57 @@
+<article class="r-evidence" id="full-the-monitor-shows-the-work-it--s135">
+  <h2 id="full-the-monitor-shows-the-work-it--s135-title">A replayed row is dated by its transition, not by the attach</h2>
+
+  <p id="full-the-monitor-shows-the-work-it--s135-what">A follower that replays what was already on disk printed every row with the
+  moment it attached, so a transition from the previous day read as
+  <code>[replay] 12:30</code> and looked like news. A replayed row now carries the stamp the event log
+  holds for its run's last transition, in both shapes the pane draws: a transition read out of the
+  log's trailing span, and a row for a run already terminal at the attach. The pointer records no
+  time for its phase change, so where the log holds no transition for the run the row shows
+  <code>--:--:--</code> rather than the attach hour. A live row, drawn without the prefix, keeps the
+  clock it had. The word a row announces is still the live fleet's, because the pointer is current
+  while the stream is history; the time answers a different question and the log's word does not
+  overrule the fleet's.</p>
+
+  <p id="full-the-monitor-shows-the-work-it--s135-proof"><code>tests/test_a_replayed_row_shows_its_transition_time.py</code>
+  drives the wired <code>crew follow</code> command against a temporary crew home, with the attach
+  frozen at 12:30:00 and the zone forced to UTC. Three cases: a replayed transition stamped
+  09:00:00 the previous day reads <code>[replay] 09:00:00</code>, and a replay of a review run
+  already terminal at the attach reads <code>[replay] 08:00:00</code>, the stamp of its own last
+  transition, with neither row carrying 12:30; a transition written after the attach prints without
+  the prefix and carries its own observed time; a run whose log holds no transition reads
+  <code>--:--:--</code>. The review case is the one that pins the rule: its log word is
+  <code>complete</code> while the live row draws the review's delivered word, so a clock taken only
+  where the two vocabularies agree would fall back to the attach time there, which is exactly the
+  reading the prefix exists to correct.</p>
+
+  <table id="full-the-monitor-shows-the-work-it--s135-arms">
+    <thead><tr><th>arm</th><th>revision</th><th>command</th><th>result</th></tr></thead>
+    <tbody>
+      <tr><td>base</td><td><code>191db600fe</code></td><td><code>PYTHONPATH=&lt;base tree&gt; .venv/bin/python -m pytest -p no:cacheprovider -q -n 4 &lt;69 importing files&gt; tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py</code></td><td>26 failed, 557 passed, 2 errors, <code>EXIT=1</code></td></tr>
+      <tr><td>head</td><td><code>39474564ce</code>, uncommitted</td><td>the same population, plus the new file, <code>-n 4</code></td><td>29 failed, 559 passed, <code>EXIT=1</code></td></tr>
+      <tr><td>head, committed</td><td><code>6f0b9ce5f0</code></td><td><code>-n 4 tests/test_follow_rearm_continues.py tests/test_a_replayed_row_shows_its_transition_time.py tests/test_follower_freshness.py tests/test_stale_producer_warning_waits_for_its_reload.py</code></td><td>54 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>new file at base</td><td><code>191db600fe</code></td><td><code>-q tests/test_a_replayed_row_shows_its_transition_time.py</code></td><td>2 failed, 1 passed, <code>EXIT=1</code></td></tr>
+      <tr><td>negative control</td><td><code>6f0b9ce5f0</code> with both stamping assignments removed</td><td><code>-q tests/test_a_replayed_row_shows_its_transition_time.py</code></td><td>2 failed, 1 passed, <code>EXIT=1</code></td></tr>
+    </tbody>
+  </table>
+
+  <p id="full-the-monitor-shows-the-work-it--s135-controls">The negative control puts the attach time back on replayed rows and the test fails on it:
+  the transition row prints <code>[replay] 12:30:00 … new → needs you</code> and the unstamped run
+  prints <code>[replay] 12:30:00</code>, so the two cases that pass at the head fail on exactly the
+  reading they pin (<code>gate-negative-control.log</code>). At the base revision the same two cases
+  fail the same way (<code>gate-base-newfile.log</code>), and the live-row case passes in both, which
+  is what the third arm is for: the change touches replayed rows only.</p>
+
+  <p id="full-the-monitor-shows-the-work-it--s135-population">The population is every test file importing <code>reckon.crew_follow_commands</code>: 70 files
+  including the new one, run with the two repository invariant suites beside it. Twenty-six ids fail
+  identically at base and at the head, all of them spawning the real <code>crew follow</code> as a
+  subprocess and timing out at 30 s on a loaded shared debug node; the two extra rows at base are
+  setup errors in <code>test_staged_write_inventory.py</code>, which pass at the head. The head arm
+  ran against the uncommitted tree and added three ids, every one of them because the follower's own
+  reloader refuses to replace its image from a dirty checkout, printing
+  <em>deferred its reload: tracked files are modified against HEAD (M reckon/crew_follow_commands.py)</em>;
+  all three pass once committed. One further head-only id,
+  <code>test_follow_rearm_continues.py::test_a_recorded_state_the_live_fleet_denies_is_not_announced</code>,
+  was a genuine contract conflict rather than a flake: it asserted the old rule that a denied state's
+  stamp is dropped, and now asserts that the row keeps the live word and takes the log's stamp.</p>
+</article>

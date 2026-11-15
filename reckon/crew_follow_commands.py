@@ -1277,22 +1277,31 @@ def _stream_events_upto(stream_path: Path, *, offset: int, boundary: int) -> lis
 def _recorded_fleet_times(
     stream_path: Path, *, boundary: int
 ) -> dict[str, tuple[str, str]]:
-    """The state each run is in, and the time it entered that state.
+    """The state each run last transitioned to, and when that transition was.
 
     A row that re-announces a run should carry the clock the run's own record
     gave it rather than the moment the pane happened to attach, so the time is
     read from the stream the producer wrote. A run's recorded time is the first
-    event in the unbroken trailing run of events whose ``to_state`` equals that
-    state, read as the earliest stamp that the run carries for the state: a
-    re-emitted baseline names a state the run already sits in and is stamped
-    when it is emitted, so it extends the run without moving the time, while a
-    genuine change of state opens a new run and stamps it at the change. The
-    read stops at the boundary the replay was given so the answer describes the
-    same span the rows do.
+    event in the unbroken trailing run of transitions whose ``to_state`` equals
+    that state, read as the earliest stamp the run carries for the state: a run
+    that re-enters the same word leaves the time where it was, while a genuine
+    change of state opens a new run and stamps it at the change. Baselines are
+    inventory rather than transitions — the producer re-announcing a state,
+    stamped when it wrote the announcement — so they are skipped: the
+    attach-time baseline a producer emits for a run it has never seen would
+    otherwise be read as the moment that run moved, which is the defect this
+    clock exists to remove. The read stops at the boundary the replay was given
+    so the answer describes the same span the rows do.
     """
     latest: dict[str, tuple[str, str]] = {}
     for event in _stream_events_upto(stream_path, offset=0, boundary=boundary):
         if event.get("legacy"):
+            continue
+        if str(event.get("event") or "") == "baseline":
+            # A baseline is inventory: the producer re-announcing the state a
+            # run already sits in, stamped when the announcement was written.
+            # It is not a transition, and its stamp is the producer's, not the
+            # moment the run moved, so it cannot date a replayed row.
             continue
         run_id = str(event.get("run_id") or "")
         to_state = event.get("to_state")
@@ -1362,12 +1371,12 @@ def _fleet_replay(
     that span is re-announced instead — one row carrying the state the live
     fleet gives it, stamped with the time its own record entered that state.
 
-    The recorded time is taken only where the stream's last word for the run
-    agrees with the live classification. Where they disagree the live fleet is
-    the authority, because it is the current pointer while the stream is
-    history, so the row keeps the live state and the fleet's own clock rather
-    than a state the live classification contradicts: a row never announces a
-    state the fleet denies.
+    The word the row announces is the live classification's, because the live
+    fleet is the current pointer while the stream is history: a row never
+    announces a state the fleet denies. The clock is the stream's, because the
+    pointer records no time for its phase change and the log's last transition
+    for the run is the only stamp either source holds. A run the log never
+    recorded is drawn with no clock rather than with the attach time.
 
     The rows are ordered by their own stamp, so a re-arm reads as a timeline and
     an old transition leads a run that has sat at its state since.
@@ -1395,11 +1404,13 @@ def _fleet_replay(
         run_id = str(row.get("run_id") or "")
         if run_id and run_id in announced:
             continue
+        # The pointer carries no time for its phase change, so the only stamp a
+        # replayed row can carry is the log's. A run the log never recorded is
+        # drawn with no clock rather than with the attach time the baseline row
+        # was built under: an unknown dressed up as the current minute is the
+        # reading error the [replay] prefix exists to prevent.
         latest = recorded.get(run_id)
-        if latest is not None:
-            stamp, state = latest
-            if stamp and state == str(row.get("to_state") or ""):
-                row["observed_at"] = stamp
+        row["observed_at"] = latest[0] if latest and latest[0] else ""
         if reannounce:
             row["reannounced"] = True
         rows.append(row)
@@ -1512,6 +1523,7 @@ def _follow_gap_rows(
     session: str | None,
     observed: Iterable[str],
     run_ids: tuple[str, ...],
+    transition_times: Mapping[str, tuple[str, str]] | None = None,
 ) -> list[dict[str, Any]]:
     """The rows a re-attach replays: one per owned run whose state moved.
 
@@ -1522,8 +1534,18 @@ def _follow_gap_rows(
     was attached, so it is replayed from ``dispatched``, the state every launch
     passes through. Each row keeps the remembered state as its left half, so it
     reads as the ordinary transition the run made while the pane was away, and
-    takes its right half and its clock from the live classification rather than
-    from any stored phase.
+    takes its right half from the live classification rather than from any
+    stored phase.
+
+    The clock is the one thing the live classification cannot give: a pointer
+    records no time for its phase change, so the row would otherwise carry the
+    moment the follower attached and printed it. ``transition_times`` is the
+    event log's own answer, one stamp per run, and a row with no entry is drawn
+    with no clock rather than with the attach time — an unknown hour is a
+    different reading from the current one. A stamp is used whether or not the
+    log's last word matches the word the live row draws, because the time is a
+    fact about the transition the log recorded, not about the vocabulary the
+    pane spells it in.
     """
     states = {
         str(run_id): str(state)
@@ -1546,6 +1568,8 @@ def _follow_gap_rows(
         ):
             continue
         event["from_state"] = recorded or "dispatched"
+        held = (transition_times or {}).get(run_id)
+        event["observed_at"] = held[0] if held else ""
         rows.append(event)
     return rows
 
@@ -2545,6 +2569,9 @@ def _follow_watch_lines(
                     session=session,
                     observed=observed_sessions,
                     run_ids=selected_runs,
+                    transition_times=_recorded_fleet_times(
+                        stream_path, boundary=boundary
+                    ),
                 )
                 if record
                 else []
