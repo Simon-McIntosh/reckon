@@ -26,7 +26,7 @@
   <title>The Monitor Shows The Work It Watches | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="935">
+<meta name="plan-version" content="936">
 <meta name="plan-modified" content="2026-11-15">
 <meta name="plan-supersedes" content="a-follower-keeps-your-work-in-view,monitor-renders-what-it-is-given,a-follower-lives-as-long-as-its-session">
 </head>
@@ -1753,6 +1753,9 @@ Both cases run under the file's existing temporary crew home.</li>
 </div>
 <div class="r-comment" data-section="s141" data-id="c-run-r-20261115T153950228339-review-of-help-word-and-waiting-states-s141-f7c7b422d79e" data-who="reckon-build" data-when="2026-11-15T15:49:08.892Z">
     <div class="r-comment-body"><p>Review of r-20261114T174718151481-help-word-and-waiting-states-s141 at head f7c7b422 against base 889f7e78 is stored parsed with scores goal_fidelity 16, evidence 7, scope_discipline 12, durability 13, fit 16, reuse 18 (total 82); the rename and the four-state move landed in ticker.PANE_STATES and recovery_watch.WAITING_STATES, and seven blocking findings record that six modules reaching the pane still pin the retired word (9 failing ids at head, all green at base), that the 139-module arm population omits them, and that the manifest's landing line reports the head arm as 0 added while the head log it cites adds one id.</p></div>
+</div>
+<div class="r-comment" data-section="s141" data-id="c-run-r-20261114T174718151481-help-word-and-waiting-states-s141" data-who="reckon-build" data-when="2026-11-15T13:41:14Z">
+    <div class="r-comment-body"><p>The pane&#x27;s action bucket is `help` under `h`; `blocked-upstream`, `held`, `interrupted` and `ready` moved to `waiting` under `q` in both `ticker.PANE_STATES` and `recovery_watch.WAITING_STATES`; a stored `needs you` or `halted` restores as `help`. Thirty-two test modules that pinned the old word or letter were renamed with it, six of them outside the importer population. Fenced arms: base 889f7e78 90 passed EXIT=0, head b6fff08805 94 passed EXIT=0. Population, twinned per instrument: 139 importer modules: base 39 failed / 6 errors / 1212 passed over the 137 modules that arm carries plus 7 passed in a second base arm, head 39 failed / 6 errors / 1219 passed over all 139, the same 45 ids in both (0 added); the 51 vocabulary-only modules 32 failed / 628 passed in both arms (0 added). Negative controls: superseded mapping emptied fails only the restore case (1 failed, 3 passed); the six-literal commit reverted fails all six modules (9 failed, 23 passed).</p></div>
 </div>
 <div class="r-comment" data-section="s144" data-id="c-run-r-20261115T154112504384-review-of-follower-draws-after-producer-returns-s144-15f4387d952e" data-who="reckon-build" data-when="2026-11-15T15:48:53.751Z">
     <div class="r-comment-body"><p>Reviewed r-20261115T103831438354-follower-draws-after-producer-returns-s144 at 15f4387d952e against base 3bc474f926: §144 lands both halves (StationStore.reconnect_if_replaced plus StationSubscriber._adopt_replaced_store, and a follower-emission record on stderr) with a real guarding test; scores goal_fidelity 19, evidence 16, scope_discipline 15, durability 16, fit 18, reuse 20, and four non-blocking findings (untested same-identity branch, an inert session-host-log env seam, one assertion coupled to the same wake call's output, an evidence fragment outside the declared write paths).</p></div>
