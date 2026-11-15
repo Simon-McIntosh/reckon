@@ -41,7 +41,7 @@
         node's new test absent</td>
         <td>58 passed, <code>EXIT=0</code></td></tr>
       <tr><td>after arm (the same set plus the node's new test)</td>
-        <td><code>b81b1d4e5e</code>, this worktree carrying the change</td>
+        <td><code>75b7e58aee</code>, this worktree carrying the change</td>
         <td><strong>61 passed</strong>, <code>EXIT=0</code></td></tr>
       <tr><td>the node's new tests against the base revision</td>
         <td><code>3bc474f926</code>, a scratch extraction of the base tree with
@@ -50,7 +50,7 @@
         answered <code>ok: true</code> with no findings for both refusal cases,
         which is the defect reproduced</td></tr>
       <tr><td>negative control: a text arm accepted again</td>
-        <td><code>b81b1d4e5e</code>, this worktree, the armed inference forced to
+        <td><code>75b7e58aee</code>, this worktree, the armed inference forced to
         answer false — accepting a text suite arm again makes the prose-arm case
         pass the check</td>
         <td><strong>2 failed</strong>, 1 passed, <code>EXIT=1</code> —
@@ -59,11 +59,19 @@
       <tr><td>importer population, base</td>
         <td><code>3bc474f926</code>, the base tree; the 56 test files importing
         <code>reckon.crew.reports</code> or <code>reckon.crew.queue_landing</code></td>
-        <td>POPULATION_BASE</td></tr>
+        <td>56 failed, 754 passed in 2615s, <code>EXIT=1</code> &mdash; 22 of the
+        failures in <code>tests/test_crew.py</code>, the rest the sandbox's
+        socket and config-home limits</td></tr>
       <tr><td>importer population, head</td>
-        <td><code>b81b1d4e5e</code>, this worktree carrying the change; the same
+        <td><code>75b7e58aee</code>, this worktree carrying the change; the same
         56 files</td>
-        <td>POPULATION_HEAD</td></tr>
+        <td>54 failed, 756 passed in 2337s, <code>EXIT=1</code> &mdash; 21 in
+        <code>tests/test_crew.py</code>; no failure id the base arm did not
+        name, and the two ids that differ between the arms are one watch test
+        each way, both threading-and-timeout cases that fail and pass
+        run-to-run at either revision, and the node's two refusal cases are
+        among the base arm's failures because the test file does not exist
+        there</td></tr>
     </tbody>
   </table>
 
