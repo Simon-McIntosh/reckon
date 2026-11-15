@@ -2,9 +2,11 @@ import hashlib
 import json
 import os
 import re
+import select
 import shutil
 import signal
 import socket
+import stat
 import sys
 import threading
 import time
@@ -20,6 +22,7 @@ import click
 # (re-exported) here so a caller reaching them through this module keeps working.
 from reckon import checkout_trust  # noqa: F401 - re-exported for callers
 from reckon._timestamps import parse_utc
+from reckon.crew.follower_registration import _pipe_reader_pids
 from reckon.crew.follower_reload import (  # noqa: F401 - re-exported for callers
     _FollowerReloader,
     _probe_retry_jitter,
@@ -1669,6 +1672,10 @@ def _follow_watch_lines(
     )
     lifetime_elapsed = False
     consumer_gone = False
+    # Settled once the follower's output has been shown to reach a reader the
+    # process that started it does not hold, so the walk that proves it runs
+    # once rather than on every wait pass.
+    reader_confirmed = False
     # The settle: a follower a settle-aware host runs ends once no live work
     # remains, printing one idle line. ``saw_live`` is the hinge -- a dispatch
     # asks the host for this follower before it publishes the run's pointer, so
@@ -1770,7 +1777,7 @@ def _follow_watch_lines(
             settled = True
 
     def _check_consumer() -> None:
-        """End this arming when the process it reports to has gone.
+        """End this arming when its arming process has gone and no reader holds it.
 
         The follower delivers to the session that armed it, and that owner is
         fixed once, at the follower's first start, as a pid plus the kernel
@@ -1780,10 +1787,21 @@ def _follow_watch_lines(
         init or a subreaper; and rather than from the registration record,
         because a second follower that takes the registration over rewrites
         that record from its own parent, so a record read back here could name
-        the wrong process. The owner having gone means the lines reach nobody,
-        so holding the registration only denies the session its next follower:
-        the orphan keeps the advisory lock, and every dispatch from the session
-        is refused ``watcher-required`` until someone kills it by hand.
+        the wrong process.
+
+        A dead owner is not on its own proof that the lines reach nobody. A
+        follower started as a background job of a shell that exits at once —
+        two followers piped into one reader, say — is re-parented while the
+        caller still holds the pipe's read end, and its rows are still being
+        read. So an arming whose owner has gone ends only when its stdout has
+        lost its reader, which for a pipe is the same moment a write would
+        fail. An arming whose output goes to a file, or to a device that
+        discards what is written to it, keeps the owner-only rule: nothing
+        reads those, so an orphan writing into one delivers to nobody and
+        would hold the registration against the session's next follower,
+        refusing every dispatch from the session ``watcher-required`` until
+        someone kills it by hand. A terminal and a socket still reach someone,
+        so they keep the reader rule with the pipe.
 
         This runs on every wait pass, whether or not the follower holds the
         registration: a read-only follower holds no lock and still outlives its
@@ -1793,15 +1811,19 @@ def _follow_watch_lines(
         is printed on this path: it is the one path whose whole point is that no
         reader is left.
         """
-        nonlocal consumer_gone
+        nonlocal consumer_gone, reader_confirmed
         if consumer_gone:
             return
         owner_pid, owner_start = runs.follower_owner()
-        if owner_pid <= 1 or runs.process_alive(owner_pid) is not True:
+        owner_running = owner_pid > 1 and runs.process_alive(owner_pid) is True
+        if owner_running and owner_start:
+            owner_running = runs._process_start_time(owner_pid) == owner_start
+        if owner_running:
+            return
+        if not _stdout_has_reader(owner_pid, confirmed=reader_confirmed):
             consumer_gone = True
             return
-        if owner_start and runs._process_start_time(owner_pid) != owner_start:
-            consumer_gone = True
+        reader_confirmed = True
 
     def _check_lifetime() -> None:
         """Mark this arming ended when its own deadline has passed.
@@ -2715,6 +2737,68 @@ def _follow_watch_lines(
             elapsed=clock() - started_at,
         )
 
+
+
+def _stdout_has_reader(owner_pid: int, stream=None, *, confirmed=False) -> bool:
+    """Whether this follower's output still reaches a reader that is not its parent.
+
+    A follower armed by a shell that exits — two followers piped into one
+    reader, as ``bash -c 'crew follow ... & crew follow ... &' | grep .`` does —
+    loses its owner but not its reader: the caller still holds the pipe's read
+    end, and the rows are read until that end closes. That is the delivery, so a
+    follower in that state keeps streaming.
+
+    The parent is not the owner here: the arming process is dead whatever
+    adopted the follower, so re-parenting is judged against the owner read from
+    :func:`reckon.crew.runs.follower_owner`, never by the parent's liveness —
+    under a live subreaper the parent is a running process that never armed the
+    follower at all.
+
+    A socket and a terminal carry a reader by construction, so they answer yes.
+    A character device does not: ``/dev/null`` accepts every write and delivers
+    it nowhere, so an orphan writing into one ends like an orphan writing into
+    a file. A piped output is followed to the process holding its read end: the pids
+    holding that end answer whether anyone reads it, and the follower keeps
+    streaming when one of them is not the process that started it. A parent
+    holding an unread pipe for a dead armed owner is an in-process harness — a
+    takeover, not an orphan — and the owner-only rule keeps its present job on
+    it. That probe costs a walk of ``/proc``, so once a reader has been found
+    ``confirmed`` asks only the cheap question: the pipe's read end is still
+    open, which ``POLLERR`` answers on the write end. A regular file is read by
+    whoever opens it later, which for a command that never exits is nobody:
+    those answer no, and an orphan writing into one still ends and frees the
+    registration instead of refusing every dispatch from its session.
+    """
+    try:
+        target = stream or click.get_text_stream("stdout")
+        descriptor = target.fileno()
+        info = os.fstat(descriptor)
+        if not stat.S_ISFIFO(info.st_mode):
+            # A socket carries its peer by construction and a terminal has a
+            # screen attached, so both reach someone. Every other kind of
+            # descriptor — a regular file, and a character device such as
+            # /dev/null whose writes always succeed — delivers to nobody while
+            # the command runs, so an orphan writing into one ends.
+            return stat.S_ISSOCK(info.st_mode) or (
+                stat.S_ISCHR(info.st_mode) and os.isatty(descriptor)
+            )
+        poller = select.poll()
+        poller.register(descriptor, select.POLLERR)
+        if any(mask & select.POLLERR for _event, mask in poller.poll(0)):
+            return False
+        if confirmed:
+            return True
+        parent = os.getppid()
+        # An owner of pid 1 or below is the re-parented marker rather than a
+        # process, so it cannot be compared with the parent.
+        if owner_pid > 1 and parent == owner_pid:
+            return False
+        readers = _pipe_reader_pids(info.st_ino, exclude=os.getpid())
+    except (AttributeError, OSError, ValueError):
+        # A stream this cannot inspect is treated as having no reader, which is
+        # the pre-existing rule: the pending registration is the costlier error.
+        return False
+    return any(pid != parent for pid in readers)
 
 
 def _echo_follow_line(line: str, *, stream=None) -> None:
@@ -3773,6 +3857,13 @@ def crew_follow(
             stream_events(registration)
     except runs_module.CrewError as exc:
         raise click.ClickException(str(exc)) from exc
+    except BrokenPipeError:
+        # The reader closed between the wait pass's probe and this write, so
+        # this is the ending the probe would have reached one pass later: the
+        # rows reach nobody and the registration is released by the block that
+        # took it. Ended here rather than raised through the caller, which
+        # would report a write nobody is left to read as a failure.
+        return
 
 
 
