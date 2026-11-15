@@ -1,0 +1,61 @@
+<article class="r-evidence" data-node="wait-judged-against-itself-s7" id="wait-judged-against-itself-s7">
+<h3 id="wait-judged-against-itself-s7-title">A declared wait is judged against itself, not against a log's clock</h3>
+<p id="wait-judged-against-itself-s7-horizon">A parked run's overdue flag was
+<code>age_seconds &gt; expected_horizon_seconds</code>, and a declaration that named no
+horizon took the reader's default: the 900 s log-staleness bound. That number is a limit
+on a log file, not a limit the wait declared, and it was held against a scheduler job
+that was still running. Reproduced at the base revision with a live probe three hours in
+— <code>["python",&nbsp;"…/probe.py"]</code> printing <code>RUNNING</code>, no
+<code>wait_expected</code> field — the row read
+<code>wait_overdue=True</code> and <code>recovery_classification='wait-aged'</code>, which
+is the reading that sent a multi-hour compute wait to "investigate" at
+<code>r-20261114T211231918544</code>. The wait now carries
+<code>expected_horizon_source</code>, and while its own probe reports a live state a
+default horizon is not held against it: <code>overdue</code> is false and the row stays
+waiting. A declaration that names its own horizon is still judged by that horizon, and a
+<code>wait_file</code> condition — whose reader derives <code>pending</code> from absent
+paths rather than taking an answer from the awaited work — still ages into the alarm.</p>
+<p id="wait-judged-against-itself-s7-answering">The producer-gone verdict rested on three
+second-hand facts: the run's own process being gone, a probe value that had stood still,
+and a scheduler query asked on this host. The third is meaningless for work submitted
+elsewhere, and the second is what a healthy wait looks like. An answering probe was the
+one first-hand fact in the case and was not consulted. Reproduced at the base revision
+with a script probe answering <code>PENDING</code> on every sweep: the row read
+<code>producer-gone</code> with the detail "the run's own process is gone — no process of
+the run is alive and the probe 'PENDING' has not changed for 1200s — and the wait names
+no scheduler job". A declared probe that answered is now the wait's own evidence and the
+verdict returns before its second-hand legs are read, whatever its argv names, so a
+parked worker with such a probe is never read abandoned.</p>
+<p id="wait-judged-against-itself-s7-suspect">A job the scheduler cancels before it starts
+reports <code>CANCELLED</code> with an elapsed time of zero, and <code>CANCELLED</code> is
+a way a job ends, so a declaration that lists it matched its own terminal state and the
+row offered a resume against work that never ran
+(<code>r-20261114T210059239602</code>). Reproduced at the base revision: the row read
+<code>ready to resume: the compute job writes its final rows reported 'CANCELLED 00:00:00',
+a declared terminal state</code>. A probe naming a job with a cancelled state and no
+elapsed time is now carried on the row as <code>external_wait.suspect_probe</code>, the
+condition is reported <code>unknown</code> rather than met, and the offered action is the
+declaration's repair. The same state with an elapsed time behind it is still terminal, so
+a job that ran before it was cancelled ends the wait as before.</p>
+<p id="wait-judged-against-itself-s7-measure">Measure: the node's gate is
+<code>PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q
+tests/test_a_declared_wait_is_judged_against_itself.py
+tests/test_staged_write_inventory.py
+tests/test_every_shared_home_lock_holds_across_nodes.py</code>. The base arm at
+<code>977adcb</code>, resolved over a tree without the new file, gave 58 passed and
+<code>EXIT=0</code>; the after arm gave 61 passed and <code>EXIT=0</code>. The three
+added passes are this node's cases. The same three cases run against the base tree give
+3 failed, <code>EXIT=1</code>, and each names the behaviour rather than a missing field:
+<code>assert True is False</code> for the overdue flag, the producer-gone detail on a
+<code>PENDING</code> probe, and <code>ready to resume: … reported 'CANCELLED 00:00:00',
+a declared terminal state</code>.</p>
+<p id="wait-judged-against-itself-s7-controls">Negative control, logged at
+<code>gate/negative-control.log</code>: the default 900 s horizon restored for a
+live-probe wait makes <code>test_a_running_wait_is_not_overdue_before_its_own_limit</code>
+fail with <code>assert True is False</code>, 1 failed, <code>EXIT=1</code>, while the
+after arm passes the same case — the guard is what fires, not the absence of a check. The
+controls inside the cases hold the change to what §7 names: a declaration that names its
+own horizon is still judged by it (2 h horizon, 3 h old, live probe → <code>wait-aged</code>),
+a <code>wait_file</code> condition still ages into the alarm, and a cancelled job with an
+elapsed time behind it is still terminal.</p>
+</article>
