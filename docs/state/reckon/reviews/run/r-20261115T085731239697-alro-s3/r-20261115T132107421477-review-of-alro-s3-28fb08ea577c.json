@@ -1,0 +1,83 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/project_maintenance_commands.py:1483",
+    "reckon/_store.py:1323"
+  ],
+  "completed_at": "2026-11-15T14:09:02.030Z",
+  "dispatched_at": "2026-11-15T14:08:38Z",
+  "findings": [
+    {
+      "file": "reckon/evidence.py",
+      "line": 279,
+      "severity": "non-blocking",
+      "summary": "_landing_comment recognises a landing comment only by the c-close- prefix and otherwise quotes the last comment of the section, while the promotion path writes its landing comment as c-run-<run id> (RUN_COMMENT_PREFIX at reckon/crew/plan_review.py:252, written at reckon/crew/promotion_scope.py:1447); for a promotion-landed section whose last comment is not its landing, the overview quotes unrelated prose as the section's landing line, and the tests only exercise the c-close- spelling."
+    },
+    {
+      "file": "reckon/evidence.py",
+      "line": 297,
+      "severity": "non-blocking",
+      "summary": "_run_figures takes a plan_slug argument it never reads, and its only caller passes plan.get(\"slug\") at reckon/evidence.py:404, so a parameter that implies the figure path is checked against the plan's directory does nothing and misleads the next reader."
+    },
+    {
+      "file": "reckon/evidence.py",
+      "line": 284,
+      "severity": "non-blocking",
+      "summary": "_figure_src re-implements the project-absolute figure address that figure_row already owns as href = f\"/{project}/figures/{slug}\" at reckon/figures.py:171, without extending or importing that owner, so a change to the served figure route has two places to update."
+    },
+    {
+      "file": "reckon/evidence.py",
+      "line": 265,
+      "severity": "non-blocking",
+      "summary": "_done_when truncates the section body at the first period, so a done-when carrying an abbreviation, an initial or a dotted path is quoted into the overview only up to that period, and the record states a partial done-when as the section's stated measure."
+    },
+    {
+      "file": "docs/plans/a-landing-is-recorded-once.html",
+      "line": 44,
+      "severity": "non-blocking",
+      "summary": "The section deliverable lists totals for 'review findings and their disposal' among what the overview must hold, and _totals_paragraph at reckon/evidence.py:794 renders runs, attempts and worker time only; the manifest records the reason in outside_scope (the ledger row drops findings, so a findings total needs a review-store read), so the clause is undelivered rather than wrong."
+    },
+    {
+      "file": "tests/test_a_closing_plan_gets_one_sourced_overview.py",
+      "line": 294,
+      "severity": "non-blocking",
+      "summary": "check_one_row_per_landed_node asserts nodes == [\"s1-node\", \"s2-node\"] and reads the attempts cell only for s1-node, so a renderer that emitted the correct row count with a wrong attempt count on s2-node would still pass; the third case's stated measure is attempts per node, and only one node's count is asserted."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "Read commit by commit from base 69c08d4: one commit, 28fb08ea, adds 478 lines to reckon/evidence.py (read_section_landings, _overview_block, _source, _landing_comment, _run_figures, _figure_src, _totals_paragraph), a 464-line new test file, and a 19-line optional evidence fragment under docs/evidence/fragments/.",
+    "done_when": "The done_when names a new test file over a temporary repo with a ledger, one figure and a three-section plan; tests/test_a_closing_plan_gets_one_sourced_overview.py holds those eight cases plus four declared negative controls, and the manifest records 71 passed EXIT=0 at head against 58 passed EXIT=0 at base, but neither arm runs any of the existing test files that import reckon.evidence, so the done_when's closing clause is not measured by the recorded pair.",
+    "goal": "The reviewed node's goal is that the existing `reckon evidence synthesize` command writes a plan's closure overview as its landed record, with no second command or document, sourced and ordered; read at 28fb08ea, reckon/evidence.py:814 _overview_block emits the four ordered blocks and reckon/evidence.py:963-1030 wires them into the one renderer that synthesize_landed_record (reckon/evidence.py:810) and reckon/project_maintenance_commands.py:1483 already reach.",
+    "manifest": "Read; status complete, commits 28fb08ea577c, both arms given as command+log_path+failure_count 0, negative_control_log named as a bare path, and outside_scope records that review findings are absent from the ledger row the totals read.",
+    "write_paths": "The manifest declares reckon/evidence.py, tests/test_a_closing_plan_gets_one_sourced_overview.py, docs/evidence/fragments/a-landing-is-recorded-once/alro-s3.html and docs/figures/a-landing-is-recorded-once/alro-s3; all three files in the diff lie inside those paths and no fourth file is touched."
+  },
+  "justifications": {
+    "durability": "tests/test_a_closing_plan_gets_one_sourced_overview.py:279 fails if any overview paragraph loses its source element, :295 fails if _node_rows emits one row per run instead of one per node, and the four _control_ tests reinstate each declared regression and assert the corresponding checker reddens.",
+    "evidence": "The gate runs tests/test_a_closing_plan_gets_one_sourced_overview.py (13 cases, 71 passed EXIT=0 in the run's after-suite.log) and the mutation log records 4 failed / 9 passed EXIT=1, so the measured result is recorded rather than claimed; the done_when's clause about the test files importing reckon.evidence is covered by neither arm.",
+    "fit": "The added helpers follow the module's own idiom (module-level dataclasses, `_`-prefixed helpers, one-line docstrings) as reckon/evidence.py:196-265 shows, and no added name carries a plan, ticket or version identifier; landings_that_landed at reckon/evidence.py:768 is defined after its first caller, which reads as an afterthought in an otherwise ordered module.",
+    "goal_fidelity": "reckon/evidence.py:814-860 renders one paragraph per section, one row per landed node, the named figures and the totals into the record synthesize_landed_record writes, so the stated deliverable lands; the plan's totals clause naming review findings and their disposal is absent from _totals_paragraph at reckon/evidence.py:794.",
+    "reuse": "read_section_landings at reckon/evidence.py:337 is the single reading the plan asks for and reuses _plan_html.plan_headings, _field_paths and parse_manifest rather than re-deriving them, but _figure_src at reckon/evidence.py:284 recomposes the project-absolute figure address that figure_row owns at reckon/figures.py:171 without extending it.",
+    "scope_discipline": "Every path in the diff (reckon/evidence.py, tests/test_a_closing_plan_gets_one_sourced_overview.py, docs/evidence/fragments/a-landing-is-recorded-once/alro-s3.html at 19 added lines) is inside the four write paths the run's manifest declares."
+  },
+  "notes": "Reviewed head 28fb08ea is not an ancestor of this review worktree's HEAD f82a307b; the diff and the line numbers were read from the reviewed commit objects, and the reuse ownership comparison was made against the repository at that revision. No code was modified. Beyond reading the worker's own logs, one scratch-tree run at the reviewed head (tests/test_a_resynthesis_keeps_appended_anchors.py tests/test_evidence_synthesis.py: 16 passed, EXIT=0) checked the existing renderer tests that neither recorded arm runs; its log is $TMPDIR/head-evidence-tests.log.",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that the existing `reckon evidence synthesize` command writes a plan's closure overview as its landed record with no second command or document; read at 28fb08ea, reckon/evidence.py:814 _overview_block emits the four ordered blocks and reckon/evidence.py:963-1030 wires them into the one renderer synthesize_landed_record (reckon/evidence.py:810) already reaches.\nVERDICT done_when: the measure names a new test file over a temporary repo with a ledger, one figure and a three-section plan; tests/test_a_closing_plan_gets_one_sourced_overview.py carries those eight cases plus four declared negative controls, and the manifest records 71 passed EXIT=0 at head against 58 passed EXIT=0 at base, but neither arm runs the existing test files that import reckon.evidence, so the done_when's closing clause is not measured by the recorded pair.\nVERDICT write_paths: the manifest declares reckon/evidence.py, tests/test_a_closing_plan_gets_one_sourced_overview.py, docs/evidence/fragments/a-landing-is-recorded-once/alro-s3.html and docs/figures/a-landing-is-recorded-once/alro-s3; every file in the diff is inside them.\nVERDICT manifest: read; status complete, commit 28fb08ea577c, both arms recorded with command, log_path and zero failures, a bare negative_control_log path, and outside_scope naming the missing findings total.\nVERDICT diff: read commit by commit from base 69c08d4; one commit, 28fb08ea, adds 478 lines to reckon/evidence.py, a 464-line new test file and a 19-line optional fragment, and nothing else.\nCALL_SITES: reckon/project_maintenance_commands.py:1483, reckon/_store.py:1323\nSCORE goal_fidelity: 16\nJUSTIFICATION goal_fidelity: reckon/evidence.py:814-860 renders the paragraph-per-section, per-node table, figures and totals into the landed record, but the plan's totals clause naming review findings and their disposal is absent from _totals_paragraph at reckon/evidence.py:794.\nSCORE evidence: 15\nJUSTIFICATION evidence: tests/test_a_closing_plan_gets_one_sourced_overview.py ran green at head (71 passed, EXIT=0) with a red mutation log (4 failed / 9 passed, EXIT=1), but neither arm runs any test file that imports reckon.evidence, leaving the done_when's closing clause unmeasured.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: the three files in the diff all lie inside the four write paths the manifest declares, including docs/evidence/fragments/a-landing-is-recorded-once/alro-s3.html.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_a_closing_plan_gets_one_sourced_overview.py:279, :295 and its four _control_ tests each reinstate a declared defect and assert the corresponding checker reddens, and my own run of tests/test_a_resynthesis_keeps_appended_anchors.py at head passed 16 with the anchors path intact.\nSCORE fit: 17\nJUSTIFICATION fit: the added helpers match the module's idiom at reckon/evidence.py:196-265, though landings_that_landed at reckon/evidence.py:768 is defined after its first caller.\nSCORE reuse: 10\nJUSTIFICATION reuse: read_section_landings is the single reading the plan asks for and reuses _plan_html.plan_headings, _field_paths and parse_manifest, but _figure_src at reckon/evidence.py:284 recomposes the figure address figure_row owns at reckon/figures.py:171.\nFINDING reckon/evidence.py:279 non-blocking: _landing_comment matches only the c-close- prefix and otherwise quotes the last comment, while promotion writes c-run-<run id> (reckon/crew/plan_review.py:252), so a promotion-landed section can have unrelated prose quoted as its landing line.\nFINDING reckon/evidence.py:297 non-blocking: _run_figures takes plan_slug and never reads it; its caller passes plan.get(\"slug\") at evidence.py:404.\nFINDING reckon/evidence.py:284 non-blocking: _figure_src re-implements the project-absolute figure address figure_row owns at reckon/figures.py:171 without extending it.\nFINDING reckon/evidence.py:265 non-blocking: _done_when truncates the section body at the first period, so a done-when carrying an abbreviation or a dotted path is quoted only in part.\nFINDING docs/plans/a-landing-is-recorded-once.html:44 non-blocking: the deliverable's totals list names review findings and their disposal, but _totals_paragraph at reckon/evidence.py:794 renders runs, attempts and worker time only.\nFINDING tests/test_a_closing_plan_gets_one_sourced_overview.py:294 non-blocking: the attempts cell is asserted only for s1-node, so a wrong attempt count on s2-node would pass the third case.\n",
+  "review_run_id": "r-20261115T132107421477-review-of-alro-s3-28fb08ea577c",
+  "reviewed_base_sha": "69c08d4fe12fd788c19abd99f214937850f234be",
+  "reviewed_head_sha": "28fb08ea577c67d01f86dffae2f340bc6da2a3cf",
+  "reviewed_run_id": "r-20261115T085731239697-alro-s3",
+  "rubric": "code",
+  "scores": {
+    "durability": 18,
+    "evidence": 15,
+    "fit": 17,
+    "goal_fidelity": 16,
+    "reuse": 10,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-15T14:34:07.920094+00:00",
+  "total": 95
+}
