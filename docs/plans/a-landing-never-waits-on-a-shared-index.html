@@ -25,7 +25,7 @@
   <title>A Landing Never Waits On A Shared Index | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="81">
+<meta name="plan-version" content="82">
 <meta name="plan-modified" content="2026-11-15">
 </head>
 <body>
@@ -270,7 +270,10 @@
     <div class="r-comment-body"><p>placeholder</p></div>
 </div>
 <div class="r-comment" data-section="s16" data-id="c-run-r-20261115T202811884396-review-of-merged-primary-run-lands-s16-bb256684ce6f" data-who="reckon-build" data-when="2026-11-15T20:33:05.032Z">
-    <div class="r-comment-body"><p>Independent review of run r-20261115T124006592934-merged-primary-run-lands-s16 read base eb4735ae3b446954eddf79f3b2d8502bce7199f6 through head bb256684ce6f3232bdba6326f257f3faace00188 (four commits since its last review: merge 164df43d92, style 6d33245477, repair 0cb2e73380, evidence bb256684ce): goal_fidelity 17, evidence 13, scope_discipline 20, durability 18, fit 18, reuse 4, added_failure_count 0 with an empty id list, four non-blocking findings (commits_between still duplicates recovery_review_subject.reviewed_commits and the repair added the owner&#x27;s first_parent flag to the copy; the fragment&#x27;s &quot;both fail at the base revision&quot; has no base-red log; the done_when&#x27;s refusal clause is no longer asserted because the primary guard now accepts reachable imports; the base arm&#x27;s receipt names the head arm&#x27;s log and a command the base revision cannot run), no blocking finding, so the node may land.</p></div>
+    <div class="r-comment-body"><p>Independent review of run r-20261115T124006592934-merged-primary-run-lands-s16 read base eb4735ae3b446954eddf79f3b2d8502bce7199f6 through head bb256684ce6f3232bdba6326f257f3faace00188 (four commits since its last review: merge 164df43d92, style 6d33245477, repair 0cb2e73380, evidence bb256684ce): goal_fidelity 17, evidence 13, scope_discipline 20, durability 18, fit 18, reuse 4, added_failure_count 0 with an empty id list, four non-blocking findings (commits_between still duplicates recovery_review_subject.reviewed_commits and the repair added the owner's first_parent flag to the copy; the fragment's "both fail at the base revision" has no base-red log; the done_when's refusal clause is no longer asserted because the primary guard now accepts reachable imports; the base arm's receipt names the head arm's log and a command the base revision cannot run), no blocking finding, so the node may land.</p></div>
+</div>
+<div class="r-comment" data-section="s16" data-id="c-run-r-20261115T124006592934-merged-primary-run-lands-s16" data-who="reckon-build" data-when="2026-11-15T14:23:07Z">
+    <div class="r-comment-body"><p>The inference that fills a run&#x27;s promotion citations now asks for the run&#x27;s own first-parent line in base..HEAD less the history the shared branch reaches (merge.commits_between with first_parent and excluding, plus the classification sweep&#x27;s cached primary revision in promotion.py), so a run that merged the shared branch cites its own commit and its own merge and not what the merge imported; the merge with the primary branch kept that traversal and its own reachability exclusion beside it. Measure: base arm 58 passed EXIT=0 at 622ef4617d73, after arm 60 passed EXIT=0 at bb256684ce, negative control 2 failed EXIT=1.</p></div>
 </div>
 <div class="r-comment" data-section="s3" data-id="c-run-r-20261114T203051455649-review-of-promotion-checks-read-only-what-moved-52e6182f1f8a" data-who="reckon-build" data-when="2026-11-15T00:53:08.156Z">
     <div class="r-comment-body"><p>independent review of r-20261114T143749419652-promotion-checks-read-only-what-moved at head 52e6182f1f: goal_fidelity 17, evidence 14, scope_discipline 19, durability 17, fit 18, reuse 17, added_failure_count 0, three non-blocking findings.</p></div>
