@@ -19,11 +19,11 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="reckon-tooling,crew">
   <meta name="plan-informs" content="a-landing-is-recorded-once">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;}">
   <title>A Read-Only Run Promotes As Delivered | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="15">
+<meta name="plan-version" content="16">
 <meta name="plan-modified" content="2026-11-15">
 </head>
 <body>
@@ -58,7 +58,7 @@
     <p><strong>Done when</strong> a new test file shows, with isolated crew state: a delivered investigate run carrying a brief and no plan produces one review dispatch from the duty pass, whose brief names the run's brief; a second pass dispatches nothing more; the obligations view lists the duty before the dispatch and not after the review is stored; and a delivered run that carries a plan section is handled as at the base revision. Negative control: at the base revision the first case dispatches nothing, and the node's manifest quotes that result. If the first case already passes at the base revision, the node instead reports which condition kept this session's two runs from being reviewed, with the pointer fields that show it, and changes no product source. The test files that import the review duty pass add no failure against the base revision, and <code>ruff check</code> and <code>ruff format --check</code> add no finding on the staged paths.</p>
 
     <h2 id="s5">§5 — One plan's run records read in seconds</h2>
-<section data-reckon="section" data-id="s5" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+<section data-reckon="section" data-id="s5" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="done" data-links=""></section>
     <p><strong>Deliverable.</strong> Reading the run records of one plan through the ledger's own read, in a fresh process against the committed store of this repository, answers in under five seconds, and its cost does not grow with the number of runs that belong to other plans.</p>
     <p><strong>Done when</strong> one gate log, written to the node's run directory on shared storage by one job on the <code>rigel</code> partition, shows five fresh-process reads of one plan's run records against the committed store at the base revision and at the head, each timed, with the head's slowest read under five seconds and the base's times beside it; and a new test file shows that a one-plan read over a synthetic store of 2,000 runs across 50 plans decodes no run document of another plan and returns the same rows as the unfiltered read filtered afterwards. Negative control: at the base revision the decode-count case fails. If the base revision already reads under five seconds on <code>rigel</code>, the node reports the five timings and changes no product source. The test files that import the ledger read add no failure against the base revision, and <code>ruff check</code> and <code>ruff format --check</code> add no finding on the staged paths.</p>
 
@@ -116,7 +116,10 @@
     <div class="r-comment-body"><p>Figure review of rorp-s5: two non-blocking findings (faint base label, overlapping points)</p></div>
 </div>
 <div class="r-comment" data-section="s5" data-id="c-run-r-20261115T085741072175-rorp-s5" data-who="reckon-build" data-when="2026-11-15T14:16:58Z">
-    <div class="r-comment-body"><p>one plan&#x27;s run records are selected inside the ledger&#x27;s own index query, so a fresh-process read of one plan&#x27;s 365 rows costs at most 1.5 s against 7.6-14.8 s at the base revision and decodes no other plan&#x27;s documents; evidence and figure at docs/evidence/fragments/a-read-only-run-promotes-as-delivered/rorp-s5.html</p></div>
+    <div class="r-comment-body"><p>one plan's run records are selected inside the ledger's own index query, so a fresh-process read of one plan's 365 rows costs at most 1.5 s against 7.6-14.8 s at the base revision and decodes no other plan's documents; evidence and figure at docs/evidence/fragments/a-read-only-run-promotes-as-delivered/rorp-s5.html</p></div>
+</div>
+<div class="r-comment" data-section="s5" data-id="c-close-s5" data-who="reckon-build" data-when="2026-11-15T15:00:00Z">
+    <div class="r-comment-body"><p>§5 landed (run <code>r-20261115T085741072175-rorp-s5</code>, head <code>f1faed9c96</code>): one plan's run records are selected inside the ledger's own index query. Five fresh-process reads of one plan's 365 rows on <code>rigel</code> took 0.59 to 1.42 s at head against 7.58 to 14.82 s at the base revision, over a committed store of 3,124 runs across 133 plans; the decode-count test shows no other plan's run document is decoded. The head suite arm passes; the base arm's two errors come from the extracted base tree and are not added. Both reviews passed. The read-cost figure's faint base label and overlapping points are to be redrawn. <a href="/reckon/evidence/fragments/a-read-only-run-promotes-as-delivered/rorp-s5.html">fragment</a></p></div>
 </div>
 </section>
 </main>
