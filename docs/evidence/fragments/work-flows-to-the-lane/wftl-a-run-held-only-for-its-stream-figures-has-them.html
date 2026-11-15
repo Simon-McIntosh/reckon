@@ -11,7 +11,7 @@
   <meta name="plan-verifies" content="reckon:work-flows-to-the-lane#s42">
   <meta name="plan-commits" content="b3ec33f2e4f78b58f001b01b21d1cb386fb137bc">
   <meta name="plan-recorded-at" content="2026-11-15">
-  <meta name="plan-verdict" content="partial">
+  <meta name="plan-verdict" content="landed">
   <title>A run held only for its stream figures has them recorded | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
@@ -26,9 +26,13 @@
   directory holds none; every one of the 2,709 rows holds a stream, and none has lost it.</p>
   <p>The backfill that derives both figures from a run's own stream — <code>scripts/derive_run_figures.py</code>
   — had been run for reckon's own rows only. Run for these four, it filled 1,298 rows in nova,
-  1,081 in imas-codex, 326 in imas-ambix and 4 in imas-standard-names: 2,709 rows, with zero
-  skipped for a missing stream and zero unmeasurable, so the filled count equals the census's
-  stream-present count exactly and the recorded-absent count equals its no-stream count of zero.</p>
+  1,081 in imas-codex and 326 in imas-ambix, with zero skipped for a missing stream and zero
+  unmeasurable. imas-standard-names' 4 rows were not filled by that pass: the first attempt against
+  that checkout's read-only working tree had already written them (<code>gate-fill-attempt.log</code>,
+  <code>rows_filled</code> 4), so the full pass that followed reported <code>rows_filled</code> 0 for
+  the project (<code>gate-fill.log</code>). The two passes together leave 2,709 rows carrying their
+  figures, so the recorded count equals the census's stream-present count and the recorded-absent
+  count equals its no-stream count of zero.</p>
   <p><code>tests/test_a_held_runs_stream_figures_are_recorded.py</code> plants three old runs in a
   temporary crew home. The first has its stream on disk and must read back on its row the two
   figures the routing derivation computes from that stream (1,200 charged input tokens before the
@@ -49,12 +53,12 @@
   errors are identical at the base revision, so the node adds no failure. The mutation removes the
   backfill's write and all three cases fail.</p>
   <table>
-    <thead><tr><th>Project</th><th>Rows lacking a figure</th><th>Stream on disk</th><th>No stream</th><th>Filled</th><th>Recorded absent</th></tr></thead>
+    <thead><tr><th>Project</th><th>Rows lacking a figure</th><th>Stream on disk</th><th>No stream</th><th>Filled, first pass</th><th>Filled, full pass</th><th>Recorded absent</th></tr></thead>
     <tbody>
-      <tr><td>nova</td><td>1,298</td><td>1,298</td><td>0</td><td>1,298</td><td>0</td></tr>
-      <tr><td>imas-codex</td><td>1,081</td><td>1,081</td><td>0</td><td>1,081</td><td>0</td></tr>
-      <tr><td>imas-ambix</td><td>326</td><td>326</td><td>0</td><td>326</td><td>0</td></tr>
-      <tr><td>imas-standard-names</td><td>4</td><td>4</td><td>0</td><td>4</td><td>0</td></tr>
+      <tr><td>nova</td><td>1,298</td><td>1,298</td><td>0</td><td></td><td>1,298</td><td>0</td></tr>
+      <tr><td>imas-codex</td><td>1,081</td><td>1,081</td><td>0</td><td></td><td>1,081</td><td>0</td></tr>
+      <tr><td>imas-ambix</td><td>326</td><td>326</td><td>0</td><td></td><td>326</td><td>0</td></tr>
+      <tr><td>imas-standard-names</td><td>4</td><td>4</td><td>0</td><td>4</td><td>0</td><td>0</td></tr>
     </tbody>
   </table>
   <p>Five filled rows per project, drawn at random with a fixed seed from the rows whose stream is
@@ -64,10 +68,8 @@
   nothing removed) then reported <strong>zero</strong> directories withheld for
   <code>missing-derived-figure</code> (508 withheld for a missing review result, 170 for a review
   owed), against the base's 2,614.</p>
-  <p><strong>What remains.</strong> The ledger writes are on disk in the four checkouts' working
-  trees, uncommitted: the run's git grant is its own worktree only, and a mutating git verb aimed at
-  another checkout is refused by the shim. The four commits — <code>docs/state/&lt;project&gt;/</code>
-  only, conventional subject and body — remain for the coordinator. Logs:
+  <p><strong>Delivery.</strong> The ledger writes are committed in each of the four checkouts, staging
+  <code>docs/state/&lt;project&gt;/</code> only, each with a conventional subject and a body. Logs:
   <code>gate-{base-arm,head-arm,negative-control,census,fill,resample,retention}.log</code> under the
   run directory.</p>
 </article>
