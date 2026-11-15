@@ -220,7 +220,10 @@ def _held_row(run_id: str = RUN_ID) -> dict:
 def _served(rows: list[dict]) -> list[tuple[str, str]]:
     """The rows an answer still serves once its settled duties are withheld."""
     settled = obligation_snapshot.without_departed_run_duties(
-        {"obligations": list(rows), "summary": {"count": len(rows), "oldest_age_seconds": 0}}
+        {
+            "obligations": list(rows),
+            "summary": {"count": len(rows), "oldest_age_seconds": 0},
+        }
     )
     return [(str(row["kind"]), str(row["run_id"])) for row in settled["obligations"]]
 
@@ -335,7 +338,7 @@ def _commit(tree: Path, name: str) -> None:
     ],
 )
 def test_the_derivation_holds_a_tree_only_while_it_carries_unmerged_work(
-    tmp_path: Path, state: str, held: bool
+    tmp_path: Path, state: str, held: bool, repository: Path
 ) -> None:
     """The row a reader sees is the derivation's answer for this tree.
 
@@ -361,9 +364,7 @@ def test_the_derivation_holds_a_tree_only_while_it_carries_unmerged_work(
     }
     resolved = tree.resolve()
     state_reader = obligations._HeldWorktreeState([])
-    state_reader.records.replace(
-        "filing", record, retained=resolved, position="filing"
-    )
+    state_reader.records.replace("filing", record, retained=resolved, position="filing")
     if state == "gone":
         tree.rename(tmp_path / "moved-away")
 
@@ -378,8 +379,9 @@ def test_a_deferral_names_the_project_its_duty_document_carries(
     """The fallback's answer is the document's, not the fixture's name.
 
     The document is stored under a project this module never otherwise uses,
-    so an acknowledgement recorded against PROJECT could only have come from a
-    source other than the document the fallback reads.
+    and the fixture's run has neither a ledger record nor a promotion request,
+    so the only source that can name anything here is the document. An
+    answer of PROJECT, or an empty one, is a regression in the fallback.
     """
     _store_duties(project=OTHER_PROJECT)
     until = (NOW + timedelta(hours=2)).isoformat()
@@ -388,4 +390,3 @@ def test_a_deferral_names_the_project_its_duty_document_carries(
 
     recorded = json.loads(runs.acknowledgement_path(RUN_ID).read_text(encoding="utf-8"))
     assert recorded["project"] == OTHER_PROJECT, recorded
-    assert recorded["project"] != PROJECT, recorded

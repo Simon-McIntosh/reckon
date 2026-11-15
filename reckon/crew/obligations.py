@@ -24,7 +24,6 @@ import json
 import os
 import re
 import shlex
-import subprocess
 import sys
 import threading
 from collections import OrderedDict, defaultdict, deque
@@ -55,6 +54,9 @@ from reckon.crew.node import (
     INTERRUPTED_RUN_PHASE,
     CrewError,
     PlanReviewMissingError,
+    _claim_commit_answer,
+    _git_answer,
+    _integration_ref_revision,
     parse_duration,
 )
 from reckon.crew.open_run_index import operational_read
@@ -2775,41 +2777,45 @@ def _holding_record(
     return candidates[-1]
 
 
-def _git_reading(tree: Path, *args: str) -> str | None:
-    """One git reading taken in one tree, or ``None`` when it cannot be read.
+# A reading taken while a peer may hold the tree's index lock asks git to leave
+# the repository alone. ``git status`` refreshes the index and would otherwise
+# write it, so a derivation pass over a hundred trees would contend for it.
+_READ_ONLY_GIT_ENV: Mapping[str, str] = {"GIT_OPTIONAL_LOCKS": "0"}
 
-    A failed reading is distinct from an empty answer: the caller keeps a duty
-    it cannot settle rather than reporting a tree released on a read that never
-    reached the repository. ``GIT_OPTIONAL_LOCKS=0`` keeps the reading from
-    taking the tree's index lock while a peer may hold it.
+
+# The branch names a landing is expected to have made a retained tree's commits
+# reachable from, in the order they are read. A repository integrates on one of
+# them, and a name the repository does not carry costs file reads rather than a
+# subprocess.
+_PRIMARY_REF_NAMES = ("main", "develop", "master")
+
+
+def _unmerged_commit_answer(tree: Path) -> bool | None:
+    """Whether ``tree``'s head carries a commit no primary ref reaches.
+
+    ``False`` means a primary ref reaches everything the head carries, so a
+    landing has taken the work. ``True`` means a ref was compared and does not
+    reach the head, and no other ref did. ``None`` means no name could be
+    compared, which is not evidence of an empty tree.
+
+    The reachability reading is the claim fence's own, so this derivation and a
+    claim judge one tree by one rule: it reads the head and the ref from git's
+    files and memoises per object id, so a tree that has not moved costs no
+    subprocess on a later pass. The base that reading excludes is passed as the
+    ref's own commit, which leaves exactly the commits the ref cannot reach.
     """
-    try:
-        result = run_git(tree, *args, env={"GIT_OPTIONAL_LOCKS": "0"})
-    except (OSError, subprocess.SubprocessError):
-        return None
-    if result.returncode != 0:
-        return None
-    return result.stdout.decode("utf-8", "replace")
-
-
-def _landed_refs(tree: Path) -> list[str]:
-    """The refs a landing is expected to have made this tree's commits reachable from.
-
-    Every name that resolves counts, and a commit reachable from any of them is
-    landed: the tree is settled when its work is on the branch, wherever that
-    branch is written down. The remote tracking head lags the local branch
-    until someone pushes, so the local names are read first and the remote head
-    joins them as one more candidate rather than standing as the authority.
-    """
-    names = [
-        name
-        for name in ("main", "develop", "master")
-        if _git_reading(tree, "rev-parse", "--verify", "--quiet", name)
-    ]
-    remote = _git_reading(tree, "symbolic-ref", "--short", "refs/remotes/origin/HEAD")
-    if remote is not None and remote.strip() and remote.strip() not in names:
-        names.append(remote.strip())
-    return names
+    answered = False
+    for name in _PRIMARY_REF_NAMES:
+        merged = _integration_ref_revision(tree, name)
+        if not merged:
+            continue
+        answer = _claim_commit_answer(tree, name, merged)
+        if answer is None:
+            continue
+        if not answer.strip():
+            return False
+        answered = True
+    return True if answered else None
 
 
 def _tree_holds_unmerged_work(tree: Path) -> bool:
@@ -2823,19 +2829,10 @@ def _tree_holds_unmerged_work(tree: Path) -> bool:
     """
     if not tree.is_dir():
         return False
-    status = _git_reading(tree, "status", "--porcelain")
+    status = _git_answer(tree, "status", "--porcelain", env=_READ_ONLY_GIT_ENV)
     if status is None or status.strip():
         return True
-    landed = _landed_refs(tree)
-    if not landed:
-        return True
-    beyond = _git_reading(tree, "rev-list", "--count", "HEAD", "--not", *landed)
-    if beyond is None:
-        return True
-    try:
-        return int(beyond.strip() or "0") > 0
-    except ValueError:
-        return True
+    return _unmerged_commit_answer(tree) is not False
 
 
 def _held_worktree_records(project: str) -> dict[Path, Mapping[str, Any]]:

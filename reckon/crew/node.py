@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 import re
 import subprocess
 from collections.abc import Iterable, Mapping, MutableMapping
@@ -1591,13 +1592,21 @@ def validate_node(
 _WORKTREE_REPOSITORY_FIELDS = ("worktree", "repo")
 
 
-def _git_answer(cwd: Path, *args: str) -> str | None:
+def _git_answer(
+    cwd: Path, *args: str, env: Mapping[str, str] | None = None
+) -> str | None:
     """Return stripped git stdout, or None when the command could not answer.
 
     An empty answer and an unanswerable one are kept apart, because they mean
     opposite things about a claim: no output from ``rev-list`` says the work is
     integrated, while a failure says the comparison never happened.
+
+    ``env`` is merged over the process environment for a caller that needs git
+    to leave the repository alone — a reading taken while a peer may hold the
+    index lock passes ``GIT_OPTIONAL_LOCKS=0`` rather than duplicating this
+    answer.
     """
+    environment = {**os.environ, **env} if env else None
     try:
         result = subprocess.run(
             ["git", *args],
@@ -1605,6 +1614,7 @@ def _git_answer(cwd: Path, *args: str) -> str | None:
             capture_output=True,
             text=True,
             check=False,
+            env=environment,
         )
     except OSError:
         return None
