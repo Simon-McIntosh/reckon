@@ -1148,14 +1148,15 @@ def run_ids(project: str, root: str | Path | None = None) -> set[str]:
     could not decode still counts by its name, because membership and not the
     row's contents is what this answers.
     """
-    current = _indexed_run_ids(project, root)
-    if current is not None:
-        return current
-    if _run_index_path(project, root).is_file() or store_answers(project, root):
-        # A project answering from the run store has no aggregate rows and no
-        # membership to read from the index, so the union is what names it.
+    # A project answering from the run store has no documents for the index to
+    # describe, so an index built while it held none is current and empty: the
+    # store's own membership is what names it, and only the union read sees it.
+    if store_answers(project, root):
         data, _version = load(project, root, headers_only=True)
     else:
+        current = _indexed_run_ids(project, root)
+        if current is not None:
+            return current
         data, _version = _load_aggregate(project, root)
     return {
         str(record["run_id"])
