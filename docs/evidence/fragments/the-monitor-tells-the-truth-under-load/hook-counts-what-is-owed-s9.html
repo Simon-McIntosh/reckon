@@ -1,0 +1,77 @@
+<section id="hook-counts-what-is-owed-s9-landing">
+  <h2>The hook's figures count the obligations it lists</h2>
+
+  <p><strong>What changed.</strong> <code>format_checklist</code> in
+  <code>reckon/hooks/coordinator_obligations.py</code> took its header count from
+  the payload's <code>summary.count</code> and its closing figure from
+  <code>summary.unreconciled_runs</code>, and printed the instruction to work the
+  list unconditionally. Both figures now come from the rows the render prints:
+  the header counts the obligations it lists, and the trailer appears only when
+  the list holds a row a coordinator can act on, counting those obligations
+  rather than the closure's run figure.</p>
+
+  <p><strong>The reproduction, at the base revision.</strong> Two workers
+  recorded in phase <code>working</code> and one request awaiting upstream, on a
+  fixture repository and a synthesised configuration home:</p>
+
+  <pre id="hook-counts-what-is-owed-s9-before"><code>summary: {'count': 0, 'oldest_age_seconds': 0, 'unreconciled_runs': 2}
+items: []
+--- rendered
+reckon obligations for session probe-session (project probe-derive): 0 outstanding
+unreconciled runs: 2; work the list to empty before ending the turn.
+
+summary: {'count': 1, 'oldest_age_seconds': 0, 'unreconciled_runs': 3}
+items: [('run-queued', 'run-upstream-request')]
+reckon obligations for session probe-session (project probe-derive): 1 outstanding, oldest 0s
+- [1 waiting, no action shortens them] run-queued 1 (oldest 0s)
+unreconciled runs: 3; work the list to empty before ending the turn.</code></pre>
+
+  <p>That is the reported reading word for word: a count of three runs beside a
+  list holding none, and the same count beside a list holding one wait. The three
+  are runs the closure calls unreconciled, and none is a duty &mdash; a worker in
+  flight is work already moving, and a request awaiting upstream starts by itself
+  when its last ref lands.</p>
+
+  <p><strong>The second reading.</strong> A registered session with no live
+  pointer and no producer was answered at every prompt with
+  <code>are not current: no producer; run `reckon crew watch --ensure …</code>.
+  The prompt path now reads the session's own live pointers before warning:
+  <code>session_holds_live_work</code> walks the pointer directory, and an
+  unreadable pointer counts as work so the silence is only ever taken on
+  evidence. The same fixture with one live run still names the remedy, which is
+  what shows the silence is the fleet's answer rather than a hook that stopped
+  speaking. The no-follower reading is untouched: it is asserted by
+  <code>tests/test_a_missing_snapshot_names_a_live_seat.py</code> for a session
+  holding no pointer, and that reading still speaks.</p>
+
+  <table id="hook-counts-what-is-owed-s9-arms">
+    <caption>Every arm is a log whose first line names its revision, tree and
+    command and whose last line reads <code>EXIT=&lt;code&gt;</code>.</caption>
+    <thead><tr><th>arm</th><th>revision</th><th>result</th></tr></thead>
+    <tbody>
+      <tr><td>new test against the base source</td>
+        <td><code>fd2fe9c1</code>, extraction with the new file copied in</td>
+        <td>6 failed, <code>EXIT=1</code> &mdash; every done-when case red</td></tr>
+      <tr><td>baseline suite (node's files in the base tree, new file dropped)</td>
+        <td><code>fd2fe9c1</code>, scratch clone</td>
+        <td>58 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>after suite (node's files, new file present)</td>
+        <td>head of this node's commits, working tree</td>
+        <td><strong>64 passed</strong>, <code>EXIT=0</code></td></tr>
+      <tr><td>negative control: count the closure's runs again</td>
+        <td>head + mutation</td>
+        <td>5 failed, 1 passed, <code>EXIT=1</code>; the nothing-owed case,
+        both figure cases and the empty and waiting-only cases red</td></tr>
+    </tbody>
+  </table>
+
+  <p><strong>What the figures mean now.</strong> The header counts rows; the
+  trailer counts the same rows, and only prints when at least one of them is
+  actionable.</p>
+
+  <p><strong>Not done here.</strong> The payload's
+  <code>summary.unreconciled_runs</code> is unchanged and still published &mdash;
+  the closure's figure is a fact about pointers, and other readers (the
+  unreconciled-run fence) still consume it. Only the checklist's rendering
+  stopped quoting it as if it were the list's size.</p>
+</section>
