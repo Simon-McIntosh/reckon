@@ -1,0 +1,100 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "d45930c3b8272ba50691f1f0bd2f38dd5ed3e9f6",
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/crew_dispatch_commands.py:1211 queue_batch/queue_plan (crew dispatch)",
+    "reckon/crew/dispatch_batch.py:808 queue_plan -> queue_batch",
+    "reckon/crew/dispatching/preparation.py:410 plan_dispatch (dispatch lane)",
+    "reckon/crew/dispatching/preparation.py:736 plan_dispatch (dispatch lane)",
+    "reckon/crew/dispatch_sessions.py:1736 plan_dispatch (raw binding, bypasses the suppression)"
+  ],
+  "completed_at": "2026-11-15T11:05:22.806Z",
+  "dimension_dispositions": {
+    "evidence": {
+      "kind": "folded",
+      "node": "qwnw-a-dispatch-answers-in-ten-seconds-whole",
+      "recorded_at": "2026-11-15T11:50:09.665180+00:00"
+    }
+  },
+  "dispatched_at": "2026-11-15T10:22:33Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-a-dispatch-answers-in-ten-seconds-whole.html",
+      "line": "58",
+      "severity": "non-blocking",
+      "text": "non-blocking: the timing table runs seven of the ten dispatches the done_when names and its head arm records 13.07 s at load 32.17, so the requirement that every wall time be under ten seconds is unmet; the fragment states this plainly yet the node reports itself complete."
+    },
+    {
+      "file": "reckon/serve.py",
+      "line": "1623",
+      "severity": "non-blocking",
+      "text": "non-blocking: the branch that skips _git_first_committed and _git_last_committed is reached by no test, and the done_when's required test that counts a dispatch's history and last-modified invocations and reads zero does not exist anywhere in the diff, so the half of the change the fragment calls proven at the mechanism is unguarded."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-a-dispatch-answers-in-ten-seconds-whole.html",
+      "line": "75",
+      "severity": "non-blocking",
+      "text": "non-blocking: the recorded discovery share of 0 is a zero from an instrument that never fires \u2014 dryrun-arms.log prints TIMING with discovery_calls 0 on the head arm, so neither the zero git_lookups reading nor the base arm's 90 s timeouts can be attributed to the discovery path, and the table cannot witness the saving it was run for."
+    },
+    {
+      "file": "reckon/crew/dispatch_sessions.py",
+      "line": "2606",
+      "severity": "non-blocking",
+      "text": "non-blocking: this module imports plan_dispatch from .dispatch_plan, the unwrapped function, and calls it at :1736 to re-plan a run, so that production path never enters the discovery_without_git_dates scope added to fences.plan_dispatch and still pays both history queries the deliverable says a dispatch makes none of."
+    },
+    {
+      "file": "reckon/serve.py",
+      "line": "1559",
+      "severity": "non-blocking",
+      "text": "non-blocking: the suppression is a module-global boolean while the repository's other read scopes use a ContextVar (reckon/crew/admission/readiness.py:289), so a discovery running on another thread of the threaded docs server during a dispatch preview would answer a reader from working-tree stamps with no git dates."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-a-dispatch-answers-in-ten-seconds-whole.html",
+      "line": "45",
+      "severity": "non-blocking",
+      "text": "non-blocking: the fragment quotes the new test's base arm as 1 failed with assert 2 == 1, but no log of that pytest run is among the manifest's test_logs; batch-derivation.log records only a stand-alone script's discovery_calls 2, so the red arm the durability rests on is quoted rather than receipted."
+    }
+  ],
+  "head_log_revision": "325fe07e72edfea37597932950bcc55c50e2c8d5",
+  "item_aggregate": "six items read; five verdicts plus the call-site read, no item absent.",
+  "item_verdicts": {
+    "call_sites": "read the production paths that reach the change: reckon/crew_dispatch_commands.py:1211 selects queue_batch or queue_plan, reckon/crew/dispatch_batch.py:808 routes queue_plan through queue_batch, and reckon/crew/dispatching/preparation.py:410 and :736 call the wrapped plan_dispatch, while reckon/crew/dispatch_sessions.py:2606 binds the raw dispatch_plan.plan_dispatch and so bypasses the suppression at :1736.",
+    "diff": "read all three commits against d45930c3b8: 660dac92b1 and c64eda5382 write the evidence fragment, and 325fe07e72 changes the batch cache key, adds the history suppression and its scope, wraps two callers, and adds the derivation test.",
+    "done_when": "the done_when names ten dry runs whose every wall time is under ten seconds plus a test counting history invocations reading zero; docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-a-dispatch-answers-in-ten-seconds-whole.html:58-88 records seven runs with one at 13.07 s, the discovery share is 0 on both arms, and no such counting test exists, so the gate does not assert the measure.",
+    "goal": "the node's goal is a one-section dispatch answering in under ten seconds with the project-discovery cost removed; reckon/crew/dispatch_batch.py:236 and reckon/serve.py:1623 remove the history queries and the batch's one-derivation change is proven, but no arm records every dispatch under ten seconds.",
+    "manifest": "read; status complete, commits 660dac92b1, 325fe07e72, c64eda5382, changed_paths naming five paths, a tests line naming a two-file gate, baseline_suite d45930c3b8 exit 0 with 55 passed and after_suite 325fe07e72 exit 0 with 55 passed, and rubric.evidence written as blocked rather than answered.",
+    "write_paths": "the dispatched node's fence was the evidence fragment and docs/figures/queued-work-needs-no-workaround/qwnw-a-dispatch-answers-in-ten-seconds-whole; the diff also rewrites reckon/serve.py, reckon/crew/dispatch_batch.py, reckon/crew/dispatching/fences.py and adds tests/test_a_batch_derives_the_project_once.py, none of which the fence granted, and the manifest's changed_paths records them without a scope note."
+  },
+  "justifications": {
+    "durability": "tests/test_a_batch_derives_the_project_once.py:160 fails when the batch derives twice, which the base arm reproduced, while reckon/serve.py:1623's suppression branch has no test and the plan's count of history invocations reading zero is absent.",
+    "evidence": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-a-dispatch-answers-in-ten-seconds-whole.html:58-88 records seven of the ten prescribed runs, one head wall time of 13.07 s above the bound, and a discovery share of 0 on both arms, so the gate does not assert the done_when's measure.",
+    "fit": "reckon/serve.py:1559 carries the suppression in a process-global boolean where reckon/crew/admission/readiness.py:289 uses a ContextVar for the same kind of read scope.",
+    "goal_fidelity": "reckon/crew/dispatch_batch.py:236 keys the batch on the project and reckon/serve.py:1623 skips both history queries, but the head arm's own table records 8.31 to 13.07 s at load 32 to 35, so the sub-ten-second answer the goal names is not demonstrated.",
+    "reuse": "the suppression reuses metadata_index.stamps_for's working-tree fallback and composes with plan_read_scopes at reckon/crew/dispatch_batch.py:867, extending the existing scope rather than forking a stamp rule.",
+    "scope_discipline": "the diff from d45930c3b8 to c64eda5382 writes reckon/serve.py, reckon/crew/dispatch_batch.py, reckon/crew/dispatching/fences.py and tests/test_a_batch_derives_the_project_once.py in addition to the fragment, while the dispatched node's fence granted only the fragment and a figures directory."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is a one-section dispatch answering in under ten seconds with project discovery removed; reckon/crew/dispatch_batch.py:236 and reckon/serve.py:1623 remove the history queries, but no arm records every dispatch under ten seconds.\nVERDICT done_when: docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-a-dispatch-answers-in-ten-seconds-whole.html:58-88 records seven of ten runs with one at 13.07 s and a discovery share of 0 on both arms, and the required history-count test is absent, so the gate does not assert the done_when.\nVERDICT write_paths: the dispatched fence was the fragment and a figures directory, and the diff also rewrites reckon/serve.py, reckon/crew/dispatch_batch.py and reckon/crew/dispatching/fences.py and adds a test file outside it.\nVERDICT manifest: read; it records three commits, five changed paths, a two-file gate at 55 passed both arms, no added failures, and rubric.evidence written as blocked rather than answered.\nVERDICT diff: read 660dac92b1, 325fe07e72 and c64eda5382 against d45930c3b8; the batch key, the history suppression and one test landed, with nothing unrelated carried.\nCALL_SITES: reckon/crew_dispatch_commands.py:1211, reckon/crew/dispatch_batch.py:808, reckon/crew/dispatching/preparation.py:410, reckon/crew/dispatching/preparation.py:736, reckon/crew/dispatch_sessions.py:1736\nSCORE goal_fidelity: 12\nJUSTIFICATION goal_fidelity: reckon/crew/dispatch_batch.py:236 keys the batch on the project and reckon/serve.py:1623 skips both history queries, but the head arm records 8.31 to 13.07 s at load 32 to 35.\nSCORE evidence: 8\nJUSTIFICATION evidence: the fragment at :58-88 runs seven of ten dispatches, one at 13.07 s, and reads a discovery share of 0 on both arms, so the recorded gate does not assert the done_when.\nSCORE scope_discipline: 12\nJUSTIFICATION scope_discipline: the diff writes four paths the dispatched fence did not grant, listed in the manifest's changed_paths without a scope note.\nSCORE durability: 10\nJUSTIFICATION durability: tests/test_a_batch_derives_the_project_once.py:160 reddens when the batch derives twice, but reckon/serve.py:1623's suppression has no test.\nSCORE fit: 13\nJUSTIFICATION fit: reckon/serve.py:1559 uses a process global where reckon/crew/admission/readiness.py:289 uses a ContextVar.\nSCORE reuse: 18\nJUSTIFICATION reuse: reckon/serve.py:1623 reuses metadata_index.stamps_for's working-tree fallback and composes with plan_read_scopes at reckon/crew/dispatch_batch.py:867.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-a-dispatch-answers-in-ten-seconds-whole.html:58 non-blocking: seven of ten runs and one wall time of 13.07 s leave every-wall-time-under-ten seconds unmet.\nFINDING reckon/serve.py:1623 non-blocking: the suppression branch is reached by no test and the done_when's zero-history-invocation test is absent.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-a-dispatch-answers-in-ten-seconds-whole.html:75 non-blocking: the discovery share of 0 comes from an instrument that never fires, so it cannot witness the saving.\nFINDING reckon/crew/dispatch_sessions.py:2606 non-blocking: the raw plan_dispatch binding bypasses the suppression on the re-plan path at :1736.\nFINDING reckon/serve.py:1559 non-blocking: a process-global suppression where the repository's read scopes use a ContextVar.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-a-dispatch-answers-in-ten-seconds-whole.html:45 non-blocking: the quoted red base arm of the new test has no log on disk among the manifest's test_logs.\n",
+  "review_run_id": "r-20261115T102011869154-review-of-qwnw-a-dispatch-answers-in-ten-seconds-whole-c64eda538257",
+  "reviewed_base_sha": "d45930c3b8272ba50691f1f0bd2f38dd5ed3e9f6",
+  "reviewed_head_sha": "c64eda538257dfdc343c4bf9b2c049877da600d5",
+  "reviewed_run_id": "r-20261115T075142344721-qwnw-a-dispatch-answers-in-ten-seconds-whole",
+  "reviewer": "review-of-qwnw-a-dispatch-answers-in-ten-seconds-whole-c64eda538257",
+  "reviewer_run_id": "r-20261115T102011869154-review-of-qwnw-a-dispatch-answers-in-ten-seconds-whole-c64eda538257",
+  "scores": {
+    "durability": 10,
+    "evidence": 8,
+    "fit": 13,
+    "goal_fidelity": 12,
+    "reuse": 18,
+    "scope_discipline": 12
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-15T11:55:49.922117+00:00",
+  "total": 73
+}
