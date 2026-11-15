@@ -1,0 +1,215 @@
+<section id="wftl-the-lane-is-fed-while-coordinators-land-landing">
+  <h2>The lane is fed while coordinators land: one four-hour window, measured</h2>
+
+  <p><strong>What changed: a census, not a behaviour.</strong> A counting script,
+  <code>scripts/lane_window_census.py</code>, reads the three instruments the
+  plan names &mdash; the crew run ledger, the per-run landing records and the
+  admission verdict log &mdash; and reports four figures for each window it is
+  given. Its output over the measurement window, the 7 to 11 November baseline
+  and the specified negative control is committed beside this record as
+  <code>wftl-the-lane-is-fed-while-coordinators-land.census.json</code>. The
+  window is 2026-11-14 21:00 to 2026-11-15 01:00 UTC: the last four-hour stretch
+  aligned to the hour that had closed before this node was dispatched at
+  01:18:29Z, carrying 103 dispatches. The census was read at
+  2026-11-15T02:54:17Z.</p>
+
+  <p><strong>The reading: one of the gate's four figures is met.</strong> The
+  lane carried a time-weighted mean of 20.05 working workers, well past the
+  twelve the gate asks for. The other three do not hold in this window. A
+  completed implement run waited a median of 90.9 minutes to be promoted against
+  a bound of 20. Five of the window's eight admit passes held a request on a
+  claim under the shared crew home, where the gate requires none. The claims
+  directory held 27,855 worker identity files at the window's end, where the gate
+  requires fewer than 100.</p>
+
+  <table id="wftl-the-lane-is-fed-while-coordinators-land-figures">
+    <caption>Every figure below is the census script's own output in the
+    committed JSON. <code>n</code> is the population a figure was computed
+    over, stated so an empty result reads as empty.</caption>
+    <thead>
+      <tr>
+        <th>figure</th>
+        <th>window<br>21:00&ndash;01:00</th>
+        <th>baseline<br>7&ndash;11 Nov</th>
+        <th>negative control<br>11 Nov 13:00&ndash;15:00</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>working workers, time-weighted mean</td>
+        <td>20.72</td>
+        <td>3.71</td>
+        <td>6.83</td>
+      </tr>
+      <tr>
+        <td>working workers, peak</td>
+        <td>34</td>
+        <td>20</td>
+        <td>13</td>
+      </tr>
+      <tr>
+        <td>worker spans overlapping the window</td>
+        <td>133</td>
+        <td>1787</td>
+        <td>55</td>
+      </tr>
+      <tr>
+        <td>completion to promotion, median</td>
+        <td>90.9 min</td>
+        <td>62.8 min</td>
+        <td>not measured</td>
+      </tr>
+      <tr>
+        <td>completion to promotion, p90</td>
+        <td>213.9 min</td>
+        <td>258.9 min</td>
+        <td>not measured</td>
+      </tr>
+      <tr>
+        <td>implement runs completed in the window, with a landing record</td>
+        <td>36 of 36</td>
+        <td>14 of 438</td>
+        <td>0 of 13</td>
+      </tr>
+      <tr>
+        <td>admit passes</td>
+        <td>8</td>
+        <td>unmeasured</td>
+        <td>unmeasured</td>
+      </tr>
+      <tr>
+        <td>admit passes holding a request on a shared-root claim</td>
+        <td>5</td>
+        <td>unmeasured</td>
+        <td>unmeasured</td>
+      </tr>
+      <tr>
+        <td>shared-root claim holds, pointer count</td>
+        <td>6</td>
+        <td>unmeasured</td>
+        <td>unmeasured</td>
+      </tr>
+      <tr>
+        <td><code>exec-&nbsp;*.identity</code> files at the window's end</td>
+        <td>27,855</td>
+        <td>27,790</td>
+        <td>23,499</td>
+      </tr>
+      <tr>
+        <td>entries in the claims directory at the window's end</td>
+        <td>27,999</td>
+        <td>27,880</td>
+        <td>23,565</td>
+      </tr>
+      <tr>
+        <td>requests dispatched in the window</td>
+        <td>103</td>
+        <td>1795</td>
+        <td>57</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3 id="wftl-the-lane-is-fed-while-coordinators-land-gate">The gate, figure by figure</h3>
+
+  <table id="wftl-the-lane-is-fed-while-coordinators-land-verdicts">
+    <thead>
+      <tr><th>criterion</th><th>required</th><th>window</th><th>verdict</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>time-weighted mean working workers</td>
+        <td>at least 12</td>
+        <td>20.72</td>
+        <td>met</td>
+      </tr>
+      <tr>
+        <td>median completion to promotion, implement runs</td>
+        <td>at most 20 minutes</td>
+        <td>90.9 minutes</td>
+        <td><strong>not met</strong></td>
+      </tr>
+      <tr>
+        <td>admit passes holding a request on a claim under a shared root</td>
+        <td>none</td>
+        <td>5 of 8 passes</td>
+        <td><strong>not met</strong></td>
+      </tr>
+      <tr>
+        <td>worker identity files at the window's end</td>
+        <td>fewer than 100</td>
+        <td>27,855</td>
+        <td><strong>not met</strong></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p><strong>The negative control is met.</strong> Over 11 November 13:00 to
+  15:00 UTC the same script reads a mean of 6.83 working workers, below the
+  twelve the window must clear, and a peak of 13 against the window's 34. The
+  instrument therefore distinguishes a quiet afternoon from the measured window
+  rather than reporting a figure every window would pass.</p>
+
+  <h3 id="wftl-the-lane-is-fed-while-coordinators-land-instrument">The instrument, and what it read</h3>
+
+  <p><strong>A working worker is a live worker process.</strong> Each run
+  contributes one span, from its worker's own launch stamp to its exit stamp
+  (<code>worker_exit.launched_at</code> and <code>worker_exit.exited_at</code> in
+  the ledger). The mean is the total worker-seconds inside the window divided by
+  the window's seconds; the peak is the highest count reached at any instant.
+  Where a worker exit was never recorded the run falls back to its dispatch and
+  completion stamps, which bound a wider interval. This definition is what makes
+  the negative control read below twelve: the same script counting dispatch to
+  completion read 17.2 against 6.83 on that afternoon, because a run's
+  completion stamp lands well after its worker stopped.</p>
+
+  <p><strong>A landing record's first step time is the promotion time.</strong>
+  Each run directory holds a <code>landing.json</code> whose first step is the
+  landing commit, stamped when it was made. The cohort is the implement runs
+  whose completion stamp falls inside the window, so the two windows compare the
+  same population. A landing record survives only while its run directory
+  survives, so the baseline reports 14 of its 438 implement runs with a record:
+  that median is computed over the records that survived, not over all 438.</p>
+
+  <p><strong>Admission holds are read from the verdict log, and it is short.</strong>
+  <code>admission-verdicts.jsonl</code> held passes only from 2026-11-14
+  19:22 to the census instant, so the baseline window and the negative control
+  report <code>null</code> with a note rather than a zero: nothing there was
+  measured. A hold counts for this gate only where the path its detail quotes
+  lies under the crew home every node shares. The six pointers behind those five
+  passes each named a review record under
+  <code>~/.config/reckon/crew/runs/&hellip;/review-records/</code>.</p>
+
+  <p><strong>Identity files are counted at the window's end, not at read time.</strong>
+  An identity file is written once, when its process first publishes it, so
+  counting by modification time reports the claims directory as it stood at
+  01:00Z. The sweep that retires them exists as
+  <code>reckon crew gc --sweep-exec-identities</code>; the hourly retention timer
+  does not pass the flag, so nothing retires these files and the count only
+  grows.</p>
+
+  <p><strong>The ledger takes late writes for a window that has closed.</strong>
+  A run that completed inside the window can be written to the ledger minutes
+  after, so a repeat read moves the digits. An earlier read at 02:27Z over the
+  same window reported a mean of 20.05, a median of 89.7 minutes over a cohort of 35 and the same
+  three verdicts; the figures above come from the committed output read at
+  02:54Z, and the baseline reproduces to the digit on every read because no
+  further writes land on it. Three adjacent windows (20:00&ndash;00:00,
+  22:00&ndash;02:00 and 17:00&ndash;21:00) read means of 16.45, 19.74 and 8.81
+  and medians of 92.0, 83.4 and 112.4 minutes, so no window in reach meets the
+  twenty-minute bound or clears twelve only by the choice of hours.</p>
+
+  <h3 id="wftl-the-lane-is-fed-while-coordinators-land-paths">Instruments read</h3>
+
+  <ul>
+    <li><code>~/.config/reckon/crew/run_store.db</code> &mdash; 10,959 run rows,
+    10,952 worker spans.</li>
+    <li><code>~/.config/reckon/crew/runs/*/landing.json</code> and
+    <code>~/.config/reckon/crew/archive/runs/*/landing.json</code> &mdash; 1,090
+    landing records.</li>
+    <li><code>~/.config/reckon/crew/admission-verdicts.jsonl</code> &mdash; 8
+    passes inside the window.</li>
+    <li><code>~/.config/reckon/crew/claims</code> &mdash; 27,999 entries at the
+    window's end.</li>
+  </ul>
+</section>
