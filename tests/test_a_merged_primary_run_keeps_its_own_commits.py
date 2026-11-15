@@ -123,6 +123,7 @@ def test_one_landing_call_records_only_the_runs_line_of_history(merged_run):
     repository, _tree, record, own, primary, _manifest = merged_run
     offered = obligations(PROJECT, SESSION)["obligations"]
     row = next(row for row in offered if row["run_id"] == record["run_id"])
+    print("primary imports:", primary)
     result = crew.complete(record["run_id"], gate="passed", root=repository)
     assert _offered_commits(row) == own
     assert result["record"]["commits"] == own
