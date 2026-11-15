@@ -1,0 +1,138 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-15T06:47:29.205Z",
+  "dispatched_at": "2026-11-15T06:32:41Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/queued-work-needs-no-workaround/r-20261115T063118424788-plan-review-of-queued-work-needs-no-workaround/plan.html:300",
+      "id": "reasoning-1",
+      "reason": "the node's measure records the discovery share, and a worker checking the figure it must reproduce will find it cannot match the stated breakdown, so the evidence that justifies the whole section has to be restated as one dispatch's coherent accounting; the corrected breakdown also fixes the expected win.",
+      "text": "the cited evidence cannot be one dispatch: the sentence gives discovery as 50.0 s of 53.6 s and then 65.4 s of a 70.5 s discovery for the same dispatch, and its sub-costs (65.4 s reading plans, 20.0 s git lookups, 19\u201325 s roadmap) exceed either total, so the numbers are drawn from several dispatches and no reader can tell which decomposition supports \"the rest of a dispatch's time is project discovery\"",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/queued-work-needs-no-workaround/r-20261115T063118424788-plan-review-of-queued-work-needs-no-workaround/plan.html:300",
+      "id": "wiring-1",
+      "reason": "either \u00a716 must be declared done or \u00a721 must state that the 0.06 s figure was measured on a head carrying \u00a716, so the node knows the check may still cost seconds and that the same base is shared, and the followup's claim that the two are independent needs a wire.",
+      "text": "\u00a721's Why states \"\u00a716 removed the fleet-wide classification from a dispatch's overdue-runs check, which now costs about 0.06 s\" as a landed fact, but the plan declares s16 implementable (plan.html:23) and the driving followup queues \u00a716 and \u00a721 in one batch as independent (plan.html:305); the code confirms \u00a716's change is not landed (overdue_unreconciled_runs still classifies every live pointer for the project with no per-session split; the peers split helper at recovery_watch.py:545 is not applied there), so a \u00a721 node working from its own base reads a premise that is false in its tree",
+      "type": "wiring",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/queued-work-needs-no-workaround/r-20261115T063118424788-plan-review-of-queued-work-needs-no-workaround/plan.html:288",
+      "id": "done_when-1",
+      "reason": "the case is the section's only reproduction of the reported defect and the source of the red arm the negative control now names (\"a launch refusal that names the brief's path\"); without naming which backend refuses and which queues (the local lane queues at a placement bound at the base revision), a node cannot build the setup, and at base it meets the roster-cap refusal instead of the brief-unreadable one, so the section cannot show its guard fired.",
+      "text": "\u00a718's first case requires \"the same review is then dispatched again and queued\" while the first dispatch was refused at the roster bound, and states no lane or path that turns the same re-dispatch into a queued request: on the placed backends \u00a717's Why describes, the base revision refuses at the bound, and this plan descopes \u00a717 (plan.html:283), so the queued state is not reachable as written at either the base revision or the delivered backends",
+      "type": "done_when",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "3c8d1a02911447d1cdaad36745618bcf99d6dcd3",
+  "plan_fingerprint": "1558e9809e0ce6993fdfb162667d169829432bf21741ff80566b432dbb42022e",
+  "plan_slug": "queued-work-needs-no-workaround",
+  "plan_version": 55,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "f500ab8b420a9b95932f206c130b4882d036bf86",
+      "commit_basis": "edit",
+      "finding": "reasoning-1",
+      "note": "\u00a721's Why now attributes each figure to its own measure: five queued dispatches, one attributed dispatch (50.0 of 53.6 s), a separate discovery profile (65.4 of 70.5 s, git lookups 20.0 s), and three warm dispatches (roadmap 19\u201325 s)",
+      "reason": "",
+      "when": "2026-11-15T06:51:34.444468+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "f500ab8b420a9b95932f206c130b4882d036bf86",
+      "commit_basis": "edit",
+      "finding": "wiring-1",
+      "note": "\u00a716 has landed as 6ec0378f0a and is declared done; \u00a721's Why cites that landing, so a \u00a721 node based on current main reads a true premise",
+      "reason": "",
+      "when": "2026-11-15T06:51:39.001636+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "f500ab8b420a9b95932f206c130b4882d036bf86",
+      "commit_basis": "edit",
+      "finding": "done_when-1",
+      "note": "\u00a718's first case now reproduces the shape through any dispatch path that still produces it; if none does, the node proves no queueing path (direct, batch, re-dispatch) records a foreign brief, with a hand-written foreign record allowed only as that proof's negative control",
+      "reason": "",
+      "when": "2026-11-15T06:51:43.059150+00:00"
+    }
+  ],
+  "responses": {
+    "done_when-1": {
+      "action": "acted",
+      "by": "",
+      "commit": "f500ab8b420a9b95932f206c130b4882d036bf86",
+      "commit_basis": "edit",
+      "note": "\u00a718's first case now reproduces the shape through any dispatch path that still produces it; if none does, the node proves no queueing path (direct, batch, re-dispatch) records a foreign brief, with a hand-written foreign record allowed only as that proof's negative control",
+      "reason": "",
+      "when": "2026-11-15T06:51:43.059150+00:00"
+    },
+    "reasoning-1": {
+      "action": "acted",
+      "by": "",
+      "commit": "f500ab8b420a9b95932f206c130b4882d036bf86",
+      "commit_basis": "edit",
+      "note": "\u00a721's Why now attributes each figure to its own measure: five queued dispatches, one attributed dispatch (50.0 of 53.6 s), a separate discovery profile (65.4 of 70.5 s, git lookups 20.0 s), and three warm dispatches (roadmap 19\u201325 s)",
+      "reason": "",
+      "when": "2026-11-15T06:51:34.444468+00:00"
+    },
+    "wiring-1": {
+      "action": "acted",
+      "by": "",
+      "commit": "f500ab8b420a9b95932f206c130b4882d036bf86",
+      "commit_basis": "edit",
+      "note": "\u00a716 has landed as 6ec0378f0a and is declared done; \u00a721's Why cites that landing, so a \u00a721 node based on current main reads a true premise",
+      "reason": "",
+      "when": "2026-11-15T06:51:39.001636+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/plan-queued-work-needs-no-workaround.v55.json",
+  "review_run_id": "r-20261115T063118424788-plan-review-of-queued-work-needs-no-workaround",
+  "reviewed_blob_sha": "58d7809254c6f2426831283f8684720c75668e5c",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 the run id cited in \u00a718's Why resolves to an existing run directory (r-20261114T203628474513-review-of-diiid-edge-current-refusal-c981fafe8cde-figure), and every internal section reference (\u00a716, \u00a717, \u00a721) names a heading present (plan.html:278, 282, 298); no external hrefs are cited and no extensionless link appears.",
+    "done_when": "a finding \u2014 \u00a718's first case (plan.html:288) requires a re-dispatch that \"is then dispatched again and queued\" at the roster bound, but names no lane or path that queues it, and the plan's own \u00a717 Why says a placement-bound dispatch is refused outright at the changed backends.",
+    "evidence_paths": "pass \u2014 every gate in the changed units writes to docs/evidence/fragments/queued-work-needs-no-workaround/ (s16, s18, s21), a durable repository path.",
+    "naming": "pass \u2014 no plan label, ticket number or version tag reaches a symbol; \"\u00a7n\" appears only in plan prose as a section reference, and \u00a721's Why names the mechanism (the one-derivation cache keyed on the resolved docs directory) rather than a bug id.",
+    "reasoning": "a finding \u2014 \u00a721's Why states an impossible cost decomposition for its own attributed dispatch (50.0 s of 53.6 s discovery against 65.4 s of a 70.5 s discovery in the same sentence, with 20.0 s of git lookups aside and 19\u201325 s of roadmap building inside it, all of which exceed the stated discovery total).",
+    "single_goal": "pass \u2014 \u00a716 now carries only the overdue-runs check, with the whole-dispatch wall time handed to \u00a721; \u00a721's batch-derivation and timeout clauses all serve one deliverable, a dispatch inside ten seconds.",
+    "wiring": "a finding \u2014 \u00a721's Why treats \u00a716's fleet-wide classification as already removed while plan-section-declarations (plan.html:23) declares s16 implementable and the driving followup (plan.html:305) queues \u00a716 and \u00a721 together as independent."
+  },
+  "section_digests": {
+    "_document": "cff2b661e8eb0c8ef093b8b9788c19888553e8b20ddda793072e5d4958f90223",
+    "s1": "965e293bc718e24bc6e0b306c2e31f4694e8d3d1f2aafc97e86aac0ccdc0eb46",
+    "s10": "501d0d72406c2fda4dc47939b9700d2c42eb9011387b4df7abdfcc55d906d345",
+    "s11": "4dc7e37e7c9ff6d074c540a19ff75d7db784999f7b811a999a052a00fcbacb39",
+    "s12": "cf244a99091ee04721474e6caad0adad1fb1c907edc99e9fd73b86fb3251685c",
+    "s13": "8cdf1aaa77a692163d0b36bc751a206e8f6c96460d0e44b85d9feb5a76f99659",
+    "s14": "e033ab0daa427195a357d93c3b5969c3fae24f311a8dafa8b2a6bad8db0b518e",
+    "s15": "c271f7bcaa272ebd4bf87d7b1e7153251ec38aa5863fd8a3d7f12cdf1c66bd06",
+    "s16": "e958886ca859d584799d4d94514466d7e14ba4c818ac307fcb864c7eb39fa549",
+    "s17": "dd6b738e7e017fe3bc312e85841a1a6a4b4d5dc818c618040249040acf51ff19",
+    "s18": "45882e254bd4df588a4c1f218d0cafa07db142d71695310102be41a42244b32e",
+    "s19": "eaeead248338c8d630a84c78ae20179b603aa87fc7b0a599cced40377f9d8297",
+    "s2": "872b1ec9c49f32d972d450016002b1265e846673cd1aef42c41aaccc50583998",
+    "s20": "0e0d4849ea6b6f69d5354bef8f8699320f369433778609f009cf726a6657a1ee",
+    "s21": "25ca3e3be66c289b0007ab67b4c9d4ef12719763e6a3ed916301e07e621ffb3e",
+    "s3": "2a385591edce8d1cb26d41f176fb084cd634d113eb130d2581ce97000bcb3eea",
+    "s4": "0116c3c4a34b6e607b2564cc4300d3784ba5d7596a0000d0b59c40e1801dcd1a",
+    "s5": "81cc22db14da433d65d2cbfd466e233d778e9b5d50552dc7a013e94a3b25ad15",
+    "s6": "91849d1cd49d8e783c893b01272f0e0f505aed67e379d52d354011a619270a1d",
+    "s7": "0eb7720abb0f46f8d48d47fcf646be85ae58c8a5cc37c98f7ad06ac2f9deb6ff",
+    "s8": "5dcf0f324a6b831b76a043e465731eff46456979ae084bcfc764ff0d40816359",
+    "s9": "b22a82394cfc2b7163b7fbd8be1087fdb6ec66a16524e9d194431d418894d798"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-15T06:44:00.020390+00:00",
+  "total": null
+}
