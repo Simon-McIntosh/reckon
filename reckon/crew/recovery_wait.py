@@ -92,15 +92,15 @@ class _StreamScan:
     """
 
     __slots__ = (
-        "inode",
         "assistant_offset",
         "assistant_seen",
-        "tool_offset",
-        "tool_known",
-        "tool_call",
-        "record_offset",
-        "record_known",
+        "inode",
         "last_record_type",
+        "record_known",
+        "record_offset",
+        "tool_call",
+        "tool_known",
+        "tool_offset",
     )
 
     def __init__(self, inode: int) -> None:

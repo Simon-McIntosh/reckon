@@ -62,6 +62,14 @@ DAY_FILE_SUFFIX = ".sqlite3"
 # changed while its offset stayed put is recognised rather than missed.
 ANCHOR_BYTES = 64
 
+# How many stored documents one handle keeps decoded. Each is keyed by the text
+# it was decoded from, so a pass decodes a document only when that text moved;
+# the station reads the same fleet's documents on every tick, and decoding them
+# again was a measured per-tick read of the whole fleet. The cache is cleared
+# whole at its bound rather than evicted one entry at a time, because a fleet
+# that outgrew it is read once more and the next pass starts clean.
+DECODED_DOCUMENTS_LIMIT = 8192
+
 # How many UTC days of events the store keeps. A configuration value: the
 # station reads it once and hands it to the store.
 RETENTION_DAYS = 7
@@ -399,6 +407,11 @@ class StationStore:
         self.database = self.root / DATABASE_NAME
         self.day_directory = self.root / DAY_DIRECTORY
         self._connection: sqlite3.Connection | None = None
+        # The decoded text of each stored document this handle has read, keyed
+        # by the document's kind and identity. A tick reads the same pointer
+        # fields, stored verdicts and fleet image on every pass, and only the
+        # documents that moved are decoded again.
+        self._decoded_documents: dict[tuple[str, str], tuple[str, Any]] = {}
         # The device and inode of the database file this handle opened, so a
         # reader can tell that the store at this path was replaced under it.
         self._database_identity: tuple[int, int] | None = None
@@ -456,6 +469,38 @@ class StationStore:
         self._database_identity = self.database_identity()
         self._ensure_station_identity()
         return connection
+
+    def _decoded_document(self, kind: str, identity: str, text: str) -> Any:
+        """The decoded form of one stored document, decoded only when it moved.
+
+        ``kind`` and ``identity`` name the document — a pointer's path, a run's
+        id, a project's fleet image — and ``text`` is what the store holds for
+        it now. A tick reads these documents on every pass, and one whose text
+        is unchanged is the same document: decoding it again was a per-tick
+        read of the whole fleet that answered nothing new.
+        """
+        key = (kind, identity)
+        kept = self._decoded_documents.get(key)
+        if kept is not None and kept[0] == text:
+            return kept[1]
+        value = json.loads(text)
+        if len(self._decoded_documents) >= DECODED_DOCUMENTS_LIMIT:
+            self._decoded_documents.clear()
+        self._decoded_documents[key] = (text, value)
+        return value
+
+    def _remember_decoded(
+        self, kind: str, identity: str, text: str, value: Any
+    ) -> None:
+        """Keep a document this handle wrote already decoded.
+
+        A document the store itself just wrote was decoded before it was
+        written, so recording it here is what keeps a pass from decoding its
+        own output back on the next tick.
+        """
+        if len(self._decoded_documents) >= DECODED_DOCUMENTS_LIMIT:
+            self._decoded_documents.clear()
+        self._decoded_documents[(kind, identity)] = (text, value)
 
     def database_identity(self) -> tuple[int, int] | None:
         """The device and inode of the database file at this store's path now.
@@ -934,7 +979,11 @@ class StationStore:
                 "run_id": str(row["run_id"]),
                 "path": str(row["path"]),
                 "reuse_key": str(row["reuse_key"]),
-                "snapshot": json.loads(str(row["snapshot"])),
+                "snapshot": dict(
+                    self._decoded_document(
+                        "verdict", str(row["run_id"]), str(row["snapshot"])
+                    )
+                ),
             }
             for row in rows
         ]
@@ -949,19 +998,16 @@ class StationStore:
         self, run_id: str, path: Path, reuse_key: str, snapshot: Mapping[str, Any]
     ) -> None:
         connection = self.connect()
+        text = json.dumps(dict(snapshot), sort_keys=True)
         connection.execute(
             "INSERT INTO classifications (run_id, path, reuse_key, snapshot) "
             "VALUES (?, ?, ?, ?) ON CONFLICT(run_id) DO UPDATE SET "
             "path = excluded.path, reuse_key = excluded.reuse_key, "
             "snapshot = excluded.snapshot",
-            (
-                run_id,
-                str(path),
-                reuse_key,
-                json.dumps(dict(snapshot), sort_keys=True),
-            ),
+            (run_id, str(path), reuse_key, text),
         )
         connection.commit()
+        self._remember_decoded("verdict", run_id, text, dict(snapshot))
 
     def _drop_absent_classifications(self, present: set[str]) -> None:
         connection = self.connect()
@@ -1018,16 +1064,11 @@ class StationStore:
         cache = self._classification_cache()
         verdicts: dict[str, dict[str, Any]] = {}
         present: set[str] = set()
-        parsed_rows: list[tuple[Path, Mapping[str, Any]]] = []
-        for row in self.pointer_rows():
-            path = Path(str(row["path"]))
-            try:
-                record = json.loads(str(row["fields"]))
-            except ValueError:
-                continue
-            if not isinstance(record, Mapping) or not record.get("run_id"):
-                continue
-            parsed_rows.append((path, record))
+        parsed_rows: list[tuple[Path, Mapping[str, Any]]] = [
+            (Path(path), record)
+            for path, record in self.pointer_fields().items()
+            if record.get("run_id")
+        ]
         records = [record for _, record in parsed_rows]
         # Every run classified here reads the review store, so the pass shares
         # one enumeration of each store directory across all of them, as the
@@ -1187,6 +1228,28 @@ class StationStore:
         return int(self.station_value(EVENT_GENERATION_KEY) or "0")
 
     # ── readers ──────────────────────────────────────────────────────────
+
+    def pointer_fields(self) -> dict[str, dict[str, Any]]:
+        """Each live pointer's decoded fields, keyed by the pointer's path.
+
+        A tick reads every pointer's fields to classify it and again to sort the
+        fleet into projects. Both reads decode a row only when its fields text
+        differs from the one last decoded, so a pass over an unchanged fleet
+        decodes nothing at all: the text a tick stores is rewritten only when
+        the pointer itself moved.
+        """
+        fields: dict[str, dict[str, Any]] = {}
+        for row in self.pointer_rows():
+            path = str(row["path"])
+            try:
+                kept = self._decoded_document("pointer", path, str(row["fields"] or ""))
+            except ValueError:
+                # One unreadable row costs its own pointer and never the pass.
+                continue
+            if not isinstance(kept, Mapping):
+                continue
+            fields[path] = dict(kept)
+        return fields
 
     def pointer_rows(self) -> list[dict[str, Any]]:
         rows = (
@@ -1383,7 +1446,7 @@ class StationStore:
         raw = self.station_value(f"fleet:{project}")
         if raw is None:
             return {}
-        known = json.loads(raw)
+        known = dict(self._decoded_document("fleet", project, raw))
         for run_id, snapshot in self.classifications().items():
             if (
                 run_id not in known
@@ -1418,6 +1481,7 @@ class StationStore:
         """
         self.guard.check()
         rows = list(events)
+        image = json.dumps(dict(fleet), sort_keys=True)
         connection = self.connect()
         with closing(self._open_day(at.astimezone(UTC).date())):
             pass
@@ -1460,9 +1524,12 @@ class StationStore:
             connection.execute(
                 "INSERT INTO station (key, value) VALUES (?, ?) "
                 "ON CONFLICT(key) DO UPDATE SET value = excluded.value",
-                (f"fleet:{project}", json.dumps(dict(fleet), sort_keys=True)),
+                (f"fleet:{project}", image),
             )
             connection.commit()
+            # The image this tick committed is one it had already built, so the
+            # next pass reads it back without decoding it again.
+            self._remember_decoded("fleet", project, image, dict(fleet))
         except BaseException:
             connection.rollback()
             raise
