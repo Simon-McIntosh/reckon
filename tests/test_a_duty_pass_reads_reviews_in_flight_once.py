@@ -148,9 +148,8 @@ def _delivered_run(
     review_module.store_review(record)
 
 
-@pytest.fixture()
-def fleet(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> dict[str, Any]:
-    """30 delivered runs, 10 of them with a live review on the delivered head."""
+def _crew_home(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> tuple[Path, Path]:
+    """A mounted project, its ledger, and a seeded repository to run over."""
     config_home = tmp_path / "config"
     config_home.mkdir()
     monkeypatch.setenv("RECKON_HOME", str(config_home))
@@ -174,21 +173,38 @@ def fleet(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> dict[str, Any]:
         json.dumps({"data": {"_version": 1, "members": [], "runs": [], "holds": []}}),
         encoding="utf-8",
     )
-    pointers: list[dict[str, Any]] = []
-    # run-00 carries a review reading its head, run-01 a review the lane has
-    # queued and not started, and runs 02 to 09 reading reviews. The queued one
-    # is a live pointer and must answer for no head at all.
-    _delivered_run(root, config_home, 0, reviewer="working", pointers=pointers)
-    _delivered_run(root, config_home, 1, reviewer="queued", pointers=pointers)
-    for index in range(2, IN_FLIGHT_RUNS):
-        _delivered_run(root, config_home, index, reviewer="working", pointers=pointers)
-    for index in range(IN_FLIGHT_RUNS, IN_FLIGHT_RUNS + DELIVERED_RUNS):
-        _delivered_run(root, config_home, index, reviewer="", pointers=pointers)
+    return root, config_home
+
+
+def _fix_clock(monkeypatch: pytest.MonkeyPatch) -> None:
+    """One clock for the case, so an aged duty reads the same text both ways."""
     monkeypatch.setattr(obligations_module, "_utc_now", lambda: OBSERVED_AT)
     recovery_classification = importlib.import_module(
         "reckon.crew.recovery_classification"
     )
     monkeypatch.setattr(recovery_classification, "_utc_seconds", _observed_seconds)
+
+
+@pytest.fixture()
+def fleet(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> dict[str, Any]:
+    """30 delivered runs, 10 of them with a live review on the delivered head."""
+    root, config_home = _crew_home(tmp_path, monkeypatch)
+    pointers: list[dict[str, Any]] = []
+    for index in range(IN_FLIGHT_RUNS):
+        _delivered_run(root, config_home, index, reviewer="working", pointers=pointers)
+    for index in range(IN_FLIGHT_RUNS, IN_FLIGHT_RUNS + DELIVERED_RUNS):
+        _delivered_run(root, config_home, index, reviewer="", pointers=pointers)
+    _fix_clock(monkeypatch)
+    return {"home": config_home, "repo": root, "pointers": pointers}
+
+
+@pytest.fixture()
+def queued_fleet(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> dict[str, Any]:
+    """One delivered run whose reviewer the lane accepted and has not started."""
+    root, config_home = _crew_home(tmp_path, monkeypatch)
+    pointers: list[dict[str, Any]] = []
+    _delivered_run(root, config_home, 0, reviewer="queued", pointers=pointers)
+    _fix_clock(monkeypatch)
     return {"home": config_home, "repo": root, "pointers": pointers}
 
 
@@ -370,11 +386,11 @@ def test_a_question_outside_a_pass_costs_one_search(
 
 
 def test_a_queued_reviewer_answers_for_no_head(
-    fleet: dict[str, Any], monkeypatch: pytest.MonkeyPatch
+    queued_fleet: dict[str, Any], monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """A reviewer the lane accepted and has not started stands for no head."""
-    queued = next(p for p in fleet["pointers"] if p.get("run_id") == "run-01")
-    assert runs.read_pointer("review-of-run-01")["phase"] == (
+    queued = next(p for p in queued_fleet["pointers"] if p.get("run_id") == "run-00")
+    assert runs.read_pointer("review-of-run-00")["phase"] == (
         queue_admission.QUEUED_PHASE
     )
     read_pointers = obligations_module._live_pointers
