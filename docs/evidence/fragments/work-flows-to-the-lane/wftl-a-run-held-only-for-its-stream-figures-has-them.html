@@ -73,10 +73,13 @@
   reaches its own worktree alone, so a mutating git verb aimed at another checkout is refused. Counting
   the rows that carry a non-null figure gives, at each checkout's <code>HEAD</code> against its working
   tree, nova 828 vs 2,126, imas-codex 278 vs 1,359, imas-ambix 273 vs 599 and imas-standard-names
-  3 vs 7 — differences of exactly the per-project fill counts above. Until those four commits land, a
+  3 vs 7 — differences of exactly the per-project fill counts above. Those counts come from <code>scripts/count_uncommitted_ledger_figures.py</code>, whose
+  <code>--require-durable</code> run is logged as <code>ledger-durability.log</code> and exits 1 while
+  any project still holds a figure only in its working tree. Until those four commits land, a
   reclaim of any of those working trees loses the fill and retention withholds the rows again. Each
   commit stages only <code>docs/state/&lt;project&gt;/</code> with a conventional subject and a body. Logs:
-  <code>gate-{base-arm,head-arm,negative-control,census,fill,resample,retention}.log</code> under the
+  <code>gate-{base-arm,head-arm,negative-control,census,fill,resample,retention}.log</code> and
+  <code>ledger-durability.log</code> under the
   run directory.</p>
 </article>
 </body>
