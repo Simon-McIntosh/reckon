@@ -14,7 +14,6 @@ from . import release as _release
 from . import reviews as _reviews
 from . import service as _service
 from . import verdicts as _verdicts
-from .attempts import LaunchBatch
 from .shared import (
     _LANE_GATE_WAITING_STATES,
     HOLD_VERDICTS,
@@ -319,6 +318,11 @@ def admit_once(
         )
         deadline = tick() + budget
         budget_spent = False
+
+        # Imported here: attempts imports launching, service and verdicts at its
+        # top, and that chain loads this module, so a module-level import is a
+        # cycle that leaves every fresh reckon process unable to start.
+        from .attempts import LaunchBatch
 
         with LaunchBatch(result, remaining) as launches:
             candidates = deque(enumerate(order))
