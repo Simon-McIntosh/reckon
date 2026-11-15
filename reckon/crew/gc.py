@@ -2206,7 +2206,13 @@ def retention_sweep(
     _emit_phase("scratch", started, phase_seconds)
 
     started = time.perf_counter()
-    indexes = _orphan_ledger_indexes(apply=apply, now=moment, report_removals=True)
+    indexes = _orphan_ledger_indexes(
+        apply=apply,
+        now=moment,
+        report_removals=True,
+        project=project,
+        repo=roots.get(project) if project else None,
+    )
     picker_views = _expired_picker_views(apply=apply, now=moment)
     persisted_memos = _expired_persisted_memos(apply=apply, now=moment)
     caches_removed = [

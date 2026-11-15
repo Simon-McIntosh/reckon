@@ -2135,23 +2135,19 @@ def _manifest_project(manifest: Path) -> str:
     and either may carry a ``project`` key. A manifest that names none, or
     cannot be read, attributes nothing.
     """
+    from reckon.crew.reports import ManifestParseError, parse_manifest
+
     try:
         text = manifest.read_text(encoding="utf-8")
     except (OSError, UnicodeDecodeError):
         return ""
-    if text.lstrip().startswith("{"):
-        try:
-            data = json.loads(text)
-        except ValueError:
-            return ""
-        if isinstance(data, Mapping):
-            return str(data.get("project") or "").strip()
+    try:
+        fields = parse_manifest(text, path=str(manifest))
+    except ManifestParseError:
         return ""
-    for line in text.splitlines():
-        key, separator, value = line.partition(":")
-        if separator and key.strip() == "project":
-            return value.strip().strip("\"'")
-    return ""
+    if not isinstance(fields, Mapping):
+        return ""
+    return str(fields.get("project") or "").strip()
 
 
 def _run_record_projects(repo: Path) -> dict[str, str]:

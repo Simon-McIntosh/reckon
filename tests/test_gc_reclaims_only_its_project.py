@@ -120,6 +120,55 @@ def gc(repo: Path, *, apply: bool) -> dict:
     return json.loads(result.output)
 
 
+def sweep(*, apply: bool) -> dict:
+    result = CliRunner().invoke(
+        cli.main,
+        [
+            "crew",
+            "retention-sweep",
+            "--project",
+            OWN,
+            *(["--apply"] if apply else []),
+        ],
+    )
+    assert result.exit_code == 0, result.output
+    # The pass writes its phase timings to stderr before the one JSON report.
+    return json.loads(result.output.strip().splitlines()[-1])
+
+
+def test_retention_sweep_keeps_a_peer_projects_orphan_index(tmp_path, monkeypatch):
+    """``crew retention-sweep --project reckon --apply`` removes reckon's orphan
+    ledger index and leaves nova's on disk, naming each index's project."""
+    monkeypatch.setenv("RECKON_HOME", str(tmp_path / "config"))
+    repo = repository(tmp_path)
+    monkeypatch.setenv(
+        "RECKON_MOUNTS_PATH",
+        str(
+            register_mounts(
+                tmp_path,
+                {OWN: repo / "docs", PEER: repo / "docs"},
+            )
+        ),
+    )
+    own_index = seed_index(
+        "ledger-own.sqlite", str(ledger.ledger_path(OWN, repo).resolve())
+    )
+    peer_index = seed_index(
+        "ledger-peer.sqlite", str(ledger.ledger_path(PEER, repo).resolve())
+    )
+
+    applied = sweep(apply=True)
+
+    rows = {row["path"]: row for row in applied["ledger_indexes"]}
+    assert rows[str(own_index)]["removed"] is True
+    assert rows[str(own_index)]["project"] == OWN
+    assert rows[str(peer_index)]["action"] == "keep"
+    assert rows[str(peer_index)]["project"] == PEER
+    assert rows[str(peer_index)]["removed"] is False
+    assert not own_index.exists()
+    assert peer_index.is_file()
+
+
 def test_a_scoped_gc_removes_only_its_own_projects_entries(tmp_path, monkeypatch):
     """``gc --apply --project reckon`` removes reckon's run directory and ledger
     index, and keeps nova's and the unattributable one, naming each project."""
