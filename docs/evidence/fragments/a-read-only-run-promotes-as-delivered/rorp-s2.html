@@ -1,0 +1,26 @@
+<section id="rorp-s2" data-reckon="evidence-fragment">
+  <h2 id="rorp-s2-heading">A commitless manifest promotes as delivered</h2>
+  <p id="rorp-s2-summary">An investigate or plan-review run whose role delivers no
+  commit states <code>commits: none</code> — bare or with a reason in parentheses —
+  passes the write-time manifest check, and promotes with the no-commit form while
+  its run record names the base revision and no commit; a stated <code>none</code>
+  over a worktree head ahead of its base is still refused, naming that commit; and
+  the composed prompt for those roles now states the declaration form.</p>
+  <p id="rorp-s2-defect">The refusing branch was the early return in
+  <code>_require_gate_evidence</code>: any stated <code>--no-commit</code> reason
+  returned before the worktree-at-its-base guard, so a run that had committed and
+  declared <code>none</code> promoted with its work in no commit. The guard now
+  runs on both paths. The prompt gap was the manifest template carrying
+  <code>commits: &lt;sha list&gt;</code> for every role.</p>
+  <table id="rorp-s2-cases">
+    <thead><tr><th>Case</th><th>At base revision</th><th>At head</th></tr></thead>
+    <tbody>
+      <tr><td>investigate / plan-review, <code>none (read-only sandbox; nothing committed)</code>, promote</td><td>pass</td><td>pass</td></tr>
+      <tr><td>investigate / plan-review, bare <code>none</code>, promote</td><td>pass</td><td>pass</td></tr>
+      <tr><td><code>none</code> over a commit beyond the base, refused naming it</td><td><strong>fail</strong> — <code>DID NOT RAISE CrewError</code></td><td>pass</td></tr>
+      <tr><td>composed prompt states the line (investigate, review)</td><td><strong>fail</strong> — <code>assert "commits: none" in prompt</code></td><td>pass</td></tr>
+    </tbody>
+  </table>
+  <p id="rorp-s2-gate">Gate at head: <code>8 passed in 74.82s</code>; base arm of the same
+  file: <code>3 failed, 5 passed in 223.80s</code>.</p>
+</section>

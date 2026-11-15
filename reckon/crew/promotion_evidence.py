@@ -973,7 +973,17 @@ def _require_gate_evidence(
     whose worktree is already gone is not refused for a citation no store was
     asked about.
     """
-    if verdict != "passed" or str(no_commit_reason).strip():
+    if verdict != "passed":
+        return None
+    if str(no_commit_reason).strip():
+        # A stated reason says there is no commit to register, and it is the
+        # form a read-only run promotes with. It is not a statement about the
+        # run's worktree: a run that committed and then declares the commits
+        # are not being registered would leave its work in no commit at all,
+        # and the release step takes the worktree with it. The same guard the
+        # unreasoned path applies is applied here, so the declaration form does
+        # not become the way to promote a run whose work nothing points at.
+        _require_worktree_at_its_base(run_id, record)
         return None
 
     # First ask the worker, because it already answered. The manifest's
@@ -1149,16 +1159,31 @@ def _require_gate_evidence(
             "deliberately that they are not being registered"
         )
 
+    _require_worktree_at_its_base(run_id, record)
+    return None
+
+
+def _require_worktree_at_its_base(
+    run_id: str, record: Mapping[str, Any]
+) -> None:
+    """Refuse a promotion that cites no commit while the run's tree has one.
+
+    A commitless promotion records the run as having produced no commit, and
+    the base revision it was dispatched against is what the record names as its
+    start. A worktree sitting on a commit past that base says the run made one,
+    and nothing on the record says which: the ledger row would report a
+    success pointing at nothing while the commit survives only as long as its
+    worktree. The run's own tree is read rather than the repository's HEAD,
+    the same reading every other guard here makes, because the repository
+    belongs to a checkout this run did not work in. A record naming no base, or
+    no readable worktree, is not measured here: a released worktree has nothing
+    left to ask, and a blank field names nothing rather than the current
+    directory.
+    """
     base = str(record.get("base_sha") or "").strip()
-    # This one reads the worktree's own state rather than a commit object, so
-    # the fallback above does not apply: the repository's HEAD belongs to a
-    # tree this run did not work in, and reading it for a run whose worktree is
-    # gone would refuse a truthful promotion on another tree's movement. With
-    # no worktree there is nothing to ask, so the guard stays silent: a blank
-    # field names no worktree rather than the current directory.
     worktree = _record_worktree(record)
     if not base or worktree is None:
-        return None
+        return
     head = subprocess.run(
         ["git", "rev-parse", "--verify", "--quiet", "HEAD"],
         cwd=worktree,
@@ -1168,7 +1193,7 @@ def _require_gate_evidence(
     )
     tip = head.stdout.strip()
     if head.returncode or not tip or tip == base:
-        return None
+        return
     raise CrewError(
         f"run {run_id!r} has a passing gate and cites no commit, but its "
         f"worktree is at {tip[:12]} rather than its base {base[:12]}: it "
