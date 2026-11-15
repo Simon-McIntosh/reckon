@@ -1,0 +1,59 @@
+<section id="alro-s3e-brief-carried-run-keeps-its-plan" class="evidence-fragment">
+  <h2>§3 — A run dispatched with a brief keeps the plan it names on its record</h2>
+  <p>
+    The closure overview cannot be written for a plan whose runs were
+    dispatched with briefs: <code>reckon evidence synthesize --plan …</code>
+    refuses with <em>has no committed landed runs</em>. The defect reproduced on
+    the committed store in the record ending
+    <code>085741072175-rorp-s5</code>: its top-level <code>plan</code> reads
+    <code>None</code> while <code>node_definition.plan</code> reads
+    <code>a-read-only-run-promotes-as-delivered</code> and
+    <code>impl_move.plan</code> reads the same slug. Every brief-carried run is
+    in that state, and the plan-selected read
+    (<code>ledger.runs(project, plan=…)</code>) selected on the top-level field
+    alone, so it returned none of them.
+  </p>
+  <p>
+    <strong>Decision.</strong> The stored records are read through their
+    dispatch rather than rewritten. The plan a row belongs to has one owner,
+    <code>ledger._row_plan</code>, and it now reads the row's own field first
+    and then the impl move the run reported, then the node definition it ran.
+    The impl move is read before the definition because the definition is wide
+    detail a later rotation may wash out while the impl move is durable, so one
+    row's plan reads the same before and after that rotation. No second run
+    read is added: the index extracts the owner's answer into the column the
+    plan-selected read already filters on, so the selection stays inside the
+    index query and still decodes no other plan's payload.
+  </p>
+  <p>
+    <strong>The already-stored records.</strong> A warm index is never re-read
+    from its sources, so a row indexed before this change would keep the empty
+    column it was built with. The index version therefore moves to 7, which
+    makes the next read build a fresh index and re-extract every stored row's
+    plan from the payload it already holds — the store's own migration path,
+    with no separate command and no record rewritten.
+  </p>
+  <p id="alro-s3e-brief-carried-run-keeps-its-plan-measure">
+    Measure, over a temporary store built through <code>write_run_file</code>:
+    <code>tests/test_a_brief_carried_run_keeps_its_plan.py</code> reports
+    <strong>4 passed</strong> at the head, covering a promoted brief-carried run
+    naming a plan, a stored record naming it only on its node definition, a
+    record whose definition rotation washed out naming it through its impl move,
+    and a brief-carried run naming no plan returned for no plan. The negative
+    control runs the same file over the base revision, where
+    <code>_row_plan</code> reads the top-level field alone: <strong>4
+    failed</strong>, the first being the promoted brief-carried run that is not
+    returned by the plan-selected read.
+  </p>
+  <p>
+    Live pass, read-only against the committed store from a batch job with the
+    index published to scratch: the plan-selected read returns
+    <strong>0</strong> rows for <code>a-read-only-run-promotes-as-delivered</code>
+    and <strong>0</strong> for <code>a-landing-is-recorded-once</code> at the
+    base revision, against 11,006 rows in the store and 5,414 of them carrying
+    no top-level plan; at the head it returns <strong>15</strong> and
+    <strong>14</strong>. A plan the read already found is printed beside them as
+    the check that the instrument sees a plan before a zero is reported, and a
+    slug no run names reads 0 in both arms.
+  </p>
+</section>
