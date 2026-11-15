@@ -839,6 +839,7 @@ def _inspect_workspace(
     *,
     raise_on_unavailable: bool = True,
     release_residue: bool = False,
+    untracked_roots: Iterable[Path] | None = None,
 ) -> dict[str, Any]:
     """Inspect one worktree's commits, residue and classification.
 
@@ -849,9 +850,11 @@ def _inspect_workspace(
     even when they are empty. A clean tree whose head is unreachable is
     measured as well as a dirty one: the commits a deliberately abandoned tree
     carries are what an explicit pin archives, and that list cannot be read off
-    the working-tree status.
+    the working-tree status. ``untracked_roots`` bounds the status read to the
+    roots a caller charges a change to, as :func:`_tree_state` describes;
+    ``None`` reads the whole working tree.
     """
-    state = _tree_state(path)
+    state = _tree_state(path, untracked_roots=untracked_roots)
     if not state.get("available"):
         detail = state.get("detail") or "tree is unavailable"
         if raise_on_unavailable:

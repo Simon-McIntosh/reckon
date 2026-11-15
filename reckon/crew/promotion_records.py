@@ -1345,7 +1345,17 @@ def _worktree_audit(
     repo = Path(repo_value).resolve()
     worktree = Path(worktree_value).resolve()
     claims = _live_worktree_claims().get(worktree, ())
-    snapshot = _repository_tree_snapshot(repo, roots=(worktree,))
+    # Both reads below charge a change only to the paths the run declared, so
+    # the status walk stays inside the work it answered for. When the run
+    # declared no root at all nothing can be charged to it, and a bounded read
+    # would report every tree clean — so that one case keeps the whole-tree
+    # read rather than hiding uncommitted work behind an empty root set.
+    from reckon.crew.promotion_evidence import _declared_repository_roots
+
+    declared = _declared_repository_roots(record, tree=worktree) or None
+    snapshot = _repository_tree_snapshot(
+        repo, roots=(worktree,), untracked_roots=declared
+    )
     retained_path = (
         Path(str(retention["worktree"])).resolve() if retention is not None else None
     )
@@ -1364,6 +1374,7 @@ def _worktree_audit(
             "HEAD",
             claims,
             shadow_record,
+            untracked_roots=declared,
         )
         row = {**tree_state, **inspected}
         if retention is not None and path == retained_path:
