@@ -64,10 +64,15 @@ def _delivered_run(
     home: Path,
     index: int,
     *,
-    in_flight: bool,
+    reviewer: str,
     pointers: list[dict[str, Any]],
 ) -> None:
-    """Write one delivered run, and the live reviewer when it has one."""
+    """Write one delivered run, and the reviewer it has, if it has one.
+
+    ``reviewer`` is the reviewer pointer's phase: ``working`` for a review
+    reading the delivered head, ``queued`` for one the lane accepted and has
+    not started, and empty for a run with no live review at all.
+    """
     run_id = f"run-{index:02d}"
     reviewed_head = _git(root, "rev-parse", "HEAD")
     worktree = root.parent / f"worktree-{index:02d}"
@@ -104,15 +109,15 @@ def _delivered_run(
     }
     runs._write_json(runs.pointer_path(run_id), pointer)
     pointers.append(pointer)
-    if in_flight:
+    if reviewer:
         # A hand-dispatched reviewer carries no reflex record, so it is
         # recognised by the record paths it was granted: the head-keyed name the
         # composer writes for this run's head.
-        reviewer = {
+        live_reviewer = {
             "run_id": f"review-of-{run_id}",
             "project": PROJECT,
             "session": SESSION,
-            "phase": "working",
+            "phase": reviewer,
             "role": "review",
             "process_alive": True,
             "node": {
@@ -124,8 +129,8 @@ def _delivered_run(
                 ),
             },
         }
-        runs._write_json(runs.pointer_path(reviewer["run_id"]), reviewer)
-        pointers.append(reviewer)
+        runs._write_json(runs.pointer_path(live_reviewer["run_id"]), live_reviewer)
+        pointers.append(live_reviewer)
         return
     emitted = "\n".join(
         f"SCORE {dimension}: 20" for dimension in review_module.REVIEW_DIMENSIONS
@@ -170,10 +175,15 @@ def fleet(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> dict[str, Any]:
         encoding="utf-8",
     )
     pointers: list[dict[str, Any]] = []
-    for index in range(IN_FLIGHT_RUNS):
-        _delivered_run(root, config_home, index, in_flight=True, pointers=pointers)
+    # run-00 carries a review reading its head, run-01 a review the lane has
+    # queued and not started, and runs 02 to 09 reading reviews. The queued one
+    # is a live pointer and must answer for no head at all.
+    _delivered_run(root, config_home, 0, reviewer="working", pointers=pointers)
+    _delivered_run(root, config_home, 1, reviewer="queued", pointers=pointers)
+    for index in range(2, IN_FLIGHT_RUNS):
+        _delivered_run(root, config_home, index, reviewer="working", pointers=pointers)
     for index in range(IN_FLIGHT_RUNS, IN_FLIGHT_RUNS + DELIVERED_RUNS):
-        _delivered_run(root, config_home, index, in_flight=False, pointers=pointers)
+        _delivered_run(root, config_home, index, reviewer="", pointers=pointers)
     monkeypatch.setattr(obligations_module, "_utc_now", lambda: OBSERVED_AT)
     recovery_classification = importlib.import_module(
         "reckon.crew.recovery_classification"
@@ -329,4 +339,69 @@ def test_a_later_pass_seen_the_review_started_between_passes(
     assert before != after, (
         f"the second pass did not see the review started between passes: "
         f"run ids read {before!r} then {after!r}"
+    )
+
+
+def _standing(pointer: Any) -> str | None:
+    """The shared reader's answer for one pointer, when the module has one."""
+    reader = getattr(obligations_module, "_standing_review", None)
+    return None if reader is None else reader(pointer)
+
+
+def test_a_question_outside_a_pass_costs_one_search(
+    fleet: dict[str, Any], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """No snapshot published: one pointer costs one search, not a sweep."""
+    pointer = next(p for p in fleet["pointers"] if p.get("run_id") == "run-00")
+    searches = _count_searches(monkeypatch)
+    assert obligations_module._VIEW_LIVE_POINTERS.get() is None, (
+        "the fixture published a pass, so it cannot show what one costs outside"
+    )
+
+    assert obligations_module._current_review_in_flight(pointer) is True
+    print(f"no snapshot: searches={len(searches)}")
+    assert len(searches) <= 1, (
+        f"one question outside a pass made {len(searches)} in-flight searches "
+        "for one pointer: it swept the whole set"
+    )
+    assert obligations_module._VIEW_REVIEWS_IN_FLIGHT.get() is None, (
+        "a question outside a pass left its answer behind"
+    )
+
+
+def test_a_queued_reviewer_answers_for_no_head(
+    fleet: dict[str, Any], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A reviewer the lane accepted and has not started stands for no head."""
+    queued = next(p for p in fleet["pointers"] if p.get("run_id") == "run-01")
+    assert runs.read_pointer("review-of-run-01")["phase"] == (
+        queue_admission.QUEUED_PHASE
+    )
+    read_pointers = obligations_module._live_pointers
+
+    assert obligations_module._current_review_in_flight(queued) is False
+    assert _standing(queued) in (None, ""), (
+        "a queued reviewer answered for the head the run is owed a review of"
+    )
+    head = obligations_module._refused_delivered_review(queued)
+
+    # Teeth: the queued pointer is excluded by the candidate set, not lost. Let
+    # every pointer stand as a candidate and it answers for the head again, so
+    # the empty answer above is the exclusion doing its work.
+    candidates = getattr(obligations_module, "_launched_candidates", None)
+    if candidates is not None:
+        monkeypatch.setattr(obligations_module, "_launched_candidates", list)
+        assert _standing(queued) == "review-of-run-01"
+        monkeypatch.setattr(obligations_module, "_launched_candidates", candidates)
+
+    # The base read path gives the same answer for the same queued pointer.
+    monkeypatch.setattr(
+        obligations_module,
+        "_standing_review",
+        lambda pointer: _base_standing_review(pointer, read_pointers),
+        raising=False,
+    )
+    base = obligations_module._refused_delivered_review(queued)
+    assert head == base is None, (
+        f"the queued reviewer moved the refused-delivery answer: {head!r} then {base!r}"
     )
