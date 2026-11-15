@@ -190,6 +190,9 @@ DUTY_ROW_FIELDS = (
     "exempt_alternative",
     # How many requests one plan's review hold keeps waiting.
     "held_count",
+    "waiting_requests",
+    "merged_run_ids",
+    "partial_action_form",
     # The run a finished-run hold names, with its session, phase and the path
     # it fences, so a coordinator can find it without opening the waiting
     # request's pointer.
@@ -3968,6 +3971,9 @@ def _obligations_view(
         str(pointer.get("run_id") or ""): pointer for pointer in _live_pointers(project)
     }
     live_pointers = list(pointers.values())
+    from reckon.crew.section_obligations import merged_section_items
+
+    items.extend(merged_section_items(project, session, live_pointers, now=now))
     # Read once for the whole view, from the ordering the admission pass admits
     # by: a queued row and a queued review duty both report their place from
     # it, so every pointer is read once and no two duties can disagree about

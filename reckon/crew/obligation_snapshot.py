@@ -42,6 +42,7 @@ import sys
 import traceback
 from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass
+from dataclasses import field as dataclass_field
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
@@ -1658,6 +1659,9 @@ class FleetState:
     held_worktrees: dict[str, list[dict[str, Any]]]
     unreconciled: dict[str, int]
     findings: list[dict[str, str]]
+    merged_sections: dict[str, list[dict[str, Any]]] = dataclass_field(
+        default_factory=dict
+    )
 
 
 def fleet_state(project: str, *, now: datetime | None = None) -> FleetState:
@@ -1714,6 +1718,8 @@ def _derive_fleet_state(project: str, *, now: datetime | None = None) -> FleetSt
         if session and run_id and module._current_review_in_flight(pointer):
             reviews_in_flight.setdefault(session, set()).add(run_id)
     floors = module.review_dispositions.declared_dimension_floors(config)
+    from reckon.crew.section_obligations import merged_section_items_by_session
+
     # Every review read this sweep makes happens inside the region -- the
     # classified rows, the sub-floor lookup and the held-worktree scan all
     # reach the review store -- so what could not be read is collected here,
@@ -1735,6 +1741,9 @@ def _derive_fleet_state(project: str, *, now: datetime | None = None) -> FleetSt
             held_worktrees=module._held_worktrees_by_session(project, now=instant),
             unreconciled=module.runs.drain_unreconciled_by_session(project),
             findings=[],
+            merged_sections=merged_section_items_by_session(
+                project, list(pointers.values()), now=instant
+            ),
         )
     state.findings = list(skipped_records)
     return state
@@ -1939,6 +1948,7 @@ def payload_for(state: FleetState, session: str) -> dict[str, Any]:
             apply_stuck_verdict(item, pointer, passes=passes, now=state.now)
     items.extend(state.sub_floor.get(session, []))
     items.extend(state.held_worktrees.get(session, []))
+    items.extend(state.merged_sections.get(session, []))
     from reckon.crew.promotion_requests import failure_obligations
 
     items.extend(failure_obligations(state.project, session, now=state.now))
