@@ -1,0 +1,19 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <title>Closure overview: the landing line, the done-when, the review totals | landing fragment</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <h2 id="alro-s3b-overview">The overview quotes the landing the landed run recorded</h2>
+    <p><code>_landing_comment</code> reads a section's landing from the run that landed it rather than from whichever comment came last. A <code>c-close-&lt;section&gt;</code> comment still wins where one exists; otherwise the landing is the <code>c-run-</code> comment whose id is derived from the section's latest implementing run, using the prefix constant the promotion writer owns. A review of that run writes a comment on the same section under the same prefix, and the previous fallback quoted that review as the landing — so a section landed by promotion now quotes its own run's landing, and a section whose last comment is a review's still quotes its close comment.</p>
+    <p><code>_done_when</code> quotes the whole done-when paragraph. Section bodies are read paragraph by paragraph instead of being flattened, because a declaration cut at its first full stop loses everything after an abbreviation or a dotted path: a done-when naming <code>reckon audit-doc</code> and a record file name was previously quoted only as far as the dot in <code>.html</code>.</p>
+    <p>The totals block also reads the plan's committed review records under <code>docs/state/&lt;project&gt;/reviews/plan/&lt;plan&gt;/</code> and states the findings raised and how they were disposed — folded, exempted or still open — each figure cited to the review run that recorded it. Dispositions are read through <code>reckon.crew.findings</code>, which owns their encoding. Two smaller defects close with them: <code>_run_figures</code> holds a figure to the plan's own figure directory using the <code>plan_slug</code> it already took, and the figure address is taken from <code>figure_row</code>, the inventory's single row builder, rather than rebuilt beside it.</p>
+    <p>Reading: <code>reckon/evidence.py</code>. Gate: <code>tests/test_a_closing_plan_gets_one_sourced_overview.py</code>, which carries a promotion-only landing case, a review-comment-last case, a done-when holding <code>reckon audit-doc</code> and a two-review disposition case, and asserts a row's attempt count for every node.</p>
+  </main>
+</body>
+</html>
