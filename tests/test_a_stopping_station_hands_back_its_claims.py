@@ -247,6 +247,7 @@ _CHILD = textwrap.dedent(
     """
 )
 
+
 def test_a_station_stopped_while_blocked_exits_inside_its_bound(
     crew_home: Path,
 ) -> None:
