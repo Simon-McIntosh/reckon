@@ -28,6 +28,7 @@ from tests.helpers.git import git
 PROJECT = "proj"
 PLAN = "plan-a"
 
+
 def _write_plan(path: Path) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     bare = (
@@ -54,8 +55,7 @@ def _write_plan(path: Path) -> None:
 
 @pytest.fixture()
 def repository(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
-    """A shared checkout on its primary branch holding a plan to promote against.
-    """
+    """A shared checkout on its primary branch holding a plan to promote against."""
     config_home = tmp_path / "config-home"
     config_home.mkdir()
     monkeypatch.setenv("RECKON_HOME", str(config_home))
@@ -166,9 +166,7 @@ def _merge(tree: Path, branch: str, subject: str) -> str:
     return git(tree, "rev-parse", "HEAD")
 
 
-def _run_worktree(
-    repository: Path, tmp_path: Path, base: str
-) -> tuple[Path, str]:
+def _run_worktree(repository: Path, tmp_path: Path, base: str) -> tuple[Path, str]:
     """A worktree off ``base`` holding one commit of the run's own work."""
     worktree = tmp_path / "run-tree"
     git(repository, "worktree", "add", "-q", "-b", "run-branch", str(worktree), base)
