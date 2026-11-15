@@ -40,6 +40,7 @@ import json
 import sqlite3
 import sys
 import threading
+import uuid
 from collections.abc import Iterable, Mapping
 from contextlib import closing
 from datetime import UTC, date, datetime, timedelta
@@ -69,6 +70,11 @@ RETENTION_DAYS = 7
 HEARTBEAT_KEY = "heartbeat"
 CODE_IDENTITY_KEY = "code_identity"
 STARTED_AT_KEY = "started_at"
+# The name this store gave itself when it was opened, so a reader can tell a
+# store it has been reading from a different one opened at the same path. A
+# copy of a store carries it; a store created after the last one was lost does
+# not, and only the second case means the rows a reader already read are gone.
+STORE_IDENTITY_KEY = "store_identity"
 EVENT_COUNTER_KEY = "events_counter"
 EVENT_GENERATION_KEY = "events_generation"
 # The crew home this station reads from. A follower whose own home is not this
@@ -562,6 +568,10 @@ class StationStore:
                 "INSERT OR IGNORE INTO station (key, value) VALUES (?, ?)",
                 (key, "0" if seed is None else str(seed)),
             )
+        connection.execute(
+            "INSERT OR IGNORE INTO station (key, value) VALUES (?, ?)",
+            (STORE_IDENTITY_KEY, uuid.uuid4().hex),
+        )
         connection.commit()
 
     def _opening_sequence(self, connection: sqlite3.Connection) -> int | None:

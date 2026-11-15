@@ -566,7 +566,7 @@ class StationSubscriber:
         # The stamp the store gave itself when it was first opened. A store that
         # is replaced at this path opens with a new one, which is how a poll
         # tells a store its place belongs to from a store that never held it.
-        self._store_birth = store.station_value(station_store.STARTED_AT_KEY)
+        self._store_identity = store.station_value(station_store.STORE_IDENTITY_KEY)
         self._first_poll = True
         # Where this subscriber has read to. It starts at the stored place and
         # always advances in memory; the stored place is written only while the
@@ -744,21 +744,21 @@ class StationSubscriber:
         last saw belongs to the store that is gone, so it can say nothing about
         this one.
 
-        The store's birth stamp decides it. A store restored from a copy of the
-        one this pane was reading carries that stamp forward, and its rows are
-        the rows this pane already read, so the place in memory is kept and
-        nothing is drawn twice. A store opened fresh stamps itself with its own
-        opening, and then the place in memory names ids in a space nothing here
+        The store's own name decides it. A store restored from a copy of the one this
+        pane was reading carries that name forward, and its rows are the rows this
+        pane already read, so the place in memory is kept and nothing is drawn
+        twice. A store created after the last one was lost gives itself a new
+        name, and then the place in memory names ids in a space nothing here
         holds: it is replaced by the place the new store records for this
         audience, and no row this pane already drew can be in it.
         """
         self._row = self.store.read_cursor(self.project, self.audience)
         self._data_version = self.store.data_version()
         self._generation = self.store.event_generation()
-        birth = self.store.station_value(station_store.STARTED_AT_KEY)
-        if birth != self._store_birth:
+        identity = self.store.station_value(station_store.STORE_IDENTITY_KEY)
+        if identity != self._store_identity:
             self._read_id, self._read_day = self.cursor, self.cursor_day
-        self._store_birth = birth
+        self._store_identity = identity
         self._first_poll = True
 
     def _emit(self, event: Mapping[str, Any], *, sink: Any = None) -> None:
