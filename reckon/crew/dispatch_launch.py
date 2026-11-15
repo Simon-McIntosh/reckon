@@ -72,6 +72,7 @@ from reckon.crew.runs import (
     find_handover,
     placement_job_alive,
     pointer_path,
+    pid_belongs_to_the_station,
     process_alive,
     read_pointer,
     record_process_alive,
@@ -2440,11 +2441,10 @@ def _reservation_taken_by_this_process(
     launch's attempt or a later one, is adopted; another process's hold is never
     taken over, and neither is an earlier attempt's.
     """
-    pid = os.getpid()
     for attempt, path, payload in reservations_in(run_directory):
         if payload.get("supervisor_pid") is not None:
             continue
-        if payload.get("pid") != pid:
+        if not _reservation_names_this_process(payload):
             continue
         if attempt < at_least:
             continue
@@ -2463,6 +2463,32 @@ def _read_reservation(path: Path) -> Mapping[str, Any] | None:
     except (OSError, ValueError):
         return None
     return payload if isinstance(payload, Mapping) else None
+
+
+def _reservation_launcher(payload: Mapping[str, Any]) -> dict[str, Any]:
+    """The process that took this reservation, as a liveness record.
+
+    A reservation taken by this version records its door under ``launcher_pid``,
+    because ``pid`` belongs to the process that runs the attempt — the
+    supervisor the launch starts. A reservation written before that split names
+    its door under ``pid``, and there the two are the same process, so the
+    older field is the fallback rather than a second answer.
+    """
+    pid = payload.get("launcher_pid")
+    if pid is None:
+        return {
+            "pid": payload.get("pid"),
+            "pid_start_time": payload.get("pid_start_time"),
+        }
+    return {
+        "pid": pid,
+        "pid_start_time": payload.get("launcher_pid_start_time"),
+    }
+
+
+def _reservation_names_this_process(payload: Mapping[str, Any]) -> bool:
+    """Whether the process reading this reservation is the one that took it."""
+    return _reservation_launcher(payload).get("pid") == os.getpid()
 
 
 def _reservation_age_seconds(path: Path) -> float | None:
@@ -2549,6 +2575,13 @@ def reservation_in_flight(
     reservation stops holding the run so a relaunch can be admitted. Age frees
     only that shape — a reservation naming a supervisor, or one whose attempt
     left a worker record, is held on its liveness alone.
+
+    A pid that names this host's station names no process of this run, whichever
+    field carries it: the station launches runs from inside its own long-lived
+    process and outlives every one of them, so its liveness says nothing about
+    whether a worker is coming. A reservation naming the station as its
+    supervisor therefore holds nothing at all, and one whose door is the station
+    is judged by its age like any other launch that reached no supervisor.
     """
     if not isinstance(payload, Mapping):
         return False
@@ -2558,6 +2591,15 @@ def reservation_in_flight(
             "pid": payload.get("supervisor_pid"),
             "pid_start_time": payload.get("supervisor_pid_start_time"),
         }
+        if pid_belongs_to_the_station(supervisor["pid"]):
+            # The station is not this run's process, whatever the record names.
+            # A reservation written by a launch made inside the station's own
+            # process has been seen naming the station as its supervisor, and
+            # then the supervisor arm below holds the attempt for as long as the
+            # station lives: age never frees a reservation that names a
+            # supervisor, so nothing could declare that attempt ended. A pid
+            # naming this host's station names no worker and holds nothing.
+            return False
         if not holder_running(supervisor):
             return False
         # An idle supervisor holds nothing. A run whose worker has parked on a
@@ -2567,7 +2609,15 @@ def reservation_in_flight(
         # stands. A worker that is still running is not parked, and its
         # reservation still holds.
         return not _run_is_parked_on_a_declared_wait(run_directory)
-    if not holder_running(payload):
+    launcher = _reservation_launcher(payload)
+    if pid_belongs_to_the_station(launcher.get("pid")):
+        # A reservation naming this host's station names the door that was
+        # asked to launch, not anything of the run: the station outlives every
+        # run it starts, so its liveness is no evidence that a worker is coming.
+        # What remains as evidence is the launch's own age, which is the same
+        # reading an attempt that never reached a worker is given.
+        return not _unreached_launch(payload, run_directory, attempt)
+    if not holder_running(launcher):
         return False
     return not _unreached_launch(payload, run_directory, attempt)
 
@@ -2741,12 +2791,24 @@ def reserve_launch_attempt(
     for _ in range(_RESERVATION_ATTEMPTS):
         attempt = launch_reservation_key(run_directory)
         path = launch_reservation_path(run_directory, attempt)
+        launcher_pid = os.getpid()
         payload = {
             "run_id": run_id,
             "attempt": attempt,
             "kind": kind,
-            "pid": os.getpid(),
-            "pid_start_time": _process_start_time(os.getpid()),
+            # The reservation names the process that will run the attempt, never
+            # the one that asked for it. A launch made inside a long-lived door —
+            # the station, an admit service — would otherwise name a process that
+            # outlives every run it launches: the hold would read as in flight
+            # for the door's whole life, and nothing could declare the attempt
+            # ended. ``pid`` is left for the supervisor the launch starts, and
+            # the door that took the reservation is recorded beside it under
+            # names of its own, for the fences that must recognise the process
+            # which took this attempt.
+            "pid": None,
+            "pid_start_time": None,
+            "launcher_pid": launcher_pid,
+            "launcher_pid_start_time": _process_start_time(launcher_pid),
             "launcher_host": _reservation_host(),
             "at": _utc_now(),
             "supervisor_pid": None,
@@ -2786,11 +2848,16 @@ def record_reservation_supervisor(reservation: LaunchReservation, pid: int) -> b
             "run_id": reservation.run_id,
             "attempt": reservation.attempt,
             "kind": reservation.kind,
-            "pid": os.getpid(),
-            "pid_start_time": _process_start_time(os.getpid()),
             "at": _utc_now(),
         }
     record = dict(payload)
+    # ``pid`` names the process of this attempt, and the supervisor is it: a
+    # reader asking whether the attempt is still running asks about the
+    # supervisor's process, and the process that took the reservation is only
+    # the door. Keeping ``pid`` on the door is what made a station-launched
+    # reservation read as in flight for the station's whole life.
+    record["pid"] = pid
+    record["pid_start_time"] = _process_start_time(pid)
     record["supervisor_pid"] = pid
     record["supervisor_pid_start_time"] = _process_start_time(pid)
     try:
@@ -2934,7 +3001,7 @@ def release_unspawned_reservations(run_directory: Path, *, reason: str) -> int:
         payload = _read_reservation(path)
         if not isinstance(payload, Mapping):
             continue
-        if payload.get("pid") != os.getpid():
+        if not _reservation_names_this_process(payload):
             continue
         if payload.get("launcher_host") not in (None, _reservation_host()):
             continue
@@ -3002,11 +3069,12 @@ def _refuse_superseded_launch(
             "reservation is no longer on disk, so another launch has taken the "
             "run; it abandons without starting a supervisor"
         )
-    if payload.get("pid") != os.getpid():
+    if not _reservation_names_this_process(payload):
         raise CrewError(
             f"run {run_id!r} attempt {reservation.attempt}: the reservation now "
-            f"names pid {payload.get('pid')} rather than this launch, so another "
-            "launch has taken the run; it abandons without starting a supervisor"
+            f"names pid {_reservation_launcher(payload).get('pid')} rather than "
+            "this launch, so another launch has taken the run; it abandons "
+            "without starting a supervisor"
         )
     for name in sorted(p.name for p in run_directory.iterdir()):
         match = _RESERVATION_PATTERN.match(name)
