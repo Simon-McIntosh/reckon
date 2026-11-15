@@ -324,7 +324,7 @@ def test_a_steady_answer_store_read_parses_once_and_a_write_re_reads(
     tree = fleet["worktrees"]["run-00"]
     file_memo.clear()
     recovery_watch._remember_commit_answer(tree, "first-candidate", "1" * 40)
-    path = recovery_watch._git_answer_store_path()
+    path = recovery_watch._git_answer_tree_path(tree)
 
     reads: list[str] = []
     real_open = io.open
@@ -342,10 +342,10 @@ def test_a_steady_answer_store_read_parses_once_and_a_write_re_reads(
         "with nothing written between them"
     )
 
-    # Another process rewrites the shared file through its own rename, which
+    # Another process rewrites this tree's file through its own rename, which
     # changes the identity the held copy was keyed on.
     payload = json.loads(real_open(path, encoding="utf-8").read())
-    payload["commits"].setdefault(str(tree), {})["second-candidate"] = "2" * 40
+    payload["commits"]["second-candidate"] = "2" * 40
     temporary = path.with_name(f".{path.name}.external.tmp")
     temporary.write_text(json.dumps(payload, sort_keys=True), encoding="utf-8")
     os.replace(temporary, path)
