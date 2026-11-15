@@ -27,6 +27,7 @@ from reckon import (
     _backends,
     _store,
 )
+from reckon.crew import host_heartbeat
 from reckon.crew.dispatch_claims import (
     CLAIM_GRACE_OBSERVATIONS_NAME,
     CLAIM_GRACE_OBSERVATION_LIMIT,
@@ -2535,12 +2536,13 @@ def reservation_in_flight(
     """
     if not isinstance(payload, Mapping):
         return False
+    holder_running = _reservation_holder_running(payload)
     if payload.get("supervisor_pid") is not None:
         supervisor = {
             "pid": payload.get("supervisor_pid"),
             "pid_start_time": payload.get("supervisor_pid_start_time"),
         }
-        if record_process_alive(supervisor, process_alive) is not True:
+        if not holder_running(supervisor):
             return False
         # An idle supervisor holds nothing. A run whose worker has parked on a
         # declared wait has ended its turn, and the supervisor beside it is
@@ -2549,9 +2551,46 @@ def reservation_in_flight(
         # stands. A worker that is still running is not parked, and its
         # reservation still holds.
         return not _run_is_parked_on_a_declared_wait(run_directory)
-    if record_process_alive(payload, process_alive) is not True:
+    if not holder_running(payload):
         return False
     return not _unreached_launch(payload, run_directory, attempt)
+
+
+def _reservation_holder_running(
+    payload: Mapping[str, Any],
+) -> Callable[[Mapping[str, Any]], bool]:
+    """The liveness test that applies to a reservation's named process.
+
+    A process id means something only in the process table of the host that
+    issued it. A reservation taken here is judged by probing its pid here,
+    matched against the start time recorded beside it. A reservation taken on
+    another host names a pid this host cannot read at all — the number may
+    belong to an unrelated local process — so it is judged by that host's own
+    heartbeat instead: a host still publishing is a host whose holder still
+    exists, and a host whose beat has lapsed is a host that has gone.
+
+    A record naming no host is the shape an older launch wrote. It keeps the
+    local reading it was always given, because nothing on disk says the pid
+    belongs elsewhere.
+    """
+    host = payload.get("launcher_host")
+    if isinstance(host, str) and host and host != _reservation_host():
+        home = crew_home()
+
+        def foreign(_record: Mapping[str, Any]) -> bool:
+            return host_heartbeat.host_is_live(home, host)
+
+        return foreign
+
+    def local(record: Mapping[str, Any]) -> bool:
+        return record_process_alive(record, process_alive) is True
+
+    return local
+
+
+def _reservation_host() -> str:
+    """The host a launch here records on its reservation."""
+    return host_heartbeat.heartbeat_host()
 
 
 def _run_is_parked_on_a_declared_wait(run_directory: Path | None) -> bool:
@@ -2692,11 +2731,13 @@ def reserve_launch_attempt(
             "kind": kind,
             "pid": os.getpid(),
             "pid_start_time": _process_start_time(os.getpid()),
+            "launcher_host": _reservation_host(),
             "at": _utc_now(),
             "supervisor_pid": None,
             "supervisor_pid_start_time": None,
         }
         if _create_reservation(path, payload):
+            _publish_reservation_host()
             return LaunchReservation(
                 run_id=run_id, attempt=attempt, path=path, kind=kind
             )
@@ -2793,6 +2834,97 @@ def release_launch_reservation(
             return
     with contextlib.suppress(OSError):
         reservation.path.unlink(missing_ok=True)
+
+
+def release_a_withdrawn_reservation(
+    run_directory: Path, payload: Mapping[str, Any], *, reason: str
+) -> bool:
+    """Release one reservation whose door has declared it will not launch it.
+
+    Only a reservation that never became a launch may be released this way:
+    one naming a supervisor belongs to a worker's launch, and one whose attempt
+    left a worker record or an exit receipt already accounts for itself. The
+    caller decides whether the door has declared itself withdrawn; this checks
+    only that nothing was launched and take it at its word.
+
+    The attempt's own exit receipt is written before the reservation is let go,
+    so a reader that arrives between the two unlinks sees the attempt ended
+    rather than an attempt that never happened.
+    """
+    attempt = payload.get("attempt")
+    if not isinstance(attempt, int):
+        return False
+    if payload.get("supervisor_pid") is not None:
+        return False
+    if _attempt_leaves_a_worker_record(run_directory, attempt):
+        return False
+    if _reserved_attempt_ended(run_directory, attempt):
+        return False
+    _write_attempt_artifact(
+        run_directory,
+        EXIT_RECORD_NAME,
+        {
+            "run_id": str(payload.get("run_id") or run_directory.name),
+            "exit_code": None,
+            "detail": reason,
+            "cause": "the launch was withdrawn before it recorded a supervisor",
+            "recorded_at": _utc_now(),
+        },
+        attempt=attempt,
+    )
+    with contextlib.suppress(OSError):
+        launch_reservation_path(run_directory, attempt).unlink()
+    return True
+
+
+def _publish_reservation_host() -> None:
+    """Refresh this host's beat, so an off-host reader can judge its holders.
+
+    Best effort: a beat that cannot be written must not refuse a launch. The
+    cost of a miss is a reservation whose holder reads as unknown from
+    elsewhere, which is the reading this host's reservations had before the
+    beat existed.
+    """
+    with contextlib.suppress(OSError):
+        host_heartbeat.publish_host_heartbeat(crew_home())
+
+
+def release_unspawned_reservations(run_directory: Path, *, reason: str) -> int:
+    """Drop reservations this process took and never turned into a worker.
+
+    A door that takes a reservation and then declines to launch leaves the hold
+    standing. A launch whose worker ends is freed by the attempt's exit receipt,
+    and a launch that fails before its supervisor is recorded files one; a door
+    that never launched has neither, so the reservation holds until
+    :data:`UNREACHED_LAUNCH_BOUND_SECONDS` passes. A door that knows it is not
+    launching is the one party able to say so at once, and it took these
+    reservations itself.
+
+    Only reservations naming this process with no supervisor recorded are
+    dropped. One naming a supervisor belongs to a launch already under way,
+    which is not this door's to end.
+
+    The answer is how many were dropped.
+    """
+    dropped = 0
+    try:
+        names = [path.name for path in run_directory.iterdir()]
+    except OSError:
+        return dropped
+    for name in sorted(names):
+        if _RESERVATION_PATTERN.match(name) is None:
+            continue
+        path = run_directory / name
+        payload = _read_reservation(path)
+        if not isinstance(payload, Mapping):
+            continue
+        if payload.get("pid") != os.getpid():
+            continue
+        if payload.get("launcher_host") not in (None, _reservation_host()):
+            continue
+        if release_a_withdrawn_reservation(run_directory, payload, reason=reason):
+            dropped += 1
+    return dropped
 
 
 def _record_unreached_launch(
@@ -4927,7 +5059,15 @@ def _run_supervisor(spec_path: Path) -> int:
     the supervisor survives one so it can write the exit a post-spawn stop
     caused, and it abandons the launch when the stop arrived before the worker
     existed.
+
+    This process outlives the launch that started it, and the launcher does not:
+    a CLI dispatch records its reservation and returns about two seconds later,
+    so a beat only the launcher renewed would lapse while this supervisor and
+    its worker were still working. The beat is published here, from the process
+    that stays for the whole run, so a holder's host reads as live for as long
+    as the run lives rather than for as long as its launcher.
     """
+    _publish_reservation_host()
     try:
         spec = json.loads(spec_path.read_text())
     except (OSError, ValueError):

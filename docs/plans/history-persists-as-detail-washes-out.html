@@ -23,9 +23,10 @@
   <title>History Persists As Detail Washes Out | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="23">
+<meta name="plan-version" content="27">
 <meta name="plan-modified" content="2026-11-15">
-<meta name="plan-section-declarations" content="{&quot;s20&quot;:&quot;implementable&quot;}">
+<meta name="plan-section-declarations" content="{&quot;s20&quot;:&quot;done&quot;,&quot;s21&quot;:&quot;implementable&quot;,&quot;s22&quot;:&quot;implementable&quot;,&quot;s23&quot;:&quot;implementable&quot;,&quot;s24&quot;:&quot;implementable&quot;,&quot;s25&quot;:&quot;implementable&quot;,&quot;s26&quot;:&quot;implementable&quot;,&quot;s27&quot;:&quot;implementable&quot;}">
+<meta name="plan-section-depends-on" content="{&quot;s26&quot;:[&quot;history-persists-as-detail-washes-out#s21&quot;,&quot;history-persists-as-detail-washes-out#s22&quot;,&quot;history-persists-as-detail-washes-out#s23&quot;,&quot;history-persists-as-detail-washes-out#s24&quot;,&quot;history-persists-as-detail-washes-out#s25&quot;],&quot;s27&quot;:[&quot;history-persists-as-detail-washes-out#s26&quot;]}">
 </head>
 <body>
   <main class="plan-doc">
@@ -353,10 +354,46 @@
     </section>
 
     <h2 id="s20">§20 — Map every ledger reader and writer that must leave git</h2>
-<section data-reckon="section" data-id="s20" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+<section data-reckon="section" data-id="s20" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="done" data-links=""></section>
 <p><strong>Why.</strong> The lead locked <code>committed-export-scope</code> as "none": the run ledger leaves git, and the run store in the crew home becomes its only store. Untracking <code>docs/state/&lt;project&gt;/crew.json</code> and <code>docs/state/&lt;project&gt;/runs/*.json</code> reaches every path that reads or writes them. That includes promotion commits that stage ledger files, release commits, landing records, the open-run and ledger indexes, velocity and pace readers, and the SPA's state payload. Cutting nodes before those are known would strand a writer that still commits a file nobody tracks.</p>
 <p><strong>Deliverable.</strong> An investigation, which changes no product code. It produces a table of every module that reads or writes the ledger aggregate or a per-run ledger file, with the function, whether it reads or writes, and whether it stages or commits the file. Throughout this section, <em>the run store</em> means the embedded SQLite database under the crew config home that §2 defines, which no commit carries. The table states which callers already read or write through that database and which open the committed files directly. It names the one-time migration the untracking needs (<code>git rm --cached</code>, <code>.gitignore</code>, history kept in the store, an export path outside git). It ends with a proposed split into implementation sections, each with a write scope disjoint from the others, ordered so that no promotion is ever left unable to record a run. Sections §2–§7 were written before the decision and are restated from this map, not built from their current text.</p>
 <p><strong>Done when.</strong> The fragment <code>docs/evidence/fragments/history-persists-as-detail-washes-out/ledger-leaves-git-map.html</code> carries the table, found by <code>git grep</code> over the whole repository at the base revision (every tracked path, <code>docs/</code> and <code>scripts/</code> included, with test files listed in a separate group) for the ledger's path helpers and for literal <code>crew.json</code> and <code>runs/</code> uses. Each claimed caller is cited by file and line from the committed blob at the base revision. It also carries the migration steps and the proposed sections, each with a done-when. A positive control shows the grep finds <code>reckon/ledger.py</code>'s own writer and the committed reader at <code>docs/figures/plan-review-cycles/measure_review_cycles.py</code>. Write paths: the fragment only.</p>
+
+    <h2 id="s21">The store write is load-bearing</h2>
+<section data-reckon="section" data-id="s21" data-effort-hours="3.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="implementable" data-links=""></section>
+<p><strong>Why.</strong> §20's map found <code>_index_append</code> in <code>reckon/ledger.py</code> returns a failure on its payload and never raises, deliberately, which is right while the committed file is the authority and fatal once the store is the only record. It must be inverted before anything is untracked.</p>
+<p><strong>Order.</strong> <code>append_run</code> writes the per-run file and only then calls <code>_index_append</code>, so inverting the return alone would leave the file behind when the store write raises. The per-run file is unlinked when the store write raises, before the refusal propagates.</p>
+<p><strong>Done when.</strong> A promotion whose store write raises refuses, names the store and the repair verb, and leaves no row in either store, asserted by injection; a healthy promotion writes both and <code>run_store.compare</code> returns 0/0/0. The test fails at base. Write paths: <code>reckon/ledger.py</code>, <code>reckon/run_store.py</code> and the new test.</p>
+
+    <h2 id="s22">Every ledger question is answered by the store</h2>
+<section data-reckon="section" data-id="s22" data-effort-hours="4.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="implementable" data-links=""></section>
+<p><strong>Why.</strong> The map lists every reader of the per-run files and the aggregate; untracking before they read the store leaves each with nothing to read.</p>
+<p><strong>Done when.</strong> Every existing reader test passes against a project whose <code>runs/</code> directory is absent and whose store holds the rows, and a store deleted and rebuilt returns an equal answer set. Write paths: <code>reckon/ledger.py</code> (<code>load</code>, <code>load_aggregate</code>, <code>runs</code>, <code>read_records</code>), <code>reckon/crew/open_run_index.py</code> and the new test.</p>
+
+    <h2 id="s23">Members and holds become store tables</h2>
+<section data-reckon="section" data-id="s23" data-effort-hours="3.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="implementable" data-links=""></section>
+<p><strong>Why.</strong> <code>run_store.db</code> already holds runs with the five query keys, and <code>_AUX_SCHEMA</code> in <code>reckon/run_store.py</code> already defines <code>members</code> and <code>holds</code> tables, but nothing writes them: <code>run_store.append_member</code> has no caller and there is no holds writer, so <code>register_member</code> and the reap still write through <code>ledger.write</code> with a version pair. Untracking first would leave the roster and holds with no home on the first dispatch that writes one.</p>
+<p><strong>Done when.</strong> <code>register_member</code> writes through <code>append_member</code>, the reap through a holds writer beside it, and a roster registration and a reap land with no committed path, and the roster and version read after <code>crew.json</code> is removed equal those read before, asserted as values. Write paths: <code>reckon/ledger.py</code> (<code>register_member</code>, <code>write</code>, <code>members</code>), <code>reckon/crew/routing.py</code>, <code>reckon/crew/promotion_records.py</code> and the new test.</p>
+
+    <h2 id="s24">Revision-scoped history reads restate against the store</h2>
+<section data-reckon="section" data-id="s24" data-effort-hours="3.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+<p><strong>Why.</strong> Velocity reads the ledger at a revision and would report zero rather than refuse once the files leave git; the review-cycle figure script reads <code>crew.json</code> the same way.</p>
+<p><strong>Done when.</strong> Velocity's figures at a revision equal the store's answer over the same runs, over a population whose run count is nonzero and equals the ledger's at that revision; an empty store fails the comparison rather than matching an empty answer. The arm over a store rebuilt from the export belongs to §27, which delivers the export. Write paths: <code>reckon/velocity.py</code>, <code>docs/figures/plan-review-cycles/measure_review_cycles.py</code>, the <code>scripts/</code> readers the map names, and the new test.</p>
+
+    <h2 id="s25">Presence checks stop keying on a tracked file</h2>
+<section data-reckon="section" data-id="s25" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="critical" data-status="implementable" data-links=""></section>
+<p><strong>Why.</strong> <code>native_agent_guard.py</code>, <code>worker_message_guard.py</code> and <code>cli_entry.py</code> decide a repository is crew-managed by <code>crew.json</code> existing. The two guards stop a native agent writing into a managed tree and fail open. Both test the working tree, so a checkout that still holds the file keeps them firing; a tree that never held it, a fresh clone or any checkout after the removal in §26 lands, would have both silently off.</p>
+<p><strong>Done when.</strong> A repository with no tracked <code>crew.json</code> and no <code>flight.yaml</code> is still refused by both guards, and a crew project with no tracked ledger is still recognised, asserted by removing both files and requiring the refusal; the test fails at base. Write paths: <code>reckon/hooks/native_agent_guard.py</code>, <code>reckon/hooks/worker_message_guard.py</code>, <code>reckon/cli_entry.py</code>, <code>reckon/crew/dispatching/comparisons.py</code> and the new test.</p>
+
+    <h2 id="s26">The untracking migration</h2>
+<section data-reckon="section" data-id="s26" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="critical" data-status="implementable" data-links=""></section>
+<p><strong>Why.</strong> With the store load-bearing, every reader on it, members and holds in tables, history reads restated and the guards independent of the file, the ledger can leave git. History stays in every earlier commit; nothing is rewritten.</p>
+<p><strong>Done when.</strong> <code>git ls-files docs/state/*/crew.json docs/state/*/runs</code> returns nothing; the row count and the canonical JSON of every row match before and after for every mounted project; a promotion lands while the paths are untracked. Write paths: <code>.gitignore</code>, <code>docs/state/**</code> (removed from the index and the working tree by <code>git rm</code>, so every checkout loses its copy with the merge that carries the removal and the run store is the only store) and <code>scripts/import_runs_into_store.py</code>.</p>
+
+    <h2 id="s27">The export leaves git</h2>
+<section data-reckon="section" data-id="s27" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+<p><strong>Why.</strong> A reader with no shared home is served by a periodic narrow export under the crew config home rather than by a clone.</p>
+<p><strong>Done when.</strong> The export reconstructs the untracked <code>crew.json</code> byte-equal in content to the one the migration removed, a run store built from it answers a capability derivation equal to the pre-untrack answer, and velocity's figures from that rebuilt store equal the live store's over the same runs. Each comparison runs over a population whose run count is nonzero and equals the ledger's, and an empty export fails it. Write paths: a new <code>reckon/crew/export_ledger.py</code>, its scheduling point where the release sweep already runs, and the new test.</p>
 
     <section data-reckon="decisions" id="decisions" class="r-decisions">
 <h2><span class="sec">§</span> Decisions</h2>
@@ -405,10 +442,16 @@
     <pre class="r-fu-prompt">/reckon-build the-ledger-is-one-file-per-run</pre>
     <p class="r-fu-outcome">Superseded by the 2026-11-14 decision committed-export-scope = none: the per-run committed files that the-ledger-is-one-file-per-run builds toward no longer stay in git. The next step is §20's map, carried by f-hpdw-009.</p>
     </article>
-<article class="r-fu" data-id="f-hpdw-009" data-status="open" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-written-by="reckon-a6" data-written-at="2026-11-14T19:20:00Z" data-recommends-skill="" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-hpdw-009" data-status="resolved" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-written-by="reckon-a6" data-written-at="2026-11-14T19:20:00Z" data-recommends-skill="" data-resolved-at="2026-11-15T09:02:40+00:00" data-resolved-by="reckon-a6">
     <h4 class="r-fu-title">Map every ledger reader and writer before the ledger leaves git</h4>
     <div class="r-fu-body"><p>§20 maps every reader and writer of the committed ledger files across the whole repository and proposes the implementation sections that untrack them, in an order that never leaves a promotion unable to record a run.</p></div>
     <pre class="r-fu-prompt">/reckon-build history-persists-as-detail-washes-out §20</pre>
+    <p class="r-fu-outcome">§20 landed as 1ebacb850e: the fragment maps 64 ledger readers and writers and proposes seven sections, now §21 to §27 with their order declared as section waits. It found two native-agent guards and the crew-project check key on a tracked crew.json and would silently turn off if it were untracked (§25).</p>
+    </article>
+<article class="r-fu" data-id="f-hpdw-010" data-status="open" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-written-by="reckon-a6" data-written-at="2026-11-15T09:05:00Z" data-recommends-skill="" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Build the ledger-leaves-git sections</h4>
+    <div class="r-fu-body"><p>Review and build §21 to §27; §26 waits on §21 to §25 and §27 on §26.</p></div>
+    <pre class="r-fu-prompt">/reckon-build history-persists-as-detail-washes-out §21</pre>
     </article>
 </section>
 
@@ -440,6 +483,12 @@
 <div class="r-comment" data-section="s2" data-id="c-run-r-20260910T090157091906-hpdw-a-question-reaches-an-index-not-a-scan" data-who="crew-role-scope" data-when="2026-09-10T09:49:26.071Z">
     <div class="r-comment-body"><p>The store answers a question through an index again, without giving up durable-by-default. One QUERY_KEYS declaration drives the columns, their indexes and the insert, so schema and insert cannot drift, and the complete durable record still sits in the payload beside them. Base 98 passed 1 failed, head 103 passed 0 failed, 0 added, and the one base failure passes at head. Each of the five keys is asserted on the planner's own text reading SEARCH with no SCAN, not on elapsed time, and a member query returns the same rows through the column as through the payload. A store predating the current shape migrates in place on open: asserted against both earlier shapes and against a copy of the real live store. Verified by the coordinator on the real store rather than a copy: 22 rows preserved, the payload column added, four indexes created, and the plan now reads SEARCH runs USING INDEX idx_runs_member. 136 passed at the merged head.</p></div>
 </div>
+<div class="r-comment" data-section="s20" data-id="c-run-r-20261115T001237703764-review-of-ledger-leaves-git-map-s20-writable-1ebacb850e39" data-who="reckon-build" data-when="2026-11-15T01:38:25.850Z">
+    <div class="r-comment-body"><p>recorded an independent review of run r-20261114T181510678514-ledger-leaves-git-map-s20-writable at head 1ebacb850e against base a346fba4aa — parsed record with all six dimensions scored (goal_fidelity 16, evidence 16, scope_discipline 19, durability 15, fit 17, reuse 19), five non-blocking findings, zero added failures.</p></div>
+</div>
+<div class="r-comment" data-section="s20" data-id="c-run-r-20261114T181510678514-ledger-leaves-git-map-s20-writable" data-who="reckon-build" data-when="2026-11-14T23:52:14.657Z">
+    <div class="r-comment-body"><p>docs/evidence/fragments/history-persists-as-detail-washes-out/ledger-leaves-git-map-s20-writable.html carries the map and the proposed split; the coordinator owns the plan edit and the followup.</p></div>
+</div>
 <div class="r-comment" data-section="s3" data-id="c-run-r-20260909T174707543021-hpdw-the-store-exists-beside-the-file" data-who="crew-admission" data-when="2026-09-09T18:37:11.729Z">
     <div class="r-comment-body"><p>The expand stage of the store change. An embedded SQLite store created on first use with four tables - a narrow durable run row, the wide detail keyed to it, roster members and holds - and the durable columns driven by one declaration that builds both the schema and the insert, asserted by adding a field to the declaration and requiring it in the durable row. A promotion writes the file row first, then the store under a single transaction that reads or rewrites no other row, asserted by snapshotting the other rows' bytes. A store write that raises returns status failed with the error on the payload while the file row still commits, asserted by injecting the exception rather than by reading the guard. Nothing reads the store: every existing reader gives an identical answer with the store present and with it deleted. Every test resolves the store under a temporary home and asserts the real config home is untouched. 94 passed on the two named files; 4 failed / 235 passed at head against 4 failed / 228 passed at base over a 233-test delta set, 0 added failures, the four being pre-existing sandbox failures in routing-evidence with identical ids at both trees.</p></div>
 </div>
@@ -466,9 +515,6 @@
 </div>
 <div class="r-comment" data-section="s7" data-id="c-run-r-20260923T141652653142-review-of-history-persists-as-detail-washes-out" data-who="reckon-ship" data-when="2026-09-23T15:39:47.829Z">
     <div class="r-comment-body"><p>read-back found 50 sentences with two readings, 43 load-bearing, and node 4 without a measure; the per-run ledger moved to its own plan</p></div>
-</div>
-<div class="r-comment" data-section="s20" data-id="c-run-r-20261115T001237703764-review-of-ledger-leaves-git-map-s20-writable-1ebacb850e39" data-who="reckon-build" data-when="2026-11-15T01:38:25.850Z">
-    <div class="r-comment-body"><p>recorded an independent review of run r-20261114T181510678514-ledger-leaves-git-map-s20-writable at head 1ebacb850e against base a346fba4aa — parsed record with all six dimensions scored (goal_fidelity 16, evidence 16, scope_discipline 19, durability 15, fit 17, reuse 19), five non-blocking findings, zero added failures.</p></div>
 </div>
 </section>
 </main>

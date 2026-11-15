@@ -1,0 +1,48 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/promotion_checks.py:639",
+    "reckon/crew/promotion.py:1541",
+    "reckon/crew/promotion.py:2103"
+  ],
+  "completed_at": "2026-11-15T07:17:13.460Z",
+  "dispatched_at": "2026-11-15T07:03:48Z",
+  "findings": [],
+  "item_verdicts": {
+    "call_sites": "Three production callers of _declared_manifest_commits were read: the figure-twin check at reckon/crew/promotion_checks.py:639 and the landing-comment writers at reckon/crew/promotion.py:1541 and reckon/crew/promotion.py:2103, each of which resolves the returned list against the run's repository.",
+    "diff": "6657268850 changes only reckon/crew/promotion_scope.py (+19/-2, one function) and adds tests/test_a_read_only_run_promotes_without_a_hand_edit.py (231 lines); ad65425d adds only the two evidence fragments (47 and 204 lines, no deletions).",
+    "done_when": "The done_when asserts promotion with and without --no-commit, refusal of an unresolvable sha under both, and a base-revision negative control logged to docs/evidence/fragments/queued-work-needs-no-workaround/s19.html; tests/test_a_read_only_run_promotes_without_a_hand_edit.py covers all four arms and both log arms are recorded.",
+    "goal": "The node goal is 'deliver queued-work-needs-no-workaround \u00a719: a read-only run with no commit is promoted without a hand edit'; reckon/crew/promotion_scope.py:1329 now reads a review role's prose commits line as the absence it declares, which is exactly that deliverable.",
+    "manifest": "The manifest at .../r-20261115T040600990763-qwnw-a-read-only-run-promotes-without-a-hand-edit/manifest.md records status complete, both commits, the literal gate command, both arm logs and both suite JSON blocks with completed:true.",
+    "write_paths": "The declared write paths are reckon, tests and docs/evidence/fragments/queued-work-needs-no-workaround; git show --stat for 6657268850 and ad65425d lists only paths inside those three."
+  },
+  "justifications": {
+    "durability": "The baseline arm records tests/test_a_read_only_run_promotes_without_a_hand_edit.py::test_a_read_only_run_promotes_on_its_own_commits_prose failing under both parametrisations with the source change absent, so reverting reckon/crew/promotion_scope.py:1329 reddens it.",
+    "evidence": "The gate command recorded in the manifest runs tests/test_a_read_only_run_promotes_without_a_hand_edit.py against a temporary repository and a RECKON_HOME under tmp_path; logs/baseline-arm.txt ends '2 failed, 2 passed ... EXIT=1' and logs/after-arm.txt ends '4 passed ... EXIT=0'.",
+    "fit": "The addition is a docstring and a two-line guard inside the existing _declared_manifest_commits in reckon/crew/promotion_scope.py, reusing the late-bound import at reckon/crew/promotion_scope.py:3048; the new test module is named by behaviour and both files pass ruff check and ruff format --check.",
+    "goal_fidelity": "reckon/crew/promotion_scope.py:1324 now asks _commits_field_declares_absence (reckon/crew/promotion_evidence.py:785) before returning the parsed list, so a review run's prose commits line arrives as an empty list and promotion proceeds with no hand edit.",
+    "reuse": "The absence question is answered by the repository's existing owner _commits_field_declares_absence (reckon/crew/promotion_evidence.py:785), which already gates on _COMMITLESS_ROLES; the change consults that owner rather than forking a second parser.",
+    "scope_discipline": "Every path in the two commits (reckon/crew/promotion_scope.py, tests/test_a_read_only_run_promotes_without_a_hand_edit.py, and the two docs/evidence/fragments/queued-work-needs-no-workaround files) lies inside the declared write paths reckon/crew, tests and docs/evidence/fragments/queued-work-needs-no-workaround."
+  },
+  "project": "reckon",
+  "review_run_id": "r-20261115T070010086348-review-of-qwnw-a-read-only-run-promotes-without-a-hand-edit-ad65425d24a8",
+  "reviewed_at": "2026-11-15T08:20:00Z",
+  "reviewed_base_sha": "31eaf2923c2da860896c16de337408e5fcbf6ecd",
+  "reviewed_head_sha": "ad65425d24a847b65f040f1a3472c477f394d1f7",
+  "reviewed_run_id": "r-20261115T040600990763-qwnw-a-read-only-run-promotes-without-a-hand-edit",
+  "reviewer_role": "review",
+  "scores": {
+    "durability": 19,
+    "evidence": 19,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-15T07:20:33.536687+00:00",
+  "total": 115
+}

@@ -2615,6 +2615,7 @@ def crew_resume(
             config=config,
             advice=advice,
             launcher=crew_module._spawn,
+            coordinator=True,
         )
     except LanePaused as exc:
         _emit(

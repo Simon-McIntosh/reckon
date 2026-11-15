@@ -1,0 +1,247 @@
+{
+  "absent_items": [],
+  "accepted_edits": [
+    {
+      "by": "1fb615a0-2801-4418-bbb4-c2914719e520",
+      "digests": {
+        "s57": "15a5aef3aac1c6e45bcbd001839d877449601748d48d6db3e47cfeb95e11d5f8",
+        "s58": "28953bb14404136c2573a3fdda96ed6a09cbb9317247c6999a20a2f6c474fda3",
+        "s59": "9994e27964e5588275320f6f6a965720e2c81d5ddf8a4e4f7fc08b5b4302961b"
+      },
+      "reason": "the five findings were each answered acted, and v311 applies exactly those edits to s56-s59; no other text changed",
+      "units": [
+        "s57",
+        "s58",
+        "s59"
+      ],
+      "when": "2026-11-15T08:31:43.160816+00:00"
+    }
+  ],
+  "completed_at": "2026-11-15T08:27:40.046Z",
+  "dispatched_at": "2026-11-15T07:58:02Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/the-monitor-reads-each-fact-once.html#s57",
+      "id": "done_when-1",
+      "reason": "the measure must count per-pointer evaluations or `_in_flight_review` calls, or a per-pointer memo passes while the measured cost is unchanged.",
+      "text": "the gate bounds calls to `_current_review_in_flight` at 30, but that function's body walks `_live_pointers` and calls `_in_flight_review` on each pointer (reckon/crew/obligations.py:1266-1270), so computing the shared set by calling it once per live pointer leaves the P-by-P review-state tests the Why names in place and still satisfies the assertion",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/recovery_review_acceptance.py:1266",
+      "id": "done_when-2",
+      "reason": "the arm must name the key it reads, or the station-sweep-run-failure line and sweep-failed obligation the Why cites, or the control asserts a signal that never fires.",
+      "text": "s59's arm asserts \"the sweep reports no failure\" with the base control \"each sweep reports a failure\", but a refused self-promotion is appended to `review_self_refused` and explicitly kept out of `reports` (recovery_review_acceptance.py:1266-1274), so an arm reading `reports` finds no base failure and its control cannot redden",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/the-monitor-reads-each-fact-once.html#s58",
+      "id": "done_when-3",
+      "reason": "the base arm asserts a refusal the base does not raise, so the node would fail its gate or weaken the arm to fit.",
+      "text": "\"Rewriting the registry to drop one project makes the next call read it again and fail closed for the dropped project as at base\" claims a fail-closed base the cited code does not provide: mounted_project_docs raises FlightConfigError only on invalid mount data (reckon/flight.py:559-575), and _project_docs_root catches it and falls back to the state root (flight.py:611-618), so a project dropped from a valid registry resolves through the fallback at base",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/the-monitor-reads-each-fact-once.html#s57",
+      "id": "reasoning-1",
+      "reason": "the chain is the evidence the section rests on, and a reader checking it against the code finds a call that neither function makes.",
+      "text": "the Why's chain reads \"obligations._current_review_in_flight -> _live_review_runs ... reached once per duty through _review_duty_item -> _in_flight_review\" \u2014 the code has _live_review_runs calling _current_review_in_flight (reckon/crew/obligations.py:1382), never the reverse, and _in_flight_review calls recovery._review_in_flight rather than _current_review_in_flight (obligations.py:1233)",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/the-monitor-reads-each-fact-once.html#s56",
+      "id": "reasoning-2",
+      "reason": "the ordering is a guess the plan cannot verify, and removing it leaves the endpoint the worker can meet freely.",
+      "text": "the deliverable prescribes the method (\"compares against the held store before taking the lock, and takes the lock and rewrites the file only when an answer is new or different\") and names the writer to extend, where its own endpoint \u2014 an answer already stored is not written again \u2014 is what the done-when measures, and an implementation comparing under the lock passes the same gate",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "1ff2eafbe603fe5390e3fa819ca26ab23f86a14a",
+  "plan_fingerprint": "5b3ee0c771485760d50207d103e7066bae7a2f2e55eb19f3a8ed180a5cb1d18d",
+  "plan_slug": "the-monitor-reads-each-fact-once",
+  "plan_version": 308,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "d7ea58b783569dce969b3cc78bc64b319100ab3b",
+      "commit_basis": "edit",
+      "finding": "done_when-1",
+      "note": "s57 now counts calls to _in_flight_review (the per-pointer search) and asserts at most one per live pointer in one pass, plus one _live_pointers walk for the in-flight set; base is pointers x pointers",
+      "reason": "",
+      "when": "2026-11-15T08:29:54.764182+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "d7ea58b783569dce969b3cc78bc64b319100ab3b",
+      "commit_basis": "edit",
+      "finding": "done_when-2",
+      "note": "s59 now asserts the run appears in none of the sweep report's reviews.failed and review_self_refused lists and that no promotion request is filed; base control: the run appears in one of them on each pass",
+      "reason": "",
+      "when": "2026-11-15T08:29:59.129349+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "d7ea58b783569dce969b3cc78bc64b319100ab3b",
+      "commit_basis": "edit",
+      "finding": "done_when-3",
+      "note": "s58 now asserts a project dropped from a valid registry resolves through the same state-root fallback as at base (equal results), not fail-closed",
+      "reason": "",
+      "when": "2026-11-15T08:30:03.555293+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "d7ea58b783569dce969b3cc78bc64b319100ab3b",
+      "commit_basis": "edit",
+      "finding": "reasoning-1",
+      "note": "s57's Why now reads the chain as the code has it: _live_review_runs calls _current_review_in_flight per session pointer, which walks _live_pointers and calls _in_flight_review -> recovery._review_in_flight over the launched list",
+      "reason": "",
+      "when": "2026-11-15T08:30:08.586915+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "d7ea58b783569dce969b3cc78bc64b319100ab3b",
+      "commit_basis": "edit",
+      "finding": "reasoning-2",
+      "note": "s56's deliverable now states the endpoint only (an answer already stored is never rewritten; only a new or different answer takes the lock and rewrites the file) and leaves where the comparison happens to the worker",
+      "reason": "",
+      "when": "2026-11-15T08:30:13.725226+00:00"
+    }
+  ],
+  "responses": {
+    "done_when-1": {
+      "action": "acted",
+      "by": "",
+      "commit": "d7ea58b783569dce969b3cc78bc64b319100ab3b",
+      "commit_basis": "edit",
+      "note": "s57 now counts calls to _in_flight_review (the per-pointer search) and asserts at most one per live pointer in one pass, plus one _live_pointers walk for the in-flight set; base is pointers x pointers",
+      "reason": "",
+      "when": "2026-11-15T08:29:54.764182+00:00"
+    },
+    "done_when-2": {
+      "action": "acted",
+      "by": "",
+      "commit": "d7ea58b783569dce969b3cc78bc64b319100ab3b",
+      "commit_basis": "edit",
+      "note": "s59 now asserts the run appears in none of the sweep report's reviews.failed and review_self_refused lists and that no promotion request is filed; base control: the run appears in one of them on each pass",
+      "reason": "",
+      "when": "2026-11-15T08:29:59.129349+00:00"
+    },
+    "done_when-3": {
+      "action": "acted",
+      "by": "",
+      "commit": "d7ea58b783569dce969b3cc78bc64b319100ab3b",
+      "commit_basis": "edit",
+      "note": "s58 now asserts a project dropped from a valid registry resolves through the same state-root fallback as at base (equal results), not fail-closed",
+      "reason": "",
+      "when": "2026-11-15T08:30:03.555293+00:00"
+    },
+    "reasoning-1": {
+      "action": "acted",
+      "by": "",
+      "commit": "d7ea58b783569dce969b3cc78bc64b319100ab3b",
+      "commit_basis": "edit",
+      "note": "s57's Why now reads the chain as the code has it: _live_review_runs calls _current_review_in_flight per session pointer, which walks _live_pointers and calls _in_flight_review -> recovery._review_in_flight over the launched list",
+      "reason": "",
+      "when": "2026-11-15T08:30:08.586915+00:00"
+    },
+    "reasoning-2": {
+      "action": "acted",
+      "by": "",
+      "commit": "d7ea58b783569dce969b3cc78bc64b319100ab3b",
+      "commit_basis": "edit",
+      "note": "s56's deliverable now states the endpoint only (an answer already stored is never rewritten; only a new or different answer takes the lock and rewrites the file) and leaves where the comparison happens to the worker",
+      "reason": "",
+      "when": "2026-11-15T08:30:13.725226+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/Code/reckon/docs/state/reckon/reviews/plan/the-monitor-reads-each-fact-once/r-20261115T075650268751-plan-review-of-the-monitor-reads-each-fact-once.json",
+  "review_run_id": "r-20261115T075650268751-plan-review-of-the-monitor-reads-each-fact-once",
+  "reviewed_blob_sha": "b0f4aec92f381e5cb4287649a119a1ea89f53ef9",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every cited module resolves (reckon/crew/recovery_watch.py, recovery_review_subject.py, obligations.py, promotion.py, recovery_review_acceptance.py, reckon/flight.py, reckon/file_memo.py) and every cited function does (_remember_commit_answer at recovery_watch.py:285, _update_git_answer_store at :248, _resolve_commit at recovery_review_subject.py:259, _current_review_in_flight at obligations.py:1236, _live_review_runs at :1375, mounted_project_docs at flight.py:559, resolve at :2233), with extensionless hrefs resolving as <path>.html.",
+    "done_when": "a finding \u2014 s57 bounds outer calls rather than the per-pointer work its Why measures; s58 asserts a fail-closed base the cited code lacks; s59 names no observable for the failure it reports.",
+    "evidence_paths": "pass \u2014 every section requires each arm's log under the run directory, opened with its revision and literal command and closed by an EXIT= line.",
+    "naming": "pass \u2014 the four test filenames name the behaviour they prove, and no plan label, stage name, ticket number or version tag reaches a symbol, path or comment.",
+    "reasoning": "a finding \u2014 s57's cited chain is inverted against the code, and s56's and s58's deliverables prescribe mechanism where the section's endpoint suffices; s56's and s59's root-cause statements match the evidence they cite.",
+    "single_goal": "pass \u2014 each of the four states one deliverable, and s59's mark-then-remove clauses are one flow through one scenario with one control.",
+    "wiring": "pass \u2014 s56, s57, s58 and s59 declare no depends-on, and none is missing: each cites \u00a713/\u00a754/\u00a755 as already landed rather than as output it consumes, and the four write disjoint modules, so no node waits on another."
+  },
+  "section_digests": {
+    "_document": "37e7f1a265bbec8d3ef63fa12a774d6878915fa2879dc72df44c3a5d70f52060",
+    "s1": "bd759b66b2b75254305e473bf6b8af6218ef25d95b0db1638ed2668f0cdd9441",
+    "s10": "d21f2adf110c82d39fa9834752ac3f47dba7ac886c59cfd85feb23c1e8d1003f",
+    "s11": "9e8b94316ed45fc2103d1edc216fbb0dd3862f559824ad1c43299b305a3af6bd",
+    "s12": "21fc271f915167db3cca4f7d0eee1f4553b5dec7b96127d71d294e5ae242bc02",
+    "s13": "3b11fe0cd53015121e6d566c554c6c77b13236b3700a90279e77a6bc755ea0a3",
+    "s14": "5f6675ba84aab4ad594b121e888aace2d69e497390559d38f0c220e5894ac588",
+    "s15": "efa38c205c7332a7867b6d87358cd9f89fe1568beaa9f9e5eee96862dd70b6f0",
+    "s16": "65cd8e559a7a5ebf018bc9fe50a07bb0954f67405ab6f17c7377c38ccd363aa7",
+    "s17": "1dee50822a308fa4eeea0a45fd3cdaf6de52d9a1d74a91c2b9c7605d179da2ad",
+    "s18": "ba63c0b1b83ec93cc99d92a3c1f67dcf92d700e20f4f9acd88362705d6b4d123",
+    "s19": "16239e5fae49e56b170433557a77981816880756e3ae545a741ca9ec70feae63",
+    "s2": "e0f306f01b1530661ef28be3f19592348c45f24e7826567d58a2f0a4f79dd284",
+    "s20": "d14d2b70bb40dd552f306726f24f5e3c79bc5efcd7f9b74bcb7d3de8f16f5e8e",
+    "s21": "9ff7b29b83f9c8ab95a0a469c997950ef226fc3d99d8dcffdbf0683df7a1f26c",
+    "s22": "1bdc9ac90396c56bcbcc8c3c4f44aa6b30cbd59c4da001825159a7b8245e054c",
+    "s23": "a810ffe181d2787722d8f9538a4348592269fe163ba23cc59939376cb13edcbb",
+    "s24": "e861dcc5044a0a1fb36c4a374ca71717aeb97054e5a3ff1aef57c9779c7147f5",
+    "s25": "a0939bd3d8ab0fa4b5c0c88de3cb9cdab3531338fe35d0c12b4338fc3c4d1563",
+    "s26": "a8fb9d8585830b87ed826347ff724ddecc8fb9a43ad9ac1540d6499e3689d03e",
+    "s27": "3c9e47dc777eeadabbe3898d4b8f69d91defbaff009d050f2906732cb87e50c8",
+    "s28": "982b473728d61b81a3d37050384bee85f3f1fb5366aad0668c5370a51367e82c",
+    "s29": "159b45ee319dc13bffea961474eb544e5a26d161bf686ebe5b7fabf95f5266c7",
+    "s3": "f42c4644817feac0c199cd8510d2e284079b1c8fb777c7b79ced63531a8d983f",
+    "s30": "2d8c9efccd4f8eeede43f5fabe6f6b9cacc2207ce97ca700584bfedd0e512dd2",
+    "s31": "27817d420beefc15258f2f52ea8c616f3e04b4035773fe437f6cfe7f31506100",
+    "s32": "836f1473b1691ab0150f1e32791c295f7511abd66cb29f93b48dc0d347998d51",
+    "s33": "39a7d7a43bc6e97cd0c11235cfbe6c06a5b6968dab69e8147978bd164bbfef4e",
+    "s34": "16da5de7a5c4ee31ac2d9a43b888bed8fb1ec1138a2194a35c9b8eacbf03a2b1",
+    "s35": "4a0acdec0fa4d9eaa1066ee46c8a4aec8079db0452d014a442005e104c03c2cc",
+    "s36": "2a4a0d6ab4a994e2d7542482f7b44d106ab0920143bf39d14b292c7c2ec02e8a",
+    "s37": "4d92cdfe9ba1661dc549241d07f5134250aedec9d46757600f427fc52c4741dd",
+    "s38": "2cd435157dcdf14e39d4dbcd90e98b171feba9df13c5e142e0edf0d8fd4a3bf5",
+    "s39": "8808ed4531ebe4589c1b5bb7c7b0e5644b141d532a6dcc3fef92ae640e08d57c",
+    "s4": "c98e197194f43124e5a982992370bf1c08593aa17fb304787a4d7b87f42a0107",
+    "s40": "444368fd31b2649852412e7533de8628a94071d7942154f1a75921b923006779",
+    "s41": "b1092da2f507a79ce2706ec4aa2660d53c3b5250d4790b92d2dcd190f4387e17",
+    "s42": "ef98f2534552feb3a2ebf8768c6fcb43355940cef2804ddc7c77c6917785de19",
+    "s43": "0ca81d067129f3af34ec2d359c605e716be1488a1545039d936cdb1c7bbee2ec",
+    "s44": "2f0b0e686cace2db876cf00fcfaf9bb695e130bf88094a901ff7e7808b059cfc",
+    "s45": "d69c6ab4c51eb99b6262547a934d3cadb8896d272251707771027d8dacb77bcb",
+    "s46": "15bf3fae7afcff6c9b316fb4d28bd070c2190192e9b9b5c3711b26f9dbc4895f",
+    "s47": "de3c85d7297232abbe6767af5f61b6546c68c206440469f03779df09dfe9c21f",
+    "s48": "c0407ba2af0106d21163a3e1ba1bcd7ea34373211a81f3c100d623def503ec70",
+    "s49": "244b3877f19c81d81c7fda520bf6bbf2ff2d74a6a23a463bc92b50fe0b2043e0",
+    "s5": "0329936ec702c07e4a2ef8c756961740635d0dd8c7a1d14646983f1c32f09790",
+    "s50": "1c953bda33cda6d81de9479ed929ef63b0796d3c593d23de08c5f4568449f544",
+    "s51": "dbea6dee91f6029d698f151362338fc42e7401db7c931fc9d87fada7c147fcbb",
+    "s52": "b35a6850269241b61ee3a2475ddb65e655481cf4051d580fb5402d19c1987d7a",
+    "s53": "d111daeb509976a72469123f1120b1d17d21c31ad0191760a8a3985623cb5d2c",
+    "s54": "00b9abf2130abb2999241ac6fd7315689fb0e33781634dd2dcc8a999e79a14cf",
+    "s55": "7c24db1096ad617ece378da333eb9b5e0ad8683c0dcf50f8834799b84ae1678a",
+    "s56": "feec14d27a4523148ad93cfc3305f9fb788153011257fd14733ad2d96e7af1f2",
+    "s57": "3161f4285fddf5ce9b2cb5df67546d4a8d4cdc2c8e5e1b937734d39679f4975c",
+    "s58": "e0c57dfb2c77e67a667c0af09b0c9663e77343130f09d40da9f65ce47e90e412",
+    "s59": "067e6c636c2c6d83f5afd70b9c950ade7d95c7f30606112cc39ab9795d3127cb",
+    "s6": "1f19e9f8c46bc0674347ba5a3c97588b846d125a5fbcf9533e8a5a3f9ec00bb6",
+    "s7": "dff81fd58ae3afef69063faed237df9bb4056bdb98556a1e5a053e6807ae3d16",
+    "s8": "4a70cad80d8613feb4b30861587298ff1109616ba9a35992821009274f17ae3f",
+    "s9": "8597fbe3fc93694e846c364272c698acf84b09466b4798491eb74279d62cef1d"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-15T08:29:28.191511+00:00",
+  "total": null
+}

@@ -1,0 +1,58 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own gate logs on disk: baseline_suite.log at 7b45ca9058dfefe604a27839821e639c5f03ce02 records 55 passed, EXIT=0 and after_suite.log at d43e1258de53aa9d4d15338282e33b4e6b46ba41 records 55 passed, EXIT=0, both from the same two test files, so the set difference is empty",
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew/obligations.py:3133 (_tree_holds_unmerged_work inside _HeldWorktreeState.refresh_trees)",
+    "reckon/crew/obligations.py:3243 (_held_worktree_records_read calls index.refresh_trees)",
+    "reckon/crew/obligation_snapshot.py:1721 (the station snapshot publishes held_worktrees from _held_worktrees_by_session)",
+    "reckon/crew/dispatch_claims.py:2101 and :2111 (existing _git_answer callers reached by the added env parameter)"
+  ],
+  "completed_at": "2026-11-15T07:14:22.549Z",
+  "dispatched_at": "2026-11-15T06:55:21Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261114T201117263633-qwnw-every-obligation-clears-when-its-duty-ends/manifest.md",
+      "line": "24",
+      "severity": "non-blocking",
+      "text": "no recorded log runs tests/test_a_duty_clears_when_its_run_ends.py against the delivered head's own source and its own test file: the only 13-passed run is negative_control_reuse.log, which restores three files to the c5c61698 versions, and the recorded promotion gate (baseline_suite.log and after_suite.log) runs test_staged_write_inventory.py and test_every_shared_home_lock_holds_across_nodes.py, neither of which mentions the changed modules, so a reader of the record cannot tell whether the head is green; this review re-ran the module at d43e1258 (13 passed, EXIT=0, review-head-module.log) and it is green, so the gap is in the record rather than in the code"
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-every-obligation-clears-when-its-duty-ends.html",
+      "line": "133",
+      "severity": "non-blocking",
+      "text": "the fence paragraph says the cost and census readings were written from exported trees, but census_after.log's header names tree=/home/ITER/mcintos/Code/.reckon-worktrees/.../qwnw-every-obligation-clears-when-its-duty-ends, the reviewed worktree itself, and no all_debug job id, so the census's execution context is asserted rather than shown; the two cost logs do name /tmp export trees, so the sentence is right for them and wrong for the census"
+    },
+    {
+      "file": "reckon/crew/obligations.py",
+      "line": "2812",
+      "severity": "non-blocking",
+      "text": "the new multi-ref loop has one arm only: the parametrised test builds a repository whose sole primary ref is main (tests/test_a_duty_clears_when_its_run_ends.py:354), so the develop and master iterations and the answered accumulation at obligations.py:2819 that turns any non-empty comparison into True are never exercised, and a regression that compared only the first resolving ref while still returning False for a landed tree would stay green"
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the source node's goal is that every obligation row clears when its duty ends; the four commits gained since c5c61698 are the reuse repair the previous review folded, and reckon/crew/obligations.py:2793 now asks the claim fence's own reachability reader instead of two private git readers\nVERDICT done_when: the done_when asks the census to read zero rows with no live pointer one pass after the delivered head; census_after.log at 34b99177 records 70 served rows, 20 of them with no live pointer, and the fragment states that figure from that log; the gained commits add no measure of their own beyond the cost probe\nVERDICT write_paths: read the brief's four declared paths; git diff --stat c5c61698 d43e1258 touches exactly four paths: docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-every-obligation-clears-when-its-duty-ends.html, reckon/crew/node.py, reckon/crew/obligations.py and tests/test_a_duty_clears_when_its_run_ends.py, all inside them\nVERDICT manifest: read; it records status complete, after_suite 55 passed EXIT=0 at d43e1258 and baseline 55 passed at 7b45ca90, the cost and revert-control logs, and the three-file revert that proves the reuse behaviour-preserving; it records no green run of tests/test_a_duty_clears_when_its_run_ends.py at the head\nVERDICT diff: read commit by commit from c5c61698; 75bf98f5 deletes obligations.py's _git_reading and _landed_refs and routes through node.py's _git_answer, _claim_commit_answer and _integration_ref_revision, 34b99177 adds store=False to keep a derivation's answers in-process, and c2274d22 and d43e1258 rewrite the evidence fragment's change and cost paragraphs\nCALL_SITES: reckon/crew/obligations.py:3133 (_tree_holds_unmerged_work inside _HeldWorktreeState.refresh_trees), reckon/crew/obligations.py:3243 (_held_worktree_records_read calls index.refresh_trees), reckon/crew/obligation_snapshot.py:1721 (the station snapshot publishes held_worktrees from _held_worktrees_by_session), reckon/crew/dispatch_claims.py:2101 and :2111 (existing _git_answer callers reached by the added env parameter)\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: reckon/crew/obligations.py:2838 settles a retained tree on the reachability answer alone, preserving the section's release rule while narrowing it to the local primary refs the repository carries, which keeps a duty rather than releasing work a landing has not taken locally\nSCORE evidence: 13\nJUSTIFICATION evidence: the cost and control readings in the fragment match cost_before.log, cost_after.log and negative_control_reuse.log, but manifest.md:24 records no green run of tests/test_a_duty_clears_when_its_run_ends.py at d43e1258 and the recorded gate logs are two unrelated test files\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat c5c61698 d43e1258 names four paths, each inside the declared scope, and c2274d22 and d43e1258 change documentation only\nSCORE durability: 16\nJUSTIFICATION durability: tests/test_a_duty_clears_when_its_run_ends.py:364 reddens its landed arm if obligations.py:2838 returns held for a tree main reaches and its unmerged-commit arm if it releases one main does not, while obligations.py:2812's multi-ref loop has a single-ref arm only\nSCORE fit: 18\nJUSTIFICATION fit: reckon/crew/obligations.py:57 imports three private helpers from node.py, the convention reckon/crew/dispatch_claims.py:42 already uses, and no added name carries a plan, gate or ticket identifier\nSCORE reuse: 20\nJUSTIFICATION reuse: reckon/crew/obligations.py:2815 wraps reckon/crew/node.py:1712 _claim_commit_answer and obligations.py:2812 wraps node.py:1778 _integration_ref_revision instead of re-implementing them, and _git_reading and _landed_refs are gone from the module (0 occurrences)\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261114T201117263633-qwnw-every-obligation-clears-when-its-duty-ends/manifest.md:24 non-blocking: no recorded log runs tests/test_a_duty_clears_when_* module against the delivered head's own source and its own test file; the only 13-passed run is negative_control_reuse.log, which restores three files to the c5c61698 versions, and the recorded gate logs are two unrelated test files, so a reader of the record cannot tell whether the head is green; this review re-ran the module at d43e1258 (13 passed, EXIT=0) and it is green\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-every-obligation-clears-when-its-duty-ends.html:133 non-blocking: the fence paragraph says the cost and census readings were written from exported trees, but census_after.log's header names the reviewed worktree as the tree and no all_debug job id, so the census's execution context is asserted rather than shown while the two cost logs do name /tmp export trees\nFINDING reckon/crew/obligations.py:2812 non-blocking: the new multi-ref loop has one arm only, because the parametrised test builds a repository whose sole primary ref is main, so the develop and master iterations and the answered accumulation at obligations.py:2819 are never exercised and a regression that compared only the first resolving ref would stay green\n",
+  "review_node": "review-of-qwnw-every-obligation-clears-when-its-duty-ends-d43e1258de53",
+  "review_run_id": "r-20261115T065402859204-review-of-qwnw-every-obligation-clears-when-its-duty-ends-d43e1258de53",
+  "reviewed_base_sha": "c5c616981cba8f04accf7734b23f16fa6f79b7ca",
+  "reviewed_head_sha": "d43e1258de53aa9d4d15338282e33b4e6b46ba41",
+  "reviewed_run_id": "r-20261114T201117263633-qwnw-every-obligation-clears-when-its-duty-ends",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash",
+    "reviewer_run_id": "r-20261115T065402859204-review-of-qwnw-every-obligation-clears-when-its-duty-ends-d43e1258de53"
+  },
+  "scores": {
+    "durability": 16,
+    "evidence": 13,
+    "fit": 18,
+    "goal_fidelity": 17,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-15T07:22:46.298873+00:00",
+  "total": 104
+}

@@ -1,0 +1,75 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/crew/dispatching/preparation.py:1140",
+    "reckon/crew/dispatching/preparation.py:1334",
+    "reckon/crew/dispatch_admission.py:235",
+    "reckon/crew/recovery_review_dispatch.py:3961",
+    "reckon/crew/recovery_classification.py:205"
+  ],
+  "completed_at": "2026-11-15T05:35:23.833Z",
+  "dispatched_at": "2026-11-15T05:28:02Z",
+  "findings": [
+    {
+      "file": "reckon/crew/placement.py",
+      "line": 132,
+      "severity": "non-blocking",
+      "text": "named_lane_request_waiting passes project=project to runs.list_live, so the waiting population is scoped to the dispatching project, while its own docstring at placement.py:120 states the population is host-wide because one reservation seats every project's workers. A codex request queued in project B therefore does not hold the reserve for a local dispatch in project A, and project A fills the shared roster the request is waiting behind \u2014 the starvation the reserve exists to prevent, in the multi-project case. Dropping the project= argument is the whole repair."
+    },
+    {
+      "file": "reckon/crew/dispatching/preparation.py",
+      "line": 1149,
+      "severity": "non-blocking",
+      "text": "The queued reason is hardcoded as \"the placement reservation's roster is full (occupancy/limit)\" at preparation.py:1149 and again at :1343, but _refuse_over_concurrency_ceiling raises RosterFull from whichever of the roster, partition-cores or memory bound actually binds (dispatch_admission.py:301-322), so a dispatch held at the cores or memory bound is reported to the coordinator as a full roster, with occupancy taken from this backend's live runs and limit from the binding bound. The accurate bound_refusal_text survives only in the unprinted 'detail' key, which makes the coordinator-facing reason wrong precisely for the cores-bound case the plan's done_when names."
+    }
+  ],
+  "gate_sources": {
+    "after_suite": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T002740230181-named-lane-requests-queue-s5/gate/suite-head.log",
+    "baseline_suite": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T002740230181-named-lane-requests-queue-s5/gate/suite-base.log"
+  },
+  "item_verdicts": {
+    "call_sites": "The bound guard's production callers are the two reads in reckon/crew/dispatching/preparation.py (:1140, :1334); RosterFull is also classified as queueable at reckon/crew/recovery_classification.py:205 and caught at reckon/crew/recovery_review_dispatch.py:3961.",
+    "diff": "Read commit by commit against 1d16388a31: 549f4adb67 widens the bound handler, 5cdc374cda and fc6d359e2e add the cases, ccb7f1ef7f and 748c5df4eb repair the reason wording and the bare re-raise, ec807bcf0f and 0369d0c1b7 write evidence; no stray edit.",
+    "done_when": "The done_when names eight behavioural cases plus a population arm; tests/test_a_named_lane_request_queues_and_takes_the_reserve.py carries all eight by name (182, 205, 250, 266, 296, 349, 402, 436) and gate/base-arm.log ends '8 failed in 5.67s / EXIT=1' against gate/head-arm.log '8 passed in 8.51s / EXIT=0'.",
+    "goal": "The node's goal is to queue a dispatch for any lane held at a placement bound and admit named-lane requests into the reserve ahead of local work; reckon/crew/dispatching/preparation.py:1140 drops the is_local guard on the first bound read and :1334 adds the second read before any claim or run directory, storing the request through _queue_a_held_request at :1190, which is one queue path for every lane.",
+    "manifest": "Read; status complete, seven commits each with a subject and a body, tests line records 8 passed at head 748c5df4eb and 8 failed at base 1d16388a31, and negative_control_log is a bare path to a log whose last line is EXIT=1.",
+    "write_paths": "The source manifest declares six source/test paths and three docs paths; git diff --stat 1d16388a31 0369d0c1b7 touches only reckon/crew/dispatch_admission.py, reckon/crew/dispatching/preparation.py, reckon/crew/placement.py, the new test file, and the two evidence fragments plus one figure under docs/figures/the-escape-lane-and-reviews-keep-pace/named-lane-requests-queue-s5/ \u2014 every one inside the grant and three granted admission modules untouched."
+  },
+  "justifications": {
+    "durability": "tests/test_a_named_lane_request_queues_and_takes_the_reserve.py fails at base for all eight cases per gate/base-arm.log, and gate/negative-control.log restores the is_local gate and reddens test_a_codex_dispatch_at_the_roster_cap_is_queued_not_refused with EXIT=1, so the guard is shown firing rather than merely passing.",
+    "evidence": "gate/suite-summary.txt and the two suite logs record 206 failed 1045 passed at base and 196 failed 1055 passed at head over the same 162-file population, and added_failures_from_gate_logs over those two logs returns (0, []), which I re-ran and reproduced.",
+    "fit": "reckon/crew/dispatching/preparation.py:171-204 keeps the module's lazy-import and docstring idiom, and the new placement.py:109 predicate is named by what it measures; no plan, sprint or ticket identifier appears in any changed file.",
+    "goal_fidelity": "reckon/crew/dispatching/preparation.py:1136 removes the is_local gate so a codex request held at the reservation bound is stored at :1190 rather than refused, and placement.py:109 holds LOCAL_LANE_RESERVE only while a request on another lane waits.",
+    "reuse": "The change adds no second queue path: preparation.py:1190 calls the repository's existing queue_dispatch with _queued_request_record, and a search of reckon/crew for an existing named-lane-waiting predicate and for phase=\"queued\" population reads found none other than the new predicate at placement.py:109.",
+    "scope_discipline": "Every path in git diff --stat 1d16388a31 0369d0c1b7 is inside the declared write paths, and the declared admission/selection.py, ordering.py and launching.py were left untouched rather than being edited for appearance."
+  },
+  "notes": "Read-only review of run r-20261115T002740230181-named-lane-requests-2e06b36414be's landed work. Files read: the source brief and manifest, plan section 5 of docs/plans/the-escape-lane-and-reviews-keep-pace.html, the full diff 1d16388a31..0369d0c1b7, the new test file, the bound guard and its callers, and gate/{base-arm,head-arm,negative-control,suite-base,suite-head}.log. No file in the reviewed worktree was modified and no suite was re-run; the added-failure pair was derived from the run's own suite logs through reckon.crew.review.added_failures_from_gate_logs, which returned (0, []). The head arm ran at 748c5df4eb; the reviewed head 0369d0c1b7 adds only the docs fragment that reports that measurement, so the gate precedes the reviewed head by a documentation commit.",
+  "project": "reckon",
+  "review_run_id": "r-20261115T052409546664-review-of-named-lane-requests-queue-s5-0369d0c1b740",
+  "reviewed_base_sha": "1d16388a3150f88b31788d00cedaf4055f75f431",
+  "reviewed_commits": [
+    "549f4adb67",
+    "5cdc374cda",
+    "fc6d359e2e",
+    "ccb7f1ef7f",
+    "ec807bcf0f",
+    "748c5df4eb",
+    "0369d0c1b7"
+  ],
+  "reviewed_head_sha": "0369d0c1b740a37a738ec7127cc765b92cbf3500",
+  "reviewed_run_id": "r-20261115T002740230181-named-lane-requests-queue-s5",
+  "scores": {
+    "durability": 18,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 19,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-15T05:45:00Z",
+  "total": 110
+}

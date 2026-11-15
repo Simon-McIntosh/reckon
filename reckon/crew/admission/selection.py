@@ -47,6 +47,8 @@ def admit_once(
     run_id: str = "",
     now: datetime | None = None,
     lock: bool = True,
+    budget_seconds: float | None = None,
+    clock: Callable[[], float] | None = None,
 ) -> dict[str, Any]:
     """Run one admission pass and report what it launched, held and failed.
 
@@ -60,7 +62,12 @@ def admit_once(
     launches once; a caller already holding the admit lock passes ``lock=False``.
     ``run_id`` selects one queued request under that lock, skipping queue-wide
     release and recovery. Other pointers supply occupancy and claims only.
+    ``budget_seconds`` is the launch budget this pass spends before it ends; it
+    defaults to the flight config's ``admission.pass_budget_seconds``.
+    ``clock`` is the monotonic clock the budget and each launch's duration are
+    measured on, defaulting to :func:`time.monotonic`.
     """
+    tick = clock if clock is not None else time.monotonic
     moment = now or _service._now()
     gate = _dispatch_fleet_gate()
     result: dict[str, Any] = {
@@ -302,7 +309,22 @@ def admit_once(
                 moment=moment,
             )
 
+        # The pass spends at the most one budget launching, and the deadline is
+        # read once here rather than checked along each exit path: a freed seat
+        # is filled within one pass's budget, and a request the deadline leaves
+        # keeps its place, untouched, for the next pass.
+        budget = (
+            budget_seconds
+            if budget_seconds is not None
+            else _launch_budget_from_flight()
+        )
+        deadline = tick() + budget
+        budget_spent = False
+
         for index, pointer in enumerate(order):
+            if tick() >= deadline:
+                budget_spent = True
+                break
             session = str(pointer["session"])
             allowance_key = (str(pointer.get("backend") or ""), session)
             if allowance_key not in remaining:
@@ -538,11 +560,19 @@ def admit_once(
             hold_only = False
             reported_id = str(pointer["run_id"])
             restore_error = None
+            # The launch's own stopwatch, and a step name for each span of it
+            # this pass can time, so the verdict row says how long the launch
+            # took and which of its steps was slowest.
+            launch_started = tick()
+            launch_steps: dict[str, float] = {}
             # A handover identifies the admitted attempt while its original
             # pointer remains published and dispatch checks the launch.
+            step_at = tick()
             runs.write_handover(
                 pointer, admitted_by=_service._admitting_pass_identity()
             )
+            _add_step(launch_steps, "handover", tick() - step_at)
+            step_at = tick()
             try:
                 candidate = _launching._launch_queued(
                     pointer,
@@ -610,6 +640,7 @@ def admit_once(
                 caught = exc
                 failure = f"{type(exc).__name__}: {exc}"
             finally:
+                _add_step(launch_steps, "dispatch", tick() - step_at)
                 if record is None and not hold_only:
                     # The back-off is measured from the moment the attempt
                     # failed, which is now, not from the pass's start: a pass
@@ -735,20 +766,28 @@ def admit_once(
                         restore_error
                     )
                 continue
+            step_at = tick()
             _launching._stamp_admission(
                 str(record["run_id"]), snapshot, admitted_at=_service._utc_now()
             )
+            _add_step(launch_steps, "stamp", tick() - step_at)
+            slowest = _slowest_step(launch_steps)
             verdicts.append(
                 _verdicts._verdict_row(
                     pointer,
                     allowance=allowance,
                     allowance_source=allowance_source,
                     verdict="launched",
+                    launch_seconds=round(max(0.0, tick() - launch_started), 3),
+                    slowest_step=slowest,
+                    slowest_step_seconds=launch_steps.get(slowest),
                 )
             )
             result["launched"].append(str(record["run_id"]))
             if allowance is not None:
                 remaining[allowance_key] = allowance - 1
+        result["launch_budget_seconds"] = budget
+        result["launch_budget_exhausted"] = budget_spent
         # The queue's own liveness, recorded after the pass has decided what to
         # do with each request: a request this pass held on purpose is not
         # stalled, because the hold names the reason it waits. What remains is a
@@ -785,6 +824,32 @@ def admit_once(
                 order, verdicts, moment=moment, ordered=not bool(run_id)
             )
         return result
+
+
+def _launch_budget_from_flight() -> float:
+    """The seconds one admission pass may spend launching, from flight.
+
+    Read once per pass rather than per launch, so a pass's deadline is one
+    figure the whole loop is charged against.
+    """
+    from reckon import flight
+
+    return flight.admission_pass_budget_seconds(flight.resolve().config)
+
+
+def _add_step(steps: dict[str, float], name: str, seconds: float) -> None:
+    """Charge ``seconds`` to one named step of a launch, summing repeat visits.
+
+    A launch can attempt its dispatch twice — the second after a lane hold
+    rebinds it — so a step can be entered more than once and its spans are
+    added rather than replaced.
+    """
+    steps[name] = round(steps.get(name, 0.0) + max(0.0, seconds), 3)
+
+
+def _slowest_step(steps: Mapping[str, float]) -> str:
+    """The name of the step a launch spent most of its time in."""
+    return max(steps, key=lambda name: steps[name]) if steps else ""
 
 
 def _record_admission_positions(

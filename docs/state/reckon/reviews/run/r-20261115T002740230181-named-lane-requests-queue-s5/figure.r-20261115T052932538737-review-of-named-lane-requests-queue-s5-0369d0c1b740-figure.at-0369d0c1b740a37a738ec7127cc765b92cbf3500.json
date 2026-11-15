@@ -1,0 +1,64 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-11-15T05:39:43.293Z",
+  "dispatched_at": "2026-11-15T05:34:18Z",
+  "figure": "docs/figures/the-escape-lane-and-reviews-keep-pace/named-lane-requests-queue-s5/placement-bound-queueing.svg",
+  "finding_dispositions": {
+    "0": {
+      "kind": "folded",
+      "node": "repair-of-named-lane-requests-queue-s5-0369d0c1b740",
+      "recorded_at": "2026-11-15T06:03:55.455610+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "docs/figures/the-escape-lane-and-reviews-keep-pace/named-lane-requests-queue-s5/placement-bound-queueing.svg",
+      "id": "f279915541d",
+      "line": null,
+      "severity": "blocking",
+      "summary": "The rendered PNG carries no text whatsoever - zero glyph pixels across the 1400x720 canvas. Four rows of eight identical grey blocks are drawn, each row differing only by one highlighted eighth cell (row 1 none, row 2 a filled blue cell with a small blue up-arrow beneath it, row 3 a black-outlined cell, row 4 a white cell with a blue outline), but nothing names which roster state each row is, which seat is being taken, or what each highlight convention means. The intended meaning exists only in the fragment's alt attribute ('four roster states showing which waiting request takes a seat when one frees'), which a sighted reader of the figure never sees. As rendered, the figure communicates nothing on its own. The shapes are all present and the glyphs are all absent, which is the signature of a render made with no usable font available; re-render with the working font (or move the labels into shapes) and confirm the text appears in the PNG before attaching it."
+    },
+    {
+      "file": "docs/figures/the-escape-lane-and-reviews-keep-pace/named-lane-requests-queue-s5/placement-bound-queueing.svg",
+      "id": "f279915541d",
+      "line": null,
+      "severity": "non-blocking",
+      "summary": "Two unlabelled 14x14 blue squares sit at x=66-79 below the left end of rows 1 and 4 (y=162-175 and y=666-680) and correspond to nothing else in the drawing - row 3's otherwise analogous position has none, and there is no text beside either square to say what it marks. They are the same blue as the row-2 highlight, so they read as a third use of the one visual convention the figure does have and dilute it. Either label them or drop them."
+    },
+    {
+      "file": "docs/figures/the-escape-lane-and-reviews-keep-pace/named-lane-requests-queue-s5/placement-bound-queueing.svg",
+      "id": "f279915541d",
+      "line": null,
+      "severity": "non-blocking",
+      "summary": "The drawing occupies x=60-624 of the 1400 px canvas, leaving about 776 px (55 percent) of the width empty to the right. Every block renders at roughly 60x45 px in a 1400 px-wide image, so the figure is scaled to under half the page width it declares and the seat comparison reads small in the reckon column."
+    },
+    {
+      "file": "docs/evidence/fragments/the-escape-lane-and-reviews-keep-pace/named-lane-requests-queue-s5.html",
+      "id": "fb6506bf2ef",
+      "line": null,
+      "severity": "non-blocking",
+      "summary": "The figure is embedded with an alt attribute only and no visible caption, so the one statement of what the four rows mean - that each row is a roster state and the differing cell is the waiting request that takes the objecting seat - is invisible on the rendered page and unreachable by a sighted reader. A caption carrying that sentence would make the figure readable even before the in-figure labels are restored."
+    }
+  ],
+  "notes": "Read-only figure review of run r-20261115T002740230181-named-lane-requests-queue-s5 at head 0369d0c1b740. Judged only from the one attached rendered PNG (1400x720 RGBA) at the path above; no SVG was opened, read, searched, rendered or git-shown. The figure's repository path is established from the reviewed run's own diff (git diff --stat 1d16388a31 0369d0c1b740 lists docs/figures/the-escape-lane-and-reviews-keep-pace/named-lane-requests-queue-s5/placement-bound-queueing.svg) and from its manifest changed_paths; the figure is hand-authored SVG with no drawing script in the diff, so findings carry line null rather than a script line. Geometry was measured from the PNG's own pixels: content bands at y 92-137 (row 1), 272-342 (row 2, arrow to y 342), 451-499 (row 3), 615-663 (row 4), plus two 14x14 blue squares at y 162-175 and 666-680; blocks at x 60-119, 132-191, 204-263, 276-335, 348-407, 420-479, 492-551, 564-623. Pixel classes present: white 919723, grey 81694, blue 3526, black 424 (all 424 black pixels belong to the row-3 outline at x 563-624, y 451-498), and anti-aliased variants of those. No dark pixels occur in any text-sized run anywhere on the canvas. No file was edited, created, moved, deleted, redrawn, relabelled or reformatted; this record is the only output.",
+  "project": "reckon",
+  "rendered_image": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T052932538737-review-of-named-lane-requests-queue-s5-0369d0c1b740-figure/image-0.png",
+  "review_run_id": "r-20261115T052932538737-review-of-named-lane-requests-queue-s5-0369d0c1b740-figure",
+  "reviewed_base_sha": "1d16388a3150f88b31788d00cedaf4055f75f431",
+  "reviewed_head_sha": "0369d0c1b740a37a738ec7127cc765b92cbf3500",
+  "reviewed_run_id": "r-20261115T002740230181-named-lane-requests-queue-s5",
+  "rubric": "figure",
+  "rubric_verdicts": {
+    "contrast": "pass - the block grey #929292 clears about 3:1 against white and the blue #2f6fa8 reads clearly, so every mark is distinguishable; there is no text present to assess.",
+    "data_ink": "pass - the grey blocks and their outlines carry all the visual weight; no gradient, drop shadow or decorative fill is drawn.",
+    "decoration": "pass - the canvas is plain white with flat grey #929292 blocks and a single blue highlight; nothing decorative competes with the data.",
+    "label_collision": "pass - no label is present in the image, so none is clipped or overlapping; the missing labels themselves are recorded under legibility, not here.",
+    "legibility": "fail - the rendered PNG contains no text at all: no row labels, no slot labels, no legend and no axis. Four rows of eight identical grey blocks differ only by one highlighted cell, and nothing in the image says which of the four roster states each row represents or what the blue fill, blue box, black box and arrow mean. A reader cannot decode the figure from the picture.",
+    "table_form": "pass - four states of one roster across eight seats is a state comparison, not information naturally written as a table."
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-15T05:52:00Z",
+  "total": null
+}

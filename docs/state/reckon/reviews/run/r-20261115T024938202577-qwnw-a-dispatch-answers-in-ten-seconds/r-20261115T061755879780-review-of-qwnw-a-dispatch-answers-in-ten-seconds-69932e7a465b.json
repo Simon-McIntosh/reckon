@@ -1,0 +1,53 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-11-15T06:43:20.798Z",
+  "dispatched_at": "2026-11-15T06:19:21Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-a-dispatch-answers-in-ten-seconds.html",
+      "line": 118,
+      "severity": "non-blocking",
+      "text": "The dispatched done_when requires every one of the five queued dispatches to be under ten seconds; the recorded measure is 29.36, 13.20, 12.94, 13.52 and 14.03 s, so the quantitative clause fails; the worker records the shortfall rather than claiming it met, and the node's remaining deliverable stands. The plan was amended after this node's evidence commit to move the absolute dispatch target into section 21, which is what makes the shortfall non-blocking here, but the goal sentence as dispatched is not achieved: a dispatch still does not answer in ten seconds."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-a-dispatch-answers-in-ten-seconds.html",
+      "line": 131,
+      "severity": "non-blocking",
+      "text": "The done_when names a timing measure on the fleet node; the measure ran on the allocation node 98dci4-clu-2001 at load 8.83 to 12.39. The deviation is stated in the fragment, and discovery dominates the result by two orders of magnitude over the fence, so the conclusion holds, but the measure does not satisfy the clause as written."
+    },
+    {
+      "file": "reckon/crew/recovery_watch.py",
+      "line": 571,
+      "severity": "non-blocking",
+      "text": "The new docstring says omitting session keeps the project-wide reading 'the drain asks for', and the test and evidence fragment repeat that two surfaces call this function. No drain calls it: the only production caller at head is reckon/crew/dispatching/fences.py:362 (reached from preparation.py:571 and requests.py:225); the drain reaches the same predicate through _partition_session_rows and its own readers. The optional default is still worth keeping for the exported surface in reckon/crew/recovery.py:439, but the stated reason names a consumer that does not exist."
+    },
+    {
+      "file": "reckon/crew/recovery_watch.py",
+      "line": 584,
+      "severity": "non-blocking",
+      "text": "The ownership test 'no recorded owner stays in scope, otherwise the owner must match the session' is now spelled twice in one function's neighbourhood: inline here before classification, and again in _partition_session_rows at recovery_watch.py:544. The pre-filter cannot call the partition helper because it must run before the read, so the duplication is not avoidable by that route, but the rule now has two spellings that can drift."
+    }
+  ],
+  "node": "qwnw-a-dispatch-answers-in-ten-seconds",
+  "plan": "queued-work-needs-no-workaround",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is 'a dispatch answers in ten seconds whatever the fleet's queue'; reckon/crew/dispatching/fences.py:362 now classifies only the dispatching session's pointers, removing the fleet-queue term, but the measured wall time is still 12.94-29.36 s so the ten-second half of the goal is unmet.\nVERDICT done_when: read the done_when in dispatch-detail.json and the plan section; the classifier clause (200 peer pointers, none classified) and the 'under half a second per dispatch' clause are met by the 0.04 s scoped and 0.06-0.09 s in-dispatch measurements, while the 'every one is under ten seconds' clause is not met and the 'still refused naming that run' bullet no longer describes the code (backlog recorded, not enforced, settled before this node).\nVERDICT write_paths: read the declared scope (reckon, tests, the evidence fragment directory, the figure directory); both commits touch only reckon/crew/dispatching/fences.py, reckon/crew/recovery_watch.py, tests/test_a_dispatch_classifies_only_its_own_runs.py and the fragment under docs/evidence/fragments/queued-work-needs-no-workaround/.\nVERDICT manifest: read the manifest; it states status complete, the four focused suites green at head (20 passed) and at base (16 passed), the queued-dispatch times that miss the ten-second clause, and the residual in outside_scope.\nVERDICT diff: read both commits against base 23af9bcf commit by commit; the code change is 25 lines adding a keyword-only session parameter and a pre-classification skip, plus a 266-line test file and the evidence fragment.\nCALL_SITES: reckon/crew/dispatching/preparation.py:571, reckon/crew/dispatching/requests.py:225, reckon/crew/dispatching/fences.py:362\nSCORE goal_fidelity: 13\nJUSTIFICATION goal_fidelity: reckon/crew/recovery_watch.py:582 removes the fleet-queue cost the goal names, but the measured dispatch wall times recorded at docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-a-dispatch-answers-in-ten-seconds.html:118 are all above ten seconds.\nSCORE evidence: 17\nJUSTIFICATION evidence: docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-a-dispatch-answers-in-ten-seconds.html:60 records base 68 vs head 0 classifications and the red log quotations, but the timing clause was measured on a non-fleet node at line 131.\nSCORE scope_discipline: 18\nJUSTIFICATION scope_discipline: git show --name-only for 4fcdfc2791 and 69932e7a46 lists four paths, all inside the declared write paths, and the discovery residual is recorded under outside_scope rather than repaired in passing.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_a_dispatch_classifies_only_its_own_runs.py:132 fails at base with the 200 peer ids classified (red-classifier-count-base.log) and tests/test_a_dispatch_classifies_only_its_own_runs.py:146 fails if the filter is applied when no session is passed.\nSCORE fit: 17\nJUSTIFICATION fit: the new parameter at reckon/crew/recovery_watch.py:555 is keyword-only and defaulted, matching the surrounding signature, and the docstring states the mechanism rather than a plan label.\nSCORE reuse: 17\nJUSTIFICATION reuse: the change extends reckon/crew/recovery_watch.py:550, the existing owner of the classification loop, and does not add a second implementation of it; the only duplicated rule is the three-line ownership test at recovery_watch.py:584.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-a-dispatch-answers-in-ten-seconds.html:118 non-blocking: the dispatched done_when's 'every one is under ten seconds' clause is unmet at 12.94-29.36 s, and the plan was amended after this node's evidence commit to move that target to section 21.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-a-dispatch-answers-in-ten-seconds.html:131 non-blocking: the timing measure required the fleet node and ran on 98dci4-clu-2001 instead; the deviation is disclosed and does not change the attribution of the residual.\nFINDING reckon/crew/recovery_watch.py:571 non-blocking: the docstring, the test docstring and the evidence fragment say the drain asks for the project-wide reading through this function, but the only production caller at head is fences.py:362.\nFINDING reckon/crew/recovery_watch.py:584 non-blocking: the session-ownership rule is spelled inline here and again in _partition_session_rows at recovery_watch.py:544, two spellings that can drift.\n",
+  "review_run_id": "r-20261115T061755879780-review-of-qwnw-a-dispatch-answers-in-ten-seconds-69932e7a465b",
+  "reviewed_at": "2026-11-15T06:40:00Z",
+  "reviewed_base_sha": "23af9bcff3fab72bf3b7e57b74f2aff790345386",
+  "reviewed_head_sha": "69932e7a465bf563bb7da74289719253401c86d4",
+  "reviewed_run_id": "r-20261115T024938202577-qwnw-a-dispatch-answers-in-ten-seconds",
+  "scores": {
+    "durability": 19,
+    "evidence": 17,
+    "fit": 17,
+    "goal_fidelity": 13,
+    "reuse": 17,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-15T06:44:27.468260+00:00",
+  "total": 101
+}

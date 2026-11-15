@@ -1,0 +1,44 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-11-15T07:41:01.249Z",
+  "dispatched_at": "2026-11-15T07:31:16Z",
+  "findings": [
+    {
+      "file": "reckon/crew/promotion_evidence.py",
+      "line": "333",
+      "severity": "non-blocking",
+      "summary": "the two-shape node-definition read is asserted by nothing: every gate assertion is on the release verdict, and the try/except added at promotion_release.py:540 turns a raise here into a non-fatal worktree_audit_error, so reverting this hunk leaves all four cases green."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-a-clean-landing-releases-its-worktree.html",
+      "line": "70",
+      "severity": "non-blocking",
+      "summary": "the negative-control paragraph states the first two base-revision cases both report worktree_withheld 'tree is no longer available', but the log it cites records the first case failing with 'its HEAD is not reachable from the integration revision', so the record misquotes the reproduction it names."
+    },
+    {
+      "file": "logs/after-suite.log",
+      "line": "1",
+      "severity": "non-blocking",
+      "summary": "the head arm's header names revision 3c8d1a0291 (the base) while the tree it names is the reviewed worktree and the manifest's after_suite.revision is 956c261790, so a later reader trusting the header reads the head arm as a base run."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is deliver queued-work-needs-no-workaround section 20, a clean landing releases its worktree and leaves no held duty; reckon/crew/promotion_release.py:437-443 releases an absent tree and promotion_evidence.py:333 reads the node definition in the promoted row's shape, which are the states the goal names.\nVERDICT done_when: the done_when names three landing cases plus a negative control logged to docs/evidence/fragments/queued-work-needs-no-workaround/s20.html; tests/test_a_clean_landing_releases_its_worktree.py:120,136,166 implement exactly those three, and logs/negative-control.log shows the two clean-landing cases failing at the base revision (2 failed, 1 passed, EXIT=1) while logs/after-suite.log shows all four node cases passing at the head.\nVERDICT write_paths: the declared write paths are reckon, tests, the queued-work-needs-no-workaround fragments directory and its named html, and the figures directory; every one of the six changed paths in the diff lies inside them.\nVERDICT manifest: read; it records status complete, the two commits, the base and head arms (13 vs 9 failures, 0 added, 4 fixed) and a green arm of 23 passed, and all three named log paths exist on disk.\nVERDICT diff: read commit by commit against base 3c8d1a0291; 956c261790 touches reckon/crew/promotion_evidence.py, reckon/crew/promotion_release.py and two test files, and ceb3685ff0 adds two evidence fragments, nothing outside the declared scope.\nCALL_SITES: reckon/crew/merge.py:1342, reckon/crew_run_commands.py:4151, reckon/crew/obligations.py:3214, reckon/crew/promotion.py:2553, reckon/hooks/coordinator_obligations.py:1575, reckon/crew/open_run_index.py:183\nSCORE goal_fidelity: 18\nSCORE evidence: 15\nSCORE scope_discipline: 19\nSCORE durability: 14\nSCORE fit: 19\nSCORE reuse: 17\nJUSTIFICATION goal_fidelity: reckon/crew/promotion_release.py:437-443 reports a tree that is already gone as released and promotion_evidence.py:333 reads a promoted row's node_definition, which are precisely the states the deliverable names.\nJUSTIFICATION evidence: logs/negative-control.log records the two clean-landing cases failing at the base revision and logs/after-suite.log shows them passing at the head, so the delta the done_when asserts is measured, though the record misquotes one failure message and one arm's log header names the wrong revision.\nJUSTIFICATION scope_discipline: all six paths in git diff 3c8d1a0291..ceb3685ff0 lie inside the declared write paths reckon, tests and docs/evidence/fragments/queued-work-needs-no-workaround.\nJUSTIFICATION durability: tests/test_a_clean_landing_releases_its_worktree.py:153 reddens if the absent-tree branch is reverted, but the promotion_evidence.py:333 hunk is guarded by no assertion and is made non-fatal by the except at promotion_release.py:540.\nJUSTIFICATION fit: the new keys worktree_absent and worktree_audit_error and the noqa BLE001 swallow match the surrounding idiom at reckon/crew/merge.py:1348, and no name carries a plan, stage or ticket label.\nJUSTIFICATION reuse: the change extends its own owners rather than adding a definition, and no repository helper resolves a node definition in both shapes, though reckon/crew/directory.py:291 and reckon/crew/claims.py:374 each hold a pointer-only _node reader it did not reuse.\nFINDING reckon/crew/promotion_evidence.py:333 non-blocking: the two-shape node read is asserted by nothing, and the try/except at promotion_release.py:540 makes a regression there non-fatal to every gate assertion, so reverting it leaves all four cases green.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-a-clean-landing-releases-its-worktree.html:70 non-blocking: it states both base-revision clean-landing cases report 'tree is no longer available', while the cited log records the first failing with 'its HEAD is not reachable from the integration revision'.\nFINDING logs/after-suite.log:1 non-blocking: the head arm's header names the base revision 3c8d1a0291 while the manifest's after_suite.revision is 956c261790, so the two disagree about which revision the arm ran.\n",
+  "review_run_id": "r-20261115T072654577274-review-of-qwnw-a-clean-landing-releases-its-worktree-ceb3685ff0cc",
+  "reviewed_base_sha": "3c8d1a02911447d1cdaad36745618bcf99d6dcd3",
+  "reviewed_head_sha": "ceb3685ff0ccd239de983adaccbc287f8e210d3d",
+  "reviewed_run_id": "r-20261115T041011017701-qwnw-a-clean-landing-releases-its-worktree",
+  "scores": {
+    "durability": 14,
+    "evidence": 15,
+    "fit": 19,
+    "goal_fidelity": 18,
+    "reuse": 17,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-15T07:42:08.967223+00:00",
+  "total": 102
+}

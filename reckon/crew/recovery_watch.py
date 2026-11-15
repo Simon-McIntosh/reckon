@@ -287,8 +287,17 @@ def _remember_commit_answer(tree: Path, candidate: str, sha: str) -> None:
 
     An unresolved candidate is never stored: an object the repository does not
     hold yet it may hold later, so "names no commit" is not an immutable fact.
+
+    An answer the store already holds is not written again. The store is one
+    file shared by every process reading this home, and its write is a lock
+    plus a whole-file rewrite, so rewriting it to store the value it already
+    carries costs the lock every tick and hands the file a new identity — which
+    is what stops a reader's held copy from matching. Only a new or different
+    answer changes the file.
     """
     if not sha:
+        return
+    if _stored_commit_answer(tree, candidate) == sha:
         return
 
     def mutate(store: dict[str, Any]) -> None:
@@ -305,7 +314,15 @@ def _stored_count_answer(tree: Path, head: str, base: str) -> int | None:
 
 
 def _remember_count_answer(tree: Path, head: str, base: str, count: int) -> None:
-    """Record the commit count for this worktree head and base."""
+    """Record the commit count for this worktree head and base.
+
+    A count already stored for these two object ids is not written again, for
+    the reason ``_remember_commit_answer`` gives: the answer cannot move, so the
+    rewrite would cost the store's lock and a new file identity to change
+    nothing.
+    """
+    if _stored_count_answer(tree, head, base) == count:
+        return
     key = _count_answer_key(head, base)
 
     def mutate(store: dict[str, Any]) -> None:
@@ -552,6 +569,7 @@ def overdue_unreconciled_runs(
     project: str,
     grace: str,
     now_seconds: float | None = None,
+    session: str | None = None,
 ) -> list[dict[str, Any]]:
     """Return actionable terminal pointers older than the configured grace.
 
@@ -561,6 +579,15 @@ def overdue_unreconciled_runs(
     refused here (the forgotten-work case) while one the drain counts as
     reconciled is never refused. A scoring run inside its armed reflex's review
     window awaits that reflex rather than coordinator reconciliation.
+
+    ``session`` scopes the answer to one coordinator's own rows. Classification
+    is the costly part — each read opens the run's manifest, stream and stored
+    review — so a pointer another session owns is skipped before it is read.
+    The owner is the ``session`` the pointer was dispatched under.
+
+    Omitting ``session`` keeps the project-wide reading the drain asks for. A
+    pointer with no recorded owner stays in scope either way: absence cannot
+    prove that a live pointer belongs to a peer.
     """
     if not grace:
         return []
@@ -569,6 +596,10 @@ def overdue_unreconciled_runs(
     grace_seconds = parse_duration(grace)
     rows = []
     for pointer in list_live(project=project):
+        if session is not None:
+            owner = str(pointer.get("session") or "")
+            if owner and owner != session:
+                continue
         row = classify_pointer(pointer, now_seconds=now_seconds)
         age = row.get("terminal_age_seconds")
         if (

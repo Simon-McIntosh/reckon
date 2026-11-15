@@ -316,6 +316,54 @@ def launch_in_flight(record: Mapping[str, Any]) -> bool:
     return record_process_alive(marker) is True
 
 
+def launch_mark_holds(record: Mapping[str, Any]) -> bool:
+    """Whether a resume mark still stands for a launch that has not delivered.
+
+    The mark's shape says only that a door began a resume: a door that died
+    before its worker started, or one whose attempt has since finished, leaves
+    a mark whose presence means nothing about what is running now. Presence
+    alone therefore must not refuse a review, or one abandoned door withholds
+    a run's review for as long as the pointer holding the mark survives.
+    """
+    if not launch_in_flight(record):
+        return False
+    marker = record.get(RESUME_LAUNCH_IN_FLIGHT)
+    attempt = marker.get("attempt") if isinstance(marker, Mapping) else None
+    if not isinstance(attempt, int):
+        # A mark written before the attempt was named stands for whatever
+        # attempt the pointer holds, which is the launch it began.
+        attempt = record.get("attempt")
+    return not (
+        isinstance(attempt, int) and _attempt_left_an_answer(record, attempt)
+    )
+
+
+def _attempt_left_an_answer(record: Mapping[str, Any], attempt: int) -> bool:
+    """Whether an attempt recorded an answer, so the mark guarding it is spent.
+
+    Two records answer it. The attempt's own exit receipt is its end, and an
+    exit is as final as a solver result for the purpose of refusing a review.
+    Otherwise the marker stands for the attempt the pointer still names — a
+    mark left over from an attempt the run has moved past says nothing about
+    the one running now — and that attempt's stream ending in a result record
+    is the delivery the review is waiting for.
+    """
+    run_id = str(record.get("run_id") or "")
+    if run_id:
+        receipt = run_dir(run_id) / f"attempt-{attempt}-exit.json"
+        if receipt.exists():
+            return True
+    current = record.get("attempt")
+    if current is not None and current != attempt:
+        return False
+    from reckon.crew.recovery_wait import (
+        STREAM_RESULT_RECORD_TYPE,
+        _newest_stream_last_record_type,
+    )
+
+    return _newest_stream_last_record_type(record) == STREAM_RESULT_RECORD_TYPE
+
+
 class PromotionInProgressError(CrewError):
     """A resume met a run that a promotion holds, and refuses rather than waits."""
 
@@ -551,8 +599,6 @@ def lane_probe_cache_path(project: str, backend_name: str) -> Path:
         / _safe_project(project)
         / f"{_safe_project(backend_name)}.json"
     )
-
-
 
 
 def _read_lane_probe_cache(project: str, backend_name: str) -> dict[str, Any]:
@@ -1891,6 +1937,7 @@ def _resume(
     config: Mapping[str, Any] | None,
     launcher: Callable[..., int] | None = None,
     advice: str = CONTINUE_ADVICE,
+    coordinator: bool = False,
 ) -> dict[str, Any]:
     """Launch one resumption exactly the way a hand-typed resume does.
 
@@ -1920,6 +1967,16 @@ def _resume(
             f"{failure['remedy']}) and resume it by hand, or complete it"
         )
     _refuse_a_launch_already_running(run_id)
+    if coordinator:
+        # A repair round that took an attempt and then declared it was waiting
+        # for coordinator advice holds a reservation its own hold will never
+        # use. A coordinator's advice is that wait ending, so it supersedes the
+        # round instead of being refused by it.
+        from reckon.crew.recovery_repair_dispatch import (
+            supersede_a_held_repair_round,
+        )
+
+        supersede_a_held_repair_round(run_id)
     # The attempt number is reserved before anything is built, and reserved
     # with an exclusive create rather than the pointer lock, so a door on
     # another host reading the same current attempt meets this claim where a
@@ -2409,8 +2466,6 @@ def _sweep_writer_entry(
         "reviews": _review_outcome_counts(report.get("reviews")),
         "swept_by_pid": os.getpid(),
     }
-
-
 
 
 def _write_sweep_status(

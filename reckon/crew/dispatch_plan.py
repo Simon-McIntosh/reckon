@@ -886,7 +886,7 @@ def plan_dispatch(
             # scratch file no longer on disk. At first dispatch no copy exists
             # yet, so the source is read.
             node.brief_sha256 = _brief_digest(
-                node.brief_path or node.brief,
+                readable_brief_source(node),
                 block=domain_rules_block(project=project, node=node),
             )
         if not node.plan.strip():
@@ -1735,6 +1735,7 @@ from .dispatch_admission import (  # noqa: E402
     _unmetered_dispatch_alternatives,
     admission_refusals_and_warnings,
     check_placement_requirements,
+    readable_brief_source,
 )
 
 from .dispatch_claims import (  # noqa: E402

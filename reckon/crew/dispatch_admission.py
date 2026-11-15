@@ -301,13 +301,26 @@ def _refuse_over_concurrency_ceiling(
     binding = summary.binding_bound(bounds)
     if binding is not None and not binding.admits_one_more:
         run_ids = [str(pointer.get("run_id") or "unknown") for pointer in occupying]
-        raise CrewError(
+        # A bound is a wait for room, not a refusal: the workers inside the
+        # allocation carry on and one of them ending frees what this dispatch
+        # needs. It is raised as the roster's queueable hold so every lane's
+        # dispatch path stores the request instead of losing it, exactly as it
+        # already did at the roster's own cap.
+        capacity = binding.capacity
+        raise RosterFull(
             format_refusal(
                 "D09",
                 summary.bound_refusal_text(
                     binding, backend_name=backend_name, occupying=run_ids
                 ),
-            )
+            ),
+            occupancy=len(occupying),
+            limit=(
+                int(capacity)
+                if isinstance(capacity, (int, float)) and capacity >= 1
+                else len(occupying) + 1
+            ),
+            occupying=run_ids,
         )
     # A placed backend's workers run inside the one shared reservation, and
     # under --overlap the scheduler admits whatever is asked, so the
@@ -1276,8 +1289,8 @@ class LaneHeld(LanePaused):
 
     The lane is answering and its own arithmetic leaves this coordinator
     session no room, so the node is held rather than refused: no worktree was
-    created and the node is still ready. On the local lane the request is
-    queued instead, and the queued record rides the exception as ``queued``;
+    created and the node is still ready. The request is queued on whichever
+    lane it named, and the queued record rides the exception as ``queued``;
     that pointer launches later from the node's brief, so a caller must keep
     whatever the brief names. The allowance decision that produced the hold
     rides the exception, so every surface reports the figure the router
@@ -1286,13 +1299,15 @@ class LaneHeld(LanePaused):
 
 
 class RosterFull(CrewError):  # noqa: N818 - a held condition named beside the lane holds
-    """A dispatch found the placement reservation's roster at its cap.
+    """A dispatch found the placement reservation at the bound that binds.
 
-    The cap is a queueable resource rather than a refusal: the node is ready,
-    the allocation is simply carrying as many placed workers as it was sized
-    for, and one of them finishing frees the seat this dispatch would take. A
-    caller that can queue writes the request and relaunches it when a seat
-    frees, so the composition of a review is not lost while the fleet is busy.
+    Both bounds the reservation enforces are queueable resources rather than
+    refusals: the roster cap and the admitted partition cores. The node is
+    ready, the allocation is simply carrying as many placed workers as it was
+    sized for, and one of them finishing frees the seat or the cores this
+    dispatch would take. A caller that can queue writes the request and
+    relaunches it when room frees, so the composition of a review is not lost
+    while the fleet is busy.
 
     It stays a :class:`CrewError` so every refusal surface reports it, and it
     carries the occupancy the decision was taken on together with the seats
@@ -2511,6 +2526,22 @@ def _store_brief(directory: Path, source: str, *, block: str = "") -> Path:
         raise CrewError(f"the brief {source!r} could not be stored: {exc}") from exc
 
 
+def readable_brief_source(node: TaskNode) -> str:
+    """The brief a dispatch reads: the run's stored copy if it is there, else the source.
+
+    A queued request carries the stored copy an earlier attempt made under its
+    own run id. When that attempt was refused or released, its run directory
+    went with the copy, and every later launch of the request refused on a brief
+    it could no longer read, while the source the request names was still on
+    disk: on 14 November three review requests were refused this way on every
+    pass. The source is read instead, and the launch stores its own copy.
+    """
+    stored = str(node.brief_path or "").strip()
+    if stored and Path(stored).expanduser().is_file():
+        return stored
+    return node.brief
+
+
 def _brief_record(
     node: TaskNode, project: str = "", *, project_path: str | None = None
 ) -> dict[str, Any] | None:
@@ -2526,7 +2557,7 @@ def _brief_record(
         return None
     record: dict[str, Any] = {
         "sha256": node.brief_sha256,
-        "path": node.brief_path or node.brief,
+        "path": readable_brief_source(node),
         "source_path": node.brief,
     }
     carry = _domain_rules_carry(node, project, project_path=project_path)
@@ -2552,7 +2583,7 @@ def _brief_text(
     """
     if not node.brief.strip():
         return ""
-    source = node.brief_path or node.brief
+    source = readable_brief_source(node)
     try:
         text = Path(source).expanduser().read_text(encoding="utf-8")
     except OSError as exc:

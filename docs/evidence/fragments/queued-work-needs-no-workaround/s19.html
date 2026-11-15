@@ -1,0 +1,204 @@
+<section data-reckon="evidence" data-id="s19-negative-control">
+  <h3 id="s19-negative-control-heading">Negative control: the read-only case at the base revision</h3>
+  <p id="s19-negative-control-note">
+    The node test run against the base revision with the fix absent. Both arms
+    of the first case are refused as an unresolvable commit, which is the defect
+    the node removes.
+  </p>
+  <pre id="s19-negative-control-log"># revision: 31eaf2923c2da860896c16de337408e5fcbf6ecd
+# tree: /tmp/reckon-crew-scratch/r-20261115T040600990763-qwnw-a-read-only-run-promotes-without-a-hand-edit/base
+# module: /tmp/reckon-crew-scratch/r-20261115T040600990763-qwnw-a-read-only-run-promotes-without-a-hand-edit/base/reckon/crew/promotion_scope.py
+# cwd: /tmp/reckon-crew-scratch/r-20261115T040600990763-qwnw-a-read-only-run-promotes-without-a-hand-edit/base
+# command: /tmp/reckon-crew-scratch/r-20261115T040600990763-qwnw-a-read-only-run-promotes-without-a-hand-edit/base/tests/test_a_read_only_run_promotes_without_a_hand_edit.py
+FF..                                                                     [100%]
+=================================== FAILURES ===================================
+_ test_a_read_only_run_promotes_on_its_own_commits_prose[with-a-stated-reason] _
+
+repository = PosixPath(&#x27;/tmp/pytest-of-mcintos/pytest-4/test_a_read_only_run_promotes_0/repo&#x27;)
+tmp_path = PosixPath(&#x27;/tmp/pytest-of-mcintos/pytest-4/test_a_read_only_run_promotes_0&#x27;)
+run_tree = (PosixPath(&#x27;/tmp/pytest-of-mcintos/pytest-4/test_a_read_only_run_promotes_0/worktrees/run&#x27;), &#x27;aaaef95393c9071580af51e594bdf35911c0723c&#x27;)
+pass_reason = True
+
+    @pytest.mark.parametrize(
+        &quot;pass_reason&quot;,
+        [
+            pytest.param(True, id=&quot;with-a-stated-reason&quot;),
+            pytest.param(False, id=&quot;with-no-flag-at-all&quot;),
+        ],
+    )
+    def test_a_read_only_run_promotes_on_its_own_commits_prose(
+        repository: Path,
+        tmp_path: Path,
+        run_tree: tuple[Path, str],
+        pass_reason: bool,
+    ) -&gt; None:
+        &quot;&quot;&quot;The declaration is read as no commits, whichever way it is promoted.&quot;&quot;&quot;
+        tree, base_sha = run_tree
+        run_id = RUN_IDS[0]
+        _review_run(
+            repository,
+            tmp_path,
+            run_id,
+            tree=tree,
+            base_sha=base_sha,
+            commits=REVIEW_COMMITS_PROSE,
+        )
+    
+        promoted = (
+&gt;           crew.complete(run_id, gate=&quot;passed&quot;, root=repository, no_commit=REASON)
+            if pass_reason
+            else crew.complete(run_id, gate=&quot;passed&quot;, root=repository)
+        )
+
+tests/test_a_read_only_run_promotes_without_a_hand_edit.py:186: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+reckon/crew/open_run_index.py:67: in bounded
+    return function(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+reckon/crew/promotion.py:858: in complete
+    ) = _require_independently(
+reckon/crew/promotion_checks.py:1543: in _require_independently
+    raise refusals[0]
+reckon/crew/promotion_checks.py:1534: in _require_independently
+    products.append(check())
+                    ^^^^^^^
+reckon/crew/promotion.py:934: in &lt;lambda&gt;
+    lambda: _require_no_png_twin_of_an_svg(run_id, record),
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+reckon/crew/promotion_checks.py:677: in _require_no_png_twin_of_an_svg
+    findings = _png_twin_findings_in_run_commits(record)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+reckon/crew/promotion_checks.py:644: in _png_twin_findings_in_run_commits
+    resolved = _resolve_commits(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+cwd = PosixPath(&#x27;/tmp/pytest-of-mcintos/pytest-4/test_a_read_only_run_promotes_0/worktrees/run&#x27;)
+revisions = [&#x27;none — this node writes a review record outside the repository&#x27;]
+run_id = &#x27;r-20261015T120000000001-review-read-only-promotion&#x27;
+
+    def _resolve_commits(*, cwd: Path, revisions: Iterable[str], run_id: str) -&gt; list[str]:
+        &quot;&quot;&quot;Resolve every recorded revision to its canonical commit object id.&quot;&quot;&quot;
+        commits = []
+        for revision in revisions:
+            commit = _resolve_commit(cwd, revision)
+            if not commit:
+                # A commit that resolves somewhere else is not a bad sha, it is a
+                # node whose write target was not its run repository — dispatched
+                # without --repo and pointed at a foreign checkout by prose. Naming
+                # the repository it does belong to turns a correct-but-opaque
+                # refusal into the instruction for the next dispatch.
+                elsewhere = _foreign_repository(revision, exclude=cwd)
+                remedy = (
+                    f&quot;it resolves in {elsewhere} instead, so that node belongs to &quot;
+                    f&quot;that repository: redispatch it with `--repo {elsewhere}` &quot;
+                    &quot;rather than granting a foreign checkout in its prose&quot;
+                    if elsewhere is not None
+                    else &quot;check that the worker committed rather than only staging, &quot;
+                    &quot;and that it committed in its own worktree&quot;
+                )
+&gt;               raise CrewError(
+                    f&quot;run {run_id!r} commit {revision!r} does not resolve to a &quot;
+                    f&quot;commit object in the run repository ({cwd}); {remedy}&quot;
+                )
+E               reckon.crew.CrewError: run &#x27;r-20261015T120000000001-review-read-only-promotion&#x27; commit &#x27;none — this node writes a review record outside the repository&#x27; does not resolve to a commit object in the run repository (/tmp/pytest-of-mcintos/pytest-4/test_a_read_only_run_promotes_0/worktrees/run); check that the worker committed rather than only staging, and that it committed in its own worktree
+
+reckon/crew/promotion_scope.py:292: CrewError
+_ test_a_read_only_run_promotes_on_its_own_commits_prose[with-no-flag-at-all] __
+
+repository = PosixPath(&#x27;/tmp/pytest-of-mcintos/pytest-4/test_a_read_only_run_promotes_1/repo&#x27;)
+tmp_path = PosixPath(&#x27;/tmp/pytest-of-mcintos/pytest-4/test_a_read_only_run_promotes_1&#x27;)
+run_tree = (PosixPath(&#x27;/tmp/pytest-of-mcintos/pytest-4/test_a_read_only_run_promotes_1/worktrees/run&#x27;), &#x27;c057a59e72fe95527e59ea94a121965c1cafd7bd&#x27;)
+pass_reason = False
+
+    @pytest.mark.parametrize(
+        &quot;pass_reason&quot;,
+        [
+            pytest.param(True, id=&quot;with-a-stated-reason&quot;),
+            pytest.param(False, id=&quot;with-no-flag-at-all&quot;),
+        ],
+    )
+    def test_a_read_only_run_promotes_on_its_own_commits_prose(
+        repository: Path,
+        tmp_path: Path,
+        run_tree: tuple[Path, str],
+        pass_reason: bool,
+    ) -&gt; None:
+        &quot;&quot;&quot;The declaration is read as no commits, whichever way it is promoted.&quot;&quot;&quot;
+        tree, base_sha = run_tree
+        run_id = RUN_IDS[0]
+        _review_run(
+            repository,
+            tmp_path,
+            run_id,
+            tree=tree,
+            base_sha=base_sha,
+            commits=REVIEW_COMMITS_PROSE,
+        )
+    
+        promoted = (
+            crew.complete(run_id, gate=&quot;passed&quot;, root=repository, no_commit=REASON)
+            if pass_reason
+&gt;           else crew.complete(run_id, gate=&quot;passed&quot;, root=repository)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        )
+
+tests/test_a_read_only_run_promotes_without_a_hand_edit.py:188: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+reckon/crew/open_run_index.py:67: in bounded
+    return function(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+reckon/crew/promotion.py:858: in complete
+    ) = _require_independently(
+reckon/crew/promotion_checks.py:1543: in _require_independently
+    raise refusals[0]
+reckon/crew/promotion_checks.py:1534: in _require_independently
+    products.append(check())
+                    ^^^^^^^
+reckon/crew/promotion.py:934: in &lt;lambda&gt;
+    lambda: _require_no_png_twin_of_an_svg(run_id, record),
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+reckon/crew/promotion_checks.py:677: in _require_no_png_twin_of_an_svg
+    findings = _png_twin_findings_in_run_commits(record)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+reckon/crew/promotion_checks.py:644: in _png_twin_findings_in_run_commits
+    resolved = _resolve_commits(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+cwd = PosixPath(&#x27;/tmp/pytest-of-mcintos/pytest-4/test_a_read_only_run_promotes_1/worktrees/run&#x27;)
+revisions = [&#x27;none — this node writes a review record outside the repository&#x27;]
+run_id = &#x27;r-20261015T120000000001-review-read-only-promotion&#x27;
+
+    def _resolve_commits(*, cwd: Path, revisions: Iterable[str], run_id: str) -&gt; list[str]:
+        &quot;&quot;&quot;Resolve every recorded revision to its canonical commit object id.&quot;&quot;&quot;
+        commits = []
+        for revision in revisions:
+            commit = _resolve_commit(cwd, revision)
+            if not commit:
+                # A commit that resolves somewhere else is not a bad sha, it is a
+                # node whose write target was not its run repository — dispatched
+                # without --repo and pointed at a foreign checkout by prose. Naming
+                # the repository it does belong to turns a correct-but-opaque
+                # refusal into the instruction for the next dispatch.
+                elsewhere = _foreign_repository(revision, exclude=cwd)
+                remedy = (
+                    f&quot;it resolves in {elsewhere} instead, so that node belongs to &quot;
+                    f&quot;that repository: redispatch it with `--repo {elsewhere}` &quot;
+                    &quot;rather than granting a foreign checkout in its prose&quot;
+                    if elsewhere is not None
+                    else &quot;check that the worker committed rather than only staging, &quot;
+                    &quot;and that it committed in its own worktree&quot;
+                )
+&gt;               raise CrewError(
+                    f&quot;run {run_id!r} commit {revision!r} does not resolve to a &quot;
+                    f&quot;commit object in the run repository ({cwd}); {remedy}&quot;
+                )
+E               reckon.crew.CrewError: run &#x27;r-20261015T120000000001-review-read-only-promotion&#x27; commit &#x27;none — this node writes a review record outside the repository&#x27; does not resolve to a commit object in the run repository (/tmp/pytest-of-mcintos/pytest-4/test_a_read_only_run_promotes_1/worktrees/run); check that the worker committed rather than only staging, and that it committed in its own worktree
+
+reckon/crew/promotion_scope.py:292: CrewError
+=========================== short test summary info ============================
+FAILED tests/test_a_read_only_run_promotes_without_a_hand_edit.py::test_a_read_only_run_promotes_on_its_own_commits_prose[with-a-stated-reason]
+FAILED tests/test_a_read_only_run_promotes_without_a_hand_edit.py::test_a_read_only_run_promotes_on_its_own_commits_prose[with-no-flag-at-all]
+2 failed, 2 passed in 4.09s
+EXIT=1
+</pre>
+</section>
