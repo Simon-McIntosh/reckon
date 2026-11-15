@@ -231,7 +231,10 @@ def test_a_held_tree_settles_once_its_release_has_an_owner(
     with no owner the row is the only surface naming the bytes, which is why
     the same row is kept in one arm and withheld in the other.
     """
-    intent = obligation_snapshot.cleanup_intent_path(RUN_ID)
+    # Written from the config home rather than through the module's helper, so
+    # the base revision fails on the settlement it lacks rather than on a name
+    # it does not carry.
+    intent = obligation_snapshot.crew_home() / "cleanup" / f"{RUN_ID}.json"
     intent.parent.mkdir(parents=True, exist_ok=True)
     if release_owned:
         intent.write_text(json.dumps({"run_id": RUN_ID}), encoding="utf-8")
