@@ -123,9 +123,7 @@ def _write_pointer(
     root = tmp_path / "manifests"
     root.mkdir(parents=True, exist_ok=True)
     manifest = root / f"{run_id}.md"
-    manifest.write_text(
-        f"node: {run_id}\nstatus: in-progress\n", encoding="utf-8"
-    )
+    manifest.write_text(f"node: {run_id}\nstatus: in-progress\n", encoding="utf-8")
     head = _git(repository, "rev-parse", "HEAD")
     runs._write_json(
         runs.pointer_path(str(run_id)),
@@ -152,7 +150,9 @@ def _write_pointer(
     )
 
 
-def _drive(repository: Path, *, mode: str = "prompt") -> subprocess.CompletedProcess[str]:
+def _drive(
+    repository: Path, *, mode: str = "prompt"
+) -> subprocess.CompletedProcess[str]:
     """Run the hook as the harness does, against the temporary home."""
     environment = dict(os.environ)
     environment["PYTHONPATH"] = str(REPO_ROOT)
@@ -356,3 +356,60 @@ def test_an_ended_run_owing_a_promotion_still_earns_the_line(
 
     assert "no producer" in line, line
     assert f"reckon crew watch --ensure --project {PROJECT}" in line, line
+
+
+# The hook states two facts about an ended pointer itself, because the modules
+# that own them cost seconds and load the derivation modules its path forbids
+# (measured: reckon.crew.node 2.0-3.0 s and 521 modules, reckon.ledger and
+# reckon._plan_html among them). Two statements of one rule drift unless a check
+# compares them, so the parity below is what makes a change in either owner
+# fail here rather than in a coordinator's reading of a silent hook.
+@pytest.mark.parametrize(
+    "document",
+    [
+        {"phase": "complete", "manifest_path": "/manifests/run.md"},
+        {"phase": "complete"},
+        {
+            "phase": "complete",
+            "manifest_path": "/manifests/run.md",
+            "promoted_revision": "a" * 40,
+        },
+        {"phase": "failed", "review_dispatch": {"status": "dispatched"}},
+        {"phase": "failed", "review_dispatch": {"status": "withdrawn"}},
+        {"phase": "stopped", "figure_review_dispatch": {"status": "dispatched"}},
+        {"phase": "interrupted"},
+        {"phase": "working"},
+    ],
+)
+def test_the_hook_and_the_pane_population_agree_about_an_ended_pointer(
+    document: dict,
+) -> None:
+    """One question, one answer: the hook and the pane rule read it alike.
+
+    ``_record_has_pending_work`` is the pane population's statement of what an
+    ended pointer still owes. The hook states the same rule for its own question
+    rather than importing the 525-module owner on a prompt path, so the two are
+    compared case by case here, which is the check that makes them drift into a
+    test failure instead of into two readers disagreeing.
+    """
+    import reckon.hooks.coordinator_obligations as hook
+    from reckon.crew.station_subscriber import _record_has_pending_work
+
+    assert hook._pointer_owes_its_session(document) == _record_has_pending_work(
+        document
+    ), document
+
+
+def test_the_hook_reads_the_owners_phase_vocabulary() -> None:
+    """The hook's phase sets are the owner's, spelled once in a compared place.
+
+    A terminal phase added to ``reckon.crew.node`` and a launch phase renamed in
+    the launcher must reach the hook; comparing the sets is what turns a rename
+    into a red test rather than a hook that reads an ended pointer as live work.
+    """
+    import reckon.hooks.coordinator_obligations as hook
+    from reckon.crew import node
+    from reckon.crew.dispatch_launch import LAUNCH_FAILED_PHASE
+
+    assert hook._ENDED_POINTER_PHASES == node._TERMINAL_RUN_PHASES
+    assert hook._NEVER_LAUNCHED_POINTER_PHASE == LAUNCH_FAILED_PHASE
