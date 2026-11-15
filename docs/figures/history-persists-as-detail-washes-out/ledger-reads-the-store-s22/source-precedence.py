@@ -88,22 +88,23 @@ def main() -> Path:
 
     ax.text(
         40,
-        366,
+        370,
         "Both sources answer one population: one surviving document no longer hides the store's rows.",
         **note,
     )
 
-    _box(ax, 40, 240, 1220, 96, colour="#cccccc")
-    ax.text(60, 312, "run_ids reads the store's id columns, so membership costs no payload decode.", **note)
-    ax.text(60, 286, "open_run_index counts an aggregate, a run document, or stored ids before reporting a project empty.", **note)
-    ax.text(60, 260, "load_aggregate stays the writer's view: folded store rows there would be written back into the aggregate.", **note)
+    _box(ax, 40, 218, 1220, 116, colour="#cccccc")
+    ax.text(60, 314, "run_ids reads the store's id columns, so membership costs no payload decode.", **note)
+    ax.text(60, 288, "the store read is one project's rows, on a connection that cannot write.", **note)
+    ax.text(60, 262, "open_run_index counts an aggregate, a run document, or stored ids before reporting a project empty.", **note)
+    ax.text(60, 236, "load_aggregate stays the writer's view: folded store rows there would be written back into the aggregate.", **note)
 
-    ax.text(40, 206, "three arms over one population of reader tests", **name)
+    ax.text(40, 190, "three arms over one population of reader tests", **name)
 
     arms = [
-        (FAILED, 174, 52, 70, "answering change reverted: 2 failed, 16 passed (negative control)"),
-        (POLITE, 134, 52, 70, "base 2bf8e6947d: 58 passed over the two test files present there"),
-        (FEATURE, 94, 52, 70, "head 1f3094e35ae4: 76 passed over the same two files plus the new one"),
+        (FAILED, 158, 52, 70, "read reverted at b1f4c666e8: 2 failed, 19 passed"),
+        (POLITE, 118, 52, 70, "base 2bf8e6947d: 58 passed over the two test files present there"),
+        (FEATURE, 78, 52, 70, "head 9572b14547: 79 passed over the same two files plus the new one"),
     ]
     for colour, y, dot_x, text_x, text in arms:
         ax.add_patch(Circle((dot_x, y + 4), 4, facecolor=colour, edgecolor="none"))
