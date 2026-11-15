@@ -33,11 +33,11 @@ from reckon.crew import queue_admission, queue_order, runs
 from tests.test_a_claim_hold_reads_the_holder_again import _stopped_holder
 from tests.test_a_queued_run_is_admitted import admit_repo  # noqa: F401 - fixture
 from tests.test_overlapping_queued_requests_launch_in_turn import (  # noqa: F401
+    EXCLUSIVE,
     LANE,
     PROJECT,
     SESSION_A,
     SESSION_B,
-    SHARED,
     START,
     _config,
     _lane_document,
@@ -80,7 +80,7 @@ def _pair(repository: Path, *, earlier_paths: list[str] | None = None) -> None:
             node_id="earlier",
             run_id=EARLIER,
             session=SESSION_A,
-            write_paths=earlier_paths or [SHARED],
+            write_paths=earlier_paths or [EXCLUSIVE],
             queued_at=(START - timedelta(minutes=3)).isoformat(),
         )
     )
@@ -90,7 +90,7 @@ def _pair(repository: Path, *, earlier_paths: list[str] | None = None) -> None:
             node_id="later",
             run_id=LATER,
             session=SESSION_B,
-            write_paths=[SHARED],
+            write_paths=[EXCLUSIVE],
             queued_at=(START - timedelta(minutes=2)).isoformat(),
         )
     )
@@ -112,7 +112,7 @@ def test_a_request_held_on_a_peers_claim_holds_nothing_behind_it(
     # The holder claims only the earlier request's own path, so the later
     # request overlaps the earlier one but nothing fences the later one.
     _stopped_holder(admit_repo, tmp_path)
-    _pair(admit_repo, earlier_paths=[CLAIMED, SHARED])
+    _pair(admit_repo, earlier_paths=[CLAIMED, EXCLUSIVE])
     recorded: list = []
 
     result = queue_admission.admit_once(
