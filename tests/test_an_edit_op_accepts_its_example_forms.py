@@ -124,11 +124,18 @@ def test_a_followup_append_defaults_its_author_and_date(docs: Path) -> None:
 def test_a_sprint_append_resolves_a_committed_plan(tmp_path: Path, docs: Path) -> None:
     from reckon import project_state
 
-    _write_plan(docs, SLUG)
+    # The project is in distributed mode and the sprint exists before the plan
+    # does, so nothing run ahead of the append could have registered it.
     project_state.create_project_state(docs, PROJECT)
-    project_state.write_resource(
-        docs, PROJECT, "sprint", "S1", {"items": []}, 0, create=True
+    sprint_path = docs / "sprints" / "S1.html"
+    sprint_path.parent.mkdir(parents=True)
+    sprint_path.write_text(
+        project_state._render_resource(PROJECT, "sprint", "S1", {"items": []}),
+        encoding="utf-8",
     )
+    assert not (docs / "plans" / f"{SLUG}.html").exists()
+
+    _write_plan(docs, SLUG)
     _, version = project_state.read_resource(docs, PROJECT, "sprint", "S1")
 
     result = mcp_module._edit_plan(
@@ -141,7 +148,20 @@ def test_a_sprint_append_resolves_a_committed_plan(tmp_path: Path, docs: Path) -
     )
     assert result["ok"] is True, result
 
-    sprint, _ = project_state.read_resource(docs, PROJECT, "sprint", "S1")
+    sprint, version = project_state.read_resource(docs, PROJECT, "sprint", "S1")
     assert [
         row if isinstance(row, str) else row.get("slug") for row in sprint["items"]
     ] == [SLUG]
+
+    # A slug with no plan in the tree is still refused, so the acceptance above
+    # is the plan being resolved and not the check being absent.
+    refused = mcp_module._edit_plan(
+        PROJECT,
+        "S1",
+        [{"op": "append", "target": "items", "item": {"slug": "no-such-plan"}}],
+        version,
+        checkout_path=str(tmp_path),
+        doc_type="sprint",
+    )
+    assert refused["ok"] is False, refused
+    assert "does not resolve to a live plan" in json.dumps(refused), refused
