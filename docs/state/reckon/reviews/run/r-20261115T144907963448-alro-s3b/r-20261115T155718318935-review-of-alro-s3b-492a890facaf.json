@@ -1,0 +1,55 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/project_maintenance_commands.py:1483 synthesize_landed_record -> reckon/evidence.py:1529 _render_document -> read_section_landings(root=docs_dir.parent)",
+    "reckon/_store.py:1323 _landed_record_shell -> _render_document(root=Path('.'), created_by_append=True) \u2014 the overview block is skipped on this path, so the new figure and review reads are not reached"
+  ],
+  "completed_at": "2026-11-15T15:59:57.337Z",
+  "dispatched_at": "2026-11-15T15:59:11Z",
+  "findings": [
+    {
+      "file": "tests/test_a_closing_plan_gets_one_sourced_overview.py",
+      "line": 457,
+      "severity": "non-blocking",
+      "text": "check_a_review_comment_is_not_the_landing is green under the very mutation it claims to guard. Its s2 fixture (PROMOTION fixture, _promotion_comments()) carries c-close-s2 as well as the trailing c-run-<REVIEW_A> comment, so both the shipped rule and the reverted last-comment rule return the close comment and the assertion can never see a review quoted. The declared negative control proves the gap: negative-control-492a890fac.log selects -k 'promotion or reviews_last_comment' and reports '1 failed, 2 passed, 15 deselected' \u2014 only the promotion case reddens, and test_a_reviews_last_comment_is_not_the_landing passes while the landing rule is reverted. The case needs a section whose only comments are a landed run's c-run- and a review's trailing c-run-, so the fallback it names is the one that could quote the review."
+    },
+    {
+      "file": "reckon/evidence.py",
+      "line": 314,
+      "severity": "non-blocking",
+      "text": "_run_comment_id re-implements a derivation the repository already performs twice: reckon/crew/promotion_scope.py:1452 and :2628 each build the landing comment id as f\"{RUN_COMMENT_PREFIX}{re.sub(r'[^A-Za-z0-9._-]+', '-', run_id)}\". The addition extends reckon/crew/plan_review.py:252 by importing RUN_COMMENT_PREFIX, but the normalisation rule \u2014 the half that has to agree with the writer for the lookup to find anything \u2014 is now a third copy, so a change to the writer's rule silences: the reader would stop matching and every promotion-landed section would read as having no landing comment. The owner is reckon/crew/plan_review.py, which holds the prefix constant and _is_run_comment but no builder; extracting run_comment_id there and calling it from all three sites is the cut that removes the copies."
+    },
+    {
+      "file": "reckon/evidence.py",
+      "line": 277,
+      "severity": "non-blocking",
+      "text": "_done_when quotes a whole line, and the line it is handed for a section with no <p> child is the whole section: _section_texts at reckon/evidence.py:273 falls back to body or ' '.join(soup.get_text(' ').split()) for a section whose paragraphs are authored as <div>, <ul> or table cells, which is one flattened line. A section with no paragraph but a 'Done when' phrase therefore becomes a <q> holding its entire body \u2014 the opposite error to the truncation this change fixes, and not covered by the gate because every fixture section is built from <p>. Either keep a block boundary in the fallback or refuse to quote a done-when read from a body that carries no paragraph."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "Read the single commit against de9cb49abfab file by file: reckon/evidence.py adds _landed_run and _run_comment_id, paragraph-preserving _section_texts and whole-paragraph _done_when, a figure_row-delegating _figure_src, the ReviewTotals reader and the totals append; the test file adds four cases, three checks and the last-comment control; the fragment records the mechanism.",
+    "done_when": "The done_when asks a temporary-repository gate to show a paragraph per section, a source on every factual sentence, one row stating three attempts, each run record's gate figures sourced to that run, the unlanded section's sourced sentence, the figure with a project-absolute src and its caption, and no fragment text; tests/test_a_closing_plan_gets_one_sourced_overview.py asserts every one of those and the head log records '76 passed in 80.12s' with EXIT=0.",
+    "goal": "The node goal is 'Complete the closure overview to the full deliverable of its section'; reckon/evidence.py:330 _landing_comment now resolves a section's landing to the run that landed it, :277 _done_when quotes the whole paragraph, and :1005 _totals_paragraph appends review findings counted by disposition, closing all three named gaps.",
+    "manifest": "Read in full and re-read against the logs: head-gate-1318022.log confirms 76 passed at 492a890fac with EXIT=0, base-gate-1318037.log confirms 56 passed plus the two test_staged_write_inventory errors at de9cb49 that the manifest attributes to a git-less extraction, and negative-control-492a890fac.log confirms the declared mutation reddens the promotion case with EXIT=1.",
+    "write_paths": "The declared paths are reckon/evidence.py and tests/test_a_closing_plan_gets_one_sourced_overview.py; git diff de9cb49..492a890f touches exactly those two plus docs/evidence/fragments/a-landing-is-recorded-once/alro-s3b.html, which the manifest's own orientation write paths declare and which is the run's landing fragment."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is 'Complete the closure overview to the full deliverable of its section'; reckon/evidence.py:330 _landing_comment resolves a section's landing to the run that landed it, :277 _done_when quotes the whole paragraph and :1005 _totals_paragraph appends review findings counted by disposition.\nVERDICT done_when: tests/test_a_closing_plan_gets_one_sourced_overview.py asserts every clause the done_when lists (paragraph per section, a source on each fact, three attempts in one row, each run's gate figures sourced to its run id, the unlanded section's sourced sentence, the project-absolute figure with caption, no fragment text) and head-gate-1318022.log records '76 passed in 80.12s' EXIT=0 at 492a890fac.\nVERDICT write_paths: git diff de9cb49abfab..492a890facaf touches reckon/evidence.py, tests/test_a_closing_plan_gets_one_sourced_overview.py and docs/evidence/fragments/a-landing-is-recorded-once/alro-s3b.html, all inside the declared code paths plus the manifest's declared landing fragment.\nVERDICT manifest: read in full; its three gate claims reconcile with head-gate-1318022.log (76 passed, EXIT=0), base-gate-1318037.log (56 passed, 2 errors, EXIT=1) and negative-control-492a890fac.log (1 failed, EXIT=1).\nVERDICT diff: one commit against de9cb49abfab read file by file \u2014 reckon/evidence.py gains the landed-run reader, the id derivation, paragraph-preserving section text, the whole-paragraph done-when, a figure_row-delegating address and the review totals; the test file gains four cases, three checks and a control; the fragment records the mechanism.\nCALL_SITES: reckon/project_maintenance_commands.py:1483 synthesize_landed_record -> reckon/evidence.py:1529 _render_document, reckon/_store.py:1323 _landed_record_shell\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/evidence.py:330 and :1005 close the landing-line and review-totals gaps the section names, and :277 closes the done-when truncation.\nSCORE evidence: 16\nJUSTIFICATION evidence: head-gate-1318022.log records 76 passed EXIT=0 at the reviewed head and asserts every done_when clause, but no base arm runs the gate file itself, so only the promotion case has a recorded red arm.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every path in git diff de9cb49abfab..492a890facaf (reckon/evidence.py, the gate test file, the declared landing fragment) is inside the node's declared write scope.\nSCORE durability: 14\nJUSTIFICATION durability: negative-control-492a890fac.log shows the promotion case reddening on the reverted landing rule, but tests/test_a_closing_plan_gets_one_sourced_overview.py:457 stays green under that same mutation because its s2 fixture also carries c-close-s2.\nSCORE fit: 18\nJUSTIFICATION fit: ReviewTotals at reckon/evidence.py:900 follows the frozen-slots dataclass idiom of SectionLanding and LandedFigure and the new docstrings match the surrounding voice; the id derivation at :326 is the one place the house style is not followed, and that is scored under reuse.\nSCORE reuse: 8\nJUSTIFICATION reuse: reckon/evidence.py:358 and :942 extend their owners (figure_row, review_store.committed_review_root, reckon.crew.findings), but :314 duplicates the comment-id derivation already written at reckon/crew/promotion_scope.py:1452 and :2628.\nFINDING tests/test_a_closing_plan_gets_one_sourced_overview.py:457 non-blocking: check_a_review_comment_is_not_the_landing is green under the declared mutation \u2014 negative-control-492a890fac.log reports '1 failed, 2 passed' for -k 'promotion or reviews_last_comment' \u2014 because the s2 fixture also carries c-close-s2, so the close branch returns before any review comment is considered and the case cannot catch a review being quoted as the landing.\nFINDING reckon/evidence.py:314 non-blocking: _run_comment_id re-implements the landing-comment id derivation that reckon/crew/promotion_scope.py:1452 and :2628 already perform; the prefix comes from the owner at reckon/crew/plan_review.py:252 but the normalisation regex is a third copy, so a change to the writer's rule would silently stop the reader matching and every promotion-landed section would render as having no landing comment.\nFINDING reckon/evidence.py:277 non-blocking: _done_when quotes one line, and reckon/evidence.py:273 falls back to a single flattened line for a section with no <p> child, so such a section's done-when is quoted as its entire body \u2014 an over-quote the gate cannot see because every fixture section is built from <p> elements.\n",
+  "review_run_id": "r-20261115T155718318935-review-of-alro-s3b-492a890facaf",
+  "reviewed_base_sha": "de9cb49abfab034cdbadafcec9f46c3fc6b4fbaf",
+  "reviewed_head_sha": "492a890facaf7024c2d21109d70feb6e6d5317a1",
+  "reviewed_run_id": "r-20261115T144907963448-alro-s3b",
+  "scores": {
+    "durability": 14,
+    "evidence": 16,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 8,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-15T16:07:10.176868+00:00",
+  "total": 93
+}
