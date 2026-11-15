@@ -1,0 +1,19 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <title>Closure overview renderer | landing fragment</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <h2 id="alro-s3-overview">One sourced overview per closing plan</h2>
+    <p><code>synthesize_landed_record</code> now renders the plan's landed record as a sourced overview instead of a per-section dump of comments and run tables. <code>read_section_landings</code> is the single reading of what a section landed — its landing comment, its implementing runs and the figures those runs named on their manifests — so the close guard and the sprint page can answer the same question from one derivation rather than two populations.</p>
+    <p>The record holds, in order: the ledger-sourced summary; one paragraph per section naming what it set out to do, quoting its landing line and giving the latest attempt's measured result; one table with one row per landed node stating its attempt count; each figure a run named, with a project-absolute <code>src</code> and its caption; and totals for runs, attempts and worker time against declared effort. A section that did not land gets one sentence giving its declaration. Every sentence in those blocks carries a source element naming the record it rests on — a run id, a comment id, a plan section, a figure path or the ledger.</p>
+    <p>The blocks this renderer owns carry <code>data-evidence-origin="overview"</code>, so a re-synthesis replaces its own reading instead of carrying the copy already on disk forward, and the appended anchors beneath it are still carried exactly as before.</p>
+    <p>Reading: <code>reckon/evidence.py</code>. Gate: <code>tests/test_a_closing_plan_gets_one_sourced_overview.py</code>.</p>
+  </main>
+</body>
+</html>
