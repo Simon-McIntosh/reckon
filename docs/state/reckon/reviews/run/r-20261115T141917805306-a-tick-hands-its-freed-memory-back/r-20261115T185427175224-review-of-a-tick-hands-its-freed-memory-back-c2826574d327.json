@@ -4,6 +4,13 @@
   "added_failures_note": "derived from the reviewed run's own arms: logs/suite-base.log at 2780ddad20 reports '58 passed' with EXIT=0 and logs/suite-head.log at 3598481d8d reports '61 passed' with EXIT=0, so neither arm fails and the head arm adds three passing cases.",
   "completed_at": "2026-11-15T18:59:29.498Z",
   "dispatched_at": "2026-11-15T18:58:00Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "exempted",
+      "reason": "The census harness does not reproduce the live ratchet: its base arm peaked at 752 MB where the live station plateaued at 5.5 GB, so the halving ratio cannot be judged on this population. The code lands, s64 stays open, and the bound is judged on the live station after the restart.",
+      "recorded_at": "2026-11-15T19:23:37.658637+00:00"
+    }
+  },
   "findings": [
     {
       "file": "docs/evidence/fragments/the-monitor-reads-each-fact-once/a-tick-hands-its-freed-memory-back.html",
