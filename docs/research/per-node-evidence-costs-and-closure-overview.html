@@ -27,8 +27,8 @@
       sourced closure overview when a sprint or significant plan closes.
     </p>
     <p>
-      It is practical, and most of the machinery exists. Three findings support
-      it and one part is still unmeasured.
+      It is practical, and most of the machinery exists. Four findings support
+      it.
     </p>
     <ul>
       <li>Every landing is written down four times (§2). Only two of the four
@@ -37,9 +37,9 @@
         evidence accounts for one commit in six in this repository (§3).</li>
       <li>Three quarters of fragments are never opened by an agent after they
         are written (§4).</li>
-      <li>Not yet measured: what a closure overview built without fragments
-        loses. The prototype that measures it was queued behind a full worker
-        roster when this was written (§7).</li>
+      <li>A closure overview built without reading any fragment kept 47 of 60
+        sampled fragment claims, with every sentence sourced. The 13 it lost
+        were test timings, pass counts, hashes and identifiers (§7).</li>
     </ul>
     <p>
       The cost in worker time is smaller than the lead's sense of churn
@@ -207,30 +207,82 @@
         when it does not.</li>
     </ol>
     <p>
-      Items 1 to 3 should wait on the prototype in §7, which shows how much of
-      item 5 is needed.
+      The prototype in §7 bears on item 5: nothing it lost was a finding, so
+      the landing line and the gate log are enough for routine nodes.
     </p>
 
-    <h2 id="s7">§7 — Not yet measured</h2>
+    <h2 id="s7">§7 — What a closure overview loses</h2>
+    <p>
+      A prototype script built a closure overview for three shipped plans and
+      one closed sprint from the plan's sections and done-whens, its section
+      comments, its run records, its stored reviews and its figures. It was
+      barred from reading fragments or the existing landed record. Twenty
+      factual claims were then sampled from each plan's fragments (seed
+      20261114) and counted as lost when one of their numbers, commits or
+      test names appeared in none of the permitted sources.
+    </p>
+    <table>
+      <thead>
+        <tr><th>Plan</th><th>Fragments</th><th>Landed record</th><th>Overview</th><th>Claims lost of 20</th><th>Unsourced sentences</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><code>a-live-worker-can-be-reached</code></td><td>5</td><td>16 KB, 1,659 words</td><td>12 KB, 1,568 words</td><td>9</td><td>0 of 19</td></tr>
+        <tr><td><code>a-review-is-sized-to-its-risk</code></td><td>38</td><td>26 KB, 3,083 words</td><td>54 KB, 3,672 words</td><td>2</td><td>0 of 33</td></tr>
+        <tr><td><code>a-window-paces-the-lane</code></td><td>19</td><td>255 KB, 28,665 words</td><td>50 KB, 4,287 words</td><td>2</td><td>0 of 67</td></tr>
+      </tbody>
+    </table>
     <ul>
-      <li><strong>What the overview loses.</strong> A prototype is queued to
-        build closure overviews for three closed plans and one sprint without
-        reading fragments, then to sample 20 fragment claims per plan and
-        count those that cannot be recovered from the remaining sources. It
-        had not been given a worker seat when this was written.</li>
+      <li><strong>What was lost is detail.</strong> The 13 lost claims are
+        suite durations (<code>68 passed in 37.12s</code>), pass counts of a
+        full-suite arm, two content hashes, a session id, a message file name
+        and two fixture values. For 12 of the 13 the overview still states
+        the claim and lacks only those tokens. The worker classed five of
+        them as negative results because they sit in a negative-control
+        sentence; the missing token in each is a duration or a count, and the
+        control's verdict survives in the run record.</li>
+      <li><strong>Little needs authoring.</strong> The script ran in 3.4
+        seconds for all four pages. Each section needed one authored headline
+        sentence, 24 across the three plans; everything else was
+        mechanical.</li>
+      <li><strong>An overview is not always shorter.</strong> For the
+        38-fragment plan it is twice the size of the landed record, because
+        its routine table has 114 rows, one per run. A closure overview
+        should fold retries into one row per landed node.</li>
+      <li><strong>A section with no landing line has no outcome.</strong> One
+        of the 24 sections, moved in from a followup, had neither a closing
+        comment nor a run row, and the overview could only say so. Without
+        fragments, the landing line is the only prose account, so the closure
+        guard should refuse a section that lacks one.</li>
+      <li><strong>Figures carry across.</strong> The plan overviews embed 6
+        and 21 existing figures, and the sprint page 26.</li>
+    </ul>
+    <p>
+      The sample is three plans, and the loss test is mechanical: it matches
+      tokens, so it cannot tell whether an explanation of a mechanism
+      survived in substance. No lost claim was classed as a mechanism
+      explanation, which is weak evidence that such prose is rare in
+      fragments, not proof.
+    </p>
+
+    <h2 id="s8">§8 — Limits of these measurements</h2>
+    <ul>
       <li><strong>Rounds caused by record defects.</strong> Not recoverable
         from run records (§3).</li>
       <li><strong>Coverage.</strong> 987 of the 1,141 implementation runs in
         the window have no stream on disk; retention moved them to an archive
         store that keeps no stream. The stream measures rest on the other
         154.</li>
-      <li><strong>The census is unreviewed.</strong> Its independent review
-        could not be dispatched because the dispatch command was crashing on
-        an unrelated defect; its figures here are as the worker delivered
-        them, checked against its manifest only.</li>
+      <li><strong>Census review.</strong> An independent review re-ran the
+        census on a compute partition. The share-of-run and turn figures
+        reproduced exactly. The read counts came out under 1% higher (733
+        fragment reads over 493 files against 729 over 489) because the
+        coordinator transcripts are live files that grew between the two
+        passes.</li>
+      <li><strong>The prototype is unreviewed.</strong> Its figures are as
+        the worker delivered them.</li>
     </ul>
 
-    <h2 id="s8">§8 — Sources</h2>
+    <h2 id="s9">§9 — Sources</h2>
     <ul>
       <li>Repository counts: <code>git log</code> and file listings in the
         reckon checkout, 30 days to 2026-11-14.</li>
@@ -241,6 +293,9 @@
         known to write a fragment was found by the same parser. The worker
         also caught a parser fault that had hidden tool calls, which had
         dropped the runs seen writing a fragment from 149 to 82.</li>
+      <li>Prototype: run
+        <code>r-20261114T211102171695-closure-overview-prototype</code>,
+        measured at revision <code>70272d915026</code>.</li>
       <li>Prior decision: plan <code>landed-record-at-closure</code>.</li>
     </ul>
   </main>
