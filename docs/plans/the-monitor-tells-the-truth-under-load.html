@@ -24,7 +24,7 @@
   <title>The Monitor Tells The Truth Under Load | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="43">
+<meta name="plan-version" content="44">
 <meta name="plan-modified" content="2026-11-16">
 </head>
 <body>
@@ -249,6 +249,9 @@
 </div>
 <div class="r-comment" data-section="s19" data-id="c-run-r-20261115T212959382870-review-of-dead-section-needs-no-live-run-s19-02dcf2f313e1" data-who="reckon-build" data-when="2026-11-15T21:54:38Z">
     <div class="r-comment-body"><p>review of r-20261115T184142644946-dead-section-needs-no-live-run-s19 at reviewed_base_sha 5624e41095b31885f1f2b67c44d847597d924a94 and reviewed_head_sha 02dcf2f313e1e53ec809f822c4da1b9eba0bcca4: a parsed record scoring all six dimensions in 0..20 (goal_fidelity 19, evidence 17, scope_discipline 20, durability 17, fit 19, reuse 17; 109 total), added_failure_count 0 and added_failure_ids [] from the reviewed run's own baseline_suite (58 passed, 0 failures) and after_suite (61 passed, 0 failures), and three non-blocking findings: the clearing-branch assertion in the new test, the restated standing rule at release.py:134, and the unsubstituted command header in the base-arm proof log.</p></div>
+</div>
+<div class="r-comment" data-section="s19" data-id="c-run-r-20261115T184142644946-dead-section-needs-no-live-run-s19" data-who="reckon-build" data-when="2026-11-15T18:51:41.577Z">
+    <div class="r-comment-body"><p>§19 A section can no longer land only when none of its runs still can — `_dead_sections` subtracts the sections a still-standing run names from the sections a run ended without landing, `_resume_in_flight` reads the resume mark so a resuming failed run keeps its section open, and the admission pass records the live runs behind a wait in the request&#x27;s `upstream_live` slot so the waiting row names them; measured: the two new clauses fail at base (2 failed, 1 passed, EXIT=1) and pass at head (3 passed, EXIT=0), the already-correct &quot;can no longer land&quot; case green in both arms, gate 58 passed at base and 61 passed at head, and the declared mutation reddens the two new ids only.</p></div>
 </div>
 <div class="r-comment" data-section="s2" data-id="c-close-s2" data-who="reckon-a6" data-when="2026-11-15T13:30:00Z">
     <div class="r-comment-body"><p>§2 landed at <code>022b666162</code>. Its arms on all_debug over the 89 test files importing <code>reckon.roadmap</code> or <code>reckon.crew.queue_order</code> found 13 failure ids at both base <code>eaa8180e97</code> and head, none added, with 2 more passes. Both new tests fail under their own mutation. Live: three py-spy samples of station 2178731, which runs main, show no frame under the landing audit, and the reckon export's age fell from 2818 s to 270 s. The ticks were still about 5.5 min until reckon-f3's lane-rate window (s61, <code>3b57e76d24</code>) went live, because the reckon derivation then sat in the whole-ledger decode s61 removes. The station only picked up these fixes when reckon-f3 restarted it: its in-place reload never fired, which is the reload section's subject.</p></div>
