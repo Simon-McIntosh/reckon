@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="work-flows-to-the-lane">
+  <meta name="plan-title" content="A run held only for its stream figures has them recorded">
+  <meta name="plan-summary" content="The four projects' rows that carried no derived figure now carry one from their own stream. A fresh-cursor retention pass reports zero missing-derived-figure; twenty re-derived rows match exactly.">
+  <meta name="plan-evidence-for" content="reckon:work-flows-to-the-lane">
+  <meta name="plan-verifies" content="reckon:work-flows-to-the-lane#s42">
+  <meta name="plan-commits" content="b3ec33f2e4f78b58f001b01b21d1cb386fb137bc">
+  <meta name="plan-recorded-at" content="2026-11-15">
+  <meta name="plan-verdict" content="partial">
+  <title>A run held only for its stream figures has them recorded | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article id="wftl-a-run-held-only-for-its-stream-figures-has-them-record" data-node="wftl-a-run-held-only-for-its-stream-figures-has-them" data-reckon="landed">
+  <h2 id="wftl-a-run-held-only-for-its-stream-figures-has-them-outcome">A run held only for its stream figures has them recorded</h2>
+  <p>At assigned base <code>bc378cd9a3ce</code>, 2,709 ledger rows across the four projects carried
+  neither <code>tool_steps</code> nor <code>orientation_input_tokens</code>, and retention withheld
+  every one of their run directories as <code>missing-derived-figure</code>. An independent on-disk
+  census counted, per project, the rows whose run directory still holds a stream and whose run
+  directory holds none; every one of the 2,709 rows holds a stream, and none has lost it.</p>
+  <p>The backfill that derives both figures from a run's own stream — <code>scripts/derive_run_figures.py</code>
+  — had been run for reckon's own rows only. Run for these four, it filled 1,298 rows in nova,
+  1,081 in imas-codex, 326 in imas-ambix and 4 in imas-standard-names: 2,709 rows, with zero
+  skipped for a missing stream and zero unmeasurable, so the filled count equals the census's
+  stream-present count exactly and the recorded-absent count equals its no-stream count of zero.</p>
+  <p><code>tests/test_a_held_runs_stream_figures_are_recorded.py</code> plants three old runs in a
+  temporary crew home. The first has its stream on disk and must read back on its row the two
+  figures the routing derivation computes from that stream (1,200 charged input tokens before the
+  first declared-scope edit, three completed tool items); the second has no stream and must record
+  both figures as a present null rather than a zero, which retention then treats as reapable; the
+  third is the negative control, where skipping the write leaves retention withholding the same
+  directory.</p>
+  <table>
+    <thead><tr><th>Measurement on all_debug, one arm at a time</th><th>Runner summary</th></tr></thead>
+    <tbody>
+      <tr><td>Base arm at <code>bc378cd9a3ce</code>, extracted to <code>/tmp</code></td><td>53 passed, 2 errors in 9.78s; EXIT=1</td></tr>
+      <tr><td>Head arm: the two template files plus this node's test</td><td>58 passed in 26.84s; EXIT=0</td></tr>
+      <tr><td>Declared mutation: the backfill's write removed</td><td>3 failed in 3.21s; EXIT=1</td></tr>
+    </tbody>
+  </table>
+  <p>The base arm's two errors are <code>test_staged_write_inventory.py</code> requiring a git-backed
+  tree, which a <code>git archive</code> extraction is not; both files pass in the head arm and the
+  errors are identical at the base revision, so the node adds no failure. The mutation removes the
+  backfill's write and all three cases fail.</p>
+  <table>
+    <thead><tr><th>Project</th><th>Rows lacking a figure</th><th>Stream on disk</th><th>No stream</th><th>Filled</th><th>Recorded absent</th></tr></thead>
+    <tbody>
+      <tr><td>nova</td><td>1,298</td><td>1,298</td><td>0</td><td>1,298</td><td>0</td></tr>
+      <tr><td>imas-codex</td><td>1,081</td><td>1,081</td><td>0</td><td>1,081</td><td>0</td></tr>
+      <tr><td>imas-ambix</td><td>326</td><td>326</td><td>0</td><td>326</td><td>0</td></tr>
+      <tr><td>imas-standard-names</td><td>4</td><td>4</td><td>0</td><td>4</td><td>0</td></tr>
+    </tbody>
+  </table>
+  <p>Five filled rows per project, drawn at random with a fixed seed from the rows whose stream is
+  still on disk, were re-derived with both figure keys removed from the row: 20 of 20 matched the
+  recorded figures exactly. One retention dry pass from a fresh cursor
+  (<code>RECKON_RETENTION_CURSOR</code> pointed at a scratch path, <code>--limit 9000</code>,
+  nothing removed) then reported <strong>zero</strong> directories withheld for
+  <code>missing-derived-figure</code> (508 withheld for a missing review result, 170 for a review
+  owed), against the base's 2,614.</p>
+  <p><strong>What remains.</strong> The ledger writes are on disk in the four checkouts' working
+  trees, uncommitted: the run's git grant is its own worktree only, and a mutating git verb aimed at
+  another checkout is refused by the shim. The four commits — <code>docs/state/&lt;project&gt;/</code>
+  only, conventional subject and body — remain for the coordinator. Logs:
+  <code>gate-{base-arm,head-arm,negative-control,census,fill,resample,retention}.log</code> under the
+  run directory.</p>
+</article>
+</body>
+</html>
