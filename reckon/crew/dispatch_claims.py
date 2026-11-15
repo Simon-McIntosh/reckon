@@ -1209,19 +1209,19 @@ def release_unlaunched_claims(pid: int | None = None) -> tuple[str, ...]:
     from reckon.crew.admission.launching import _requeue_stranded_request
     from reckon.crew.dispatch_refusals import record_launch_refusal
 
-    holder = os.getpid() if pid is None else pid
+    holder_pid = os.getpid() if pid is None else pid
     released: list[str] = []
     for pointer in list_live():
         run_id = str(pointer.get("run_id") or "")
         if not run_id:
             continue
         claim = read_launch_claim(run_id)
-        if claim.get("holder_pid") != holder:
+        if claim.get("holder_pid") != holder_pid:
             continue
         step = str(claim.get("step") or "")
         if step in LAUNCHED_STEPS or pointer.get("pid"):
             continue
-        holder = {
+        holder_record = {
             key: claim.get(key)
             for key in (
                 "holder_pid",
@@ -1231,7 +1231,7 @@ def release_unlaunched_claims(pid: int | None = None) -> tuple[str, ...]:
                 "step_at",
             )
         }
-        record_launch_refusal(run_id=run_id, step=step, holder=holder)
+        record_launch_refusal(run_id=run_id, step=step, holder=holder_record)
         if _requeue_stranded_request(run_id, step=step):
             released.append(run_id)
             continue

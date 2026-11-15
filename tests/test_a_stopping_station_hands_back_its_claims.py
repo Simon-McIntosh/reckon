@@ -123,6 +123,30 @@ def test_a_claim_short_of_its_worker_is_handed_back_and_a_working_one_is_left(
     assert "1 unlaunched" in capsys.readouterr().err
 
 
+def test_every_unlaunched_claim_is_handed_back_in_one_pass(crew_home: Path) -> None:
+    """The handback is over all of them, which is what the incident needed.
+
+    Seven claims were orphaned at once on 15 November, so a pass that gives back
+    only the first is no better than none: a name rebound inside the walk is all
+    it takes for every claim after the first to read as another process's and be
+    left standing.
+    """
+    unlaunched = [f"r-20261115T1300000000{i:02d}-unlaunched-{i}" for i in range(1, 5)]
+    running = "r-20261115T130000000099-running"
+    for run_id in unlaunched:
+        _publish(run_id, step=claims.LAUNCH_CLAIM_STEP)
+    _publish(running, step=claims.LAUNCH_WORKER_STEP, worker_pid=os.getpid())
+
+    released = claims.release_unlaunched_claims()
+
+    assert sorted(released) == sorted(unlaunched)
+    for run_id in unlaunched:
+        assert not runs.pointer_path(run_id).exists(), run_id
+        assert not runs.run_dir(run_id).exists(), run_id
+    assert runs.pointer_path(running).exists()
+    assert claims.read_launch_claim(running)["step"] == claims.LAUNCH_WORKER_STEP
+
+
 def test_a_queued_request_is_put_back_in_the_queue_not_deleted(crew_home: Path) -> None:
     """A launch taken from the queue carries the queue's only copy of it.
 
