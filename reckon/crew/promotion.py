@@ -220,36 +220,51 @@ def _promotion_lock(run_id: str) -> Iterator[None]:
         yield
 
 
+#: The pointer fields a promotion must find a pointer it can remove, in the
+#: order the refusal message names them. The phase is among them because a
+#: promoted attempt whose phase moved is not the attempt this promotion read.
+_PROMOTED_POINTER_FIELDS = (
+    "attempt",
+    "attempt_kind",
+    "phase",
+    "pid",
+    "pid_start_time",
+    "launcher_host",
+    "log_path",
+    "stderr_path",
+    "worktree",
+    "resume_launch_in_flight",
+    "node",
+    "repo",
+    "backend",
+    "agent",
+)
+
+
+def _same_fields(
+    current: Mapping[str, Any],
+    record: Mapping[str, Any],
+    fields: tuple[str, ...],
+) -> bool:
+    return all(current.get(key) == record.get(key) for key in fields)
+
+
 def _remove_promoted_pointer(run_id: str, record: Mapping[str, Any]) -> bool:
     """Remove only the attempt that promotion checked, preserving a newer one."""
-    with _pointer_lock(run_id):
-        path = pointer_path(run_id)
-        if not path.exists():
-            return False
-        current = read_pointer(run_id)
-        fields = (
-            "attempt",
-            "attempt_kind",
-            "phase",
-            "pid",
-            "pid_start_time",
-            "launcher_host",
-            "log_path",
-            "stderr_path",
-            "worktree",
-            "resume_launch_in_flight",
-            "node",
-            "repo",
-            "backend",
-            "agent",
+    from reckon.crew import pending_landing
+
+    outcome = pending_landing.retire_pointer_if(
+        run_id,
+        lambda current: _same_fields(current, record, _PROMOTED_POINTER_FIELDS),
+    )
+    if outcome == pending_landing.POINTER_ABSENT:
+        return False
+    if outcome != pending_landing.POINTER_RETIRED:
+        raise CrewError(
+            f"run {run_id!r} changed while promotion ran; "
+            "its pointer and workspace are preserved; retry promotion"
         )
-        if any(current.get(key) != record.get(key) for key in fields):
-            raise CrewError(
-                f"run {run_id!r} changed while promotion ran; "
-                "its pointer and workspace are preserved; retry promotion"
-            )
-        path.unlink()
-        return True
+    return True
 
 
 def _keep_pointer_for_pending_landing(run_id: str) -> bool:
@@ -286,27 +301,18 @@ def _retire_review_pointer(run_id: str, record: Mapping[str, Any]) -> bool:
     repair could finish. A pointer a newer attempt has since written belongs to
     work still in flight, so only the attempt the promotion read is removed.
     """
-    from reckon.crew.pending_landing import pointer_attempt
+    from reckon.crew import pending_landing
 
-    with _pointer_lock(run_id):
-        try:
-            current = read_pointer(run_id)
-        except CrewError:
-            return False
-        if pointer_attempt(current) != pointer_attempt(record):
-            return False
-        path = pointer_path(run_id)
-        try:
-            path.unlink(missing_ok=True)
-        except OSError:
-            return False
-        return True
-
-
-#: The pointer fields that name one attempt of a run. The phase is not one of
-#: them: a promotion request rewrites it while the attempt it belongs to keeps
-#: running, so a mark made during a promotion would otherwise read as a race.
-_ATTEMPT_IDENTITY_FIELDS = ("attempt", "attempt_kind", "pid", "pid_start_time")
+    return (
+        pending_landing.retire_pointer_if(
+            run_id,
+            lambda current: (
+                pending_landing.attempt_identity(current)
+                == pending_landing.attempt_identity(record)
+            ),
+        )
+        == pending_landing.POINTER_RETIRED
+    )
 
 
 #: What a raced promotion found when it tried to retire its live pointer.
@@ -324,28 +330,24 @@ def _retire_a_raced_pointer(run_id: str, record: Mapping[str, Any]) -> str:
     writer put on the pointer while this promotion ran — a promotion request, a
     landing mark — is bookkeeping about a run whose row now has an owner, not a
     different attempt. A resume that started the run again does change the
-    attempt, and its pointer is left to that attempt: the outcome distinguishes
-    that case from a retired or absent pointer so the caller does not write a
-    mark onto state another attempt owns.
+    attempt, and its pointer is left to that attempt. An absent pointer needs no
+    retirement: the run has no live pointer left to strand, and reporting it as
+    one is what let a caller write a mark onto nothing.
     """
-    with _pointer_lock(run_id):
-        path = pointer_path(run_id)
-        if not path.exists():
-            return _RACED_POINTER_ABSENT
-        try:
-            current = read_pointer(run_id)
-        except CrewError:
-            return _RACED_POINTER_ANOTHER_ATTEMPT
-        if any(
-            current.get(field) != record.get(field)
-            for field in _ATTEMPT_IDENTITY_FIELDS
-        ):
-            return _RACED_POINTER_ANOTHER_ATTEMPT
-        try:
-            path.unlink(missing_ok=True)
-        except OSError:
-            return _RACED_POINTER_ANOTHER_ATTEMPT
+    from reckon.crew import pending_landing
+
+    outcome = pending_landing.retire_pointer_if(
+        run_id,
+        lambda current: (
+            pending_landing.attempt_identity(current)
+            == pending_landing.attempt_identity(record)
+        ),
+    )
+    if outcome == pending_landing.POINTER_RETIRED:
         return _RACED_POINTER_RETIRED
+    if outcome == pending_landing.POINTER_ABSENT:
+        return _RACED_POINTER_ABSENT
+    return _RACED_POINTER_ANOTHER_ATTEMPT
 
 
 def _record_a_raced_landing(
@@ -413,12 +415,19 @@ def _remove_promoted_pointer_or_defer(
         if finishing_another_writers_row:
             _record_a_raced_landing(run_id, record, reviewed_head=reviewed_head)
             retired = _retire_a_raced_pointer(run_id, record)
-            if retired == _RACED_POINTER_RETIRED:
+            if retired in (_RACED_POINTER_RETIRED, _RACED_POINTER_ABSENT):
+                # An absent pointer has nothing left to strand: the run's row
+                # is written and its head is merged by the caller's landing.
                 return True
             if retired == _RACED_POINTER_ANOTHER_ATTEMPT:
                 return False
         if not _keep_pointer_for_pending_landing(run_id):
-            raise
+            raise CrewError(
+                f"run {run_id!r} changed while promotion ran and its pointer "
+                "could not be marked for the landing pass: its promotion is "
+                "recorded, and the merge of its reviewed head is left to the "
+                "landing record this promotion wrote"
+            ) from exc
         if finishing_another_writers_row:
             return False
         raise CrewError(

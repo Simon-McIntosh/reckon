@@ -22,7 +22,9 @@ from __future__ import annotations
 
 import json
 import subprocess
+import sys
 import threading
+from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
@@ -158,47 +160,73 @@ def _the_first_promotion_pauses_in_its_landing(
     return promoted, release
 
 
-def _a_resume_started_the_run(monkeypatch: pytest.MonkeyPatch, pointer: dict) -> dict:
-    """Rewrite the live pointer as a newer attempt's as the promotion commits.
+def _the_pointer_moves_as_the_promotion_writes(
+    monkeypatch: pytest.MonkeyPatch, act: Callable[[], None]
+) -> None:
+    """Run ``act`` against the live pointer as the promotion finishes writing.
 
-    The promotion reads the pointer when it starts, so a resume that begins
-    while it runs is the case that matters: the attempt it holds is no longer
-    the attempt the file names.
+    The promotion reads the pointer when it starts, so the state that matters is
+    the one the file carries when the promotion is about to retire it.
     """
-    newer = {**pointer, "attempt": 4, "phase": "running"}
-    newer.pop("pending_landing_repair", None)
-    real_commit = promotion._commit_landing_writes
+    real_write = promotion._commit_landing_writes
 
-    def commit_then_resume(*args: Any, **kwargs: Any) -> Any:
-        written = real_commit(*args, **kwargs)
-        _write_json(pointer_path(RUN_ID), newer)
+    def write_then_touch(*args: Any, **kwargs: Any) -> Any:
+        written = real_write(*args, **kwargs)
+        act()
         return written
 
-    monkeypatch.setattr(promotion, "_commit_landing_writes", commit_then_resume)
-    return newer
+    monkeypatch.setattr(promotion, "_commit_landing_writes", write_then_touch)
+
+
+def _a_requested_pointer(pointer: dict) -> dict:
+    return {
+        **pointer,
+        "phase": promotion_requests.REQUESTED,
+        "promotion_status": promotion_requests.REQUESTED,
+    }
 
 
 def _the_station_requests_the_promotion(
     monkeypatch: pytest.MonkeyPatch, pointer: dict
-) -> dict:
-    """Rewrite the live pointer to promotion-requested as the promotion commits.
+) -> None:
+    """Rewrite the live pointer to promotion-requested as the promotion writes."""
+    requested = _a_requested_pointer(pointer)
+    _the_pointer_moves_as_the_promotion_writes(
+        monkeypatch, lambda: _write_json(pointer_path(RUN_ID), requested)
+    )
 
-    The station marks a run for promotion while a promotion may already be
-    running, so the pointer identity has to carry the attempt rather than the
-    phase the station rewrote.
+
+def _a_resume_started_the_run(monkeypatch: pytest.MonkeyPatch, pointer: dict) -> dict:
+    """Rewrite the live pointer as a newer attempt's as the promotion writes."""
+    newer = {**pointer, "attempt": 4, "phase": "running"}
+    newer.pop("pending_landing_repair", None)
+    _the_pointer_moves_as_the_promotion_writes(
+        monkeypatch, lambda: _write_json(pointer_path(RUN_ID), newer)
+    )
+    return newer
+
+
+def _the_row_appears_after_the_read(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Hide the other writer's row from the promotion's early read.
+
+    A completion that lands between that read and the append is the window the
+    append-race branch exists for: the append refuses, the row is found, and the
+    promotion finishes the landing rather than re-promoting.
     """
-    requested = dict(pointer)
-    requested["phase"] = promotion_requests.REQUESTED
-    requested["promotion_status"] = promotion_requests.REQUESTED
-    real_commit = promotion._commit_landing_writes
+    from reckon.crew import open_run_index
 
-    def commit_then_request(*args: Any, **kwargs: Any) -> Any:
-        written = real_commit(*args, **kwargs)
-        _write_json(pointer_path(RUN_ID), requested)
-        return written
+    real = open_run_index.row_for_run
+    hidden = {"_complete_locked": 1, "_landing_preconditions": 1}
 
-    monkeypatch.setattr(promotion, "_commit_landing_writes", commit_then_request)
-    return requested
+    def miss_until_the_append(*args: Any, **kwargs: Any) -> Any:
+        caller = sys._getframe(1).f_code.co_name
+        remaining = hidden.get(caller, 0)
+        if remaining:
+            hidden[caller] = remaining - 1
+            return None
+        return real(*args, **kwargs)
+
+    monkeypatch.setattr(open_run_index, "row_for_run", miss_until_the_append)
 
 
 def test_the_losing_promotion_returns_and_lands_the_head(
@@ -295,3 +323,85 @@ def test_the_record_cites_the_reviewed_head_and_never_replaces_one(
     promotion._record_a_raced_landing(run["run_id"], record, reviewed_head=run["head"])
     kept = json.loads(_pending_path(run["run_id"]).read_text(encoding="utf-8"))
     assert kept["head"] == advanced, "a record another attempt wrote was replaced"
+
+
+def _the_run_is_reclaimed_between_the_two_reads(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Remove the live pointer between the promotion's read and its retirement.
+
+    The promotion's first read finds a pointer it cannot remove as its own, and
+    the pointer is gone by the time the retirement looks for it.
+    """
+    real_record = promotion._record_a_raced_landing
+
+    def record_then_reclaim(*args: Any, **kwargs: Any) -> Any:
+        written = real_record(*args, **kwargs)
+        pointer_path(RUN_ID).unlink(missing_ok=True)
+        return written
+
+    monkeypatch.setattr(promotion, "_record_a_raced_landing", record_then_reclaim)
+
+
+def test_a_row_that_appears_after_the_read_still_lands_the_head(
+    raced_run: dict[str, Any], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The row is absent when the promotion reads and present when it appends."""
+    run = raced_run
+    delivered = read_pointer(run["run_id"])
+    promoted, release = _the_first_promotion_pauses_in_its_landing(monkeypatch)
+    first: dict[str, Any] = {}
+
+    def promote_first() -> None:
+        first["result"] = _complete_land(run)
+
+    thread = threading.Thread(target=promote_first, daemon=True)
+    thread.start()
+    assert promoted.wait(PAUSE_SECONDS), "the first promotion never wrote its row"
+
+    _write_json(pointer_path(run["run_id"]), delivered)
+    _the_station_requests_the_promotion(monkeypatch, delivered)
+    _the_row_appears_after_the_read(monkeypatch)
+
+    second = _complete_land(run)
+    if second.exception and not isinstance(second.exception, SystemExit):
+        assert second.exit_code == 0, second.output
+
+    release.set()
+    thread.join(PAUSE_SECONDS)
+    assert not thread.is_alive(), "the first promotion never returned"
+    assert first["result"].exit_code == 0, first["result"].output
+    assert _is_ancestor(run["origin"], run["head"], "main"), "head never landed"
+    assert not pointer_path(run["run_id"]).exists(), "the pointer stayed held"
+    assert not _pending_path(run["run_id"]).exists(), "a record outlived the landing"
+
+
+def test_a_pointer_reclaimed_mid_promotion_strands_nothing(
+    raced_run: dict[str, Any], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A pointer gone before the retirement leaves nothing to mark or keep."""
+    run = raced_run
+    delivered = read_pointer(run["run_id"])
+    promoted, release = _the_first_promotion_pauses_in_its_landing(monkeypatch)
+    first: dict[str, Any] = {}
+
+    def promote_first() -> None:
+        first["result"] = _complete_land(run)
+
+    thread = threading.Thread(target=promote_first, daemon=True)
+    thread.start()
+    assert promoted.wait(PAUSE_SECONDS), "the first promotion never wrote its row"
+
+    _write_json(pointer_path(run["run_id"]), delivered)
+    _the_station_requests_the_promotion(monkeypatch, delivered)
+    _the_run_is_reclaimed_between_the_two_reads(monkeypatch)
+
+    second = _complete_land(run)
+    assert second.exit_code == 0, second.output
+
+    release.set()
+    thread.join(PAUSE_SECONDS)
+    assert not thread.is_alive(), "the first promotion never returned"
+    assert first["result"].exit_code == 0, first["result"].output
+    assert _is_ancestor(run["origin"], run["head"], "main"), "head never landed"
+    assert not pointer_path(run["run_id"]).exists(), "the pointer came back"
