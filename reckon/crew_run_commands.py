@@ -419,7 +419,7 @@ def crew_merge(
             "unplanned_reason": unplanned_reason,
         }
 
-        def verify_promotion(checkout, _base, merged_head, _commit):
+        def verify_promotion(checkout, _base, merged_head, _commit, _objects=None):
             merge.require_promotable_head(
                 project, checkout, merged_head, **promotion_options
             )
@@ -4235,9 +4235,12 @@ def _land_a_promoted_run(
         )
         return report, 1
 
-    def verify_gate(checkout, _base, _head, revision):
+    def verify_gate(checkout, _base, _head, revision, objects=None):
         from reckon.crew.review_landing import replay_candidate
 
+        merge_module.import_built_merge(
+            checkout, revision, objects, parents=[_base, _head]
+        )
         checked = replay_candidate(
             {
                 **record,

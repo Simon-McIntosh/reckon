@@ -688,11 +688,15 @@ def finish_pending_landings(
             _base,
             _head,
             revision,
+            objects=None,
             pointer=replay_pointer,
             gate=automatic_gate,
         ):
             from reckon.crew.review_landing import replay_candidate
 
+            merge.import_built_merge(
+                checkout, revision, objects, parents=[_base, _head]
+            )
             checked = replay_candidate(
                 {**pointer, "repo": str(checkout)}, revision, gate
             )
