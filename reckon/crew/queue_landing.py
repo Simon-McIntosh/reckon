@@ -1925,6 +1925,22 @@ def land_once() -> dict[str, Any]:
     return result
 
 
+def _measurement_run_skip(pointer: Mapping[str, Any]) -> str:
+    """Why the landing pass never takes this run, or "" for a run it may land.
+
+    A measurement run replays a section that has already landed, so its head is
+    a duplicate of work the primary branch carries and its ledger row says
+    ``measured`` rather than landed. Nothing merges it, so the pass that selects
+    landing candidates skips it before anything about its evidence is read: a
+    judgement recorded against a measurement run would be an obligation on a
+    delivery no coordinator may answer.
+    """
+    marker = pointer.get("measure_only")
+    if not isinstance(marker, Mapping) and not str(marker or "").strip():
+        return ""
+    return "the run is a measurement run: it builds and gates, and it never lands"
+
+
 def _land_deliveries(settled_landings: set[str] | None = None) -> dict[str, Any]:
     settled_landings = settled_landings or set()
     landed: list[str] = []
@@ -1947,6 +1963,16 @@ def _land_deliveries(settled_landings: set[str] | None = None) -> dict[str, Any]
         }:
             continue
         if pointer.get("pending_landing_repair"):
+            continue
+        skipped_measurement = _measurement_run_skip(pointer)
+        if skipped_measurement:
+            skipped.append(
+                {
+                    "run_id": str(pointer.get("run_id") or ""),
+                    "status": "measurement-run",
+                    "reason": skipped_measurement,
+                }
+            )
             continue
         if (
             str(pointer.get("role") or (pointer.get("node") or {}).get("role") or "")
