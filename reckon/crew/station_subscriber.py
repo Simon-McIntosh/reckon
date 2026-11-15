@@ -772,8 +772,9 @@ class StationSubscriber:
         """
         self._emitted += 1
         writer = sys.stderr if sink is None else sink
+        attached = getattr(writer, "isatty", None)
         try:
-            if writer.isatty():
+            if attached is not None and writer.isatty():
                 return
             print(
                 _emission_record(event, sequence=self._emitted),
