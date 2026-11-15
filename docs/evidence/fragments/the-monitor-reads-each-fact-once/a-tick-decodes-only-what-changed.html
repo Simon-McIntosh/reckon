@@ -73,15 +73,18 @@
 
   <h3 id="a-tick-decodes-only-what-changed-head">At head</h3>
 
-  <p>The same harness at head <code>33f28354f7</code> reports no
-  <code>_pointer_for_stream</code> and no <code>_pointer_streams</code> entry at
-  all. Tick 1 decoded <strong>294,622,004 bytes</strong> where base's
-  decoded 372,393,182 &mdash; 77.8 MB less &mdash; and its largest caller is the
-  one that has to remain: <code>parse_events</code>, reading the streams' own new
-  bytes (131,884,178 of them).</p>
+  <p>The same harness at head <code>33f28354f7</code>, six ticks, exits 0
+  (<code>decode-census-head.log</code>) and reports no
+  <code>_pointer_for_stream</code> and no <code>_pointer_streams</code> entry in
+  any of them. The six ticks decoded <strong>294.6, 418.6, 396.5, 342.6, 321.6
+  and 353.5 MB</strong>, against base's 372.4, 441.8, 536.4, 459.0, 582.9 and
+  <strong>523.1 MB</strong> &mdash; 78, 23, 140, 116, 261 and 170 MB less on the
+  same fleet, without a single decode of the fleet's fields. The largest caller
+  is the one that has to remain: <code>parse_events</code>, reading the streams'
+  own new bytes (131.9 MB of them on tick 1).</p>
 
   <figure>
-    <img alt="Horizontal stacked bars, one per traced tick, of the megabytes one station tick decoded, split by pass: the streams' new bytes, the fleet's fields per stream, the pointer fields read per tick, the classifier's line scans, and everything else. Base ticks 1 to 5 decode 372, 442, 536, 459 and 583 MB, of which the fleet's fields per stream are 96, 104, 132, 105 and 72 MB. Head ticks 1 and 2 decode 295 and 419 MB and carry no fleet's-fields band at all." src="/reckon/figures/the-monitor-reads-each-fact-once/a-tick-decodes-only-what-changed/decode-bytes-by-census-pass.svg">
+    <img alt="Horizontal stacked bars, one per traced tick, of the megabytes one station tick decoded, split by pass: the streams' new bytes, the fleet's fields per stream, the pointer fields read per tick, the classifier's line scans, and everything else. Base ticks 1 to 6 decode 372, 442, 536, 459, 583 and 523 MB, of which the fleet's fields per stream are 96, 104, 132, 105, 123 and 121 MB. Head ticks 1 to 6 decode 295, 419, 396, 343, 322 and 354 MB and carry no fleet's-fields band at all." src="/reckon/figures/the-monitor-reads-each-fact-once/a-tick-decodes-only-what-changed/decode-bytes-by-census-pass.svg">
     <figcaption>One tick's decoded bytes, by the pass that decoded them. The
     fleet's fields per stream is the band this node removed.</figcaption>
   </figure>
@@ -139,11 +142,14 @@
 
   <h3 id="a-tick-decodes-only-what-changed-peaks">Peaks</h3>
 
-  <p>Base's five traced ticks peaked at <strong>175.5, 221.5, 213.7, 230.5 and 240.5 MB</strong>; head's at 185.6 and 235.3 MB for the ticks traced so far.
-  Every observed tick in both arms is far under the node's 600 MB ceiling.</p>
+  <p>Base's six traced ticks peaked at <strong>175.5, 221.5, 213.7, 230.5, 240.5
+  and 251.0 MB</strong>; head's at <strong>185.6, 235.3, 244.6, 238.5, 229.5 and
+  242.3 MB</strong>. The highest tick either arm traced is 251.0 MB, so every one
+  of the twelve is under the node's 600 MB ceiling, and the head's worst tick is
+  244.6 MB &mdash; 2.5x inside it.</p>
 
   <figure>
-    <img alt="Grouped vertical bars of the peak traced bytes in one station tick, one pair per tick number, with a dashed line at 600 MB. Base peaks 176, 222, 214, 230 and 240 MB; head peaks 186 and 235 MB." src="/reckon/figures/the-monitor-reads-each-fact-once/a-tick-decodes-only-what-changed/peak-bytes-per-tick.svg">
+    <img alt="Grouped vertical bars of the peak traced bytes in one station tick, one pair per tick number, with a dashed line at 600 MB. Base peaks 176, 222, 214, 230, 240 and 251 MB; head peaks 186, 235, 245, 239, 229 and 242 MB, every bar far under the line." src="/reckon/figures/the-monitor-reads-each-fact-once/a-tick-decodes-only-what-changed/peak-bytes-per-tick.svg">
     <figcaption>A tick's tracemalloc peak, base against head, under the 600 MB
     ceiling this node is judged against.</figcaption>
   </figure>
