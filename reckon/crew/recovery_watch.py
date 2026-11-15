@@ -552,6 +552,7 @@ def overdue_unreconciled_runs(
     project: str,
     grace: str,
     now_seconds: float | None = None,
+    session: str | None = None,
 ) -> list[dict[str, Any]]:
     """Return actionable terminal pointers older than the configured grace.
 
@@ -561,6 +562,15 @@ def overdue_unreconciled_runs(
     refused here (the forgotten-work case) while one the drain counts as
     reconciled is never refused. A scoring run inside its armed reflex's review
     window awaits that reflex rather than coordinator reconciliation.
+
+    ``session`` scopes the answer to one coordinator's own rows. Classification
+    is the costly part — each read opens the run's manifest, stream and stored
+    review — so a pointer another session owns is skipped before it is read.
+    The owner is the ``session`` the pointer was dispatched under.
+
+    Omitting ``session`` keeps the project-wide reading the drain asks for. A
+    pointer with no recorded owner stays in scope either way: absence cannot
+    prove that a live pointer belongs to a peer.
     """
     if not grace:
         return []
@@ -569,6 +579,10 @@ def overdue_unreconciled_runs(
     grace_seconds = parse_duration(grace)
     rows = []
     for pointer in list_live(project=project):
+        if session is not None:
+            owner = str(pointer.get("session") or "")
+            if owner and owner != session:
+                continue
         row = classify_pointer(pointer, now_seconds=now_seconds)
         age = row.get("terminal_age_seconds")
         if (
