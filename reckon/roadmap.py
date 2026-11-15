@@ -3332,14 +3332,19 @@ def _held_paths_by_section(
 class _RoadmapScope:
     """The roadmap the builds inside one scope produced, read after its work."""
 
-    __slots__ = ("built", "classify_runs", "resolve_coordinators")
+    __slots__ = ("audit_landings", "built", "classify_runs", "resolve_coordinators")
 
     def __init__(
-        self, *, resolve_coordinators: bool, classify_runs: bool = True
+        self,
+        *,
+        resolve_coordinators: bool,
+        classify_runs: bool = True,
+        audit_landings: bool = True,
     ) -> None:
         self.built: dict[str, Any] | None = None
         self.resolve_coordinators = resolve_coordinators
         self.classify_runs = classify_runs
+        self.audit_landings = audit_landings
 
 
 #: The scope whose builds record their roadmap, when a caller opened one. A
@@ -3353,7 +3358,10 @@ _BUILT_ROADMAP: ContextVar[_RoadmapScope | None] = ContextVar(
 
 @contextmanager
 def roadmap_build_scope(
-    *, resolve_coordinators: bool = True, classify_runs: bool = True
+    *,
+    resolve_coordinators: bool = True,
+    classify_runs: bool = True,
+    audit_landings: bool = True,
 ) -> Iterator[_RoadmapScope]:
     """Record the roadmap the builds inside this scope produce.
 
@@ -3367,10 +3375,19 @@ def roadmap_build_scope(
     run only when it has been blocked for a day, and such a run has recorded
     its block; classifying every unrecorded run cost a full review-store read
     per run on every pass that ranks the queue.
+
+    ``audit_landings`` off skips the check that a done section's promoting run
+    landed. That check reads the plan's ledger records and asks git about the
+    ancestry of every promoted head, and what it produces is a finding, which a
+    ranking key never reads. Measured on 15 November, the station's queue
+    ranking spent most of each tick there, one ``git merge-base`` per promoted
+    run, which left the station's export minutes stale fleet-wide.
     """
 
     scope = _RoadmapScope(
-        resolve_coordinators=resolve_coordinators, classify_runs=classify_runs
+        resolve_coordinators=resolve_coordinators,
+        classify_runs=classify_runs,
+        audit_landings=audit_landings,
     )
     token = _BUILT_ROADMAP.set(scope)
     try:
@@ -4702,9 +4719,13 @@ def _build_roadmap(
     findings.extend(
         _overlapping_scope_findings(open_sections_by_plan, section_runs, scope_claims)
     )
-    findings.extend(
-        _unlanded_run_findings(project, authored_by_plan, run_holds_by_plan, repo_root)
-    )
+    build_scope = _BUILT_ROADMAP.get()
+    if build_scope is None or build_scope.audit_landings:
+        findings.extend(
+            _unlanded_run_findings(
+                project, authored_by_plan, run_holds_by_plan, repo_root
+            )
+        )
 
     open_paths, critical, critical_members = rank_open_paths(
         plans,

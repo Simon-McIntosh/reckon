@@ -421,3 +421,93 @@ def test_a_done_section_whose_run_landed_emits_no_finding(
         for finding in report["wiring_findings"]
         if finding.get("code") == "run-not-landed"
     ] == []
+
+
+def _unlanded_side_head(checkout: Path) -> str:
+    """A promoted head on a branch the integration branch cannot reach."""
+
+    (checkout / "docs" / "plans" / f"{PLAN}.html").write_text(
+        _plan_html_text({"s1": "done"}), encoding="utf-8"
+    )
+    _git(checkout, "checkout", "-q", "-b", "side")
+    (checkout / "side.txt").write_text("side\n", encoding="utf-8")
+    _git(checkout, "add", "--", "side.txt")
+    _git(checkout, "commit", "-q", "-m", "feat: side work")
+    side_head = _git(checkout, "rev-parse", "HEAD")
+    _git(checkout, "checkout", "-q", "main")
+    _promoted_row(checkout, plan=PLAN, section="s1", node="n-one", head=side_head)
+    return side_head
+
+
+def test_a_ranking_build_asks_git_nothing_about_landings(
+    checkout: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A build that only ranks sections never runs the landing audit.
+
+    The audit asks git about the ancestry of every promoted head, which cost the
+    station most of each tick when it ranked the queue, and a ranking reads no
+    finding. The same build outside the scope still reports the unlanded run, so
+    the audit is skipped rather than lost.
+    """
+
+    _unlanded_side_head(checkout)
+    monkeypatch.setattr("reckon.crew.list_live", list)
+    from reckon.crew import merge
+
+    asked: list[tuple[str, str]] = []
+    real = merge._is_ancestor
+
+    def recording(repository: Path, ancestor: str, descendant: str) -> bool:
+        asked.append((ancestor, descendant))
+        return real(repository, ancestor, descendant)
+
+    monkeypatch.setattr(merge, "_is_ancestor", recording)
+
+    with roadmap.roadmap_build_scope(
+        resolve_coordinators=False, classify_runs=False, audit_landings=False
+    ):
+        ranked = roadmap.build_roadmap(
+            PROJECT, _inventory({"s1": "done"}), [], docs_dir=checkout / "docs"
+        )
+    assert asked == []
+    assert not [
+        finding
+        for finding in ranked["wiring_findings"]
+        if finding.get("code") == "run-not-landed"
+    ]
+
+    full = roadmap.build_roadmap(
+        PROJECT, _inventory({"s1": "done"}), [], docs_dir=checkout / "docs"
+    )
+    assert asked, "the full build must still ask about the promoted head"
+    assert [
+        finding
+        for finding in full["wiring_findings"]
+        if finding.get("code") == "run-not-landed"
+    ]
+
+
+def test_queue_ranking_opens_the_scope_without_the_landing_audit(
+    checkout: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The queue's priority keys are built with the landing audit off."""
+
+    from reckon.crew import queue_order
+
+    _unlanded_side_head(checkout)
+    monkeypatch.setattr("reckon.crew.list_live", list)
+    audited: list[str] = []
+    real = roadmap._unlanded_run_findings
+
+    def recording(project, *args, **kwargs):
+        audited.append(project)
+        return real(project, *args, **kwargs)
+
+    monkeypatch.setattr(roadmap, "_unlanded_run_findings", recording)
+    queue_order._PRIORITY_KEYS.clear()
+
+    queue_order._roadmap_priority_keys(
+        [{"project": PROJECT, "plan": PLAN, "section": "s1", "run_id": "r-queued"}]
+    )
+
+    assert audited == []
