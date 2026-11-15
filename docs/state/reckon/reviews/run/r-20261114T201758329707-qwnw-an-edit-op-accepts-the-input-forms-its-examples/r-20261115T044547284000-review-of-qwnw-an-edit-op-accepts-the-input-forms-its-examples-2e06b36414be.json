@@ -1,0 +1,44 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-11-15T05:06:08.890Z",
+  "dispatched_at": "2026-11-15T04:50:05Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-an-edit-op-accepts-the-input-forms-its-examples.html",
+      "line": "5",
+      "severity": "non-blocking",
+      "text": "non-blocking: the sentence calls the sprint document 'a committed file in the tree', but the test writes it at tests/test_an_edit_op_accepts_its_example_forms.py:132-135 through project_state._render_resource"
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-an-edit-op-accepts-the-input-forms-its-examples.html",
+      "line": "4",
+      "severity": "non-blocking",
+      "text": "non-blocking: the quoted pydantic message is truncated to 'Input should be a valid string [type=string_type, input_value=True' where base-arm.log records 'Input should be a valid string [type=string_type, input_value=True, input_type=bool]'"
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261114T201758329707-qwnw-an-edit-op-accepts-the-input-forms-its-examples/logs/after-arm.log",
+      "line": "1",
+      "severity": "non-blocking",
+      "text": "non-blocking: the after-arm log header names revision fe990d2aa1 while the run carried the uncommitted change that landed as 2e06b36414, so the cited head arm names a revision that does not contain the change; re-running the named test at 2e06b36414 gives 3 passed, so the result is right and the stamp is not"
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is that an edit op accepts the input forms its examples show; the delta reviewed here is the third form's evidence, and tests/test_an_edit_op_accepts_its_example_forms.py:124 now measures that form rather than assuming it.\nVERDICT done_when: the done_when asks for one test per case plus one base-revision negative control per case; the sprint case's control was absent at fe990d2aa1 and is now tests/test_an_edit_op_accepts_its_example_forms.py:156-167, with base-arm.log recording 2 failed 1 passed and after-arm.log 3 passed.\nVERDICT write_paths: the declared scope stated in this node's goal is docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-an-edit-op-accepts-the-input-forms-its-examples.html and tests/test_an_edit_op_accepts_its_example_forms.py, and `git diff fe990d2aa1..2e06b36414` touches exactly those two paths.\nVERDICT manifest: read; the reviewed run's manifest.md records status complete, the two arm logs and the two suite arms, 3 passed at head against 2 failed 1 passed at base, and negative_control_note disclosing that the sprint case passes at base.\nVERDICT diff: read commit by commit from fe990d2aa1; the single commit 2e06b36414 rewrites the sprint test so the sprint file is written first and the plan last, adds a refusal assertion for a slug no plan carries, and adds a fragment paragraph describing that measurement.\nCALL_SITES: reckon/mcp_edit_plan.py:_edit_plan, reckon/project_state.py:_validate_runtime_references, reckon/project_state.py:_live_plan_slugs\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: tests/test_an_edit_op_accepts_its_example_forms.py:124 is the three-in-one sprint case, and the commit makes it a measurement of the third form rather than a restatement of it.\nSCORE evidence: 15\nJUSTIFICATION evidence: base-arm.log and after-arm.log record 2 failed 1 passed and 3 passed, but after-arm.log:1 names revision fe990d2aa1 while the change landed at 2e06b36414, so I re-ran the named test at 2e06b36414 and read 3 passed.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: `git diff fe990d2aa1..2e06b36414 --name-only` lists only tests/test_an_edit_op_accepts_its_example_forms.py and the evidence fragment, both inside the paths this review covers.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_an_edit_op_accepts_its_example_forms.py:156-167 reddens if the live-plan resolution stops checking, and :136 reddens if the plan is written ahead of the append as it was before this commit, so both the code and the setup regression a reader would reinstate are caught.\nSCORE fit: 18\nJUSTIFICATION fit: the comment at tests/test_an_edit_op_accepts_its_example_forms.py:127-128 states the mechanism in mechanism terms, and the direct sprint write at :132 follows the existing precedent at tests/test_review_roadmap.py:210.\nSCORE reuse: 20\nJUSTIFICATION reuse: the added setup calls the owner of resource rendering, reckon/project_state.py:382 _render_resource, already imported this way at tests/test_review_roadmap.py:7, so no mechanism is forked.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-an-edit-op-accepts-the-input-forms-its-examples.html:5 non-blocking: the sentence calls the sprint document 'a committed file in the tree', but the test writes it at tests/test_an_edit_op_accepts_its_example_forms.py:132-135 through project_state._render_resource, so no commit is involved and the claim overstates what the setup demonstrates.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-an-edit-op-accepts-the-input-forms-its-examples.html:4 non-blocking: the quoted pydantic message is truncated to 'Input should be a valid string [type=string_type, input_value=True' where base-arm.log records 'Input should be a valid string [type=string_type, input_value=True, input_type=bool]', so evidence quoted to show the refusal is not verbatim.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261114T201758329707-qwnw-an-edit-op-accepts-the-input-forms-its-examples/logs/after-arm.log:1 non-blocking: the header names revision fe990d2aa1 while the run carried the uncommitted change that landed as 2e06b36414, so the cited head arm names a revision that does not contain the change; re-running the named test at 2e06b36414 gives 3 passed, so the result is right and the stamp is not.\n",
+  "review_run_id": "r-20261115T044547284000-review-of-qwnw-an-edit-op-accepts-the-input-forms-its-examples-2e06b36414be",
+  "reviewed_base_sha": "fe990d2aa161bc928e4da428336139c2ccd4f133",
+  "reviewed_head_sha": "2e06b36414beb6a15bf8786895287e05a4447b3a",
+  "reviewed_run_id": "r-20261114T201758329707-qwnw-an-edit-op-accepts-the-input-forms-its-examples",
+  "scores": {
+    "durability": 18,
+    "evidence": 15,
+    "fit": 18,
+    "goal_fidelity": 17,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-15T05:06:47.557534+00:00",
+  "total": 108
+}

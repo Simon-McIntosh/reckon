@@ -1,0 +1,84 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own gate logs on disk: logs/base-arm.log runs at 2bf8e6947d761394f75022925c4aa498a7db2b99 and ends '58 passed in 35.94s' with a bare EXIT=0; logs/after-suite.log runs at 3eee72acf0810f999bbf3a5a70e8f95a188f421a and ends '76 passed in 42.04s' with a bare EXIT=0. Neither log carries a FAILED line, so the after-minus-baseline failure-id difference is empty (0). The negative control logs/negative-control-store.log records 2 failed, 16 passed, EXIT=1 and logs/negative-control-figure.log records EXIT=1; neither is the head arm.",
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/crew/open_run_index.py:339 (_ensure calls ledger.store_answers before caching a project as empty)",
+    "reckon/crew/review_lifecycle.py:414 (ledger.run_ids over a project's closed runs)",
+    "reckon/crew/recovery_watch.py:2071 (ledger.run_ids for the runs the departure record names)",
+    "reckon/crew/recovery_repair_dispatch.py:1114 (ledger.run_ids to answer membership)",
+    "reckon/run_store.py:690 (RunStore._refresh compares its row ids against ledger.run_ids, so the changed membership read is on the store's own refresh path)"
+  ],
+  "completed_at": "2026-11-15T14:09:34.434Z",
+  "dispatched_at": "2026-11-15T13:55:01Z",
+  "findings": [
+    {
+      "file": "reckon/ledger.py",
+      "id": "f8076e44698",
+      "line": 2263,
+      "severity": "non-blocking",
+      "text": "non-blocking: _merge_stored_rows runs at every return of load (ledger.py:2410, 2422, 2433), so every ledger.load for any project with content now opens the store and json-decodes every stored payload for every project before filtering to one (_indexed_records at run_store.py:649 is not project-scoped). The per-call decode cost the run_ids repair removed is drawn once per stored row per load, on a path every reader in the repository uses, rather than once per station tick."
+    },
+    {
+      "file": "reckon/ledger.py",
+      "id": "f43623ec4c8",
+      "line": 2261,
+      "severity": "non-blocking",
+      "text": "non-blocking: the replaced read opened the store with sqlite mode=ro and swallowed OSError/sqlite3.Error into an empty answer; the landed read opens RunStore(path), whose __init__ makes the parent directory and whose _create() executes the auxiliary schema and any pending migration, so a read path now writes and a locked, read-only or damaged store raises out of ledger.load instead of degrading to the document answer that is still available."
+    },
+    {
+      "file": "reckon/ledger.py",
+      "id": "f68262336d9",
+      "line": 2262,
+      "severity": "non-blocking",
+      "text": "non-blocking: the ledger reaches the store's private RunStore._indexed_records from outside the owning module. The store exposes records() (which excludes the archive, run_store.py:781) and durable_rows() (which drops the wide detail, run_store.py:840), so no public read answers a project's hot and retired records with their detail; the reuse is correct but the owner should gain that public accessor rather than the private method being called across the boundary."
+    },
+    {
+      "file": "docs/figures/history-persists-as-detail-washes-out/ledger-reads-the-store-s22/source-precedence.py",
+      "id": "f3d75bfabfb",
+      "line": 106,
+      "severity": "non-blocking",
+      "text": "non-blocking: the head arm's dot is labelled 'head 1f3094e35ae4: 76 passed', while the log the evidence cites records that 76-passed arm at 3eee72acf081 (logs/after-suite.log first line) and the fragment's arm table names 07d166b0f6 for the same 76 passes. Three revisions are attached to one measurement, so a reader cannot tell which commit the 76-passed figure belongs to; the log's revision is the only one backed by a recorded run."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "read four commits against base 4bc9d8bf1d: 8e8f22b6f5 rewrites _stored_run_rows onto RunStore._indexed_records/archive_path, adds _stored_run_ids, drops _store_archive_path and the source gate, and adds _stored_run_ids/run_ids union and four tests (reckon/ledger.py, reckon/crew/open_run_index.py, tests); 1f3094e35a adds the figure script and check-figure-text.py; 07d166b0f6 rewrites the SVG; 3eee72acf0 records the precedence rule in the fragment. Seven files, 3081 insertions, 201 deletions, every path inside the declared scope plus the repair-granted figure directory.",
+    "done_when": "the done_when is 'every existing reader test passes against a project whose runs/ directory is absent and whose store holds the rows, and a store deleted and rebuilt returns an equal answer set'; tests/test_every_ledger_question_reads_the_store.py:183-300 parametrises nine readers over the absent-directory population, asserts the re-read equals the store's rows at line 300, and logs/after-suite.log records 76 passed with EXIT=0 while the negative controls recorded red.",
+    "goal": "the goal is 'answer every ledger reader from the run store when the per-run directory is absent'; reckon/ledger.py:2422 and :2433 merge stored rows at every return of load, ledger.py:1156-1176 unions the store's ids into run_ids, and reckon/crew/open_run_index.py:339 counts stored ids before caching a project empty.",
+    "manifest": "read; it records status complete, commits 8e8f22b6f5, 1f3094e35a, 07d166b0f6, 3eee72acf0, the after-suite of 76 passed at 3eee72acf0, the base arm of 58 passed, and both negative controls with their logs; the four new tests it names are present in the test file.",
+    "write_paths": "read the declared paths (reckon/ledger.py, reckon/crew/open_run_index.py, tests/test_every_ledger_question_reads_the_store.py, the evidence fragment); every code and test path in the diff is inside them; the three docs/figures files were granted by the repair advice ('Repair the blocking figure finding'), which this run's manifest records as its repair round."
+  },
+  "justifications": {
+    "durability": "tests/test_every_ledger_question_reads_the_store.py:238 reddens when run_ids decodes a payload and :241 reddens when one document hides the store's rows, both shown red in logs/negative-control-store.log; the archive read is guarded by :262 (a dropped include_archive loses the retired id) and :300 by the delete-and-rebuild equality.",
+    "evidence": "the gate does measure the done_when (tests/test_every_ledger_question_reads_the_store.py:183-300, logs/after-suite.log 76 passed EXIT=0, logs/base-arm.log 58 passed EXIT=0) but the same 76 passes are attributed to three different revisions across logs/after-suite.log:1, the fragment table and docs/figures/.../source-precedence.py:106.",
+    "fit": "reckon/ledger.py:2262 calls another module's private RunStore._indexed_records and :2261 opens a write-mode store on a read path; the added names and local-import style otherwise follow the module (ledger.py:2249).",
+    "goal_fidelity": "reckon/ledger.py:2263 makes every reader that returns through load see the store's rows, ledger.py:1156 unions the store's membership into run_ids, and reckon/crew/open_run_index.py:339 stops a store-backed project being cached as empty.",
+    "reuse": "reckon/ledger.py:2262 reads through the store's own record read and :2277 through run_store.indexed_run_ids, so the duplicated SQL and the copied archive-path helper the previous review found are gone; the owner is used, though not extended with a public accessor.",
+    "scope_discipline": "every changed path is a declared write path or the figure directory the repair advice explicitly granted; the change carries nothing the goal does not imply."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is 'answer every ledger reader from the run store when the per-run directory is absent'; reckon/ledger.py:2422 and :2433 merge stored rows at every return of load, ledger.py:1156 unions the store's ids into run_ids, and reckon/crew/open_run_index.py:339 counts stored ids before caching a project empty.\nVERDICT done_when: the done_when is 'every existing reader test passes against a project whose runs/ directory is absent and whose store holds the rows, and a store deleted and rebuilt returns an equal answer set'; tests/test_every_ledger_question_reads_the_store.py:183-300 parametrises nine readers over the absent-directory population, asserts the re-read equals the store's rows at line 300, and logs/after-suite.log records 76 passed with EXIT=0.\nVERDICT write_paths: read the declared paths (reckon/ledger.py, reckon/crew/open_run_index.py, tests/test_every_ledger_question_reads_the_store.py, the evidence fragment); every code and test path in the diff is inside them, and the three docs/figures files were granted by the repair advice the run records as its repair round.\nVERDICT manifest: read; it records status complete, commits 8e8f22b6f5, 1f3094e35a, 07d166b0f6, 3eee72acf0, the after-suite of 76 passed at 3eee72acf0, the base arm of 58 passed, and both negative controls with their logs.\nVERDICT diff: read four commits against base 4bc9d8bf1d; 8e8f22b6f5 rewrites _stored_run_rows onto RunStore._indexed_records/archive_path, adds _stored_run_ids, drops _store_archive_path and the source gate, and adds four tests; 1f3094e35a adds the figure script and check-figure-text.py; 07d166b0f6 rewrites the SVG; 3eee72acf0 records the precedence rule in the fragment.\nCALL_SITES: reckon/crew/open_run_index.py:339, reckon/crew/review_lifecycle.py:414, reckon/crew/recovery_watch.py:2071, reckon/crew/recovery_repair_dispatch.py:1114, reckon/run_store.py:690\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/ledger.py:2263 makes every reader that returns through load see the store's rows, ledger.py:1156 unions the store's membership into run_ids, and reckon/crew/open_run_index.py:339 stops a store-backed project being cached as empty.\nSCORE evidence: 16\nJUSTIFICATION evidence: the gate measures the done_when (tests/test_every_ledger_question_reads_the_store.py:183-300, logs/after-suite.log 76 passed EXIT=0, logs/base-arm.log 58 passed EXIT=0) but the same 76 passes are attributed to three different revisions across logs/after-suite.log:1, the fragment table and docs/figures/history-persists-as-detail-washes-out/ledger-reads-the-store-s22/source-precedence.py:106.\nSCORE scope_discipline: 18\nJUSTIFICATION scope_discipline: every changed path is a declared write path or the figure directory the repair advice explicitly granted, and the change carries nothing the goal does not imply.\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_every_ledger_question_reads_the_store.py:238 reddens when run_ids decodes a payload and :241 reddens when one document hides the store's rows, both shown red in logs/negative-control-store.log.\nSCORE fit: 15\nJUSTIFICATION fit: reckon/ledger.py:2262 calls another module's private RunStore._indexed_records and :2261 opens a write-mode store on a read path; the added names and local-import style otherwise follow the module (ledger.py:2242-2246).\nSCORE reuse: 17\nJUSTIFICATION reuse: reckon/ledger.py:2262 reads through the store's own record read and :2277 through run_store.indexed_run_ids, so the duplicated SQL and copied archive-path helper the previous review found are gone; the owner is used but not extended with a public accessor.\nFINDING reckon/ledger.py:2263 non-blocking: _merge_stored_rows runs at every return of load (ledger.py:2410, 2422, 2433), so every ledger.load for any project with content opens the store and json-decodes every stored payload for every project before filtering to one, drawing the decode moved off run_ids on a path every reader uses rather than once per station tick.\nFINDING reckon/ledger.py:2261 non-blocking: the replaced read opened the store mode=ro and swallowed sqlite3.Error into an empty answer, while RunStore(path) makes the parent directory, runs _create()'s schema and migration, and raises on a locked or damaged store, so a read path now writes and can fail where a document answer was still available.\nFINDING reckon/ledger.py:2262 non-blocking: the ledger calls the private RunStore._indexed_records from outside its owning module; records() excludes the archive (run_store.py:781) and durable_rows() drops the detail (run_store.py:840), so the owner should gain a public project-scoped all-records read instead of the private method being reached across the boundary.\nFINDING docs/figures/history-persists-as-detail-washes-out/ledger-reads-the-store-s22/source-precedence.py:106 non-blocking: the head arm is labelled 'head 1f3094e35ae4: 76 passed' while logs/after-suite.log:1 records that 76-passed arm at 3eee72acf081 and the fragment's arm table names 07d166b0f6, attaching three revisions to one measurement so a reader cannot tell which commit the figure reports.\n",
+  "review_node": "review-of-ledger-reads-the-store-s22-3eee72acf081",
+  "review_run_id": "r-20261115T135109480663-review-of-ledger-reads-the-store-s22-3eee72acf081",
+  "reviewed_base_sha": "4bc9d8bf1d7457e6117f7cd70e5da61b07b4be2c",
+  "reviewed_head_sha": "3eee72acf0810f999bbf3a5a70e8f95a188f421a",
+  "reviewed_run_id": "r-20261115T102552534698-ledger-reads-the-store-s22",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash",
+    "reviewer_run_id": "r-20261115T135109480663-review-of-ledger-reads-the-store-s22-3eee72acf081"
+  },
+  "scores": {
+    "durability": 17,
+    "evidence": 16,
+    "fit": 15,
+    "goal_fidelity": 18,
+    "reuse": 17,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-15T14:16:14.364228+00:00",
+  "total": 101
+}

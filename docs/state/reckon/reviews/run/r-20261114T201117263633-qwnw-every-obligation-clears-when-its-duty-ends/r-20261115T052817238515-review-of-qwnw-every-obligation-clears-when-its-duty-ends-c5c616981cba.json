@@ -1,0 +1,79 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own gate logs on disk: baseline_suite.log at 7b45ca90 records 55 passed EXIT=0 and after_suite.log at 9d886bbf records 55 passed EXIT=0, so the set difference is empty",
+  "call_site_count": 6,
+  "call_sites": [
+    "reckon/crew/obligations.py:3264 (_held_worktrees_by_session walks _held_worktree_records)",
+    "reckon/crew/obligations.py:3243 (_held_worktree_records_read calls index.refresh_trees)",
+    "reckon/crew/obligation_snapshot.py:1721 (the station snapshot publishes held_worktrees)",
+    "reckon/crew/merge.py:1099 (merge reads the held worktrees)",
+    "reckon/crew/runs.py:2347 (_record_promoted_acknowledgement falls back to _obligation_record_project)",
+    "reckon/hooks/coordinator_obligations.py:1638 and reckon/mcp_views.py:4618 (the stop hook and the obligations view serve the snapshot's held duties)"
+  ],
+  "completed_at": "2026-11-15T05:47:43.140Z",
+  "dimension_dispositions": {
+    "reuse": {
+      "kind": "folded",
+      "node": "repair-of-qwnw-every-obligation-clears-when-its-duty-ends-c5c616981cba",
+      "recorded_at": "2026-11-15T06:48:45.992060+00:00"
+    }
+  },
+  "dispatched_at": "2026-11-15T05:33:14Z",
+  "findings": [
+    {
+      "file": "reckon/crew/obligations.py",
+      "line": "2778",
+      "severity": "non-blocking",
+      "text": "_git_reading re-implements reckon/crew/node.py:1594 _git_answer, the same git-stdout-or-None capability whose docstring already separates an empty answer from an unanswerable one, in a module that imports from reckon.crew.node at obligations.py:52, so the duplication buys nothing and splits one reading's behaviour across modules"
+    },
+    {
+      "file": "reckon/crew/obligations.py",
+      "line": "2815",
+      "severity": "non-blocking",
+      "text": "_tree_holds_unmerged_work and _landed_refs re-implement the reachability answer reckon/crew/node.py:1707 _claim_commit_answer owns, which reads HEAD and the integration ref from git's files and memoises the answer so an unchanged worktree costs no process; the new version spawns up to four git processes per tree inside the module-level _HELD_READ_LOCK held at obligations.py:3171, and no measurement of that refresh cost is recorded"
+    },
+    {
+      "file": "tests/test_a_duty_clears_when_its_run_ends.py",
+      "line": "391",
+      "severity": "non-blocking",
+      "text": "the second assertion cannot fail once line 390 passes, because OTHER_PROJECT and PROJECT are distinct module constants, so it adds no coverage against any regression the pair of assertion lines exists to catch"
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261114T201117263633-qwnw-every-obligation-clears-when-its-duty-ends/manifest.md",
+      "line": "17",
+      "severity": "non-blocking",
+      "text": "the test_logs line's fourth entry reads a runs-placeholder path that no file on disk matches, so a reader following the manifest's evidence list is sent to a file that does not exist; the same manifest carries no after_suite key although after_suite.log exists"
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261114T201117263633-qwnw-every-obligation-clears-when-its-duty-ends/probe_tree_state.py",
+      "line": "55",
+      "severity": "non-blocking",
+      "text": "the probe's EXIT_METRIC sums counts[\"dirty\"] and counts[\"clean\"], neither of which the loop increments, so held_trees=0 is a constant rather than a measurement; the fragment does not lean on it, but the log's headline metric would tell a reader the opposite of the scoped rows it prints"
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that every obligation row clears when its duty ends; the gained commits land a rule at reckon/crew/obligations.py:2815 that releases a retained tree's row only when the tree holds no unmerged work, and probe_trees.log records that none of the 102 retained trees on this fleet qualifies, so the rule clears no row on the population the section measures\nVERDICT done_when: the section's done_when asks the census to read zero one pass after the delivered head; census_after.log at 9d886bbf records 20 rows whose run has no live pointer out of 67 served, and the evidence fragment now states that figure from that log rather than the earlier 25\nVERDICT write_paths: the resume advice grants the evidence fragment, its figures directory, reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround and reckon/crew/obligation_snapshot.py; every path in git diff 322a57bf c5c616981c lies inside that grant\nVERDICT manifest: read; it records status complete, suite arms at 55 passed exit 0, a negative control at 8 failed 5 passed exit 1, and a test_logs line whose fourth entry ends in a runs-placeholder path that no file on disk matches\nVERDICT diff: read commit by commit against 322a57bf; c778aaa1 adds the unmerged-work rule and the runs.py helper reuse, 9d886bbf reads landings from every resolvable primary ref, f44776da and c5c616981c rewrite the evidence fragment to the logs, and all five changed paths are declared\nCALL_SITES: reckon/crew/obligations.py:3264 (_held_worktrees_by_session walks _held_worktree_records), reckon/crew/obligations.py:3243 (_held_worktree_records_read calls index.refresh_trees), reckon/crew/obligation_snapshot.py:1721 (the station snapshot publishes held_worktrees), reckon/crew/merge.py:1099 (merge reads the held worktrees), reckon/crew/runs.py:2347 (_record_promoted_acknowledgement falls back to _obligation_record_project), reckon/hooks/coordinator_obligations.py:1638 and reckon/mcp_views.py:4618 (the stop hook and the obligations view serve the snapshot's held duties)\nSCORE goal_fidelity: 12\nJUSTIFICATION goal_fidelity: reckon/crew/obligations.py:3133 releases a row only when _tree_holds_unmerged_work is false, and probe_trees.log records 96 of 102 retained trees carrying commits main does not reach, so the added rule releases no row on the population the section measures\nSCORE evidence: 12\nJUSTIFICATION evidence: the fragment's figures now match census.log, census_after.log, probe_trees.log and negative_control.log, but census_after.log records 20 rows no live pointer names where the done_when asks for zero, and no recorded arm runs tests/test_a_duty_clears_when_its_run_ends.py green at the head\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in git diff --stat 322a57bf c5c616981c is one of the five the resume advice grants, and no path outside the grant is touched\nSCORE durability: 15\nJUSTIFICATION durability: tests/test_a_duty_clears_when_its_run_ends.py:374 fails at the base revision for the landed and gone arms, so a regression that re-holds those trees reddens it, while tests/test_a_duty_clears_when_its_run_ends.py:391 asserts only what line 390 already establishes\nSCORE fit: 18\nJUSTIFICATION fit: reckon/crew/obligations.py:2778 keeps the module's reading-before-emit shape and no added name carries a plan, gate or ticket identifier\nSCORE reuse: 5\nJUSTIFICATION reuse: reckon/crew/obligations.py:2778 re-implements the git-stdout-or-None reading reckon/crew/node.py:1594 _git_answer already owns, and obligations.py:2815 re-implements the reachability answer reckon/crew/node.py:1707 _claim_commit_answer owns, in a module that already imports from node.py\nFINDING reckon/crew/obligations.py:2778 non-blocking: _git_reading re-implements reckon/crew/node.py:1594 _git_answer, the same git-stdout-or-None capability whose docstring already separates an empty answer from an unanswerable one, in a module that imports from reckon.crew.node at obligations.py:52, so the duplication buys nothing and splits one reading's behaviour across modules\nFINDING reckon/crew/obligations.py:2815 non-blocking: _tree_holds_unmerged_work and _landed_refs re-implement the reachability answer reckon/crew/node.py:1707 _claim_commit_answer owns, which reads HEAD and the integration ref from git's files and memoises the answer so an unchanged worktree costs no process; the new version spawns up to four git processes per tree inside the module-level _HELD_READ_LOCK held at obligations.py:3171, and no measurement of that refresh cost is recorded\nFINDING tests/test_a_duty_clears_when_its_run_ends.py:391 non-blocking: the second assertion cannot fail once line 390 passes, because OTHER_PROJECT and PROJECT are distinct module constants, so it adds no coverage against any regression the pair of assertion lines exists to catch\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261114T201117263633-qwnw-every-obligation-clears-when-its-duty-ends/manifest.md:17 non-blocking: the test_logs line's fourth entry reads a runs-placeholder path that no file on disk matches, so a reader following the manifest's evidence list is sent to a file that does not exist; the same manifest carries no after_suite key although after_suite.log exists\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261114T201117263633-qwnw-every-obligation-clears-when-its-duty-ends/probe_tree_state.py:55 non-blocking: the probe's EXIT_METRIC sums counts[\"dirty\"] and counts[\"clean\"], neither of which the loop increments, so held_trees=0 is a constant rather than a measurement; the fragment does not lean on it, but the log's headline metric would tell a reader the opposite of the scoped rows it prints\n",
+  "review_node": "review-of-qwnw-every-obligation-clears-when-its-duty-ends-c5c616981cba",
+  "review_run_id": "r-20261115T052817238515-review-of-qwnw-every-obligation-clears-when-its-duty-ends-c5c616981cba",
+  "reviewed_base_sha": "322a57bf5fecaa77c77ab6ac32936b8aff34c8b7",
+  "reviewed_head_sha": "c5c616981cba8f04accf7734b23f16fa6f79b7ca",
+  "reviewed_run_id": "r-20261114T201117263633-qwnw-every-obligation-clears-when-its-duty-ends",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash",
+    "reviewer_run_id": "r-20261115T052817238515-review-of-qwnw-every-obligation-clears-when-its-duty-ends-c5c616981cba"
+  },
+  "scores": {
+    "durability": 15,
+    "evidence": 12,
+    "fit": 18,
+    "goal_fidelity": 12,
+    "reuse": 5,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-15T05:53:57.932989+00:00",
+  "total": 82
+}

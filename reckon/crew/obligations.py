@@ -18,7 +18,6 @@ reports what is still owed.
 
 from __future__ import annotations
 
-import fcntl
 import hashlib
 import json
 import os
@@ -27,7 +26,8 @@ import shlex
 import sys
 import threading
 from collections import OrderedDict, defaultdict, deque
-from collections.abc import Callable, Iterable, Mapping, Sequence
+from collections.abc import Callable, Iterable, Iterator, Mapping, Sequence
+from contextlib import contextmanager
 from contextvars import ContextVar
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
@@ -54,6 +54,9 @@ from reckon.crew.node import (
     INTERRUPTED_RUN_PHASE,
     CrewError,
     PlanReviewMissingError,
+    _claim_commit_answer,
+    _git_answer,
+    _integration_ref_revision,
     parse_duration,
 )
 from reckon.crew.open_run_index import operational_read
@@ -70,6 +73,7 @@ from reckon.crew.routing import (
 from reckon.crew.run_paths import crew_home
 from reckon.git_head import _common_git_directory, _git_directory, _head_identity
 from reckon.mcp_crew_actions import CREW_WRITE_ACTIONS
+from reckon.node_exclusive_lock import exclusive_lock
 from reckon.velocity import run_git
 
 CLASSIFICATION_DUTY_KINDS = {
@@ -257,6 +261,12 @@ QUEUED_AWAITING_SESSION_DUTY_KIND = "queued-awaiting-session"
 # how one project's sections sat dead for the better part of an hour.
 QUEUED_CONTRACT_REFUSED_DUTY_KIND = "queued-contract-refused"
 
+# A queued request whose refused launch named a live run's write claim. The
+# holder's landing releases it, so the row names the holder and the path and
+# carries no command: nothing this session runs shortens the wait, and the
+# listed duty is a wait rather than a debt a coordinator can discharge.
+SCOPE_HELD_DUTY_KIND = "scope-held"
+
 # The node-contract properties ``reckon crew queue edit`` can repair, with the
 # field the edit names for each. A refusal naming only these is cleared by an
 # edit that keeps the request's place in the queue; any other property belongs
@@ -346,6 +356,7 @@ NON_BLOCKING_DUTY_KINDS = frozenset(
         QUEUED_RUN_DUTY_KIND,
         STALLED_RUN_DUTY_KIND,
         INDEX_LAG_DUTY_KIND,
+        SCOPE_HELD_DUTY_KIND,
         REPAIR_ROUND_DUTY_KIND,
     }
 )
@@ -617,6 +628,13 @@ def _row_age(row: Mapping[str, Any], *, now: datetime) -> int:
 
 _VIEW_LIVE_POINTERS: ContextVar[Mapping[str, tuple[dict[str, Any], ...]] | None] = (
     ContextVar("reckon_obligations_view_live_pointers", default=None)
+)
+
+#: The in-flight review answer computed for one published pointer snapshot. The
+#: snapshot object identifies the pass: a view or a tick publishes a fresh tuple,
+#: so an answer stored beside the previous one is never read for a later pass.
+_VIEW_REVIEWS_IN_FLIGHT: ContextVar[Mapping[str, Any] | None] = ContextVar(
+    "reckon_obligations_view_reviews_in_flight", default=None
 )
 
 
@@ -903,6 +921,44 @@ def _reflex_owns_review(project: str, pointer: Mapping[str, Any]) -> bool:
     return bool(state.get("live"))
 
 
+def _producer_lease(project: str, *, now: datetime) -> tuple[bool | None, int | None]:
+    """Whether a producer stands behind the project, and how old its silence is.
+
+    The lease is the one liveness the coordinator hook reads for the same
+    question (:func:`reckon.hooks.coordinator_obligations.producer_lease_is_live`):
+    the producer writes it when it takes the seat and each live follower renews
+    it on its wait pass, so a renewal inside one lease interval is a staffed
+    project. The age beside the verdict is how long nothing has swept.
+
+    A project with no renewal recorded at all has never seated a producer
+    that published one, so there is no silence to age. ``None`` says that, and
+    the caller keeps the liveness it has already established for the run
+    rather than declaring a producer down over a record never written.
+    """
+    renewed = runs.watch_lease_renewed_at(project)
+    if renewed is None:
+        return None, None
+    age = max(0, int(now.timestamp() - renewed))
+    return age < runs.producer_lease_seconds(), age
+
+
+def _producer_down_command(project: str, *, age: int) -> str:
+    """The next action while no producer is live to sweep this run's review.
+
+    An armed follower's reflex is staffed by the project's producer: the review
+    pass runs inside its sweep, so with no producer the promised window holds
+    nothing and would keep promising on every turn until the row went stale.
+    The age is the interval the lease has stood still, which is how long nothing
+    has been sweeping.
+    """
+    return (
+        "the producer is down: its lease has not been renewed for "
+        f"{_overdue_figure(age)}, so no sweep will compose this run's "
+        "review; arm it again with: "
+        f"`reckon crew watch --ensure --project {project}`"
+    )
+
+
 def _reflex_review_window_seconds() -> int:
     """The window a duty may expect the reflex's next sweep within.
 
@@ -1185,6 +1241,110 @@ def _in_flight_review(
         return recovery._review_in_flight(pointer)
 
 
+def _launched_candidates(
+    pointers: Iterable[Mapping[str, Any]],
+) -> list[Mapping[str, Any]]:
+    """The pointers a search may answer with: those the lane has started.
+
+    A review the lane accepted and has not started is not working on a
+    revision, and counting it as one would hide the very duty the run still
+    owes.
+    """
+    return [
+        candidate
+        for candidate in pointers
+        if str(candidate.get("phase") or "") != queue_admission.QUEUED_PHASE
+    ]
+
+
+def _sweep_reviews_in_flight(
+    pointers: Sequence[Mapping[str, Any]],
+) -> dict[str, str | None]:
+    """The review standing for each pointer's head, from one walk of the set.
+
+    The candidates a search considers are the pointers that have launched: a
+    review the lane accepted and has not started is not working on a revision,
+    and counting it as one would hide the very duty the run still owes, so the
+    queued pointers are excluded exactly as :func:`_current_review_in_flight`
+    excludes them. The answer is keyed by every pointer in the set, including
+    the queued ones, because a queued run still asks whether a launched review
+    stands for its head.
+    """
+    launched = _launched_candidates(pointers)
+    return {
+        str(pointer.get("run_id") or ""): _in_flight_review(pointer, launched)
+        for pointer in pointers
+        if str(pointer.get("run_id") or "")
+    }
+
+
+def _pointer_review(
+    pointer: Mapping[str, Any], pointers: Sequence[Mapping[str, Any]]
+) -> str:
+    """One pointer's standing review, at the cost a single question had."""
+    return _in_flight_review(pointer, _launched_candidates(pointers))
+
+
+@contextmanager
+def _pass_reviews_in_flight() -> Iterator[None]:
+    """Scope the shared answer to the derivation that published the pointers.
+
+    The memo carries the pass's own snapshot so it can tell one pass from the
+    next, so it must not outlive the pass either. Publishing the empty answer
+    with a token and resetting it in a finally drops the memo when the
+    derivation ends, as the pointer snapshot itself is dropped.
+    """
+    token = _VIEW_REVIEWS_IN_FLIGHT.set(None)
+    try:
+        yield
+    finally:
+        _VIEW_REVIEWS_IN_FLIGHT.reset(token)
+
+
+def _reviews_in_flight(project: str) -> Mapping[str, str | None]:
+    """Every pointer's standing review, answered once for the whole pass.
+
+    A pass asks the same question of every pointer it holds: which live
+    reviewer stands for the run's head. The rule that answers it sweeps the
+    live pointers, so a derivation over P pointers used to pay P sweeps of P
+    pointers. The published snapshot is the pass's identity, so the first
+    question reads one sweep and every later duty in that memo. Outside a pass
+    there is no snapshot to key on and no answer to share, so this returns
+    nothing and the caller answers its own pointer at the cost one question
+    always had. The memo is published with a token and reset when the pass
+    ends, so it never outlives the pointers it described.
+    """
+    held = _VIEW_LIVE_POINTERS.get()
+    snapshot = held.get(project) if held is not None else None
+    if snapshot is None:
+        # No pass published these pointers, so there is nothing to share the
+        # answer with and no pass identity to key it on. The caller answers its
+        # own one pointer instead: a reader outside a pass must cost what it
+        # always did, never a sweep of the whole set.
+        return {}
+    memo = _VIEW_REVIEWS_IN_FLIGHT.get()
+    if memo is not None and memo["snapshot"] is snapshot:
+        return memo["by_run"]
+    by_run = _sweep_reviews_in_flight(_live_pointers(project))
+    _VIEW_REVIEWS_IN_FLIGHT.set({"snapshot": snapshot, "by_run": by_run})
+    return by_run
+
+
+def _standing_review(pointer: Mapping[str, Any]) -> str:
+    """The live review standing for this pointer's head, read from the pass.
+
+    Every pointer the pass published already has an answer; a pointer handed in
+    from outside the pass's own set is answered by its own sweep, so this reader
+    is correct whichever way it is entered.
+    """
+    project = str(pointer.get("project") or "")
+    run_id = str(pointer.get("run_id") or "")
+    standing = _reviews_in_flight(project)
+    if run_id and run_id in standing:
+        return str(standing[run_id] or "")
+    return _pointer_review(pointer, _live_pointers(project))
+
+
 def _current_review_in_flight(pointer: Mapping[str, Any]) -> bool:
     """Whether a live review is working on this run's current revision.
 
@@ -1216,12 +1376,7 @@ def _current_review_in_flight(pointer: Mapping[str, Any]) -> bool:
         return False
     if _reflex_review_in_flight(pointer):
         return True
-    launched = [
-        candidate
-        for candidate in _live_pointers(str(pointer.get("project") or ""))
-        if str(candidate.get("phase") or "") != queue_admission.QUEUED_PHASE
-    ]
-    review_run_id = _in_flight_review(pointer, launched)
+    review_run_id = _standing_review(pointer)
     if not review_run_id:
         return False
     try:
@@ -1250,9 +1405,7 @@ def _current_review_in_flight(pointer: Mapping[str, Any]) -> bool:
 def _refused_delivered_review(pointer: Mapping[str, Any]) -> dict[str, str] | None:
     """Read a live review's refused delivery before asking for another review."""
     reviewed_run_id = str(pointer.get("run_id") or "")
-    review_run_id = _in_flight_review(
-        pointer, _live_pointers(str(pointer.get("project") or ""))
-    )
+    review_run_id = _standing_review(pointer)
     if not review_run_id:
         return None
     try:
@@ -1513,6 +1666,26 @@ def _partition_acknowledged(
             }
         )
     return owed, deferred
+
+
+def _scope_held_item(
+    row: Mapping[str, Any],
+    *,
+    refusal: Mapping[str, Any],
+    now: datetime,
+) -> dict[str, Any]:
+    """The waiting duty one queued request owed a peer run's write claim.
+
+    The holder's landing releases the request, so the row names the holder and
+    the path it fences and publishes no command. ``next_command`` is emptied
+    rather than dropped because the stable shape carries it for every kind.
+    """
+    item = _live_item(row, kind=SCOPE_HELD_DUTY_KIND, now=now)
+    item["next_command"] = ""
+    item["reason"] = str(refusal.get("detail") or "")
+    item["holder_run_id"] = str(refusal.get("holder_run_id") or "")
+    item["held_path"] = str(refusal.get("held_path") or "")
+    return item
 
 
 def _live_item(
@@ -1915,6 +2088,9 @@ def _queued_row_item(
             awaited_review=awaited,
         )
     if row.get("session_refusal"):
+        refusal = row.get("session_refusal")
+        if isinstance(refusal, Mapping) and str(refusal.get("holder_run_id") or ""):
+            return _scope_held_item(row, refusal=refusal, now=now)
         return _live_item(row, kind=QUEUED_AWAITING_SESSION_DUTY_KIND, now=now)
     ordered = placements() if callable(placements) else placements
     return _queued_item(
@@ -2561,20 +2737,35 @@ def _review_duty_item(
         elif _reflex_owns_review(project, pointer):
             # One actor owns review dispatch. While an armed follower will
             # compose this review, the duty names that reflex and the window
-            # its cadence promises, as a field beside the words so a reader
+            # its cadence promises, as a field beside the reflex so a reader
             # deciding whether to act reads the same figure the text quotes.
-            # A reflex already refused is not a wait, so once its window has
+            #
+            # The reflex runs inside the producer's sweep, so an armed follower
+            # with no producer is a staffed session and an unstaffed project,
+            # and the promise of a window holds nothing: a lease nothing has
+            # renewed is the producer's own silence, read by the rule the
+            # reflex reads it with, so the duty states that silence with the
+            # age it has stood still and names the command that arms a producer
+            # again. A reflex already refused is not a wait, so once its window
             # passed the duty carries the refusal's own reason and the dispose
             # command that lifts it instead of a follower to inspect.
-            held = _reflex_open_refusal(
-                project,
-                pointer,
-                age=age,
-                dispatch=str(item.get("next_command") or ""),
+            producer_live, producer_age = _producer_lease(project, now=now)
+            held = (
+                _reflex_open_refusal(
+                    project,
+                    pointer,
+                    age=age,
+                    dispatch=str(item.get("next_command") or ""),
+                )
+                if producer_live is not False
+                else None
             )
             if held is not None:
                 item["reason"] = held["reason"]
                 item["next_command"] = held["next_command"]
+            elif producer_live is False:
+                item["next_command"] = _producer_down_command(project, age=producer_age)
+                item["producer_down_seconds"] = producer_age
             else:
                 # The row's own action is the dispatch this duty replaces only
                 # while the reflex still owns it inside the window; past the
@@ -2772,6 +2963,67 @@ def _holding_record(
     if not candidates:
         return None
     return candidates[-1]
+
+
+# A reading taken while a peer may hold the tree's index lock asks git to leave
+# the repository alone. ``git status`` refreshes the index and would otherwise
+# write it, so a derivation pass over a hundred trees would contend for it.
+_READ_ONLY_GIT_ENV: Mapping[str, str] = {"GIT_OPTIONAL_LOCKS": "0"}
+
+
+# The branch names a landing is expected to have made a retained tree's commits
+# reachable from, in the order they are read. A repository integrates on one of
+# them, and a name the repository does not carry costs file reads rather than a
+# subprocess.
+_PRIMARY_REF_NAMES = ("main", "develop", "master")
+
+
+def _unmerged_commit_answer(tree: Path) -> bool | None:
+    """Whether ``tree``'s head carries a commit no primary ref reaches.
+
+    ``False`` means a primary ref reaches everything the head carries, so a
+    landing has taken the work. ``True`` means a ref was compared and does not
+    reach the head, and no other ref did. ``None`` means no name could be
+    compared, which is not evidence of an empty tree.
+
+    The reachability reading is the claim fence's own, so this derivation and a
+    claim judge one tree by one rule: it reads the head and the ref from git's
+    files and memoises per object id, so a tree that has not moved costs no
+    subprocess on a later pass. The base that reading excludes is passed as the
+    ref's own commit, which leaves exactly the commits the ref cannot reach. The
+    answer is kept in this process rather than in the crew home's store: one
+    derivation pass asks it for every retained tree, and the store is a single
+    file rewritten per answer.
+    """
+    answered = False
+    for name in _PRIMARY_REF_NAMES:
+        merged = _integration_ref_revision(tree, name)
+        if not merged:
+            continue
+        answer = _claim_commit_answer(tree, name, merged, store=False)
+        if answer is None:
+            continue
+        if not answer.strip():
+            return False
+        answered = True
+    return True if answered else None
+
+
+def _tree_holds_unmerged_work(tree: Path) -> bool:
+    """Whether a retained tree still carries work no landing has taken.
+
+    A tree is a duty while deleting it would lose something: an uncommitted
+    change, or a commit the primary branch does not reach. A tree whose run has
+    landed holds neither, so the row naming it names bytes nothing needs, and
+    the derivation stops raising it. A tree that is gone holds nothing; a tree
+    whose state cannot be read keeps its duty.
+    """
+    if not tree.is_dir():
+        return False
+    status = _git_answer(tree, "status", "--porcelain", env=_READ_ONLY_GIT_ENV)
+    if status is None or status.strip():
+        return True
+    return _unmerged_commit_answer(tree) is not False
 
 
 def _held_worktree_records(project: str) -> dict[Path, Mapping[str, Any]]:
@@ -3038,6 +3290,14 @@ class _HeldWorktreeState:
         return affected
 
     def refresh_trees(self, inspected: set[Path], affected: set[Path]) -> None:
+        """Re-file the trees this read inspected, holding only those still owed.
+
+        A tree stops being held when no record names it any more, when its
+        release is already owned, or when it carries no work a landing would
+        have taken: a tree that survived its run but holds nothing unmerged
+        only costs someone a look, while a row claiming otherwise costs a
+        reader their trust in every row beside it.
+        """
         for tree in self.inspected - inspected:
             self.held.pop(tree, None)
             for name in self.records.worktree_keys(tree):
@@ -3052,9 +3312,13 @@ class _HeldWorktreeState:
         for tree in affected & inspected:
             record = _holding_record(tree, self.records)
             release = record.get("release") if record is not None else None
-            if record is None or (
-                isinstance(release, Mapping)
-                and release.get("worktree_released") is True
+            if (
+                record is None
+                or (
+                    isinstance(release, Mapping)
+                    and release.get("worktree_released") is True
+                )
+                or not _tree_holds_unmerged_work(tree)
             ):
                 self.held.pop(tree, None)
             else:
@@ -3488,30 +3752,26 @@ def _record_index_lag(paths: Sequence[str], head: str, *, now: datetime) -> None
     ).hexdigest()
     try:
         home.mkdir(parents=True, exist_ok=True)
-        with (home / (INDEX_LAG_SEEN_NAME + ".lock")).open("a+b") as handle:
-            fcntl.flock(handle.fileno(), fcntl.LOCK_EX)
+        with exclusive_lock(home / (INDEX_LAG_SEEN_NAME + ".lock")):
+            seen_path = home / INDEX_LAG_SEEN_NAME
             try:
-                seen_path = home / INDEX_LAG_SEEN_NAME
-                try:
-                    seen = json.loads(seen_path.read_text(encoding="utf-8"))
-                except (OSError, ValueError):
-                    seen = {}
-                if not isinstance(seen, dict):
-                    seen = {}
-                if key in seen:
-                    return
-                stamp = now.astimezone(UTC).isoformat().replace("+00:00", "Z")
-                line = json.dumps({"at": stamp, "head": head, "paths": list(paths)})
-                with (home / INDEX_LAG_LOG_NAME).open("a", encoding="utf-8") as log:
-                    log.write(line + "\n")
-                seen[key] = stamp
-                pending = seen_path.with_name(seen_path.name + ".tmp")
-                pending.write_text(
-                    json.dumps(seen, sort_keys=True) + "\n", encoding="utf-8"
-                )
-                os.replace(pending, seen_path)
-            finally:
-                fcntl.flock(handle.fileno(), fcntl.LOCK_UN)
+                seen = json.loads(seen_path.read_text(encoding="utf-8"))
+            except (OSError, ValueError):
+                seen = {}
+            if not isinstance(seen, dict):
+                seen = {}
+            if key in seen:
+                return
+            stamp = now.astimezone(UTC).isoformat().replace("+00:00", "Z")
+            line = json.dumps({"at": stamp, "head": head, "paths": list(paths)})
+            with (home / INDEX_LAG_LOG_NAME).open("a", encoding="utf-8") as log:
+                log.write(line + "\n")
+            seen[key] = stamp
+            pending = seen_path.with_name(seen_path.name + ".tmp")
+            pending.write_text(
+                json.dumps(seen, sort_keys=True) + "\n", encoding="utf-8"
+            )
+            os.replace(pending, seen_path)
     except OSError:
         return
 
@@ -3616,11 +3876,14 @@ def obligations(
     and a run in flight cannot appear in one duty and be absent from another
     read in the same view.
     """
-    token = _VIEW_LIVE_POINTERS.set({project: tuple(runs.list_live(project=project))})
-    try:
-        return _obligations_view(project, session, fields=fields)
-    finally:
-        _VIEW_LIVE_POINTERS.reset(token)
+    with _pass_reviews_in_flight():
+        token = _VIEW_LIVE_POINTERS.set(
+            {project: tuple(runs.list_live(project=project))}
+        )
+        try:
+            return _obligations_view(project, session, fields=fields)
+        finally:
+            _VIEW_LIVE_POINTERS.reset(token)
 
 
 def _obligations_view(

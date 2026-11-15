@@ -1,0 +1,48 @@
+<section id="review-index-stamp-s49">
+  <h3>An unchanged reconcile writes only its stamp</h3>
+  <p>The review store's directory identity moves whenever any process creates and removes a file in
+  it, while every record the index describes is untouched. The identity a reconcile proved settled
+  lived only in the memory of the process that reconciled, so every other process -- the station,
+  each project's watch producer, every MCP server and CLI call, and every process started after the
+  reconcile -- found the store moved and listed its names again under the index lock. The settled
+  identity is now written to <code>.review-index/stamp.json</code> beside the document, and both
+  identity probes read it from there.</p>
+  <table>
+    <thead><tr><th>Measure: one process reconciles, then a freshly started process reads.</th><th>Result</th></tr></thead>
+    <tbody>
+      <tr><td>Base: listings of an unchanged store by the second process</td><td>1 (<code>scandir</code>), assertion fails</td></tr>
+      <tr><td>Head: listings of an unchanged store by the second process</td><td>0</td></tr>
+      <tr><td>Head: the reconciling process's index document</td><td>inode, size, mtime and bytes all unchanged</td></tr>
+      <tr><td>Head: a record written afterwards</td><td>reaches the document; its bytes differ from before</td></tr>
+    </tbody>
+  </table>
+  <p>The regression moves the store directory's identity by creating and removing a temporary file,
+  then calls <code>store_index_document</code> once in the test process and asserts the document's
+  inode and bytes are unchanged. A helper asserts the identity actually moved, so a filesystem that
+  coalesced the writes fails as an instrument rather than reporting a silent zero. A second,
+  freshly started interpreter counts every <code>os.scandir</code> and <code>Path.glob</code> over
+  that store before calling <code>store_index_document</code>: it reads 1 at the base revision and 0
+  at head. The same test then writes a record and shows the document move.</p>
+  <p>The stamp records the identity taken before the listing its entries came from, never a later
+  stat, so a record written after that listing moves the identity again and the stamp cannot mask
+  it. A document write carries its stamp in the same step, so a reader sees both or sees the stamp
+  lagging and reconciles. The stamp is read and written through the cache document helpers the rest
+  of the store already uses, so it inherits their rule rather than repeating it: a missing,
+  half-written or malformed stamp reads as absent, and advancing it neither fsyncs a cache file nor
+  narrows its mode.</p>
+  <p>The declared mutation restores the base behaviour -- writing the whole document when a
+  reconcile changes no entry -- and the test fails with
+  <strong>an unchanged reconcile rewrote the index document</strong> and <code>EXIT=1</code>.</p>
+  <p>Matched arms of the node's suite over scratch trees of <code>ffcba6679c</code> and the change
+  head read <strong>53 passed, 2 errors</strong> at base and <strong>54 passed, 2 errors</strong> at
+  head: zero added failures. The two errors are identical in both arms and belong to
+  <code>tests/test_staged_write_inventory.py</code>, whose fixture runs <code>git ls-tree HEAD</code>
+  against a tree extracted with <code>git archive</code>, which carries no repository.
+  <code>ruff check</code> and <code>ruff format --check</code> add no finding on the staged paths.</p>
+  <p>Retiring the in-process memo also retires the fixture that cleared it:
+  <code>tests/test_a_review_index_reader_never_waits_or_rewrites.py</code> carried an autouse
+  fixture calling <code>review_records._SETTLED_IDENTITIES.clear()</code>, so its two tests failed
+  at setup once the memo was gone, where both passed at base. The fixture, and the import only it
+  used, are deleted in the same change: a reader now settles against the recorded stamp, so no
+  process state is left to reset between tests.</p>
+</section>

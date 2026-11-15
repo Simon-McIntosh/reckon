@@ -200,7 +200,9 @@ def _roadmap_priority_keys(
                     else []
                 )
                 with roadmap_build_scope(
-                    resolve_coordinators=False, classify_runs=False
+                    resolve_coordinators=False,
+                    classify_runs=False,
+                    audit_landings=False,
                 ):
                     report = build_roadmap(
                         project,

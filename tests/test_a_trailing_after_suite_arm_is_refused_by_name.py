@@ -37,6 +37,21 @@ def _git(root: Path, *args: str) -> str:
     ).stdout.strip()
 
 
+@pytest.fixture(autouse=True)
+def _no_landing_measurement(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Make the landing's own measurement unavailable, as it is for a run whose
+    trees cannot be named.
+
+    The landing measures a superseded arm itself when it can, and that path is
+    exercised where the measurement is. These cases are about the explanation a
+    run gets when nothing can be measured, so the measurement is taken out of
+    reach rather than left to fail inside the fixture.
+    """
+    from reckon.crew import promotion_records
+
+    monkeypatch.setattr(promotion_records, "_measured_arm_tree", lambda _record: None)
+
+
 @pytest.fixture()
 def tree(tmp_path: Path) -> tuple[Path, Path, str, str]:
     """A run's worktree whose head has moved past its base, and both revisions.
@@ -56,8 +71,9 @@ def tree(tmp_path: Path) -> tuple[Path, Path, str, str]:
     base = _git(main, "rev-parse", "HEAD")
     worktree = tmp_path / "run-worktree"
     _git(main, "worktree", "add", "-q", "--detach", str(worktree), base)
-    (worktree / "delivered.txt").write_text("the run's own work\n")
-    _git(worktree, "add", "delivered.txt")
+    (worktree / "reckon").mkdir(parents=True, exist_ok=True)
+    (worktree / "reckon" / "alpha.py").write_text("VALUE = 1\n")
+    _git(worktree, "add", "reckon")
     _git(worktree, "commit", "-q", "-m", "head")
     head = _git(worktree, "rev-parse", "HEAD")
     return worktree, main, base, head

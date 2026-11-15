@@ -1,0 +1,72 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_basis": "the reviewed node is suite-unarmed and records no baseline_suite or after_suite; the pair is read from its focused arms, measurement-logs/focused/base.log (revision 251cb1cd05, 1 failed, 4 passed, EXIT=1, failing id tests/test_a_landing_commit_retries_a_released_lock.py::test_a_lock_released_after_the_failed_call_still_waits) and measurement-logs/focused/head.log (revision 1b8a0d372a, 5 passed, EXIT=0), so no failure is added at the head.",
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/serve.py:2705 compose_landed_record (served landed record)",
+    "reckon/mcp.py:1344 compose_landed_record (read_plan composition)",
+    "reckon/doccheck.py:1970 compose_landed_record (composed-record audit)",
+    "reckon/crew/reports.py:2663 audit_fragment_ids (promotion-time id audit)"
+  ],
+  "completed_at": "2026-11-15T07:20:19.464Z",
+  "dispatched_at": "2026-11-15T07:04:34Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "exempted",
+      "reason": "the control arm's surviving log records the refusal and its 148.64 s; the quoted bound figures came from per-promotion stdout under node-local scratch, which the fragment cites as such",
+      "recorded_at": "2026-11-15T07:24:09.446765+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/a-landing-never-waits-on-a-shared-index/a-promotion-lands-in-under-a-minute-remeasured.html",
+      "line": "75",
+      "severity": "non-blocking",
+      "text": "the fragment quotes a refusal report reading \"Another writer has held the checkout's index lock for 83.2s, past this landing's 64.5s retry bound (130 attempts 0.50s apart)\", and neither figure appears in any log under the run directory: measurement-logs/control/lock-hold-150.log records only refused 1, rolled_back 1, landed 0 and max_seconds 148.64, while the per-promotion stdout the sentence was copied from lived under the node-local /tmp scratch the run has since removed. The claim the sentence supports is durable, but the numbers it quotes are not checkable by a reader."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "four production paths reach a fragment: reckon/serve.py:2705 (the landed record served for a plan), reckon/mcp.py:1344 (read_plan composing the record), reckon/doccheck.py:1970 (the composed-record audit) and reckon/crew/reports.py:2663 (the promotion-time fragment id audit); the fragment's six element ids collide with none of them and with no other fragment in docs/, so it composes without a duplicate anchor.",
+    "diff": "read the single commit c4297848a7 against its parent 1b8a0d372a: one new 123-line evidence fragment holding two timing tables, the head arm's git log beside the identical origin log, the negative-control section and an evidence-path list; no executable change, so the diff adds no definition and no assertion.",
+    "done_when": "the plan section's done-when asks for at least four attempts of three landing under 60 s wall clock with none rolled back, both arms recorded in the evidence, and either a lock collision or a record of how often it was tried; the fragment's two timing tables match measurement-logs/head/attempt-1..4.log (12 of 12 landed, 0 refused, 0 rolled back, slowest 15.31 s) and measurement-logs/base/attempt-1..4.log (12 of 12, 0 refused, 0 rolled back, slowest 15.49 s) field for field, and its negative control section names the twelve attempts in which the collision did not reproduce.",
+    "goal": "the node's goal is to re-measure three concurrent promotions against one checkout at a revision carrying the released-lock retry; the landed fragment docs/evidence/fragments/a-landing-never-waits-on-a-shared-index/a-promotion-lands-in-under-a-minute-remeasured.html records four attempts of three at 1b8a0d372a and the same four at 251cb1cd05, and states every promotion landed in at most 15.31 s at the head and 15.49 s on the comparison arm.",
+    "manifest": "read; status complete, commits [c4297848a7], changed_paths the fragment, and its checkpoint and artifacts restate the head arm's 12 of 12 at 15.31 s, the comparison arm's 12 of 12 at 15.49 s and the refusal control at 148.64 s; baseline_suite and after_suite are absent because the node is suite-unarmed, so the added-failure pair is read from its focused arms instead.",
+    "write_paths": "the node was fenced to the evidence fragment and a figure directory under docs/evidence/fragments/a-landing-never-waits-on-a-shared-index/; git diff --stat 1b8a0d372a..c4297848a7 lists exactly one file, the fragment, and no source, test, plan or other path."
+  },
+  "justifications": {
+    "durability": "the commit adds no executable change and no assertion, so nothing fails if the fragment is deleted or its numbers are edited; the only mechanical guard is the promotion-time id audit at reckon/crew/reports.py:2663, which covers anchor collisions rather than content.",
+    "evidence": "every figure in both tables reproduces from the logs the fragment cites measurement-logs/head/attempt-3.log reads 15.31, 12.44 and 14.27 s with landed 3, refused 0, rolled_back 0, and measurement-logs/control/lock-hold-150.log records refused 1 and rolled_back 1 at 148.64 s; the one quoted refusal sentence at :75 has no durable source, which is the finding below.",
+    "fit": "the fragment follows the sibling idiom of docs/evidence/fragments/a-landing-never-waits-on-a-shared-index/a-promotion-lands-in-under-a-minute-with-peers.html (section, h2, table, table, pre/code, evidence paths) with no plan, sprint or ticket identifier and no attribution, though it anchors on the bare node id where every section-style sibling uses the '<node>-landing' suffix and it ends without a trailing newline.",
+    "goal_fidelity": "the fragment records the measure the goal names at the revision that carries the retry (docs/evidence/fragments/a-landing-never-waits-on-a-shared-index/a-promotion-lands-in-under-a-minute-remeasured.html:15-34 head arm, :36-56 comparison arm), and the head arm's twelve landings are all reachable from the origin's main per measurement-logs/head/attempt-*.log, so the goal's deliverable is present.",
+    "reuse": "nothing is defined, so nothing is duplicated; the search for an existing owner of concurrent-promotion measurement found reckon/crew/landing_measure.py, which measures a gate's suite arms at a base and a head revision rather than promotions racing on one checkout, and the run-local driver is not landed code.",
+    "scope_discipline": "git diff --stat 1b8a0d372a..c4297848a7 lists one file, docs/evidence/fragments/a-landing-never-waits-on-a-shared-index/a-promotion-lands-in-under-a-minute-remeasured.html, inside the declared fragment fence; no file was written under the node's declared figure directory, which git ls-tree shows absent at the head."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to re-measure three concurrent promotions against one checkout at a revision carrying the released-lock retry; the landed fragment docs/evidence/fragments/a-landing-never-waits-on-a-shared-index/a-promotion-lands-in-under-a-minute-remeasured.html records four attempts of three at 1b8a0d372a and the same four at 251cb1cd05, and states every promotion landed in at most 15.31 s at the head and 15.49 s on the comparison arm.\nVERDICT done_when: the plan section's done-when asks for at least four attempts of three landing under 60 s wall clock with none rolled back, both arms recorded in the evidence, and either a lock collision or a record of how often it was tried; the fragment's two timing tables match measurement-logs/head/attempt-1..4.log (12 of 12 landed, 0 refused, 0 rolled back, slowest 15.31 s) and measurement-logs/base/attempt-1..4.log (12 of 12, 0 refused, 0 rolled back, slowest 15.49 s) field for field, and its negative control section names the twelve attempts in which the collision did not reproduce.\nVERDICT diff: read the single commit c4297848a7 against its parent 1b8a0d372a: one new 123-line evidence fragment holding two timing tables, the head arm's git log beside the identical origin log, the negative-control section and an evidence-path list; no executable change, so the diff adds no definition and no assertion.\nVERDICT write_paths: the node was fenced to the evidence fragment and a figure directory under docs/evidence/fragments/a-landing-never-waits-on-a-shared-index/; git diff --stat 1b8a0d372a..c4297848a7 lists exactly one file, the fragment, and no source, test, plan or other path.\nVERDICT manifest: read; status complete, commits [c4297848a7], changed_paths the fragment, and its checkpoint and artifacts restate the head arm's 12 of 12 at 15.31 s, the comparison arm's 12 of 12 at 15.49 s and the refusal control at 148.64 s; baseline_suite and after_suite are absent because the node is suite-unarmed, so the added-failure pair is read from its focused arms instead.\nCALL_SITES: reckon/serve.py:2705 compose_landed_record (served landed record), reckon/mcp.py:1344 compose_landed_record (read_plan composition), reckon/doccheck.py:1970 compose_landed_record (composed-record audit), reckon/crew/reports.py:2663 audit_fragment_ids (promotion-time id audit)\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: the fragment records the measure the goal names at the revision that carries the retry (docs/evidence/fragments/a-landing-never-waits-on-a-shared-index/a-promotion-lands-in-under-a-minute-remeasured.html:15-34 head arm, :36-56 comparison arm), and the head arm's twelve landings are all reachable from the origin's main per measurement-logs/head/attempt-*.log, so the goal's deliverable is present.\nSCORE evidence: 17\nJUSTIFICATION evidence: every figure in both tables reproduces from the logs the fragment cites measurement-logs/head/attempt-3.log reads 15.31, 12.44 and 14.27 s with landed 3, refused 0, rolled_back 0, and measurement-logs/control/lock-hold-150.log records refused 1 and rolled_back 1 at 148.64 s; the one quoted refusal sentence at :75 has no durable source, which is the finding below.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat 1b8a0d372a..c4297848a7 lists one file, docs/evidence/fragments/a-landing-never-waits-on-a-shared-index/a-promotion-lands-in-under-a-minute-remeasured.html, inside the declared fragment fence; no file was written under the node's declared figure directory, which git ls-tree shows absent at the head.\nSCORE durability: 10\nJUSTIFICATION durability: the commit adds no executable change and no assertion, so nothing fails if the fragment is deleted or its numbers are edited; the only mechanical guard is the promotion-time id audit at reckon/crew/reports.py:2663, which covers anchor collisions rather than content.\nSCORE fit: 17\nJUSTIFICATION fit: the fragment follows the sibling idiom of docs/evidence/fragments/a-landing-never-waits-on-a-shared-index/a-promotion-lands-in-under-a-minute-with-peers.html (section, h2, table, table, pre/code, evidence paths) with no plan, sprint or ticket identifier and no attribution, though it anchors on the bare node id where every section-style sibling uses the '<node>-landing' suffix and it ends without a trailing newline.\nSCORE reuse: 20\nJUSTIFICATION reuse: nothing is defined, so nothing is duplicated; the search for an existing owner of concurrent-promotion measurement found reckon/crew/landing_measure.py, which measures a gate's suite arms at a base and a head revision rather than promotions racing on one checkout, and the run-local driver is not landed code.\nFINDING docs/evidence/fragments/a-landing-never-waits-on-a-shared-index/a-promotion-lands-in-under-a-minute-remeasured.html:75 non-blocking: the fragment quotes a refusal report reading \"Another writer has held the checkout's index lock for 83.2s, past this landing's 64.5s retry bound (130 attempts 0.50s apart)\", and neither figure appears in any log under the run directory: measurement-logs/control/lock-hold-150.log records only refused 1, rolled_back 1, landed 0 and max_seconds 148.64, while the per-promotion stdout the sentence was copied from lived under the node-local /tmp scratch the run has since removed. The claim the sentence supports is durable, but the numbers it quotes are not checkable by a reader.\n",
+  "review_run_id": "r-20261115T070101678216-review-of-a-promotion-lands-in-under-a-minute-remeasured-c4297848a7ba",
+  "reviewed_base_sha": "1b8a0d372a38dc90952c3fa0bf284ffefca26603",
+  "reviewed_head_sha": "c4297848a7ba132f0999ed4dc400f6e5869c4854",
+  "reviewed_run_id": "r-20261115T062044373262-a-promotion-lands-in-under-a-minute-remeasured",
+  "reviewer": {
+    "backend": "clive",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash",
+    "reviewer_run_id": "r-20261115T070101678216-review-of-a-promotion-lands-in-under-a-minute-remeasured-c4297848a7ba"
+  },
+  "reviewer_run_id": "r-20261115T070101678216-review-of-a-promotion-lands-in-under-a-minute-remeasured-c4297848a7ba",
+  "scores": {
+    "durability": 10,
+    "evidence": 17,
+    "fit": 17,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-15T07:23:37.060010+00:00",
+  "total": 104
+}

@@ -130,6 +130,12 @@ def sweep(
         lift_id = str(lift.get("id") or "")
         if not lift_id:
             continue
+        scope = str(lift.get("scope") or "")
+        if (
+            scope.startswith(budget_lift.PROJECT_PREFIX)
+            and scope != f"{budget_lift.PROJECT_PREFIX}{project}"
+        ):
+            continue
         by_id[lift_id] = dict(lift)
         readings = resolver(str(lift.get("group") or ""), config, moment)
         if budget_lift._in_force(lift, readings=readings, now=moment, bound=bound):

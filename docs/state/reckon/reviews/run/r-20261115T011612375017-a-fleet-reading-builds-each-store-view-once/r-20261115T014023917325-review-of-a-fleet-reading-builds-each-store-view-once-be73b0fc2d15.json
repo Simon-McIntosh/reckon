@@ -1,0 +1,120 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_independence": "No added assertion merely compares an echoed supplied scalar with itself; expected path membership is checked against a transformed index view, and performance counts are measured by a wrapper around the real builder.",
+  "assertion_review": [
+    {
+      "failure_condition": "Fixture index missing or not holding 2000 entries fails setup.",
+      "lines": "74"
+    },
+    {
+      "failure_condition": "A leaked tick context fails the outside-tick precondition.",
+      "lines": "83"
+    },
+    {
+      "failure_condition": "A missing pointer or collapsed classification row fails the independently fixed population counts.",
+      "lines": "103-104"
+    },
+    {
+      "failure_condition": "An unreadable classification fails; another incorrect readable classification does not, as the finding records.",
+      "lines": "105"
+    },
+    {
+      "failure_condition": "Bypassing the measured builder fails the positive control; reinstating the base uncached branch yields 540 and fails <=1.",
+      "lines": "106-107"
+    },
+    {
+      "failure_condition": "Mutating a held snapshot in place fails old-view absence; ignoring index version fails new-path presence and size; uncached reads fail the build count.",
+      "lines": "138-141"
+    },
+    {
+      "failure_condition": "Cross-store cache confusion fails the independent expected path sets; removing reuse fails identity and builder count.",
+      "lines": "161-164"
+    },
+    {
+      "failure_condition": "Keying by version alone after a generation change returns first.json instead of replacement.json and fails both assertions.",
+      "lines": "171-172"
+    }
+  ],
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/crew/review_records.py:_store_paths:145",
+    "reckon/crew/review_records.py:_record_stat:154",
+    "reckon/crew/review_records.py:_build_store_entries:1555",
+    "reckon/crew/review_records.py:_update_store_entries:1599",
+    "reckon/crew/review_records.py:stored_review:893-894"
+  ],
+  "completed_at": "2026-11-15T01:49:37Z",
+  "dispatched_at": "2026-11-15T01:44:02Z",
+  "failure_delta_evidence": {
+    "after_suite": {
+      "command": "PYTHONPATH=. /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_fleet_reading_builds_each_store_view_once.py tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T011612375017-a-fleet-reading-builds-each-store-view-once/after-suite.log",
+      "revision": "a8b520dd310241cde39d272399385b9f261b5fff",
+      "verified_failure_ids": []
+    },
+    "baseline_suite": {
+      "command": "PYTHONPATH=. /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T011612375017-a-fleet-reading-builds-each-store-view-once/baseline-suite-valid.log",
+      "revision": "ee4121ee40ae170be3362898306a9447c85628da",
+      "verified_failure_ids": []
+    }
+  },
+  "findings": [
+    {
+      "file": "tests/test_a_fleet_reading_builds_each_store_view_once.py",
+      "line": "105",
+      "severity": "non-blocking",
+      "text": "non-blocking: The committed classification assertion only rejects unreadable, so a change from promotable to another readable classification would stay green; the base/head equality check exists in the run receipts but has no durable regression assertion."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 5 production call site(s)",
+    "diff": "Read a8b520dd310241cde39d272399385b9f261b5fff and be73b0fc2d1579d19f58e05f8ec7efd9caa434f3 against ee4121ee40ae170be3362898306a9447c85628da; the first extends the existing stat-view owner and adds five acceptance cases, and the second adds only the evidence fragment.",
+    "done_when": "The source live pointer's node.done_when and live plan s80 require the 30-pointer/2000-entry gate, base negative control and all_debug evidence; after-suite.log records 60 passes, negative-control-final.log records the outside count 540, and the JUnit arms independently agree on all 30 classifications in both modes.",
+    "goal": "The source live pointer's node.goal asks for at-most-once store views inside and outside ticks; reckon/crew/review_records.py:80-89 implements reuse by directory, generation and version.",
+    "manifest": "The source run's manifest.md names both inspected commits, complete base/head gate receipts and the preserved importer failures; those receipt contents support its reported results.",
+    "write_paths": "The source live pointer's node.write_paths grants the module, acceptance test, evidence fragment and figure directory; all three changed files are within those grants."
+  },
+  "justifications": {
+    "durability": "tests/test_a_fleet_reading_builds_each_store_view_once.py:106-107,138-141,161-172 reject skipped measurement, repeated builds, stale writes and cross-store/generation confusion, but :99-105 only records classifications and excludes unreadable rather than asserting base parity.",
+    "evidence": "after-suite.log and negative-control-final.log record 60 passes versus three negative-control failures, and base-classifications-final.xml and head-classifications.xml independently show 540-to-1 outside builds with 30 matching classifications.",
+    "fit": "reckon/crew/review_records.py:80 and :124 extend the established owner with the same generation/version identity used by _document_index_maps at :2420 and introduce no forbidden source names.",
+    "goal_fidelity": "reckon/crew/review_records.py:80-89 shares the held view across callers and installs it into a tick, while a changed generation/version rebuilds it.",
+    "reuse": "Capability searches for stat views, indexed generation caches and memoization found the existing _tick_store/_document_stat_view owner and _document_index_maps in reckon/crew/review_records.py; the change extends that owner, while reckon/file_memo.py:445 owns copying memoization rather than this shared stat-view identity.",
+    "scope_discipline": "Both inspected commits change only reckon/crew/review_records.py, tests/test_a_fleet_reading_builds_each_store_view_once.py and the expressly granted evidence fragment."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The source live pointer's node.goal asks for at-most-once store views inside and outside ticks; reckon/crew/review_records.py:80-89 implements reuse by directory, generation and version.\nVERDICT done_when: The source live pointer's node.done_when and live plan s80 require the 30-pointer/2000-entry gate, base negative control and all_debug evidence; after-suite.log records 60 passes, negative-control-final.log records the outside count 540, and the JUnit arms independently agree on all 30 classifications in both modes.\nVERDICT write_paths: The source live pointer's node.write_paths grants the module, acceptance test, evidence fragment and figure directory; all three changed files are within those grants.\nVERDICT manifest: The source run's manifest.md names both inspected commits, complete base/head gate receipts and the preserved importer failures; those receipt contents support its reported results.\nVERDICT diff: Read a8b520dd310241cde39d272399385b9f261b5fff and be73b0fc2d1579d19f58e05f8ec7efd9caa434f3 against ee4121ee40ae170be3362898306a9447c85628da; the first extends the existing stat-view owner and adds five acceptance cases, and the second adds only the evidence fragment.\nCALL_SITES: reckon/crew/review_records.py:_store_paths:145, reckon/crew/review_records.py:_record_stat:154, reckon/crew/review_records.py:_build_store_entries:1555, reckon/crew/review_records.py:_update_store_entries:1599, reckon/crew/review_records.py:stored_review:893-894\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/review_records.py:80-89 shares the held view across callers and installs it into a tick, while a changed generation/version rebuilds it.\nSCORE evidence: 20\nJUSTIFICATION evidence: after-suite.log and negative-control-final.log record 60 passes versus three negative-control failures, and base-classifications-final.xml and head-classifications.xml independently show 540-to-1 outside builds with 30 matching classifications.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: Both inspected commits change only reckon/crew/review_records.py, tests/test_a_fleet_reading_builds_each_store_view_once.py and the expressly granted evidence fragment.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_a_fleet_reading_builds_each_store_view_once.py:106-107,138-141,161-172 reject skipped measurement, repeated builds, stale writes and cross-store/generation confusion, but :99-105 only records classifications and excludes unreadable rather than asserting base parity.\nSCORE fit: 20\nJUSTIFICATION fit: reckon/crew/review_records.py:80 and :124 extend the established owner with the same generation/version identity used by _document_index_maps at :2420 and introduce no forbidden source names.\nSCORE reuse: 20\nJUSTIFICATION reuse: Capability searches for stat views, indexed generation caches and memoization found the existing _tick_store/_document_stat_view owner and _document_index_maps in reckon/crew/review_records.py; the change extends that owner, while reckon/file_memo.py:445 owns copying memoization rather than this shared stat-view identity.\nFINDING tests/test_a_fleet_reading_builds_each_store_view_once.py:105 non-blocking: The committed classification assertion only rejects unreadable, so a change from promotable to another readable classification would stay green; the base/head equality check exists in the run receipts but has no durable regression assertion.\n",
+  "review_run_id": "r-20261115T014023917325-review-of-a-fleet-reading-builds-each-store-view-once-be73b0fc2d15",
+  "reviewed_base_sha": "ee4121ee40ae170be3362898306a9447c85628da",
+  "reviewed_commits": [
+    "a8b520dd310241cde39d272399385b9f261b5fff",
+    "be73b0fc2d1579d19f58e05f8ec7efd9caa434f3"
+  ],
+  "reviewed_head_sha": "be73b0fc2d1579d19f58e05f8ec7efd9caa434f3",
+  "reviewed_run_id": "r-20261115T011612375017-a-fleet-reading-builds-each-store-view-once",
+  "scores": {
+    "durability": 18,
+    "evidence": 20,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-15T01:56:27.277607+00:00",
+  "total": 118
+}

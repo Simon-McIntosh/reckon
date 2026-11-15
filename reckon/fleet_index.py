@@ -229,10 +229,12 @@ def compute_project_row(
     *,
     state_root: Path | None = None,
     now: datetime | None = None,
+    home: Path | None = None,
 ) -> dict:
     """Return one project's fleet-index row, computed live from its repository."""
 
     from reckon import crew
+    from reckon.crew import repository_maintenance
     from reckon.serve import discover_plans
 
     reference = now or datetime.now()  # noqa: DTZ005 — naive local, matches serve._row_times
@@ -243,6 +245,7 @@ def compute_project_row(
     counts = _status_counts(inventory)
     plans_count = sum(counts.values())
     live_pointers = crew.list_live(project=project)
+    last_objects = repository_maintenance.read_record(Path(docs_dir).parent, home=home)
     last_edited = _last_edited(inventory)
 
     return {
@@ -255,6 +258,16 @@ def compute_project_row(
         "pending": counts["pending"],
         "shipped": counts["shipped"],
         "live": len(live_pointers),
+        # The repository's object store as the last maintenance pass left it.
+        # Read from the record rather than from the repository: this row is
+        # composed for every mounted project on each page load, and counting a
+        # real object store costs a git walk beside every other project's.
+        "loose_objects": None
+        if last_objects is None
+        else last_objects.get("loose_after"),
+        "maintenance_ran_at": None
+        if last_objects is None
+        else last_objects.get("ran_at"),
         "last_edited": last_edited,
         "last_modified": last_edited,
         "recent_landed": _recent_landed(inventory, project, reference),
@@ -268,10 +281,11 @@ def collect_project_rows(
     *,
     state_root: Path | None = None,
     now: datetime | None = None,
+    home: Path | None = None,
 ) -> list[dict]:
     """Return compact fleet rows for every mounted project in stable order."""
 
     return [
-        compute_project_row(path, name, state_root=state_root, now=now)
+        compute_project_row(path, name, state_root=state_root, now=now, home=home)
         for name, path in sorted(mounts.items())
     ]

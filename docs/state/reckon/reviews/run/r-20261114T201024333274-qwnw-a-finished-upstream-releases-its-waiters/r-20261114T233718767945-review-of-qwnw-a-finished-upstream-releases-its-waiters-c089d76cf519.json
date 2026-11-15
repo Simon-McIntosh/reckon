@@ -1,0 +1,54 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/crew/dispatch.py:601 (queue_requests reachable from crew dispatch)",
+    "reckon/crew/dispatch_batch.py:763 (batch entries queue through queue_requests)",
+    "reckon/crew/admission/release.py:555 (the release tick re-queues through dispatch_queue_requests)",
+    "reckon/crew/admission/readiness.py:725 _wait_state -> _ref_state:1299 and :1308",
+    "reckon/crew/admission/readiness.py:805 _section_readiness_state -> _section_run_unlanded",
+    "reckon/crew/admission/readiness.py:854 _dispatch_nonrun_wait_state -> _section_run_unlanded",
+    "reckon/crew/promotion.py:921 _complete_locked from complete(), which promotion runs"
+  ],
+  "completed_at": "2026-11-15T00:47:26.092Z",
+  "dispatched_at": "2026-11-14T23:51:58Z",
+  "findings": [
+    {
+      "file": "reckon/crew/admission/readiness.py",
+      "line": 1299,
+      "severity": "non-blocking",
+      "text": "the whole-plan wait is resolved by roadmap._plan_dependency_satisfied, which returns False until at least one section is done (reckon/roadmap.py:765), so a plan whose sections are all descoped and none done still holds its dependents, while section 7's deliverable states the wait clears once every section is done or descoped; the reuse is deliberate so a wait and a roadmap edge cannot disagree, but the evidence fragment repeats the deliverable's wording rather than the rule that runs"
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-a-finished-upstream-releases-its-waiters.html",
+      "line": 71,
+      "severity": "non-blocking",
+      "text": "the 'node tests, after' arm is labelled revision 1ba716cf, but node-tests-head.log in the same run directory records revision=c089d76cf519 in its header, so the delivered evidence table misstates the revision that arm ran at; no test result. Zero added failures derived from the gate logs is unaffected."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "read commit by commit against base 1ba716cf; one commit c089d76cf519 changes three source modules, one new test file and one evidence fragment, all inside the declared scope.",
+    "done_when": "the done_when names five behaviours measured with a temporary repository and crew home; tests/test_a_finished_upstream_releases_its_waiters.py carries one test per behaviour plus discriminators, the head arm records 9 passed (node-tests-head.log) and the base arm records 5 failed (negative-control.log).",
+    "goal": "the node goal is that a finished upstream releases its waiters; reckon/crew/admission/readiness.py:1299 now resolves a whole-plan wait through roadmap._plan_dependency_satisfied, and the other three landed sites cover the input, review-pointer and plan-slug behaviours.",
+    "manifest": "read; it reports 9 node tests passed at head against 5 failed at base, the suite gate at 55 passed after and 53 passed plus 2 setup errors at base, and names every log on disk.",
+    "write_paths": "the declared write paths are reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround and skills; every one of the five changed paths in the diff lies inside them."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that a finished upstream releases its waiters; reckon/crew/admission/readiness.py:1299 resolves a whole-plan wait through roadmap._plan_dependency_satisfied, and reckon/crew/dispatching/requests.py:197, readiness.py:610 and promotion.py:495 carry the input, review-pointer and plan-slug behaviours.\nVERDICT done_when: the done_when names five behaviours measured with a temporary repository and crew home; tests/test_a_finished_upstream_releases_its_waiters.py has one test per bullet plus discriminators, node-tests-head.log records 9 passed and negative-control.log records 5 failed at base.\nVERDICT write_paths: the declared paths are reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround and skills; all five changed paths in the diff lie inside them.\nVERDICT manifest: read; it states 9 node tests passed at head against 5 failed at base, the suite gate 55 passed after against 53 passed with 2 extraction setup errors at base, and names every log on disk.\nVERDICT diff: read commit by commit against base 1ba716cf; one commit c089d76cf519 touches three source modules, one new test file and one evidence fragment, all in scope, and the metered behaviour is disclosed as already correct at base rather than rewritten.\nCALL_SITES: reckon/crew/dispatch.py:601, reckon/crew/dispatch_batch.py:763, reckon/crew/admission/release.py:555, reckon/crew/admission/readiness.py:725, reckon/crew/admission/readiness.py:805, reckon/crew/admission/readiness.py:854, reckon/crew/promotion.py:921\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/dispatching/requests.py:197 drops the inputs finding for a waiting request and readiness.py:1299 delegates the plan wait to the roadmap's own rule, covering four of the five bullets with code and the fifth with a passing test.\nSCORE evidence: 17\nJUSTIFICATION evidence: gate-base.log and gate-after.log record EXIT=1 and EXIT=0 with their summary lines, and node-tests-head.log records 9 passed against 5 failed in negative-control.log, though the evidence fragment at line 71 mislabels the after arm's revision.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the five paths in the diff are all inside the declared write paths, and no file outside the goal's reach is touched.\nSCORE durability: 18\nJUSTIFICATION durability: test_a_plan_whose_sections_are_all_done_releases_its_waiter fails at base on {'candidates': ['r-waiter'], 'promoted': []}, and test_a_plan_with_an_open_section_keeps_its_waiter_parked and test_a_delivered_implementation_run_still_holds_its_section discriminate the new behaviour from the old.\nSCORE fit: 19\nJUSTIFICATION fit: readiness.py:1299 and :610 use the file's existing idiom of importing a private owner helper inside the function, as _revision_is_ancestor already does at readiness.py:563.\nSCORE reuse: 20\nJUSTIFICATION reuse: the change delegates the plan wait to roadmap._plan_dependency_satisfied at readiness.py:1252, to recovery_review_delivery._is_review_run at readiness.py:610 and to recovery_review_dispatch._plan_review_pointer_slug at promotion.py:507, adding no second implementation of any of the three capabilities.\nFINDING reckon/crew/admission/readiness.py:1299 non-blocking: the whole-plan wait is resolved by roadmap._plan_dependency_satisfied, which returns False until at least one section is done (reckon/roadmap.py:765), so a plan whose sections are all descoped and none done still holds its dependents, while section 7's deliverable states the wait clears once every section is done or descoped; the reuse is deliberate so a wait and a roadmap edge cannot disagree, but the evidence fragment repeats the deliverable's wording rather than the rule that runs.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-a-finished-upstream-releases-its-waiters.html:71 non-blocking: the 'node tests, after' arm is labelled revision 1ba716cf, but node-tests-head.log in the same run directory records revision=c089d76cf519 in its header, so the delivered evidence table misstates the revision that arm ran at.",
+  "review_run_id": "r-20261114T233718767945-review-of-qwnw-a-finished-upstream-releases-its-waiters-c089d76cf519",
+  "reviewed_base_sha": "1ba716cf0aeb500f4cf9bc0192d6927e11f9d6b2",
+  "reviewed_head_sha": "c089d76cf519760750d055c471058532bc18f898",
+  "reviewed_run_id": "r-20261114T201024333274-qwnw-a-finished-upstream-releases-its-waiters",
+  "scores": {
+    "durability": 18,
+    "evidence": 17,
+    "fit": 19,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-15T01:01:57.885934+00:00",
+  "total": 112
+}

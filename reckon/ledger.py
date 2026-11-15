@@ -35,7 +35,6 @@ rather than averaging it in silently.
 from __future__ import annotations
 
 import contextlib
-import fcntl
 import hashlib
 import json
 import logging
@@ -61,6 +60,7 @@ from reckon import _store, file_memo
 from reckon._plan_html import SECTION_NUMBER_PATTERN
 from reckon._timestamps import parse_utc
 from reckon.git_head import _common_git_directory, _git_directory
+from reckon.node_exclusive_lock import exclusive_lock
 
 _LOG = logging.getLogger(__name__)
 _DAMAGED_RUN_RECORDS: ContextVar[tuple[str, tuple[Path, ...]]] = ContextVar(
@@ -2625,19 +2625,14 @@ def _ledger_write_lock(project: str):
     is refused before it writes anything, and any restore it performs can only
     concern files it wrote itself.
 
-    The lock is advisory and process-scoped (``flock``), which is the scope of
-    the hazard: every writer here is a command in a separate process. It is
-    released when the file handle closes, so a writer that dies mid-write
-    cannot strand the lock.
+    The lock excludes across nodes because it is taken through
+    :func:`reckon.node_exclusive_lock.exclusive_lock`, whose POSIX record lock
+    the file server holds for a holder on another node; ``flock`` alone is
+    granted by the local kernel and would not. It is released when the handle
+    closes, so a writer that dies mid-write cannot strand it.
     """
-    path = ledger_lock_path(project)
-    path.parent.mkdir(parents=True, exist_ok=True)
-    with path.open("a+b") as handle:
-        fcntl.flock(handle.fileno(), fcntl.LOCK_EX)
-        try:
-            yield
-        finally:
-            fcntl.flock(handle.fileno(), fcntl.LOCK_UN)
+    with exclusive_lock(ledger_lock_path(project)):
+        yield
 
 
 def write(
@@ -3317,22 +3312,32 @@ def register_member(
 
 
 def _index_append(project: str, record: Mapping[str, Any]) -> dict[str, Any]:
-    """Update the rebuildable index after the authoritative file is written.
+    """Record one run in the store, refusing when the store will not take it.
+
+    The store is the durable authority for every promoted run, so a write it
+    declines is a refusal and never a merely unhealthy index: an append that
+    returned having written nothing would report a landed run that no store
+    holds. The caller owns the run file and removes it before this refusal
+    propagates, so neither store keeps the row.
 
     The store retries a locked database with a bounded backoff inside this one
     call, so a lock held by a concurrent promotion lasts milliseconds and the
     row it costs is written rather than lost. A lock outlasting that bound, and
-    any other failure, is returned to promotion without altering the run file
-    or failing its append. Index lag exposes missing rows until
-    ``run_store.import_ledger`` — the repair pass the promotion gate already
-    runs — inserts them, or a reader rebuilds the cache from the files.
+    any other failure, is raised naming the store and the repair verb.
     """
     from reckon import run_store
 
     try:
         run_store.append(project, dict(record))
-    except Exception as exc:  # noqa: BLE001 — index failure cannot undo the run file
-        return {"status": "failed", "error": f"{type(exc).__name__}: {exc}"}
+    except Exception as exc:  # every store failure is a refusal
+        raise LedgerError(
+            f"cannot record run {str(record.get('run_id'))!r} in the run store at "
+            f"{_run_store_location()}: {type(exc).__name__}: {exc}. The run store "
+            "is the durable authority for every promoted run, so this write is "
+            "refused rather than leaving a run file whose row no store holds; "
+            "repair the store with `python scripts/import_runs_into_store.py "
+            f"--project {project}` and promote the run again"
+        ) from exc
     return {"status": "written"}
 
 
@@ -3451,6 +3456,10 @@ def append_run(
     need no retry queue.
     The returned ``version`` is None because no aggregate version is advanced.
 
+    The store write is the authority and comes before the rebuildable
+    projections, so a store that refuses this run takes the run file back and
+    leaves neither store holding the row.
+
     An absent aggregate still needs the history guard: a tracked file missing
     from the working tree can hold unsplit history that needs recovery. A path
     never tracked can accept a run without creating an aggregate; where git
@@ -3518,12 +3527,19 @@ def append_run(
             stream.write(encoded)
     except FileExistsError as exc:
         raise LedgerError(refusal) from exc
+    # The store write is the authority, so it goes before the rebuildable
+    # projections: a store that refuses this run leaves neither the file nor a
+    # projection row naming it for a reader to find and trust.
+    try:
+        store_outcome = _index_append(project, stored_record)
+    except LedgerError:
+        target.unlink(missing_ok=True)
+        raise
     from reckon.crew import open_run_index
 
     _bump_generation(project)
     open_run_index.record_written(project, stored_record, ledger_root)
     _index_record_written_document(project, root, stored_record, target)
-    store_outcome = _index_append(project, stored_record)
     return {
         "path": str(target),
         "version": None,

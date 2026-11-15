@@ -1,0 +1,173 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_audit": [
+    {
+      "failure_condition": "Restoring raw local/local-model endpoint matching withholds omp-local and fails membership; the recorded base negative control exhibits this failure.",
+      "path": "tests/test_picker_local_backend.py:92"
+    },
+    {
+      "failure_condition": "Incorrectly excluding a nonlocal non-Claude backend removes codex-astra from the eligible set.",
+      "path": "tests/test_picker_local_backend.py:93"
+    },
+    {
+      "failure_condition": "Removing local-wrapper exclusion or restoring soft Claude reservation preferences offers one of clive, clive-anchored or claude-opus.",
+      "path": "tests/test_picker_local_backend.py:94"
+    },
+    {
+      "failure_condition": "Removing the reserved-lane exclusion reason fails the independent reason-prefix expectation even if another condition happens to exclude Claude.",
+      "path": "tests/test_picker_local_backend.py:96"
+    },
+    {
+      "failure_condition": "A blanket Claude ban or failure to translate the local serving selector loses a required reserved-tier offer.",
+      "path": "tests/test_picker_local_backend.py:102"
+    },
+    {
+      "failure_condition": "Allowing other wrappers alongside configured omp-local offers clive or clive-anchored.",
+      "path": "tests/test_picker_local_backend.py:103"
+    },
+    {
+      "failure_condition": "An explicit backend that calls the monkeypatched automatic picker raises or makes the dry-run fail.",
+      "path": "tests/test_picker_local_backend.py:116"
+    },
+    {
+      "failure_condition": "Treating a named backend as an automatic route changes the independent deterministic expectation.",
+      "path": "tests/test_picker_local_backend.py:118"
+    },
+    {
+      "failure_condition": "The literal clive anchors both returned backend and requested backend; rewriting both to another backend fails, so this is not an unanchored comparison of outputs.",
+      "path": "tests/test_picker_local_backend.py:119"
+    },
+    {
+      "failure_condition": "Failing to mark the configured clive backend local fails the local flag assertion.",
+      "path": "tests/test_picker_local_backend.py:129"
+    },
+    {
+      "failure_condition": "Using local as the reservation family rather than the Claude dialect loses or misnames the reservation for both implement and review cases.",
+      "path": "tests/test_picker_local_backend.py:130"
+    },
+    {
+      "failure_condition": "Returning reservation violations as soft preferences, or exempting ordinary reviews, leaves no reserved-lane exclusion reason.",
+      "path": "tests/test_picker_local_backend.py:131"
+    },
+    {
+      "failure_condition": "Restoring the unconditional derived_from skip removes a configured derived local backend from the offered set.",
+      "path": "tests/test_picker_local_backend.py:137"
+    },
+    {
+      "failure_condition": "Removing OMP provider-prefix translation fails the positive case; translating Codex or Claude too, or ignoring checkpoint mismatch, fails the independent false cases; served is a literal expectation parameter and is not passed into production code.",
+      "path": "tests/test_picker_local_backend.py:157"
+    },
+    {
+      "failure_condition": "The injected answer must select the actually offered clive route; selecting another backend fails its literal expectation.",
+      "path": "tests/test_picker_local_backend.py:174"
+    },
+    {
+      "failure_condition": "Restoring _chosen_lane to lane_family alone names the wrapper local and omits reserved_lane=claude.",
+      "path": "tests/test_picker_local_backend.py:175"
+    },
+    {
+      "failure_condition": "This compares the returned reason to the same reason supplied through the mocked client, so it tests forwarding only; it is not circular because removing _name_reserved_lane reason propagation (or restoring wrapper classification to local) removes the output reason and fails, while the companion literal reserved_lane assertion independently guards classification.",
+      "path": "tests/test_picker_local_backend.py:176"
+    },
+    {
+      "failure_condition": "An unnecessary reask after a reasoned exception increments calls beyond one.",
+      "path": "tests/test_picker_local_backend.py:177"
+    },
+    {
+      "failure_condition": "Removing reservation_family from _lane_backend_names leaves configured clive behind when the Claude lane is filtered.",
+      "path": "tests/test_picker_local_backend.py:183"
+    },
+    {
+      "failure_condition": "Overbroad Claude-lane filtering also removes the independent omp-local backend.",
+      "path": "tests/test_picker_local_backend.py:184"
+    },
+    {
+      "failure_condition": "Each changed negative membership assertion reddens when Claude reservation refusals are restored to soft preferences: routine, exhausted or unknown headroom, insufficient attempts and ordinary-review cases must exclude Claude.",
+      "path": "tests/test_picker_reserved_lanes.py:244,276,291,301"
+    }
+  ],
+  "call_site_count": 7,
+  "call_sites": [
+    "reckon/crew/dispatching/preparation.py:470",
+    "reckon/crew/picker/__init__.py:478",
+    "reckon/crew/picker/__init__.py:492",
+    "reckon/crew/picker/snapshot.py:698",
+    "reckon/flight.py:2641",
+    "reckon/crew/dispatch_picker.py:802",
+    "reckon/crew/dispatch_picker.py:979"
+  ],
+  "completed_at": "2026-11-15T11:40:46Z",
+  "dispatched_at": "2026-11-15T11:34:08Z",
+  "evidence_note": "The reviewed head adds documentation only after the executable source receipt at b14e289ffe8392ec93634f0051d4ad0e7c0fe758; its executable content is identical. No suite was rerun during review.",
+  "findings": [],
+  "gate_evidence": {
+    "after_suite": {
+      "command": "PYTHONPATH=. /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T110357872056-wftl-the-picker-offers-claude-only-as-an-exception-codex/after.log",
+      "observed_summary": "58 passed in 34.36s",
+      "revision": "b14e289ffe8392ec93634f0051d4ad0e7c0fe758"
+    },
+    "baseline_suite": {
+      "command": "PYTHONPATH=. /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T110357872056-wftl-the-picker-offers-claude-only-as-an-exception-codex/baseline.log",
+      "observed_summary": "58 passed in 34.26s",
+      "revision": "30d72f4efc2d6396ae912f70473b7f78f17d1e61"
+    }
+  },
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 7 production call site(s)",
+    "diff": "Read b14e289ffe8392ec93634f0051d4ad0e7c0fe758 and 7911d736f8d61e0c23def645207e1acd1b44c8d1 separately against 30d72f4efc2d6396ae912f70473b7f78f17d1e61; the first changes five runtime files and two test files and the second preserves two evidence fragments without changing executable content.",
+    "done_when": "The source prompt.txt:163 requires three temporary-flight cases and an all_debug negative control; tests/test_picker_local_backend.py:83-119 asserts all three and acceptance.log records 12 passed while negative-control-endpoints.log records 2 failed, 1 passed.",
+    "goal": "The source prompt.txt:38 requires configured local offers and exceptional Claude use; reckon/crew/picker/snapshot.py:1700 and :1798 implement those two filters and dispatch_picker.py:722 retains the wrapper's reservation identity.",
+    "manifest": "The source manifest.md names both commits, the 12-pass acceptance receipt, baseline_suite and after_suite receipts with 58 passes each, and the separately attributed unchanged dispatch failures; those receipts were opened and agree with its report.",
+    "write_paths": "The source prompt.txt:80-85 grants reckon, tests and the evidence fragment directory; all nine paths in both committed diffs fall inside those grants."
+  },
+  "justifications": {
+    "durability": "tests/test_picker_local_backend.py:92-96 fails if local availability translation or hard Claude exclusion is restored to the base behavior, :118-119 guards explicit routing, :129-131 guards local-wrapper reservation identity, and :175-176 guards reservation and reason propagation.",
+    "evidence": "tests/test_picker_local_backend.py:83-119 directly measures the three required cases, acceptance.log records 12 passed with EXIT=0, and negative-control-endpoints.log demonstrates the unchanged source offering the forbidden candidates with EXIT=1.",
+    "fit": "reckon/_backends.py:1165 and :2025 put harness translation on the existing dialect abstraction, reckon/flight.py:2641 retains the serving reader, and the changed Python definitions use mechanism-based names without forbidden release or plan labels.",
+    "goal_fidelity": "reckon/crew/picker/snapshot.py:1711 excludes other local wrappers, :1825 makes Claude policy refusals hard exclusions, and reckon/crew/dispatch_picker.py:722 records the selected wrapper's policy family.",
+    "reuse": "The capability search found reckon/crew/dispatch_picker.py:909 as lane identity owner, reckon/_backends.py:1134 as dialect owner and reckon/flight.py:2602 as endpoint-reader owner, all extended or wrapped here; reckon/ledger.py:336 resolves catalogue lane/model aliases rather than endpoint checkpoint identifiers and is not duplicated.",
+    "scope_discipline": "The nine changed paths under reckon, tests and docs/evidence/fragments/work-flows-to-the-lane match the source prompt.txt:80-85 grants and serve local offering, reservation enforcement or their evidence."
+  },
+  "outside_scope": "The reviewed manifest records ten unchanged dispatch-output parsing failures in its expanded gate; the separate failure-delta receipt lists the same ids at base and head. No repair or new finding is assigned by this review.",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The source prompt.txt:38 requires configured local offers and exceptional Claude use; reckon/crew/picker/snapshot.py:1700 and :1798 implement those two filters and dispatch_picker.py:722 retains the wrapper's reservation identity.\nVERDICT done_when: The source prompt.txt:163 requires three temporary-flight cases and an all_debug negative control; tests/test_picker_local_backend.py:83-119 asserts all three and acceptance.log records 12 passed while negative-control-endpoints.log records 2 failed, 1 passed.\nVERDICT write_paths: The source prompt.txt:80-85 grants reckon, tests and the evidence fragment directory; all nine paths in both committed diffs fall inside those grants.\nVERDICT manifest: The source manifest.md names both commits, the 12-pass acceptance receipt, baseline_suite and after_suite receipts with 58 passes each, and the separately attributed unchanged dispatch failures; those receipts were opened and agree with its report.\nVERDICT diff: Read b14e289ffe8392ec93634f0051d4ad0e7c0fe758 and 7911d736f8d61e0c23def645207e1acd1b44c8d1 separately against 30d72f4efc2d6396ae912f70473b7f78f17d1e61; the first changes five runtime files and two test files and the second preserves two evidence fragments without changing executable content.\nCALL_SITES: reckon/crew/dispatching/preparation.py:470, reckon/crew/picker/__init__.py:478, reckon/crew/picker/__init__.py:492, reckon/crew/picker/snapshot.py:698, reckon/flight.py:2641, reckon/crew/dispatch_picker.py:802, reckon/crew/dispatch_picker.py:979\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/picker/snapshot.py:1711 excludes other local wrappers, :1825 makes Claude policy refusals hard exclusions, and reckon/crew/dispatch_picker.py:722 records the selected wrapper's policy family.\nSCORE evidence: 20\nJUSTIFICATION evidence: tests/test_picker_local_backend.py:83-119 directly measures the three required cases, acceptance.log records 12 passed with EXIT=0, and negative-control-endpoints.log demonstrates the unchanged source offering the forbidden candidates with EXIT=1.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: The nine changed paths under reckon, tests and docs/evidence/fragments/work-flows-to-the-lane match the source prompt.txt:80-85 grants and serve local offering, reservation enforcement or their evidence.\nSCORE durability: 20\nJUSTIFICATION durability: tests/test_picker_local_backend.py:92-96 fails if local availability translation or hard Claude exclusion is restored to the base behavior, :118-119 guards explicit routing, :129-131 guards local-wrapper reservation identity, and :175-176 guards reservation and reason propagation.\nSCORE fit: 20\nJUSTIFICATION fit: reckon/_backends.py:1165 and :2025 put harness translation on the existing dialect abstraction, reckon/flight.py:2641 retains the serving reader, and the changed Python definitions use mechanism-based names without forbidden release or plan labels.\nSCORE reuse: 20\nJUSTIFICATION reuse: The capability search found reckon/crew/dispatch_picker.py:909 as lane identity owner, reckon/_backends.py:1134 as dialect owner and reckon/flight.py:2602 as endpoint-reader owner, all extended or wrapped here; reckon/ledger.py:336 resolves catalogue lane/model aliases rather than endpoint checkpoint identifiers and is not duplicated.\n",
+  "reuse_audit": {
+    "production_additions": "Dialect.serving_model and _OmpDialect.serving_model extend the dialect owner; reservation_family wraps dialect_for and existing lane_family to preserve a reservation distinct from execution lane identity.",
+    "search": "Searched reckon runtime for serving_model, backend_serving_model, model selector splitting, dialect/lane family derivation, reservation handling and endpoint serving probes; opened ledger.backend_serving_model, Dialect, lane_family and flight._probe_serving. No second owner of harness checkpoint translation or reservation identity exists.",
+    "test_additions": "local_flight extends CONFIG through deepcopy and flight.resolve; _view supplies a synthetic budget view, _options wraps snapshot.candidates, and the cases reuse _dispatch_pick, _invoke, _payload and _request from tests/test_picker_reserved_lanes.py rather than rebuilding dispatch tooling."
+  },
+  "review_run_id": "r-20261115T113216373428-review-of-wftl-the-picker-offers-claude-only-as-an-exception-codex-7911d736f8d6",
+  "reviewed_base_sha": "30d72f4efc2d6396ae912f70473b7f78f17d1e61",
+  "reviewed_commits": [
+    "b14e289ffe8392ec93634f0051d4ad0e7c0fe758",
+    "7911d736f8d61e0c23def645207e1acd1b44c8d1"
+  ],
+  "reviewed_head_sha": "7911d736f8d61e0c23def645207e1acd1b44c8d1",
+  "reviewed_run_id": "r-20261115T110357872056-wftl-the-picker-offers-claude-only-as-an-exception-codex",
+  "scores": {
+    "durability": 20,
+    "evidence": 20,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-15T11:52:50.833286+00:00",
+  "total": 120
+}

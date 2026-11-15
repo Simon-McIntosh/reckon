@@ -331,12 +331,18 @@ def cores_bound(
         )
     held = occupancy if reservation_occupancy is None else reservation_occupancy
     demanded = held * share
+    # Reported, never refused. A placed worker spends most of its life waiting
+    # on the serve's router, which holds the requests past its own gate width
+    # in its queue, so the workers launched past the allocation's core count
+    # hold a router slot rather than a core; refusing at the core count kept
+    # ready work out of the router's queue while its cards had room.
     return Bound(
         name="partition-cores",
         capacity=admitted / share,
         utilisation=demanded / admitted,
-        admits_one_more=(demanded + share) <= admitted,
+        admits_one_more=True,
         value=f"{demanded} of {admitted} cores admitted ({share} per worker)",
+        detail="reported only: a worker waiting on the router holds no core",
     )
 
 

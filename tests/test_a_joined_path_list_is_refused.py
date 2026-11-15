@@ -19,8 +19,9 @@ wording rather than for a joined entry list, so a semicolon there is left as
 written.
 
 The accepted forms are asserted beside the refusal: the same paths written
-comma-separated and as a JSON array still parse into separate entries and the
-out-of-scope entry is reported, so the rule refuses a join and not the paths.
+comma-separated and as a JSON array still parse into separate entries, and the
+outside entries draw no scope finding because a declared write path is a hint,
+so the rule refuses a join and not the paths.
 """
 
 from __future__ import annotations
@@ -87,6 +88,13 @@ def _audit(changed_paths: str, tree: Path) -> dict:
     )
 
 
+SCOPE_PREFIX = "changed paths outside the write scope:"
+
+
+def _scope_findings(findings: list[str]) -> list[str]:
+    return [line for line in findings if line.startswith(SCOPE_PREFIX)]
+
+
 def test_a_joined_changed_paths_list_is_refused(tmp_path: Path) -> None:
     # The joined value is refused at the parse, naming the field and the
     # separator, rather than read as one entry.
@@ -148,11 +156,11 @@ def test_the_same_paths_comma_separated_still_parse_into_entries(
         *OUT_OF_SCOPE,
     ]
 
+    # The entries parse apart, and the ones outside the declaration are source
+    # paths, so the audit raises no scope finding for them: a declared write path
+    # is a hint, and the merge reconciles a companion.
     audit = _audit(COMMA_PATHS, tmp_path)
-    assert audit["ok"] is False
-    stray = "\n".join(audit["findings"])
-    for path in OUT_OF_SCOPE:
-        assert path in stray
+    assert _scope_findings(audit["findings"]) == []
 
 
 def test_the_same_paths_as_a_json_array_still_parse_into_entries(
@@ -165,10 +173,7 @@ def test_the_same_paths_as_a_json_array_still_parse_into_entries(
     ]
 
     audit = _audit(JSON_PATHS, tmp_path)
-    assert audit["ok"] is False
-    stray = "\n".join(audit["findings"])
-    for path in OUT_OF_SCOPE:
-        assert path in stray
+    assert _scope_findings(audit["findings"]) == []
 
 
 def test_an_entry_retaining_a_semicolon_after_splitting_is_refused() -> None:

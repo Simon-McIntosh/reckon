@@ -24,7 +24,7 @@ import json
 import os
 import stat
 from collections.abc import Iterable, Iterator, Mapping
-from contextlib import contextmanager
+from contextlib import ExitStack, contextmanager
 from contextvars import ContextVar
 from datetime import UTC, datetime
 from fnmatch import fnmatchcase
@@ -33,6 +33,7 @@ from typing import Any
 
 from reckon import file_memo
 from reckon.crew import open_run_index
+from reckon.node_exclusive_lock import LockHeld, exclusive_lock
 
 # Each producer tick freezes the store's names and indexed content hashes.
 # Parsed bytes use the shared bounded memo; writer updates move the next tick's
@@ -76,7 +77,16 @@ def _tick_store(directory: Path) -> dict[Path, os.stat_result] | None:
     # freshness of a writer-maintained index costs.
     document = store_index_document(directory)
     if document is not None:
-        return _document_stat_view(directory, document, stores)
+        key = (str(document.get("generation") or ""), int(document.get("version") or 0))
+        held = _DOCUMENT_STAT_VIEWS.get(directory)
+        if held is not None and held[0] == key:
+            files = held[1]
+            if stores is not None:
+                stores[directory] = files
+            return files
+        files = _document_stat_view(directory, document, stores)
+        _DOCUMENT_STAT_VIEWS[directory] = (key, files)
+        return files
     selected = open_run_index.review_paths(directory)
     if selected is not None:
         files = {}
@@ -107,6 +117,13 @@ def _tick_store(directory: Path) -> dict[Path, os.stat_result] | None:
             pass
         stores[directory] = files
     return stores[directory]
+
+
+# One stat view per store, replaced when its writer advances the document.
+# Generation distinguishes a rebuilt index whose version repeats a prior one.
+_DOCUMENT_STAT_VIEWS: dict[
+    Path, tuple[tuple[str, int], dict[Path, os.stat_result]]
+] = {}
 
 
 def _document_stat_view(
@@ -1918,6 +1935,7 @@ def _store_index(directory: Path) -> dict[str, list[dict[str, Any]]]:
 
 _INDEX_DIRNAME = ".review-index"
 _INDEX_NAME = "index.json"
+_INDEX_STAMP_NAME = "stamp.json"
 _INDEX_LOCK_NAME = "lock"
 _INDEX_LOG_LIMIT = 4096
 
@@ -1934,6 +1952,75 @@ def _index_document_path(directory: Path) -> Path:
     return directory / _INDEX_DIRNAME / _INDEX_NAME
 
 
+def _index_stamp_path(directory: Path) -> Path:
+    """The settled store identity that belongs to one store's index.
+
+    It sits beside the document for the same reason the document sits in this
+    subdirectory: a write here does not move the store directory's own identity.
+    Keeping the settled identity in a file of its own is what lets a reconcile
+    that changed nothing record it by writing a few dozen bytes, instead of
+    rewriting a document of megabytes to change one field of it.
+    """
+    return directory / _INDEX_DIRNAME / _INDEX_STAMP_NAME
+
+
+def _read_index_stamp(directory: Path) -> tuple[tuple[int, ...], int] | None:
+    """The store identity a previous reconcile settled, and its document version.
+
+    A missing, half-written or unusable stamp answers ``None`` exactly as an
+    absent one does, which makes the next reader reconcile and write it again.
+    """
+    raw = read_cache_document(_index_stamp_path(directory))
+    if raw is None:
+        return None
+    identity = raw.get("directory_identity")
+    if not isinstance(identity, list) or not identity:
+        return None
+    try:
+        return tuple(int(item) for item in identity), int(raw.get("version") or 0)
+    except (TypeError, ValueError):
+        return None
+
+
+def _persist_index_stamp(
+    directory: Path, identity: tuple[int, ...] | None, version: int
+) -> None:
+    """Record the store identity this process found settled, against a version.
+
+    ``identity`` is the store directory's identity as it stood before the
+    listing the settled entries came from, never a later stat: a record written
+    after that listing moves the identity again, so the stamp cannot mask it.
+    The write is a cache write like the document's: an unwritable directory
+    costs the next reader a reconcile rather than being an error it reports.
+    """
+    if identity is None or not _resolved(directory):
+        return
+    write_cache_document(
+        _index_stamp_path(directory),
+        {"directory_identity": list(identity), "version": int(version)},
+    )
+
+
+def _index_is_settled(
+    directory: Path, document: Mapping[str, Any], identity: tuple[int, ...] | None
+) -> bool:
+    """Whether a persisted stamp already accounts for this store state.
+
+    Both the identity and the document version must match. A moved identity
+    means something may have changed in the store; a moved version means the
+    document describes records the stamp was not written beside.
+    """
+    if identity is None:
+        return False
+    stamp = _read_index_stamp(directory)
+    if stamp is None:
+        return False
+    held_identity, held_version = stamp
+    return held_identity == identity and held_version == int(
+        document.get("version") or 0
+    )
+
+
 def _index_holding(directory: Path) -> Path | None:
     """The store's index subdirectory, created when the store can hold one."""
     holding = directory / _INDEX_DIRNAME
@@ -1948,43 +2035,33 @@ def _index_holding(directory: Path) -> Path | None:
 def _index_lock(directory: Path, *, wait: bool = True) -> Iterator[bool | None]:
     """Hold the store's index lock, or report that it could not be taken.
 
-    The lock file sits beside the document so a writer on any node serialises
-    against every other node's writer. A directory that cannot hold the lock
-    file, or a filesystem without advisory locks, yields ``False`` and the
-    caller writes the document unlocked.
+    The lock is :func:`reckon.node_exclusive_lock.exclusive_lock`, whose POSIX
+    record lock the file server holds, so a writer on any node serialises
+    against every other node's writer rather than only this node's. A directory
+    that cannot hold the lock file, or a filesystem without advisory locks,
+    yields ``False`` and the caller writes the document unlocked.
 
     ``wait`` false is for a reader: a lock another process holds yields
     ``None`` at once rather than blocking, and the reader serves the document
     as last persisted. A producer, station or follower thread reading the store
     must never wait on another process's index write.
     """
-    import fcntl
-
     holding = _index_holding(directory)
     if holding is None:
         yield False
         return
-    try:
-        handle = (holding / _INDEX_LOCK_NAME).open("a")
-    except OSError:
-        yield False
-        return
-    with handle:
+    with ExitStack() as held:
         try:
-            fcntl.flock(
-                handle.fileno(),
-                fcntl.LOCK_EX if wait else fcntl.LOCK_EX | fcntl.LOCK_NB,
+            held.enter_context(
+                exclusive_lock(holding / _INDEX_LOCK_NAME, blocking=wait)
             )
-        except BlockingIOError:
+        except LockHeld:
             yield None
             return
         except OSError:
             yield False
             return
-        try:
-            yield True
-        finally:
-            fcntl.flock(handle.fileno(), fcntl.LOCK_UN)
+        yield True
 
 
 def _sha256_hex(data: bytes) -> str:
@@ -2011,16 +2088,14 @@ def _document_is_usable(directory: Path, doc: Any) -> bool:
     entries = doc.get("entries")
     if not isinstance(entries, dict):
         return False
-    return isinstance(doc.get("runs"), dict)
+    return isinstance(doc.get("runs"), dict) and isinstance(doc.get("run_names"), dict)
 
 
-def _read_index_document(directory: Path) -> dict[str, Any] | None:
-    """Read the store's index document, or ``None`` when there is not one.
+def _fresh_index_document(directory: Path) -> dict[str, Any] | None:
+    """Read and parse the document afresh, consulting no memo and filling none.
 
-    The read is a read: no stat of the document, the directory or a record. An
-    unusable document -- another checkout's, another store's, half written or
-    not JSON -- answers ``None`` exactly as a missing one does, because an index
-    that cannot be read is not an index.
+    A writer mutates the document it reads, so it takes this private copy
+    rather than the shared one the read path hands out.
     """
     try:
         raw = _index_document_path(directory).read_bytes()
@@ -2033,8 +2108,37 @@ def _read_index_document(directory: Path) -> dict[str, Any] | None:
     return doc if _document_is_usable(directory, doc) else None
 
 
+def _read_index_document(directory: Path) -> Mapping[str, Any] | None:
+    """The store's index document, parsed once per unchanged file.
+
+    :func:`reckon.file_memo.memoized` owns the reuse: a read costs one stat
+    while the file is unchanged. The code stamp is part of the memo's variant
+    because it decides whether a document is usable, so a document is also read
+    again when the stamp this process files under changes. Inside a read-only
+    region the held document reaches a reader as a read-only view, so a reader
+    cannot change what the next reader is given; a writer takes
+    :func:`_fresh_index_document` for itself instead. A changed or unusable
+    document -- another checkout's, another store's, half written or not JSON
+    -- reads as ``None`` exactly as a missing one does, because an index that
+    cannot be read is not an index.
+    """
+    with file_memo.read_only_region():
+        return file_memo.memoized(
+            "index_document",
+            _index_document_path(directory),
+            lambda: _fresh_index_document(directory),
+            variant=_index_code_stamp(),
+        )
+
+
 def _persist_index_document(directory: Path, doc: Mapping[str, Any]) -> None:
-    """Write the store's index document atomically in the store's index dir."""
+    """Write the store's index document atomically in the store's index dir.
+
+    The stamp is written at the same moment, from the identity and version the
+    document itself records, so a document never describes a state its stamp
+    contradicts: a reader either sees both, or sees the stamp lagging and
+    reconciles.
+    """
     try:
         from reckon._store import write_json_atomically
 
@@ -2049,6 +2153,12 @@ def _persist_index_document(directory: Path, doc: Mapping[str, Any]) -> None:
         )
     except OSError:
         return
+    identity = doc.get("directory_identity")
+    _persist_index_stamp(
+        directory,
+        tuple(int(item) for item in identity) if identity else None,
+        int(doc.get("version") or 0),
+    )
 
 
 def _entry_facts(name: str, record: Mapping[str, Any], data: bytes) -> dict[str, Any]:
@@ -2125,6 +2235,7 @@ def _rebuild_index_document(directory: Path) -> dict[str, Any]:
         ],
         "entries": entries,
         "runs": runs,
+        "run_names": _run_name_map(entries),
         "directory_identity": identity,
         "dir_mtime_ns": identity[3] if identity is not None else None,
     }
@@ -2132,6 +2243,71 @@ def _rebuild_index_document(directory: Path) -> dict[str, Any]:
 
 def _runs_of(entries: Mapping[str, Any]) -> set[str]:
     return {str(entry.get("reviewed_run_id") or "") for entry in entries.values()}
+
+
+def _run_name_map(entries: Mapping[str, Any]) -> dict[str, list[str]]:
+    """The record names each run holds, keyed by the run the record reviews.
+
+    A staging record is named after the run it reviews, so this map answers
+    "which names are this run's records" without walking the store. Keeping the
+    names beside the run digest lets a reader classify a pointer by looking at
+    that pointer's own records rather than at the whole store.
+    """
+    names: dict[str, list[str]] = {}
+    for name, entry in entries.items():
+        run_id = str(entry.get("reviewed_run_id") or "")
+        if run_id:
+            names[run_id] = [*names.get(run_id, []), str(name)]
+    for held in names.values():
+        held.sort()
+    return names
+
+
+def _move_run_name(
+    doc: dict[str, Any],
+    name: str,
+    previous: Mapping[str, Any] | None,
+    entry: Mapping[str, Any],
+) -> None:
+    """Keep one run's name list in step with a write or removal of ``name``.
+
+    The map is advanced from the entry that changed rather than rebuilt, so a
+    write costs the run's own record count and never the store's size. A record
+    rewritten under a different reviewed run moves between the two lists.
+    """
+    run_names = doc.setdefault("run_names", {})
+    if not isinstance(run_names, dict):
+        return
+    new_run = str(entry.get("reviewed_run_id") or "")
+    if previous is not None:
+        old_run = str(previous.get("reviewed_run_id") or "")
+        if old_run and old_run != new_run:
+            held = run_names.get(old_run)
+            if isinstance(held, list) and name in held:
+                held.remove(name)
+                if not held:
+                    run_names.pop(old_run, None)
+    if new_run:
+        held = run_names.get(new_run)
+        if not isinstance(held, list):
+            held = []
+            run_names[new_run] = held
+        if name not in held:
+            held.append(name)
+            held.sort()
+
+
+def _drop_run_name(doc: dict[str, Any], name: str, entry: Mapping[str, Any]) -> None:
+    """Remove a deleted record's name from the run that held it."""
+    run_names = doc.get("run_names")
+    if not isinstance(run_names, dict):
+        return
+    run_id = str(entry.get("reviewed_run_id") or "")
+    held = run_names.get(run_id)
+    if isinstance(held, list) and name in held:
+        held.remove(name)
+        if not held:
+            run_names.pop(run_id, None)
 
 
 def _index_stored_record(path: Path, record: Mapping[str, Any]) -> None:
@@ -2148,7 +2324,7 @@ def _index_stored_record(path: Path, record: Mapping[str, Any]) -> None:
     entry = _entry_facts(path.name, record, data)
     entry["inode"] = inode
     with _index_lock(directory):
-        doc = _read_index_document(directory)
+        doc = _fresh_index_document(directory)
         if doc is None:
             doc = _rebuild_index_document(directory)
         version = int(doc.get("version") or 0) + 1
@@ -2160,6 +2336,7 @@ def _index_stored_record(path: Path, record: Mapping[str, Any]) -> None:
             touched.add(str(previous.get("reviewed_run_id") or ""))
         entry["entry_version"] = version
         entries[path.name] = entry
+        _move_run_name(doc, path.name, previous, entry)
         runs = doc.setdefault("runs", {})
         log = doc.setdefault("log", [])
         for run_id in sorted(touched):
@@ -2206,16 +2383,6 @@ def record_written(
     _index_stored_record(path, record)
 
 
-# The directory identities this process has reconciled and found nothing to
-# change, each with the document version it was checked at. A short-lived file
-# another writer creates and removes in the store moves the directory's
-# identity without moving any record, and recording the new identity meant
-# rewriting the whole document -- megabytes on a shared filesystem, every few
-# seconds. Remembering the check here costs nothing on disk; a moved identity
-# or a new document version is checked again.
-_SETTLED_IDENTITIES: dict[str, tuple[tuple[int, ...], int]] = {}
-
-
 def reconcile_foreign_write(directory: Path) -> int:
     """Pick up added, removed or atomically replaced records without file stats.
 
@@ -2224,15 +2391,17 @@ def reconcile_foreign_write(directory: Path) -> int:
     at. Directory entries supply their inodes without stat-ing the files.
     Only added or replaced names are read; removed names are dropped. An
     external rewrite retaining its inode becomes visible at the next rebuild.
+
+    A reconcile that finds nothing changed is not repeated by any other
+    process: the identity it settled is written to the stamp beside the
+    document, and the next reader -- on this node or any other -- settles from
+    that file with one stat and no listing.
     """
-    doc = _read_index_document(directory)
+    doc = _fresh_index_document(directory)
     if doc is None:
         return 0
     identity = _store_directory_identity(directory)
-    if identity is None or identity == tuple(doc.get("directory_identity") or ()):
-        return 0
-    settled = (tuple(identity), int(doc.get("version") or 0))
-    if _SETTLED_IDENTITIES.get(str(directory)) == settled:
+    if identity is None or _index_is_settled(directory, doc, identity):
         return 0
     changed = 0
     with _index_lock(directory, wait=False) as locked:
@@ -2241,9 +2410,9 @@ def reconcile_foreign_write(directory: Path) -> int:
             # and the document this reader already has is at most that one
             # write behind.
             return 0
-        doc = _read_index_document(directory) or doc
+        doc = _fresh_index_document(directory) or doc
         identity = _store_directory_identity(directory)
-        if identity is None or identity == tuple(doc.get("directory_identity") or ()):
+        if identity is None or _index_is_settled(directory, doc, identity):
             return 0
         try:
             with os.scandir(directory) as scanned:
@@ -2283,6 +2452,7 @@ def reconcile_foreign_write(directory: Path) -> int:
             doc["version"] = int(doc.get("version") or 0) + 1
             entry["entry_version"] = doc["version"]
             entries[name] = entry
+            _move_run_name(doc, name, previous, entry)
             log.append([doc["version"], entry["reviewed_run_id"]])
             touched.add(entry["reviewed_run_id"])
             if previous is not None:
@@ -2293,17 +2463,16 @@ def reconcile_foreign_write(directory: Path) -> int:
             changed += 1
         for name in sorted(set(entries) - present.keys()):
             gone = entries.pop(name)
+            _drop_run_name(doc, name, gone)
             run_id = str(gone.get("reviewed_run_id") or "")
             doc["version"] = int(doc.get("version") or 0) + 1
             log.append([doc["version"], run_id])
             touched.add(run_id)
             changed += 1
         if not changed:
-            # Nothing the index describes moved, so nothing is written.
-            _SETTLED_IDENTITIES[str(directory)] = (
-                tuple(identity),
-                int(doc.get("version") or 0),
-            )
+            # Nothing the index describes moved, so the document is left
+            # untouched and only the stamp records the identity that settled.
+            _persist_index_stamp(directory, identity, int(doc.get("version") or 0))
             return 0
         for run_id in touched:
             runs[run_id] = _run_digest(entries, run_id)
@@ -2314,7 +2483,7 @@ def reconcile_foreign_write(directory: Path) -> int:
     return changed
 
 
-def store_index_document(directory: Path) -> dict[str, Any] | None:
+def store_index_document(directory: Path) -> Mapping[str, Any] | None:
     """The store's index document, as current as its writers have left it.
 
     The document is probed against the store directory's identity, which is the
@@ -2335,16 +2504,14 @@ def store_index_document(directory: Path) -> dict[str, Any] | None:
     return document
 
 
-def _settled_index_document(directory: Path) -> dict[str, Any] | None:
+def _settled_index_document(directory: Path) -> Mapping[str, Any] | None:
     """Read the document and bring it up to date with the store it describes."""
     document = _read_index_document(directory)
     if document is not None:
         # Several directory writes can share one filesystem clock tick. Size
         # and ctime are part of the same stat and keep a new name observable.
         identity = _store_directory_identity(directory)
-        if identity is not None and identity == tuple(
-            document.get("directory_identity") or ()
-        ):
+        if _index_is_settled(directory, document, identity):
             return document
         reconcile_foreign_write(directory)
         return _read_index_document(directory) or document
@@ -2354,7 +2521,8 @@ def _settled_index_document(directory: Path) -> dict[str, Any] | None:
     except OSError:
         return None
     with _index_lock(directory):
-        document = _read_index_document(directory)
+        # Another process may have written while this one waited for the lock.
+        document = _fresh_index_document(directory)
         if document is None:
             document = _rebuild_index_document(directory)
             _persist_index_document(directory, document)
@@ -2466,6 +2634,27 @@ def store_index_run_digest(directory: Path, run_id: str) -> str | None:
     if not isinstance(runs, Mapping):
         return None
     return runs.get(run_id)
+
+
+def review_run_record_names(directory: Path, run_id: str) -> list[str] | None:
+    """The record names one run holds, read from the index's per-run map.
+
+    This is the lookup a classification asks: a store that keeps an index
+    document answers with the run's own names and never looks at another run's
+    record, so the cost is the run's record count and not the store's size. A
+    directory that keeps no index -- the committed reviews tree, or a store the
+    writer index does not own -- answers ``None``, and the caller lists it.
+    """
+    document = store_index_document(directory)
+    if document is None:
+        return None
+    run_names = document.get("run_names")
+    if not isinstance(run_names, Mapping):
+        return None
+    names = run_names.get(run_id)
+    if isinstance(names, list):
+        return [str(name) for name in names]
+    return []
 
 
 class _IndexedStat:

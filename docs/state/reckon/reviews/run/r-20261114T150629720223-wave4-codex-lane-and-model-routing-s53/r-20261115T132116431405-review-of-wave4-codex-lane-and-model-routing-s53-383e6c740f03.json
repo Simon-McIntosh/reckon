@@ -1,0 +1,159 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_audit": [
+    {
+      "fails_if": "The lift store resolves outside either fixture home, or the new grant CLI option is absent/refused; line 67 is only a setup check, not a real-store postcondition.",
+      "lines": "67,80"
+    },
+    {
+      "fails_if": "The unlifted 95% dispatch is admitted, a valid project grant is ignored, its reserve release is lost, future sessions lose the governing grant, or another project inherits it; restoring return True for project scopes reddens line 149 in negative-control.log.",
+      "lines": "141,144-150"
+    },
+    {
+      "fails_if": "Newest grant replaces scope precedence, another project inherits the project grant, or session scope fails to outrank a newer project grant; comparisons use independent persisted grant IDs, not an expected scope handed to the resolver.",
+      "lines": "156-163"
+    },
+    {
+      "fails_if": "Repeated project options collapse records, reasons diverge, either project loses coverage, listing loses a project scope, clear changes the wrong scope or fails to revoke, or a repeat clear is not a no-op.",
+      "lines": "170,175-178,180-192"
+    },
+    {
+      "fails_if": "A clear for an absent project lift revokes the global fallback or reports it as cleared.",
+      "lines": "198-200"
+    },
+    {
+      "fails_if": "Project credits are not selected, sessions receive separate cap semantics, a pre-cap account balance is held, the full cap is admitted, or a different project spends the lift.",
+      "lines": "207-220"
+    },
+    {
+      "fails_if": "The watch sweep loses the matching project, emits the lift to the other project, produces duplicate rows, changes lift identity, wrongly session-scopes project delivery, or loses the end transition.",
+      "lines": "239-245,257"
+    },
+    {
+      "fails_if": "Conflicting scope flags are accepted, fail for an unrelated reason, or write a lift before refusal.",
+      "lines": "273-275"
+    },
+    {
+      "fails_if": "Existing --check --project parsing stops forwarding its argument to the report owner or --for-project is silently accepted outside --lift; the fake report return is not itself asserted as proof of behavior.",
+      "lines": "287-293"
+    },
+    {
+      "fails_if": "The real picker path is not reached, the lifted lane is excluded, CLI dispatch fails, or the selected backend differs; restoring project=None at the picker budget-block boundary removes the sole candidate and reddens line 335.",
+      "lines": "335,384-388"
+    }
+  ],
+  "call_site_count": 7,
+  "call_sites": [
+    "reckon/crew_run_commands.py:crew_budget",
+    "reckon/crew/dispatching/preparation.py:708",
+    "reckon/crew/routing.py:_budget_verdict",
+    "reckon/crew/budget_group.py:effective_block",
+    "reckon/crew/picker/snapshot.py:candidates",
+    "reckon/crew/recovery_watch.py:3401",
+    "reckon/crew_follow_commands.py:_follow_selects"
+  ],
+  "completed_at": "2026-11-15T13:34:10Z",
+  "dispatched_at": "2026-11-15T13:27:31Z",
+  "evidence_caveats": [
+    "Zero added failure count is derived only from the source manifest canonical arms, not a claim of an absolutely green suite.",
+    "The coordinator accepted the unchanged size failure by delta and the six isolated route trials; the earlier broad head-only route failure remains context-dependent and is not erased by those trials.",
+    "No tests or mutations were rerun during this read-only review."
+  ],
+  "finding_dispositions": {
+    "0": {
+      "kind": "exempted",
+      "reason": "non-blocking; carried to the plan's next health review",
+      "recorded_at": "2026-11-15T13:38:15.477187+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "tests/test_a_lift_can_be_scoped_to_a_project.py",
+      "line": "67",
+      "severity": "non-blocking",
+      "text": "non-blocking: The fixture checks its resolved home only before exercising the APIs and has no after-test assertion that the real lift store is untouched; a write path that bypasses RECKON_HOME can therefore escape this coverage, unlike the independent before/after trace check already owned by tests/test_budget_lift.py:83-88."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 7 production call site(s)",
+    "diff": "Read 1b27dcc7f410122eec5b01e4d154dc2a1d51f4fb and 383e6c740f03aa12a389fa04fb0812eaf05f53f1 individually against base fa53583e86a7077e7e9774e07140eef7495933d0; the first extends existing budget owners and adds ten cases, and the second adds only the 15-line evidence fragment.",
+    "done_when": "Read the section and resume-1-advice.txt; adjudicated-base-suite.log and adjudicated-head-suite.log complete at the required revisions with the same size-guard failure, 61 versus 71 passes, while negative-control.log fails the cross-project assertion as required.",
+    "goal": "The goal in dispatch-detail.json delegates the section deliverable; reckon/crew/budget_lift.py:1141 and routing.py:480 implement project scope and precedence within the coordinator-adjudicated consumer boundary.",
+    "manifest": "Read manifest.md and its referenced receipts; the canonical suite fields agree with log revisions, summaries and EXIT=1, and the earlier broader route failure remains disclosed beside six passing isolated trials.",
+    "write_paths": "Read the actual prompt.txt fence, including its evidence fragment; all nine changed paths across both commits stay inside it, and the size-guard test and figure directory were not changed."
+  },
+  "justifications": {
+    "durability": "tests/test_a_lift_can_be_scoped_to_a_project.py:141-150 rejects a missing or cross-project lift and its recorded mutation reddens line 149, but the fixture at line 60 omits the real-store postcondition used by tests/test_budget_lift.py:83-88.",
+    "evidence": "adjudicated-head-suite.log records 1 failed and 71 passed against adjudicated-base-suite.log's identical failure and 61 passes, and negative-control.log records the intended failure at tests/test_a_lift_can_be_scoped_to_a_project.py:149.",
+    "fit": "reckon/crew/budget_lift.py:1141 extends the existing scope resolver, crew_run_commands.py:4839 follows the surrounding Click option idiom, and the new source and test names describe their capability without plan labels.",
+    "goal_fidelity": "reckon/crew/routing.py:480 and picker/snapshot.py:1754 propagate project identity through the requested paths, with the remaining consumers explicitly deferred by resume-1-advice.txt rather than represented as working.",
+    "reuse": "Capability searches for grant, scope, budget-block resolution and pane selection locate owners in budget_lift.py:291,1510, budget_group.py:220, lift_watch.py:95 and crew_follow_commands.py:60, which this change extends or calls, while its dispatch fixture wraps tests/test_picker_in_dispatch.py:40.",
+    "scope_discipline": "The eight implementation paths in commit 1b27dcc7f4 and evidence fragment in commit 383e6c740f are all authorized by the source prompt.txt fence and implement its declared goal."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The goal in dispatch-detail.json delegates the section deliverable; reckon/crew/budget_lift.py:1141 and routing.py:480 implement project scope and precedence within the coordinator-adjudicated consumer boundary.\nVERDICT done_when: Read the section and resume-1-advice.txt; adjudicated-base-suite.log and adjudicated-head-suite.log complete at the required revisions with the same size-guard failure, 61 versus 71 passes, while negative-control.log fails the cross-project assertion as required.\nVERDICT write_paths: Read the actual prompt.txt fence, including its evidence fragment; all nine changed paths across both commits stay inside it, and the size-guard test and figure directory were not changed.\nVERDICT manifest: Read manifest.md and its referenced receipts; the canonical suite fields agree with log revisions, summaries and EXIT=1, and the earlier broader route failure remains disclosed beside six passing isolated trials.\nVERDICT diff: Read 1b27dcc7f410122eec5b01e4d154dc2a1d51f4fb and 383e6c740f03aa12a389fa04fb0812eaf05f53f1 individually against base fa53583e86a7077e7e9774e07140eef7495933d0; the first extends existing budget owners and adds ten cases, and the second adds only the 15-line evidence fragment.\nCALL_SITES: reckon/crew_run_commands.py:crew_budget, reckon/crew/dispatching/preparation.py:708, reckon/crew/routing.py:_budget_verdict, reckon/crew/budget_group.py:effective_block, reckon/crew/picker/snapshot.py:candidates, reckon/crew/recovery_watch.py:3401, reckon/crew_follow_commands.py:_follow_selects\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/routing.py:480 and picker/snapshot.py:1754 propagate project identity through the requested paths, with the remaining consumers explicitly deferred by resume-1-advice.txt rather than represented as working.\nSCORE evidence: 18\nJUSTIFICATION evidence: adjudicated-head-suite.log records 1 failed and 71 passed against adjudicated-base-suite.log's identical failure and 61 passes, and negative-control.log records the intended failure at tests/test_a_lift_can_be_scoped_to_a_project.py:149.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: The eight implementation paths in commit 1b27dcc7f4 and evidence fragment in commit 383e6c740f are all authorized by the source prompt.txt fence and implement its declared goal.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_a_lift_can_be_scoped_to_a_project.py:141-150 rejects a missing or cross-project lift and its recorded mutation reddens line 149, but the fixture at line 60 omits the real-store postcondition used by tests/test_budget_lift.py:83-88.\nSCORE fit: 20\nJUSTIFICATION fit: reckon/crew/budget_lift.py:1141 extends the existing scope resolver, crew_run_commands.py:4839 follows the surrounding Click option idiom, and the new source and test names describe their capability without plan labels.\nSCORE reuse: 20\nJUSTIFICATION reuse: Capability searches for grant, scope, budget-block resolution and pane selection locate owners in budget_lift.py:291,1510, budget_group.py:220, lift_watch.py:95 and crew_follow_commands.py:60, which this change extends or calls, while its dispatch fixture wraps tests/test_picker_in_dispatch.py:40.\nFINDING tests/test_a_lift_can_be_scoped_to_a_project.py:67 non-blocking: The fixture checks its resolved home only before exercising the APIs and has no after-test assertion that the real lift store is untouched; a write path that bypasses RECKON_HOME can therefore escape this coverage, unlike the independent before/after trace check already owned by tests/test_budget_lift.py:83-88.\n",
+  "reuse_audit": {
+    "production_additions": "Only nested priority is a new production definition; it extends the existing _governing_lift owner rather than adding a parallel resolver. All other production changes extend existing functions.",
+    "searches": [
+      "grant and scope resolution in reckon/crew/budget_lift.py",
+      "effective_block production consumers",
+      "lift sweep and follower selection",
+      "existing temporary dispatch repository fixture",
+      "real-store before/after trace assertion in tests/test_budget_lift.py"
+    ],
+    "test_additions": "New definitions assemble config/readings/grants, wrap production APIs, or exercise assertions; they reuse the existing dispatch repository fixture and isolation fixture rather than implementing budget or routing behavior."
+  },
+  "review_run_id": "r-20261115T132116431405-review-of-wave4-codex-lane-and-model-routing-s53-383e6c740f03",
+  "reviewed_base_sha": "fa53583e86a7077e7e9774e07140eef7495933d0",
+  "reviewed_head_sha": "383e6c740f03aa12a389fa04fb0812eaf05f53f1",
+  "reviewed_run_id": "r-20261114T150629720223-wave4-codex-lane-and-model-routing-s53",
+  "scores": {
+    "durability": 18,
+    "evidence": 18,
+    "fit": 20,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "suite_evidence": {
+    "after_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_lift_can_be_scoped_to_a_project.py tests/test_every_module_fits_a_worker_window.py tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py",
+      "completed": true,
+      "exit_status": 1,
+      "failure_count": 1,
+      "failure_ids": [
+        "tests/test_every_module_fits_a_worker_window.py::test_every_module_fits_a_worker_window"
+      ],
+      "failure_ids_from_log": [
+        "tests/test_every_module_fits_a_worker_window.py::test_every_module_fits_a_worker_window"
+      ],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261114T150629720223-wave4-codex-lane-and-model-routing-s53/adjudicated-head-suite.log",
+      "revision": "383e6c740f03aa12a389fa04fb0812eaf05f53f1",
+      "summary_from_log": "1 failed, 71 passed in 37.86s"
+    },
+    "baseline_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_every_module_fits_a_worker_window.py tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py",
+      "completed": true,
+      "exit_status": 1,
+      "failure_count": 1,
+      "failure_ids": [
+        "tests/test_every_module_fits_a_worker_window.py::test_every_module_fits_a_worker_window"
+      ],
+      "failure_ids_from_log": [
+        "tests/test_every_module_fits_a_worker_window.py::test_every_module_fits_a_worker_window"
+      ],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261114T150629720223-wave4-codex-lane-and-model-routing-s53/adjudicated-base-suite.log",
+      "revision": "fa53583e86a7077e7e9774e07140eef7495933d0",
+      "summary_from_log": "1 failed, 61 passed in 37.16s"
+    }
+  },
+  "tautological_assertions": [],
+  "times_source": "run-record",
+  "timestamp": "2026-11-15T13:36:32.497402+00:00",
+  "total": 114
+}

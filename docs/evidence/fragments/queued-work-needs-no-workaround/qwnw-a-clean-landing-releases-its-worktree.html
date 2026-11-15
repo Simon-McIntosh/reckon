@@ -1,0 +1,103 @@
+<section id="qwnw-a-clean-landing-releases-its-worktree-landing">
+  <h2>A clean landing releases its worktree and leaves no held duty</h2>
+
+  <p><strong>What changed.</strong> A hand landing of a promoted run judged the
+  run's tree twice after the merge. The landing's own release reads the commit
+  the merge wrote, and it removes the tree. The release's audit then reads the
+  run's declared write paths to describe what was left behind — and it read them
+  off <code>node</code>, which a promoted ledger row carries the node
+  <em>id</em> in, with the definition under <code>node_definition</code>. The
+  audit therefore raised on every run whose manifest still named changed paths,
+  after the reviewed head had already been pushed, and the release was recorded
+  as raised. A tree the landing had just removed was reported withheld, naming a
+  tree no command could free; the duty it raises offered
+  <code>reckon crew gc</code>, whose sweep answered that no record named a
+  worktree for the run.</p>
+
+  <p>Three changes in <code>reckon/crew/promotion_release.py</code> and
+  <code>reckon/crew/promotion_evidence.py</code>. <code>_declared_repository_roots</code>
+  now reads the node definition in whichever shape the record carries it, so the
+  audit describes the release instead of raising through it. A tree whose
+  directory is already gone is reported released rather than withheld, because it
+  holds nothing to release. And an audit that fails after the removal is recorded
+  beside the outcome rather than inverting it, so a release cannot be undone by
+  its own receipt.</p>
+
+  <p>A tree holding a commit the primary branch lacks is unchanged: it is
+  withheld, its obligation is named, and the sweep that obligation suggests frees
+  it once that commit lands.</p>
+
+  <h3 id="qwnw-a-clean-landing-releases-its-worktree-measured">Measured</h3>
+
+  <p>Every case synthesises its own origin, checkout, ledger and workspace under
+  a temporary config home, and enters the project's real entry through
+  <code>crew complete --land</code>. The three cases are: a clean landing whose
+  worktree holds exactly the reviewed head; a landing whose worktree was removed
+  before the landing; and a worktree holding one commit beyond the reviewed
+  head.</p>
+
+  <table id="qwnw-a-clean-landing-releases-its-worktree-arms">
+    <caption>Each arm is a log whose first lines name the revision, tree and
+    command and whose last line reads <code>EXIT=&lt;code&gt;</code>.</caption>
+    <thead><tr><th>arm</th><th>revision</th><th>result</th></tr></thead>
+    <tbody>
+      <tr><td>the node's six cases</td>
+        <td><code>956c261790</code>, working tree</td>
+        <td>6 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>the gate, head arm</td>
+        <td><code>956c261790</code>, working tree</td>
+        <td>45 passed, 9 failed, <code>EXIT=1</code></td></tr>
+      <tr><td>the gate, base arm</td>
+        <td><code>3c8d1a0291</code>, extraction</td>
+        <td>41 passed, 13 failed, <code>EXIT=1</code></td></tr>
+      <tr><td>the gate, delta</td>
+        <td>base arm against head arm</td>
+        <td>0 added failures, 4 fixed</td></tr>
+      <tr><td>the negative control</td>
+        <td><code>3c8d1a0291</code>, extraction</td>
+        <td>2 failed, 1 passed, <code>EXIT=1</code></td></tr>
+    </tbody>
+  </table>
+
+  <p>The gate covers thirteen files: the node's two test files, the release,
+  landing-plan and promotion-release suites, and the three repository-wide
+  invariant tests over removal sites and worktree-held records. Both arms run the
+  same file list, so the delta is the source change rather than the test set.</p>
+
+  <h3 id="qwnw-a-clean-landing-releases-its-worktree-control">Negative control</h3>
+
+  <p>At the base revision the two clean-landing cases fail and the withheld
+  case passes: the first two report <code>"worktree_released": false</code> with
+  <code>"worktree_withheld": "tree is no longer available"</code> on a tree the
+  landing had already removed, while the reviewed head is pushed and the merge
+  succeeds. The failing run is
+  <code>docs/evidence/fragments/queued-work-needs-no-workaround/s20.html</code>.
+  The second case's failure carries the whole landing report, including
+  <code>"merged": true</code> beside the withheld release — the defect in one
+  object.</p>
+
+  <h3 id="qwnw-a-clean-landing-releases-its-worktree-outside">Outside scope</h3>
+
+  <p>Nine tests fail identically in both arms, so none of them is caused by this
+  change, and they fail alone in an unmodified base extraction as well:</p>
+
+  <ul>
+    <li><code>test_a_merge_releases_its_worktree.py</code>: four cases, three of
+    them refusing at promotion because the fixture's gate record carries no
+    command, exit status, log path or digest, and one reading an absent run
+    record file.</li>
+    <li><code>test_promotion_releases_its_worktree.py</code>: one case, which
+    expects a refusal that does not raise.</li>
+    <li><code>test_refused_promotion_leaves_the_worktree.py</code>: one case, the
+    same missing refusal.</li>
+    <li><code>test_a_released_worktree_takes_its_index.py</code> and
+    <code>test_a_worktree_release_is_whole.py</code>: one case each, the
+    repository-wide removal-site invariants naming
+    <code>landing_measure.py::base_checkout</code>.</li>
+    <li><code>test_every_removal_path_reads_the_wide_claim.py</code>: one case,
+    the removal-path set having changed without a direct driver.</li>
+  </ul>
+
+  <p>This gate measures only this node's own change. Verifying the merged result
+  belongs to a separately dispatched test node.</p>
+</section>

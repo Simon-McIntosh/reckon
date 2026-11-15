@@ -1,0 +1,112 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-15T09:02:56.508Z",
+  "dispatched_at": "2026-11-15T08:46:06Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/queued-work-needs-no-workaround/r-20261115T084309497291-plan-review-of-queued-work-needs-no-workaround/plan.html:308",
+      "id": "wiring-1",
+      "reason": "the followup is the dispatch instruction, so the section this review is about would never be queued, and the fix is a one-line edit to its section arithmetic (\"\u00a72\u2013\u00a716 and \u00a719\u2013\u00a722\", with \u00a722 in the priority list).",
+      "text": "the driving followup reads \"\u00a72\u2013\u00a716 and \u00a718\u2013\u00a721 are independent ... queue them all in one batch\", but `plan-section-declarations` (plan.html:23) now declares `s18` descoped and `s22` implementable; a coordinator following the followup dispatches nothing for \u00a722 and attempts a descoped \u00a718",
+      "type": "wiring",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/queued-work-needs-no-workaround/r-20261115T084309497291-plan-review-of-queued-work-needs-no-workaround/plan.html:300",
+      "id": "done_when-1",
+      "reason": "the clause would ship unjudged, and the node's gate can go green with the very lookup the Why blames still in the dispatch path; the plan needs an arm that records the count of git history/last-modified invocations and requires it to be zero.",
+      "text": "\u00a721's deliverable says \"A dispatch makes no git history or last-modified lookup that can wait on a timeout\", but its done-when measures only wall time and a window through the repository; a dispatch that keeps the three git date lookups but happens to run on a warm cache, or at a moment no lookup times out, still reads under ten seconds \u2014 and the plan's own Why shows those lookups are intermittent (two of three hit a ten-second timeout)",
+      "type": "done_when",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "940d214e04cb98677596b2527af873315ea10f68",
+  "plan_fingerprint": "31b22a39fb14c84250e5061cd9cc2407bccbae37dafed246c3e2925cee83de67",
+  "plan_slug": "queued-work-needs-no-workaround",
+  "plan_version": 81,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "5422c517d40744cf4bb5b18d244c6bc876562b8f",
+      "commit_basis": "edit",
+      "finding": "wiring-1",
+      "note": "the driving followup now names \u00a72\u2013\u00a716 and \u00a719\u2013\u00a722, records \u00a718 as descoped, and lists \u00a721 and \u00a722 in the priority list",
+      "reason": "",
+      "when": "2026-11-15T09:26:12.879246+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "5422c517d40744cf4bb5b18d244c6bc876562b8f",
+      "commit_basis": "edit",
+      "finding": "done_when-1",
+      "note": "\u00a721's done-when now has a test counting the git history and last-modified invocations a dispatch makes, required to be zero",
+      "reason": "",
+      "when": "2026-11-15T09:26:21.721020+00:00"
+    }
+  ],
+  "responses": {
+    "done_when-1": {
+      "action": "acted",
+      "by": "",
+      "commit": "5422c517d40744cf4bb5b18d244c6bc876562b8f",
+      "commit_basis": "edit",
+      "note": "\u00a721's done-when now has a test counting the git history and last-modified invocations a dispatch makes, required to be zero",
+      "reason": "",
+      "when": "2026-11-15T09:26:21.721020+00:00"
+    },
+    "wiring-1": {
+      "action": "acted",
+      "by": "",
+      "commit": "5422c517d40744cf4bb5b18d244c6bc876562b8f",
+      "commit_basis": "edit",
+      "note": "the driving followup now names \u00a72\u2013\u00a716 and \u00a719\u2013\u00a722, records \u00a718 as descoped, and lists \u00a721 and \u00a722 in the priority list",
+      "reason": "",
+      "when": "2026-11-15T09:26:12.879246+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/Code/reckon/docs/state/reckon/reviews/plan/queued-work-needs-no-workaround/r-20261115T084309497291-plan-review-of-queued-work-needs-no-workaround.json",
+  "review_run_id": "r-20261115T084309497291-plan-review-of-queued-work-needs-no-workaround",
+  "reviewed_blob_sha": "f33e29c74f15a035662d0592c67a429e897a8612",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `6ec0378f0a` resolves as a commit that is an ancestor of `main` (\"land(...a-dispatch-answers-in-ten-seconds)...\"), run `r-20261115T080146603789-review-code-7296511cb661` resolves under the crew archive with its brief carrying the quoted \"Open findings already stored against the named paths: none.\" line, and the extensionless evidence URLs resolve as `<path>.html`.",
+    "done_when": "a finding \u2014 \u00a721's deliverable adds \"a dispatch makes no git history or last-modified lookup that can wait on a timeout\", and no arm of its done-when measures that lookup's absence.",
+    "evidence_paths": "pass \u2014 \u00a721 and \u00a722 both log to `docs/evidence/fragments/queued-work-needs-no-workaround/s21.html` and `s22.html` under the repository, and \u00a721 names its partitions (`fleet node` for timing, `all_debug` for tests).",
+    "naming": "pass \u2014 no plan labels, stage labels, ticket numbers or version tags reach a symbol, filename or evidence path in the changed units; evidence filenames are section-neutral (`s21.html`, `s22.html` in a per-plan directory) and the two matched against the plan's own anchor convention.",
+    "reasoning": "pass \u2014 \u00a722's stated root cause is confirmed in the code it describes \u2014 `_open_findings_for` (`reckon/crew/plan_review.py:5717-5730`) keeps a group only when its path is in the named set, and `except (OSError, ValueError): return []` is exactly the \"reported as none\" failure it names; re-running `reckon crew view findings --project imas-codex --path imas_codex/discovery/signals` returns 47 open rows today, 38 on `parallel.py`, so the 44/37 quoted for the earlier minute is a dated observation of a live and growing store, not a contradiction; and \u00a721's figures are attributed to separate measures as the previous round asked.",
+    "single_goal": "pass \u2014 \u00a721 carries one deliverable (a dispatch answers in ten seconds and derives the project once), \u00a722 one (the brief's findings line is truthful for paths and for an unreadable store), and _document only re-declares section status.",
+    "wiring": "a finding \u2014 the driving followup f-qwnw-001 still names \"\u00a72\u2013\u00a716 and \u00a718\u2013\u00a721\" while _document declares s18 descoped and s22 implementable, so the section this review is asked to read is the one the followup omits."
+  },
+  "section_digests": {
+    "_document": "3bcc11f3c5be8e04b525fe5c1dda07c43484945d58d34af144f088cf82620eb7",
+    "s1": "965e293bc718e24bc6e0b306c2e31f4694e8d3d1f2aafc97e86aac0ccdc0eb46",
+    "s10": "501d0d72406c2fda4dc47939b9700d2c42eb9011387b4df7abdfcc55d906d345",
+    "s11": "4dc7e37e7c9ff6d074c540a19ff75d7db784999f7b811a999a052a00fcbacb39",
+    "s12": "cf244a99091ee04721474e6caad0adad1fb1c907edc99e9fd73b86fb3251685c",
+    "s13": "8cdf1aaa77a692163d0b36bc751a206e8f6c96460d0e44b85d9feb5a76f99659",
+    "s14": "e033ab0daa427195a357d93c3b5969c3fae24f311a8dafa8b2a6bad8db0b518e",
+    "s15": "c271f7bcaa272ebd4bf87d7b1e7153251ec38aa5863fd8a3d7f12cdf1c66bd06",
+    "s16": "e958886ca859d584799d4d94514466d7e14ba4c818ac307fcb864c7eb39fa549",
+    "s17": "dd6b738e7e017fe3bc312e85841a1a6a4b4d5dc818c618040249040acf51ff19",
+    "s18": "cce913fd1fd3cd0d62df97ae997ebb6708c0f8082d5fb90425f676f105322724",
+    "s19": "eaeead248338c8d630a84c78ae20179b603aa87fc7b0a599cced40377f9d8297",
+    "s2": "872b1ec9c49f32d972d450016002b1265e846673cd1aef42c41aaccc50583998",
+    "s20": "0e0d4849ea6b6f69d5354bef8f8699320f369433778609f009cf726a6657a1ee",
+    "s21": "c5390458923286df31cbb7eb8389162837d48b75ed0456fd7f480ed16e5db42e",
+    "s22": "fce0ba09ddb9ec3bc2b594b7cd00683449d9a170142add8d81af3fdd14b02100",
+    "s3": "2a385591edce8d1cb26d41f176fb084cd634d113eb130d2581ce97000bcb3eea",
+    "s4": "0116c3c4a34b6e607b2564cc4300d3784ba5d7596a0000d0b59c40e1801dcd1a",
+    "s5": "81cc22db14da433d65d2cbfd466e233d778e9b5d50552dc7a013e94a3b25ad15",
+    "s6": "91849d1cd49d8e783c893b01272f0e0f505aed67e379d52d354011a619270a1d",
+    "s7": "0eb7720abb0f46f8d48d47fcf646be85ae58c8a5cc37c98f7ad06ac2f9deb6ff",
+    "s8": "5dcf0f324a6b831b76a043e465731eff46456979ae084bcfc764ff0d40816359",
+    "s9": "b22a82394cfc2b7163b7fbd8be1087fdb6ec66a16524e9d194431d418894d798"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-15T08:57:47.743492+00:00",
+  "total": null
+}

@@ -427,6 +427,7 @@ def _config_with_effective_budget(
     readings: Sequence[Mapping[str, Any]] | None,
     now: datetime | None,
     session: str | None,
+    project: str | None = None,
 ) -> Mapping[str, Any] | None:
     """A configuration whose budget block is the one in force for ``group``.
 
@@ -440,7 +441,7 @@ def _config_with_effective_budget(
     from reckon.crew import budget_group as budget_group_module
 
     block = budget_group_module.effective_block(
-        config, str(group), readings=readings, now=now, session=session
+        config, str(group), readings=readings, now=now, session=session, project=project
     )
     return {**(config or {}), "budget": block}
 
@@ -476,7 +477,7 @@ def _budget_verdict(
 
     wallet = group or budget_group_module.declared_group_for(config, backend_name)
     judged_config = _config_with_effective_budget(
-        config, wallet, readings=readings, now=now, session=session
+        config, wallet, readings=readings, now=now, session=session, project=project
     )
     if budget_state is None:
         recorded = budget_module.latest_recorded(project, root=root, config=config)
@@ -839,6 +840,7 @@ def _inspect_workspace(
     *,
     raise_on_unavailable: bool = True,
     release_residue: bool = False,
+    untracked_roots: Iterable[Path] | None = None,
 ) -> dict[str, Any]:
     """Inspect one worktree's commits, residue and classification.
 
@@ -849,9 +851,11 @@ def _inspect_workspace(
     even when they are empty. A clean tree whose head is unreachable is
     measured as well as a dirty one: the commits a deliberately abandoned tree
     carries are what an explicit pin archives, and that list cannot be read off
-    the working-tree status.
+    the working-tree status. ``untracked_roots`` bounds the status read to the
+    roots a caller charges a change to, as :func:`_tree_state` describes;
+    ``None`` reads the whole working tree.
     """
-    state = _tree_state(path)
+    state = _tree_state(path, untracked_roots=untracked_roots)
     if not state.get("available"):
         detail = state.get("detail") or "tree is unavailable"
         if raise_on_unavailable:
@@ -2095,6 +2099,99 @@ def _clear_run_lock(run_id: str, *, apply: bool) -> dict[str, Any]:
     return entry
 
 
+def _project_repo_roots(repo: Path) -> dict[str, Path]:
+    """Each project's checkout, keyed by name, from local state and the mounts.
+
+    A project's own ledger, run records and state directory all resolve beneath
+    its checkout, so attribution needs the checkout each project's state lives
+    under rather than the gc caller's alone.
+    """
+    roots: dict[str, Path] = {}
+    state_root = repo / "docs" / "state"
+    if state_root.is_dir():
+        for path in state_root.iterdir():
+            if path.is_dir():
+                roots.setdefault(path.name, repo)
+    try:
+        mounts = flight.mounted_project_docs()
+    except flight.FlightConfigError:
+        mounts = {}
+    for name, docs in mounts.items():
+        roots.setdefault(str(name), docs.parent)
+    return roots
+
+
+def _project_ledger_paths(repo: Path) -> dict[Path, str]:
+    """Each project's own ledger path, resolved, mapped to the project it names."""
+    paths: dict[Path, str] = {}
+    for name, root in _project_repo_roots(repo).items():
+        try:
+            paths[ledger.ledger_path(name, root=root).resolve()] = name
+        except (ledger.LedgerError, OSError, ValueError):
+            continue
+    return paths
+
+
+def _manifest_project(manifest: Path) -> str:
+    """The project a run's manifest names, or an empty string.
+
+    A manifest is either a JSON object or the tolerant ``key: value`` text form,
+    and either may carry a ``project`` key. A manifest that names none, or
+    cannot be read, attributes nothing.
+    """
+    from reckon.crew.reports import ManifestParseError, parse_manifest
+
+    try:
+        text = manifest.read_text(encoding="utf-8")
+    except (OSError, UnicodeDecodeError):
+        return ""
+    try:
+        fields = parse_manifest(text, path=str(manifest))
+    except ManifestParseError:
+        return ""
+    if not isinstance(fields, Mapping):
+        return ""
+    return str(fields.get("project") or "").strip()
+
+
+def _run_record_projects(repo: Path) -> dict[str, str]:
+    """Map each run id to the project whose state directory holds its record."""
+    projects: dict[str, str] = {}
+    for name, root in _project_repo_roots(repo).items():
+        runs = root / "docs" / "state" / name / "runs"
+        if not runs.is_dir():
+            continue
+        try:
+            for entry in runs.glob("*.json"):
+                projects.setdefault(entry.stem, name)
+        except OSError:
+            continue
+    return projects
+
+
+def _run_directory_project(directory: Path, *, run_records: Mapping[str, str]) -> str:
+    """The project a run directory belongs to, or an empty string.
+
+    Its live pointer is the run's own declaration. A run directory whose pointer
+    is gone is attributed by its manifest, or by the project whose state holds
+    its run record. Nothing else can name it.
+    """
+    from reckon.crew.runs import read_pointer
+
+    try:
+        pointer = read_pointer(directory.name)
+    except (CrewError, OSError, ValueError):
+        pointer = None
+    if isinstance(pointer, Mapping):
+        name = str(pointer.get("project") or "").strip()
+        if name:
+            return name
+    name = _manifest_project(directory / "manifest.md")
+    if name:
+        return name
+    return run_records.get(directory.name, "")
+
+
 def _mounted_ledgered_run_ids() -> tuple[set[str], list[str]]:
     """Run ids held by every registered project's ledger, and unreadable names.
 
@@ -2135,6 +2232,8 @@ def _unledgered_run_directories(
     live_ids: set[str],
     ledgered: set[str],
     retention_days: int,
+    project: str | None = None,
+    repo: Path | None = None,
 ) -> list[dict[str, Any]]:
     """Run directories with no ledger row and no live pointer, past retention.
 
@@ -2155,6 +2254,12 @@ def _unledgered_run_directories(
     row is reported withheld with a reason naming the unreadable project and
     none of them is removed, so a gc run from one checkout cannot delete a
     peer project's run directories.
+
+    With ``project`` named the pass reclaims only that project's own
+    directories: a directory is attributed to the project its live pointer,
+    manifest or run record names, and one that belongs to another project, or
+    to none the sweep can name, is reported as kept and left on disk. Every
+    row carries the ``project`` it was attributed to, or ``unknown``.
     """
     from reckon.crew.dispatch import tree_size_bytes
 
@@ -2165,6 +2270,7 @@ def _unledgered_run_directories(
     known = set(ledgered) | mounted
     current = now or datetime.now(tz=UTC)
     cutoff = current - timedelta(days=retention_days)
+    run_records: dict[str, str] | None = None
     entries: list[dict[str, Any]] = []
     for directory in sorted(
         path
@@ -2179,9 +2285,16 @@ def _unledgered_run_directories(
         modified = datetime.fromtimestamp(directory.stat().st_mtime, tz=UTC)
         if modified > cutoff:
             continue
+        if repo is not None:
+            if run_records is None:
+                run_records = _run_record_projects(repo)
+            attributed = _run_directory_project(directory, run_records=run_records)
+        else:
+            attributed = ""
         entry = {
             "run_id": directory_run_id,
             "path": str(directory),
+            "project": attributed or "unknown",
             "size": tree_size_bytes(directory),
             "age_days": (current - modified).days,
             "action": "prune",
@@ -2194,6 +2307,13 @@ def _unledgered_run_directories(
                 f"{', '.join(repr(name) for name in unreadable)} could not be "
                 "read, so no run directory can be shown unledgered"
             )
+        elif project is not None and attributed != project:
+            entry["action"] = "keep"
+            entry["kept"] = (
+                f"belongs to project {attributed!r}"
+                if attributed
+                else "belongs to no project the sweep can name"
+            ) + f", and this pass reclaims only project {project!r}"
         elif apply and directory_run_id not in _live_run_ids():
             shutil.rmtree(directory)
             entry["removed"] = True
@@ -3018,9 +3138,7 @@ def require_plan_reviewed(
         if design is None:
             missing = "carries no stored review under the design rubric"
         else:
-            missing = (
-                "carries a design review that left out an item of its rubric"
-            )
+            missing = "carries a design review that left out an item of its rubric"
         return _plan_review_verdict(
             enforce,
             f"plan {node.plan!r} in project {project!r} {missing}; "
@@ -3211,10 +3329,12 @@ def resolve_scope_repository(
     repositories: Iterable[str | Path],
 ) -> Path | None:
     """Resolve a declared path to its most specific containing repository."""
-    base = Path(base_repository).expanduser().resolve()
+    from reckon.crew.runs import resolved_path
+
+    base = resolved_path(Path(base_repository).expanduser())
     raw = Path(path).expanduser()
-    resolved = (raw if raw.is_absolute() else base / raw).resolve()
-    roots = {Path(root).expanduser().resolve() for root in repositories}
+    resolved = resolved_path(raw if raw.is_absolute() else base / raw)
+    roots = {resolved_path(Path(root).expanduser()) for root in repositories}
     roots.add(base)
     matches = [root for root in roots if resolved.is_relative_to(root)]
     return max(matches, key=lambda root: len(root.parts)) if matches else None
@@ -3717,9 +3837,7 @@ def _context_file_inputs(
     return file_tokens, {"write_paths": write_paths, "named_files": named_files}
 
 
-def pick_lane_document(
-    backend: Mapping[str, Any], cache: dict[str, Any]
-) -> Any:
+def pick_lane_document(backend: Mapping[str, Any], cache: dict[str, Any]) -> Any:
     """Parse one backend's published lane document once per pick.
 
     ``run_time_profile.local_lane_load`` reads the same published document for
@@ -3821,7 +3939,9 @@ def context_census(
     """
 
     def build() -> dict[str, Any]:
-        standing_tokens, standing = _standing_context_input(repo, backend_settings or {})
+        standing_tokens, standing = _standing_context_input(
+            repo, backend_settings or {}
+        )
         file_tokens, files = _context_file_inputs(repo, node, authority)
         return {
             "tokens": standing_tokens + file_tokens,
@@ -3830,14 +3950,16 @@ def context_census(
 
     def stamp_of(value: Mapping[str, Any]) -> list[Any]:
         return [
-            [path, capabilities.file_stamp(path)]
-            for path in (value.get("paths") or [])
+            [path, capabilities.file_stamp(path)] for path in (value.get("paths") or [])
         ]
 
     request_key = _census_request_key(node, repo, backend_settings, authority)
-    name = "context-census-" + hashlib.sha256(
-        json.dumps(request_key, sort_keys=True, default=str).encode()
-    ).hexdigest()
+    name = (
+        "context-census-"
+        + hashlib.sha256(
+            json.dumps(request_key, sort_keys=True, default=str).encode()
+        ).hexdigest()
+    )
     value = capabilities.cached_pick_input_stamped(
         name, request_key, stamp_of, build, root=root
     )

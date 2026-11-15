@@ -1,0 +1,46 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/_store.py:validate_landing_patch",
+    "reckon/_store.py:_apply_close",
+    "reckon/serve.py:patch-handler"
+  ],
+  "completed_at": "2026-11-15T13:45:04.101Z",
+  "dispatched_at": "2026-11-15T13:28:38Z",
+  "findings": [
+    {
+      "file": "reckon/_store.py",
+      "line": "5070",
+      "severity": "non-blocking",
+      "text": "non-blocking: the added exemption table is written in single quotes throughout, and line 5092 is 115 characters wide, where reckon/_store.py uses double-quoted literals around it; `ruff format --diff reckon/_store.py` rewrites exactly this block, so the commit adds formatting debt on the path the repo's staged-path format rule asks it to leave clean."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T085732662020-alro-s4/logs/live-store-pass.log",
+      "line": "4",
+      "severity": "non-blocking",
+      "text": "non-blocking: the log cited as the live-store measurement holds only its three `#` header lines and no stdout and no `EXIT=` line, so the `174 open plans, 23765 run records, 1 refusal (work-flows-to-the-lane s9)` figure in the manifest's artefacts cannot be re-derived by any reader who did not watch the terminal that ran live_store_pass.py."
+    }
+  ],
+  "node": "review-of-alro-s4-862923311349",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: read the node goal in the dispatch record and reckon/_store.py:5199; the gained commits narrow the close rule to a section marked done after the rule, which is the deliverable the coordinator's resume advice named.\nVERDICT done_when: read the done_when against tests/test_a_plan_does_not_close_over_an_unlanded_section.py:163 and :181 and the two negative-control logs; both new cases hold and both controls are red, but the live-store count the done_when also asks for has a header-only log.\nVERDICT write_paths: read the two declared write paths against `git diff --stat 37cb0d68..86292331`; the diff touches exactly reckon/_store.py (79 lines) and tests/test_a_plan_does_not_close_over_an_unlanded_section.py (36 lines).\nVERDICT manifest: read manifest.md; it records status complete, both arms with their literal commands and EXIT=0, both negative controls red, and the live-pass figure with the plan and section it refuses.\nVERDICT diff: read 0f28ed2986 and 8629233113 commit by commit; the first adds `_LANDING_RULE_EXEMPTIONS`, `_landed_before_the_rule` and two tests, and 8629233113 rewrites one docstring sentence and changes no behaviour.\nCALL_SITES: reckon/_store.py:validate_landing_patch, reckon/_store.py:_apply_close, reckon/serve.py:patch-handler\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/_store.py:5158 carries the exemption as one more condition of the same guard, so the delivered refusal is the goal's refusal and not a second rule beside it.\nSCORE evidence: 13\nJUSTIFICATION evidence: the gate file reruns 7 passed / EXIT=0 at head and both arms record their revision and exit, but logs/live-store-pass.log holds only its three header lines, so the live-store figure exists only as the manifest's word.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every path in the diff of 0f28ed2986 and 8629233113 is inside the two declared write paths, and the second commit changes a docstring only.\nSCORE durability: 16\nJUSTIFICATION durability: removing `and not _landed_before_the_rule(state, section)` at reckon/_store.py:5158 reddens tests/test_a_plan_does_not_close_over_an_unlanded_section.py:163 and a reader that ignores section identity reddens :181, but the two recorded negative controls remove the whole guard and never exercise the exemption, so no log shows either assertion red.\nSCORE fit: 11\nJUSTIFICATION fit: reckon/_store.py:5070 opens a single-quoted table in a module whose neighbouring literals are double-quoted, and `ruff format --diff reckon/_store.py` rewrites exactly that added block.\nSCORE reuse: 18\nJUSTIFICATION reuse: reckon/_store.py:5213 compares spellings through the existing `section_id_candidates` at reckon/_plan_html.py:113 rather than a second spelling rule, and no prior owner exists for a per-section migration exemption.\nFINDING reckon/_store.py:5070 non-blocking: the added exemption table is written in single quotes and line 5092 is 115 characters wide where the module uses double-quoted literals throughout, so `ruff format --diff reckon/_store.py` rewrites the whole added block and the commit adds formatting debt on its own staged path.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T085732662020-alro-s4/logs/live-store-pass.log:4 non-blocking: the log holds only its three `#` header lines, unlike the six kinds of line live_store_pass.py prints, so the `174 open plans, 23765 run records, 1 refusal` figure recorded in the manifest artefacts cannot be re-derived by a reader who did not watch the terminal.\n",
+  "review_run_id": "r-20261115T132438094956-review-of-alro-s4-862923311349",
+  "reviewed_base_sha": "37cb0d686e10541a7b1ecfe55d4a04a884c726cb",
+  "reviewed_head_sha": "862923311349d09f0236e48226233788ed847892",
+  "reviewed_run_id": "r-20261115T085732662020-alro-s4",
+  "scores": {
+    "durability": 16,
+    "evidence": 13,
+    "fit": 11,
+    "goal_fidelity": 18,
+    "reuse": 18,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "text": "VERDICT goal: read the node goal in the dispatch record and reckon/_store.py:5199; the gained commits narrow the close rule to a section marked done after the rule, which is the deliverable the coordinator's resume advice named.\nVERDICT done_when: read the done_when against tests/test_a_plan_does_not_close_over_an_unlanded_section.py:163 and :181 and the two negative-control logs; both new cases hold and both controls are red, but the live-store count the done_when also asks for has a header-only log.\nVERDICT write_paths: read the two declared write paths against `git diff --stat 37cb0d68..86292331`; the diff touches exactly reckon/_store.py (79 lines) and tests/test_a_plan_does_not_close_over_an_unlanded_section.py (36 lines).\nVERDICT manifest: read manifest.md; it records status complete, both arms with their literal commands and EXIT=0, both negative controls red, and the live-pass figure with the plan and section it refuses.\nVERDICT diff: read 0f28ed2986 and 8629233113 commit by commit; the first adds `_LANDING_RULE_EXEMPTIONS`, `_landed_before_the_rule` and two tests, and 8629233113 rewrites one docstring sentence and changes no behaviour.\nCALL_SITES: reckon/_store.py:validate_landing_patch, reckon/_store.py:_apply_close, reckon/serve.py:patch-handler\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/_store.py:5158 carries the exemption as one more condition of the same guard, so the delivered refusal is the goal's refusal and not a second rule beside it.\nSCORE evidence: 13\nJUSTIFICATION evidence: the gate file reruns 7 passed / EXIT=0 at head and both arms record their revision and exit, but logs/live-store-pass.log holds only its three header lines, so the live-store figure exists only as the manifest's word.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every path in the diff of 0f28ed2986 and 8629233113 is inside the two declared write paths, and the second commit changes a docstring only.\nSCORE durability: 16\nJUSTIFICATION durability: removing `and not _landed_before_the_rule(state, section)` at reckon/_store.py:5158 reddens tests/test_a_plan_does_not_close_over_an_unlanded_section.py:163 and a reader that ignores section identity reddens :181, but the two recorded negative controls remove the whole guard and never exercise the exemption, so no log shows either assertion red.\nSCORE fit: 11\nJUSTIFICATION fit: reckon/_store.py:5070 opens a single-quoted table in a module whose neighbouring literals are double-quoted, and `ruff format --diff reckon/_store.py` rewrites exactly that added block.\nSCORE reuse: 18\nJUSTIFICATION reuse: reckon/_store.py:5213 compares spellings through the existing `section_id_candidates` at reckon/_plan_html.py:113 rather than a second spelling rule, and no prior owner exists for a per-section migration exemption.\nFINDING reckon/_store.py:5070 non-blocking: the added exemption table is written in single quotes and line 5092 is 115 characters wide where the module uses double-quoted literals throughout, so `ruff format --diff reckon/_store.py` rewrites the whole added block and the commit adds formatting debt on its own staged path.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T085732662020-alro-s4/logs/live-store-pass.log:4 non-blocking: the log holds only its three `#` header lines, unlike the six kinds of line live_store_pass.py prints, so the `174 open plans, 23765 run records, 1 refusal` figure recorded in the manifest artefacts cannot be re-derived by a reader who did not watch the terminal.\n",
+  "times_source": "run-record",
+  "timestamp": "2026-11-15T13:56:35.453339+00:00",
+  "total": 95
+}

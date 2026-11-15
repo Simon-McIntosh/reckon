@@ -1,0 +1,98 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": [
+    "derived from the reviewed run's own arm logs on disk: after_suite (logs/after-arm.log at efeb0d0d4339) records 59 passed, no FAILED line, EXIT=0; baseline_suite (logs/base-arm.log at 251cb1cd) records 55 passed, no FAILED line, EXIT=0; the difference is empty. Cross-checked over the importer population the manifest names: logs/importer-base.log and logs/importer-after.log each carry 18 FAILED/ERROR ids and comm over the two sorted id sets returns none added and none fixed."
+  ],
+  "call_site_count": 7,
+  "call_sites": [
+    "reckon/crew/merge.py:528",
+    "reckon/crew/merge.py:1178",
+    "reckon/crew/promotion_scope.py:1985",
+    "reckon/crew/promotion_scope.py:2568",
+    "reckon/crew/promotion_scope.py:2762",
+    "reckon/crew/promotion_scope.py:2940",
+    "reckon/ledger.py:3113"
+  ],
+  "completed_at": "2026-11-15T05:21:02.986Z",
+  "dispatched_at": "2026-11-15T04:58:58Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "folded",
+      "node": "a-landing-commit-retries-a-released-lock",
+      "recorded_at": "2026-11-15T05:52:31.987049+00:00"
+    },
+    "1": {
+      "kind": "exempted",
+      "reason": "the guard for that case is attempts == [1], which reddens if another checkout's lock is waited on; the self-constructed path comparison is a fixture sanity check, not the coverage claim",
+      "recorded_at": "2026-11-15T05:52:37.292218+00:00"
+    },
+    "2": {
+      "kind": "exempted",
+      "reason": "the gate ran on all_debug, not the fleet node; a scheduler-latency flake would show as a red case whose cause names the 50 ms bound, and is cheaper to loosen then than to guess now",
+      "recorded_at": "2026-11-15T05:52:41.104556+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "reckon/crew/merge.py",
+      "line": "867",
+      "severity": "blocking",
+      "summary": "the loop condition is \"while retries + 1 < attempts and _failed_on_this_index_lock(lock, result)\", and that predicate never reads result.returncode",
+      "text": "blocking: the loop condition is \"while retries + 1 < attempts and _failed_on_this_index_lock(lock, result)\", and that predicate never reads result.returncode, so a successful step is retried whenever this checkout's index.lock exists at the check, either because a peer created it between the call returning and the check or through the lock.exists() fallback at merge.py:822; the old condition required returncode != 0 and the docstring at merge.py:838 still says the step runs until it succeeds. land_merge's step at merge.py:1174 runs git merge --ff-only and its retry re-reads base from the moved HEAD at merge.py:1155, so a retried success lands a second merge commit on the primary branch; promotion_scope.py:2940's git commit --only re-run after a successful commit returns \"nothing to commit\", driving the caller at promotion_scope.py:2958 into rollback and reporting a landed commit as failed, and reckon/ledger.py:3113's commit step reaches the same false failure. Repair by keeping the guard, \"result.returncode != 0 and _failed_on_this_index_lock(lock, result)\", and add a case asserting a successful call with the lock present returns after one attempt."
+    },
+    {
+      "file": "tests/test_a_landing_commit_retries_a_released_lock.py",
+      "line": "228",
+      "severity": "non-blocking",
+      "summary": "assert str(other_lock) != str(_lock(repo)) compares two paths the test itself constructed and never calls the code under test",
+      "text": "non-blocking: assert str(other_lock) != str(_lock(repo)) compares two paths the test itself constructed and never calls the code under test, so it holds whatever the helper does and reads as coverage it does not provide; the guard in that case is attempts == [1] at line 229, which does redden if another checkout's lock is waited on."
+    },
+    {
+      "file": "tests/test_a_landing_commit_retries_a_released_lock.py",
+      "line": "108",
+      "severity": "non-blocking",
+      "summary": "the holder subprocess is given 50 ms to notice the release file and unlink the lock, and line 134 asserts released_after[0] < 0.05",
+      "text": "non-blocking: the holder subprocess is given 50 ms to notice the release file and unlink the lock, and line 134 asserts released_after[0] < 0.05, so on a loaded shared node the case can fail for scheduler latency rather than for anything the helper did; the property the case needs is only that the lock is gone before the retry reads it."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "read commit by commit against 251cb1cd: bcc56fcc adds _result_text and _failed_on_this_index_lock and rewrites the retry condition plus two docstrings in reckon/crew/merge.py; efeb0d0d4339 adds only the 37-line evidence fragment; three files, 306 insertions and 7 deletions.",
+    "done_when": "the done_when names tests/test_a_landing_commit_retries_a_released_lock.py passing every plan case, the base revision failing the released-lock case, and no added importer failure; after-arm.log at efeb0d0d4339 records 59 passed EXIT=0, base-arm.log at 251cb1cd records 55 passed EXIT=0, negative-control.log records 1 failed and 3 passed EXIT=1 naming test_a_lock_released_after_the_failed_call_still_waits, and the importer arms carry 18 identical failure ids either side, all four logs reopened by this review.",
+    "goal": "the node goal is to retry a git call refused by this checkout's index lock even when the lock is gone by the time the wait helper looks, up to the same bound; reckon/crew/merge.py:807-822 adds _failed_on_this_index_lock, which reads the failure's own text for this checkout's lock path before falling back to the file, and merge.py:867 applies it inside the existing bounded loop, so the goal is met.",
+    "manifest": "read; it reports status complete, two commits at bcc56fcc and efeb0d0d4339, a focused gate of 59 passed against a 55-passed base arm, a negative control failing only the released-lock case, a clean worktree, and 18 pre-existing importer failures at both arms.",
+    "write_paths": "the declared paths are reckon/crew/merge.py, tests/test_a_landing_commit_retries_a_released_lock.py, a fragment under docs/evidence/fragments/a-landing-never-waits-on-a-shared-index/ and a figures directory; the diff touches the first three and nothing outside them."
+  },
+  "justifications": {
+    "durability": "tests/test_a_landing_commit_retries_a_released_lock.py:128 asserts attempts == [1, 2] and negative-control.log shows that assertion reddening at the base revision, but no test asserts that a successful call with the lock present returns after one attempt, so the regression merge.py:867 introduces is unguarded.",
+    "evidence": "the three arms are recorded in logs I reopened and their summary lines and EXIT codes match the manifest, though the importer head arm ran at bcc56fcc rather than efeb0d0d4339 and that second commit is docs-only.",
+    "fit": "merge.py:807-809 names and documents the new predicate for a failed call while merge.py:867 applies it to every result including successful ones, where the surrounding helpers at merge.py:706-720 keep name and contract aligned.",
+    "goal_fidelity": "reckon/crew/merge.py:820-822 returns the failure's own naming of this checkout's lock before falling back to lock.exists(), which is exactly the released-lock case the goal names.",
+    "reuse": "the change extends _run_waiting_out_a_held_index_lock at merge.py:825 rather than forking it and reuses _index_lock_held and the caller's bound, and _result_text at merge.py:796 has no owner in the repository, the nearest idiom being the inline stderr.strip() or stdout.strip() at merge.py:296 and reckon/ledger.py:3183.",
+    "scope_discipline": "the three changed files sit inside the four declared paths, but merge.py:867 also drops the loop's result.returncode != 0 guard, which is a behavioural change the goal does not imply."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to retry a git call refused by this checkout's index lock even when the lock is gone by the time the wait helper looks, up to the same bound; reckon/crew/merge.py:807-822 adds _failed_on_this_index_lock, which reads the failure's own text for this checkout's lock path before falling back to the file, and merge.py:867 applies it inside the existing bounded loop, so the goal is met.\nVERDICT done_when: the done_when names tests/test_a_landing_commit_retries_a_released_lock.py passing every plan case, the base revision failing the released-lock case, and no added importer failure; after-arm.log at efeb0d0d4339 records 59 passed EXIT=0, base-arm.log at 251cb1cd records 55 passed EXIT=0, negative-control.log records 1 failed and 3 passed EXIT=1 naming test_a_lock_released_after_the_failed_call_still_waits, and the importer arms carry 18 identical failure ids either side, all four logs reopened by this review.\nVERDICT write_paths: the declared paths are reckon/crew/merge.py, tests/test_a_landing_commit_retries_a_released_lock.py, a fragment under docs/evidence/fragments/a-landing-never-waits-on-a-shared-index/ and a figures directory; the diff touches the first three and nothing outside them.\nVERDICT manifest: read; it reports status complete, two commits at bcc56fcc and efeb0d0d4339, a focused gate of 59 passed against a 55-passed base arm, a negative control failing only the released-lock case, a clean worktree, and 18 pre-existing importer failures at both arms.\nVERDICT diff: read commit by commit against 251cb1cd: bcc56fcc adds _result_text and _failed_on_this_index_lock and rewrites the retry condition plus two docstrings in reckon/crew/merge.py; efeb0d0d4339 adds only the 37-line evidence fragment; three files, 306 insertions and 7 deletions.\nCALL_SITES: reckon/crew/merge.py:528, reckon/crew/merge.py:1178, reckon/crew/promotion_scope.py:1985, reckon/crew/promotion_scope.py:2568, reckon/crew/promotion_scope.py:2762, reckon/crew/promotion_scope.py:2940, reckon/ledger.py:3113\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/merge.py:820-822 returns the failure's own naming of this checkout's lock before falling back to lock.exists(), which is exactly the released-lock case the goal names.\nSCORE evidence: 18\nJUSTIFICATION evidence: the three arms are recorded in logs I reopened and their summary lines and EXIT codes match the manifest, though the importer head arm ran at bcc56fcc rather than efeb0d0d4339 and that second commit is docs-only.\nSCORE scope_discipline: 16\nJUSTIFICATION scope_discipline: the three changed files sit inside the four declared paths, but merge.py:867 also drops the loop's result.returncode != 0 guard, which is a behavioural change the goal does not imply.\nSCORE durability: 14\nJUSTIFICATION durability: tests/test_a_landing_commit_retries_a_released_lock.py:128 asserts attempts == [1, 2] and negative-control.log shows that assertion reddening at the base revision, but no test asserts that a successful call with the lock present returns after one attempt, so the regression merge.py:867 introduces is unguarded.\nSCORE fit: 15\nJUSTIFICATION fit: merge.py:807-809 names and documents the new predicate for a failed call while merge.py:867 applies it to every result including successful ones, where the surrounding helpers at merge.py:706-720 keep name and contract aligned.\nSCORE reuse: 18\nJUSTIFICATION reuse: the change extends _run_waiting_out_a_held_index_lock at merge.py:825 rather than forking it and reuses _index_lock_held and the caller's bound, and _result_text at merge.py:796 has no owner in the repository, the nearest idiom being the inline stderr.strip() or stdout.strip() at merge.py:296 and reckon/ledger.py:3183.\nFINDING reckon/crew/merge.py:867 blocking: the loop condition is \"while retries + 1 < attempts and _failed_on_this_index_lock(lock, result)\", and that predicate never reads result.returncode, so a successful step is retried whenever this checkout's index.lock exists at the check, either because a peer created it between the call returning and the check or through the lock.exists() fallback at merge.py:822; the old condition required returncode != 0 and the docstring at merge.py:838 still says the step runs until it succeeds. land_merge's step at merge.py:1174 runs git merge --ff-only and its retry re-reads base from the moved HEAD at merge.py:1155, so a retried success lands a second merge commit on the primary branch; promotion_scope.py:2940's git commit --only re-run after a successful commit returns \"nothing to commit\", driving the caller at promotion_scope.py:2958 into rollback and reporting a landed commit as failed, and reckon/ledger.py:3113's commit step reaches the same false failure. Repair by keeping the guard, \"result.returncode != 0 and _failed_on_this_index_lock(lock, result)\", and add a case asserting a successful call with the lock present returns after one attempt.\nFINDING tests/test_a_landing_commit_retries_a_released_lock.py:228 non-blocking: assert str(other_lock) != str(_lock(repo)) compares two paths the test itself constructed and never calls the code under test, so it holds whatever the helper does and reads as coverage it does not provide; the guard in that case is attempts == [1] at line 229, which does redden if another checkout's lock is waited on.\nFINDING tests/test_a_landing_commit_retries_a_released_lock.py:108 non-blocking: the holder subprocess is given 50 ms to notice the release file and unlink the lock, and line 134 asserts released_after[0] < 0.05, so on a loaded shared node the case can fail for scheduler latency rather than for anything the helper did; the property the case needs is only that the lock is gone before the retry reads it.\n",
+  "review_node": "review-of-a-landing-commit-retries-a-released-lock-efeb0d0d4339",
+  "review_run_id": "r-20261115T045402525342-review-of-a-landing-commit-retries-a-released-lock-efeb0d0d4339",
+  "reviewed_base_sha": "251cb1cd058784974614ba8cc292d665b7ca7dc1",
+  "reviewed_head_sha": "efeb0d0d4339cb0ed0700c01957f488ae99aef12",
+  "reviewed_run_id": "r-20261115T031844233655-a-landing-commit-retries-a-released-lock",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash",
+    "reviewer_run_id": "r-20261115T045402525342-review-of-a-landing-commit-retries-a-released-lock-efeb0d0d4339"
+  },
+  "scores": {
+    "durability": 14,
+    "evidence": 18,
+    "fit": 15,
+    "goal_fidelity": 18,
+    "reuse": 18,
+    "scope_discipline": 16
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-15T05:29:53.963296+00:00",
+  "total": 99
+}

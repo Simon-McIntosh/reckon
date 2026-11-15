@@ -1,0 +1,73 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-15T13:01:16.981Z",
+  "dispatched_at": "2026-11-15T13:00:50Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/queued-work-needs-no-workaround/r-20261115T112139796764-plan-review-of-queued-work-needs-no-workaround/plan.html:323",
+      "id": "wiring-1",
+      "reason": "the newest section is declared implementable and named by no dispatch instruction, so it is queued by nothing and the plan stops at its own followup.",
+      "text": "the driving followup reads \"\u00a72\u2013\u00a716 and \u00a719\u2013\u00a722 are independent ... queue them all in one batch\" while `plan-section-declarations` (plan.html:23) declares s23, s24 and s25 implementable, and \u00a725 is the section this change added; a coordinator obeying the followup dispatches nothing for any of the three",
+      "type": "wiring",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/queued-work-needs-no-workaround/r-20261115T112139796764-plan-review-of-queued-work-needs-no-workaround/plan.html:317",
+      "id": "done_when-1",
+      "reason": "without a space-separated-pair case the gate cannot fail on the one regression its own deliverable sentence creates, so the node can land a reader that silently drops commits.",
+      "text": "\u00a725's done-when fixes four forms (sha-subject list items, a JSON list of sha-subject strings, a bare list item stating none, a comma-separated line) plus a fifth refusal case, and none of them is the space-separated pair the deliverable names; at the base revision `commits: <sha> <sha>` already parses to two commits while `commits: <sha> fix(crew): something` parses to one entry carrying the subject, so a reader that keeps the first token as the sha and treats the rest as its subject truncates a base-correct space-separated pair and still passes every case",
+      "type": "done_when",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "9095a7c300330af44c1dba2b3d1e2c2bf392af71",
+  "plan_fingerprint": "3fa7d975b8a7b3fc2d2ffb3d925d95c7766f2581c5a0ef4abc43f1394b32a7d5",
+  "plan_slug": "queued-work-needs-no-workaround",
+  "plan_version": 89,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261115T112139796764-plan-review-of-queued-work-needs-no-workaround",
+  "reviewed_blob_sha": "794cb5d53b1065f0752912262554698b287f6be5",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 \u00a719 (plan.html:292) and work-flows-to-the-lane \u00a765 both resolve; \u00a725 names no file or commit to check \u2014 reported absence.",
+    "done_when": "a finding \u2014 \u00a725's case set omits the space-separated pair of bare shas that the deliverable itself names and that base already reads as two commits.",
+    "evidence_paths": "pass \u2014 \u00a725's fragment goes to docs/evidence/fragments/queued-work-needs-no-workaround/s25.html, a directory that exists in the repository and outlives the run.",
+    "naming": "pass \u2014 \u00a725's text states a reader's behaviour in plain words and names no symbol, ticket or changelog tag.",
+    "reasoning": "pass \u2014 the Why's three forms are exactly the shapes that leave an unresolvable entry today (measured at HEAD 54ba2ea9ca), the endpoint is a reading of the field any manifest can carry, and no code path or function is named.",
+    "single_goal": "pass \u2014 \u00a725 delivers one thing: one reading of a manifest's commits field across the forms a worker writes.",
+    "wiring": "a finding \u2014 the open driving followup (plan.html:323) names \u00a72\u2013\u00a716 and \u00a719\u2013\u00a722 for the batch while `plan-section-declarations` (plan.html:23) declares s23, s24 and s25 implementable, so \u00a725 is declared ready and queued by nothing."
+  },
+  "section_digests": {
+    "_document": "b01d311a8ac26de383d2d5beb538e47bde177de022ce2e8eb15b5e022d8cd6aa",
+    "s1": "965e293bc718e24bc6e0b306c2e31f4694e8d3d1f2aafc97e86aac0ccdc0eb46",
+    "s10": "501d0d72406c2fda4dc47939b9700d2c42eb9011387b4df7abdfcc55d906d345",
+    "s11": "4dc7e37e7c9ff6d074c540a19ff75d7db784999f7b811a999a052a00fcbacb39",
+    "s12": "cf244a99091ee04721474e6caad0adad1fb1c907edc99e9fd73b86fb3251685c",
+    "s13": "8cdf1aaa77a692163d0b36bc751a206e8f6c96460d0e44b85d9feb5a76f99659",
+    "s14": "e033ab0daa427195a357d93c3b5969c3fae24f311a8dafa8b2a6bad8db0b518e",
+    "s15": "c271f7bcaa272ebd4bf87d7b1e7153251ec38aa5863fd8a3d7f12cdf1c66bd06",
+    "s16": "e958886ca859d584799d4d94514466d7e14ba4c818ac307fcb864c7eb39fa549",
+    "s17": "dd6b738e7e017fe3bc312e85841a1a6a4b4d5dc818c618040249040acf51ff19",
+    "s18": "cce913fd1fd3cd0d62df97ae997ebb6708c0f8082d5fb90425f676f105322724",
+    "s19": "eaeead248338c8d630a84c78ae20179b603aa87fc7b0a599cced40377f9d8297",
+    "s2": "872b1ec9c49f32d972d450016002b1265e846673cd1aef42c41aaccc50583998",
+    "s20": "0e0d4849ea6b6f69d5354bef8f8699320f369433778609f009cf726a6657a1ee",
+    "s21": "1ba6fbba19ed595b11f5efb9d35bd3b6620bad888924989e016324a2ad6a714e",
+    "s22": "fce0ba09ddb9ec3bc2b594b7cd00683449d9a170142add8d81af3fdd14b02100",
+    "s23": "43fe6c8d8a3118b055dc76b75bd328396172198ba8c599d5fd70be079950e6f4",
+    "s24": "d0c890a99bc99126d7e2700c0ba7b5bf1d72012ceca7169bdeeb3268bfcd9150",
+    "s25": "afd11e98028c6beb77d132f656f7e433fab87c40e3e0f5257920383e880c2cd9",
+    "s3": "2a385591edce8d1cb26d41f176fb084cd634d113eb130d2581ce97000bcb3eea",
+    "s4": "0116c3c4a34b6e607b2564cc4300d3784ba5d7596a0000d0b59c40e1801dcd1a",
+    "s5": "81cc22db14da433d65d2cbfd466e233d778e9b5d50552dc7a013e94a3b25ad15",
+    "s6": "91849d1cd49d8e783c893b01272f0e0f505aed67e379d52d354011a619270a1d",
+    "s7": "0eb7720abb0f46f8d48d47fcf646be85ae58c8a5cc37c98f7ad06ac2f9deb6ff",
+    "s8": "5dcf0f324a6b831b76a043e465731eff46456979ae084bcfc764ff0d40816359",
+    "s9": "b22a82394cfc2b7163b7fbd8be1087fdb6ec66a16524e9d194431d418894d798"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-15T13:09:57.043202+00:00",
+  "total": null
+}

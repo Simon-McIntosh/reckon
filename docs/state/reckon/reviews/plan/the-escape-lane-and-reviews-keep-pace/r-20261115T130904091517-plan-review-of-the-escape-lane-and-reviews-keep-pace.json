@@ -1,0 +1,93 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-15T13:32:00.966Z",
+  "dispatched_at": "2026-11-15T13:31:42Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/the-escape-lane-and-reviews-keep-pace.html:107",
+      "id": "done_when-1",
+      "reason": "a worker implementing the reuse fails the section's own gate on the case the section is about, and can only pass it by keeping the duplicate it was told to remove.",
+      "text": "s13's done-when pins the nine-implementations, three-reviews case to \"the same seats in the same order\", but with the deliverable applied the order changes at seat 8 while both roles still wait: `_seat_share_turns` gives `I R I I R I I R I I I I` and `weighted_project_order` keyed on the role gives `I R I I R I I I R I I I I` for that exact slice (measured at revision 68a11d72 against `reckon/crew/admission/ordering.py` with the module's own `_role_seat_weights`, weights 0.692/0.308). The current test asserts no order at all \u2014 `test_a_pass_gives_both_roles_a_seat_with_three_waiting` only checks membership in the first three seats \u2014 so this arm is a demand no existing assertion carries, and it contradicts the deliverable two lines above it",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/the-escape-lane-and-reviews-keep-pace.html:105",
+      "id": "reasoning-1",
+      "reason": "the section's stated root cause is \"a duplicate that agrees seat for seat\", and the change it asks for is a behaviour change to the seat cadence, which the plan must state as such or the reuse is argued on a premise the code does not support.",
+      "text": "the `Why.` justifies the reuse on \"From a zero start the two accrual keys agree seat for seat\", which the cited module falsifies: with three implementations and nine reviews the quota key seats an implementation first (`I R R R I R R I R R R`) while `weighted_project_order` seats a review first (`R I R R I R R R I R R R`), because it accrues a role's weight before choosing and the quota key compares after, so the two differ at the first seat whenever the shares are unequal and at seat 8 of the plan's own nine/three case",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/the-escape-lane-and-reviews-keep-pace.html:106",
+      "id": "reasoning-2",
+      "reason": "a worker following the text either widens an interface the plan says to reuse or silently rewrites the field the surrounding pass groups on, and no done-when arm checks the project field afterwards.",
+      "text": "`weighted_project_order(ordered, weights)` takes no key argument and groups rows by `pointer[\"project\"]` (`reckon/crew/admission/ordering.py:70-105`), returning the same mapping objects it was given; \"computed through `weighted_project_order` with the role as its key\" therefore describes a call the module does not offer, and the obvious way to supply a role key \u2014 passing copies whose `project` field carries the role \u2014 puts those copies back into the pass's order with `project` rewritten, a field `role_share_order`'s callers and the project slice keep reading",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/the-escape-lane-and-reviews-keep-pace.html:107",
+      "id": "single_goal-1",
+      "reason": "the reuse half's premise is itself disputed (the two findings above), so one close verdict would either carry a rename through a reverted reuse or leave the rename unreviewed, and each half is closable on its own gate.",
+      "text": "s13 delivers the ordering reuse (`reckon/crew/admission/ordering.py`) and the role-key rename (`reckon/crew/admission/verdicts.py`, `selection.py` and the join with run pointers) under one done-when, and the two fail independently: the rename is a contract between a verdict row and every run pointer, while the reuse changes which pointer takes which seat",
+      "type": "single_goal",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/the-escape-lane-and-reviews-keep-pace.html:101",
+      "id": "single_goal-2",
+      "reason": "both are consequences of one landed verb, each arm of the single done-when measures one half, and splitting a 1.0h cleanup buys no review resolution.",
+      "text": "s12 likewise carries the ledger's `not-run` key (`reckon/ledger.py`) and the formatter consolidation (`reckon/crew_run_commands.py`) as two deliverables",
+      "type": "single_goal",
+      "would_change": false
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/the-escape-lane-and-reviews-keep-pace.html:100",
+      "id": "reasoning-3",
+      "reason": "both symbols resolve as described and produce the identical string today (`_utc_now() == _utc_now_text()`), so the named method is verified true and sends no worker wrong; only the rubric's wording preference is at stake.",
+      "text": "s12 prescribes a method rather than an endpoint (\"stamps through `run_paths._utc_now`, and `_utc_now_text` is removed\")",
+      "type": "reasoning",
+      "would_change": false
+    }
+  ],
+  "plan_commit": "c9de35882920331e9ab22c101071212c5004ce06",
+  "plan_fingerprint": "626168700c0aa57bf2e5e24e3fd246e59e34791ee93bdd99049daf4b49c5d19c",
+  "plan_slug": "the-escape-lane-and-reviews-keep-pace",
+  "plan_version": 37,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261115T130904091517-plan-review-of-the-escape-lane-and-reviews-keep-pace",
+  "reviewed_blob_sha": "2871b920b3e08a6f835e9d983d0b36d29bb397fd",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `341daa7894`, `c60fd6b57d` and `2424ab7511` all resolve as commits, `reckon/ledger.py`, `reckon/crew/promotion_records.py`, `reckon/crew_run_commands.py`, `reckon/crew/run_paths.py`, `reckon/crew/admission/{ordering,selection,verdicts}.py`, `tests/test_a_hand_merged_run_is_recorded.py` and `tests/test_reviews_and_implementations_share_the_seats.py` all exist, and \"the ticker\" resolves to `reckon/crew/ticker.py:647`, whose role set carries `implement`.",
+    "done_when": "a finding \u2014 s13's `Done when` requires that the nine-implementations, three-reviews case \"still yields the same seats in the same order\" while its `Deliverable` routes the share through `weighted_project_order`, and the two orders measurably differ for that case.",
+    "evidence_paths": "pass \u2014 s12 and s13 name no session-scratchpad path and their all_debug arms land in the run directory by the convention \u00a75\u2013\u00a711 established; the same point on \u00a79 was already declined on that ground.",
+    "naming": "pass \u2014 no ticket number, stage name or version tag reaches a symbol or a filename; the \u00a76/\u00a79 citations stay in plan text where a reader expects them.",
+    "reasoning": "a finding \u2014 s13's mechanism cannot be called as written: `weighted_project_order` takes no key argument and groups by `pointer[\"project\"]`, and it returns the same mapping objects it was handed, so \"with the role as its key\" means overwriting a field the rest of the pass reads, and the premise that the two seat orders agree seat for seat is false on the plan's own case.",
+    "single_goal": "a finding \u2014 s13 carries two independent deliverables, the ordering reuse and the role-key rename, under one done-when and one close verdict.",
+    "wiring": "pass \u2014 s12 and s13 name no upstream but \u00a79 and \u00a76, and both are declared done in `plan-section-declarations` with their landing records present (`docs/evidence/fragments/the-escape-lane-and-reviews-keep-pace/gate-names-its-arms-s9.html`, `.../reviews-keep-pace-s6.html`), so nothing waits and `plan-section-depends-on` correctly carries only the live waits (s5, s6, s9)."
+  },
+  "section_digests": {
+    "_document": "f5989cf57d8221ef17173daae628d6b3c55933e17836ad0255758966bcdd47fd",
+    "s1": "2f30b04db27eda225a7d9a82c4b2b9cf5e512723d009737b2a923bb7c84a60ce",
+    "s10": "5eb27e39dbb74e08b25bc9961a8db50ec7ee85a2d8ea31e89312d453366baa11",
+    "s11": "91984404776771ba270847f9c00ea2aee84209be72d77ded494b480e7f46fc20",
+    "s12": "0cc630f34de55a6a52e68c4aec4308e14f6e04d7b497c263619d7bd3b2d90280",
+    "s13": "ce3e923175044460261e7b63836747cacb0f0288a045ac9a5073b69dbaca7ae5",
+    "s2": "1c1291a10bbf3182487496ef153e5873681ea3827c7bacc16efddf88c7cca128",
+    "s3": "2a0e0fabbd2ee502c5a7928a8fa608b66f83d3ad3fe304a31a05b66f0cb3d688",
+    "s4": "4a85c23ac81214a3af1b59e1888c579b2e2525eb2a2346a965b291cee79651b7",
+    "s5": "fb1f3e1546621cc855884449828d1a21bbdbe0f82829e3272a4980de76583329",
+    "s6": "cc57c977bc74be9abc823c22b2bdb1536d9437ee9b4055386c7bcc135cf44073",
+    "s7": "ed204545a51bd6d6fca68193a080594cbf03befec2fbab427a94d4fa64bb5b4d",
+    "s8": "f91bbc8415af7128a49266e48bcf0855214aed2b1c090350cf262046fdca9025",
+    "s9": "f45ac50a3cec315ac6b6faa699dabc9b61b96ee903819df9eb7dd788e1cd1497"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-15T13:55:10.008590+00:00",
+  "total": null
+}

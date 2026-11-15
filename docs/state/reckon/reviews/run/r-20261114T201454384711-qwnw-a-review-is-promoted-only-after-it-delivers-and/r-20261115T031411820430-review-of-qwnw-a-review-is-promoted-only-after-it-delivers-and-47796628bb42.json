@@ -1,0 +1,66 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/evidence.py",
+    "reckon/resources.py"
+  ],
+  "call_sites_emission": "reckon/evidence.py, reckon/resources.py",
+  "completed_at": "2026-11-15T03:57:25.690Z",
+  "dispatched_at": "2026-11-15T03:17:28Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-a-review-is-promoted-only-after-it-delivers-and.html",
+      "line": "12",
+      "severity": "non-blocking",
+      "text": "the sentence says the after arm's measured revision 'is identical to the head the arm was declared at, 10d854ba1f, because the commits between them touch only this record', but the log it cites names 47796628bb and the two trees are not identical (606f89b1 against b23dff6d), because 2221249863 added a Python census script between them; a reader checking the sentence against its own evidence finds a contradiction."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-a-review-is-promoted-only-after-it-delivers-and-census.py",
+      "line": "1",
+      "severity": "non-blocking",
+      "text": "this script and its .json sibling lie outside the node's two declared write paths, which name only the fragment .html and the figures topic directory; the coordinator's repair advice directed the commit under the evidence path, so the resolution is a one-line accept-path ratification rather than a repair."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-a-review-is-promoted-only-after-it-delivers-and.html",
+      "line": "9",
+      "severity": "non-blocking",
+      "text": "the claim that a second census run over a fresh window 'named 313 ids and again reported no vanished run' has no artefact: logs/ holds only the first run's census.json and census.json.summary, so the 313 figure is a recalled delta rather than a recorded one."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "reckon/evidence.py composes docs/evidence/fragments/<plan>/<node>.html into the plan and reckon/resources.py:65 names that path; the census script is standalone and imported by nothing.",
+    "diff": "read all seven commits against base 191db600fe; b494e66dce adds the fragment, 2221249863 adds the census script and output plus the positive-control correction, 10d854ba1f and the four later commits edit the suite-arm prose, and no file outside docs/evidence/fragments is touched and no test file changes.",
+    "done_when": "the done_when names tests over a temporary repository and crew home for five behaviours plus a census over the last day's admission verdict log and dispatch records; the manifest's gate command runs the five named files at 22 passed EXIT=0, and census.json.summary reconciles with the fragment's counts.",
+    "goal": "the source node's goal is 'a review is promoted only after it delivers, and no review run vanishes'; the fragment records five passing behaviour files for the promotion half and a 309-id census with zero vanished runs for the census half.",
+    "manifest": "read; status complete, seven commits recorded, the five-file behavioural gate named with its log, the negative control path named alone, and the four widened-run failures reported under outside_scope.",
+    "write_paths": "the declared paths are the r-landing fragment and its figure topic directory; the diff adds the fragment plus a census script and its recorded output under the same fragments directory, so two of three changed files fall outside the grant."
+  },
+  "justifications": {
+    "durability": "No assertion is added anywhere in the diff; the census at ...-census.py is re-runnable beside its recorded output but no test re-derives it, so nothing reddens if the measured property regresses.",
+    "evidence": "logs/head-gate-behaviours.log runs the five behaviour files at b494e66dce and closes '22 passed in 59.41s' EXIT=0, logs/base-never-launched.log reddens the never-launched case at 03b18d96 with '3 failed in 2.02s' EXIT=1 on the assertion the fragment quotes, and census.json.summary reconciles with every figure in the fragment \u2014 but the fragment at :12 misstates the after arm's revision identity and the 313-id re-run at :9 has no log on disk.",
+    "fit": "The fragment uses the r-landing wrapper with element ids prefixed by the node id, matching the sibling docs/evidence/fragments/a-landing-never-waits-on-a-shared-index/stale-index-lock-cleared-s10.html, the script has one precedent at docs/evidence/fragments/work-is-never-stuck-behind-the-admission-loop/replay_oversized_route.py, and all seven commits are conventional with bodies.",
+    "goal_fidelity": "The section's two halves are both recorded at docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-a-review-is-promoted-only-after-it-delivers-and.html:5-8 (five behaviours with the test that measures each) and :9-11 (a 309-id census reporting no vanished run), which is what the plan's s12 declares a node delivers.",
+    "reuse": "The added census.py extends no owner and forks none: the closest owners, reckon/crew/census.py and reckon/crew/live_worker_census.py, census carried monitor rows rather than run-record presence, and reckon/ledger.py:71 only reports damaged rows, so nothing in the search enumerates run ids and checks the five record surfaces.",
+    "scope_discipline": "Two of the three landed files \u2014 qwnw-a-review-is-promoted-only-after-it-delivers-and-census.py and its .json sibling \u2014 sit under docs/evidence/fragments/queued-work-needs-no-workaround/ but outside the node's two declared write paths, the fragment .html and the figures topic directory."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the source node's goal is \"a review is promoted only after it delivers, and no review run vanishes\"; docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-a-review-is-promoted-only-after-it-delivers-and.html:5-8 records five passing behaviour files for the promotion half and :9-11 records a 309-id census with zero vanished runs for the census half, so both halves are evidenced.\nVERDICT done_when: the done_when names tests over a temporary repository and crew home for five behaviours plus a census over the last day's admission verdict log and dispatch records; census.json.summary reconciles with the fragment's counts and logs/head-gate-behaviours.log runs the five behaviour files at \"22 passed in 59.41s\", EXIT=0.\nVERDICT write_paths: the source node's fence names docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-a-review-is-promoted-only-after-it-delivers-and.html and docs/figures/queued-work-needs-no-workaround/qwnw-a-review-is-promoted-only-after-it-delivers-and; git diff --name-status 191db600fe 47796628bb adds that fragment plus a census .py and a census .json under the same fragments directory, so two of the three changed files fall outside the grant.\nVERDICT manifest: read; it reads status complete, names all seven commits, records the five-file behavioural gate with its log, names the negative control log alone, carries baseline_suite and after_suite JSON whose log paths exist and report 55 passed EXIT=0 at 191db600fe and 47796628bb, and reports the four widened-run failures under outside_scope.\nVERDICT diff: read all seven commits against base 191db600fea89eeceb839c5e8a4f259a0f5ecf54; b494e66dce adds the r-landing fragment, 2221249863 adds the census script and its recorded output and corrects the positive-controls sentence, 10d854ba1f and fff542d755, 59f5e52aa5, 23602396e4 and 47796628bb edit the suite-arm prose, and no source, test or figure file changes.\nCALL_SITES: reckon/evidence.py, reckon/resources.py\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-a-review-is-promoted-only-after-it-delivers-and.html:5-11 records both halves of the section's deliverable, each against the test or census that measures it.\nSCORE evidence: 15\nJUSTIFICATION evidence: logs/head-gate-behaviours.log closes \"22 passed in 59.41s\" with EXIT=0 over the five behaviour files, logs/base-never-launched.log shows \"3 failed in 2.02s\" EXIT=1 on the quoted assertion, and census.json.summary matches every figure, but :12 misstates the after arm's revision identity and :9's 313-id re-run has no log.\nSCORE scope_discipline: 12\nJUSTIFICATION scope_discipline: docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-a-review-is-promoted-only-after-it-delivers-and-census.py:1 and its .json sibling lie outside the two declared write paths, though the coordinator's repair advice directed that commit.\nSCORE durability: 10\nJUSTIFICATION durability: the diff adds no assertion or test; docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-a-review-is-promoted-only-after-it-delivers-and-census.py is re-runnable beside its recorded output but no test re-derives it, so nothing reddens on regression.\nSCORE fit: 18\nJUSTIFICATION fit: the fragment at docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-a-review-is-promoted-only-after-it-delivers-and.html:1-3 uses the r-landing wrapper with node-id-prefixed ids, matching docs/evidence/fragments/a-landing-never-waits-on-a-shared-index/stale-index-lock-cleared-s10.html.\nSCORE reuse: 20\nJUSTIFICATION reuse: no owner of run-record presence exists \u2014 reckon/crew/census.py and reckon/crew/live_worker_census.py census monitor rows and reckon/ledger.py:71 reports damaged rows \u2014 so ...-census.py duplicates nothing it should extend.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-a-review-is-promoted-only-after-it-delivers-and.html:12 non-blocking: the sentence claims the after arm's measured revision has the same source tree as 10d854ba1f because the intervening commits touch only this record, but the cited log names 47796628bb and the trees differ (606f89b1 against b23dff6d) because 2221249863 added a Python census script.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-a-review-is-promoted-only-after-it-delivers-and-census.py:1 non-blocking: this script and its .json sibling are outside the node's two declared write paths, so they need an accept-path ratification rather than a repair.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-a-review-is-promoted-only-after-it-delivers-and.html:9 non-blocking: the 313-id second census run is claimed with no log on disk, so the figure cannot be checked, unlike the first run whose census.json and summary are committed.",
+  "review_run_id": "r-20261115T031411820430-review-of-qwnw-a-review-is-promoted-only-after-it-delivers-and-47796628bb42",
+  "reviewed_base_sha": "191db600fea89eeceb839c5e8a4f259a0f5ecf54",
+  "reviewed_head_sha": "47796628bb42ee5cde916f528d1189a9c8ff8681",
+  "reviewed_run_id": "r-20261114T201454384711-qwnw-a-review-is-promoted-only-after-it-delivers-and",
+  "scores": {
+    "durability": 10,
+    "evidence": 15,
+    "fit": 18,
+    "goal_fidelity": 17,
+    "reuse": 20,
+    "scope_discipline": 12
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-15T04:00:06.377468+00:00",
+  "total": 92
+}

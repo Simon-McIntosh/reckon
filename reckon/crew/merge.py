@@ -38,11 +38,13 @@ fallback beside it.
 
 from __future__ import annotations
 
+import contextlib
 import os
 import re
 import subprocess
+import tempfile
 import time
-from collections.abc import Callable, Iterable, Mapping
+from collections.abc import Callable, Iterable, Iterator, Mapping
 from pathlib import Path
 
 # The repository's own pre-push guard refuses a line-anchored ``co-authored-by``
@@ -64,6 +66,15 @@ _GENERATOR_FOOTER = re.compile(
 # reported refusal rather than a hang.
 DEFAULT_ATTEMPTS = 8
 DEFAULT_RETRY_SECONDS = 0.25
+
+# A checkout is written from several hosts, so a lock's holder is not always
+# visible here: a live writer on another host cannot be ruled out from a local
+# absence. What a live writer does leave is movement — it grows the lock as it
+# writes the index and removes it when it finishes. A lock that is old, has not
+# changed across the whole retry window, and that no process on this host holds
+# open is therefore a hung or dead writer's, and clearing it is the difference
+# between one stale file and every landing on the checkout blocked forever.
+STALE_INDEX_LOCK_AGE_SECONDS = 600.0
 
 # Bound remote operations even when SSH, a transport helper or a hook stalls.
 REMOTE_TIMEOUT_SECONDS = 30
@@ -196,6 +207,7 @@ def _run(
     *args: str,
     input: str | None = None,
     env: dict[str, str] | None = None,
+    extra_env: Mapping[str, str] | None = None,
 ) -> subprocess.CompletedProcess[str]:
     remote = bool(args) and args[0] in {"ls-remote", "fetch"}
     if remote:
@@ -213,6 +225,8 @@ def _run(
                 env["GIT_SSH_COMMAND"] = (
                     f"ssh -o ConnectTimeout={SSH_CONNECT_TIMEOUT_SECONDS}"
                 )
+    if extra_env:
+        env = {**(os.environ if env is None else env), **extra_env}
     command = ["git", "-C", str(repo), *args]
     try:
         return subprocess.run(
@@ -279,9 +293,133 @@ def _compose_message(subject: str, body: str) -> str:
     return f"{subject}\n\n{body}\n"
 
 
-def _merge_tree(repo: Path, base: str, head: str) -> tuple[str, list[str]]:
-    """Return the merged tree and any conflicted paths, touching no checkout state."""
-    result = _run(repo, "merge-tree", "--write-tree", "--name-only", base, head)
+@contextlib.contextmanager
+def scratch_object_store(repo: Path) -> Iterator[dict[str, str]]:
+    """A throwaway object store that reads the repository's objects and writes its own.
+
+    ``merge-tree --write-tree`` computes the merged tree by writing it, so a
+    conflict check pinned to the repository's own store leaves one tree per
+    path it could not resolve: measured on this workstation, 7,692 unreachable
+    loose objects, about 95% of them trees, from landing passes that wrote no
+    merge. The check is asked on every pass of every candidate, so the objects
+    accumulate faster than gc's two-week unreachability window can expire them.
+
+    Running the check against this store instead keeps the merged tree out of
+    the repository while still reading everything it merges — the repository's
+    own object directory is an alternate — and the store is removed with the
+    attempt that opened it. A merge that lands brings its objects across with
+    :func:`_copy_objects`, so the repository holds the merge and nothing the
+    check computed.
+    """
+    with tempfile.TemporaryDirectory(prefix="reckon-merge-objects-") as root:
+        objects = Path(root) / "objects"
+        objects.mkdir()
+        yield {
+            "GIT_OBJECT_DIRECTORY": str(objects),
+            "GIT_ALTERNATE_OBJECT_DIRECTORIES": str(_git_dir(repo) / "objects"),
+        }
+
+
+def _copy_objects(
+    repo: Path,
+    revision: str,
+    objects: Mapping[str, str],
+    *,
+    parents: Iterable[str] = (),
+) -> list[str]:
+    """Move ``revision`` and what it reaches into the repository's own store.
+
+    ``parents`` are the revisions the merge is built on. Everything they reach
+    is already in the repository — a merge of existing commits introduces trees
+    and its own commit, because every blob it names is already in the store its
+    parents were committed to — so excluding them keeps the copy to the delta
+    rather than to the whole tree the merge describes.
+
+    The copy is read back afterwards, because a packed stream git accepted is
+    not a promise that the object resolves in the repository it was unpacked
+    into — the failure it hides is a branch moved onto an object no other
+    reader has.
+    """
+    excluded = list(parents)
+    query = ["rev-list", "--objects", revision]
+    if excluded:
+        query += ["--not", *excluded]
+    listed = _run(repo, *query, extra_env=objects)
+    if listed.returncode != 0:
+        raise MergeError(
+            "cannot read the merge's objects: "
+            + (listed.stderr.strip() or listed.stdout.strip())
+        )
+    names = [line.split()[0] for line in listed.stdout.splitlines() if line.strip()]
+    if names:
+        packed = subprocess.run(
+            ["git", "-C", str(repo), "pack-objects", "--stdout", "-q"],
+            input=("\n".join(names) + "\n").encode(),
+            capture_output=True,
+            check=False,
+            env={**os.environ, **objects},
+        )
+        if packed.returncode != 0 or not packed.stdout:
+            raise MergeError(
+                "cannot pack the merge's objects: "
+                + (packed.stderr.decode("utf-8", "replace").strip() or "no output")
+            )
+        unpacked = subprocess.run(
+            ["git", "-C", str(repo), "unpack-objects", "-q"],
+            input=packed.stdout,
+            capture_output=True,
+            check=False,
+        )
+        if unpacked.returncode != 0:
+            raise MergeError(
+                "cannot store the merge's objects: "
+                + unpacked.stderr.decode("utf-8", "replace").strip()
+            )
+    present = _run(repo, "cat-file", "-e", f"{revision}^{{commit}}")
+    if present.returncode != 0:
+        raise MergeError(
+            f"the built merge {revision} did not reach the repository's store"
+        )
+    return names
+
+
+def import_built_merge(
+    repo: Path,
+    revision: str,
+    objects: Mapping[str, str] | None,
+    *,
+    parents: Iterable[str] = (),
+) -> None:
+    """Bring a merge built in a scratch store into the repository's own store.
+
+    A verification seam that reads the built merge with another process — a
+    gate replayed in a partition checkout, a promotion check run through git —
+    reads the repository, not the object environment of the process that built
+    it. Such a seam calls this before it measures, so the revision it is handed
+    resolves where that reader looks. Idempotent: a second call copies nothing
+    new when the objects are already there.
+    """
+    if objects:
+        _copy_objects(repo, revision, objects, parents=parents)
+
+
+def _merge_tree(
+    repo: Path,
+    base: str,
+    head: str,
+    *,
+    objects: Mapping[str, str] | None = None,
+) -> tuple[str, list[str]]:
+    """Return the merged tree and any conflicted paths, touching no checkout state.
+
+    ``objects`` is a store to write the merged tree into instead of the
+    repository's own — see :func:`scratch_object_store`. A caller that only
+    wants the conflicted paths and none of the objects opens one, so a check
+    that refuses a candidate leaves the repository exactly as it found it.
+    """
+    result = _run(
+        repo, "merge-tree", "--write-tree", "--name-only", base, head, extra_env=objects
+    )
     if result.returncode not in (0, 1):
         raise MergeError(
             "merge-tree failed: " + (result.stderr.strip() or result.stdout.strip())
@@ -309,12 +447,19 @@ def refusing_conflicts(conflicts: list[str]) -> list[str]:
     return conflicts
 
 
-def _commit_tree(repo: Path, tree: str, parents: list[str], message: str) -> str:
+def _commit_tree(
+    repo: Path,
+    tree: str,
+    parents: list[str],
+    message: str,
+    *,
+    objects: Mapping[str, str] | None = None,
+) -> str:
     args = ["commit-tree", tree]
     for parent in parents:
         args += ["-p", parent]
     args += ["-F", "-"]
-    result = _run(repo, *args, input=message)
+    result = _run(repo, *args, input=message, extra_env=objects)
     commit = result.stdout.strip()
     if result.returncode != 0 or not commit:
         raise MergeError(
@@ -332,18 +477,24 @@ def _commit_tree(repo: Path, tree: str, parents: list[str], message: str) -> str
 _MARKER_MIN_LENGTH = 8
 
 
-def _show_bytes(repo: Path, revision: str, path: str) -> bytes | None:
+def _show_bytes(
+    repo: Path, revision: str, path: str, *, objects: Mapping[str, str] | None = None
+) -> bytes | None:
     """Return the bytes of ``path`` at ``revision``, or None when it is absent.
 
     The content is returned undecoded, because a changed path may be a binary
     blob and decoding it as text is exactly what a landing must not do before it
     takes a reading. A content read is the one git call that bypasses
     :func:`_run`; every other call stays a text run.
+
+    ``objects`` is the store ``revision`` was built in when it is not the
+    repository's own — a merge judged in the scratch store belongs to it.
     """
     result = subprocess.run(
         ["git", "-C", str(repo), "show", f"{revision}:{path}"],
         capture_output=True,
         check=False,
+        env={**os.environ, **objects} if objects else None,
     )
     if result.returncode != 0:
         return None
@@ -365,7 +516,9 @@ def _decode_text(data: bytes | None) -> str | None:
         return None
 
 
-def _blob_id(repo: Path, revision: str, path: str) -> str | None:
+def _blob_id(
+    repo: Path, revision: str, path: str, *, objects: Mapping[str, str] | None = None
+) -> str | None:
     """Return ``path``'s blob id at ``revision``, or None when it is absent.
 
     ``git rev-parse <revision>:<path>`` answers from the object database and
@@ -373,7 +526,14 @@ def _blob_id(repo: Path, revision: str, path: str) -> str | None:
     content — ``rev-parse`` names an object rather than reading its bytes — and
     resolves an absent path to nothing.
     """
-    result = _run(repo, "rev-parse", "--verify", "--quiet", f"{revision}:{path}")
+    result = _run(
+        repo,
+        "rev-parse",
+        "--verify",
+        "--quiet",
+        f"{revision}:{path}",
+        extra_env=objects,
+    )
     answer = result.stdout.strip()
     if result.returncode != 0 or not answer:
         return None
@@ -381,7 +541,12 @@ def _blob_id(repo: Path, revision: str, path: str) -> str | None:
 
 
 def _read_path(
-    repo: Path, revision: str, path: str, *, matches: str | None = None
+    repo: Path,
+    revision: str,
+    path: str,
+    *,
+    matches: str | None = None,
+    objects: Mapping[str, str] | None = None,
 ) -> dict[str, object]:
     """Read ``path`` at ``revision`` and say whether it is the change's own.
 
@@ -409,7 +574,7 @@ def _read_path(
     * with ``matches`` None, as when the head's markers are first computed, the
       content is read to become the reading's ``text``.
     """
-    blob = _blob_id(repo, revision, path)
+    blob = _blob_id(repo, revision, path, objects=objects)
     reading: dict[str, object] = {
         "present": blob is not None,
         "blob": blob,
@@ -422,7 +587,7 @@ def _read_path(
         reading["identical"] = blob == matches
         if reading["identical"]:
             return reading
-    reading["text"] = _decode_text(_show_bytes(repo, revision, path))
+    reading["text"] = _decode_text(_show_bytes(repo, revision, path, objects=objects))
     return reading
 
 
@@ -473,7 +638,12 @@ def landed_paths(repo: Path, base: str, landed: str) -> list[str]:
     return [name for name in result.stdout.split("\0") if name]
 
 
-def clear_stale_landed_copies(repo: Path, paths: Iterable[str]) -> list[str]:
+def clear_stale_landed_copies(
+    repo: Path,
+    paths: Iterable[str],
+    *,
+    on_stale_removed: Callable[[Path, float], None] | None = None,
+) -> list[str]:
     """Unstage every landed path the shared index stages with content but HEAD's.
 
     A landing moves the branch with a fast-forward, and anything that writes the
@@ -516,6 +686,7 @@ def clear_stale_landed_copies(repo: Path, paths: Iterable[str]) -> list[str]:
         lambda _attempt: _run(
             repo, "restore", "--staged", "--source=HEAD", "--", *stale
         ),
+        on_stale_removed=on_stale_removed,
     )
     if restored.returncode != 0:
         raise MergeError(
@@ -600,7 +771,11 @@ def change_markers(repo: Path, base: str, head: str) -> dict[str, dict[str, obje
 
 
 def surviving_change_refusals(
-    repo: Path, revision: str, markers: dict[str, dict[str, object]]
+    repo: Path,
+    revision: str,
+    markers: dict[str, dict[str, object]],
+    *,
+    objects: Mapping[str, str] | None = None,
 ) -> list[str]:
     """Return one refusal for each path whose change did not survive ``revision``.
 
@@ -624,7 +799,9 @@ def surviving_change_refusals(
     """
     refusals: list[str] = []
     for path, expected in markers.items():
-        reading = _read_path(repo, revision, path, matches=expected.get("blob"))
+        reading = _read_path(
+            repo, revision, path, matches=expected.get("blob"), objects=objects
+        )
         if expected.get("deleted"):
             if reading["present"]:
                 refusals.append(
@@ -664,13 +841,23 @@ def surviving_change_refusals(
 def build_merge_commit(
     repo: Path, base: str, head: str, subject: str, body: str
 ) -> str:
-    """Build a merge commit of ``head`` onto ``base`` without touching the checkout."""
+    """Build a merge commit of ``head`` onto ``base`` without touching the checkout.
+
+    The merge is computed and committed in a scratch object store, and its
+    objects are copied into the repository only once the merge is known to be
+    conflict-free. A head that conflicts therefore costs the repository
+    nothing: the merged tree ``merge-tree`` writes to answer the question is
+    discarded with the store it was written to.
+    """
     message = _compose_message(subject, body)
-    tree, conflicts = _merge_tree(repo, base, head)
-    refusing = refusing_conflicts(conflicts)
-    if refusing:
-        raise MergeConflictError(refusing, base, head)
-    return _commit_tree(repo, tree, [base, head], message)
+    with scratch_object_store(repo) as objects:
+        tree, conflicts = _merge_tree(repo, base, head, objects=objects)
+        refusing = refusing_conflicts(conflicts)
+        if refusing:
+            raise MergeConflictError(refusing, base, head)
+        commit = _commit_tree(repo, tree, [base, head], message, objects=objects)
+        _copy_objects(repo, commit, objects, parents=[base, head])
+    return commit
 
 
 def _git_dir(repo: Path) -> Path:
@@ -678,8 +865,136 @@ def _git_dir(repo: Path) -> Path:
     return Path(result.stdout.strip() or (repo / ".git"))
 
 
+# A git process killed while holding ``index.lock`` leaves the lock behind, and
+# every later landing then waits on a lock no process will ever release: an
+# empty lock left in the shared checkout once blocked every merge for over
+# sixteen minutes. Such a lock is cleared, but only on evidence: it must be at
+# least this old, its size and mtime must not have moved across the whole retry
+# window, and no process on this host may hold it open. The checkout is written
+# from other hosts as well, whose file descriptors this host cannot read, so age
+# and stillness carry the judgement for a remote writer — a live git index write
+# grows or touches the lock as it goes and does not stay still and empty for ten
+# minutes.
+def _index_lock_path(repo: Path) -> Path:
+    return _git_dir(repo) / "index.lock"
+
+
 def _index_lock_held(repo: Path) -> bool:
-    return (_git_dir(repo) / "index.lock").exists()
+    return _index_lock_path(repo).exists()
+
+
+def _index_lock_signature(lock: Path) -> tuple[int, int] | None:
+    """The lock's size and mtime, or ``None`` when the file is not there."""
+    try:
+        stat = lock.stat()
+    except OSError:
+        return None
+    return (stat.st_size, stat.st_mtime_ns)
+
+
+def _processes_holding(path: Path) -> list[int] | None:
+    """Return the pids on this host with ``path`` open, or ``None`` if unreadable.
+
+    git writes no owner into ``index.lock``, so the holder is found by walking
+    ``/proc/<pid>/fd``. The distinction between an empty list and ``None``
+    matters: a ``/proc`` that cannot be read says nothing about whether the lock
+    is held, so a caller must not read that failure as proof that it is free.
+    """
+    try:
+        processes = [entry for entry in Path("/proc").iterdir() if entry.name.isdigit()]
+    except OSError:  # pragma: no cover - an unreadable /proc answers "unknown"
+        return None
+    target = os.path.realpath(path)
+    holders: list[int] = []
+    for process in processes:
+        try:
+            descriptors = list((process / "fd").iterdir())
+        except OSError:
+            # A process that ended, or one this user cannot inspect, offers no
+            # evidence either way; it holds no descriptor we can see.
+            continue
+        for descriptor in descriptors:
+            try:
+                link = os.readlink(descriptor)
+            except OSError:
+                continue
+            if link == str(path) or link == target:
+                holders.append(int(process.name))
+                break
+    return holders
+
+
+def _index_lock_age_seconds(lock: Path) -> float | None:
+    """How long the lock has existed, or ``None`` when the file is not there.
+
+    The landing path and the staging path both ask this question of the same
+    file, and both ask it here: one definition keeps two readers of one fact
+    from drifting apart.
+    """
+    try:
+        return time.time() - lock.stat().st_mtime
+    except OSError:
+        return None
+
+
+def _stale_index_lock_age_seconds(
+    lock: Path,
+    observed: tuple[int, int] | None,
+    moved: bool,
+    *,
+    stale_after_seconds: float = STALE_INDEX_LOCK_AGE_SECONDS,
+) -> float | None:
+    """Return the lock's age when it is provably stale, else ``None``.
+
+    Stale means all three hold: it is at least ``stale_after_seconds`` old, its
+    size and mtime never changed across the retry window, and no process on this
+    host holds it open. Any one failing leaves the refusal as it was, because the
+    lock could still belong to a live writer.
+    """
+    if moved or observed is None:
+        return None
+    current = _index_lock_signature(lock)
+    if current is None or current != observed:
+        return None
+    age = _index_lock_age_seconds(lock)
+    if age is None or age < stale_after_seconds:
+        return None
+    holders = _processes_holding(lock)
+    if holders is None or holders:
+        return None
+    return age
+
+
+def _result_text(result: subprocess.CompletedProcess) -> str:
+    parts = []
+    for value in (result.stderr, result.stdout):
+        if value is None:
+            continue
+        parts.append(
+            value.decode("utf-8", "replace") if isinstance(value, bytes) else value
+        )
+    return "\n".join(parts)
+
+
+def _failed_on_this_index_lock(lock: Path, result: subprocess.CompletedProcess) -> bool:
+    """Whether a failed call could have been refused by this checkout's lock.
+
+    git names the lock file when it cannot take it — ``Unable to create
+    '<git-dir>/index.lock': File exists`` — so the failure says which lock
+    refused it. The failure is what decides, not the file: a peer's commit
+    releases the lock within milliseconds, and a wait that reads only the file
+    returns the failure after one attempt, losing the race the retry exists to
+    win. A failure naming a different checkout's lock is not this one's to wait
+    for. A failure that names no lock at all still waits while this checkout
+    holds one, because a git call can be refused by a lock it does not name.
+
+    It is only asked about a failed call: a call that succeeded is never
+    retried, whatever lock a peer holds at the moment of the check.
+    """
+    detail = _result_text(result)
+    if lock.name in detail:
+        return str(lock) in detail or os.path.realpath(lock) in detail
+    return lock.exists()
 
 
 def _run_waiting_out_a_held_index_lock(
@@ -690,31 +1005,69 @@ def _run_waiting_out_a_held_index_lock(
     retry_seconds: float = DEFAULT_RETRY_SECONDS,
     sleep: Callable[[float], None] = time.sleep,
     on_retry: Callable[[int, subprocess.CompletedProcess[str]], None] | None = None,
+    stale_after_seconds: float = STALE_INDEX_LOCK_AGE_SECONDS,
+    on_stale_removed: Callable[[Path, float], None] | None = None,
 ) -> tuple[subprocess.CompletedProcess[str], int]:
     """Run ``step`` until it succeeds, a lock is not what refused it, or it runs out.
 
     ``step`` is called with the number of the attempt, counting from one, and
-    returns the result of one git invocation. A failed result that left ``repo``
-    holding an ``index.lock`` is retried after ``retry_seconds``, up to
+    returns the result of one git invocation. A failed result this checkout's
+    ``index.lock`` could have refused is retried after ``retry_seconds``, up to
     ``attempts`` calls in total, so a lock that is never released ends in the
     caller's refusal rather than a wait that never ends. ``on_retry`` is called
     with the number of retries made so far and the result that failed, before
     each wait, which is where a caller records the retry.
 
+    A lock that outlasts the attempts is judged before the caller refuses
+    it. If it is provably stale - at least ``stale_after_seconds`` old,
+    unchanged across the caller's retry window, and held by no process on
+    this host - it is removed and ``step`` is tried once more, and
+    ``on_stale_removed`` is called with the lock and its age in seconds so
+    the caller can record the removal. A lock that is merely young, that
+    moved, or that a process holds is left alone and the failing result is
+    returned unchanged.
+
     Returns the last result with the number of retries made, so a caller that
     reports a lock that outlasted the attempts and a caller that records its
-    retries both read one count from one place. The lock is read from the
-    checkout's own ``index.lock`` rather than from the failing command's text,
-    because that file is what the next attempt waits for.
+    retries both read one count from one place. Whether a failure waits is
+    decided by what the failure names as well as by whether the lock is still
+    on disk, so a lock released between the failed call and this check is
+    still waited out rather than returned after one attempt.
     """
+    lock = _index_lock_path(repo)
+    observed = _index_lock_signature(lock)
     retries = 0
+    moved = False
     result = step(1)
-    while result.returncode != 0 and retries + 1 < attempts and _index_lock_held(repo):
+    while (
+        result.returncode != 0
+        and retries + 1 < attempts
+        and _failed_on_this_index_lock(lock, result)
+    ):
         retries += 1
         if on_retry is not None:
             on_retry(retries, result)
         sleep(retry_seconds)
         result = step(retries + 1)
+        after_step = _index_lock_signature(lock)
+        if observed is None:
+            observed = after_step
+        elif after_step is not None and after_step != observed:
+            moved = True
+    if result.returncode != 0 and _index_lock_held(repo):
+        age = _stale_index_lock_age_seconds(
+            lock, observed, moved, stale_after_seconds=stale_after_seconds
+        )
+        if age is not None:
+            try:
+                lock.unlink()
+            except OSError:
+                age = None
+            if age is not None:
+                retries += 1
+                if on_stale_removed is not None:
+                    on_stale_removed(lock, age)
+                result = step(retries + 1)
     return result, retries
 
 
@@ -924,8 +1277,10 @@ def land_merge(
     remote: str = "origin",
     attempts: int = DEFAULT_ATTEMPTS,
     retry_seconds: float = DEFAULT_RETRY_SECONDS,
+    stale_lock_seconds: float = STALE_INDEX_LOCK_AGE_SECONDS,
     sleep=time.sleep,
-    verify: Callable[[Path, str, str, str], None] | None = None,
+    verify: Callable[[Path, str, str, str, Mapping[str, str] | None], None]
+    | None = None,
     release: bool = True,
 ) -> dict:
     """Land ``head`` on the checked-out branch and push it, returning a report.
@@ -939,10 +1294,12 @@ def land_merge(
     head.
 
     ``verify`` is the seam a caller judges the merge through before it becomes
-    reachable: it is called with the checkout, the pinned base, the head and the
-    built commit, once per attempt and before the branch moves. A caller that
-    refuses raises :class:`MergeError` from it, and because nothing has moved at
-    that point the refusal has touched neither the branch nor the remote. The
+    reachable: it is called with the checkout, the pinned base, the head, the
+    built commit and the object store that commit was built in — ``None`` when
+    the commit is already in the repository — once per attempt and before the
+    branch moves. A caller that refuses raises :class:`MergeError` from it, and
+    because nothing has moved at that point the refusal has touched neither the
+    branch nor the remote, nor left the merge's objects in the repository. The
     call is skipped on the already-landed path below, where the change is on the
     branch already and no merge is built.
 
@@ -955,6 +1312,14 @@ def land_merge(
     head_sha = _rev_parse(repo, head)
     branch = _current_branch(repo)
 
+    stale_removals: list[str] = []
+
+    def record_stale_removal(lock: Path, age: float) -> None:
+        stale_removals.append(
+            f"removed {lock} after {age:.0f}s unchanged with no process "
+            "on this host holding it"
+        )
+
     if _is_ancestor(repo, head_sha, "HEAD"):
         # A previous run landed this head and only its push is outstanding, so
         # the merge is already in HEAD: push it again rather than build a second
@@ -962,12 +1327,19 @@ def land_merge(
         landed = _rev_parse(repo, "HEAD")
         base = _first_parent(repo, landed)
     else:
-        if candidate is None:
-            _compose_message(message, body)
+        merge_message = _compose_message(message, body) if candidate is None else ""
         base = commit = ""
 
         def step(_attempt: int) -> subprocess.CompletedProcess[str]:
-            """Rebuild the merge, run a caller's check on it, and try to land it."""
+            """Build the merge, run a caller's check on it, and try to land it.
+
+            The merge is computed and committed in a scratch object store, and
+            its objects reach the repository only once the merge is known to be
+            conflict-free and still the one this attempt will land. A conflict,
+            or a primary that moved under the build, therefore leaves the
+            repository holding nothing the check computed — which is what keeps
+            a pass that lands nothing from growing the store.
+            """
             nonlocal base, commit
             base = _rev_parse(repo, "HEAD")
             if candidate is not None:
@@ -978,15 +1350,34 @@ def land_merge(
                         f"candidate {commit} has parents {parents}, not the pinned "
                         f"HEAD {base} and head {head_sha}"
                     )
+                if verify is not None:
+                    verify(repo, base, head_sha, commit, None)
             else:
-                commit = build_merge_commit(repo, base, head_sha, message, body)
+                with scratch_object_store(repo) as objects:
+                    tree, conflicts = _merge_tree(repo, base, head_sha, objects=objects)
+                    refusing = refusing_conflicts(conflicts)
+                    if refusing:
+                        raise MergeConflictError(refusing, base, head_sha)
+                    if _rev_parse(repo, "HEAD") != base:
+                        return subprocess.CompletedProcess(
+                            ["git", "-C", str(repo), "merge"],
+                            1,
+                            "",
+                            "HEAD moved while the merge was built; nothing was written",
+                        )
+                    commit = _commit_tree(
+                        repo, tree, [base, head_sha], merge_message, objects=objects
+                    )
 
-            # The seam runs before the branch moves, so what a caller refuses
-            # here has touched neither the branch nor the remote. It is inside
-            # the step because a retry rebuilds the commit against a fresh HEAD
-            # and the new commit is what must be judged.
-            if verify is not None:
-                verify(repo, base, head_sha, commit)
+                    # The seam runs before the branch moves, so what a caller
+                    # refuses here has touched neither the branch nor the
+                    # remote. It reads the commit through the store it was built
+                    # in, because the repository holds it only once this attempt
+                    # has accepted it.
+                    if verify is not None:
+                        verify(repo, base, head_sha, commit, objects)
+
+                    _copy_objects(repo, commit, objects, parents=[base, head_sha])
 
             return _run(repo, "merge", "--ff-only", commit)
 
@@ -998,14 +1389,18 @@ def land_merge(
                 attempts=remaining,
                 retry_seconds=retry_seconds,
                 sleep=sleep,
+                stale_after_seconds=stale_lock_seconds,
+                on_stale_removed=record_stale_removal,
             )
             remaining -= retries + 1
             if result.returncode == 0:
                 break
             if _index_lock_held(repo):
+                age = _index_lock_age_seconds(_git_dir(repo) / "index.lock")
+                aged = f" (aged {age:.0f}s)" if age is not None else ""
                 raise MergeError(
                     "the checkout's index.lock stayed held for "
-                    f"{attempts} attempts; nothing was written"
+                    f"{attempts} attempts{aged}; nothing was written"
                 )
             if _rev_parse(repo, "HEAD") != base:
                 if remaining <= 0:
@@ -1030,7 +1425,14 @@ def land_merge(
         # Paths the landing moved that the shared index was staging with other
         # than HEAD's content, restored in the index before the push so no
         # peer's later commit can take them back.
-        "unstaged": clear_stale_landed_copies(repo, landed_paths(repo, base, landed)),
+        "unstaged": clear_stale_landed_copies(
+            repo,
+            landed_paths(repo, base, landed),
+            on_stale_removed=record_stale_removal,
+        ),
+        # One line per lock this landing cleared after proving no live process
+        # held it and that it had not changed across the whole retry window.
+        "stale_index_lock_removed": stale_removals,
     }
     try:
         remote_head = _push_and_confirm(repo, remote, landed, branch)
@@ -1174,8 +1576,10 @@ def land(
     remote: str = "origin",
     attempts: int = DEFAULT_ATTEMPTS,
     retry_seconds: float = DEFAULT_RETRY_SECONDS,
+    stale_lock_seconds: float = STALE_INDEX_LOCK_AGE_SECONDS,
     sleep=time.sleep,
-    verify: Callable[[Path, str, str, str], None] | None = None,
+    verify: Callable[[Path, str, str, str, Mapping[str, str] | None], None]
+    | None = None,
 ) -> dict:
     """Land ``head``, confirm its change survived the merge, and push it.
 
@@ -1201,19 +1605,23 @@ def land(
     markers: dict[str, dict[str, object]] = {}
 
     def _refuse_a_dropped_change(
-        checkout: Path, base: str, merged_head: str, commit: str
+        checkout: Path,
+        base: str,
+        merged_head: str,
+        commit: str,
+        objects: Mapping[str, str] | None = None,
     ) -> None:
         """Judge the built merge by the tree it will put on the branch."""
         nonlocal markers
         markers = change_markers(checkout, base, merged_head)
-        dropped = surviving_change_refusals(checkout, commit, markers)
+        dropped = surviving_change_refusals(checkout, commit, markers, objects=objects)
         if dropped:
             raise MergeError(
                 "the merge dropped the reviewed change, so nothing was moved "
                 "or pushed: " + "; ".join(dropped)
             )
         if verify is not None:
-            verify(checkout, base, merged_head, commit)
+            verify(checkout, base, merged_head, commit, objects)
 
     report = land_merge(
         repo,
@@ -1224,6 +1632,7 @@ def land(
         remote=remote,
         attempts=attempts,
         retry_seconds=retry_seconds,
+        stale_lock_seconds=stale_lock_seconds,
         sleep=sleep,
         verify=_refuse_a_dropped_change,
         # The caller's own release follows this landing and reports the tree it

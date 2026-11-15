@@ -102,6 +102,176 @@ def weighted_project_order(
     return result
 
 
+def _seat_share_turns(
+    rows: Sequence[Mapping[str, Any]],
+    weights: Mapping[str, float],
+) -> list[Mapping[str, Any]]:
+    """Interleave rows, seat by seat, so each role receives its share exactly.
+
+    The share is a deficit round robin counted in seats rather than in rounds:
+    after ``k`` seats a role has been owed ``k * share`` of them, and the next
+    seat goes to whichever role has received fewest against that quota. Comparing
+    against the quota rather than the running deficit is what makes a role's
+    share what it receives rather than what it averages — with a third and two
+    thirds, every third seat is the smaller role's, not one seat in four from a
+    tie broken the same way each time. A tie goes to the role the priority order
+    reached first, and a role whose requests are exhausted leaves the rest of the
+    seats to the other.
+    """
+    pending: dict[str, list[Mapping[str, Any]]] = {}
+    first_seen: dict[str, int] = {}
+    for index, pointer in enumerate(rows):
+        role = _role_of(pointer)
+        pending.setdefault(role, []).append(pointer)
+        first_seen.setdefault(role, index)
+    served: dict[str, int] = dict.fromkeys(pending, 0)
+    servable = list(pending)
+    result: list[Mapping[str, Any]] = []
+    while servable:
+        seated = sum(served.values())
+        chosen = max(
+            servable,
+            key=lambda role: (
+                seated * weights.get(role, 1.0) - served[role],
+                -first_seen[role],
+            ),
+        )
+        served[chosen] += 1
+        result.append(pending[chosen].pop(0))
+        if not pending[chosen]:
+            servable.remove(chosen)
+    return result
+
+
+# The smallest share of a pass's seats one role takes while the other role waits.
+# Proportional-only shares let a deep backlog starve the other role: nine
+# implementations and one review would give the review a tenth of the seats even
+# though a delivered run waits on its review to land. Each waiting role is
+# guaranteed this share, and the rest of the seats are split by backlog.
+ROLE_SEAT_SHARE_FLOOR = 1 / 3
+
+# A queued request that is not a review is an implementation.
+IMPLEMENTATION_ROLE = "implementation"
+
+
+def _review_role() -> str:
+    """The reviewer role name, read from the module that owns the definition."""
+    from reckon.crew.recovery_vocabulary import REVIEW_ROLE
+
+    return REVIEW_ROLE
+
+
+def _role_of(pointer: Mapping[str, Any]) -> str:
+    """Whether a queued request is a review or an implementation.
+
+    The review predicate is the one the recovery surfaces already own, imported
+    here because the review-delivery module reads the run commands at import
+    time.
+    """
+    from reckon.crew.recovery_review_delivery import _is_review_run
+
+    return _review_role() if _is_review_run(pointer) else IMPLEMENTATION_ROLE
+
+
+def _role_seat_weights(rows: Sequence[Mapping[str, Any]]) -> dict[str, float]:
+    """Each waiting role's share of the seats, in proportion to its backlog.
+
+    A role's share is its count over the slice's total, raised to
+    :data:`ROLE_SEAT_SHARE_FLOOR` where its backlog would give it less, and the
+    shares are rescaled so they still sum to one. A slice holding one role gives
+    that role every seat.
+    """
+    counts: dict[str, int] = {}
+    for pointer in rows:
+        role = _role_of(pointer)
+        counts[role] = counts.get(role, 0) + 1
+    if len(counts) < 2:
+        return dict.fromkeys(counts, 1.0)
+    total = sum(counts.values())
+    floored = {
+        role: max(count / total, ROLE_SEAT_SHARE_FLOOR)
+        for role, count in counts.items()
+    }
+    scale = sum(floored.values())
+    return {role: share / scale for role, share in floored.items()}
+
+
+def role_share_order(
+    ordered: Sequence[Mapping[str, Any]],
+) -> list[Mapping[str, Any]]:
+    """Share each project's slice of the queue between reviews and implementations.
+
+    The share is applied inside the project's own slice and never across the
+    queue: every project keeps the place the priority order gave it, so the
+    project fairness the weighted round robin protects is untouched, and this is
+    not a second interleaver run over its result. Inside a slice each role keeps
+    the relative order it was ranked in, so fair use between sessions still
+    governs within each role, and the two roles then take turns by their share.
+
+    A slice holding one role only keeps the order it had.
+    """
+    result = list(ordered)
+    projects: list[str] = []
+    for pointer in result:
+        project = str(pointer.get("project") or "")
+        if project not in projects:
+            projects.append(project)
+    for project in projects:
+        positions = [
+            index
+            for index, pointer in enumerate(result)
+            if str(pointer.get("project") or "") == project
+        ]
+        if len(positions) < 2:
+            continue
+        rows = [result[index] for index in positions]
+        weights = _role_seat_weights(rows)
+        if len(weights) < 2:
+            continue
+        shared = _seat_share_turns(rows, weights)
+        for position, pointer in zip(positions, shared, strict=True):
+            result[position] = pointer
+    return result
+
+
+def role_cadence(
+    ordered: Sequence[Mapping[str, Any]],
+    *,
+    launched: Sequence[str],
+    now: datetime,
+) -> dict[str, dict[str, Any]]:
+    """Per role, what one pass launched and the age of the oldest left waiting.
+
+    ``launched`` names the run ids the pass launched. Every other request in
+    ``ordered`` was left waiting, and its age is read from its ``queued_at``. The
+    two figures answer the question a coordinator reading a pass asks: is one
+    role's backlog draining, or is the other taking the seats it needs.
+    """
+    cadence: dict[str, dict[str, Any]] = {
+        _review_role(): {"launched": 0, "waiting": 0, "oldest_waiting_seconds": None},
+        IMPLEMENTATION_ROLE: {
+            "launched": 0,
+            "waiting": 0,
+            "oldest_waiting_seconds": None,
+        },
+    }
+    launched_ids = set(launched)
+    for pointer in ordered:
+        row = cadence[_role_of(pointer)]
+        if str(pointer.get("run_id") or "") in launched_ids:
+            row["launched"] += 1
+            continue
+        row["waiting"] += 1
+        queued_at = parse_utc(pointer.get("queued_at"))
+        if queued_at is None:
+            continue
+        age = round(max(0.0, (now - queued_at).total_seconds()), 3)
+        oldest = row["oldest_waiting_seconds"]
+        if oldest is None or age > oldest:
+            row["oldest_waiting_seconds"] = age
+    return cadence
+
+
 def priorities_first(
     order: Sequence[Mapping[str, Any]],
 ) -> list[Mapping[str, Any]]:
@@ -165,6 +335,7 @@ def fair_share_admission_order(
         [pointer for pointer in live if pointer.get("phase") != HELD_PHASE],
         now=now,
     )
+    order = role_share_order(order)
     weights = _fair_use_weights(queued, config_for=config_for)
     if weights is not None:
         order = weighted_project_order(order, weights)
@@ -246,6 +417,7 @@ def queued_placements(
     reasons = {str(pointer.get("run_id") or ""): reason for pointer, reason in details}
     weights = _fair_use_weights(queued, config_for=config_for)
     order = [pointer for pointer, _reason in details]
+    order = role_share_order(order)
     if weights is not None:
         order = weighted_project_order(order, weights)
     order = priorities_first(order)

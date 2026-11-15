@@ -144,15 +144,54 @@ QUEUED_REFUSAL_SESSION_PREFIX = (
 )
 QUEUED_REFUSAL_PREFIXES = (QUEUED_REFUSAL_PREFIX, QUEUED_REFUSAL_SESSION_PREFIX)
 
+# A queued request whose refused launch named a live run's write claim. The
+# holder's landing releases the request, so the reading names the holder and the
+# path and publishes no command: nothing this session runs shortens the wait,
+# and a command printed here would send a coordinator to act on a peer's claim.
+QUEUED_REFUSAL_SCOPE_PREFIX = (
+    "the last admission attempt was refused because a live run claims a write "
+    "path this request needs: "
+)
+
+# A scope refusal names both facts the row publishes: the path the live claim
+# covers and the run that holds it, as node.ScopeConflict renders them.
+_SCOPE_CLAIM = re.compile(
+    r"conflicts with live claim (?P<path>'[^']*') held by run (?P<run>'[^']*')"
+)
+
+
+def _scope_claim_classes() -> frozenset[str]:
+    """The refusals that name a live run's write claim on a path.
+
+    The family is walked from ``ScopeConflict`` rather than typed out, so a
+    coarser claim kind — a directory claim overlapping a peer's exact path — is
+    recognised as a claim too. Recognising it matters here because a claim is
+    the one refusal the queued reading can settle. That reading names the holder
+    and the path it fences and publishes no command, whereas the code that
+    treats a refusal as the session's own publishes one that names another run.
+    """
+    from reckon.crew.node import ScopeConflict
+
+    names = {ScopeConflict.__name__}
+    pending = list(ScopeConflict.__subclasses__())
+    while pending:
+        subclass = pending.pop()
+        names.add(subclass.__name__)
+        pending.extend(subclass.__subclasses__())
+    return frozenset(names)
+
 
 def _wait_refusal_classes() -> frozenset[str]:
     """The refusals that leave a queued request waiting rather than in debt.
 
     ``QueueFull`` says the session already holds its share of queued
-    dispatches, and a ``ScopeConflict`` says a live run claims a write path the
-    request needs. A slot opens, or that run ends, whichever the refusal names;
-    nothing the session arms clears either, so both keep the waiting reading
-    and the retry back-off they are stored with.
+    dispatches, ``RosterFull`` that the placement reservation's seats are all
+    taken, and a ``ScopeConflict`` says a live run claims a write path the
+    request needs. A slot or a seat opens, or that run ends, whichever the
+    refusal names; nothing the session arms clears any of them, so they keep
+    the waiting reading and the retry back-off they are stored with. The roster
+    refusal quotes ``reckon crew complete`` for an occupying run, which read as
+    the request's own duty on every coordinator's checklist.
 
     The class family is walked rather than typed out, because a coarser claim
     kind — a directory claim overlapping a peer's exact path — is the same wait
@@ -160,16 +199,10 @@ def _wait_refusal_classes() -> frozenset[str]:
     guidance quotes a dispatch command and reads as a session duty. All of them
     name the session or quote commands, so none is legible from its text alone.
     """
-    from reckon.crew.node import ScopeConflict
+    from reckon.crew.dispatch_admission import RosterFull
     from reckon.crew.runs import QueueFull
 
-    names = {QueueFull.__name__, ScopeConflict.__name__}
-    pending = list(ScopeConflict.__subclasses__())
-    while pending:
-        subclass = pending.pop()
-        names.add(subclass.__name__)
-        pending.extend(subclass.__subclasses__())
-    return frozenset(names)
+    return frozenset({QueueFull.__name__, RosterFull.__name__}) | _scope_claim_classes()
 
 
 def _remedy_command_stated_by(text: str) -> str | None:
@@ -257,6 +290,53 @@ def _plan_review_remedy_is_answered(command: str) -> bool:
     return False
 
 
+def _scope_claim_holder(record: Mapping[str, Any], text: str) -> tuple[str, str] | None:
+    """The run and path a scope refusal names, from the refusal or the hold.
+
+    The refusal text carries both, as the refusal that refused the launch
+    rendered them. A record whose stored text names neither falls back to the
+    hold the admission pass recorded on the pointer, which carries the same two
+    facts as fields. Neither source is composed here: a second spelling of the
+    holder would drift from the reading this row reports.
+    """
+    from reckon.crew.queue_admission import recorded_pass_hold
+
+    found = _SCOPE_CLAIM.search(text)
+    if found is None:
+        hold = recorded_pass_hold(record)
+        holder = hold.get("holder")
+        if not isinstance(holder, Mapping):
+            return None
+        run_id = str(holder.get("run_id") or "").strip()
+        path = str(holder.get("path") or "").strip()
+        if run_id and path:
+            return run_id, path
+        return None
+    return found.group("run").strip("'"), found.group("path").strip("'")
+
+
+def _refusal_superseded_by_hold(record: Mapping[str, Any], recorded_at: str) -> bool:
+    """Whether the pointer carries a later hold that answers this refusal.
+
+    The admission pass rewrites a queued request's recorded hold whenever what
+    holds it changes, so a hold stamped after the refusal's own record is the
+    pass's later answer to the condition the refusal named. Only a hold that
+    leaves the request queued answers it: a refusal verdict on the pointer names
+    a condition still standing, and an undated refusal cannot be ordered against
+    anything, so both keep the duty.
+    """
+    from reckon.crew.queue_admission import HOLD_VERDICTS, recorded_pass_hold
+
+    refused_at = parse_utc(recorded_at)
+    if refused_at is None:
+        return False
+    hold = recorded_pass_hold(record)
+    if str(hold.get("verdict") or "").strip() not in HOLD_VERDICTS:
+        return False
+    held_at = parse_utc(hold.get("recorded_at"))
+    return held_at is not None and held_at > refused_at
+
+
 def _queued_failure_remedy(record: Mapping[str, Any]) -> dict[str, str] | None:
     """The remedy for a queued request the session itself must unblock.
 
@@ -270,11 +350,13 @@ def _queued_failure_remedy(record: Mapping[str, Any]) -> dict[str, str] | None:
 
     A lane hold is told apart by its own message: it is the lane speaking and
     is left to the waiting reading. A ``QueueFull`` refusal says the session
-    already holds its share of queued dispatches, and a ``ScopeConflict`` —
-    any subclass of it included, a directory claim among them — says a live run
-    claims a write path the request needs; each clears when a slot opens or
-    that run ends, so each keeps the waiting reading too, and the class stamp
-    is what tells them apart from the refusals below. Any other
+    already holds its share of queued dispatches, so it keeps the waiting
+    dispatch, owns no command that clears it and is not the session's own
+    debt. A ``ScopeConflict`` — any subclass of it included, a directory claim
+    among them — is read for the run and path it names and published as a wait
+    on that holder, whose landing releases the request: publishing a
+    text-searched command for it would send a coordinator to act on a peer's
+    claim. Any other
     refusal is surfaced, and the remedy is the one the refusal itself states.
     Whose refusal it is comes from the exception class the admission pass
     stamps at the head of the stored
@@ -308,13 +390,37 @@ def _queued_failure_remedy(record: Mapping[str, Any]) -> dict[str, str] | None:
         return None
     text = _failure_text(failure)
     refusal_class = _stamped_refusal_class(text)
+    recorded_at = str(record.get("failure_at") or "")
+    if refusal_class in _scope_claim_classes():
+        # A claim names the run whose landing releases the request, and no
+        # command this session runs shortens that wait.
+        claim = _scope_claim_holder(record, text)
+        if claim is None:
+            return None
+        run_id, path = claim
+        return {
+            "detail": (
+                f"{QUEUED_REFUSAL_SESSION_PREFIX}run {run_id!r} holds the write path "
+                f"{path!r} this request needs, so that run's landing releases it and "
+                f"no command here clears the wait: {text}"
+            ),
+            "next_command": "",
+            "recorded_at": recorded_at,
+            "holder_run_id": run_id,
+            "held_path": path,
+        }
+    if _refusal_superseded_by_hold(record, recorded_at):
+        return None
     if refusal_class in _wait_refusal_classes():
         return None
     if refusal_class == _UNRECONCILED_RUNS_REFUSAL:
         # No live run among those named means the refusal has already been
         # answered, and that many of the words here are the refusal's own
         # guidance: the default reading is the waiting one.
-        return _unreconciled_runs_remedy(text)
+        remedy = _unreconciled_runs_remedy(text)
+        if remedy is not None:
+            remedy["recorded_at"] = recorded_at
+        return remedy
     session = str(record.get("session") or "").strip()
     # The class decides whose refusal this is. The text alone cannot: a
     # refusal quotes the commands that clear it, and one of those commands can
@@ -348,7 +454,7 @@ def _queued_failure_remedy(record: Mapping[str, Any]) -> dict[str, str] | None:
         ):
             return None
         detail = f"{QUEUED_REFUSAL_PREFIX}{text}"
-    return {"detail": detail, "next_command": command}
+    return {"detail": detail, "next_command": command, "recorded_at": recorded_at}
 
 
 def _filed_review_record(
@@ -430,6 +536,28 @@ def _the_probe_did_not_answer(observation: Mapping[str, Any] | None) -> bool:
     if observation is None:
         return False
     return observation.get("answered") is False
+
+
+def _wait_declaration_missing_keys(wait: Mapping[str, Any]) -> list[str]:
+    """The required keys a refused wait declaration lacks, in the reader's order.
+
+    Derived from the parsed declaration rather than re-read from the refusal
+    text, so the row names the field a repair must add whatever wording the
+    refusal happens to carry. A declaration that names no probe may still be a
+    declaration that should have used ``wait_file`` instead, so the two shapes
+    are named together: the repair adds one or the other, and naming both tells
+    the reader a file condition is also accepted.
+    """
+    missing: list[str] = []
+    if not str(wait.get("condition") or "").strip():
+        missing.append("wait_condition")
+    if not wait.get("probe") and not wait.get("files"):
+        missing.append("wait_probe or wait_file")
+    if not wait.get("terminal"):
+        missing.append("wait_terminal")
+    if not str(wait.get("resume_brief") or "").strip():
+        missing.append("resume_brief")
+    return missing
 
 
 #: How long a declared wait's probe value must have stood still, over a run
@@ -1646,7 +1774,20 @@ def classify_pointer(
     # exactly as the drain view and the stop hook judge it.
     stuck = _stuck_verdict_for(record) if phase else None
 
-    if phase in WAITING_UPSTREAM_PHASES:
+    # A pre-spawn launch past its bound with its holder gone is not waiting to
+    # start: the liveness arms read it as a failed launch, which the admission
+    # pass then releases or returns to the queue.
+    pre_spawn_waiting = phase in _PRE_SPAWN_PHASES and not _stranded_launch(
+        record, now_seconds=moment
+    )
+    # A parked phase is the launcher's statement that the request is waiting to
+    # start, and it means that only while the pointer records no worker: a pid
+    # or a launch clock on a queued request is a request that has launched, and
+    # its liveness rather than its old label decides the reading. Without this
+    # a phase label could not be left behind, and a launched request whose
+    # label had not yet advanced read as the wait it had already passed.
+    launched = bool(record.get("pid")) or bool(record.get("launched_at"))
+    if phase in WAITING_UPSTREAM_PHASES and not launched:
         classification = phase
         # A request held on a section it waits for is stored, not launched, and
         # no lane slot will release it: what releases it is the upstream section
@@ -1665,7 +1806,7 @@ def classify_pointer(
                 f"waiting for {waiting_on} to land"
             )
             action = f"wait for {waiting_on} to land"
-    elif phase == HELD_PHASE:
+    elif phase == HELD_PHASE and not launched:
         classification = HELD_PHASE
         hold = record.get("queue_hold")
         reason = str(hold.get("reason") or "") if isinstance(hold, Mapping) else ""
@@ -1673,7 +1814,7 @@ def classify_pointer(
         if reason:
             detail += f": {reason}"
         action = f"reckon crew queue release --run {run_id}"
-    elif phase == QUEUED_PHASE:
+    elif phase == QUEUED_PHASE and not launched:
         classification = "queued"
         session_refusal = _queued_failure_remedy(record)
         if session_refusal is not None:
@@ -1682,7 +1823,31 @@ def classify_pointer(
         else:
             detail = str(record.get("reason") or "waiting for a local lane slot")
             action = "wait for a local lane slot"
-    if stuck is not None:
+    elif pre_spawn_waiting:
+        # Claimed by its launcher with no worker yet: the phase reading stands,
+        # as it does for a queued request, and it is reported as running, the
+        # reading such a run carried before the liveness arms were skipped for
+        # it. Without a classification here the arms below were skipped too,
+        # and the read raised for every row of the project.
+        classification = "running"
+        detail = (
+            f"the launcher has claimed this run ({phase}) and has not started "
+            "its worker yet"
+        )
+        action = f"reckon crew observe --run {run_id}"
+    # A request that has not launched has no process, no stream and no manifest
+    # for the arms below to read, and reading that absence as evidence would
+    # report a stored request as a run. Its phase reading stands instead; the
+    # stuck verdict still speaks, because it is about the wait rather than
+    # about a worker.
+    unlaunched = (
+        phase in {QUEUED_PHASE, HELD_PHASE}
+        or phase in WAITING_UPSTREAM_PHASES
+        or pre_spawn_waiting
+    ) and not launched
+    if unlaunched and stuck is None:
+        pass
+    elif stuck is not None:
         # The request is stuck on a wait that will not resolve by itself, so
         # the row names the one stuck verdict's reason rather than the phase's
         # own sentence.
@@ -2080,11 +2245,21 @@ def classify_pointer(
             )
     elif wait is not None and process_gone:
         classification = "unreadable"
+        absent_keys = _wait_declaration_missing_keys(wait)
+        names_absent = (
+            "lacks " + ", ".join(absent_keys)
+            if absent_keys
+            else "carries a field the reader refused"
+        )
         detail = (
             f"the manifest at {manifest} declares an external wait but is "
-            f"incomplete: {manifest_error}"
+            f"incomplete: it {names_absent} ({manifest_error})"
         )
-        action = f"repair the waiting declaration in {manifest} before resuming"
+        action = (
+            f"repair the waiting declaration in {manifest} — it {names_absent} "
+            f"— then reckon crew resume --run {run_id} --advice "
+            "'<what to tell the worker>'"
+        )
     elif phase == "stopped":
         classification = "stopped"
         detail = "the run was intentionally stopped"

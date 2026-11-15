@@ -2,12 +2,12 @@
 
 A reader scans this pane down a column rather than across a line, so every
 field holds its screen column and the fields appear in one order on every row:
-the clock, the stage, the job, the transition, the elapsed span and the four
+the clock, the stage, the job, the transition, the elapsed span and the five
 fleet counters, which every row carries at fixed widths, and then the lane's
 rate, the model and the effort. The trailing three are added left to right only
 while the pane has room, so a narrow pane drops the effort first and the rate
 last and never wraps. Two facts inside the row are asserted here as well: the
-four counters read w, h, d and q, and a review's job cell drops the prefix and
+counters read w, r, n, d and q, and a review's job cell drops the prefix and
 the reviewed head's digest the stage cell already says.
 
 This file renders rows through :meth:`Ticker.render` and reads the columns off
@@ -176,21 +176,24 @@ def test_the_stage_and_job_cells_hold_the_row_s_own_columns(grid):
     assert _cell(line, JOB_AT, ticker_module.NODE).strip() == "n-row-order"
 
 
-def test_the_counters_are_labelled_w_h_d_q(grid):
-    """The four counters carry one distinct lower-case letter each.
+def test_the_counters_are_labelled_w_r_n_d_q(grid):
+    """The five counters carry one distinct lower-case letter each.
 
     The waiting bucket counts the runs the scheduler has admitted and not
     started, so it reads q, its own name's initial, and no two counters share a
-    letter or need a case to tell them apart.
+    letter or need a case to tell them apart. The review bucket reads r because
+    its work is a review in progress rather than a worker implementing.
     """
     assert ticker_module.STAT_LETTER == {
         "working": "w",
+        "in review": "r",
         "needs you": "n",
         "delivered": "d",
         "waiting": "q",
+        "stuck": "s",
     }
     line = plain(grid.render(_event(working=3, blocked=1, unpromoted=7, waiting=2)))
-    assert "3w  1n  7d  2q" in line
+    assert "3w  0r  1n  7d  2q  0s" in line
 
 
 def test_a_review_shows_the_job_under_review_beside_its_stage(grid):
@@ -293,12 +296,12 @@ def test_a_narrow_pane_drops_the_effort_then_the_model_then_the_rate(lane_row):
     assert "tok/s" in wide and "sonnet5" in wide and "medium" in wide
 
     # Effort dropped, rate and model kept.
-    no_effort = row_at(124)
+    no_effort = row_at(132)
     assert "tok/s" in no_effort and "sonnet5" in no_effort
     assert "medium" not in no_effort
 
     # Model dropped too, rate kept.
-    rate_only = row_at(116)
+    rate_only = row_at(124)
     assert "tok/s" in rate_only
     assert "sonnet5" not in rate_only and "medium" not in rate_only
 
@@ -309,8 +312,8 @@ def test_a_narrow_pane_drops_the_effort_then_the_model_then_the_rate(lane_row):
 
     for width, line in (
         (180, wide),
-        (124, no_effort),
-        (116, rate_only),
+        (132, no_effort),
+        (124, rate_only),
         (ticker_module.MIN_WIDTH, none_left),
     ):
         assert len(line) <= width, (width, line)

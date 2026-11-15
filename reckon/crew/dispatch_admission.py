@@ -6,6 +6,7 @@ import os
 import shlex
 import socket
 import threading
+import time
 from collections import (
     defaultdict,
 )
@@ -169,6 +170,8 @@ def _refuse_over_reservation_roster(
     backend: Mapping[str, Any],
     occupying: list[dict[str, Any]],
     project: str | None = None,
+    *,
+    reserve: int = 0,
 ) -> None:
     """Refuse a dispatch past the placement reservation's roster cap.
 
@@ -205,9 +208,16 @@ def _refuse_over_reservation_roster(
     occupants = placement_module.roster_occupants(
         placement_module.placed_in_reservation(occupying, reservation)
     )
-    refusal = placement_module.reservation_roster_refusal(len(occupants))
+    limit = max(1, placement_module.RESERVATION_ROSTER_LIMIT - max(0, reserve))
+    refusal = placement_module.reservation_roster_refusal(len(occupants), limit=limit)
     if refusal is None:
         return
+    if reserve:
+        refusal = (
+            f"{refusal} The local lane stops {reserve} seats short of the "
+            f"roster's cap of {placement_module.RESERVATION_ROSTER_LIMIT}, "
+            "which are kept for a dispatch naming another lane."
+        )
     # The seats, not the population handed in: with the population host-wide a
     # reader would otherwise be shown every live run on the machine, most of
     # which are not inside the allocation at all.
@@ -217,7 +227,7 @@ def _refuse_over_reservation_roster(
         f"queued behind this cap launches then. "
         f"Occupying runs: {', '.join(occupying_ids) or 'none'}.",
         occupancy=len(occupants),
-        limit=placement_module.RESERVATION_ROSTER_LIMIT,
+        limit=limit,
         occupying=occupying_ids,
     )
 
@@ -228,8 +238,14 @@ def _refuse_over_concurrency_ceiling(
     project: str | None = None,
     *,
     exclude_run_ids: Iterable[str] = (),
+    reserve: int = 0,
 ) -> None:
     """Refuse a dispatch that would exceed whichever resource bound is binding.
+
+    ``reserve`` is the number of reservation seats, and their cores, this
+    dispatch must leave free: the local lane passes
+    :data:`reckon.crew.placement.LOCAL_LANE_RESERVE`, so a dispatch naming
+    another lane is never starved by the local queue.
 
     A physical resource that is already spent must not be asked to carry one
     more worker: the harness retry budget is fixed and reckon passes no retry
@@ -263,6 +279,7 @@ def _refuse_over_concurrency_ceiling(
     # counts with, while the lane bound above stays this backend's own.
     reservation_occupancy: int | None = None
     roster_pointers: list[dict[str, Any]] = []
+    seat_ids: list[str] = []
     if flight.placement_for(backend) is not None:
         from reckon.crew import placement as placement_module
 
@@ -270,7 +287,11 @@ def _refuse_over_concurrency_ceiling(
             _live_runs_across_backends(exclude_run_ids=exclude_run_ids),
             placement_module.read_reservation(project),
         )
-        reservation_occupancy = len(placement_module.roster_occupants(roster_pointers))
+        seat_ids = [
+            str(pointer.get("run_id") or "unknown")
+            for pointer in placement_module.roster_occupants(roster_pointers)
+        ]
+        reservation_occupancy = len(seat_ids) + max(0, reserve)
     bounds = summary.concurrency_bounds(
         backend,
         occupancy=len(occupying),
@@ -280,13 +301,26 @@ def _refuse_over_concurrency_ceiling(
     binding = summary.binding_bound(bounds)
     if binding is not None and not binding.admits_one_more:
         run_ids = [str(pointer.get("run_id") or "unknown") for pointer in occupying]
-        raise CrewError(
+        # A bound is a wait for room, not a refusal: the workers inside the
+        # allocation carry on and one of them ending frees what this dispatch
+        # needs. It is raised as the roster's queueable hold so every lane's
+        # dispatch path stores the request instead of losing it, exactly as it
+        # already did at the roster's own cap.
+        capacity = binding.capacity
+        raise RosterFull(
             format_refusal(
                 "D09",
                 summary.bound_refusal_text(
                     binding, backend_name=backend_name, occupying=run_ids
                 ),
-            )
+            ),
+            occupancy=len(occupying),
+            limit=(
+                int(capacity)
+                if isinstance(capacity, (int, float)) and capacity >= 1
+                else len(occupying) + 1
+            ),
+            occupying=run_ids,
         )
     # A placed backend's workers run inside the one shared reservation, and
     # under --overlap the scheduler admits whatever is asked, so the
@@ -294,7 +328,7 @@ def _refuse_over_concurrency_ceiling(
     # the only bound nothing else enforces on the fleet's behalf. It is counted
     # over the host-wide population, because a placed worker of any backend is
     # a step inside the same allocation.
-    _refuse_over_reservation_roster(backend, roster_pointers, project)
+    _refuse_over_reservation_roster(backend, roster_pointers, project, reserve=reserve)
 
 
 def _refuse_against_the_bookend_reserve(
@@ -1255,8 +1289,8 @@ class LaneHeld(LanePaused):
 
     The lane is answering and its own arithmetic leaves this coordinator
     session no room, so the node is held rather than refused: no worktree was
-    created and the node is still ready. On the local lane the request is
-    queued instead, and the queued record rides the exception as ``queued``;
+    created and the node is still ready. The request is queued on whichever
+    lane it named, and the queued record rides the exception as ``queued``;
     that pointer launches later from the node's brief, so a caller must keep
     whatever the brief names. The allowance decision that produced the hold
     rides the exception, so every surface reports the figure the router
@@ -1265,20 +1299,24 @@ class LaneHeld(LanePaused):
 
 
 class RosterFull(CrewError):  # noqa: N818 - a held condition named beside the lane holds
-    """A dispatch found the placement reservation's roster at its cap.
+    """A dispatch found the placement reservation at the bound that binds.
 
-    The cap is a queueable resource rather than a refusal: the node is ready,
-    the allocation is simply carrying as many placed workers as it was sized
-    for, and one of them finishing frees the seat this dispatch would take. A
-    caller that can queue writes the request and relaunches it when a seat
-    frees, so the composition of a review is not lost while the fleet is busy.
+    Both bounds the reservation enforces are queueable resources rather than
+    refusals: the roster cap and the admitted partition cores. The node is
+    ready, the allocation is simply carrying as many placed workers as it was
+    sized for, and one of them finishing frees the seat or the cores this
+    dispatch would take. A caller that can queue writes the request and
+    relaunches it when room frees, so the composition of a review is not lost
+    while the fleet is busy.
 
     It stays a :class:`CrewError` so every refusal surface reports it, and it
     carries the occupancy the decision was taken on together with the seats
     that produced it, so a reader sees the same population the guard counted.
     """
 
-    def __init__(self, message: str, *, occupancy: int, limit: int, occupying: list[str]) -> None:
+    def __init__(
+        self, message: str, *, occupancy: int, limit: int, occupying: list[str]
+    ) -> None:
         super().__init__(message)
         self.occupancy = occupancy
         self.limit = limit
@@ -1690,14 +1728,27 @@ def _orchestrator_lane_stop_line(stop: Mapping[str, Any]) -> str:
     return f"{stop['detail']}; {stop['discharge']}"
 
 
-def _path_is_tmpfs(path: str | Path) -> bool:
-    """Return whether a path resolves beneath a tmpfs or ramfs mount."""
-    target = Path(path).expanduser().resolve()
-    best: tuple[int, str] | None = None
+# How long one reading of the mount table is reused. Resolving every mount
+# point reaches each mounted filesystem, the shared ones included, and the
+# placement check asked it once per launch, a measurable share of an admission
+# pass. Mounts change rarely, and a minute is shorter than any launch it serves.
+_MOUNT_TABLE_SECONDS = 60.0
+_MOUNT_TABLE: dict[str, Any] = {}
+_MOUNT_TABLE_LOCK = threading.Lock()
+
+
+def _mount_table() -> tuple[tuple[Path, str], ...]:
+    """Each mount point, resolved, with its filesystem type, read at most once a minute."""
+    now = time.monotonic()
+    with _MOUNT_TABLE_LOCK:
+        read_at = _MOUNT_TABLE.get("at")
+        if read_at is not None and now - read_at < _MOUNT_TABLE_SECONDS:
+            return _MOUNT_TABLE["table"]
     try:
         lines = Path("/proc/self/mountinfo").read_text().splitlines()
     except OSError:
-        return False
+        return ()
+    mounts: list[tuple[Path, str]] = []
     for line in lines:
         fields, separator, trailing = line.partition(" - ")
         if not separator:
@@ -1707,8 +1758,20 @@ def _path_is_tmpfs(path: str | Path) -> bool:
         if len(parts) < 5 or not trailing_parts:
             continue
         mount = Path(parts[4].replace("\\040", " ")).resolve()
+        mounts.append((mount, trailing_parts[0]))
+    table = tuple(mounts)
+    with _MOUNT_TABLE_LOCK:
+        _MOUNT_TABLE.update(at=now, table=table)
+    return table
+
+
+def _path_is_tmpfs(path: str | Path) -> bool:
+    """Return whether a path resolves beneath a tmpfs or ramfs mount."""
+    target = Path(path).expanduser().resolve()
+    best: tuple[int, str] | None = None
+    for mount, kind in _mount_table():
         if target == mount or target.is_relative_to(mount):
-            candidate = (len(mount.parts), trailing_parts[0])
+            candidate = (len(mount.parts), kind)
             if best is None or candidate[0] > best[0]:
                 best = candidate
     return bool(best and best[1] in {"tmpfs", "ramfs"})
@@ -2463,6 +2526,22 @@ def _store_brief(directory: Path, source: str, *, block: str = "") -> Path:
         raise CrewError(f"the brief {source!r} could not be stored: {exc}") from exc
 
 
+def readable_brief_source(node: TaskNode) -> str:
+    """The brief a dispatch reads: the run's stored copy if it is there, else the source.
+
+    A queued request carries the stored copy an earlier attempt made under its
+    own run id. When that attempt was refused or released, its run directory
+    went with the copy, and every later launch of the request refused on a brief
+    it could no longer read, while the source the request names was still on
+    disk: on 14 November three review requests were refused this way on every
+    pass. The source is read instead, and the launch stores its own copy.
+    """
+    stored = str(node.brief_path or "").strip()
+    if stored and Path(stored).expanduser().is_file():
+        return stored
+    return node.brief
+
+
 def _brief_record(
     node: TaskNode, project: str = "", *, project_path: str | None = None
 ) -> dict[str, Any] | None:
@@ -2478,7 +2557,7 @@ def _brief_record(
         return None
     record: dict[str, Any] = {
         "sha256": node.brief_sha256,
-        "path": node.brief_path or node.brief,
+        "path": readable_brief_source(node),
         "source_path": node.brief,
     }
     carry = _domain_rules_carry(node, project, project_path=project_path)
@@ -2504,7 +2583,7 @@ def _brief_text(
     """
     if not node.brief.strip():
         return ""
-    source = node.brief_path or node.brief
+    source = readable_brief_source(node)
     try:
         text = Path(source).expanduser().read_text(encoding="utf-8")
     except OSError as exc:

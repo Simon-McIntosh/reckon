@@ -7,9 +7,9 @@ resolve, a connection that fails. So the seeder writes into the run home's
 ``settings.json`` the two Claude Code keys that govern the project's servers:
 ``enableAllProjectMcpServers`` set false, which disables the project's
 ``.mcp.json`` servers as a group, and ``enabledMcpjsonServers`` naming the ones
-the project's flight configuration names under ``worker_mcp_servers``. The user
-scope servers — reckon among them — are carried separately in the run home's
-``.claude.json`` and stay enabled, because the project key does not govern them.
+the project's flight configuration names under ``worker_mcp_servers``. Other user
+scope servers are carried separately in the run home's ``.claude.json``; the
+coordination server is excluded from worker launches.
 
 Everything here runs against a synthetic operator home, a synthetic project
 checkout and a synthetic run directory in ``tmp_path`` and never touches the
@@ -62,8 +62,7 @@ PROJECT_SERVERS = {
     "imas-cx": {"command": "uv", "args": ["run", "imas-codex", "serve"]},
     "imas-dd": {"command": "uv", "args": ["run", "imas-dd", "serve"]},
 }
-# The user-scope servers the operator carries in ``~/.claude.json``. reckon is
-# the one every worker needs; it must stay enabled.
+# The coordination server stays in the operator home and is excluded in workers.
 OPERATOR_SERVERS = {"reckon": {"command": "reckon", "args": ["mcp"]}}
 
 CLAUDE_BACKEND = {"launch": "cli", "command": "claude"}
@@ -164,8 +163,8 @@ def _apply_declared_mutation(monkeypatch):
         )
 
 
-def test_the_default_project_disables_its_servers_and_keeps_reckon(tmp_path: Path):
-    """No worker_mcp_servers: the project's servers do not start; reckon does."""
+def test_the_default_project_disables_its_servers_and_excludes_reckon(tmp_path: Path):
+    """No worker_mcp_servers: neither project nor coordination servers start."""
     home = _operator_home(tmp_path)
     _project_checkout(tmp_path)
     run = tmp_path / "run"
@@ -176,11 +175,10 @@ def test_the_default_project_disables_its_servers_and_keeps_reckon(tmp_path: Pat
     assert settings[_backends.PROJECT_MCP_SERVERS_ENABLED_KEY] is False
     for name in PROJECT_SERVERS:
         assert not _server_starts(settings, name), name
-    # reckon is a user-scope server, carried in the run home's .claude.json and
-    # not governed by the project key, so it stays enabled.
+    # Worker configuration excludes the coordination server.
     carried = json.loads((_harness(plan) / ".claude.json").read_text())
-    assert carried["mcpServers"] == OPERATOR_SERVERS
-    assert "reckon" in carried["mcpServers"]
+    assert carried["mcpServers"] == {}
+    assert "reckon" not in carried["mcpServers"]
 
 
 def test_a_named_worker_server_is_enabled_in_the_seeded_settings(tmp_path: Path):
@@ -209,20 +207,28 @@ def test_a_clive_launch_seeds_it_through_the_lifecycle_path(tmp_path: Path):
     assert _settings(plan)[_backends.PROJECT_MCP_SERVERS_ENABLED_KEY] is False
 
 
-def test_an_existing_run_settings_file_is_left_untouched(tmp_path: Path):
-    """A run's own settings file is left untouched, not rewritten by the seed."""
+@pytest.mark.parametrize("indent", [None, 4], ids=["compact", "indented"])
+def test_an_existing_run_settings_file_is_left_untouched(tmp_path: Path, indent):
+    """Seeding preserves all settings in a run that carries its inbox hook."""
+    from reckon.hooks import install
+
     home = _operator_home(tmp_path)
     run = tmp_path / "run"
     run.mkdir()
     harness = run / "harness"
     harness.mkdir(parents=True)
-    own = json.dumps({"hooks": {"Stop": []}, "model": "a-run-choice"})
-    (harness / "settings.json").write_text(own)
+    own = install.build_worker_inbox_snippet()
+    own["hooks"]["Stop"] = []
+    own.update(
+        model="a-run-choice",
+        permissions={"allow": ["Read"]},
+        enableAllProjectMcpServers=False,
+        enabledMcpjsonServers=["run-server"],
+    )
+    (harness / "settings.json").write_text(json.dumps(own, indent=indent))
     _launch(home, run, CLAUDE_BACKEND, fence_config={})
 
-    # The run home was seeded once, carrying the MCP record; a launch into it
-    # again leaves the run's own file exactly as it is.
-    assert (harness / "settings.json").read_text() == own
+    assert json.loads((harness / "settings.json").read_text()) == own
 
 
 def test_a_missing_operator_settings_file_still_gains_the_record(tmp_path: Path):

@@ -157,3 +157,36 @@ def test_the_station_loop_hands_its_duties_to_the_reload(tmp_path, monkeypatch):
             interval=0.0,
         )
     assert handed == [beat]
+
+
+def test_a_deferred_reload_says_why(reloader, monkeypatch, capsys):
+    """A reload whose image will not import names the reason in the log.
+
+    The station keeps running its old code when the new image fails its import
+    check, and with nothing written that is indistinguishable from a station
+    that never noticed the code moved.
+    """
+    monkeypatch.setattr(
+        checkout_trust, "reckon_imports", lambda root: ([], "pydantic is missing")
+    )
+    reloader.reloader.poll()
+    err = capsys.readouterr().err
+    assert reloader.execs == []
+    assert "station-reload: deferred" in err
+    assert NEW in err and "pydantic is missing" in err
+
+
+def test_a_held_reload_is_written_once(reloader, duties, capsys):
+    """The hold is noted when it starts, not on every poll it spans."""
+    assert _request(duties.beat, "slow")
+    reloader.reloader.poll(duties.beat)
+    reloader.reloader.poll(duties.beat)
+    err = capsys.readouterr().err
+    assert err.count("station-reload: holding") == 1
+
+
+def test_a_reload_that_fires_names_both_identities(reloader, capsys):
+    with pytest.raises(OSError, match="execve captured"):
+        reloader.reloader.poll()
+    err = capsys.readouterr().err
+    assert f"station-reload: re-executing from {OLD} onto {NEW}" in err

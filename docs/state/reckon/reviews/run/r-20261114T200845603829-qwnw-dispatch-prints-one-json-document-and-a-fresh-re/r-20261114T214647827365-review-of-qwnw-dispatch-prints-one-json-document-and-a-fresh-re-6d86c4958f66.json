@@ -1,0 +1,73 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/crew_dispatch_commands.py:89 crew group registers _CrewGroup whose invoke override runs",
+    "reckon/crew_dispatch_commands.py:2413 _emit_held_result call site in the dispatch command",
+    "reckon/crew_dispatch_commands.py:2425 _emit_held_result call site in the dispatch command",
+    "reckon/crew/dispatching/preparation.py:874 dispatch builds the LaneHeld.queued record",
+    "reckon/crew_run_commands.py:3463 the crew_complete callback under the stdout-holding decorator"
+  ],
+  "completed_at": "2026-11-15T00:42:18.384Z",
+  "dispatched_at": "2026-11-14T23:32:52Z",
+  "findings": [
+    {
+      "file": "tests/test_dispatch_family_prints_one_json_document.py",
+      "id": "f04358dfdfa",
+      "line": "250",
+      "severity": "non-blocking",
+      "text": "non-blocking: crew review is exercised only under --dry-run and its sole assertion is `assert document, result.stderr` (:265), a truthiness check on a mapping, so no review refusal or raised refusal path is parsed; the done_when's success/refusal/raised matrix is unmet for the review verb and a review refusal that stopped emitting one document would not fail any test."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261114T200845603829-qwnw-dispatch-prints-one-json-document-and-a-fresh-re/manifest.md",
+      "id": "f946ffb6de7",
+      "line": "14",
+      "severity": "non-blocking",
+      "text": "non-blocking: the manifest's tests field is a sentence with counts rather than the literal command a shell was handed, and the structured baseline_suite/after_suite objects are absent, so a promotion gate reading the stage pair finds nothing and derives added failures from the log headers instead."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "reckon/crew_dispatch_commands.py:89 crew group registers _CrewGroup whose invoke override runs; reckon/crew_dispatch_commands.py:2413 _emit_held_result call site in the dispatch command; reckon/crew_dispatch_commands.py:2425 _emit_held_result call site in the dispatch command; reckon/crew/dispatching/preparation.py:874 dispatch builds the LaneHeld.queued record; reckon/crew_run_commands.py:3463 the crew_complete callback under the stdout-holding decorator",
+    "diff": "read commit 6d86c4958f against base ffb3037a09 - preparation.py adds created and backend to the held request, crew_dispatch_commands.py adds _emit_failure_document and the invoke override plus the created-aware detail, crew_run_commands.py applies the stdout-holding decorator to crew_complete, and the new 289-line test file; four files, all implied by the goal.",
+    "done_when": "the done_when measures that each verb, run as a piped subprocess through success, refusal and a raised CrewError, parses the whole of stdout as one document and that a fresh waiting dispatch reads queued: true, awaiting-upstream and no already; tests/test_dispatch_family_prints_one_json_document.py runs those cases, gates/head-arm.log records 7 passed and gates/base-arm.log records 3 failed at base, so the gate asserts the measure.",
+    "goal": "the node's goal is that dispatch prints one JSON document and a fresh request never reads as a duplicate; reckon/crew_dispatch_commands.py:67 `_CrewGroup.invoke` answers a body or parse refusal for dispatch, review and complete with one document, and reckon/crew/dispatching/preparation.py:877 marks a request this call created, which reckon/crew_dispatch_commands.py:451-458 reports as queued with its phase, so both halves of the goal land.",
+    "manifest": "read; status complete, commits 6d86c4958f, changed_paths the four landed files, tests prose recording 7 passed in the new file and 146 passed with 9 failures identical at base and head, test_logs naming gates/head-arm.log and the two regression logs, negative_control_log gates/base-arm.log; the structured baseline_suite and after_suite objects are absent.",
+    "write_paths": "read the manifest's changed_paths, being reckon/crew/dispatching/preparation.py, reckon/crew_dispatch_commands.py, reckon/crew_run_commands.py and tests/test_dispatch_family_prints_one_json_document.py; the diff touches exactly those four, and the source node declared no write paths (dispatch-detail.json node.write_paths is []), so nothing in the diff falls outside a fence."
+  },
+  "justifications": {
+    "durability": "the negative control reinstates the base behaviour and gates/base-arm.log reddens test_a_raised_refusal_answers_with_one_document, test_a_parsing_refusal_answers_with_one_document and test_a_fresh_request_behind_an_upstream_is_created_not_already.",
+    "evidence": "gates/head-arm.log reads 7 passed and gates/base-arm.log reads 3 failed at base, and the two regression logs carry identical 9-failure sets (146 passed each), yet the manifest's tests field is prose and the review verb is exercised only in dry-run.",
+    "fit": "reckon/crew_dispatch_commands.py:19 names _ONE_DOCUMENT_VERBS and :22 _emit_failure_document in the module's existing one-document vocabulary, and no added comment carries a plan, sprint or ticket identifier.",
+    "goal_fidelity": "reckon/crew_dispatch_commands.py:67 and :451-458 together deliver both halves of the goal, the one-document answer and the created-before-call distinction.",
+    "reuse": "the change routes through the existing reckon/crew_dispatch_commands.py:299 _emit and :283 _holds_stdout_for_one_document, and a grep found no pre-existing owner of an invoke-level failure document to fork.",
+    "scope_discipline": "git diff ffb3037a09..6d86c4958f --stat lists only preparation.py, crew_dispatch_commands.py, crew_run_commands.py and the new test file, each implied by the goal."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that dispatch prints one JSON document and a fresh request never reads as a duplicate; reckon/crew_dispatch_commands.py:67 `_CrewGroup.invoke` answers a body or parse refusal for dispatch, review and complete with one document, and reckon/crew/dispatching/preparation.py:877 marks a request this call created, which reckon/crew_dispatch_commands.py:451-458 reports as queued with its phase, so both halves of the goal land.\nVERDICT done_when: the done_when measures that each verb, run as a piped subprocess through success, refusal and a raised CrewError, parses the whole of stdout as one document and that a fresh waiting dispatch reads queued: true, awaiting-upstream and no already; tests/test_dispatch_family_prints_one_json_document.py runs those cases, gates/head-arm.log records 7 passed and gates/base-arm.log records 3 failed at base, so the gate asserts the measure.\nVERDICT write_paths: read the manifest's changed_paths, being reckon/crew/dispatching/preparation.py, reckon/crew_dispatch_commands.py, reckon/crew_run_commands.py and tests/test_dispatch_family_prints_one_json_document.py; the diff touches exactly those four, and the source node declared no write paths (dispatch-detail.json node.write_paths is []), so nothing in the diff falls outside a fence.\nVERDICT manifest: read; status complete, commits 6d86c4958f, changed_paths the four landed files, tests prose recording 7 passed in the new file and 146 passed with 9 failures identical at base and head, test_logs naming gates/head-arm.log and the two regression logs, negative_control_log gates/base-arm.log; the structured baseline_suite and after_suite objects are absent.\nVERDICT diff: read commit 6d86c4958f against base ffb3037a09 - preparation.py adds created and backend to the held request, crew_dispatch_commands.py adds _emit_failure_document and the invoke override plus the created-aware detail, crew_run_commands.py applies the stdout-holding decorator to crew_complete, and the new 289-line test file; four files, all implied by the goal.\nCALL_SITES: reckon/crew_dispatch_commands.py:89 crew group registers _CrewGroup whose invoke override runs, reckon/crew_dispatch_commands.py:2413 _emit_held_result call site in the dispatch command, reckon/crew_dispatch_commands.py:2425 _emit_held_result call site in the dispatch command, reckon/crew/dispatching/preparation.py:874 dispatch builds the LaneHeld.queued record, reckon/crew_run_commands.py:3463 the crew_complete callback under the stdout-holding decorator\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew_dispatch_commands.py:67 and :451-458 together deliver both halves of the goal, the one-document answer and the created-before-call distinction.\nSCORE evidence: 15\nJUSTIFICATION evidence: gates/head-arm.log reads 7 passed and gates/base-arm.log reads 3 failed at base, and the two regression logs carry identical 9-failure sets (146 passed each), yet the manifest's tests field is prose and the review verb is exercised only in dry-run.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: git diff ffb3037a09..6d86c4958f --stat lists only preparation.py, crew_dispatch_commands.py, crew_run_commands.py and the new test file, each implied by the goal.\nSCORE durability: 18\nJUSTIFICATION durability: the negative control reinstates the base behaviour and gates/base-arm.log reddens test_a_raised_refusal_answers_with_one_document, test_a_parsing_refusal_answers_with_one_document and test_a_fresh_request_behind_an_upstream_is_created_not_already.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/crew_dispatch_commands.py:19 names _ONE_DOCUMENT_VERBS and :22 _emit_failure_document in the module's existing one-document vocabulary, and no added comment carries a plan, sprint or ticket identifier.\nSCORE reuse: 19\nJUSTIFICATION reuse: the change routes through the existing reckon/crew_dispatch_commands.py:299 _emit and :283 _holds_stdout_for_one_document, and a grep found no pre-existing owner of an invoke-level failure document to fork.\nFINDING tests/test_dispatch_family_prints_one_json_document.py:250 non-blocking: crew review is exercised only under --dry-run and its sole assertion is `assert document, result.stderr` (:265), a truthiness check on a mapping, so no review refusal or raised refusal path is parsed; the done_when's success/refusal/raised matrix is unmet for the review verb and a review refusal that stopped emitting one document would not fail any test.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261114T200845603829-qwnw-dispatch-prints-one-json-document-and-a-fresh-re/manifest.md:14 non-blocking: the manifest's tests field is a sentence with counts rather than the literal command a shell was handed, and the structured baseline_suite/after_suite objects are absent, so a promotion gate reading the stage pair finds nothing and derives added failures from the log headers instead.",
+  "review_run_id": "r-20261114T214647827365-review-of-qwnw-dispatch-prints-one-json-document-and-a-fresh-re-6d86c4958f66",
+  "reviewed_base_sha": "ffb3037a09333916cc1df0c3bb1c7a80e4e0b0b6",
+  "reviewed_head_sha": "6d86c4958f6612d1accf14f331d2c208cd802c05",
+  "reviewed_run_id": "r-20261114T200845603829-qwnw-dispatch-prints-one-json-document-and-a-fresh-re",
+  "reviewer": {
+    "backend": "clive",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash",
+    "reviewer_run_id": "r-20261114T214647827365-review-of-qwnw-dispatch-prints-one-json-document-and-a-fresh-re-6d86c4958f66"
+  },
+  "reviewer_run_id": "r-20261114T214647827365-review-of-qwnw-dispatch-prints-one-json-document-and-a-fresh-re-6d86c4958f66",
+  "scores": {
+    "durability": 18,
+    "evidence": 15,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 19,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-15T00:51:25.739718+00:00",
+  "total": 109
+}

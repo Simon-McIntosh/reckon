@@ -114,11 +114,87 @@ def record_sweep_report(
             store.set_station_value(key, after)
 
 
+def _ended_sweep_failures(
+    failures: Iterable[Mapping[str, Any]],
+    *,
+    project: str,
+) -> list[Mapping[str, Any]]:
+    """The failures still owed as duties: those whose run the fleet still holds.
+
+    A failure's row carries ``crew observe --run``, so it is owed only while
+    that run has a live pointer, and a run whose ledger records it has been
+    promoted or landed owes nothing from a sweep. The failure list is durable
+    per session and is replaced only by that session's next completed sweep, so
+    a run that ends between two sweeps would leave its row standing for as long
+    as the session stayed quiet -- a duty the coordinator can clear only by
+    hand, and one its own prompt keeps naming.
+
+    The mount registry is read once for the whole list: a resolver call per
+    failure would parse the registry once per row.
+    """
+    from reckon.crew import runs
+
+    entries = list(failures)
+    if not entries:
+        return entries
+    roots = runs._mounted_project_roots(project)
+    kept: list[Mapping[str, Any]] = []
+    for failure in entries:
+        run_id = str(failure.get("run_id") or "")
+        if not run_id:
+            # A failure naming no run offers no command that could act on it.
+            continue
+        if not obligation_snapshot.live_pointer_path(run_id).is_file():
+            continue
+        if _ledger_holds_run(run_id, project, roots):
+            continue
+        kept.append(failure)
+    return kept
+
+
+def _ledger_holds_run(run_id: str, project: str, roots: Mapping[str, Path]) -> bool:
+    """Whether a promoted record for this run stands beside the project's ledger."""
+    from reckon.crew import runs
+
+    try:
+        return runs._promoted_record_project(run_id, project, roots=roots) is not None
+    except Exception:  # noqa: BLE001 - an unreadable registry keeps the duty
+        return False
+
+
+def prune_sweep_failures(store: Any, project: str) -> dict[str, Any]:
+    """Drop stored sweep failures whose run the fleet no longer holds.
+
+    The stored record is what every later pass reads, so a failure left in it
+    is raised again by any pass that finds nothing else changed, and the list
+    grows by every run that fails once. Pruning it keeps the record a statement
+    about the fleet the station can still see; the write happens only when
+    something actually ended, so an unchanged fleet leaves it untouched.
+    """
+    key = _sweep_failure_key(project)
+    with _SWEEP_REPORT_LOCK:
+        before = store.station_value(key) or "{}"
+        recorded = json.loads(before)
+        kept: dict[str, Any] = {}
+        if isinstance(recorded, Mapping):
+            for session, failures in recorded.items():
+                if not isinstance(failures, list):
+                    continue
+                remaining = _ended_sweep_failures(failures, project=project)
+                if remaining:
+                    kept[str(session)] = remaining
+        after = json.dumps(kept, sort_keys=True)
+        if before != after:
+            store.set_station_value(key, after)
+    return kept
+
+
 def _with_sweep_failures(
     payload: Mapping[str, Any], failures: Iterable[Mapping[str, Any]]
 ) -> dict[str, Any]:
     rows = list(payload.get("obligations") or ())
-    for failure in failures:
+    project = str(payload.get("project") or "")
+    for failure in _ended_sweep_failures(failures, project=project):
         run_id = str(failure["run_id"])
         command = f"reckon crew observe --run {shlex.quote(run_id)}"
         rows.append(
@@ -481,13 +557,12 @@ def publish(
         submit(project, home=home, changed=changed, moment=now)
         return None
     try:
-        sweep_record = store.station_value(_sweep_failure_key(project)) or "{}"
         refresh(
             store,
             project=project,
             changed=changed,
             now=now,
-            sweep_failures=json.loads(sweep_record),
+            sweep_failures=prune_sweep_failures(store, project),
         )
     except Exception:  # noqa: BLE001 - one project's input costs one pass
         _report_failure(project, "refresh")

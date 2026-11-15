@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project"   content="reckon">
+  <meta name="reckon-type"    content="plan">
+  <meta name="plan-slug"      content="work-scales-to-eighty-across-nodes">
+  <meta name="plan-title"     content="Work Scales To Eighty Across Nodes">
+  <meta name="plan-summary"   content="About 80 concurrent local requests across nodes: no harness before a slot, shared MCP servers, declared MCP sets, workers on compute nodes.">
+  <meta name="plan-status"    content="draft">
+  <meta name="plan-roi"       content="high">
+  <meta name="plan-effort-hours" content="18.0">
+  <meta name="plan-capability-version" content="1.0">
+  <meta name="plan-capability-class" content="orchestrator">
+  <meta name="plan-capability-reasoning" content="deep">
+  <meta name="plan-capability-verification" content="strict">
+  <meta name="plan-capability-risk" content="elevated">
+  <meta name="plan-owner"     content="Simon McIntosh">
+  <meta name="plan-tags"      content="crew,reckon-tooling">
+  <meta name="plan-after"     content="work-flows-to-the-lane">
+  <meta name="plan-section-depends-on" content="{&quot;s2&quot;:[&quot;work-scales-to-eighty-across-nodes#s3&quot;],&quot;s3&quot;:[&quot;work-flows-to-the-lane#s71&quot;],&quot;s6&quot;:[&quot;work-scales-to-eighty-across-nodes#s1&quot;,&quot;work-scales-to-eighty-across-nodes#s2&quot;,&quot;work-scales-to-eighty-across-nodes#s4&quot;,&quot;work-scales-to-eighty-across-nodes#s5&quot;]}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;implementable&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;}">
+  <title>Work Scales To Eighty Across Nodes | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <p><strong>Why.</strong> A B300 router is expected to serve about 80 concurrent local requests, against today's gate of 12. On 15 November one fleet node (96 GB, 28 cores) carried every coordinator, the station, the admit service and every worker, and failed at gate 12. The fleet job reached 95 of 96 GB and recorded 136 OOM kills. The admit service restarted six times in under an hour, and the station's tick took two to six minutes. The measured costs that set the scale:</p>
+    <table>
+      <thead><tr><th>Holder</th><th>Measured on 15 November</th></tr></thead>
+      <tbody>
+        <tr><td>Router requests per live worker</td><td>0.29 to 0.46 (a worker spends most of its time in tool calls)</td></tr>
+        <tr><td>Live workers needed to fill a gate of 80</td><td>about 175 to 275</td></tr>
+        <tr><td>A clive worker (Claude CLI with its MCP servers)</td><td>0.6 to 2.9 GB; its reckon MCP server alone 0.42 GB mean, 2.7 GB at most</td></tr>
+        <tr><td>An omp-local worker</td><td>about 0.4 GB, no MCP server</td></tr>
+        <tr><td>Coordinator side (17 sessions: CLIs, MCP servers, crew hosts)</td><td>about 22 GB</td></tr>
+        <tr><td>Station and admit service</td><td>2.7 to 6.9 GB and 1.8 to 3.7 GB</td></tr>
+      </tbody>
+    </table>
+    <p>About 230 omp-local workers at 0.4 GB is about 90 GB, which does not fit on one fleet node beside the coordinators, so workers have to run on more than one node. The reckon MCP server today speaks stdio only, so each worker that uses it starts its own copy. The installed MCP library (1.28) also offers a network transport that one server can serve many clients through. Workers can already be placed as scheduler steps on a reservation. This plan sets the endpoints that let the lane run at 80 without the fleet node failing, and keeps MCP use open to workers that need it.</p>
+
+    <h2 id="s1">§1 — A queued request holds no process until it holds a slot</h2>
+    <section data-reckon="section" data-id="s1" data-effort-hours="3.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="implementable" data-links=""></section>
+    <p><strong>Deliverable.</strong> A request starts its worker's harness only when the router has a slot for it, and admission never launches past the router's published worker slots. A request waiting for a slot holds no process and no memory. The number of live workers at a full lane stays within the router's published worker slots plus a stated margin.</p>
+    <p><strong>Done when.</strong> A test with a temporary crew home and a stand-in router of width 4 queues 20 requests and reads, at every admission pass, no more live workers than the router's worker slots plus the margin, and no process for any request still queued. A measure on the fleet node over one hour at a full lane reads the live worker count against the published worker slots every five minutes, and every reading is within the margin. Negative control: at the base revision the test reads more live workers than the slots allow; the failing run and the measure are logged to <code>docs/evidence/fragments/work-scales-to-eighty-across-nodes/s1.html</code>.</p>
+
+    <h2 id="s2">§2 — One MCP server per node serves every worker that uses it</h2>
+    <section data-reckon="section" data-id="s2" data-effort-hours="4.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="implementable" data-links=""></section>
+    <p><strong>Deliverable.</strong> On each node that runs workers, a declared MCP server runs once and serves every worker on that node whose MCP set names it. A worker connects to it rather than starting its own copy. The server's resident memory does not grow with the number of workers it serves.</p>
+    <p><strong>Done when.</strong> A test starts 5, then 40 stand-in workers on one node whose MCP set names the reckon server and reads one reckon server process serving all of them, each worker's tool call answered. A measure over one hour with 40 such workers reads the server's resident memory every ten minutes, with the last reading no more than 20 percent above the first. Negative control: at the base revision the test reads one server per worker; the failing run and the measure are logged to <code>docs/evidence/fragments/work-scales-to-eighty-across-nodes/s2.html</code>.</p>
+
+    <h2 id="s3">§3 — A node declares the MCP set it needs</h2>
+    <section data-reckon="section" data-id="s3" data-effort-hours="2.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="implementable" data-links=""></section>
+    <p><strong>Deliverable.</strong> The flight names MCP sets, each a list of servers. A plan section or a brief may name one set for its node, and the node's worker connects to exactly that set, on every backend. A node that names no set connects to none. The set a worker connected to is recorded on its run.</p>
+    <p><strong>Done when.</strong> Tests with a temporary flight declaring two sets read a node naming the first connected to exactly its servers, a node naming the second connected to exactly its servers, and a node naming none connected to no server, on a Claude, a Codex and an omp launch, with the connected set recorded on each run. Negative control: at the base revision a node naming a set is refused or connected to servers outside it; the failing run is logged to <code>docs/evidence/fragments/work-scales-to-eighty-across-nodes/s3.html</code>.</p>
+
+    <h2 id="s4">§4 — Workers run on compute nodes while coordination stays on the fleet node</h2>
+    <section data-reckon="section" data-id="s4" data-effort-hours="4.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="implementable" data-links=""></section>
+    <p><strong>Deliverable.</strong> A dispatched worker can run on a compute node rather than the fleet node. It reads and writes run state on GPFS and its scratch on that node's local disk. The fleet node keeps the coordinators, the station, the admit service and their MCP servers. A worker on a compute node delivers, is reviewed and lands exactly as one on the fleet node does.</p>
+    <p><strong>Done when.</strong> A rehearsal places 20 workers on a compute node through the scheduler, and each delivers a manifest, passes its review and lands. The rehearsal reads the fleet node's memory before and during the run, and the readings differ by less than 2 GB. A test reads a worker on a compute node writing no file under the fleet node's local scratch. Negative control: at the base revision the rehearsal's workers run on the fleet node, and its memory rises by about 0.4 GB per worker; both are logged to <code>docs/evidence/fragments/work-scales-to-eighty-across-nodes/s4.html</code>.</p>
+
+    <h2 id="s5">§5 — The station's tick stays under 30 seconds at 230 live runs</h2>
+    <section data-reckon="section" data-id="s5" data-effort-hours="3.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="implementable" data-links=""></section>
+    <p><strong>Deliverable.</strong> The station completes a tick in under 30 seconds with 230 live runs across the mounted projects, and its resident memory stays under 2 GB, so obligations and the monitor stay current at the target scale.</p>
+    <p><strong>Done when.</strong> A measure against a crew home populated with 230 live runs, run on <code>all_debug</code>, records 20 consecutive tick durations and the station's resident memory after each, and every tick is under 30 seconds and every reading under 2 GB. Negative control: the same measure at the base revision records ticks over 30 seconds; both are logged to <code>docs/evidence/fragments/work-scales-to-eighty-across-nodes/s5.html</code>.</p>
+
+    <h2 id="s6">§6 — The lane holds 80 concurrent requests for an hour</h2>
+    <section data-reckon="section" data-id="s6" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="implementable" data-links=""></section>
+    <p><strong>Deliverable.</strong> With §1 to §5 landed, the local lane holds about 80 concurrent requests for an hour across at least two nodes, with no OOM kill in any fleet job and every admission pass under 30 seconds.</p>
+    <p><strong>Done when.</strong> A record of a one-hour window, against the B300 router or a stand-in router of width 80, reads the router's in-flight count every five minutes with a median of at least 72, zero OOM kills in each node's memory events, every admission pass under 30 seconds, and every queued request still present or launched at the window's end. Negative control: the same window at a revision before §1 lands records OOM kills or a median below 72; the record is <code>docs/evidence/fragments/work-scales-to-eighty-across-nodes/s6.html</code>.</p>
+
+    <section data-reckon="decisions" id="decisions" class="r-decisions">
+      <h2><span class="sec">§</span> Decisions</h2>
+    </section>
+
+    <section data-reckon="followups" id="followups" class="r-followups">
+      <h2><span class="sec">§</span> Followups</h2>
+      <article class="r-fu" data-id="f-wse-001" data-status="open" data-capability-version="1.0" data-capability-class="orchestrator" data-written-by="reckon-create" data-written-at="2026-11-15" data-recommends-skill="/reckon-build work-scales-to-eighty-across-nodes" data-resolved-at="" data-resolved-by="">
+        <h4 class="r-fu-title">Review, then queue §1 to §5, with §6 waiting on them</h4>
+        <div class="r-fu-body"><p>§1, §4 and §5 are independent; §3 waits on work-flows-to-the-lane §71, and §2 on §3. §6 is the scale rehearsal and waits on §1, §2, §4 and §5. Once the content and design reviews are answered, queue all six in one batch with §1 first.</p></div>
+        <pre class="r-fu-prompt">/reckon-build work-scales-to-eighty-across-nodes</pre>
+      </article>
+    </section>
+  </main>
+</body>
+</html>

@@ -1,0 +1,84 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/crew/obligations.py:3879 (obligations() publishes the pointer snapshot and the review memo together and resets both)",
+    "reckon/crew/station_subscriber.py:344,350 (live_work_populations publishes both context variables for the station's duty pass)",
+    "reckon/crew/obligations.py:1487 (_live_review_runs asks _current_review_in_flight once per pointer)",
+    "reckon/crew/obligation_snapshot.py:1700 (fleet_state's per-pointer current-review call with no pass published - the site the prior review's blocking finding named)",
+    "reckon/crew/obligations.py:2659 (the duty item builder reaches _refused_delivered_review)",
+    "reckon/crew/station_subscriber.py:145,152 (a session's duty row reads the in-flight set and the refused-delivery answer)"
+  ],
+  "completed_at": "2026-11-15T12:43:04.933Z",
+  "dispatched_at": "2026-11-15T12:25:55Z",
+  "findings": [
+    {
+      "file": "reckon/crew/obligations.py",
+      "line": "1253",
+      "severity": "non-blocking",
+      "text": "_launched_candidates decides which pointers a search may answer with by reading the queued phase alone, and ignores launched_at, while the repository already owns that decision at reckon/crew/admission/ordering.py:175 (awaits_a_lane_slot), whose docstring says a pointer carrying launched_at is launched whatever its phase says; the new named definition duplicates the owner's predicate rather than extending it, so a review that launched before its phase write is excluded from the search and the duty reads missing - the same coarser rule the two inline citations it replaces already used, now fixed under a name that reads as authoritative."
+    },
+    {
+      "file": "reckon/crew/obligations.py",
+      "line": "1337",
+      "severity": "non-blocking",
+      "text": "_standing_review's docstring still says a pointer handed in from outside the pass 'is answered by its own sweep', but c2c8909eb6 changed that fallback to _pointer_review, which makes one search over the launched candidates and no sweep at all; the paragraph now describes a cost the code does not pay, and a reader budgeting this path from the docstring will overstate it by the size of the live set."
+    },
+    {
+      "file": "reckon/crew/station_subscriber.py",
+      "line": "350",
+      "severity": "non-blocking",
+      "text": "the repair edits reckon/crew/station_subscriber.py, which neither the plan section's write paths (reckon/crew/obligations.py, tests/test_a_duty_pass_reads_reviews_in_flight_once.py and the node's fragment) nor the dispatch node's declared paths cover; the manifest discloses it as a scope note in evidence_inputs under the shared-file ruling, so it needs the coordinator's ratification rather than a repair, but it is out of the fence as delivered."
+    },
+    {
+      "file": "tests/test_a_duty_pass_reads_reviews_in_flight_once.py",
+      "line": "420",
+      "severity": "non-blocking",
+      "text": "the closing assertion 'head == base is None' compares _refused_delivered_review's answer with the same function's answer after monkeypatching _standing_review; if that function stopped consulting _standing_review the monkeypatch would change nothing and both sides would move together, so the assertion cannot redden on that regression and guards the reader's own answer rather than the function's use of it."
+    },
+    {
+      "file": "tests/test_a_duty_pass_reads_reviews_in_flight_once.py",
+      "line": "398",
+      "severity": "non-blocking",
+      "text": "_standing returns None whenever _standing_review is absent from the module, so the queued case's 'in (None, \"\")' assertion passes unchanged if the reader is renamed or removed; the only thing that catches the removal is the sibling _current_review_in_flight call raising AttributeError, so the line reads as a guard it is not."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "pass - read commit by commit: c2c8909eb6 repairs the outside-a-pass sweep and scopes the memo with a token, 36f38d7bfb and 9f1611935e add the queued reviewer's own fixture, b32f91adc3 and 3df34b2bb9 record the repaired node's evidence at the final head, with the last two touching only the evidence fragment.",
+    "done_when": "pass - logs/gate-head.log at b32f91adc3 records '4 passed in 7.16s' EXIT=0 with the done_when's counts (40 searches, one walk, 30 duty rows, and the base read path at 60 searches), logs/negative-control.log reddens at the base revision, and logs/repair-negative-control.log reddens the outside-a-pass case at 072c413f9a with '40 in-flight searches for one pointer'; the done_when's ruff clause has no gate log in the manifest or the fragment.",
+    "goal": "pass - the node goal is that one duty pass computes which runs have a review in flight once and every duty in the pass reads it; reckon/crew/obligations.py:1304-1330 returns the pass's shared map when a snapshot is published and returns nothing outside a pass, and :1340-1345 answers a single pointer with one walk and one search, measured in logs/gate-head.log as 'head: searches=40 walks=1 live_pointers=40 duties=30' and 'no snapshot: searches=1'.",
+    "manifest": "pass - read; it reads complete with four files in changed_paths, eight commits, both suite arms with revisions and EXIT lines, the gate log and both negative controls named, and the out-of-path edit declared rather than hidden; its baseline_suite and after_suite are prose sentences rather than the JSON objects the delivery contract describes, and it carries no ruff receipt.",
+    "write_paths": "pass - the dispatch node declares reckon/crew/obligations.py and tests/test_a_duty_pass_reads_reviews_in_flight_once.py and the plan adds the node's fragment; git diff --stat 072c413f9a..3df34b2bb9 lists those three plus reckon/crew/station_subscriber.py, which is outside every declared path and is disclosed in the manifest's evidence_inputs."
+  },
+  "justifications": {
+    "durability": "tests/test_a_duty_pass_reads_reviews_in_flight_once.py:379-386 reddens at the prior head with 40 searches for one pointer (logs/repair-negative-control.log) and :383 fails if the memo outlives the question, but :420's 'head == base is None' moves both sides together if _refused_delivered_review stops reading _standing_review and :398's getattr fallback passes when the reader is absent.",
+    "evidence": "logs/gate-head.log and logs/repair-negative-control.log record both arms' counts and exits at named revisions, and logs/baseline-suite.log (55 passed, EXIT=0) against logs/after-suite.log (59 passed, EXIT=0) give zero added failures, but the done_when's ruff clause has no log and the manifest's suite fields are prose rather than the contract's JSON.",
+    "fit": "the new contextmanager at reckon/crew/obligations.py:1294-1302 and the publishers at :3879 and station_subscriber.py:350 follow the token-reset idiom of the pointer snapshot, and the names are mechanism-based, but _standing_review's docstring at :1337 still describes a sweep the code no longer takes.",
+    "goal_fidelity": "reckon/crew/obligations.py:1319-1324 returns an empty answer outside a pass and :1345 answers one pointer with one search, so the prior head's P-sweeps-of-P regression is gone while the pass still pays one search per pointer (logs/gate-head.log: 'head: searches=40 walks=1').",
+    "reuse": "reckon/crew/obligations.py:1253 adds _launched_candidates, which answers the same 'is this pointer launched' question the repository owns at reckon/crew/admission/ordering.py:175 (awaits_a_lane_slot) with a coarser phase-only test; it does consolidate two in-module copies, but it does not extend the owner, and the divergence is a real divergence.",
+    "scope_discipline": "git diff --stat 072c413f9a..3df34b2bb9 lists reckon/crew/station_subscriber.py, outside the plan's and dispatch node's declared write paths, disclosed in the manifest's evidence_inputs rather than omitted."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: pass - the node goal is that one duty pass computes which runs have a review in flight once and every duty in the pass reads it; reckon/crew/obligations.py:1304-1330 returns the pass's shared map when a snapshot is published and nothing outside a pass, and :1340-1345 answers a single pointer with one walk and one search, printed in logs/gate-head.log as 'head: searches=40 walks=1 live_pointers=40 duties=30' and 'no snapshot: searches=1'.\nVERDICT done_when: pass - logs/gate-head.log at b32f91adc3 records '4 passed in 7.16s' EXIT=0 with the done_when's counts (40 searches, one walk, 30 duty rows, base read path 60 searches), logs/negative-control.log reddens at the base revision with 'a pass made 60 in-flight searches for 40 live pointers', and logs/repair-negative-control.log reddens the outside-a-pass case at 072c413f9a with '40 in-flight searches for one pointer'; the done_when's ruff clause has no gate log in the manifest or the fragment.\nVERDICT write_paths: pass - the dispatch node declares reckon/crew/obligations.py and tests/test_a_duty_pass_reads_reviews_in_flight_once.py, the plan adds the node's fragment, and git diff --stat 072c413f9a..3df34b2bb9 lists those three plus reckon/crew/station_subscriber.py, which is outside every declared path and disclosed in the manifest's evidence_inputs.\nVERDICT manifest: pass - read; it reads complete with four files in changed_paths, eight commits, both suite arms with revisions and EXIT lines, the gate and both negative controls named, and the out-of-path edit declared rather than hidden; its baseline_suite and after_suite carry prose sentences rather than the contract's JSON fields, and it carries no ruff receipt.\nVERDICT diff: pass - read commit by commit: c2c8909eb6 repairs the outside-a-pass sweep and scopes the memo with a token, 36f38d7bfb and 9f1611935e add the queued reviewer's own fixture, b32f91adc3 and 3df34b2bb9 record the evidence at the final head and touch only the fragment.\nCALL_SITES: reckon/crew/obligations.py:3879 (obligations() publishes and resets both context variables), reckon/crew/station_subscriber.py:344,350 (live_work_populations publishes both for the station duty pass), reckon/crew/obligations.py:1487 (_live_review_runs asks once per pointer), reckon/crew/obligation_snapshot.py:1700 (fleet_state's per-pointer call with no pass published), reckon/crew/obligations.py:2659 (duty item builder reaches _refused_delivered_review), reckon/crew/station_subscriber.py:145,152 (the session duty row's two calls)\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/obligations.py:1319-1324 returns an empty answer outside a pass and :1345 answers one pointer with one search, so the prior head's P-sweeps-of-P is gone while the pass pays one search per pointer, printed as 'head: searches=40 walks=1' in logs/gate-head.log.\nSCORE evidence: 17\nJUSTIFICATION evidence: logs/gate-head.log and logs/repair-negative-control.log record both arms' counts and exits at named revisions and the 55-passed to 59-passed arms give zero added failures, but the done_when's ruff clause has no log and the manifest's suite fields are prose rather than the contract's JSON.\nSCORE scope_discipline: 15\nJUSTIFICATION scope_discipline: git diff --stat 072c413f9a..3df34b2bb9 lists reckon/crew/station_subscriber.py, outside the plan's and dispatch node's declared write paths, disclosed in the manifest's evidence_inputs rather than omitted.\nSCORE durability: 16\nJUSTIFICATION durability: tests/test_a_duty_pass_reads_reviews_in_flight_once.py:383-386 reddens at the prior head with 40 searches for one pointer (logs/repair-negative-control.log), but :420's 'head == base is None' moves both sides together if _refused_delivered_review stops reading _standing_review and :398's getattr fallback passes when the reader is absent.\nSCORE fit: 17\nJUSTIFICATION fit: the new contextmanager at reckon/crew/obligations.py:1294-1302 and the publishers at :3879 and station_subscriber.py:350 follow the token-reset idiom the pointer snapshot already uses, but _standing_review's docstring at :1337 still describes a sweep the code no longer takes.\nSCORE reuse: 12\nJUSTIFICATION reuse: reckon/crew/obligations.py:1253 adds _launched_candidates, which answers the 'is this pointer launched' question the repository owns at reckon/crew/admission/ordering.py:175 (awaits_a_lane_slot) with a coarser phase-only test; it consolidates two in-module copies but does not extend the owner.\nFINDING reckon/crew/obligations.py:1253 non-blocking: _launched_candidates reads the queued phase alone and ignores launched_at, duplicating the predicate the repository owns at reckon/crew/admission/ordering.py:175 (awaits_a_lane_slot), whose docstring says a pointer carrying launched_at is launched whatever its phase says; a review that launched before its phase write is excluded from the search and the duty reads missing, and the new named definition codifies the coarser rule rather than extending the owner.\nFINDING reckon/crew/station_subscriber.py:350 non-blocking: the repair edits a file outside the plan's and dispatch node's declared write paths; the manifest discloses it as a scope note in evidence_inputs under the shared-file ruling, so it needs the coordinator's ratification rather than a repair, but it is out of the fence as delivered.\nFINDING reckon/crew/obligations.py:1337 non-blocking: _standing_review's docstring still says a pointer from outside the pass 'is answered by its own sweep', but c2c8909eb6 changed that fallback to _pointer_review, one search over the launched candidates, so the paragraph describes a cost the code does not pay.\nFINDING tests/test_a_duty_pass_reads_reviews_in_flight_once.py:420 non-blocking: 'head == base is None' compares _refused_delivered_review's answer with the same function's answer after monkeypatching _standing_review; if the function stopped consulting it the monkeypatch would change nothing and both sides move together, so the assertion cannot redden on that regression.\nFINDING tests/test_a_duty_pass_reads_reviews_in_flight_once.py:398 non-blocking: _standing returns None whenever _standing_review is absent, so the queued case's 'in (None, \"\")' assertion passes unchanged if the reader is renamed or removed, and only the sibling _current_review_in_flight call catches that by raising.",
+  "review_run_id": "r-20261115T122436886142-review-of-a-duty-pass-reads-reviews-in-flight-once-3df34b2bb925",
+  "reviewed_base_sha": "072c413f9a3828319ef468410e82fdbca60fde17",
+  "reviewed_head_sha": "3df34b2bb9256dbafa7735f4a43540ba9c99538e",
+  "reviewed_run_id": "r-20261115T083214743713-a-duty-pass-reads-reviews-in-flight-once",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash",
+    "reviewer_run_id": "r-20261115T122436886142-review-of-a-duty-pass-reads-reviews-in-flight-once-3df34b2bb925"
+  },
+  "scores": {
+    "durability": 16,
+    "evidence": 17,
+    "fit": 17,
+    "goal_fidelity": 19,
+    "reuse": 12,
+    "scope_discipline": 15
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-15T12:48:41.681223+00:00",
+  "total": 96
+}

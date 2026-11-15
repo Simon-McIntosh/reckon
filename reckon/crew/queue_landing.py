@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-import fcntl
+import contextlib
 import json
 import os
 import re
@@ -22,6 +22,7 @@ from reckon.crew.node import CrewError
 from reckon.crew.open_run_index import operational_read
 from reckon.crew.recovery_review_acceptance import _review_accepts_promotion
 from reckon.crew.resume import hold_reason as delivery_hold_reason
+from reckon.node_exclusive_lock import LockHeld, exclusive_lock
 
 _run_srun = subprocess.run
 
@@ -882,9 +883,13 @@ def _merge_conflicts(pointer: Mapping[str, Any], head: str) -> list[str]:
     from reckon.crew import merge
 
     try:
-        _merged_tree, conflicts = merge._merge_tree(
-            repo, str(pointer.get("merge_primary_revision") or "HEAD"), head
-        )
+        with merge.scratch_object_store(repo) as objects:
+            _merged_tree, conflicts = merge._merge_tree(
+                repo,
+                str(pointer.get("merge_primary_revision") or "HEAD"),
+                head,
+                objects=objects,
+            )
     except (merge.MergeError, OSError):
         return []
     return merge.refusing_conflicts(conflicts)
@@ -1753,27 +1758,37 @@ def _verified_measurement(
     # and that is the merge the change markers are judged against: what a
     # docs-only move cannot do is change the product, and that claim is only
     # worth making if the merge onto the new primary is read.
-    if moved:
-        merged_tree, conflicts = merge._merge_tree(repo, primary, head)
-        if merge.refusing_conflicts(conflicts):
-            from reckon.crew.recovery_repair_dispatch import dispatch_merge_repair
+    with contextlib.ExitStack() as stack:
+        objects = None
+        if moved:
+            # The merge is built in a scratch store, so a head that fails this
+            # check leaves the repository untouched; the store outlives the
+            # marker read that judges the merged tree it holds.
+            objects = stack.enter_context(merge.scratch_object_store(repo))
+            merged_tree, conflicts = merge._merge_tree(
+                repo, primary, head, objects=objects
+            )
+            if merge.refusing_conflicts(conflicts):
+                from reckon.crew.recovery_repair_dispatch import dispatch_merge_repair
 
-            dispatch_merge_repair(
-                pointer,
-                head=head,
-                primary=primary,
-                paths=merge.refusing_conflicts(conflicts),
-            )
-            raise CrewError(
-                "the head no longer merges cleanly onto the primary: "
-                + ", ".join(merge.refusing_conflicts(conflicts))
-            )
-        judged_base, judged_revision = primary, merged_tree
-    else:
-        judged_base = measured_main
-        judged_revision = str(measured.population["candidate_sha"])
-    markers = merge.change_markers(repo, judged_base, head)
-    dropped = merge.surviving_change_refusals(repo, judged_revision, markers)
+                dispatch_merge_repair(
+                    pointer,
+                    head=head,
+                    primary=primary,
+                    paths=merge.refusing_conflicts(conflicts),
+                )
+                raise CrewError(
+                    "the head no longer merges cleanly onto the primary: "
+                    + ", ".join(merge.refusing_conflicts(conflicts))
+                )
+            judged_base, judged_revision = primary, merged_tree
+        else:
+            judged_base = measured_main
+            judged_revision = str(measured.population["candidate_sha"])
+        markers = merge.change_markers(repo, judged_base, head)
+        dropped = merge.surviving_change_refusals(
+            repo, judged_revision, markers, objects=objects
+        )
     if dropped:
         raise CrewError(
             "the measured merge dropped the reviewed change: " + "; ".join(dropped)
@@ -1891,11 +1906,10 @@ def land_once() -> dict[str, Any]:
     # A landing promoted but never merged is finished before new deliveries are
     # judged: its promotion already counts as landed everywhere else.
     lock = runs.crew_home() / "locks" / "landing-pass.lock"
-    lock.parent.mkdir(parents=True, exist_ok=True)
-    with lock.open("a+b") as handle:
+    with ExitStack() as held:
         try:
-            fcntl.flock(handle.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
-        except BlockingIOError:
+            held.enter_context(exclusive_lock(lock, blocking=False))
+        except LockHeld:
             return {"landed": [], "obligations": [], "deferred": [], "busy": True}
         finished = pending_landing.finish_pending_landings()
         with plan_read_scopes():

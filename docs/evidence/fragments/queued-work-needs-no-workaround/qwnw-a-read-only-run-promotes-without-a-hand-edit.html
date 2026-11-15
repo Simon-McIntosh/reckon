@@ -1,0 +1,47 @@
+<section data-reckon="evidence" data-id="qwnw-a-read-only-run-promotes-without-a-hand-edit">
+  <h3 id="qwnw-a-read-only-run-promotes-without-a-hand-edit-heading">A read-only run promotes on its own commits line, with or without a reason</h3>
+  <p id="qwnw-a-read-only-run-promotes-without-a-hand-edit-why">
+    A review run has no repository work to commit and writes its manifest's
+    <code>commits</code> line as prose, such as
+    <code>none — this node writes a review record outside the repository</code>.
+    Promotion resolved that sentence against the run's repository and refused it
+    as a citation naming no object. A <code>--no-commit</code> reason did not
+    reach the refusal, because the readers that resolved the line answer a
+    scope question rather than the ledger's commit list.
+  </p>
+  <p id="qwnw-a-read-only-run-promotes-without-a-hand-edit-what">
+    The declaration parser that already decides whether a commitless role's
+    field declares an absence is now asked by
+    <code>_declared_manifest_commits</code>, the single reader every caller
+    resolves a manifest's commits through. A genuine declaration therefore
+    reads as an empty list everywhere; a citation-shaped value is still
+    returned, and still refused by value.
+  </p>
+  <table id="qwnw-a-read-only-run-promotes-without-a-hand-edit-arms">
+    <thead>
+      <tr><th>arm</th><th>revision</th><th>result</th><th>log</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>baseline</td>
+        <td><code>31eaf2923c</code></td>
+        <td>2 failed, 2 passed, EXIT=1</td>
+        <td><code>logs/baseline-arm.txt</code></td>
+      </tr>
+      <tr>
+        <td>after</td>
+        <td><code>6657268850</code></td>
+        <td>4 passed, EXIT=0</td>
+        <td><code>logs/after-arm.txt</code></td>
+      </tr>
+    </tbody>
+  </table>
+  <p id="qwnw-a-read-only-run-promotes-without-a-hand-edit-control">
+    Negative control: at the base revision both of the first case's arms are
+    refused as an unresolvable commit:
+    <code>test_a_read_only_run_promotes_on_its_own_commits_prose</code> fails
+    under <code>with-a-stated-reason</code> and <code>with-no-flag-at-all</code>.
+    The failing run is kept at
+    <a href="/reckon/evidence/fragments/queued-work-needs-no-workaround/s19.html">s19.html</a>.
+  </p>
+</section>

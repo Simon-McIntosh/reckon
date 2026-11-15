@@ -1,0 +1,191 @@
+{
+  "absent_items": [],
+  "accepted_edits": [
+    {
+      "by": "1fb615a0-2801-4418-bbb4-c2914719e520",
+      "digests": {
+        "s64": "9d881c2700f0ec618274645bc8918c8686d5424eb918c1c9e330a4f0a9fa5faf",
+        "s65": "a5176fbdb84822caa27c8d903a1d05f028a6d3e1cb41445ac305110711f32453"
+      },
+      "reason": "reasoning-1 and reasoning-2 were answered acted and v340 applies exactly those edits to s64 and s65; done_when-1 is reckon-a6's s63 and was declined here and forwarded to its owner",
+      "units": [
+        "s64",
+        "s65"
+      ],
+      "when": "2026-11-15T14:19:04.404033+00:00"
+    }
+  ],
+  "completed_at": "2026-11-15T13:44:41.189Z",
+  "dispatched_at": "2026-11-15T13:44:24Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/the-monitor-reads-each-fact-once.html:736",
+      "id": "done_when-1",
+      "reason": "the node either reports a completed removal as a failure against an unrelated identifier or widens scope to rename it, so the measure has to be word-bounded or path-scoped.",
+      "text": "s63's done-when reads \"`git grep run_names reckon/` at head finds nothing\", but that substring already matches `_recent_run_names` at reckon/crew/dispatch_claims.py:1875 and :1944, which this section does not ask to rename, and matches the local `run_names` at reckon/crew/recovery_memo.py:456-459, which sits inside the section's own write path and takes `review_run_record_names`'s result \u2014 so the removal the section asks for cannot satisfy its first item",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/the-monitor-reads-each-fact-once.html:740",
+      "id": "reasoning-1",
+      "reason": "the two-arm comparison both sections' memory bounds rest on cannot be produced from the cited instrument, so the plan must name the harness-and-arguments each arm runs.",
+      "text": "s64's head-and-base arms (and s65's reuse of \"the same harness\" at :744) name `census/run_census.sh`, which hardcodes `TREE=.../a-census-names-what-holds-the-stations-memory` and `REV=$(git -C \"$TREE\" rev-parse HEAD)` and pipes both runs into one `census-main.log`, so running it \"at head and at base\" measures one revision twice",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/the-monitor-reads-each-fact-once.html:740",
+      "id": "reasoning-2",
+      "reason": "no gate moves, because s64's and s65's bounds are derived from the per-tick peaks the census log already carries, not from the summary range.",
+      "text": "the Why states each tick allocates and releases between 1.6 and 3.3 GB and then gives the cited tracemalloc peaks as 207, 1,664, 298, 3,264, 3,254 and 2,255 MB, two of which are 0.2\u20130.3 GB, so the stated range contradicts its own evidence",
+      "type": "reasoning",
+      "would_change": false
+    }
+  ],
+  "plan_commit": "13073346261d2293381023cd5bebf583de63ab13",
+  "plan_fingerprint": "e2edbe0783540e443a382805f9c715cdb7994f7f9328620b41da36f2850a848c",
+  "plan_slug": "the-monitor-reads-each-fact-once",
+  "plan_version": 337,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "declined",
+      "by": "1fb615a0-2801-4418-bbb4-c2914719e520",
+      "finding": "done_when-1",
+      "reason": "s63 is reckon-a6's section (pointer record names from the index's per-run grouping), added to this plan by that session; the finding is forwarded to reckon-a6, who owns s63's text and will revise its done-when before dispatching it",
+      "when": "2026-11-15T14:06:37.065859+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "1fb615a0-2801-4418-bbb4-c2914719e520",
+      "commit": "5e7cfda7485bf3ae44a559d8ca69d72e60b656c6",
+      "commit_basis": "edit",
+      "finding": "reasoning-1",
+      "note": "s64 and s65 now require the census harness to take the revision and log path per arm: each arm builds its own worktree at its revision and writes its own log, so head and base are measured at different revisions",
+      "reason": "",
+      "when": "2026-11-15T14:06:46.868187+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "1fb615a0-2801-4418-bbb4-c2914719e520",
+      "commit": "5e7cfda7485bf3ae44a559d8ca69d72e60b656c6",
+      "commit_basis": "edit",
+      "finding": "reasoning-2",
+      "note": "the shared Why now gives the per-tick tracemalloc peak as 0.2 to 3.3 GB, above 1.6 GB in four of the six ticks, matching the cited figures",
+      "reason": "",
+      "when": "2026-11-15T14:06:59.511540+00:00"
+    }
+  ],
+  "responses": {
+    "done_when-1": {
+      "action": "declined",
+      "by": "1fb615a0-2801-4418-bbb4-c2914719e520",
+      "reason": "s63 is reckon-a6's section (pointer record names from the index's per-run grouping), added to this plan by that session; the finding is forwarded to reckon-a6, who owns s63's text and will revise its done-when before dispatching it",
+      "when": "2026-11-15T14:06:37.065859+00:00"
+    },
+    "reasoning-1": {
+      "action": "acted",
+      "by": "1fb615a0-2801-4418-bbb4-c2914719e520",
+      "commit": "5e7cfda7485bf3ae44a559d8ca69d72e60b656c6",
+      "commit_basis": "edit",
+      "note": "s64 and s65 now require the census harness to take the revision and log path per arm: each arm builds its own worktree at its revision and writes its own log, so head and base are measured at different revisions",
+      "reason": "",
+      "when": "2026-11-15T14:06:46.868187+00:00"
+    },
+    "reasoning-2": {
+      "action": "acted",
+      "by": "1fb615a0-2801-4418-bbb4-c2914719e520",
+      "commit": "5e7cfda7485bf3ae44a559d8ca69d72e60b656c6",
+      "commit_basis": "edit",
+      "note": "the shared Why now gives the per-tick tracemalloc peak as 0.2 to 3.3 GB, above 1.6 GB in four of the six ticks, matching the cited figures",
+      "reason": "",
+      "when": "2026-11-15T14:06:59.511540+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/Code/reckon/docs/state/reckon/reviews/plan/the-monitor-reads-each-fact-once/r-20261115T134304094689-plan-review-of-the-monitor-reads-each-fact-once.json",
+  "review_run_id": "r-20261115T134304094689-plan-review-of-the-monitor-reads-each-fact-once",
+  "reviewed_blob_sha": "a96c91cb66215eead89f123a0a582f128c1622c9",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `0e9a52e542` resolves as a commit, `tests/test_a_pointer_reads_only_its_runs_records.py` and `census/run_census.sh` exist, and `review_run_record_names`, `run_names`, `_index_maps`, `_document_index_maps`, `station_store.ingest_stream` and `json/decoder.py raw_decode` all resolve at head.",
+    "done_when": "a finding \u2014 s63's first done-when item (`git grep run_names reckon/` at head finds nothing) cannot hold at any head, because the substring matches identifiers this section does not ask to change.",
+    "evidence_paths": "pass \u2014 s64's and s65's arm logs sit under the run directory, and the census harness and its logs sit under `~/.config/reckon/crew/runs/r-20261115T101152745611-a-census-names-what-holds-the-stations-memory/census/`; all durable.",
+    "naming": "pass \u2014 the new test files name behaviour (`test_a_tick_hands_its_freed_memory_back`, `test_a_tick_decodes_only_what_changed`), and no plan label, stage name or ticket number reaches a symbol or a comment.",
+    "reasoning": "a finding \u2014 s64's and s65's two-arm census measure is not reachable from the instrument the sections name, and s64's stated per-tick allocation range contradicts the peaks it cites.",
+    "single_goal": "pass \u2014 each unit carries one deliverable: one per-run grouping (s63), memory handed back per tick (s64), an incremental decode (s65).",
+    "wiring": "pass \u2014 s63's declared depends-on s65 resolves to an existing section, and both write `reckon/crew/review_records.py`, where s65's incremental index read lands first; s64 and s65 need no other section's product because s62 writes no product source and its census logs already exist at the cited run path."
+  },
+  "section_digests": {
+    "_document": "f63cc809627ea31535bace7f84cfe82f2cff32647c6da5195819defae360d5e8",
+    "s1": "bd759b66b2b75254305e473bf6b8af6218ef25d95b0db1638ed2668f0cdd9441",
+    "s10": "d21f2adf110c82d39fa9834752ac3f47dba7ac886c59cfd85feb23c1e8d1003f",
+    "s11": "9e8b94316ed45fc2103d1edc216fbb0dd3862f559824ad1c43299b305a3af6bd",
+    "s12": "21fc271f915167db3cca4f7d0eee1f4553b5dec7b96127d71d294e5ae242bc02",
+    "s13": "3b11fe0cd53015121e6d566c554c6c77b13236b3700a90279e77a6bc755ea0a3",
+    "s14": "5f6675ba84aab4ad594b121e888aace2d69e497390559d38f0c220e5894ac588",
+    "s15": "efa38c205c7332a7867b6d87358cd9f89fe1568beaa9f9e5eee96862dd70b6f0",
+    "s16": "65cd8e559a7a5ebf018bc9fe50a07bb0954f67405ab6f17c7377c38ccd363aa7",
+    "s17": "1dee50822a308fa4eeea0a45fd3cdaf6de52d9a1d74a91c2b9c7605d179da2ad",
+    "s18": "ba63c0b1b83ec93cc99d92a3c1f67dcf92d700e20f4f9acd88362705d6b4d123",
+    "s19": "16239e5fae49e56b170433557a77981816880756e3ae545a741ca9ec70feae63",
+    "s2": "e0f306f01b1530661ef28be3f19592348c45f24e7826567d58a2f0a4f79dd284",
+    "s20": "d14d2b70bb40dd552f306726f24f5e3c79bc5efcd7f9b74bcb7d3de8f16f5e8e",
+    "s21": "9ff7b29b83f9c8ab95a0a469c997950ef226fc3d99d8dcffdbf0683df7a1f26c",
+    "s22": "1bdc9ac90396c56bcbcc8c3c4f44aa6b30cbd59c4da001825159a7b8245e054c",
+    "s23": "a810ffe181d2787722d8f9538a4348592269fe163ba23cc59939376cb13edcbb",
+    "s24": "e861dcc5044a0a1fb36c4a374ca71717aeb97054e5a3ff1aef57c9779c7147f5",
+    "s25": "a0939bd3d8ab0fa4b5c0c88de3cb9cdab3531338fe35d0c12b4338fc3c4d1563",
+    "s26": "a8fb9d8585830b87ed826347ff724ddecc8fb9a43ad9ac1540d6499e3689d03e",
+    "s27": "3c9e47dc777eeadabbe3898d4b8f69d91defbaff009d050f2906732cb87e50c8",
+    "s28": "982b473728d61b81a3d37050384bee85f3f1fb5366aad0668c5370a51367e82c",
+    "s29": "159b45ee319dc13bffea961474eb544e5a26d161bf686ebe5b7fabf95f5266c7",
+    "s3": "f42c4644817feac0c199cd8510d2e284079b1c8fb777c7b79ced63531a8d983f",
+    "s30": "2d8c9efccd4f8eeede43f5fabe6f6b9cacc2207ce97ca700584bfedd0e512dd2",
+    "s31": "27817d420beefc15258f2f52ea8c616f3e04b4035773fe437f6cfe7f31506100",
+    "s32": "836f1473b1691ab0150f1e32791c295f7511abd66cb29f93b48dc0d347998d51",
+    "s33": "39a7d7a43bc6e97cd0c11235cfbe6c06a5b6968dab69e8147978bd164bbfef4e",
+    "s34": "16da5de7a5c4ee31ac2d9a43b888bed8fb1ec1138a2194a35c9b8eacbf03a2b1",
+    "s35": "4a0acdec0fa4d9eaa1066ee46c8a4aec8079db0452d014a442005e104c03c2cc",
+    "s36": "2a4a0d6ab4a994e2d7542482f7b44d106ab0920143bf39d14b292c7c2ec02e8a",
+    "s37": "4d92cdfe9ba1661dc549241d07f5134250aedec9d46757600f427fc52c4741dd",
+    "s38": "2cd435157dcdf14e39d4dbcd90e98b171feba9df13c5e142e0edf0d8fd4a3bf5",
+    "s39": "8808ed4531ebe4589c1b5bb7c7b0e5644b141d532a6dcc3fef92ae640e08d57c",
+    "s4": "c98e197194f43124e5a982992370bf1c08593aa17fb304787a4d7b87f42a0107",
+    "s40": "444368fd31b2649852412e7533de8628a94071d7942154f1a75921b923006779",
+    "s41": "b1092da2f507a79ce2706ec4aa2660d53c3b5250d4790b92d2dcd190f4387e17",
+    "s42": "ef98f2534552feb3a2ebf8768c6fcb43355940cef2804ddc7c77c6917785de19",
+    "s43": "0ca81d067129f3af34ec2d359c605e716be1488a1545039d936cdb1c7bbee2ec",
+    "s44": "2f0b0e686cace2db876cf00fcfaf9bb695e130bf88094a901ff7e7808b059cfc",
+    "s45": "d69c6ab4c51eb99b6262547a934d3cadb8896d272251707771027d8dacb77bcb",
+    "s46": "15bf3fae7afcff6c9b316fb4d28bd070c2190192e9b9b5c3711b26f9dbc4895f",
+    "s47": "de3c85d7297232abbe6767af5f61b6546c68c206440469f03779df09dfe9c21f",
+    "s48": "c0407ba2af0106d21163a3e1ba1bcd7ea34373211a81f3c100d623def503ec70",
+    "s49": "244b3877f19c81d81c7fda520bf6bbf2ff2d74a6a23a463bc92b50fe0b2043e0",
+    "s5": "0329936ec702c07e4a2ef8c756961740635d0dd8c7a1d14646983f1c32f09790",
+    "s50": "1c953bda33cda6d81de9479ed929ef63b0796d3c593d23de08c5f4568449f544",
+    "s51": "dbea6dee91f6029d698f151362338fc42e7401db7c931fc9d87fada7c147fcbb",
+    "s52": "b35a6850269241b61ee3a2475ddb65e655481cf4051d580fb5402d19c1987d7a",
+    "s53": "d111daeb509976a72469123f1120b1d17d21c31ad0191760a8a3985623cb5d2c",
+    "s54": "00b9abf2130abb2999241ac6fd7315689fb0e33781634dd2dcc8a999e79a14cf",
+    "s55": "7c24db1096ad617ece378da333eb9b5e0ad8683c0dcf50f8834799b84ae1678a",
+    "s56": "60d073a3c86cef44d7cfdd7668cdab4ef60b8a9294237d2a8c26a7eb67f133cb",
+    "s57": "15a5aef3aac1c6e45bcbd001839d877449601748d48d6db3e47cfeb95e11d5f8",
+    "s58": "28953bb14404136c2573a3fdda96ed6a09cbb9317247c6999a20a2f6c474fda3",
+    "s59": "9994e27964e5588275320f6f6a965720e2c81d5ddf8a4e4f7fc08b5b4302961b",
+    "s6": "1f19e9f8c46bc0674347ba5a3c97588b846d125a5fbcf9533e8a5a3f9ec00bb6",
+    "s60": "4ac84162bc4236319ae405ae0c32937368b1339bcdee0178933b853401835a8e",
+    "s61": "36791e828ea3dd92554e24d83bef4d15f4eedbf54747aeb392f00d692b248a5f",
+    "s62": "de4be6e1dcda58963d4b6bcc718b61639a4e3824bc5bb398f37aa7393b796acf",
+    "s63": "f1accb37758dc49ecfa3bd7a5fab7937e7328bd29937b3866d896f38e6f0ab2a",
+    "s64": "757ff048e41ae76b04dbd2fd8f5e3fe3ade7a8b24372ebabad63fb5dd978e638",
+    "s65": "b14b5480471c10c98420ea6ded6caa8501378aa196ecb9445f8e45d258aa60e1",
+    "s7": "dff81fd58ae3afef69063faed237df9bb4056bdb98556a1e5a053e6807ae3d16",
+    "s8": "4a70cad80d8613feb4b30861587298ff1109616ba9a35992821009274f17ae3f",
+    "s9": "8597fbe3fc93694e846c364272c698acf84b09466b4798491eb74279d62cef1d"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-15T13:56:20.895559+00:00",
+  "total": null
+}

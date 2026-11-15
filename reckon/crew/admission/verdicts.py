@@ -38,8 +38,16 @@ def _verdict_row(
     detail: str = "",
     retry_at: str = "",
     failure: str = "",
+    launch_seconds: float | None = None,
+    slowest_step: str = "",
+    slowest_step_seconds: float | None = None,
 ) -> dict[str, Any]:
-    """One queued pointer's verdict for a pass, as the log records it."""
+    """One queued pointer's verdict for a pass, as the log records it.
+
+    A launched row carries what the launch cost: its duration and the step of
+    it that took longest, so a pass that ran long says which launch and which
+    of its steps to look at rather than only that it was slow.
+    """
     row: dict[str, Any] = {
         "run_id": str(pointer.get("run_id") or ""),
         "session": str(pointer.get("session") or ""),
@@ -53,6 +61,12 @@ def _verdict_row(
         row["retry_at"] = retry_at
     if failure:
         row["failure"] = failure
+    if launch_seconds is not None:
+        row["launch_seconds"] = launch_seconds
+    if slowest_step:
+        row["slowest_step"] = slowest_step
+    if slowest_step_seconds is not None:
+        row["slowest_step_seconds"] = slowest_step_seconds
     return row
 
 
@@ -375,11 +389,14 @@ def _pass_verdict_record(
         "release_seconds": result.get("release_seconds"),
         "waits_seconds": result.get("waits_seconds"),
         "launch_seconds": result.get("launch_seconds"),
+        "launch_budget_seconds": result.get("launch_budget_seconds"),
+        "launch_budget_exhausted": bool(result.get("launch_budget_exhausted")),
         "land_seconds": result.get("land_seconds"),
         "lane": lane,
         "code_stamp": code_stamp,
         "gate": result.get("gate"),
         "admissible_age_seconds": result.get("admissible_age_seconds"),
+        "roles": result.get("role_cadence"),
         "stalls": list(result.get("stalls") or ()),
         "pointers": list(verdicts),
         "retired": list(result.get("retired") or ()),

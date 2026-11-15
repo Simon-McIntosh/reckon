@@ -405,6 +405,9 @@ def test_an_exported_snapshot_with_a_stale_heartbeat_names_its_age(
         store, project=PROJECT, home=config_home / "crew", now=long_ago
     )
     store.close()
+    # The export must be the session's only source here: a current snapshot
+    # of the session's own is served in preference to a stale export.
+    obligation_snapshot.snapshot_path(PROJECT, SESSION).unlink(missing_ok=True)
     elsewhere = tmp_path / "elsewhere"
     elsewhere.mkdir()
 

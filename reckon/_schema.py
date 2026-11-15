@@ -1402,6 +1402,17 @@ class PlanState(BaseModel):
             return "mid"
         return v
 
+    @field_validator("archived", "read", mode="before")
+    @classmethod
+    def _norm_flag(cls, v: Any) -> Any:
+        # A visibility flag is stored as the meta string "1", and a caller
+        # writing it through a JSON op naturally spells it as a boolean. Both
+        # spellings mark the same file, so the boolean canonicalises here
+        # rather than being refused as the wrong type.
+        if isinstance(v, bool):
+            return "1" if v else None
+        return v
+
     @field_validator("type", mode="before")
     @classmethod
     def _norm_type(cls, v: Any) -> Any:

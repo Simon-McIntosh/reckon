@@ -1,0 +1,198 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-review-dies-where-nobody-is-looking">
+  <meta name="plan-title" content="A local worker compacts and continues instead of dying">
+  <meta name="plan-summary" content="One local worker was given a synthetic corpus larger than the lane's usable window and told to read it in eight staged parts, writing one planted checksum after each. Its stream carries six automatic compaction boundaries, each firing near 200 000 tokens against a declared usable window of 230 144, and the worker recovered all eight checksums and finished with a complete manifest. The positive arm of the plan's measure is met on this lane: a local worker compacts and continues rather than dying at the boundary.">
+  <meta name="plan-evidence-for" content="a-review-dies-where-nobody-is-looking">
+  <meta name="plan-recorded-at" content="2026-11-15">
+  <meta name="plan-verdict" content="passed">
+  <title>A local worker compacts and continues instead of dying | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <h1>A local worker compacts and continues instead of dying</h1>
+
+    <section id="a-local-worker-compacts-and-continues-measured-question">
+      <h2>The question</h2>
+      <p>The local lane is expected to compact a conversation that approaches its window and carry on,
+        and nothing in this repository had shown it doing so on this lane at this window. This node
+        dispatched one local worker whose task is designed to exceed the lane's usable window partway
+        through — a synthetic corpus of eight parts, 2 000 lines and roughly 55 000 tokens each, read in
+        order with a small written result after each part — and recorded what the run did at the
+        boundary.</p>
+      <p><strong>Result: the worker compacted and continued.</strong> The run's own stream carries six
+        <code>compact_boundary</code> records. The worker wrote its opening result before the first of
+        them and its closing result after the sixth, all eight of its recorded checksums equal the values
+        planted in the corpus, and the run ended by writing a complete manifest rather than by dying at
+        the boundary.</p>
+    </section>
+
+    <section id="a-local-worker-compacts-and-continues-measured-setup">
+      <h2>The probe</h2>
+      <p>The worker is its own probe: no second dispatch, no sub-agent, no background task. Its brief
+        told it to read the corpus parts in order and append one line per part holding that part's
+        planted checksum, and the corpus was built so that the anchors could be obtained only by reading
+        it. Part <em>NN</em> carries, at file line 1 000, a line naming <code>CHECKSUM-NN</code>; the
+        eight expected values live in a separate file the worker compared against only when it finished.</p>
+      <ul>
+        <li>lane: <code>clive</code>, model <code>deepseek-v4.1-flash</code>, effort xhigh, time budget 90 minutes</li>
+        <li>declared window: <code>effective_input_window</code> = <code>usable_input_window</code> = 230 144 tokens</li>
+        <li>corpus: 8 parts × 2 000 lines, about 222 KB and 55 000 tokens per part, about 440 000 tokens in total</li>
+        <li>results: <code>measure/probe/results/0-before.txt</code>, <code>readings.txt</code>,
+          <code>9-after.txt</code> and <code>compactions.txt</code>, all under the run directory</li>
+      </ul>
+      <p>Reading was done with the file-read tool only. Reading the corpus through a shell tool (grep,
+        sed, head, wc, python) would have defeated the measurement, and the brief said so: the reading is
+        what grows the conversation.</p>
+    </section>
+
+    <section id="a-local-worker-compacts-and-continues-measured-boundaries">
+      <h2>Six compactions, all automatic</h2>
+      <p>Each boundary is a stream record of type <code>system</code>, subtype
+        <code>compact_boundary</code>, triggered <code>auto</code>. The turn column counts the assistant
+        records preceding that boundary in the same stream, so it is the worker's conversation depth, not
+        wall clock.</p>
+      <table>
+        <thead>
+          <tr><th>#</th><th>stream record</th><th>turn</th><th>before [tokens]</th>
+            <th>after [tokens]</th><th>dropped, cumulative</th><th>duration [s]</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>1</td><td>6 060</td><td>82</td><td>200 840</td><td>30 955</td><td>169 885</td><td>255.2</td></tr>
+          <tr><td>2</td><td>6 469</td><td>102</td><td>203 860</td><td>28 495</td><td>345 250</td><td>160.1</td></tr>
+          <tr><td>3</td><td>7 187</td><td>127</td><td>200 160</td><td>26 958</td><td>518 452</td><td>167.2</td></tr>
+          <tr><td>4</td><td>7 528</td><td>141</td><td>196 889</td><td>23 833</td><td>691 508</td><td>139.8</td></tr>
+          <tr><td>5</td><td>7 715</td><td>157</td><td>205 512</td><td>21 052</td><td>875 968</td><td>187.3</td></tr>
+          <tr><td>6</td><td>7 788</td><td>169</td><td>200 181</td><td>24 247</td><td>1 051 902</td><td>167.1</td></tr>
+        </tbody>
+      </table>
+      <p>Every boundary compresses the conversation down to between 21 052 and 30 955 tokens, and every
+        boundary fires between 196 889 and 205 512 tokens — at 86–89 % of the declared usable window.
+        Between 24 632 and 33 255 tokens of the declared window therefore go unused at each
+        compaction: 24 632 at the fifth boundary, whose pre-token count is the largest, and 33 255 at
+        the fourth, whose pre-token count is the smallest. That is the
+        same operating point the pre-existing census of the local lane found (median 197 386 tokens
+        across 190 boundaries in 164 streams), so these six boundaries are ordinary for the lane and not
+        an artefact of the probe.</p>
+      <p>Each compaction also announces itself first: five to nine <code>system</code>/<code>status</code>
+        records carrying <code>status: compacting</code> arrive immediately before each boundary. The
+        announcement and the boundary are separate records, and the gap matters — the same census found
+        two local streams that announced a compaction and recorded no boundary, and those are the streams
+        that died.</p>
+    </section>
+
+    <section id="a-local-worker-compacts-and-continues-measured-readings">
+      <h2>Results written either side of the boundary</h2>
+      <p>Each reading is the planted checksum of one corpus part, appended with the UTC time of the
+        append and matched to the stream position at that moment. The measured thing is not that the
+        worker put text on disk; it is that the checksum it reported is the value planted at file line
+        1 000 of a part it could only have read. Eight of eight match.</p>
+      <table>
+        <thead>
+          <tr><th>reading</th><th>checksum</th><th>recorded at</th><th>stream position</th>
+            <th>between compactions</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>0-before</td><td>—</td><td>01:45:49Z</td><td>before any read</td><td>before 1</td></tr>
+          <tr><td>part-01</td><td><code>6A07BB91C39265BC</code></td><td>01:57:51Z</td><td>6 197</td><td>1 and 2</td></tr>
+          <tr><td>part-02</td><td><code>B4FB8129F9E2E0A1</code></td><td>02:01:11Z</td><td>6 434</td><td>1 and 2</td></tr>
+          <tr><td>part-03</td><td><code>6512EA7E7C209BBF</code></td><td>02:09:38Z</td><td>7 006</td><td>2 and 3</td></tr>
+          <tr><td>part-04</td><td><code>D689FD5E0CD22F8A</code></td><td>02:22:05Z</td><td>7 434</td><td>3 and 4</td></tr>
+          <tr><td>part-05</td><td><code>255D421A39E787C7</code></td><td>02:29:36Z</td><td>7 665</td><td>4 and 5</td></tr>
+          <tr><td>part-06</td><td><code>D2DE1641B5263AB4</code></td><td>02:33:28Z</td><td>7 699</td><td>4 and 5</td></tr>
+          <tr><td>part-07</td><td><code>FDF62D6D56A37048</code></td><td>02:39:46Z</td><td>7 756</td><td>5 and 6</td></tr>
+          <tr><td>part-08</td><td><code>BA786A18BDD2EACC</code></td><td>02:47:14Z</td><td>7 805</td><td>after 6</td></tr>
+          <tr><td>after</td><td>—</td><td>02:47:54Z</td><td>7 845</td><td>after 6</td></tr>
+        </tbody>
+      </table>
+      <p>Three of the six compactions landed <em>inside</em> a part rather than between two: boundary 1
+        between page reads of part-01, boundary 3 between page reads of part-04, boundary 5 between page
+        reads of part-07. Two more landed between a part's last page and the append that recorded it
+        (boundary 4 after part-05, boundary 6 after part-08), and one fell between two parts
+        (boundary 2, between the part-02 append and the first part-03 page). The worker resumed inside a
+        part from the retained context each time: the reading of a part that straddled a boundary still
+        produced that part's correct checksum.</p>
+    </section>
+
+    <section id="a-local-worker-compacts-and-continues-measured-figure">
+      <h2>Figure</h2>
+      <figure>
+        <img src="/reckon/figures/a-review-dies-where-nobody-is-looking/a-local-worker-compacts-and-continues-measured/compaction-drops.svg"
+             alt="Six vertical drops in context size at stream records 6 060 to 7 788, each from about 200 000 tokens down to between 21 000 and 31 000, with a dotted line at the declared usable window of 230 144 tokens above them">
+        <figcaption>Context size either side of each of the six compactions in one local worker's
+          stream. Closed marks are the size immediately before the boundary, open marks the size
+          immediately after; the dotted line is the declared usable window of 230 144 tokens, which no
+          compaction reached within less than 24 632 tokens.</figcaption>
+      </figure>
+      <p>The figure is drawn by <code>plot_compaction_drops.py</code> from the run's own stream, not
+        by hand from the table, so it cannot drift from the data. The x axis spans only the records
+        the compactions occupy, stream records 5 950 to 7 900, so the six boundaries fill the plot
+        rather than being squeezed into its right-hand quarter. Every label — both axis titles, the
+        tick values, the window annotation and the two direct labels — is emitted as glyph
+        outlines rather than as live text, so the file carries its wording inside itself and a
+        renderer that holds none of the plotting library's fonts still draws all of it. The
+        drawing script refuses to save a file containing a text element for that reason.</p>
+    </section>
+
+    <section id="a-local-worker-compacts-and-continues-measured-scope">
+      <h2>What this supports, and what it does not</h2>
+      <p>It supports the positive arm of the plan's measure on this lane at this window: a dispatched
+        worker whose task outgrows the window compacts mid-task and carries the task through to a
+        complete manifest, with results on both sides of every boundary. The death arm the plan
+        describes is not exercised here — no boundary was reached without a following boundary, and the
+        stream's last record at the time of writing is an assistant record rather than a terminal error.
+        The census above is where that arm's evidence lives: 125 of 164 boundary streams reached a
+        <code>result</code> record, and two announced a compaction without recording a boundary. Those
+        two do not share a terminal signature, and the difference is the datum the death arm turns on:
+        <code>r-20261018T192200408612-review-of-tcv-liuqe-known-answer</code> stops with a
+        <code>system</code> record of subtype <code>status</code>, while
+        <code>r-20260926T195126315924-resume-offer-needs-a-dead-process</code> reaches a
+        <code>result</code> record carrying <code>is_error: true</code> and the text
+        <em>Prompt is too long</em> — its census row records <code>last_type: result</code>. A reader
+        building the RCA from the census must therefore read each row's own terminal record rather
+        than generalise one stream's signature to the other.</p>
+      <p>Two limits on the reading. The task writes a result after every part, so this run shows that
+        results already on disk survive a boundary; it does not show what happens to a manifest that is
+        still unwritten when the boundary arrives. And the corpus is synthetic and homogeneous — plain
+        sequential reading — so the run does not measure how a conversation carrying many tool results
+        of varied shape compacts.</p>
+    </section>
+
+    <section id="a-local-worker-compacts-and-continues-measured-artifacts">
+      <h2>Logs and artifacts</h2>
+      <p>Everything below is under the run directory
+        <code>r-20261114T205719669237-a-local-worker-compacts-and-continues-measured</code>, and every
+        log begins with its revision and the literal command that produced it and ends with an
+        <code>EXIT=</code> line.</p>
+      <ul>
+        <li><code>measure/probe/results/readings.txt</code> — one line per part, plus the closing line</li>
+        <li><code>measure/probe/results/compactions.txt</code> — the six boundaries with their stream
+          indices, turn counts, token sizes and durations, and the reading-to-boundary mapping</li>
+        <li><code>measure/probe/results/0-before.txt</code>, <code>9-after.txt</code> — the opening and
+          closing marks</li>
+        <li><code>measure/corpus/part-01.txt</code> … <code>part-08.txt</code> and
+          <code>expected-checksums.json</code> — the corpus and its planted values</li>
+        <li><code>measure/compaction-census.json</code> and <code>measure/census.log</code> — the
+          lane-wide census this node ran, and the log of that one run: its header carries the revision
+          and the literal command, which walks the whole crew runs root, and it ends with
+          <code>EXIT=0</code></li>
+        <li><code>stream.jsonl</code> — this run's own stream, the instrument</li>
+        <li><code>docs/figures/a-review-dies-where-nobody-is-looking/a-local-worker-compacts-and-continues-measured/check_compaction_evidence.py</code>
+          — re-derives every number in this fragment from the run directory and exits non-zero when
+          one disagrees; run it as <code>python3 check_compaction_evidence.py &lt;run-dir&gt;</code></li>
+        <li><code>docs/figures/a-review-dies-where-nobody-is-looking/a-local-worker-compacts-and-continues-measured/plot_compaction_drops.py</code>
+          — draws the figure above from the same stream, over the compacting span only, emitting
+          every label as glyph outlines, and refusing to save if a label is clipped, if two labels
+          overlap, or if the file carries a live text element</li>
+      </ul>
+    </section>
+  </main>
+</body>
+</html>

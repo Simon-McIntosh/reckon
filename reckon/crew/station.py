@@ -19,6 +19,7 @@ from reckon import checkout_trust, flight
 from reckon.crew import (
     census,
     dispatch_claims,
+    follower_registration,
     follower_reload,
     obligation_snapshot,
     recovery,
@@ -58,6 +59,22 @@ SWEEP_CONCURRENCY = 4
 # no session of its own, so it takes the shared slot a hand-run pass uses
 # rather than a follower's per-session entry.
 SWEEP_WRITER = {"kind": "other", "key": "station"}
+
+# How often the station clears follower registrations whose session has ended.
+# A released registration is dead as soon as its follower exits, so an hourly
+# pass bounds a registry that otherwise grows by one file per session that ever
+# followed a project. The pass opens every registration in every project to take
+# its lock, which is too much for the five-second beat, so the station records
+# when it last ran rather than reusing a single session's change signal: no
+# session's departures are what make a registry grow.
+FOLLOWER_PRUNE_BEAT_SECONDS = 60 * 60
+
+# How old a released registration must be before the station removes it. The
+# lock, not the age, is what keeps a delivering follower: a follower armed in
+# the morning and still delivering at night survives whatever its file says. The
+# day keeps a session that released and re-armed moments later, as at a
+# re-exec, from being removed between the two.
+FOLLOWER_REGISTRATION_RETENTION_SECONDS = 24 * 60 * 60
 
 
 class StationHeldError(RuntimeError):
@@ -767,6 +784,20 @@ def station_lease(root: Path) -> HostLease:
 #: The station value under which each project's announced reset ids are kept.
 _ANNOUNCED_RESETS_KEY = "announced-resets"
 
+#: The station value holding when the follower registries were last pruned.
+_FOLLOWER_PRUNE_KEY = "followers-pruned-at"
+
+
+def _reload_note(message: str) -> None:
+    """Write one reload decision to the station's log.
+
+    A reload that holds, defers or fires changes which code the whole fleet's
+    monitor runs, and a station that never reloads looks exactly like one that
+    reloaded onto code that did not help. Each decision is therefore written
+    where the station's own failures already go.
+    """
+    print(f"station-reload: {message}", file=sys.stderr, flush=True)
+
 
 class StationReloader:
     """Replace the station with a proved image from the node's runtime root."""
@@ -836,6 +867,10 @@ class StationReloader:
         now = time.monotonic()
         if self._held_since is None:
             self._held_since = now
+            _reload_note(
+                "holding a due reload until the derivations in flight land, "
+                f"for at most {RELOAD_HOLD_SECONDS:.0f}s"
+            )
         return idle or now - self._held_since >= RELOAD_HOLD_SECONDS
 
     def _replace(self, current: str) -> None:
@@ -845,11 +880,16 @@ class StationReloader:
         if not image.is_relative_to(self.runtime_root):
             os.close(pin)
             raise RuntimeError(f"station reload image escaped runtime root: {image}")
-        imports, _reason = checkout_trust.reckon_imports(image)
+        imports, reason = checkout_trust.reckon_imports(image)
         if not imports:
             self.deferred_identity = current
             os.close(pin)
+            _reload_note(
+                f"deferred the reload to {current}: its image does not import "
+                f"({reason}); the station keeps running {self.identity}"
+            )
             return
+        _reload_note(f"re-executing from {self.identity} onto {current}")
         environment = follower_reload.image_reexec_environment(
             self.source_root, current, pin
         )
@@ -881,6 +921,7 @@ class Station:
         sweeps: SweepBeat | None = None,
         duties: DutyBeat | None = None,
         reflex_beat_seconds: float = REFLEX_BEAT_SECONDS,
+        maintenance: Any | None = None,
         clock: Callable[[], datetime] | None = None,
     ) -> None:
         self.store = store
@@ -888,6 +929,10 @@ class Station:
         self.projects = projects
         self.stall_seconds = stall_seconds
         self.clock = clock or (lambda: datetime.now(tz=UTC))
+        # The schedule that keeps every managed repository packed. ``None``
+        # leaves it off, which is what a test driving one tick wants: a pass
+        # submits a scheduler job, and only the long-running service does that.
+        self.maintenance = maintenance
         # Each project's duties are derived on a worker of its own, so a long
         # derivation never holds the next tick's phase transitions back.
         self.duties = (
@@ -979,6 +1024,48 @@ class Station:
         self.store.set_station_value(
             f"{_ANNOUNCED_RESETS_KEY}:{project}", json.dumps(sorted(announced))
         )
+
+    def _prune_released_followers(self, moment: datetime) -> list[dict[str, Any]]:
+        """Remove each project's registrations for sessions that ended long ago.
+
+        Called from the tick's maintenance stage, never from a read path: the
+        sweep takes each registration's lock before unlinking it, and doing that
+        on a read path races a follower opening the same path. The sweep's own
+        non-blocking lock is the liveness check — a held lock means a follower
+        is delivering now, whatever its file's age — so only a registration
+        feeding an ended session and older than a day is a candidate at all.
+
+        The registries grow one file per session that has ever followed a
+        project, which no single session's change announces, so the pass is due
+        on the station's own hourly clock rather than on a fleet change.
+        """
+        last = self.store.station_value(_FOLLOWER_PRUNE_KEY)
+        if last is not None:
+            try:
+                since = moment.timestamp() - datetime.fromisoformat(last).timestamp()
+            except ValueError:
+                since = None
+            if since is not None and since < FOLLOWER_PRUNE_BEAT_SECONDS:
+                return []
+        removed: list[dict[str, Any]] = []
+        for project in sorted(self.projects()):
+            removed.extend(
+                follower_registration.sweep_released_followers(
+                    project,
+                    stale_after_seconds=FOLLOWER_REGISTRATION_RETENTION_SECONDS,
+                    now=moment.timestamp(),
+                )
+            )
+        self.store.set_station_value(
+            _FOLLOWER_PRUNE_KEY, moment.astimezone(UTC).isoformat()
+        )
+        for entry in removed:
+            print(
+                f"station-pruned-follower: {entry['project']}/{entry['session']}: "
+                f"{entry['path']}",
+                flush=True,
+            )
+        return removed
 
     @operational_read
     def tick(self, *, now: datetime | None = None) -> list[dict[str, Any]]:
@@ -1107,6 +1194,14 @@ class Station:
                 )
         self._enter(stages[4])
         self.store.sweep_retention(now=moment)
+        self._prune_released_followers(moment)
+        # The repositories this fleet manages are packed here rather than on a
+        # user timer: this cluster refuses lingering, so a timer stops at logout
+        # while the station runs for as long as the fleet does. The sweep holds
+        # its own hourly beat and submits a job per repository that is due.
+        if self.maintenance is not None:
+            for row in self.maintenance.run(self.projects(), moment=moment):
+                print(f"station-maintenance: {row}", flush=True)
         # The finish stamp is what closes the tick for a reader: until it is
         # later than the start, a stage on record is a tick still running.
         self.store.set_station_value(
@@ -1133,6 +1228,7 @@ def run_station(
     unless a caller asks for it: signalling a process is a destructive act, so
     no station run takes it as a side effect of starting.
     """
+    from reckon.crew import repository_maintenance
     from reckon.crew.dispatch_launch import _adopt_launched_workers_from_reexec
 
     _adopt_launched_workers_from_reexec()
@@ -1180,7 +1276,16 @@ def run_station(
         census_beat: CensusBeat | None = None
         station: Station | None = None
         try:
-            station = Station(store) if station_instance is None else station_instance
+            station = (
+                Station(
+                    store,
+                    maintenance=repository_maintenance.MaintenanceSweep(
+                        clock=lambda: datetime.now(tz=UTC)
+                    ),
+                )
+                if station_instance is None
+                else station_instance
+            )
             reloader = StationReloader(store.root)
             # Both threads start before the first tick, so a station whose
             # opening tick is slow is never read as one that never started, and

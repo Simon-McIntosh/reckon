@@ -165,6 +165,10 @@ def _complete_arguments(
     arguments = [
         "crew",
         "complete",
+        # The command queues a promotion by default and returns a receipt for a
+        # runner to drain; these cases read the verdict the promotion reached,
+        # so they ask it to run here rather than wait on the queue.
+        "--wait",
         "--run",
         run_id,
         "--gate",

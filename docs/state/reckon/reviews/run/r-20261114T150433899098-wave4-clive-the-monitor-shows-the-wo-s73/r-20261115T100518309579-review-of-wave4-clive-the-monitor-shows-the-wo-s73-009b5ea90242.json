@@ -1,0 +1,60 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "7ccec2dd4e2986e92c5ca480118d9aad26bb7397",
+  "call_sites": [
+    "reckon/crew/follower_reload.py:_FollowerReloader.poll"
+  ],
+  "call_sites_note": "the only production reach to the changed flag is the reloader's own poll loop; no other runtime module reads timeout_deferral or calls _clear_probe_retry",
+  "completed_at": "2026-11-15T10:45:23.699Z",
+  "dispatched_at": "2026-11-15T10:06:40Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "exempted",
+      "reason": "non-blocking; carried to the plan's next health review",
+      "recorded_at": "2026-11-15T10:55:44.897027+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "tests/test_a_reload_probe_timeout_is_not_a_broken_image.py",
+      "line": 139,
+      "severity": "non-blocking",
+      "summary": "an existing test was edited to match the new behaviour although the done_when's write paths name only the new test; the edit is necessary because that test asserted the reprint the fix removes"
+    }
+  ],
+  "head_log_revision": "009b5ea902423ea76df5b702e70c4d0a7bef7f42",
+  "justifications": {
+    "durability": "tests/test_a_reload_deferral_is_printed_once.py:134 asserts reprinted is empty, which would redden had the removed self.timeout_deferral reset at reckon/crew/follower_reload.py:434 been reinstated, as logs/negative-control.log records.",
+    "evidence": "logs/suite-baseline.log ends 1 failed, 56 passed, 2 errors EXIT=1 and logs/suite-after.log ends 1 failed, 61 passed EXIT=1, so added_failure_count is 0; logs/negative-control.log records the first case red with 3 reprinted lines when the reset is restored.",
+    "fit": "reckon/crew/follower_reload.py:186-204 keeps the surrounding method shape and keyword-only flag style, and no plan, ticket or version identifier appears in the added names or comments.",
+    "goal_fidelity": "reckon/crew/follower_reload.py:200-204 clears timeout_deferral only when answered is true, and both probe-answered callers around lines 455 and 468 pass it, which is the single-line-per-contiguous-run behaviour the done_when names.",
+    "reuse": "the change extends the existing _clear_probe_retry and timeout_deferral mechanism at reckon/crew/follower_reload.py:186 rather than adding a parallel deferral tracker; no second owner of that capability exists in the reloader family.",
+    "scope_discipline": "the diff touches reckon/crew/follower_reload.py, tests/test_a_reload_deferral_is_printed_once.py and tests/test_a_reload_probe_timeout_is_not_a_broken_image.py; the last is a pre-existing test the done_when's write paths do not name, although it asserted the reprint the fix removes."
+  },
+  "project": "reckon",
+  "review_run_id": "r-20261115T100518309579-review-of-wave4-clive-the-monitor-shows-the-wo-s73-009b5ea90242",
+  "reviewed_base_sha": "7ccec2dd4e2986e92c5ca480118d9aad26bb7397",
+  "reviewed_head_sha": "009b5ea902423ea76df5b702e70c4d0a7bef7f42",
+  "reviewed_run_id": "r-20261114T150433899098-wave4-clive-the-monitor-shows-the-wo-s73",
+  "reviewer_run_id": "r-20261115T100518309579-review-of-wave4-clive-the-monitor-shows-the-wo-s73-009b5ea90242",
+  "scores": {
+    "durability": 19,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 19,
+    "scope_discipline": 15
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-15T10:46:48.270227+00:00",
+  "total": 109,
+  "verdicts": {
+    "diff": "read all three commits against 7ccec2dd4e: fb25c51b46 changes the flag semantics and adds a 200-line test, c9044d3474 updates the older moved-stamp test, 009b5ea902 adds the 27-line evidence fragment.",
+    "done_when": "the done_when asks for one deferral line across three stamp moves with the import proof lock held, the reload then proceeding, and a later deferral printing its own line; tests/test_a_reload_deferral_is_printed_once.py:114-200 asserts those cases and the manifest records 3 passed.",
+    "goal": "the goal is to deliver plan section s73 of the-monitor-shows-the-work-it-watches as its done_when states, and reckon/crew/follower_reload.py:200-204 now keeps the deferral flag across a stamp move so a contiguous run prints once.",
+    "manifest": "read; it records status complete, three commits, the pytest gate command, 0 added failures across the population arms, and a red negative control log path.",
+    "write_paths": "read the source manifest and prompt: reckon/crew_follow_commands.py, the module that receives _FollowerReloader, and the new test; follower_reload.py falls under that second clause and the modified pre-existing test does not."
+  }
+}

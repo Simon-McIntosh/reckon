@@ -1,0 +1,123 @@
+<section id="qwnw-landing-judges-added-failures-and-reads-a-finish-landing">
+  <h2>A landing reads a suite by its delta and a repeat by its own request</h2>
+
+  <p><strong>What changed.</strong> Three landing readers decide on evidence the
+  run itself carries, and two of them were reading a narrower fact than the one
+  they needed.</p>
+
+  <p>An after-suite arm measured before a later commit was refused whenever the
+  head had moved, so a documentation or evidence commit after the measurement
+  invalidated an arm that still described the suite the head runs.
+  <code>reckon/crew/promotion_records.py</code> now asks what the commits
+  between the arm and the head <em>touch</em>: a Python file, anything under the
+  tests tree, or the pytest configuration files count as reaching the suite, and
+  a head that moved through none of them keeps its arm. The question is
+  deliberately conservative, because deciding it properly needs an import graph
+  this check does not carry, and an arm wrongly kept is a regression that lands,
+  so a diff that cannot be read keeps the refusal.</p>
+
+  <p>A dry run measured what a real landing would measure, submitting a
+  scheduler job and waiting on it. The suite-delta reader now reports
+  <code>would-measure</code> with the arms it is missing instead of running
+  them, and the declared negative control takes the same path: a run that kept
+  no log admitting its control is reported as one the landing would measure
+  rather than as one that failed.</p>
+
+  <p>A coordinator repeating a promotion request that was still queued received
+  the duplicate receipt and nothing else, so the repeat reported the same state
+  as the first call and left the promotion waiting on a drain that might never
+  come. <code>reckon/crew_run_commands.py</code> now carries that request out in
+  the call that found it, and the emitted outcome records
+  <code>"driven": true</code>. A repeat that finds its request terminal keeps the
+  receipt path, so nothing is promoted twice.</p>
+
+  <p>The request that call queues carried the command's whole local scope, and a
+  name the command binds without declaring — the phase it compares against —
+  rode along with it. The drain forwards every stored option as a keyword to
+  the command it re-runs, so each queuing completion left a request that raised
+  before reaching any guard, while the call that queued it returned zero. The
+  snapshot now keeps only the names the callback declares, read from its own
+  signature, so nothing bound beside the code can become a forwarded keyword.
+  The cases that cover it run the request rather than the flag: the repeat
+  reads the row it wrote and the settled request, and a second case takes what
+  the first queuing call left and drains it.</p>
+
+  <h3 id="qwnw-landing-judges-added-failures-and-reads-a-finish-measured">Measured</h3>
+
+  <table id="qwnw-landing-judges-added-failures-and-reads-a-finish-arms">
+    <caption>Every arm is a log whose head names its revision, tree and command
+    and whose last line reads <code>EXIT=&lt;code&gt;</code>.</caption>
+    <thead><tr><th>arm</th><th>revision</th><th>result</th></tr></thead>
+    <tbody>
+      <tr><td>gate (the node's three test files)</td>
+        <td>the revision this fragment lands on</td>
+        <td>12 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>negative control (the same three files at the plan's base)</td>
+        <td><code>a346fba4aa</code></td>
+        <td>6 failed, 6 passed, <code>EXIT=1</code></td></tr>
+      <tr><td>repair control (the queueing cases against the tree before the
+        repair)</td>
+        <td><code>aa3f4a6ec6</code></td>
+        <td>1 failed, 7 passed, <code>EXIT=1</code></td></tr>
+    </tbody>
+  </table>
+
+  <p>The gate runs the node's three test files:
+  <code>tests/test_a_landing_judges_the_head_by_its_suite.py</code>,
+  <code>tests/test_a_review_of_the_asserted_head_counts.py</code> and
+  <code>tests/test_an_evidence_only_node_lands_on_its_declared_check.py</code>,
+  12 cases in all. The negative control extracts the base revision to a scratch
+  tree, copies all three files in, and runs them against the base code: six of
+  the twelve fail there, including both halves of the paired base-and-head
+  failure — the arm is refused at the base whichever direction the delta
+  points, and the log is kept. The six that pass at the base are the cases
+  whose behaviour it already had: a code commit after the arm being refused,
+  the four review-at-head and evidence-only cases, and a queued request that
+  drains — so for those the node adds coverage, not a repair.</p>
+
+  <p>The repair control runs the queueing cases against the tree as it stood
+  before the repair: exactly one of them fails there, the case that takes the
+  request a queuing call left and runs it through the drain, and the message it
+  fails with is the one the drain raised.</p>
+
+  <h3 id="qwnw-landing-judges-added-failures-and-reads-a-finish-cases">Cases and what is covered</h3>
+
+  <ul>
+    <li>A head whose only failure is the id the base also fails measures zero
+    added, against a red base.</li>
+    <li>The same base with an id the head alone fails is refused, naming that
+    id.</li>
+    <li>A documentation commit after the arm leaves the arm standing; the same
+    shape with a code commit still refuses it.</li>
+    <li>A dry run names the arms it would measure and measures none; a control
+    the run kept no log for is named the same way.</li>
+    <li>A repeated <code>crew complete</code> carries the request its first call
+    queued, and the row it wrote and the request it settled are read from disk.</li>
+    <li>The request a queuing call left runs through the drain, which is the only
+    place a request that cannot run shows.</li>
+    <li>A delivered review of the asserted head is read while its own run is
+    still promotion-requested; an earlier head's review is named stale.</li>
+    <li>A node whose only change is its evidence lands on its declared check,
+    and is refused beside that check answering failure.</li>
+  </ul>
+
+  <p><strong>The two remaining cases.</strong> A delivered review of the
+  asserted head counts before its own run is promoted: the store reader selects
+  a record by the revision a review recorded reading and reads no phase of the
+  review run, so a review whose own request is still queued is evidence about
+  the diff being landed. The case stores both that record and an earlier head's
+  record — the earlier one written later, so a reader that took the newest file
+  would take the wrong one — and asserts the landing reads the asserted head
+  and names the earlier one as stale.</p>
+
+  <p>A node whose only change is its evidence names no test file, so no
+  baseline and after pair can measure it; the landing reads the check the node
+  declared instead, and the path that does so already existed at the plan's
+  base. The case delivers the fragment, passes its declared check and lands,
+  and its pair runs the same node beside the same check answering failure and
+  is refused — so the node lands because it meets its check, not because a run
+  with no test file is admitted whatever it says. Both of these cases pass
+  against the plan's base as well, which is what the negative control shows:
+  the node records them because nothing covered them, not because something
+  was broken.</p>
+</section>

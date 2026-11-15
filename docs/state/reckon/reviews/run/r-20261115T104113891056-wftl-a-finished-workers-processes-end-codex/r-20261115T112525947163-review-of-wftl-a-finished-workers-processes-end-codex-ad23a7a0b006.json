@@ -1,0 +1,157 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_analysis": [
+    {
+      "failure_condition": "The bounded wait fails when the predicate stays false until its deadline; replacing cleanup by the base lingering behavior produces that failure.",
+      "lines": "68-74"
+    },
+    {
+      "failure_condition": "Fixture positive control fails if any expected non-natural supervisor, harness, child or grandchild is already absent, preventing an empty population from proving cleanup.",
+      "lines": "147"
+    },
+    {
+      "failure_condition": "Fails if pointer write/read does not preserve the phase supplied by the test; it does not fail when only supervisor pointer observation regresses, as recorded in the finding.",
+      "lines": "178"
+    },
+    {
+      "failure_condition": "The wait fails if any initially observed process remains alive for 60 seconds; the separate /proc existence assertion fails if reaping leaves even a zombie after supervisor exit.",
+      "lines": "184-192"
+    },
+    {
+      "failure_condition": "Fails if the exit receipt is not explicitly attributed to the supervisor.",
+      "lines": "194"
+    },
+    {
+      "failure_condition": "Fails if adopted-descendant reaping replaces the harness identity with a child PID; restoring the first repair behavior before dd003bc triggers this risk.",
+      "lines": "195"
+    },
+    {
+      "failure_condition": "Fails when any expected harness or descendant that required intervention is omitted from ended_pids; the crashed harness is correctly excluded because the fixture killed it.",
+      "lines": "196-198"
+    },
+    {
+      "failure_condition": "Fails if the supervisor omits forced_exit or records a reason other than terminal-run; removing the new receipt propagation would fail here.",
+      "lines": "199"
+    },
+    {
+      "failure_condition": "Fails if the intervention receipt omits or misidentifies complete as the terminal phase; this asserts output provenance, whereas line 178 asserts only input setup.",
+      "lines": "200"
+    },
+    {
+      "failure_condition": "Fails if sender receipts contain no delivered signal outcome, even when a receipt file exists.",
+      "lines": "205"
+    },
+    {
+      "failure_condition": "Natural-exit positive control fails if supervisor or worker still runs after process.wait returns.",
+      "lines": "213"
+    },
+    {
+      "failure_condition": "Fails if a natural worker exit is recorded with a nonzero exit code.",
+      "lines": "215"
+    },
+    {
+      "failure_condition": "Fails if natural exit is recorded as having signalled processes.",
+      "lines": "216"
+    },
+    {
+      "failure_condition": "Fails if forced_exit is emitted unconditionally instead of only on intervention.",
+      "lines": "217"
+    },
+    {
+      "failure_condition": "Fails if a natural exit generates any sender log, independently checking the absence of signal activity.",
+      "lines": "218"
+    },
+    {
+      "failure_condition": "Fails if the supervisor never updates the natural worker pointer from starting to complete; this test does not itself write complete into the pointer.",
+      "lines": "219"
+    },
+    {
+      "failure_condition": "Fails if the override cap is removed and 3600 seconds is returned; the independent bound is the literal 60 seconds, while the component constants contribute a conservative timing budget rather than proving actual scheduling.",
+      "lines": "224-228"
+    }
+  ],
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew/supervisor_main.py:main",
+    "reckon/crew/dispatch_peer.py:_supervisor_command",
+    "reckon/crew/dispatch_launch.py:_run_supervisor",
+    "reckon/crew/dispatch_launch.py:_reap_the_launched_worker"
+  ],
+  "completed_at": "2026-11-15T11:33:03Z",
+  "dispatched_at": "2026-11-15T11:27:27Z",
+  "findings": [
+    {
+      "file": "tests/test_finished_worker_processes_end.py",
+      "line": "178",
+      "severity": "non-blocking",
+      "text": "non-blocking: this assertion reads complete immediately after the test supplied complete, while STAND_IN also supplies a complete manifest; removing the new pointer deadline at dispatch_launch.py:4811 would leave these assertions and the whole-tree cases satisfiable through manifest cleanup, so add a case with a terminal pointer and a nonterminal or absent manifest to protect pointer-only termination."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "read bc4aae395e624cff468fb956822e96b21077801f, dd003bc93b114dd852ac2b591b7fc772391ca8f5 and ad23a7a0b0062dfc41a3bd642b97474358540288 separately; changes are bounded supervisor cleanup, six behavioral cases and its evidence fragment.",
+    "done_when": "source prompt.txt:162 requires whole-tree termination, a natural-exit control, a reproduced base leak and a later fleet census; product-gate.log records 64 passed and negative-control.log records the one-minute leak, while the post-landing census remains pending.",
+    "goal": "source prompt.txt states that every launch process must end within one minute of terminal phase; reckon/crew/dispatch_launch.py:4811 and :5241 add the attempt deadline and descendant drain inside the existing supervisor.",
+    "manifest": "source manifest.md records three commits, 64 behavioral-gate passes, 58 passes in each armed arm, two reproduced leaks and the pending post-landing census, consistent with the receipts read.",
+    "write_paths": "source prompt.txt declares reckon, tests and the node evidence fragment directories; the three changed files in the exact base-to-head diff are inside those grants."
+  },
+  "justifications": {
+    "durability": "tests/test_finished_worker_processes_end.py:184 fails on retained process trees and :199 fails on absent forced-exit receipts, but :178 merely reads back the supplied phase and does not independently guard the new pointer-only cleanup branch.",
+    "evidence": "product-gate.log records 64 passed in 234.39s and negative-control.log records four surviving processes after 60 seconds, but source manifest.md:26 correctly leaves the required one-hour fleet census for after coordinator landing.",
+    "fit": "reckon/crew/dispatch_launch.py:4722 uses the existing read_pointer and _record_is_this_attempt mechanisms and :4927 retains the existing signal_worker owner with mechanism-based names.",
+    "goal_fidelity": "reckon/crew/dispatch_launch.py:4811 fixes a current-attempt deadline and :5241 carries it through descendant reaping, with real whole-tree tests at tests/test_finished_worker_processes_end.py:176 supporting the worker-executable goal.",
+    "reuse": "capability searches for terminal-phase handling, attempt matching, run signalling and process-test fixtures found the owners in reckon/crew/dispatch_launch.py:4308 and reckon/crew/process_signal.py:906, which the new helper wraps and the existing supervisor extends; the test-local observers deliberately remain independent of production liveness.",
+    "scope_discipline": "the exact diff changes only reckon/crew/dispatch_launch.py, tests/test_finished_worker_processes_end.py and the declared node evidence fragment, each covered by source prompt.txt scope grants."
+  },
+  "limitations": [
+    "No test was rerun during this read-only review; source receipts and assertions were read.",
+    "One-hour post-landing fleet census is pending coordinator landing and later observation.",
+    "Recorded armed suite pair covers census fixtures; behavioral coverage is supplied by the separately recorded product gate at dd003bc93b114dd852ac2b591b7fc772391ca8f5, whose source and tests are byte-identical at reviewed head."
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: source prompt.txt states that every launch process must end within one minute of terminal phase; reckon/crew/dispatch_launch.py:4811 and :5241 add the attempt deadline and descendant drain inside the existing supervisor.\nVERDICT done_when: source prompt.txt:162 requires whole-tree termination, a natural-exit control, a reproduced base leak and a later fleet census; product-gate.log records 64 passed and negative-control.log records the one-minute leak, while the post-landing census remains pending.\nVERDICT write_paths: source prompt.txt declares reckon, tests and the node evidence fragment directories; the three changed files in the exact base-to-head diff are inside those grants.\nVERDICT manifest: source manifest.md records three commits, 64 behavioral-gate passes, 58 passes in each armed arm, two reproduced leaks and the pending post-landing census, consistent with the receipts read.\nVERDICT diff: read bc4aae395e624cff468fb956822e96b21077801f, dd003bc93b114dd852ac2b591b7fc772391ca8f5 and ad23a7a0b0062dfc41a3bd642b97474358540288 separately; changes are bounded supervisor cleanup, six behavioral cases and its evidence fragment.\nCALL_SITES: reckon/crew/supervisor_main.py:main, reckon/crew/dispatch_peer.py:_supervisor_command, reckon/crew/dispatch_launch.py:_run_supervisor, reckon/crew/dispatch_launch.py:_reap_the_launched_worker\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/dispatch_launch.py:4811 fixes a current-attempt deadline and :5241 carries it through descendant reaping, with real whole-tree tests at tests/test_finished_worker_processes_end.py:176 supporting the worker-executable goal.\nSCORE evidence: 17\nJUSTIFICATION evidence: product-gate.log records 64 passed in 234.39s and negative-control.log records four surviving processes after 60 seconds, but source manifest.md:26 correctly leaves the required one-hour fleet census for after coordinator landing.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the exact diff changes only reckon/crew/dispatch_launch.py, tests/test_finished_worker_processes_end.py and the declared node evidence fragment, each covered by source prompt.txt scope grants.\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_finished_worker_processes_end.py:184 fails on retained process trees and :199 fails on absent forced-exit receipts, but :178 merely reads back the supplied phase and does not independently guard the new pointer-only cleanup branch.\nSCORE fit: 20\nJUSTIFICATION fit: reckon/crew/dispatch_launch.py:4722 uses the existing read_pointer and _record_is_this_attempt mechanisms and :4927 retains the existing signal_worker owner with mechanism-based names.\nSCORE reuse: 20\nJUSTIFICATION reuse: capability searches for terminal-phase handling, attempt matching, run signalling and process-test fixtures found the owners in reckon/crew/dispatch_launch.py:4308 and reckon/crew/process_signal.py:906, which the new helper wraps and the existing supervisor extends; the test-local observers deliberately remain independent of production liveness.\nFINDING tests/test_finished_worker_processes_end.py:178 non-blocking: this assertion reads complete immediately after the test supplied complete, while STAND_IN also supplies a complete manifest; removing the new pointer deadline at dispatch_launch.py:4811 would leave these assertions and the whole-tree cases satisfiable through manifest cleanup, so add a case with a terminal pointer and a nonterminal or absent manifest to protect pointer-only termination.\n",
+  "reuse_search": {
+    "production": "New _terminal_attempt_phase wraps read_pointer and the existing same-module _record_is_this_attempt; existing reaper and receipt functions are extended, and process signalling remains in process_signal.signal_worker.",
+    "test_definitions": "_running, _wait and launch/start implement independent fixture observation, bounded polling and a dedicated real-process setup; analogous local helpers exist in test_a_resumed_worker_is_not_ended_as_delivered.py:97 and :116, with no shared fixture owner found for this supervisor/tree contract."
+  },
+  "review_run_id": "r-20261115T112525947163-review-of-wftl-a-finished-workers-processes-end-codex-ad23a7a0b006",
+  "reviewed_base_sha": "5dae31ed3697400c2bd8f12b8057f977e017d863",
+  "reviewed_head_sha": "ad23a7a0b0062dfc41a3bd642b97474358540288",
+  "reviewed_run_id": "r-20261115T104113891056-wftl-a-finished-workers-processes-end-codex",
+  "scores": {
+    "durability": 17,
+    "evidence": 17,
+    "fit": 20,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "suite_evidence": {
+    "after_suite": {
+      "command": "PYTHONPATH=. /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T104113891056-wftl-a-finished-workers-processes-end-codex/after-suite.log",
+      "revision": "ad23a7a0b0062dfc41a3bd642b97474358540288"
+    },
+    "baseline_suite": {
+      "command": "PYTHONPATH=. /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T104113891056-wftl-a-finished-workers-processes-end-codex/baseline-suite.log",
+      "revision": "5dae31ed3697400c2bd8f12b8057f977e017d863"
+    }
+  },
+  "times_source": "run-record",
+  "timestamp": "2026-11-15T12:27:38.037217+00:00",
+  "total": 113
+}

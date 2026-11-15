@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from reckon.node_exclusive_lock import exclusive_lock
+
 from . import landing as _landing
 from . import release as _release
 from . import selection as _selection
@@ -17,7 +19,6 @@ from .shared import (
     Path,
     contextmanager,
     datetime,
-    fcntl,
     os,
     runs,
     sys,
@@ -40,14 +41,8 @@ def _admit_lock_path() -> Path:
 @contextmanager
 def _admit_lock():
     """Serialise two admission passes so one queued run launches once."""
-    path = _admit_lock_path()
-    path.parent.mkdir(parents=True, exist_ok=True)
-    with path.open("a+b") as handle:
-        fcntl.flock(handle.fileno(), fcntl.LOCK_EX)
-        try:
-            yield
-        finally:
-            fcntl.flock(handle.fileno(), fcntl.LOCK_UN)
+    with exclusive_lock(_admit_lock_path()):
+        yield
 
 
 def _admitting_pass_identity() -> dict[str, Any]:
@@ -57,7 +52,15 @@ def _admitting_pass_identity() -> dict[str, Any]:
     that loses its pointer can learn which pass launched it, on which process,
     from which checkout.
     """
-    return {"pid": os.getpid(), "at": _utc_now(), "code": _admit_code_stamp()}
+    import socket
+
+    return {
+        "pid": os.getpid(),
+        "pid_start_time": runs._process_start_time(os.getpid()),
+        "host": socket.gethostname(),
+        "at": _utc_now(),
+        "code": _admit_code_stamp(),
+    }
 
 
 def _admit_code_stamp() -> str:
@@ -260,7 +263,8 @@ def admit_until_stopped(
         worker.tick()
         promotions.tick()
         landing = worker.settle()
-        result = _selection.admit_once(**admission_options)
+        with runs.resolution_scope():
+            result = _selection.admit_once(**admission_options)
         ended = time.monotonic()
         result["release"] = release
         result["landing"] = landing
@@ -300,7 +304,8 @@ def admit_until_stopped(
                 promotions.tick()
                 release = _release._release_tick()
                 released = time.monotonic()
-                admitted = _selection.admit_once(**admission_options)
+                with runs.resolution_scope():
+                    admitted = _selection.admit_once(**admission_options)
                 ended = time.monotonic()
                 landing = worker.last
                 admitted["release"] = release

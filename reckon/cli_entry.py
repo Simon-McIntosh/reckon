@@ -370,10 +370,22 @@ def _configure_crew_guards(
 
 
 
+# Files a project's state directory carries that identify it as crew-managed.
+# The run ledger and the flight configuration are honoured while a tree has not
+# migrated, but recognition must not depend on the ledger: it leaves git, so a
+# synced checkout carries only the project's own configuration.
+_CREW_STATE_MARKERS = ("index.json", "flight.yaml", "crew.json")
+
+
 def _crew_state_exists(docs_dir: Path, project: str) -> bool:
-    """Return whether the synced project carries repository-local crew state."""
+    """Return whether the synced project carries repository-local crew state.
+
+    Keyed on the configuration the project's state directory carries rather
+    than on the run ledger, which leaves git: a synced checkout of a migrated
+    repository holds no ``crew.json`` and is still crew-managed.
+    """
     state_dir = docs_dir / "state" / project
-    return (state_dir / "crew.json").is_file() or (state_dir / "flight.yaml").is_file()
+    return any((state_dir / marker).is_file() for marker in _CREW_STATE_MARKERS)
 
 
 

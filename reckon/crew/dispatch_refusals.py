@@ -281,6 +281,23 @@ def launch_refusal(
     return dict(stored)
 
 
+# How long a release fences the attempt it abandoned. A launch slowed by
+# storage resumes within minutes of its release; a request the release put back
+# in the queue launches again under the same run id, and is refused until the
+# fence has lapsed. An hour keeps a slow original out and delays the re-queued
+# request by at most that much, which is cheaper than losing it.
+RELEASED_LAUNCH_FENCE_SECONDS = 3600.0
+
+
+def _release_has_lapsed(refusal: Mapping[str, Any]) -> bool:
+    """Whether a recorded release is older than the fence it holds."""
+    recorded = parse_utc(str(refusal.get("recorded_at") or ""))
+    if recorded is None:
+        return False
+    age = (datetime.now(UTC) - recorded).total_seconds()
+    return age > RELEASED_LAUNCH_FENCE_SECONDS
+
+
 def refuse_a_released_launch(
     run_id: str, *, started: bool = False, home: str | Path | None = None
 ) -> None:
@@ -294,6 +311,8 @@ def refuse_a_released_launch(
     """
     refusal = launch_refusal(run_id, home=home)
     if refusal is None:
+        return
+    if _release_has_lapsed(refusal):
         return
     step = str(refusal.get("step") or "an unrecorded step")
     when = (

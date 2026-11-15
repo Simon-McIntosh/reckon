@@ -1,0 +1,157 @@
+{
+  "absent_items": [],
+  "accepted_edits": [
+    {
+      "by": "efd0ee8c-9d4e-4fa3-a440-ac05791d4758",
+      "digests": {
+        "s13": "d619af298fcc65f16d08dfe593dba0aa7e64996224e620f8e5a0a5ae222f3274"
+      },
+      "reason": "the edits since the newest review add the bound case its done_when-1 asked for and the s4 wait its wiring-1 asked for; nothing else changed",
+      "units": [
+        "s13"
+      ],
+      "when": "2026-11-15T03:18:16.919544+00:00"
+    }
+  ],
+  "completed_at": "2026-11-15T03:11:30.741Z",
+  "dispatched_at": "2026-11-15T02:38:14Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-landing-never-waits-on-a-shared-index.html:120",
+      "id": "anchors_resolve-1",
+      "reason": "the citation is the only evidence path the section gives; a node dispatched from it cannot read what it is told to reproduce and must instead recover the measurement from the run directory the plan mentions only in passing \u2014 as the durable record of eleven landings and one refusal.",
+      "text": "\u00a713's Why cites `docs/evidence/fragments/a-landing-never-waits-on-a-shared-index/a-promotion-lands-in-under-a-minute-with-peers.html` as the record of its measurement, and that path resolves nowhere: the file was written in commit `897549cbc4` (which is not an ancestor of HEAD) and does not exist at the cited revision `1d16388a31` nor at HEAD, so the run whose single refusal \u00a713 exists to fix has no readable evidence under the path the plan names",
+      "type": "anchors_resolve",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-landing-never-waits-on-a-shared-index.html:120",
+      "id": "done_when-1",
+      "reason": "this is the same defect shape the plan already repaired in \u00a710's mtime condition; without a case where this checkout's lock stays present across the whole window and the last failing result is returned after the declared attempts, the gate proves only that the retry happens, never that it stops.",
+      "text": "the deliverable promises a retry \"up to the same bound\", but all three cases in the done-when end either on the first retry (released lock) or after one attempt (unknown revision, another repository's lock), so an implementation that retries a lock-named failure without any bound passes every case and the bound can be deleted from the code with the gate still green",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-landing-never-waits-on-a-shared-index.html:24",
+      "id": "wiring-1",
+      "reason": "the queue orders only what the plan declares; without a `s4`\u2192`s13` edge or a followup carrying the \u00a74 re-measurement, the re-measurement either runs early and records the unfixed defect as \u00a74's outcome, or is never dispatched at all after \u00a713 lands.",
+      "text": "`f-alnw-013` records that \"\u00a74 is measured again once \u00a713 lands\", but `plan-section-depends-on` still binds only `s4` to `s3` and the followup's single prompt names only \u00a713, so \u00a74 remains `implementable` and dispatchable before \u00a713, where its done-when (\"none rolls back\") fails on exactly the one-in-twelve refusal \u00a713 removes",
+      "type": "wiring",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "4a1070b6480b79d38ae8b93084b9a6e5f32e9290",
+  "plan_fingerprint": "4598caf6cb3390827a9a65e9858c85079e6ab77a7fc516958a0152753b960546",
+  "plan_slug": "a-landing-never-waits-on-a-shared-index",
+  "plan_version": 56,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "declined",
+      "by": "efd0ee8c-9d4e-4fa3-a440-ac05791d4758",
+      "finding": "wiring-1",
+      "reason": "concerns \u00a710/\u00a712 and f-alnw-007, which reckon-a6 authored and is building; forwarded to reckon-a6 rather than edited beside its live runs",
+      "when": "2026-11-15T03:15:29.731548+00:00"
+    },
+    {
+      "action": "declined",
+      "by": "efd0ee8c-9d4e-4fa3-a440-ac05791d4758",
+      "finding": "done_when-1",
+      "reason": "concerns \u00a710/\u00a712 and f-alnw-007, which reckon-a6 authored and is building; forwarded to reckon-a6 rather than edited beside its live runs",
+      "when": "2026-11-15T03:15:43.460415+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "efd0ee8c-9d4e-4fa3-a440-ac05791d4758",
+      "commit": "7c4b0189f3c95c8200cbd7554d3100df4190719a",
+      "commit_basis": "edit",
+      "finding": "done_when-1",
+      "note": "\u00a713's done-when adds a held-for-the-whole-call case that refuses after exactly the bound's attempts",
+      "reason": "",
+      "when": "2026-11-15T03:17:06.413883+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "efd0ee8c-9d4e-4fa3-a440-ac05791d4758",
+      "commit": "7c4b0189f3c95c8200cbd7554d3100df4190719a",
+      "commit_basis": "edit",
+      "finding": "wiring-1",
+      "note": "plan-section-depends-on now holds s4 behind both #s3 and #s13",
+      "reason": "",
+      "when": "2026-11-15T03:17:22.881331+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "efd0ee8c-9d4e-4fa3-a440-ac05791d4758",
+      "commit": "7c4b0189f3c95c8200cbd7554d3100df4190719a",
+      "commit_basis": "edit",
+      "finding": "anchors_resolve-1",
+      "note": "the fragment is the \u00a74 run's commit 897549cbc4, which lands with that run once its review is promoted; \u00a713 also names the run id",
+      "reason": "",
+      "when": "2026-11-15T03:17:36.741525+00:00"
+    }
+  ],
+  "responses": {
+    "anchors_resolve-1": {
+      "action": "acted",
+      "by": "efd0ee8c-9d4e-4fa3-a440-ac05791d4758",
+      "commit": "7c4b0189f3c95c8200cbd7554d3100df4190719a",
+      "commit_basis": "edit",
+      "note": "the fragment is the \u00a74 run's commit 897549cbc4, which lands with that run once its review is promoted; \u00a713 also names the run id",
+      "reason": "",
+      "when": "2026-11-15T03:17:36.741525+00:00"
+    },
+    "done_when-1": {
+      "action": "acted",
+      "by": "efd0ee8c-9d4e-4fa3-a440-ac05791d4758",
+      "commit": "7c4b0189f3c95c8200cbd7554d3100df4190719a",
+      "commit_basis": "edit",
+      "note": "\u00a713's done-when adds a held-for-the-whole-call case that refuses after exactly the bound's attempts",
+      "reason": "",
+      "when": "2026-11-15T03:17:06.413883+00:00"
+    },
+    "wiring-1": {
+      "action": "acted",
+      "by": "efd0ee8c-9d4e-4fa3-a440-ac05791d4758",
+      "commit": "7c4b0189f3c95c8200cbd7554d3100df4190719a",
+      "commit_basis": "edit",
+      "note": "plan-section-depends-on now holds s4 behind both #s3 and #s13",
+      "reason": "",
+      "when": "2026-11-15T03:17:22.881331+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/Code/reckon/docs/state/reckon/reviews/plan/a-landing-never-waits-on-a-shared-index/r-20261115T023523519031-plan-review-of-a-landing-never-waits-on-a-shared-index.json",
+  "review_run_id": "r-20261115T023523519031-plan-review-of-a-landing-never-waits-on-a-shared-index",
+  "reviewed_blob_sha": "e39d44247a0efd80008265376243670e024d663a",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "a finding \u2014 the fragment \u00a713 cites as the evidence for its measurement does not exist on main, while the code anchors it also cites do resolve.",
+    "done_when": "a finding \u2014 \u00a713's gate never leaves this checkout's lock in place across the retries, so the deliverable's \"up to the same bound\" clause is measured by no case.",
+    "evidence_paths": "pass \u2014 \u00a713 requires every gate log under the run directory with its revision, literal command and `EXIT=` line; the one evidence path that cannot be opened is a resolution defect, reported under `anchors_resolve`.",
+    "naming": "pass \u2014 the one artifact \u00a713 names (a new test file) is named by the behaviour it checks, and no plan label, ticket number or version tag is carried into a symbol or comment.",
+    "reasoning": "pass \u2014 the stated root cause matches both the code and the measurement: `_index_lock_held` is the loop condition in `_run_waiting_out_a_held_index_lock`, and a refusal at 4.87 s is consistent with an attempt bound of 130 half-second retries (about 65 s) being abandoned rather than exhausted.",
+    "single_goal": "pass \u2014 \u00a713 names one outcome (a landing commit that met a released lock is retried instead of returned after one attempt) and its gate measures that outcome.",
+    "wiring": "a finding \u2014 `plan-section-depends-on` orders `s4` only after `s3`, while the new followup `f-alnw-013` says \u00a74 is measured again once \u00a713 lands, so no declared edge and no prompt order \u00a74 after \u00a713."
+  },
+  "section_digests": {
+    "_document": "cdffcff35bab022189e7d54313919ad31e73d65b3093e63acc4f5a4b3c3af563",
+    "s1": "704da057b1e86cedb79ae983e9f7504afd9303eac87bb25b9d4aa38717913746",
+    "s10": "5d5cbb85e08c2cb299d601fc388401675ee5191128e8b85dd642cc2c27b83747",
+    "s11": "5799ddfd0b370de4655ad0bacee8fae5b8388a5711aea97614e95d4519671bff",
+    "s12": "0c789b60e5a0d2aaf0c65dc227735ef9a3133365f385da71fbc25b13534f6863",
+    "s13": "a11cce28ec1110b89d7d40074bf9362fd91aff8c194ef303d1b53732b7d4c2cc",
+    "s2": "a72539aa82cfb965c54c35d223b2606608ed39bc8269f82d2e7427267b4636af",
+    "s3": "58b92de94f7a15cbe2a66cb37ebc307ca1d8306003ca55ca38ac6fd12e6266c8",
+    "s4": "f9e5f60efd976441ef227da76beb3f9309fccd0d2f99eee0fc98924588b241aa",
+    "s5": "41308d89a4ece7829b6313c98047025055c9c8dc56e754dc8ccf0501af52b1b3",
+    "s6": "ddc19efe3db5d3e2196ba12f1ccea29b87e0e15e0f71c68c2fc89431d6cca56b",
+    "s7": "2ebeb3cecb2ecb78b7b4d2160d5d040e80b315fd2ed14bebcd78068961e3d9e7",
+    "s8": "b02f4e8c623fc056b518109ad2e4921c5835b87308d0f448c3c0acd9590ab68f",
+    "s9": "397bff46dceb3adfac8e00e31582b6935a480117ee402da0713534c17f544501"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-15T03:14:32.372779+00:00",
+  "total": null
+}

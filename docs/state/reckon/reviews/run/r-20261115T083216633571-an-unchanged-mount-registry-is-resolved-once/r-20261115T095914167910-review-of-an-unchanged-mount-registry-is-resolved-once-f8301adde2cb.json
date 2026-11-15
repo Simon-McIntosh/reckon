@@ -1,0 +1,97 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own arm logs on disk: the base arm base-arm.log at 7997d712 records 55 passed with EXIT=0 and no FAILED line, and the after arm after-arm.log at da4afea0ff records 57 passed with EXIT=0 and no FAILED line, so no failure appears in the after arm that the base arm does not also carry and the set difference is empty (0).",
+  "call_site_count": 7,
+  "call_sites": [
+    "reckon/crew/station.py:899 Station's default projects callable",
+    "reckon/flight.py:632 _project_docs_root",
+    "reckon/flight.py:555 project_config_path",
+    "reckon/crew/admission/holds.py:406",
+    "reckon/run_record.py:240",
+    "reckon/crew/routing.py:1956",
+    "reckon/crew/persist.py:54"
+  ],
+  "completed_at": "2026-11-15T10:52:35.788Z",
+  "dispatched_at": "2026-11-15T10:03:03Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "exempted",
+      "reason": "coordinator repaired the record: the after_suite line is rewritten whole from after-arm.log (57 passed, EXIT=0 at da4afea0ff), the delivered manifest kept as manifest.md.asdelivered",
+      "recorded_at": "2026-11-15T11:05:10.079775+00:00"
+    },
+    "1": {
+      "kind": "exempted",
+      "reason": "docstring wording only; the memo is keyed on the registry's stat identity, and a repointed symlink inside an unchanged registry is outside this section's done-when",
+      "recorded_at": "2026-11-15T11:05:12.007998+00:00"
+    },
+    "2": {
+      "kind": "exempted",
+      "reason": "the reviewer re-ran ruff check and ruff format --check on the head blobs and both are clean; the clause holds",
+      "recorded_at": "2026-11-15T11:05:14.043554+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "manifest.md",
+      "line": "20",
+      "severity": "blocking",
+      "text": "blocking: the after_suite line is a truncated JSON object ending in the stray lines '# tail2' and '# tail', so reckon's parse_manifest returns it as a str rather than a mapping and the run's own record states no head gate result, which promotion's red-suite guard reads as unreadable (reckon/crew/queue_landing.py:1392) and refuses; the repair is to rewrite that one line whole from after-arm.log, which is readable and records 57 passed EXIT=0 at da4afea0ff."
+    },
+    {
+      "file": "reckon/flight.py",
+      "line": "589",
+      "severity": "non-blocking",
+      "text": "non-blocking: the added docstring says the memo cannot hand back 'a path it now points elsewhere', but the cache is keyed only on the registry file's stat identity, so a symlink inside a mount entry's path that is repointed while mounts.json's bytes are unchanged is not observed and the previously resolved path is served, where Path.resolve at the base revision re-evaluated it on every ask; the words are broader than the guarantee."
+    },
+    {
+      "file": "manifest.md",
+      "line": "13",
+      "severity": "non-blocking",
+      "text": "non-blocking: the done_when requires ruff check and ruff format --check to add no finding on the staged paths and the manifest records no such result; I re-ran both on the head blobs of reckon/flight.py and the test file and both are clean, so the clause holds but its evidence was never written down."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 7 production call site(s) that reach mounted_project_docs or project_config_path",
+    "diff": "read all three commits against base 7997d712f6; 3c16cb94df moves the registry body into a read() closure behind file_memo.memoized, da4afea0ff moves the test's one-read assertion after the whole resolve loop, and f8301adde2 adds the landing fragment, and nothing outside those three paths changes.",
+    "done_when": "the done_when names tests/test_an_unchanged_mount_registry_is_resolved_once.py asserting one registry read and three resolves across 150 resolves plus a rewritten-registry case and a 150-read negative control; lines 130-136 and 146-165 assert exactly those, gate.log records 2 passed EXIT=0, and negative-control.log records reads=150 resolves=450 at the base revision, so the gate asserts the stated measure.",
+    "goal": "the node goal is to hold the resolved mount registry under its stat identity; reckon/flight.py:629 routes the parse through file_memo.memoized(\"mounts_registry\", mounts_file, read), so an unchanged registry costs one stat per ask and a rewritten one is parsed again, which is the goal met.",
+    "manifest": "read; it reports status complete with the diff's three commits, the gate at 2 passed and matched arms at 55 and 57 passed EXIT=0, which the on-disk logs confirm, but its after_suite line is a truncated JSON object that reckon's own parse_manifest returns as a str rather than a mapping, so that field states no gate result.",
+    "write_paths": "the declared paths are reckon/flight.py, tests/test_an_unchanged_mount_registry_is_resolved_once.py, the landing fragment under docs/evidence/fragments/the-monitor-reads-each-fact-once/, and an unused figures directory; the diff touches exactly the first three and every one is inside the fence."
+  },
+  "justifications": {
+    "durability": "reinstating the per-call parse makes tests/test_an_unchanged_mount_registry_is_resolved_once.py:130 redden at 150 reads, exactly as negative-control.log shows, though line 163 compares against production's own _state_root() so that one assertion moves with the helper it checks.",
+    "evidence": "gate.log records 2 passed EXIT=0 at da4afea0ff and negative-control.log records 150 reads at base with both failing ids named, but the manifest's own after_suite at manifest.md:20 is truncated and unreadable, so the delivered record bears no readable head arm.",
+    "fit": "the read() closure passed to file_memo.memoized matches reckon/_store.py:952 and reckon/crew/review.py:472, and neither the memo kind string nor the test filename carries a plan or stage label.",
+    "goal_fidelity": "reckon/flight.py:629 sends the parse and every entry's Path.resolve through file_memo.memoized keyed on the registry's stat identity, so every caller of mounted_project_docs inherits the reuse the goal names.",
+    "reuse": "reckon/flight.py:629 extends reckon/file_memo.py:362 memoized, the repository's owner of stat-keyed parse reuse, and no second registry parser or registry cache was added.",
+    "scope_discipline": "the three changed paths in the diff (reckon/flight.py, the test file and the fragment) are all inside the manifest's declared write paths and the unused figures directory is untouched."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to hold the resolved mount registry under its stat identity; reckon/flight.py:629 routes the parse through file_memo.memoized(\"mounts_registry\", mounts_file, read), so an unchanged registry costs one stat per ask and a rewritten one is parsed again, which is the goal met.\nVERDICT done_when: the done_when names tests/test_an_unchanged_mount_registry_is_resolved_once.py asserting one registry read and three resolves across 150 resolves plus a rewritten-registry case and a 150-read negative control; lines 130-136 and 146-165 assert exactly those, gate.log records 2 passed EXIT=0, and negative-control.log records reads=150 resolves=450 at the base revision, so the gate asserts the stated measure.\nVERDICT write_paths: the declared paths are reckon/flight.py, tests/test_an_unchanged_mount_registry_is_resolved_once.py, the landing fragment under docs/evidence/fragments/the-monitor-reads-each-fact-once/, and an unused figures directory; the diff touches exactly the first three and every one is inside the fence.\nVERDICT manifest: read; it reports status complete with the diff's three commits, the gate at 2 passed and matched arms at 55 and 57 passed EXIT=0, which the on-disk logs confirm, but its after_suite line is a truncated JSON object that reckon's own parse_manifest returns as a str rather than a mapping, so that field states no gate result.\nVERDICT diff: read all three commits against base 7997d712f6; 3c16cb94df moves the registry body into a read() closure behind file_memo.memoized, da4afea0ff moves the test's one-read assertion after the whole resolve loop, and f8301adde2 adds the landing fragment, and nothing outside those three paths changes.\nCALL_SITES: reckon/crew/station.py:899 Station's default projects callable, reckon/flight.py:632 _project_docs_root, reckon/flight.py:555 project_config_path, reckon/crew/admission/holds.py:406, reckon/run_record.py:240, reckon/crew/routing.py:1956, reckon/crew/persist.py:54\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/flight.py:629 sends the parse and every entry's Path.resolve through file_memo.memoized keyed on the registry's stat identity, so every caller of mounted_project_docs inherits the reuse the goal names.\nSCORE evidence: 15\nJUSTIFICATION evidence: gate.log records 2 passed EXIT=0 at da4afea0ff and negative-control.log records 150 reads at base with both failing ids named, but the manifest's own after_suite at manifest.md:20 is truncated and unreadable, so the delivered record bears no readable head arm.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the three changed paths in the diff (reckon/flight.py, the test file and the fragment) are all inside the manifest's declared write paths and the unused figures directory is untouched.\nSCORE durability: 18\nJUSTIFICATION durability: reinstating the per-call parse makes tests/test_an_unchanged_mount_registry_is_resolved_once.py:130 redden at 150 reads, exactly as negative-control.log shows, though line 163 compares against production's own _state_root() so that one assertion moves with the helper it checks.\nSCORE fit: 19\nJUSTIFICATION fit: the read() closure passed to file_memo.memoized matches reckon/_store.py:952 and reckon/crew/review.py:472, and neither the memo kind string nor the test filename carries a plan or stage label.\nSCORE reuse: 20\nJUSTIFICATION reuse: reckon/flight.py:629 extends reckon/file_memo.py:362 memoized, the repository's owner of stat-keyed parse reuse, and no second registry parser or registry cache was added.\nFINDING manifest.md:20 blocking: the after_suite line is a truncated JSON object ending in the stray lines '# tail2' and '# tail', so reckon's parse_manifest returns it as a str rather than a mapping and the run's own record states no head gate result, which promotion's red-suite guard reads as unreadable (reckon/crew/queue_landing.py:1392) and refuses; the repair is to rewrite that one line whole from after-arm.log, which is readable and records 57 passed EXIT=0 at da4afea0ff.\nFINDING reckon/flight.py:589 non-blocking: the added docstring says the memo cannot hand back 'a path it now points elsewhere', but the cache is keyed only on the registry file's stat identity, so a symlink inside a mount entry's path that is repointed while mounts.json's bytes are unchanged is not observed and the previously resolved path is served, where Path.resolve at the base revision re-evaluated it on every ask; the words are broader than the guarantee.\nFINDING manifest.md:13 non-blocking: the done_when requires ruff check and ruff format --check to add no finding on the staged paths and the manifest records no such result; I re-ran both on the head blobs of reckon/flight.py and the test file and both are clean, so the clause holds but its evidence was never written down.",
+  "review_node": "review-of-an-unchanged-mount-registry-is-resolved-once-f8301adde2cb",
+  "review_run_id": "r-20261115T095914167910-review-of-an-unchanged-mount-registry-is-resolved-once-f8301adde2cb",
+  "reviewed_base_sha": "7997d712f6290e614c8be0ced3fabb23f9db6111",
+  "reviewed_head_sha": "f8301adde2cb031d0c47c89102f907ad4ae47d4e",
+  "reviewed_run_id": "r-20261115T083216633571-an-unchanged-mount-registry-is-resolved-once",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash",
+    "reviewer_run_id": "r-20261115T095914167910-review-of-an-unchanged-mount-registry-is-resolved-once-f8301adde2cb"
+  },
+  "scores": {
+    "durability": 18,
+    "evidence": 15,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-15T11:05:40.221251+00:00",
+  "total": 111
+}

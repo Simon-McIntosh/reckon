@@ -1,0 +1,70 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/crew/review_records.py:_tick_store",
+    "reckon/crew/review_records.py:_record_identity",
+    "reckon/crew/review_records.py:_store_indexes",
+    "reckon/crew/review.py:store_index_document",
+    "reckon/crew/obligations.py:stored_records_for_run"
+  ],
+  "completed_at": "2026-11-15T01:00:38.794Z",
+  "dispatched_at": "2026-11-15T00:07:12Z",
+  "findings": [
+    {
+      "file": "tests/test_a_review_index_reader_never_waits_or_rewrites.py",
+      "line": "22",
+      "severity": "non-blocking",
+      "text": "the node edited a file outside its four declared write paths, removing the autouse fixture that cleared _SETTLED_IDENTITIES and the pytest import only it used; the edit is required once the memo is retired, since logs/arm-head.log shows those tests failing at setup at a4b72a5ff5, but the fence was never widened, so a change the node needs arrives outside the scope it was granted."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261114T170847087917-review-index-stamp-s49/manifest.md",
+      "line": "18",
+      "severity": "non-blocking",
+      "text": "the filed baseline_suite command and measurement_module name /tmp/arm-20261114-2zw6y3on, a tree no log under logs/ records, while the arm-base.log it cites ran in /tmp/arm-20261114-pbv53l3e; after_suite cites the in-worktree gate-head.log rather than the matched scratch arm arm-head-scratch.log, so the base and head arms cannot be reconciled as a matched pair from the receipt alone."
+    },
+    {
+      "file": "reckon/crew/review_records.py",
+      "line": "2131",
+      "severity": "non-blocking",
+      "text": "tuple(int(item) for item in identity) is unguarded while _document_is_usable at :2074 never checks the shape of directory_identity, so a document the module calls usable but whose identity holds a non-numeric value now raises ValueError out of _persist_index_document on a reader's reconcile path, where the same document previously only cost a re-listing."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "diff": "read commit by commit against ffcba667: a4b72a5ff5 adds the stamp helpers, the 208-line test and retires the memo; 41256d10e0 routes the stamp through read_cache_document/write_cache_document and deletes the reader test's memo-clearing fixture; d89c36e124 and 4d0372b434 record the fragment; 350 insertions and 33 deletions across four files, one of them outside the fence.",
+    "done_when": "the done_when names tests/test_an_unchanged_reconcile_writes_only_its_stamp.py; logs/gate-head.log records 56 passed EXIT=0 at 4d0372b434 against 53 passed, 2 errors EXIT=1 at ffcba667 in logs/arm-base.log, logs/repro-base-second-process-lists-once.log shows the same test red at the base revision, and logs/negative-control.log shows the declared mutation red with \"an unchanged reconcile rewrote the index document\" EXIT=1.",
+    "goal": "the node goal is \"Record the review store's identity in a small stamp so an unchanged reconcile writes only the stamp\"; reckon/crew/review_records.py:1938 adds _index_stamp_path with _read_index_stamp, :1968 adds _persist_index_stamp, :1987 adds _index_is_settled, and reconcile_foreign_write:2291 now advances only the stamp when nothing changed, with the in-process _SETTLED_IDENTITIES memo retired (grep for that name at the head revision returns 0 hits).",
+    "manifest": "read in full; it records status complete, the gate command and its result, a baseline/after suite pair with per-failure attribution and a per-dimension rubric self-check, but its commits list names three shas where the diff carries four, and its baseline_suite command and measurement_module name a /tmp tree that the arm-base.log it cites did not run in.",
+    "write_paths": "the fence declares reckon/crew/review_records.py, tests/test_an_unchanged_reconcile_writes_only_its_stamp.py, the node's fragment and docs/figures/the-monitor-reads-each-fact-once/review-index-stamp-s49; three of the four paths in the diff are inside that set and tests/test_a_review_index_reader_never_waits_or_rewrites.py is outside it, which the manifest records under outside_scope."
+  },
+  "justifications": {
+    "durability": "tests/test_an_unchanged_reconcile_writes_only_its_stamp.py:180-185 fails when an unchanged reconcile rewrites the document and :186 fails when a freshly started process lists the store at :192, which logs/repro-base-second-process-lists-once.log shows happening at base, and :195 pins the probe to the fixture's own entry count as a positive control rather than to anything the test passes to the code under test.",
+    "evidence": "logs/gate-head.log (56 passed, EXIT=0) and logs/arm-base.log (53 passed, 2 errors, EXIT=1) carry both arms with their revisions, but the manifest's baseline_suite command and measurement_module name /tmp/arm-20261114-2zw6y3on while the arm-base.log they cite ran in /tmp/arm-20261114-pbv53l3e, so the filed receipt cannot be matched to its own log.",
+    "fit": "reckon/crew/review_records.py:1938-2010 follows the module's private-helper and cache-document idiom and introduces no plan, phase or ticket label in any name, docstring or comment.",
+    "goal_fidelity": "reckon/crew/review_records.py:2378 persists the settled identity through _persist_index_stamp and :2417 consults it through _index_is_settled, so a reconcile that changes no entry writes only stamp.json beside index.json.",
+    "reuse": "reckon/crew/review_records.py:1957 and :1981 delegate to read_cache_document and write_cache_document, the module's existing owners of a cache document, though the added _index_is_settled at :1987 is a second notion of a settled store identity beside recovery_memo.py:416's persisted directory identities.",
+    "scope_discipline": "tests/test_a_review_index_reader_never_waits_or_rewrites.py:22 was changed outside the four declared write paths, disclosed in the manifest's outside_scope and needed once the memo it cleared was retired."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is \"Record the review store's identity in a small stamp so an unchanged reconcile writes only the stamp\"; reckon/crew/review_records.py:1938 adds _index_stamp_path with _read_index_stamp, :1968 adds _persist_index_stamp, :1987 adds _index_is_settled, and reconcile_foreign_write:2291 now advances only the stamp when nothing changed, with the in-process _SETTLED_IDENTITIES memo retired (grep for that name at the head revision returns 0 hits).\nVERDICT done_when: the done_when names tests/test_an_unchanged_reconcile_writes_only_its_stamp.py; logs/gate-head.log records 56 passed EXIT=0 at 4d0372b434 against 53 passed, 2 errors EXIT=1 at ffcba667 in logs/arm-base.log, logs/repro-base-second-process-lists-once.log shows the same test red at the base revision, and logs/negative-control.log shows the declared mutation red with \"an unchanged reconcile rewrote the index document\" EXIT=1.\nVERDICT write_paths: the fence declares reckon/crew/review_records.py, tests/test_an_unchanged_reconcile_writes_only_its_stamp.py, the node's fragment and docs/figures/the-monitor-reads-each-fact-once/review-index-stamp-s49; three of the four paths in the diff are inside that set and tests/test_a_review_index_reader_never_waits_or_rewrites.py is outside it, which the manifest records under outside_scope.\nVERDICT manifest: read in full; it records status complete, the gate command and its result, a baseline/after suite pair with per-failure attribution and a per-dimension rubric self-check, but its commits list names three shas where the diff carries four, and its baseline_suite command and measurement_module name a /tmp tree that the arm-base.log it cites did not run in.\nVERDICT diff: read commit by commit against ffcba667: a4b72a5ff5 adds the stamp helpers, the 208-line test and retires the memo; 41256d10e0 routes the stamp through read_cache_document/write_cache_document and deletes the reader test's memo-clearing fixture; d89c36e124 and 4d0372b434 record the fragment; 350 insertions and 33 deletions across four files, one of them outside the fence.\nCALL_SITES: reckon/crew/review_records.py:_tick_store, reckon/crew/review_records.py:_record_identity, reckon/crew/review_records.py:_store_indexes, reckon/crew/review.py:store_index_document, reckon/crew/obligations.py:stored_records_for_run\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/review_records.py:2378 persists the settled identity through _persist_index_stamp and :2417 consults it through _index_is_settled, so a reconcile that changes no entry writes only stamp.json beside index.json.\nSCORE evidence: 16\nJUSTIFICATION evidence: logs/gate-head.log (56 passed, EXIT=0) and logs/arm-base.log (53 passed, 2 errors, EXIT=1) carry both arms with their revisions, but the manifest's baseline_suite command and measurement_module name /tmp/arm-20261114-2zw6y3on while the arm-base.log they cite ran in /tmp/arm-20261114-pbv53l3e, so the filed receipt cannot be matched to its own log.\nSCORE scope_discipline: 13\nJUSTIFICATION scope_discipline: tests/test_a_review_index_reader_never_waits_or_rewrites.py:22 was changed outside the four declared write paths, disclosed in the manifest's outside_scope and needed once the memo it cleared was retired.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_an_unchanged_reconcile_writes_only_its_stamp.py:180-185 fails when an unchanged reconcile rewrites the document and :186 fails when a freshly started process lists the store at :192, which logs/repro-base-second-process-lists-once.log shows happening at base, and :195 pins the probe to the fixture's own entry count as a positive control rather than to anything the test passes to the code under test.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/crew/review_records.py:1938-2010 follows the module's private-helper and cache-document idiom and introduces no plan, phase or ticket label in any name, docstring or comment.\nSCORE reuse: 18\nJUSTIFICATION reuse: reckon/crew/review_records.py:1957 and :1981 delegate to read_cache_document and write_cache_document, the module's existing owners of a cache document, though the added _index_is_settled at :1987 is a second notion of a settled store identity beside recovery_memo.py:416's persisted directory identities.\nFINDING tests/test_a_review_index_reader_never_waits_or_rewrites.py:22 the node edited a file outside its four declared write paths, removing the autouse fixture that cleared _SETTLED_IDENTITIES and the pytest import only it used; the edit is required once the memo is retired, since logs/arm-head.log shows those tests failing at setup at a4b72a5ff5, but the fence was never widened, so a change the node needs arrives outside the scope it was granted.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261114T170847087917-review-index-stamp-s49/manifest.md:18 the filed baseline_suite command and measurement_module name /tmp/arm-20261114-2zw6y3on, a tree no log under logs/ records, while the arm-base.log it cites ran in /tmp/arm-20261114-pbv53l3e; after_suite cites the in-worktree gate-head.log rather than the matched scratch arm arm-head-scratch.log, so the base and head arms cannot be reconciled as a matched pair from the receipt alone.\nFINDING reckon/crew/review_records.py:2131 tuple(int(item) for item in identity) is unguarded while _document_is_usable at :2074 never checks the shape of directory_identity, so a document the module calls usable but whose identity holds a non-numeric value now raises ValueError out of _persist_index_document on a reader's reconcile path, where the same document previously only cost a re-listing.",
+  "review_run_id": "r-20261114T232505037359-review-of-review-index-stamp-s49-4d0372b434e2",
+  "reviewed_base_sha": "ffcba6679c7cb5812709911217e6cf43ebbe9870",
+  "reviewed_head_sha": "4d0372b434e20139e46d5b5d41e6c914a2c59b19",
+  "reviewed_run_id": "r-20261114T170847087917-review-index-stamp-s49",
+  "scores": {
+    "durability": 19,
+    "evidence": 16,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 18,
+    "scope_discipline": 13
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-15T01:08:46.586991+00:00",
+  "total": 103
+}

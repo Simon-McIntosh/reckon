@@ -23,7 +23,11 @@ from collections.abc import (
     Mapping as Mapping,
     Sequence as Sequence,
 )
-from contextlib import contextmanager as contextmanager, suppress as suppress
+from contextlib import (
+    ExitStack as ExitStack,
+    contextmanager as contextmanager,
+    suppress as suppress,
+)
 from contextvars import ContextVar as ContextVar
 from dataclasses import dataclass as dataclass, field as field
 from datetime import UTC as UTC, datetime as datetime, timedelta as timedelta
@@ -38,6 +42,7 @@ from reckon._store import (
 )
 from reckon._timestamps import parse_utc as parse_utc
 from reckon.env_duration import read_duration_override
+from reckon.node_exclusive_lock import LockHeld, exclusive_lock
 from reckon.crew.host_lease import (
     LEASE_RENEW_SECONDS as LEASE_RENEW_SECONDS,
     HostLease as HostLease,
@@ -487,17 +492,12 @@ def _pointer_lock(run_id: str, *, blocking: bool = True):
     behind (a promotion) is a refusal rather than a wait.
     """
     path = crew_home() / "locks" / f"{run_id}.lock"
-    path.parent.mkdir(parents=True, exist_ok=True)
-    with path.open("a+b") as handle:
-        flags = fcntl.LOCK_EX if blocking else fcntl.LOCK_EX | fcntl.LOCK_NB
+    with ExitStack() as held:
         try:
-            fcntl.flock(handle.fileno(), flags)
-        except BlockingIOError as exc:
+            held.enter_context(exclusive_lock(path, blocking=blocking))
+        except LockHeld as exc:
             raise PointerLockHeldError(run_id) from exc
-        try:
-            yield
-        finally:
-            fcntl.flock(handle.fileno(), fcntl.LOCK_UN)
+        yield
 
 
 def _mutate_pointer(
@@ -882,140 +882,135 @@ def queue_dispatch(
     ordered nowhere in the admission queue.
     """
     lock = crew_home() / "locks" / "queued-dispatch.lock"
-    lock.parent.mkdir(parents=True, exist_ok=True)
-    with lock.open("a+b") as handle:
-        fcntl.flock(handle.fileno(), fcntl.LOCK_EX)
-        try:
-            project = str(record["project"])
-            identity = _node_identity(record)
-            live = _list_live_records(project=project)
-            existing = next(
+    with ExitStack() as stack:
+        stack.enter_context(exclusive_lock(lock))
+        project = str(record["project"])
+        identity = _node_identity(record)
+        live = _list_live_records(project=project)
+        existing = next(
+            (
+                pointer
+                for pointer in live
+                if pointer.get("phase") == "queued"
+                and _node_identity(pointer) == identity
+            ),
+            None,
+        )
+        if existing is None:
+            # No queued copy of the request. A run of the same node still in
+            # flight is answered as it is, with no second pointer: the
+            # request is already somewhere between the queue and a worker.
+            # The gap where no live pointer names the node — an admission
+            # handing the request to a launch — is covered by the dispatch
+            # path's own check against the handover record, not here: this
+            # primitive is also how the admission pass itself re-queues, and
+            # that write must not be answered by its own handover.
+            current = next(
                 (
                     pointer
                     for pointer in live
-                    if pointer.get("phase") == "queued"
-                    and _node_identity(pointer) == identity
+                    if _node_identity(pointer) == identity
+                    and str(pointer.get("phase") or "") not in _TERMINAL_RUN_PHASES
                 ),
                 None,
             )
-            if existing is None:
-                # No queued copy of the request. A run of the same node still in
-                # flight is answered as it is, with no second pointer: the
-                # request is already somewhere between the queue and a worker.
-                # The gap where no live pointer names the node — an admission
-                # handing the request to a launch — is covered by the dispatch
-                # path's own check against the handover record, not here: this
-                # primitive is also how the admission pass itself re-queues, and
-                # that write must not be answered by its own handover.
-                current = next(
-                    (
-                        pointer
-                        for pointer in live
-                        if _node_identity(pointer) == identity
-                        and str(pointer.get("phase") or "") not in _TERMINAL_RUN_PHASES
-                    ),
-                    None,
-                )
-                if current is not None:
-                    return dict(current), None
-            existing_run_id = str(existing["run_id"]) if existing is not None else None
-            requeued = False
-            if existing_run_id is not None:
-                with _pointer_lock(existing_run_id):
-                    if pointer_path(existing_run_id).exists():
-                        current = read_pointer(existing_run_id)
-                        if current.get("phase") != "queued":
-                            raise CrewError(
-                                f"queued run {existing_run_id!r} changed phase; "
-                                "retry dispatch"
-                            )
-                        record["run_id"] = existing_run_id
-                        from reckon.crew.queue_order import readable_queued_at
-
-                        record["queued_at"] = readable_queued_at(
-                            current, now=datetime.now(UTC)
+            if current is not None:
+                return dict(current), None
+        existing_run_id = str(existing["run_id"]) if existing is not None else None
+        requeued = False
+        if existing_run_id is not None:
+            with _pointer_lock(existing_run_id):
+                if pointer_path(existing_run_id).exists():
+                    current = read_pointer(existing_run_id)
+                    if current.get("phase") != "queued":
+                        raise CrewError(
+                            f"queued run {existing_run_id!r} changed phase; "
+                            "retry dispatch"
                         )
-                        record["created_at"] = current["created_at"]
-                        record = _merged_requeue(current, record)
-                        requeued = True
-                        _write_json(pointer_path(existing_run_id), record)
-                    # A pointer that vanished between the scan and this lock was
-                    # discarded underneath the re-queue: fall through and queue
-                    # afresh rather than reading a pointer that is gone.
-            if not requeued:
-                from reckon.crew.queue_admission import (
-                    QUEUED_PHASE,
-                    WAITING_UPSTREAM_PHASES,
-                )
-                from reckon.crew.recovery_review_delivery import _is_review_run
+                    record["run_id"] = existing_run_id
+                    from reckon.crew.queue_order import readable_queued_at
 
-                if not _is_review_run(record):
-                    bound = (
-                        max_requests
-                        if max_requests is not None
-                        else _resolved_queue_max_requests(record)
+                    record["queued_at"] = readable_queued_at(
+                        current, now=datetime.now(UTC)
                     )
-                    held = sum(
+                    record["created_at"] = current["created_at"]
+                    record = _merged_requeue(current, record)
+                    requeued = True
+                    _write_json(pointer_path(existing_run_id), record)
+                # A pointer that vanished between the scan and this lock was
+                # discarded underneath the re-queue: fall through and queue
+                # afresh rather than reading a pointer that is gone.
+        if not requeued:
+            from reckon.crew.queue_admission import (
+                QUEUED_PHASE,
+                WAITING_UPSTREAM_PHASES,
+            )
+            from reckon.crew.recovery_review_delivery import _is_review_run
+
+            if not _is_review_run(record):
+                bound = (
+                    max_requests
+                    if max_requests is not None
+                    else _resolved_queue_max_requests(record)
+                )
+                held = sum(
+                    1
+                    for pointer in live
+                    if pointer.get("phase") in (QUEUED_PHASE, *WAITING_UPSTREAM_PHASES)
+                    and str(pointer.get("project") or project) == project
+                    and not _is_review_run(pointer)
+                )
+                if held >= bound:
+                    raise QueueFull(
+                        project=project,
+                        session=str(record.get("session") or ""),
+                        held=held,
+                        cap=bound,
+                    )
+                if cap is not None:
+                    session = str(record.get("session") or "")
+                    session_held = sum(
                         1
                         for pointer in live
-                        if pointer.get("phase")
-                        in (QUEUED_PHASE, *WAITING_UPSTREAM_PHASES)
-                        and str(pointer.get("project") or project) == project
+                        if pointer.get("phase") == "queued"
+                        and str(pointer.get("session") or "") == session
                         and not _is_review_run(pointer)
                     )
-                    if held >= bound:
-                        raise QueueFull(
-                            project=project,
-                            session=str(record.get("session") or ""),
-                            held=held,
-                            cap=bound,
-                        )
-                    if cap is not None:
-                        session = str(record.get("session") or "")
-                        session_held = sum(
-                            1
-                            for pointer in live
-                            if pointer.get("phase") == "queued"
-                            and str(pointer.get("session") or "") == session
-                            and not _is_review_run(pointer)
-                        )
-                        if session_held >= cap:
-                            raise QueueFull(session=session, held=session_held, cap=cap)
-                run_id = str(record["run_id"])
-                # The queue is ordered by arrival, so a pointer is never
-                # written without an arrival every reader can parse: a caller
-                # that supplies none has this writer's moment stamped in. One
-                # unplaceable pointer would otherwise stop every ordering pass.
-                from reckon.crew.queue_order import readable_queued_at
+                    if session_held >= cap:
+                        raise QueueFull(session=session, held=session_held, cap=cap)
+            run_id = str(record["run_id"])
+            # The queue is ordered by arrival, so a pointer is never written
+            # without an arrival every reader can parse: a caller that supplies
+            # none has this writer's moment stamped in. One unplaceable pointer
+            # would otherwise stop every ordering pass.
+            from reckon.crew.queue_order import readable_queued_at
 
-                record["queued_at"] = readable_queued_at(record, now=datetime.now(UTC))
-                with _pointer_lock(run_id):
-                    _write_json(pointer_path(run_id), record)
-            # A request is checked for review when it enters the queue: the
-            # digests of the text it was dispatched for are stamped here, from
-            # the plan as this dispatch wrote it, so later admission compares
-            # the plan against this request's own contract rather than against
-            # whatever the plan says at its first pass.
-            from reckon.crew.queue_admission import record_review_contract
+            record["queued_at"] = readable_queued_at(record, now=datetime.now(UTC))
+            with _pointer_lock(run_id):
+                _write_json(pointer_path(run_id), record)
+        # A request is checked for review when it enters the queue: the
+        # digests of the text it was dispatched for are stamped here, from
+        # the plan as this dispatch wrote it, so later admission compares
+        # the plan against this request's own contract rather than against
+        # whatever the plan says at its first pass.
+        from reckon.crew.queue_admission import record_review_contract
 
-            record_review_contract(record)
-            _write_steering(
-                str(record["run_id"]),
-                str(dict(record.get("node") or {}).get("brief") or ""),
-            )
-            from reckon.crew.queue_order import admission_order
+        record_review_contract(record)
+        _write_steering(
+            str(record["run_id"]),
+            str(dict(record.get("node") or {}).get("brief") or ""),
+        )
+        from reckon.crew.queue_order import admission_order
 
-            live = _list_live_records(project=str(record["project"]))
-            queued = [pointer for pointer in live if pointer.get("phase") == "queued"]
-            order = admission_order(queued, live, now=datetime.now(UTC))
-            position = next(
-                index
-                for index, pointer in enumerate(order, 1)
-                if pointer["run_id"] == record["run_id"]
-            )
-            return record, position
-        finally:
-            fcntl.flock(handle.fileno(), fcntl.LOCK_UN)
+        live = _list_live_records(project=str(record["project"]))
+        queued = [pointer for pointer in live if pointer.get("phase") == "queued"]
+        order = admission_order(queued, live, now=datetime.now(UTC))
+        position = next(
+            index
+            for index, pointer in enumerate(order, 1)
+            if pointer["run_id"] == record["run_id"]
+        )
+        return record, position
 
 
 _RESUME_BUDGET = re.compile(
@@ -1288,6 +1283,40 @@ class _LiveScopeClaim:
         return claim
 
 
+# Each path one admission pass resolves, and what it resolved to. Every launch
+# checks its scope against every live pointer's declared paths, and resolving
+# each of them walks the path on shared storage: on 14 November that was about
+# an eighth of each launch. Symlinks under a checkout do not move between two
+# launches of one pass, so inside a pass one path is resolved once; outside a
+# pass nothing is kept and every caller resolves as before.
+_RESOLVED_PATHS: ContextVar[dict[str, Path] | None] = ContextVar(
+    "reckon_resolved_paths", default=None
+)
+
+
+@contextmanager
+def resolution_scope():
+    """Resolve each path once for the length of the block, such as one admission pass."""
+    token = _RESOLVED_PATHS.set({})
+    try:
+        yield
+    finally:
+        _RESOLVED_PATHS.reset(token)
+
+
+def resolved_path(path: Path) -> Path:
+    """``path.resolve()``, kept for the enclosing :func:`resolution_scope` if one is open."""
+    memo = _RESOLVED_PATHS.get()
+    if memo is None:
+        return path.resolve()
+    key = str(path)
+    found = memo.get(key)
+    if found is None:
+        found = path.resolve()
+        memo[key] = found
+    return found
+
+
 def _repository_relative_scope(path: str, repo: Path | None) -> str | None:
     """Normalize an in-repository scope to a repository-relative POSIX path.
 
@@ -1312,7 +1341,7 @@ def _repository_relative_scope(path: str, repo: Path | None) -> str | None:
             return None
         return Path(text).as_posix()
     raw = Path(path).expanduser()
-    resolved = (raw if raw.is_absolute() else repo / raw).resolve()
+    resolved = resolved_path(raw if raw.is_absolute() else repo / raw)
     try:
         relative = resolved.relative_to(repo)
     except ValueError:
@@ -1371,7 +1400,9 @@ def _expanded_scope_paths(
         declared = _repository_relative_scope(str(raw_path), repo)
         if declared is None:
             raw = Path(str(raw_path)).expanduser()
-            absolute = (raw if raw.is_absolute() else repo / raw).resolve().as_posix()
+            absolute = resolved_path(
+                raw if raw.is_absolute() else repo / raw
+            ).as_posix()
             expanded[absolute] = (absolute, None)
             continue
         expanded[declared] = (declared, None)
@@ -2288,6 +2319,43 @@ def _promoted_record_project(
     return None
 
 
+def _obligation_record_project(run_id: str) -> str:
+    """Name a project whose stored duties still raise a row for this run.
+
+    A run can hold no live pointer, no ledger record and no promotion request
+    and still be raising duties: a row whose evidence is a manifest, a refusal
+    or a retained tree outlives all three. The stored duty documents are then
+    the only place the run's project is written down, and the deferral must
+    name it -- a deferral is read per project, and one naming the wrong project
+    withholds nothing. A document is matched on a row carrying the run's id;
+    one that cannot be parsed is skipped rather than guessed at.
+    """
+    from reckon.crew import obligation_snapshot, station_obligations
+
+    try:
+        paths = sorted(obligation_snapshot.obligations_home().glob("*/*.json"))
+    except OSError:
+        return ""
+    for path in paths:
+        try:
+            stored = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            continue
+        document = station_obligations.stored_document(stored)
+        if document is None and isinstance(stored, Mapping):
+            document = stored
+        if not isinstance(document, Mapping):
+            continue
+        name = str(document.get("project") or "")
+        if not name:
+            continue
+        for key in ("obligations", "acknowledged"):
+            for row in document.get(key) or ():
+                if isinstance(row, Mapping) and str(row.get("run_id") or "") == run_id:
+                    return name
+    return ""
+
+
 def _record_promoted_acknowledgement(
     run_id: str, deferral: Mapping[str, Any], *, project: str | None
 ) -> dict[str, Any]:
@@ -2307,7 +2375,8 @@ def _record_promoted_acknowledgement(
         # needs no project to be honoured — but the reader is asked per project
         # and a record naming none is never returned, so a project is resolved
         # from the remaining records in order: the caller's own, then the
-        # promotion request the run left behind.
+        # promotion request the run left behind, then the stored duty document
+        # that still raises its rows.
         name = str(project or "").strip()
     if not name:
         from reckon.crew import promotion_requests
@@ -2316,6 +2385,8 @@ def _record_promoted_acknowledgement(
             name = str(promotion_requests.read_promotion(run_id).get("project") or "")
         except (OSError, ValueError, CrewError):
             name = ""
+    if not name:
+        name = _obligation_record_project(run_id)
     if not name:
         looked = (
             ", ".join(sorted(_mounted_project_roots(project))) or "no mounted project"
@@ -2812,9 +2883,7 @@ def _admissible_unlaunched_passes(
 _LAUNCHED_VERDICTS = frozenset({"launched", "routed", "moved"})
 
 
-def _stuck_wait_started(
-    pointer: Mapping[str, Any], phase: str
-) -> datetime | None:
+def _stuck_wait_started(pointer: Mapping[str, Any], phase: str) -> datetime | None:
     """When the request entered the phase whose wait is being judged."""
     hold = pointer.get("queue_hold")
     if not isinstance(hold, Mapping):
@@ -3326,15 +3395,11 @@ def update_watch_registration(project: str, **fields: Any) -> dict[str, Any]:
     path = watch_registration_path(project)
     path.parent.mkdir(parents=True, exist_ok=True)
     lock = watch_registration_lock_path(project)
-    with lock.open("a+b") as guard:
-        fcntl.flock(guard.fileno(), fcntl.LOCK_EX)
-        try:
-            record = read_watch_registration(project)
-            record.setdefault("project", project)
-            record.update(fields)
-            write_json_atomically(path, record)
-        finally:
-            fcntl.flock(guard.fileno(), fcntl.LOCK_UN)
+    with exclusive_lock(lock):
+        record = read_watch_registration(project)
+        record.setdefault("project", project)
+        record.update(fields)
+        write_json_atomically(path, record)
     return record
 
 
@@ -3418,9 +3483,14 @@ def _watch_stream_snapshots(
     moment = _utc_seconds()
     stall_seconds = parse_duration(stall_window)
     pointers = list(records)
+    passes = admission_pass_history()
     return {
         str(record.get("run_id") or ""): _watch_snapshot(
-            record, moment=moment, stall_seconds=stall_seconds, pointers=pointers
+            record,
+            moment=moment,
+            stall_seconds=stall_seconds,
+            pointers=pointers,
+            passes=passes,
         )
         for record in _tick_pointers(pointers)
         if record.get("run_id")
@@ -3897,8 +3967,31 @@ def _publish_watch_stream(project: str, records: Iterable[Mapping[str, Any]]) ->
         transition_fired = _publish_watch_transitions(project, producer, records)
     finally:
         _SWEEP_LOCAL.in_transition = False
+    _start_obligation_sweep(project, transition_fired=transition_fired)
+
+
+def _start_obligation_sweep(project: str, *, transition_fired: bool) -> bool:
+    """Start one obligations sweep, or report that one is already in flight.
+
+    Both triggers take this one path: the change gate folds its transitions and
+    then starts a sweep that knows whether a transition fired, and the
+    producer's own beat starts one with no transition at all. One sweep runs at
+    a time, and a trigger arriving while a sweep is in flight is skipped rather
+    than queued — the sweep's floor interval decides whether that pass writes,
+    so a skipped trigger costs no freshness.
+
+    A trigger raised from inside a running sweep is left to that sweep. This is
+    load-bearing rather than defensive: the derivation lists the fleet through
+    the same call that publishes this stream, so re-entering here would publish
+    a second stream from within the first.
+    """
+    if getattr(_SWEEP_LOCAL, "in_sweep", False):
+        return False
+    producer = _WATCH_STREAM_PRODUCERS.get(project)
+    if producer is None:
+        return False
     if not producer.sweep_lock.acquire(blocking=False):
-        return
+        return False
     producer.sweep_thread = threading.Thread(
         target=_run_obligation_sweep,
         args=(project, producer, transition_fired),
@@ -3906,6 +3999,26 @@ def _publish_watch_stream(project: str, records: Iterable[Mapping[str, Any]]) ->
         daemon=True,
     )
     producer.sweep_thread.start()
+    return True
+
+
+def publish_obligations_on_beat(project: str) -> bool:
+    """Start one obligations sweep without asking for a fleet read.
+
+    A session's snapshot carries an age, so publishing a fresh one becomes due
+    by the passage of time alone. Every other trigger for the sweep reads a
+    document — a transition, a file under the state or plan tree, or the crew
+    home's fingerprint — and a fleet that is simply quiet moves none of them, so
+    a producer reachable only through those triggers goes on holding the seat
+    while its sessions' snapshots age out of the freshness window. This call is
+    the producer's own beat reaching the sweep: it lists nothing, folds no
+    transition, and leaves the sweep's floor interval to decide whether this
+    beat publishes.
+
+    Reports whether a sweep was started. A sweep already in flight is skipped
+    rather than queued, exactly as a trigger from the change gate is.
+    """
+    return _start_obligation_sweep(project, transition_fired=False)
 
 
 def _run_obligation_sweep(

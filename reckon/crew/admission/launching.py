@@ -571,6 +571,25 @@ def _release_stranded_launches(
         if reviewed_run:
             holder["reviewed_run_id"] = reviewed_run
         dispatch_refusals.record_launch_refusal(run_id=run_id, step=step, holder=holder)
+        if _requeue_stranded_request(run_id, step=step):
+            # A request this pass took from the queue goes back to it, with its
+            # brief and steering: nothing else would dispatch it again.
+            released.append(run_id)
+            if verdicts is not None:
+                verdicts.append(
+                    _verdicts._verdict_row(
+                        pointer,
+                        allowance=None,
+                        allowance_source="",
+                        verdict="requeued-stranded-launch",
+                        detail=(
+                            "the launch span passed its bound at step "
+                            f"{step or 'an unrecorded step'}; the queued request "
+                            "it came from is back in the queue"
+                        ),
+                    )
+                )
+            continue
         dispatch_claims._release_launch_claim(run_id)
         released.append(run_id)
         if verdicts is not None:
@@ -588,6 +607,47 @@ def _release_stranded_launches(
                 )
             )
     return released
+
+
+def _requeue_stranded_request(run_id: str, *, step: str) -> bool:
+    """Write a stranded launch back as the queued request it came from.
+
+    An admission pass records a handover holding the queued request before it
+    launches, and clears it in the same pass once the launch settles. A pass
+    cut off mid-launch, as a re-exec of the service is, never clears it, so a
+    stranded launch that still has its handover is one this lane took from the
+    queue. Releasing it as a launch removed its pointer and run directory, and
+    with them the only copy of a request nothing would dispatch again: on 14
+    November queued requests vanished this way with no record a reader could
+    find. A launch with no handover was not taken from the queue, and a run
+    whose discard is recorded was deliberately ended; both keep the release.
+    """
+    from reckon.crew.dispatching.claims import _attempt_record_for
+    from reckon.crew.promotion import discard_recorded
+
+    request = runs.find_handover(run_id)
+    if not isinstance(request, Mapping) or discard_recorded(run_id):
+        return False
+    restored = _requeued_request(request, run_id)
+    for key in ("admitted_by", "pid", "pid_start_time"):
+        restored.pop(key, None)
+    restored["queued_at"] = _service._utc_now()
+    restored.setdefault("created_at", restored["queued_at"])
+    _holds._stamp_failure(
+        restored,
+        {"kind": "stranded-launch", "step": step},
+        moment=_service._now(),
+        guard=_holds._dependency_guard(restored, None),
+    )
+    directory = runs.run_dir(run_id)
+    # The attempt and its claim belong to the launch that stranded; the request
+    # waits without either, exactly as it did before that pass took it.
+    _attempt_record_for(run_id).unlink(missing_ok=True)
+    (directory / "claim.json").unlink(missing_ok=True)
+    with runs._pointer_lock(run_id):
+        _write_pointer(run_id, restored)
+    runs.clear_handover(restored)
+    return True
 
 
 def _requeued_request(request: Mapping[str, Any], run_id: str) -> dict[str, Any]:

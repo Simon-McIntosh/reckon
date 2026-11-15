@@ -101,6 +101,22 @@ def gc(repo: Path, *, apply: bool) -> dict:
     return json.loads(result.output)
 
 
+def gc_unscoped(repo: Path, *, apply: bool) -> dict:
+    """A pass over every local ledger, the arm that reclaims across the home."""
+    result = CliRunner().invoke(
+        cli.main,
+        [
+            "crew",
+            "gc",
+            "--repo",
+            str(repo),
+            *(["--apply"] if apply else []),
+        ],
+    )
+    assert result.exit_code == 0, result.output
+    return json.loads(result.output)
+
+
 def create_ledger(repo: Path) -> Path:
     """Create the project's ledger file, so its recorded path is live."""
     ledger.write(
@@ -127,8 +143,9 @@ def plant(repo: Path) -> dict[str, Path]:
 
 
 def test_gc_reports_and_removes_orphan_ledger_indexes(tmp_path, monkeypatch):
-    """gc lists exactly the two orphans and the stale unrecorded index, and
-    ``--apply`` removes exactly those, stating each path and size."""
+    """gc lists exactly the two orphans and the stale unrecorded index; a
+    project-scoped ``--apply`` keeps them, because none records this project's
+    own ledger, and an unscoped ``--apply`` removes all three."""
     monkeypatch.setenv("RECKON_HOME", str(tmp_path / "config"))
     repo = repository(tmp_path)
     stores = plant(repo)
@@ -155,18 +172,38 @@ def test_gc_reports_and_removes_orphan_ledger_indexes(tmp_path, monkeypatch):
 
     applied = gc(repo, apply=True)
 
-    removed = {row["path"] for row in applied["ledger_indexes"] if row["removed"]}
+    # Each records a path that is not this project's own ledger, or none at
+    # all, so the scoped pass attributes them nowhere and keeps every one.
+    rows = {row["path"]: row for row in applied["ledger_indexes"]}
+    assert set(rows) == {
+        str(stores["orphan_a"]),
+        str(stores["orphan_b"]),
+        str(stores["unrecorded"]),
+    }
+    assert all(row["action"] == "keep" for row in rows.values())
+    assert all(row["project"] == "unknown" for row in rows.values())
+    assert applied["ledger_indexes_removed"] == 0
+    assert stores["orphan_a"].is_file()
+    assert stores["orphan_b"].is_file()
+    assert stores["unrecorded"].is_file()
+    # The live index and the picker's own input file in the same cache root are
+    # never matched.
+    assert stores["live"].is_file()
+    assert stores["picker"].is_file()
+
+    # Without --project the pass reclaims across the home, and there each of
+    # the three is an orphan it removes.
+    unscoped = gc_unscoped(repo, apply=True)
+    removed = {row["path"] for row in unscoped["ledger_indexes"] if row["removed"]}
     assert removed == {
         str(stores["orphan_a"]),
         str(stores["orphan_b"]),
         str(stores["unrecorded"]),
     }
-    assert applied["ledger_indexes_removed"] == 3
+    assert unscoped["ledger_indexes_removed"] == 3
     assert not stores["orphan_a"].exists()
     assert not stores["orphan_b"].exists()
     assert not stores["unrecorded"].exists()
-    # The live index and the picker's own input file in the same cache root are
-    # never matched.
     assert stores["live"].is_file()
     assert stores["picker"].is_file()
 
@@ -211,7 +248,7 @@ def test_a_live_process_holds_its_index(tmp_path, monkeypatch):
     held = sqlite3.connect(orphan, timeout=0.0)
     held.execute("BEGIN IMMEDIATE")
     try:
-        applied = gc(repo, apply=True)
+        applied = gc_unscoped(repo, apply=True)
         assert orphan.is_file()
         assert all(
             not row["removed"]

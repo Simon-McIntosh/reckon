@@ -21,6 +21,7 @@ from ._imports import (
     LanePaused,
     Mapping,
     Path,
+    RosterFull,
     TaskNode,
     _actionable_budget_hold,
     _adjacent_live_peers,
@@ -114,6 +115,51 @@ IDLE_MEMBER_REAP_INTERVAL_SECONDS = 600.0
 _LAST_IDLE_MEMBER_REAP: dict[tuple[str, str], float] = {}
 
 
+def _committed_node_runs(
+    project: str, root: object, node_id: str
+) -> list[dict[str, Any]]:
+    """The committed runs of one node, in completion order.
+
+    Read from the project's run index with one filtered query, so a dispatch
+    pays for its own node's rows rather than for the whole ledger. An index
+    that cannot be read falls back to the full ledger read, filtered here.
+    """
+    import json as _json
+    import sqlite3
+    from contextlib import closing
+
+    def ordered(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+        return sorted(
+            rows,
+            key=lambda row: (
+                str(row.get("completed_at") or row.get("dispatched_at") or ""),
+                str(row.get("run_id") or ""),
+            ),
+        )
+
+    query = (
+        "SELECT payload FROM aggregate_rows "  # noqa: S608 - values are bound
+        "WHERE json_extract(payload, '$.node') = ? "
+        "UNION ALL SELECT payload FROM records "
+        "WHERE name NOT IN (SELECT run_id FROM aggregate_rows WHERE run_id IS NOT NULL) "
+        "AND json_extract(payload, '$.node') = ?"
+    )
+    try:
+        index_uri = ledger._run_index_path(project, root).as_uri() + "?mode=ro"
+        with closing(sqlite3.connect(index_uri, uri=True)) as connection:
+            rows = [
+                _json.loads(payload)
+                for (payload,) in connection.execute(query, (node_id, node_id))
+            ]
+    except (OSError, sqlite3.Error, ValueError):
+        rows = [
+            row
+            for row in ledger.runs(project, root=root)
+            if str(row.get("node") or "") == node_id
+        ]
+    return ordered([row for row in rows if isinstance(row, dict)])
+
+
 def _idle_member_reap_due(project: str, root: object) -> bool:
     """Whether this process should reap the project's idle members now."""
     key = (str(project), str(root))
@@ -123,6 +169,119 @@ def _idle_member_reap_due(project: str, root: object) -> bool:
         return False
     _LAST_IDLE_MEMBER_REAP[key] = now
     return True
+
+
+def _local_lane_reserve(
+    is_local: bool,
+    *,
+    config: Mapping[str, Any] | None = None,
+) -> int:
+    """The reservation seats a dispatch must leave free: the local lane's reserve.
+
+    Only the local lane holds seats back. A dispatch naming any other lane is
+    what the reserve is kept for, so it is measured against the bounds as they
+    stand.
+
+    The reserve is held only while a request on another lane is actually
+    waiting: with none, local work may fill every seat, because a standing
+    reserve leaves that work idle for room nothing asked for. A caller that
+    states no configuration has no queue to read, and keeps the reserve rather
+    than being granted room on an unread queue.
+    """
+    if not is_local:
+        return 0
+    from reckon.crew import placement
+
+    if config is None:
+        return placement.LOCAL_LANE_RESERVE
+    if placement.named_lane_request_waiting(config):
+        return placement.LOCAL_LANE_RESERVE
+    return 0
+
+
+def _context_fit_shortfall(resolution: Any, repo: Path) -> str:
+    """Name the figure that moved a request off the lane it first resolved to.
+
+    A request too large for the lane it resolved onto is re-resolved onto one
+    whose window holds it, and the bound it then meets belongs to that second
+    lane. Naming the shortfall keeps an answer about a full reservation from
+    reading as a node too large for the lane that was asked for, which is a
+    different remedy.
+    """
+    from ._imports import _context_fit_verdict
+
+    lane = str(resolution.backend or "")
+    try:
+        verdict = _context_fit_verdict(resolution=resolution, repo=repo)
+    except CrewError:
+        verdict = None
+    if not verdict:
+        return f"; it left {lane!r} on context fit"
+    return (
+        f"; it left {lane!r} on context fit, whose window of "
+        f"{int(verdict['window_tokens'])} tokens the request exceeds by "
+        f"{int(verdict['shortfall_tokens'])} tokens "
+        f"(estimated {int(verdict['estimated_tokens'])})"
+    )
+
+
+def _queue_a_held_request(
+    *,
+    run_id: str,
+    project: str,
+    node: TaskNode,
+    repo_root: Path,
+    session: str,
+    backend_name: str,
+    launch_kind: str,
+    lane_allowance: Mapping[str, Any],
+    dispatch_options: Mapping[str, Any] | None,
+    config: Mapping[str, Any],
+    admitted_from: str = "",
+    backlog: Mapping[str, Any] | None = None,
+    is_local: bool = True,
+) -> LaneHeld:
+    """Store a dispatch the lane had no room for as one queued request.
+
+    Every lane queues here rather than losing a node whose run id the caller
+    has already been shown: the request keeps the lane it named, the options it
+    was dispatched with, and the hold that stored it, and the admission service
+    launches it when that lane has room. The hold rides the exception so the
+    caller reports the same reason the pointer carries.
+    """
+    from reckon.crew import queue_admission
+
+    queued, position = queue_dispatch(
+        _queued_request_record(
+            run_id=run_id,
+            project=project,
+            repo_root=repo_root,
+            node=node,
+            session=session,
+            backend_name=backend_name,
+            launch_kind=launch_kind,
+            lane_allowance=lane_allowance,
+            dispatch_options=dispatch_options,
+            queued_at=_utc_now(),
+            admitted_from=admitted_from,
+            local=is_local,
+            backlog=backlog,
+        ),
+        max_requests=flight.queue_max_requests(config),
+    )
+    held = LaneHeld(lane_allowance)
+    held.queued = {
+        "run_id": queued["run_id"],
+        "position": position,
+        "phase": str(queued.get("phase") or queue_admission.QUEUED_PHASE),
+        "waits": [],
+        "reason": lane_allowance.get("reason"),
+    }
+    if not is_local:
+        # The lane this request waits on, so a reader of the answer is not told
+        # its own local queue holds it.
+        held.queued["backend"] = backend_name
+    return held
 
 
 def dispatch(
@@ -401,6 +560,9 @@ def dispatch(
     # oversized request off a lane that can only refuse it at launch, where a
     # full lane would have queued it first.
     context_fit_fallback: dict[str, Any] | None = None
+    # Kept because the reroute replaces the resolution, and the figure that
+    # moved the request belongs to the lane it left.
+    pre_reroute_resolution = resolution
     if _router_free_resolution(
         resolved_route=resolved_route,
         picker_selection=picker_selection,
@@ -443,6 +605,9 @@ def dispatch(
     dispatch_options.setdefault("route", route or resolution.route)
     if context_fit_fallback is not None:
         dispatch_options["route_fallback"] = context_fit_fallback
+        dispatch_options["context_fit_shortfall"] = _context_fit_shortfall(
+            pre_reroute_resolution, repo_root
+        )
     if not admission_launch and caller_named_route:
         dispatch_options["named_route"] = {
             "backend": resolution.backend,
@@ -871,6 +1036,11 @@ def dispatch(
         )
         held = LaneHeld({"detail": hold["detail"], "reason": hold["reason"]})
         held.queued = {
+            # A node with no stored request is created by this call, so the
+            # answer reports it as created rather than naming the run back as
+            # one that was already waiting.
+            "created": existing is None,
+            "backend": backend_name,
             "run_id": str(queued["run_id"]),
             "position": position,
             # A request the writer could not move off ``queued`` is reported
@@ -958,41 +1128,59 @@ def dispatch(
     if lane_gate.get("state") in _LANE_GATE_WAITING_STATES:
         raise LanePaused(lane_gate)
 
-    # The router's allowance is checked before creating a worktree. A local
-    # hold records the request as queued; other holds remain transient. The
-    # allowance rides the exception so the caller reports the router's reason.
-    if lane_allowance.get("held"):
-        if is_local and not shadow_lineage:
-            queued, position = queue_dispatch(
-                _queued_request_record(
-                    run_id=run_id,
-                    project=project,
-                    node=node,
-                    repo_root=repo_root,
-                    session=session,
-                    backend_name=backend_name,
-                    launch_kind=launch_kind,
-                    lane_allowance=lane_allowance,
-                    dispatch_options=dispatch_options,
-                    queued_at=_utc_now(),
-                    admitted_from=admitted_from,
-                    backlog=backlog,
-                ),
-                max_requests=flight.queue_max_requests(config),
+    # A bound the placement reservation enforces is a wait for room, not a
+    # refusal: a direct dispatch that meets one is stored as a queued request
+    # exactly as a router hold is, so it launches when room frees rather than
+    # being lost after its run id was printed. A request the admission pass is
+    # launching is already queued, and its later bound refusal restores it, so
+    # it is not queued a second time here.
+    if not shadow_lineage and not admission_launch:
+        try:
+            _refuse_over_concurrency_ceiling(
+                backend_name,
+                backend,
+                project,
+                exclude_run_ids=(run_id,),
+                reserve=_local_lane_reserve(is_local, config=config),
             )
-            from reckon.crew import queue_admission
+        except RosterFull as roster:
+            reason = (
+                "the placement reservation's roster is full "
+                f"({roster.occupancy}/{roster.limit}); the request waits for room"
+                + dispatch_options.get("context_fit_shortfall", "")
+            )
+            lane_allowance = {
+                **lane_allowance,
+                "held": True,
+                "reason": reason,
+                "detail": str(roster),
+            }
 
+    # The router's allowance is checked before creating a worktree. A hold on
+    # any lane records the request as queued, so a request naming a lane the
+    # coordinator must run on is stored and launched by admission rather than
+    # refused and retried by hand. The allowance rides the exception so the
+    # caller reports the router's reason.
+    if lane_allowance.get("held"):
+        if not shadow_lineage:
             # A node whose waits are unmet is held on them above, whatever the
             # lane state, so what this branch stores is a request the lane had
             # no room for and it carries no wait.
-            held = LaneHeld(lane_allowance)
-            held.queued = {
-                "run_id": queued["run_id"],
-                "position": position,
-                "phase": str(queued.get("phase") or queue_admission.QUEUED_PHASE),
-                "waits": [],
-                "reason": lane_allowance.get("reason"),
-            }
+            held = _queue_a_held_request(
+                run_id=run_id,
+                project=project,
+                node=node,
+                repo_root=repo_root,
+                session=session,
+                backend_name=backend_name,
+                launch_kind=launch_kind,
+                lane_allowance=lane_allowance,
+                dispatch_options=dispatch_options,
+                config=config,
+                admitted_from=admitted_from,
+                backlog=backlog,
+                is_local=is_local,
+            )
             if held_selection is not None:
                 # The hold that offered the local lane is kept in the outcome
                 # history, marked queued with the run it became, so a reader of
@@ -1005,7 +1193,7 @@ def dispatch(
                     plan=node.plan,
                     selection=held_selection,
                     reason=_picker_refusal_reasons(held_selection),
-                    run_id=str(queued["run_id"]),
+                    run_id=str(held.queued["run_id"]),
                     queued=True,
                 )
             _arrange_dispatch_follower(
@@ -1133,6 +1321,65 @@ def dispatch(
     # would overwrite or release something the running worker holds.
     _refuse_a_live_worker_before_the_worktree(run_id)
 
+    # The bound is read a second time here, after the gates above that can take
+    # seconds: a seat or a core can be taken between the first read and this
+    # one. It still runs before any claim, run directory or worktree exists, so
+    # a dispatch that meets it has published nothing to take back and the run id
+    # the caller was shown is never one the refusal strands. A request naming
+    # any lane is stored as queued here, exactly as the first read stores it; a
+    # request the admission pass is already launching keeps the waiting pointer
+    # it came with, and the hold is reported so that pass restores it.
+    try:
+        _refuse_over_concurrency_ceiling(
+            backend_name,
+            backend,
+            project,
+            exclude_run_ids=(run_id,),
+            reserve=_local_lane_reserve(is_local, config=config),
+        )
+    except RosterFull as roster:
+        reason = (
+            "the placement reservation's roster is full "
+            f"({roster.occupancy}/{roster.limit}); the request waits for room"
+            + dispatch_options.get("context_fit_shortfall", "")
+        )
+        bound_hold = {
+            **lane_allowance,
+            "held": True,
+            "reason": reason,
+            "detail": str(roster),
+        }
+        if shadow_lineage:
+            # A shadow run exists to be compared against its pair, so it is
+            # refused when the bound binds rather than stored for later: a
+            # queued shadow has no pair to run beside.
+            raise
+        if admission_launch:
+            raise LaneHeld(bound_hold) from roster
+        held = _queue_a_held_request(
+            run_id=run_id,
+            project=project,
+            node=node,
+            repo_root=repo_root,
+            session=session,
+            backend_name=backend_name,
+            launch_kind=launch_kind,
+            lane_allowance=bound_hold,
+            dispatch_options=dispatch_options,
+            config=config,
+            admitted_from=admitted_from,
+            backlog=backlog,
+            is_local=is_local,
+        )
+        _arrange_dispatch_follower(
+            project,
+            session,
+            launch_kind,
+            watch_required=watch_required,
+            watch_override=watch_override,
+        )
+        raise held from roster
+
     directory = run_dir(run_id)
     # A brief is authority text, so its durable copy is taken with the run's id
     # rather than at launch: a later reader opening the pointer finds the same
@@ -1190,14 +1437,6 @@ def dispatch(
         if admission_launch
         else _claim_released_on_refusal(run_id, claim_published)
     ):
-        # A dispatch that would exceed a resource bound — the placement's
-        # admitted partition cores or the login memory slice — refuses before
-        # anything is created or spawned. A fallback backend resolved above
-        # gets the same reading as a directly chosen one, so a held lane never
-        # reroutes onto an exhausted resource.
-        _refuse_over_concurrency_ceiling(
-            backend_name, backend, project, exclude_run_ids=(run_id,)
-        )
         explicitly_named_peers = set() if shadow_lineage else set(node.peer_scopes)
         peers = (
             {} if shadow_lineage else _merge_peer_scopes(peer_claims, node.peer_scopes)
@@ -1293,7 +1532,14 @@ def dispatch(
                 explicitly_named=explicitly_named_peers,
                 exclude_run_ids=(run_id,),
             )
-        committed_runs = ledger.runs(project, root=ledger_root)
+        # Only shadow lineage and session reuse read runs beyond this node's
+        # own, so every other dispatch reads just the node's rows from the run
+        # index instead of decoding the whole ledger on each launch.
+        committed_runs = (
+            ledger.runs(project, root=ledger_root)
+            if shadow_lineage or backend.get("session_reuse")
+            else _committed_node_runs(project, ledger_root, node.id)
+        )
         session_resolution = (
             _task_session_resolution(
                 node,

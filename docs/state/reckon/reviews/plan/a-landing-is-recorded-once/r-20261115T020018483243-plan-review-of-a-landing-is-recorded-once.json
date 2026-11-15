@@ -1,0 +1,141 @@
+{
+  "absent_items": [],
+  "accepted_edits": [
+    {
+      "by": "874a3927-ba34-4bb1-be65-22fd95326122",
+      "digests": {
+        "s3": "cb9307f1c325e756c27eabb07961d46e42f04f4ea0c48ac0f249c699110cf8b3"
+      },
+      "reason": "the edits to section 3 and the dependency map are the three answers to the scoped review, each recorded on its finding",
+      "units": [
+        "s3"
+      ],
+      "when": "2026-11-15T02:43:46.558798+00:00"
+    }
+  ],
+  "completed_at": "2026-11-15T02:37:42.821Z",
+  "dispatched_at": "2026-11-15T02:04:30Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-landing-is-recorded-once.html:42",
+      "id": "wiring-1",
+      "reason": "dispatched as a batch the DAG gate releases \u00a73 before \u00a72 has landed, so the \u00a73 node has no source for a run's named figures and must invent one, which is exactly the second write this plan exists to remove.",
+      "text": "\u00a73's overview carries \"every named figure with its caption\" and \"the figures its runs named\", but a named figure exists only through \u00a72's `figures:` manifest line, and \u00a73 declares no `depends-on` on \u00a72 (the plan's dependency map holds only s5\u2192s3 and s6\u2192s3,s4) while the followup records \"\u00a72, \u00a73 and \u00a74 are independent\"",
+      "type": "wiring",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-landing-is-recorded-once.html:43",
+      "id": "reasoning-1",
+      "reason": "a node meeting this case must either widen the ledger's declared record schema \u2014 an unstated deliverable, since a row's keys are a declared vocabulary (`RECORD_FIELDS`, `reckon/ledger.py:132`) that a test holds to, and `normalized_suite_observation` drops any key it does not know \u2014 or read the gate log, which then leaves the pass count as the one factual sentence in the overview with no source of the permitted kinds.",
+      "text": "\u00a73's done-when requires \"the gate command, its exit status, the pass count and the tests-added count held on a run record\" to appear in the overview, but the run record carries `gate`, `gate_check.command`, `gate_check.exit_status`, `tests_added` and, for the suite arms, `failure_count` and `failure_ids` only (`reckon/ledger.py:469-500`, `reckon/ledger.py:511-556`); no field carries a pass count, and the count exists only inside the gate log, which \u00a73's own source list (\"a commit, a run id, a gate command with its exit status, or a figure path\") does not name",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-landing-is-recorded-once.html:42",
+      "id": "reasoning-2",
+      "reason": "\u00a73's test uses a two-section plan whose sections both land, so the measure passes while the overview of every plan that closes with deferred work has no defined rendering, and the node invents one.",
+      "text": "\u00a73 says the overview holds \"one paragraph per section giving what the section set out to do, its landing line verbatim, and the measured result\", with no rule for a section that closes without landing; \u00a74 permits exactly that state (its guard reaches only a section declared `done`, so a section with a done-when that closed `deferred` is outside it) and this plan declares it for \u00a76, so a plan closed as the plan describes cannot satisfy \u00a73's own content rule",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "034c84e704c0e8cfb1fa3237ae4c52ee188a2ff8",
+  "plan_fingerprint": "e7b8a9e85079622bfb720274f2a3074c2f4669d2a4e34ad65a3c85a8fb52cc68",
+  "plan_slug": "a-landing-is-recorded-once",
+  "plan_version": 0,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "034c84e704c0e8cfb1fa3237ae4c52ee188a2ff8",
+      "commit_basis": "edit",
+      "finding": "wiring-1",
+      "note": "\u00a73 now declares a wait on \u00a72 in the section dependency map, and the followup no longer calls them independent",
+      "reason": "",
+      "when": "2026-11-15T02:41:43.734940+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "034c84e704c0e8cfb1fa3237ae4c52ee188a2ff8",
+      "commit_basis": "edit",
+      "finding": "reasoning-1",
+      "note": "\u00a73 no longer asks for a pass count, which no run record holds; the case now names the gate command, exit status, tests-added count and suite failure count, and a gate log path is added to the permitted source kinds",
+      "reason": "",
+      "when": "2026-11-15T02:42:01.631551+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "034c84e704c0e8cfb1fa3237ae4c52ee188a2ff8",
+      "commit_basis": "edit",
+      "finding": "reasoning-2",
+      "note": "\u00a73 now states what a section with no landing renders (one sourced sentence giving its declaration and that nothing landed), with a third fixture section and a negative control covering it",
+      "reason": "",
+      "when": "2026-11-15T02:42:20.380953+00:00"
+    }
+  ],
+  "responses": {
+    "reasoning-1": {
+      "action": "acted",
+      "by": "",
+      "commit": "034c84e704c0e8cfb1fa3237ae4c52ee188a2ff8",
+      "commit_basis": "edit",
+      "note": "\u00a73 no longer asks for a pass count, which no run record holds; the case now names the gate command, exit status, tests-added count and suite failure count, and a gate log path is added to the permitted source kinds",
+      "reason": "",
+      "when": "2026-11-15T02:42:01.631551+00:00"
+    },
+    "reasoning-2": {
+      "action": "acted",
+      "by": "",
+      "commit": "034c84e704c0e8cfb1fa3237ae4c52ee188a2ff8",
+      "commit_basis": "edit",
+      "note": "\u00a73 now states what a section with no landing renders (one sourced sentence giving its declaration and that nothing landed), with a third fixture section and a negative control covering it",
+      "reason": "",
+      "when": "2026-11-15T02:42:20.380953+00:00"
+    },
+    "wiring-1": {
+      "action": "acted",
+      "by": "",
+      "commit": "034c84e704c0e8cfb1fa3237ae4c52ee188a2ff8",
+      "commit_basis": "edit",
+      "note": "\u00a73 now declares a wait on \u00a72 in the section dependency map, and the followup no longer calls them independent",
+      "reason": "",
+      "when": "2026-11-15T02:41:43.734940+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/Code/reckon/docs/state/reckon/reviews/plan/a-landing-is-recorded-once/r-20261115T020018483243-plan-review-of-a-landing-is-recorded-once.json",
+  "review_run_id": "r-20261115T020018483243-plan-review-of-a-landing-is-recorded-once",
+  "reviewed_blob_sha": "b61f69122d8f72f6b6c78893a7902aa50f8af2b2",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 the cited research document `docs/research/per-node-evidence-costs-and-closure-overview.html`, the plan `landed-record-at-closure`, the command `reckon evidence synthesize` (present at `reckon/project_maintenance_commands.py:1468` as a redefinition of an existing command) and `reckon audit-doc` (`reckon/project_maintenance_commands.py:1624`) all resolve; the `docs/figures/<plan>/` convention matches 60+ existing directories in the tree.",
+    "done_when": "pass \u2014 each of s2, s3 and s4 states a case set that can fail and declares at least one negative control that makes its guard speak.",
+    "evidence_paths": "pass \u2014 figures land under `docs/figures/<plan>/`, the s4 live-store count lands on the run's manifest, and every named gate runs as a test in the repository; nothing is written to a scratchpad or a node-local temporary path.",
+    "naming": "pass \u2014 the units name no plan labels, stage names, ticket numbers or version tags, and state their mechanisms rather than their history.",
+    "reasoning": "two findings \u2014 \u00a73 asserts a pass count \"held on a run record\" that no run record holds, and its \"one paragraph per section, its landing line verbatim\" rule has no endpoint for a section that closes unlanded, a state this plan itself declares for \u00a76.",
+    "single_goal": "pass \u2014 s2 (a figure per node with something to show), s3 (one sourced closure overview) and s4 (a close refuses an unlanded section) each carry one deliverable.",
+    "wiring": "a finding \u2014 \u00a73 draws \"the figures its runs named\", which only \u00a72's `figures:` manifest line establishes, yet \u00a73 declares no depends-on on \u00a72 and the followup calls \u00a72, \u00a73 and \u00a74 independent."
+  },
+  "section_digests": {
+    "_document": "7a8f1117820bc57873c4dcffaa7634193c4a7eea872bdf892b49536f0a0c4fc1",
+    "s1": "643944e30f98fe3b7d1b4817bffd76b5fc4294adfad633bdb56e383d94505f84",
+    "s2": "2d2d44bf749b7916a80e500c8eb68efba5d3e518c2a88d597fdfcf45a78bd746",
+    "s3": "70a73adfb2f93453c9d5fdd1a94c8b376cf3cca4fd45d7a86e67926259279c7e",
+    "s4": "53fbc9358daa84854d9ee99d8eba8beaf95787d214575b2fed22849911b46558",
+    "s5": "70388ed2fe3a64b08e6ce5b7d84d907144450ecd34194e69c68fb2bdcf1d356b",
+    "s6": "d6ac7def5f2ac649cc11f84673fc62b471033e72004c9d12d778323b5a8a100e"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-15T02:40:29.876135+00:00",
+  "total": null,
+  "traced_units": [
+    "s2",
+    "s3",
+    "s4"
+  ]
+}

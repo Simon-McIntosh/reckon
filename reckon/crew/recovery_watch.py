@@ -14,6 +14,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Callable, Iterable, Iterator, Mapping, Sequence
 
+from reckon import file_memo
 from reckon._timestamps import parse_utc
 from reckon.crew import metering, obligation_snapshot, quota_weight, runs
 from reckon.crew.host_lease import LEASE_RENEW_SECONDS
@@ -48,6 +49,7 @@ from reckon.crew.watch_unit import (
     seat_names_a_live_foreign_producer,
     watch_state,
 )
+from reckon.node_exclusive_lock import exclusive_lock
 
 # The waiting family is the stop that lifts itself, an overdue wait included:
 # a run whose declared external wait has aged past its expectation has not
@@ -110,6 +112,7 @@ _GIT_ANSWER_STORE_FILENAME = "git-object-answers.json"
 _GIT_ANSWER_STORE_VERSION = 1
 _GIT_ANSWER_STORE_WORKTREES = 256
 _GIT_ANSWER_STORE_CANDIDATES = 512
+_GIT_ANSWER_STORE_KIND = "git_answer_store"
 
 
 def _git_answer_store_path() -> Path:
@@ -160,7 +163,21 @@ def _read_git_answer_store() -> dict[str, Any]:
     one, because the only answers offered are ones a previous git run gave for
     these exact object ids. Anything the reader does not recognise is treated
     as corrupt rather than guessed at.
+
+    The parsed copy lives in the shared file memo under the file's own identity.
+    One sweep asks this store for nearly every citation it composes, and a fresh
+    read of the file per question is the read the census named: a steady station
+    opened the same file hundreds of times in one tick to learn that no other
+    process had written it. The identity is the stat identity, so a write by
+    another process — which rewrites the file through a rename — misses the held
+    copy on the next read.
     """
+    return file_memo.memoized(
+        _GIT_ANSWER_STORE_KIND, _git_answer_store_path(), _parse_git_answer_store
+    )
+
+
+def _parse_git_answer_store() -> dict[str, Any]:
     try:
         payload = json.loads(_git_answer_store_path().read_text(encoding="utf-8"))
     except (OSError, ValueError, UnicodeDecodeError):
@@ -239,24 +256,23 @@ def _update_git_answer_store(mutate: Callable[[dict[str, Any]], None]) -> None:
     path = _git_answer_store_path()
     lock_path = path.with_name(f"{path.name}.lock")
     try:
-        path.parent.mkdir(parents=True, exist_ok=True)
-        lock = lock_path.open("a+")
-    except OSError:
-        return
-    with lock:
-        try:
-            fcntl.flock(lock.fileno(), fcntl.LOCK_EX)
-            store = _read_git_answer_store()
+        with exclusive_lock(lock_path):
+            # Parsed fresh under the lock: the held copy may predate another
+            # process's write, and a change applied to it would drop that write.
+            store = _parse_git_answer_store()
             mutate(store)
             _bound_git_answer_store(store)
             payload = json.dumps(store, sort_keys=True)
             temporary = path.with_name(f".{path.name}.{os.getpid()}.tmp")
             temporary.write_text(payload, encoding="utf-8")
             os.replace(temporary, path)
-        except OSError:
-            return
-        finally:
-            fcntl.flock(lock.fileno(), fcntl.LOCK_UN)
+            # The write is this process's own, so the copy it just persisted is
+            # the one a later read should hold rather than re-parsing it. A path
+            # that cannot be stat'd after the rename holds nothing to key on, and
+            # is left for the next read to parse.
+            file_memo.memoized(_GIT_ANSWER_STORE_KIND, path, lambda: store)
+    except OSError:
+        return
 
 
 def _stored_commit_answer(tree: Path, candidate: str) -> str:
@@ -271,8 +287,17 @@ def _remember_commit_answer(tree: Path, candidate: str, sha: str) -> None:
 
     An unresolved candidate is never stored: an object the repository does not
     hold yet it may hold later, so "names no commit" is not an immutable fact.
+
+    An answer the store already holds is not written again. The store is one
+    file shared by every process reading this home, and its write is a lock
+    plus a whole-file rewrite, so rewriting it to store the value it already
+    carries costs the lock every tick and hands the file a new identity — which
+    is what stops a reader's held copy from matching. Only a new or different
+    answer changes the file.
     """
     if not sha:
+        return
+    if _stored_commit_answer(tree, candidate) == sha:
         return
 
     def mutate(store: dict[str, Any]) -> None:
@@ -289,7 +314,15 @@ def _stored_count_answer(tree: Path, head: str, base: str) -> int | None:
 
 
 def _remember_count_answer(tree: Path, head: str, base: str, count: int) -> None:
-    """Record the commit count for this worktree head and base."""
+    """Record the commit count for this worktree head and base.
+
+    A count already stored for these two object ids is not written again, for
+    the reason ``_remember_commit_answer`` gives: the answer cannot move, so the
+    rewrite would cost the store's lock and a new file identity to change
+    nothing.
+    """
+    if _stored_count_answer(tree, head, base) == count:
+        return
     key = _count_answer_key(head, base)
 
     def mutate(store: dict[str, Any]) -> None:
@@ -536,6 +569,7 @@ def overdue_unreconciled_runs(
     project: str,
     grace: str,
     now_seconds: float | None = None,
+    session: str | None = None,
 ) -> list[dict[str, Any]]:
     """Return actionable terminal pointers older than the configured grace.
 
@@ -545,6 +579,15 @@ def overdue_unreconciled_runs(
     refused here (the forgotten-work case) while one the drain counts as
     reconciled is never refused. A scoring run inside its armed reflex's review
     window awaits that reflex rather than coordinator reconciliation.
+
+    ``session`` scopes the answer to one coordinator's own rows. Classification
+    is the costly part — each read opens the run's manifest, stream and stored
+    review — so a pointer another session owns is skipped before it is read.
+    The owner is the ``session`` the pointer was dispatched under.
+
+    Omitting ``session`` keeps the project-wide reading the drain asks for. A
+    pointer with no recorded owner stays in scope either way: absence cannot
+    prove that a live pointer belongs to a peer.
     """
     if not grace:
         return []
@@ -553,6 +596,10 @@ def overdue_unreconciled_runs(
     grace_seconds = parse_duration(grace)
     rows = []
     for pointer in list_live(project=project):
+        if session is not None:
+            owner = str(pointer.get("session") or "")
+            if owner and owner != session:
+                continue
         row = classify_pointer(pointer, now_seconds=now_seconds)
         age = row.get("terminal_age_seconds")
         if (
@@ -1454,6 +1501,13 @@ def _compute_watch_snapshot(
         stale_after_seconds=stall_seconds,
         **({"pointers": pointers} if pointers is not None else {}),
     )
+    # Which repair records count as open is the reflex's own question, so it is
+    # asked of the owner of that reading rather than answered here. The import
+    # is deferred because this module is reachable from the reflex's own import
+    # chain, and only the call needs the answer.
+    from reckon.crew import obligations
+
+    repair_round = obligations._repair_round_in_flight(pointer)
     verdict = row["fleet_verdict"]
 
     # The absolute instants the silence is measured between, resolved once
@@ -1510,6 +1564,12 @@ def _compute_watch_snapshot(
         # way — the snapshot carries the raw spelling and the renderer narrows
         # it to fit its column.
         "role": _pointer_role(pointer),
+        # Whether a repair round for this run has a worker answering it, so the
+        # counter can read a run that the review sent back to work as working
+        # while its manifest still carries the verdict it delivered. Which
+        # records count as open is the reflex's own question, so it is asked of
+        # the owner of that reading rather than answered a second time here.
+        "repair_in_flight": repair_round is not None,
         # Whether this run is a shadow of a committed primary. Dispatch decides
         # shadowship at launch and writes the lineage onto the pointer; the
         # renderer dims a shadow row end to end from that fact, so the snapshot
@@ -1588,6 +1648,31 @@ def _compute_watch_snapshot(
     }
 
 
+def _with_stuck_verdict(
+    snapshot: Mapping[str, Any],
+    pointer: Mapping[str, Any],
+    *,
+    passes: Sequence[Mapping[str, Any]] | None = None,
+) -> dict[str, Any]:
+    """Attach the one stuck verdict to a snapshot, read from its live pointer.
+
+    The verdict is recomputed on every observation rather than frozen into the
+    reusable snapshot. A snapshot is reused while every file it was classified
+    from is untouched, and neither input to this verdict is a file: a phase's
+    age crosses the stuck phase's bound on the clock, and the admission pass log
+    appends between polls. A stuck cell reading either of those an hour stale
+    would report an alarm that has cleared, or miss one that has just started.
+    ``passes`` is the caller's own read of the pass history, taken once for the
+    whole beat and handed to every row. Left unset, each call reads the log
+    itself, which suits a single-row caller and not a sweep: the reader's own
+    contract is one reading per view, so a sweep that omitted it would read the
+    log once per row per beat.
+    """
+    verdict = dict(snapshot)
+    verdict["stuck"] = runs.stuck_verdict(pointer, passes=passes)
+    return verdict
+
+
 def _watch_snapshot(
     pointer: Mapping[str, Any],
     *,
@@ -1595,6 +1680,7 @@ def _watch_snapshot(
     stall_seconds: int,
     cache: dict[str, tuple[str, dict[str, Any]]] | None = None,
     pointers: Sequence[Mapping[str, Any]] | None = None,
+    passes: Sequence[Mapping[str, Any]] | None = None,
 ) -> dict[str, Any]:
     """Reduce one pointer to the state and reason a ticker compares.
 
@@ -1627,14 +1713,18 @@ def _watch_snapshot(
             stored.get("liveness_proven"),
             stored.get("process_descendant_alive"),
         ):
-            return _refresh_snapshot(stored, moment=moment, stall_seconds=stall_seconds)
+            return _with_stuck_verdict(
+                _refresh_snapshot(stored, moment=moment, stall_seconds=stall_seconds),
+                pointer,
+                passes=passes,
+            )
     snapshot = _compute_watch_snapshot(
         pointer, moment=moment, stall_seconds=stall_seconds, pointers=pointers
     )
     refreshed = _refresh_snapshot(snapshot, moment=moment, stall_seconds=stall_seconds)
     if run_id and key is not None:
         _remember_snapshot(run_id, key, refreshed, cache=store)
-    return refreshed
+    return _with_stuck_verdict(refreshed, pointer, passes=passes)
 
 
 #: How far past its declared allowance a still-running worker is before it is
@@ -1825,17 +1915,48 @@ FLEET_WAITING_STATES = tuple(sorted(WAITING_STATES))
 # excluding a run that is legitimately still in the waiting column.
 FLEET_BLOCKED_STATES = tuple(sorted(NEEDS_ACTION - WAITING_STATES))
 
+# The phases a request is parked in before launch: the queue owns it, so no
+# worker is running and no lane slot will free it on its own. Its wait is the
+# fleet's waiting figure rather than an action tally, which is what the pane's
+# `q` cell counts. `blocked-upstream` sits here beside `awaiting-upstream`
+# because the request is still parked; it asks for a decision, and the stuck
+# count is the cell that raises that alarm.
+FLEET_PARKED_STATES = frozenset({"awaiting-upstream", "blocked-upstream"})
+
+
+def _stuck_count(rows: Iterable[Mapping[str, Any]]) -> int:
+    """How many of these rows the one stuck verdict calls stuck.
+
+    The verdict is already on each snapshot, written from the live pointer by
+    the one function every surface reads, so this counts the alarm rather than
+    deriving a second answer. A stuck request keeps the cell its phase belongs
+    to, so this figure overlaps the bucket counts by design and never joins
+    their sum.
+    """
+    return sum(1 for row in rows if row.get("stuck"))
+
 
 def _fleet_counts(
     snapshots: Mapping[str, Mapping[str, Any]], *, session: str | None = None
 ) -> dict[str, int]:
-    """Partition the fleet into working, blocked, delivered, and waiting work.
+    """Partition the fleet into working, reviewing, blocked, delivered and waiting.
 
-    ``working`` is what a reader means by a live worker. ``blocked`` is
-    everything that has stopped progressing and needs the coordinator, a stall
-    or a failure included. ``unpromoted`` is delivered work waiting on a gate.
-    ``waiting`` is a run whose declared external condition remains outstanding.
-    A run that leaves the fleet is in none of them.
+    ``working`` is what a reader means by a live implementation worker, and
+    ``reviewing`` is the review work running beside it: a run launched to review
+    counts here rather than in ``working``, so a session whose only live run is
+    a review does not read as idle. ``blocked`` is everything that has stopped
+    progressing and needs the coordinator, a stall or a failure included.
+    ``unpromoted`` is delivered work waiting on a gate. ``waiting`` is a run
+    whose declared external condition remains outstanding. A run that leaves the
+    fleet is in none of them.
+
+    A delivered run whose repair round holds a live attempt counts as working,
+    not delivered: the review sent it back to work, and its manifest keeps the
+    verdict it delivered until it delivers again.
+
+    ``reviewing`` joins the result only when some run is reviewing, the same way
+    ``waiting`` does, so a fleet with no review carries no zero for a reader to
+    misinterpret and the figure's presence itself says reviews are running.
 
     ``session`` narrows the counted population to the runs that session owns,
     using the ownership already persisted on each snapshot; omitted, the
@@ -1849,23 +1970,41 @@ def _fleet_counts(
         str(snapshot.get("recovery_classification") or "") == "held"
         for snapshot in rows
     )
+    reviewing = sum(
+        str(snapshot.get("state") or "") in FLEET_WORKING_STATES
+        and str(snapshot.get("role") or "") == REVIEW_ROLE
+        for snapshot in rows
+    )
+    # A delivered run under a live repair attempt is at work again. Only an
+    # opening repair record says the round has a worker; the record's own
+    # meaning, including which statuses are openings, belongs to the reflex's
+    # writer and is read from it here rather than restated.
+    repairing = sum(
+        str(snapshot.get("state") or "") in FLEET_UNPROMOTED_STATES
+        and bool(snapshot.get("repair_in_flight"))
+        for snapshot in rows
+    )
     counts = {
-        "working": sum(state in FLEET_WORKING_STATES for state in states),
+        "working": sum(state in FLEET_WORKING_STATES for state in states)
+        - reviewing
+        + repairing,
         "blocked": sum(
             str(snapshot.get("state") or "") in FLEET_BLOCKED_STATES
             and str(snapshot.get("recovery_classification") or "") != "held"
             for snapshot in rows
         ),
-        "unpromoted": sum(state in FLEET_UNPROMOTED_STATES for state in states),
+        "unpromoted": sum(state in FLEET_UNPROMOTED_STATES for state in states)
+        - repairing,
     }
-    waiting = (
-        sum(
-            str(snapshot.get("state") or "") in FLEET_WAITING_STATES
-            and str(snapshot.get("recovery_classification") or "") != "held"
-            for snapshot in rows
-        )
-        + held
-    )
+    if reviewing:
+        counts["reviewing"] = reviewing
+    waiting = held
+    for snapshot in rows:
+        if str(snapshot.get("recovery_classification") or "") == "held":
+            continue
+        state = str(snapshot.get("state") or "")
+        if state in FLEET_WAITING_STATES or state in FLEET_PARKED_STATES:
+            waiting += 1
     if waiting:
         counts["waiting"] = waiting
     return counts
@@ -2220,16 +2359,24 @@ def fleet_transitions(
             (departed, str(known[run_id]["state"]), _departure_word(run_id, recorded))
         )
     for run_id in (item for item in current if item not in known):
+        # A launched run still opens as a dispatch, so the pane's arrival and
+        # start rows keep the pair they were built around. A request that has
+        # not launched opens in the state its own pointer supports instead:
+        # painting every arrival as dispatched drew held and parked work as a
+        # worker that had started.
+        observed = str(current[run_id].get("state") or "")
+        arrival_state = "dispatched" if observed in FLEET_WORKING_STATES else observed
+        arrival_state = arrival_state or "dispatched"
         changes.append(
             (
                 {
                     **current[run_id],
-                    "state": "dispatched",
+                    "state": arrival_state,
                     "detail": "",
                     "needs_help_complete": None,
                 },
                 None,
-                "dispatched",
+                arrival_state,
             )
         )
     for run_id in (item for item in current if item in known):
@@ -2331,14 +2478,25 @@ def _session_fleet_counts(
     ``""`` entry, which counts only the rows no session owns.
     """
     owners = {str(snapshot.get("session") or "") for snapshot in snapshots.values()}
-    return {owner: _fleet_counts(snapshots, session=owner) for owner in owners | {""}}
+    counts: dict[str, dict[str, int]] = {}
+    for owner in owners | {""}:
+        rows, _peers = _partition_session_rows(snapshots.values(), owner)
+        counts[owner] = {
+            **_fleet_counts(snapshots, session=owner),
+            "stuck": _stuck_count(rows),
+        }
+    return counts
 
 
 def _transition_counts(
     snapshots: Mapping[str, Mapping[str, Any]],
 ) -> dict[str, Any]:
     """The fleet's counts at one transition, with the per-session partition."""
-    return {**_fleet_counts(snapshots), "sessions": _session_fleet_counts(snapshots)}
+    return {
+        **_fleet_counts(snapshots),
+        "stuck": _stuck_count(snapshots.values()),
+        "sessions": _session_fleet_counts(snapshots),
+    }
 
 
 def _reviewed_run_facts(
@@ -2472,8 +2630,18 @@ def _watch_transition(
         "process_alive": snapshot.get("process_alive"),
         "liveness_proven": snapshot.get("liveness_proven"),
         "working": counts["working"],
+        # Review work running beside the implementation workers. It rides the
+        # event even at zero so every row renders the same five counter cells
+        # and the columns after them never move.
+        "reviewing": counts.get("reviewing", 0),
         "blocked": counts["blocked"],
         "unpromoted": counts["unpromoted"],
+        # The stuck count sits beside the bucket counters rather than inside
+        # them: a stuck request keeps the cell its phase belongs to, so this
+        # figure recounts rows the buckets already hold. It is always present so
+        # the pane's `s` cell renders a dimmed zero rather than vanishing and
+        # leaving the block ragged.
+        "stuck": int(counts.get("stuck") or 0),
         # The same partition per owning session, taken by the fold at this
         # transition. A follower scoped to one session reads its own entry, so
         # the row's figures describe the fleet the transition left rather than
@@ -2826,7 +2994,13 @@ def _session_counts_in_other_projects(project: str, session: str) -> dict[str, i
     if not project or not session:
         return {}
     own = watch_stream_path(project)
-    total = {"working": 0, "blocked": 0, "unpromoted": 0}
+    total = {
+        "working": 0,
+        "reviewing": 0,
+        "blocked": 0,
+        "unpromoted": 0,
+        "stuck": 0,
+    }
     waiting_seen = False
     waiting = 0
     stamp: str | None = None
@@ -2880,14 +3054,20 @@ def _live_project_session_counts(project: str, session: str) -> dict[str, int]:
     stall_seconds = parse_duration(DEFAULT_WATCH_STALL_WINDOW)
     moment = _utc_seconds()
     pointers = runs._list_live_records(project=project)
+    passes = runs.admission_pass_history()
     current = {
         str(pointer.get("run_id") or ""): _watch_snapshot(
-            pointer, moment=moment, stall_seconds=stall_seconds, pointers=pointers
+            pointer,
+            moment=moment,
+            stall_seconds=stall_seconds,
+            pointers=pointers,
+            passes=passes,
         )
         for pointer in pointers
         if pointer.get("run_id")
     }
-    return _fleet_counts(current, session=session)
+    rows, _peers = _partition_session_rows(current.values(), session)
+    return {**_fleet_counts(current, session=session), "stuck": _stuck_count(rows)}
 
 
 def _scoped_watch_event(event: Mapping[str, Any], session: str) -> dict[str, Any]:
@@ -2908,10 +3088,10 @@ def _scoped_watch_event(event: Mapping[str, Any], session: str) -> dict[str, Any
     nothing, and neither does a project whose watcher has stopped. A follower
     with no session is one project's pane and keeps that project's counts.
 
-    ``working``/``blocked``/``unpromoted`` (and ``waiting``) carry the
-    session-wide figures the pane renders; the same row's own-project figures
-    travel beside them under ``project_*``, so a consumer of either reading
-    loses nothing.
+    ``working``/``reviewing``/``blocked``/``unpromoted`` (and ``waiting``)
+    carry the session-wide figures the pane renders; the same row's own-project
+    figures travel beside them under ``project_*``, so a consumer of either
+    reading loses nothing.
     """
     sessions = event.get("session_counts")
     if isinstance(sessions, Mapping):
@@ -2926,8 +3106,10 @@ def _scoped_watch_event(event: Mapping[str, Any], session: str) -> dict[str, Any
 
     project_counts = {
         "working": int(own.get("working") or 0),
+        "reviewing": int(own.get("reviewing") or 0),
         "blocked": int(own.get("blocked") or 0),
         "unpromoted": int(own.get("unpromoted") or 0),
+        "stuck": int(own.get("stuck") or 0),
     }
     if "waiting" in own:
         project_counts["waiting"] = int(own.get("waiting") or 0)
@@ -2937,18 +3119,31 @@ def _scoped_watch_event(event: Mapping[str, Any], session: str) -> dict[str, Any
         elsewhere = _session_counts_in_other_projects(
             str(event.get("project") or ""), session
         )
-        for key in ("working", "blocked", "unpromoted"):
+        for key in (
+            "working",
+            "reviewing",
+            "blocked",
+            "unpromoted",
+            "stuck",
+        ):
             total[key] = total.get(key, 0) + elsewhere.get(key, 0)
         if "waiting" in elsewhere:
             total["waiting"] = total.get("waiting", 0) + elsewhere["waiting"]
 
     scoped = dict(event)
     scoped["working"] = total.get("working", 0)
+    scoped["reviewing"] = total.get("reviewing", 0)
     scoped["blocked"] = total.get("blocked", 0)
     scoped["unpromoted"] = total.get("unpromoted", 0)
     scoped["project_working"] = project_counts.get("working", 0)
+    scoped["project_reviewing"] = project_counts.get("reviewing", 0)
     scoped["project_blocked"] = project_counts.get("blocked", 0)
     scoped["project_unpromoted"] = project_counts.get("unpromoted", 0)
+    # The stuck figure overlaps the buckets rather than joining them, so it is
+    # copied whole instead of being summed out of them: a session's stuck
+    # requests are already counted under their own phases.
+    scoped["stuck"] = int(total.get("stuck") or 0)
+    scoped["project_stuck"] = project_counts.get("stuck", 0)
     if "waiting" in project_counts:
         scoped["project_waiting"] = project_counts["waiting"]
     previous = scoped.get("from_state")
@@ -3147,6 +3342,7 @@ def _quiet_beat_snapshots(
     exists to leave unread.
     """
     current: dict[str, dict[str, Any]] = {}
+    passes = runs.admission_pass_history()
     for pointer in runs._tick_pointers(pointers):
         run_id = str(pointer.get("run_id") or "")
         if not run_id:
@@ -3160,6 +3356,7 @@ def _quiet_beat_snapshots(
                 stall_seconds=stall_seconds,
                 cache=cache,
                 pointers=pointers,
+                passes=passes,
             )
             continue
         if _fresh_liveness(pointer) != (
@@ -3173,10 +3370,13 @@ def _quiet_beat_snapshots(
                 stall_seconds=stall_seconds,
                 cache=cache,
                 pointers=pointers,
+                passes=passes,
             )
         else:
-            current[run_id] = _refresh_snapshot(
-                stored, moment=moment, stall_seconds=stall_seconds
+            current[run_id] = _with_stuck_verdict(
+                _refresh_snapshot(stored, moment=moment, stall_seconds=stall_seconds),
+                pointer,
+                passes=passes,
             )
     return current
 
@@ -3484,8 +3684,28 @@ def watch_ticker(
                         # running until the next unrelated change. Best-effort on the
                         # same terms as its neighbours.
                         gate_seen = _sweep_gate_rows(project, gate_seen)
+                    # A session's snapshot ages whether or not a document
+                    # moves, so keeping it fresh is a duty of every beat rather
+                    # than of the cadence above. The change gate is the sweep's
+                    # other producer-side trigger, and a quiet fleet never opens
+                    # it: the seat holder stays healthy and goes on drawing rows
+                    # while its sessions' snapshots age out of the freshness
+                    # window. Reaching the sweep on every beat costs a thread
+                    # start and a stat identity; the sweep's own floor interval
+                    # is what decides whether the beat publishes, so a fleet
+                    # that is moving writes no more than it did. Best-effort on
+                    # the same terms as its neighbours, and skipped by any
+                    # process that is not this project's producer.
+                    try:
+                        runs.publish_obligations_on_beat(project)
+                    except Exception as exc:  # noqa: BLE001 - one bad pass ends nothing
+                        print(
+                            f"obligation-beat-failure: {project}: {exc}",
+                            flush=True,
+                        )
                     moment = _utc_seconds()
                     if sweep:
+                        beat_passes = runs.admission_pass_history()
                         current = {
                             str(pointer.get("run_id") or ""): _watch_snapshot(
                                 pointer,
@@ -3493,6 +3713,7 @@ def watch_ticker(
                                 stall_seconds=stall_seconds,
                                 cache=snapshot_cache,
                                 pointers=pointers,
+                                passes=beat_passes,
                             )
                             for pointer in runs._tick_pointers(pointers)
                             if pointer.get("run_id")
@@ -3837,6 +4058,7 @@ from .recovery_review_dispatch import (  # noqa: E402
 from .recovery_vocabulary import (  # noqa: E402
     RECOVERY_CLASSES,
     RECOVERY_VERBS,
+    REVIEW_ROLE,
     WAITING_STATUS,
 )
 from .recovery_wait import (  # noqa: E402

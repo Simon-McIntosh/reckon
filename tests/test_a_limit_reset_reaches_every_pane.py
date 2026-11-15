@@ -46,7 +46,7 @@ SESSION_B = "s-other"
 GROUP = "claude-sub"
 PROJECTS = ("alpha", "beta")
 NOW = datetime(2026, 10, 14, 18, 30, tzinfo=UTC)
-WIDE = 200
+WIDE = 208
 
 
 def _listing(directory: Path) -> list[str]:
