@@ -1,0 +1,70 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "56173971738a1353e848f05d384bcdbdec3c10e9",
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew/recovery_review_subject.py:337 _resolve_commit -> _remember_commit_answer",
+    "reckon/crew/recovery_watch.py:420 _commits_beyond_base -> _remember_count_answer"
+  ],
+  "completed_at": "2026-11-15T10:12:31.316Z",
+  "dispatched_at": "2026-11-15T09:35:47Z",
+  "findings": [
+    {
+      "file": "reckon/crew/recovery_watch.py",
+      "line": "324",
+      "severity": "non-blocking",
+      "text": "non-blocking: the early return added to _remember_count_answer is unreachable from its only caller, because _commits_beyond_base returns the stored count at :402 before it ever computes one and so it is never asked to record a held answer; no test exercises it either, so the second half of the diff carries no behaviour change and would regress silently."
+    },
+    {
+      "file": "docs/evidence/fragments/the-monitor-reads-each-fact-once/a-steady-tick-writes-no-known-answer.html",
+      "line": "26",
+      "severity": "non-blocking",
+      "text": "non-blocking: the gate sentence ends 'reads its full sha back out of the two.', a truncated phrase where 'the store' was meant, so the fragment's own account of the assertion is unreadable at the point a later reader checks it."
+    },
+    {
+      "file": "arm-baseline.log",
+      "line": "1",
+      "severity": "non-blocking",
+      "text": "non-blocking: the matched-arm logs record their revision, tree and command but no partition or scheduler job id, and the sibling arm-baseline.sbatch.log and arm-after.sbatch.log are empty files, so the done_when's 'all_debug partition job ... never on the fleet node' clause cannot be confirmed from the run's own artefacts."
+    }
+  ],
+  "head_log_revision": "f5e5e8e52d0692fe8d7d19130f592e657cf567cf",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified the two production writers' callers: reckon/crew/recovery_review_subject.py:337 (_resolve_commit, uncached on the tick path) and reckon/crew/recovery_watch.py:420 (_commits_beyond_base).",
+    "diff": "read commit by commit against base 5617397173: f5e5e8e52d adds the two early returns and the 98-line test, 041192e26d adds the 34-line evidence fragment; no other file changes.",
+    "done_when": "the done_when names tests/test_a_steady_tick_writes_no_known_answer.py resolving 20 citations twice on a temporary crew home; the file asserts 20 writes then 0 writes with st_ino and st_mtime_ns unchanged across the second pass (:71, :82, :83), and gate-head.log records '2 passed in 9.60s' EXIT=0.",
+    "goal": "the node's goal is 'skip rewriting a git answer the store already holds; reckon/crew/recovery_watch.py:300 skips the commit-answer write when the store already resolves the candidate to that sha, and :324 adds the same skip to the count-answer writer.",
+    "manifest": "read; status complete, commits f5e5e8e52d and 041192e26d, tests the relative gate command, test_logs naming the gate, both arms and the control, baseline_suite and after_suite for the two matched arms; its hygiene line claims 5 pre-existing ruff findings where ruff reports 3, which does not move the delta.",
+    "write_paths": "the fence was recovery_watch.py, recovery_review_subject.py, the node's test file, the node's fragment and its figures directory; the diff touches recovery_watch.py, the test file and the fragment, and nothing else."
+  },
+  "justifications": {
+    "durability": "tests/test_a_steady_tick_writes_no_known_answer.py:82 fails if the skip at recovery_watch.py:300 is reverted, shown by the base-revision control; the count skip added at recovery_watch.py:324 has no assertion and no reachable caller, so it is unguarded.",
+    "evidence": "gate-head.log opens at revision f5e5e8e52d with the literal relative command and reads '2 passed in 9.60s' / EXIT=0, and negative-control.log runs the same case at base 5617397173 and fails on 'assert 20 == 0' at test_a_steady_tick_writes_no_known_answer.py:82, which is the declared control.",
+    "fit": "reckon/crew/recovery_watch.py:292-296 explains the mechanism in the module's own voice beside the pre-existing _stored_commit_answer/_remember_commit_answer pair, and neither the source nor the test carries a plan, section or ticket identifier.",
+    "goal_fidelity": "reckon/crew/recovery_watch.py:300 returns before the store's lock when _stored_commit_answer already carries the sha passed in, which is the write the section's profile puts 42.0% of the tick under, and :324 repeats the skip for the count writer.",
+    "reuse": "the change extends the store's existing readers (_stored_commit_answer at recovery_watch.py:278, _stored_count_answer at :309) inside their own module, and ruff over a whole-repo search finds no other git answer store to fork.",
+    "scope_discipline": "git diff --stat 56173971738a..041192e26d lists recovery_watch.py, the node's test file and the node's evidence fragment, all three inside the four declared write paths; recovery_review_subject.py was fenced and left untouched."
+  },
+  "project": "reckon",
+  "review_run_id": "r-20261115T092903639683-review-of-a-steady-tick-writes-no-known-answer-041192e26dc8",
+  "reviewed_base_sha": "56173971738a1353e848f05d384bcdbdec3c10e9",
+  "reviewed_head_sha": "041192e26dc8ced7d8e06c5fb2408e3c6f81aad6",
+  "reviewed_run_id": "r-20261115T083242123087-a-steady-tick-writes-no-known-answer",
+  "reviewer_run_id": "r-20261115T092903639683-review-of-a-steady-tick-writes-no-known-answer-041192e26dc8",
+  "scores": {
+    "durability": 15,
+    "evidence": 16,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 18,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-15T10:18:29.247728+00:00",
+  "total": 104
+}
