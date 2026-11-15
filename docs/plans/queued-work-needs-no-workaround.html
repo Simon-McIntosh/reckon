@@ -20,11 +20,11 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-after" content="work-flows-to-the-lane">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;implementable&quot;,&quot;s12&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;done&quot;,&quot;s14&quot;:&quot;done&quot;,&quot;s15&quot;:&quot;done&quot;,&quot;s16&quot;:&quot;done&quot;,&quot;s17&quot;:&quot;descoped&quot;,&quot;s18&quot;:&quot;implementable&quot;,&quot;s19&quot;:&quot;implementable&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s20&quot;:&quot;implementable&quot;,&quot;s21&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;implementable&quot;,&quot;s12&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;done&quot;,&quot;s14&quot;:&quot;done&quot;,&quot;s15&quot;:&quot;done&quot;,&quot;s16&quot;:&quot;done&quot;,&quot;s17&quot;:&quot;descoped&quot;,&quot;s18&quot;:&quot;implementable&quot;,&quot;s19&quot;:&quot;implementable&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s20&quot;:&quot;implementable&quot;,&quot;s21&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;implementable&quot;}">
   <title>Queued work needs no workaround | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="63">
+<meta name="plan-version" content="66">
 <meta name="plan-modified" content="2026-11-15">
 </head>
 <body>
@@ -164,7 +164,7 @@
 <p>Negative control: against the base revision, the first request stays parked, and the failing run is logged.</p>
 
     <h2 id="s8">§8 — Every obligation clears when its duty ends</h2>
-<section data-reckon="section" data-id="s8" data-effort-hours="3.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="implementable" data-links=""></section>
+<section data-reckon="section" data-id="s8" data-effort-hours="3.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="done" data-links=""></section>
 <p><strong>Why.</strong> Defects D14, D31, D43, D47, D59, D90, D103, D114, D124, D125 and D149. Seven sessions saw <code>promotion-failed</code>, <code>sweep-failed</code>, <code>review-in-flight</code> or <code>worktree-held</code> rows after the run was promoted, landed, resumed or discarded. They saw this after work-flows-to-the-lane §52 landed, so its fix covers only part of the cases. The stop hook refuses every turn on such a row. <code>crew ack</code> returns success but leaves the row, and for a run with no pointer and no ledger row it refuses. One session's rows were served from a station snapshot two hours old. A <code>sweep-failed</code> row comes from the station's per-session failure list, which only that session's next completed sweep replaces, and the view adds each entry back without checking that its run still exists.</p>
 <p><strong>Deliverable.</strong> An obligation row is removed in each of these cases:</p>
 <ul>
@@ -359,6 +359,9 @@
 <div class="r-comment" data-section="s16" data-id="c-run-r-20261115T024938202577-qwnw-a-dispatch-answers-in-ten-seconds" data-who="reckon-build" data-when="2026-11-15T06:07:04.184Z">
     <div class="r-comment-body"><p>EVIDENCE docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-a-dispatch-answers-in-ten-seconds.html — the overdue-runs fence classifies none of 200 peer pointers and still records the session's own run, and it costs 0.04 s scoped against 5.33 s project-wide; the section's ten-second clause is not met because project discovery is 50.03 s of a 53.64 s dispatch</p></div>
 </div>
+<div class="r-comment" data-section="s19" data-id="c-run-r-20261115T070010086348-review-of-qwnw-a-read-only-run-promotes-without-a-hand-edit-ad65425d24a8" data-who="reckon-build" data-when="2026-11-15T07:17:13.460Z">
+    <div class="r-comment-body"><p>Independent review of run r-20261115T040600990763-qwnw-a-read-only-run-promotes-without-a-hand-edit at base 31eaf2923c2da860896c16de337408e5fcbf6ecd and head ad65425d24a847b65f040f1a3472c477f394d1f7 scored goal_fidelity 19, evidence 19, scope_discipline 20, durability 19, fit 18, reuse 20 (total 115 of 120), added_failure_count 0, and no findings.</p></div>
+</div>
 <div class="r-comment" data-section="s2" data-id="c-run-r-20261115T004354574270-review-of-qwnw-a-batch-entry-takes-every-field-a-single-dispatc-ec3f17e99482" data-who="reckon-build" data-when="2026-11-15T02:02:59.885Z">
     <div class="r-comment-body"><p>an independent review of the batch-entry node is stored at the reviewed run's review-records directory naming base 1ba716cf0aeb500f4cf9bc0192d6927e11f9d6b2 and head ec3f17e99482da85ac137e939a22de9726e60c76, scoring all six dimensions out of 20 (total 101) with three non-blocking findings and zero added failures across the reviewed run's two gate arms.</p></div>
 </div>
@@ -393,13 +396,16 @@
     <div class="r-comment-body"><p>the review of 322a57bf..c5c616981c reads goal_fidelity 12, evidence 12, scope_discipline 20, durability 15, fit 18 and reuse 5 (total 82), names five non-blocking findings — a duplicated git reading at obligations.py:2778, a duplicated reachability answer at obligations.py:2815 spawning git under the held-read lock, a redundant assertion at the test's line 391, a runs-placeholder path in the reviewed manifest's test_logs line, and a constant EXIT_METRIC in probe_tree_state.py:55 — and records added_failure_count 0 against 55-passed arms at both fence revisions. No finding blocks.</p></div>
 </div>
 <div class="r-comment" data-section="s8" data-id="c-run-r-20261114T201117263633-qwnw-every-obligation-clears-when-its-duty-ends" data-who="reckon-build" data-when="2026-11-15T06:47:32Z">
-    <div class="r-comment-body"><p>the evidence for §8 records the census and its post-change reading, the four row kinds with what each does, the change across five source files, the held-tree rule with both readings of every retained tree, thirteen tests with a base-revision control that fails on behaviour, and the reuse round&#x27;s cost and control readings.</p></div>
+    <div class="r-comment-body"><p>the evidence for §8 records the census and its post-change reading, the four row kinds with what each does, the change across five source files, the held-tree rule with both readings of every retained tree, thirteen tests with a base-revision control that fails on behaviour, and the reuse round's cost and control readings.</p></div>
 </div>
 <div class="r-comment" data-section="s9" data-id="c-run-r-20261115T013916575004-review-of-qwnw-a-reservation-or-lock-holds-only-while-its-holde-c225824d918d" data-who="reckon-build" data-when="2026-11-15T02:48:33.595Z">
     <div class="r-comment-body"><p>review of r-20261114T201210409568-qwnw-a-reservation-or-lock-holds-only-while-its-holde at head c225824d918dddc8abdc9c8929f35fc978a3258e against base e393d4098a36e6e67be0bb1ead9285fe34cf63d9 — six dimensions scored, 7 findings (1 blocking), added_failure_count 0</p></div>
 </div>
 <div class="r-comment" data-section="s9" data-id="c-run-r-20261115T060729382145-review-of-qwnw-a-reservation-or-lock-holds-only-while-its-holde-e78fbc4df395" data-who="reckon-build" data-when="2026-11-15T06:31:16.170Z">
     <div class="r-comment-body"><p>the review record for r-20261114T201210409568 at head e78fbc4df3 scores goal_fidelity 13, evidence 13, scope_discipline 19, durability 12, fit 16, reuse 10, with one blocking and five non-blocking findings, added_failure_count 0</p></div>
+</div>
+<div class="r-comment" data-section="s9" data-id="c-run-r-20261115T065718783067-review-of-qwnw-a-reservation-or-lock-holds-only-while-its-holde-f9a15fef9e0d" data-who="reckon-build" data-when="2026-11-15T07:16:31.243Z">
+    <div class="r-comment-body"><p>review of r-20261114T201210409568 at e78fbc4d..f9a15fef9e, six dimensions scored (goal 17, evidence 14, scope 20, durability 12, fit 17, reuse 15), 4 non-blocking findings, added_failure_count 0</p></div>
 </div>
 </section>
 </main>
