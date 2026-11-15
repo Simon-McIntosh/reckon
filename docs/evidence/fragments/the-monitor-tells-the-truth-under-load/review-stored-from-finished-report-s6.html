@@ -49,14 +49,21 @@
   </p>
   <p id="review-stored-from-finished-report-s6-measure">
     Measure: the new file reports <strong>5 passed</strong> at the head and
-    <strong>5 failed</strong> at the base revision
-    <code>af516b3</code> — both arms run in this worktree and a scratch
+    <strong>5 failed</strong> at the base revision <code>af516b3</code> — the
+    head run in this worktree, the base run in a scratch
     <code>git archive</code> of the base. The armed gate
     <code>pytest -q tests/test_a_review_is_stored_only_from_a_finished_report.py
     tests/test_staged_write_inventory.py
     tests/test_every_shared_home_lock_holds_across_nodes.py</code> reports
-    <strong>63 passed</strong> with <code>EXIT=0</code>. The negative control
-    makes <code>report_placeholders</code> scan an empty string, so a report still
+    <strong>63 passed</strong> with <code>EXIT=0</code>. The same three files at
+    the base revision report <strong>6 failed, 55 passed, 2 errors</strong>: the
+    five new tests above, plus <strong>3</strong> failures of
+    <code>test_staged_write_inventory.py</code> that are the scratch tree's, not
+    the code's — an extraction is not a git checkout, so its
+    <code>git ls-tree HEAD</code> exits 128, and the archive carries no
+    <code>docs/research/data</code> census corpus the other test reads. Their
+    failing ids do not appear in the head arm. The negative control makes
+    <code>report_placeholders</code> scan an empty string, so a report still
     carrying the brief's placeholders is stored again: the file then reports
     <strong>3 failed, 2 passed</strong> — the three placeholder cases, which the
     head arm passes — with <code>EXIT=1</code>.
