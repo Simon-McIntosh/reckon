@@ -48,4 +48,38 @@ separate gate.</p>
 <code>runtime-measure-fixed/receipt.json</code>,
 <code>resumed-focused.log</code>, <code>resumed-focused-base.log</code>, and
 <code>resumed-armed-head.log</code>.</p>
+<section id="wftl-an-omp-worker-cut-off-is-classified-and-resumed-codex-shared-reader">
+<h4>Shared last-tool reader</h4>
+<p>The reuse review identified a duplicate reverse chunk scanner in cut-off
+recovery. The answering commit <code>aa349bcbe03f87665530ac96991d2a453b6bbd19</code>
+removes that scanner and routes <code>omp_cut_off</code> through
+<code>recovery_wait._last_tool_call</code>. The existing owner now decodes omp
+start and update records, and <code>toolCall</code> message blocks, while retaining
+its established chunk-boundary handling.</p>
+<table>
+<thead><tr><th>Measure on all_debug</th><th>Result</th></tr></thead>
+<tbody>
+<tr><td>Repaired focused tests</td><td>20 passed in 20.37 s</td></tr>
+<tr><td>Inverse answering product commit, retaining tests</td><td>1 failed in 0.39 s: <code>read_paths == [stream]</code> reads an empty call list</td></tr>
+<tr><td>Declared original base</td><td>58 passed in 33.41 s</td></tr>
+<tr><td>Review repair base</td><td>58 passed in 33.25 s</td></tr>
+<tr><td>Repaired head</td><td>58 passed in 34.18 s</td></tr>
+</tbody>
+</table>
+<p>The negative control applies the inverse of the answering commit to both
+product files in a disposable head extraction, leaves the regression tests in
+place, and verifies the restored bytes against the repair parent. The shared
+reader assertion then fails, while the same test passes with the repair. The
+focused tests also exercise native omp records, missing update arguments, long
+commands spanning blocks, and the existing recovery integration. The PID equality
+check is treated only as fixture consistency; the live-running assertion and
+supervised resume assertions carry the recovery evidence.</p>
+<p>The exact suite command in every arm is
+<code>PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py</code>.
+Receipts and full logs are <code>reuse-focused</code>, <code>reuse-negative</code>,
+<code>reuse-suite-original-base</code>, <code>reuse-suite-repair-base</code>, and
+<code>reuse-suite-head</code> beneath the durable run directory; each has a
+<code>.log</code> and <code>-receipt.json</code>. All temporary extraction trees
+were removed by the batch job.</p>
+</section>
 </article>
