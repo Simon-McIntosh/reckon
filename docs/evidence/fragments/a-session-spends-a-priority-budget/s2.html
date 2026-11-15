@@ -1,4 +1,4 @@
-# revision: 0e35e05838 (repair head); base revision: 95e530385ef505438d4a89a7f978a941e6a68663
+# revision: dc200d8576 (the merge head); base revision: 95e530385ef505438d4a89a7f978a941e6a68663
 # worktree: /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/8e41a6d3-d0e0-4927-afd1-771942ebfe6a/sspb-each-session-holds-a-priority-budget-and-spends
 # partition: rigel, one arm per job; each arm checks its own revision out with
 # `git worktree add --detach` into node-local /tmp, so the tree carries the git
@@ -70,12 +70,27 @@ EXIT=0
 # arm: base, revision 95e530385ef505438d4a89a7f978a941e6a68663
 55 passed in 25.28s
 EXIT=0
-# arm: repair head, revision 0e35e05838
-55 passed in 24.62s
+# arm: repair head, revision 5b88b2d99a
+55 passed in 25.05s
 EXIT=0
-# The same command re-run at the revision this record closes on, whose only
-# change over the one above is this record itself: 55 passed, EXIT=0.
-# delta: identical, 0 added failures, no id failing at either revision.
+# arm: merged head, revision dc200d8576
+58 passed in 33.73s
+EXIT=0
+# The two arms either side of the merge differ by three tests, and the three
+# are not this branch's: primary main added them to these same two files
+# between the base revision and the merge, so the merged head collects three
+# more ids than the base does. Every id that passes at base passes at the
+# merged head; no id fails at either revision.
+#
+# Each arm's log is committed beside this record, so the figure above can be
+# read rather than re-derived:
+#   arm-suite-base-95e5303.txt          base arm
+#   arm-suite-merged-dc200d85.txt       merged-head arm
+#   arm-focused-merged-dc200d85.txt     the focused file at the merged head
+#   arm-population-failures-base.txt    the base arm's 316 failing ids
+#   arm-population-failures-head.txt    the head arm's 316 failing ids
+#   arm-population-added-failures.txt   empty: no id fails at head that passes at base
+#   arm-population-removed-failures.txt empty: no id fails at base that passes at head
 #
 # SUITE ARMS — the population the queue's own tests cover
 # The population is derived inside each arm from its own tree by one command,
