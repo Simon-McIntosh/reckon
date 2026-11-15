@@ -1,0 +1,78 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/crew/dispatch_picker.py:683 (dispatch_picker_selection -> dispatcher_declared_difficulty)",
+    "reckon/crew/dispatching/preparation.py:470 (the dispatch path -> dispatch_picker_selection)",
+    "reckon/crew/dispatch_plan.py:1298 (plan_dispatch -> _awaiting_pick_hold)",
+    "reckon/crew/picker/__init__.py:134 (_record_pick_timings -> _dispatch_bound_seconds)",
+    "reckon/crew/obligations.py:4131 (_obligations_view -> _route_defaulted_items)",
+    "reckon/crew/recovery_watch.py:594 (obligations view reader)"
+  ],
+  "completed_at": "2026-11-15T14:53:23.973Z",
+  "dispatched_at": "2026-11-15T14:52:00Z",
+  "findings": [
+    {
+      "file": "tests/test_a_dispatch_waits_for_the_router.py",
+      "line": 433,
+      "severity": "non-blocking",
+      "text": "assert items[0][\"route_step\"] == \"pick:snapshot\" compares the function's output against the exact string the test itself placed in the pointer it handed to _route_defaulted_items, and line 434 does the same for the detail substring, so both hold for any implementation that echoes the pointer fields it was given; they verify the key name and would not redden if the derivation read the wrong selection field so long as that field carried the same text."
+    },
+    {
+      "file": "tests/test_a_dispatch_waits_for_the_router.py",
+      "line": 464,
+      "severity": "non-blocking",
+      "text": "The view-level test monkeypatches _route_defaulted_items with a spy returning a hand-built marker, and the derivation test at line 428 hands the function a hand-built pointer, so no test drives a dispatch whose route defaulted through the pointer write at reckon/crew/dispatching/launch.py:593 and the read at reckon/crew/obligations.py:1658; a break in that wiring (the selection stored without route_defaulted, or dispatch_field resolving another path) leaves every test green exactly as the prior review recorded."
+    },
+    {
+      "file": "reckon/crew/dispatch_plan.py",
+      "line": 1316,
+      "severity": "non-blocking",
+      "text": "The added dispatch_options parameter of _awaiting_pick_hold is never supplied by its only caller (reckon/crew/dispatch_plan.py:1298), so the docstring's claim that the due and urgency are carried off the request options is not realised on the production path; the owner still writes those keys with the values it derives, so the defect is a dead parameter and an overstated docstring rather than a wrong stored record."
+    },
+    {
+      "file": "tests/test_a_dispatch_waits_for_the_router.py",
+      "line": 271,
+      "severity": "non-blocking",
+      "text": "The done_when's named negative control -- restore the 5 s bound with default routing and watch the second and third cases fail -- is recorded in neither the manifest nor logs/negative-control.log; the six controls the worker did record each target one added check, so the bound's own regression is guarded by cases 2 and 3 by construction but is not shown red anywhere on disk."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261114T145535353631-wave4-clive-anchored-lane-and-model-routing-s59/logs/after-arm.log",
+      "line": 3,
+      "severity": "non-blocking",
+      "text": "The manifest cites logs/after-arm.log and logs/base-arm.log among its test_logs and quotes '67 passed, EXIT=0 at dbecafe94e against 56 passed / 2 environmental errors at ed0ca92be6', but the after log is 3 lines ending mid-progress with no pytest summary and no EXIT= line, and the base log is 4 lines of 'EE...' with none either, so the quoted figures reconcile with no cited receipt; the armed-suite/after.log (67 passed, EXIT=0) and armed-suite/baseline.log (58 passed, EXIT=0) are readable and are what added_failure_count was derived from."
+    }
+  ],
+  "justifications": {
+    "durability": "The six controls in logs/negative-control.log each redden the check their mutation targets, but tests/test_a_dispatch_waits_for_the_router.py:433-434 echo values the test supplied and a break in the launch-to-view pointer wiring leaves every test green.",
+    "evidence": "The armed-suite logs record 58 passed/EXIT=0 at ed0ca92b and 67 passed/EXIT=0 at dbecafe94e -- added_failure_count 0 -- and I re-ran the node gate (9 passed) but logs/after-arm.log:3 carries no summary or EXIT line for the figure the manifest quotes from it.",
+    "fit": "The additions follow the file's own idiom -- _route_defaulted_items at obligations.py:1632 mirrors _sub_floor_items at obligations.py:3611 and builds rows through _live_item at obligations.py:1598, with WHY-only comments and no plan or ticket identifiers.",
+    "goal_fidelity": "reckon/crew/dispatch_picker.py:83-96 and dispatch_plan.py:1292 deliver the wait and the queue, and obligations.py:1629 delivers the listing the previous review found absent, leaving only the unsupplied dispatch_options parameter at dispatch_plan.py:1316 short of what its docstring claims.",
+    "reuse": "The commit is a delegation rather than a fork: dispatch_picker.py:96 calls picker._declared_difficulty, dispatch_plan.py:1348 builds the held record through dispatching.requests._queued_request_record, picker/__init__.py:73 calls dispatch_picker.picker_dispatch_timeout, and no owner exists for a route-defaulted listing after searching reckon/crew/obligations.py's *_items builders.",
+    "scope_discipline": "Every path in `git diff abb1956823 dbecafe94e` is one of the paths the source manifest declares, and the commit removes two duplications rather than adding scope."
+  },
+  "project": "reckon",
+  "review_run_id": "r-20261115T144413292980-review-of-wave4-clive-anchored-lane-and-model-routing-s59-dbecafe94e63",
+  "reviewed_base_sha": "abb195682329163d98ef41ff92d666e87c4dc666",
+  "reviewed_head_sha": "dbecafe94e635348a9bbc02ed5b5922ee814a9e5",
+  "reviewed_run_id": "r-20261114T145535353631-wave4-clive-anchored-lane-and-model-routing-s59",
+  "scores": {
+    "durability": 17,
+    "evidence": 15,
+    "fit": 19,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-15T15:18:12.861253+00:00",
+  "total": 109,
+  "verdicts": {
+    "diff": "Read commit by commit from abb1956823 to dbecafe94e: one commit, five files, +356/-91, deleting the duplicated plan-path resolution and the hand-built held record in favour of picker._declared_difficulty and dispatching.requests._queued_request_record, adding the real failed step, the config-aware within-bound flag, and the obligations listing.",
+    "done_when": "The done_when names four cases in tests/test_a_dispatch_waits_for_the_router.py plus a negative control; all four are asserted in the file at dbecafe94e (lines 176, 222, 251, 402) and a re-run of that file in a scratch tree at dbecafe94e reports '9 passed in 11.84s', while the named negative control is nowhere in the recorded log.",
+    "goal": "The node's goal is to deliver lane-and-model-routing s59's done-when; at dbecafe94e reckon/crew/dispatch_picker.py:83 resolves the section's difficulty through the picker's owner, dispatch_plan.py:1292 raises the awaiting-pick hold instead of placing a default lane, and obligations.py:1629 lists a route-defaulted run naming its step, so all three named behaviours exist.",
+    "manifest": "Read at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261114T145535353631-wave4-clive-anchored-lane-and-model-routing-s59/manifest.md: status complete, commits ad89560e2b/abb1956823/dbecafe94e, baseline_suite 58 passed EXIT=0 at ed0ca92b, after_suite 67 passed EXIT=0 at dbecafe94e, six negative controls, and its logs/after-arm.log and logs/base-arm.log citations truncated without a summary or EXIT line.",
+    "write_paths": "The node declared reckon/crew/dispatch_picker.py, dispatch_plan.py, picker/types.py, picker/__init__.py, the new test and its fragment plus a granted obligations.py; `git diff --stat abb1956823 dbecafe94e` names dispatch_picker.py, dispatch_plan.py, obligations.py, picker/__init__.py and the test, all inside that set."
+  }
+}
