@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="queued-work-needs-no-workaround">
+  <meta name="plan-title" content="Queued work needs no workaround">
+  <meta name="plan-evidence-for" content="reckon:queued-work-needs-no-workaround">
+  <meta name="plan-verifies" content="reckon:queued-work-needs-no-workaround#s6">
+  <meta name="plan-recorded-at" content="2026-11-14">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-tags" content="readiness,promotion,ledger,batch,admission">
+  <title>A section a run has delivered is not ready — evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+</head>
+<body>
+<article class="r-note" data-node="qwnw-a-section-a-run-has-delivered-is-not-ready" data-reckon="landed" data-when="2026-11-14">
+  <h2 id="qwnw-a-section-a-run-has-delivered-is-not-ready-head">A section a run has delivered is no longer offered again</h2>
+
+  <p id="qwnw-a-section-a-run-has-delivered-is-not-ready-what">The roadmap's ready set, batch dispatch and
+  admission now treat a section's node as not ready while that node has a live, delivered, promoted or
+  landed implementation run, and each of them names the run that holds it. The change is
+  <code>fb9067dda2aa6c447ea3bb7f559283093603cf29</code> in this worktree. The three readers agree because
+  the hold is computed once, in <code>reckon/crew/section_holds.py</code>, and feeds the roadmap's own
+  section verdict, which is the answer admission and dispatch already derive their waits from.</p>
+
+  <p id="qwnw-a-section-a-run-has-delivered-is-not-ready-mechanism">The defect was structural. The
+  roadmap's only run input was <code>crew.list_live()</code>; section readiness was derived from that
+  live set and from declared holds alone, by <code>section_readiness_verdict</code> at
+  <code>reckon/roadmap.py:964</code>, whose <code>ready</code> is <code>plan_ready and not
+  blockers</code>. Promotion unlinks the live pointer (<code>reckon/crew/promotion.py:251</code>), so the
+  moment a node was delivered the run left the only set the roadmap read, and the section came back
+  ready. Nothing in that path could see a promoted run, which is the record promotion leaves.</p>
+
+  <p id="qwnw-a-section-a-run-has-delivered-is-not-ready-rule">The hold is read from both records a run
+  leaves: the live pointers, where a phase of <code>complete</code> or a running phase holds and a stored
+  request (<code>queued</code>, <code>held</code>, <code>awaiting-upstream</code>,
+  <code>blocked-upstream</code>, <code>launch-failed</code>) or a dead run (<code>failed</code>,
+  <code>stopped</code>, <code>interrupted</code>) does not; and the ledger rows, which are the only
+  record left once the pointer is gone. Only the roles that implement a section
+  (<code>implement</code>, <code>test</code>) are counted, so a review never holds its own section.
+  <b>A row's gate says what the run's check found, not whether it delivered.</b> Every row the ledger's
+  picker projection returns is a completed promotion: <code>passed</code>, <code>not-run</code> (the
+  check's evidence could not be produced) and <code>failed</code> (the check lost and the promotion was
+  taken anyway) all promoted a node, so none of the three is filtered out. <b>The hold is per node:</b> a
+  section is held only when every node the records know of is held, so a section split into several
+  dispatch nodes keeps the work of a node that has not been delivered dispatchable. Nodes are the
+  dispatch node ids the records carry; a record with no node id is its section's own node. A row is the
+  later record of the two, so it also takes its node out of the free set: a pointer released after the
+  delivery — an attempt dropped, or one that stopped without delivering — no longer puts the section
+  back in play.</p>
+
+  <p id="qwnw-a-section-a-run-has-delivered-is-not-ready-sites">What changed, by site:</p>
+  <ul id="qwnw-a-section-a-run-has-delivered-is-not-ready-sites-list">
+    <li><code>reckon/crew/section_holds.py</code> — the hold itself: <code>held_section_blockers</code>
+    (:179) for a readiness answer and <code>held_node_rows</code> (:205) for one node about to be
+    queued. The promoted history is the ledger's own indexed read
+    (<code>ledger.picker_runs</code>), so the probe keeps no cache of its own;</li>
+    <li><code>reckon/roadmap.py:3781</code> — the hold is computed once per build and folded into
+    <code>named_holds</code> (:4591), which is what makes it a section blocker of kind
+    <code>run</code>; <code>:4617</code> adds it to the condition that populates
+    <code>ready_sections</code>, so a plan held only by a run reports the key rather than omitting it;</li>
+    <li><code>reckon/roadmap.py:4821</code> — a section held only by a run that has left the page's live
+    set gets a section row anyway, with the holding run in its <code>blockers</code>;</li>
+    <li><code>reckon/roadmap.py:1948</code> — the wiring finding <code>run-not-landed</code>: a section
+    declared done whose promoting run's head is not an ancestor of the local integration branch
+    (<code>main</code>, or the checked-out branch), naming the run and the head;</li>
+    <li><code>reckon/crew/dispatch_batch.py:838</code> — a batch entry for a held node is answered
+    <code>status: held</code> with <code>held_by</code> naming the run, and is not stored; the summary
+    counts it separately at <code>:924</code> rather than as queued;</li>
+    <li><code>reckon/crew/admission/readiness.py</code> needed no change: it derives a request's wait
+    from <code>roadmap.section_readiness_rows</code>, so the same verdict keeps a request that carries a
+    readiness ref pending while the run holds the section.</li>
+  </ul>
+
+  <p id="qwnw-a-section-a-run-has-delivered-is-not-ready-tests">The done-when is held by
+  <code>tests/test_a_section_a_run_has_delivered_is_not_ready.py</code> over a temporary repository and
+  crew home: a promoted row on <code>alpha#s1</code> leaves <code>s1</code> out of
+  <code>ready_sections</code> with a <code>run</code>-kind blocker naming <code>run-n-one</code>, while
+  <code>s2</code>, whose second node exists as an <code>awaiting-upstream</code> request, stays listed;
+  a batch entry for <code>n-one</code> answers <code>held</code> while <code>n-other</code> queues; and a
+  done section whose run's head is on a side branch yields the finding, with the landed-head twin of that
+  fixture emitting nothing. Two further cases hold the edges: a delivery promoted under each of
+  <code>passed</code>, <code>not-run</code> and <code>failed</code> holds its node identically, and a
+  stopped pointer naming an already-delivered node is not taken as freeing it, while a stopped pointer
+  with no row behind it stays ready — the fix must not read every stopped run as delivered.</p>
+
+  <p id="qwnw-a-section-a-run-has-delivered-is-not-ready-evidence">Evidence, all resolved over its own
+  revision. Against the base revision <code>34e8cf65b53bd57225fc6acbf74230a493a3527e</code> the same test
+  module fails eight of its nine: <code>KeyError: 'ready_sections'</code> six times, which is the promoted
+  section reading ready with no hold at all under every gate verdict and under the released pointer,
+  <code>assert 'queued' == 'held'</code> where the duplicate was queued, and no finding at all for the
+  unlanded head. The landed-head control passes on both arms, which is the direction that must not move. The two gate files the node was dispatched with
+  (<code>tests/test_staged_write_inventory.py</code>,
+  <code>tests/test_every_shared_home_lock_holds_across_nodes.py</code>) run 55 passed at the head. Command
+  and full output for each arm are the logs named in the manifest.</p>
+
+  <p id="qwnw-a-section-a-run-has-delivered-is-not-ready-boundary">One boundary is left explicit rather
+  than hidden: a section's nodes are known from its run records, so a node that has never been dispatched
+  has no record and cannot be counted. The plan's own wording — a section "split on purpose into several
+  nodes" — is satisfied once any node of the section has a stored request or a run; a section split for
+  the first time has nothing to split from until its first node exists. Declaring a node list in the
+  plan would close it, and that is a plan-format decision this node did not take on. The
+  <code>run-not-landed</code> finding reads the local integration branch only: a checkout whose branch
+  cannot be resolved reports nothing, because an unanswerable ancestry question is not a defect in the
+  plan.</p>
+</article>
+</body>
+</html>

@@ -910,6 +910,24 @@ def _mark_refusal_reported(signature: tuple[Any, ...]) -> bool:
         return True
 
 
+def _pointer_carries_promoted_mark(pointer: Mapping[str, Any]) -> bool:
+    """Whether the live pointer still carries the mark a promotion wrote.
+
+    Read outside the retirement's lock, so this answers only what the sweep does
+    when that retirement did not remove the pointer. A pointer that cannot be
+    read answers True: it is not a pointer to file a promotion request over, and
+    the pass after it reads the file again.
+    """
+    from reckon.crew import pending_landing
+
+    run_id = str(pointer.get("run_id") or "")
+    try:
+        current = runs.read_pointer(run_id)
+    except (CrewError, OSError, ValueError):
+        return True
+    return bool(current.get(pending_landing.PROMOTED_MARK))
+
+
 def _retire_promoted_pointer(pointer: Mapping[str, Any]) -> str:
     """Answer what the sweep does with a pointer a promotion recorded.
 
@@ -925,25 +943,23 @@ def _retire_promoted_pointer(pointer: Mapping[str, Any]) -> str:
     ``retired`` means the pointer is gone, ``waiting`` that a live process still
     owns it, and ``unmarked`` that the ordinary review path applies.
     """
-    from reckon.crew.promotion import PROMOTED_POINTER_MARK
+    from reckon.crew import pending_landing
 
     run_id = str(pointer.get("run_id") or "")
     if not run_id:
         return "unmarked"
-    with runs._pointer_lock(run_id):
-        try:
-            current = runs.read_pointer(run_id)
-        except (CrewError, OSError, ValueError):
-            return "unmarked"
-        if not current.get(PROMOTED_POINTER_MARK):
-            return "unmarked"
-        if record_process_alive(current) is True:
-            return "waiting"
-        try:
-            runs.pointer_path(run_id).unlink(missing_ok=True)
-        except OSError:
-            return "waiting"
+    outcome = pending_landing.retire_pointer_if(
+        run_id,
+        lambda current: (
+            bool(current.get(pending_landing.PROMOTED_MARK))
+            and record_process_alive(current) is not True
+        ),
+    )
+    if outcome == pending_landing.POINTER_RETIRED:
         return "retired"
+    if outcome == pending_landing.POINTER_ABSENT:
+        return "unmarked"
+    return "waiting" if _pointer_carries_promoted_mark(pointer) else "unmarked"
 
 
 def _claims_refusal(run_id: str) -> bool:

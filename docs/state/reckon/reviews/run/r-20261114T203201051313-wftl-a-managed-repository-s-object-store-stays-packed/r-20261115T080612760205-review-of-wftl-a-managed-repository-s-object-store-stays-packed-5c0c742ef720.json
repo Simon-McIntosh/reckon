@@ -1,0 +1,71 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 9,
+  "call_sites": [
+    "reckon/crew_run_commands.py:430",
+    "reckon/crew_run_commands.py:422",
+    "reckon/crew_run_commands.py:3992",
+    "reckon/crew/pending_landing.py:635",
+    "reckon/crew/landing_measure.py:1431",
+    "reckon/crew/queue_landing.py:1298",
+    "reckon/crew/queue_landing.py:887",
+    "reckon/crew/queue_landing.py:1768",
+    "reckon/crew/review_landing.py:55"
+  ],
+  "completed_at": "2026-11-15T09:03:49.965Z",
+  "dispatched_at": "2026-11-15T08:09:56Z",
+  "findings": [
+    {
+      "file": "reckon/crew/merge.py",
+      "line": "1356",
+      "severity": "non-blocking",
+      "text": "non-blocking: land_merge's step re-implements the tree-then-commit-then-copy sequence that build_merge_commit already owns at merge.py:841, so a later fix to the merge build in one place silently misses the other; a hook on the owner (or a shared helper taking the pre-copy seam) would keep one composition."
+    },
+    {
+      "file": "reckon/crew/merge.py",
+      "line": "859",
+      "severity": "non-blocking",
+      "text": "non-blocking: build_merge_commit copies its objects into the repository unconditionally, so a candidate built for measurement and then never landed \u2014 a red gate in queue_landing.py:1112's candidate_checkout, or a run left delivered \u2014 leaves that merge commit and its trees unreachable; the deliverable's \"only a merge that lands writes objects into the repository\" is tested only in the positive direction, and the residue belongs to \u00a766's scheduled cruft packing."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 9 production call site(s)",
+    "diff": "read commit by commit; b06fca782b adds scratch_object_store and _copy_objects and routes every _merge_tree caller through the scratch store, b275b82b99 repairs the verify seam's fifth argument that the first head broke and adds import_built_merge, and 5c0c742ef7 records the measure in docs/evidence/fragments/work-flows-to-the-lane/wftl-a-managed-repository-s-object-store-stays-packed.html.",
+    "done_when": "the done_when asks for an object-set equality over three refused passes with a moving primary, a landed-merge positive, and a base-revision negative control that is logged; tests/test_a_merge_check_leaves_no_object.py:109 asserts that equality, the same file's landed test asserts the positive through git cat-file -e, and negative-control-base-revision.log records the base run red at the same line with six extra object ids.",
+    "goal": "\u00a765's deliverable is that a landing pass's conflict check leaves no object in the repository while a merge that lands still writes its own (docs/plans/work-flows-to-the-lane.html \u00a765, line 322); reckon/crew/merge.py:297 makes the check read the repository through an alternate and write into a throwaway store, so it does.",
+    "manifest": "read at the reviewed run's manifest.md; it records the gate command, three gate logs and the negative-control log, a paired arms result of 41 identical failure ids, the two failures its first delivered head caused and the repair, and its status is complete.",
+    "write_paths": "the fenced paths are reckon, tests, docs/evidence/fragments/work-flows-to-the-lane and skills; git diff --stat 1b8a0d372a38dc90952c3fa0bf284ffefca26603..5c0c742ef720e1752468c4b82ca983ae67433ffe names four files under reckon/ and tests/ plus the evidence fragment under docs/evidence/fragments/work-flows-to-the-lane, and nothing outside."
+  },
+  "justifications": {
+    "durability": "reinstating the defect \u2014 pinning the check to the repository's own store \u2014 reddens tests/test_a_merge_check_leaves_no_object.py:109, which the recorded base-revision run shows, and dropping the copy reddens the landed test's git cat-file -e at :130.",
+    "evidence": "tests/test_a_merge_check_leaves_no_object.py:109 measures the object set itself rather than a return value, both arms carry the same 41 failure ids, and negative-control-base-revision.log fails at the base revision, though no gate log's header names the partition or host it ran on, so the \"runs on all_debug\" requirement is carried only by the run's stream and the file names.",
+    "fit": "the additions at reckon/crew/merge.py:297 follow the module's _run/contextlib idiom and their names state the mechanism, but land_merge's step at :1356 now repeats the composition that build_merge_commit still owns at :841.",
+    "goal_fidelity": "reckon/crew/merge.py:1356 builds the conflict check and the merge commit in the scratch store and copies them only after the merge is accepted, which is what \u00a765 asks, though the node's one-line goal still reads as the broader packing claim the plan review split into \u00a766.",
+    "reuse": "no runtime owner of a scratch object store or of an object copy exists \u2014 a search of the reviewed head for pack-objects, unpack-objects and GIT_OBJECT_DIRECTORY found only docs/research scripts and merge.py \u2014 but reckon/crew/merge.py:1356 re-implements build_merge_commit's build-and-copy sequence at :841 instead of extending it with a hook, so one sequence now has two copies that can drift.",
+    "scope_discipline": "every path in the diff is inside the declared write paths, and the crew_run_commands.py seam change at :3992 and :422 is required by the signature the diff changes."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: \u00a765's deliverable is that a landing pass's conflict check leaves no object in the repository while a merge that lands still writes its own (docs/plans/work-flows-to-the-lane.html \u00a765, line 322); reckon/crew/merge.py:297 makes the check read the repository through an alternate and write into a throwaway store, so it does.\nVERDICT done_when: the done_when asks for an object-set equality over three refused passes with a moving primary, a landed-merge positive, and a base-revision negative control that is logged; tests/test_a_merge_check_leaves_no_object.py:109 asserts that equality, the same file's landed test asserts the positive through git cat-file -e, and negative-control-base-revision.log records the base run red at the same line with six extra object ids.\nVERDICT write_paths: the fenced paths are reckon, tests, docs/evidence/fragments/work-flows-to-the-lane and skills; git diff --stat 1b8a0d372a38dc90952c3fa0bf284ffefca26603..5c0c742ef720e1752468c4b82ca983ae67433ffe names four files under reckon/ and tests/ plus the evidence fragment under docs/evidence/fragments/work-flows-to-the-lane, and nothing outside.\nVERDICT manifest: read at the reviewed run's manifest.md; it records the gate command, three gate logs and the negative-control log, a paired arms result of 41 identical failure ids, the two failures its first delivered head caused and the repair, and its status is complete.\nVERDICT diff: read commit by commit; b06fca782b adds scratch_object_store and _copy_objects and routes every _merge_tree caller through the scratch store, b275b82b99 repairs the verify seam's fifth argument that the first head broke and adds import_built_merge, and 5c0c742ef7 records the measure in docs/evidence/fragments/work-flows-to-the-lane/wftl-a-managed-repository-s-object-store-stays-packed.html.\nCALL_SITES: reckon/crew_run_commands.py:430, reckon/crew_run_commands.py:422, reckon/crew_run_commands.py:3992, reckon/crew/pending_landing.py:635, reckon/crew/landing_measure.py:1431, reckon/crew/queue_landing.py:1298, reckon/crew/queue_landing.py:887, reckon/crew/queue_landing.py:1768, reckon/crew/review_landing.py:55\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/merge.py:1356 builds the conflict check and the merge commit in the scratch store and copies them only after the merge is accepted, which is what \u00a765 asks, though the node's one-line goal still reads as the broader packing claim the plan review split into \u00a766.\nSCORE evidence: 18\nJUSTIFICATION evidence: tests/test_a_merge_check_leaves_no_object.py:109 measures the object set itself rather than a return value, both arms carry the same 41 failure ids, and negative-control-base-revision.log fails at the base revision, though no gate log's header names the partition or host it ran on, so the \"runs on all_debug\" requirement is carried only by the run's stream and the file names.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every path in the diff is inside the declared write paths, and the crew_run_commands.py seam change at :3992 and :422 is required by the signature the diff changes.\nSCORE durability: 19\nJUSTIFICATION durability: reinstating the defect \u2014 pinning the check to the repository's own store \u2014 reddens tests/test_a_merge_check_leaves_no_object.py:109, which the recorded base-revision run shows, and dropping the copy reddens the landed test's git cat-file -e at :130.\nSCORE fit: 17\nJUSTIFICATION fit: the additions at reckon/crew/merge.py:297 follow the module's _run/contextlib idiom and their names state the mechanism, but land_merge's step at :1356 now repeats the composition that build_merge_commit still owns at :841.\nSCORE reuse: 12\nJUSTIFICATION reuse: no runtime owner of a scratch object store or of an object copy exists \u2014 a search of the reviewed head for pack-objects, unpack-objects and GIT_OBJECT_DIRECTORY found only docs/research scripts and merge.py \u2014 but reckon/crew/merge.py:1356 re-implements build_merge_commit's build-and-copy sequence at :841 instead of extending it with a hook, so one sequence now has two copies that can drift.\nFINDING reckon/crew/merge.py:1356 non-blocking: land_merge's step re-implements the tree-then-commit-then-copy sequence that build_merge_commit already owns at merge.py:841, so a later fix to the merge build in one place silently misses the other; a hook on the owner (or a shared helper taking the pre-copy seam) would keep one composition.\nFINDING reckon/crew/merge.py:859 non-blocking: build_merge_commit copies its objects into the repository unconditionally, so a candidate built for measurement and then never landed \u2014 a red gate in queue_landing.py:1112's candidate_checkout, or a run left delivered \u2014 leaves that merge commit and its trees unreachable; the deliverable's \"only a merge that lands writes objects into the repository\" is tested only in the positive direction, and the residue belongs to \u00a766's scheduled cruft packing.",
+  "review_run_id": "r-20261115T080612760205-review-of-wftl-a-managed-repository-s-object-store-stays-packed-5c0c742ef720",
+  "reviewed_base": "1b8a0d372a38dc90952c3fa0bf284ffefca26603",
+  "reviewed_base_sha": "1b8a0d372a38dc90952c3fa0bf284ffefca26603",
+  "reviewed_head": "5c0c742ef720e1752468c4b82ca983ae67433ffe",
+  "reviewed_head_sha": "5c0c742ef720e1752468c4b82ca983ae67433ffe",
+  "reviewed_run_id": "r-20261114T203201051313-wftl-a-managed-repository-s-object-store-stays-packed",
+  "scores": {
+    "durability": 19,
+    "evidence": 18,
+    "fit": 17,
+    "goal_fidelity": 18,
+    "reuse": 12,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-15T11:08:11.461226+00:00",
+  "total": 103
+}

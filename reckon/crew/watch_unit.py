@@ -935,6 +935,84 @@ def _seat_is_held(project: str) -> bool:
     return False
 
 
+@dataclass
+class ProducerSnapshotNotices:
+    """Bounded loss and recovery notices from the publication a pane reads.
+
+    Station documents stand until work changes, so their heartbeat measures
+    publication health. A session without a station reads its producer snapshot
+    instead. Missing timestamps cannot establish an age or prove a recovery.
+    """
+
+    project: str
+    session: str | None
+    clock: Callable[[], float] = time.monotonic
+    sampled_at: float | None = None
+    reported_at: float | None = None
+    lost: bool = False
+
+    def poll(self) -> list[dict[str, Any]]:
+        from reckon.crew import obligation_snapshot as snapshots
+
+        if self.session is None:
+            return []
+        moment = self.clock()
+        if (
+            self.sampled_at is not None
+            and moment - self.sampled_at < snapshots.STAT_IDENTITY_INTERVAL_SECONDS
+        ):
+            return []
+        self.sampled_at = moment
+        station = snapshots.read_station_answer(self.project, self.session)
+        if station is not None:
+            age = station["heartbeat_age_seconds"]
+            bound = snapshots.STATION_STALE_SECONDS
+        if station is None or (station["source"] == "snapshot" and station["stale"]):
+            own_age = snapshots.snapshot_age_seconds(
+                snapshots.read_snapshot(self.project, self.session)
+            )
+            if station is None or (
+                own_age is not None and own_age <= snapshots.FRESHNESS_WINDOW_SECONDS
+            ):
+                age = own_age
+                bound = snapshots.FRESHNESS_WINDOW_SECONDS
+        if age is None:
+            return []
+        if age > bound:
+            if self.reported_at is not None and moment - self.reported_at < bound:
+                return []
+            self.lost = True
+            self.reported_at = moment
+            remedy = watcher_ensure_line(self.project)
+            details = {
+                "event": "producer-lost",
+                "remedy": remedy,
+                "line": (
+                    f"producer {self.project} lost: snapshot age {age}s "
+                    f"exceeds {bound:g}s; re-arm with: {remedy}"
+                ),
+            }
+        elif self.lost:
+            self.lost = False
+            self.reported_at = None
+            details = {
+                "event": "producer-restored",
+                "line": f"producer {self.project} restored: snapshot age {age}s",
+            }
+        else:
+            return []
+        return [
+            {
+                "project": self.project,
+                "session": self.session,
+                "run_id": None,
+                "age_seconds": age,
+                "bound_seconds": bound,
+                **details,
+            }
+        ]
+
+
 def _producer_snapshot_stale(project: str, registration: Mapping[str, Any]) -> bool:
     """Whether a project's producer snapshot is stale past its bound.
 

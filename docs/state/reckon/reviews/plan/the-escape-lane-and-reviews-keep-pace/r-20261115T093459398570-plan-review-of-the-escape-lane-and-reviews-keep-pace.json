@@ -1,0 +1,99 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-15T10:00:18.285Z",
+  "dispatched_at": "2026-11-15T09:38:44Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/the-escape-lane-and-reviews-keep-pace.html:88",
+      "id": "done_when-1",
+      "reason": "the node can satisfy every listed case and still leave the newly named failure exactly where it is, which is the defect the appended paragraph was added to close.",
+      "text": "the Endpoint now requires that a released reflex-composed review be composed again by the next reflex pass, and says \"a test releases a stranded reflex-composed review and shows the next reflex pass composes it again\", but the Done when's four cases are the section's earlier ones: a stranded request reads queued, the original attempt is refused, a station-composed review \"is released as before\", a discarded run \"is released as before\". Release is the half the 15 November incidents show working; re-composition is the half that failed, and no case in the gate measures it",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/the-escape-lane-and-reviews-keep-pace.html:87",
+      "id": "reasoning-1",
+      "reason": "a worker who opens the code finds a re-composition path already present and can conclude nothing is owed, or repairs admission's release ordering when the gap is in how plan reviews are composed; the mechanism decides which module the node touches.",
+      "text": "the paragraph names the outcome (\"it was not [composed again], twice\") but not what makes it so, and the reflex already re-composes a stranded review it can see: reckon/crew/recovery_review_dispatch.py:2794-2815 treats a standing review that `_stranded_launch` reports as stranded as the trigger for `_discard_stranded_review` and then falls through to compose the review again for the same pair. A reader therefore cannot tell which case is meant: a review whose pointer admission removed before the reflex scanned, so there is no in-flight review to see, or a plan review, which that reflex \u2014 whose unit is a reviewed run \u2014 does not compose at all. The r-20261115T020055912484 id in the same sentence is described as \"reckon-1e's plan review\", the second kind",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/the-escape-lane-and-reviews-keep-pace.html:87",
+      "id": "single_goal-1",
+      "reason": "the second deliverable is unmeasured inside a section whose gate is about requeueing, so either it moves to its own section with its own done-when or it is declared landed beside s10 and not owed, as \u00a77 already does for the repairs it landed.",
+      "text": "s10 now delivers two things whose write paths are disjoint: the admission pass's stranded-launch handling (reckon/crew/admission/launching.py, with its queue and refusal records) and the reflex's re-composition of a review it did not compose again (reckon/crew/recovery_review_dispatch.py, and for a plan review the plan-review reflex). The gate covers only the first",
+      "type": "single_goal",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/the-escape-lane-and-reviews-keep-pace.html:87",
+      "id": "anchors_resolve-1",
+      "reason": "either the id is mis-transcribed, in which case \"twice\" rests on one openable record, or the second occurrence is a different class of vanish, in which case the section's scope is not what it states.",
+      "text": "of the two occurrences the paragraph leans on for \"twice\", r-20261115T060531066893 resolves as an in-flight review of r-20261115T002740230181 under docs/state/reckon/runs/, while no query for r-20261115T020055912484 in docs/state/, reckon/ or tests/ returns anything and no live run directory carries it. Absence of a live pointer is the subject, but one occurrence is checkable and the other is not",
+      "type": "anchors_resolve",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/the-escape-lane-and-reviews-keep-pace.html:88",
+      "id": "evidence_paths-1",
+      "reason": "the run-directory convention is established by the neighbouring sections and a worker will put the arm there unasked; it costs a later reader some searching, not a wrong repair.",
+      "text": "the landing record is named but the all_debug arm (\"the tests importing the admission package, reckon.crew.dispatch_claims or reckon.crew.dispatch_refusals add no failure against the base on all_debug\") names no log location, where \u00a75, \u00a76 and \u00a77 each name the run directory",
+      "type": "evidence_paths",
+      "would_change": false
+    }
+  ],
+  "plan_commit": "490c2d2aa2e2cce4b52a1572cd54bd347caecf1f",
+  "plan_fingerprint": "91635e70b89f29e9e9a54b03d53d1609dd7a019ee2ea23c17d9a49124ecb769b",
+  "plan_slug": "the-escape-lane-and-reviews-keep-pace",
+  "plan_version": 25,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "noted",
+      "by": "plan-review-reflex",
+      "finding": "evidence_paths-1",
+      "reason": "the run-directory convention is established by the neighbouring sections and a worker will put the arm there unasked; it costs a later reader some searching, not a wrong repair.",
+      "when": "2026-11-15T10:02:36.283584+00:00"
+    }
+  ],
+  "responses": {
+    "evidence_paths-1": {
+      "action": "noted",
+      "by": "plan-review-reflex",
+      "reason": "the run-directory convention is established by the neighbouring sections and a worker will put the arm there unasked; it costs a later reader some searching, not a wrong repair.",
+      "when": "2026-11-15T10:02:36.283584+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/plan-the-escape-lane-and-reviews-keep-pace.v25.json",
+  "review_run_id": "r-20261115T093459398570-plan-review-of-the-escape-lane-and-reviews-keep-pace",
+  "reviewed_blob_sha": "4f7d64c19fc59402ebfa9f2d14b39fcd8afc13e0",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "a finding \u2014 `r-20261115T020055912484` resolves nowhere in the tree or the run state, while its sibling `r-20261115T060531066893` resolves in docs/state/reckon/runs/. Every code anchor resolves: `_release_stranded_launches` and `_requeue_stranded_request` (reckon/crew/admission/launching.py:535,611), `STRANDED_LAUNCH_BOUND_SECONDS` (reckon/crew/recovery_liveness.py:68), `dispatch_claims._release_launch_claim` (reckon/crew/dispatch_claims.py:1157), `_request_claim_restored_on_refusal` (reckon/crew/dispatching/claims.py:19, reckon/crew/dispatching/preparation.py:87) and tests/test_a_launch_stopped_at_its_claim_is_redispatched.py. D180 is left as previously noted, not re-raised.",
+    "done_when": "a finding \u2014 s10's Done when (line 88) lists four cases, none of which measures the reflex re-composition its Endpoint now requires; the re-composition is asserted only as prose inside the Endpoint paragraph.",
+    "evidence_paths": "a finding \u2014 s10 names docs/evidence/fragments/the-escape-lane-and-reviews-keep-pace/stranded-launch-requeued.html as its landing record but names no location for its all_debug arm's gate log, where \u00a75, \u00a76 and \u00a77 each name the run directory.",
+    "naming": "pass \u2014 no plan labels, ticket numbers or version tags enter a symbol, a filename or a comment; s10 names modules and behaviour, not stages.",
+    "reasoning": "a finding \u2014 the appended defect is asserted as a symptom with no mechanism, against a reflex that already re-composes a stranded review it can still see in flight.",
+    "single_goal": "a finding \u2014 s10 now carries two endpoints owned by different modules: requeueing an admission-launched request (`reckon/crew/admission/launching.py` with its queue and refusal records) and making the reflex compose a released review again (`reckon/crew/recovery_review_dispatch.py`), and the gate covers only the first.",
+    "wiring": "pass \u2014 `s5`\u2192`the-escape-lane-and-reviews-keep-pace#s2`, `s6`\u2192`#s7` and `s9`\u2192`queued-work-needs-no-workaround#s13` each resolve (docs/plans/queued-work-needs-no-workaround.html carries `id=\"s13\"`), and s10 needs no upstream: it builds on the local queue that exists at HEAD and that \u00a75 widens to every lane."
+  },
+  "section_digests": {
+    "_document": "a5d10760fe7dca59281ba1d00d8092a548375419a88ecdcc74513b0d9d1eaf58",
+    "s1": "2f30b04db27eda225a7d9a82c4b2b9cf5e512723d009737b2a923bb7c84a60ce",
+    "s10": "da66895f6aac58cb9b328ffc086a4df9ce57504fa3931b893250d2df8c645df6",
+    "s2": "1c1291a10bbf3182487496ef153e5873681ea3827c7bacc16efddf88c7cca128",
+    "s3": "2a0e0fabbd2ee502c5a7928a8fa608b66f83d3ad3fe304a31a05b66f0cb3d688",
+    "s4": "4a85c23ac81214a3af1b59e1888c579b2e2525eb2a2346a965b291cee79651b7",
+    "s5": "fb1f3e1546621cc855884449828d1a21bbdbe0f82829e3272a4980de76583329",
+    "s6": "cc57c977bc74be9abc823c22b2bdb1536d9437ee9b4055386c7bcc135cf44073",
+    "s7": "ed204545a51bd6d6fca68193a080594cbf03befec2fbab427a94d4fa64bb5b4d",
+    "s8": "f91bbc8415af7128a49266e48bcf0855214aed2b1c090350cf262046fdca9025",
+    "s9": "f45ac50a3cec315ac6b6faa699dabc9b61b96ee903819df9eb7dd788e1cd1497"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-15T10:02:09.039574+00:00",
+  "total": null
+}

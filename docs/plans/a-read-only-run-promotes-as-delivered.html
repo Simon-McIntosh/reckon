@@ -7,7 +7,7 @@
   <meta name="reckon-type" content="plan">
   <meta name="plan-slug" content="a-read-only-run-promotes-as-delivered">
   <meta name="plan-title" content="A Read-Only Run Promotes As Delivered">
-  <meta name="plan-summary" content="An investigation or review run that carries a brief is reviewed, checked and promoted without hand repair, and one plan's run records read in seconds.">
+  <meta name="plan-summary" content="An investigation or review run that carries a brief is reviewed, checked and promoted without hand repair, and one plan&#x27;s run records read in seconds.">
   <meta name="plan-status" content="active">
   <meta name="plan-roi" content="mid">
   <meta name="plan-effort-hours" content="5.25">
@@ -18,11 +18,13 @@
   <meta name="plan-capability-risk" content="moderate">
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="reckon-tooling,crew">
-  <meta name="plan-after" content="a-read-costs-what-changed">
+  <meta name="plan-informs" content="a-landing-is-recorded-once">
   <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;}">
   <title>A Read-Only Run Promotes As Delivered | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
+<meta name="plan-version" content="1">
+<meta name="plan-modified" content="2026-11-15">
 </head>
 <body>
   <main class="plan-doc">
@@ -42,8 +44,8 @@
 
     <h2 id="s2">§2 — A read-only run that commits nothing says so and promotes</h2>
 <section data-reckon="section" data-id="s2" data-effort-hours="1.25" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
-    <p><strong>Deliverable.</strong> A run in a read-only sandbox has no commit to name. Its manifest may state <code>commits: none</code>, with or without a reason in parentheses after it, and the run promotes with the no-commit form of <code>crew complete</code>. The run record carries the run's base revision and an empty commit list. The prompt composed for a read-only role states this form of the line. A run in a writable sandbox that states <code>none</code> while its worktree head is ahead of its base is still refused, naming the commits.</p>
-    <p><strong>Done when</strong> a new test file shows, in a temporary repository: a read-only run whose manifest reads <code>commits: none (read-only sandbox)</code> passes the manifest check and promotes with the no-commit form, and its run record names the base revision and no commit; the same manifest with bare <code>none</code> does the same; a writable run stating <code>none</code> with a commit beyond its base is refused, naming that commit; and the composed prompt for a read-only role states the line. Negative control: at the base revision the first case fails with the unresolved-commit refusal. The test files that import the manifest check or the promotion evidence check add no failure against the base revision, and <code>ruff check</code> and <code>ruff format --check</code> add no finding on the staged paths.</p>
+    <p><strong>Deliverable.</strong> A run whose recorded role is investigate or review has no commit to name. Its manifest may state <code>commits: none</code>, with or without a reason in parentheses after it, and the run promotes with the no-commit form of <code>crew complete</code>, its run record carrying the base revision and no commit as it does for any commitless run. Four such runs were refused on 2026-11-14 and 15 with the manifest line <code>commits: none (read-only sandbox; nothing committed)</code>: two investigations and two plan reviews. The node names the condition that refused them and removes it. The prompt composed for those roles states this form of the line. A run of any role that states <code>none</code> while its worktree head is ahead of its base is still refused, naming the commits.</p>
+    <p><strong>Done when</strong> a new test file shows, using the repository's shared test isolation: an investigate run carrying a brief and no plan, and a plan-review run, each with the manifest line above, pass the manifest check and promote with the no-commit form, and each run record names the base revision and no commit; the same with bare <code>none</code>; a run stating <code>none</code> with a commit beyond its base is refused, naming that commit; and the composed prompt for each role states the line. Negative control: the manifest names which case fails at the base revision and quotes its refusal. If every case passes at the base revision, the node reports the commit that changed the behaviour since 2026-11-14 and changes no product source. The test files that import the manifest check or the promotion evidence check add no failure against the base revision, and <code>ruff check</code> and <code>ruff format --check</code> add no finding on the staged paths.</p>
 
     <h2 id="s3">§3 — A claims review record passes the review check</h2>
 <section data-reckon="section" data-id="s3" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
@@ -58,20 +60,23 @@
     <h2 id="s5">§5 — One plan's run records read in seconds</h2>
 <section data-reckon="section" data-id="s5" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
     <p><strong>Deliverable.</strong> Reading the run records of one plan through the ledger's own read, in a fresh process against the committed store of this repository, answers in under five seconds, and its cost does not grow with the number of runs that belong to other plans.</p>
-    <p><strong>Done when</strong> a gate log from one job on the <code>rigel</code> partition shows five fresh-process reads of one plan's run records against the committed store at the base revision and at the head, each timed, with the head's slowest read under five seconds and the base's times beside it; and a new test file shows that a one-plan read over a synthetic store of 2,000 runs across 50 plans decodes no run document of another plan and returns the same rows as the unfiltered read filtered afterwards. Negative control: at the base revision the decode-count case fails. If the base revision already reads under five seconds on <code>rigel</code>, the node reports the five timings and changes no product source. The test files that import the ledger read add no failure against the base revision, and <code>ruff check</code> and <code>ruff format --check</code> add no finding on the staged paths.</p>
+    <p><strong>Done when</strong> one gate log, written to the node's run directory on shared storage by one job on the <code>rigel</code> partition, shows five fresh-process reads of one plan's run records against the committed store at the base revision and at the head, each timed, with the head's slowest read under five seconds and the base's times beside it; and a new test file shows that a one-plan read over a synthetic store of 2,000 runs across 50 plans decodes no run document of another plan and returns the same rows as the unfiltered read filtered afterwards. Negative control: at the base revision the decode-count case fails. If the base revision already reads under five seconds on <code>rigel</code>, the node reports the five timings and changes no product source. The test files that import the ledger read add no failure against the base revision, and <code>ruff check</code> and <code>ruff format --check</code> add no finding on the staged paths.</p>
 
-    <section data-reckon="decisions" id="decisions" class="r-decisions">
-      <h2><span class="sec">§</span> Decisions</h2>
-    </section>
+    
 
     <section data-reckon="followups" id="followups" class="r-followups">
-      <h2><span class="sec">§</span> Followups</h2>
-      <article class="r-fu" data-id="f-rorp-001" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-create" data-written-at="2026-11-15" data-recommends-skill="/reckon-build a-read-only-run-promotes-as-delivered" data-resolved-at="" data-resolved-by="">
-        <h4 class="r-fu-title">Build the four repairs</h4>
-        <div class="r-fu-body"><p>§2 to §5 are independent of each other and wait on nothing.</p></div>
-        <pre class="r-fu-prompt">/reckon-build a-read-only-run-promotes-as-delivered</pre>
-      </article>
-    </section>
-  </main>
+<h2><span class="sec">§</span> Followups</h2>
+<article class="r-fu" data-id="f-rorp-001" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-create" data-written-at="2026-11-15" data-recommends-skill="/reckon-build a-read-only-run-promotes-as-delivered" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Build the four repairs</h4>
+    <div class="r-fu-body"><p>§2 to §5 are independent of each other and wait on nothing.</p></div>
+    <pre class="r-fu-prompt">/reckon-build a-read-only-run-promotes-as-delivered</pre>
+    </article>
+</section>
+  <section data-reckon="comments" id="comments" class="r-comments">
+<div class="r-comment" data-section="s2" data-id="c-run-r-20261115T104520769772-review-of-rorp-s2-d753104cff34" data-who="reckon-build" data-when="2026-11-15T11:26:06.652Z">
+    <div class="r-comment-body"><p>Independent review of r-20261115T085736602818-rorp-s2 at d753104cff scores goal_fidelity 10, evidence 9, scope_discipline 18, durability 13, fit 18, reuse 19 (total 87) with one blocking and three non-blocking findings; the record is stored under the reviewed run&#x27;s review-records directory at both declared paths and `crew check --review` reports ok on each.</p></div>
+</div>
+</section>
+</main>
 </body>
 </html>

@@ -1,0 +1,66 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "56173971738a1353e848f05d384bcdbdec3c10e9",
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew/promotion.py:1681",
+    "reckon/crew/promotion.py:2364",
+    "reckon/crew/resumption.py:2867",
+    "reckon/crew/recovery.py:192"
+  ],
+  "completed_at": "2026-11-15T11:29:58.496Z",
+  "dispatched_at": "2026-11-15T11:03:46Z",
+  "findings": [
+    {
+      "file": "reckon/crew/recovery_review_acceptance.py",
+      "line": "913",
+      "severity": "non-blocking",
+      "text": "non-blocking: _retire_promoted_pointer repeats pending_landing.retire_pointer_if's compare-under-lock-and-unlink (pending_landing.py:207) and adds a second writer of a pointer mark beside pending_landing.mark_pending_landing_repair (pending_landing.py:232), so the lock, absent-pointer and failed-unlink decisions now live in two places and the owner's docstring's claim that every retirement reaches it stops being true."
+    },
+    {
+      "file": "tests/test_a_promoted_review_is_never_promoted_again.py",
+      "line": "277",
+      "severity": "non-blocking",
+      "text": "non-blocking: assert result[\"run_id\"] == REVIEW_RUN_ID compares complete()'s echo of the id the test supplied, so it holds whatever the code does to promotion and should not be read as coverage of the ledger row that line 273 already asserts."
+    }
+  ],
+  "head_log_revision": "0df3c301f0",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "read commit by commit against 5617397173; the fix adds the mark and the sweep retirement in 110 changed lines across two modules, and the second commit adds only the 34-line evidence fragment, with nothing outside the declared scope.",
+    "done_when": "the measure is tests/test_a_promoted_review_is_never_promoted_again.py, whose two cases do exactly what the done_when states - live child holding the worker pid, --no-commit promotion, three sweeps after the child ends - and the worker's arm logs record 1 failed/56 passed at 56173971 (EXIT=1) and 57 passed at 0df3c301f0 (EXIT=0).",
+    "goal": "the goal is to retire a promoted review's pointer once its worker exits; reckon/crew/promotion.py:221 adds PROMOTED_POINTER_MARK and reckon/crew/promotion.py:384 marks the pointer a live worker still owns, and reckon/crew/recovery_review_acceptance.py:913 removes it once that process is gone, so both halves of the goal are present.",
+    "manifest": "read; it names commits 96c8881f19 and 0df3c301f0, both arm logs with their revisions and EXIT lines, the negative-control reproduction quoted from the base arm, and one rubric line per dimension.",
+    "write_paths": "the manifest's declared paths are reckon/crew/promotion.py, reckon/crew/recovery_review_acceptance.py, the node's test file, its evidence fragment and its figures directory; the two commits touch the first four and none besides."
+  },
+  "justifications": {
+    "durability": "tests/test_a_promoted_review_is_never_promoted_again.py:276 reddens at the base revision as the base arm shows, and tests/test_a_promoted_review_is_never_promoted_again.py:288 (read_promotion == {}) reddens if the sweep retires the mark by filing a promotion instead.",
+    "evidence": "the base arm's log at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T083217900491-a-promoted-review-is-never-promoted-again/arms/base.log:45 fails at assert pointer.get(\"promoted\") is True reading None, reproducing the defect, and the head arm reports 57 passed with EXIT=0.",
+    "fit": "the mark is written under the existing _pointer_lock in reckon/crew/promotion.py:313 and reported through the existing review_self_waiting list in reckon/crew/recovery_review_acceptance.py:1358, matching the surrounding idiom, and no symbol carries a plan or stage label.",
+    "goal_fidelity": "reckon/crew/recovery_review_acceptance.py:1359 retires a mark-bearing pointer on the first pass whose recorded process is not alive and files no request, which is the goal's stated behaviour.",
+    "reuse": "reckon/crew/recovery_review_acceptance.py:913 re-implements the compare-under-lock-and-unlink that reckon/crew/pending_landing.py:207 declares as its single owner, and its docstring there names the retirement paths that are meant to reach that owner.",
+    "scope_discipline": "the diff's four files are all named in the manifest's write paths and the unused figures directory carried nothing."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is to retire a promoted review's pointer once its worker exits; reckon/crew/promotion.py:221 adds PROMOTED_POINTER_MARK and reckon/crew/promotion.py:384 marks the pointer a live worker still owns, and reckon/crew/recovery_review_acceptance.py:913 removes it once that process is gone, so both halves of the goal are present.\nVERDICT done_when: the measure is tests/test_a_promoted_review_is_never_promoted_again.py, whose two cases do exactly what the done_when states - live child holding the worker pid, --no-commit promotion, three sweeps after the child ends - and the worker's arm logs record 1 failed/56 passed at 56173971 (EXIT=1) and 57 passed at 0df3c301f0 (EXIT=0).\nVERDICT write_paths: the manifest's declared paths are reckon/crew/promotion.py, reckon/crew/recovery_review_acceptance.py, the node's test file, its evidence fragment and its figures directory; the two commits touch the first four and none besides.\nVERDICT manifest: read; it names commits 96c8881f19 and 0df3c301f0, both arm logs with their revisions and EXIT lines, the negative-control reproduction quoted from the base arm, and one rubric line per dimension.\nVERDICT diff: read commit by commit against 5617397173; the fix adds the mark and the sweep retirement in 110 changed lines across two modules, and the second commit adds only the 34-line evidence fragment, with nothing outside the declared scope.\nCALL_SITES: reckon/crew/promotion.py:1681, reckon/crew/promotion.py:2364, reckon/crew/resumption.py:2867, reckon/crew/recovery.py:192\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/recovery_review_acceptance.py:1359 retires a mark-bearing pointer on the first pass whose recorded process is not alive and files no request, which is the goal's stated behaviour.\nSCORE evidence: 18\nJUSTIFICATION evidence: the base arm's log at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T083217900491-a-promoted-review-is-never-promoted-again/arms/base.log:45 fails at assert pointer.get(\"promoted\") is True reading None, reproducing the defect, and the head arm reports 57 passed with EXIT=0.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff's four files are all named in the manifest's write paths and the unused figures directory carried nothing.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_a_promoted_review_is_never_promoted_again.py:276 reddens at the base revision as the base arm shows, and tests/test_a_promoted_review_is_never_promoted_again.py:288 (read_promotion == {}) reddens if the sweep retires the mark by filing a promotion instead.\nSCORE fit: 18\nJUSTIFICATION fit: the mark is written under the existing _pointer_lock in reckon/crew/promotion.py:313 and reported through the existing review_self_waiting list in reckon/crew/recovery_review_acceptance.py:1358, matching the surrounding idiom, and no symbol carries a plan or stage label.\nSCORE reuse: 5\nJUSTIFICATION reuse: reckon/crew/recovery_review_acceptance.py:913 re-implements the compare-under-lock-and-unlink that reckon/crew/pending_landing.py:207 declares as its single owner, and its docstring there names the retirement paths that are meant to reach that owner.\nFINDING reckon/crew/recovery_review_acceptance.py:913 non-blocking: _retire_promoted_pointer repeats pending_landing.retire_pointer_if's compare-under-lock-and-unlink (pending_landing.py:207) and adds a second writer of a pointer mark beside pending_landing.mark_pending_landing_repair (pending_landing.py:232), so the lock, absent-pointer and failed-unlink decisions now live in two places and the owner's docstring's claim that every retirement reaches it stops being true.\nFINDING tests/test_a_promoted_review_is_never_promoted_again.py:277 non-blocking: assert result[\"run_id\"] == REVIEW_RUN_ID compares complete()'s echo of the id the test supplied, so it holds whatever the code does to promotion and should not be read as coverage of the ledger row that line 273 already asserts.\n",
+  "review_run_id": "r-20261115T110203259559-review-of-a-promoted-review-is-never-promoted-again-0df3c301f045",
+  "reviewed_base_sha": "56173971738a1353e848f05d384bcdbdec3c10e9",
+  "reviewed_head_sha": "0df3c301f045428c5c70b8dc295d6dd757f258a7",
+  "reviewed_run_id": "r-20261115T083217900491-a-promoted-review-is-never-promoted-again",
+  "scores": {
+    "durability": 18,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 5,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-15T11:30:35.785880+00:00",
+  "total": 98
+}

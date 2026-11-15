@@ -25,7 +25,7 @@ from __future__ import annotations
 import contextlib
 import json
 import time
-from collections.abc import Mapping
+from collections.abc import Callable, Mapping
 from pathlib import Path
 from typing import Any
 
@@ -164,14 +164,88 @@ def _settled_landing(
     return disposition
 
 
-#: The pointer fields that identify the attempt a landing mark belongs to.
-_ATTEMPT_FIELDS = ("attempt", "phase", "pid", "pid_start_time")
+#: The pointer fields that name one attempt of a run. The phase is not one of
+#: them: a promotion request rewrites it while the attempt it belongs to keeps
+#: running, so an attempt's identity is stable across a station mark.
+ATTEMPT_FIELDS = ("attempt", "attempt_kind", "pid", "pid_start_time")
+
+#: What a landing mark records: the attempt plus the phase it was written
+#: against, so a station rewrite of the phase leaves the mark naming the pointer
+#: state it was made for rather than whichever state is live when it is read.
+#: The shape is the one marks already on disk carry, so it keeps the fields
+#: those records were written with rather than growing with the identity above.
+MARKED_FIELDS = ("attempt", "phase", "pid", "pid_start_time")
+
+#: What a compare-under-lock-and-retire found.
+POINTER_RETIRED = "retired"
+POINTER_ABSENT = "absent"
+POINTER_HELD = "held"
+
+#: The pointer field a promotion sets when it recorded the run but could not
+#: retire the live pointer. Unlike the landing mark this names no attempt: the
+#: pointer it is written onto is whichever one is live, and the reader that
+#: retires it decides from that pointer's own recorded process whether anything
+#: still owns it.
+PROMOTED_MARK = "promoted"
+
+
+def _identity(
+    pointer: Mapping[str, Any] | None, fields: tuple[str, ...]
+) -> dict[str, Any]:
+    pointer = pointer or {}
+    return {field: pointer.get(field) for field in fields}
+
+
+def attempt_identity(pointer: Mapping[str, Any] | None) -> dict[str, Any]:
+    """``pointer``'s attempt identity, ignoring the phase the station rewrites."""
+    return _identity(pointer, ATTEMPT_FIELDS)
+
+
+def marked_identity(pointer: Mapping[str, Any] | None) -> dict[str, Any]:
+    """The identity a landing mark names, including the phase it was made for."""
+    return _identity(pointer, MARKED_FIELDS)
 
 
 def pointer_attempt(pointer: Mapping[str, Any] | None) -> dict[str, Any]:
     """The identity of the attempt a pointer belongs to, as the mark records it."""
-    pointer = pointer or {}
-    return {field: pointer.get(field) for field in _ATTEMPT_FIELDS}
+    return marked_identity(pointer)
+
+
+def retire_pointer_if(run_id: str, matches: Callable[[Mapping[str, Any]], bool]) -> str:
+    """Retire the live pointer under its lock while ``matches`` accepts it.
+
+    One owner for compare-under-lock-and-retire: a promotion retiring the
+    attempt it read, a review retiring a pointer that moved, the acceptance
+    sweep retiring a pointer a promotion marked, and the landing pass releasing
+    a review's or a repair's mark all reach the pointer here, so the lock, the
+    absent case and an unlink that fails are decided once.
+    """
+    with runs._pointer_lock(run_id):
+        path = runs.pointer_path(run_id)
+        if not path.exists():
+            return POINTER_ABSENT
+        try:
+            current = runs.read_pointer(run_id)
+        except runs.CrewError:
+            return POINTER_HELD
+        if not matches(current):
+            return POINTER_HELD
+        try:
+            path.unlink(missing_ok=True)
+        except OSError:
+            return POINTER_HELD
+        return POINTER_RETIRED
+
+
+def _write_mark(run_id: str, pointer: Mapping[str, Any], **mark: Any) -> dict[str, Any]:
+    """Write ``pointer`` as the run's live pointer, carrying ``mark``'s fields.
+
+    One writer for a pointer mark: both marks below are written here, so what a
+    mark does to the pointer it is written onto is decided once.
+    """
+    marked = {**dict(pointer), **mark}
+    runs._write_json(runs.pointer_path(run_id), marked)
+    return marked
 
 
 def mark_pending_landing_repair(
@@ -186,26 +260,32 @@ def mark_pending_landing_repair(
     already belong to a newer attempt, and the pass must remove only the attempt
     it finished rather than whichever pointer happens to be there later.
     """
-    marked = {
-        **dict(pointer),
-        "pending_landing_repair": True,
-        "pending_landing_repair_attempt": pointer_attempt(pointer),
-    }
-    runs._write_json(runs.pointer_path(run_id), marked)
-    return marked
+    return _write_mark(
+        run_id,
+        pointer,
+        pending_landing_repair=True,
+        pending_landing_repair_attempt=pointer_attempt(pointer),
+    )
+
+
+def mark_promoted_pointer(run_id: str, pointer: Mapping[str, Any]) -> dict[str, Any]:
+    """Write ``pointer`` as the run's live pointer, marked as already promoted.
+
+    A promotion that recorded the run but could not retire the pointer calls
+    this, and the acceptance sweep retires the mark once no process owns it. The
+    mark names no attempt, unlike the landing mark above: the reader decides
+    from the pointer's own recorded process whether anything still owns it.
+    """
+    return _write_mark(run_id, pointer, **{PROMOTED_MARK: True})
 
 
 def _release_marked_pointer(run_id: str, marked: Mapping[str, Any]) -> bool:
     """Remove a marked pointer only while it is still the attempt the mark names."""
-    with runs._pointer_lock(run_id):
-        try:
-            current = runs.read_pointer(run_id)
-        except runs.CrewError:
-            return False
-        if pointer_attempt(current) != marked.get("pending_landing_repair_attempt"):
-            return False
-        runs.pointer_path(run_id).unlink(missing_ok=True)
-        return True
+    recorded = marked.get("pending_landing_repair_attempt")
+    return (
+        retire_pointer_if(run_id, lambda current: marked_identity(current) == recorded)
+        == POINTER_RETIRED
+    )
 
 
 def _read(path: Path) -> dict[str, Any] | None:

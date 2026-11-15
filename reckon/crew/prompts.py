@@ -195,7 +195,11 @@ PLAN_LANDING_CONTRACT = (
     + "  Use a figure wherever a spatial, plotted or sequential relationship is clearer\n"
     "  shown than described, under your own docs/figures/<plan>/<node-id>/ with the\n"
     "  project-absolute src /<project>/figures/<plan>/<node-id>/...; never an image\n"
-    "  of what is naturally a table.\n"
+    "  of what is naturally a table. Name each figure you keep on a `figures:`\n"
+    "  line in your manifest, giving the path the run commits under the plan's\n"
+    "  figure directory docs/figures/<plan>/; a node with nothing to show names\n"
+    "  none, and the manifest check holds a named figure to a file the run's\n"
+    "  commits carry there.\n"
     "  Do not edit the plan-version or plan-modified meta lines: every worker\n"
     "  touching them makes every merge conflict there."
 )

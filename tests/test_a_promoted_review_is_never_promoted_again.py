@@ -265,7 +265,7 @@ def test_a_promoted_review_pointer_is_retired_after_its_worker_exits(
         _deliver(repository, tmp_path, worker_pid=child.pid)
         _move_the_pointer_while_promotion_runs(monkeypatch, go, done)
 
-        result = crew.complete(
+        crew.complete(
             REVIEW_RUN_ID, gate="not-run", no_commit=NO_COMMIT_REASON, root=repository
         )
 
@@ -274,7 +274,6 @@ def test_a_promoted_review_pointer_is_retired_after_its_worker_exits(
         assert row["gate"] == "not-run"
         pointer = json.loads(pointer_path(REVIEW_RUN_ID).read_text(encoding="utf-8"))
         assert pointer.get("promoted") is True
-        assert result["run_id"] == REVIEW_RUN_ID
     finally:
         child.kill()
         child.wait()
