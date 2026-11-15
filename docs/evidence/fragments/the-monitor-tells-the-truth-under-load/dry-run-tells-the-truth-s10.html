@@ -1,0 +1,41 @@
+<section id="dry-run-tells-the-truth-s10" class="evidence-fragment">
+  <h2>§10 — A dry run reports what the real call will refuse</h2>
+  <p>
+    Three dry-run gaps, each reproduced at the base revision before it was
+    repaired, and each held by a test that fails against the code it replaces.
+    <code>crew complete --dry-run</code> reported <code>would_promote: true</code>
+    for a run whose armed suite pair the landing could not read: the suite
+    evaluation returned <code>would-measure</code> — the landing would run the
+    armed command over the base and head trees itself — and the dry-run branch
+    passed no refusals, so a run whose promotion depended on a measurement
+    nobody had taken read as promotable. The real <code>complete</code> took the
+    same record, measured, could not read the pair, and refused naming the arm
+    fields it was missing.
+  </p>
+  <p>
+    The evaluation the promotion already runs now reaches the report, and its
+    one unmeasured state is a refusal naming those fields, worded as the
+    landing's measurement and not this call's. A second gap: a delivered
+    implementation with no stored review of its head reported
+    <code>would_file_reviews: []</code>, which answers a different question —
+    which delivered review records a filing would move into the store — and left
+    an owed review looking like none. The review gate's own predicate is
+    extracted and read by a helper that states the review owed as a fact: the
+    run, the tier that decided it is owed and the head it must read. Third, the
+    dry run took the run's pointer lock and its cross-host claim, so it could
+    queue behind a promotion of the same run and answer as a write that timed
+    out; a dry run writes nothing, so it now takes neither.
+  </p>
+  <p id="dry-run-tells-the-truth-s10-measure">
+    Measure. The gate is
+    <code>PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_dry_run_reports_what_the_real_call_refuses.py tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py</code>,
+    reported in the run's manifest with both arms. Each of the three new cases
+    fails at the base revision for its own reason: the suite case on
+    <code>would_promote</code> being true, the review case on
+    <code>reviews_owed</code> being absent, and the lock case on the dry run
+    taking a write lock. The declared mutation skips the armed suite check in
+    the dry run, and the suite case then fails with
+    <code>assert True is False</code> while the other two still pass, so the
+    pass rests on the check being there.
+  </p>
+</section>
