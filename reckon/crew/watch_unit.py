@@ -1077,6 +1077,9 @@ class ProducerSnapshotNotices:
                 self._notice(
                     {
                         "event": "producer-slow",
+                        # A slow tick asks nothing of anyone, so the pane does
+                        # not print it; the JSON stream keeps the reading.
+                        "pane_line": False,
                         "stage": stage,
                         "line": (
                             f"producer {self.project} slow: its tick has run "
@@ -1091,6 +1094,7 @@ class ProducerSnapshotNotices:
             ]
         if self.slow_tick is None and not self.lost:
             return []
+        recovered_from_loss = self.lost
         self.slow_tick = None
         self.lost = False
         self.reported_at = None
@@ -1098,6 +1102,9 @@ class ProducerSnapshotNotices:
             self._notice(
                 {
                     "event": "producer-restored",
+                    # Only the end of a loss the pane printed is news; the end
+                    # of a slow tick it did not print is not.
+                    "pane_line": recovered_from_loss,
                     "line": (
                         f"producer {self.project} restored: snapshot age "
                         f"{own['heartbeat_age_seconds']}s"
