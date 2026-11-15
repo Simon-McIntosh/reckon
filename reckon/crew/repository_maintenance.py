@@ -24,7 +24,6 @@ from __future__ import annotations
 
 import hashlib
 import json
-import os
 import re
 import shlex
 import subprocess
@@ -33,6 +32,8 @@ from collections.abc import Callable, Mapping
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
+
+from reckon._store import write_atomically
 
 #: How old a repository's last recorded pass must be before another is due.
 MAINTENANCE_INTERVAL_SECONDS = 24 * 60 * 60
@@ -117,9 +118,11 @@ def _write_record(
 ) -> Path:
     path = record_path(repository, home=home)
     path.parent.mkdir(parents=True, exist_ok=True)
-    staging = path.with_name(f".{path.name}.{os.getpid()}")
-    staging.write_text(json.dumps(record, indent=2, sort_keys=True), encoding="utf-8")
-    os.replace(staging, path)
+    body = json.dumps(record, indent=2, sort_keys=True)
+    # The record is published through the shared writer, so a reader of the
+    # fleet view sees the old counts or the new ones and never a half-written
+    # record.
+    write_atomically(path, lambda handle: handle.write(body))
     return path
 
 

@@ -199,6 +199,40 @@ def test_a_repository_with_no_record_is_submitted_once(tmp_path: Path, home: Pat
     assert len(scheduler.scripts) == 1, scheduler.scripts
 
 
+def test_the_pass_is_submitted_through_the_fleet_nodes_own_form(
+    tmp_path: Path, home: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The schedule submits through the fleet node's submission, not its own.
+
+    One submission form is what keeps the partition on the argv and the
+    refusal handling in one place: a second sbatch invocation here would drift
+    from the form every other partitioned launch uses as soon as either
+    changes. The fleet node's own submission is replaced for this test, so a
+    schedule that reaches a scheduler client directly records nothing and
+    fails here.
+    """
+
+    from reckon.crew import fleet_node
+    from reckon.crew import repository_maintenance as maintenance
+
+    calls: list[dict] = []
+
+    def recording_submit(script, *, partition=None, runner=None) -> str:
+        calls.append({"script": script, "partition": partition})
+        return "4242"
+
+    monkeypatch.setattr(fleet_node, "submit", recording_submit)
+    repository = _repository(tmp_path, "one")
+
+    row = maintenance.submit_pass(repository, partition="all_debug", home=home)
+
+    assert row["job_id"] == "4242", row
+    assert row["partition"] == "all_debug", row
+    assert len(calls) == 1, calls
+    assert calls[0]["partition"] == "all_debug", calls
+    assert str(repository) in calls[0]["script"], calls
+
+
 def test_a_refused_submission_is_reported_and_does_not_stop_the_tick(
     tmp_path: Path, home: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
