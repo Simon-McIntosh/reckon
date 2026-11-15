@@ -40,10 +40,21 @@
   raises <code>run_store.UnreadableRunStoreError</code>, and the message carries
   the store's path and the cause. The two read-only readers cannot migrate: the
   backfill is a write, and <code>RunStore</code> is what performs it. So a store
-  that owes its migration is <em>refused</em>, naming the migration and the
-  declaration it should carry, and opening the store through
-  <code>RunStore</code> migrates it before answering. Absence stays distinct
-  from failure: an absent store still answers <code>None</code>.</p>
+  whose <code>runs</code> table lacks a column a read selects is
+  <em>refused</em>, naming the missing column and the migration that supplies
+  it. The schema record is not the test: a store carrying every column answers
+  whatever <code>store_meta</code> says, because that is the state a migration
+  leaves when it commits its backfill and is interrupted before writing the
+  record. Absence stays distinct from failure: an absent store still answers
+  <code>None</code>.</p>
+
+  <p><strong>The guard was first too wide.</strong> Keying the refusal on the
+  recorded declaration refused a readable store — measured against the base, a
+  test that deletes <code>store_meta</code> and requires the load to answer a
+  store the caller cannot write passed at base and failed at head. The
+  criterion moved to the table's shape, and that test passes again. Its lesson
+  is the one the measure asks for: a guard is shown firing, and it also has to
+  be shown not firing where reading is sound.</p>
 
   <p><strong>One record join.</strong> The record is split across
   <code>runs</code> and <code>run_details</code>, with retired rows in an
@@ -55,19 +66,21 @@
   drift between them fails rather than passing quietly.</p>
 
   <p><strong>Evidence.</strong> <code>tests/test_an_unreadable_store_is_an_error.py</code>
-  holds six tests. The three error arms are asserted through
+  holds seven tests. The three error arms are asserted through
   <code>ledger.load</code>, which is where a reader meets the store, and each
   also asserts the reader itself raises rather than answering empty. One test
   asserts the refusal is bounded — the same store, migrated through
-  <code>RunStore</code>, then answers its row to both readers. One asserts the
-  absent store still answers empty, so the guard is shown to see a failure
-  rather than to be loud. The last holds the ledger reader and the indexed
-  reader equal over a store with a retired row, over a population of two runs,
-  one of them archived.</p>
+  <code>RunStore</code>, then answers its row to both readers. One asserts a
+  store with every column but no schema record still answers, which is the
+  interrupted-migration shape and the over-fire this node measured and fixed.
+  One asserts the absent store still answers empty, so the guard is shown to
+  see a failure rather than to be loud. The last holds the ledger reader and the
+  indexed reader equal over a store with a retired row, over a population of
+  two runs, one of them archived.</p>
 
   <p><strong>Arms.</strong> Base <code>8e542a224c</code>: the declared suite
   without the new test file, <strong>58 passed</strong>. Head
-  <code>24f983870b</code> with it: <strong>64 passed</strong>. Both arms exited
+  <code>3fbd898502</code> with it: <strong>65 passed</strong>. Both arms exited
   zero and ran to their summary line. The three error arms fail at base. The
   base column of the table above is a probe run against the base tree rather
   than something a passing suite would show, because at base these shapes raise
