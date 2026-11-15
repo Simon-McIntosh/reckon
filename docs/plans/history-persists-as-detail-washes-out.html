@@ -23,9 +23,9 @@
   <title>History Persists As Detail Washes Out | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="24">
+<meta name="plan-version" content="25">
 <meta name="plan-modified" content="2026-11-15">
-<meta name="plan-section-declarations" content="{&quot;s20&quot;:&quot;implementable&quot;}">
+<meta name="plan-section-declarations" content="{&quot;s20&quot;:&quot;done&quot;}">
 </head>
 <body>
   <main class="plan-doc">
@@ -353,7 +353,7 @@
     </section>
 
     <h2 id="s20">§20 — Map every ledger reader and writer that must leave git</h2>
-<section data-reckon="section" data-id="s20" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+<section data-reckon="section" data-id="s20" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="done" data-links=""></section>
 <p><strong>Why.</strong> The lead locked <code>committed-export-scope</code> as "none": the run ledger leaves git, and the run store in the crew home becomes its only store. Untracking <code>docs/state/&lt;project&gt;/crew.json</code> and <code>docs/state/&lt;project&gt;/runs/*.json</code> reaches every path that reads or writes them. That includes promotion commits that stage ledger files, release commits, landing records, the open-run and ledger indexes, velocity and pace readers, and the SPA's state payload. Cutting nodes before those are known would strand a writer that still commits a file nobody tracks.</p>
 <p><strong>Deliverable.</strong> An investigation, which changes no product code. It produces a table of every module that reads or writes the ledger aggregate or a per-run ledger file, with the function, whether it reads or writes, and whether it stages or commits the file. Throughout this section, <em>the run store</em> means the embedded SQLite database under the crew config home that §2 defines, which no commit carries. The table states which callers already read or write through that database and which open the committed files directly. It names the one-time migration the untracking needs (<code>git rm --cached</code>, <code>.gitignore</code>, history kept in the store, an export path outside git). It ends with a proposed split into implementation sections, each with a write scope disjoint from the others, ordered so that no promotion is ever left unable to record a run. Sections §2–§7 were written before the decision and are restated from this map, not built from their current text.</p>
 <p><strong>Done when.</strong> The fragment <code>docs/evidence/fragments/history-persists-as-detail-washes-out/ledger-leaves-git-map.html</code> carries the table, found by <code>git grep</code> over the whole repository at the base revision (every tracked path, <code>docs/</code> and <code>scripts/</code> included, with test files listed in a separate group) for the ledger's path helpers and for literal <code>crew.json</code> and <code>runs/</code> uses. Each claimed caller is cited by file and line from the committed blob at the base revision. It also carries the migration steps and the proposed sections, each with a done-when. A positive control shows the grep finds <code>reckon/ledger.py</code>'s own writer and the committed reader at <code>docs/figures/plan-review-cycles/measure_review_cycles.py</code>. Write paths: the fragment only.</p>
