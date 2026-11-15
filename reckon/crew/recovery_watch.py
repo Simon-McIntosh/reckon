@@ -3956,6 +3956,7 @@ def recover(
     config: Mapping[str, Any] | None = None,
     launcher: Callable[..., Any] | None = None,
     dispatch_reviews: bool = False,
+    any_session: bool = False,
 ) -> dict[str, Any]:
     """Classify live pointers; launch reviews only with --dispatch-reviews and --project.
 
@@ -3970,6 +3971,10 @@ def recover(
     reaches only runs whose dispatching session still has a live follower;
     otherwise the review remains with its coordinator. The sweep prefers the
     local lane unless the reviewed node explicitly declared another backend.
+
+    ``any_session`` drops the live-follower condition. The admit service sweeps
+    with it, because a delivered run whose coordinator has stopped still owes a
+    review before it can land, and nothing else would dispatch it.
     """
     from reckon.crew.dispatch import observe
 
@@ -4018,7 +4023,10 @@ def recover(
     if dispatch_reviews:
         for record in scoring:
             session = str(record.get("session") or "")
-            if not session or not runs.follower_state(project, session).get("live"):
+            if not any_session and (
+                not session
+                or not runs.follower_state(project, session).get("live")
+            ):
                 awaiting_coordinator.append(
                     {
                         "run_id": str(record.get("run_id") or ""),
