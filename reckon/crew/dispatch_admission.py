@@ -301,13 +301,26 @@ def _refuse_over_concurrency_ceiling(
     binding = summary.binding_bound(bounds)
     if binding is not None and not binding.admits_one_more:
         run_ids = [str(pointer.get("run_id") or "unknown") for pointer in occupying]
-        raise CrewError(
+        # A bound is a wait for room, not a refusal: the workers inside the
+        # allocation carry on and one of them ending frees what this dispatch
+        # needs. It is raised as the roster's queueable hold so every lane's
+        # dispatch path stores the request instead of losing it, exactly as it
+        # already did at the roster's own cap.
+        capacity = binding.capacity
+        raise RosterFull(
             format_refusal(
                 "D09",
                 summary.bound_refusal_text(
                     binding, backend_name=backend_name, occupying=run_ids
                 ),
-            )
+            ),
+            occupancy=len(occupying),
+            limit=(
+                int(capacity)
+                if isinstance(capacity, (int, float)) and capacity >= 1
+                else len(occupying) + 1
+            ),
+            occupying=run_ids,
         )
     # A placed backend's workers run inside the one shared reservation, and
     # under --overlap the scheduler admits whatever is asked, so the
@@ -1276,8 +1289,8 @@ class LaneHeld(LanePaused):
 
     The lane is answering and its own arithmetic leaves this coordinator
     session no room, so the node is held rather than refused: no worktree was
-    created and the node is still ready. On the local lane the request is
-    queued instead, and the queued record rides the exception as ``queued``;
+    created and the node is still ready. The request is queued on whichever
+    lane it named, and the queued record rides the exception as ``queued``;
     that pointer launches later from the node's brief, so a caller must keep
     whatever the brief names. The allowance decision that produced the hold
     rides the exception, so every surface reports the figure the router
@@ -1286,13 +1299,15 @@ class LaneHeld(LanePaused):
 
 
 class RosterFull(CrewError):  # noqa: N818 - a held condition named beside the lane holds
-    """A dispatch found the placement reservation's roster at its cap.
+    """A dispatch found the placement reservation at the bound that binds.
 
-    The cap is a queueable resource rather than a refusal: the node is ready,
-    the allocation is simply carrying as many placed workers as it was sized
-    for, and one of them finishing frees the seat this dispatch would take. A
-    caller that can queue writes the request and relaunches it when a seat
-    frees, so the composition of a review is not lost while the fleet is busy.
+    Both bounds the reservation enforces are queueable resources rather than
+    refusals: the roster cap and the admitted partition cores. The node is
+    ready, the allocation is simply carrying as many placed workers as it was
+    sized for, and one of them finishing frees the seat or the cores this
+    dispatch would take. A caller that can queue writes the request and
+    relaunches it when room frees, so the composition of a review is not lost
+    while the fleet is busy.
 
     It stays a :class:`CrewError` so every refusal surface reports it, and it
     carries the occupancy the decision was taken on together with the seats
