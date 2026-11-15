@@ -1,0 +1,66 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "claim_summary": {
+    "detail": "the summary line's figures are the table's: 296,595 and 116,089 bytes (39 percent) are the byte totals of the three size rows, 13 of 60 is the sum of the per-plan lost counts (9 + 2 + 2), the kinds 4 / 4 / 5 are the per-plan by_kind sums, and the per-plan pairs 254,691 -> 49,946, 15,799 -> 12,346 and 26,105 -> 53,797 are the three size rows verbatim; every byte figure was confirmed against os.path.getsize on disk. The only tension is the 13 itself, which the re-run put at 12, and that is a claim finding rather than a mismatch between the summary and its table.",
+    "verdict": "agrees"
+  },
+  "claims": [
+    {
+      "detail": "size pair re-measured against the reviewed worktree at 70272d91 (git rev-parse HEAD matches, status clean) and the prototypes under the run directory: overviews 12,346 + 53,797 + 49,946 = 116,089 bytes against records 15,799 + 26,105 + 254,691 = 296,595 bytes, 39.1 percent. Per-plan pairs match the report exactly: 254,691 -> 49,946, 15,799 -> 12,346, 26,105 -> 53,797 (the third overview is larger than its record). Caveat: the cited command `measure_comparison.py` does not run as delivered because closure_overview.RUNS_CACHE resolves to /tmp/reckon-crew-scratch/r-20261114T211102171695-closure-overview-prototype/work/runs_compact.json, which no longer exists; it aborts FileNotFoundError before any measure. The sizes do not read that cache, and the same plan_measure functions with the cache rebuilt from the 8,798 committed run records returned the figures above.",
+      "rank": "1",
+      "verdict": "reproduced"
+    },
+    {
+      "detail": "the report states 13 of 60 sampled claims are recoverable from no allowed source (4 routine counts, 4 measurement narratives, 5 negative results); the re-run produced 12 of 60 (4 routine counts, 3 measurement narratives, 5 negative results). The single differing claim is the a-review-is-sized-to-its-risk arm table ('base ... 7595 passed ... head ... 7690 passed'), whose tokens 7595 and 7690 are absent from the plan, comments, reviews and figures and match only inside commit SHAs in the run records' manifest_commits field, so the original 13 rests on the subset of run-record fields its discarded cache carried.",
+      "rank": "2",
+      "verdict": "differs"
+    },
+    {
+      "detail": "the unsourced-claim counter recomputes to 0 unsourced blocks and 0 unsourced sentences on all three overviews, over 19, 33 and 67 factual sentences respectively, and the routine tables carry a source in every row (8/8, 114/114, 61/61). The cited falsifier that made this zero credible (/tmp/reckon-crew-scratch/r-20261114T211102171695-closure-overview-prototype/work/falsify_unsourced.py) went with the /tmp scratch, so its 0 -> 1 demonstration cannot be re-run; the record of it in negative-control.log was read and matches the page sha256.",
+      "rank": "3",
+      "verdict": "reproduced"
+    }
+  ],
+  "completed_at": "2026-11-15T02:49:06.790Z",
+  "dispatched_at": "2026-11-15T02:09:59Z",
+  "findings": [
+    {
+      "file": "measure_comparison.py",
+      "line": "58",
+      "severity": "blocking",
+      "text": "the measurement is not reproducible as delivered: closure_overview.py:28-31 points RUNS_CACHE at /tmp/reckon-crew-scratch/r-20261114T211102171695-closure-overview-prototype/work/runs_compact.json, a node-local file no script in the run directory produces, so the cited re-run aborts FileNotFoundError and a later reader cannot recover the corpus the loss figure was measured against. The cache should be rebuilt from docs/state/reckon/runs/ by a recorded command, or written into the run directory."
+    },
+    {
+      "file": "deliverables/comparison.json",
+      "line": "158",
+      "severity": "follow-on",
+      "text": "the loss count is sensitive to which fields the missing cache carried: with the full committed run records it re-measures 12 of 60 rather than 13, because the tokens 7595 and 7690 of one arm table match substrings of manifest_commits SHAs. A token match is a substring test, so incidental hex can mark a claim recoverable that is not; the repository-wide corpus should exclude identifier-shaped hex or require a token boundary before a claim counts as recovered."
+    },
+    {
+      "file": "deliverables/comparison.json",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "verified and consistent: the three size pairs reproduce byte-exact from the reviewed tree, the routine tables carry a source in all 183 rows, the unsourced counter recomputes to zero, and the three overviews' figure references resolve inside the run directory. Only the falsifier script and the runs cache lived in /tmp and are now gone."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "CLAIM 1: reproduced: ...\nCLAIM 2: differs: ...\nCLAIM 3: reproduced: ...\nCLAIM_SUMMARY: agrees: ...",
+  "review_run_id": "r-20261115T020506097715-review-of-closure-overview-prototype-70272d915026",
+  "reviewed_base_sha": "70272d915026239598b7ce5b77128c50c54b58cb",
+  "reviewed_head_sha": "70272d915026239598b7ce5b77128c50c54b58cb",
+  "reviewed_run_id": "r-20261114T211102171695-closure-overview-prototype",
+  "rubric": "claims",
+  "scores": {
+    "durability": null,
+    "evidence": null,
+    "fit": null,
+    "goal_fidelity": null,
+    "reuse": null,
+    "scope_discipline": null
+  },
+  "scores_note": "the six landed-node dimensions are not what a claims review measures: nothing was landed and no gate suite ran, so each is null rather than scored; the verdicts above are the review.",
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-15T02:49:47.358430+00:00"
+}
