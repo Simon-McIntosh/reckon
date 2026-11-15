@@ -1,0 +1,83 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "0f519315992f429fae018708f84eba960b99fb15",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/serve.py:2751 compose_landed_record in the evidence-page handler",
+    "reckon/mcp.py:1344 compose_landed_record in the MCP evidence read",
+    "reckon/evidence.py:1219 _overall_verdict writing plan-verdict"
+  ],
+  "completed_at": "2026-11-15T21:59:31.959Z",
+  "dispatched_at": "2026-11-15T21:57:53Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/work-scales-to-eighty-across-nodes/s5.html",
+      "line": "38",
+      "severity": "non-blocking",
+      "text": "non-blocking: the added paragraph says the measure \"appends 32 KiB to every run's stream\" and ties that to the timed arms \"whose medians are 1.523 s and 1.546 s\", but those are the all_debug arms and logs/tick-base-all_debug.json records arrival_bytes 8192 for them \u2014 32768 is the 1 mb arms' figure (logs/tick-base-1mb.json) whose medians are 3.243 s and 3.575 s, so the paragraph contradicts the two arms it names in the same sentence."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T200323420839-wse-the-station-tick-stays-under-30-seconds-at-230-live-runs/manifest.md",
+      "line": "13",
+      "severity": "blocking",
+      "text": "blocking: the gate line reads `tests: WHOLE_SUITE_PLACEHOLDER`, an unsubstituted template rather than the command a shell was handed, so promotion has no gate receipt it can fill and the suite arms can only be recovered from the logs' own `# command:` headers."
+    },
+    {
+      "file": "docs/evidence/fragments/work-scales-to-eighty-across-nodes/s5.html",
+      "line": "12",
+      "severity": "non-blocking",
+      "text": "non-blocking: the flipped plan-verdict scalar is dropped when the fragment is composed into the plan's landed record \u2014 reckon/evidence.py:1340-1366 keeps only a fragment's body and discards its head \u2014 so the composed record's verdict still comes from _overall_verdict over the run ledger (reckon/evidence.py:1219), and the qualification this commit stores is visible only when the fragment file is read directly."
+    },
+    {
+      "file": "docs/evidence/fragments/work-scales-to-eighty-across-nodes/s5.html",
+      "line": "38",
+      "severity": "non-blocking",
+      "text": "non-blocking: the conclusion that \"no population of this measure can show the base over 30 seconds while the head stays under it\" generalises a cold-to-steady ratio measured at one population (2.966 s against 1.453 s) and rests on a steady base tick of 30 s that was never measured, and the paragraph also removed the record's earlier explanation that the fleet node's 2 to 6 minute ticks needed its memory pressure, which the run's own outside_scope still cites."
+    }
+  ],
+  "head_log_revision": "1b8e50f1f13eed6c6772d1267223d3085a88ee74",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read commit by commit against 11491f785b39595be3387a45451f840a2860ef91; the range holds one commit, 1b8e50f1f13e, +8/-4 over two files: plan-verdict flipped from \"passed\" to \"qualified\" at both pages' line 12, s5.html gains s5-verdict (line 36) and s5-control-shape (line 38), and the older s5-negative-control paragraph (line 40) is repurposed as the mutation control.",
+    "done_when": "the done_when (prompt.txt:165) is a 20-tick measure over 230 live runs on all_debug with every tick under 30 s and every reading under 2 GB, and a negative control in which the same measure at the base revision records ticks over 30 s; the commit adds no measurement, the first clause's readings are the worker's logs (max 8.997 s base, 5.476 s head, 0 of 20 over bound) and the control clause is now recorded as not reproduced at docs/evidence/fragments/work-scales-to-eighty-across-nodes/s5.html:36-38 rather than asserted as passed.",
+    "goal": "the source node's goal is \"Keep the station tick under 30 seconds and under 2 GB with 230 live runs\" (prompt.txt:38 of the reviewed run); the single commit this review covers (1b8e50f1f13e) touches no runtime code, and its landed effect is to stop the two evidence pages claiming a passing verdict the section's time control does not support (docs/evidence/fragments/work-scales-to-eighty-across-nodes/s5.html:12, wse-the-station-tick-stays-under-30-seconds-at-230-live-runs pages:12).",
+    "manifest": "read at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T200323420839-wse-the-station-tick-stays-under-30-seconds-at-230-live-runs/manifest.md; it reports status complete, both suite arms at EXIT=0 (58 passed each, logs/suite-base.log at 0f51931 and logs/suite-head-repair.log at 1b8e50f1), a negative_control_log at 2 failed/EXIT=1, and four measure arms whose figures match the pages \u2014 but its gate line reads `tests: WHOLE_SUITE_PLACEHOLDER` (manifest.md:13), an unsubstituted template that promotion cannot re-run.",
+    "write_paths": "the reviewed node's fence (prompt.txt:84-89) is reckon, tests, docs/evidence/fragments/work-scales-to-eighty-across-nodes, that directory's wse-the-station-tick... page and docs/figures/work-scales-to-eighty-across-nodes/wse-the-station-tick...; `git diff --name-status 11491f785b39..1b8e50f1f13e` lists exactly the two evidence files and both are inside that fence."
+  },
+  "justifications": {
+    "durability": "the diff adds no assertion at all, and the only guard near this surface, tests/test_closure_verdict.py:181, asserts the generated record's meta against an expected value from _overall_verdict, so no test reddens if docs/evidence/fragments/work-scales-to-eighty-across-nodes/s5.html:12 regresses to \"passed\".",
+    "evidence": "the arms' figures in docs/evidence/fragments/work-scales-to-eighty-across-nodes/s5.html:34-36 reconcile with logs/tick-base-all_debug.json and logs/tick-head-all_debug.json, but manifest.md:13 carries WHOLE_SUITE_PLACEHOLDER where the gate command belongs and s5.html:38 states 32 KiB against the 8192 arrival_bytes those arms record.",
+    "fit": "the added paragraphs at docs/evidence/fragments/work-scales-to-eighty-across-nodes/s5.html:36-40 keep the file's id and strong-lead paragraph idiom, and \"qualified\" is the spelling the record vocabulary already owns at reckon/evidence.py:708.",
+    "goal_fidelity": "docs/evidence/fragments/work-scales-to-eighty-across-nodes/s5.html:36 now records the bound as qualified with the base arm's worst tick named, which is what the goal's bound plus the unreproduced control require of the record.",
+    "reuse": "the diff adds no function, class or module; the search of reckon/ for plan-verdict found the only writer at reckon/evidence.py:1219 and the value chosen matches its _VERDICT_SEVERITY set rather than forking a vocabulary.",
+    "scope_discipline": "`git diff --name-status 11491f785b39..1b8e50f1f13e` lists only s5.html and the wse-the-station-tick... page, both inside the fence at the reviewed prompt.txt:84-89, with no code, test or unrelated edit."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the source node's goal is \"Keep the station tick under 30 seconds and under 2 GB with 230 live runs\" (prompt.txt:38 of the reviewed run); the single commit this review covers (1b8e50f1f13e) touches no runtime code, and its landed effect is to stop the two evidence pages claiming a passing verdict the section's time control does not support (docs/evidence/fragments/work-scales-to-eighty-across-nodes/s5.html:12, wse-the-station-tick-stays-under-30-seconds-at-230-live-runs pages:12).\nVERDICT done_when: the done_when (prompt.txt:165) is a 20-tick measure over 230 live runs on all_debug with every tick under 30 s and every reading under 2 GB, and a negative control in which the same measure at the base revision records ticks over 30 s; the commit adds no measurement, the first clause's readings are the worker's logs (max 8.997 s base, 5.476 s head, 0 of 20 over bound) and the control clause is now recorded as not reproduced at docs/evidence/fragments/work-scales-to-eighty-across-nodes/s5.html:36-38 rather than asserted as passed.\nVERDICT write_paths: the reviewed node's fence (prompt.txt:84-89) is reckon, tests, docs/evidence/fragments/work-scales-to-eighty-across-nodes, that directory's wse-the-station-tick... page and docs/figures/work-scales-to-eighty-across-nodes/wse-the-station-tick...; `git diff --name-status 11491f785b39..1b8e50f1f13e` lists exactly the two evidence files and both are inside that fence.\nVERDICT manifest: read at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T200323420839-wse-the-station-tick-stays-under-30-seconds-at-230-live-runs/manifest.md; it reports status complete, both suite arms at EXIT=0 (58 passed each, logs/suite-base.log at 0f51931 and logs/suite-head-repair.log at 1b8e50f1), a negative_control_log at 2 failed/EXIT=1, and four measure arms whose figures match the pages \u2014 but its gate line reads `tests: WHOLE_SUITE_PLACEHOLDER` (manifest.md:13), an unsubstituted template that promotion cannot re-run.\nVERDICT diff: read commit by commit against 11491f785b39595be3387a45451f840a2860ef91; the range holds one commit, 1b8e50f1f13e, +8/-4 over two files: plan-verdict flipped from \"passed\" to \"qualified\" at both pages' line 12, s5.html gains s5-verdict (line 36) and s5-control-shape (line 38), and the older s5-negative-control paragraph (line 40) is repurposed as the mutation control.\nCALL_SITES: reckon/serve.py:2751 compose_landed_record in the evidence-page handler, reckon/mcp.py:1344 compose_landed_record in the MCP evidence read, reckon/evidence.py:1219 _overall_verdict writing plan-verdict\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: docs/evidence/fragments/work-scales-to-eighty-across-nodes/s5.html:36 now records the bound as qualified with the base arm's worst tick named, which is what the goal's bound plus the unreproduced control require of the record.\nSCORE evidence: 11\nJUSTIFICATION evidence: the arms' figures in docs/evidence/fragments/work-scales-to-eighty-across-nodes/s5.html:34-36 reconcile with logs/tick-base-all_debug.json and logs/tick-head-all_debug.json, but manifest.md:13 carries WHOLE_SUITE_PLACEHOLDER where the gate command belongs and s5.html:38 states 32 KiB against the 8192 arrival_bytes those arms record.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: `git diff --name-status 11491f785b39..1b8e50f1f13e` lists only s5.html and the wse-the-station-tick... page, both inside the fence at the reviewed prompt.txt:84-89, with no code, test or unrelated edit.\nSCORE durability: 10\nJUSTIFICATION durability: the diff adds no assertion at all, and the only guard near this surface, tests/test_closure_verdict.py:181, asserts the generated record's meta against an expected value from _overall_verdict, so no test reddens if docs/evidence/fragments/work-scales-to-eighty-across-nodes/s5.html:12 regresses to \"passed\".\nSCORE fit: 18\nJUSTIFICATION fit: the added paragraphs at docs/evidence/fragments/work-scales-to-eighty-across-nodes/s5.html:36-40 keep the file's id and strong-lead paragraph idiom, and \"qualified\" is the spelling the record vocabulary already owns at reckon/evidence.py:708.\nSCORE reuse: 20\nJUSTIFICATION reuse: the diff adds no function, class or module; the search of reckon/ for plan-verdict found the only writer at reckon/evidence.py:1219 and the value chosen matches its _VERDICT_SEVERITY set rather than forking a vocabulary.\nFINDING docs/evidence/fragments/work-scales-to-eighty-across-nodes/s5.html:38 non-blocking: the added paragraph says the measure \"appends 32 KiB to every run's stream\" and ties that to the timed arms \"whose medians are 1.523 s and 1.546 s\", but those are the all_debug arms and logs/tick-base-all_debug.json records arrival_bytes 8192 for them \u2014 32768 is the 1 mb arms' figure (logs/tick-base-1mb.json) whose medians are 3.243 s and 3.575 s, so the paragraph contradicts the two arms it names in the same sentence.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T200323420839-wse-the-station-tick-stays-under-30-seconds-at-230-live-runs/manifest.md:13 blocking: the gate line reads `tests: WHOLE_SUITE_PLACEHOLDER`, an unsubstituted template rather than the command a shell was handed, so promotion has no gate receipt it can fill and the suite arms can only be recovered from the logs' own `# command:` headers.\nFINDING docs/evidence/fragments/work-scales-to-eighty-across-nodes/s5.html:12 non-blocking: the flipped plan-verdict scalar is dropped when the fragment is composed into the plan's landed record \u2014 reckon/evidence.py:1340-1366 keeps only a fragment's body and discards its head \u2014 so the composed record's verdict still comes from _overall_verdict over the run ledger (reckon/evidence.py:1219), and the qualification this commit stores is visible only when the fragment file is read directly.\nFINDING docs/evidence/fragments/work-scales-to-eighty-across-nodes/s5.html:38 non-blocking: the conclusion that \"no population of this measure can show the base over 30 seconds while the head stays under it\" generalises a cold-to-steady ratio measured at one population (2.966 s against 1.453 s) and rests on a steady base tick of 30 s that was never measured, and the paragraph also removed the record's earlier explanation that the fleet node's 2 to 6 minute ticks needed its memory pressure, which the run's own outside_scope still cites.",
+  "review_run_id": "r-20261115T214905424626-review-of-wse-the-station-tick-stays-under-30-seconds-at-230-live-runs-1b8e50f1f13e",
+  "reviewed_base_sha": "11491f785b39595be3387a45451f840a2860ef91",
+  "reviewed_head_sha": "1b8e50f1f13eed6c6772d1267223d3085a88ee74",
+  "reviewed_run_id": "r-20261115T200323420839-wse-the-station-tick-stays-under-30-seconds-at-230-live-runs",
+  "reviewer": {
+    "backend": "omp",
+    "model": "deepseek-v4.1-flash",
+    "reviewer_run_id": "r-20261115T214905424626-review-of-wse-the-station-tick-stays-under-30-seconds-at-230-live-runs-1b8e50f1f13e"
+  },
+  "reviewer_run_id": "r-20261115T214905424626-review-of-wse-the-station-tick-stays-under-30-seconds-at-230-live-runs-1b8e50f1f13e",
+  "scores": {
+    "durability": 10,
+    "evidence": 11,
+    "fit": 18,
+    "goal_fidelity": 17,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-15T22:34:44.124942+00:00",
+  "total": 96
+}
