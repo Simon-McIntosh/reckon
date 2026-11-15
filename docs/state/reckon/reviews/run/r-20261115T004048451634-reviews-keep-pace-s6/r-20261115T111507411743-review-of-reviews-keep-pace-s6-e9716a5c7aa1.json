@@ -1,0 +1,118 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-11-15T11:43:09.322Z",
+  "dimension_dispositions": {
+    "reuse": {
+      "kind": "folded",
+      "node": "seat-share-reuses-deficit-order-s13",
+      "recorded_at": "2026-11-15T11:55:39.513718+00:00"
+    }
+  },
+  "dispatched_at": "2026-11-15T11:16:45Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "exempted",
+      "reason": "selection.py was ratified at landing with --accept-path; the concurrent claim merged without conflict",
+      "recorded_at": "2026-11-15T11:56:31.262616+00:00"
+    },
+    "1": {
+      "kind": "folded",
+      "node": "seat-share-reuses-deficit-order-s13",
+      "recorded_at": "2026-11-15T11:55:50.010040+00:00"
+    },
+    "2": {
+      "kind": "folded",
+      "node": "seat-share-reuses-deficit-order-s13",
+      "recorded_at": "2026-11-15T11:56:09.179073+00:00"
+    },
+    "3": {
+      "kind": "folded",
+      "node": "seat-share-reuses-deficit-order-s13",
+      "recorded_at": "2026-11-15T11:56:20.080729+00:00"
+    },
+    "4": {
+      "kind": "exempted",
+      "reason": "an evidence count in the landing fragment, not code; the verdict log the review cites is the authority",
+      "recorded_at": "2026-11-15T11:56:42.811853+00:00"
+    },
+    "5": {
+      "kind": "exempted",
+      "reason": "the after-hour reading needs the admit service on this code; it is read once the service reloads past c60fd6b57d",
+      "recorded_at": "2026-11-15T11:57:02.703723+00:00"
+    },
+    "6": {
+      "kind": "exempted",
+      "reason": "a manifest figure off by rounding against the fragment; the log is the authority",
+      "recorded_at": "2026-11-15T11:57:13.072847+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "reckon/crew/admission/selection.py",
+      "id": "f2636ca6596",
+      "line": "794",
+      "severity": "non-blocking",
+      "text": "the cadence is computed at selection.py:794, a file outside the dispatch's declared write paths (the order is built in admission ordering, then this result is read at verdicts.py:399), and a concurrent node declares the same path, so the coordinator must ratify it with crew accept-path rather than let it merge as a silent colliding edit."
+    },
+    {
+      "file": "reckon/crew/admission/ordering.py",
+      "id": "f21523a20ac",
+      "line": "106",
+      "severity": "non-blocking",
+      "text": "_seat_share_turns duplicates the deficit round-robin loop the same module already owns at ordering.py:70 weighted_project_order: the same pending/first_seen/servable structure with only the tie rule restated, and the docstring's quota-versus-deficit distinction is not a real difference, because from a zero start the accrual key (k*w - served) is the expression this function computes: the two keys agree seat for seat, so factoring the loop to take a key function would have extended the owner instead of forking it."
+    },
+    {
+      "file": "reckon/crew/admission/ordering.py",
+      "id": "f4d980032bb",
+      "line": "155",
+      "severity": "non-blocking",
+      "text": "IMPLEMENTATION_ROLE is \"implementation\", but every other surface names that role \"implement\" (reckon/crew/ticker.py:647; the dispatch default is at reckon/crew/dispatch_batch.py:633), so the verdict row's roles block cannot be joined to a run's role on the implementation side while the change's own review half joins exactly."
+    },
+    {
+      "file": "tests/test_reviews_and_implementations_share_the_seats.py",
+      "id": "f26c6e1e92a",
+      "line": "152",
+      "severity": "non-blocking",
+      "text": "the verdict-row case never asserts a launched count, only launched+waiting against the number of requests the test queued, so a role_cadence that reported every request as waiting \u2014 launched always 0 \u2014 satisfies all four assertions and leaves the plan's \"how many it launched\" unguarded."
+    },
+    {
+      "file": "docs/evidence/fragments/the-escape-lane-and-reviews-keep-pace/role-cadence.html",
+      "id": "fcda0b370ec",
+      "line": "9",
+      "severity": "non-blocking",
+      "text": "the fragment states \"4 distinct run ids were launched\", but the verdict log over the stated window carries six launched rows on six distinct run ids (alro-s2, rorp-s3, rorp-s2, rorp-s4, rorp-s5, a-wait-no-sweep-can-lift-reaches-its-coordinator), so a reader counting launches from the record answers four."
+    },
+    {
+      "file": "docs/evidence/fragments/the-escape-lane-and-reviews-keep-pace/role-cadence.html",
+      "id": "f2b036a614c",
+      "line": "53",
+      "severity": "non-blocking",
+      "text": "the done_when asks for a one-hour reading \"before and after\", and only the before half is in the record; the fragment says the after half needs the admit service restarted on this code, which is honest but leaves that clause of the measure unmet at this revision."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T004048451634-reviews-keep-pace-s6/manifest.md",
+      "id": "fe1bcb8eab5",
+      "line": "25",
+      "severity": "non-blocking",
+      "text": "the evidence_inputs summary repeats the \"4 distinct run ids launched\" figure and quotes the ninetieth percentile as 7660 s where the fragment says 7664 s and the log yields 7664.2 s at nearest rank, so the manifest's own figures do not reconcile with the record it cites."
+    }
+  ],
+  "project": "reckon",
+  "review_run_id": "r-20261115T111507411743-review-of-reviews-keep-pace-s6-e9716a5c7aa1",
+  "reviewed_base_sha": "5f939278c4d7531af8ef7392b31f4c87279735a2",
+  "reviewed_head_sha": "e9716a5c7aa135b15e1d3a0f7b6b187a2f5bf597",
+  "reviewed_run_id": "r-20261115T004048451634-reviews-keep-pace-s6",
+  "scores": {
+    "durability": 14,
+    "evidence": 14,
+    "fit": 15,
+    "goal_fidelity": 18,
+    "reuse": 5,
+    "scope_discipline": 13
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-15T11:43:29.338532+00:00",
+  "total": 79
+}
