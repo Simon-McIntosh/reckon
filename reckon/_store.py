@@ -5055,13 +5055,14 @@ def _require_every_section_ticked(
     )
 
 
-#: The instant the landing-account rule landed. A section whose last recorded
+#: The instant the landing-account rule landed, 2026-11-15T10:05:58Z, held as
+#: a datetime so no caller parses it. A section whose earliest recorded
 #: activity predates it was already done when the rule arrived and owes no
 #: account; a section recorded at or after it is refused while it holds none,
 #: and one with no recorded activity at all predates the record and is exempt
 #: for the same reason. A fixed instant and not the clock, so the verdict reads
 #: the same on every later day and a fixture's expectation cannot expire.
-LANDING_ACCOUNT_ENFORCED_FROM = "2026-11-15T10:05:58Z"
+LANDING_ACCOUNT_ENFORCED_FROM = datetime(2026, 11, 15, 10, 5, 58, tzinfo=UTC)
 
 
 def _require_every_landed_section_answered(
@@ -5080,12 +5081,15 @@ def _require_every_landed_section_answered(
 
     The rule applies to a section marked done after it landed. A section
     already done when the rule landed is exempt, and the exemption is read from
-    the section's own recorded activity — the newest comment on it, or the
-    completion time of a run whose record names it — compared against
-    :data:`LANDING_ACCOUNT_ENFORCED_FROM`, one fixed instant. A section the
-    store records nothing about predates the record and is exempt for the same
-    reason. Neither side of that comparison consults the
-    clock, so a plan edited today does not change what the rule owed yesterday.
+    the earliest activity the section carries — its first comment, or the
+    completion time of the earliest run whose record names it — compared against
+    :data:`LANDING_ACCOUNT_ENFORCED_FROM`, one fixed instant. The earliest and
+    not the newest, because a section already done stays exempt however its plan
+    is edited, and a comment appended afterwards is not evidence that the work
+    came later. A section the store records nothing about predates the record
+    and is exempt for the same reason. Neither side of that comparison consults
+    the clock, so a plan edited today does not change what
+    the rule owed yesterday.
 
     The rule needs the plan's document to read that prose, and a caller without
     one gets no check rather than a refusal: the document is what distinguishes
@@ -5158,38 +5162,39 @@ def _states_a_done_when(prose: dict[str, str], section: str) -> bool:
 def _landed_before_the_rule(state: dict[str, Any], section: str) -> bool:
     """Whether a section was already done when the landing rule landed.
 
-    Read from the section's own recorded activity and one fixed instant, so the
-    verdict neither expires with the calendar nor depends on what the plan's
-    prose says today. A section the store records nothing about predates the
-    record and is exempt; one recorded at or after the instant is not.
+    Read from the earliest activity the store records for the section and one
+    fixed instant, so the verdict neither expires with the calendar nor depends
+    on what the plan's prose says today, and a comment appended to a section
+    since it was landed cannot take its exemption away. A section the store
+    records nothing about predates the record and is exempt; one whose record
+    begins at or after the instant is not.
     """
-    recorded = _section_last_recorded_at(state, section)
+    recorded = _section_first_recorded_at(state, section)
     if recorded is None:
         return True
-    return recorded < _rule_landed_at()
+    return recorded < LANDING_ACCOUNT_ENFORCED_FROM
 
 
-def _rule_landed_at() -> datetime:
-    """The instant the landing-account rule landed, as an aware datetime."""
-    return datetime.fromisoformat(LANDING_ACCOUNT_ENFORCED_FROM)
+def _section_first_recorded_at(state: dict[str, Any], section: str) -> datetime | None:
+    """The earliest moment the store records anything about one section, or None.
 
-
-def _section_last_recorded_at(state: dict[str, Any], section: str) -> datetime | None:
-    """The newest moment the store records something about one section, or None.
-
-    Two stores hold a per-section time: the plan's comment log and the run
-    ledger's completion times. The newest of them is the section's last recorded
-    activity, which is what the rule compares against its one fixed instant. A
-    section both stores are silent about yields None, and a record whose stamp
-    cannot be read contributes nothing — an unreadable stamp is not evidence
-    that the section was touched late.
+    Two stores carry a per-section time: the plan's comment log and the run
+    ledger's completion times. Their earliest stamp is the moment the section
+    enters the store's record, and that is what the rule compares against its
+    one fixed instant. The earliest and not the newest, because the rule exempts
+    a section already done when it landed and that section stays exempt however
+    its plan is edited: a comment appended afterwards says the section was
+    discussed later, not that it was done later. A section both stores are
+    silent about yields None, and a record whose stamp cannot be read
+    contributes nothing — an unreadable stamp is not evidence either way.
     """
     from reckon import ledger
     from reckon._plan_html import section_id_candidates
+    from reckon._timestamps import parse_utc
 
     wanted = section_id_candidates(section)
     stamps: list[datetime | None] = [
-        _readable_instant((record or {}).get("when"))
+        parse_utc((record or {}).get("when"))
         for identity, records in (state.get("comments") or {}).items()
         if section_id_candidates(str(identity)) & wanted
         for record in records or []
@@ -5205,28 +5210,12 @@ def _section_last_recorded_at(state: dict[str, Any], section: str) -> datetime |
                 f"section {section!r}: {exc}"
             ) from exc
         stamps.extend(
-            _readable_instant(record.get("completed_at"))
+            parse_utc(record.get("completed_at"))
             for record in records
             if section_id_candidates(record.get("section")) & wanted
         )
     readable = [stamp for stamp in stamps if stamp is not None]
-    return max(readable) if readable else None
-
-
-def _readable_instant(value: Any) -> datetime | None:
-    """One stored stamp as an aware UTC datetime, or None when it does not parse."""
-    if value is None:
-        return None
-    text = str(value).strip()
-    if not text:
-        return None
-    try:
-        parsed = datetime.fromisoformat(text)
-    except ValueError:
-        return None
-    if parsed.tzinfo is None:
-        parsed = parsed.replace(tzinfo=UTC)
-    return parsed.astimezone(UTC)
+    return min(readable) if readable else None
 
 
 def _section_holds_a_landing(state: dict[str, Any], section: str) -> bool:

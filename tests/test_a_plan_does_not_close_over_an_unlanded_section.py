@@ -31,6 +31,8 @@ SLUG = "landing-account-guard"
 #: side of the rule its section was marked done on without reading the clock.
 DONE_BEFORE_THE_RULE = "2026-11-14T09:00:00Z"
 DONE_AFTER_THE_RULE = "2026-11-15T12:00:00Z"
+#: The same instant as an epoch, the shape some writers store.
+DONE_AFTER_THE_RULE_EPOCH = 1794744000
 
 CLOSE = {
     "op": "close",
@@ -248,3 +250,40 @@ def test_a_run_record_for_the_section_answers_for_it(
     _store.apply_ops(state, [CLOSE], False)
 
     assert state["status"] == "done"
+
+
+def test_a_section_already_done_stays_exempt_when_a_later_comment_arrives(
+    mounted_plan: Path,
+) -> None:
+    # A section that states a done-when and was recorded before the rule landed
+    # stays exempt however its plan is edited, so a comment appended since then
+    # must not take the exemption away. Keying the rule on the newest activity
+    # instead of the earliest refuses this close.
+    state = _read_state()
+    state["comments"]["s1"] = [
+        _activity(DONE_BEFORE_THE_RULE),
+        {**_activity(DONE_AFTER_THE_RULE), "id": "c-run-later"},
+    ]
+
+    _store.apply_ops(state, [CLOSE], False)
+
+    assert state["status"] == "done"
+
+
+def test_a_stamp_only_the_shared_parser_reads_places_the_section(
+    mounted_plan: Path,
+) -> None:
+    # The store's comment stamps are ISO strings, but the ledger and other
+    # writers also produce numeric epochs, and one parser already owns every
+    # shape. An epoch after the rule's instant puts the section inside the rule,
+    # so the close is refused; a reader that understands only ISO leaves the
+    # stamp unread and the section exempt, and this close would succeed.
+    state = _read_state()
+    state["comments"]["s1"] = [
+        {"id": "c-run-epoch", "who": "reckon-build", "when": DONE_AFTER_THE_RULE_EPOCH}
+    ]
+
+    with pytest.raises(_store.OpError) as refusal:
+        _store.apply_ops(state, [CLOSE], False)
+
+    assert "s1" in str(refusal.value)
