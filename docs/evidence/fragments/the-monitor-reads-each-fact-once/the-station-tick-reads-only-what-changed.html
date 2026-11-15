@@ -90,13 +90,22 @@
 
   <h3 id="the-station-tick-reads-only-what-changed-gate">Gate</h3>
   <p>Focused gate: <code>tests/test_the_station_reads_only_what_changed.py</code>, 14 passed at
-  the head against 10 passed and 4 failed at base. Matched suite arms ran on
-  <code>all_debug</code> at both revisions: job 1315897 at base reports 823 failed, 20,409
-  passed and 33 errors, and job 1315898 at head reports 809 failed, 20,359 passed and 34 errors.
-  38 test ids fail only at the head; 36 of them pass when re-run in isolation at the head, and
-  the remaining two are errors in a module that reports failures and errors at both revisions.
-  Both arms are environment-red rather than code-red, so their absolute counts measure the
-  environment and the comparison is by added id.</p>
+  the head against 10 passed and 4 failed at base. The three test files the section's review
+  names as its fence ran as two arms of one job (1316292), each arm a worktree of the same
+  repository at its own revision: at base 1 failed and 65 passed, failing on the reproduced
+  count ("the second tick ran 6 git subprocesses with nothing moved"), and at head 69 passed.</p>
+  <p>Matched suite arms also ran on <code>all_debug</code> at both revisions: job 1315897 at
+  base reports 823 failed, 20,409 passed and 33 errors, and job 1315898 at head reports 809
+  failed, 20,359 passed and 34 errors. The two arms were not comparable in one respect, so the
+  38 ids the comparison reported as failing only at the head were re-run as a paired study
+  (job 1316294), both arms built as worktrees at one moment. <b>All 38 pass at base; 37 pass at
+  the head.</b> The remaining id,
+  <code>tests/test_idle_producer_backs_off.py::test_idle_producer_backs_off_to_the_cap_and_returns_to_base</code>,
+  fails one repeat in three in <i>each</i> arm (jobs 1316302, three repeats per arm) &mdash; at
+  base on its never-reached-the-cap assertion, at head on a wake that saw a live run losing its
+  watch seat &mdash; so it is timing-sensitive at both revisions. No id fails only at the head in
+  the paired study. Both suites are environment-red rather than code-red, so their absolute
+  counts measure the environment and the comparison is by added id.</p>
   <figure>
     <img alt="Horizontal bars, one per reading function, of megabytes read in one tick: the stream cache 499.1, review records 333.0, the ledger run-record reader 65.9, the project store 56.8, the review index 53.5, the metadata index 41.2, the answer store 37.4, dispatch details 31.0, stream metering 20.4, and budget documents 12.8." src="/reckon/figures/the-monitor-reads-each-fact-once/the-station-tick-reads-only-what-changed/census-readers.svg">
     <figcaption>Bytes read by one station tick, attributed to the first caller frame outside the interpreter, over the live crew home at 145 live pointers on 2026-11-14 (compute-partition job 1316002). The stream cache is drawn in the feature colour because it is the largest remaining reader; every other reader is grey. Ten readers are drawn of the 1.24 GB attributed across 17,040 paths, where 90% of the bytes fall in 7,515 paths.</figcaption>
