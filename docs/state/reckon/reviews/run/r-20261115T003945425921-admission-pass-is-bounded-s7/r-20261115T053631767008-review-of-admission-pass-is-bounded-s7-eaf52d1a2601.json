@@ -1,0 +1,69 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own gate logs on disk, not from its manifest: base-focus.log at 1d16388a carries 55 passed with no FAILED line and head-focus-final.log at eaf52d1a26 carries 60 passed with no FAILED line, so the armed set difference is empty. Cross-checked over the wider admission-importing population: comm -13 of the 165 distinct FAILED ids in base-admission.log and the 164 in head-admission.log is empty, and comm -23 returns one id (tests/test_a_queued_launch_never_classifies_the_fleet.py::test_the_launch_inputs_equal_the_base_except_for_backlog), which is the positive control showing the derivation read both logs rather than finding nothing to read.",
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew/admission/service.py:259",
+    "reckon/crew/admission/service.py:300",
+    "reckon/crew_run_commands.py:5124",
+    "reckon/crew/admission/verdicts.py:392"
+  ],
+  "completed_at": "2026-11-15T05:51:26.568Z",
+  "dispatched_at": "2026-11-15T05:39:54Z",
+  "findings": [
+    {
+      "file": "tests/test_an_admission_pass_is_bounded.py",
+      "line": "121",
+      "severity": "non-blocking",
+      "summary": "the echo assertion's power rests on BUDGET differing from the flight default, and nothing asserts it does",
+      "text": "non-blocking: assert first[\"launch_budget_seconds\"] == BUDGET compares the pass's echoed figure against the constant the case handed in, and it discriminates now only because BUDGET is 30.0 at line 28 while DEFAULT_ADMISSION_PASS_BUDGET_SECONDS at reckon/flight.py:198 is also 60.0; if a later edit restores BUDGET = 60.0 the case stays green while a pass that ignored its argument and fell through to the default becomes invisible again, which is exactly the regression this repair was made to catch. A one-line assert BUDGET != DEFAULT_BUDGET in test_the_budget_defaults_to_sixty_seconds_from_flight at line 188 would make the relationship a check rather than a coincidence."
+    },
+    {
+      "file": "docs/evidence/fragments/the-escape-lane-and-reviews-keep-pace/bounded-pass.html",
+      "line": "111",
+      "severity": "non-blocking",
+      "summary": "the budget control's gloss names both budget cases as red, but the log's two red cases are the launch-count ones",
+      "text": "non-blocking: the row glosses 2 failed, 3 passed as \"both budget cases red against a 30 s budget where the default fits one launch more\", yet negative-control-budget.log's failing ids are test_a_pass_stops_when_its_launch_budget_is_spent and test_a_launch_row_carries_its_duration_and_slowest_step, while test_a_pass_with_no_budget_reads_the_flight_value passes by construction because the mutation still reads the flight-published 30 s. The counts are right and the mechanism stated is the right one, but a reader takes the phrase as covering the no-argument case, which that control does not exercise."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "read commit by commit against 95f2cd4dba: 9a026e0eaa replaces the local resolver with the fixture's _config_with_lane, moves BUDGET to 30 s away from the 60 s default, and adds two cases plus _publish_flight_budget; 6fe82ccdf9 and eaf52d1a26 carry the repair arms and both controls into bounded-pass.html and admission-pass-is-bounded-s7.html; 153 insertions and 51 deletions over three files, no source file changed.",
+    "done_when": "the done_when asks for new tests failing at the base revision, no added failure over the admission-importing population on all_debug, and a 120 s py-spy profile in bounded-pass.html; base-newtests.log records all five cases of the file failing at 1d16388a (5 failed, EXIT=1), head-focus-final.log records 60 passed EXIT=0 at eaf52d1a26, the population arms take no added id, and bounded-pass.html:143-160 still discloses the profile gap as an absent artefact rather than asserting it was taken.",
+    "goal": "the source node's goal is to bound each admission pass by a flight time budget and record each launch's duration and slowest step; this delta adds no production code, and reckon/crew/admission/selection.py:316-326 at eaf52d1a26 still holds the single deadline read and selection.py:789-790 the recorded budget, unchanged from the revision the prior review scored.",
+    "manifest": "read; it records the repair at 9a026e0eaa with evidence at 6fe82ccdf9 and eaf52d1a26, three controls each with its log path and patch, the armed set at 60 passed EXIT=0, the first-delivered-head population arm, and the live-profile gap under outside_scope rather than claiming it.",
+    "write_paths": "the source node declared reckon/crew/admission/selection.py, service.py, verdicts.py, reckon/flight.py, tests/test_an_admission_pass_is_bounded.py and the two escape-lane fragments; this delta touches exactly the test file and the two fragments, and git diff --stat 95f2cd4dba..eaf52d1a26 names nothing else."
+  },
+  "justifications": {
+    "durability": "negative-control-budget.log reddens test_a_pass_stops_when_its_launch_budget_is_spent and test_a_launch_row_carries_its_duration_and_slowest_step under a restored fall-through to the flight default, and pre-repair-budget.log shows the earlier cases green with that defect live, but the echo assertion at tests/test_an_admission_pass_is_bounded.py:121 keeps its power only because BUDGET is 30.0 and nothing asserts it differs from DEFAULT_BUDGET.",
+    "evidence": "the five cases of tests/test_an_admission_pass_is_bounded.py fail at 1d16388a (base-newtests.log, 5 failed, EXIT=1) and pass at eaf52d1a26 (head-focus-final.log, 60 passed, EXIT=0), and the population arms add no failure id, but bounded-pass.html:111 glosses the pair of red cases imprecisely.",
+    "fit": "tests/test_an_admission_pass_is_bounded.py:76-90 resolves the lane through the neighbouring fixture's own _config_with_lane and stubs flight.resolve with the SimpleNamespace idiom already used at tests/test_a_design_and_a_content_review_run_together.py:113.",
+    "goal_fidelity": "the delta leaves the landed production change untouched (git diff 95f2cd4dba..eaf52d1a26 names no file under reckon/) and completes the repair the prior review's reuse finding asked for, at tests/test_an_admission_pass_is_bounded.py:113-116.",
+    "reuse": "the repair extends the owner it had duplicated, calling tests/test_each_admission_pass_records_its_verdict.py:140 _config_with_lane rather than re-implementing it, and the flight stub has no shared owner in tests/ for _publish_flight_budget to extend.",
+    "scope_discipline": "git diff --stat 95f2cd4dba eaf52d1a26 lists only the test file and the two fragments, all inside the declared write paths, and no source, plan or figure changed."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the source node's goal is to bound each admission pass by a flight time budget and record each launch's duration and slowest step; this delta adds no production code, and reckon/crew/admission/selection.py:316-326 at eaf52d1a26 still holds the single deadline read and selection.py:789-790 the recorded budget, unchanged from the revision the prior review scored.\nVERDICT done_when: the done_when asks for new tests failing at the base revision, no added failure over the admission-importing population on all_debug, and a 120 s py-spy profile in bounded-pass.html; base-newtests.log records all five cases of the file failing at 1d16388a (5 failed, EXIT=1), head-focus-final.log records 60 passed EXIT=0 at eaf52d1a26, the population arms take no added id, and bounded-pass.html:143-160 still discloses the profile gap as an absent artefact rather than asserting it was taken.\nVERDICT write_paths: the source node declared reckon/crew/admission/selection.py, service.py, verdicts.py, reckon/flight.py, tests/test_an_admission_pass_is_bounded.py and the two escape-lane fragments; this delta touches exactly the test file and the two fragments, and git diff --stat 95f2cd4dba..eaf52d1a26 names nothing else.\nVERDICT manifest: read; it records the repair at 9a026e0eaa with evidence at 6fe82ccdf9 and eaf52d1a26, three controls each with its log path and patch, the armed set at 60 passed EXIT=0, the first-delivered-head population arm, and the live-profile gap under outside_scope rather than claiming it.\nVERDICT diff: read commit by commit against 95f2cd4dba: 9a026e0eaa replaces the local resolver with the fixture's _config_with_lane, moves BUDGET to 30 s away from the 60 s default, and adds two cases plus _publish_flight_budget; 6fe82ccdf9 and eaf52d1a26 carry the repair arms and both controls into bounded-pass.html and admission-pass-is-bounded-s7.html; 153 insertions and 51 deletions over three files, no source file changed.\nCALL_SITES: reckon/crew/admission/service.py:259, reckon/crew/admission/service.py:300, reckon/crew_run_commands.py:5124, reckon/crew/admission/verdicts.py:392\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: the delta leaves the landed production change untouched (git diff 95f2cd4dba..eaf52d1a26 names no file under reckon/) and completes the repair the prior review's reuse finding asked for, at tests/test_an_admission_pass_is_bounded.py:113-116.\nSCORE evidence: 18\nJUSTIFICATION evidence: the five cases of tests/test_an_admission_pass_is_bounded.py fail at 1d16388a (base-newtests.log, 5 failed, EXIT=1) and pass at eaf52d1a26 (head-focus-final.log, 60 passed, EXIT=0), and the population arms add no failure id, but bounded-pass.html:111 glosses the pair of red cases imprecisely.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat 95f2cd4dba eaf52d1a26 lists only the test file and the two fragments, all inside the declared write paths, and no source, plan or figure changed.\nSCORE durability: 18\nJUSTIFICATION durability: negative-control-budget.log reddens test_a_pass_stops_when_its_launch_budget_is_spent and test_a_launch_row_carries_its_duration_and_slowest_step under a restored fall-through to the flight default, and pre-repair-budget.log shows the earlier cases green with that defect live, but the echo assertion at tests/test_an_admission_pass_is_bounded.py:121 keeps its power only because BUDGET is 30.0 and nothing asserts it differs from DEFAULT_BUDGET.\nSCORE fit: 19\nJUSTIFICATION fit: tests/test_an_admission_pass_is_bounded.py:76-90 resolves the lane through the neighbouring fixture's own _config_with_lane and stubs flight.resolve with the SimpleNamespace idiom already used at tests/test_a_design_and_a_content_review_run_together.py:113.\nSCORE reuse: 20\nJUSTIFICATION reuse: the repair extends the owner it had duplicated, calling tests/test_each_admission_pass_records_its_verdict.py:140 _config_with_lane rather than re-implementing it, and the flight stub has no shared owner in tests/ for _publish_flight_budget to extend.\nFINDING tests/test_an_admission_pass_is_bounded.py:121 non-blocking: assert first[\"launch_budget_seconds\"] == BUDGET compares the pass's echoed figure against the constant the case handed in, and it discriminates now only because BUDGET is 30.0 at line 28 while DEFAULT_ADMISSION_PASS_BUDGET_SECONDS at reckon/flight.py:198 is also 60.0; if a later edit restores BUDGET = 60.0 the case stays green while a pass that ignored its argument and fell through to the default becomes invisible again, which is exactly the regression this repair was made to catch. A one-line assert BUDGET != DEFAULT_BUDGET in test_the_budget_defaults_to_sixty_seconds_from_flight at line 188 would make the relationship a check rather than a coincidence.\nFINDING docs/evidence/fragments/the-escape-lane-and-reviews-keep-pace/bounded-pass.html:111 non-blocking: the row glosses 2 failed, 3 passed as \"both budget cases red against a 30 s budget where the default fits one launch more\", yet negative-control-budget.log's failing ids are test_a_pass_stops_when_its_launch_budget_is_spent and test_a_launch_row_carries_its_duration_and_slowest_step, while test_a_pass_with_no_budget_reads_the_flight_value passes by construction because the mutation still reads the flight-published 30 s. The counts are right and the mechanism stated is the right one, but a reader takes the phrase as covering the no-argument case, which that control does not exercise.",
+  "review_node": "review-of-admission-pass-is-bounded-s7-eaf52d1a2601",
+  "review_run_id": "r-20261115T053631767008-review-of-admission-pass-is-bounded-s7-eaf52d1a2601",
+  "reviewed_base_sha": "95f2cd4dba10c7803e1f6d062ea16d84ffd5bd3d",
+  "reviewed_head_sha": "eaf52d1a2601157d925ad2be3372276d7f77cc9a",
+  "reviewed_run_id": "r-20261115T003945425921-admission-pass-is-bounded-s7",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash",
+    "reviewer_run_id": "r-20261115T053631767008-review-of-admission-pass-is-bounded-s7-eaf52d1a2601"
+  },
+  "scores": {
+    "durability": 18,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-15T07:48:41.324195+00:00",
+  "total": 114
+}
