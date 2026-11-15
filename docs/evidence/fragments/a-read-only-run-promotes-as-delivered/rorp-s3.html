@@ -1,0 +1,150 @@
+<section id="rorp-s3-landing">
+  <h2>A claims review record passes the check on the run's verdicts</h2>
+
+  <p><strong>What changed.</strong> <code>review_record_refusals</code> in
+  <code>reckon/crew/review.py</code> asked every parsed record for the six
+  landed-node text scores, exempting only the figure rubric. A claims review
+  scores none of them: it re-runs the report's top claims and records a verdict
+  <em>per claim</em>. So both claims records stored for this session's census and
+  prototype reviews were refused for missing scores, and each had to be repaired
+  by hand before it could promote.
+
+  <p>Two edits, one rule. The exemption is now the declared set
+  <code>ITEM_VERDICT_RUBRICS</code> &mdash; the claims, figure, health,
+  plan-review and plan-design rubrics &mdash; so a rubric that measures verdicts
+  owes no text scores and a rubric added later is exempt by being listed there,
+  not by a second check beside the first. The delivery contract then holds a
+  claims record to the measurement it does owe: a verdict for each of the claims
+  it was asked to re-run and one for the report's own summary line.
+  <code>CLAIM_VERDICT_FIELDS</code> reads either spelling a record may state its
+  per-claim verdicts under (<code>claims</code>, and the
+  <code>claim_verdicts</code> a hand-written record uses), so a complete record
+  is never refused for the key it chose.</p>
+
+  <h3 id="rorp-s3-arms">Measured</h3>
+
+  <table id="rorp-s3-arm-rows">
+    <caption>Every arm is a log whose first line names its revision, tree and
+    command and whose last line reads <code>EXIT=&lt;code&gt;</code>.</caption>
+    <thead><tr><th>arm</th><th>revision</th><th>result</th></tr></thead>
+    <tbody>
+      <tr><td>new test file, head</td>
+        <td><code>bb45282b</code> + this node's change, worktree</td>
+        <td><strong>13 passed</strong>, <code>EXIT=0</code></td></tr>
+      <tr><td>negative control: same file at the base revision</td>
+        <td><code>bb45282b</code>, scratch extraction</td>
+        <td>9 failed, 3 passed, <code>EXIT=1</code> &mdash; the first is
+        <code>test_a_complete_claims_record_passes_the_review_check</code>'s case,
+        refused with <code>{"findings": ["missing scores"]}</code>; the two
+        scored-rubric cases pass at base unchanged, and
+        <code>test_each_verdict_per_item_rubric_owes_no_text_scores[figure]</code>
+        passes there because the figure rubric was already exempt</td></tr>
+      <tr><td>baseline suite (node's files, new test absent)</td>
+        <td><code>bb45282b</code>, scratch extraction</td>
+        <td>55 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>after suite (node's files)</td>
+        <td>this node's landing commit, worktree</td>
+        <td><strong>68 passed</strong>, <code>EXIT=0</code></td></tr>
+    </tbody>
+  </table>
+
+  <p><strong>The stored corpus decides whether the new refusal costs an
+  answer.</strong> Every claims record in <code>docs/state/reckon/reviews</code> (23 of them) was
+  run through <code>review_record_refusals</code> at the base revision and at
+  <code>this</code> head: none is newly refused, one (the census record) newly
+  passes, and the 17 refused in both were refused before for reasons this change
+  does not touch. The one record that the first attempt <em>did</em> newly refuse
+  &mdash; <code>r-20261020T125655924881</code>, a complete review stating its
+  verdicts under <code>claim_verdicts</code> &mdash; is why
+  <code>CLAIM_VERDICT_FIELDS</code> exists: a refusal there would have reported a
+  review that answered all three claims as one that answered none.</p>
+
+  <h3 id="rorp-s3-repair">Repair: one rule, asked by both readers</h3>
+
+  <p>A review found that the first cut split the claims measures in two. The
+  delivery check restated the completeness rule beside the promotion reader's
+  copy, and it read the <code>claim_verdicts</code> spelling that neither the
+  store nor the promotion rule reads. A record stating its verdicts under that
+  key therefore passed <code>crew check --review</code> and was then refused as
+  incomplete at promotion; in the other direction a record whose two claims
+  carried the same rank read complete to promotion while the check refused it.
+  A rule must not answer differently depending on which reader asks.</p>
+
+  <p><code>claims_verdict_refusals</code> now calls
+  <code>_claims_missing_measures</code> — the declared single owner, imported at
+  call time because its module reads this one — and does nothing but word each
+  measure it reports from <code>CLAIMS_MISSING_MESSAGES</code>. The second
+  spelling is gone with the second rule, so nothing is admitted here that
+  promotion will refuse.</p>
+
+  <table id="rorp-s3-repair-rows">
+    <thead><tr><th>arm</th><th>result</th></tr></thead>
+    <tbody>
+      <tr><td>after suite at the repair head</td>
+        <td><strong>73 passed</strong>, <code>EXIT=0</code></td></tr>
+      <tr><td>four importer test files the earlier gate skipped</td>
+        <td><strong>45 passed</strong>, <code>EXIT=0</code></td></tr>
+      <tr><td>baseline suite at <code>bb45282b</code></td>
+        <td>55 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>negative control: the test file at <code>bb45282b</code></td>
+        <td>10 failed, 8 passed, <code>EXIT=1</code></td></tr>
+      <tr><td>guided control: the check mutated to admit every record</td>
+        <td>4 failed, 1 passed, <code>EXIT=1</code> — the complete record still
+        agrees, the four incomplete shapes do not</td></tr>
+    </tbody>
+  </table>
+
+  <p><strong>The stored corpus, asked of both readers.</strong> All
+  <code>23</code> stored claims records were put to the delivery check and to
+  the promotion rule: <strong>both admit 22, both refuse the same one, zero
+  disagreements</strong>. The probe and its output live in the run directory
+  (<code>split-probe.py</code>, <code>split-probe.json</code>) rather than in a
+  scratch path, so a reader can re-run it. The earlier corpus figure rested on
+  <code>/tmp</code> artifacts that no longer existed; this one does not.</p>
+
+  <p><strong>Not moved.</strong> The rule's owner lives in
+  <code>reckon/crew/recovery_review_subject.py</code>, outside this node's write
+  paths, so it stays where it is and the check calls it. That is the same
+  single-answer outcome without an out-of-scope edit.</p>
+
+  <p><strong>Not done here.</strong> The stored census and prototype records are
+  copied into the test as fixtures rather than re-derived from the run
+  directories, so they measure the shapes live reviewers wrote rather than the
+  store as it moves.</p>
+  <h3 id="rorp-s3-spelling-fold">Repair: the spelling is folded once, at the read boundary</h3>
+
+  <p>Calling the owner directly closed the split but left it reading only the
+  parser's <code>claims</code> key, so a stored record that states three
+  verdicts under <code>claim_verdicts</code> was refused as incomplete by both
+  readers — a review that answered every claim it was asked about, refused
+  twice. The folding belongs at the boundary the readers share, not in either
+  of them.</p>
+
+  <p><code>with_canonical_claims</code> folds the hand-written spelling onto the
+  parser's key once. The store's read path applies it, so every promotion
+  consumer — the classifier, the gate, the obligations pass — asks the same
+  field, and the delivery check applies the same function before calling the
+  rule. One fold, one rule, one answer.</p>
+
+  <table id="rorp-s3-fold-rows">
+    <thead><tr><th>arm</th><th>result</th></tr></thead>
+    <tbody>
+      <tr><td>after suite at the repair head</td>
+        <td><strong>75 passed</strong>, <code>EXIT=0</code></td></tr>
+      <tr><td>baseline suite at <code>bb45282b</code></td>
+        <td>55 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>negative control: the test file at <code>bb45282b</code></td>
+        <td><strong>13 failed, 7 passed, <code>EXIT=1</code></strong>, every
+        hand-written-spelling case among them</td></tr>
+      <tr><td>guided control: the fold removed from the check</td>
+        <td>2 failed, <code>EXIT=1</code> — the two hand-written-spelling tests
+        and nothing else</td></tr>
+    </tbody>
+  </table>
+
+  <p>The stored nova record is carried in the test as a fixture and passes the
+  delivery check on its own content. A second test stores it and reads it back
+  through <code>read_review</code>, asserting the promotion reader receives a
+  complete record — the fold is what admits it, not a second rule.</p>
+
+</section>
