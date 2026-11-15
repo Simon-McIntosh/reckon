@@ -81,9 +81,9 @@ def main() -> Path:
     ax.text(320, 458, "a document answers for its own run id", **note)
     ax.text(320, 430, "and stays the fuller record", **note)
 
-    _box(ax, 820, 396, 440, 120, colour=FEATURE, width=3.0)
+    _box(ax, 820, 396, 480, 120, colour=FEATURE, width=3.0)
     ax.text(840, 488, "run store", fontsize=LABEL, color=FEATURE, fontweight="bold")
-    ax.text(840, 458, "crew/run_store.db, its retired rows attached as archive", **note)
+    ax.text(840, 458, "crew/run_store.db, its retired rows attached", **note)
     ax.text(840, 430, "answers every run id no document names", **note)
 
     ax.text(
@@ -101,9 +101,9 @@ def main() -> Path:
     ax.text(40, 206, "three arms over one population of reader tests", **name)
 
     arms = [
-        (FAILED, 174, 52, 70, "store merge disabled: 12 failed, 2 passed (negative control)"),
-        (FEATURE, 134, 52, 70, "base 2bf8e6947d: 58 passed over the two test files present there"),
-        (FEATURE, 94, 672, 690, "head: 72 passed over the same two files plus the new one"),
+        (FAILED, 174, 52, 70, "answering change reverted: 2 failed, 16 passed (negative control)"),
+        (POLITE, 134, 52, 70, "base 2bf8e6947d: 58 passed over the two test files present there"),
+        (FEATURE, 94, 52, 70, "head 1f3094e35ae4: 76 passed over the same two files plus the new one"),
     ]
     for colour, y, dot_x, text_x, text in arms:
         ax.add_patch(Circle((dot_x, y + 4), 4, facecolor=colour, edgecolor="none"))
