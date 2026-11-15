@@ -20,11 +20,11 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-after" content="work-flows-to-the-lane">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;implementable&quot;,&quot;s12&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;implementable&quot;,&quot;s14&quot;:&quot;done&quot;,&quot;s15&quot;:&quot;implementable&quot;,&quot;s16&quot;:&quot;implementable&quot;,&quot;s17&quot;:&quot;descoped&quot;,&quot;s18&quot;:&quot;implementable&quot;,&quot;s19&quot;:&quot;implementable&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;implementable&quot;,&quot;s20&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;implementable&quot;,&quot;s12&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;implementable&quot;,&quot;s14&quot;:&quot;done&quot;,&quot;s15&quot;:&quot;done&quot;,&quot;s16&quot;:&quot;implementable&quot;,&quot;s17&quot;:&quot;descoped&quot;,&quot;s18&quot;:&quot;implementable&quot;,&quot;s19&quot;:&quot;implementable&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s20&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;implementable&quot;}">
   <title>Queued work needs no workaround | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="46">
+<meta name="plan-version" content="47">
 <meta name="plan-modified" content="2026-11-15">
 </head>
 <body>
@@ -270,7 +270,7 @@
 <p><strong>Done when.</strong> Tests drive both cases through the MCP edit tool against a temporary project and read the plan HTML. A decision scoped to §2 holds only §2 on the roadmap. A close batched after its evidence succeeds in one write. Negative control: the batched close against the base revision is refused at its op index, and the failing run is logged.</p>
 
     <h2 id="s15">§15 — An edit op accepts the input forms its examples show</h2>
-<section data-reckon="section" data-id="s15" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="implementable" data-links=""></section>
+<section data-reckon="section" data-id="s15" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="done" data-links=""></section>
 <p><strong>Why.</strong> Defects D98, D99 and D105. <code>archived: true</code> fails with a raw schema error while the string <code>"1"</code> works. A followup append requires <code>written_at</code> and <code>written_by</code>, which the reckon-edit examples omit. A sprint append refuses a committed plan until some state write registers it.</p>
 <p><strong>Deliverable.</strong> Boolean and string spellings of a flag are both accepted. A followup append defaults its author and date. A sprint append resolves any committed plan with valid metadata.</p>
 <p><strong>Done when.</strong> Tests drive the three cases through the MCP edit tool against a temporary project and read the written plan or sprint, one test per case. Negative controls, one per case, each run against the base revision and logged: <code>archived: true</code> fails with the schema error; a followup append without author and date is refused; a sprint append naming a committed plan with no state write is refused.</p>
@@ -310,6 +310,12 @@
 <div class="r-comment" data-section="s10" data-id="c-run-r-20261114T201305479585-qwnw-a-repair-round-s-advice-carries-every-finding-di" data-who="reckon-build" data-when="2026-11-14T22:24:34Z">
     <div class="r-comment-body"><p>repair advice lists the findings disposed as folded into the node beside the open ones, names their ids in its done-when and exposes them as folded_findings; the base revision carries 1 of 3 findings and the head carries 3 of 3, and the head gate reads 58 passed</p></div>
 </div>
+<div class="r-comment" data-section="s11" data-id="c-run-r-20261115T031717418770-review-of-qwnw-a-manifest-is-refused-while-its-worker-is-live-f-875c0cc2d552" data-who="reckon-build" data-when="2026-11-15T04:23:37.935Z">
+    <div class="r-comment-body"><p>Reviewed r-20261114T201401429252-qwnw-a-manifest-is-refused-while-its-worker-is-live-f from base a346fba4aa0e53481a816fc06d92e48db899d60a to head 875c0cc2d552a957fcf2ccdc2c6516f39e2a5f1b: parsed, scoring goal_fidelity 18, evidence 18, scope_discipline 19, durability 16, fit 18, reuse 12 (total 101), no added failures, two non-blocking findings on the temp-root rule's reach and on a restated object-id predicate.</p></div>
+</div>
+<div class="r-comment" data-section="s11" data-id="c-run-r-20261114T201401429252-qwnw-a-manifest-is-refused-while-its-worker-is-live-f" data-who="reckon-build" data-when="2026-11-15T03:14:43.035Z">
+    <div class="r-comment-body"><p>The delivery check and promotion refuse the same manifest faults through one module, an absent base arm over a base tree holding none of the node's tests reads as zero failures, and the repair verb re-points a suite arm keeping the as-delivered file; node gate 18 passed EXIT=0 at 95047fc36e, and the affected selection's 109 failing ids are identical at base and head.</p></div>
+</div>
 <div class="r-comment" data-section="s12" data-id="c-run-r-20261114T233332869212-review-of-qwnw-a-review-is-promoted-only-after-it-delivers-and-10d854ba1f9a" data-who="reckon-build" data-when="2026-11-15T00:39:15.575Z">
     <div class="r-comment-body"><p>Reviewed run r-20261114T201454384711-qwnw-a-review-is-promoted-only-after-it-delivers-and at head 10d854ba1f against base 191db600fe: scored goal_fidelity 18, evidence 18, scope_discipline 20, durability 10, fit 18, reuse 20 (total 104), added failures 0, and filed two non-blocking findings — the fragment names census.json as a script no file holds, and reports a ledger positive control while the census's expected ledger control returned false.</p></div>
 </div>
@@ -318,6 +324,15 @@
 </div>
 <div class="r-comment" data-section="s12" data-id="c-run-r-20261114T201454384711-qwnw-a-review-is-promoted-only-after-it-delivers-and" data-who="reckon-build" data-when="2026-11-15T03:11:53Z">
     <div class="r-comment-body"><p>Committed the census script and its recorded output beside the evidence fragment together with the command that ran it, corrected the positive-controls sentence to state that the census's own ledger control returned false and why the sampled population id is a valid substitute, and recorded the two suite arms at their own revisions — the base at 191db600fe and the after arm at the delivered head — each reporting 55 passed with EXIT=0 and no added failure.</p></div>
+</div>
+<div class="r-comment" data-section="s13" data-id="c-run-r-20261115T041434682629-review-of-qwnw-landing-judges-added-failures-and-reads-a-finish-aa3f4a6ec6f1" data-who="reckon-build" data-when="2026-11-15T04:54:53.407Z">
+    <div class="r-comment-body"><p>Reviewed r-20261114T201549755678-qwnw-landing-judges-added-failures-and-reads-a-finish at base a346fba4aa and head aa3f4a6ec6 across its six commits: scores 14/15/20/8/17/20 (94), added failures 0, one blocking finding (the queued promotion's options carry REQUESTED and the drain raises TypeError) and two non-blocking.</p></div>
+</div>
+<div class="r-comment" data-section="s13" data-id="c-run-r-20261115T053620542979-review-of-qwnw-landing-judges-added-failures-and-reads-a-finish-7b280b0165a5" data-who="reckon-build" data-when="2026-11-15T05:50:47.462Z">
+    <div class="r-comment-body"><p>Reviewed the three commits gained since the last review (aa3f4a6ec6..7b280b0165): the queued request's options now come from the callback's signature, the fragment's measurement table and cases are rewritten, and the gate row names the landing revision; stored a parsed record scoring all six dimensions 116 in total with no blocking finding and 0 added failures, and both record files pass crew check --review.</p></div>
+</div>
+<div class="r-comment" data-section="s13" data-id="c-run-r-20261114T201549755678-qwnw-landing-judges-added-failures-and-reads-a-finish" data-who="reckon-build" data-when="2026-11-15T05:28:37Z">
+    <div class="r-comment-body"><p>A landing judges a suite by the failures it added and an after arm by what the suite reads, reads a delivered review of the asserted head, and lands an evidence-only node on its declared check; a dry run measures nothing, a repeated complete carries the request it queued, and that request carries only options the command declares.</p></div>
 </div>
 <div class="r-comment" data-section="s14" data-id="c-run-r-20261114T201655647949-qwnw-a-decision-can-hold-only-its-sections-and-a-batc" data-who="reckon-build" data-when="2026-11-14T23:39:51.968Z">
     <div class="r-comment-body"><p>§14 delivered — a close batched behind its evidence now lands in one write because the terminal-evidence guard counts the batch's own queued evidence appends; the decision-scope case was already correct and gains its roadmap-release test. Node tests pass 2/2 at the head; at the base revision the batched close is refused at refused_op_index 1.</p></div>
@@ -369,21 +384,6 @@
 </div>
 <div class="r-comment" data-section="s9" data-id="c-run-r-20261115T013916575004-review-of-qwnw-a-reservation-or-lock-holds-only-while-its-holde-c225824d918d" data-who="reckon-build" data-when="2026-11-15T02:48:33.595Z">
     <div class="r-comment-body"><p>review of r-20261114T201210409568-qwnw-a-reservation-or-lock-holds-only-while-its-holde at head c225824d918dddc8abdc9c8929f35fc978a3258e against base e393d4098a36e6e67be0bb1ead9285fe34cf63d9 — six dimensions scored, 7 findings (1 blocking), added_failure_count 0</p></div>
-</div>
-<div class="r-comment" data-section="s11" data-id="c-run-r-20261115T031717418770-review-of-qwnw-a-manifest-is-refused-while-its-worker-is-live-f-875c0cc2d552" data-who="reckon-build" data-when="2026-11-15T04:23:37.935Z">
-    <div class="r-comment-body"><p>Reviewed r-20261114T201401429252-qwnw-a-manifest-is-refused-while-its-worker-is-live-f from base a346fba4aa0e53481a816fc06d92e48db899d60a to head 875c0cc2d552a957fcf2ccdc2c6516f39e2a5f1b: parsed, scoring goal_fidelity 18, evidence 18, scope_discipline 19, durability 16, fit 18, reuse 12 (total 101), no added failures, two non-blocking findings on the temp-root rule's reach and on a restated object-id predicate.</p></div>
-</div>
-<div class="r-comment" data-section="s11" data-id="c-run-r-20261114T201401429252-qwnw-a-manifest-is-refused-while-its-worker-is-live-f" data-who="reckon-build" data-when="2026-11-15T03:14:43.035Z">
-    <div class="r-comment-body"><p>The delivery check and promotion refuse the same manifest faults through one module, an absent base arm over a base tree holding none of the node's tests reads as zero failures, and the repair verb re-points a suite arm keeping the as-delivered file; node gate 18 passed EXIT=0 at 95047fc36e, and the affected selection's 109 failing ids are identical at base and head.</p></div>
-</div>
-<div class="r-comment" data-section="s13" data-id="c-run-r-20261115T041434682629-review-of-qwnw-landing-judges-added-failures-and-reads-a-finish-aa3f4a6ec6f1" data-who="reckon-build" data-when="2026-11-15T04:54:53.407Z">
-    <div class="r-comment-body"><p>Reviewed r-20261114T201549755678-qwnw-landing-judges-added-failures-and-reads-a-finish at base a346fba4aa and head aa3f4a6ec6 across its six commits: scores 14/15/20/8/17/20 (94), added failures 0, one blocking finding (the queued promotion's options carry REQUESTED and the drain raises TypeError) and two non-blocking.</p></div>
-</div>
-<div class="r-comment" data-section="s13" data-id="c-run-r-20261115T053620542979-review-of-qwnw-landing-judges-added-failures-and-reads-a-finish-7b280b0165a5" data-who="reckon-build" data-when="2026-11-15T05:50:47.462Z">
-    <div class="r-comment-body"><p>Reviewed the three commits gained since the last review (aa3f4a6ec6..7b280b0165): the queued request's options now come from the callback's signature, the fragment's measurement table and cases are rewritten, and the gate row names the landing revision; stored a parsed record scoring all six dimensions 116 in total with no blocking finding and 0 added failures, and both record files pass crew check --review.</p></div>
-</div>
-<div class="r-comment" data-section="s13" data-id="c-run-r-20261114T201549755678-qwnw-landing-judges-added-failures-and-reads-a-finish" data-who="reckon-build" data-when="2026-11-15T05:28:37Z">
-    <div class="r-comment-body"><p>A landing judges a suite by the failures it added and an after arm by what the suite reads, reads a delivered review of the asserted head, and lands an evidence-only node on its declared check; a dry run measures nothing, a repeated complete carries the request it queued, and that request carries only options the command declares.</p></div>
 </div>
 </section>
 </main>
