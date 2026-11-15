@@ -3448,7 +3448,7 @@ def section_readiness_rows(
     named.
     """
 
-    with roadmap_build_scope(resolve_coordinators=False):
+    with roadmap_build_scope(resolve_coordinators=False, audit_landings=False):
         return section_verdicts_by_plan(
             build_roadmap(
                 project,
