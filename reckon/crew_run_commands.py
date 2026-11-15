@@ -13,6 +13,7 @@ from reckon.crew_dispatch_commands import (
     _accept_a_matching_project,
     _budget_check_report,
     _crew_modules,
+    _holds_stdout_for_one_document,
     _lane_paused_detail,
     _resolved_flight,
     _resolved_gc_repo,
@@ -3459,6 +3460,7 @@ def _refuse_a_flag_as_a_reason(
     default=False,
     help="Carry out promotion in this call and return its completed outcome.",
 )
+@_holds_stdout_for_one_document
 def crew_complete(
     run_id,
     gate,
