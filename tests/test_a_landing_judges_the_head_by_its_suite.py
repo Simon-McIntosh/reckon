@@ -24,7 +24,7 @@ from click.testing import CliRunner
 
 from reckon import ledger
 from reckon.cli import main as cli_main
-from reckon.crew import promotion_checks, promotion_records
+from reckon.crew import promotion_checks, promotion_records, promotion_requests
 from reckon.crew.promotion_records import _evaluate_suite_delta
 from reckon.crew.runs import _write_json, pointer_path
 from tests.test_passed_verdict_needs_exit_zero import (
@@ -77,7 +77,7 @@ def landing_repository(tmp_path, monkeypatch) -> Path:
     root = tmp_path / "repo"
     (root / "docs" / "plans").mkdir(parents=True)
     (root / "docs" / "plans" / "plan-a.html").write_text(
-        '<!doctype html><html><head>'
+        "<!doctype html><html><head>"
         '<meta name="docs-project" content="proj">'
         '<meta name="reckon-type" content="plan">'
         '<meta name="plan-slug" content="plan-a">'
@@ -303,6 +303,44 @@ def test_a_dry_run_names_the_control_it_would_measure(
     assert check["verdict"] == "would-measure"
 
 
+def _queued_arguments(run_id: str, repository: Path, log: Path) -> list[str]:
+    return [
+        item
+        for item in _complete_arguments(run_id, repository, log)
+        if item != "--wait"
+    ]
+
+
+def test_the_request_a_complete_queues_runs_when_the_drain_takes_it(
+    landing_repository: Path, tmp_path: Path
+) -> None:
+    """A queued request carries only names the command takes, so it can run.
+
+    The drain forwards every stored option as a keyword to the command it
+    re-runs, so a name the command does not declare makes the queued promotion
+    fail before it reaches any guard. Queuing and then draining is the only way
+    to see that: the queueing call returns a receipt either way.
+    """
+    run_id = "r-20261114T200000000000-queued"
+    _write_pointer(run_id, landing_repository)
+    log = tmp_path / "gate.log"
+    log.write_text("12 passed in 0.4s\nEXIT=0\n", encoding="utf-8")
+
+    first = CliRunner().invoke(
+        cli_main, _queued_arguments(run_id, landing_repository, log)
+    )
+    assert first.exit_code == 0, first.output
+
+    request = promotion_requests._read(promotion_requests._request_path(run_id))
+    assert request["phase"] == promotion_requests.REQUESTED
+    result = promotion_requests._execute(request)
+
+    assert result["ok"] is True
+    row = Path(result["ledger_path"])
+    assert row.is_file()
+    assert json.loads(row.read_text(encoding="utf-8"))["run_id"] == run_id
+
+
 def test_a_repeat_carries_the_queued_promotion(
     landing_repository: Path, tmp_path: Path
 ) -> None:
@@ -310,11 +348,7 @@ def test_a_repeat_carries_the_queued_promotion(
     _write_pointer(run_id, landing_repository)
     log = tmp_path / "gate.log"
     log.write_text("12 passed in 0.4s\nEXIT=0\n", encoding="utf-8")
-    arguments = [
-        item
-        for item in _complete_arguments(run_id, landing_repository, log)
-        if item != "--wait"
-    ]
+    arguments = _queued_arguments(run_id, landing_repository, log)
 
     first = CliRunner().invoke(cli_main, arguments)
     assert first.exit_code == 0, first.output
@@ -322,4 +356,10 @@ def test_a_repeat_carries_the_queued_promotion(
     second = CliRunner().invoke(cli_main, arguments)
 
     assert second.exit_code == 0, second.output
-    assert json.loads(second.output).get("driven") is True
+    outcome = json.loads(second.output)
+    assert outcome.get("driven") is True
+    # The repeat carried the request out rather than only reporting it: the
+    # row it wrote is on disk and nothing is left queued for a drain to find.
+    assert Path(outcome["ledger_path"]).is_file()
+    settled = promotion_requests._read(promotion_requests._request_path(run_id))
+    assert settled["phase"] == promotion_requests.SETTLED

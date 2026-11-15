@@ -1,3 +1,4 @@
+import inspect
 import os
 import time
 from collections.abc import Mapping
@@ -3512,9 +3513,15 @@ def crew_complete(
         _refuse_a_landing_without_its_pointer(run_id)
     driven = False
     if not wait and not dry_run and COMMAND_REPLY.get() is None:
-        parameters = dict(locals())
-        for name in ("COMMAND_REPLY", "request_promotion", "driven"):
-            parameters.pop(name, None)
+        # The drain forwards every stored option as a keyword, so the snapshot
+        # carries only names this command declares: a name bound here by an
+        # import or a local reaches the drain as an unknown keyword and the
+        # queued promotion fails to run at all.
+        callback = getattr(crew_complete, "callback", crew_complete)
+        accepted = set(inspect.signature(callback).parameters)
+        parameters = {
+            name: value for name, value in locals().items() if name in accepted
+        }
         from reckon.crew.node import CrewError
 
         try:
