@@ -10,7 +10,7 @@
   <meta name="plan-summary" content="Fix the monitor defects fourteen sessions reported on 15 November: a slow tick, false needs-you rows, dangerous remedies and lost review findings.">
   <meta name="plan-status" content="active">
   <meta name="plan-roi" content="high">
-  <meta name="plan-effort-hours" content="20">
+  <meta name="plan-effort-hours" content="20.0">
   <meta name="plan-capability-version" content="1.0">
   <meta name="plan-capability-class" content="general">
   <meta name="plan-capability-reasoning" content="deep">
@@ -20,10 +20,12 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-informs" content="the-monitor-shows-the-work-it-watches,the-monitor-reads-each-fact-once,a-landing-never-waits-on-a-shared-index,the-escape-lane-and-reviews-keep-pace">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;implementable&quot;,&quot;s10&quot;:&quot;implementable&quot;,&quot;s11&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;implementable&quot;,&quot;s11&quot;:&quot;implementable&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;implementable&quot;}">
   <title>The Monitor Tells The Truth Under Load | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
+<meta name="plan-version" content="1">
+<meta name="plan-modified" content="2026-11-15">
 </head>
 <body>
   <main class="plan-doc">
@@ -48,17 +50,17 @@
     </table>
 
     <h2 id="s2">§2 — The queue ranking asks git nothing about landings</h2>
-    <section data-reckon="section" data-id="s2" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="elevated" data-status="implementable" data-links=""></section>
+    <section data-reckon="section" data-id="s2" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="elevated" data-status="done" data-links=""></section>
     <p><strong>Why.</strong> Eight py-spy samples of the live station (pid 1137861, 12:14–12:16Z) found its main thread inside the tick's queue ranking every time. That ranking builds the project roadmap to read section priority keys. Five samples were in a <code>git merge-base</code> subprocess under the roadmap's landing audit, and three in the whole-ledger decode the same audit triggers. A ranking reads no finding.</p>
     <p><strong>Done when.</strong> A roadmap built for queue ranking runs no landing audit, while a roadmap read outside ranking still reports an unlanded run. One test asserts both, failing at base; a second asserts that the queue ranking opens its build with the audit off. Each test fails under its own mutation. The tests importing <code>reckon.roadmap</code> or <code>reckon.crew.queue_order</code> add no failure against the base on all_debug. After the station reloads past the landing, three py-spy samples of its main thread show no frame under the landing audit. Write paths: <code>reckon/roadmap.py</code>, <code>reckon/crew/queue_order.py</code>, <code>tests/test_a_section_a_run_has_delivered_is_not_ready.py</code>.</p>
 
     <h2 id="s3">§3 — A held request is drawn by whose move the hold is</h2>
-    <section data-reckon="section" data-id="s3" data-effort-hours="2" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+    <section data-reckon="section" data-id="s3" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
     <p><strong>Why.</strong> The pane's word set puts <code>held</code> under "needs you", while the counter in <code>reckon/crew/ticker.py</code> counts a held run as waiting. A request parked by the queue itself (held on a claim, on an allowance, on a retry back-off, or with <code>queue_hold.automatic</code> true) was drawn "needs you" in five sessions with nothing to do. A request the coordinator held with <code>crew hold</code>, or one whose hold asks for a coordinator act such as composing an owed plan review, is the coordinator's move.</p>
     <p><strong>Done when.</strong> New tests, each failing at the base revision. A request held on a claim, on an allowance or on a back-off is drawn in the waiting pane and counted there. A request held by <code>crew hold</code>, or by a hold whose lifting condition is a coordinator act, is drawn "needs you" and names that act. The row word and the counter bucket agree for every hold kind the code defines. The tests importing <code>reckon.crew.ticker</code> or <code>reckon.crew.recovery_watch</code> add no failure against the base on all_debug. Write paths: <code>reckon/crew/ticker.py</code>, <code>reckon/crew/recovery_watch.py</code> and a new test.</p>
 
     <h2 id="s4">§4 — A launch that never reached a worker is reaped and drawn unlaunched</h2>
-    <section data-reckon="section" data-id="s4" data-effort-hours="3" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="implementable" data-links=""></section>
+    <section data-reckon="section" data-id="s4" data-effort-hours="3.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="implementable" data-links=""></section>
     <p><strong>Why.</strong> Four sessions found runs at phase <code>starting</code> with no process and only <code>prompt.txt</code> and <code>claim.json</code> on disk. Some had a dispatch or review killed by its caller's timeout (code-a6: r-20261115T005130501954, r-20261115T101209167018). Others had a launch whose holder was alive but stuck at <code>claim-published</code> for 15 minutes or more (r-20261115T103234306208, r-20261115T115003592886, reckon-af's alro-s2 review). The pane drew each as working and then as needs-you; the obligations view showed nothing.</p>
     <p><strong>Done when.</strong> New tests, each failing at the base revision. A run at <code>starting</code> or <code>claim-published</code> whose launcher pid is gone, or whose claim step is older than the launch bound with no worker record, is released within one pass. A launch from a queued request goes back to the queue, and a composed review is recomposed. Until then it is drawn as unlaunched, not as working. A launch still within its bound is untouched. The tests importing <code>reckon.crew.dispatch_claims</code> or <code>reckon.crew.recovery_classification</code> add no failure against the base on all_debug. Write paths: <code>reckon/crew/dispatch_claims.py</code>, <code>reckon/crew/recovery_classification.py</code>, <code>reckon/crew/admission/launching.py</code> and a new test.</p>
 
@@ -81,7 +83,7 @@
     <p>The tests importing <code>reckon.crew.obligations</code> or <code>reckon.hooks.coordinator_obligations</code> add no failure against the base on all_debug. Write paths: <code>reckon/crew/obligations.py</code>, <code>reckon/hooks/coordinator_obligations.py</code>, <code>reckon/crew/recovery_classification.py</code>, <code>reckon/crew_run_commands.py</code> and a new test.</p>
 
     <h2 id="s6">§6 — A review record is stored only from a finished report, in either shape</h2>
-    <section data-reckon="section" data-id="s6" data-effort-hours="2" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="implementable" data-links=""></section>
+    <section data-reckon="section" data-id="s6" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="implementable" data-links=""></section>
     <p><strong>Why.</strong> power-convertor-85 found a design review stored with <code>findings: []</code> while its <code>report.md</code> still held <code>RUBRIC-PLACEHOLDER</code> and <code>FINDING-PLACEHOLDER</code> lines. The record was taken before the reviewer finished writing, so three real findings never reached the gate (r-20261115T002957131074). Two sessions also had figure-review records with per-figure verdicts refused as "not a complete review" (r-20261114T223637959073, r-20261114T155313333323).</p>
     <p><strong>Done when.</strong> New tests, each failing at the base revision. A report still carrying a template placeholder is not stored; the run reads as still reviewing, and a later read of the finished report stores its findings. A figure-review record with complete per-figure verdicts promotes, while one missing a figure's verdict is refused naming the figure. The tests importing <code>reckon.crew.plan_review</code> or <code>reckon.crew.recovery_review_delivery</code> add no failure against the base on all_debug. Write paths: <code>reckon/crew/plan_review.py</code>, <code>reckon/crew/recovery_review_delivery.py</code>, <code>reckon/crew/review.py</code> and a new test.</p>
 
@@ -102,7 +104,7 @@
     <p>The tests importing <code>reckon.crew.recovery_liveness</code> or <code>reckon.crew.recovery_classification</code> add no failure against the base on all_debug. Write paths: <code>reckon/crew/recovery_liveness.py</code>, <code>reckon/crew/recovery_classification.py</code>, <code>reckon/crew/recovery_watch.py</code> and a new test.</p>
 
     <h2 id="s8">§8 — The pane emits only real transitions, in order, with a live age</h2>
-    <section data-reckon="section" data-id="s8" data-effort-hours="2" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+    <section data-reckon="section" data-id="s8" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
     <p><strong>Why.</strong> Several sessions reported noise rows:</p>
     <ul>
       <li>X → X rows ("waiting → waiting", "in review → in review", "delivered → delivered") woke coordinators for nothing (imas-codex, nova-2e).</li>
@@ -120,32 +122,35 @@
     <p>The tests importing <code>reckon.crew.ticker</code>, <code>reckon.crew.recovery_watch</code> or <code>reckon.crew.obligations</code> add no failure against the base on all_debug. Write paths: <code>reckon/crew/ticker.py</code>, <code>reckon/crew/recovery_watch.py</code>, <code>reckon/crew/obligations.py</code> and a new test.</p>
 
     <h2 id="s9">§9 — The hook's summary counts only what is owed</h2>
-    <section data-reckon="section" data-id="s9" data-effort-hours="1" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="implementable" data-links=""></section>
+    <section data-reckon="section" data-id="s9" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="implementable" data-links=""></section>
     <p><strong>Why.</strong> nova-09's hook read "unreconciled runs: 3; work the list to empty before ending the turn" while its obligation list was empty. The three runs were two in-flight workers and one request awaiting upstream. nova-8e's hook has read "not current: no producer" on every prompt since 13 November for a session that has dispatched nothing.</p>
     <p><strong>Done when.</strong> New tests, each failing at the base revision. A session whose runs are all in flight or awaiting upstream prints no instruction to work a list. A session with no runs and no producer prints no staleness warning. The hook's count equals the number of obligations it lists. The tests importing <code>reckon.hooks.coordinator_obligations</code> add no failure against the base on all_debug. Write paths: <code>reckon/hooks/coordinator_obligations.py</code> and a new test.</p>
 
     <h2 id="s10">§10 — A dry run reports what the real call will refuse</h2>
-    <section data-reckon="section" data-id="s10" data-effort-hours="2" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+    <section data-reckon="section" data-id="s10" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
     <p><strong>Why.</strong> nova-84 reported three dry-run gaps. <code>crew complete --dry-run</code> with a suite-delta waiver reported <code>would_promote: true</code>, and the real <code>--land</code> then refused with <code>suite-delta-refused … missing after_suite.revision_matches_head</code>. A dry run of a delivered, unreviewed implementation reported <code>would_file_reviews: []</code>. And an MCP complete dry run timed out as a write, although a dry run writes nothing.</p>
     <p><strong>Done when.</strong> New tests, each failing at the base revision. For a run the real <code>complete --land</code> refuses on its armed suite evidence, the dry run reports the same refusal. For a delivered implementation with no stored review of its head, the dry run reports the review owed. A dry run performs no write and takes no write lock. The tests importing <code>reckon.crew.promotion</code> add no failure against the base on all_debug. Write paths: <code>reckon/crew/promotion.py</code>, <code>reckon/crew/promotion_checks.py</code> and a new test.</p>
 
     <h2 id="s11">§11 — A run-scoped gc touches only that run</h2>
-    <section data-reckon="section" data-id="s11" data-effort-hours="1" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+    <section data-reckon="section" data-id="s11" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
     <p><strong>Why.</strong> <code>reckon crew gc --run &lt;one review run&gt; --apply</code> printed "removed worktree trash" for two other sessions' runs (imas-codex-5a, 01:31Z). Nothing was lost because the trees were already in the trash, but a destructive command scoped to one run acted outside its scope.</p>
     <p><strong>Done when.</strong> A new test, failing at the base revision: <code>crew gc --run X --apply</code> removes trash belonging to X and nothing else, and prints every removal. An unscoped gc still sweeps all trash it owns. The tests importing <code>reckon.crew.gc</code> add no failure against the base on all_debug. Write paths: <code>reckon/crew/gc.py</code> and a new test.</p>
 
-    <section data-reckon="decisions" id="decisions" class="r-decisions">
-      <h2><span class="sec">§</span> Decisions</h2>
-    </section>
+    
 
     <section data-reckon="followups" id="followups" class="r-followups">
-      <h2><span class="sec">§</span> Followups</h2>
-      <article class="r-fu" data-id="f-mttu-001" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-a6" data-written-at="2026-11-15 13:30" data-recommends-skill="/reckon-build the-monitor-tells-the-truth-under-load">
-        <h4 class="r-fu-title">Land §2, then build §3 to §11</h4>
-        <div class="r-fu-body"><p>§2 is in hand: its fix is committed and its arms are running. The other sections queue after this plan's review is answered.</p></div>
-        <pre class="r-fu-prompt">/reckon-build the-monitor-tells-the-truth-under-load</pre>
-      </article>
-    </section>
-  </main>
+<h2><span class="sec">§</span> Followups</h2>
+<article class="r-fu" data-id="f-mttu-001" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-a6" data-written-at="2026-11-15 13:30" data-recommends-skill="/reckon-build the-monitor-tells-the-truth-under-load" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Land §2, then build §3 to §11</h4>
+    <div class="r-fu-body"><p>§2 is in hand: its fix is committed and its arms are running. The other sections queue after this plan's review is answered.</p></div>
+    <pre class="r-fu-prompt">/reckon-build the-monitor-tells-the-truth-under-load</pre>
+    </article>
+</section>
+  <section data-reckon="comments" id="comments" class="r-comments">
+<div class="r-comment" data-section="s2" data-id="c-close-s2" data-who="reckon-a6" data-when="2026-11-15T13:30:00Z">
+    <div class="r-comment-body"><p>§2 landed at <code>022b666162</code>. Its arms on all_debug over the 89 test files importing <code>reckon.roadmap</code> or <code>reckon.crew.queue_order</code> found 13 failure ids at both base <code>eaa8180e97</code> and head, none added, with 2 more passes. Both new tests fail under their own mutation. Live: three py-spy samples of station 2178731, which runs main, show no frame under the landing audit, and the reckon export's age fell from 2818 s to 270 s. The ticks were still about 5.5 min until reckon-f3's lane-rate window (s61, <code>3b57e76d24</code>) went live, because the reckon derivation then sat in the whole-ledger decode s61 removes. The station only picked up these fixes when reckon-f3 restarted it: its in-place reload never fired, which is the reload section's subject.</p></div>
+</div>
+</section>
+</main>
 </body>
 </html>
