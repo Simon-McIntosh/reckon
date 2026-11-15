@@ -34,21 +34,36 @@
   <code>1 failed, 1 passed</code>), which is
   the check proving the assertion measures the raise and not the setup.</p>
 
-  <p><strong>Arms.</strong> Baseline, resolved over the base tree:
+  <p><strong>Arms.</strong> Baseline, resolved over the base tree
+  <code>9530fe3d48ea</code> (<code>tests/test_crew_promotion.py</code> included):
   <code>PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q
   tests/test_staged_write_inventory.py
-  tests/test_every_shared_home_lock_holds_across_nodes.py</code> — 58 passed,
-  exit 0. After, at this commit's head:
-  <code>pytest … -q tests/test_a_failed_store_write_leaves_no_row.py
-  tests/test_staged_write_inventory.py
-  tests/test_every_shared_home_lock_holds_across_nodes.py</code> — 60 passed,
-  exit 0. Logs are in the run directory.</p>
+  tests/test_every_shared_home_lock_holds_across_nodes.py
+  tests/test_crew_promotion.py</code> — <strong>106 passed, 2 failed</strong>,
+  exit 1; the two failures are the store-write pair named above. After, at the
+  head that carries them
+  (<code>tests/test_a_failed_store_write_leaves_no_row.py</code> added) —
+  <strong>110 passed</strong>, exit 0. Logs are in the run directory.</p>
 
-  <p><strong>What this node did not touch.</strong>
-  <code>tests/test_crew_promotion.py</code> carries
-  <code>test_a_failing_store_write_is_reported_on_the_*success*_payload</code>,
-  which asserts the inverted behaviour that this section retires — a
-  <code>store</code> of <code>{"status": "failed"}</code> on a successful
-  promotion. It is outside this node's declared write paths and it now encodes
-  the defect; it is reported for another node rather than edited here.</p>
+  <p><strong>The promotion itself, at the same contract.</strong>
+  <code>tests/test_crew_promotion.py</code> drives a full <code>crew complete</code>
+  against an injected raising <code>run_store.append</code>. It now asserts what
+  this section requires: the command exits 1, the refusal names the store path
+  and <code>scripts/import_runs_into_store.py --project proj</code>, the per-run
+  file is gone, and <code>run_store.compare</code> is 0/0/0. Its sibling, the
+  healthy store-write case, keeps its assertions.</p>
+
+  <p><strong>A scaffolding defect found on the way.</strong> Both store-write
+  tests cited a gate log holding only <code>probe check passed</code>. The gate
+  evidence check refuses a log with no terminal <code>EXIT=&lt;n&gt;</code> line,
+  so neither test ever reached the store write it asserts about; both were red
+  at <code>9530fe3d48ea</code>, before this section's change. The logs now carry
+  <code>EXIT=0</code>.</p>
+
+  <p><strong>Still outside this section.</strong>
+  <code>reckon/crew/promotion.py</code> around line 2277 keeps a comment
+  describing "a silently failing shadow", and the matching
+  <code>store_outcome is None</code> branch is now only reached on the
+  already-promoted path. Neither is in this node's write paths; both are
+  reported, not edited.</p>
 </section>
