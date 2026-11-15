@@ -124,8 +124,8 @@ def dispatch_read(
 ) -> tuple[dict[str, Any], int]:
     """Read live outside dispatch; derive its readers from one full read inside.
 
-    Copies isolate callers from each other. Full rows also let the attempt
-    reader filter in memory rather than opening the index a second time.
+    Project before copying, so an identity or picker reader never copies the
+    retained full payloads. Each handout remains independent of other readers.
     """
     snapshot = _DISPATCH_SNAPSHOT.get()
     if snapshot is None or not snapshot.active:
@@ -145,19 +145,20 @@ def dispatch_read(
             snapshot.reads[key] = (*load(project, root), damaged_run_records(project))
         held, version, damaged = snapshot.reads[key]
         _report_damaged_run_records(project, damaged)
-        data = copy.deepcopy(held)
+    rows = held["runs"]
     if activity_since is not None:
-        data["runs"] = _active_records(data["runs"], activity_since)
+        rows = _active_records(rows, activity_since)
     if plan:
-        data["runs"] = [row for row in data["runs"] if _row_plan(row) == plan]
-    if picker_only:
-        data["runs"] = [picker_record(row) for row in data["runs"]]
+        rows = [row for row in rows if _row_plan(row) == plan]
     if headers_only:
-        present = {row.get("run_id") for row in data["runs"]}
-        data["runs"].extend(
+        rows = [{"run_id": row["run_id"]} for row in rows if row.get("run_id")]
+        present = {row["run_id"] for row in rows}
+        rows.extend(
             {"run_id": path.stem} for path in damaged if path.stem not in present
         )
-    return data, version
+    elif picker_only:
+        rows = [picker_record(row) for row in rows]
+    return copy.deepcopy({**held, "runs": rows}), version
 
 
 def damaged_run_records(project: str) -> tuple[Path, ...]:

@@ -1950,7 +1950,16 @@ def _section_attempt_count_uncached(
         "AND json_extract(payload, '$.plan') = ? "
         f"AND json_extract(payload, '$.role') IN ({role_slots})"
     )
-    if any(isinstance(row, Mapping) and set(row) - {"run_id"} for row in header_rows):
+    if ledger.dispatch_snapshot_active():
+        data, _version = ledger.dispatch_read(project, root, True)
+        rows = [
+            row
+            for row in data["runs"]
+            if isinstance(row, Mapping)
+            and row.get("plan") == plan
+            and row.get("role") in EXECUTABLE_SECTION_ROLES
+        ]
+    elif any(isinstance(row, Mapping) and set(row) - {"run_id"} for row in header_rows):
         # An unreadable index makes indexed_headers return authoritative full rows.
         rows = [
             row
