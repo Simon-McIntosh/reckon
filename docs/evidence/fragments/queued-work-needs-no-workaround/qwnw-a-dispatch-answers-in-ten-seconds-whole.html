@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="artifact-kind" content="evidence">
+  <meta name="plan-slug" content="queued-work-needs-no-workaround">
+  <meta name="plan-title" content="Queued Work Needs No Workaround">
+  <meta name="plan-evidence-for" content="reckon:queued-work-needs-no-workaround#s21">
+  <meta name="evidence-verdict" content="partial">
+  <meta name="evidence-date" content="2026-11-15">
+  <title>The discovery cost is gone and the ten-second bound is not met | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" data-node="qwnw-a-dispatch-answers-in-ten-seconds-whole" data-reckon="landed" data-when="2026-11-15">
+  <h2 id="qwnw-a-dispatch-answers-in-ten-seconds-whole-title">The discovery cost is gone, and the ten-second bound is not met</h2>
+
+  <p id="qwnw-a-dispatch-answers-in-ten-seconds-whole-change"><strong>What changed.</strong>
+  A dispatch preview, a batch and a lane change's re-plan all answer document
+  stamps from the working tree instead of calling
+  <code>_git_first_committed</code> and <code>_git_last_committed</code>, each
+  bounded at ten seconds, and the answer is cached under its own key so a
+  reader that needs commit times never receives the approximation. The flag
+  behind that scope is a <code>contextvars.ContextVar</code>, so it is not
+  shared with a reader on another path. The lane change reaches
+  <code>plan_dispatch</code> by importing it straight from the plan module and
+  so never passed the preview wrapper; it enters the scope itself now.
+  <code>reckon/crew/dispatch_batch.py</code> keys its one-derivation cache on
+  the project and derives from the registered mount, because a dispatch from a
+  worktree named two docs trees and derived the project twice.</p>
+
+  <p id="qwnw-a-dispatch-answers-in-ten-seconds-whole-tests"><strong>The two measure files, both arms.</strong>
+  <code>tests/test_a_batch_derives_the_project_once.py</code> counts the project
+  derivations a batch of three entries costs from a worktree, and counts the git
+  history and last-modified invocations a batch dispatch makes, with the same
+  counter proven alive on a discovery outside the scope first.
+  <code>tests/test_a_lane_change_reads_no_git_dates.py</code> records the
+  suppression flag at the moment a lane change calls the re-plan, and reads the
+  flag from a thread that did not enter the scope while it is open — which is
+  what separates a per-context flag from a module global.</p>
+
+  <table>
+    <thead><tr><th>arm</th><th>revision</th><th>result</th></tr></thead>
+    <tbody>
+      <tr><th scope="row">both files, base tree from <code>d45930c3b8</code></th><td><code>d45930c3b8</code></td><td><strong>4 failed</strong> — two derivations, two git lookups, no scope on the re-plan, no per-context flag</td></tr>
+      <tr><th scope="row">both files, head</th><td><code>a3da138b48</code></td><td><strong>4 passed</strong></td></tr>
+      <tr><th scope="row">the named suite files, base tree</th><td><code>d45930c3b8</code></td><td><strong>55 passed</strong></td></tr>
+      <tr><th scope="row">the named suite files, head</th><td><code>a3da138b48</code></td><td><strong>55 passed</strong></td></tr>
+    </tbody>
+    <caption>Suite arms ran on <code>all_debug</code>, each from inside its own
+    tree so the command is <code>PYTHONPATH=. … -m pytest -q</code> at that
+    arm's revision. The receipts carry the revision read from the tree they
+    ran in, not a typed figure.</caption>
+  </table>
+
+  <p id="qwnw-a-dispatch-answers-in-ten-seconds-whole-negative"><strong>Negative control — each answering commit reverted in turn.</strong>
+  Two mutations were applied to the head tree and each was run against the case
+  that should catch it, then the source was restored and the tree verified
+  clean. Replacing the lane change's scope with a plain block makes the re-plan
+  record the flag as <code>False</code> and that case fails. Replacing the
+  <code>ContextVar</code> with a module-global shim makes the reader in the
+  other thread see <code>True</code> and that case fails. Both runs are in the
+  round's <code>negative-control.log</code>.</p>
+
+  <p id="qwnw-a-dispatch-answers-in-ten-seconds-whole-timing"><strong>Ten dry runs of one section at head</strong> — five from the main
+  checkout and five from a worktree, both executing the head code, each naming
+  a fresh probe node id so the preview places a node instead of refusing a
+  claim the live node holds. Every one answered <code>"ok": true</code>; the
+  earlier table's ten runs all answered a <code>scope-conflict</code> refusal
+  because they reused this node's live id, and that table is superseded.</p>
+
+  <table>
+    <thead><tr><th>arm</th><th>load average</th><th>wall (incl. python start)</th><th>command</th><th>discovery share</th><th>git lookups</th></tr></thead>
+    <tbody>
+      <tr><th scope="row">main 1</th><td>44.89</td><td>20.46 s</td><td>20.08 s</td><td>0</td><td>0</td></tr>
+      <tr><th scope="row">worktree 1</th><td>42.35</td><td>14.59 s</td><td>14.14 s</td><td>0</td><td>0</td></tr>
+      <tr><th scope="row">main 2</th><td>37.62</td><td>12.80 s</td><td>12.45 s</td><td>0</td><td>0</td></tr>
+      <tr><th scope="row">worktree 2</th><td>33.68</td><td>14.45 s</td><td>14.07 s</td><td>0</td><td>0</td></tr>
+      <tr><th scope="row">main 3</th><td>34.11</td><td>15.57 s</td><td>15.20 s</td><td>0</td><td>0</td></tr>
+      <tr><th scope="row">worktree 3</th><td>36.32</td><td>21.30 s</td><td>20.77 s</td><td>0</td><td>0</td></tr>
+      <tr><th scope="row">main 4</th><td>39.48</td><td>17.76 s</td><td>17.34 s</td><td>0</td><td>0</td></tr>
+      <tr><th scope="row">worktree 4</th><td>37.98</td><td>15.97 s</td><td>15.56 s</td><td>0</td><td>0</td></tr>
+      <tr><th scope="row">main 5</th><td>37.49</td><td>17.76 s</td><td>17.21 s</td><td>0</td><td>0</td></tr>
+      <tr><th scope="row">worktree 5</th><td>47.18</td><td>14.35 s</td><td>14.02 s</td><td>0</td><td>0</td></tr>
+    </tbody>
+  </table>
+
+  <p id="qwnw-a-dispatch-answers-in-ten-seconds-whole-base-table"><strong>The same measure at the base revision</strong>, five runs from a tree
+  extracted from <code>d45930c3b8</code>, on the same instrument: wall 12.28 to
+  14.49 s, command 11.96 to 14.11 s, discovery share 0, git lookups 0 at load
+  28.06 to 36.48.</p>
+
+  <p id="qwnw-a-dispatch-answers-in-ten-seconds-whole-revs"><strong>Which revision each table ran at.</strong> The ten head runs executed
+  <code>a3da138b48</code>. Every commit above it touches only this fragment, so
+  <code>git diff --stat a3da138b48 &lt;head&gt; -- reckon tests</code> is empty
+  and the runs measure the same source the suite arms at the head revision do.
+  Both head arms were then re-run from the final head,
+  <code>966b54e65a</code>, and each receipt's first line is the revision read
+  from the tree it ran in: four passed of the two measure files and fifty-five
+  passed of the named suite files, each exiting zero.</p>
+
+  <p id="qwnw-a-dispatch-answers-in-ten-seconds-whole-limit"><strong>What the dry-run table cannot show, measured rather than asserted.</strong>
+  A dry run resolves a placement without deriving the project, at the head
+  revision and at the base revision alike: the instrument wraps nine discovery
+  entry points — <code>reckon.mcp_discovery._discover_project</code> and
+  <code>discover_plans</code>, <code>reckon.serve.discover_plans</code> and
+  that scope's two git queries, and the roadmap reads in
+  <code>route_results</code>, <code>fleet_index</code> and
+  <code>project_maintenance_commands</code> — and every one of them reads zero
+  on all fifteen runs. So this table measures contention, not this change, and
+  §21's negative control (base wall times over ten seconds with a discovery
+  share above 80 percent) cannot be produced by it. What the change is proven
+  by is the two measure files above, four failures at base and four passes at
+  head.</p>
+
+  <p id="qwnw-a-dispatch-answers-in-ten-seconds-whole-residual"><strong>Where the twelve to twenty-one seconds go.</strong> A profile of one
+  preview of the same command at load 45: 2.2 s of interpreter and imports;
+  <code>plan_dispatch</code> 15.6 s of a 26.6 s command, dominated by 45 thread
+  joins totalling 16.1 s inside the claim sweep
+  (<code>_repository_scope_claims</code> 3.9 s,
+  <code>_grant_landing_write_paths</code> 1.8 s,
+  <code>_live_conflict_rows</code> 1.1 s, 66,546 <code>lstat</code> and 16,433
+  <code>stat</code> calls in one process); <code>build_picker_inputs</code>
+  4.2 s. None of it is project discovery.</p>
+
+  <p id="qwnw-a-dispatch-answers-in-ten-seconds-whole-open"><strong>Still open.</strong> The deliverable's ten-second bound is not met: a
+  dry run of one section answers in twelve to twenty-one seconds on the fleet
+  node at load 34 to 47. The next node should read the live-pointer claims once
+  and for the project only, because that sweep — not discovery — is what holds
+  a dispatch there.</p>
+</article>
+</body>
+</html>
