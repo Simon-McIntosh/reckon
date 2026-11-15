@@ -162,10 +162,6 @@ def test_a_slow_tick_draws_one_row_that_names_stage_and_duration(
     """The pane says what the station is doing, and offers no remedy."""
     _slow_tick_fixture(clock, tmp_path)
     _assert_fell_back()
-    reading = obligation_snapshot.read_station_tick()
-    assert reading is not None and reading["state"] == obligation_snapshot.STATION_SLOW
-    assert reading["tick_stage"] == STAGE, reading
-    assert reading["tick_age_seconds"] == TICK_RUNNING_SECONDS, reading
 
     rows = ProducerSnapshotNotices(PROJECT, SESSION, clock=clock).poll()
 
@@ -178,6 +174,13 @@ def test_a_slow_tick_draws_one_row_that_names_stage_and_duration(
     assert STAGE in row["line"] and SLOW_SPAN in row["line"], row["line"]
     assert "remedy" not in row, row
     assert "re-arm" not in row["line"], row["line"]
+
+    # The row is the store's own reading rather than a guess about it: the
+    # station's beat is fresh and its tick is the one the fixture started.
+    reading = obligation_snapshot.read_station_tick()
+    assert reading is not None and reading["state"] == obligation_snapshot.STATION_SLOW
+    assert reading["tick_stage"] == STAGE, reading
+    assert reading["tick_age_seconds"] == TICK_RUNNING_SECONDS, reading
 
 
 def test_the_same_tick_is_reported_once(clock: Clock, tmp_path: Path) -> None:
@@ -237,11 +240,6 @@ def test_a_stale_beat_with_no_tick_running_is_still_a_loss(
     )
     _stale_export(beat_age=364)
     _pane_snapshot()
-    reading = obligation_snapshot.read_station_tick()
-    assert (
-        reading is not None and reading["state"] == obligation_snapshot.STATION_STOPPED
-    )
-    assert reading["tick_age_seconds"] is None, reading
 
     rows = ProducerSnapshotNotices(PROJECT, SESSION, clock=clock).poll()
 
@@ -249,3 +247,11 @@ def test_a_stale_beat_with_no_tick_running_is_still_a_loss(
     row = rows[0]
     assert row["remedy"] == watcher_ensure_line(PROJECT), row
     assert row["remedy"] in row["line"], row["line"]
+
+    # The loss is the store's own verdict rather than the export's: the beat
+    # is stale and no tick is running, so nothing here reads as a slow tick.
+    reading = obligation_snapshot.read_station_tick()
+    assert (
+        reading is not None and reading["state"] == obligation_snapshot.STATION_STOPPED
+    )
+    assert reading["tick_age_seconds"] is None, reading
