@@ -1,0 +1,38 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-11-15T22:23:24.007Z",
+  "dispatched_at": "2026-11-15T22:22:47Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/history-persists-as-detail-washes-out/revision-reads-on-the-store-s24.html",
+      "line": 99,
+      "severity": "blocking",
+      "text": "docs/evidence/fragments/history-persists-as-detail-washes-out/revision-reads-on-the-store-s24.html:99 blocking: the after-suite row names \"the run's head, af6bcd68dc\", but af6bcd68dc is not the run's head \u2014 c2c40ab117bd is, and it is the very commit that wrote this row \u2014 and the row's own cited receipt logs/after-suite.log:1 records the run at revision c2c40ab117bd000c590c1161d38655bc72d3e00b, so the record contradicts its own log on the one fact commit c2c40ab117 exists to state."
+    },
+    {
+      "file": "docs/evidence/fragments/history-persists-as-detail-washes-out/revision-reads-on-the-store-s24.html",
+      "line": 109,
+      "severity": "non-blocking",
+      "text": "docs/evidence/fragments/history-persists-as-detail-washes-out/revision-reads-on-the-store-s24.html:109 non-blocking: the landing line claims the new test file \"passes at the head tree (8 passed)\" while logs/ holds no run of that file alone at the head \u2014 the figure is only inferable from 66 minus 58 across two arms \u2014 so the sentence states a result with no receipt; cite logs/after-suite.log's population or record the head-only run."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is prompt.txt:38, \"Answer velocity's revision-scoped figures and the review-cycle script from the run store\"; the two gained commits are docs-only on docs/evidence/fragments/history-persists-as-detail-washes-out/revision-reads-on-the-store-s24.html:92-111 and change the arms record rather than the goal's behaviour, which they leave untouched.\nVERDICT done_when: prompt.txt:166 asks that a revision with no runs directory answer from the store with a nonzero population and that an empty store be refused; the driven gate is the suite recorded in logs/after-suite.log, \"66 passed in 220.40s (0:03:40)\" with a bare EXIT=0 at revision c2c40ab117bd, which is the manifest's after arm.\nVERDICT write_paths: prompt.txt:85-91 declares six exclusive paths; the gained diff touches only docs/evidence/fragments/history-persists-as-detail-washes-out/revision-reads-on-the-store-s24.html, which is the fifth of them.\nVERDICT manifest: manifest.md records after_suite at revision c2c40ab117bd with \"66 passed in 220.40s (0:03:40)\" EXIT=0 and baseline_suite at 27958ce9c4fa with \"58 passed\" EXIT=0, and its two log_digest values reproduce against logs/base-arm.log and logs/after-suite.log under sha256sum.\nVERDICT diff: git log 588705d9c6..c2c40ab117bd is exactly two commits, af6bcd68dc (10 added, 7 deleted) correcting the negative-control row to logs/negative-control.log's \"2 failed, 6 passed in 118.20s\" EXIT=1, and c2c40ab117 (2 added, 2 deleted) rewriting the after-arm row's revision and dropping its duration.\nCALL_SITES: reckon/evidence.py:compose_landed_record, reckon/crew/reports.py:_fragment_plan_of, reckon/crew/reports.py:_landing_record_beside\nSCORE goal_fidelity: 13\nJUSTIFICATION goal_fidelity: docs/evidence/fragments/history-persists-as-detail-washes-out/revision-reads-on-the-store-s24.html:99 reports the after arm at af6bcd68dc, so the record the two commits exist to make faithful is still false on the fact c2c40ab117 was written to state.\nSCORE evidence: 14\nJUSTIFICATION evidence: the manifest's two arms reconcile with logs/base-arm.log and logs/after-suite.log line for line, but the landed table at revision-reads-on-the-store-s24.html:99 names a revision its own receipt logs/after-suite.log:1 contradicts.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: the whole gained diff is the single declared path docs/evidence/fragments/history-persists-as-detail-washes-out/revision-reads-on-the-store-s24.html, at 12 changed lines total.\nSCORE durability: 11\nJUSTIFICATION durability: the gained commits add no assertion and no test can redden on the fragment's prose, so the misnamed revision at revision-reads-on-the-store-s24.html:99 shipped with every gate green; the only red receipt is the product-level negative control in logs/negative-control.log, which is unchanged by these commits.\nSCORE fit: 17\nJUSTIFICATION fit: the row keeps the surrounding table's five-column shape at revision-reads-on-the-store-s24.html:75-104 and the section's node-prefixed element ids, so it reads as the sibling of the other evidence fragments in docs/evidence/fragments/.\nSCORE reuse: 20\nJUSTIFICATION reuse: no function, class or module is added, and a search over docs/ and reckon/ for an existing arms-table or fragment-composition owner found reckon/evidence.py:compose_landed_record, which reads the fragment rather than being duplicated by it.\nFINDING docs/evidence/fragments/history-persists-as-detail-washes-out/revision-reads-on-the-store-s24.html:99 blocking: the after-suite row names \"the run's head, af6bcd68dc\", but af6bcd68dc is not the run's head \u2014 c2c40ab117bd is, and it is the very commit that wrote this row \u2014 and the row's own cited receipt logs/after-suite.log:1 records the run at revision c2c40ab117bd000c590c1161d38655bc72d3e00b, so the record contradicts its own log on the one fact commit c2c40ab117 exists to state.\nFINDING docs/evidence/fragments/history-persists-as-detail-washes-out/revision-reads-on-the-store-s24.html:109 non-blocking: the landing line claims the new test file \"passes at the head tree (8 passed)\" while logs/ holds no run of that file alone at the head \u2014 the figure is only inferable from 66 minus 58 across two arms \u2014 so the sentence states a result with no receipt; cite logs/after-suite.log's population or record the head-only run.",
+  "review_run_id": "r-20261115T220347865853-review-of-revision-reads-on-the-store-s24-c2c40ab117bd",
+  "reviewed_base_sha": "588705d9c698c22a690dcb5b54714461d6133517",
+  "reviewed_head_sha": "c2c40ab117bd000c590c1161d38655bc72d3e00b",
+  "reviewed_run_id": "r-20261115T102555144818-revision-reads-on-the-store-s24",
+  "scores": {
+    "durability": 11,
+    "evidence": 14,
+    "fit": 17,
+    "goal_fidelity": 13,
+    "reuse": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-15T22:35:15.620292+00:00",
+  "total": 94
+}
