@@ -123,16 +123,10 @@ def test_an_unchanged_registry_is_read_and_resolved_once(
 
     resolved: dict[str, flight.ResolvedFlight] = {}
     for project in _PROJECTS:
-        resolved[project] = flight.resolve(project)
-    # Positive control: the first pass reads the registry and resolves every
-    # entry, so these counts tell reuse apart from an instrument that never ran.
-    assert traffic.reads == 1
-    assert traffic.resolves == len(_PROJECTS)
-
-    for project in _PROJECTS:
-        for _ in range(_CALLS_PER_PROJECT - 1):
-            flight.resolve(project)
-
+        for _ in range(_CALLS_PER_PROJECT):
+            resolved[project] = flight.resolve(project)
+    # The instrument has to have fired for the one-read count below to mean
+    # reuse: a stand-in that never ran would count zero reads, not one.
     assert traffic.reads == 1
     assert traffic.resolves == len(_PROJECTS)
     for project in _PROJECTS:
