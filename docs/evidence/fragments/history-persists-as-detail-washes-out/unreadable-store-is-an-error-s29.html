@@ -1,0 +1,83 @@
+<section id="unreadable-store-is-an-error-s29-record">
+  <h2>An unreadable store is an error, not an empty project</h2>
+
+  <p><strong>What this is.</strong> The run store is the ledger's only store, so
+  a read that cannot reach it must not be confusable with a project that holds
+  no runs. Three shapes were measured doing exactly that through
+  <code>stored_run_rows</code>, the read-only reader the ledger calls on every
+  load: a file that is not a database, an archive that will not attach, and a
+  runs table predating the <code>payload</code> column. Each answered an empty
+  population while the id columns still listed every id, so nothing failed and a
+  whole history read as absent.</p>
+
+  <table id="unreadable-store-is-an-error-s29-shapes">
+    <caption>The three shapes, what the base revision answered, and what a
+    read now does.</caption>
+    <thead><tr><th>shape</th><th>base answer</th><th>now</th></tr></thead>
+    <tbody>
+      <tr><td>the store file is not a database</td>
+        <td><code>stored_run_rows</code> returned <code>[]</code></td>
+        <td>raises naming the store and <code>DatabaseError: file is not a
+        database</code></td></tr>
+      <tr><td>the archive cannot be attached</td>
+        <td>returned the main database's rows only: the retired run
+        <code>r-1</code> vanished, while <code>indexed_run_ids</code> listed
+        <code>r-1</code> and <code>r-2</code></td>
+        <td>raises naming the store and the archive, and why the attach
+        failed</td></tr>
+      <tr><td>the runs table has no <code>payload</code> column</td>
+        <td>returned <code>[]</code> while <code>indexed_run_ids</code> listed
+        <code>r-old</code></td>
+        <td>raises naming the store and the migration it owes, including the
+        missing column</td></tr>
+      <tr><td>no store at all</td>
+        <td><code>None</code>, and an empty roster</td>
+        <td>unchanged</td></tr>
+    </tbody>
+  </table>
+
+  <p><strong>The rule.</strong> A store that is present but cannot be read
+  raises <code>run_store.UnreadableRunStoreError</code>, and the message carries
+  the store's path and the cause. The two read-only readers cannot migrate: the
+  backfill is a write, and <code>RunStore</code> is what performs it. So a store
+  that owes its migration is <em>refused</em>, naming the migration and the
+  declaration it should carry, and opening the store through
+  <code>RunStore</code> migrates it before answering. Absence stays distinct
+  from failure: an absent store still answers <code>None</code>.</p>
+
+  <p><strong>One record join.</strong> The record is split across
+  <code>runs</code> and <code>run_details</code>, with retired rows in an
+  attached archive carrying both tables. The join was written twice — once in
+  <code>RunStore._indexed_records</code> and once in the read-only reader — so
+  the module held two descriptions of what a record is.
+  <code>run_store._record_rows</code> now owns it, and both readers call it.
+  A test holds the two readers equal over a store carrying a retired row, so a
+  drift between them fails rather than passing quietly.</p>
+
+  <p><strong>Evidence.</strong> <code>tests/test_an_unreadable_store_is_an_error.py</code>
+  holds six tests. The three error arms are asserted through
+  <code>ledger.load</code>, which is where a reader meets the store, and each
+  also asserts the reader itself raises rather than answering empty. One test
+  asserts the refusal is bounded — the same store, migrated through
+  <code>RunStore</code>, then answers its row to both readers. One asserts the
+  absent store still answers empty, so the guard is shown to see a failure
+  rather than to be loud. The last holds the ledger reader and the indexed
+  reader equal over a store with a retired row, over a population of two runs,
+  one of them archived.</p>
+
+  <p><strong>Arms.</strong> Base <code>8e542a224c</code>: the declared suite
+  without the new test file, <strong>58 passed</strong>. Head
+  <code>24f983870b</code> with it: <strong>64 passed</strong>. Both arms exited
+  zero and ran to their summary line. The three error arms fail at base. The
+  base column of the table above is a probe run against the base tree rather
+  than something a passing suite would show, because at base these shapes raise
+  nothing. The declared mutation — restoring the swallow that returns an empty
+  population — leaves the damaged-store test red
+  (<code>Failed: DID NOT RAISE UnreadableRunStoreError</code>, exit 1), which is
+  the log the run keeps.</p>
+
+  <p><strong>Cost.</strong> The live store's recorded declaration version
+  matches the current one, so the migration refusal does not fire on it and a
+  whole-project read still returns its rows (<strong>10,979</strong> rows for
+  <code>reckon</code>, read in one call).</p>
+</section>
