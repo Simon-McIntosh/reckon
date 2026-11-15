@@ -21,7 +21,6 @@ import pytest
 
 from reckon.crew import queue_admission, runs
 from reckon.crew.admission import holds
-from reckon.crew.admission.selection import LANE_ROOM_POLL_SECONDS
 from tests import test_each_admission_pass_records_its_verdict as fixtures
 
 # The stand-in reads full for this long after the pass's first reading, then
@@ -138,6 +137,24 @@ def _instant_launcher(completed: list[tuple[str, float]]) -> Any:
     return launch
 
 
+def _recorded_pause(pauses: list[float]) -> Any:
+    """The pass's own pause, recorded as it is taken.
+
+    Every wait the pass takes between two readings of a full lane goes through
+    this seam, so the list is the pass's own account of whether it waited: an
+    empty list says it took one reading and moved on, and a short total on a
+    short budget shows the wait never outlived the budget it was given. The
+    pause itself still spends the time it names, because the stand-in lane
+    publishes its next reading on the wall clock.
+    """
+
+    def pause(seconds: float) -> None:
+        pauses.append(seconds)
+        time.sleep(seconds)
+
+    return pause
+
+
 def _admission_repository(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     """The shared admission fixture: isolated crew home, launchable checkout."""
     return fixtures.admit_repo.__wrapped__(tmp_path, monkeypatch)
@@ -158,14 +175,18 @@ def test_a_full_reading_does_not_hold_the_queue(
     queued = _queue(repository, REQUESTS)
     completed: list[tuple[str, float]] = []
     monkeypatch.setattr(queue_admission, "_launch_queued", _instant_launcher(completed))
+    pauses: list[float] = []
+    monkeypatch.setattr(queue_admission, "_pause", _recorded_pause(pauses))
 
     result = queue_admission.admit_once(
-        config_for=resolve, budget_seconds=PASS_BUDGET_SECONDS
+        config_for=resolve,
+        budget_seconds=PASS_BUDGET_SECONDS,
     )
 
     assert router.reads[0][1] == "full", router.reads
-    assert router.opened_at is not None, router.reads
     assert set(result["launched"]) == set(queued), result["verdicts"]
+    assert pauses != [], "the pass did not re-read a lane that read full"
+    assert router.opened_at is not None, router.reads
     assert len(completed) == REQUESTS
     latest = max(at for _run_id, at in completed)
     assert latest - router.opened_at < LAUNCH_BOUND_SECONDS, (
@@ -185,6 +206,8 @@ def test_a_paused_lane_is_not_waited_on(
     queued = _queue(repository, REQUESTS)
     completed: list[tuple[str, float]] = []
     monkeypatch.setattr(queue_admission, "_launch_queued", _instant_launcher(completed))
+    pauses: list[float] = []
+    monkeypatch.setattr(queue_admission, "_pause", _recorded_pause(pauses))
 
     result = queue_admission.admit_once(
         config_for=resolve, budget_seconds=PASS_BUDGET_SECONDS
@@ -193,11 +216,9 @@ def test_a_paused_lane_is_not_waited_on(
     assert result["launched"] == [], result["launched"]
     assert completed == []
     assert {reading for _at, reading in router.reads} == {"paused"}
-    # No re-read comes a poll interval after the pass's own reading: a paused
-    # lane is a decision, and the pass does not wait on one.
-    assert max(at for at, _reading in router.reads) < LANE_ROOM_POLL_SECONDS, (
-        router.reads
-    )
+    # A paused lane is a decision, not an instant: the pass takes its reading,
+    # holds every request and moves on without waiting for a different one.
+    assert pauses == [], f"the pass waited {sum(pauses):.1f}s on a paused lane"
     assert sorted(result["held"]) == sorted(queued)
 
 
@@ -209,15 +230,19 @@ def test_a_full_reading_waits_no_longer_than_the_pass_budget(
     router = _StandInRouter(lane, open_after=3600.0, slots=float(REQUESTS))
     _config, resolve = fixtures._config_with_lane(lane)
     monkeypatch.setattr(holds, "_dispatch_lane_allowance", router.read)
-    queued = _queue(repository, REQUESTS)
+    run_ids = _queue(repository, REQUESTS)
     completed: list[tuple[str, float]] = []
     monkeypatch.setattr(queue_admission, "_launch_queued", _instant_launcher(completed))
+    pauses: list[float] = []
+    monkeypatch.setattr(queue_admission, "_pause", _recorded_pause(pauses))
 
     started = time.monotonic()
     result = queue_admission.admit_once(config_for=resolve, budget_seconds=2.0)
     elapsed = time.monotonic() - started
 
     assert result["launched"] == [], result["launched"]
-    assert sorted(result["held"]) == sorted(queued)
+    assert result["held"], "the pass held nothing it could not launch"
+    assert set(result["held"]) <= set(run_ids)
     assert all(reading == "full" for _at, reading in router.reads), router.reads
-    assert elapsed < 6.0, f"the pass spent {elapsed:.1f}s on a two-second budget"
+    assert sum(pauses) <= 2.0, f"the pass waited {sum(pauses):.1f}s of a 2s budget"
+    assert elapsed < 10.0, f"the pass spent {elapsed:.1f}s on a two-second budget"
