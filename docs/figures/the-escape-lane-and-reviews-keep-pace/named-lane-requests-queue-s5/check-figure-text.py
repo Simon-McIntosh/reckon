@@ -59,19 +59,23 @@ def main() -> int:
         bare_png = room / "bare.png"
         render(SVG, host_png, fonts=None)
         render(SVG, bare_png, fonts=fonts)
-        with Image.open(host_png) as host, Image.open(bare_png) as bare:
-            host = host.convert("RGB")
-            bare = bare.convert("RGB")
+        with Image.open(host_png) as host_file, Image.open(bare_png) as bare_file:
+            host = host_file.convert("RGB")
+            bare = bare_file.convert("RGB")
             difference = ImageChops.difference(host, bare)
             differing = difference.getbbox()
             ink = host.convert("L").getbbox()
 
     changed = differing is not None
     print(f"text elements: {text_elements}")
-    print(f"differing area between the host render and the fontless render: {differing}")
+    print(
+        f"differing area between the host render and the fontless render: {differing}"
+    )
     print(f"ink present in the host render: {ink}")
     if text_elements:
-        print("FAIL: the figure carries SVG text, so a renderer without a font loses it")
+        print(
+            "FAIL: the figure carries SVG text, so a renderer without a font loses it"
+        )
         return 1
     if changed:
         print("FAIL: the two renders differ, so the figure's content depends on a font")

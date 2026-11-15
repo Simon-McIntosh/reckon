@@ -14,8 +14,8 @@ from pathlib import Path
 import matplotlib
 
 matplotlib.use("Agg")
-import matplotlib.pyplot as plt  # noqa: figure construction needs pyplot
-from matplotlib.patches import Rectangle  # noqa: seat cells and arrows
+import matplotlib.pyplot as plt
+from matplotlib.patches import Rectangle
 
 SVG_FONT = "path"
 
@@ -32,7 +32,9 @@ def _seats(ax, y, *, filled, outline=None, outline_colour=INK):
     for index in range(8):
         x = FIRST_SEAT_X + index * (SEAT_W + SEAT_GAP)
         face = POPULATION if index < filled else "#ffffff"
-        ax.add_patch(Rectangle((x, y), SEAT_W, SEAT_H, facecolor=face, edgecolor="none"))
+        ax.add_patch(
+            Rectangle((x, y), SEAT_W, SEAT_H, facecolor=face, edgecolor="none")
+        )
         if outline is not None and index == 7:
             ax.add_patch(
                 Rectangle(
@@ -74,7 +76,12 @@ def main() -> Path:
     ax.text(90, 528, "named lane request", fontsize=14, color=NAMED)
     ax.text(320, 528, "local request a", **note_kw)
     ax.text(500, 528, "local request b", **note_kw)
-    ax.text(700, 620, "all three wait queued; no run id is printed without a pointer", **note_kw)
+    ax.text(
+        700,
+        620,
+        "all three wait queued; no run id is printed without a pointer",
+        **note_kw,
+    )
 
     # one seat frees and the named request takes it
     ax.text(60, 470, "one seat frees", **label_kw)
@@ -104,7 +111,9 @@ def main() -> Path:
     ax.add_patch(Rectangle((66, 30), 14, 14, facecolor=NAMED, edgecolor="none"))
     ax.text(90, 28, "named lane request waiting", fontsize=14, color=NAMED)
     ax.text(700, 130, "the last seat stays free for the request that named", **note_kw)
-    ax.text(700, 100, "another lane; local work queues one seat short of the cap", **note_kw)
+    ax.text(
+        700, 100, "another lane; local work queues one seat short of the cap", **note_kw
+    )
 
     target = Path(__file__).with_suffix(".svg")
     fig.savefig(target, format="svg", facecolor="#ffffff")
