@@ -19,11 +19,11 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="reckon-tooling,crew">
   <meta name="plan-informs" content="a-landing-is-recorded-once">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;implementable&quot;}">
   <title>A Read-Only Run Promotes As Delivered | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="3">
+<meta name="plan-version" content="4">
 <meta name="plan-modified" content="2026-11-15">
 </head>
 <body>
@@ -53,7 +53,7 @@
     <p><strong>Done when</strong> a new test file shows: a claims-rubric record with a verdict for every claim and no scores passes <code>crew check --review</code>; a claims-rubric record missing one claim's verdict is refused, naming the claim; a scored-rubric record without scores is refused as it is at the base revision; and the two claims-rubric records stored for this session's census and prototype reviews, copied into the test as fixtures, pass. Negative control: at the base revision the first case fails with a missing-scores refusal. The test files that import the review record check add no failure against the base revision, and <code>ruff check</code> and <code>ruff format --check</code> add no finding on the staged paths.</p>
 
     <h2 id="s4">§4 — A delivered run that carries a brief gets its review</h2>
-<section data-reckon="section" data-id="s4" data-effort-hours="1.25" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+<section data-reckon="section" data-id="s4" data-effort-hours="1.25" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="done" data-links=""></section>
     <p><strong>Deliverable.</strong> A delivered investigation run whose authority is a brief, with no plan and no section, owes a review like any other delivered run. The review duty pass composes and dispatches that review without the coordinator, and the obligations view names the duty until the review is stored.</p>
     <p><strong>Done when</strong> a new test file shows, with isolated crew state: a delivered investigate run carrying a brief and no plan produces one review dispatch from the duty pass, whose brief names the run's brief; a second pass dispatches nothing more; the obligations view lists the duty before the dispatch and not after the review is stored; and a delivered run that carries a plan section is handled as at the base revision. Negative control: at the base revision the first case dispatches nothing, and the node's manifest quotes that result. If the first case already passes at the base revision, the node instead reports which condition kept this session's two runs from being reviewed, with the pointer fields that show it, and changes no product source. The test files that import the review duty pass add no failure against the base revision, and <code>ruff check</code> and <code>ruff format --check</code> add no finding on the staged paths.</p>
 
@@ -81,6 +81,9 @@
 </div>
 <div class="r-comment" data-section="s4" data-id="c-run-r-20261115T085739228283-rorp-s4" data-who="reckon-build" data-when="2026-11-15T11:38:40Z">
     <div class="r-comment-body"><p>the duty pass already composes a review for a delivered brief-carried run, measured by the probe log at probe-rorp-s4.log (classification scoring, review id minted, launch reached and refused only at fixture backend preflight).</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-close-s4" data-who="reckon-build" data-when="2026-11-15T12:20:00Z">
+    <div class="r-comment-body"><p>§4 closed with no product change (run <code>r-20261115T085739228283-rorp-s4</code>, commits <code>5c642615c0</code>, <code>ff0472faa7</code>): the defect does not reproduce. A probe over isolated crew state shows a delivered investigate run that carries a brief and no plan classifies as awaiting review, and the duty pass composes and attempts its review dispatch. Why two such runs went unreviewed on 2026-11-14 cannot be established, because their pointers and run directories were removed by retention; the coordinator had acknowledged one of those runs' obligations at the time, which is a known way the reflex is silenced. <a href="/reckon/evidence/fragments/a-read-only-run-promotes-as-delivered/rorp-s4.html">fragment</a></p></div>
 </div>
 </section>
 </main>
