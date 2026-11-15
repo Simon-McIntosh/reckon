@@ -1,0 +1,46 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-11-15T11:01:23.148Z",
+  "dispatched_at": "2026-11-15T10:03:05Z",
+  "findings": [
+    {
+      "file": "timing-arm-local-room-2.log",
+      "line": 1,
+      "severity": "non-blocking",
+      "summary": "the arm log that carries the done-when's local-placement result begins directly with its JSON array, so it names neither the revision it ran at nor the literal command, unlike timing-arm-live.log and timing-arm-local-room.log which carry both header lines; the done-when explicitly requires the timing arm's log to start with its revision and the literal command, and the manifest cites this file as evidence."
+    },
+    {
+      "file": "timing_arm.py",
+      "line": 164,
+      "severity": "non-blocking",
+      "summary": "the arm named as delivering local placement substitutes snapshot._lane, which is the very input stating the local lane has room, and it also supplies its own ledger rows, verdict inputs and budget snapshot, so the done-when's local half is demonstrated on a substituted platform rather than the live one; the behaviour is separately guarded by tests/test_the_router_decides_on_preferences.py:297, which is why this does not hold the node."
+    },
+    {
+      "file": "docs/evidence/fragments/lane-and-model-routing/router-decides-on-preferences-s57.html",
+      "line": 33,
+      "severity": "non-blocking",
+      "summary": "the fragment asserts \"All checks passed!\" for the Ruff command but no Ruff log exists in the run directory and the manifest's test_logs names none, so the done-when's Ruff clause is claimed rather than recorded and the manifest's artifacts line is its only trace."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is \"Deliver section s57 of lane-and-model-routing as its done-when states\"; the landed change is docs/evidence/fragments/lane-and-model-routing/router-decides-on-preferences-s57.html, and the behaviour it records is present at base in reckon/crew/picker/snapshot.py:1284, where _reserved_lane_evidence returns an empty exclusion list and the policy text travels in preferences, so the node re-measured that behaviour rather than rebuilding it and says so at the fragment's line 11.\nVERDICT done_when: the five named cases are asserted at tests/test_the_router_decides_on_preferences.py:241, :255, :267, :279 and at :297 with :318, both negative controls red under their mutations at tests/test_the_router_decides_on_preferences.py:324 and :336, the base arm reads 79 passed EXIT=0 and the after arm the same so the add-no-failure clause holds, but the local-placement half of the timing arm is shown by a second arm that stubs the lane document's worker count (timing_arm.py:164) while the live arm routed the low-think node to a metered lane.\nVERDICT write_paths: the dispatch prompt's FENCE \u2014 SCOPE names seven paths including docs/evidence/fragments/lane-and-model-routing/router-decides-on-preferences-s57.html, and the diff's single new path lies inside that list.\nVERDICT manifest: read; status complete, one commit a00c9c21f7, both suite arms recorded with revision, command, log path, completed true and empty failure_ids, and the negative-control log named as a bare path.\nVERDICT diff: read commit by commit from 70f907c3309453fe531beed0d407a9a5724b1a91 to a00c9c21f7d193598735b8fb10b440d5adf13f8a; the single commit \"docs(evidence): record the router deciding on preferences\" adds one new file, 52 insertions and no deletions, all of it the evidence fragment.\nCALL_SITES: reckon/evidence.py:687 compose_landed_record, reckon/crew/reports.py:2578 _fragment_plan_of, reckon/crew/reports.py:2598 _landing_record_beside, reckon/resources.py:244 _is_evidence_fragment\nSCORE goal_fidelity: 16\nJUSTIFICATION goal_fidelity: the fragment at docs/evidence/fragments/lane-and-model-routing/router-decides-on-preferences-s57.html:11 records the section's exclusion-free reservation and its measure, but the node's diff changes no source or test because the section was already present at base, so the delivered work is the evidence that the goal's behaviour holds rather than the behaviour itself.\nSCORE evidence: 13\nJUSTIFICATION evidence: the suite arms and both negative controls are recorded with revisions and EXIT= lines in base-arm.log, after-arm.log, negative-control-reserved-exclusion.log and negative-control-offer-unfit-lane.log, but the local-placement result rests on timing-arm-local-room-2.log, which stubs the lane document's worker count and carries no revision or command header, and the Ruff claim at router-decides-on-preferences-s57.html:33 has no log anywhere in the run directory.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the one path in the diff, docs/evidence/fragments/lane-and-model-routing/router-decides-on-preferences-s57.html, is named in the dispatch prompt's FENCE \u2014 SCOPE and the diff carries nothing else.\nSCORE durability: 16\nJUSTIFICATION durability: tests/test_the_router_decides_on_preferences.py:324 reinstates the removed exclusion and negative-control-reserved-exclusion.log shows 4 failed with EXIT=1 against 8 passed at head, so the section's rule reddens under the regression it guards, but the landed fragment adds no assertion of its own and the guard predates this node.\nSCORE fit: 19\nJUSTIFICATION fit: the fragment follows the plan's own evidence idiom, the article class landed-report with id <node>-summary and <node>-measure used by docs/evidence/fragments/lane-and-model-routing/an-oversize-node-reaches-a-reserved-lane.html:1, and its unnamed filename matches the node-id convention the fragment directory already carries in 48 files.\nSCORE reuse: 20\nJUSTIFICATION reuse: the diff adds no function, class or module, and the fragment is consumed by the existing reckon/evidence.py:687 compose_landed_record rather than by any composition written for this node, so there is no capability to duplicate.\nFINDING timing-arm-local-room-2.log:1 non-blocking: the arm log that carries the done-when's local-placement result begins directly with its JSON array, so it names neither the revision it ran at nor the literal command, unlike timing-arm-live.log and timing-arm-local-room.log which carry both header lines; the done-when explicitly requires the timing arm's log to start with its revision and the literal command, and the manifest cites this file as evidence.\nFINDING timing_arm.py:164 non-blocking: the arm named as delivering local placement substitutes snapshot._lane, which is the very input stating the local lane has room, and it also supplies its own ledger rows, verdict inputs and budget snapshot, so the done-when's local half is demonstrated on a substituted platform rather than the live one; the behaviour is separately guarded by tests/test_the_router_decides_on_preferences.py:297, which is why this does not hold the node.\nFINDING docs/evidence/fragments/lane-and-model-routing/router-decides-on-preferences-s57.html:33 non-blocking: the fragment asserts \"All checks passed!\" for the Ruff command but no Ruff log exists in the run directory and the manifest's test_logs names none, so the done-when's Ruff clause is claimed rather than recorded and the manifest's artifacts line is its only trace.",
+  "review_run_id": "r-20261115T095849737888-review-of-router-decides-on-preferences-s57-a00c9c21f7d1",
+  "reviewed_base_sha": "70f907c3309453fe531beed0d407a9a5724b1a91",
+  "reviewed_head_sha": "a00c9c21f7d193598735b8fb10b440d5adf13f8a",
+  "reviewed_run_id": "r-20261115T075629435080-router-decides-on-preferences-s57",
+  "rubric": "code",
+  "scores": {
+    "durability": 16,
+    "evidence": 13,
+    "fit": 19,
+    "goal_fidelity": 16,
+    "reuse": 20,
+    "scope_discipline": 20,
+    "total": 104
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-15T11:03:25.267209+00:00",
+  "total": 104
+}
