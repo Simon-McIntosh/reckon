@@ -204,7 +204,7 @@ def test_a_running_wait_is_not_overdue_before_its_own_limit() -> None:
     wait = row["external_wait"]
     assert wait["overdue"] is False
     assert wait["probe_live_state"] == "running"
-    assert wait["expected_horizon_source"] == "default"
+    assert wait["overdue_basis"] == "probe"
     assert wait["expected_horizon_seconds"] == STALE_AFTER_SECONDS
     snapshot = recovery._watch_snapshot(
         run, moment=NOW_SECONDS, stall_seconds=STALE_AFTER_SECONDS
@@ -223,7 +223,7 @@ def test_a_running_wait_is_not_overdue_before_its_own_limit() -> None:
     aged = _row(declared)
 
     assert aged["external_wait"]["expected_horizon_seconds"] == 2 * HOUR
-    assert aged["external_wait"]["expected_horizon_source"] == "declared"
+    assert aged["external_wait"].get("overdue_basis") is None
     assert aged["wait_overdue"] is True
     assert aged["recovery_classification"] == "wait-aged"
 

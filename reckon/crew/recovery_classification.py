@@ -1613,7 +1613,13 @@ def classify_pointer(
         # cancelled with no elapsed time is reported as suspect — not terminal —
         # because that state names the allocation's cancellation rather than the
         # end of what the wait is on.
-        wait = _wait_judged_against_itself(wait, wait_observation)
+        wait = _wait_judged_against_itself(
+            wait,
+            wait_observation,
+            horizon_declared=any(
+                field in manifest_data for field in _WAIT_HORIZON_FIELDS
+            ),
+        )
         if wait.get("suspect_probe"):
             wait_observation = {
                 **wait_observation,
@@ -3252,6 +3258,7 @@ from .recovery_vocabulary import (  # noqa: E402
     WAITING_STATUS,
 )
 from .recovery_wait import (  # noqa: E402
+    _WAIT_HORIZON_FIELDS,
     _background_wait_signal,
     _newest_stream_shows_work,
     _run_directory,

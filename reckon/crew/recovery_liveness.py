@@ -1061,14 +1061,6 @@ def _manifest_wait(
     )
     if expected_error:
         missing.append(expected_error)
-    # Whether the horizon is the wait's own or the reader's default is the fact
-    # its overdue flag is judged on: a default borrowed from the log-staleness
-    # bound is not a limit the wait declared, so it may not be held against a
-    # probe that is still answering (see ``_wait_judged_against_itself``).
-    declared_horizon = any(field in manifest_data for field in _WAIT_HORIZON_FIELDS)
-    horizon_source = (
-        "declared" if declared_horizon and not expected_error else "default"
-    )
     signature = _wait_declaration_signature(condition, probe, terminal, resume_brief)
     wait_key_defect = ""
     if structured_form:
@@ -1101,7 +1093,6 @@ def _manifest_wait(
         ),
         "age_seconds": age_seconds,
         "expected_horizon_seconds": expected_seconds,
-        "expected_horizon_source": horizon_source,
         "overdue": age_seconds > expected_seconds,
         "signature": signature,
         "valid": not missing,
@@ -1219,14 +1210,15 @@ def _wait_probe_suspect(
 
 
 def _wait_judged_against_itself(
-    wait: dict[str, Any], observation: Any
+    wait: dict[str, Any], observation: Any, *, horizon_declared: bool
 ) -> dict[str, Any]:
     """Judge a wait's overdue flag against its own limit and its own probe.
 
     A declaration's own horizon is the limit the wait named for itself, so the
     flag is what it always was: the age against that horizon. A declaration that
     names no horizon was judged against the reader's default — the log-staleness
-    bound — and that number is not a limit anything declared. Measured
+    bound — and that number is not a limit anything declared, so
+    ``horizon_declared`` says which of the two is in force. Measured
     2026-11-14: a multi-hour compute wait was read overdue and sent to
     "investigate" at 900 s while its probe reported the job RUNNING, so the
     reader had held a scheduler's job to a bound invented for a log file.
@@ -1243,7 +1235,7 @@ def _wait_judged_against_itself(
     """
     wait["probe_live_state"] = _wait_probe_live_state(wait, observation) or None
     wait["suspect_probe"] = _wait_probe_suspect(wait, observation)
-    if wait["probe_live_state"] and wait.get("expected_horizon_source") == "default":
+    if wait["probe_live_state"] and not horizon_declared:
         wait["overdue"] = False
         wait["overdue_basis"] = "probe"
     return wait
@@ -1951,7 +1943,6 @@ from .recovery_vocabulary import (  # noqa: E402
 )
 from .recovery_wait import (  # noqa: E402
     _WAIT_ACCEPTED_SHAPES,
-    _WAIT_HORIZON_FIELDS,
     _newest_stream_shows_work,
     _run_directory,
     _unquote_wait_declaration_scalar,
