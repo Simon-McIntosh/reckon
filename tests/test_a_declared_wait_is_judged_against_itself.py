@@ -9,12 +9,6 @@ the log-staleness bound, borrowed as a horizon because the declaration named
 none; it is not a limit the wait asked to be held to, and a live answer is
 evidence there is nothing to investigate.
 
-''The answering probe.'' A run whose probe was a script rather than a
-``squeue`` or ``sacct`` vector was read producer-gone, because the scheduler
-query put beside the probe named no job and this host's silence was read as
-the job's absence. A probe that answered has already said what the thing it
-watches is doing, and no second-hand reading beside it can outvote that.
-
 ''The cancelled job.'' A probe naming a job the scheduler cancelled before it
 started reported ``CANCELLED`` with an elapsed time of zero. ``CANCELLED`` is a
 way a job ends, so the declaration's terminal list matched it and the sweep was
@@ -37,7 +31,7 @@ from pathlib import Path
 
 import pytest
 
-from reckon.crew import recovery, recovery_classification
+from reckon.crew import recovery
 from reckon.crew.runs import _write_json, pointer_path, runs_dir
 
 PROJECT = "declared-wait-fixture"
@@ -45,12 +39,10 @@ SESSION = "fixture-session"
 STALE_AFTER_SECONDS = 900
 NOW_SECONDS = 1_788_467_520.0
 HOUR = 3600.0
-BOUND = recovery_classification.WAIT_PRODUCER_GONE_SECONDS
 RUN_IDS = (
-    "r-running-over-the-default-horizon",
-    "r-running-over-its-declared-horizon",
-    "r-file-wait-over-the-default-horizon",
-    "r-script-probe-that-answers",
+    "r-live-job-inside-its-limit",
+    "r-live-job-past-its-limit",
+    "r-live-job-under-the-default",
     "r-probe-naming-a-cancelled-job",
     "r-probe-naming-a-cancelled-job-that-ran",
 )
@@ -76,14 +68,6 @@ def _stamp(seconds: float) -> str:
     return datetime.fromtimestamp(seconds, tz=UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
-def _history(*entries: tuple[float, str, bool]) -> list[dict[str, object]]:
-    """A recorded probe history: (seconds before now, observed, answered)."""
-    return [
-        {"at": _stamp(NOW_SECONDS - ago), "observed": observed, "answered": answered}
-        for ago, observed, answered in entries
-    ]
-
-
 def _waiting_run(
     run_id: str,
     *,
@@ -94,7 +78,6 @@ def _waiting_run(
     terminal: tuple[str, ...] = ("COMPLETED", "FAILED"),
     started_seconds_ago: float = 10.0,
     declared_horizon: str | None = None,
-    history: list[dict[str, object]] | None = None,
 ) -> dict:
     """One parked run, its manifest, and the pointer a wait is read from.
 
@@ -161,8 +144,6 @@ def _waiting_run(
         "time_budget": "30m",
         "write_paths": ["reckon/crew/recovery_liveness.py"],
     }
-    if history is not None:
-        record["wait_probe_history"] = history
     _write_json(pointer_path(run_id), record)
     return record
 
@@ -176,103 +157,89 @@ def _row(run: dict, condition_test=None) -> dict:
     )
 
 
-# ── The horizon is the wait's own, or its probe's ──────────────────────────
+# ── The horizon is the wait's own, or its scheduler's ─────────────────────
 
 
-def test_a_running_wait_is_not_overdue_before_its_own_limit() -> None:
-    """A live probe three hours in is working, not overdue.
+def _live_job(observed: str, detail: str = "the job is running") -> object:
+    """A probe verdict that never runs a command: the limit is the subject."""
+
+    def verdict(_pointer, _wait):
+        return {"state": "pending", "observed": observed, "detail": detail}
+
+    return verdict
+
+
+def test_a_live_job_inside_its_scheduler_limit_is_not_overdue() -> None:
+    """A job three hours into a four-hour limit is working, not overdue.
 
     The default horizon is the log-staleness bound, and holding a scheduler's
-    job to it is what sent a multi-hour compute wait to "investigate". A
-    declaration that names its own horizon is still judged by that horizon, and
-    a ``wait_file`` condition still ages into the alarm: the exemption is a
-    live answer, and a derived "absent" is not one.
+    job to it is what sent a multi-hour compute wait to "investigate" while its
+    job ran. The limit the scheduler reports for the job the probe names is the
+    one the wait is judged by; a wait whose probe asks for no limit keeps the
+    default, and a declaration's own horizon outranks both.
     """
     run = _waiting_run(
         RUN_IDS[0],
-        script_body="print('RUNNING')\n",
+        probe=["sacct", "-n", "-X", "-j", "1317867", "--format=State,Timelimit"],
         started_seconds_ago=3 * HOUR,
     )
 
-    row = _row(run)
+    row = _row(run, condition_test=_live_job("RUNNING 04:00:00"))
 
-    # The defect first: the row held a live scheduler job to a log-staleness
-    # bound and read it overdue three hours in.
+    # The defect first: 10800 s against the 900 s default, so the row read a
+    # live job overdue and offered the worker a nudge to investigate nothing.
     assert row["wait_overdue"] is False
     assert row["recovery_classification"] == "waiting"
     assert row["classification"] == "waiting"
     wait = row["external_wait"]
     assert wait["overdue"] is False
+    assert wait["expected_horizon_seconds"] == 4 * HOUR
     assert wait["probe_live_state"] == "running"
-    assert wait["overdue_basis"] == "probe"
-    assert wait["expected_horizon_seconds"] == STALE_AFTER_SECONDS
     snapshot = recovery._watch_snapshot(
         run, moment=NOW_SECONDS, stall_seconds=STALE_AFTER_SECONDS
     )
     assert snapshot["state"] == "waiting"
 
-    # Control: a wait that names its own horizon is judged by it, so the same
-    # live probe past that horizon is overdue.
-    declared = _waiting_run(
+    # Control: the same limit still ages the wait once it is passed, so the
+    # scheduler's number is a clock and not a reprieve from one.
+    late = _waiting_run(
         RUN_IDS[1],
-        script_body="print('RUNNING')\n",
+        probe=["sacct", "-n", "-X", "-j", "1317867", "--format=State,Timelimit"],
+        started_seconds_ago=5 * HOUR,
+    )
+
+    aged = _row(late, condition_test=_live_job("RUNNING 04:00:00"))
+
+    assert aged["external_wait"]["expected_horizon_seconds"] == 4 * HOUR
+    assert aged["wait_overdue"] is True
+    assert aged["recovery_classification"] == "wait-aged"
+
+    # Control: a probe that never asked for the limit leaves the default in
+    # force: nothing told this reader how long the job may run.
+    unasked = _waiting_run(
+        RUN_IDS[2],
+        probe=["squeue", "-h", "-j", "1317867"],
+        started_seconds_ago=3 * HOUR,
+    )
+
+    default = _row(unasked, condition_test=_live_job("RUNNING"))
+
+    assert default["external_wait"]["expected_horizon_seconds"] == STALE_AFTER_SECONDS
+    assert default["wait_overdue"] is True
+
+    # Control: a declaration that names its own horizon is judged by it.
+    declared = _waiting_run(
+        RUN_IDS[3],
+        probe=["sacct", "-n", "-X", "-j", "1317867", "--format=State,Timelimit"],
         started_seconds_ago=3 * HOUR,
         declared_horizon="2h",
     )
 
-    aged = _row(declared)
+    own = _row(declared, condition_test=_live_job("RUNNING 04:00:00"))
 
-    assert aged["external_wait"]["expected_horizon_seconds"] == 2 * HOUR
-    assert aged["external_wait"].get("overdue_basis") is None
-    assert aged["wait_overdue"] is True
-    assert aged["recovery_classification"] == "wait-aged"
-
-    # Control: a file condition declares no probe of its own, so its absent
-    # paths age into the alarm as before.
-    file_wait = _waiting_run(
-        RUN_IDS[2],
-        files=["never-written/rows.jsonl"],
-        started_seconds_ago=3 * HOUR,
-    )
-
-    quiet = _row(file_wait)
-
-    assert quiet["external_wait"]["probe_live_state"] is None
-    assert quiet["wait_overdue"] is True
-    assert quiet["recovery_classification"] == "wait-aged"
-
-
-# ── An answering probe is the wait's evidence ──────────────────────────────
-
-
-def test_a_script_probe_that_answers_is_never_read_abandoned() -> None:
-    """The probe answered, so nothing beside it can say the work has stopped.
-
-    The probe is a script rather than a scheduler vector, which is the shape
-    whose scheduler silence was read as "no scheduler job" and then as a dead
-    producer, while the script itself reported that the work was still going.
-    """
-    run = _waiting_run(
-        RUN_IDS[3],
-        script_body="print('PENDING')\n",
-        history=_history(
-            (BOUND + 300, "PENDING", True),
-            (BOUND + 60, "PENDING", True),
-            (60, "PENDING", True),
-        ),
-    )
-
-    row = _row(run)
-
-    # The defect first: an answering probe was outvoted by the scheduler query
-    # put beside it, and the parked run was read abandoned.
-    assert "the run's own process is gone" not in row["detail"]
-    assert row["recovery_classification"] == "waiting"
-    assert row["classification"] == "waiting"
-    wait = row["external_wait"]
-    assert wait.get("producer_gone") is None
-    assert wait["valid"] is True
-    assert wait["probe_live_state"] == "pending"
+    assert own["external_wait"]["expected_horizon_seconds"] == 2 * HOUR
+    assert own["wait_overdue"] is True
+    assert own["recovery_classification"] == "wait-aged"
 
 
 # ── A cancelled job that never started is suspect ──────────────────────────
@@ -308,7 +275,7 @@ def test_a_probe_naming_a_cancelled_job_that_never_started_is_suspect() -> None:
     # Control: a job that ran before it was cancelled is a terminal state, and
     # the row offers the resume its declaration named.
     ran = _waiting_run(
-        RUN_IDS[5],
+        RUN_IDS[4],
         script_body="print('CANCELLED 01:02:03')\n",
         probe_extra=("-j", "1310001"),
         terminal=("COMPLETED", "FAILED", "CANCELLED"),

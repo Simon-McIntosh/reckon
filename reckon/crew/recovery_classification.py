@@ -749,25 +749,8 @@ def _producer_gone_verdict(
     None means any of those is unmet, unproven, or unreadable: a scheduler that
     could not be asked and a stillness the history does not establish both keep
     the run waiting, because neither is evidence that anything has stopped.
-
-    A probe that answered is the fourth fact, and it cancels the rest: a wait
-    whose own probe reported something is waiting on that report, whatever the
-    process table, the stillness and this host's scheduler say beside it.
     """
     if alive is not False or liveness_proven is not True:
-        return None
-    # A declared probe that answered is the wait's own evidence: it reported
-    # something about the thing watched, and nothing read beside it can outvote
-    # that. The facts this verdict rests on are all second-hand — a process
-    # table on this host, the stillness of the same value, and a scheduler
-    # query asked here about work that may have been submitted elsewhere — so
-    # an answer already in hand is what the wait is judged by. Measured
-    # 2026-11-15: two runs parked on scheduler jobs submitted on another
-    # cluster were read producer-gone because this host's scheduler listed
-    # nothing, while their own sacct probes were answering that the job was
-    # still queued. Whatever its argv names, an answering probe keeps the run
-    # waiting; only a probe that reports nothing leaves this verdict its work.
-    if not wait.get("files") and _wait_probe_answered(observation):
         return None
     # A wait that names jobs is only settled by a scheduler that answered and
     # listed none of them; a scheduler that could not be asked leaves their
@@ -3215,7 +3198,6 @@ from .recovery_liveness import (  # noqa: E402
     _stranded_launch_age_seconds,
     _wait_judged_against_itself,
     _wait_observation_defect,
-    _wait_probe_answered,
     _worker_launched_after_manifest,
     _worker_record_liveness,
     _worker_record_pid,

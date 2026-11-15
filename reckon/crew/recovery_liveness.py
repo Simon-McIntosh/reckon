@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import socket
 import time
 from datetime import UTC, datetime
@@ -1153,14 +1154,12 @@ def _wait_probe_live_state(wait: Mapping[str, Any], observation: Any) -> str:
         return ""
     if not isinstance(observation, Mapping):
         return ""
-    if str(observation.get("state") or "") == "pending":
-        return "pending"
     observed = str(observation.get("observed") or "")
     for word in observed.replace(",", " ").split():
         token = word.strip("\"'()[]{}:;.").casefold()
         if token in _WAIT_LIVE_PROBE_STATES:
             return token
-    return ""
+    return "pending" if str(observation.get("state") or "") == "pending" else ""
 
 
 def _wait_probe_suspect(
@@ -1209,6 +1208,45 @@ def _wait_probe_suspect(
     }
 
 
+def _wait_probe_reported_limit(wait: Mapping[str, Any], observation: Any) -> int | None:
+    """The job's own time limit, in seconds, as the wait's probe reports it.
+
+    The scheduler is the only party that knows how long a job may run, and a
+    probe that asks for that field reports it beside the state: ``%L`` in a
+    midday ``squeue`` format, ``Timelimit`` in an ``sacct`` one. A declaration
+    that asks for neither is a declaration that never named a limit, so nothing
+    is read here and the reader's default stays in force.
+
+    ``UNLIMITED`` is no limit at all rather than a number, and a token that is
+    not a wall clock — a state, an id — is not a limit either.
+    """
+    if wait.get("files") or not _wait_probe_answered(observation):
+        return None
+    probe = [str(item) for item in (wait.get("probe") or ()) if str(item).strip()]
+    if not _wait_probe_job_ids(probe):
+        return None
+    asked = " ".join(probe).casefold()
+    if "%l" not in asked and "timelimit" not in asked and "time_limit" not in asked:
+        return None
+    if not _wait_probe_live_state(wait, observation):
+        return None
+    if not isinstance(observation, Mapping):
+        return None
+    observed = str(observation.get("observed") or "")
+    for word in observed.replace(",", " ").split():
+        token = word.strip("\"'()[]{}:;")
+        if token.casefold() in {"unlimited", "partition_limit", "none"}:
+            return None
+        match = re.fullmatch(r"(?:(\d+)-)?(\d{1,3}):(\d{2}):(\d{2})", token)
+        if match is None:
+            continue
+        days, hours, minutes, seconds = (int(part or 0) for part in match.groups())
+        total = ((days * 24 + hours) * 60 + minutes) * 60 + seconds
+        if total > 0:
+            return total
+    return None
+
+
 def _wait_judged_against_itself(
     wait: dict[str, Any], observation: Any, *, horizon_declared: bool
 ) -> dict[str, Any]:
@@ -1216,28 +1254,32 @@ def _wait_judged_against_itself(
 
     A declaration's own horizon is the limit the wait named for itself, so the
     flag is what it always was: the age against that horizon. A declaration that
-    names no horizon was judged against the reader's default — the log-staleness
-    bound — and that number is not a limit anything declared, so
+    names no horizon is held to the limit the scheduler reports for the job its
+    probe names, when the probe asks the scheduler for that limit at all;
     ``horizon_declared`` says which of the two is in force. Measured
     2026-11-14: a multi-hour compute wait was read overdue and sent to
     "investigate" at 900 s while its probe reported the job RUNNING, so the
     reader had held a scheduler's job to a bound invented for a log file.
 
-    While the probe reports a live state there is nothing to investigate, so a
-    default horizon is not held against it at all: the wait is judged by its own
-    probe. A probe that stops answering, or answers with something that is not a
-    live state, is read against the horizon exactly as before — the exemption is
-    the live answer, not a general reprieve from the clock, so a wait that has
-    gone quiet still ages into the alarm that reports it.
+    While the probe reports a live state there is nothing to investigate, so the
+    limit the scheduler reports for that job is the one in force rather than the
+    reader's default. A probe that stops answering, or answers with something
+    that is not a live state, is read against the horizon exactly as before, and
+    a probe that names no job or asks for no limit leaves the default in force:
+    the reading is the scheduler's own limit, not a general reprieve from the
+    clock, so a wait nobody reported a limit for still ages into the alarm that
+    reports it.
 
     The probe's own reading is also where a suspect declaration is caught, so
     the row and the overdue flag are judged on one answer rather than two.
     """
     wait["probe_live_state"] = _wait_probe_live_state(wait, observation) or None
     wait["suspect_probe"] = _wait_probe_suspect(wait, observation)
-    if wait["probe_live_state"] and not horizon_declared:
-        wait["overdue"] = False
-        wait["overdue_basis"] = "probe"
+    if not horizon_declared:
+        limit = _wait_probe_reported_limit(wait, observation)
+        if limit is not None and wait.get("age_seconds") is not None:
+            wait["expected_horizon_seconds"] = limit
+            wait["overdue"] = float(wait["age_seconds"]) > limit
     return wait
 
 

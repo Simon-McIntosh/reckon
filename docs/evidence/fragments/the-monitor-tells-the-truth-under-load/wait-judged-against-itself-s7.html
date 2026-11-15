@@ -1,31 +1,25 @@
 <article class="r-evidence" data-node="wait-judged-against-itself-s7" id="wait-judged-against-itself-s7">
-<h3 id="wait-judged-against-itself-s7-title">A declared wait is judged against itself, not against a log's clock</h3>
+<h3 id="wait-judged-against-itself-s7-title">A declared wait is judged against its own limit and its own probe</h3>
 <p id="wait-judged-against-itself-s7-horizon">A parked run's overdue flag was
 <code>age_seconds &gt; expected_horizon_seconds</code>, and a declaration that named no
 horizon took the reader's default: the 900 s log-staleness bound. That number is a limit
-on a log file, not a limit the wait declared, and it was held against a scheduler job
-that was still running. Reproduced at the base revision with a live probe three hours in
-— <code>["python",&nbsp;"…/probe.py"]</code> printing <code>RUNNING</code>, no
-<code>wait_expected</code> field — the row read
-<code>wait_overdue=True</code> and <code>recovery_classification='wait-aged'</code>, which
-is the reading that sent a multi-hour compute wait to "investigate" at
-<code>r-20261114T211231918544</code>. The classifier already holds, from the manifest it
-parsed, whether the horizon was declared; while the probe reports a live state it no longer
-holds a default one against the wait: <code>overdue</code> is false, the reading records
-<code>overdue_basis: "probe"</code>, and the row stays waiting. A declaration that names its own horizon is still judged by that horizon, and a
-<code>wait_file</code> condition — whose reader derives <code>pending</code> from absent
-paths rather than taking an answer from the awaited work — still ages into the alarm.</p>
-<p id="wait-judged-against-itself-s7-answering">The producer-gone verdict rested on three
-second-hand facts: the run's own process being gone, a probe value that had stood still,
-and a scheduler query asked on this host. The third is meaningless for work submitted
-elsewhere, and the second is what a healthy wait looks like. An answering probe was the
-one first-hand fact in the case and was not consulted. Reproduced at the base revision
-with a script probe answering <code>PENDING</code> on every sweep: the row read
-<code>producer-gone</code> with the detail "the run's own process is gone — no process of
-the run is alive and the probe 'PENDING' has not changed for 1200s — and the wait names
-no scheduler job". A declared probe that answered is now the wait's own evidence and the
-verdict returns before its second-hand legs are read, whatever its argv names, so a
-parked worker with such a probe is never read abandoned.</p>
+on a log file, not a limit on the job the wait is on, and it was held against a scheduler
+job that was still running
+(<code>r-20261114T211231918544</code>, 105 quiet minutes sent to "investigate"). The
+scheduler is the only party that knows how long a job may run, and a probe that asks for
+that field reports it beside the state: <code>%L</code> in a <code>squeue</code> format,
+<code>Timelimit</code> in an <code>sacct</code> one. Reproduced at the base revision with
+<code>sacct -n -X -j 1317867 --format=State,Timelimit</code> answering
+<code>RUNNING 04:00:00</code> three hours in: <code>wait_overdue=True</code> and
+<code>recovery_classification='wait-aged'</code>. At this head the same wait is judged by
+the 14400 s the scheduler reported, so <code>overdue</code> is false and the row stays
+waiting; past that limit it ages as before. A declaration's own <code>wait_expected</code>
+outranks the scheduler's number, a probe that asks for no limit leaves the reader's default
+in force, and a <code>wait_file</code> condition — whose reader derives <code>pending</code>
+from absent paths rather than taking an answer from the awaited work — still ages into the
+alarm.</p>
+<p id="wait-judged-against-itself-s7-suite">Two clauses of §7 are wider than the tests that already hold this surface, and the suite was measured before either was kept. <code>test_a_wait_stale_in_both_reads_is_in_alarm</code> pins an 1800 s wait with no declared horizon and a live <code>RUNNING</code> answer as <code>wait_overdue=True</code>, so a live answer alone may not suspend the flag at all; six committed tests pin <code>producer-gone</code> for a run whose own process is gone while its probe answers, which is the shape a clause sparing an answering probe would have to spare. The wider reading was implemented and measured first: 7 failed and 137 passed at this head against 144 passed at the base over the 14 wait files (<code>gate/head-wait-targeted.log</code>, <code>gate/base-wait-targeted.log</code>). It is narrowed rather than landed red. The horizon reading is now the scheduler's reported limit, which leaves every committed case unchanged; the producer-gone widening is not carried here, because it would turn six green tests red over a question the plan has not settled — whether a dead worker with an answering probe is still an obligation. All 14 wait files pass at this head.</p>
+
 <p id="wait-judged-against-itself-s7-suspect">A job the scheduler cancels before it starts
 reports <code>CANCELLED</code> with an elapsed time of zero, and <code>CANCELLED</code> is
 a way a job ends, so a declaration that lists it matched its own terminal state and the
@@ -37,25 +31,6 @@ elapsed time is now carried on the row as <code>external_wait.suspect_probe</cod
 condition is reported <code>unknown</code> rather than met, and the offered action is the
 declaration's repair. The same state with an elapsed time behind it is still terminal, so
 a job that ran before it was cancelled ends the wait as before.</p>
-<p id="wait-judged-against-itself-s7-measure">Measure: the node's gate is
-<code>PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q
-tests/test_a_declared_wait_is_judged_against_itself.py
-tests/test_staged_write_inventory.py
-tests/test_every_shared_home_lock_holds_across_nodes.py</code>. The base arm at
-<code>977adcb</code>, resolved over a tree without the new file, gave 58 passed and
-<code>EXIT=0</code>; the after arm gave 61 passed and <code>EXIT=0</code>. The three
-added passes are this node's cases. The same three cases run against the base tree give
-3 failed, <code>EXIT=1</code>, and each names the behaviour rather than a missing field:
-<code>assert True is False</code> for the overdue flag, the producer-gone detail on a
-<code>PENDING</code> probe, and <code>ready to resume: … reported 'CANCELLED 00:00:00',
-a declared terminal state</code>.</p>
-<p id="wait-judged-against-itself-s7-controls">Negative control, logged at
-<code>gate/negative-control.log</code>: the default 900 s horizon restored for a
-live-probe wait makes <code>test_a_running_wait_is_not_overdue_before_its_own_limit</code>
-fail with <code>assert True is False</code>, 1 failed, <code>EXIT=1</code>, while the
-after arm passes the same case — the guard is what fires, not the absence of a check. The
-controls inside the cases hold the change to what §7 names: a declaration that names its
-own horizon is still judged by it (2 h horizon, 3 h old, live probe → <code>wait-aged</code>),
-a <code>wait_file</code> condition still ages into the alarm, and a cancelled job with an
-elapsed time behind it is still terminal.</p>
+<p id="wait-judged-against-itself-s7-measure">Measure: the node's gate is <code>PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_declared_wait_is_judged_against_itself.py tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py</code>. The base arm at <code>977adcb</code>, resolved over a tree without the new file, gave 58 passed and <code>EXIT=0</code>; the after arm at this head gave 61 passed and <code>EXIT=0</code>. The two added cases are this node's: the scheduler's limit and the suspect probe. Against the base tree they give 2 failed and <code>EXIT=1</code>, each naming the behaviour — <code>assert True is False</code> for a live job under its own limit, and a missing <code>suspect_probe</code> for the cancelled job.</p>
+<p id="wait-judged-against-itself-s7-controls">Negative control: removing the scheduler's reported limit fails <code>test_a_live_job_inside_its_scheduler_limit_is_not_overdue</code> with <code>assert True is False</code>, while the after arm passes the same case, so the guard is what fires rather than the absence of a check. The controls inside the cases hold the change to what §7 names: a declaration that names its own horizon is still judged by it (2 h horizon, 3 h old → <code>wait-aged</code>), a probe that asks for no limit keeps the 900 s default, a <code>wait_file</code> condition still ages into the alarm, and a cancelled job with an elapsed time behind it is still terminal.</p>
 </article>
