@@ -57,6 +57,25 @@ def _scoped_python_files(paths: Iterable[str], repo: Path) -> tuple[Path, ...]:
     return tuple(sorted(files))
 
 
+#: How long one scope's listing answers a later launch in the same process. A
+#: service that launches many requests compares each with the same live scopes,
+#: and a scope's file list does not change between two launches a minute apart.
+_SCOPE_MEMO_SECONDS = 600.0
+_SCOPE_MEMO: dict[tuple[str, str, tuple[str, ...]], tuple[float, Any]] = {}
+
+
+def _scope_memo(kind: str, paths: tuple[str, ...], repo: Path, read: Any) -> Any:
+    """One scope's answer, read again only once its last reading has aged out."""
+    key = (kind, str(repo), paths)
+    held = _SCOPE_MEMO.get(key)
+    now = time.monotonic()
+    if held is not None and now - held[0] < _SCOPE_MEMO_SECONDS:
+        return held[1]
+    answer = read()
+    _SCOPE_MEMO[key] = (now, answer)
+    return answer
+
+
 #: A scope holding more Python files than this is not read file by file. It is
 #: a whole package or test tree, and every other scope in the repository
 #: imports from it or is imported by it.
@@ -234,12 +253,16 @@ def _nodes_are_adjacent(
     wide = wide_scopes if wide_scopes is not None else {}
     for key in (left_key, right_key):
         if key not in wide:
-            wide[key] = _scope_is_wide(key, repo)
+            wide[key] = _scope_memo(
+                "wide", key, repo, lambda key=key: _scope_is_wide(key, repo)
+            )
     if wide[left_key] or wide[right_key]:
         return True
     for key in (left_key, right_key):
         if key not in known:
-            known[key] = _scoped_python_files(key, repo)
+            known[key] = _scope_memo(
+                "files", key, repo, lambda key=key: _scoped_python_files(key, repo)
+            )
     left_files, right_files = known[left_key], known[right_key]
     left_aliases = {
         alias for path in left_files for alias in _module_aliases(path, repo)
