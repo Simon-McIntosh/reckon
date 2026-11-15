@@ -24,7 +24,7 @@
   <title>The Monitor Tells The Truth Under Load | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="29">
+<meta name="plan-version" content="31">
 <meta name="plan-modified" content="2026-11-15">
 </head>
 <body>
@@ -212,6 +212,9 @@
 <div class="r-comment" data-section="s13" data-id="c-run-r-20261115T182449429955-due-reload-fires-in-bound-s13" data-who="reckon-build" data-when="2026-11-15T18:43:09.536Z">
     <div class="r-comment-body"><p>Reload hold dated from the last poll that found no reload owed (`_clear_since`) so a tick longer than `RELOAD_HOLD_SECONDS` can no longer move the deadline, plus a deferred image re-proved at the next poll with `RELOAD_DEFERRED_RETRY_SECONDS` spacing after that; base af516b3ac9 ran the new cases 3 failed / 1 passed, head fa156c22cb runs 4 passed (13 with test_a_reload_lets_derivations_land.py), the declared mutation turns the slow-tick case red again (1 failed / 3 passed / EXIT=1), and the gate is 62 passed EXIT=0.</p></div>
 </div>
+<div class="r-comment" data-section="s14" data-id="c-run-r-20261115T212935585553-review-of-stopping-station-hands-back-claims-s14-ed6a6414112e" data-who="reckon-build" data-when="2026-11-15T21:54:42.146Z">
+    <div class="r-comment-body"><p>Reviewed r-20261115T182453131268-stopping-station-hands-back-claims-s14 at ed6a6414112e (base 18d133b40e54057955fee45c889cde9371c8e068) as parsed — goal_fidelity 12, evidence 13, scope_discipline 20, durability 10, fit 17, reuse 13, added_failure_count 0, one blocking finding: release_unlaunched_claims hands back only the first unlaunched claim because holder is rebound to a dict inside its loop, reproduced with two published claims at the head revision.</p></div>
+</div>
 <div class="r-comment" data-section="s15" data-id="c-run-r-20261115T213148029737-review-of-resumed-repair-not-killed-s15-f57ec4874b64" data-who="reckon-build" data-when="2026-11-15T21:35:50.782Z">
     <div class="r-comment-body"><p>Independent review of f57ec4874b against base 18d133b4 stored as parsed: goal_fidelity 19, evidence 13, scope_discipline 19, durability 18, fit 16, reuse 5; added_failure_count 0; four non-blocking findings.</p></div>
 </div>
@@ -242,8 +245,11 @@
 <div class="r-comment" data-section="s9" data-id="c-run-r-20261115T173941433645-review-of-hook-counts-what-is-owed-s9-215392550c93" data-who="reckon-build" data-when="2026-11-15T17:47:32.856Z">
     <div class="r-comment-body"><p>Independent review of r-20261115T145806650328-hook-counts-what-is-owed-s9 at head 215392550c against base fd2fe9c1 is stored as a parsed record scoring goal_fidelity 17, evidence 13, scope_discipline 20, durability 17, fit 16, reuse 4, with three non-blocking findings (the duplicated has-live-work rule at reckon/hooks/coordinator_obligations.py:1079, the trailer label at :954, and the done_when clause the gate never measured), added_failure_count 0.</p></div>
 </div>
-<div class="r-comment" data-section="s14" data-id="c-run-r-20261115T212935585553-review-of-stopping-station-hands-back-claims-s14-ed6a6414112e" data-who="reckon-build" data-when="2026-11-15T21:54:42.146Z">
-    <div class="r-comment-body"><p>Reviewed r-20261115T182453131268-stopping-station-hands-back-claims-s14 at ed6a6414112e (base 18d133b40e54057955fee45c889cde9371c8e068) as parsed — goal_fidelity 12, evidence 13, scope_discipline 20, durability 10, fit 17, reuse 13, added_failure_count 0, one blocking finding: release_unlaunched_claims hands back only the first unlaunched claim because holder is rebound to a dict inside its loop, reproduced with two published claims at the head revision.</p></div>
+<div class="r-comment" data-section="s6" data-id="c-run-r-20261115T212902564426-review-of-review-stored-from-finished-report-s6-4b39a5e2c58f" data-who="reckon-build" data-when="2026-11-15T21:54:42.148Z">
+    <div class="r-comment-body"><p>An independent review of review-stored-from-finished-report-s6 is stored at the reviewed run's review-records directory: all six dimensions scored 19/16/20/19/19/19 against base af516b3 and head 4b39a5e, added_failure_count 0 derived from baseline_suite (6 failures, completed) and after_suite (0 failures, completed), with three non-blocking findings on the evidence fragment's population paragraph and the base population log's header.</p></div>
+</div>
+<div class="r-comment" data-section="s19" data-id="c-run-r-20261115T212959382870-review-of-dead-section-needs-no-live-run-s19-02dcf2f313e1" data-who="reckon-build" data-when="2026-11-15T21:54:38Z">
+    <div class="r-comment-body"><p>review of r-20261115T184142644946-dead-section-needs-no-live-run-s19 at reviewed_base_sha 5624e41095b31885f1f2b67c44d847597d924a94 and reviewed_head_sha 02dcf2f313e1e53ec809f822c4da1b9eba0bcca4: a parsed record scoring all six dimensions in 0..20 (goal_fidelity 19, evidence 17, scope_discipline 20, durability 17, fit 19, reuse 17; 109 total), added_failure_count 0 and added_failure_ids [] from the reviewed run&#x27;s own baseline_suite (58 passed, 0 failures) and after_suite (61 passed, 0 failures), and three non-blocking findings: the clearing-branch assertion in the new test, the restated standing rule at release.py:134, and the unsubstituted command header in the base-arm proof log.</p></div>
 </div>
 </section>
 </main>
