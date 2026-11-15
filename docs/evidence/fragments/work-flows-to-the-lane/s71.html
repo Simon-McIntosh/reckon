@@ -1,0 +1,33 @@
+<section id="wftl-a-worker-starts-no-reckon-mcp-server-codex-negative-control">
+<h3>Worker MCP launch negative control</h3>
+<p>The launch-exclusion assertion fails at revision <code>361b7cfb44151bf12134b3298c97aa09a5d56953</code>: the Claude worker carries the operator’s reckon MCP declaration. The test ran on all_debug against the imported module and scratch tree recorded below.</p>
+<pre># revision: 361b7cfb44151bf12134b3298c97aa09a5d56953 tree: /tmp/worker-mcp-base-5q7welcw command: PYTHONPATH=/tmp/worker-mcp-base-5q7welcw /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q /tmp/worker-mcp-base-5q7welcw/tests/test_workers_start_without_reckon_mcp.py::test_worker_launch_excludes_reckon[claude]
+# command: PYTHONPATH=/tmp/worker-mcp-base-5q7welcw /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q /tmp/worker-mcp-base-5q7welcw/tests/test_workers_start_without_reckon_mcp.py::test_worker_launch_excludes_reckon[claude]
+# measurement_cwd: /tmp/worker-mcp-base-5q7welcw
+# measurement_module: /tmp/worker-mcp-base-5q7welcw/reckon/_backends.py
+F                                                                        [100%]
+=================================== FAILURES ===================================
+__________________ test_worker_launch_excludes_reckon[claude] __________________
+
+tmp_path = PosixPath(&#x27;/tmp/pytest-of-mcintos/pytest-7253/test_worker_launch_excludes_re0&#x27;)
+worker_home = PosixPath(&#x27;/tmp/pytest-of-mcintos/pytest-7253/test_worker_launch_excludes_re0/operator&#x27;)
+command = &#x27;claude&#x27;
+
+    @pytest.mark.parametrize(&quot;command&quot;, [&quot;claude&quot;, &quot;clive&quot;, &quot;codex&quot;, &quot;omp&quot;])
+    def test_worker_launch_excludes_reckon(tmp_path, worker_home, command):
+        before = {p: p.read_bytes() for p in worker_home.rglob(&quot;*&quot;) if p.is_file()}
+        plan = _launch(tmp_path, worker_home, command)
+        if command in (&quot;claude&quot;, &quot;clive&quot;):
+            home = Path(plan.environment[&quot;CLAUDE_CONFIG_DIR&quot;])
+            carried = json.loads((home / &quot;.claude.json&quot;).read_text())
+&gt;           assert &quot;reckon&quot; not in carried[&quot;mcpServers&quot;], carried[&quot;mcpServers&quot;]
+E           AssertionError: {&#x27;reckon&#x27;: {&#x27;args&#x27;: [&#x27;mcp&#x27;], &#x27;command&#x27;: &#x27;reckon&#x27;}, &#x27;useful&#x27;: {&#x27;command&#x27;: &#x27;useful-server&#x27;}}
+E           assert &#x27;reckon&#x27; not in {&#x27;reckon&#x27;: {&#x27;args&#x27;: [&#x27;mcp&#x27;], &#x27;command&#x27;: &#x27;reckon&#x27;}, &#x27;useful&#x27;: {&#x27;command&#x27;: &#x27;useful-server&#x27;}}
+
+tests/test_workers_start_without_reckon_mcp.py:65: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_workers_start_without_reckon_mcp.py::test_worker_launch_excludes_reckon[claude]
+1 failed in 0.82s
+EXIT=1
+</pre>
+</section>

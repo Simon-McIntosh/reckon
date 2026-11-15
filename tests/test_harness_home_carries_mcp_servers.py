@@ -171,7 +171,9 @@ def test_a_claude_run_home_carries_the_operator_mcp_servers(tmp_path: Path):
 
     seeded_path = harness / ".claude.json"
     seeded = json.loads(seeded_path.read_text())
-    assert seeded["mcpServers"] == OPERATOR_SERVERS
+    assert seeded["mcpServers"] == {
+        name: server for name, server in OPERATOR_SERVERS.items() if name != "reckon"
+    }
     # No other operator key crosses: no projects, no oauth, no counters.
     assert "projects" not in seeded
     assert "oauthAccount" not in seeded
@@ -190,7 +192,9 @@ def test_a_clive_launch_through_the_production_path_seeds_it(tmp_path: Path):
     assert plan.argv[0] == _backends.FENCE_BINARY
     harness = Path(plan.environment["CLAUDE_CONFIG_DIR"])
     seeded = json.loads((harness / ".claude.json").read_text())
-    assert seeded["mcpServers"] == OPERATOR_SERVERS
+    assert seeded["mcpServers"] == {
+        name: server for name, server in OPERATOR_SERVERS.items() if name != "reckon"
+    }
 
 
 def test_an_existing_run_home_file_keeps_its_keys_and_gains_the_servers(
@@ -218,7 +222,7 @@ def test_an_existing_run_home_file_keeps_its_keys_and_gains_the_servers(
         "/home/operator/Code/reckon": {"history": ["run's own"]}
     }
     assert seeded["mcpServers"]["run-local"] == {"command": "run-mcp"}
-    assert seeded["mcpServers"]["reckon"] == OPERATOR_SERVERS["reckon"]
+    assert "reckon" not in seeded["mcpServers"]
     assert seeded["mcpServers"]["imas-dd"] == OPERATOR_SERVERS["imas-dd"]
 
 
@@ -259,7 +263,9 @@ def test_a_wider_source_never_widens_an_existing_destination(tmp_path: Path):
 
     assert stat.S_IMODE(destination.stat().st_mode) == 0o600
     seeded = json.loads(destination.read_text())
-    assert seeded["mcpServers"] == OPERATOR_SERVERS
+    assert seeded["mcpServers"] == {
+        name: server for name, server in OPERATOR_SERVERS.items() if name != "reckon"
+    }
     assert "projects" in seeded
 
 

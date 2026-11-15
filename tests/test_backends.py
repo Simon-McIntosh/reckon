@@ -21,6 +21,14 @@ CODEX = {"launch": "cli", "command": "codex", "sandbox": "worktree-full"}
 CLAUDE = {"launch": "cli", "command": "claude", "sandbox": "worktree-full"}
 
 
+@pytest.fixture(autouse=True)
+def isolated_operator_home(tmp_path, monkeypatch):
+    """Launch composition reads configuration only from a synthetic home."""
+    operator = tmp_path / "operator"
+    operator.mkdir()
+    monkeypatch.setattr(Path, "home", classmethod(lambda cls: operator))
+
+
 def _lines(name: str) -> list[str]:
     return (FIXTURES / name).read_text().splitlines()
 
@@ -115,6 +123,10 @@ def test_read_only_codex_uses_the_delivery_directory_for_a_fresh_launch() -> Non
         "--json",
         "-C",
         "/delivery",
+        "-c",
+        "mcp_servers.reckon.enabled=false",
+        "-c",
+        'mcp_servers.reckon.command="reckon"',
         "--sandbox",
         "workspace-write",
         "-c",
@@ -141,6 +153,10 @@ def test_read_only_codex_uses_the_delivery_directory_when_resumed() -> None:
         "--json",
         "-C",
         "/redelivery",
+        "-c",
+        "mcp_servers.reckon.enabled=false",
+        "-c",
+        'mcp_servers.reckon.command="reckon"',
         "--sandbox",
         "workspace-write",
         "-c",
@@ -164,6 +180,10 @@ def test_read_only_codex_uses_the_delivery_directory_when_resumed() -> None:
                 "--json",
                 "-C",
                 "/wt",
+                "-c",
+                "mcp_servers.reckon.enabled=false",
+                "-c",
+                'mcp_servers.reckon.command="reckon"',
                 "--dangerously-bypass-approvals-and-sandbox",
                 "-",
             ],
@@ -176,6 +196,10 @@ def test_read_only_codex_uses_the_delivery_directory_when_resumed() -> None:
                 "--json",
                 "-C",
                 "/wt",
+                "-c",
+                "mcp_servers.reckon.enabled=false",
+                "-c",
+                'mcp_servers.reckon.command="reckon"',
                 "--sandbox",
                 "workspace-write",
                 "-c",
