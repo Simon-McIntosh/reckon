@@ -9,6 +9,16 @@ all. Each host therefore publishes one beat beside the fleet state it shares,
 and a holder living on a host whose beat has lapsed is a holder on a machine
 that has gone, which is the one fact an off-host reader can establish.
 
+A beat is published once and then renewed for as long as the process that first
+published it lives, because a holder that is working must keep the evidence of
+its own host current: a beat written once and never refreshed lapses on a timer
+and a working holder's reservation would be released out from under it. The
+renewal is a thread the publishing process owns, so it ends when that process
+is gone, which is exactly the event the beat is meant to mark. A beat whose
+renewal stopped while its holder is still visible in this process table is not
+treated as a host that has gone: a stalled renewal is a slow host, not a dead
+one.
+
 A beat's age is its file's own write time, refreshed rather than rewritten, so a
 reader never parses anything to answer how old it is.
 """
@@ -17,27 +27,36 @@ from __future__ import annotations
 
 import json
 import os
-import socket
 import tempfile
+import threading
 import time
 from pathlib import Path
+
+from reckon.crew.host_lease import _pid_namespace, _process_start, local_host
 
 #: Directory under the crew home holding one beat per host.
 HEARTBEAT_DIRECTORY = "hosts"
 
-#: How old a beat may be before its host is presumed gone. Sized well above the
-#: interval at which anything publishes one, so a host busy enough to fall
-#: behind on its beat is not read as a host that has gone.
+#: How often a publishing process refreshes its beat. Well inside the stale
+#: window, so a beat lapses only when its renewing process has ended.
+HEARTBEAT_RENEW_SECONDS = 20.0
+
+#: How old a beat may be before its host is presumed gone. Sized several renewals
+#: wide, so a host busy enough to fall behind on one renewal is not read as gone.
 HEARTBEAT_STALE_SECONDS = 90.0
+
+#: One renewing thread per (home, host), owned by the process that published.
+_RENEWERS: dict[tuple[str, str], threading.Event] = {}
+_RENEWERS_LOCK = threading.Lock()
 
 
 def heartbeat_host() -> str:
     """The host identity a beat is published under and compared against."""
-    return socket.gethostname()
+    return local_host()
 
 
 def _readable(host: str) -> str:
-    """A filesystem-safe rendering of a host name."""
+    """A filesystem-safe rendering of a beat's host name."""
     name = "".join(char if char.isalnum() or char in "._-" else "-" for char in host)
     return name or "host"
 
@@ -47,20 +66,17 @@ def host_heartbeat_path(home: Path, host: str) -> Path:
     return Path(home) / HEARTBEAT_DIRECTORY / f"{_readable(host)}.json"
 
 
-def publish_host_heartbeat(
-    home: Path, host: str | None = None, *, now: float | None = None
-) -> Path:
-    """Write this host's beat, and refresh the instant a reader measures.
-
-    The record is replaced atomically so a reader never sees a partial beat, and
-    its write time is set explicitly so the refresh is the beat rather than a
-    side effect of whatever clock the filesystem keeps.
-    """
-    host = host or heartbeat_host()
+def _write_beat(home: Path, host: str, instant: float) -> Path:
     path = host_heartbeat_path(home, host)
     path.parent.mkdir(parents=True, exist_ok=True)
-    instant = now if now is not None else time.time()
-    record = {"host": host, "pid": os.getpid(), "at": instant}
+    pid = os.getpid()
+    record = {
+        "host": host,
+        "pid": pid,
+        "pid_start": _process_start(pid),
+        "pid_namespace": _pid_namespace(),
+        "at": instant,
+    }
     with tempfile.NamedTemporaryFile(
         mode="w",
         encoding="utf-8",
@@ -81,6 +97,68 @@ def publish_host_heartbeat(
     return path
 
 
+def publish_host_heartbeat(
+    home: Path, host: str | None = None, *, now: float | None = None
+) -> Path:
+    """Write this host's beat, and keep it fresh while this process lives.
+
+    The record is replaced atomically so a reader never sees a partial beat, and
+    its write time is set explicitly so the refresh is the beat rather than a
+    side effect of whatever clock the filesystem keeps. Renewal starts here and
+    stops when this process ends, so a lapsed beat means its host stopped
+    renewing, which is what a reader elsewhere is trying to find out.
+
+    An explicit instant is a caller stating when the beat belongs, which a live
+    renewal would overwrite; such a write is left un-renewed.
+    """
+    host = host or heartbeat_host()
+    instant = now if now is not None else time.time()
+    path = _write_beat(home, host, instant)
+    if now is None:
+        _start_renewing(Path(home), host)
+    return path
+
+
+def _start_renewing(home: Path, host: str) -> None:
+    key = (str(home), host)
+    with _RENEWERS_LOCK:
+        if key in _RENEWERS:
+            return
+        stop = threading.Event()
+        thread = threading.Thread(
+            target=_renew_until_stopped,
+            args=(home, host, stop),
+            name=f"heartbeat-{_readable(host)}",
+            daemon=True,
+        )
+        _RENEWERS[key] = stop
+        thread.start()
+
+
+def _renew_until_stopped(home: Path, host: str, stop: threading.Event) -> None:
+    while not stop.wait(HEARTBEAT_RENEW_SECONDS):
+        try:
+            os.utime(host_heartbeat_path(home, host), None)
+        except OSError:
+            # The beat was removed, by a sweep or by a fresh crew home. A
+            # renewal has nothing to refresh, so it ends rather than writing a
+            # beat for a home this process may no longer be using.
+            break
+
+
+def stop_host_heartbeat(home: Path, host: str | None = None) -> bool:
+    """End this process's renewal of a beat. The answer is whether one ran."""
+    key = (str(Path(home)), host or heartbeat_host())
+    with _RENEWERS_LOCK:
+        stop = _RENEWERS.pop(key, None)
+    if stop is None:
+        return False
+    stop.set()
+    return True
+
+
+
+
 def host_heartbeat_age(
     home: Path, host: str, *, now: float | None = None
 ) -> float | None:
@@ -93,11 +171,48 @@ def host_heartbeat_age(
     return instant - written
 
 
-def host_is_live(home: Path, host: str, *, now: float | None = None) -> bool:
-    """Whether the host published a beat inside the stale window.
+def _holder_is_running_here(record: dict) -> bool:
+    """Whether a beat names a process this reader can see running.
 
-    A host with no beat at all is not live. That is a fact about a host never
-    seen holding state here, not a claim that it has stopped.
+    A renewal lapses while its process is busy or blocked, and a slow renewal is
+    not a host that has gone. The reader can tell the two apart only when the
+    beat names a process in a process table it shares: the pid namespace must
+    match, and the start time must be the recorded one, so a pid the kernel has
+    reused does not read as the holder.
     """
-    age = host_heartbeat_age(home, host, now=now)
-    return age is not None and age < HEARTBEAT_STALE_SECONDS
+    namespace = str(record.get("pid_namespace") or "")
+    started = str(record.get("pid_start") or "")
+    pid = record.get("pid")
+    if not namespace or not started:
+        return False
+    if namespace != _pid_namespace():
+        return False
+    target = int(pid) if isinstance(pid, int) else None
+    if target is None:
+        return False
+    return _process_start(target) == started
+
+
+def host_is_live(home: Path, host: str, *, now: float | None = None) -> bool:
+    """Whether the beat record for a host still stands for something running.
+
+    A beat inside the stale window is live. A lapsed beat is live while the
+    process it names is visible in this reader's own process table, because a
+    stalled renewal is not a host that has gone. Anything else — no beat, an
+    unreadable one, or a lapsed one whose holder this reader cannot see — is not
+    live: the reader has no evidence the host is still there, and the claim it
+    guards is freed.
+    """
+    path = host_heartbeat_path(home, host)
+    try:
+        written = path.stat().st_mtime
+    except OSError:
+        return False
+    instant = now if now is not None else time.time()
+    if instant - written < HEARTBEAT_STALE_SECONDS:
+        return True
+    try:
+        record = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return False
+    return isinstance(record, dict) and _holder_is_running_here(record)

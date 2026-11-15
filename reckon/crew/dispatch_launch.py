@@ -2922,27 +2922,7 @@ def release_unspawned_reservations(run_directory: Path, *, reason: str) -> int:
             continue
         if payload.get("launcher_host") not in (None, _reservation_host()):
             continue
-        if payload.get("supervisor_pid") is not None:
-            continue
-        attempt = _attempt_number(payload)
-        if attempt is None:
-            continue
-        if _attempt_leaves_a_worker_record(run_directory, attempt):
-            continue
-        _write_attempt_artifact(
-            run_directory,
-            EXIT_RECORD_NAME,
-            {
-                "run_id": str(payload.get("run_id") or run_directory.name),
-                "exit_code": None,
-                "detail": reason,
-                "cause": "the launch was withdrawn before it recorded a supervisor",
-                "recorded_at": _utc_now(),
-            },
-            attempt=attempt,
-        )
-        with contextlib.suppress(OSError):
-            path.unlink()
+        if release_a_withdrawn_reservation(run_directory, payload, reason=reason):
             dropped += 1
     return dropped
 

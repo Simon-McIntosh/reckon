@@ -21,18 +21,24 @@ operator's own crew home is untouched.
 
 from __future__ import annotations
 
+import json
 import os
 import signal
 import socket
 import subprocess
 import sys
+import time
 from pathlib import Path
 
 import pytest
 
-from reckon.crew import dispatch_launch, process_liveness
+from reckon.crew import dispatch_launch, host_heartbeat, process_liveness
 from reckon.crew import runs as runs_module
 from reckon.crew.node import CrewError
+from reckon.crew.recovery_repair_dispatch import (
+    supersede_a_held_repair_round,
+    withdraw_unlaunched_repair_reservations,
+)
 
 RUN_ID = "r-reservation-holder"
 NODE_ID = "reservation-holder"
@@ -168,7 +174,6 @@ def test_a_reservation_naming_a_dead_pid_is_released_on_read(home: Path) -> None
 def test_a_reservation_naming_a_host_whose_beat_lapsed_is_released(
     home: Path,
 ) -> None:
-    pytest.importorskip("reckon.crew.host_heartbeat")
     payload = _reservation(home, 2, pid=os.getpid(), host="another-host")
     assert (
         dispatch_launch.reservation_in_flight(
@@ -179,9 +184,48 @@ def test_a_reservation_naming_a_host_whose_beat_lapsed_is_released(
     assert _held(home) is None
 
 
+def test_a_lapsed_beat_whose_holder_is_running_still_holds(home: Path) -> None:
+    """A renewal that stalled is a slow host, not one that has gone."""
+    host_heartbeat.publish_host_heartbeat(
+        runs_module.crew_home(), "another-host", now=time.time() - 600.0
+    )
+    payload = _reservation(home, 2, pid=os.getpid(), host="another-host")
+    assert host_heartbeat.host_is_live(runs_module.crew_home(), "another-host")
+    assert (
+        dispatch_launch.reservation_in_flight(
+            payload, run_directory=home, attempt=2
+        )
+        is True
+    )
+    assert _held(home) is not None
+
+
+def test_a_lapsed_beat_whose_holder_has_gone_releases_the_reservation(
+    home: Path,
+) -> None:
+    path = host_heartbeat.publish_host_heartbeat(
+        runs_module.crew_home(), "another-host", now=time.time() - 600.0
+    )
+    path.write_text(
+        json.dumps(
+            {
+                "host": "another-host",
+                "pid": _dead_pid(),
+                "pid_start": "",
+                "pid_namespace": "",
+                "at": time.time() - 600.0,
+            }
+        ),
+        encoding="utf-8",
+    )
+    stamp = time.time() - 600.0
+    os.utime(path, (stamp, stamp))
+    assert host_heartbeat.host_is_live(runs_module.crew_home(), "another-host") is False
+    assert _held(home) is None
+
+
 def test_a_reservation_naming_a_host_with_a_fresh_beat_is_kept(home: Path) -> None:
-    heartbeat = pytest.importorskip("reckon.crew.host_heartbeat")
-    heartbeat.publish_host_heartbeat(runs_module.crew_home(), "another-host")
+    host_heartbeat.publish_host_heartbeat(runs_module.crew_home(), "another-host")
     payload = _reservation(home, 2, pid=_dead_pid(), host="another-host")
     assert (
         dispatch_launch.reservation_in_flight(
@@ -260,25 +304,18 @@ def test_a_resume_mark_whose_attempt_is_undelivered_still_holds(
 
 
 def test_an_advice_hold_withdraws_the_reservation_it_took(home: Path) -> None:
-    from reckon.crew import recovery_repair_dispatch as repair
-
     _reservation(home, 2, pid=os.getpid(), host=socket.gethostname())
     assert _held(home) is not None
-    withdrawal = getattr(repair, "withdraw_unlaunched_repair_reservations", None)
-    if withdrawal is not None:
-        assert withdrawal(RUN_ID, reason="held for coordinator advice") == 1
-        assert _held(home) is None
-        assert (home / "attempt-2-exit.json").exists()
+    assert withdraw_unlaunched_repair_reservations(
+        RUN_ID, reason="held for coordinator advice"
+    ) == 1
+    assert _held(home) is None
+    assert (home / "attempt-2-exit.json").exists()
     admitted = dispatch_launch.reserve_launch_attempt(home, RUN_ID, kind="resume")
     assert admitted.attempt == 3
 
 
 def test_a_coordinator_resume_supersedes_a_held_round(home: Path) -> None:
-    from reckon.crew import recovery_repair_dispatch as repair
-
-    supersede = getattr(repair, "supersede_a_held_repair_round", None)
-    if supersede is None:
-        pytest.skip("this tree does not supersede a held round")
     door = _live_child()
     try:
         _reservation(home, 2, pid=door.pid, host=socket.gethostname())
@@ -290,9 +327,28 @@ def test_a_coordinator_resume_supersedes_a_held_round(home: Path) -> None:
         }
         runs_module._write_json(runs_module.pointer_path(RUN_ID), pointer)
         assert _held(home) is not None
-        assert supersede(RUN_ID) == 2
+        assert supersede_a_held_repair_round(RUN_ID) == 2
         assert _held(home) is None
         recorded = runs_module.read_pointer(RUN_ID)["repair_dispatch"]
         assert recorded["status"] == "superseded"
     finally:
         _stop(door)
+
+
+def test_a_published_beat_stays_fresh_while_its_process_lives(
+    home: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A working holder keeps its own beat current, so it cannot lapse."""
+    monkeypatch.setattr(host_heartbeat, "HEARTBEAT_RENEW_SECONDS", 0.05)
+    path = host_heartbeat.publish_host_heartbeat(
+        runs_module.crew_home(), "renewing-host"
+    )
+    stale = time.time() - 600.0
+    os.utime(path, (stale, stale))
+    deadline = time.monotonic() + 10
+    while time.monotonic() < deadline:
+        if host_heartbeat.host_is_live(runs_module.crew_home(), "renewing-host"):
+            break
+        time.sleep(0.02)
+    assert host_heartbeat.host_is_live(runs_module.crew_home(), "renewing-host")
+    assert host_heartbeat.stop_host_heartbeat(runs_module.crew_home(), "renewing-host")
