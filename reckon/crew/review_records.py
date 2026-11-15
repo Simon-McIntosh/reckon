@@ -413,6 +413,9 @@ def store_committed_review(
             "rubric or a reviewed revision — so it is not a review and the "
             "committed store holds records only"
         )
+    brief_refusal = _review.review_brief_head_refusal(record)
+    if brief_refusal:
+        raise ValueError(brief_refusal)
     if committed_root is None:
         committed_root = _review.committed_review_root(project, root=root)
     if committed_root is None:

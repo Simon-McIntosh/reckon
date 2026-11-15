@@ -3280,6 +3280,46 @@ def _stamp_finding_ids(record: dict[str, Any]) -> dict[str, Any]:
     return {**record, "findings": stamped}
 
 
+def review_brief_head_refusal(
+    record: Mapping[str, Any], *, review_run: Mapping[str, Any] | None = None
+) -> str | None:
+    """Compare a run review with the head in its reviewer's stored brief.
+
+    The dispatch snapshot belongs to this review round. The source brief and
+    the reviewed worktree can advance while that round is working, so neither
+    supplies its expected head. Records without a readable run-review brief
+    retain the store's revision checks without inventing an expected revision.
+    """
+    if not record.get("reviewed_run_id"):
+        return None
+    review_run_id = str(record.get("review_run_id") or "").strip()
+    if review_run is None:
+        if not review_run_id:
+            return None
+        review_run = _reviewed_run_pointer(review_run_id) or {}
+    review_run_id = str(review_run.get("run_id") or review_run_id).strip()
+    brief = review_run.get("brief") or {}
+    path = str(brief.get("path") or "") if isinstance(brief, Mapping) else ""
+    if not path:
+        if not review_run_id:
+            return None
+        from reckon.crew import runs
+
+        path = str(runs.run_dir(review_run_id) / "brief.md")
+    from reckon.crew.recovery_review_subject import brief_named_head, same_revision
+
+    expected = brief_named_head(Path(path))
+    if not expected:
+        return None
+    _, _, _, reviewed = carried_revision_pair(record)
+    if same_revision(reviewed or "", expected):
+        return None
+    return (
+        f"review record describes head {reviewed or '(unnamed)'} but its "
+        f"brief {path} names head {expected}; file a review of the briefed head"
+    )
+
+
 def store_review(
     record: dict[str, Any],
     *,
@@ -3334,6 +3374,9 @@ def store_review(
     status_refusal = review_status_refusal(record)
     if status_refusal:
         raise ValueError(status_refusal)
+    brief_refusal = review_brief_head_refusal(record)
+    if brief_refusal:
+        raise ValueError(brief_refusal)
     base_carried, base_sha, head_carried, head_sha = carried_revision_pair(record)
     if base_carried or head_carried:
         record = dict(record)
@@ -3534,6 +3577,10 @@ def file_delivered_run_review_report(
             continue
         if not isinstance(body, dict):
             refused.append({"record": str(source), "reason": "record is not an object"})
+            continue
+        brief_refusal = review_brief_head_refusal(body, review_run=record)
+        if brief_refusal:
+            refused.append({"record": str(source), "reason": brief_refusal})
             continue
         try:
             filed.append(store_review(body))
