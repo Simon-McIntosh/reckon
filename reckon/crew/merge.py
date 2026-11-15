@@ -793,6 +793,38 @@ def _stale_index_lock_age_seconds(
     return age
 
 
+def _result_text(result: subprocess.CompletedProcess) -> str:
+    parts = []
+    for value in (result.stderr, result.stdout):
+        if value is None:
+            continue
+        parts.append(
+            value.decode("utf-8", "replace") if isinstance(value, bytes) else value
+        )
+    return "\n".join(parts)
+
+
+def _failed_on_this_index_lock(lock: Path, result: subprocess.CompletedProcess) -> bool:
+    """Whether a failed call could have been refused by this checkout's lock.
+
+    git names the lock file when it cannot take it — ``Unable to create
+    '<git-dir>/index.lock': File exists`` — so the failure says which lock
+    refused it. The failure is what decides, not the file: a peer's commit
+    releases the lock within milliseconds, and a wait that reads only the file
+    returns the failure after one attempt, losing the race the retry exists to
+    win. A failure naming a different checkout's lock is not this one's to wait
+    for. A failure that names no lock at all still waits while this checkout
+    holds one, because a git call can be refused by a lock it does not name.
+
+    It is only asked about a failed call: a call that succeeded is never
+    retried, whatever lock a peer holds at the moment of the check.
+    """
+    detail = _result_text(result)
+    if lock.name in detail:
+        return str(lock) in detail or os.path.realpath(lock) in detail
+    return lock.exists()
+
+
 def _run_waiting_out_a_held_index_lock(
     repo: Path,
     step: Callable[[int], subprocess.CompletedProcess[str]],
@@ -807,8 +839,8 @@ def _run_waiting_out_a_held_index_lock(
     """Run ``step`` until it succeeds, a lock is not what refused it, or it runs out.
 
     ``step`` is called with the number of the attempt, counting from one, and
-    returns the result of one git invocation. A failed result that left ``repo``
-    holding an ``index.lock`` is retried after ``retry_seconds``, up to
+    returns the result of one git invocation. A failed result this checkout's
+    ``index.lock`` could have refused is retried after ``retry_seconds``, up to
     ``attempts`` calls in total, so a lock that is never released ends in the
     caller's refusal rather than a wait that never ends. ``on_retry`` is called
     with the number of retries made so far and the result that failed, before
@@ -825,16 +857,21 @@ def _run_waiting_out_a_held_index_lock(
 
     Returns the last result with the number of retries made, so a caller that
     reports a lock that outlasted the attempts and a caller that records its
-    retries both read one count from one place. The lock is read from the
-    checkout's own ``index.lock`` rather than from the failing command's text,
-    because that file is what the next attempt waits for.
+    retries both read one count from one place. Whether a failure waits is
+    decided by what the failure names as well as by whether the lock is still
+    on disk, so a lock released between the failed call and this check is
+    still waited out rather than returned after one attempt.
     """
     lock = _index_lock_path(repo)
     observed = _index_lock_signature(lock)
     retries = 0
     moved = False
     result = step(1)
-    while result.returncode != 0 and retries + 1 < attempts and _index_lock_held(repo):
+    while (
+        result.returncode != 0
+        and retries + 1 < attempts
+        and _failed_on_this_index_lock(lock, result)
+    ):
         retries += 1
         if on_retry is not None:
             on_retry(retries, result)
@@ -1151,7 +1188,7 @@ def land_merge(
                 attempts=remaining,
                 retry_seconds=retry_seconds,
                 sleep=sleep,
-stale_after_seconds=stale_lock_seconds,
+                stale_after_seconds=stale_lock_seconds,
                 on_stale_removed=record_stale_removal,
             )
             remaining -= retries + 1
