@@ -935,15 +935,17 @@ def _dispatch_health_review(
 
     from reckon.crew import plan_review as _plan_review
 
-    def _open_findings() -> int:
+    def _open_findings() -> int | None:
         """The open findings stored against the node's write paths.
 
         The count comes from :func:`reckon.crew.plan_review._open_findings_for`,
-        which reads the findings store by path and keeps the open rows for the
-        named paths, so the block counts nothing a second time. The store's own
-        reader swallows an unreadable findings tree as no rows; the resolved
-        checkout it needs is the dispatch's, or the project's own when the
-        dispatch named none.
+        which reads the findings store by path and keeps the open rows at or
+        beneath the named paths, so the block counts nothing a second time and a
+        named directory carries the findings stored on the files under it. That
+        reader answers ``None`` for a store that exists and could not be read,
+        which is no count at all rather than zero, so the block reports the
+        absence as unmeasured. The resolved checkout it needs is the dispatch's,
+        or the project's own when the dispatch named none.
         """
         try:
             repo_root = (
@@ -951,17 +953,16 @@ def _dispatch_health_review(
                 if root is not None
                 else _plan_review._project_repository(project)
             )
-            return len(
-                _plan_review._open_findings_for(
-                    {
-                        "project": project,
-                        "repo": repo_root,
-                        "named_paths": sorted(product_paths),
-                    }
-                )
+            rows = _plan_review._open_findings_for(
+                {
+                    "project": project,
+                    "repo": repo_root,
+                    "named_paths": sorted(product_paths),
+                }
             )
         except (CrewError, OSError, ValueError):
-            return 0
+            return None
+        return None if rows is None else len(rows)
 
     def _remedy_paths() -> list[str]:
         """The paths the remedy names: the dispatch's own, unless the plan has some.
@@ -987,7 +988,7 @@ def _dispatch_health_review(
             "state": state,
             "review": review,
             "age_days": age_days,
-            "open_findings": 0 if state == "unknown" else _open_findings(),
+            "open_findings": None if state == "unknown" else _open_findings(),
             "compose_command": (
                 None
                 if fresh

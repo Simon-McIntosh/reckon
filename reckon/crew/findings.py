@@ -1017,6 +1017,42 @@ def _within(path: Path, directory: Path) -> bool:
     return True
 
 
+def _store_unreadable_paths(candidates: Iterable[Path | None]) -> list[str]:
+    """The store locations that exist and cannot be read.
+
+    Every scan in this module swallows an unreadable directory as no rows,
+    because a reader that has rows from elsewhere should still serve them. That
+    swallow is invisible to the caller, so a store that exists but cannot be
+    listed reads exactly like an empty one and a brief reports "none" for rows
+    nobody measured. Each location is therefore checked once, against the two
+    ways a store goes unreadable: it is not a directory where one is expected, a
+    partial write having left a file in its place, or it cannot be listed.
+    A location that does not exist is a store with nothing in it, not an
+    unreadable one.
+    A ``None`` candidate is a store this project has no path for at all, and is
+    skipped: no path was expected, so none went unread.
+    """
+    unreadable: list[str] = []
+    for candidate in candidates:
+        if candidate is None:
+            continue
+        try:
+            candidate.stat()
+        except FileNotFoundError:
+            continue
+        except OSError:
+            unreadable.append(str(candidate))
+            continue
+        if not candidate.is_dir():
+            unreadable.append(str(candidate))
+            continue
+        try:
+            next(iter(candidate.iterdir()), None)
+        except OSError:
+            unreadable.append(str(candidate))
+    return unreadable
+
+
 def findings_by_path(
     project: str,
     *,
@@ -1042,6 +1078,12 @@ def findings_by_path(
     against — a worker's worktree; omitted, both resolve against the project's
     mounted checkout, so an absolute path inside it is read repository-relative
     and counts toward recurrence rather than being kept as an artefact.
+
+    ``unreadable`` names every store location that exists and could not be read.
+    The scans below swallow such a directory as no rows so a partly unreadable
+    store still serves what it can, which leaves a caller unable to tell an
+    empty store from one it never saw; this key is how it tells them apart, and a
+    caller reporting a count is expected to read it.
     """
     root_path = _scope_root(project, root)
     prefix = str(path or "").strip()
@@ -1049,6 +1091,12 @@ def findings_by_path(
     groups: dict[str, dict[str, Any]] = {}
     artefacts: list[dict[str, Any]] = []
     all_rows: list[dict[str, Any]] = []
+    unreadable = _store_unreadable_paths(
+        (
+            _review.committed_review_root(project, root=root_path),
+            _code_review_directory(project),
+        )
+    )
     stored_rows, records_read = _indexed_rows(project, root_path)
     for row in stored_rows:
         if prefix and not row["path"].startswith(prefix):
@@ -1086,4 +1134,5 @@ def findings_by_path(
         "paths": grouped,
         "artefacts": artefacts,
         "rows": all_rows,
+        "unreadable": unreadable,
     }
