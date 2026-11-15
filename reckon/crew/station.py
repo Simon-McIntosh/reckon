@@ -458,6 +458,13 @@ DUTY_DRAIN_SECONDS = 10.0
 # the bound keeps one stuck derivation from pinning old code for ever.
 RELOAD_HOLD_SECONDS = 900.0
 
+# How long a deferred image waits before the proof that refused it is repeated.
+# The first retry is the next poll, because a refusal that says nothing about
+# the image -- a proof that timed out, a peer holding its lock -- can pass at
+# once; this is the spacing a repeated deferral then waits, so an image that
+# will not import is not proved again on every tick.
+RELOAD_DEFERRED_RETRY_SECONDS = 60.0
+
 
 class _CommitBarrier:
     """Hold derivations out of the store while a tick writes transitions."""
@@ -826,7 +833,16 @@ class StationReloader:
             except (OSError, ValueError):
                 pass
         self.deferred_identity: str | None = None
+        # When the deferred image's proof may be repeated, and the spacing its
+        # next refusal waits. Zero means the next poll.
+        self._deferred_proof_at = 0.0
+        self._deferred_gap = 0.0
         self._held_since: float | None = None
+        # When this station last found no reload owed. A hold is dated from here
+        # rather than from the poll that noticed the code move, because a poll
+        # happens only at a tick's end: a tick longer than the bound used to put
+        # the deadline a whole tick past it.
+        self._clear_since: float | None = None
 
     def poll(self, duties: DutyBeat | None = None) -> None:
         """Check committed code after a tick and re-execute when it moves.
@@ -834,7 +850,10 @@ class StationReloader:
         With ``duties`` named, a due reload first lets the derivations in flight
         land: it stops new ones and returns, and the station keeps ticking until
         a later poll finds none running or :data:`RELOAD_HOLD_SECONDS` has
-        passed. A reload that does not happen starts the derivations again.
+        passed. The bound runs from the poll that last found no reload owed, so
+        a tick several minutes long cannot move the deadline: the reload fires
+        at the first poll after it expires. A reload that does not happen starts
+        the derivations again.
         """
         if self.image_pin is not None:
             checkout_trust.refresh_materialized_tree_pin(
@@ -843,11 +862,9 @@ class StationReloader:
         current = checkout_trust.source_code_identity(
             self.source_root / "reckon", source_root=self.source_root
         )
-        due = (
-            current not in (checkout_trust.IDENTITY_UNKNOWN, self.identity)
-            and current != self.deferred_identity
-            and re.fullmatch(r"[0-9a-f]{40}", current) is not None
-        )
+        due = self._reload_owed(current)
+        if not due:
+            self._clear_since = time.monotonic()
         if due and duties is not None and not self._quiet(duties):
             return
         try:
@@ -858,20 +875,52 @@ class StationReloader:
             # not import, or the exec itself failed. A hold taken for a reload
             # that is no longer due must not leave the derivations stopped.
             self._held_since = None
+            self._clear_since = time.monotonic()
             if duties is not None:
                 duties.resume()
+
+    def _reload_owed(self, current: str) -> bool:
+        """Whether committed code names an image this station has not taken.
+
+        A deferred image is owed again once its proof is due to be repeated: a
+        deferral that said nothing about the image must not stand until main
+        moves, which used to be the only thing that asked for it again.
+        """
+        if re.fullmatch(r"[0-9a-f]{40}", current) is None:
+            return False
+        if current in (checkout_trust.IDENTITY_UNKNOWN, self.identity):
+            return False
+        if current == self.deferred_identity:
+            return time.monotonic() >= self._deferred_proof_at
+        return True
 
     def _quiet(self, duties: DutyBeat) -> bool:
         """Whether the derivations have landed, or the hold has run out."""
         idle = duties.quiesce()
         now = time.monotonic()
         if self._held_since is None:
-            self._held_since = now
+            self._held_since = now if self._clear_since is None else self._clear_since
             _reload_note(
                 "holding a due reload until the derivations in flight land, "
                 f"for at most {RELOAD_HOLD_SECONDS:.0f}s"
             )
         return idle or now - self._held_since >= RELOAD_HOLD_SECONDS
+
+    def _arm_deferred_proof(self) -> None:
+        """Schedule the next proof of a deferred image.
+
+        The first retry is the next poll: a proof that timed out, or one a peer
+        held the image's lock for, refuses without saying anything about the
+        image, and the answer can change a moment later. A deferral that repeats
+        waits :data:`RELOAD_DEFERRED_RETRY_SECONDS` and then twice as long each
+        time, up to the hold bound, so an image that will not import is not
+        proved again on every tick.
+        """
+        self._deferred_proof_at = time.monotonic() + self._deferred_gap
+        self._deferred_gap = min(
+            max(RELOAD_DEFERRED_RETRY_SECONDS, self._deferred_gap * 2),
+            RELOAD_HOLD_SECONDS,
+        )
 
     def _replace(self, current: str) -> None:
         image, _removed, _kept, pin = checkout_trust.materialize_committed_tree(
@@ -883,6 +932,7 @@ class StationReloader:
         imports, reason = checkout_trust.reckon_imports(image)
         if not imports:
             self.deferred_identity = current
+            self._arm_deferred_proof()
             os.close(pin)
             _reload_note(
                 f"deferred the reload to {current}: its image does not import "
