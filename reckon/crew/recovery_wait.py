@@ -88,6 +88,17 @@ def _tool_call_in_line(line: bytes) -> tuple[str, str] | None:
         return None
     if not isinstance(event, Mapping):
         return None
+    kind = event.get("type")
+    if kind in {"tool_execution_start", "tool_execution_update"}:
+        arguments = event.get("args")
+        if kind == "tool_execution_update" and not isinstance(arguments, Mapping):
+            return None
+        command = (
+            str(arguments.get("command") or arguments.get("prompt") or "")
+            if isinstance(arguments, Mapping)
+            else ""
+        )
+        return str(event.get("toolName") or ""), command
     message = event.get("message")
     if not isinstance(message, Mapping):
         return None
@@ -96,13 +107,17 @@ def _tool_call_in_line(line: bytes) -> tuple[str, str] | None:
         return None
     found: tuple[str, str] | None = None
     for block in content:
-        if not isinstance(block, Mapping) or block.get("type") != "tool_use":
+        if not isinstance(block, Mapping):
+            continue
+        if block.get("type") == "tool_use":
+            arguments = block.get("input")
+        elif block.get("type") == "toolCall":
+            arguments = block.get("arguments")
+        else:
             continue
         command = ""
-        if isinstance(block.get("input"), Mapping):
-            command = str(
-                block["input"].get("command") or block["input"].get("prompt") or ""
-            )
+        if isinstance(arguments, Mapping):
+            command = str(arguments.get("command") or arguments.get("prompt") or "")
         found = (str(block.get("name") or ""), command)
     return found
 
