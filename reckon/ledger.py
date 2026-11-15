@@ -3902,41 +3902,21 @@ def read_records(
             else {}
         ),
     )
-    if with_figures and stored:
-        from bisect import bisect_left, bisect_right
-
-        from reckon.crew.summary import _row_moment
-
-        spans = run_store.stored_run_rows(
-            project,
-            fields=("dispatched_at", "completed_at"),
-        )
-        measured = [
-            (start, end)
-            for row in spans or []
-            if (start := _row_moment(row, "dispatched_at")) is not None
-            and (end := _row_moment(row, "completed_at")) is not None
-            and start <= end
-        ]
-        starts = sorted(start for start, _ in measured)
-        ends = sorted(end for _, end in measured)
-        records = []
-        for record in data["runs"]:
-            row = dict(record)
-            row["wall_seconds"] = _worker_seconds(
-                row.get("dispatched_at"), row.get("completed_at")
-            )
-            start = _row_moment(row, "dispatched_at")
-            row["width_at_start"] = (
-                None
-                if start is None
-                else bisect_right(starts, start) - bisect_left(ends, start)
-            )
-            records.append(row)
-    elif with_figures:
+    if with_figures:
         from reckon.crew import summary
 
-        records = summary.run_rows(project, root=root)
+        if stored:
+            records = summary.run_rows(
+                project,
+                root=root,
+                records=data["runs"],
+                timestamp_population=run_store.stored_run_rows(
+                    project,
+                    fields=("dispatched_at", "completed_at"),
+                ),
+            )
+        else:
+            records = summary.run_rows(project, root=root)
     else:
         records = list(data["runs"])
     if activity_since is not None and with_figures:
