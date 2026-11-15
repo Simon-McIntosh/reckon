@@ -1752,6 +1752,12 @@ def classify_pointer(
     # exactly as the drain view and the stop hook judge it.
     stuck = _stuck_verdict_for(record) if phase else None
 
+    # A pre-spawn launch past its bound with its holder gone is not waiting to
+    # start: the liveness arms read it as a failed launch, which the admission
+    # pass then releases or returns to the queue.
+    pre_spawn_waiting = phase in _PRE_SPAWN_PHASES and not _stranded_launch(
+        record, now_seconds=moment
+    )
     if phase in WAITING_UPSTREAM_PHASES:
         classification = phase
         # A request held on a section it waits for is stored, not launched, and
@@ -1788,7 +1794,7 @@ def classify_pointer(
         else:
             detail = str(record.get("reason") or "waiting for a local lane slot")
             action = "wait for a local lane slot"
-    elif phase in _PRE_SPAWN_PHASES:
+    elif pre_spawn_waiting:
         # Claimed by its launcher with no worker yet: the phase reading stands,
         # as it does for a queued request, and it is reported as running, the
         # reading such a run carried before the liveness arms were skipped for
@@ -1805,7 +1811,7 @@ def classify_pointer(
     # report a stored request as a run. Its phase reading stands instead; the
     # stuck verdict still speaks, because it is about the wait rather than
     # about a worker.
-    unlaunched = phase in {QUEUED_PHASE, HELD_PHASE} or phase in _PRE_SPAWN_PHASES
+    unlaunched = phase in {QUEUED_PHASE, HELD_PHASE} or pre_spawn_waiting
     if unlaunched and stuck is None:
         pass
     elif stuck is not None:
