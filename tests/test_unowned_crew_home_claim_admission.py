@@ -95,3 +95,8 @@ def _assert_held(repository, tmp_path, holder_path, write_path):
     assert result["held"] == [admission_fixtures.RUN_ID]
     assert launched == []
     assert runs.read_pointer(admission_fixtures.RUN_ID)["phase"] == "queued"
+
+
+def test_a_broad_request_still_meets_an_owned_file(admit_repo, tmp_path):
+    path = runs.crew_home() / "runs" / "r-holder" / "receipt.json"
+    _assert_held(admit_repo, tmp_path, path, runs.runs_dir())
