@@ -25,7 +25,7 @@
   <title>A Landing Never Waits On A Shared Index | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="73">
+<meta name="plan-version" content="75">
 <meta name="plan-modified" content="2026-11-15">
 </head>
 <body>
@@ -123,13 +123,13 @@
 <section data-reckon="section" data-id="s14" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
 <p><strong>Why.</strong> On 15 November two runs promoted cleanly and then sat 5 to 8 hours as pending landings: the escape-lane plan's named-lane queueing run and this plan's raced-promotion run. In each, the admit lander refused with <code>red-suite: the manifest records no after_suite observation of the delivered head</code>, because the worker had written <code>baseline_suite</code> and <code>after_suite</code> as prose sentences. <code>_after_suite_arm</code> in <code>reckon/crew/queue_landing.py</code> reads only a mapping. The manifest check in <code>reckon/crew/reports.py</code> declares both arms as <code>text</code> or <code>mapping</code>, so <code>crew check --manifest</code> and promotion passed the prose. The refusal arrived after the worker had exited, and each run needed a coordinator to rewrite its arms by hand. A third run wrote them as bare command strings.</p>
 <p><strong>Deliverable.</strong> When the flight declares a suite command, the manifest check refuses a suite arm that is not the inline JSON observation <code>skills/reckon-build/references/worker-protocol.md</code> defines. It names the field and the keys missing, so the worker repairs it before its turn ends. The check and the lander read the arm through one reader, so the two cannot disagree again.</p>
-<p><strong>Done when.</strong> New tests, each failing at the base revision: a manifest whose <code>after_suite</code> is a prose sentence fails <code>crew check --manifest</code> and names <code>after_suite</code>; one whose arm is a bare command string fails the same way; a manifest carrying the JSON observation passes, and the lander reads it as an observation. The lander's own refusal text is unchanged. The tests importing <code>reckon.crew.reports</code> or <code>reckon.crew.queue_landing</code> add no failure against the base on all_debug. Write paths: <code>reckon/crew/reports.py</code>, <code>reckon/crew/queue_landing.py</code> and the new test.</p>
+<p><strong>Done when.</strong> New tests, the first two failing at the base revision: a manifest whose <code>after_suite</code> is a prose sentence fails <code>crew check --manifest</code> and names <code>after_suite</code>; one whose arm is a bare command string fails the same way. A third test, already green at base, pins what must not move: a manifest carrying the JSON observation passes, and the lander reads it as an observation. The lander's own refusal text is unchanged. The tests importing <code>reckon.crew.reports</code> or <code>reckon.crew.queue_landing</code> add no failure against the base on all_debug. Write paths: <code>reckon/crew/reports.py</code>, <code>reckon/crew/queue_landing.py</code> and the new test.</p>
 
     <h2 id="s15">A merge repair&#x27;s gate judges added failures, not absolute green</h2>
 <section data-reckon="section" data-id="s15" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="implementable" data-links=""></section>
 <p><strong>Why.</strong> <code>_require_repair_gate</code> in <code>reckon/crew/pending_landing.py</code> refuses a merge repair unless its gate's exit status is 0 and its log ends <code>EXIT=0</code>. A run whose gate files are already red on the primary branch can therefore never land through its pending landing, however clean its own change. The monitor plan's review-cell run hit this on 15 November. Its 20 gate files carry 26 failure ids at main <code>e79530ca9f</code>, 19 of them in <code>tests/test_crew_recovery.py</code>, and the same 26 at main merged with the repaired head, none added. The repair gate refused with <code>repair gate did not pass</code>. The landing measure already judges added failures against the primary branch; the repair gate is the one landing path that demands absolute green.</p>
 <p><strong>Deliverable.</strong> The repair gate compares the repair's failure ids with the same command run at the primary revision the conflict record names, and refuses only on an id the primary does not fail. It names those ids and both logs.</p>
-<p><strong>Done when.</strong> New tests, each failing at the base revision: a repair whose gate is red on the primary branch with no added id lands through its pending landing; one that adds an id is refused naming it; a gate log that names another revision is still refused. The tests importing <code>reckon.crew.pending_landing</code> add no failure against the base on all_debug. Write paths: <code>reckon/crew/pending_landing.py</code> and the new test.</p>
+<p><strong>Done when.</strong> New tests, the first two failing at the base revision: a repair whose gate is red on the primary branch with no added id lands through its pending landing; one that adds an id is refused naming it. A third test, already green at base, pins what must not move: a gate log that names another revision is still refused. The tests importing <code>reckon.crew.pending_landing</code> add no failure against the base on all_debug. Write paths: <code>reckon/crew/pending_landing.py</code> and the new test.</p>
 
     <h2 id="s16">A run that merged the primary branch into its worktree lands through crew merge</h2>
 <section data-reckon="section" data-id="s16" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
@@ -187,15 +187,37 @@
     <pre class="r-fu-prompt">/reckon-build a-landing-never-waits-on-a-shared-index §11</pre>
     <p class="r-fu-outcome"><p>§11 landed at <code>e3ba3a2b59</code>: a promotion that loses the race to a concurrent promotion of the same reviewed head completes the landing; five tests over a temporary origin drive two real <code>crew complete --land --wait</code> promotions.</p></p>
     </article>
-<article class="r-fu" data-id="f-alnw-013" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-c0" data-written-at="2026-11-15" data-recommends-skill="/reckon-build a-landing-never-waits-on-a-shared-index §13" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-alnw-013" data-status="resolved" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-c0" data-written-at="2026-11-15" data-recommends-skill="/reckon-build a-landing-never-waits-on-a-shared-index §13" data-resolved-at="2026-11-15T12:36:28+00:00" data-resolved-by="reckon-a6">
     <h4 class="r-fu-title">Build §13, then re-measure §4</h4>
     <div class="r-fu-body"><p>§4's measurement found one of twelve concurrent promotions refused at its landing commit because the lock-wait helper retries only a lock it still sees. §13 retries a lock released before the helper looked. §4 is measured again once §13 lands.</p></div>
     <pre class="r-fu-prompt">/reckon-build a-landing-never-waits-on-a-shared-index §13</pre>
+    <p class="r-fu-outcome"><p>§13 landed and was reviewed at head <code>8d32dce587</code>; the §4 re-measurement is recorded in the s4 comment (run r-20261115T062044373262, 12 of 12 landed, none rolled back).</p></p>
     </article>
-<article class="r-fu" data-id="f-alnw-009" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-a6" data-written-at="2026-11-15 11:20" data-recommends-skill="/reckon-build a-landing-never-waits-on-a-shared-index §12" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-alnw-009" data-status="resolved" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-a6" data-written-at="2026-11-15 11:20" data-recommends-skill="/reckon-build a-landing-never-waits-on-a-shared-index §12" data-resolved-at="2026-11-15T12:36:28+00:00" data-resolved-by="reckon-a6">
     <h4 class="r-fu-title">Build §12</h4>
     <div class="r-fu-body"><p>§10 and §11 have landed; §12 is the remaining implementable section.</p></div>
     <pre class="r-fu-prompt">/reckon-build a-landing-never-waits-on-a-shared-index §12</pre>
+    <p class="r-fu-outcome"><p>Superseded: §14, §15 and §16 were added after this followup was written, so each remaining section now carries its own followup.</p></p>
+    </article>
+<article class="r-fu" data-id="f-alnw-014" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-a6" data-written-at="2026-11-15 13:50" data-recommends-skill="/reckon-build a-landing-never-waits-on-a-shared-index §12" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Build §12</h4>
+    <div class="r-fu-body"><p>The stale-lock check reuses the holder scan and the lock-age owner.</p></div>
+    <pre class="r-fu-prompt">/reckon-build a-landing-never-waits-on-a-shared-index §12</pre>
+    </article>
+<article class="r-fu" data-id="f-alnw-015" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-a6" data-written-at="2026-11-15 13:50" data-recommends-skill="/reckon-build a-landing-never-waits-on-a-shared-index §14" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Build §14</h4>
+    <div class="r-fu-body"><p>A suite arm the lander cannot read is refused at delivery.</p></div>
+    <pre class="r-fu-prompt">/reckon-build a-landing-never-waits-on-a-shared-index §14</pre>
+    </article>
+<article class="r-fu" data-id="f-alnw-016" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-a6" data-written-at="2026-11-15 13:50" data-recommends-skill="/reckon-build a-landing-never-waits-on-a-shared-index §15" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Build §15</h4>
+    <div class="r-fu-body"><p>A merge repair's gate judges added failures, not absolute green.</p></div>
+    <pre class="r-fu-prompt">/reckon-build a-landing-never-waits-on-a-shared-index §15</pre>
+    </article>
+<article class="r-fu" data-id="f-alnw-017" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-a6" data-written-at="2026-11-15 13:50" data-recommends-skill="/reckon-build a-landing-never-waits-on-a-shared-index §16" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Build §16</h4>
+    <div class="r-fu-body"><p>A run that merged the primary branch into its worktree lands through crew merge.</p></div>
+    <pre class="r-fu-prompt">/reckon-build a-landing-never-waits-on-a-shared-index §16</pre>
     </article>
 </section>
   <section data-reckon="comments" id="comments" class="r-comments">
