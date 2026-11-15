@@ -20,11 +20,11 @@
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-after" content="work-flows-to-the-lane">
   <meta name="plan-section-depends-on" content="{&quot;s2&quot;:[&quot;work-scales-to-eighty-across-nodes#s3&quot;],&quot;s3&quot;:[&quot;work-flows-to-the-lane#s71&quot;],&quot;s6&quot;:[&quot;work-scales-to-eighty-across-nodes#s1&quot;,&quot;work-scales-to-eighty-across-nodes#s2&quot;,&quot;work-scales-to-eighty-across-nodes#s3&quot;,&quot;work-scales-to-eighty-across-nodes#s4&quot;,&quot;work-scales-to-eighty-across-nodes#s5&quot;]}">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;implementable&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;implementable&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;}">
   <title>Work Scales To Eighty Across Nodes | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="5">
+<meta name="plan-version" content="6">
 <meta name="plan-modified" content="2026-11-15">
 </head>
 <body>
@@ -54,7 +54,7 @@
     <p><strong>Done when.</strong> A test starts 5, then 40 stand-in workers on one node whose MCP set names the reckon server and reads one reckon server process serving all of them, each worker's tool call answered. The server's resident memory serving 40 workers, read every ten minutes for one hour, has a median no more than 0.5 GB above its median serving 5 workers over the same length of time. Negative control: at the base revision the test reads one server per worker; the failing run and the measure are logged to <code>docs/evidence/fragments/work-scales-to-eighty-across-nodes/s2.html</code>.</p>
 
     <h2 id="s3">§3 — A node declares the MCP set it needs</h2>
-    <section data-reckon="section" data-id="s3" data-effort-hours="2.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="implementable" data-links=""></section>
+    <section data-reckon="section" data-id="s3" data-effort-hours="2.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="done" data-links=""></section>
     <p><strong>Deliverable.</strong> The flight names MCP sets, each a list of servers. A plan section or a brief may name one set for its node, and the node's worker connects to exactly that set, on every backend. A node that names no set connects to none. The set a worker connected to is recorded on its run.</p>
     <p><strong>Done when.</strong> Tests with a temporary flight declaring two sets read a node naming the first connected to exactly its servers, a node naming the second connected to exactly its servers, and a node naming none connected to no server, on a Claude, a Codex and an omp launch, with the connected set recorded on each run. Negative control: at the base revision a node naming a set is refused or connected to servers outside it; the failing run is logged to <code>docs/evidence/fragments/work-scales-to-eighty-across-nodes/s3.html</code>.</p>
 
@@ -87,11 +87,11 @@
 <div class="r-comment" data-section="s3" data-id="c-run-r-20261115T201217697164-wse-a-node-declares-the-mcp-set-it-needs" data-who="reckon-build" data-when="2026-11-15T20:15:38.181Z">
     <div class="r-comment-body"><p>A flight declares named MCP sets and a node names one with mcp_set, resolved before any harness home is seeded and refused by name when the flight does not hold it; claude, codex and omp each start exactly that set and the run records worker_mcp {set, servers} — 20 passed at head against 20 failed at the base revision.</p></div>
 </div>
-<div class="r-comment" data-section="s5" data-id="c-run-r-20261115T210928954290-review-of-wse-the-station-tick-stays-under-30-seconds-at-230-live-runs-11491f785b39" data-who="reckon-build" data-when="2026-11-15T21:18:58.824Z">
-    <div class="r-comment-body"><p>Independent review of head 11491f785b against base 0f519315992f: all six dimensions scored (goal_fidelity 13, evidence 10, scope_discipline 19, durability 18, fit 18, reuse 20) with one blocking finding — the done_when's base-revision negative control did not fire (base max tick 8.997 s, over_bound 0) so the measure never demonstrates the over-30-second tick, while the evidence fragment still records verdict passed — and two non-blocking findings (the fragment's 32 KiB arrival states the secondary arm while its table's arms ran 8192; the measure arm logs carry no revision/command header).</p></div>
-</div>
 <div class="r-comment" data-section="s4" data-id="c-run-r-20261115T211853440360-review-of-wse-workers-run-on-compute-nodes-2b04fe6263d1" data-who="reckon-build" data-when="2026-11-15T21:24:29.113Z">
     <div class="r-comment-body"><p>review record stored for r-20261115T200804650837-wse-workers-run-on-compute-nodes at dafd87495fc749997947105eec1e2e0992fb8941..2b04fe6263d131b553141fa4f290321974c13c94, scoring goal_fidelity 15 evidence 8 scope_discipline 19 durability 13 fit 16 reuse 10, with 0 added failures and 4 non-blocking findings.</p></div>
+</div>
+<div class="r-comment" data-section="s5" data-id="c-run-r-20261115T210928954290-review-of-wse-the-station-tick-stays-under-30-seconds-at-230-live-runs-11491f785b39" data-who="reckon-build" data-when="2026-11-15T21:18:58.824Z">
+    <div class="r-comment-body"><p>Independent review of head 11491f785b against base 0f519315992f: all six dimensions scored (goal_fidelity 13, evidence 10, scope_discipline 19, durability 18, fit 18, reuse 20) with one blocking finding — the done_when's base-revision negative control did not fire (base max tick 8.997 s, over_bound 0) so the measure never demonstrates the over-30-second tick, while the evidence fragment still records verdict passed — and two non-blocking findings (the fragment's 32 KiB arrival states the secondary arm while its table's arms ran 8192; the measure arm logs carry no revision/command header).</p></div>
 </div>
 </section>
 </main>
