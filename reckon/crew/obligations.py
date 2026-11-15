@@ -2792,20 +2792,24 @@ def _git_reading(tree: Path, *args: str) -> str | None:
     return result.stdout.decode("utf-8", "replace")
 
 
-def _primary_branch(tree: Path) -> str | None:
-    """The ref a landing is expected to have made this tree's commits reach a.
+def _landed_refs(tree: Path) -> list[str]:
+    """The refs a landing is expected to have made this tree's commits reachable from.
 
-    The remote's own head answers first, then the names repositories here use.
-    ``None`` means no primary branch could be named, and the caller keeps the
-    duty rather than calling a tree merged by assumption.
+    Every name that resolves counts, and a commit reachable from any of them is
+    landed: the tree is settled when its work is on the branch, wherever that
+    branch is written down. The remote tracking head lags the local branch
+    until someone pushes, so the local names are read first and the remote head
+    joins them as one more candidate rather than standing as the authority.
     """
+    names = [
+        name
+        for name in ("main", "develop", "master")
+        if _git_reading(tree, "rev-parse", "--verify", "--quiet", name)
+    ]
     remote = _git_reading(tree, "symbolic-ref", "--short", "refs/remotes/origin/HEAD")
-    if remote is not None and remote.strip():
-        return remote.strip()
-    for name in ("main", "develop", "master"):
-        if _git_reading(tree, "rev-parse", "--verify", "--quiet", name):
-            return name
-    return None
+    if remote is not None and remote.strip() and remote.strip() not in names:
+        names.append(remote.strip())
+    return names
 
 
 def _tree_holds_unmerged_work(tree: Path) -> bool:
@@ -2822,10 +2826,10 @@ def _tree_holds_unmerged_work(tree: Path) -> bool:
     status = _git_reading(tree, "status", "--porcelain")
     if status is None or status.strip():
         return True
-    branch = _primary_branch(tree)
-    if branch is None:
+    landed = _landed_refs(tree)
+    if not landed:
         return True
-    beyond = _git_reading(tree, "rev-list", "--count", "HEAD", "--not", branch)
+    beyond = _git_reading(tree, "rev-list", "--count", "HEAD", "--not", *landed)
     if beyond is None:
         return True
     try:

@@ -325,55 +325,51 @@ def _commit(tree: Path, name: str) -> None:
     )
 
 
-def test_a_retained_tree_holds_while_it_carries_unmerged_work(tmp_path: Path) -> None:
-    """The rule reads work a landing has not taken, in both of its forms.
-
-    A landed, committed tree holds nothing, so a row naming it names bytes
-    nothing needs. An uncommitted change and a commit the primary branch does
-    not reach are both work deleting the tree would lose, so both keep the
-    duty.
-    """
-    tree = _git_tree(tmp_path)
-    assert obligations._tree_holds_unmerged_work(tree) is False
-
-    (tree / "uncommitted.txt").write_text("work", encoding="utf-8")
-    assert obligations._tree_holds_unmerged_work(tree) is True
-    (tree / "uncommitted.txt").unlink()
-
-    _git(tree, "checkout", "-q", "-b", "topic")
-    _commit(tree, "beyond-the-primary-branch")
-    assert obligations._tree_holds_unmerged_work(tree) is True
-    _git(tree, "checkout", "-q", "--detach")
-    assert obligations._tree_holds_unmerged_work(tree) is True
-
-    assert obligations._tree_holds_unmerged_work(tmp_path / "absent") is False
-
-
-@pytest.mark.parametrize("holds_work", [True, False])
-def test_the_derivation_holds_a_tree_only_while_it_holds_unmerged_work(
-    tmp_path: Path, holds_work: bool
+@pytest.mark.parametrize(
+    ("state", "held"),
+    [
+        ("landed", False),
+        ("uncommitted", True),
+        ("unmerged-commit", True),
+        ("gone", False),
+    ],
+)
+def test_the_derivation_holds_a_tree_only_while_it_carries_unmerged_work(
+    tmp_path: Path, state: str, held: bool
 ) -> None:
     """The row a reader sees is the derivation's answer for this tree.
 
-    The two arms differ only in whether the tree carries an uncommitted
-    change, so the re-filing step is what withholds the row rather than the
-    absence of a record naming the tree.
+    Every arm files the same record naming the same tree and differs only in
+    what the tree holds, so it is the re-filing step that decides the row and
+    not the presence of a record. A landed tree holds nothing and its row goes;
+    an uncommitted change and a commit the primary branch does not reach are
+    both work deleting the tree would lose, and a tree that is gone holds
+    nothing by construction.
     """
     tree = _git_tree(tmp_path)
-    if holds_work:
+    if state == "uncommitted":
         (tree / "uncommitted.txt").write_text("work", encoding="utf-8")
+    if state == "unmerged-commit":
+        _git(tree, "checkout", "-q", "-b", "topic")
+        _commit(tree, "beyond-the-primary-branch")
+        _git(tree, "checkout", "-q", "--detach")
     record = {
-        "run_id": RUN_ID,
+        "run_id": "r-" + state,
         "session": SESSION,
         "node": "fixture-node",
         "worktree_retention": {"worktree": str(tree)},
     }
-    state = obligations._HeldWorktreeState([])
-    state.records.replace("filing", record, retained=tree.resolve(), position="filing")
+    resolved = tree.resolve()
+    state_reader = obligations._HeldWorktreeState([])
+    state_reader.records.replace(
+        "filing", record, retained=resolved, position="filing"
+    )
+    if state == "gone":
+        tree.rename(tmp_path / "moved-away")
 
-    state.refresh_trees({tree.resolve()}, set())
+    state_reader.refresh_trees({resolved}, set())
 
-    assert (tree.resolve() in state.held) is holds_work
+    assert (resolved in state_reader.held) is held
 
 
 def test_a_deferral_names_the_project_its_duty_document_carries(
