@@ -1,0 +1,52 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/roadmap.py:3781",
+    "reckon/crew/dispatch_batch.py:838"
+  ],
+  "completed_at": "2026-11-15T10:16:18.247Z",
+  "dispatched_at": "2026-11-15T09:42:07Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-a-section-a-run-has-delivered-is-not-ready.html",
+      "line": 58,
+      "severity": "non-blocking",
+      "text": "the evidence record cites held_section_blockers (:179) and held_node_rows (:205), but they resolve at reckon/crew/section_holds.py:181 and :207, and its roadmap references named_holds (:4591) and :4611/:4617 which resolve at :4593 and :4619; the names are correct so a reader can find them, but the stale line numbers are the pointer the document offers and no reader should have to correct them."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "pass - read commit by commit from 126ffd5c0c to 6048c47423; two commits, three files, all inside the declared scope, repairing the prior round's four findings.",
+    "done_when": "pass - tests/test_a_section_a_run_has_delivered_is_not_ready.py asserts each of the three done-when clauses, and the negative control at 2026-11-15 records 8 failed, 1 passed EXIT=1 at base 34e8cf65b5.",
+    "goal": "pass - the goal is that a section a run has delivered is not ready; this round is the repair covering commits 36defce82d (code and tests) and 6048c47423 (evidence record), and the hold at reckon/crew/section_division.py no longer filters on a gate.",
+    "manifest": "pass - read; it records node module 9 passed EXIT=0 at 36defce82d, baseline arm 55 passed EXIT=0 at 55 passed in 55 / 26.82s, and negative control 8 failed, 1 passed EXIT=1.",
+    "write_paths": "pass - the three changed paths (docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-a-section-a-run-has-delivered-is-not-ready.html, reckon/crew/section_holds.py, tests/test_a_section_a_run_has_delivered_is_not_ready.py) are inside the manifest's orientation_write_paths."
+  },
+  "justifications": {
+    "durability": "tests/test_a_section_a_run_has_delivered_is_not_ready.py:255 parametrises ledger.GATE_VERDICTS so reinstating the gate filter reddens the not-run and failed cases, and :275 reddens if free[key].discard(node_key) is removed.",
+    "evidence": "both suite arms and the node module are recorded with revision, command and resolved module path in their own headers, and the done-when clauses are asserted at tests/test_a_section_a_run_has_delivered_is_not_ready.py:187, :253 and :300.",
+    "fit": "reckon/crew/section_holds.py:79 follows the surrounding lazy-import idiom, and the removed _PROMOTED_GATE constant and dead section_nodes probe leave no forbidden naming behind.",
+    "goal_fidelity": "reckon/crew/section_holds.py:158-166 holds every row ledger.picker_runs returns, so a delivery promoted under passed, failed or not-run all hold their node.",
+    "reuse": "the hand-rolled stat memo is gone; reckon/crew/section_holds.py:79 now calls the ledger's indexed read directly, extending the owner rather than duplicating it.",
+    "scope_discipline": "the diff touches only reckon/crew/section_holds.py, tests/test_a_section_a_run_has_delivered_is_not_ready.py and the evidence record - exactly the node goal, no plan state."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is that a section a run has delivered is not ready; the incremental diff from 126ffd5c0c to 6048c47423 repairs the prior round's gate filter at reckon/crew/section_holds.py:77 and removes the per-process memo and dead section_nodes probe.\nVERDICT done_when: the three done-when clauses are asserted by tests/test_a_section_a_run_has_delivered_is_not_ready.py:187, :253 and :300, and the recorded arms are suite-base 55 passed EXIT=0, suite-head 55 passed EXIT=0, node module 9 passed EXIT=0 at 36defce82d, negative control 8 failed 1 passed EXIT=1 at 34e8cf65b5.\nVERDICT write_paths: every diff path (section_holds.py, the node test module, the evidence record) is inside the manifest orientation_write_paths declared for this run.\nVERDICT manifest: read; it states node module 9 passed EXIT=0 at 36defce82d, both suite arms 55 passed and the negative control at base with its log named.\nVERDICT diff: read commit by commit from 126ffd5c0c to 6048c47423; two commits, three files, all inside the declared scope.\nCALL_SITES: reckon/roadmap.py:3781, reckon/crew/dispatch_batch.py:838\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/section_holds.py:158-166 holds every row ledger.picker_runs returns, so a delivery promoted under any gate verdict holds its node.\nSCORE evidence: 18\nJUSTIFICATION evidence: both suite arms and the node module record revision, command and resolved module path in their headers, and the done-when clauses are asserted at tests/test_a_section_a_run_has_delivered_is_not_ready.py:187, :253 and :300.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: the diff touches only reckon/crew/section_holds.py, tests/test_a_section_a_run_has_delivered_is_not_ready.py and the evidence record, carrying nothing the goal does not imply.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_a_section_a_run_has_delivered_is_not_ready.py:253 parametrises ledger.GATE_VERDICTS so a reinstated gate filter reddens not-run and failed, and :273 reddens if free[key].discard(node_key) is removed.\nSCORE fit: 17\nJUSTIFICATION fit: reckon/crew/section_holds.py:79 follows the lazy-import idiom of the module and the removed _PROMOTED_GATE leaves no forbidden name behind.\nSCORE reuse: 20\nJUSTIFICATION reuse: the hand-rolled stat-keyed memo is gone and reckon/crew/section_holds.py:79 calls ledger.picker_runs, the ledger's indexed read, so the repair extends the existing owner rather than duplicating it.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-a-section-a-run-has-delivered-is-not-ready.html:58 non-blocking: the record's line references are stale by two (held_section_blockers :179 -> :181, held_node_rows :205 -> :207, roadmap named_* :4591/:4617 -> :4593/:4619); the names resolve, but the line numbers a reader is offered do not.\n",
+  "review_run_id": "r-20261115T093925736491-review-of-qwnw-a-section-a-run-has-delivered-is-not-ready-6048c47423fc",
+  "reviewed_base_sha": "126ffd5c0c28b28651f22eb215a12f621ed29a22",
+  "reviewed_head_sha": "6048c47423fc6424132265288a37dfe824a48167",
+  "reviewed_run_id": "r-20261114T200936152763-qwnw-a-section-a-run-has-delivered-is-not-ready",
+  "scores": {
+    "durability": 19,
+    "evidence": 18,
+    "fit": 17,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-15T10:29:28.950517+00:00",
+  "total": 112
+}
