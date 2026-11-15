@@ -1,0 +1,56 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1400 720" width="31.1cm" height="16cm" font-family="Inter, 'Segoe UI', Helvetica, Arial, sans-serif">
+  <rect width="1400" height="720" fill="#ffffff"/>
+
+  <defs>
+    <marker id="arrow-grey" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#929292"/>
+    </marker>
+    <marker id="arrow-blue" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#2f6db3"/>
+    </marker>
+  </defs>
+
+  <rect x="40" y="46" width="420" height="100" rx="8" fill="none" stroke="#333333" stroke-width="1.2"/>
+  <text x="60" y="82" font-size="16" font-weight="600" fill="#111111">ledger readers</text>
+  <text x="60" y="108" font-size="14" fill="#444444">load · runs · read_records · run_ids</text>
+  <text x="60" y="130" font-size="14" fill="#444444">open_run_index rows</text>
+
+  <line x1="460" y1="96" x2="596" y2="96" stroke="#333333" stroke-width="1.2" marker-end="url(#arrow-grey)"/>
+
+  <rect x="600" y="46" width="300" height="100" rx="8" fill="none" stroke="#333333" stroke-width="1.2"/>
+  <text x="620" y="82" font-size="16" font-weight="600" fill="#111111">any *.json in runs/ ?</text>
+  <text x="620" y="108" font-size="14" fill="#444444">run_directory_holds_records</text>
+
+  <path d="M750 146 L750 196 L520 196 L520 246" fill="none" stroke="#929292" stroke-width="2.6" marker-end="url(#arrow-grey)"/>
+  <path d="M750 146 L750 196 L1040 196 L1040 246" fill="none" stroke="#2f6db3" stroke-width="3.0" marker-end="url(#arrow-blue)"/>
+  <text x="512" y="190" font-size="14" fill="#5e5e5e" text-anchor="end">yes</text>
+  <text x="1048" y="190" font-size="14" fill="#2f6db3">no</text>
+
+  <rect x="300" y="250" width="440" height="120" rx="8" fill="none" stroke="#929292" stroke-width="2.6"/>
+  <text x="320" y="286" font-size="16" font-weight="600" fill="#333333">per-run documents + aggregate</text>
+  <text x="320" y="312" font-size="14" fill="#555555">the fuller record where a document survives</text>
+  <text x="320" y="336" font-size="14" fill="#555555">and the store is not read at all</text>
+
+  <rect x="820" y="250" width="440" height="120" rx="8" fill="none" stroke="#2f6db3" stroke-width="3.0"/>
+  <text x="840" y="286" font-size="16" font-weight="600" fill="#2f6db3">run store</text>
+  <text x="840" y="312" font-size="14" fill="#555555">crew/run_store.db, its retired rows attached as archive</text>
+  <text x="840" y="336" font-size="14" fill="#555555">answers every reader's population from its rows</text>
+
+  <text x="40" y="424" font-size="14" fill="#333333">Both answers name the same run population, and a store deleted and rebuilt returns an equal answer set.</text>
+
+  <rect x="40" y="452" width="1220" height="120" rx="8" fill="none" stroke="#cccccc" stroke-width="1.2"/>
+  <text x="60" y="484" font-size="14" fill="#333333">run_ids checks the store before the published index: an index built while the project held no documents is current and empty.</text>
+  <text x="60" y="510" font-size="14" fill="#333333">open_run_index counts an aggregate, a run document, or stored rows before it reports a project with nothing to show.</text>
+  <text x="60" y="536" font-size="14" fill="#333333">load_aggregate stays the writer's view: folded store rows there would be written back into the aggregate, so it is unchanged.</text>
+
+  <text x="40" y="612" font-size="14" font-weight="600" fill="#111111">three arms over one population of 14 reader tests</text>
+
+  <circle cx="52" cy="648" r="4" fill="#b23c3c"/>
+  <text x="70" y="654" font-size="14" fill="#333333">store merge disabled: 12 failed, 2 passed (negative control)</text>
+
+  <circle cx="640" cy="648" r="4" fill="#2f6db3"/>
+  <text x="658" y="654" font-size="14" fill="#333333">base 2bf8e6947d: 58 passed over the two test files present there</text>
+
+  <circle cx="640" cy="684" r="4" fill="#2f6db3"/>
+  <text x="658" y="690" font-size="14" fill="#333333">head 27af871ae2: 72 passed, the same two files plus the new one</text>
+</svg>
