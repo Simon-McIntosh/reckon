@@ -64,16 +64,17 @@
 
       <h2 id="measurement-run-never-lands-s13-measure">Measure</h2>
       <p id="measurement-run-never-lands-s13-measure-gate"><code>tests/test_a_measurement_run_never_lands.py</code>:
-        <strong>9 passed</strong>, <code>EXIT=0</code> as the after arm's own
-        file. The nine cases are the marker the dispatch writes; the reflex
-        refusing and composing nothing; the landing pass skipping the run and
-        recording no judgement against it; <code>crew complete</code> writing
+        <strong>10 passed</strong>, <code>EXIT=0</code> on its own. The ten
+        cases are the marker the dispatch writes; the reflex refusing and
+        composing nothing; the landing pass skipping the run and recording no
+        judgement against it; <code>crew complete</code> writing
         <code>outcome: measured</code> with <code>gate: passed</code>, the run's
         commit and its 1200/40 tokens, the run's commit still not an ancestor of
         <code>main</code> and its file absent from it, and the worktree gone;
         the refusal of a landed section without the flag naming it; an open
-        section dispatching without the flag; the dry run reaching the same
-        refusal; and two comparison controls.</p>
+        section dispatching without the flag; the preview reaching the same
+        refusal and then accepting the flag it names; and the two controls
+        below.</p>
       <p id="measurement-run-never-lands-s13-measure-fixture">Every case
         synthesises its own repository, plan, ledger and workspace under a
         temporary config home. The launcher stands in for the worker: the case
@@ -84,25 +85,29 @@
 
       <h2 id="measurement-run-never-lands-s13-controls">Negative controls</h2>
       <p id="measurement-run-never-lands-s13-controls-log">Two declared
-        mutations were applied over the head revision: <code>recovery_review_dispatch._is_measurement_run</code>
-        returning <code>False</code> for every record, and
-        <code>_land_deliveries</code> ignoring
-        <code>_measurement_run_skip</code>. The reflex case then fails because
-        its refusal no longer names the measurement — the reason it reports is
-        the run's liveness — and both lander cases fail on the skip entry that
-        is no longer there. Log: <code>3 failed, 1 passed, 5 deselected</code>,
-        <code>EXIT=1</code> (<code>negative_control.log</code>). Both modules
-        were restored to their committed contents before the arms ran.</p>
-      <p id="measurement-run-never-lands-s13-controls-comparison">The two
-        comparison controls do not mutate product code: they dispatch the same
-        delivery twice, once marked and once unmarked, and assert that the
-        landing pass reaches the unmarked one — an
-        <code>admission_landing</code> judgement — while the marked one leaves
-        the pass with the measurement status and no judgement against it; and
-        that the reflex composes a review for the unmarked run with its
-        measurement refusal lifted by monkeypatch. Both would pass on a fixture
-        that is simply unlandable, which is why they assert the positive half
-        too.</p>
+        mutations were applied to the working tree over the head revision:
+        <code>recovery_review_dispatch._is_measurement_run</code> returning
+        <code>False</code> for every record, and
+        <code>queue_landing._land_deliveries</code> ignoring
+        <code>_measurement_run_skip</code>'s answer. The reflex case then fails
+        because its refusal no longer names the measurement — the reason it
+        reports is the run's liveness — and the lander case fails because the
+        pass skipped nothing and recorded no status for the run. Log:
+        <code>2 failed, 2 passed, 6 deselected</code>, <code>EXIT=1</code>
+        (<code>negative_control.log</code>). The two cases that keep passing are
+        the controls below, whose own guard removal is what the source mutation
+        does; both modules were restored to their committed contents before the
+        after arm ran.</p>
+      <p id="measurement-run-never-lands-s13-controls-guards">The two controls
+        remove one guard each on the same delivered run rather than picking a
+        different fixture: the lander control lifts
+        <code>_measurement_run_skip</code> and finds an
+        <code>admission_landing</code> judgement recorded against the run, and
+        the reflex control lifts <code>_measurement_run_refusal</code> and finds
+        a review composed. Both deliveries end the stand-in worker before the
+        pass runs: a live pid legitimately defers a terminal manifest, so
+        without that step a control would measure liveness instead of the
+        guard.</p>
 
       <h2 id="measurement-run-never-lands-s13-suite">Suite</h2>
       <p id="measurement-run-never-lands-s13-suite-arms">Base arm: the revision
@@ -110,10 +115,10 @@
         staged-write inventory case has a repository to read —
         <code>tests/test_staged_write_inventory.py</code> and
         <code>tests/test_every_shared_home_lock_holds_across_nodes.py</code>,
-        <strong>58 passed</strong>, <code>EXIT=0</code>. After arm at
-        <code>af14a0e848</code>, the same two files beside this node's own test
-        file: <strong>67 passed</strong>, <code>EXIT=0</code>. The delta is the
-        nine new cases; neither sibling changed.</p>
+        <strong>58 passed</strong>, <code>EXIT=0</code>. After arm at code head
+        <code>9d4d5e9586</code>, the same two files beside this node's own test
+        file: <strong>68 passed</strong>, <code>EXIT=0</code>. The delta is the
+        ten new cases; neither sibling changed.</p>
       <p id="measurement-run-never-lands-s13-suite-lint">Ruff on the six staged
         paths reports one finding, the unused <code>noqa</code> directive at
         <code>preparation.py:141</code> that the base revision carries as well,
