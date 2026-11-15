@@ -63,7 +63,20 @@
   <p>Declared mutation <em>mapping every held state to needs-you again fails the
   held-on-claim case</em>: with <code>hold_owner</code> returning the
   coordinator's reading for every hold, <code>9 failed, 2 passed</code>
-  (<code>EXIT=1</code>), the parked cases and the owner table among them.</p>
+  (<code>EXIT=1</code>), the parked cases and the owner table among them.
+  Reverting the repair commit instead, which is the mutation this round is
+  judged by, fails on the assertion the finding named: a parked request in
+  six of six hold kinds still hands <code>reckon crew queue release --run
+  r-parked</code> on a row drawn waiting.</p>
+  <p>Of the 85 test files that import either edited module, 76 pass at the
+  repair head and 9 fail; every failing id also fails at the base arm except
+  <code>test_the_pane_counts_parked_work.py</code>'s
+  <code>test_every_parked_phase_counts_once_in_the_waiting_cell</code>, which
+  asserts that a row whose state is <code>held</code> and whose record names
+  no owner is counted in the waiting cell. No production path emits that row
+  any more: a held snapshot is drawn by its owner's move, so it reads
+  waiting or needs-you. Retiring that case is a change to a file outside
+  this section's write scope and is recorded in the manifest.</p>
   <p><code>tests/test_recovery_state_typing.py</code> — which pinned the old
   disagreement, a queued run drawn "needs you" and counted in the waiting cell —
   passes at head and at base; the classifier still calls that row
