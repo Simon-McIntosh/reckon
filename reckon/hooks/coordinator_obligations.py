@@ -1557,13 +1557,18 @@ def _prompt(payload: dict[str, Any]) -> int:
             note=f"producer reloading, last snapshot {_format_age(age)} old",
         )
         return 0
-    if state == module.NO_PRODUCER and not session_holds_live_work(project, session):
+    if (
+        state == module.NO_PRODUCER
+        and not session_holds_live_work(project, session)
+        and not limit_reset_events(session)
+    ):
         # An absent producer publishes nothing for a session that holds no
         # live work, so the line would ask a coordinator that dispatched
         # nothing to arm a seat nothing is owed to -- the reading a session
-        # with no runs read on every prompt for days. The record is cleared so
-        # work that arrives later is spoken for the first time rather than
-        # read as a repeat of a reading already given.
+        # with no runs read on every prompt for days. A limit reset is still
+        # news for such a session, so the reading is kept when one is due. The
+        # record is cleared so work that arrives later is spoken for the first
+        # time rather than read as a repeat of a reading already given.
         _clear_digest(digest_path(project, session))
         return 0
     _inject_reading(
@@ -1849,13 +1854,6 @@ def _stop(payload: dict[str, Any]) -> int:
             resolved = derive_within_budget(project, session, stop_derivation_budget())
         if resolved is None:
             if not payload.get("stop_hook_active"):
-                if state == module.NO_PRODUCER and not session_holds_live_work(
-                    project, session
-                ):
-                    # The same reading the prompt path stays quiet over: a
-                    # session holding no live work is owed nothing by a seat
-                    # that publishes nothing about it.
-                    return 0
                 reload_started_at, deferral = module.watch_reload_state(project)
                 if deferral is not None:
                     line = deferred_reload_line(
