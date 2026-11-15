@@ -24,7 +24,7 @@
   <title>Work Flows To The Lane | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="350">
+<meta name="plan-version" content="351">
 <meta name="plan-modified" content="2026-11-15">
 </head>
 <body>
@@ -1232,6 +1232,9 @@
 <div class="r-comment" data-section="s70" data-id="c-run-r-20261115T121622838079-wftl-a-delivered-run-is-promoted-without-a-coordinator-codex" data-who="reckon-build" data-when="2026-11-15T13:08:58Z">
     <div class="r-comment-body"><p>Added three station/service regression tests; all_debug base 58 passed and head 61 passed, zero added failures. Both automatic behaviors already passed on base product code; disabling the acceptance handoff causes the landing test to fail, while a blocking finding defers promotion.</p></div>
 </div>
+<div class="r-comment" data-section="s70" data-id="c-run-r-20261115T163011754683-review-of-wftl-a-working-review-keeps-its-working-phase-codex-83d42b81ee65" data-who="reckon-build" data-when="2026-11-15T16:38:17Z">
+    <div class="r-comment-body"><p>Independent review of base 922e3ba81a02ea9644838b4855b5d6173b656d2b through head 83d42b81ee65f06e8c5313e2136cdb8d305a50ae scores all six dimensions 20/20, finds no defects, and records zero added failures from baseline/after logs (58 passed each).</p></div>
+</div>
 <div class="r-comment" data-section="s71" data-id="c-run-r-20261115T110125481369-review-of-wftl-a-worker-starts-no-reckon-mcp-server-codex-aea34fce655e" data-who="reckon-build" data-when="2026-11-15T11:11:04Z">
     <div class="r-comment-body"><p>Parsed independent review records both source revisions, all six scores, zero added armed-gate failures, and one blocking all-server allow-list finding; both records validated.</p></div>
 </div>
@@ -1305,7 +1308,7 @@
     <div class="r-comment-body"><p>Measured the closed 2026-11-14 21:00 to 2026-11-15 01:00 UTC window with scripts/lane_window_census.py, which now reads the ledger through the store that owns it (11,670 hot rows plus 12,227 retired): a time-weighted mean of 23.55 working workers against a 4.34 baseline (criterion 12, met), a median completion-to-promotion of 92.5 minutes for the 39 implement runs (criterion 20 minutes, not met), 27,854 worker identity files at the window's end (criterion under 100, not met), and 5 of 8 admit passes holding a request on a claim under the shared crew home (criterion none, not met).</p></div>
 </div>
 <div class="r-comment" data-section="s76" data-id="c-run-r-20261115T152105901404-review-of-wftl-a-producer-restarts-without-linger-994d51ee3a16" data-who="reckon-build" data-when="2026-11-15T15:30:21.662Z">
-    <div class="r-comment-body"><p>an independent review of 994d51ee3a is stored under the reviewed run&#x27;s review-records: six dimensions goal_fidelity 15, evidence 15, scope_discipline 20, durability 16, fit 18, reuse 13 (total 97), two non-blocking findings (the reviewed manifest&#x27;s after_suite command and log_path are mangled shell fragments at manifest.md:21; the new test file restates the poll/pid helpers and the parametric kill case owned by tests/test_a_crashed_producer_is_restarted.py), added_failure_count 0 derived from the reviewed run&#x27;s logs/s76-base-arm.log (0 failures, 2 passed at 8863ecb4f369) and logs/s76-after-arm.log (0 failures, 2 passed at 994d51ee3a); both record files pass `crew check --review` with ok true, EXIT=0.</p></div>
+    <div class="r-comment-body"><p>an independent review of 994d51ee3a is stored under the reviewed run's review-records: six dimensions goal_fidelity 15, evidence 15, scope_discipline 20, durability 16, fit 18, reuse 13 (total 97), two non-blocking findings (the reviewed manifest's after_suite command and log_path are mangled shell fragments at manifest.md:21; the new test file restates the poll/pid helpers and the parametric kill case owned by tests/test_a_crashed_producer_is_restarted.py), added_failure_count 0 derived from the reviewed run's logs/s76-base-arm.log (0 failures, 2 passed at 8863ecb4f369) and logs/s76-after-arm.log (0 failures, 2 passed at 994d51ee3a); both record files pass `crew check --review` with ok true, EXIT=0.</p></div>
 </div>
 </section>
 </main>
