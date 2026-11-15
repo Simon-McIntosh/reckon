@@ -89,29 +89,16 @@ def test_live_view_carries_the_cause(tmp_path: Path, monkeypatch) -> None:
     assert row["budget_overrun_cause"] == "lane-saturated"
 
 
-#: The stamps the ledger index takes the maximum over when it stores a row's
-#: activity, which is the scalar its ``activity_since`` bound filters on.
-_ACTIVITY_KEYS = ("launched_at", "created_at", "dispatched_at", "completed_at")
-
-
-def _activity_seconds(row: dict) -> float | None:
-    """The newest usable stamp on a row, as the ledger's activity scalar reads it."""
-    moments = [
-        datetime.fromisoformat(str(row[key])).timestamp()
-        for key in _ACTIVITY_KEYS
-        if row.get(key)
-    ]
-    return max(moments) if moments else None
-
-
 def _load_stub(rows: list[dict]):
     """Stand in for ``ledger.load``, honouring the window bound it publishes.
 
     The real read may be bounded by ``activity_since``; a stub that took only
     the project name would raise when the bound is passed, and a stub that
     accepted and ignored it would answer a different question from the index.
-    So the bound is applied here the same way: keep the rows whose newest stamp
-    is no older than the boundary.
+    So the bound is applied here as the index applies it — over
+    :func:`ledger.run_activity_seconds`, which owns the rule that a row's
+    activity is its newest usable stamp — rather than over a copy of that rule,
+    which would drift the moment the owner changed which stamps it counts.
     """
 
     def load(project: str, activity_since: float | None = None, **unused):
@@ -120,12 +107,37 @@ def _load_stub(rows: list[dict]):
             selected = [
                 row
                 for row in rows
-                if (moment := _activity_seconds(row)) is not None
+                if (moment := ledger.run_activity_seconds(row)) is not None
                 and moment >= activity_since
             ]
         return {"runs": selected}, 1
 
     return load
+
+
+def test_the_reference_stub_filters_by_the_ledgers_activity_rule(monkeypatch) -> None:
+    """The stand-in must apply the owner's activity rule, not a copy of it.
+
+    A row's activity is whatever ``ledger.run_activity_seconds`` says it is, so
+    moving that rule has to move the stand-in's filtering with it. The rule is
+    replaced here with a fixed instant after the bound; a stand-in carrying its
+    own copy of the newest-stamp rule keeps filtering on the row's completion
+    stamp and returns nothing.
+    """
+    rows = [
+        {
+            "backend": "clive",
+            "agent": {"model": "deepseek-v4.1-flash"},
+            "completed_at": "2026-10-03T11:00:00Z",
+            "throughput": {"tokens_per_second": 44.5},
+        }
+    ]
+    bound = datetime(2026, 10, 3, 11, 30, tzinfo=UTC).timestamp()
+    assert _load_stub(rows)("sample", activity_since=bound)[0]["runs"] == []
+
+    later = bound + 3600
+    monkeypatch.setattr(ledger, "run_activity_seconds", lambda row: later)
+    assert _load_stub(rows)("sample", activity_since=bound)[0]["runs"] == rows
 
 
 def test_reference_reads_recent_committed_rows_for_one_backend_and_model(
