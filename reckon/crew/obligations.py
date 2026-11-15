@@ -1888,16 +1888,22 @@ def _producer_gone_item(row: Mapping[str, Any], *, now: datetime) -> dict[str, A
     return item
 
 
-def _repair_round_in_flight(pointer: Mapping[str, Any]) -> Mapping[str, Any] | None:
-    """The repair round a run's pointer records as open, or ``None``.
+def _repair_round_in_flight(
+    pointer: Mapping[str, Any], *, process_alive: bool | None
+) -> Mapping[str, Any] | None:
+    """The open repair round with a live attempt, or ``None``.
 
     The record is the reflex's own account of the round it acted on. Only an
     opening status means work is under way: a round the reflex held, declined,
     refused or exhausted produced no worker answering it, so it names nothing in
     flight however recently it was written. The record's ``round_id`` is the run
     at the revision its review read, which is both the round's identity and the
-    key to the stored review that raised the finding.
+    key to the stored review that raised the finding. A round counts as in flight
+    only when its attempt process is known to be alive, so every reader asks this
+    owner for the complete verdict.
     """
+    if process_alive is not True:
+        return None
     dispatch = pointer.get(recovery_review_dispatch.REPAIR_DISPATCH_FIELD)
     if not isinstance(dispatch, Mapping):
         return None
@@ -1960,10 +1966,8 @@ def _repair_round_item(
     """
     if pointer is None:
         return None
-    dispatch = _repair_round_in_flight(pointer)
+    dispatch = _repair_round_in_flight(pointer, process_alive=row.get("process_alive"))
     if dispatch is None:
-        return None
-    if row.get("process_alive") is not True:
         return None
     item = _live_item(row, kind=REPAIR_ROUND_DUTY_KIND, now=now)
     item["next_command"] = ""
