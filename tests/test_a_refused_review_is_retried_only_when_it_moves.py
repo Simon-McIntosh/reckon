@@ -36,7 +36,7 @@ from reckon import _plan_html, file_memo
 from reckon.crew import recovery, resumption, station
 from reckon.crew import recovery_review_acceptance as acceptance
 from reckon.crew import review as review_module
-from reckon.crew.promotion_requests import PromotionService
+from reckon.crew.promotion_requests import PromotionRequests, PromotionService
 from reckon.crew.runs import _write_json, crew_home, pointer_path, run_dir
 from tests.helpers.git import git as _git
 
@@ -180,6 +180,63 @@ def _sweep() -> dict:
     )
 
 
+def _sweep_durable() -> dict:
+    """One sweep that hands promotions to the durable queue, as the station does."""
+    return recovery.dispatch_awaiting_reviews(
+        project=PROJECT,
+        session=SESSION,
+        launcher=lambda *args, **kwargs: 0,
+        promotions=PromotionRequests(),
+    )
+
+
+def _store_record(path: Path) -> Path:
+    """File the review record the run was dispatched to write, at ``path``."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    body = {
+        "status": "parsed",
+        "project": PROJECT,
+        "reviewed_run_id": REVIEWED_RUN_ID,
+        "review_run_id": REVIEW_RUN_ID,
+        "reviewed_base_sha": REVIEWED_BASE,
+        "reviewed_head_sha": REVIEWED_HEAD,
+        "scores": dict.fromkeys(review_module.REVIEW_DIMENSIONS, 20),
+        "total": 20 * len(review_module.REVIEW_DIMENSIONS),
+        "findings": [],
+        "timestamp": "2026-11-14T15:00:00Z",
+    }
+    path.write_text(json.dumps(body), encoding="utf-8")
+    return path
+
+
+def _seed_refused_receipt(error: str) -> Path:
+    """Leave the durable queue holding a refusal for this review run.
+
+    A receipt refused on an earlier attempt is what a refusal looks like once
+    the queue has drained one: the request path returns it unchanged to every
+    later sweep, so the sweep's report is where it is stated.
+    """
+    path = run_dir(REVIEW_RUN_ID) / "promotion.json"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    _write_json(
+        path,
+        {
+            "ok": True,
+            "run_id": REVIEW_RUN_ID,
+            "request_id": "refused-earlier",
+            "phase": "promotion-refused",
+            "kind": "review-self",
+            "project": PROJECT,
+            "session": SESSION,
+            "node": REVIEW_NODE_ID,
+            "requested_at": "2026-11-14T14:10:00+00:00",
+            "finished_at": "2026-11-14T14:10:01+00:00",
+            "error": error,
+        },
+    )
+    return path
+
+
 def _station_beat() -> station.SweepBeat:
     """The station's runner, driving the same sweep the live station drives."""
     return station.SweepBeat(sweep=resumption.sweep, start=lambda work: work())
@@ -251,3 +308,67 @@ def test_an_unmoved_refusal_is_read_once_and_reported_once(
     assert three_sweep_searches == 1, three_sweep_searches
     assert moved_searches == 2, moved_searches
     assert len(lines) == 1, lines
+
+
+def test_a_record_filed_after_a_read_is_seen_by_the_next_sweep(
+    repository: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A record stored after a pass cached its absence is read, and promotes.
+
+    The search reads a path filed under the run the reviewer read, so storing
+    the record there moves neither the review run's pointer nor its own run
+    directory. The answer kept from an earlier pass must not survive the file
+    it was about.
+    """
+    file_memo.clear()
+    _write_ended_review_pointer()
+    searches = _count_record_searches(monkeypatch)
+
+    first = _sweep()
+    refusals = [
+        entry
+        for entry in first["review_self_refused"]
+        if entry.get("run_id") == REVIEW_RUN_ID
+    ]
+    assert refusals, first
+    assert refusals[0]["promoted"] is False, refusals
+    assert first["self_promoted"] == [], first
+    cached = searches["count"]
+
+    _store_record(_record_path())
+
+    second = _sweep()
+    print(f"record searches before the record was filed: {cached}")
+    print(f"record searches after the record was filed: {searches['count']}")
+    print(f"promoted after the record was filed: {second['self_promoted']}")
+    assert second["self_promoted"] == [REVIEW_RUN_ID], second
+
+
+def test_a_durable_refusal_is_reported_once_across_sweeps(repository: Path) -> None:
+    """A refused receipt is one line, not one per sweep that reports it.
+
+    The refusal reaches the sweep on two paths: the review pass reads it, and
+    the collection reports the refusal the durable queue returns for the
+    promotions this sweep handed off. Both must claim the same identity, or the
+    receipt's one refusal is stated again on a later pass.
+    """
+    file_memo.clear()
+    _write_ended_review_pointer()
+    _seed_refused_receipt("the promotion was refused on an earlier attempt")
+
+    first = _sweep_durable()
+    second = _sweep_durable()
+    third = _sweep_durable()
+
+    counts = [
+        len(
+            [
+                entry
+                for entry in report["failed"]
+                if entry.get("run_id") == REVIEW_RUN_ID
+            ]
+        )
+        for report in (first, second, third)
+    ]
+    print(f"failed entries naming the run per durable sweep: {counts}")
+    assert sum(counts) == 1, counts

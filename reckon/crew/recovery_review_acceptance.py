@@ -778,30 +778,85 @@ _PRE_LAUNCH_PHASES = frozenset({"queued", "awaiting-upstream", "starting"})
 REVIEW_SELF_REFUSED = "refused"
 
 
-def _review_self_signature(pointer: Mapping[str, Any]) -> tuple[Any, ...] | None:
-    """The identity of the pointer and run directory a refusal was read at.
+def _identity_signature(path: Path) -> tuple[Any, ...]:
+    """The stat identity of ``path``, or its absence, without raising.
 
-    A review run that ended without storing its record changes none of its own
-    inputs, so re-reading it every sweep reaches the same refusal and costs the
-    same record search. The pair the run can move — its pointer and its run
-    directory — is the identity the answer is kept under: a worker that writes
-    into the run directory, or anything that rewrites the pointer, changes it
-    and makes the next sweep look again. ``None`` when either cannot be
-    stat'ed, which leaves the caller reading uncached.
+    A record the search looks for is normally absent on the pass that refuses
+    the review, and its absence is as much part of the identity as its content:
+    a file that appears must change the identity, so ``("absent",)`` is a value
+    here rather than a missing one.
     """
-    run_id = str(pointer.get("run_id") or "")
-    if not run_id:
-        return None
     from reckon import file_memo
 
     try:
-        return (
-            run_id,
-            file_memo.file_signature(runs.pointer_path(run_id)),
-            file_memo.file_signature(Path(runs.run_dir(run_id))),
-        )
+        return file_memo.file_signature(path)
     except OSError:
+        return ("absent",)
+
+
+def _directory_signature(directory: Path) -> tuple[Any, ...]:
+    """The identity of every entry of ``directory``, or its absence.
+
+    A plan review's record is the newest delivered report under a directory
+    named for its run, so the directory's own entries are what the search
+    reads and what a later delivery changes.
+    """
+    try:
+        entries = sorted(directory.iterdir())
+    except OSError:
+        return ("absent",)
+    return tuple((entry.name, _identity_signature(entry)) for entry in entries)
+
+
+def _review_self_signature(
+    pointer: Mapping[str, Any] | None, project: str = ""
+) -> tuple[Any, ...] | None:
+    """The identity of everything a review's delivery search reads.
+
+    A review run that ended without storing its record changes none of the
+    inputs the search reads *from the review run itself*, so the pointer and
+    run directory are part of this identity. They are not enough on their own:
+    the record the search looks for is filed under the run that was reviewed —
+    a head-keyed path in that run's ``review-records`` directory, or a path in
+    the crew review store — and filing it there moves neither the review's
+    pointer nor its run directory. Keyed on those two alone, the answer
+    "no record" was returned forever after the reviewer finally stored one.
+    So every candidate path the search would read is part of the identity too,
+    absent ones included, and a plan review's report directory is read the same
+    way. ``None`` when the run cannot be identified at all, which leaves the
+    caller reading uncached.
+    """
+    if pointer is None:
         return None
+    run_id = str(pointer.get("run_id") or "")
+    if not run_id:
+        return None
+    project = project or str(pointer.get("project") or "")
+    parts: list[Any] = [
+        run_id,
+        _identity_signature(runs.pointer_path(run_id)),
+        _identity_signature(Path(runs.run_dir(run_id))),
+    ]
+    plan_slug = _plan_review_pointer_slug(pointer)
+    if plan_slug:
+        from reckon.crew import plan_review
+
+        directory = Path(
+            plan_review.review_report_directory(project, plan_slug, run_id)
+        )
+        parts.append(("plan-report", _identity_signature(directory)))
+        parts.append(("plan-report-entries", _directory_signature(directory)))
+    else:
+        from .recovery_review_delivery import _review_store_record_paths
+
+        try:
+            candidates = _review_store_record_paths(pointer, project)
+        except (CrewError, OSError, ValueError):
+            candidates = []
+        parts.extend(
+            (str(candidate), _identity_signature(candidate)) for candidate in candidates
+        )
+    return tuple(parts)
 
 
 def _delivered_once(
@@ -809,14 +864,14 @@ def _delivered_once(
     signature: tuple[Any, ...] | None,
     read: Callable[[], Any],
 ) -> Any:
-    """Read a review's delivered record once per pointer-and-directory identity.
+    """Read a review's delivered record once per identity it was searched at.
 
-    A review that has ended and stored nothing will keep delivering nothing
-    until its pointer or its run directory moves, so the search that establishes
-    the absence is shared across the sweeps that read it: the first pass pays for
-    it and every pass at the same identity reads what it found. A record that
-    appears while the identity is unchanged is not seen until one of the pair
-    moves, which is the condition the refusal is remembered under.
+    A review that has ended and stored nothing keeps delivering nothing until
+    something the search reads moves, so the search that establishes the
+    absence is shared across the sweeps that read it: the first pass pays for
+    it and every pass at the same identity reads what it found. The identity
+    carries the paths the search itself would read, so a record filed after a
+    pass looked is a new identity and the next pass reads it.
     """
     if signature is None:
         return read()
@@ -852,6 +907,26 @@ def _mark_refusal_reported(signature: tuple[Any, ...]) -> bool:
         while len(_REPORTED_REFUSALS) > _REPORTED_REFUSALS_LIMIT:
             _REPORTED_REFUSALS.popitem(last=False)
         return True
+
+
+def _claims_refusal(run_id: str) -> bool:
+    """Whether a refused ``review-self`` receipt is this pass's to report.
+
+    The receipt the drain leaves is read by the review pass and again by the
+    collection that reports the promotions this sweep handed off, so one
+    unchanged refusal would be logged twice. Both claim the same identity
+    through :func:`_mark_refusal_reported`; the first claim reports and the
+    second stays silent. A run whose pointer cannot be read has no identity to
+    claim, so it is reported rather than dropped.
+    """
+    try:
+        pointer = runs.read_pointer(run_id)
+    except (CrewError, OSError, ValueError):
+        return True
+    signature = _review_self_signature(pointer)
+    if signature is None:
+        return True
+    return _mark_refusal_reported(signature)
 
 
 def _settled_self_refusal(run_id: str, reason: str) -> str | None:
@@ -962,7 +1037,7 @@ def review_self_state(
     # A review that has ended changes nothing about itself until its pointer or
     # its run directory moves, so the record search below is shared across the
     # sweeps that read it at one identity rather than repeated each pass.
-    signature = _review_self_signature(pointer)
+    signature = _review_self_signature(pointer, project)
     plan_slug = _plan_review_pointer_slug(pointer)
     if plan_slug:
         # A plan review's record is the report it wrote under the composed
@@ -1431,9 +1506,9 @@ def dispatch_awaiting_reviews(
             if receipt.get("phase") in {"promotion-requested", "promotion-running"}:
                 requested.append(run_id)
             elif receipt.get("phase") in {"promotion-failed", "promotion-refused"}:
-                failed.append(
-                    {"run_id": run_id, "error": str(receipt.get("error") or "")}
-                )
+                error = str(receipt.get("error") or "")
+                if kind != "review-self" or _claims_refusal(run_id):
+                    failed.append({"run_id": run_id, "error": error})
     elif promotions is not None and handed:
         for run_id, kind, job in handed:
 
