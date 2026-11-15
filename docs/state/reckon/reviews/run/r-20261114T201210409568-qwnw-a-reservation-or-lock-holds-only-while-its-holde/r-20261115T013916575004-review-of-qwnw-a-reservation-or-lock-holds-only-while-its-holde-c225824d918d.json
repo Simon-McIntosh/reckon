@@ -1,0 +1,75 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-11-15T02:48:33.595Z",
+  "dispatched_at": "2026-11-15T01:42:33Z",
+  "findings": [
+    {
+      "line": 31,
+      "path": "reckon/crew/host_heartbeat.py",
+      "severity": "blocking",
+      "text": "nothing refreshes a host's beat on an interval, so the 90-second stale window releases a foreign reservation while its holder is still working \u2014 the only production publisher is `_publish_reservation_host` at reckon/crew/dispatch_launch.py:2889, called once when a reservation is taken, so a host that takes no new launch for ninety seconds reads as gone to every other host, `reservation_in_flight` returns False, and a second launch on the same attempt is admitted; the constant's own comment claims a window \"well above the interval at which anything publishes one\" and no such interval exists."
+    },
+    {
+      "line": 2930,
+      "path": "reckon/crew/dispatch_launch.py",
+      "severity": "non-blocking",
+      "text": "`release_unspawned_reservations` omits the `_reserved_attempt_ended` guard its twin `release_a_withdrawn_reservation` applies at :2861, so it can write an `exit_code: null` receipt over an attempt's real exit record."
+    },
+    {
+      "line": 279,
+      "path": "tests/test_a_reservation_holds_only_while_its_holder_works.py",
+      "severity": "non-blocking",
+      "text": "`getattr(repair, \"supersede_a_held_repair_round\", None)` followed by `pytest.skip` turns deletion of the capability the done_when names into a green skip, and :267 and :171 do the same for the withdrawal call and the heartbeat module."
+    },
+    {
+      "line": 34,
+      "path": "reckon/crew/host_heartbeat.py",
+      "severity": "non-blocking",
+      "text": "`heartbeat_host` duplicates `local_host`, which reckon/crew/host_lease.py:19 already owns and twelve modules already import."
+    },
+    {
+      "line": 2892,
+      "path": "reckon/crew/dispatch_launch.py",
+      "severity": "non-blocking",
+      "text": "the loop body repeats `release_a_withdrawn_reservation`'s body at :2839-2877 line for line instead of calling it, so a change to one release path will not reach the other."
+    },
+    {
+      "line": 168,
+      "path": "tests/test_a_reservation_holds_only_while_its_holder_works.py",
+      "severity": "non-blocking",
+      "text": "the lapsed-beat branch \u2014 a beat present but older than HEARTBEAT_STALE_SECONDS at reckon/crew/host_heartbeat.py:31 \u2014 is untested, because this case covers only a beat that was never written and reaches its answer by a different comparison."
+    },
+    {
+      "line": 6,
+      "path": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-a-reservation-or-lock-holds-only-while-its-holde.html",
+      "severity": "non-blocking",
+      "text": "the gate paragraph rests on two suite logs that match the repository's `*.log` gitignore rule, so they are uncommitted and vanish with the worktree; the copies in the run directory are the ones a later reader can open."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "read commit by commit against e393d4098a \u2014 82959bb827 is the fix across six reckon modules plus the new test file, and c225824d91 is the eight-line evidence fragment; 8 files, 698 insertions, 4 deletions.",
+    "done_when": "the done_when names seven behaviours; tests/test_a_reservation_holds_only_while_its_holder_works.py asserts a live door still refusing (line 148), a dead pid released (160), a fresh foreign beat keeping a reservation (182), an absent beat releasing one (168), a delivered and an undelivered resume mark (198, 229), the advice-hold withdrawal (262) and the superseded round (276), but it never drives `crew resume --advice` through reckon/crew_run_commands.py:2612 or the door's own withdrawal call at reckon/crew/recovery_repair_dispatch.py:1929, and it never ages a beat into the lapsed window its own done_when names.",
+    "goal": "the node's goal is that a reservation or lock holds only while its holder is working on it; reckon/crew/dispatch_launch.py:2559 `_reservation_holder_running` picks the liveness test per holder, reckon/crew/resumption.py:319 `launch_mark_holds` spends a resume mark once its attempt has answered, and reckon/crew/recovery_repair_dispatch.py:118 lets a door that never launched release what it holds \u2014 read in full; the first is only partly faithful, because a holder on another host is judged by when that host last took a launch rather than by whether this holder is still working.",
+    "manifest": "read; it records 8 passed on tests/test_a_reservation_holds_only_while_its_holder_works.py, a base arm of 2 failed/49 passed and a head arm of 2 failed/57 passed with the same two ids, a negative control of 3 failed/2 passed/3 skipped at e393d4098a, and names three log files that exist in the reviewed worktree.",
+    "write_paths": "the dispatch declares reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround and skills; every path in e393d4098a..c225824d91 \u2014 the six reckon modules, the one test file and the one evidence fragment \u2014 sits inside them."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that a reservation or lock holds only while its holder is working on it; reckon/crew/dispatch_launch.py:2559 `_reservation_holder_running` picks the liveness test per holder, reckon/crew/resumption.py:319 `launch_mark_holds` spends a resume mark once its attempt has answered, and reckon/crew/recovery_repair_dispatch.py:118 lets a door that never launched release what it holds \u2014 read in full; the first is only partly faithful, because a holder on another host is judged by when that host last took a launch rather than by whether this holder is still working.\nVERDICT done_when: the done_when names seven behaviours; tests/test_a_reservation_holds_only_while_its_holder_works.py asserts a live door still refusing (line 148), a dead pid released (160), a fresh foreign beat keeping a reservation (182), an absent beat releasing one (168), a delivered and an undelivered resume mark (198, 229), the advice-hold withdrawal (262) and the superseded round (276), but it never drives `crew resume --advice` through reckon/crew_run_commands.py:2612 or the door's own withdrawal call at reckon/crew/recovery_repair_dispatch.py:1929, and it never ages a beat into the lapsed window its own done_when names.\nVERDICT write_paths: the dispatch declares reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround and skills; every path in e393d4098a..c225824d91 \u2014 the six reckon modules, the one test file and the one evidence fragment \u2014 sits inside them.\nVERDICT manifest: read; it records 8 passed on tests/test_a_reservation_holds_only_while_its_holder_works.py, a base arm of 2 failed/49 passed and a head arm of 2 failed/57 passed with the same two ids, a negative control of 3 failed/2 passed/3 skipped at e393d4098a, and names three log files that exist in the reviewed worktree.\nVERDICT diff: read commit by commit against e393d4098a \u2014 82959bb827 is the fix across six reckon modules plus the new test file, and c225824d91 is the eight-line evidence fragment; 8 files, 698 insertions, 4 deletions.\nCALL_SITES: reckon/crew/dispatch_launch.py:reserve_launch_attempt, reckon/crew/dispatch_launch.py:held_launch_reservation, reckon/crew/dispatch_launch.py:reservation_in_flight, reckon/crew/recovery_repair_dispatch.py:withdraw_unlaunched_repair_reservations (called at reckon/crew/recovery_repair_dispatch.py:1929), reckon/crew/recovery_repair_dispatch.py:supersede_a_held_repair_round (called at reckon/crew/resumption.py:1981), reckon/crew_run_commands.py:crew_resume, reckon/crew/recovery_review_dispatch.py:_settled_delivery_refusal, reckon/crew/recovery_review_acceptance.py:1284\nSCORE goal_fidelity: 14\nJUSTIFICATION goal_fidelity: reckon/crew/dispatch_launch.py:2565-2581 judges a foreign holder by host_heartbeat.host_is_live, which answers \"did this host take a launch in the last ninety seconds\" rather than \"is this host still working\", so the goal's own wording is met for a local holder and only approximated for a remote one.\nSCORE evidence: 12\nJUSTIFICATION evidence: the gate is recorded and reproducible \u2014 tests/test_a_reservation_holds_only_while_its_holder_works.py at 8 passed beside a base arm of 2 failed/49 passed and a head arm of 2 failed/57 passed \u2014 but two of the done_when's clauses are asserted only at helper level and the lapsed-beat clause is tested as an absent beat instead.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every path in the diff lies under reckon/, tests/ or docs/evidence/fragments/queued-work-needs-no-workaround/, which are exactly the declared write paths, and the diff carries nothing the goal does not imply.\nSCORE durability: 10\nJUSTIFICATION durability: tests/test_a_reservation_holds_only_while_its_holder_works.py:168 and :182 do redden if dispatch_launch._reservation_holder_running is reverted, but :267, :279 and :171 stay green if the capability is deleted, and no test reaches the wiring at reckon/crew_run_commands.py:2612 or reckon/crew/recovery_repair_dispatch.py:1929.\nSCORE fit: 16\nJUSTIFICATION fit: reckon/crew/host_heartbeat.py follows the idiom of reckon/crew/host_lease.py \u2014 a small state record written atomically with fsync and judged by its own mtime \u2014 and names everything by mechanism, with no plan or ticket reference and no plan labels.\nSCORE reuse: 9\nJUSTIFICATION reuse: reckon/crew/host_heartbeat.py re-implements the mtime-freshness record and the `socket.gethostname()` accessor that reckon/crew/host_lease.py:19-118 already owns, and reckon/crew/dispatch_launch.py:2892 inlines the release body of its own `release_a_withdrawn_reservation` at :2839 instead of calling it.\nFINDING reckon/crew/host_heartbeat.py:31 blocking: nothing refreshes a host's beat on an interval, so the 90-second stale window releases a foreign reservation while its holder is still working \u2014 the only production publisher is `_publish_reservation_host` at reckon/crew/dispatch_launch.py:2889, called once when a reservation is taken, so a host that takes no new launch for ninety seconds reads as gone to every other host, `reservation_in_flight` returns False, and a second launch on the same attempt is admitted; the constant's own comment claims a window \"well above the interval at which anything publishes one\" and no such interval exists.\nFINDING reckon/crew/dispatch_launch.py:2930 non-blocking: `release_unspawned_reservations` omits the `_reserved_attempt_ended` guard its twin `release_a_withdrawn_reservation` applies at :2861, so it can write an `exit_code: null` receipt over an attempt's real exit record.\nFINDING tests/test_a_reservation_holds_only_while_its_holder_works.py:279 non-blocking: `getattr(repair, \"supersede_a_held_repair_round\", None)` followed by `pytest.skip` turns deletion of the capability the done_when names into a green skip, and :267 and :171 do the same for the withdrawal call and the heartbeat module.\nFINDING reckon/crew/host_heartbeat.py:34 non-blocking: `heartbeat_host` duplicates `local_host`, which reckon/crew/host_lease.py:19 already owns and twelve modules already import.\nFINDING reckon/crew/dispatch_launch.py:2892 non-blocking: the loop body repeats `release_a_withdrawn_reservation`'s body at :2839-2877 line for line instead of calling it, so a change to one release path will not reach the other.\nFINDING tests/test_a_reservation_holds_only_while_its_holder_works.py:168 non-blocking: the lapsed-beat branch \u2014 a beat present but older than HEARTBEAT_STALE_SECONDS at reckon/crew/host_heartbeat.py:31 \u2014 is untested, because this case covers only a beat that was never written and reaches its answer by a different comparison.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-a-reservation-or-lock-holds-only-while-its-holde.html:6 non-blocking: the gate paragraph rests on two suite logs that match the repository's `*.log` gitignore rule, so they are uncommitted and vanish with the worktree; the copies in the run directory are the ones a later reader can open.",
+  "review_run_id": "r-20261115T013916575004-review-of-qwnw-a-reservation-or-lock-holds-only-while-its-holde-c225824d918d",
+  "reviewed_base_sha": "e393d4098a36e6e67be0bb1ead9285fe34cf63d9",
+  "reviewed_head_sha": "c225824d918dddc8abdc9c8929f35fc978a3258e",
+  "reviewed_run_id": "r-20261114T201210409568-qwnw-a-reservation-or-lock-holds-only-while-its-holde",
+  "scores": {
+    "durability": 10,
+    "evidence": 12,
+    "fit": 16,
+    "goal_fidelity": 14,
+    "reuse": 9,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-15T02:50:56.061237+00:00",
+  "total": 80
+}
