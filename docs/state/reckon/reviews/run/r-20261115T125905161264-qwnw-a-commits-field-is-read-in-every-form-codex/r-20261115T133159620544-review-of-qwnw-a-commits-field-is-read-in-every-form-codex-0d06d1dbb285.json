@@ -1,0 +1,115 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "Derived from the reviewed run baseline.log and armed-head.log: each completed with 58 passed, EXIT=0 and no FAILED IDs; added failure set is empty.",
+  "assertion_analysis": [
+    {
+      "failure_condition": "Promotion returns or stores raw annotated strings, the wrong commit, or a truncated commit list instead of full IDs independently read from Git; restoring pre-change raw-string resolution already raises on list and JSON inputs. Expected is Git-derived, not an echo of the supplied annotated strings.",
+      "lines": "tests/test_manifest_commit_forms.py:63-64"
+    },
+    {
+      "failure_condition": "Successful completion leaves the live pointer present.",
+      "lines": "tests/test_manifest_commit_forms.py:65"
+    },
+    {
+      "failure_condition": "Promotion silently rewrites the delivered manifest to make it acceptable; delivered is an intentional before/after snapshot of the file, not a functional-output oracle.",
+      "lines": "tests/test_manifest_commit_forms.py:66"
+    },
+    {
+      "failure_condition": "The parser splits a subject comma into another entry or loses a list entry; the expected cardinality is independently fixed by the fixture structure.",
+      "lines": "tests/test_manifest_commit_forms.py:67"
+    },
+    {
+      "failure_condition": "The positive-control fixture commit does not resolve or the supposedly missing revision actually belongs to the repository; these establish fixture validity, not regression coverage.",
+      "lines": "tests/test_manifest_commit_forms.py:75-76"
+    },
+    {
+      "failure_condition": "Invalid-SHA promotion succeeds or raises a refusal that does not name the SHA and report non-resolution; silently dropping invalid entries would violate the expected refusal.",
+      "lines": "tests/test_manifest_commit_forms.py:87-90"
+    },
+    {
+      "failure_condition": "Refused promotion writes a ledger row or removes the resumable live pointer.",
+      "lines": "tests/test_manifest_commit_forms.py:91-92"
+    }
+  ],
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew/promotion_scope.py:_manifest_cites_a_commit",
+    "reckon/crew/promotion_scope.py:_declared_manifest_commits",
+    "reckon/crew/promotion_checks.py:_png_twin_findings_in_run_commits",
+    "reckon/crew/promotion_checks.py:_review_changed_scope"
+  ],
+  "compatibility_evidence": {
+    "added_failure_count": 0,
+    "base_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T125905161264-qwnw-a-commits-field-is-read-in-every-form-codex/compatibility-base.log",
+    "head_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T125905161264-qwnw-a-commits-field-is-read-in-every-form-codex/compatibility.log",
+    "note": "Both recorded the same three failure IDs; reviewed only as evidence, with no out-of-node triage."
+  },
+  "completed_at": "2026-11-15T13:39:24Z",
+  "dispatched_at": "2026-11-15T13:33:37Z",
+  "findings": [],
+  "gate_evidence": {
+    "after_suite": {
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T125905161264-qwnw-a-commits-field-is-read-in-every-form-codex/armed-head.log"
+    },
+    "baseline_suite": {
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T125905161264-qwnw-a-commits-field-is-read-in-every-form-codex/baseline.log"
+    }
+  },
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "Read f8d177380052313acf1c7adb8a1ba6e21a320fe6 and 0d06d1dbb2851b83f86dbadec86c8a142744e0e9 against 6cc82823b5917cc458b5064ee49efb1cba97e093; the changes comprise two focused production edits, five promotion cases and two evidence fragments.",
+    "done_when": "Read the quantitative measure in prompt.txt; tests/test_manifest_commit_forms.py:22 exercises all four successful forms plus the named invalid-SHA refusal at line 87, with after.log recording 63 passed and negative-control.log recording the three required base failures on all_debug.",
+    "goal": "Read the source goal in prompt.txt and live section s25; reckon/crew/promotion_scope.py:280 and reckon/crew/promotion_evidence.py:820 accept the required annotated citations and commitless list declaration while retaining unresolved-commit refusal.",
+    "manifest": "Read manifest.md and the actual baseline.log, armed-head.log, after.log, negative-control.log and compatibility logs; the reported counts, revision pair, five changed paths and two commits agree with those artifacts.",
+    "write_paths": "Read the declared scope in prompt.txt; all five paths in the base-to-head diff are within reckon, tests or docs/evidence/fragments/queued-work-needs-no-workaround."
+  },
+  "justifications": {
+    "durability": "tests/test_manifest_commit_forms.py:63 checks Git-derived canonical IDs rather than the annotated input strings, and :87 requires named refusal, so restoring raw-string resolution or dropping invalid revisions would fail these tests.",
+    "evidence": "tests/test_manifest_commit_forms.py:22 and :70 exercise actual temporary-repository promotion and refusal, after.log records 63 passed, and negative-control.log records the list, JSON and none cases failing at the stated base.",
+    "fit": "reckon/crew/promotion_scope.py:274 uses the surrounding lazy-import idiom and tests/test_manifest_commit_forms.py:14 reuses existing promotion fixtures with mechanism-based names and comments.",
+    "goal_fidelity": "reckon/crew/promotion_scope.py:280 resolves annotated entries through the existing revision reader and reckon/crew/promotion_evidence.py:820 recognises parsed absence declarations, meeting the four-form deliverable without weakening invalid-SHA resolution.",
+    "reuse": "Capability searches for commit citation and subject handling identified reckon/crew/queue_landing.py:85 and reckon/crew/reports.py:565, whose revision reader and literal-list parser the edits reuse, while both added test functions extend the existing promotion fixture mechanism.",
+    "scope_discipline": "The two production modules, tests/test_manifest_commit_forms.py and the two evidence fragments shown by the commit diffs all lie inside the source prompt.txt write paths and serve its deliverable."
+  },
+  "negative_control_evidence": {
+    "exit_status": 1,
+    "failing_forms": [
+      "list",
+      "json",
+      "none"
+    ],
+    "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T125905161264-qwnw-a-commits-field-is-read-in-every-form-codex/negative-control.log",
+    "reproduction": "commit '9271b92 test: record candidate, with details' does not resolve to a commit object",
+    "summary": "3 failed, 2 passed in 2.40s"
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: Read the source goal in prompt.txt and live section s25; reckon/crew/promotion_scope.py:280 and reckon/crew/promotion_evidence.py:820 accept the required annotated citations and commitless list declaration while retaining unresolved-commit refusal.\nVERDICT done_when: Read the quantitative measure in prompt.txt; tests/test_manifest_commit_forms.py:22 exercises all four successful forms plus the named invalid-SHA refusal at line 87, with after.log recording 63 passed and negative-control.log recording the three required base failures on all_debug.\nVERDICT write_paths: Read the declared scope in prompt.txt; all five paths in the base-to-head diff are within reckon, tests or docs/evidence/fragments/queued-work-needs-no-workaround.\nVERDICT manifest: Read manifest.md and the actual baseline.log, armed-head.log, after.log, negative-control.log and compatibility logs; the reported counts, revision pair, five changed paths and two commits agree with those artifacts.\nVERDICT diff: Read f8d177380052313acf1c7adb8a1ba6e21a320fe6 and 0d06d1dbb2851b83f86dbadec86c8a142744e0e9 against 6cc82823b5917cc458b5064ee49efb1cba97e093; the changes comprise two focused production edits, five promotion cases and two evidence fragments.\nCALL_SITES: reckon/crew/promotion_scope.py:_manifest_cites_a_commit, reckon/crew/promotion_scope.py:_declared_manifest_commits, reckon/crew/promotion_checks.py:_png_twin_findings_in_run_commits, reckon/crew/promotion_checks.py:_review_changed_scope\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/promotion_scope.py:280 resolves annotated entries through the existing revision reader and reckon/crew/promotion_evidence.py:820 recognises parsed absence declarations, meeting the four-form deliverable without weakening invalid-SHA resolution.\nSCORE evidence: 20\nJUSTIFICATION evidence: tests/test_manifest_commit_forms.py:22 and :70 exercise actual temporary-repository promotion and refusal, after.log records 63 passed, and negative-control.log records the list, JSON and none cases failing at the stated base.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: The two production modules, tests/test_manifest_commit_forms.py and the two evidence fragments shown by the commit diffs all lie inside the source prompt.txt write paths and serve its deliverable.\nSCORE durability: 20\nJUSTIFICATION durability: tests/test_manifest_commit_forms.py:63 checks Git-derived canonical IDs rather than the annotated input strings, and :87 requires named refusal, so restoring raw-string resolution or dropping invalid revisions would fail these tests.\nSCORE fit: 20\nJUSTIFICATION fit: reckon/crew/promotion_scope.py:274 uses the surrounding lazy-import idiom and tests/test_manifest_commit_forms.py:14 reuses existing promotion fixtures with mechanism-based names and comments.\nSCORE reuse: 20\nJUSTIFICATION reuse: Capability searches for commit citation and subject handling identified reckon/crew/queue_landing.py:85 and reckon/crew/reports.py:565, whose revision reader and literal-list parser the edits reuse, while both added test functions extend the existing promotion fixture mechanism.\n",
+  "review_run_id": "r-20261115T133159620544-review-of-qwnw-a-commits-field-is-read-in-every-form-codex-0d06d1dbb285",
+  "reviewed_base_sha": "6cc82823b5917cc458b5064ee49efb1cba97e093",
+  "reviewed_head_sha": "0d06d1dbb2851b83f86dbadec86c8a142744e0e9",
+  "reviewed_run_id": "r-20261115T125905161264-qwnw-a-commits-field-is-read-in-every-form-codex",
+  "scores": {
+    "durability": 20,
+    "evidence": 20,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-15T13:58:14.207431+00:00",
+  "total": 120
+}
