@@ -1,0 +1,90 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew/promotion.py:944",
+    "reckon/crew/promotion_records.py:1106",
+    "reckon/crew_run_commands.py:3770",
+    "reckon/crew_run_commands.py:3860"
+  ],
+  "completed_at": "2026-11-15T11:41:16.305Z",
+  "dispatched_at": "2026-11-15T11:18:30Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "exempted",
+      "reason": "nova \u00a71 landing is an observation in another repository after this node, not a deliverable it can show",
+      "recorded_at": "2026-11-15T11:49:12.931405+00:00"
+    },
+    "1": {
+      "kind": "folded",
+      "node": "hand-merge-row-is-counted-s12",
+      "recorded_at": "2026-11-15T11:49:52.524770+00:00"
+    },
+    "2": {
+      "kind": "folded",
+      "node": "hand-merge-row-is-counted-s12",
+      "recorded_at": "2026-11-15T11:50:55.366690+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T003157263085-gate-names-its-arms-s9/manifest.md",
+      "id": "f600687e53a",
+      "line": "11",
+      "severity": "non-blocking",
+      "text": "non-blocking: the done_when's clause \"nova \u00a71 then lands through the guard with its H200 arms\" has no recorded result in the manifest, the checkpoint or the evidence fragment, so one clause of the measure is neither shown nor waived and a reader cannot tell whether it was attempted."
+    },
+    {
+      "file": "reckon/crew_run_commands.py",
+      "id": "f08a57d2123",
+      "line": "3851",
+      "severity": "non-blocking",
+      "text": "non-blocking: _utc_now_text re-implements the ISO-Z timestamp capability reckon/crew/run_paths.py:36 _utc_now already owns, so two formatters now have to be kept in step; import the existing one or lift it to a shared owner."
+    },
+    {
+      "file": "reckon/ledger.py",
+      "id": "fdda7a5a044",
+      "line": "4472",
+      "severity": "non-blocking",
+      "text": "non-blocking: the new \"not-run\" suite_delta status returned at reckon/crew/promotion_records.py:1253 is absent from the suite_deltas counter's fixed vocabulary, so a hand-merged row is silently uncounted in the ledger rollup."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "read both commits against cb00d30e70; six files, 1091 insertions and 13 deletions \u2014 promotion_records.py adds gate_declaration, _declared_command_text, the arm-waiver helpers and the recorded_merge short-circuit, landing_measure.py threads a declared partition into armed_observations, crew_run_commands.py adds the two verbs, and the rest is the two test files and one evidence fragment; nothing outside the goal is carried.",
+    "done_when": "the done_when asserts three unit behaviours plus a suite pair plus an external landing step; tests/test_a_gate_names_its_arms.py carries all three behaviours (declared GPU arms land, undeclared arms refused naming the mismatch, waiver lands with reason and held arms, waiver still refuses an added failure, refused --land --wait submits no job) and the suite pair is recorded in the manifest; the \"nova \u00a71 lands through the guard with its H200 arms\" clause has no recorded result anywhere in the run.",
+    "goal": "read the node goal (\"Let a run's gate declare the command and partition its arms run with and record a hand-merged run through a supported verb\") against the landed diff; both halves are present \u2014 reckon/crew_run_commands.py:3770 crew_declare_gate and reckon/crew_run_commands.py:3860 crew_record_merge are real Click verbs, and reckon/crew/promotion_records.py:482 gate_declaration is read where the arming was read.",
+    "manifest": "read; status complete, commits 905128fb92 and 795d15b44f, tests line names the pytest invocation with \"7 passed\", baseline_suite and after_suite carry revision, command, exit_status, completed true, failure_count 0 and empty failure_ids, and test_logs names suite-base.log and suite-after.log \u2014 the logs agree with every claim (55 passed at base, 62 passed at head, both EXIT=0, all_debug, -n 4).",
+    "write_paths": "read the dispatch's declared write paths (promotion_records.py, landing_measure.py, node.py, crew_run_commands.py, the two new test files, the evidence fragment); every one of the six paths in the diff is inside them, and reckon/crew/node.py is declared but untouched."
+  },
+  "justifications": {
+    "durability": "tests/test_a_gate_names_its_arms.py:279 fails if _declared_command_text stops reading the declaration \u2014 the mutating negative control at negative-control.log turns that case red \u2014 and tests/test_a_hand_merged_run_is_recorded.py:170 fails if the recorded_merge short-circuit is removed.",
+    "evidence": "the gate log tests/test_a_gate_names_its_arms.py pairs with a red negative-control.log at EXIT=1, but the done_when's \"nova \u00a71 lands through the guard\" clause is recorded nowhere in the run's manifest or evidence fragment.",
+    "fit": "the two verbs sit beside crew_complete in reckon/crew_run_commands.py:3770 and follow its option and docstring idiom, and reuse _refuse_a_flag_as_a_reason; the one wart is the new reckon/crew_run_commands.py:3851 _utc_now_text duplicating an existing formatter.",
+    "goal_fidelity": "reckon/crew_run_commands.py:3770 and reckon/crew_run_commands.py:3860 deliver exactly the two verbs the goal names, and reckon/crew/promotion_records.py:1100 routes the declaration into the measurement.",
+    "reuse": "record-merge wraps reckon/crew/promotion.py:539 complete and reckon/crew/pending_landing.py:111 clear_pending rather than adding a second release path, but reckon/crew_run_commands.py:3851 re-implements the timestamp capability reckon/crew/run_paths.py:36 already owns.",
+    "scope_discipline": "every path in git diff --stat cb00d30e70 795d15b44f lies inside the declared write paths, and no behaviour outside the goal (no dispatch-side field, no plan edit) was touched."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: read the node goal (\"Let a run's gate declare the command and partition its arms run with and record a hand-merged run through a supported verb\") against the landed diff; both halves are present \u2014 reckon/crew_run_commands.py:3770 crew_declare_gate and reckon/crew_run_commands.py:3860 crew_record_merge are real Click verbs, and reckon/crew/promotion_records.py:482 gate_declaration is read where the arming was read.\nVERDICT done_when: the done_when asserts three unit behaviours plus a suite pair plus an external landing step; tests/test_a_gate_names_its_arms.py carries all three behaviours (declared GPU arms land, undeclared arms refused naming the mismatch, waiver lands with reason and held arms, waiver still refuses an added failure, refused --land --wait submits no job) and the suite pair is recorded in the manifest; the \"nova \u00a71 lands through the guard with its H200 arms\" clause has no recorded result anywhere in the run.\nVERDICT write_paths: read the dispatch's declared write paths (promotion_records.py, landing_measure.py, node.py, crew_run_commands.py, the two new test files, the evidence fragment); every one of the six paths in the diff is inside them, and reckon/crew/node.py is declared but untouched.\nVERDICT manifest: read; status complete, commits 905128fb92 and 795d15b44f, tests line names the pytest invocation with \"7 passed\", baseline_suite and after_suite carry revision, command, exit_status, completed true, failure_count 0 and empty failure_ids, and test_logs names suite-base.log and suite-after.log \u2014 the logs agree with every claim (55 passed at base, 62 passed at head, both EXIT=0, all_debug, -n 4).\nVERDICT diff: read both commits against cb00d30e70; six files, 1091 insertions and 13 deletions \u2014 promotion_records.py adds gate_declaration, _declared_command_text, the arm-waiver helpers and the recorded_merge short-circuit, landing_measure.py threads a declared partition into armed_observations, crew_run_commands.py adds the two verbs, and the rest is the two test files and one evidence fragment; nothing outside the goal is carried.\nCALL_SITES: reckon/crew/promotion.py:944, reckon/crew/promotion_records.py:1106, reckon/crew_run_commands.py:3770, reckon/crew_run_commands.py:3860\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew_run_commands.py:3770 and reckon/crew_run_commands.py:3860 deliver exactly the two verbs the goal names, and reckon/crew/promotion_records.py:1100 routes the declaration into the measurement.\nSCORE evidence: 14\nJUSTIFICATION evidence: the gate log tests/test_a_gate_names_its_arms.py pairs with a red negative-control.log at EXIT=1, but the done_when's \"nova \u00a71 lands through the guard\" clause is recorded nowhere in the run's manifest or evidence fragment.\nSCORE scope_discipline: 17\nJUSTIFICATION scope_discipline: every path in git diff --stat cb00d30e70 795d15b44f lies inside the declared write paths, and no behaviour outside the goal (no dispatch-side field, no plan edit) was touched.\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_a_gate_names_its_arms.py:279 fails if _declared_command_text stops reading the declaration \u2014 the mutating negative control at negative-control.log turns that case red \u2014 and tests/test_a_hand_merged_run_is_recorded.py:170 fails if the recorded_merge short-circuit is removed.\nSCORE fit: 16\nJUSTIFICATION fit: the two verbs sit beside crew_complete in reckon/crew_run_commands.py:3770 and follow its option and docstring idiom, and reuse _refuse_a_flag_as_a_reason; the one wart is the new reckon/crew_run_commands.py:3851 _utc_now_text duplicating an existing formatter.\nSCORE reuse: 17\nJUSTIFICATION reuse: record-merge wraps reckon/crew/promotion.py:539 complete and reckon/crew/pending_landing.py:111 clear_pending rather than adding a second release path, but reckon/crew_run_commands.py:3851 re-implements the timestamp capability reckon/crew/run_paths.py:36 already owns.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T003157263085-gate-names-its-arms-s9/manifest.md:11 non-blocking: the done_when's clause \"nova \u00a71 then lands through the guard with its H200 arms\" has no recorded result in the manifest, the checkpoint or the evidence fragment, so one clause of the measure is neither shown nor waived and a reader cannot tell whether it was attempted.\nFINDING reckon/crew_run_commands.py:3851 non-blocking: _utc_now_text re-implements the ISO-Z timestamp capability reckon/crew/run_paths.py:36 _utc_now already owns, so two formatters now have to be kept in step; import the existing one or lift it to a shared owner.\nFINDING reckon/ledger.py:4472 non-blocking: the new \"not-run\" suite_delta status returned at reckon/crew/promotion_records.py:1253 is absent from the suite_deltas counter's fixed vocabulary, so a hand-merged row is silently uncounted in the ledger rollup.\n",
+  "review_run_id": "r-20261115T111658222214-review-of-gate-names-its-arms-s9-795d15b44f59",
+  "reviewed_base_sha": "cb00d30e70593c7ffa02103815ad1551c39a4a3f",
+  "reviewed_head_sha": "795d15b44f59fc8057dd539bda66c0bd6731ee1c",
+  "reviewed_run_id": "r-20261115T003157263085-gate-names-its-arms-s9",
+  "scores": {
+    "durability": 17,
+    "evidence": 14,
+    "fit": 16,
+    "goal_fidelity": 18,
+    "reuse": 17,
+    "scope_discipline": 17
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-15T11:42:19.199295+00:00",
+  "total": 99
+}
