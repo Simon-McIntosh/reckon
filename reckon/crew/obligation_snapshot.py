@@ -170,6 +170,11 @@ def cleanup_intent_path(run_id: str) -> Path:
     Written before a run's pointer is retired and retired only once the release
     is done, so its presence means the run's workspace has an owner with work
     already scheduled for it.
+
+    Repeated here rather than read through ``terminal_cleanup.cleanup_path`` for
+    the reason this module repeats the config home: the prompt hook resolves a
+    held answer by loading this file alone, so importing that module would drag
+    the crew package into the hook's interpreter.
     """
     return crew_home() / "cleanup" / f"{run_id}.json"
 

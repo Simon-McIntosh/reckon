@@ -24,6 +24,7 @@ import json
 import os
 import re
 import shlex
+import subprocess
 import sys
 import threading
 from collections import OrderedDict, defaultdict, deque
@@ -2774,6 +2775,65 @@ def _holding_record(
     return candidates[-1]
 
 
+def _git_reading(tree: Path, *args: str) -> str | None:
+    """One git reading taken in one tree, or ``None`` when it cannot be read.
+
+    A failed reading is distinct from an empty answer: the caller keeps a duty
+    it cannot settle rather than reporting a tree released on a read that never
+    reached the repository. ``GIT_OPTIONAL_LOCKS=0`` keeps the reading from
+    taking the tree's index lock while a peer may hold it.
+    """
+    try:
+        result = run_git(tree, *args, env={"GIT_OPTIONAL_LOCKS": "0"})
+    except (OSError, subprocess.SubprocessError):
+        return None
+    if result.returncode != 0:
+        return None
+    return result.stdout.decode("utf-8", "replace")
+
+
+def _primary_branch(tree: Path) -> str | None:
+    """The ref a landing is expected to have made this tree's commits reach a.
+
+    The remote's own head answers first, then the names repositories here use.
+    ``None`` means no primary branch could be named, and the caller keeps the
+    duty rather than calling a tree merged by assumption.
+    """
+    remote = _git_reading(tree, "symbolic-ref", "--short", "refs/remotes/origin/HEAD")
+    if remote is not None and remote.strip():
+        return remote.strip()
+    for name in ("main", "develop", "master"):
+        if _git_reading(tree, "rev-parse", "--verify", "--quiet", name):
+            return name
+    return None
+
+
+def _tree_holds_unmerged_work(tree: Path) -> bool:
+    """Whether a retained tree still carries work no landing has taken.
+
+    A tree is a duty while deleting it would lose something: an uncommitted
+    change, or a commit the primary branch does not reach. A tree whose run has
+    landed holds neither, so the row naming it names bytes nothing needs, and
+    the derivation stops raising it. A tree that is gone holds nothing; a tree
+    whose state cannot be read keeps its duty.
+    """
+    if not tree.is_dir():
+        return False
+    status = _git_reading(tree, "status", "--porcelain")
+    if status is None or status.strip():
+        return True
+    branch = _primary_branch(tree)
+    if branch is None:
+        return True
+    beyond = _git_reading(tree, "rev-list", "--count", "HEAD", "--not", branch)
+    if beyond is None:
+        return True
+    try:
+        return int(beyond.strip() or "0") > 0
+    except ValueError:
+        return True
+
+
 def _held_worktree_records(project: str) -> dict[Path, Mapping[str, Any]]:
     """Return the record holding each registered, present and unoccupied tree.
 
@@ -3038,6 +3098,14 @@ class _HeldWorktreeState:
         return affected
 
     def refresh_trees(self, inspected: set[Path], affected: set[Path]) -> None:
+        """Re-file the trees this read inspected, holding only those still owed.
+
+        A tree stops being held when no record names it any more, when its
+        release is already owned, or when it carries no work a landing would
+        have taken: a tree that survived its run but holds nothing unmerged
+        only costs someone a look, while a row claiming otherwise costs a
+        reader their trust in every row beside it.
+        """
         for tree in self.inspected - inspected:
             self.held.pop(tree, None)
             for name in self.records.worktree_keys(tree):
@@ -3052,9 +3120,13 @@ class _HeldWorktreeState:
         for tree in affected & inspected:
             record = _holding_record(tree, self.records)
             release = record.get("release") if record is not None else None
-            if record is None or (
-                isinstance(release, Mapping)
-                and release.get("worktree_released") is True
+            if (
+                record is None
+                or (
+                    isinstance(release, Mapping)
+                    and release.get("worktree_released") is True
+                )
+                or not _tree_holds_unmerged_work(tree)
             ):
                 self.held.pop(tree, None)
             else:

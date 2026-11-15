@@ -23,6 +23,7 @@ from __future__ import annotations
 
 import importlib
 import json
+import subprocess
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
@@ -36,6 +37,7 @@ obligations = importlib.import_module("reckon.crew.obligations")
 PROJECT = "duty-ends-fixture"
 SESSION = "duty-ends-session"
 OTHER_SESSION = "duty-ends-other-session"
+OTHER_PROJECT = "duty-ends-other-project"
 RUN_ID = "r-duty-ends"
 OTHER_RUN_ID = "r-duty-ends-other"
 ERROR = "ValueError: unreadable ledger row"
@@ -186,13 +188,15 @@ def _row(run_id: str = RUN_ID) -> dict:
     }
 
 
-def _store_duties(session: str = SESSION, run_id: str = RUN_ID) -> Path:
+def _store_duties(
+    session: str = SESSION, run_id: str = RUN_ID, project: str = PROJECT
+) -> Path:
     """Store the duty document a session's view is served from."""
-    directory = obligation_snapshot.obligations_home() / PROJECT
+    directory = obligation_snapshot.obligations_home() / project
     directory.mkdir(parents=True, exist_ok=True)
     path = directory / f"{session}.json"
     document = {
-        "project": PROJECT,
+        "project": project,
         "session": session,
         "obligations": [_row(run_id)],
         "acknowledged": [],
@@ -223,7 +227,7 @@ def _served(rows: list[dict]) -> list[tuple[str, str]]:
 
 @pytest.mark.parametrize("release_owned", [True, False])
 def test_a_held_tree_settles_once_its_release_has_an_owner(
-    release_owned: bool,
+    release_owned: bool, repository: Path
 ) -> None:
     """A retained tree is a duty until the cleanup queue owns its release.
 
@@ -280,3 +284,112 @@ def test_a_deferral_for_a_run_no_record_names_is_still_refused(
 
     with pytest.raises(runs.CrewError):
         runs.record_run_acknowledgement(RUN_ID, "awaiting a peer release", until)
+
+
+def _git(tree: Path, *args: str) -> str:
+    result = subprocess.run(
+        ["git", "-C", str(tree), *args], capture_output=True, text=True, check=False
+    )
+    assert result.returncode == 0, (args, result.stderr)
+    return result.stdout.strip()
+
+
+def _git_tree(tmp_path: Path) -> Path:
+    """A repository with one landed commit on its primary branch.
+
+    Its own repository rather than a worktree of this checkout: the rule reads
+    a tree's own commits and working state, and a fixture sharing this
+    repository would answer for whatever a peer has in flight here.
+    """
+    tree = tmp_path / "retained-tree"
+    tree.mkdir()
+    _git(tree, "init", "-q")
+    _commit(tree, "landed")
+    _git(tree, "branch", "-M", "main")
+    return tree
+
+
+def _commit(tree: Path, name: str) -> None:
+    (tree / f"{name}.txt").write_text(name, encoding="utf-8")
+    _git(tree, "add", "--", f"{name}.txt")
+    _git(
+        tree,
+        "-c",
+        "user.name=fixture",
+        "-c",
+        "user.email=fixture@example.invalid",
+        "commit",
+        "-q",
+        "-m",
+        name,
+    )
+
+
+def test_a_retained_tree_holds_while_it_carries_unmerged_work(tmp_path: Path) -> None:
+    """The rule reads work a landing has not taken, in both of its forms.
+
+    A landed, committed tree holds nothing, so a row naming it names bytes
+    nothing needs. An uncommitted change and a commit the primary branch does
+    not reach are both work deleting the tree would lose, so both keep the
+    duty.
+    """
+    tree = _git_tree(tmp_path)
+    assert obligations._tree_holds_unmerged_work(tree) is False
+
+    (tree / "uncommitted.txt").write_text("work", encoding="utf-8")
+    assert obligations._tree_holds_unmerged_work(tree) is True
+    (tree / "uncommitted.txt").unlink()
+
+    _git(tree, "checkout", "-q", "-b", "topic")
+    _commit(tree, "beyond-the-primary-branch")
+    assert obligations._tree_holds_unmerged_work(tree) is True
+    _git(tree, "checkout", "-q", "--detach")
+    assert obligations._tree_holds_unmerged_work(tree) is True
+
+    assert obligations._tree_holds_unmerged_work(tmp_path / "absent") is False
+
+
+@pytest.mark.parametrize("holds_work", [True, False])
+def test_the_derivation_holds_a_tree_only_while_it_holds_unmerged_work(
+    tmp_path: Path, holds_work: bool
+) -> None:
+    """The row a reader sees is the derivation's answer for this tree.
+
+    The two arms differ only in whether the tree carries an uncommitted
+    change, so the re-filing step is what withholds the row rather than the
+    absence of a record naming the tree.
+    """
+    tree = _git_tree(tmp_path)
+    if holds_work:
+        (tree / "uncommitted.txt").write_text("work", encoding="utf-8")
+    record = {
+        "run_id": RUN_ID,
+        "session": SESSION,
+        "node": "fixture-node",
+        "worktree_retention": {"worktree": str(tree)},
+    }
+    state = obligations._HeldWorktreeState([])
+    state.records.replace("filing", record, retained=tree.resolve(), position="filing")
+
+    state.refresh_trees({tree.resolve()}, set())
+
+    assert (tree.resolve() in state.held) is holds_work
+
+
+def test_a_deferral_names_the_project_its_duty_document_carries(
+    repository: Path,
+) -> None:
+    """The fallback's answer is the document's, not the fixture's name.
+
+    The document is stored under a project this module never otherwise uses,
+    so an acknowledgement recorded against PROJECT could only have come from a
+    source other than the document the fallback reads.
+    """
+    _store_duties(project=OTHER_PROJECT)
+    until = (NOW + timedelta(hours=2)).isoformat()
+
+    runs.record_run_acknowledgement(RUN_ID, "awaiting a peer release", until)
+
+    recorded = json.loads(runs.acknowledgement_path(RUN_ID).read_text(encoding="utf-8"))
+    assert recorded["project"] == OTHER_PROJECT, recorded
+    assert recorded["project"] != PROJECT, recorded

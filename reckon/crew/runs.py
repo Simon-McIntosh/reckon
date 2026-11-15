@@ -2288,8 +2288,10 @@ def _obligation_record_project(run_id: str) -> str:
     withholds nothing. A document is matched on a row carrying the run's id;
     one that cannot be parsed is skipped rather than guessed at.
     """
+    from reckon.crew import obligation_snapshot, station_obligations
+
     try:
-        paths = sorted((crew_home() / "obligations").glob("*/*.json"))
+        paths = sorted(obligation_snapshot.obligations_home().glob("*/*.json"))
     except OSError:
         return ""
     for path in paths:
@@ -2297,12 +2299,11 @@ def _obligation_record_project(run_id: str) -> str:
             stored = json.loads(path.read_text(encoding="utf-8"))
         except (OSError, ValueError):
             continue
-        if not isinstance(stored, Mapping):
-            continue
-        payload = stored.get("payload")
-        document = payload.get("document") if isinstance(payload, Mapping) else None
-        if not isinstance(document, Mapping):
+        document = station_obligations.stored_document(stored)
+        if document is None and isinstance(stored, Mapping):
             document = stored
+        if not isinstance(document, Mapping):
+            continue
         name = str(document.get("project") or "")
         if not name:
             continue
