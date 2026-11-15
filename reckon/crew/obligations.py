@@ -1678,7 +1678,7 @@ def _partition_acknowledged(
     """Split duties into those still owed and those deliberately deferred."""
     owed: list[dict[str, Any]] = []
     deferred: list[dict[str, Any]] = []
-    for item in items:
+    for item in measured_remedy_items(items):
         record = acknowledgements.get(str(item.get("run_id") or ""))
         if record is None:
             owed.append(item)
@@ -1691,6 +1691,56 @@ def _partition_acknowledged(
             }
         )
     return owed, deferred
+
+
+def measured_remedy_items(items: Sequence[Mapping[str, Any]]) -> list[dict[str, Any]]:
+    """Offer settlement commands only from the attempt's current evidence.
+
+    Both the direct view and the station's snapshot partition here, so the
+    hook renders the same decision without importing the derivation.
+    """
+    checked: list[dict[str, Any]] = []
+    for original in items:
+        item = dict(original)
+        command = str(item.get("next_command") or "")
+        try:
+            tokens = shlex.split(command)
+        except ValueError:
+            tokens = []
+        completing = "complete" in tokens and "crew" in tokens
+        repairing = "repair" in tokens and "--status" in tokens and "complete" in tokens
+        settlement_kind = item.get("kind") in {
+            "promotion-failed",
+            "review-ready",
+            "promotable-stale",
+            HELD_BY_FINISHED_RUN_DUTY_KIND,
+        }
+        if not (completing or repairing or settlement_kind):
+            checked.append(item)
+            continue
+        run_id = str(item.get("run_id") or "")
+        if "--run" in tokens and tokens.index("--run") + 1 < len(tokens):
+            run_id = tokens[tokens.index("--run") + 1]
+        try:
+            pointer = runs.read_pointer(run_id)
+        except CrewError:
+            pointer = {}
+        if not pointer:
+            if item.get("kind") == "promotion-failed":
+                continue
+            item["next_command"] = f"reckon crew observe --run {shlex.quote(run_id)}"
+        elif not recovery_classification.completion_offer(pointer, repair=True):
+            continue
+        elif not repairing:
+            item["next_command"] = recovery_classification._promotion_command(
+                run_id, pointer, list(item.get("manifest_commits") or ())
+            )
+        # An action form from a cached snapshot describes its previous command.
+        if "next_action" in item:
+            item["next_action"] = item["next_command"]
+        item.pop("next_action_form", None)
+        checked.append(item)
+    return checked
 
 
 def _scope_held_item(
@@ -2600,6 +2650,10 @@ def _review_duty_item(
     """
     age = _row_age(row, now=now)
     classification = str(row.get("classification") or "")
+    if pointer is not None and not recovery_classification.completion_offer(
+        pointer, repair=True
+    ):
+        return None
 
     def _classification_kind() -> str:
         return (
@@ -3711,7 +3765,11 @@ def _sub_floor_items_by_session(
                 run_id,
                 f"--dimension {shlex.quote(str(finding['dimension']))}",
                 review_run_id=str(record.get("review_run_id") or "") or None,
-                rubric=review_module._review_record_rubric(record) or None,
+                rubric=(
+                    None
+                    if review_module._review_record_rubric(record) == "node"
+                    else review_module._review_record_rubric(record) or None
+                ),
             )
             by_session.setdefault(session, []).append(
                 {

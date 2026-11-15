@@ -3536,6 +3536,10 @@ def crew_complete(
         request_promotion,
     )
 
+    if gate not in _ledger_module().GATE_VERDICTS:
+        raise click.ClickException(
+            f"unknown gate verdict {gate!r}; expected passed, failed or not-run"
+        )
     if land and not dry_run:
         _refuse_a_landing_without_its_pointer(run_id)
     driven = False
