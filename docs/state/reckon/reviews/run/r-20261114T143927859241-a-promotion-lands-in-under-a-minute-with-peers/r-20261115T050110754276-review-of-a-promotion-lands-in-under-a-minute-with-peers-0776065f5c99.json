@@ -1,0 +1,57 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/evidence.py:687 compose_landed_record",
+    "reckon/doccheck.py:2128 audit_fragment_ids",
+    "reckon/crew/dispatch_claims.py:1303 _landing_fragment_paths"
+  ],
+  "completed_at": "2026-11-15T06:35:42.800Z",
+  "dispatched_at": "2026-11-15T06:21:10Z",
+  "finding_dispositions": {},
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/a-landing-never-waits-on-a-shared-index/a-promotion-lands-in-under-a-minute-with-peers.html",
+      "line": 32,
+      "severity": "non-blocking",
+      "text": "the quoted refusal inverts the two halves of one message: the run's own stderr at measurement-logs/head-bulk/run-2.log:1 opens with \"the ledger row for run ... is already written; do not re-promote.\" and only then carries the index.lock text, while the excerpt at :32-36 prints the lock text first and the ledger clause last after an ellipsis; the ledger clause is the one the fragment's \"not rolled back\" claim at :38 rests on, so an evidence record quoting a refusal should keep the original order."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_site_check": "verified the three production readers of an evidence fragment exist at 0776065f5c: reckon/evidence.py:687 compose_landed_record, reckon/doccheck.py:2128 audit_fragment_ids, reckon/crew/dispatch_claims.py:1303 _landing_fragment_paths.",
+    "diff": "read 0776065f5c against 897549cbc4: one file, 49 insertions and 14 deletions, all prose, table-free corrections, no code and no test touched; each cited line was checked at the revision the fragment names.",
+    "done_when": "the done_when asks for sub-60 s landings, no rollback, and the timings and git log in the RCA; the fragment's table at :21-24 records 4.70-16.47 s, :38-40 records that the refused run was not rolled back, :75-78 points at the copied raw logs, and :83-94 carries a git-log excerpt that matches measurement-logs/head-bulk-3/summary.json (remote_head 4f2f056, 12 commits, clean tree).",
+    "goal": "the reviewed node's goal is to measure three concurrent promotions of completed runs against one shared checkout; the gained commit 0776065f5c corrects that record: the failure's cause at :40-52 now names the helper's re-check rather than a retry bound, and the negative-control paragraph at :54-73 splits the five attempts into two scaffolding exits and nine measured promotions.",
+    "manifest": "read; status complete, commits now records 897549cbc4 0776065f5c, the pre-revision counts read five attempts of which three reached the code (nine promotions), and every test_logs path now names measurement-logs/<attempt>/gate.log under the run directory, all of which exist; measurement_module still names the /tmp scratch extraction, which is gone.",
+    "write_paths": "the declared fence was docs/evidence/fragments/a-landing-never-waits-on-a-shared-index/a-promotion-lands-in-under-a-minute-with-peers.html; git show --name-only 0776065f5c lists that one file and nothing else."
+  },
+  "justifications": {
+    "durability": "the diff adds no assertion and no test, so nothing fails if the retry condition at reckon/crew/merge.py:837 changes or the fragment's cited line numbers drift; the correction is verified by reading, not guarded.",
+    "evidence": "every corrected figure reconciles with the independent logs under measurement-logs/: head-bulk run-2 at 4.87 s refused with 'index.lock: File exists' and no retry line, pre-arm-1/2 exit 2 on 'No such option --wait', pre-arm-3/4/5 at 3.73/3.83/3.89/6.49 s all landed.",
+    "fit": "the fragment keeps the sibling fragments' section/paragraph shape and its own element ids are unique across docs/evidence/fragments/a-landing-never-waits-on-a-shared-index/, including the new id at :75.",
+    "goal_fidelity": "the fragment at docs/evidence/fragments/a-landing-never-waits-on-a-shared-index/a-promotion-lands-in-under-a-minute-with-peers.html:40-52 now attributes the refusal to push a lock the helper saw released rather than to a bound, which the code at reckon/crew/merge.py:837 confirms.",
+    "reuse": "the commit adds no definition, function or module; fragment composition stays with its owner reckon/evidence.py:687 compose_landed_record and duplicate-id auditing with reckon/doccheck.py:2128, so no capability is forked.",
+    "scope_discipline": "git show --name-only 0776065f5c lists only docs/evidence/fragments/a-landing-never-waits-on-a-shared-index/a-promotion-lands-in-under-a-minute-with-peers.html, inside the single declared write path."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the reviewed node's goal is to measure three concurrent promotions of completed runs against one shared checkout; the gained commit 0776065f5c corrects that record, with the failure's cause at docs/evidence/fragments/a-landing-never-waits-on-a-shared-index/a-promotion-lands-in-under-a-minute-with-peers.html:40-52 naming the helper's re-check rather than a retry bound.\nVERDICT done_when: the done_when asks for sub-60 s landings, no rollback, and the timings and git log in the RCA; the table at :21-24 records 4.70-16.47 s, :38-40 records the refused run was not rolled back, :75-78 points at the copied raw logs, and :83-94 matches measurement-logs/head-bulk-3/summary.json.\nVERDICT write_paths: the declared fence was docs/evidence/fragments/a-landing-never-waits-on-a-shared-index/a-promotion-lands-in-under-a-minute-with-peers.html; git show --name-only 0776065f5c lists that one file and nothing else.\nVERDICT manifest: read; commits now records 897549cbc4 0776065f5c, the pre-revision counts read three attempts reached the code (nine promotions), and every test_logs path names an existing measurement-logs/<attempt>/gate.log, though measurement_module still names the gone /tmp scratch extraction.\nVERDICT diff: read 0776065f5c against 897549cbc4, one file, 49 insertions and 14 deletions, all prose corrections, no code or test touched, and each cited line checked at 1d16388a31.\nCALL_SITES: reckon/evidence.py:687 compose_landed_record, reckon/doccheck.py:2128 audit_fragment_ids, reckon/crew/dispatch_claims.py:1303 _landing_fragment_paths\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: docs/evidence/fragments/a-landing-never-waits-on-a-shared-index/a-promotion-lands-in-under-a-minute-with-peers.html:40-52 attributes the refusal to a lock the helper saw released, which reckon/crew/merge.py:837 confirms.\nSCORE evidence: 17\nJUSTIFICATION evidence: every corrected figure reconciles with the independent logs under measurement-logs/ (head-bulk run-2 at 4.87 s refused with 'index.lock: File exists', pre-arm-1/2 exit 2 on 'No such option --wait', pre-arm-3/4/5 all landed).\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git show --name-only 0776065f5c lists only docs/evidence/fragments/a-landing-never-waits-on-a-shared-index/a-promotion-lands-in-under-a-minute-with-peers.html, inside the single declared write path.\nSCORE durability: 8\nJUSTIFICATION durability: the diff adds no assertion, so nothing fails if the retry condition at reckon/crew/merge.py:837 changes or the cited line numbers drift.\nSCORE fit: 18\nJUSTIFICATION fit: the fragment keeps the sibling fragments' shape and the new element id at :75 is unique across docs/evidence/fragments/a-landing-never-waits-on-a-shared-index/.\nSCORE reuse: 20\nJUSTIFICATION reuse: the commit adds no definition, leaving fragment composition with reckon/evidence.py:687 and duplicate-id auditing with reckon/doccheck.py:2128.\nFINDING docs/evidence/fragments/a-landing-never-waits-on-a-shared-index/a-promotion-lands-in-under-a-minute-with-peers.html:32 non-blocking: the quoted refusal inverts the two halves of one message, since measurement-logs/head-bulk/run-2.log:1 opens with \"the ledger row for run ... is already written; do not re-promote.\" and only then carries the index.lock text, while the excerpt prints the lock text first and the ledger clause last.\n",
+  "review_run_id": "r-20261115T050110754276-review-of-a-promotion-lands-in-under-a-minute-with-peers-0776065f5c99",
+  "reviewed_base_sha": "897549cbc44565d01c71ae917341f2268ed395bd",
+  "reviewed_head_sha": "0776065f5c995fa729a65ed61510601e16784c74",
+  "reviewed_run_id": "r-20261114T143927859241-a-promotion-lands-in-under-a-minute-with-peers",
+  "reviewer_run_id": "r-20261115T050110754276-review-of-a-promotion-lands-in-under-a-minute-with-peers-0776065f5c99",
+  "scores": {
+    "durability": 8,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 17,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-15T06:38:50.485893+00:00",
+  "total": 100
+}

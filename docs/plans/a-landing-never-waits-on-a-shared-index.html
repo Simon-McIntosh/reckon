@@ -25,7 +25,7 @@
   <title>A Landing Never Waits On A Shared Index | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="62">
+<meta name="plan-version" content="63">
 <meta name="plan-modified" content="2026-11-15">
 </head>
 <body>
@@ -199,7 +199,7 @@
     <div class="r-comment-body"><p>Review of run r-20261115T031844233655-a-landing-commit-retries-a-released-lock at head 8d32dce587 whose reviewed_base_sha is efeb0d0d, i.e. only the commits it gained since efeb0d0d were read: the blocking finding from the efeb0d0d review is answered (returncode guard restored at merge.py:871-874 and pinned by a case that reddens at efeb0d0d in logs/negative-control-repair.log), and one non-blocking finding records that the evidence fragment attributes its 60-passed gate to c9d5bfef74 while the log it cites records 8d32dce587.</p></div>
 </div>
 <div class="r-comment" data-section="s13" data-id="c-run-r-20261115T031844233655-a-landing-commit-retries-a-released-lock" data-who="reckon-build" data-when="2026-11-15T05:49:29Z">
-    <div class="r-comment-body"><p>The landing wait helper decides whether to retry from the failure&#x27;s own naming of this checkout&#x27;s index.lock as well as from the file&#x27;s presence, so a call refused by a lock a peer released within 50 ms is retried to the same bound instead of returning after one attempt — and the wait is asked only about a failed call, so a step that succeeded while a peer held the lock is run once and never over its own success. The gate reports 60 passed at head 8d32dce587 against a base arm reporting 55 passed at 251cb1cd, the base helper fails the released-lock case, and the revision the review raised fails only the successful-call case.</p></div>
+    <div class="r-comment-body"><p>The landing wait helper decides whether to retry from the failure's own naming of this checkout's index.lock as well as from the file's presence, so a call refused by a lock a peer released within 50 ms is retried to the same bound instead of returning after one attempt — and the wait is asked only about a failed call, so a step that succeeded while a peer held the lock is run once and never over its own success. The gate reports 60 passed at head 8d32dce587 against a base arm reporting 55 passed at 251cb1cd, the base helper fails the released-lock case, and the revision the review raised fails only the successful-call case.</p></div>
 </div>
 <div class="r-comment" data-section="s3" data-id="c-run-r-20261114T203051455649-review-of-promotion-checks-read-only-what-moved-52e6182f1f8a" data-who="reckon-build" data-when="2026-11-15T00:53:08.156Z">
     <div class="r-comment-body"><p>independent review of r-20261114T143749419652-promotion-checks-read-only-what-moved at head 52e6182f1f: goal_fidelity 17, evidence 14, scope_discipline 19, durability 17, fit 18, reuse 17, added_failure_count 0, three non-blocking findings.</p></div>
@@ -209,6 +209,9 @@
 </div>
 <div class="r-comment" data-section="s4" data-id="c-run-r-20261115T023840531008-review-of-a-promotion-lands-in-under-a-minute-with-peers-897549cbc445" data-who="reckon-build" data-when="2026-11-15T03:34:09.684Z">
     <div class="r-comment-body"><p>Reviewed r-20261114T143927859241-a-promotion-lands-in-under-a-minute-with-peers at base 1d16388a31..897549cbc4 (one commit, 77 inserted lines, one file): scores goal_fidelity 16, evidence 12, scope_discipline 19, durability 5, fit 17, reuse 20; the timings and the eleven-of-twelve landing result are accurate and reconcile with the run's stream, but one blocking finding stands — the fragment at :41 attributes the refused promotion to a six-second landing-commit retry bound that the named revision does not define (reckon/crew/promotion_scope.py:2080-2081 sets 130 attempts at 0.5 s, and the refused promotion ran 4.87 s in full).</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-run-r-20261115T050110754276-review-of-a-promotion-lands-in-under-a-minute-with-peers-0776065f5c99" data-who="reckon-build" data-when="2026-11-15T06:35:42.800Z">
+    <div class="r-comment-body"><p>Reviewed r-20261114T143927859241 over 897549cbc4..0776065f5c: the gained commit corrects the refusal&#x27;s cause and the negative-control counts, every corrected figure reconciles with the copied measurement logs, and the prior blocking finding (a retry bound that never ran) is resolved; scores goal_fidelity 17, evidence 17, scope_discipline 20, durability 8, fit 18, reuse 20 (total 100), with one non-blocking finding on the quoted refusal&#x27;s line order.</p></div>
 </div>
 <div class="r-comment" data-section="s5" data-id="c-run-r-20261106T134612700154-review-of-retry-a-held-index-lock-in-a-promotions-commit-and-restore-5568106b9358" data-who="reckon-build" data-when="2026-11-06T13:57:16.941Z">
     <div class="r-comment-body"><p>review of r-20261106T124416537003-retry-a-held-index-lock-in-a-promotions-commit-and-restore at 5568106b9358 stored parsed with scores goal_fidelity 16, evidence 12, scope_discipline 18, durability 17, fit 18, reuse 20 (total 101), one blocking finding at tests/test_rollback_asks_head.py:117 and two non-blocking findings.</p></div>
