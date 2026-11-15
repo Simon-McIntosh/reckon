@@ -1,0 +1,30 @@
+<section data-reckon="evidence" data-node="unlaunched-launch-reaped-s4">
+  <h2>A launch cut off before its worker releases the review claim it holds</h2>
+  <p>The launch reap already worked at the base revision: a pointer held in a
+  pre-spawn phase with no worker record, stream or launch log is dated from its
+  claim and released by the admission pass, and drawn in the launch-failed
+  family. The surviving defect was the review arm. A composed review whose
+  launch was cut off left its own pointer at <code>starting</code> forever, and
+  the review reflex answered the in-flight read only after the reviewed run's
+  own classification gate. That gate read the reviewed run as
+  <code>running</code>, so the reflex returned "the run is not awaiting review"
+  and never reached the release, and the review was never composed again.</p>
+  <h3>What changed</h3>
+  <p>The standing review claim is now answered before the reviewed run's own
+  reading is judged (<code>_standing_review_report</code> in
+  <code>reckon/crew/recovery_review_dispatch.py</code>). A claim whose pointer
+  has held a pre-spawn phase past the one stranded-launch bound
+  (<code>STRANDED_LAUNCH_BOUND_SECONDS</code>) with no worker record is
+  discarded with the reason recorded on its departure marker and on the
+  reviewed run's dispatch record, and the claim no longer returns in flight. A
+  claim inside that bound is still a young launch and is reported in flight.</p>
+  <h3>Measure</h3>
+  <p>The two review-arm tests in
+  <code>tests/test_stranded_launch_releases_its_claim.py</code> fail at the base
+  revision <code>c00ffd3d20</code> and pass at the head; the other two cases in
+  that file — the stranded and the young classification reads — were green
+  before and stay green. <code>tests/test_a_launch_stopped_at_its_claim_is_redispatched.py</code>
+  stays green. The failing assertion at base was the released pointer still
+  present on disk, and the in-flight case reporting "the run is not awaiting
+  review (running)" instead of the standing review it names.</p>
+</section>
