@@ -1078,7 +1078,7 @@ def _watch_verdict(
         # its own grid word would need a second routing route with no reader
         # benefit — the distinction that matters is that it is not blocked.
         state = WAITING_STATUS
-    elif classification == INTERRUPTED_RUN_PHASE:
+    elif classification in {INTERRUPTED_RUN_PHASE, "cut-off"}:
         # The compatibility watch vocabulary does not yet expose interruptions
         # as their own column. Keep the run in the needs-action bucket while the
         # row's recovery classification and action retain the precise cause.

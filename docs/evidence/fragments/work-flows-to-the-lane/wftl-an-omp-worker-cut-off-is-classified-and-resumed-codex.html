@@ -1,0 +1,38 @@
+<article id="wftl-an-omp-worker-cut-off-is-classified-and-resumed-codex-evidence">
+<h3>Unfinished omp exits: partial implementation and measured print-mode bound</h3>
+<p>The original launch on <code>all_debug</code> exited with code 0 after
+75.779924 seconds. Its brief requested one 1200-second shell command, a
+1500-second tool timeout and <code>async: false</code>. The manifest still read
+<code>in-progress</code>. The trace records automatic backgrounding after 60
+seconds, a nonterminal <code>agent_end</code> with
+<code>awaitingAsyncWork: true</code>, and cancellation during print-mode exit.
+The installed harness defaults <code>bash.autoBackground.enabled</code> to true,
+its threshold to 60000 ms, and <code>async.printWake</code> to false.</p>
+<p>The worker overlay now enables <code>async.printWake</code>. Classification
+reads an observed omp exit with an unfinished manifest as <code>cut-off</code>
+and names the last tool and its command. The normal recovery sweep resumes
+that attempt through the existing launcher, deduplicates its exit trigger,
+and stops at the flight's <code>fences.needs_help_after_failures</code> bound.
+Explicit waits and terminal manifests retain their existing handling.</p>
+<table>
+<thead><tr><th>Arm</th><th>Result</th></tr></thead>
+<tbody>
+<tr><td>Base census at <code>28e27b492a2b7166b15d713cf4ea2051da61fecc</code></td><td>58 passed in 49.88 s</td></tr>
+<tr><td>New controls against unchanged base source</td><td>2 failed, 2 passed in 22.10 s: no cut-off classification or automatic resume</td></tr>
+<tr><td>Partial implementation</td><td>3 passed, 2 failed in 23.03 s; cut-off classification names <code>bash: sleep 1200</code> and the sweep launches attempt 2</td></tr>
+<tr><td>Original all_debug worker</td><td>Exit 0 at 75.779924 s; command cancelled and manifest unfinished</td></tr>
+<tr><td>Repaired all_debug worker</td><td>Batch job 1317772 is measuring the same 20-minute command with print-mode wake enabled</td></tr>
+</tbody>
+</table>
+<p>Delivery is held by the repeated-failure stop rule. The resumed test
+executable is hidden by the fence's private temporary directory; the live
+control changes its process receipt but retains an exit record naming the dead
+worker. These fixtures need correction before a passing head gate can be
+claimed. No merged-head verification or plan state change is claimed.</p>
+<p>Durable logs and receipts live under
+<code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T132239549895-wftl-an-omp-worker-cut-off-is-classified-and-resumed-codex/</code>:
+<code>base-suite.log</code>, <code>reproduction.log</code>,
+<code>focused-head.log</code>, <code>focused-corrected.log</code>,
+<code>runtime-measure/receipt.json</code> and
+<code>runtime-measure-fixed/receipt.json</code> (pending).</p>
+</article>

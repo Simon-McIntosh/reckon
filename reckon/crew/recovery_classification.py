@@ -4,6 +4,7 @@ from __future__ import annotations
 import contextlib
 import hashlib
 import json
+from reckon.crew.recovery_cut_off import cut_off_detail, omp_cut_off
 import re
 import shlex
 import subprocess
@@ -1901,6 +1902,17 @@ def classify_pointer(
             "attempt the pointer still names"
         )
         action = f"reckon crew observe --run {run_id}"
+    elif (
+        cut_off := omp_cut_off(
+            record, manifest_status=manifest_status, exit_record=ended_exit, stream=log
+        )
+    ) is not None:
+        classification = "cut-off"
+        detail = (
+            f"the omp worker {_exit_record_end_phrase(ended_exit)} before its "
+            f"manifest reached an outcome; last tool call: {cut_off_detail(cut_off)}"
+        )
+        action = f"reckon crew resume --run {run_id} --advice 'continue the unfinished work'"
     elif interruption is not None:
         classification = INTERRUPTED_RUN_PHASE
         signal_name = interruption.get("signal_name")
