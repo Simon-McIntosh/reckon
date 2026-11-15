@@ -36,29 +36,37 @@ def test_no_entry_is_kept_for_a_path_no_thread_holds(tmp_path: Path) -> None:
 def test_two_threads_contending_on_one_path_still_exclude(tmp_path: Path) -> None:
     path = tmp_path / "contended.lock"
     entered: list[str] = []
-    holding = threading.Event()
+    first_holds = threading.Event()
+    release_first = threading.Event()
 
-    def hold(name: str, release: threading.Event | None) -> None:
+    def hold(
+        name: str, holds: threading.Event | None, release: threading.Event | None
+    ) -> None:
         with node_exclusive_lock.exclusive_lock(path):
+            if holds is not None:
+                holds.set()
             if release is not None:
                 release.wait(timeout=30)
             entered.append(name)
             time.sleep(0.05)
 
-    first = threading.Thread(target=hold, args=("first", holding))
+    first = threading.Thread(target=hold, args=("first", first_holds, release_first))
     first.start()
-    second = threading.Thread(target=hold, args=("second", None))
-    second.start()
     try:
-        _wait_for(
-            lambda: node_exclusive_lock._PROCESS_LOCKS_USERS.get(str(path), 0) >= 2
-        )
-        assert entered == [], (
-            f"the second thread entered while the first held: {entered}"
-        )
-        holding.set()
+        assert first_holds.wait(timeout=30), "the first thread never took the lock"
+        second = threading.Thread(target=hold, args=("second", None, None))
+        second.start()
+        try:
+            _wait_for(
+                lambda: node_exclusive_lock._PROCESS_LOCKS_USERS.get(str(path), 0) >= 2
+            )
+            assert entered == [], (
+                f"the second thread entered while the first held: {entered}"
+            )
+        finally:
+            release_first.set()
     finally:
-        holding.set()
+        release_first.set()
     first.join(timeout=60)
     second.join(timeout=60)
 

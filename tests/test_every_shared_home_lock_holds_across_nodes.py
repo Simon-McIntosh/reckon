@@ -289,7 +289,7 @@ def test_a_second_flock_in_an_already_judged_module_is_counted() -> None:
         "    fcntl.flock(handle.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)\n"
     )
     found = flock_sites({"reckon/judged.py": tree})["reckon/judged.py::judged"]
-    recorded = 1
-    assert found != recorded, (
-        "a second flock inside an already judged function is not reported as a new lock"
+    assert found == 2, (
+        "a second flock inside an already judged function must count 2 against "
+        f"the recorded 1, not {found}"
     )
