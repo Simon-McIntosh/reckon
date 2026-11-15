@@ -1,0 +1,106 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_audit": {
+    "tests/test_a_ledger_load_stats_no_run_file.py:49,52,53": "The positive control fails if os.stat interception misses a known file; the population check fails on dropped identities; reinstating the file-backed loader reddens the zero-stat assertion (reproduction.log records 800).",
+    "tests/test_a_ledger_load_stats_no_run_file.py:77,81,83,84,85": "A missed JSON interception fails the positive control; losing plan selection returns extra identities; returning stored wall_seconds=1 or computing width from the single selected row fails the independent 3600/200 literals; decoding unrelated rows fails the empty-decode assertion, observed in negative-control.log.",
+    "tests/test_a_ledger_load_stats_no_run_file.py:98,105": "Parsing full payloads during headers-only reads triggers the payload marker guard; dropping or adding identities breaks the exact projected list; the negative control demonstrates this guard firing.",
+    "tests/test_every_ledger_question_reads_the_store.py:145,147,149,151,153": "These checks fail if any reader loses the independently enumerated three identities, reports false membership or discards aggregate version 7; they do not assert derived figure values.",
+    "tests/test_every_ledger_question_reads_the_store.py:170,171,174": "The setup assertions fail if files remain; reverting to file-backed readers makes the post-removal answer differ from the nonempty first answer; both arms at head read the store, so this does not establish document/store field parity.",
+    "tests/test_every_ledger_question_reads_the_store.py:180,184,186": "The setup fails if an aggregate was accidentally created; restoring dependence on an aggregate drops the stored identities and fails the population expectations.",
+    "tests/test_every_ledger_question_reads_the_store.py:221": "Reverting to file membership omits the extra stored-only id; decoding stored payloads instead of selecting ids raises in the parser instrument.",
+    "tests/test_every_ledger_question_reads_the_store.py:229": "Preferring the stale document over the store changes the member or population and fails the original-row expectation.",
+    "tests/test_every_ledger_question_reads_the_store.py:249,253,254,255": "No archive creation breaks the setup; omitting archived rows or their detail breaks identity/detail/membership checks.",
+    "tests/test_every_ledger_question_reads_the_store.py:273,285,286,287,288": "Missing initial detail breaks the setup; losing rotated durable identity/member or resurrecting deleted detail fails the independent field checks.",
+    "tests/test_every_ledger_question_reads_the_store.py:328,329": "Removing the project predicate decodes the foreign marker and raises; returning foreign rows or dropping local rows fails identity/project checks.",
+    "tests/test_every_ledger_question_reads_the_store.py:342,344,347,348,349": "The setup requires no store or directory; reinstating read-time RunStore construction creates them and fails the final absence checks; losing file fallback fails identities.",
+    "tests/test_every_ledger_question_reads_the_store.py:375": "Returning empty data or raising on the readable schema after clearing metadata fails; this identity assertion alone does not demonstrate the absence of writes under a privileged uid.",
+    "tests/test_every_ledger_question_reads_the_store.py:384,387,392": "Identity loss fails the initial check; sourcing rows outside the deleted store fails the empty middle read; rebuild equality fails a non-idempotent reconstruction, but a consistently dropped field survives because first is its own rebuild input and oracle (finding).",
+    "tests/test_every_ledger_question_reads_the_store.py:401,403,404,406,408": "Using the authoritative store as import/compare input reports zero rather than two missing/imported rows; broken import leaves a nonzero comparison; broken cold import misses the three-row count or original full-row equality."
+  },
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/plan_review.py:4035",
+    "reckon/crew/recovery_watch.py:2162",
+    "reckon/crew/obligations.py:2945"
+  ],
+  "completed_at": "2026-11-15T21:48:10Z",
+  "dispatched_at": "2026-11-15T21:41:58Z",
+  "failure_delta_evidence": {
+    "after": {
+      "exit_status": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T210413244048-bounded-store-read-s22/after.log",
+      "summary": "85 passed in 45.58s"
+    },
+    "baseline": {
+      "exit_status": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T210413244048-bounded-store-read-s22/baseline.log",
+      "summary": "58 passed in 35.44s"
+    },
+    "derivation": "Both completed logs contain no FAILED ids; after minus baseline is the empty set. The final commit adds only the evidence fragment."
+  },
+  "findings": [
+    {
+      "file": "reckon/ledger.py",
+      "line": "3915",
+      "severity": "blocking",
+      "text": "blocking: the stored-read branch independently derives wall_seconds and width_at_start although reckon/crew/summary.py:534 already owns both figures; importing only its timestamp parser still leaves two production implementations that can diverge, so extend the existing owner to accept the selected records and narrow timestamp population and keep the bounded query there."
+    },
+    {
+      "file": "tests/test_every_ledger_question_reads_the_store.py",
+      "line": "392",
+      "severity": "non-blocking",
+      "text": "non-blocking: first is produced by ledger.load and then passed back through fill_store(first) before being used as the expected result; a loader that consistently drops a non-identity field passes this equality and the preceding identity-only check, so assert the rebuilt full rows against the original _rows() population as well; the from_documents arm at :165 likewise already reads the store at head and is not an independent document-parity oracle."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read 5bd3f77bd4875721f1a202dd652ca48a2fed34fa, 0d8ea23ad9d3210335f1deda47601cef222f38d2 and e1037006e08323ff8d595c878ae17a23deb05341 individually against a4085603a2cabb227db10167e8a0305ab84599e5; the tests, SQL selection, operational hydration and evidence fragment match the bounded-read goal, with duplicated figure derivation in reckon/ledger.py:3915.",
+    "done_when": "prompt.txt:170 and the live plan at docs/plans/history-persists-as-detail-washes-out.html:371 require absent-document readers, rebuild equality, zero run-file stats and three live reads below 300 MB and 10 s; after.log records 85 passed and live-read.log records 156.082176 MB and 7.563597 seconds, with the rebuild assertion caveat below.",
+    "goal": "prompt.txt:38 requests a bounded store-backed ledger read, and reckon/ledger.py:2320 and reckon/run_store.py:299 implement selection before decoding while retaining document reads for explicit import.",
+    "manifest": "manifest.md names three existing commits and completed baseline/after receipts, whose logs confirm 58 and 85 passes with EXIT=0 and zero added failure ids; its separate station landing obligation remains explicit.",
+    "write_paths": "prompt.txt:84 grants the three product modules, two tests, fragment and figure directory; all six changed files are inside these grants and no figure changed."
+  },
+  "justifications": {
+    "durability": "tests/test_a_ledger_load_stats_no_run_file.py:53 and :86 fail if file scans or unrelated decoding return, as the red logs demonstrate, but tests/test_every_ledger_question_reads_the_store.py:392 reuses its own prior read as both rebuild input and expectation and can preserve a systematic field loss.",
+    "evidence": "baseline.log and after.log contain complete summaries and EXIT=0, reproduction.log:26 records 800 run-file stats, and negative-control.log:132 names the three failing decode guards, although tests/test_every_ledger_question_reads_the_store.py:392 does not independently prove complete rebuild fidelity.",
+    "fit": "reckon/run_store.py:219 extends the existing SQLite record owner and reuses parse_utc and run_record normalization, while reckon/crew/open_run_index.py:269 uses file_memo.file_signature instead of inventing another stat identity.",
+    "goal_fidelity": "reckon/ledger.py:2320 selects the store and reckon/crew/open_run_index.py:367 builds its operational projection from stored rows, while live-read.log meets both quantitative bounds.",
+    "reuse": "reckon/run_store.py:219 consolidates the record join and reckon/crew/open_run_index.py:289 wraps it appropriately, but reckon/ledger.py:3915 duplicates the wall-time and fleet-width capability already owned by reckon/crew/summary.py:534 rather than extending that owner.",
+    "scope_discipline": "the six files in the a4085603a2ca..e1037006e083 diff are all expressly granted by prompt.txt:84 and implement or document the bounded store read."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: prompt.txt:38 requests a bounded store-backed ledger read, and reckon/ledger.py:2320 and reckon/run_store.py:299 implement selection before decoding while retaining document reads for explicit import.\nVERDICT done_when: prompt.txt:170 and the live plan at docs/plans/history-persists-as-detail-washes-out.html:371 require absent-document readers, rebuild equality, zero run-file stats and three live reads below 300 MB and 10 s; after.log records 85 passed and live-read.log records 156.082176 MB and 7.563597 seconds, with the rebuild assertion caveat below.\nVERDICT write_paths: prompt.txt:84 grants the three product modules, two tests, fragment and figure directory; all six changed files are inside these grants and no figure changed.\nVERDICT manifest: manifest.md names three existing commits and completed baseline/after receipts, whose logs confirm 58 and 85 passes with EXIT=0 and zero added failure ids; its separate station landing obligation remains explicit.\nVERDICT diff: read 5bd3f77bd4875721f1a202dd652ca48a2fed34fa, 0d8ea23ad9d3210335f1deda47601cef222f38d2 and e1037006e08323ff8d595c878ae17a23deb05341 individually against a4085603a2cabb227db10167e8a0305ab84599e5; the tests, SQL selection, operational hydration and evidence fragment match the bounded-read goal, with duplicated figure derivation in reckon/ledger.py:3915.\nCALL_SITES: reckon/crew/plan_review.py:4035, reckon/crew/recovery_watch.py:2162, reckon/crew/obligations.py:2945\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/ledger.py:2320 selects the store and reckon/crew/open_run_index.py:367 builds its operational projection from stored rows, while live-read.log meets both quantitative bounds.\nSCORE evidence: 18\nJUSTIFICATION evidence: baseline.log and after.log contain complete summaries and EXIT=0, reproduction.log:26 records 800 run-file stats, and negative-control.log:132 names the three failing decode guards, although tests/test_every_ledger_question_reads_the_store.py:392 does not independently prove complete rebuild fidelity.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the six files in the a4085603a2ca..e1037006e083 diff are all expressly granted by prompt.txt:84 and implement or document the bounded store read.\nSCORE durability: 16\nJUSTIFICATION durability: tests/test_a_ledger_load_stats_no_run_file.py:53 and :86 fail if file scans or unrelated decoding return, as the red logs demonstrate, but tests/test_every_ledger_question_reads_the_store.py:392 reuses its own prior read as both rebuild input and expectation and can preserve a systematic field loss.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/run_store.py:219 extends the existing SQLite record owner and reuses parse_utc and run_record normalization, while reckon/crew/open_run_index.py:269 uses file_memo.file_signature instead of inventing another stat identity.\nSCORE reuse: 5\nJUSTIFICATION reuse: reckon/run_store.py:219 consolidates the record join and reckon/crew/open_run_index.py:289 wraps it appropriately, but reckon/ledger.py:3915 duplicates the wall-time and fleet-width capability already owned by reckon/crew/summary.py:534 rather than extending that owner.\nFINDING reckon/ledger.py:3915 blocking: the stored-read branch independently derives wall_seconds and width_at_start although reckon/crew/summary.py:534 already owns both figures; importing only its timestamp parser still leaves two production implementations that can diverge, so extend the existing owner to accept the selected records and narrow timestamp population and keep the bounded query there.\nFINDING tests/test_every_ledger_question_reads_the_store.py:392 non-blocking: first is produced by ledger.load and then passed back through fill_store(first) before being used as the expected result; a loader that consistently drops a non-identity field passes this equality and the preceding identity-only check, so assert the rebuilt full rows against the original _rows() population as well; the from_documents arm at :165 likewise already reads the store at head and is not an independent document-parity oracle.\n",
+  "reuse_audit": {
+    "_aggregate_headers": "Wraps existing load_aggregate and the existing metadata index; does not fork header parsing.",
+    "_archive_path": "Factors RunStore.archive_path in the owning module; the property delegates to it.",
+    "_hydrate": "Wraps stored_run_rows for ids selected by the operational index; no independent record retrieval implementation.",
+    "_record_rows and nested epoch": "Extends the existing _indexed_records join owner; both readers delegate to this one join, and epoch reuses parse_utc.",
+    "_store_signature": "Combines file_memo.file_signature over the main/archive/WAL files; reuses the existing stat identity owner.",
+    "derived figures": "Duplicated capability: ledger.read_records derives the same wall time and width that summary.run_rows already owns; blocking finding.",
+    "search": "Searched record retrieval, projection/header loading, timestamp and width derivation, archive naming, stat signatures and hydration in reckon/run_store.py, reckon/ledger.py, reckon/crew/open_run_index.py, reckon/file_memo.py and reckon/crew/summary.py at the reviewed revision; also read the added fixture/helper definitions as test scaffolding for these capabilities.",
+    "stored_run_rows": "Read-only selected wrapper around the shared join in the store owner.",
+    "test definitions": "Fixtures, readers and parser instruments exercise the store/ledger owners in temporary state; no new production store or decoder is introduced."
+  },
+  "review_run_id": "r-20261115T213643211346-review-of-bounded-store-read-s22-e1037006e083",
+  "reviewed_base_sha": "a4085603a2cabb227db10167e8a0305ab84599e5",
+  "reviewed_head_sha": "e1037006e08323ff8d595c878ae17a23deb05341",
+  "reviewed_run_id": "r-20261115T210413244048-bounded-store-read-s22",
+  "scores": {
+    "durability": 16,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 5,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-15T22:03:58.907479+00:00",
+  "total": 96
+}
