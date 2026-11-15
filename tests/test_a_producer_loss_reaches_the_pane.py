@@ -209,3 +209,34 @@ def test_a_missing_publication_does_not_invent_an_age_or_a_recovery(
 ):
     received = _drive(isolated, monkeypatch, samples=2)
     assert [event["event"] for _, event in received] == ["fixture-row"]
+
+
+def test_a_fresh_producer_snapshot_supersedes_a_stale_station_export(
+    isolated, monkeypatch
+):
+    clock = isolated
+    age = int(BOUND + 60)
+    _publish(clock, age)
+    document = {
+        "project": PROJECT,
+        "computed_at": (INSTANT - timedelta(seconds=age)).isoformat(),
+        "obligations": [],
+    }
+    path = obligation_snapshot.station_snapshot_path(PROJECT)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(
+        json.dumps(
+            {
+                "project": PROJECT,
+                "station": {"heartbeat": document["computed_at"]},
+                "sessions": {SESSION: document},
+            }
+        )
+    )
+    assert obligation_snapshot.read_station_answer(PROJECT, SESSION)["stale"]
+    received = _drive(clock, monkeypatch, restore_at=2 * SAMPLE)
+    assert [
+        event["event"]
+        for _, event in received
+        if event["event"].startswith("producer-")
+    ] == ["producer-lost", "producer-restored"]

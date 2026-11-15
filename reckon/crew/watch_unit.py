@@ -967,11 +967,15 @@ class ProducerSnapshotNotices:
         if station is not None:
             age = station["heartbeat_age_seconds"]
             bound = snapshots.STATION_STALE_SECONDS
-        else:
-            age = snapshots.snapshot_age_seconds(
+        if station is None or (station["source"] == "snapshot" and station["stale"]):
+            own_age = snapshots.snapshot_age_seconds(
                 snapshots.read_snapshot(self.project, self.session)
             )
-            bound = snapshots.FRESHNESS_WINDOW_SECONDS
+            if station is None or (
+                own_age is not None and own_age <= snapshots.FRESHNESS_WINDOW_SECONDS
+            ):
+                age = own_age
+                bound = snapshots.FRESHNESS_WINDOW_SECONDS
         if age is None:
             return []
         if age > bound:
