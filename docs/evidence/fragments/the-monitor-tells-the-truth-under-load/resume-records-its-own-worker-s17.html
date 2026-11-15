@@ -22,13 +22,15 @@
   reading host's station is read as naming no process of the run: as a
   supervisor it holds nothing, and as a door it is judged by the launch's own
   age like any other launch that reached no worker.
-  <code>runs.read_pointer</code> applies the same rule to the pointer, which is
+<code>runs.read_pointer</code> applies the same rule to the pointer, which is
   the record <code>crew stop</code>, <code>crew discard</code> and every
   liveness reading take their pid from, so a pointer naming the station reads as
-  naming none. The station pid is the lease the station keeps under the
-  node-local runtime root, matched with the start tick recorded beside it, so a
-  recycled number is not mistaken for the station and no other host's station is
-  read.</p>
+  naming none.</p>
+
+  <p>The station pid is the lease the station keeps under the node-local runtime
+  root, matched with the start tick recorded beside it, so a number the kernel
+  has since recycled is not mistaken for the station and no other host's station
+  is read.</p>
 
   <h3 id="resume-records-its-own-worker-s17-repro">Measured</h3>
 
@@ -47,26 +49,35 @@ B. the station survived the stop: False</code></pre>
   <p>At the change's head the same script reads: the reservation names
   <code>None</code> until its supervisor is known, a reservation naming the
   station is not held and a relaunch is admitted, the pointer read names no
-  station pid, and <code>EXIT</code>-checked stop of a record naming the station
-  refuses with "has no process to stop" while the station process survives.</p>
+  station pid, and a stop of a record naming the station refuses with "has no
+  process to stop" while the station process survives.</p>
 
   <table id="resume-records-its-own-worker-s17-arms">
     <caption>Every arm is a log whose first line names its revision and tree and
     whose last line reads <code>EXIT=&lt;code&gt;</code>.</caption>
     <thead><tr><th>arm</th><th>revision</th><th>result</th></tr></thead>
     <tbody>
-      <tr><td>base suite (structural guards; the new test does not exist here)</td>
+      <tr><td>base suite (structural guards; the new test does not exist at the
+        base; both modules under test at <code>af516b3a</code>)</td>
         <td><code>af516b3a</code></td>
-        <td>pending</td></tr>
+        <td>58 passed, <code>EXIT=0</code></td></tr>
       <tr><td>after suite (the new test and the two guards)</td>
-        <td><code>0c10b1f972</code></td>
+        <td><code>ef63881b</code>, working tree clean</td>
         <td>61 passed, <code>EXIT=0</code></td></tr>
-      <tr><td>new tests at the base revision</td>
+      <tr><td>the new tests at the base revision</td>
         <td><code>af516b3a</code></td>
-        <td>pending</td></tr>
+        <td>3 failed, <code>EXIT=1</code>: the reservation names the launcher
+        (pid 3033) rather than the supervisor (pid 3034); a reservation naming
+        the station holds the attempt; the pointer read names the station's pid
+        and the stop kills it</td></tr>
+      <tr><td>the new tests at the run's head</td>
+        <td><code>ef63881b</code></td>
+        <td>3 passed, <code>EXIT=0</code></td></tr>
       <tr><td>negative control: the launcher's pid recorded again</td>
-        <td><code>0c10b1f972</code> plus the mutation</td>
-        <td>pending</td></tr>
+        <td><code>ef63881b</code> plus the declared mutation</td>
+        <td>1 failed, 2 passed, <code>EXIT=1</code>: the failing id is
+        <code>test_a_launch_inside_the_station_records_the_supervisor_it_started</code>,
+        which the head arm passes</td></tr>
     </tbody>
   </table>
 </section>
