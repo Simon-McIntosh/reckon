@@ -1,0 +1,84 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "98b7fdd438c95937db6cd43cdba9504269351dc8",
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/crew/admission/holds.py:456",
+    "reckon/crew/runs.py:4208",
+    "reckon/crew/recovery_watch.py:2609",
+    "reckon/crew/recovery_watch.py:3194",
+    "reckon/crew/recovery.py:66"
+  ],
+  "completed_at": "2026-11-15T21:33:20.827Z",
+  "dispatched_at": "2026-11-15T21:32:14Z",
+  "findings": [
+    {
+      "file": "reckon/crew/recovery_watch.py",
+      "line": "1730",
+      "severity": "non-blocking",
+      "text": "non-blocking: for a queue-lifted hold the row keeps the classifier's next_action, which reckon/crew/recovery_classification.py:1830 fixes to 'reckon crew queue release --run <id>' for every unlaunched HELD_PHASE request, and keeps recovery='resume' from RECOVERY_VERBS['held'], so a row drawn waiting still hands the coordinator the release command the change's own comment says nothing a coordinator does lifts; acting on it launches over the admission pass's automatic release path."
+    },
+    {
+      "file": "reckon/crew/recovery_watch.py",
+      "line": "1092",
+      "severity": "non-blocking",
+      "text": "non-blocking: the non-review branch of _coordinator_hold_next_action re-composes 'reckon crew queue release --run <id>', a command the repository already composes for the same held population at reckon/crew/recovery_classification.py:1830 and again at reckon/crew/obligations.py:3948; the addition duplicates that composition instead of extending an owner, so the copies can drift apart."
+    },
+    {
+      "file": "reckon/crew/ticker.py",
+      "line": "952",
+      "severity": "non-blocking",
+      "text": "non-blocking: _bucket_of still takes a classification argument it now ignores, and a search over the reviewed head finds no production caller at all, only tests, so the edit to it changes no runtime surface; the live counter is _fleet_counts (reckon/crew/recovery_watch.py:2068) plus NEEDS_ACTION (reckon/crew/ticker.py:270)."
+    },
+    {
+      "file": "tests/test_a_held_request_is_drawn_by_its_owner.py",
+      "line": "255",
+      "severity": "non-blocking",
+      "text": "non-blocking: the launched-run case asserts count agreement only through _bucket_of, which no production code calls, so a regression in _fleet_counts for the launched held population would leave this case green; the queue-parked and coordinator-hold cases assert _fleet_counts directly and are guarded."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T145426280351-held-drawn-by-its-owner-s3/manifest.md",
+      "line": "20",
+      "severity": "non-blocking",
+      "text": "non-blocking: the artifacts line reports '1 EXIT=124' over the 57 importer files, but logs/per-file-head3 ends EXIT=124 in test_a_promotions_review_lookups_cost_the_same_at_any_store_size.py.log, test_a_runs_view_checks_only_the_rows_it_returns.py.log and test_crew.py.log (44 EXIT=0, 10 EXIT=1, 3 EXIT=124), so the done_when's importer population is established over 54 of 57 files and the record understates what went unmeasured."
+    }
+  ],
+  "head_log_revision": "c8561d003402ed58a60c859bf2b8d59f18f9a94c",
+  "item_verdicts": {
+    "diff": "read commit by commit from 98b7fdd4 to dd6df313; 7244ebffa6 adds hold_owner and the word split, c8561d0034 takes the waiting word from the lifting move and drops the classification special cases, dd6df313 restates the landing record; 4 files, +511/-22, nothing outside the fence.",
+    "done_when": "the done_when requires tests red at base, queue holds drawn and counted waiting, coordinator holds drawn needs-you naming the act, word/bucket agreement per hold kind and no added failure among ticker/recovery_watch importers; logs/gate.log records '11 passed' EXIT=0 at c8561d0034, the new file's base arm ('10 failed, 1 passed') survives only in stream.jsonl, and logs/per-file-head3 against logs/per-file-base record the importer sweep with three EXIT=124 files the manifest reports as one.",
+    "goal": "the node's goal is to draw a queue-held request as waiting and a coordinator-held one as needs-you; reckon/crew/recovery_watch.py:1039 hold_owner derives the owner from the hold's own record (phase, queue_hold.automatic, the plan-review reason) and :1235-1252 sets the row word from that one answer on both branches.",
+    "manifest": "read; status complete, commits 7244ebffa6/c8561d0034/dd6df313c0, the literal gate command on its tests line, test_logs naming the gate, both suite arms and the negative control, and an artifacts figure of '1 EXIT=124' where the per-file logs end EXIT=124 three times.",
+    "write_paths": "the fence was reckon/crew/ticker.py, reckon/crew/recovery_watch.py, reckon/crew/runs.py, a new test and the landing fragment; git diff 98b7fdd4..dd6df313 touches exactly recovery_watch.py, ticker.py, tests/test_a_held_request_is_drawn_by_its_owner.py and the evidence fragment, all inside the fence."
+  },
+  "justifications": {
+    "durability": "tests/test_a_held_request_is_drawn_by_its_owner.py:141 fails if the queue hold returns the coordinator's reading, but its launched-run count assertion at :255 rests on _bucket_of, whose only callers are tests.",
+    "evidence": "logs/gate.log ends '11 passed in 9.74s' with EXIT=0 at c8561d0034, and the new file's base arm ('10 failed, 1 passed', stream.jsonl) plus the per-file importer sweep are recorded, though three sweep files ended EXIT=124 unremarked.",
+    "fit": "reckon/crew/recovery_watch.py:1056 and :1079 take their imports at call time with the cycle reason the module already states, and no added name carries a plan or ticket identifier, though _bucket_of keeps an argument it no longer reads.",
+    "goal_fidelity": "reckon/crew/recovery_watch.py:1238-1252 splits the held population by whose move lifts the hold, and both branches are exercised through _watch_verdict in the new test file.",
+    "reuse": "reckon/crew/recovery_watch.py:1092 duplicates the release-command composition already owned by reckon/crew/recovery_classification.py:1830 for the same held population, while the plan-review branch correctly calls plan_review.review_invocation.",
+    "scope_discipline": "git diff --stat 98b7fdd438c95937db6cd43cdba9504269351dc8..dd6df313c008be0317424386d35a01a7484ce6bc lists only the two source files, the new test and the evidence fragment."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to draw a queue-held request as waiting and a coordinator-held one as needs-you; reckon/crew/recovery_watch.py:1039 hold_owner derives the owner from the hold's own record and :1235-1252 sets the row word from that one answer on both branches.\nVERDICT done_when: the done_when requires tests red at base, queue holds drawn and counted waiting, coordinator holds drawn needs-you naming the act, word/bucket agreement per hold kind and no added failure among ticker/recovery_watch importers; logs/gate.log records '11 passed' EXIT=0 at c8561d0034, the new file's base arm ('10 failed, 1 passed') survives only in stream.jsonl, and logs/per-file-head3 against logs/per-file-base record the importer sweep with three EXIT=124 files the manifest reports as one.\nVERDICT write_paths: the fence was reckon/crew/ticker.py, reckon/crew/recovery_watch.py, reckon/crew/runs.py, a new test and the landing fragment; git diff 98b7fdd4..dd6df313 touches exactly recovery_watch.py, ticker.py, tests/test_a_held_request_is_drawn_by_its_owner.py and the evidence fragment, all inside the fence.\nVERDICT manifest: read; status complete, commits 7244ebffa6/c8561d0034/dd6df313c0, the literal gate command on its tests line, test_logs naming the gate, both suite arms and the negative control, and an artifacts figure of '1 EXIT=124' where the per-file logs end EXIT=124 three times.\nVERDICT diff: read commit by commit from 98b7fdd4 to dd6df313; 7244ebffa6 adds hold_owner and the word split, c8561d0034 takes the waiting word from the lifting move and drops the classification special cases, dd6df313 restates the landing record; 4 files, +511/-22, nothing outside the fence.\nCALL_SITES: reckon/crew/admission/holds.py:456, reckon/crew/runs.py:4208, reckon/crew/recovery_watch.py:2609, reckon/crew/recovery_watch.py:3194, reckon/crew/recovery.py:66\nSCORE goal_fidelity: 17\nSCORE evidence: 15\nSCORE scope_discipline: 20\nSCORE durability: 15\nSCORE fit: 17\nSCORE reuse: 5\nJUSTIFICATION goal_fidelity: reckon/crew/recovery_watch.py:1238-1252 splits the held population by whose move lifts the hold, and both branches are exercised through _watch_verdict in the new test file.\nJUSTIFICATION evidence: logs/gate.log ends '11 passed in 9.74s' with EXIT=0 at c8561d0034, and the new file's base arm ('10 failed, 1 passed', stream.jsonl) plus the per-file importer sweep are recorded, though three sweep files ended EXIT=124 unremarked.\nJUSTIFICATION scope_discipline: git diff --stat 98b7fdd438c95937db6cd43cdba9504269351dc8..dd6df313c008be0317424386d35a01a7484ce6bc lists only the two source files, the new test and the evidence fragment.\nJUSTIFICATION durability: tests/test_a_held_request_is_drawn_by_its_owner.py:141 fails if the queue hold returns the coordinator's reading, but its launched-run count assertion at :255 rests on _bucket_of, whose only callers are tests.\nJUSTIFICATION fit: reckon/crew/recovery_watch.py:1056 and :1079 take their imports at call time with the cycle reason the module already states, and no added name carries a plan or ticket identifier, though _bucket_of keeps an argument it no longer reads.\nJUSTIFICATION reuse: reckon/crew/recovery_watch.py:1092 duplicates the release-command composition already owned by reckon/crew/recovery_classification.py:1830 for the same held population, while the plan-review branch correctly calls plan_review.review_invocation.\nFINDING reckon/crew/recovery_watch.py:1730 non-blocking: for a queue-lifted hold the row keeps the classifier's next_action, which reckon/crew/recovery_classification.py:1830 fixes to 'reckon crew queue release --run <id>' for every unlaunched HELD_PHASE request, and keeps recovery='resume' from RECOVERY_VERBS['held'], so a row drawn waiting still hands the coordinator the release command the change's comment says nothing a coordinator does lifts.\nFINDING reckon/crew/recovery_watch.py:1092 non-blocking: the non-review branch of _coordinator_hold_next_action re-composes 'reckon crew queue release --run <id>', a command the repository already composes for the same held population at reckon/crew/recovery_classification.py:1830 and again at reckon/crew/obligations.py:3948, so the addition duplicates that composition instead of extending an owner.\nFINDING reckon/crew/ticker.py:952 non-blocking: _bucket_of still takes a classification argument it now ignores, and a search over the reviewed head finds no production caller at all, only tests, so the edit to it changes no runtime surface; the live counter is _fleet_counts (reckon/crew/recovery_watch.py:2068) plus NEEDS_ACTION (reckon/crew/ticker.py:270).\nFINDING tests/test_a_held_request_is_drawn_by_its_owner.py:255 non-blocking: the launched-run case asserts count agreement only through _bucket_of, which no production code calls, so a regression in _fleet_counts for the launched held population would leave this case green.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T145426280351-held-drawn-by-its-owner-s3/manifest.md:20 non-blocking: the artifacts line reports '1 EXIT=124' over the 57 importer files, but logs/per-file-head3 ends EXIT=124 three times, so the done_when's importer population is established over 54 of 57 files and the record understates what went unmeasured.",
+  "review_run_id": "r-20261115T212555586749-review-of-held-drawn-by-its-owner-s3-dd6df313c008",
+  "reviewed_base_sha": "98b7fdd438c95937db6cd43cdba9504269351dc8",
+  "reviewed_head_sha": "dd6df313c008be0317424386d35a01a7484ce6bc",
+  "reviewed_run_id": "r-20261115T145426280351-held-drawn-by-its-owner-s3",
+  "reviewer_run_id": "r-20261115T212555586749-review-of-held-drawn-by-its-owner-s3-dd6df313c008",
+  "scores": {
+    "durability": 15,
+    "evidence": 15,
+    "fit": 17,
+    "goal_fidelity": 17,
+    "reuse": 5,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-15T22:01:34.736127+00:00",
+  "total": 89
+}
