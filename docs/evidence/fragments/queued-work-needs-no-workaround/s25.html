@@ -1,0 +1,307 @@
+<section id="qwnw-a-commits-field-is-read-in-every-form-codex-negative-control">
+<h3>Manifest commit forms: base revision refusal</h3>
+<pre># revision: 6cc82823b5917cc458b5064ee49efb1cba97e093 tree: /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/8e41a6d3-d0e0-4927-afd1-771942ebfe6a/qwnw-a-commits-field-is-read-in-every-form-codex
+# command: PYTHONPATH=. /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_manifest_commit_forms.py
+FFF..                                                                    [100%]
+=================================== FAILURES ===================================
+_____________ test_each_commit_form_promotes_without_editing[list] _____________
+
+repository = PosixPath(&#x27;/tmp/mcintos-1317707-JGB4/pytest/test_each_commit_form_promotes0/repo&#x27;)
+tmp_path = PosixPath(&#x27;/tmp/mcintos-1317707-JGB4/pytest/test_each_commit_form_promotes0&#x27;)
+form = &#x27;list&#x27;
+
+    @pytest.mark.parametrize(&quot;form&quot;, [&quot;list&quot;, &quot;json&quot;, &quot;none&quot;, &quot;commas&quot;])
+    def test_each_commit_form_promotes_without_editing(
+        repository: Path, tmp_path: Path, form: str
+    ) -&gt; None:
+        base, first = _repository_with_candidate(repository)
+        (repository / &quot;candidate.txt&quot;).write_text(&quot;seed\ndelivered\nverified\n&quot;)
+        git(repository, &quot;add&quot;, &quot;candidate.txt&quot;)
+        git(repository, &quot;commit&quot;, &quot;-q&quot;, &quot;-m&quot;, &quot;test: verify candidate&quot;)
+        second = git(repository, &quot;rev-parse&quot;, &quot;HEAD&quot;)
+        first_short = git(repository, &quot;rev-parse&quot;, &quot;--short&quot;, first)
+        expected = [first, second]
+        entries = [
+            f&quot;{first_short} test: record candidate, with details&quot;,
+            f&quot;{second} test: verify candidate&quot;,
+        ]
+        values = {
+            &quot;list&quot;: &quot;\n&quot; + &quot;\n&quot;.join(f&quot;  - {entry}&quot; for entry in entries),
+            &quot;json&quot;: json.dumps(entries),
+            &quot;none&quot;: &quot;\n- none — this node writes a review record outside the repository&quot;,
+            &quot;commas&quot;: f&quot;{first_short}, {second}&quot;,
+        }
+        run_id = f&quot;r-manifest-commit-form-{form}&quot;
+        if form == &quot;none&quot;:
+            base = second
+            expected = []
+        manifest = _write_complete_manifest_pointer(
+            repository,
+            tmp_path,
+            run_id,
+            base=base,
+            changed_paths=&quot;none&quot; if form == &quot;none&quot; else &quot;candidate.txt&quot;,
+            commits=values[form],
+        )
+        if form == &quot;none&quot;:
+            record = json.loads(pointer_path(run_id).read_text())
+            record[&quot;role&quot;] = &quot;review&quot;
+            _write_json(pointer_path(run_id), record)
+        delivered = manifest.read_text()
+    
+&gt;       promoted = crew.complete(run_id, gate=&quot;passed&quot;, root=repository)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_manifest_commit_forms.py:59: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+reckon/crew/open_run_index.py:67: in bounded
+    return function(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+reckon/crew/promotion.py:1007: in complete
+    ) = _require_independently(
+reckon/crew/promotion_checks.py:1543: in _require_independently
+    raise refusals[0]
+reckon/crew/promotion_checks.py:1534: in _require_independently
+    products.append(check())
+                    ^^^^^^^
+reckon/crew/promotion.py:1083: in &lt;lambda&gt;
+    lambda: _require_no_png_twin_of_an_svg(run_id, record),
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+reckon/crew/promotion_checks.py:677: in _require_no_png_twin_of_an_svg
+    findings = _png_twin_findings_in_run_commits(record)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+reckon/crew/promotion_checks.py:644: in _png_twin_findings_in_run_commits
+    resolved = _resolve_commits(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+cwd = PosixPath(&#x27;/tmp/mcintos-1317707-JGB4/pytest/test_each_commit_form_promotes0/repo&#x27;)
+revisions = [&#x27;9271b92 test: record candidate, with details&#x27;, &#x27;684e6e35c952076ccde5406be52e65bf81f5848c test: verify candidate&#x27;]
+run_id = &#x27;r-manifest-commit-form-list&#x27;
+
+    def _resolve_commits(*, cwd: Path, revisions: Iterable[str], run_id: str) -&gt; list[str]:
+        &quot;&quot;&quot;Resolve every recorded revision to its canonical commit object id.&quot;&quot;&quot;
+        commits = []
+        for revision in revisions:
+            commit = _resolve_commit(cwd, revision)
+            if not commit:
+                # A commit that resolves somewhere else is not a bad sha, it is a
+                # node whose write target was not its run repository — dispatched
+                # without --repo and pointed at a foreign checkout by prose. Naming
+                # the repository it does belong to turns a correct-but-opaque
+                # refusal into the instruction for the next dispatch.
+                elsewhere = _foreign_repository(revision, exclude=cwd)
+                remedy = (
+                    f&quot;it resolves in {elsewhere} instead, so that node belongs to &quot;
+                    f&quot;that repository: redispatch it with `--repo {elsewhere}` &quot;
+                    &quot;rather than granting a foreign checkout in its prose&quot;
+                    if elsewhere is not None
+                    else &quot;check that the worker committed rather than only staging, &quot;
+                    &quot;and that it committed in its own worktree&quot;
+                )
+&gt;               raise CrewError(
+                    f&quot;run {run_id!r} commit {revision!r} does not resolve to a &quot;
+                    f&quot;commit object in the run repository ({cwd}); {remedy}&quot;
+                )
+E               reckon.crew.CrewError: run &#x27;r-manifest-commit-form-list&#x27; commit &#x27;9271b92 test: record candidate, with details&#x27; does not resolve to a commit object in the run repository (/tmp/mcintos-1317707-JGB4/pytest/test_each_commit_form_promotes0/repo); check that the worker committed rather than only staging, and that it committed in its own worktree
+
+reckon/crew/promotion_scope.py:292: CrewError
+_____________ test_each_commit_form_promotes_without_editing[json] _____________
+
+repository = PosixPath(&#x27;/tmp/mcintos-1317707-JGB4/pytest/test_each_commit_form_promotes1/repo&#x27;)
+tmp_path = PosixPath(&#x27;/tmp/mcintos-1317707-JGB4/pytest/test_each_commit_form_promotes1&#x27;)
+form = &#x27;json&#x27;
+
+    @pytest.mark.parametrize(&quot;form&quot;, [&quot;list&quot;, &quot;json&quot;, &quot;none&quot;, &quot;commas&quot;])
+    def test_each_commit_form_promotes_without_editing(
+        repository: Path, tmp_path: Path, form: str
+    ) -&gt; None:
+        base, first = _repository_with_candidate(repository)
+        (repository / &quot;candidate.txt&quot;).write_text(&quot;seed\ndelivered\nverified\n&quot;)
+        git(repository, &quot;add&quot;, &quot;candidate.txt&quot;)
+        git(repository, &quot;commit&quot;, &quot;-q&quot;, &quot;-m&quot;, &quot;test: verify candidate&quot;)
+        second = git(repository, &quot;rev-parse&quot;, &quot;HEAD&quot;)
+        first_short = git(repository, &quot;rev-parse&quot;, &quot;--short&quot;, first)
+        expected = [first, second]
+        entries = [
+            f&quot;{first_short} test: record candidate, with details&quot;,
+            f&quot;{second} test: verify candidate&quot;,
+        ]
+        values = {
+            &quot;list&quot;: &quot;\n&quot; + &quot;\n&quot;.join(f&quot;  - {entry}&quot; for entry in entries),
+            &quot;json&quot;: json.dumps(entries),
+            &quot;none&quot;: &quot;\n- none — this node writes a review record outside the repository&quot;,
+            &quot;commas&quot;: f&quot;{first_short}, {second}&quot;,
+        }
+        run_id = f&quot;r-manifest-commit-form-{form}&quot;
+        if form == &quot;none&quot;:
+            base = second
+            expected = []
+        manifest = _write_complete_manifest_pointer(
+            repository,
+            tmp_path,
+            run_id,
+            base=base,
+            changed_paths=&quot;none&quot; if form == &quot;none&quot; else &quot;candidate.txt&quot;,
+            commits=values[form],
+        )
+        if form == &quot;none&quot;:
+            record = json.loads(pointer_path(run_id).read_text())
+            record[&quot;role&quot;] = &quot;review&quot;
+            _write_json(pointer_path(run_id), record)
+        delivered = manifest.read_text()
+    
+&gt;       promoted = crew.complete(run_id, gate=&quot;passed&quot;, root=repository)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_manifest_commit_forms.py:59: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+reckon/crew/open_run_index.py:67: in bounded
+    return function(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+reckon/crew/promotion.py:1007: in complete
+    ) = _require_independently(
+reckon/crew/promotion_checks.py:1543: in _require_independently
+    raise refusals[0]
+reckon/crew/promotion_checks.py:1534: in _require_independently
+    products.append(check())
+                    ^^^^^^^
+reckon/crew/promotion.py:1083: in &lt;lambda&gt;
+    lambda: _require_no_png_twin_of_an_svg(run_id, record),
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+reckon/crew/promotion_checks.py:677: in _require_no_png_twin_of_an_svg
+    findings = _png_twin_findings_in_run_commits(record)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+reckon/crew/promotion_checks.py:644: in _png_twin_findings_in_run_commits
+    resolved = _resolve_commits(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+cwd = PosixPath(&#x27;/tmp/mcintos-1317707-JGB4/pytest/test_each_commit_form_promotes1/repo&#x27;)
+revisions = [&#x27;1d76c49 test: record candidate, with details&#x27;, &#x27;47ba47e8a370bc36a7b6a9fb1b16ae147a982c7f test: verify candidate&#x27;]
+run_id = &#x27;r-manifest-commit-form-json&#x27;
+
+    def _resolve_commits(*, cwd: Path, revisions: Iterable[str], run_id: str) -&gt; list[str]:
+        &quot;&quot;&quot;Resolve every recorded revision to its canonical commit object id.&quot;&quot;&quot;
+        commits = []
+        for revision in revisions:
+            commit = _resolve_commit(cwd, revision)
+            if not commit:
+                # A commit that resolves somewhere else is not a bad sha, it is a
+                # node whose write target was not its run repository — dispatched
+                # without --repo and pointed at a foreign checkout by prose. Naming
+                # the repository it does belong to turns a correct-but-opaque
+                # refusal into the instruction for the next dispatch.
+                elsewhere = _foreign_repository(revision, exclude=cwd)
+                remedy = (
+                    f&quot;it resolves in {elsewhere} instead, so that node belongs to &quot;
+                    f&quot;that repository: redispatch it with `--repo {elsewhere}` &quot;
+                    &quot;rather than granting a foreign checkout in its prose&quot;
+                    if elsewhere is not None
+                    else &quot;check that the worker committed rather than only staging, &quot;
+                    &quot;and that it committed in its own worktree&quot;
+                )
+&gt;               raise CrewError(
+                    f&quot;run {run_id!r} commit {revision!r} does not resolve to a &quot;
+                    f&quot;commit object in the run repository ({cwd}); {remedy}&quot;
+                )
+E               reckon.crew.CrewError: run &#x27;r-manifest-commit-form-json&#x27; commit &#x27;1d76c49 test: record candidate, with details&#x27; does not resolve to a commit object in the run repository (/tmp/mcintos-1317707-JGB4/pytest/test_each_commit_form_promotes1/repo); check that the worker committed rather than only staging, and that it committed in its own worktree
+
+reckon/crew/promotion_scope.py:292: CrewError
+_____________ test_each_commit_form_promotes_without_editing[none] _____________
+
+repository = PosixPath(&#x27;/tmp/mcintos-1317707-JGB4/pytest/test_each_commit_form_promotes2/repo&#x27;)
+tmp_path = PosixPath(&#x27;/tmp/mcintos-1317707-JGB4/pytest/test_each_commit_form_promotes2&#x27;)
+form = &#x27;none&#x27;
+
+    @pytest.mark.parametrize(&quot;form&quot;, [&quot;list&quot;, &quot;json&quot;, &quot;none&quot;, &quot;commas&quot;])
+    def test_each_commit_form_promotes_without_editing(
+        repository: Path, tmp_path: Path, form: str
+    ) -&gt; None:
+        base, first = _repository_with_candidate(repository)
+        (repository / &quot;candidate.txt&quot;).write_text(&quot;seed\ndelivered\nverified\n&quot;)
+        git(repository, &quot;add&quot;, &quot;candidate.txt&quot;)
+        git(repository, &quot;commit&quot;, &quot;-q&quot;, &quot;-m&quot;, &quot;test: verify candidate&quot;)
+        second = git(repository, &quot;rev-parse&quot;, &quot;HEAD&quot;)
+        first_short = git(repository, &quot;rev-parse&quot;, &quot;--short&quot;, first)
+        expected = [first, second]
+        entries = [
+            f&quot;{first_short} test: record candidate, with details&quot;,
+            f&quot;{second} test: verify candidate&quot;,
+        ]
+        values = {
+            &quot;list&quot;: &quot;\n&quot; + &quot;\n&quot;.join(f&quot;  - {entry}&quot; for entry in entries),
+            &quot;json&quot;: json.dumps(entries),
+            &quot;none&quot;: &quot;\n- none — this node writes a review record outside the repository&quot;,
+            &quot;commas&quot;: f&quot;{first_short}, {second}&quot;,
+        }
+        run_id = f&quot;r-manifest-commit-form-{form}&quot;
+        if form == &quot;none&quot;:
+            base = second
+            expected = []
+        manifest = _write_complete_manifest_pointer(
+            repository,
+            tmp_path,
+            run_id,
+            base=base,
+            changed_paths=&quot;none&quot; if form == &quot;none&quot; else &quot;candidate.txt&quot;,
+            commits=values[form],
+        )
+        if form == &quot;none&quot;:
+            record = json.loads(pointer_path(run_id).read_text())
+            record[&quot;role&quot;] = &quot;review&quot;
+            _write_json(pointer_path(run_id), record)
+        delivered = manifest.read_text()
+    
+&gt;       promoted = crew.complete(run_id, gate=&quot;passed&quot;, root=repository)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_manifest_commit_forms.py:59: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+reckon/crew/open_run_index.py:67: in bounded
+    return function(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+reckon/crew/promotion.py:1007: in complete
+    ) = _require_independently(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+checks = [&lt;function complete.&lt;locals&gt;._repository_root at 0x7f91e97d0460&gt;, &lt;function complete.&lt;locals&gt;.&lt;lambda&gt; at 0x7f91e97d0e... &lt;function complete.&lt;locals&gt;.&lt;lambda&gt; at 0x7f91e97d10c0&gt;, &lt;function complete.&lt;locals&gt;.&lt;lambda&gt; at 0x7f91e97d1170&gt;, ...]
+
+    def _require_independently(checks: Sequence[Callable[[], Any]]) -&gt; list[Any]:
+        &quot;&quot;&quot;Run independent preconditions together, refusing once with every failure.
+    
+        Each check returns its product; every check runs even after an earlier one
+        has refused, because the facts behind them are independent, and then one
+        refusal carries all of them in the order given. A check whose inputs come
+        from an earlier check&#x27;s success is not listed as independent — the caller
+        keeps it after this sweep, where it is judged only once its inputs hold.
+        &quot;&quot;&quot;
+        refusals: list[BaseException] = []
+        products: list[Any] = []
+        for check in checks:
+            try:
+                products.append(check())
+            except (CrewError, ledger.LedgerError) as refusal:
+                products.append(None)
+                if isinstance(refusal, _PromotionRefusalError):
+                    refusals.extend(refusal.refusals)
+                else:
+                    refusals.append(refusal)
+        if refusals:
+            if len(refusals) == 1:
+                raise refusals[0]
+&gt;           raise _PromotionRefusalError(refusals)
+E           reckon.crew.promotion_checks._PromotionRefusalError: run &#x27;r-manifest-commit-form-none&#x27; presents &#x27;none — this node writes a review record outside the repository&#x27; as a commit, but that identifier does not resolve to a commit object in the run repository (/tmp/mcintos-1317707-JGB4/pytest/test_each_commit_form_promotes2/repo). The presented list is what the boundary check and the ledger resolve, so a value that names nothing is not evidence and is reported rather than dropped from the comparison. Cite the commit the run actually wrote, or leave the value out of the presentation
+E           
+E           This promotion also fails 3 further precondition(s), in the order the promotion checks them:
+E             - the citation &#x27;none — this node writes a review record outside the repository&#x27; presented for this promotion names no commit in the run&#x27;s tree /tmp/mcintos-1317707-JGB4/pytest/test_each_commit_form_promotes2/repo, so the revision the run&#x27;s work reached cannot be chosen while it still has to be placed in the history. Present the commit the run&#x27;s work ended at
+E             - run &#x27;r-manifest-commit-form-none&#x27; commit &#x27;none — this node writes a review record outside the repository&#x27; does not resolve to a commit object in the run repository (/tmp/mcintos-1317707-JGB4/pytest/test_each_commit_form_promotes2/repo); check that the worker committed rather than only staging, and that it committed in its own worktree
+E             - run &#x27;r-manifest-commit-form-none&#x27; commit &#x27;none — this node writes a review record outside the repository&#x27; does not resolve to a commit object in the run repository (/tmp/mcintos-1317707-JGB4/pytest/test_each_commit_form_promotes2/repo); check that the worker committed rather than only staging, and that it committed in its own worktree
+
+reckon/crew/promotion_checks.py:1544: _PromotionRefusalError
+=========================== short test summary info ============================
+FAILED tests/test_manifest_commit_forms.py::test_each_commit_form_promotes_without_editing[list]
+FAILED tests/test_manifest_commit_forms.py::test_each_commit_form_promotes_without_editing[json]
+FAILED tests/test_manifest_commit_forms.py::test_each_commit_form_promotes_without_editing[none]
+3 failed, 2 passed in 2.40s
+EXIT=1
+</pre>
+</section>
