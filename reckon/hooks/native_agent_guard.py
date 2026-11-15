@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Pre-tool-use hook: refuse a harness-native background-agent spawn where the
-crew's committed run ledger already owns worker execution.
+crew's run ledger already owns worker execution.
 
 Self-contained and stdlib-only on purpose: this single file is distributed
 into every crew-managed repository's harness settings, and most of those
@@ -12,8 +12,8 @@ Behavior, in order:
 
 1. Scope test — the repository is found by walking up from the session's
    working directory, so a session in any subdirectory is governed by it. A
-   repository whose ``docs/state`` carries no project configuration is
-   untouched; the spawn is allowed silently.
+   repository whose ``docs/state`` carries no crew state is untouched; the
+   spawn is allowed silently.
 2. Waiver — a live run pointer for this repository with an in-harness launch
    still awaiting attachment allows the spawn and names the bind command.
 3. Waiver — an explicit environment override allows the spawn.
@@ -49,12 +49,10 @@ OVERRIDE_ENV = "RECKON_ALLOW_NATIVE_AGENT"
 # coordinator, which changes the re-route the refusal teaches.
 RUN_ID_ENV = "RECKON_RUN_ID"
 
-# Files a project's state directory carries that identify it as crew-managed.
-# The run ledger (``crew.json``) and the flight configuration are honoured for
-# a tree that has not migrated yet, but recognition must not depend on either:
-# the ledger leaves git, so a checkout carries only the project's own
-# configuration.
-PROJECT_STATE_MARKERS = ("index.json", "flight.yaml", "crew.json")
+# Crew configuration identifies crew ownership; tracked review history also
+# establishes it when the run ledger is absent. Static build metadata alone
+# does not distinguish a crew project.
+PROJECT_STATE_MARKERS = ("flight.yaml", "crew.json")
 
 # The shape of the re-route a refusal teaches. Angle-bracket placeholders mark
 # what only the plan and the caller's own work list can fill in; the guard
@@ -84,10 +82,8 @@ def _config_home() -> Path:
 def crew_managed_projects(repo_root: Path) -> list[str]:
     """Repository-local project names carrying crew or flight state.
 
-    A project is recognised by the configuration its state directory carries,
-    never by the run ledger: the ledger leaves git, so a checkout of a
-    migrated repository holds no ``crew.json`` for this to key on. The
-    remaining markers are the project's own configuration, which stays.
+    Review history stays in a checkout without the run ledger. Project
+    metadata written by a static build alone does not establish crew ownership.
 
     Reads only repository-local state — never the host's mounts file — so
     detection is correct for a repository nobody has registered on this host
@@ -100,7 +96,10 @@ def crew_managed_projects(repo_root: Path) -> list[str]:
         entry.name
         for entry in state_root.iterdir()
         if entry.is_dir()
-        and any((entry / marker).is_file() for marker in PROJECT_STATE_MARKERS)
+        and (
+            (entry / "reviews").is_dir()
+            or any((entry / marker).is_file() for marker in PROJECT_STATE_MARKERS)
+        )
     )
 
 

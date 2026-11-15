@@ -1,11 +1,8 @@
-"""A crew project is recognised by its own configuration, not by its ledger.
+"""Review history keeps crew guards active without a tracked run ledger.
 
-The run ledger lives in the crew store outside every repository, so a checkout
-carries no ``crew.json``. The two pre-tool-use guards fail open by design, so a
-detection keyed on that file would turn both silently off in every tree once
-the untracking lands. Each case here builds a project whose state directory
-holds only the project configuration that stays tracked, removes both ledger
-files, and requires the refusal anyway.
+Repository-local review history survives independently of ``crew.json`` and
+``flight.yaml``. Both guards must still refuse guarded actions, and CLI and
+shadow discovery must recognise the project.
 """
 
 from __future__ import annotations
@@ -23,15 +20,14 @@ from reckon.hooks import native_agent_guard, worker_message_guard
 def _project_repo(tmp_path: Path, *, project: str = "proj") -> Path:
     """A repository whose project state survives with no tracked ledger.
 
-    The directory carries a tracked project configuration file and nothing
-    else; the two ledger files are created and then removed, which is the state
-    every checkout reaches once the ledger leaves git.
+    Tracked review history establishes crew ownership independently of the
+    two configuration files created and removed here.
     """
     repo = tmp_path / "repo"
     state = repo / "docs" / "state" / project
     state.mkdir(parents=True)
     (repo / ".git").mkdir()
-    (state / "index.json").write_text("{}\n")
+    (state / "reviews").mkdir()
     for ledger_name in ("crew.json", "flight.yaml"):
         ledger = state / ledger_name
         ledger.write_text("")
