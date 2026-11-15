@@ -360,6 +360,34 @@ def test_a_load_against_an_absent_store_creates_nothing(aggregate):
     assert not store.parent.exists(), "the read created the store's directory"
 
 
+def test_a_load_answers_a_store_it_cannot_write(aggregate):
+    """A read must not need write access to the store it reads.
+
+    Opening the store through its constructor runs its schema setup, which
+    migrates a store that still owes one: so a read took a write lock and, on a
+    store the caller cannot write, failed outright. A station tick is a read; it
+    must answer from a store the caller has no permission to modify and leave
+    any migration to whoever opens the store to write.
+    """
+    rows = _rows()
+    write_aggregate()
+    write_documents(rows)
+    fill_store(rows)
+    store = run_store.store_path()
+    connection = sqlite3.connect(store)
+    try:
+        with connection:
+            connection.execute('DELETE FROM "store_meta"')
+    finally:
+        connection.close()
+    store.chmod(0o444)
+    try:
+        data, _version = ledger.load(PROJECT)
+        assert [row["run_id"] for row in data["runs"]] == _ids()
+    finally:
+        store.chmod(0o644)
+
+
 def test_a_store_deleted_and_rebuilt_returns_an_equal_answer_set(aggregate):
     fill_store(_rows())
 
