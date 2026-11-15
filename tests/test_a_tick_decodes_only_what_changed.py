@@ -16,8 +16,10 @@ satisfied by a cheaper decode somewhere else.
 from __future__ import annotations
 
 import json
+import sqlite3
 from pathlib import Path
 
+from reckon import file_memo
 from reckon.crew import station_store
 
 
@@ -254,4 +256,53 @@ def test_one_byte_appended_to_one_stream_is_decoded_once(tmp_path, monkeypatch):
     stored = {str(row["path"]): str(row["fold_state"]) for row in store.stream_rows()}
     assert decodes.texts == [stored[str(stream)]], (
         "the tick decoded a document other than the grown stream's own fold state"
+    )
+
+
+# ── a store written before the scalars still folds its runs' dialects ───
+
+
+def test_a_store_written_before_the_scalars_backfills_them(tmp_path):
+    """A node's store outlives an upgrade; its rows must still fold correctly.
+
+    The store written by the previous build keeps each pointer's dialect only
+    inside its fields document. A tick that read the signal from the new columns
+    without backfilling them would read every such run as the default dialect,
+    so the backfill is what a store on disk depends on.
+    """
+    home, streams = _fixture_home(tmp_path)
+    root = tmp_path / "old-station"
+    root.mkdir()
+    pointer = home / "live" / "r-b.json"
+    record = json.loads(pointer.read_text(encoding="utf-8"))
+    connection = sqlite3.connect(root / station_store.DATABASE_NAME)
+    try:
+        connection.execute(
+            "CREATE TABLE pointers (path TEXT PRIMARY KEY, signature TEXT NOT NULL, "
+            "run_id TEXT, project TEXT, session TEXT, phase TEXT, "
+            "fields TEXT NOT NULL)"
+        )
+        connection.execute(
+            "INSERT INTO pointers VALUES (?, ?, ?, ?, ?, ?, ?)",
+            (
+                str(pointer),
+                json.dumps(list(file_memo.file_signature(pointer))),
+                record["run_id"],
+                record["project"],
+                record["session"],
+                record["phase"],
+                json.dumps(record, sort_keys=True),
+            ),
+        )
+        connection.commit()
+    finally:
+        connection.close()
+
+    store = station_store.StationStore(root)
+    store.connect()
+    store.tick(home=home)
+
+    observation = store.observation_rows()[str(streams["r-b"])]
+    assert observation["backend"] == "codex", (
+        "a store written before the scalars folded its run in another dialect"
     )
