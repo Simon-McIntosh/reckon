@@ -240,3 +240,17 @@ def test_a_fresh_producer_snapshot_supersedes_a_stale_station_export(
         for _, event in received
         if event["event"].startswith("producer-")
     ] == ["producer-lost", "producer-restored"]
+
+
+@pytest.mark.timeout(2)
+def test_an_exhausted_subscriber_ends_the_follower(isolated):
+    subscriber = _stub_subscriber()
+    subscriber.wake = lambda **kwargs: iter(())
+    assert (
+        list(
+            follow._follow_watch_lines(
+                PROJECT, session=SESSION, subscriber=subscriber, sweep=None
+            )
+        )
+        == []
+    )

@@ -2346,6 +2346,8 @@ def _follow_watch_lines(
                     yield dict(event, replay=True)
                 else:
                     yield event
+            if not pending_notices:
+                break
             yield from pending_notices
             pending_notices.clear()
             continue
