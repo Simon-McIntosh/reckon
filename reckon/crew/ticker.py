@@ -2727,6 +2727,13 @@ class PaneRowPath:
             lift_groups=lift_groups,
             lift_claim=lift_claim,
         )
+        # run_id -> the observation moment of the newest row this path emitted
+        # for the run. A stream can reach a pane out of order — a producer's
+        # sweep rewrites a stream while a follower is reading it, and a re-armed
+        # follower picks up rows written before the ones it already showed — so
+        # a row stamped before one already emitted for its run is a redraw of an
+        # instant the pane has passed. This is the memory that drops it.
+        self._emitted_moment: dict[str, float] = {}
         for run_id, state in self.reported.items():
             self._policy.seed(run_id, state)
 
@@ -2786,6 +2793,33 @@ class PaneRowPath:
                 self.reported[run_id] = str(row.get("to_state") or "")
         return printed
 
+    def _in_order(self, rows: Iterable[Mapping[str, Any]]) -> list[Mapping[str, Any]]:
+        """Drop each row older than one already emitted for its own run.
+
+        A run's rows are emitted in the order of their observation times: the
+        pane draws the state as of the update the reader has already seen, so a
+        row stamped before that instant would redraw the run in a state it has
+        left and read as a fresh transition. The running figure is updated by
+        every row this path emits, so a replay of the same stream is ordered
+        against itself and not against the clock a reader happens to hold. A row
+        carrying no observation time cannot be ordered and is passed through; so
+        is a row whose run this path has not emitted anything for, because there
+        is no later row for it to be older than.
+        """
+        kept: list[Mapping[str, Any]] = []
+        for row in rows:
+            run_id = str(row.get("run_id") or "")
+            moment = _stamped_moment(row)
+            if not run_id or moment <= 0.0:
+                kept.append(row)
+                continue
+            emitted = self._emitted_moment.get(run_id, 0.0)
+            if emitted and moment < emitted:
+                continue
+            self._emitted_moment[run_id] = moment
+            kept.append(row)
+        return kept
+
     def feed(
         self, event: Mapping[str, Any] | None, *, now: float
     ) -> list[Mapping[str, Any]]:
@@ -2794,11 +2828,11 @@ class PaneRowPath:
             return []
         if self._selects is not None and not self._selects(event):
             return []
-        return self._remember(self._policy.feed(event, now=now))
+        return self._remember(self._in_order(self._policy.feed(event, now=now)))
 
     def flush(self, *, now: float) -> list[Mapping[str, Any]]:
         """Openers whose hold window has closed, released to the pane."""
-        return self._remember(self._policy.flush(now=now))
+        return self._remember(self._in_order(self._policy.flush(now=now)))
 
 
 def row_moment(event: Mapping[str, Any]) -> float:
@@ -3427,14 +3461,18 @@ class Ticker:
             # The row's destination repeats the word the pane already shows for
             # the run. That draws no transition — unless the row carries a duty
             # (:func:`same_word_row_is_news`), which the pane owes the reader
-            # even when the word repeats. Such a row prints the destination word
-            # twice, or its own left word where the row names a different one,
-            # so a block or an unreadable the pane already shows is never
-            # released as an empty line the reader never saw.
+            # even when the word repeats. Such a row prints its own left word
+            # where the row names a different one, so a block or an unreadable
+            # the pane already shows is never released as an empty line the
+            # reader never saw. Where the row's own left word is the destination
+            # too, the row carries news and no transition: it names the state
+            # the run stands in and leaves the arrow's left side blank, because
+            # one word printed around an arrow claims a move between two states
+            # that are the same state, which is the noise a coordinator woke for.
             if not same_word_row_is_news(event, self._shown_wait.get(run_id)):
                 return ""
             own_left = _display_state(event.get("from_state"))
-            from_state = own_left if own_left and own_left != to_state else to_state
+            from_state = own_left if own_left and own_left != to_state else ""
         if stream_event:
             self._reported[run_id] = to_state
             # The wait facts the pane has now shown, so a later row repeating

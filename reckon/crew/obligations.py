@@ -154,12 +154,29 @@ REPAIR_ROUND_DUTY_KIND = "repair-round"
 #: vocabulary read from it would refuse the duty's own ``kind``. A field whose
 #: value is empty is left off the row by the projection; a name is accepted here
 #: whether or not any duty of that kind is currently owed.
+#: The fields a duty row's evidence names its runs in, in the order a reader
+#: wants them: the duty's own run first, then the holder that fences a waiting
+#: request, then the review a delivered run awaits. A counted duty names at
+#: least one of them, and :func:`_with_action_form` projects the set onto every
+#: row as ``run_ids``.
+RUN_ID_FIELDS = ("run_id", "holder_run_id", "review_run_id")
+
 DUTY_ROW_FIELDS = (
     "kind",
     "run_id",
+    # Every run this row's evidence names: the duty's own run, the holder of a
+    # fence a waiting request is stuck behind, and the review a delivered run
+    # awaits. A counted row names at least one, which is what lets a count be
+    # read back to the runs behind it — a count of one row cannot be acted on
+    # without knowing which run it is about.
+    "run_ids",
     "node",
     "plan",
     "age_seconds",
+    # The instant the row's age was measured at. A reader holding the row later
+    # re-measures the age from here, so a stale snapshot cannot keep a duty
+    # claiming the age it had when it was written down.
+    "observed_at",
     "next_command",
     "next_action_form",
     # A queued duty's place in the lane's order, present only while it waits.
@@ -591,18 +608,32 @@ def action_form(command: str) -> str | None:
 
 
 def _with_action_form(item: Mapping[str, Any]) -> dict[str, Any]:
-    """Return one duty row carrying its command's action form, when it has one.
+    """Return one duty row carrying its command's action form and its run ids.
 
     The printed command is left as it stands, in ``next_command`` and in
     ``next_action`` alike — that spelling is the CLI's own, and some readers
     still run it. The rendered form travels under its own key, so no reader
     that already knows ``next_action`` as a command string has to tell the two
     apart.
+
+    The run ids are read from the fields a duty's own evidence names them in —
+    the duty's run, the holder of a fence a waiting request is stuck behind, and the
+    review a delivered run awaits — because a row that says how many duties are
+    owed and names no run leaves the reader to guess which ones. Every row this
+    view projects passes through here, in the derivation and in the slice a
+    sweep publishes, so the two surfaces cannot disagree about what a duty names.
     """
     row = dict(item)
     rendered = action_form(str(item.get("next_command") or ""))
     if rendered is not None:
         row["next_action_form"] = rendered
+    named: list[str] = []
+    for field in RUN_ID_FIELDS:
+        run_id = str(item.get(field) or "").strip()
+        if run_id and run_id not in named:
+            named.append(run_id)
+    if named:
+        row["run_ids"] = named
     return row
 
 
@@ -618,7 +649,18 @@ def _seconds_since(value: Any, *, now: datetime) -> int:
 
 
 def _row_age(row: Mapping[str, Any], *, now: datetime) -> int:
-    """Read a classifier row's best available age measurement."""
+    """Read a classifier row's best available age measurement.
+
+    A row that records the instant it was observed answers here with its age at
+    this read, measured from that instant and the stated figure it carried then
+    (:func:`refresh_age`); the stated figure alone is what a snapshot published
+    an hour ago would keep, so a duty would read as freshly observed for as long
+    as nobody rewrote the snapshot. A row recorded before this change carries no
+    such instant, and its stated figures stand.
+    """
+    refreshed = refresh_age(row, now=now)
+    if refreshed is not None:
+        return refreshed
     stated_age = row.get("age_seconds")
     if isinstance(stated_age, (int, float)) and not isinstance(stated_age, bool):
         return max(0, int(stated_age))
@@ -632,6 +674,100 @@ def _row_age(row: Mapping[str, Any], *, now: datetime) -> int:
     if isinstance(log_age, (int, float)) and not isinstance(log_age, bool):
         return max(0, int(log_age))
     return 0
+
+
+#: The field a duty row records its own observation instant in: the moment the
+#: row's age was measured, as an ISO-8601 stamp. A reader later than that moment
+#: measures the duty's age again from here rather than trusting the stated
+#: figure, which is why every row that states an age also carries this.
+OBSERVED_AT_FIELD = "observed_at"
+
+
+def _measured_at_read(
+    items: Iterable[Mapping[str, Any]], *, now: datetime
+) -> list[dict[str, Any]]:
+    """Each duty row with its age measured again at this read.
+
+    One row is read by the derivation, by the slice a sweep publishes, and by
+    every hook and pane that holds the payload afterwards. The age the row
+    states was measured when it was written, so a read that repeats it makes an
+    old duty look freshly observed: a row standing at 720 s for an hour is what
+    a coordinator reads as fresh and never revisits. :func:`refresh_age` adds
+    the interval since the row's own observation, so the figure grows by exactly
+    the time that has passed and two readers of the same row agree about it. A
+    row recording no instant is left as it stands.
+    """
+    refreshed: list[dict[str, Any]] = []
+    for item in items:
+        row = dict(item)
+        age = refresh_age(row, now=now)
+        if age is not None:
+            row["age_seconds"] = age
+        refreshed.append(row)
+    return refreshed
+
+
+def _counted_summary(
+    items: Sequence[Mapping[str, Any]], *, unreconciled: int
+) -> dict[str, Any]:
+    """The figures a reader acts on, over the duties that name a run.
+
+    A counted obligation names at least one run id. A row whose evidence names
+    no run at all is a notice about the checkout the session works in, not a duty
+    a run owes: it stays in the list, and it is counted under ``notice_count``,
+    so the count a reader acts on is always a count of runs they own and
+    ``run_ids`` names every one of them. A count of one row that names nothing
+    cannot be acted on and cannot be traced back to the run behind it, which is
+    what "run-stalled 1" told a coordinator.
+    """
+    counted = [item for item in items if item.get("run_ids")]
+    summary: dict[str, Any] = {
+        "count": len(counted),
+        "oldest_age_seconds": max(
+            (int(item.get("age_seconds") or 0) for item in counted), default=0
+        ),
+        "unreconciled_runs": int(unreconciled),
+        "run_ids": sorted({run_id for item in counted for run_id in item["run_ids"]}),
+    }
+    if len(counted) != len(items):
+        summary["notice_count"] = len(items) - len(counted)
+    return summary
+
+
+def _stated_age(row: Mapping[str, Any]) -> int | None:
+    """The age figure the graph's own builders stated, or None when none did.
+
+    Only the figures that are ages in seconds are read, in the order the
+    builders set them: a duty row states its age directly, a classifier row the
+    age of its terminal record, and the exit record's own timestamp is a figure
+    too far from the row to survive being added to an interval.
+    """
+    for field in ("age_seconds", "terminal_age_seconds", "log_age_seconds"):
+        value = row.get(field)
+        if isinstance(value, (int, float)) and not isinstance(value, bool):
+            return max(0, int(value))
+    return None
+
+
+def refresh_age(row: Mapping[str, Any], *, now: datetime) -> int | None:
+    """One duty row's age at this read, or None where it records no instant.
+
+    A duty is observed once and read many times: the derivation measures it,
+    a published snapshot carries it to a hook an hour later, and the pane draws
+    it again after a reload. The figure the row states is the age it had when it
+    was observed, so a read must add the interval since — otherwise a stale row
+    keeps claiming the age it had at publication, which makes an old duty look
+    like a fresh observation. Measured this way the age grows with every read by
+    exactly the time that has passed, and two readers of one row cannot disagree
+    about it.
+    """
+    observed = parse_utc(str(row.get(OBSERVED_AT_FIELD) or ""))
+    if observed is None:
+        return None
+    stated = _stated_age(row)
+    if stated is None:
+        return max(0, int((now - observed).total_seconds()))
+    return max(0, int(stated + (now - observed).total_seconds()))
 
 
 _VIEW_LIVE_POINTERS: ContextVar[Mapping[str, tuple[dict[str, Any], ...]] | None] = (
@@ -1713,11 +1849,14 @@ def _live_item(
     refused.
     """
     item = {
-        "kind": kind,
+        "kind": str(kind),
         "run_id": str(row.get("run_id") or ""),
         "node": str(row.get("node") or ""),
         "plan": str(row.get("plan") or ""),
         "age_seconds": _row_age(row, now=now),
+        # The instant this age was measured at, so a reader holding the row
+        # later re-measures it from here instead of repeating the figure.
+        OBSERVED_AT_FIELD: _iso(now),
         "next_command": str(row.get("next_action") or ""),
     }
     if kind in CLASSIFIER_DETAIL_DUTY_KINDS:
@@ -4259,6 +4398,13 @@ def _obligations_view(
         items.append(index_lag)
     acknowledgements = _acknowledgements_in_force(project, now=now)
     items, acknowledged = _partition_acknowledged(items, acknowledgements)
+    # Every age is measured again here, at this read, from the instant the row
+    # states it was observed. A row is observed once and read many times — the
+    # derivation computes it, a slice publishes it, a hook an hour later prints
+    # it — and the figure it carries is the age it had then. Reading it as it
+    # stands is what made a stale duty look freshly observed.
+    items = _measured_at_read(items, now=now)
+    acknowledged = _measured_at_read(acknowledged, now=now)
     items.sort(
         key=lambda item: (
             -int(item["age_seconds"]),
@@ -4277,13 +4423,9 @@ def _obligations_view(
     items = [_with_action_form(item) for item in items]
     acknowledged = [_with_action_form(item) for item in acknowledged]
     sections = run_section_index([pointers.values()])
-    summary = {
-        "count": len(items),
-        "oldest_age_seconds": max(
-            (int(item["age_seconds"]) for item in items), default=0
-        ),
-        "unreconciled_runs": int(unreconciled),
-    }
+    # The count a reader acts on is a count of runs they own, and the runs
+    # behind it are named beside it; see :func:`_counted_summary`.
+    summary = _counted_summary(items, unreconciled=unreconciled)
     view = {
         "project": project,
         "session": session,
