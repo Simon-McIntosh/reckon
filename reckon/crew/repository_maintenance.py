@@ -324,6 +324,13 @@ def maintenance_job_script(
     interpreter is this process's own, which is the one that resolves the
     installed ``reckon`` package, and ``TMPDIR`` is the node's own disk so the
     pack's temporary files never land on the shared filesystem.
+
+    The working directory is the node's own disk for the same reason, and not
+    the repository being packed: ``python -c`` puts the working directory first
+    on the import path, so a job run from inside a checkout would run that
+    checkout's ``reckon`` rather than the installed one. For the reckon
+    checkout itself that would let the repository's own revision decide how the
+    repository is packed.
     """
 
     repo = Path(repository).expanduser().resolve()
@@ -349,7 +356,11 @@ def maintenance_job_script(
             f"#SBATCH --error={log}",
             "set -euo pipefail",
             "export TMPDIR=/tmp",
-            f"cd {shlex.quote(str(repo))}",
+            # The node's own disk, never the repository being packed: python -c
+            # puts the working directory first on the import path, so a job run
+            # from inside a checkout runs that checkout's reckon instead of the
+            # installed one.
+            "cd /tmp",
             entry,
             "",
         ]

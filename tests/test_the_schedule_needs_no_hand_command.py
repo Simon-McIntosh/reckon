@@ -145,7 +145,6 @@ def test_only_the_repository_whose_pass_is_old_is_submitted(tmp_path: Path, home
         if line.startswith("#SBATCH --partition=")
     ]
     assert partitions == [maintenance.MAINTENANCE_PARTITION], script
-    assert partitions == [maintenance.MAINTENANCE_PARTITION], script
     assert partitions[0].endswith("_debug"), partitions
     # The partition is named on the submitting argv too. The station submits
     # from inside the fleet's own allocation, where a launch that names no
@@ -162,6 +161,20 @@ def test_only_the_repository_whose_pass_is_old_is_submitted(tmp_path: Path, home
     ]
     assert times == ["00:30:00"], script
     assert "#SBATCH --mem=8G" in script
+    # The job does not run from inside the repository it packs. ``python -c``
+    # puts the working directory first on the import path, so a job started in
+    # the checkout would run that checkout's reckon rather than the installed
+    # one, and for the reckon checkout itself the repository's own revision
+    # would decide how the repository is packed.
+    directories = [
+        line.split("cd ", 1)[1]
+        for line in script.splitlines()
+        if line.startswith("cd ")
+    ]
+    assert len(directories) == 1, script
+    working_directory = Path(directories[0]).resolve()
+    assert not working_directory.is_relative_to(stale.resolve()), script
+    assert not working_directory.is_relative_to(fresh.resolve()), script
 
 
 def test_a_repository_with_no_record_is_submitted_once(tmp_path: Path, home: Path):
