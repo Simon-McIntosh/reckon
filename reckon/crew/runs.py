@@ -596,18 +596,16 @@ class PriorityBudgetExceeded(CrewError):  # noqa: N818 - named as the refusal st
 
 
 def _stored_priority(pointer: Mapping[str, Any]) -> int:
-    """The priority a request carries, from its own field or its older alias.
+    """The points a request carries, as both its budget and its ranking read them.
 
-    ``priority`` is the value a submission stores; ``priority_override`` is the
-    name the one-request reprioritise verb wrote before a request could be given
-    priority at submission. Both count against the budget and both rank the
-    queue, so a request written under either name spends and ranks alike.
+    The definition belongs to the queue ordering, which is what ranks a request;
+    this calls it rather than reading the fields a second way. Two readings of
+    one pointer is how a request comes to be charged zero by its session's budget
+    while the lane honours the points it holds, so this is a call and not a copy.
     """
-    for key in ("priority", "priority_override"):
-        value = pointer.get(key)
-        if isinstance(value, int) and not isinstance(value, bool):
-            return int(value)
-    return 0
+    from reckon.crew.queue_order import _override
+
+    return _override(pointer) or 0
 
 
 def session_priority_in_use(
@@ -965,6 +963,17 @@ def _merged_requeue(
     """
     merged: dict[str, Any] = dict(existing)
     merged.update(record)
+    # One figure describes the points a request holds, and both field names carry
+    # it. A re-dispatch that names no points keeps the points the request already
+    # held rather than zeroing them, and a named figure replaces it outright; the
+    # older alias is rewritten to match so the two can never disagree.
+    from reckon.crew.queue_order import _override
+
+    named = record.get("priority")
+    if not (isinstance(named, int) and not isinstance(named, bool) and named > 0):
+        merged["priority"] = _override(existing) or 0
+    if "priority_override" in merged:
+        merged["priority_override"] = merged["priority"]
     held_node = existing.get("node")
     new_node = record.get("node")
     if isinstance(held_node, Mapping) or isinstance(new_node, Mapping):
@@ -1017,6 +1026,11 @@ def queue_dispatch(
         project = str(record["project"])
         identity = _node_identity(record)
         live = _list_live_records(project=project)
+        # Depth and node identity are the project's, but the priority budget is
+        # the session's: points it has placed on requests in another project are
+        # the same points, and reading only this project's pointers is how two
+        # submissions of 6 and 5 both pass a budget of 10.
+        session_live = _list_live_records()
         existing = next(
             (
                 pointer
@@ -1069,7 +1083,7 @@ def queue_dispatch(
                         str(record.get("session") or ""),
                         _stored_priority(record),
                         priority_budget,
-                        live=live,
+                        live=session_live,
                         exclude_run_id=existing_run_id,
                     )
                     requeued = True
@@ -1093,7 +1107,7 @@ def queue_dispatch(
                 str(record.get("session") or ""),
                 _stored_priority(record),
                 priority_budget,
-                live=live,
+                live=session_live,
             )
 
             if not _is_review_run(record):
