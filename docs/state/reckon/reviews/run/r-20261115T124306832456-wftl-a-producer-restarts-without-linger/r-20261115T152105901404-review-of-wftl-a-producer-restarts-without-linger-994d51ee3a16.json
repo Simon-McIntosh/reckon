@@ -1,0 +1,75 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "8863ecb4f3690956868bab0b12e2b7961f98b2b9",
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/crew_follow_commands.py:4006 ensure_watcher_service",
+    "reckon/crew/watch_unit.py:788 _ensure_watch_producer",
+    "reckon/crew/dispatching/requests.py:297 _ensure_watch_producer",
+    "reckon/crew/dispatch_watch.py:487 _ensure_watch_producer",
+    "reckon/crew/dispatch_watch.py:409 _start_watch_producer"
+  ],
+  "completed_at": "2026-11-15T15:30:21.662Z",
+  "dispatched_at": "2026-11-15T15:29:59Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T124306832456-wftl-a-producer-restarts-without-linger/manifest.md",
+      "line": "21",
+      "severity": "non-blocking",
+      "text": "non-blocking: after_suite's command and log_path are mangled shell fragments ('.../.venv/bin 2>/dev/null; true' and a path truncated at 'restarts-without 2>/dev/null; true'), so the structured after receipt resolves to no file; the real receipt is test_logs/s76-after-arm.log (EXIT=0, 2 passed at 994d51ee3a) and this line has to be re-recorded before a reader can use it."
+    },
+    {
+      "file": "tests/test_a_killed_producer_is_restarted_without_linger.py",
+      "line": "105",
+      "severity": "non-blocking",
+      "text": "non-blocking: _stop, _pids and _until at :86 and :77 restate the helpers at tests/test_a_crashed_producer_is_restarted.py:176, :93 and :109, and the killed-producer case at :178 duplicates the parametric kill mode of tests/test_a_crashed_producer_is_restarted.py:190, extending it only by the linger-fallback entry and the snapshot stamp; the duplicated case does not itself hold the node, but the next such test should extend that module instead of forking it."
+    }
+  ],
+  "head_log_revision": "994d51ee3a162f6f8c8d304d6f54445e863acd28",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 5 production call site(s)",
+    "diff": "read both commits against 8863ecb4f3690956868bab0b12e2b7961f98b2b9 \u2014 b0ddae8593 adds the 232-line test file, 994d51ee3a adds the two evidence fragments, and nothing under reckon/ changes.",
+    "done_when": "the done_when asks for a killed producer replaced within two minutes with no coordinator call and five ensures leaving one producer; logs/s76-head-gate.log ran the named gate at b0ddae8593 to '2 passed in 2.68s' EXIT=0, which asserts both clauses, while its declared negative control does not reproduce and a mutation of the worker's own stands in.",
+    "goal": "the node's goal is to restart an exited watch producer with no coordinator where lingering is unavailable; tests/test_a_killed_producer_is_restarted_without_linger.py:178 arms through the linger fallback, SIGKILLs the pid that took the seat and requires a new one within two minutes, and no product file changed, so the landed change pins that restart rather than adding it.",
+    "manifest": "read; it records status complete, commits b0ddae8593 and 994d51ee3a, the gate at 2 passed, four logs, and a completed after arm, but its after_suite command and log_path fields at manifest.md:21 are truncated shell text instead of the command that ran.",
+    "write_paths": "the node's fence was reckon, tests and docs/evidence/fragments/work-flows-to-the-lane; git diff --stat 8863ecb4f369..994d51ee3a lists only tests/test_a_killed_producer_is_restarted_without_linger.py and the two evidence fragments, and git diff --stat over reckon is empty."
+  },
+  "justifications": {
+    "durability": "logs/s76-negative-control.log shows the case reddening at its 120-second bound when the supervisor's crash test is replaced by an unconditional exit, and tests/test_a_killed_producer_is_restarted_without_linger.py:228 fails if _ensure_watch_producer re-arms against a live producer.",
+    "evidence": "logs/s76-head-gate.log reads '2 passed in 2.68s' at b0ddae8593 and logs/s76-after-arm.log reads '2 passed in 5.44s' at 994d51ee3a, but the done_when's own negative control does not reproduce and the after receipt recorded in manifest.md:21 names no log that resolves.",
+    "fit": "tests/test_a_killed_producer_is_restarted_without_linger.py:77 repeats the local _until helper the surrounding test modules define, and the commits carry conventional subjects and bodies with no plan or ticket identifier.",
+    "goal_fidelity": "tests/test_a_killed_producer_is_restarted_without_linger.py:178 reaches the restart through watch_unit.ensure_watcher_service with a manager whose enable_linger raises, but the behaviour it measures already existed at base (logs/s76-base-arm.log, 2 passed at 8863ecb4f369), so the node delivers the pinning case rather than the restart its goal names.",
+    "reuse": "tests/test_a_killed_producer_is_restarted_without_linger.py:60 extends tests/test_crew_watch_ensure.py:55 FakeWatchService and imports _backend_bin and _config rather than copying FakeWatchService, but no shared owner exists for _until/_pids/_stop, which restate tests/test_a_crashed_producer_is_restarted.py:93,109,176.",
+    "scope_discipline": "every path in git diff --stat 8863ecb4f369..994d51ee3a is inside the declared fence, and the empty product diff leaves reckon/ untouched as the fence required."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to restart an exited watch producer with no coordinator where lingering is unavailable; tests/test_a_killed_producer_is_restarted_without_linger.py:178 arms through the linger fallback, SIGKILLs the pid that took the seat and requires a new one within two minutes, and no product file changed, so the landed change pins that restart rather than adding it.\nVERDICT done_when: the done_when asks for a killed producer replaced within two minutes with no coordinator call and five ensures leaving one producer; logs/s76-head-gate.log ran the named gate at b0ddae8593 to '2 passed in 2.68s' EXIT=0, which asserts both clauses, while its declared negative control does not reproduce and a mutation of the worker's own stands in.\nVERDICT write_paths: the node's fence was reckon, tests and docs/evidence/fragments/work-flows-to-the-lane; git diff --stat 8863ecb4f369..994d51ee3a lists only tests/test_a_killed_producer_is_restarted_without_linger.py and the two evidence fragments, and git diff --stat over reckon is empty.\nVERDICT manifest: read; it records status complete, commits b0ddae8593 and 994d51ee3a, the gate at 2 passed, four logs, and a completed after arm, but its after_suite command and log_path fields at manifest.md:21 are truncated shell text instead of the command that ran.\nVERDICT diff: read both commits against 8863ecb4f3690956868bab0b12e2b7961f98b2b9 \u2014 b0ddae8593 adds the 232-line test file, 994d51ee3a adds the two evidence fragments, and nothing under reckon/ changes.\nCALL_SITES: reckon/crew_follow_commands.py:4006 ensure_watcher_service, reckon/crew/watch_unit.py:788 _ensure_watch_producer, reckon/crew/dispatching/requests.py:297 _ensure_watch_producer, reckon/crew/dispatch_watch.py:487 _ensure_watch_producer, reckon/crew/dispatch_watch.py:409 _start_watch_producer\nSCORE goal_fidelity: 15\nJUSTIFICATION goal_fidelity: tests/test_a_killed_producer_is_restarted_without_linger.py:178 reaches the restart through watch_unit.ensure_watcher_service with a manager whose enable_linger raises, but the behaviour it measures already existed at base (logs/s76-base-arm.log, 2 passed at 8863ecb4f369), so the node delivers the pinning case rather than the restart its goal names.\nSCORE evidence: 15\nJUSTIFICATION evidence: logs/s76-head-gate.log reads '2 passed in 2.68s' at b0ddae8593 and logs/s76-after-arm.log reads '2 passed in 5.44s' at 994d51ee3a, but the done_when's own negative control does not reproduce and the after receipt recorded in manifest.md:21 names no log that resolves.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in git diff --stat 8863ecb4f369..994d51ee3a is inside the declared fence, and the empty product diff leaves reckon/ untouched as the fence required.\nSCORE durability: 16\nJUSTIFICATION durability: logs/s76-negative-control.log shows the case reddening at its 120-second bound when the supervisor's crash test is replaced by an unconditional exit, and tests/test_a_killed_producer_is_restarted_without_linger.py:228 fails if _ensure_watch_producer re-arms against a live producer.\nSCORE fit: 18\nJUSTIFICATION fit: tests/test_a_killed_producer_is_restarted_without_linger.py:77 repeats the local _until helper the surrounding test modules define, and the commits carry conventional subjects and bodies with no plan or ticket identifier.\nSCORE reuse: 13\nJUSTIFICATION reuse: tests/test_a_killed_producer_is_restarted_without_linger.py:60 extends tests/test_crew_watch_ensure.py:55 FakeWatchService and imports _backend_bin and _config rather than copying FakeWatchService, but no shared owner exists for _until/_pids/_stop, which restate tests/test_a_crashed_producer_is_restarted.py:93,109,176.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T124306832456-wftl-a-producer-restarts-without-linger/manifest.md:21 non-blocking: after_suite's command and log_path are mangled shell fragments ('.../.venv/bin 2>/dev/null; true' and a path truncated at 'restarts-without 2>/dev/null; true'), so the structured after receipt resolves to no file; the real receipt is test_logs/s76-after-arm.log (EXIT=0, 2 passed at 994d51ee3a) and this line has to be re-recorded before a reader can use it.\nFINDING tests/test_a_killed_producer_is_restarted_without_linger.py:105 non-blocking: _stop, _pids and _until at :86 and :77 restate the helpers at tests/test_a_crashed_producer_is_restarted.py:176, :93 and :109, and the killed-producer case at :178 duplicates the parametric kill mode of tests/test_a_crashed_producer_is_restarted.py:190, extending it only by the linger-fallback entry and the snapshot stamp; the duplicated case does not itself hold the node, but the next such test should extend that module instead of forking it.",
+  "review_run_id": "r-20261115T152105901404-review-of-wftl-a-producer-restarts-without-linger-994d51ee3a16",
+  "reviewed_base_sha": "8863ecb4f3690956868bab0b12e2b7961f98b2b9",
+  "reviewed_head_sha": "994d51ee3a162f6f8c8d304d6f54445e863acd28",
+  "reviewed_run_id": "r-20261115T124306832456-wftl-a-producer-restarts-without-linger",
+  "reviewer": {
+    "backend": "clive",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash",
+    "reviewer_run_id": "r-20261115T152105901404-review-of-wftl-a-producer-restarts-without-linger-994d51ee3a16"
+  },
+  "reviewer_head_sha": "994d51ee3a162f6f8c8d304d6f54445e863acd28",
+  "reviewer_run_id": "r-20261115T152105901404-review-of-wftl-a-producer-restarts-without-linger-994d51ee3a16",
+  "scores": {
+    "durability": 16,
+    "evidence": 15,
+    "fit": 18,
+    "goal_fidelity": 15,
+    "reuse": 13,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-15T15:48:53.120941+00:00",
+  "total": 97
+}

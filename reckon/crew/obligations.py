@@ -190,6 +190,9 @@ DUTY_ROW_FIELDS = (
     "exempt_alternative",
     # How many requests one plan's review hold keeps waiting.
     "held_count",
+    "waiting_requests",
+    "merged_run_ids",
+    "partial_action_form",
     # The run a finished-run hold names, with its session, phase and the path
     # it fences, so a coordinator can find it without opening the waiting
     # request's pointer.
@@ -217,6 +220,10 @@ DUTY_ROW_FIELDS = (
     # The paths a checkout's index stages as deleted while HEAD and the working
     # tree both still carry them.
     "paths",
+    # The step a defaulted route's pick gave up in, named in the pick's own
+    # vocabulary for a step inside the call and in the dispatcher's for one of
+    # its own stages.
+    "route_step",
 )
 
 # A review whose attempt the lane's admission gate refused with ``lane-paused``
@@ -234,6 +241,14 @@ REVIEW_QUEUED_DUTY_KIND = "review-queued"
 # cannot tell a finished review from a running one; the phase does.
 REVIEW_AWAITING_PROMOTION_DUTY_KIND = "review-awaiting-promotion"
 REVIEW_QUEUED_BOUND_SECONDS = 30 * 60
+
+# A run whose recorded review dispatch was refused for the head it now carries
+# is not waiting on the reflex: its own record says every sweep will be refused
+# for the boundary it names, so the duty names the answer rather than a window
+# that passes without the run moving. The kind is its own rather than
+# ``review-refused``, which already names a live review whose stored record the
+# store refused — two states, one name, reads as one duty with two remedies.
+REVIEW_DISPATCH_REFUSED_DUTY_KIND = "review-dispatch-refused"
 
 # The status the review reflex records on a run's pointer when the lane refused
 # the attempt as paused; the refusal instant it carries is the bound's origin.
@@ -322,6 +337,13 @@ PRODUCER_GONE_DUTY_KIND = "run-producer-gone"
 # the request.
 WAIT_UNRESOLVABLE_DUTY_KIND = "wait-unresolvable"
 
+# A run the dispatcher placed on a default lane because its pick failed rather
+# than answered. The route is not the router's reading of the run, so the row
+# names the step the pick gave up in and the lane the run therefore takes. It is
+# a notice rather than a debt: the run is working, and whether to move it is the
+# coordinator's judgement, so it never holds a stop open.
+ROUTE_DEFAULTED_DUTY_KIND = "route-defaulted"
+
 # A main checkout whose index stages a path as deleted while HEAD and the
 # working tree both still carry it. An ordinary ``git commit`` in that checkout
 # records the deletion, and the working tree shows nothing wrong. It is a
@@ -358,6 +380,7 @@ NON_BLOCKING_DUTY_KINDS = frozenset(
         INDEX_LAG_DUTY_KIND,
         SCOPE_HELD_DUTY_KIND,
         REPAIR_ROUND_DUTY_KIND,
+        ROUTE_DEFAULTED_DUTY_KIND,
     }
 )
 
@@ -781,39 +804,20 @@ def _reflex_review_in_flight(pointer: Mapping[str, Any]) -> bool:
     )
 
 
-def _row_delivery_instant(row: Mapping[str, Any], *, now: datetime) -> datetime:
-    """The instant a row's age counts from: the run's last delivery.
-
-    ``_row_age`` measures how long a run has stood in the state the row reports,
-    so that state began that many seconds before ``now``. The instant is the
-    anchor an undated refusal is judged against: a refusal recorded before the
-    run delivered speaks about a revision the run has since left behind.
-    """
-    return now - timedelta(seconds=_row_age(row, now=now))
-
-
-def _refusal_speaks_for_revision(
-    recorded: Mapping[str, Any],
-    *,
-    row: Mapping[str, Any],
-    head: str,
-    now: datetime,
-) -> bool:
+def _refusal_speaks_for_revision(recorded: Mapping[str, Any], *, head: str) -> bool:
     """Whether a recorded review dispatch speaks for the revision now owed one.
 
-    A record that names a head is counted while that head is the run's current
-    one. A record that names none is counted from its instant, which is the
-    only fact it carries that can be ordered against the run's own delivery:
-    the refusal writer records a head only for an attempt it composed against
-    one, so a refusal has to be anchored on when it was made instead.
+    Only a record that names a head the run still carries speaks for it. A
+    record that names none cannot be told apart from one recorded against any
+    other revision, so it covers none: every refusal written before the writer
+    took the run's head carries no head, and reading those as covering would let
+    a two-day-old refusal answer for a head the run reached afterwards. The
+    reader that treats an unnamed side as matching — ``_review_head_covers`` —
+    is deliberately not the rule here, and a record whose head the run has
+    moved past leaves the reflex's own next sweep as the duty's answer.
     """
     stated = str(recorded.get("head") or "").strip()
-    if stated:
-        return bool(head) and recovery.same_revision(stated, head)
-    at = parse_utc(recorded.get("at"))
-    if at is None:
-        return False
-    return at >= _row_delivery_instant(row, now=now)
+    return bool(stated) and bool(head) and recovery.same_revision(stated, head)
 
 
 def _review_dispatch_refusal(
@@ -831,9 +835,17 @@ def _review_dispatch_refusal(
     refusal speaks for the revision the run owes a review of, the duty is not
     the reflex's: the reflex will keep refusing until the finding it named is
     answered, so the duty names the answer rather than a window that will pass
-    without the run moving. The command is built from the same two helpers the
-    refusal itself renders, so the row and the refusal cannot name different
-    commands for one finding.
+    without the run moving. The
+    command is built from the same two helpers the refusal itself renders, so
+    the row and the refusal cannot name different commands for one finding.
+
+    The finding is taken from the store while the review that raised it can be
+    read there, because a figure review's finding is answered on its own record
+    and only that record names the rubric the command needs. The record the
+    refusal left carries the indices it was raised on, so a refusal whose stored
+    review has since moved out of the store still names the command that lifts
+    it: a duty that fell back to the reflex's window there would promise a
+    dispatch the run's own record says will be refused again.
 
     None means no refusal speaks for the current revision, or that every stored
     review of it has had its blocking findings answered — in both cases the
@@ -844,7 +856,7 @@ def _review_dispatch_refusal(
         return None
     if str(recorded.get("status") or "") != "refused":
         return None
-    if not _refusal_speaks_for_revision(recorded, row=row, head=head, now=now):
+    if not _refusal_speaks_for_revision(recorded, head=head):
         return None
     claim = recorded.get("claim")
     if isinstance(
@@ -890,6 +902,19 @@ def _review_dispatch_refusal(
         index, _finding = undisposed[0]
         fold, exempt = recovery_review_dispatch._finding_dispose_commands(
             project, run_id, index, review=record
+        )
+        return {
+            "reason": str(recorded.get("reason") or "")
+            or "the review reflex refused this review's dispatch",
+            "next_command": (
+                f"dispose the blocking finding with `{fold}` or `{exempt}`"
+            ),
+        }
+    for index in recorded.get("findings") or ():
+        if not isinstance(index, int) or isinstance(index, bool):
+            continue
+        fold, exempt = recovery_review_dispatch._finding_dispose_commands(
+            project, run_id, index
         )
         return {
             "reason": str(recorded.get("reason") or "")
@@ -1720,6 +1745,46 @@ def _live_item(
             item["reason"] = f"{verdict}: {reason}" if reason else verdict
             item["next_command"] = f"wait: {item['reason']}"
     return item
+
+
+def _route_defaulted_items(
+    classified: Sequence[Mapping[str, Any]],
+    pointers: Mapping[str, Mapping[str, Any]],
+    *,
+    session: str,
+    now: datetime,
+) -> list[dict[str, Any]]:
+    """The live runs a failed pick placed on a default lane.
+
+    A pick that failed rather than answered leaves dispatch with the configured
+    default as its only placement, and the selection records the step it gave up
+    in. That marker reaches no reader otherwise: the run is working, so no
+    recovery reading owes it a duty, and a coordinator sees a run on a lane the
+    router never chose with nothing saying why. The row carries the step and the
+    failure's own text, and is listed for as long as the pointer stands.
+    """
+    items: list[dict[str, Any]] = []
+    for row in classified:
+        run_id = str(row.get("run_id") or "")
+        if not run_id:
+            continue
+        owner = str(row.get("session") or "")
+        if owner and owner != session:
+            continue
+        pointer = pointers.get(run_id)
+        if pointer is None:
+            continue
+        selection = runs.dispatch_field(pointer, "picker_selection")
+        if not isinstance(selection, Mapping):
+            continue
+        defaulted = selection.get("route_defaulted")
+        if not isinstance(defaulted, Mapping):
+            continue
+        item = _live_item(row, kind=ROUTE_DEFAULTED_DUTY_KIND, now=now)
+        item["route_step"] = str(defaulted.get("step") or "")
+        item["reason"] = str(defaulted.get("detail") or "")
+        items.append(item)
+    return items
 
 
 def admission_verdicts() -> dict[str, dict[str, Any]]:
@@ -2731,7 +2796,11 @@ def _review_duty_item(
             # The reflex has already tried and been refused, so naming it as
             # the owner would promise a dispatch its own record says it cannot
             # make. The duty carries the refusal's own account and the answer
-            # that lifts it, so the coordinator acts instead of waiting.
+            # that lifts it, so the coordinator acts instead of waiting. It
+            # reads as its own kind, because a coordinator filtering the list
+            # for the refused-review duty must not be handed the one that
+            # names a live review the store refused.
+            item["kind"] = REVIEW_DISPATCH_REFUSED_DUTY_KIND
             item["reason"] = refusal["reason"]
             item["next_command"] = refusal["next_command"]
         elif _reflex_owns_review(project, pointer):
@@ -3902,6 +3971,9 @@ def _obligations_view(
         str(pointer.get("run_id") or ""): pointer for pointer in _live_pointers(project)
     }
     live_pointers = list(pointers.values())
+    from reckon.crew.section_obligations import merged_section_items
+
+    items.extend(merged_section_items(project, session, live_pointers, now=now))
     # Read once for the whole view, from the ordering the admission pass admits
     # by: a queued row and a queued review duty both report their place from
     # it, so every pointer is read once and no two duties can disagree about
@@ -4180,6 +4252,15 @@ def _obligations_view(
     # slice of it equal for the same files; anything else parked is listed
     # under the classification its reader gave it.
     listed = {str(item.get("run_id") or "") for item in items}
+    # A run the dispatcher placed on a default lane carries the marker its
+    # selection recorded, so the reason it was placed there is listed beside the
+    # work rather than left on a payload only a dispatch's own output shows. The
+    # row is a notice: the run is working, and nothing about it is waiting.
+    defaulted_routes = _route_defaulted_items(
+        classified, pointers, session=session, now=now
+    )
+    items.extend(defaulted_routes)
+    listed.update(str(item.get("run_id") or "") for item in defaulted_routes)
     for row in classified:
         run_id = str(row.get("run_id") or "")
         if not run_id or run_id in listed:

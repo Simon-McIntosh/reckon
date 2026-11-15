@@ -1,0 +1,30 @@
+<section id="qwnw-a-commits-field-is-read-in-every-form-codex-landing">
+  <h3>Manifest commit forms promote without a hand edit</h3>
+  <p>Promotion reads a leading SHA with the same revision reader as admission,
+  preserving the manifest parser’s literal subjects and punctuation. A commitless
+  run’s block-list declaration is read from its parsed entries; every entry must
+  declare absence before the list is treated as empty.</p>
+  <table>
+    <thead><tr><th>Delivered form</th><th>Temporary-repository result</th></tr></thead>
+    <tbody>
+      <tr><td>SHA-and-subject list items, including a subject with a comma</td><td>Promoted; two canonical commit IDs recorded</td></tr>
+      <tr><td>JSON list of SHA-and-subject strings</td><td>Promoted; the same two canonical commit IDs recorded</td></tr>
+      <tr><td>Bare list item declaring none in words</td><td>Promoted; no commit IDs recorded</td></tr>
+      <tr><td>Comma-separated SHA line</td><td>Promoted; two canonical commit IDs recorded</td></tr>
+      <tr><td>List item with an unresolvable SHA</td><td>Refused, naming the SHA; no ledger row written and the run pointer retained</td></tr>
+    </tbody>
+  </table>
+  <p>The baseline at <code>6cc82823b5917cc458b5064ee49efb1cba97e093</code>
+  reproduced all three recorded defects: <code>3 failed, 2 passed in 2.40s</code>.
+  One refusal read <q>commit '9271b92 test: record candidate, with details' does
+  not resolve to a commit object</q>. The
+  <a href="/reckon/evidence/fragments/queued-work-needs-no-workaround/s25.html">complete negative-control log</a>
+  retains all three refusals.</p>
+  <p>All measures ran on <code>all_debug</code>. The armed baseline passed
+  <code>58 passed in 34.58s</code>. The combined head check, including the five
+  promotion cases, passed <code>63 passed in 37.03s</code>. A wider compatibility
+  check recorded <code>3 failed, 86 passed in 11.80s</code> at the head and the
+  identical three failure IDs at the base (<code>3 failed, 86 passed in 16.40s</code>):
+  zero added compatibility failures. Durable commands, revisions and complete
+  logs accompany the worker manifest.</p>
+</section>

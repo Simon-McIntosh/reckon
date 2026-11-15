@@ -1,0 +1,74 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 6,
+  "call_sites": [
+    "reckon/crew_run_commands.py:2589 change_lane (crew lane move)",
+    "reckon/crew/dispatch_sessions.py:1679 change_lane",
+    "reckon/crew/dispatch_sessions.py:1741 re-plan enters discovery_without_git_dates",
+    "reckon/crew/dispatch_batch.py:873 queue_batch enters it",
+    "reckon/crew/dispatching/fences.py:290 dispatch preview enters it",
+    "reckon/serve.py:1560 the ContextVar and :1593/:1626 discover_plans reads it"
+  ],
+  "completed_at": "2026-11-15T14:09:09.343Z",
+  "dispatched_at": "2026-11-15T13:54:57Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-a-dispatch-answers-in-ten-seconds-whole.html",
+      "line": "101",
+      "severity": "non-blocking",
+      "text": "non-blocking: the paragraph says both head arms were re-run from \"the final head, 966b54e65a\", but the reviewed head is 1e0be3bf30 and the receipts at that head exist, so a paragraph written to remove a revision ambiguity names a revision one commit short."
+    },
+    {
+      "file": "manifest.md",
+      "line": "tests",
+      "severity": "non-blocking",
+      "text": "non-blocking: the tests line names tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py, not the two measure files the fragment's table presents, so a promotion gate receipt re-runs the named suite and never the measure that carries the claim."
+    },
+    {
+      "file": "tests/test_a_lane_change_reads_no_git_dates.py",
+      "line": "86",
+      "severity": "non-blocking",
+      "text": "non-blocking: the lane-change guard records the suppression flag at the call rather than counting git lookups on the re-plan, so a change that keeps the flag set and bypasses it inside discover_plans would leave the test in scope and the case green."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 6 production call site(s)",
+    "diff": "read a3da138b48, f75fcdd379, 966b54e65a and 1e0be3bf30 against base 7c552b3747; the first adds the 114-line guard test, the other three rewrite the fragment, and git diff --stat a3da138b48 1e0be3bf30 -- reckon tests is empty, so no production or test source changed after the guard landed.",
+    "done_when": "the done_when asks for five queued dispatches and five dry runs all under ten seconds with a negative control whose base discovery share exceeds 80 percent; tests/test_a_lane_change_reads_no_git_dates.py:86 and the batch file now cover the one-derivation and no-git-lookup clauses, while the fragment at :106 measures and concedes that the preview instrument reads zero discovery at both revisions, so the timing clause and its negative control remain unevidenced.",
+    "goal": "the reviewed node's goal is a dispatch of one section answering under ten seconds by removing project-discovery cost; the four commits since 7c552b3747 add a guard test and evidence, and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-a-dispatch-answers-in-ten-seconds-whole.html:130 states plainly that the bound is still not met, with every dry run at 12.80-21.30 s.",
+    "manifest": "read at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T075142344721-qwnw-a-dispatch-answers-in-ten-seconds-whole/manifest.md; it reports complete, its after_suite names revision 1e0be3bf30 with a 55-passed result, and its tests line names tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py rather than the two measure files the fragment's own table presents.",
+    "write_paths": "the manifest's orientation_write_paths name docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-a-dispatch-answers-in-ten-seconds-whole.html, docs/figures/queued-work-needs-no-workaround/qwnw-a-dispatch-answers-in-ten-seconds-whole, reckon and tests; the delta's two files, the fragment and tests/test_a_lane_change_reads_no_git_dates.py, are both inside that scope."
+  },
+  "justifications": {
+    "durability": "tests/test_a_lane_change_reads_no_git_dates.py:86 reddens when the lane-change scope is removed and :111 reddens when the flag becomes a module global, both shown in negative-control.log, though the guard records the flag rather than counting git lookups so a bypass inside discover_plans would stay green.",
+    "evidence": "the receipts now carry the revision read from their own tree (tests-head-fence.log:1 and suite-head-fence.log:1 both at 1e0be3bf30) and negative-control.log shows both mutations red, but the fragment's timing table at :106 cannot witness the discovery saving and says so.",
+    "fit": "tests/test_a_lane_change_reads_no_git_dates.py:22 states the mechanism in its docstring with no plan label, and the per-test _pointer builder matches the idiom already used at tests/test_a_batch_entry_carries_its_waivers.py:131.",
+    "goal_fidelity": "the delta hardens the mechanism the goal names, but docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-a-dispatch-answers-in-ten-seconds-whole.html:130 records every dry run at 12.80-21.30 s, so the under-ten-second goal is still not reached.",
+    "reuse": "the test drives the existing owners dispatch_sessions.change_lane and serve.discovery_without_git_dates and reuses runs.pointer_path and runs._write_json rather than adding a second pointer or scope mechanism; a search of tests/ for a shared pointer fixture found none, only per-file builders as here.",
+    "scope_discipline": "the four commits touch only tests/test_a_lane_change_reads_no_git_dates.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-a-dispatch-answers-in-ten-seconds-whole.html, both declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the reviewed node's goal is a dispatch of one section answering under ten seconds by removing project-discovery cost; the four commits since 7c552b3747 add a guard test and evidence, and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-a-dispatch-answers-in-ten-seconds-whole.html:130 states plainly that the bound is still not met, with every dry run at 12.80-21.30 s.\nVERDICT done_when: the done_when asks for five queued dispatches and five dry runs all under ten seconds with a negative control whose base discovery share exceeds 80 percent; tests/test_a_lane_change_reads_no_git_dates.py:86 and the batch file now cover the one-derivation and no-git-lookup clauses, while the fragment at :106 measures and concedes that the preview instrument reads zero discovery at both revisions, so the timing clause and its negative control remain unevidenced.\nVERDICT write_paths: the manifest's orientation_write_paths name docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-a-dispatch-answers-in-ten-seconds-whole.html, docs/figures/queued-work-needs-no-workaround/qwnw-a-dispatch-answers-in-ten-seconds-whole, reckon and tests; the delta's two files, the fragment and tests/test_a_lane_change_reads_no_git_dates.py, are both inside that scope.\nVERDICT manifest: read at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T075142344721-qwnw-a-dispatch-answers-in-ten-seconds-whole/manifest.md; it reports complete, its after_suite names revision 1e0be3bf30 with a 55-passed result, and its tests line names tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py rather than the two measure files the fragment's own table presents.\nVERDICT diff: read a3da138b48, f75fcdd379, 966b54e65a and 1e0be3bf30 against base 7c552b3747; the first adds the 114-line guard test, the other three rewrite the fragment, and git diff --stat a3da138b48 1e0be3bf30 -- reckon tests is empty, so no production or test source changed after the guard landed.\nCALL_SITES: reckon/crew_run_commands.py:2589 change_lane (crew lane move), reckon/crew/dispatch_sessions.py:1679 change_lane, reckon/crew/dispatch_sessions.py:1741 re-plan enters discovery_without_git_dates, reckon/crew/dispatch_batch.py:873 queue_batch enters it, reckon/crew/dispatching/fences.py:290 dispatch preview enters it, reckon/serve.py:1560 the ContextVar and :1593/:1626 discover_plans reads it\nSCORE goal_fidelity: 13\nJUSTIFICATION goal_fidelity: the delta hardens the mechanism the goal names, but docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-a-dispatch-answers-in-ten-seconds-whole.html:130 records every dry run at 12.80-21.30 s, so the under-ten-second goal is still not reached.\nSCORE evidence: 15\nJUSTIFICATION evidence: the receipts now carry the revision read from their own tree (tests-head-fence.log:1 and suite-head-fence.log:1 both at 1e0be3bf30) and negative-control.log shows both mutations red, but the fragment's timing table at :106 cannot witness the discovery saving and says so.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the four commits touch only tests/test_a_lane_change_reads_no_git_dates.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-a-dispatch-answers-in-ten-seconds-whole.html, both declared write paths.\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_a_lane_change_reads_no_git_dates.py:86 reddens when the lane-change scope is removed and :111 reddens when the flag becomes a module global, both shown in negative-control.log, though the guard records the flag rather than counting git lookups so a bypass inside discover_plans would stay green.\nSCORE fit: 19\nJUSTIFICATION fit: tests/test_a_lane_change_reads_no_git_dates.py:22 states the mechanism in its docstring with no plan label, and the per-test _pointer builder matches the idiom already used at tests/test_a_batch_entry_carries_its_waivers.py:131.\nSCORE reuse: 20\nJUSTIFICATION reuse: the test drives the existing owners dispatch_sessions.change_lane and serve.discovery_without_git_dates and reuses runs.pointer_path and runs._write_json rather than adding a second pointer or scope mechanism; a search of tests/ for a shared pointer fixture found none, only per-file builders as here.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-a-dispatch-answers-in-ten-seconds-whole.html:101 non-blocking: the paragraph says both head arms were re-run from \"the final head, 966b54e65a\", but the reviewed head is 1e0be3bf30 and the receipts at that head exist, so a paragraph written to remove a revision ambiguity names a revision one commit short.\nFINDING manifest.md:tests non-blocking: the tests line names tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py, not the two measure files the fragment's table presents, so a promotion gate receipt re-runs the named suite and never the measure that carries the claim.\nFINDING tests/test_a_lane_change_reads_no_git_dates.py:86 non-blocking: the lane-change guard records the suppression flag at the call rather than counting git lookups on the re-plan, so a change that keeps the flag set and bypasses it inside discover_plans would leave the test in scope and the case green.\n",
+  "review_run_id": "r-20261115T135042114965-review-of-qwnw-a-dispatch-answers-in-ten-seconds-whole-1e0be3bf3063",
+  "reviewed_base_sha": "7c552b3747d1afc608a7afc81c002f7314e9e128",
+  "reviewed_head_sha": "1e0be3bf3063c431d5a5b0ad76a1864f08ad25ef",
+  "reviewed_run_id": "r-20261115T075142344721-qwnw-a-dispatch-answers-in-ten-seconds-whole",
+  "reviewer": "review-of-qwnw-a-dispatch-answers-in-ten-seconds-whole-1e0be3bf3063",
+  "reviewer_run_id": "r-20261115T135042114965-review-of-qwnw-a-dispatch-answers-in-ten-seconds-whole-1e0be3bf3063",
+  "scores": {
+    "durability": 17,
+    "evidence": 15,
+    "fit": 19,
+    "goal_fidelity": 13,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-15T14:24:29.373223+00:00",
+  "total": 104
+}

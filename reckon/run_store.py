@@ -20,7 +20,7 @@ import os
 import random
 import sqlite3
 import time
-from collections.abc import Callable, Mapping
+from collections.abc import Callable, Iterable, Mapping
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Self
@@ -214,6 +214,11 @@ def enable_incremental_vacuum(path: str | Path | None = None) -> dict[str, Any]:
         }
     finally:
         connection.close()
+
+
+def _archive_path(path: Path) -> Path:
+    """The separate SQLite file holding one store's retired history."""
+    return path.with_name(f"{path.stem}.archive{path.suffix}")
 
 
 def _decoded_record(stored: str) -> dict[str, Any]:
@@ -496,7 +501,7 @@ class RunStore:
     @property
     def archive_path(self) -> Path:
         """The separate SQLite file holding retired history."""
-        return self._path.with_name(f"{self._path.stem}.archive{self._path.suffix}")
+        return _archive_path(self._path)
 
     def _attach_archive(self, *, create: bool = False) -> bool:
         if not self._archive_attached and (create or self.archive_path.is_file()):
@@ -1036,6 +1041,86 @@ def runs_for_node(node: str, *, project: str | None = None) -> list[dict[str, An
         record = json.loads(payload)
         if isinstance(record, dict):
             records.append(record)
+    return records
+
+
+def stored_run_rows(
+    project: str, *, run_ids: Iterable[str] | None = None
+) -> list[dict[str, Any]] | None:
+    """One project's stored runs, retired rows included, read without writing.
+
+    ``None`` distinguishes an absent store from one holding no row of this
+    project's. The connection is opened read-only, so a history read never
+    creates the store, its directory or its schema: a read that creates is a
+    write, and the ledger's readers are called on every station tick.
+
+    The query is scoped by the project column, so only this project's payloads
+    are decoded. One config home serves every project on this machine, and a
+    read for one project must not pay for the others. A record's wide detail is
+    joined back from its own table, and retired rows are read from the attached
+    archive, so a caller sees each record whole and a retirement does not
+    shorten the history it answers.
+    """
+    path = store_path()
+    if not path.is_file():
+        return None
+    try:
+        connection = sqlite3.connect(f"{path.resolve().as_uri()}?mode=ro", uri=True)
+    except (OSError, sqlite3.Error):
+        return None
+    try:
+        tables = ["main"]
+        archive = _archive_path(path)
+        if archive.is_file():
+            try:
+                connection.execute(
+                    "ATTACH DATABASE ? AS archive",
+                    (f"{archive.resolve().as_uri()}?mode=ro",),
+                )
+            except (OSError, sqlite3.Error):
+                pass
+            else:
+                tables.append("archive")
+        rows: list[tuple[Any, ...]] = []
+        # ``run_ids`` narrows the read to the named runs, so a caller that
+        # needs a few records decodes only those payloads.
+        selected = None if run_ids is None else sorted({str(r) for r in run_ids})
+        if selected is not None and not selected:
+            return []
+        batches: list[list[str] | None] = (
+            [None]
+            if selected is None
+            else [selected[i : i + 500] for i in range(0, len(selected), 500)]
+        )
+        for table in tables:
+            for batch in batches:
+                query = (
+                    f"SELECT r.run_id, r.payload, d.detail FROM {table}.runs r "  # noqa: S608 - fixed table names
+                    f"LEFT JOIN {table}.run_details d ON r.run_id = d.run_id "
+                    "WHERE r.project = ?"
+                )
+                params: list[Any] = [project]
+                if batch is not None:
+                    query += f" AND r.run_id IN ({','.join('?' * len(batch))})"
+                    params.extend(batch)
+                try:
+                    rows.extend(connection.execute(query, params))
+                except sqlite3.Error:
+                    # A store that never carried the run tables holds no row.
+                    break
+    finally:
+        connection.close()
+    records: list[dict[str, Any]] = []
+    for _run_id, payload, detail in rows:
+        if payload is None:
+            continue
+        try:
+            record = json.loads(payload)
+            if detail:
+                record.update(json.loads(detail))
+        except (TypeError, ValueError):
+            continue
+        records.append(run_record.normalize_outside_scope_paths(record))
     return records
 
 

@@ -110,10 +110,12 @@ from reckon._worker_fence import (  # noqa: F401
     _within_any,
     _write_private_json,
     claude_credential_source,
+    claude_worker_mcp_config,
     codex_auth_source,
     codex_login_record_path,
     codex_login_size,
     codex_login_truncation_detail,
+    codex_worker_mcp_flags,
     create_write_roots,
     declared_protected_paths,
     fence_argv,
@@ -1410,6 +1412,8 @@ class _CodexDialect(Dialect):
         run_directory: str | None = None,
     ) -> list[str]:
         argv = [command, "exec", "--json", "-C", working_directory]
+        # A process override also covers resumes and explicitly unfenced runs.
+        argv += list(backend.get("worker_mcp_flags", ["-c", "mcp_servers={}"]))
         if (
             run_directory
             and Path(run_directory).is_absolute()
@@ -1566,6 +1570,8 @@ class _CodexDialect(Dialect):
             f"{server}.args=[{', '.join(json.dumps(word) for word in words)}]",
             "-c",
             f'{server}.default_tools_approval_mode="approve"',
+            "-c",
+            f"{server}.enabled=true",
         ]
 
     def _sandbox_flags(self, tier: str | None) -> list[str]:
@@ -1914,6 +1920,8 @@ _OMP_THINKING_LEVELS = frozenset({"low", "high", "max"})
 # project server is discovered and traces an error; with it disabled the same
 # server is never discovered and the run's trace log names it zero times.
 OMP_WORKER_OVERLAY = """\
+async:
+  printWake: true
 mcp:
   enableProjectConfig: false
 task:
@@ -2368,6 +2376,11 @@ class _ClaudeDialect(Dialect):
     ) -> list[str]:
         self._refuse_images(command, images)
         argv = [command, "-p", "--output-format", "stream-json", "--verbose"]
+        argv += [
+            "--strict-mcp-config",
+            "--mcp-config",
+            str(backend.get("worker_mcp_config", '{"mcpServers": {}}')),
+        ]
         if resume_session:
             argv += ["--resume", resume_session]
         model = backend.get("model")
@@ -3039,11 +3052,13 @@ def launch_plan(
         if run_directory is None or not run_directory.is_dir()
         else harness_home(dialect.name, run_directory)
     )
-    # A run adopts its own harness home only when fenced. An unfenced run keeps
+    # Claude and Codex adopt their own harness home when fenced. Omp keeps its
+    # own home in either mode so MCP discovery cannot escape its agent store.
+    # Other unfenced runs keep
     # the operator's home, where the user hooks, user memory and every session
     # recorded before the run existed already live; a per-run home that carries
     # none of them silently drops the hooks and orphans those sessions.
-    adopts_harness_home = fence
+    adopts_harness_home = fence or dialect.name == "omp"
     anchored_edit = False
     anchored_edit_reason = "disabled"
     if backend.get("anchored_edit") is True:
@@ -3066,7 +3081,9 @@ def launch_plan(
             anchored_edit_reason = "no-harness-home"
         else:
             anchored_edit_reason = "operator-settings"
-    if harness is not None and adopts_harness_home:
+    # Omp reads its MCP deny list from the agent store, including without a
+    # filesystem fence. Keep that store run-local in either mode.
+    if harness is not None and (adopts_harness_home or dialect.name == "omp"):
         from reckon.flight import harness_home_adjacent_files, harness_home_files
 
         seeded_treatment = seed_harness_home(
@@ -3077,9 +3094,7 @@ def launch_plan(
             adjacent_declaration=harness_home_adjacent_files(dialect.name),
             resume_session=resume_session,
             anchored_edit=(
-                backend.get("anchored_edit") is True
-                and dialect.name == "claude"
-                and not resume_session
+                backend.get("anchored_edit") is True and dialect.name == "claude"
             ),
             # The fence grants the worktree separately from delivery roots.
             anchored_edit_roots=fence_writable_roots(
@@ -3101,7 +3116,8 @@ def launch_plan(
         # its recorded fact must not be replaced by the seeder's answer.
         if dialect.name == "claude":
             anchored_edit = seeded_treatment
-        environment[_HARNESS_HOME[dialect.name][0]] = str(harness)
+        if adopts_harness_home:
+            environment[_HARNESS_HOME[dialect.name][0]] = str(harness)
         # A harness that keeps its agent store below its home needs the store
         # variable too: the seed mirrors the operator's files relative to the
         # home the run owns, and a harness resolving its store from the
@@ -3112,7 +3128,7 @@ def launch_plan(
         # commits would carry a name and address nobody configured. Naming the
         # global config explicitly restores it through one environment variable
         # the fence already mounts read-only, so no path is made writable.
-        if _HARNESS_HOME[dialect.name][0] == "HOME":
+        if adopts_harness_home and _HARNESS_HOME[dialect.name][0] == "HOME":
             operator = Path(fence_home) if fence_home is not None else Path.home()
             operator_config = operator / ".gitconfig"
             if operator_config.is_file():
@@ -3152,6 +3168,39 @@ def launch_plan(
     if named_in_prompt:
         prompt = _prompt_naming_images(prompt, attached)
     launch_backend = dict(backend)
+    if dialect.name == "codex":
+        operator = Path(fence_home) if fence_home is not None else Path.home()
+        launch_backend["worker_mcp_flags"] = codex_worker_mcp_flags(
+            harness
+            if harness is not None and adopts_harness_home
+            else operator / ".codex",
+            Path(worktree_path).resolve(),
+            [
+                *_declared_worker_mcp_servers(fence_config),
+                *(
+                    [ANCHORED_EDIT_SERVER]
+                    if backend.get("anchored_edit") is True
+                    else []
+                ),
+            ],
+        )
+    if dialect.name == "claude":
+        operator = Path(fence_home) if fence_home is not None else Path.home()
+        mcp_config = claude_worker_mcp_config(
+            harness if harness is not None and adopts_harness_home else operator,
+            Path(worktree_path),
+            _declared_worker_mcp_servers(fence_config)
+            if fence_config is not None
+            else None,
+            anchored_edit=backend.get("anchored_edit") is True,
+        )
+        # Server declarations can carry credentials: keep them off process argv.
+        if run_directory is not None and run_directory.is_dir():
+            mcp_path = run_directory / "worker-mcp.json"
+            _write_private_json(mcp_path, json.loads(mcp_config))
+            launch_backend["worker_mcp_config"] = str(mcp_path)
+        else:
+            launch_backend["worker_mcp_config"] = '{"mcpServers": {}}'
     if dialect.name in ("claude", "codex"):
         launch_backend["anchored_edit"] = anchored_edit
     # A launch that seeded the anchored server names its tools in the worker's

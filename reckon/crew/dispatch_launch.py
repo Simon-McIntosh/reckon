@@ -2412,6 +2412,22 @@ def latest_reservation(
     return found[-1] if found else None
 
 
+def _adoptable_floor(run_directory: Path, from_record: int) -> int:
+    """The lowest attempt a launch may adopt as the reservation its door took.
+
+    The pointer names the attempt the run last started, and one past it is the
+    attempt a launch normally starts. An attempt that never left a receipt has
+    not consumed that number, though: the door's own reservation key, read from
+    the receipts, is that same attempt again, and the door reserved it. Adopting
+    only from one past the pointer then skipped the door's reservation, the
+    launch reserved the same attempt a second time, met its own live file, and
+    refused itself. On 15 November a run whose wait-lift died before its worker
+    started could not be resumed at all for that reason. The floor is therefore
+    never above the receipt-derived key.
+    """
+    return min(from_record, launch_reservation_key(run_directory))
+
+
 def _reservation_taken_by_this_process(
     run_directory: Path, *, at_least: int = 1
 ) -> LaunchReservation | None:
@@ -3532,7 +3548,7 @@ def supervised_launch(
         # supervisor is recorded on it: the hold then follows the worker rather
         # than the door that took it.
         reservation = _reservation_taken_by_this_process(
-            run_directory, at_least=from_record
+            run_directory, at_least=_adoptable_floor(run_directory, from_record)
         )
     if reservation is None:
         # Every launch that spawns a supervisor reserves the attempt it starts,

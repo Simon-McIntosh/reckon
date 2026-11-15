@@ -1,0 +1,82 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own arm records: its manifest's baseline_suite and after_suite each carry completed=true, exit_status=0 and failure_count=0 with empty failure_ids (58 passed at fd2fe9c1, 64 passed at 215392550c), and the six extra passes are the new test file, which shows the after arm ran the new cases rather than reporting an empty run. The four logs those records name under /tmp/reckon-crew-scratch/r-20261115T145806650328-hook-counts-what-is-owed-s9/s9-logs/ no longer exist on this node, so the derivation is from the records the run wrote, not from the log text.",
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/hooks/coordinator_obligations.py:1287 (emit calls format_checklist for both modes)",
+    "reckon/hooks/coordinator_obligations.py:1339 (_inject_list calls format_checklist on the prompt path)",
+    "reckon/hooks/coordinator_obligations.py:1513 (_prompt gates the no-producer reading on session_holds_live_work)",
+    "reckon/hooks/coordinator_obligations.py:1802 (_stop gates the same reading on session_holds_live_work)"
+  ],
+  "completed_at": "2026-11-15T17:47:32.856Z",
+  "dimension_dispositions": {
+    "reuse": {
+      "kind": "folded",
+      "node": "repair-of-hook-counts-what-is-owed-s9-215392550c93",
+      "recorded_at": "2026-11-15T18:34:49.725082+00:00"
+    }
+  },
+  "dispatched_at": "2026-11-15T17:46:23Z",
+  "findings": [
+    {
+      "file": "reckon/hooks/coordinator_obligations.py",
+      "line": "1079",
+      "severity": "non-blocking",
+      "text": "non-blocking: session_holds_live_work re-implements the has-live-work capability owned by reckon/crew/station_subscriber.py:276 (live_work_populations, exposed as population_has_live_work at :410), matching project and session across live/*.json without that rule's terminal-phase or launch-failed exclusions, so a session whose pointers have all ended or never launched is still told 'no producer' at every prompt, which is the false reading this node fixes left reachable for that population."
+    },
+    {
+      "file": "reckon/hooks/coordinator_obligations.py",
+      "line": "954",
+      "severity": "non-blocking",
+      "text": "non-blocking: the trailer keeps the label 'unreconciled runs' while printing the rendered list's length, a figure that includes waiting rows and is absent altogether when only waits are listed, so one label names the list size here and the pointer count the fence still reads from summary.unreconciled_runs elsewhere, and a reader comparing the two sees a disagreement."
+    },
+    {
+      "file": "tests/test_coordinator_obligations_hook.py",
+      "line": "735",
+      "severity": "non-blocking",
+      "text": "non-blocking: the done_when requires that the tests importing reckon.hooks.coordinator_obligations add no failure against the base, and the manifest's gate ran only the new file plus two unrelated modules, so that clause was never measured by the run itself; measured here, test_each_held_worktree_keeps_its_own_run_scoped_line fails with held == [] identically on the reviewed head and on a tree without this node's commits, so the failure is pre-existing and the clause holds, but the gate will not catch a future regression in that file."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "verified 4 production call sites, all inside reckon/hooks/coordinator_obligations.py: emit at :1287, _inject_list at :1339, the prompt guard at :1513 and the stop guard at :1802.",
+    "diff": "both commits read commit by commit against fd2fe9c1; two files of source and test plus one evidence fragment, 436 insertions, nothing outside the fence.",
+    "done_when": "tests/test_the_hook_counts_only_what_is_owed.py:174-250 assert three of the four clauses and were recorded red at the base; the clause about the tests importing reckon.hooks.coordinator_obligations was measured outside the manifest's arms and shows the same single pre-existing failure with and without this diff.",
+    "goal": "reckon/hooks/coordinator_obligations.py:915 counts the rows the render prints, :952 prints the trailer only over actionable rows, :1513 and :1802 suppress the no-producer reading for a session with no live pointer; the goal is met, with :1096 counting any pointer phase as live work.",
+    "manifest": "read; it states 6 failed at base, 58 passed base suite, 64 passed after suite, 5 failed 1 passed negative control, and names four /tmp logs that no longer exist on this node.",
+    "write_paths": "git diff --stat fd2fe9c1 215392550c names reckon/hooks/coordinator_obligations.py, tests/test_the_hook_counts_only_what_is_owed.py and the s9 evidence fragment, all three declared."
+  },
+  "justifications": {
+    "durability": "durability: tests/test_the_hook_counts_only_what_is_owed.py:183 and :216 redden on the base source (6 failed, EXIT=1) and the negative control reinstating summary.unreconciled_runs reddens 5 of 6, but nothing asserts the terminal-phase pointer that session_holds_live_work at :1096 counts as live work.",
+    "evidence": "evidence: the manifest's tests line runs only the new file plus two unrelated modules, so the done_when clause about the tests importing reckon/hooks/coordinator_obligations.py is measured by no arm, while the four arms it did run are recorded with EXIT=0 and EXIT=1 and a 58-to-64 passed delta.",
+    "fit": "fit: the change follows the module's idiom (snapshot_module().crew_home() as at reckon/hooks/coordinator_obligations.py:713) but adds a live-directory walk on the prompt path that the module docstring's 'one stat, one small JSON read and a formatting pass' at :17-19 no longer describes.",
+    "goal_fidelity": "goal_fidelity: reckon/hooks/coordinator_obligations.py:915 and :952 make both figures the rendered list's own, and :1513/:1802 silence the absent-producer reading for a session with no pointer; :1096 accepts any pointer phase, so a session whose runs have all ended still earns the warning.",
+    "reuse": "reuse: reckon/crew/station_subscriber.py:276 live_work_populations is documented as 'the one statement of the has-live-work rule', and session_holds_live_work at :1079 re-reads live/*.json with its own project/session match and none of that rule's terminal-phase or launch-failed exclusions.",
+    "scope_discipline": "scope_discipline: git diff --stat fd2fe9c1 215392550c names only reckon/hooks/coordinator_obligations.py, tests/test_the_hook_counts_only_what_is_owed.py and docs/evidence/fragments/the-monitor-tells-the-truth-under-load/hook-counts-what-is-owed-s9.html, all three declared."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to make the obligations hook count only what is owed; reckon/hooks/coordinator_obligations.py:915 now takes count from len(items) and :952 prints the trailer only when a row is actionable, with :1513 and :1802 suppressing the no-producer reading for a session holding no live pointer, so the goal is met and the one gap is that :1096 counts any pointer phase as live work.\nVERDICT done_when: the done_when carries four clauses; tests/test_the_hook_counts_only_what_is_owed.py:174-250 assert three of them and are recorded red at the base (6 failed, EXIT=1), while the clause that the tests importing reckon.hooks.coordinator_obligations add no failure is in no arm the manifest records; run here, that file gives 1 failed 19 passed at the reviewed head with the failure being test_each_held_worktree_keeps_its_own_run_scoped_line (held == []), and the identical result on a tree without this node's commits, so the diff adds no failure.\nVERDICT write_paths: the declared paths are reckon/hooks/coordinator_obligations.py, tests/test_the_hook_counts_only_what_is_owed.py and docs/evidence/fragments/the-monitor-tells-the-truth-under-load/hook-counts-what-is-owed-s9.html; git diff --stat fd2fe9c1 215392550c names exactly those three.\nVERDICT manifest: read; it records 6 failed at the base source, base suite 58 passed EXIT=0, after suite 64 passed EXIT=0, negative control 5 failed 1 passed EXIT=1, and baseline_suite/after_suite objects with failure_count 0 and empty failure_ids, though its four /tmp log paths no longer exist on this node.\nVERDICT diff: read both commits against fd2fe9c1 \u2014 8e1af360be moves the header count to len(items) at :915, gates and re-figures the trailer at :952-956, adds session_holds_live_work at :1079 and the guards at :1513/:1802; 215392550c adds the 77-line evidence fragment; all three files inside the declared paths.\nCALL_SITES: reckon/hooks/coordinator_obligations.py:1287, reckon/hooks/coordinator_obligations.py:1339, reckon/hooks/coordinator_obligations.py:1513, reckon/hooks/coordinator_obligations.py:1802\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: reckon/hooks/coordinator_obligations.py:915 and :952 make both figures the rendered list's own and :1513/:1802 silence the absent-producer reading, while :1096 accepts any pointer phase so a session whose runs have all ended still earns the warning.\nSCORE evidence: 13\nJUSTIFICATION evidence: the manifest's tests line runs only the new file plus two unrelated modules, leaving the done_when clause about the tests importing reckon/hooks/coordinator_obligations.py unmeasured by the run, though its four arms are recorded with EXIT=0/EXIT=1 and a 58-to-64 passed delta.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat fd2fe9c1 215392550c names only reckon/hooks/coordinator_obligations.py, tests/test_the_hook_counts_only_what_is_owed.py and docs/evidence/fragments/the-monitor-tells-the-truth-under-load/hook-counts-what-is-owed-s9.html, all three declared.\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_the_hook_counts_only_what_is_owed.py:183 and :216 redden on the base source (6 failed, EXIT=1) and the negative control reinstating summary.unreconciled_runs reddens 5 of 6, but no assertion covers the terminal-phase pointer that session_holds_live_work at :1096 counts as live work.\nSCORE fit: 16\nJUSTIFICATION fit: the change follows the module's idiom (snapshot_module().crew_home() as at reckon/hooks/coordinator_obligations.py:713) but adds a live-directory walk on the prompt path that the module docstring's 'one stat, one small JSON read' at :17-19 no longer describes.\nSCORE reuse: 4\nJUSTIFICATION reuse: reckon/crew/station_subscriber.py:276 live_work_populations is documented as 'the one statement of the has-live-work rule', and session_holds_live_work at :1079 re-reads live/*.json with its own match and none of that rule's exclusions.\nFINDING reckon/hooks/coordinator_obligations.py:1079 non-blocking: session_holds_live_work re-implements the has-live-work capability owned by reckon/crew/station_subscriber.py:276 (live_work_populations, exposed as population_has_live_work at :410) without its terminal-phase or launch-failed exclusions, so a session whose pointers have all ended or never launched is still told 'no producer' at every prompt.\nFINDING reckon/hooks/coordinator_obligations.py:954 non-blocking: the trailer keeps the label 'unreconciled runs' while printing the rendered list's length, which includes waiting rows and is absent when only waits are listed, so one label names the same quantity as summary.unreconciled_runs elsewhere.\nFINDING tests/test_coordinator_obligations_hook.py:735 non-blocking: the done_when's clause that the tests importing reckon.hooks.coordinator_obligations add no failure was measured by no arm of the gate; measured here, test_each_held_worktree_keeps_its_own_run_scoped_line fails identically with and without this diff, so it is pre-existing, but the gate will not catch a regression in that file.",
+  "review_run_id": "r-20261115T173941433645-review-of-hook-counts-what-is-owed-s9-215392550c93",
+  "reviewed_base_sha": "fd2fe9c17f80e5901236fb399cb7ac4831d2bcce",
+  "reviewed_head_sha": "215392550c93b1b473f43ae60080f64992873bcf",
+  "reviewed_run_id": "r-20261115T145806650328-hook-counts-what-is-owed-s9",
+  "scores": {
+    "durability": 17,
+    "evidence": 13,
+    "fit": 16,
+    "goal_fidelity": 17,
+    "reuse": 4,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-15T18:07:46.885480+00:00",
+  "total": 87,
+  "verdicts": {
+    "diff": "read both commits against fd2fe9c1: 8e1af360be changes the header count at :915, gates and re-figures the trailer at :952-956, adds session_holds_live_work at :1079 and both guards at :1513/:1802; 215392550c adds the 77-line evidence fragment; all three files are inside the declared write paths.",
+    "done_when": "the done_when carries four clauses; three are asserted in tests/test_the_hook_counts_only_what_is_owed.py:174-250 and recorded red at the base (6 failed, EXIT=1), and the fourth, that the tests importing reckon.hooks.coordinator_obligations add no failure, is in no arm the manifest records; I ran that file (pytest -q tests/test_coordinator_obligations_hook.py) at the reviewed head, 1 failed 19 passed with the failure being test_each_held_worktree_keeps_its_own_run_scoped_line (held == []), and the identical result on a tree that does not contain this node's commits, so the diff adds no failure there.",
+    "goal": "the node goal is to make the obligations hook count only what is owed; reckon/hooks/coordinator_obligations.py:915 now takes count from len(items) and :952 prints the trailer only when actionable (lines 952-956), with :1513 and :1802 suppressing the no-producer reading for a session holding no live pointer, so the goal is met and the one gap is that :1096 counts any pointer phase as live work.",
+    "manifest": "read; it records status complete, 6 failed at the base source, a base suite of 58 passed and an after suite of 64 passed at EXIT=0, a negative control of 5 failed 1 passed at EXIT=1, and baseline_suite/after_suite objects with failure_count 0 and empty failure_ids, so its claim reconciles with the records but its four log paths are gone from /tmp on this node.",
+    "write_paths": "the declared paths are reckon/hooks/coordinator_obligations.py, tests/test_the_hook_counts_only_what_is_owed.py and docs/evidence/fragments/the-monitor-tells-the-truth-under-load/hook-counts-what-is-owed-s9.html; git diff --stat fd2fe9c1 215392550c names exactly those three and nothing else."
+  }
+}

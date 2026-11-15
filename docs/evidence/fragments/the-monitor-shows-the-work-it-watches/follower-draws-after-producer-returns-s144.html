@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="the-monitor-shows-the-work-it-watches">
+  <meta name="plan-evidence-for" content="reckon:the-monitor-shows-the-work-it-watches">
+  <meta name="plan-verifies" content="reckon:the-monitor-shows-the-work-it-watches#s144">
+  <meta name="plan-recorded-at" content="2026-11-15">
+  <title>A follower keeps drawing after its producer returns | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" id="follower-draws-after-producer-returns-s144-landing" data-node="follower-draws-after-producer-returns-s144" data-reckon="landed" data-when="2026-11-15">
+  <h2>A follower keeps drawing after its producer returns, and records what it drew</h2>
+
+  <p id="follower-draws-after-producer-returns-s144-record">Session 874a3927's pane drew nothing
+  for half an hour while seven of its runs changed state, and its follower was alive and looping the
+  whole time in <code>StationSubscriber.wake</code>. Nothing recorded what that follower emitted, so
+  a lost row could be blamed on the follower or on the reader and neither could be shown. Driving one
+  subscriber through a producer restart reproduced the stop at two gates, in this order.</p>
+
+  <p id="follower-draws-after-producer-returns-s144-gates">The <strong>generation gate</strong> came
+  first. The follower holds one connection to the node-local station store for its whole life. When the
+  runtime directory is re-created and a fresh station process opens a new database at the same path,
+  that handle still names the file that was unlinked, and <code>PRAGMA data_version</code> -- which
+  moves only when another connection commits to the database this connection has open -- never moves
+  again. <code>generation_moved</code> answered "nothing moved" for as long as the follower lived.
+  The <strong>place</strong> came second. A fresh store begins its own id space, so the rows it writes carry ids
+  below the cursor the follower reached in the store that is gone; even with the right file open, a
+  read after that cursor returns nothing.</p>
+
+  <p id="follower-draws-after-producer-returns-s144-fix"><code>StationStore</code> now records the device
+  and inode of the database its handle opened (<code>database_identity</code>) and reopens when the
+  file at that path is a different one (<code>reconnect_if_replaced</code>) -- one <code>stat</code>
+  beside the pragma the gate already pays for, and no reopen while the path holds no file. A
+  subscriber that reconnects onto a store opened fresh takes that store's own place for its audience
+  and forces one read; a store carrying the same birth stamp forward, as a restored copy does, leaves
+  the in-memory place alone so nothing is drawn twice. A store with no counter yet also opens its
+  sequence after the highest id its surviving day files hold
+  (<code>_opening_sequence</code>), so a lost database over living day files can neither write below
+  ids already held nor leave a cursor naming a row already read.</p>
+
+  <p id="follower-draws-after-producer-returns-s144-emissions">Every row a follower yields is now
+  written to its own stderr -- which the session host opens onto
+  <code>&lt;cache&gt;/session-host/&lt;owner&gt;.log</code> -- as a
+  <code>follower-emission</code> line carrying the follower's sequence number, the row's time, its
+  run, its transition and the station event id. A later report of a missing row can be placed on the
+  follower that emitted it or on the row's reader without a live capture. A terminal arming skips
+  the line, where it would read as a second copy of the pane's output, and a log that cannot be
+  written never ends the pane.</p>
+
+  <p id="follower-draws-after-producer-returns-s144-evidence">
+  <code>tests/test_a_follower_keeps_drawing_after_its_producer_returns.py</code> drives one
+  subscriber over a fixture store through two transitions, a producer lost past
+  <code>obligation_snapshot.STATION_STALE_SECONDS</code>, and a fresh station process writing five
+  more transitions. The same cases run as a fence: the base revision's tree at
+  <code>3bc474f</code> is 58 passed with exit 0, and the head at <code>ddebbfa</code> is 61 passed
+  with exit 0 — the three extra cases are this measure's own. The wider population that imports
+  the subscriber, the watch unit or the follow commands is 101 files at the base and 102 at the
+  head: 24 failed and 669 passed against 23 failed and 673 passed, with no failing id added and one
+  base failure gone, so the change's own three cases account for the difference. The declared
+  negative control — <code>StationStore.reconnect_if_replaced</code> answering False, which is the
+  base gate — leaves 1 failed and 2 passed and names
+  <code>test_a_follower_keeps_drawing_after_its_producer_returns</code>, so the measure is the one
+  the gate turns.</p>
+</article>
+</body>
+</html>

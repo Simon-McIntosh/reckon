@@ -1,0 +1,142 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "Derived with reckon.crew.review.added_failures_from_gate_logs over the reviewed run's own gate logs (logs/base-arm-s22.log and logs/head-arm-s22.log): the base log reports FAILED tests/test_a_code_review_brief_carries_findings_under_its_paths.py::test_a_named_directory_carries_every_open_finding_beneath_it and ::test_an_unreadable_store_says_so_rather_than_none; the head log reports no FAILED id with 3 passed, so the added-failure set is empty and the reviewed change adds none.",
+  "assertion_analysis": [
+    {
+      "failure_condition": "Reinstating the equality match, or dropping the expansion, leaves _finding_bullets empty while _open_rows_in_the_view returns three rows; the base arm shows exactly that at 6cc82823.",
+      "lines": "tests/test_a_code_review_brief_carries_findings_under_its_paths.py:136"
+    },
+    {
+      "failure_condition": "The expected texts come from the BENEATH fixture written by _store, not from the brief, so a brief carrying the wrong rows or over-collecting the ABOVE finding reddens.",
+      "lines": "tests/test_a_code_review_brief_carries_findings_*:137-146"
+    },
+    {
+      "failure_condition": "A named-file review that still matches its package directory, or leaks a sibling finding, yields more than one bullet or the ABOVE text and reddens.",
+      "lines": "tests/test_a_code_review_brief_carries_findings_under_its_paths.py:150-156"
+    },
+    {
+      "failure_condition": "If _store_unreadable_paths or the None branch is removed the line reads 'Open findings already stored against the named paths: none.' and both assertions redden; the base arm shows that.",
+      "lines": "tests/test_a_code_review_brief_carries_findings_under_its_paths.py:158-171"
+    }
+  ],
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/plan_review.py:5879",
+    "reckon/crew/dispatch_admission.py:899",
+    "reckon/mcp_views.py:4530"
+  ],
+  "completed_at": "2026-11-15T14:04:07.783Z",
+  "dimension_dispositions": {
+    "reuse": {
+      "kind": "folded",
+      "node": "repair-of-qwnw-a-code-review-brief-carries-findings-under-its-paths-10e7b2f1aa8f",
+      "recorded_at": "2026-11-15T14:47:26.307146+00:00"
+    }
+  },
+  "dispatched_at": "2026-11-15T14:03:47Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "folded",
+      "node": "repair-of-qwnw-a-code-review-brief-carries-findings-under-its-paths-10e7b2f1aa8f",
+      "recorded_at": "2026-11-15T14:47:22.749289+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T083000485371-qwnw-a-code-review-brief-carries-findings-under-its-paths/manifest.md",
+      "line": "5",
+      "severity": "blocking",
+      "text": "The delivered manifest is a five-line stub that stops at the bare word NEXT: no commits, no tests line, no test_logs, no baseline_suite/after_suite, no landing. `crew check --manifest --run r-20261115T083000485371-qwnw-a-code-review-brief-carries-findings-under-its-paths` answers ok=false with 'status is complete but no commit is recorded', 'status is complete but no test result is recorded' and 'no delivery receipt was recorded, so the manifest must say `messages_received: none`'. Nothing in the delivered record ties commits a11bd1381a and 10e7b2f1aa to the 3-passed gate or to the base arm's two failures."
+    },
+    {
+      "file": "logs/head-arm-s22.log",
+      "line": "1",
+      "severity": "non-blocking",
+      "text": "The passing arm's header names revision 6cc82823b5917cc458b5064ee49efb1cba97e093, the base revision, because it ran in the worktree before the fix was committed (log mtime 14:18:53, commit a11bd1381a authored 14:24:39); no gate log names a11bd1381a or 10e7b2f1aa, so the recorded receipt cannot be tied to the landed revision. The done_when's clause 'the tests run on all_debug' also has no evidence: every log in the run is a local worktree run."
+    },
+    {
+      "file": "tests/test_a_code_review_brief_carries_findings_under_its_paths.py",
+      "line": "1",
+      "severity": "non-blocking",
+      "text": "This test file and the three production modules the fix edits (reckon/crew/plan_review.py, reckon/crew/findings.py, reckon/crew/dispatch_admission.py) lie outside the node's declared write paths, which name only docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-a-code-review-brief-carries-findings-under-its-paths.html and docs/figures/queued-work-needs-no-workaround/qwnw-a-code-review-brief-carries-findings-under-its-paths. The plan section names no write path, the run was fenced true and no dispatch grant widened it; docs/evidence/fragments/queued-work-needs-no-workaround/s22.html is out of scope by the same declaration although the done_when names it."
+    },
+    {
+      "file": "reckon/crew/plan_review.py",
+      "line": "5739",
+      "severity": "non-blocking",
+      "text": "_finding_is_beneath re-implements at-or-beneath path containment that the repository already owns at reckon/crew/domain_rules.py:83 and reckon/crew/findings.py:1011, rather than extending either owner, so a change to containment semantics in domain_rules does not reach the brief."
+    },
+    {
+      "file": "tests/test_a_code_review_brief_carries_findings_under_its_paths.py",
+      "line": "136",
+      "severity": "non-blocking",
+      "text": "The assertion that the brief's count equals the findings view's count is exercised only on a fixture with no sibling sharing the directory prefix: the view filters with a bare startswith at reckon/crew/findings.py:1102 while the brief matches on a path boundary, so a finding on reckon/subtle.py is counted by the view and not by the brief and the done_when's equality clause is not guarded in general."
+    }
+  ],
+  "gate_evidence": {
+    "after_suite": {
+      "command": "PYTHONPATH=/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/8e41a6d3-d0e0-4927-afd1-771942ebfe6a/qwnw-a-code-review-brief-carries-findings-under-its-paths /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_code_review_brief_carries_findings_under_its_paths.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T083000485371-qwnw-a-code-review-brief-carries-findings-under-its-paths/logs/head-arm-s22.log",
+      "revision": "6cc82823b5917cc458b5064ee49efb1cba97e093"
+    },
+    "baseline_suite": {
+      "command": "PYTHONPATH=/tmp/reckon-crew-scratch/r-20261115T083000485371-qwnw-a-code-review-brief-carries-findings-under-its-paths/base-arm /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_code_review_brief_carries_findings_under_its_paths.py",
+      "completed": true,
+      "exit_status": 1,
+      "failure_count": 2,
+      "failure_ids": [
+        "tests/test_a_code_review_brief_carries_findings_under_its_paths.py::test_a_named_directory_carries_every_open_finding_beneath_it",
+        "tests/test_a_code_review_brief_carries_findings_under_its_paths.py::test_an_unreadable_store_says_so_rather_than_none"
+      ],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T083000485371-qwnw-a-code-review-brief-carries-findings-under-its-paths/logs/base-arm-s22.log",
+      "revision": "6cc82823b5917cc458b5064ee49efb1cba97e093"
+    }
+  },
+  "item_verdicts": {
+    "call_sites": "Verified reckon/crew/plan_review.py:5879, reckon/crew/dispatch_admission.py:899 (_dispatch_health_review) and reckon/mcp_views.py:4530 reach the changed _open_findings_for, findings_by_path and its added unreadable key.",
+    "diff": "Read a11bd1381a and 10e7b2f1aa against 6cc82823 commit by commit: a11bd1381a changes reckon/crew/findings.py, reckon/crew/plan_review.py, reckon/crew/dispatch_admission.py and the one test file; 10e7b2f1aa adds the per-node evidence fragment and the s22 negative-control log.",
+    "done_when": "Read the clauses against tests/test_a_code_review_brief_carries_findings_under_its_paths.py:136 (directory count equals the view), :150 (named file only) and :168 (unreadable store says 'could not be read', not 'none'); all three are asserted and the base arm reddens on the first and third, but the clause 'the tests run on all_debug' has no evidence.",
+    "goal": "Read the goal in dispatch-detail.json and live section s22 of docs/plans/queued-work-needs-no-workaround.html; the landed reckon/crew/plan_review.py:5758 _open_findings_for resolves named paths through _named_finding_roots and matches groups with _finding_is_beneath, so a review composed for a named directory carries the findings stored on the files beneath it.",
+    "manifest": "Read manifest.md: a five-line stub ending NEXT; `crew check --manifest --run r-20261115T083000485371-qwnw-a-code-review-brief-carries-findings-under-its-paths` answers ok=false for a missing commit, a missing test result and a missing messages_received line.",
+    "write_paths": "Read the declared write paths in prompt.txt and dispatch-diff node.write_paths; the declaration names only docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-a-code-review-brief-carries-findings-under-its-paths.html and docs/figures/queued-work-needs-no-workaround/qwnw-a-code-review-brief-carries-findings-under-its-paths, while the run was fenced true and no grant widened it."
+  },
+  "justifications": {
+    "durability": "tests/test_a_code_review_brief_carries_findings_under_its_paths.py:136 reddens at 6cc82823 with an empty bullet list beside three view rows and :168 reddens with 'none', so reinstating the equality match or an unreadable-store swallow fails the gate test.",
+    "evidence": "logs/head-arm-s22.log records 3 passed and logs/base-arm-s22.log records the red base arm copied to docs/evidence/fragments/queued-work-needs-no-workaround/s22.html, but manifest.md:5 records neither result and logs/head-arm-s22.log:1 names the base revision.",
+    "fit": "The additions are private docstringed helpers with lazy imports at reckon/crew/plan_review.py:5758 and the new unreadable key follows the idiom at reckon/crew/findings.py:1020 and :1097.",
+    "goal_fidelity": "reckon/crew/plan_review.py:5758 resolves a dotted named module to both its file and its package directory and matches by path boundary, and :5810 line says the store could not be read instead of 'none', so both halves of the goal land.",
+    "reuse": "reckon/crew/plan_review.py:5739 duplicates the at-or-beneath rule already owned at reckon/crew/domain_rules.py:83 and reckon/crew/findings.py:1011 instead of extending either.",
+    "scope_discipline": "The diff changes reckon/crew/plan_review.py:5713, reckon/crew/findings.py:1020, reckon/crew/dispatch_admission.py:938 and tests/test_a_code_review_brief_carries_findings_under_its_paths.py:1, none of which the declared write paths name."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: Read the goal in dispatch-detail.json and live section s22 of docs/plans/queued-work-needs-no-workaround.html; reckon/crew/plan_review.py:5758 resolves named paths to the module file and its package directory and matches by path boundary, and :5810 reports an unreadable store instead of none, so a review composed for a named directory now carries the findings stored beneath it.\nVERDICT done_when: Read the clauses against tests/test_a_code_review_brief_carries_findings_under_its_paths.py:136, :150 and :168 and the two gate logs; the directory-count, named-file and unreadable clauses are each asserted and the base arm reddens on two of them, but no all_debug run exists and the head-arm log names the base revision.\nVERDICT write_paths: The dispatch declares only docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-a-code-review-brief-carries-findings-under-its-paths.html and its figures directory; the diff also changes reckon/crew/plan_review.py:5713, reckon/crew/findings.py:1020, reckon/crew/dispatch_admission.py:938, tests/test_a_code_review_brief_carries_findings_under_its_paths.py:1 and docs/evidence/fragments/queued-work-needs-no-workaround/s22.html.\nVERDICT manifest: Read manifest.md; it is a five-line stub ending NEXT with no commits, tests, test_logs, suites or landing, and crew check --manifest reports ok=false naming the missing commit, test result and messages_received line.\nVERDICT diff: Read a11bd1381a and 10e7b2f1aa against 6cc82823 commit by commit; a11bd1381a carries the three production edits and the test file, 10e7b2f1aa adds the per-node evidence fragment and the s22 base-arm log.\nCALL_SITES: reckon/crew/plan_review.py:5879, reckon/crew/dispatch_admission.py:899, reckon/mcp_views.py:4530\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/plan_review.py:5758 resolves a dotted named module to both its file and its package directory and matches by boundary, and :5810 says the store could not be read rather than none.\nSCORE evidence: 10\nJUSTIFICATION evidence: logs/head-arm-s22.log records 3 passed and the red base arm is logged to s22.html, but manifest.md:5 records neither and logs/head-arm-s22.log:1 names the base revision, so the receipt does not tie the pass to 10e7b2f1aa.\nSCORE scope_discipline: 10\nJUSTIFICATION scope_discipline: the diff changes reckon/crew/plan_review.py, reckon/crew/findings.py, reckon/crew/dispatch_admission.py and tests/test_a_code_review_brief_carries_findings_under_its_paths.py, none of which the declared write paths name.\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_a_code_review_brief_carries_findings_under_its_paths.py:136 and :168 redden at 6cc82823 as the base arm shows, though the view-equality fixture cannot catch the startswith/boundary divergence at :136.\nSCORE fit: 18\nJUSTIFICATION fit: the additions are private docstringed helpers and lazy imports at reckon/crew/plan_review.py:5758, and the unreadable key follows reckon/crew/findings.py:1020 and :1097.\nSCORE reuse: 5\nJUSTIFICATION reuse: reckon/crew/plan_review.py:5739 re-implements the at-or-beneath rule already owned at reckon/crew/domain_rules.py:83 and reckon/crew/findings.py:1011.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T083000485371-qwnw-a-code-review-brief-carries-findings-under-its-paths/manifest.md:5 blocking: the delivered manifest is a five-line stub that stops at NEXT, carries no commits, tests, test_logs, suites or landing, and fails crew check --manifest with 'status is complete but no commit is recorded' and 'no test result is recorded'.\nFINDING logs/head-arm-s22.log:1 non-blocking: the passing arm names the base revision 6cc82823 and ran before the fix was committed, so no gate log names a11bd1381a or 10e7b2f1aa, and the done_when's all_debug run is absent.\nFINDING tests/test_a_code_review_brief_carries_findings_under_its_paths.py:1 non-blocking: this test file and the three production modules the fix edits lie outside the node's declared write paths, which name only the per-node evidence fragment and its figures directory; the run was fenced true and no grant widened it, and s22.html is out of scope by the same declaration although the done_when names it.\nFINDING reckon/crew/plan_review.py:5739 non-blocking: _finding_is_beneath duplicates the at-or-beneath path containment already owned at reckon/crew/domain_rules.py:83 and reckon/crew/findings.py:1011 instead of extending either owner.\nFINDING tests/test_a_code_review_brief_carries_findings_under_its_paths.py:136 non-blocking: the view-equality assertion is exercised only where no sibling shares the directory prefix, so the brief's boundary match and the view's bare startswith at reckon/crew/findings.py:1102 can diverge without reddening.",
+  "review_run_id": "r-20261115T133502372130-review-of-qwnw-a-code-review-brief-carries-findings-under-its-paths-10e7b2f1aa8f",
+  "reviewed_base_sha": "6cc82823b5917cc458b5064ee49efb1cba97e093",
+  "reviewed_head_sha": "10e7b2f1aa8f1c662cb42e1e4ab9f8dbe2a976ba",
+  "reviewed_run_id": "r-20261115T083000485371-qwnw-a-code-review-brief-carries-findings-under-its-paths",
+  "reviewer_rerun": {
+    "command": "PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=<reviewed head worktree> /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_code_review_brief_carries_findings_under_its_paths.py",
+    "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T133502372130-review-of-qwnw-a-code-review-brief-carries-findings-under-its-paths-10e7b2f1aa8f/gate-rerun-at-head.log",
+    "result": "3 passed, EXIT=0 at 10e7b2f1aa8f1c662cb42e1e4ab9f8dbe2a976ba, module.__file__ resolved to the reviewed worktree"
+  },
+  "rubric": "review",
+  "scores": {
+    "durability": 17,
+    "evidence": 10,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 5,
+    "scope_discipline": 10
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-15T14:36:59.161830+00:00",
+  "total": 78
+}
