@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="queued-work-needs-no-workaround">
+  <meta name="plan-evidence-for" content="queued-work-needs-no-workaround">
+  <title>A code review brief carries the findings stored under its paths | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <header>
+      <p class="eyebrow">Execution evidence &middot; fragment</p>
+      <h1>A code review brief carries the findings stored under its paths</h1>
+      <p class="lead">A review composed with <code>--path imas_codex/discovery/signals</code> read
+      "Open findings already stored against the named paths: none." while the findings view
+      returned 44 open findings for that path, 37 of them on <code>parallel.py</code> inside
+      the directory. The brief kept a stored finding only when its path equalled a named path
+      exactly, and a directory resolves to dotted module names, so no file-keyed row could
+      match. A quieter absence sat beside it: the reader swallows an unreadable store as no
+      rows, so a store nobody could read also read as "none".</p>
+    </header>
+
+    <section id="qwnw-a-code-review-brief-carries-findings-under-its-paths-changed">
+      <h2>What changed</h2>
+      <p><code>reckon/crew/findings.py</code> gains <code>_store_unreadable_paths</code>, and
+      <code>findings_by_path</code> returns an <code>unreadable</code> list naming every store
+      location that exists and cannot be read (a file where a directory is expected, or a
+      directory that will not list). A location that does not exist is still a store with
+      nothing in it.</p>
+      <p><code>reckon/crew/plan_review.py</code> gains <code>_named_finding_roots</code>: a
+      plan write path is taken as written, a dotted module name contributes both the module
+      file and the package directory, and <code>_finding_is_beneath</code> matches at or
+      beneath those roots by path boundary. <code>_open_findings_for</code> answers
+      <code>None</code> for an unreadable store, and <code>code_review_brief</code> then says
+      the stored findings could not be read instead of carrying a count or "none".</p>
+      <p><code>reckon/crew/dispatch_admission.py</code> passes that <code>None</code> through
+      as an unmeasured <code>open_findings</code> rather than counting it as zero.</p>
+    </section>
+
+    <section id="qwnw-a-code-review-brief-carries-findings-under-its-paths-measure">
+      <h2>Measure</h2>
+      <p><code>PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q
+      tests/test_a_code_review_brief_carries_findings_under_its_paths.py</code>:
+      3 passed, 0 failed. The three cases are: a review composed for a named directory lists
+      every open finding stored on the files beneath it, and the bullet count equals the open
+      rows the findings view returns for that path; a review composed for a named file lists
+      only that file's finding; a review composed while the reviews tree is a file rather than
+      a directory carries a line saying the stored findings could not be read, with no
+      "none".</p>
+      <p>The affected population ran green: 85 passed, 0 failed, across the findings reader,
+      its index, disposal and client tests, and the health review dispatch block.</p>
+    </section>
+
+    <section id="qwnw-a-code-review-brief-carries-findings-under-its-paths-negative-control">
+      <h2>Negative control</h2>
+      <p>At the base revision the same test file reads "none" for the directory and "none"
+      for the unreadable store: 2 failed, 1 passed, EXIT=1. The
+      directory case's failure carries the reader's empty bullet list beside the three rows
+      the findings view returns for <code>reckon/sub</code>. The failing run is logged at
+      <code>docs/evidence/fragments/queued-work-needs-no-workaround/s22.html</code>, whose
+      header names the base revision, the scratch tree and the
+      <code>module.__file__</code> it imported.</p>
+    </section>
+  </main>
+</body>
+</html>
