@@ -1,0 +1,76 @@
+<section id="reviews-keep-pace-s6-cadence">
+  <h2 id="reviews-keep-pace-s6-cadence-title">What the live passes were doing
+    before the per-role share</h2>
+
+  <p id="reviews-keep-pace-s6-cadence-before">
+    Read from <code>~/.config/reckon/crew/admission-verdicts.jsonl</code> over
+    the hour <strong>2026-11-15T09:08:20Z to 10:08:20Z</strong>: 26 recorded
+    passes, every one with its gate <code>open</code>. Across those passes
+    <strong>14 distinct requests</strong> were examined and <strong>4 distinct
+    run ids</strong> were launched (6 <code>launched</code> verdict rows, a
+    request re-read on a later pass counting again). The oldest request a pass
+    could have launched was <strong>6256 s</strong> old at the median,
+    <strong>7664 s</strong> at the ninetieth percentile and <strong>7792
+    s</strong> at the maximum.
+  </p>
+
+  <table id="reviews-keep-pace-s6-cadence-verdicts">
+    <thead>
+      <tr><th>verdict</th><th>pointer rows in the hour</th></tr>
+    </thead>
+    <tbody>
+      <tr><td><code>held-on-retry-backoff</code></td><td>27</td></tr>
+      <tr><td><code>refused</code></td><td>17</td></tr>
+      <tr><td><code>stalled</code></td><td>7</td></tr>
+      <tr><td><code>launched</code></td><td>6</td></tr>
+      <tr><td><code>released-stranded-launch</code></td><td>3</td></tr>
+      <tr><td><code>held-on-plan-review</code></td><td>3</td></tr>
+      <tr><td><code>requeued-stranded-launch</code></td><td>1</td></tr>
+    </tbody>
+  </table>
+
+  <p id="reviews-keep-pace-s6-cadence-no-reviews">
+    <strong>No review-delivery request waited in that hour.</strong> A pass's
+    pointer rows carry the run id and little else, so the before reading
+    classifies a row as a review by the run-id prefix the recovery surfaces
+    already use (<code>review-of-</code>, <code>plan-review-of-</code>):
+    <strong>0 of the 14</strong> distinct requests read as a review. The
+    <code>held-on-plan-review</code> rows are holds on a section's plan review,
+    which is a different gate and not a review run waiting for a seat.
+  </p>
+
+  <p id="reviews-keep-pace-s6-cadence-implication">
+    Two things follow, and the second is the one worth keeping. First, the
+    backlog in this hour is not a review backlog: a share that would have given
+    a third of the seats to reviews gives them nothing here, because nothing of
+    that role was waiting. Second, the gate was open on all 26 passes while the
+    oldest admissible request sat at 1 h 44 m, and it is retry backoff and
+    refusals that account for the wait rather than seats being taken by the
+    other role — an admission pass was not the thing holding that queue.
+  </p>
+
+  <p id="reviews-keep-pace-s6-cadence-after">
+    The after reading is not available in this record. The per-role figures are
+    written by the pass itself (<code>roles</code> in each verdict record), and
+    that field is present on <strong>0 of the 26</strong> passes above; it
+    appears only once the admit service is running this pass, which needs the
+    served process restarted. Nothing here is offered as evidence of the
+    change's effect — the gate is the tests, and this is the before half of a
+    before-and-after a later reader can complete from the same file.
+  </p>
+
+  <h3 id="reviews-keep-pace-s6-cadence-share">What the share does to the queue
+    it was written for</h3>
+  <p id="reviews-keep-pace-s6-cadence-share-note">
+    Nine implementations queued ahead of three reviews, inside one project's
+    slice, give weights <code>implementation 0.6923</code> and
+    <code>review 0.3077</code> (the reviews' 3/12 backlog raised to the one-in-three
+    floor and both rescaled to sum to one). The seats then go
+    <code>impl, review, impl, impl, review, impl, impl, review, impl, …</code> —
+    one review in every three seats while three reviews wait, and the four seats
+    after the third review go to implementations because no review is left. The
+    project's own positions in the queue are unchanged: the share reorders the
+    requests inside a project's slice and never moves a request from one project
+    into another project's place.
+  </p>
+</section>
