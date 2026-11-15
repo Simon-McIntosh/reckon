@@ -203,10 +203,16 @@ def test_the_same_tick_is_reported_once(clock: Clock, tmp_path: Path) -> None:
 def test_the_tick_finishing_draws_one_recovery_row(
     clock: Clock, tmp_path: Path
 ) -> None:
-    """The slow stretch ends visibly, once."""
+    """The slow stretch ends once, in the JSON stream and not on the pane.
+
+    A slow tick asks nothing of anyone, so neither its start nor its end is a
+    pane line: printed, each long tick drew a slow and a restored line.
+    """
     store = _slow_tick_fixture(clock, tmp_path)
     check = ProducerSnapshotNotices(PROJECT, SESSION, clock=clock)
-    assert [row["event"] for row in check.poll()] == ["producer-slow"]
+    slow = check.poll()
+    assert [row["event"] for row in slow] == ["producer-slow"]
+    assert slow[0]["pane_line"] is False, slow[0]
 
     clock.value += SAMPLE + 1
     assert check.poll() == []
@@ -223,6 +229,7 @@ def test_the_tick_finishing_draws_one_recovery_row(
     assert recovered[0]["project"] == PROJECT
     assert recovered[0]["age_seconds"] == 0, recovered[0]
     assert "remedy" not in recovered[0], recovered[0]
+    assert recovered[0]["pane_line"] is False, recovered[0]
     assert check.poll() == []
 
 
