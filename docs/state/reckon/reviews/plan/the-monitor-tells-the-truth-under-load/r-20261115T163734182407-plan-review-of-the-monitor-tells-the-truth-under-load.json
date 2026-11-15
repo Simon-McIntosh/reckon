@@ -1,0 +1,96 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-15T16:40:22.669Z",
+  "dispatched_at": "2026-11-15T16:40:01Z",
+  "findings": [
+    {
+      "anchor": "reckon/crew_run_commands.py:1981",
+      "id": "reuse_search-1",
+      "reason": "the section's stated motivation is factually wrong, so it must be rewritten as an extension of the acknowledgement record (adding an end condition and release-on-state-change) rather than as a new hold, or state the granularity ack lacks.",
+      "text": "\u00a712 rests on the premise that \"`crew ack` silences an obligation outright, which is the opposite of what is wanted\", but `crew ack --run X --reason R --until T` records a reason and a deadline beside the run (`reckon/crew/runs.py:2115`), the obligations view splits those duties into an `acknowledged` list that carries `reason` and `until` (`reckon/crew/obligations.py:1618`, `reckon/crew/obligations.py:1659`), the hook excludes them from blocking a stop and re-reads them live (`reckon/hooks/coordinator_obligations.py:1675`), and a lapsed instant returns the duty on the next read; the plan asks for a parallel \"held\" notion whose stated difference from ack does not exist",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/recovery_liveness.py:68",
+      "id": "reuse_search-2",
+      "reason": "a second, section-local definition of the launch bound would drift from the existing one, and the section's own declared write paths cannot satisfy its done-when without editing the owner.",
+      "text": "\u00a74 requires a launch to be released when \"its claim step is older than the launch bound\", and that bound already exists as `STRANDED_LAUNCH_BOUND_SECONDS = 900` in `reckon/crew/recovery_liveness.py:68` alongside the only other reader of the `claim-published` step (`reckon/crew/recovery_liveness.py`, beside `reckon/crew/dispatch_claims.py`), yet \u00a74's write paths name dispatch_claims, recovery_classification and admission/launching and never the module that owns the bound",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/obligations.py:593",
+      "id": "deep_module-1",
+      "reason": "the brief should hand one node the single predicate \"which command an obligation may offer, and which duties may block a stop\" behind obligations.py, because five independent edits to one policy produce five orderings of the same guard rather than one rule.",
+      "text": "the remedy-selection policy (`_with_action_form` at obligations.py:593, with the per-kind `next_command` assignments from line 1694 onward, in a 4314-line module) is being extended by five sections independently: \u00a75 (no `--gate passed` without a measured gate), \u00a78 (every counted obligation names a run), \u00a712 (held duties carry a reason), \u00a715 (no `crew complete` while a repair attempt is live) and \u00a718 (no `crew complete` when the tier owes a review), each a separate patch to the same composer; likewise \u00a74, \u00a75 and \u00a77 each patch a separate verdict branch of `reckon/crew/recovery_classification.py`",
+      "type": "deep_module",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/runs.py:2115",
+      "id": "thin_wrapper-1",
+      "reason": "the honest change is one extra field and one release check on the deferral record the obligations reader already consults, and the plan should say so or justify the second store.",
+      "text": "\u00a712's hold would sit beside `record_run_acknowledgement`, `_acknowledgements_in_force` and `_partition_acknowledged` as a second deferral store keyed on the same run ids, adding one field (an end condition) and a release rule, and the section never says why the existing record cannot carry a condition field",
+      "type": "thin_wrapper",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/promotion_checks.py:2273",
+      "id": "duplicate_owner-1",
+      "reason": "\u00a75's guard cannot fire for the two sites that actually print the string, and \u00a77's three done-when clauses are unachievable inside its declared write paths, so the declared scope must widen to the owning files.",
+      "text": "\u00a75 forbids an obligation offering `--gate passed` for an unmeasured run, but the string is composed in two owners outside \u00a75's write paths (`reckon/crew/promotion_checks.py:2273` and `reckon/crew/queue_landing.py:2027`), and the probe semantics \u00a77 respecifies (\"any declared probe that answers counts as the wait's evidence\", \"a job cancelled before it started is a suspect probe\", \"never overdue before its own declared limit\") are owned by `reckon/crew/recovery_wait.py` \u2014 `_wait_expected_seconds` at line 578, `_wait_probe_reference_kind` at 698, `_wait_probe_job_ids` at 917 \u2014 which \u00a74/\u00a77 already import from (`reckon/crew/recovery_classification.py:692`, `reckon/crew/recovery_classification.py:760`, `reckon/crew/recovery_liveness.py:1059`), while \u00a77's write paths name only recovery_liveness, recovery_classification and recovery_watch; a third site of the same defect is \u00a73's hold-kind vocabulary, whose row/counter agreement is decided in `reckon/crew/ticker.py` and the hold records under `reckon/crew/runs.py`",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew_run_commands.py:1981",
+      "id": "interface_budget-1",
+      "reason": "\u00a712 could reuse `crew ack --until`'s option set with one added condition rather than a second verb, and \u00a75's new refusal should name the deferred refusal path it replaces, so each section has to account for the surface it adds in its own text.",
+      "text": "public_definitions 2793, cli_options 504, mcp_views 15, refusal_families 25; \u00a712 adds a hold surface (a named obligation, a reason, an end condition) on top of an acknowledgement record that already carries a reason and a deadline, and \u00a75 adds a new synchronous refusal family for an unknown gate word (\"`crew complete` refuses an unknown gate word synchronously, with exit 1\"), and neither section names a command or option it retires or merges, nor says why nothing can be",
+      "type": "interface_budget",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "c2401b44d1d880582bdbc19e95101dee98c74334",
+  "plan_fingerprint": "3abd670319209b14aee8a04bb87c79c22fcc960955abd083ee30d122a5a4df7d",
+  "plan_slug": "the-monitor-tells-the-truth-under-load",
+  "plan_version": 5,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261115T163734182407-plan-review-of-the-monitor-tells-the-truth-under-load",
+  "reviewed_blob_sha": "7357a7ba896cee8e92cfb8bec7ee8fce7c9b0697",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "a finding \u2014 the plan hands five separate sections (\u00a75, \u00a78, \u00a712, \u00a715, with \u00a718 already landed) that each add a condition to one remedy-selection policy in `reckon/crew/obligations.py` (4314 lines), and three (\u00a74, \u00a75, \u00a77) that each patch `reckon/crew/recovery_classification.py` (3216 lines), so the policy gains no single interface and no section owns the predicate.",
+    "duplicate_owner": "a finding \u2014 the `--gate passed` remedy string \u00a75 forbids is composed at `reckon/crew/promotion_checks.py:2273` and `reckon/crew/queue_landing.py:2027`, neither in \u00a75's write paths, and the probe semantics \u00a77 respecifies are owned by `reckon/crew/recovery_wait.py`.",
+    "interface_budget": "a finding \u2014 public_definitions 2793, cli_options 504, mcp_views 15, refusal_families 25; \u00a712 adds a hold surface (a name, a reason and an end condition) and \u00a75 adds a synchronous refusal family for an unknown gate word, and neither section names what it retires or merges, or states why nothing can be.",
+    "reuse_search": "a finding \u2014 \u00a712 rebuilds a deferral that `crew ack --reason --until` already records and the obligations view already re-surfaces, and \u00a74's \"launch bound\" already exists as `STRANDED_LAUNCH_BOUND_SECONDS` in `reckon/crew/recovery_liveness.py:68`.",
+    "thin_wrapper": "a finding \u2014 \u00a712's per-obligation hold is a second layer over the existing per-run acknowledgement record (`reckon/crew/runs.py:2115`) whose only new behaviour is an end *condition* instead of a deadline, and the section gives no reason the record cannot carry that."
+  },
+  "section_digests": {
+    "_document": "11c929f2d4c02a39a26472a2c211bcb5a572d782e5d7a7ced9eb19e8bba35b5d",
+    "s1": "7df70e005850ec7773b3db8cdf1384c5422e6cbfac994a1cfc3bdeca2fd47ef2",
+    "s10": "b83b287b25ce35ab03c105da8c02eec999809dbdea6073436eae2dc72bb0055d",
+    "s11": "db2972ed7155bc484ac98ce58f8c119ab201e99f5a53c1af54606eb6564a66e4",
+    "s12": "6d00c3593dc3ac12569804d49312a7a62c8bfe08142ea6fc80fb1fa5f7b46bbf",
+    "s13": "79271d44153e341633146df7233120d46939c41b1ca66de6bac074c2472ea991",
+    "s14": "c0f58bcc6da33e5ff402ec71bef199b31de1619824a04f6db8d415d9669a38d7",
+    "s15": "6d981e1f07643227d97018196c6bcd7047a59090453d1f264330beb768524c2d",
+    "s16": "9c67ebb9a89d3b566da303e2866877a636f868c501bf32f08ff80e2c7a7f26da",
+    "s17": "229d1aee2b054a2680acdd7883f3d6cd8216513f31305ff21ed874c51b1af3a7",
+    "s18": "4a5429fac53529c64918e90d1bc4d47480e08689bea9601336332ce330c82e49",
+    "s2": "a065d657377c24ca69329c265d4a0a821a0104c7df8d1140dec9c3b9d1c6edf2",
+    "s3": "56910cab877eb38336945d14734b277c784a2a9b0a468847c8587cddfae1e108",
+    "s4": "9756c05b7dd601c1ea2c61ee3fef0a89198cd233b165fca686abd3e2e160e136",
+    "s5": "9191c874610bbd54c95eeb8cbd6aac0ffd1efc7a9814aaad3f7416b41879cb38",
+    "s6": "a8a7d00ef50ab0ca240bc59bb917ff62442d6f3567da095cb913cd5860246056",
+    "s7": "8ba34483eab2bbd914de8648f6230b223e01771d2c1796fe5eb299da42edab74",
+    "s8": "30f0e740e2caee5b735cc3bdc83d5eaa23eac7eeaae780899f811d7a1c32956c",
+    "s9": "56c122a4d4057a2e12e9ebbaae0a53fb955938f47dbe9275cdf2dd5566896f78"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-15T16:43:26.753509+00:00",
+  "total": null
+}
