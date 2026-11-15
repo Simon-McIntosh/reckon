@@ -6,7 +6,7 @@ F.F                                                                      [100%]
 =================================== FAILURES ===================================
 _________ test_a_named_directory_carries_every_open_finding_beneath_it _________
 
-repo = PosixPath('/tmp/reckon-crew-scratch/r-20261115T083000485371-qwnw-a-code-review-brief-carries-findings-under-its-paths/pytest-of-mcintos/pytest-1/test_a_named_directory_carries0/repo')
+repo = PosixPath('/tmp/reckon-crew-scratch/r-20261115T083000485371-qwnw-a-code-review-brief-carries-findings-under-its-paths/pytest-of-mcintos/pytest-2/test_a_named_directory_carries0/repo')
 
     def test_a_named_directory_carries_every_open_finding_beneath_it(repo: Path) -> None:
         _store(repo, _all_findings())
@@ -16,15 +16,15 @@ repo = PosixPath('/tmp/reckon-crew-scratch/r-20261115T083000485371-qwnw-a-code-r
         bullets = _finding_bullets(brief)
         view_rows = _open_rows_in_the_view(repo, "reckon/sub")
 >       assert len(bullets) == len(view_rows) == len(BENEATH), (bullets, view_rows)
-E       AssertionError: ([], [{'path': 'reckon/sub/other.py', 'line': '7', 'scope': 'repository', 'severity': 'follow-on', ...}, {'path': 'rec...locking', ...}, {'path': 'reckon/sub/parallel.py', 'line': '40', 'scope': 'repository', 'severity': 'follow-on', ...}])
-E       assert 0 == 3
+E       AssertionError: ([], [{'path': 'reckon/sub/other.py', 'line': '7', 'scope': 'repository', 'severity': 'follow-on', ...}, {'path': 'rec...ty': 'follow-on', ...}, {'path': 'reckon/subtle.py', 'line': '5', 'scope': 'repository', 'severity': 'blocking', ...}])
+E       assert 0 == 4
 E        +  where 0 = len([])
-E        +  and   3 = len([{'path': 'reckon/sub/other.py', 'line': '7', 'scope': 'repository', 'severity': 'follow-on', ...}, {'path': 'reckon/s...blocking', ...}, {'path': 'reckon/sub/parallel.py', 'line': '40', 'scope': 'repository', 'severity': 'follow-on', ...}])
+E        +  and   4 = len([{'path': 'reckon/sub/other.py', 'line': '7', 'scope': 'repository', 'severity': 'follow-on', ...}, {'path': 'reckon/s...ity': 'follow-on', ...}, {'path': 'reckon/subtle.py', 'line': '5', 'scope': 'repository', 'severity': 'blocking', ...}])
 
-tests/test_a_code_review_brief_carries_findings_under_its_paths.py:136: AssertionError
+tests/test_a_code_review_brief_carries_findings_under_its_paths.py:140: AssertionError
 ______________ test_an_unreadable_store_says_so_rather_than_none _______________
 
-repo = PosixPath('/tmp/reckon-crew-scratch/r-20261115T083000485371-qwnw-a-code-review-brief-carries-findings-under-its-paths/pytest-of-mcintos/pytest-1/test_an_unreadable_store_says_0/repo')
+repo = PosixPath('/tmp/reckon-crew-scratch/r-20261115T083000485371-qwnw-a-code-review-brief-carries-findings-under-its-paths/pytest-of-mcintos/pytest-2/test_an_unreadable_store_says_0/repo')
 
     def test_an_unreadable_store_says_so_rather_than_none(repo: Path) -> None:
         # The committed reviews tree is a file where a directory is expected, so the
@@ -145,21 +145,21 @@ E         FINDING test_debt tests/test_c.py:20 — CLASS: source_text_assertion 
 E         TREATMENT — GOAL: delete the second implementation and route callers to the first — WRITE_PATHS: reckon/c.py, reckon/d.py — DONE_WHEN: `reckon/d.py` no longer defines `normalise_path` and the suite passes; negative control: removing `reckon/c.py`'s definition turns `tests/test_c.py::test_normalise` red — EXPECTED_DELTA: -24
 E         ```
 E         
-E         Reviewed revision: ca09b9c57058f8ff5f01bc9508ac4836fdba3c25
+E         Reviewed revision: b9bd2ed52469715127afd316d72aefe95e2212a0
 E         Named paths: reckon.sub.other, reckon.sub.parallel
 E         Neighbourhood modules (one import away): reckon.sub
 E         Interface figures: public_definitions 0, cli_options 0, mcp_views 0, refusal_families 0
 E         Open findings already stored against the named paths: none.
-E         Report path: /tmp/reckon-crew-scratch/r-20261115T083000485371-qwnw-a-code-review-brief-carries-findings-under-its-paths/pytest-of-mcintos/pytest-1/test_an_unreadable_store_says_0/config/crew/reports/sample/code-review/ab162649d6b5/report.md
+E         Report path: /tmp/reckon-crew-scratch/r-20261115T083000485371-qwnw-a-code-review-brief-carries-findings-under-its-paths/pytest-of-mcintos/pytest-2/test_an_unreadable_store_says_0/config/crew/reports/sample/code-review/ab162649d6b5/report.md
 E         
 E       assert 'could not be read' in 'Open findings already stored against the named paths: none.'
 
-tests/test_a_code_review_brief_carries_findings_under_its_paths.py:168: AssertionError
+tests/test_a_code_review_brief_carries_findings_under_its_paths.py:175: AssertionError
 =========================== short test summary info ============================
-FAILED tests/test_a_code_review_brief_carries_findings_under_its_paths.py::test_a_named_directory_carries_every_open_finding_beneath_it - AssertionError: ([], [{'path': 'reckon/sub/other.py', 'line': '7', 'scope': 'repository', 'severity': 'follow-on', ...}, {'path': 'rec...locking', ...}, {'path': 'reckon/sub/parallel.py', 'line': '40', 'scope': 'repository', 'severity': 'follow-on', ...}])
-assert 0 == 3
+FAILED tests/test_a_code_review_brief_carries_findings_under_its_paths.py::test_a_named_directory_carries_every_open_finding_beneath_it - AssertionError: ([], [{'path': 'reckon/sub/other.py', 'line': '7', 'scope': 'repository', 'severity': 'follow-on', ...}, {'path': 'rec...ty': 'follow-on', ...}, {'path': 'reckon/subtle.py', 'line': '5', 'scope': 'repository', 'severity': 'blocking', ...}])
+assert 0 == 4
  +  where 0 = len([])
- +  and   3 = len([{'path': 'reckon/sub/other.py', 'line': '7', 'scope': 'repository', 'severity': 'follow-on', ...}, {'path': 'reckon/s...blocking', ...}, {'path': 'reckon/sub/parallel.py', 'line': '40', 'scope': 'repository', 'severity': 'follow-on', ...}])
+ +  and   4 = len([{'path': 'reckon/sub/other.py', 'line': '7', 'scope': 'repository', 'severity': 'follow-on', ...}, {'path': 'reckon/s...ity': 'follow-on', ...}, {'path': 'reckon/subtle.py', 'line': '5', 'scope': 'repository', 'severity': 'blocking', ...}])
 FAILED tests/test_a_code_review_brief_carries_findings_under_its_paths.py::test_an_unreadable_store_says_so_rather_than_none - AssertionError: # Health review of a neighbourhood of code
   
   You are reviewing a neighbourhood of the codebase — a set of production modules
@@ -266,13 +266,13 @@ FAILED tests/test_a_code_review_brief_carries_findings_under_its_paths.py::test_
   TREATMENT — GOAL: delete the second implementation and route callers to the first — WRITE_PATHS: reckon/c.py, reckon/d.py — DONE_WHEN: `reckon/d.py` no longer defines `normalise_path` and the suite passes; negative control: removing `reckon/c.py`'s definition turns `tests/test_c.py::test_normalise` red — EXPECTED_DELTA: -24
   ```
   
-  Reviewed revision: ca09b9c57058f8ff5f01bc9508ac4836fdba3c25
+  Reviewed revision: b9bd2ed52469715127afd316d72aefe95e2212a0
   Named paths: reckon.sub.other, reckon.sub.parallel
   Neighbourhood modules (one import away): reckon.sub
   Interface figures: public_definitions 0, cli_options 0, mcp_views 0, refusal_families 0
   Open findings already stored against the named paths: none.
-  Report path: /tmp/reckon-crew-scratch/r-20261115T083000485371-qwnw-a-code-review-brief-carries-findings-under-its-paths/pytest-of-mcintos/pytest-1/test_an_unreadable_store_says_0/config/crew/reports/sample/code-review/ab162649d6b5/report.md
+  Report path: /tmp/reckon-crew-scratch/r-20261115T083000485371-qwnw-a-code-review-brief-carries-findings-under-its-paths/pytest-of-mcintos/pytest-2/test_an_unreadable_store_says_0/config/crew/reports/sample/code-review/ab162649d6b5/report.md
   
 assert 'could not be read' in 'Open findings already stored against the named paths: none.'
-2 failed, 1 passed in 0.94s
+2 failed, 1 passed in 1.46s
 EXIT=1
