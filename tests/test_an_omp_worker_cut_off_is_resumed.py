@@ -18,8 +18,10 @@ repository = supervised.repository
 def _exited_worker(tmp_path, repository, monkeypatch, *, status="in-progress"):
     monkeypatch.setattr(supervised, "WORKER_BINARY", "omp")
     worktree = supervised._worktree_with_committed_work(repository, tmp_path)
-    manifest = runs.run_dir(supervised.RUN_ID) / "manifest.md"
-    bin_directory = tmp_path / "bin"
+    directory = runs.run_dir(supervised.RUN_ID)
+    directory.mkdir(parents=True, exist_ok=True)
+    manifest = directory / "manifest.md"
+    bin_directory = directory / "bin"
     bin_directory.mkdir()
     pointer = supervised._write_pointer(
         repository, worktree, manifest, bin_directory=bin_directory
@@ -128,6 +130,17 @@ def test_a_live_omp_worker_is_never_cut_off(
         pid=os.getpid(), pid_start_time=recovery._process_start_time(os.getpid())
     )
     runs._write_json(worker_path, worker)
+    directory = runs.run_dir(supervised.RUN_ID)
+    end = supervised.dispatch_module._supervisor_exit_record(
+        run_id=worker["run_id"],
+        attempt=worker["attempt"],
+        worker_pid=worker["pid"],
+        launched_at=worker["launched_at"],
+        status=0,
+        run_directory=directory,
+    )
+    runs._write_json(directory / recovery.EXIT_RECORD_NAME, end)
+    assert end["worker_pid"] == os.getpid()
     row = recovery.classify_pointer(pointer)
     assert row["classification"] == "running"
 
