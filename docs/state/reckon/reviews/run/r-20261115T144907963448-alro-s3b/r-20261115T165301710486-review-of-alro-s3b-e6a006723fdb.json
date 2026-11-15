@@ -1,0 +1,47 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/serve.py:2751 (body = compose_landed_record(target, plan_slug, project=project))",
+    "reckon/mcp.py:1344 (composed = compose_landed_record(...))",
+    "reckon/doccheck.py:1970 (compose_landed_record(path, plan_slug, project=project))",
+    "reckon/evidence.py:1362 compose_landed_record reads docs/evidence/fragments/<plan>/"
+  ],
+  "completed_at": "2026-11-15T16:57:32.154Z",
+  "dimension_dispositions": {},
+  "dispatched_at": "2026-11-15T16:56:03Z",
+  "finding_dispositions": {},
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/a-landing-is-recorded-once/alro-s3b.html",
+      "line": 17,
+      "severity": "non-blocking",
+      "text": "the arm symmetry this paragraph records has no guard behind it: reckon/crew/promotion_checks.py reads baseline_suite and after_suite only to judge a negative-control log (the arm readers at :2345 and :2379 feed the comparison at :2484) and never compares an arm's command against the test files that exist at that arm's revision, so the defect the previous review refused with a blocking finding \u2014 a base arm dropping tests/test_a_closing_plan_gets_one_sourced_overview.py, which exists at de9cb49 \u2014 would pass promotion again silently. The correction here is prose plus a manifest, and no test or check reddens if it is undone."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "read commit by commit against 2baf8e9: e6a006723f is the only gained commit, one file, one insertion \u2014 the paragraph at docs/evidence/fragments/a-landing-is-recorded-once/alro-s3b.html:17 stating both arms name the gate file, and nothing else changed.",
+    "done_when": "the done_when at prompt.txt:175 asks the new test file to show the overview clauses over a temporary repository; the manifest names tests/test_a_closing_plan_gets_one_sourced_overview.py in both arms and records base-full-1318175.log '69 passed, 2 errors' EXIT=1 at de9cb49 against head-full-1318178.log '77 passed' EXIT=0 at e6a006723f, the six-case delta being the gate file's own growth.",
+    "goal": "the node goal is 'Complete the closure overview to the full deliverable of its section'; the gained commit e6a006723f adds one paragraph at docs/evidence/fragments/a-landing-is-recorded-once/alro-s3b.html:17 stating both gate arms name the gate file, which answers the record defect the review at 2baf8e9 refused and leaves reckon/evidence.py untouched.",
+    "manifest": "read; status complete, commits 492a890/5d300cc/2baf8e9/e6a0067, baseline_suite completed true exit 1 with the two test_staged_write_inventory ids attributed to a git-less scratch extraction, after_suite completed true exit 0 with no failures, the two negative-control logs named.",
+    "write_paths": "the manifest declares reckon/evidence.py, tests/test_a_closing_plan_gets_one_sourced_overview.py, docs/evidence/fragments/a-landing-is-recorded-once/alro-s3b.html and docs/figures/a-landing-is-recorded-once/alro-s3b; the gained diff touches only docs/evidence/fragments/a-landing-is-recorded-once/alro-s3b.html."
+  },
+  "project": "reckon",
+  "raw_text": "Reviewed run: r-20261115T144907963448-alro-s3b\nReviewed base: 2baf8e9fe8d8be3a16a08c1570439b5baf829d69\nReviewed head: e6a006723fdb33400fc4f90956c6d2510e293c0c\nRange: one commit gained since the review at 2baf8e9 (e6a0067), 1 file, 1 insertion.\n\nVERDICT goal: the node goal is \"Complete the closure overview to the full deliverable of its section\"; the gained commit e6a006723f adds one paragraph at docs/evidence/fragments/a-landing-is-recorded-once/alro-s3b.html:17 recording that both gate arms name the gate file, which answers the record defect the review at 2baf8e9 refused, and leaves reckon/evidence.py unchanged.\nVERDICT done_when: the done_when at prompt.txt:175 asks the new test file to show the overview clauses over a temporary repository; the gate command names tests/test_a_closing_plan_gets_one_sourced_overview.py and the manifest records both arms over it \u2014 base-full-1318175.log at de9cb49 reads '69 passed, 2 errors' EXIT=1 and head-full-1318178.log at e6a006723f reads '77 passed' EXIT=0.\nVERDICT write_paths: the manifest declares reckon/evidence.py, tests/test_a_closing_plan_gets_one_sourced_overview.py, docs/evidence/fragments/a-landing-is-recorded-once/alro-s3b.html and docs/figures/a-landing-is-recorded-once/alro-s3b; the gained diff touches only docs/evidence/fragments/a-landing-is-recorded-once/alro-s3b.html, inside that set.\nVERDICT manifest: read; status complete with commits 492a890/5d300cc/2baf8e9/e6a0067, baseline_suite completed true at exit 1 carrying the two test_staged_write_inventory ids attributed to a git-less scratch extraction, after_suite completed true at exit 0, and both negative-control logs named as arms of the reverted landing rule and the reverted block-boundary rule.\nVERDICT diff: read against 2baf8e9; e6a006723f changes one file, adding the paragraph at docs/evidence/fragments/a-landing-is-recorded-once/alro-s3b.html:17 and nothing else, and its two counts check out independently \u2014 tests/test_a_closing_plan_gets_one_sourced_overview.py holds 13 test functions at de9cb49abf and 19 at e6a006723f, with no parametrize in either revision, so the 71-item base run and the 77-item head run differ by exactly the gate file's six added cases.\nCALL_SITES: reckon/serve.py:2751 (body = compose_landed_record(target, plan_slug, project=project)), reckon/mcp.py:1344 (composed = compose_landed_record(...)), reckon/doccheck.py:1970 (compose_landed_record(path, plan_slug, project=project)), reckon/evidence.py:1362 compose_landed_record reads docs/evidence/fragments/<plan>/\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: docs/evidence/fragments/a-landing-is-recorded-once/alro-s3b.html:17 records the repaired arm composition the previous review refused, without disturbing the overview code the section delivers.\nSCORE evidence: 18\nJUSTIFICATION evidence: base-full-1318175.log names revision de9cb49 and the three-file command and closes EXIT=1 with '69 passed, 2 errors', head-full-1318178.log names e6a006723f and closes EXIT=0 with '77 passed', and the paragraph's 13-to-19 claim matches the test-function counts at those two revisions.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the only file in 2baf8e9..e6a006723f is docs/evidence/fragments/a-landing-is-recorded-once/alro-s3b.html, one insertion, inside the manifest's declared paths.\nSCORE durability: 8\nJUSTIFICATION durability: the gained diff adds no assertion, and reckon/crew/promotion_checks.py:2345 and :2379 read the two arms only for the negative-control comparison at :2484, so nothing would redden if a base arm again dropped the gate file.\nSCORE fit: 19\nJUSTIFICATION fit: the added paragraph at docs/evidence/fragments/a-landing-is-recorded-once/alro-s3b.html:17 joins the same six-paragraph series, naming code and logs in the surrounding style and adding no identifier of its own.\nSCORE reuse: 20\nJUSTIFICATION reuse: the diff adds no function, class or module, so nothing duplicates a capability; the fragment's reader is the existing reckon/evidence.py:1362 compose_landed_record, which this change does not re-implement.\nFINDING docs/evidence/fragments/a-landing-is-recorded-once/alro-s3b.html:17 non-blocking: the arm symmetry the paragraph records is held by prose and a manifest only \u2014 reckon/crew/promotion_checks.py reads baseline_suite and after_suite at :2345 and :2379 solely to judge a negative-control log, and never compares an arm's command with the test files that exist at that arm's revision, so the blocking defect the previous review found (a base arm dropping tests/test_a_closing_plan_gets_one_sourced_overview.py, present at de9cb49) would pass again silently.\n",
+  "review_run_id": "r-20261115T165301710486-review-of-alro-s3b-e6a006723fdb",
+  "reviewed_base_sha": "2baf8e9fe8d8be3a16a08c1570439b5baf829d69",
+  "reviewed_head_sha": "e6a006723fdb33400fc4f90956c6d2510e293c0c",
+  "reviewed_run_id": "r-20261115T144907963448-alro-s3b",
+  "scores": {
+    "durability": 8,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-15T17:20:00+00:00",
+  "total": 103
+}
