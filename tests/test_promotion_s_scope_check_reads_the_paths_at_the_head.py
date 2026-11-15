@@ -128,6 +128,26 @@ def test_an_undeclared_deletion_left_at_the_head_is_refused(run):
     assert UNDECLARED in str(error.value)
 
 
+def test_an_unreadable_base_is_refused_instead_of_excusing_paths(run):
+    repo = Path(run["worktree"])
+    _write(repo, UNDECLARED, "still changed\n")
+    changed = _commit(repo, UNDECLARED)
+    run["base_sha"] = "missing-base"
+
+    with pytest.raises(CrewError, match="cannot measure scope paths"):
+        _promote_scope(run, [changed])
+
+
+def test_a_record_without_a_base_keeps_the_conservative_scope_check(run):
+    repo = Path(run["worktree"])
+    _write(repo, UNDECLARED, "still changed\n")
+    changed = _commit(repo, UNDECLARED)
+    del run["base_sha"]
+
+    with pytest.raises(CrewError, match="outside its declared write scope"):
+        _promote_scope(run, [changed])
+
+
 def test_a_cited_merge_does_not_charge_the_imported_branch_paths(run):
     repo = Path(run["worktree"])
     peer = repo.parent / "peer"
