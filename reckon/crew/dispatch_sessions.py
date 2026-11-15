@@ -1365,6 +1365,10 @@ def resume_plan(
             images=(record.get("node") or {}).get("images") or (),
             fence=FENCE_WORKERS,
             fence_config=config,
+            # The set is the node's, so a resume reconnects the worker to the
+            # same servers the dispatch did rather than to whatever the flight's
+            # default list says now.
+            worker_mcp_set=str((record.get("node") or {}).get("mcp_set") or ""),
             unmergeable_patterns=_resume_unmergeable_patterns(record),
             masked_paths=_shadow_masks_for_record(record),
         )
@@ -1480,6 +1484,7 @@ def _recorded_task_node(record: Mapping[str, Any]) -> TaskNode:
             data.get("manifest_path") or record.get("manifest_path") or ""
         ),
         negative_control=str(data.get("negative_control") or ""),
+        mcp_set=str(data.get("mcp_set") or ""),
         estimated_hours=data.get("estimated_hours"),
         requires_decisions=[str(key) for key in data.get("requires_decisions") or ()],
         images=[str(path) for path in data.get("images") or ()],
@@ -1891,6 +1896,7 @@ def change_lane(
                 images=(record.get("node") or {}).get("images") or (),
                 fence=FENCE_WORKERS,
                 fence_config=config,
+                worker_mcp_set=str((record.get("node") or {}).get("mcp_set") or ""),
                 unmergeable_patterns=_resume_unmergeable_patterns(record),
                 masked_paths=_shadow_masks_for_record(record),
             )

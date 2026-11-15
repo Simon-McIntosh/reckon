@@ -81,6 +81,7 @@ if TYPE_CHECKING:
 
 from reckon import service
 from reckon._store import write_json_atomically
+from reckon.crew import oom_priority
 from reckon.crew.host_lease import LEASE_RENEW_SECONDS, HostLease, local_host
 from reckon.crew.routing import signal_worker
 
@@ -2242,6 +2243,14 @@ def run_declared_service(
         os.close(descriptor)
         return 1
     os.set_inheritable(descriptor, True)
+    # The service takes its place in the job's OOM ordering before it becomes
+    # the service, because exec keeps the adjustment: the kernel then reaches
+    # for a worker, at a strictly higher score, before this process. The log
+    # line names what the kernel actually applied, since an unprivileged fleet
+    # can only raise an adjustment and the write falls back to the inherited
+    # value in that case.
+    oom_priority.claim_service()
+    log(f"declared service {name} starts at {oom_priority.describe()}")
     # The copy records the code it is about to become, beside the pid that
     # names it, so a supervisor adopting this copy can tell whether it carries
     # the checkout's code. This write is the authoritative one: it happens in

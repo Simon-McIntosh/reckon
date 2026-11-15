@@ -1405,6 +1405,19 @@ def _queue_dispatch_batch(
     ),
 )
 @click.option(
+    "--mcp-set",
+    "mcp_set",
+    default="",
+    metavar="NAME",
+    help=(
+        "The MCP set this node's worker connects to, named by the plan section "
+        "or the brief. The flight declares each set under `mcp_sets` as a list "
+        "of servers; a name the flight does not declare refuses the dispatch. "
+        "Omitted, the node gets the flight's `worker_mcp_servers` list, or no "
+        "server at all."
+    ),
+)
+@click.option(
     "--peer",
     "peers",
     multiple=True,
@@ -1606,6 +1619,7 @@ def crew_dispatch(
     regenerate_paths,
     anchor_paths,
     image_paths,
+    mcp_set,
     peers,
     required_decisions,
     locked_decisions,
@@ -1800,6 +1814,7 @@ def crew_dispatch(
         role=role,
         spec_level=spec_level or "",
         negative_control=negative_control or "",
+        mcp_set=mcp_set or "",
         done_when=done_when,
         write_paths=list(write_paths),
         inputs=list(inputs),

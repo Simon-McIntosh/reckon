@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="work-flows-to-the-lane">
+  <meta name="plan-evidence-for" content="reckon:work-flows-to-the-lane">
+  <meta name="plan-verifies" content="reckon:work-flows-to-the-lane#s76">
+  <meta name="plan-recorded-at" content="2026-11-15">
+  <meta name="plan-verdict" content="passed">
+  <title>A killed watch producer is restarted without linger</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" id="wftl-a-producer-restarts-without-linger-landing"
+  data-node="wftl-a-producer-restarts-without-linger" data-reckon="landed"
+  data-when="2026-11-15">
+  <h2>Killing a producer leaves a fresh one, and five ensures leave one</h2>
+  <p>The restart this section asks for is already carried by the arming
+  supervisor: a host that cannot enable lingering arms the producer as a plain
+  background process under <code>_WATCH_PRODUCER_SUPERVISOR</code>, whose wait
+  on its child treats a signal death as a crash: the supervisor's own argv is
+  <code>if not (1 &lt;= status &lt;= 127 or status &lt; 0): raise SystemExit(status)</code>.
+  <code>reckon/crew/dispatch_watch.py</code> has restarted a crashed fallback
+  producer under the same backoff curve since <code>4152e8c57b</code>
+  (<em>fix(crew): restart a crashed fallback watch producer</em>, 13 October).
+  No product change was needed, and none was made.</p>
+
+  <p>What was missing was a case pinning the measure end to end, and that is
+  <code>tests/test_a_killed_producer_is_restarted_without_linger.py</code>. It
+  arms through <code>watch_unit.ensure_watcher_service</code> with a manager
+  whose <code>enable_linger</code> raises <code>LingerUnavailableError</code>,
+  so the fallback is the path that starts the process, and the producer runs in
+  a temporary <code>RECKON_HOME</code>.</p>
+
+  <table id="wftl-a-producer-restarts-without-linger-cases">
+    <thead><tr><th>case</th><th>what it holds</th></tr></thead>
+    <tbody>
+      <tr><td><code>test_a_killed_producer_is_restarted_without_linger</code></td>
+        <td>SIGKILL the pid that took the seat; a different live pid writes a
+        snapshot stamped after the kill, well inside two minutes, and the
+        armings the test's own process made after the kill are counted as zero
+        — the restart came from the supervisor, not a re-arm.</td></tr>
+      <tr><td><code>test_ensure_five_times_leaves_one_producer</code></td>
+        <td>Five <code>_ensure_watch_producer</code> calls against a live
+        producer: no arming call, one pid record, that pid alive.</td></tr>
+    </tbody>
+  </table>
+
+  <p><strong>The negative control this section names does not reproduce.</strong>
+  The section's control reads “at the base revision the first test reads no
+  producer two minutes after the kill”. Measured at
+  <code>8863ecb4f3690956868bab0b12e2b7961f98b2b9</code>, the base revision this
+  node was dispatched at. A producer killed with SIGKILL was replaced within
+  the two-minute bound, so the arm is green at base. The record of what the
+  instrument saw, and of the mutation that does falsify the new test, is
+  <code>docs/evidence/fragments/work-flows-to-the-lane/s76.html</code>.</p>
+</article>
+</body>
+<footer><p>Composed as one node fragment; promoted into the plan's evidence
+record.</p></footer>
+</html>

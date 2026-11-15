@@ -283,6 +283,13 @@ def admit_until_stopped(
     worker = _landing._LandingWorker(lander)
     # The queue refills itself between passes.
     promotions.start_refill()
+    # A delivered run owes a review before it can land, and its coordinator may
+    # not be there to dispatch it, so the service dispatches owed reviews on a
+    # clock of its own.
+    from .review_sweep import ReviewSweep
+
+    reviews = ReviewSweep(code_stamp=_admit_code_stamp)
+    reviews.start()
     try:
         while True:
             with service_pass():
@@ -292,6 +299,7 @@ def admit_until_stopped(
                     # one starts once the stamp has moved: the loop drains the
                     # work in flight, and only then replaces the process.
                     promotions.begin_drain()
+                    reviews.stop()
                     promotions.wait_for_in_flight()
                     worker.settle()
                     _reexec_into_current_code()
@@ -329,4 +337,5 @@ def admit_until_stopped(
         return {"passes": passes}
     finally:
         promotions.stop_refill()
+        reviews.stop(timeout=5.0)
         worker.stop()
