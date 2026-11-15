@@ -1,0 +1,67 @@
+<section id="rorp-s3-landing">
+  <h2>A claims review record passes the check on the run's verdicts</h2>
+
+  <p><strong>What changed.</strong> <code>review_record_refusals</code> in
+  <code>reckon/crew/review.py</code> asked every parsed record for the six
+  landed-node text scores, exempting only the figure rubric. A claims review
+  scores none of them: it re-runs the report's top claims and records a verdict
+  <em>per claim</em>. So both claims records stored for this session's census and
+  prototype reviews were refused for missing scores, and each had to be repaired
+  by hand before it could promote.
+
+  <p>Two edits, one rule. The exemption is now the declared set
+  <code>ITEM_VERDICT_RUBRICS</code> &mdash; the claims, figure, health,
+  plan-review and plan-design rubrics &mdash; so a rubric that measures verdicts
+  owes no text scores and a rubric added later is exempt by being listed there,
+  not by a second check beside the first. The delivery contract then holds a
+  claims record to the measurement it does owe: a verdict for each of the ranks
+  <code>1..CLAIMS_REQUIRED</code> and one for the report's own summary line.
+  <code>CLAIM_VERDICT_FIELDS</code> reads either spelling a record may state its
+  per-claim verdicts under (<code>claims</code>, and the
+  <code>claim_verdicts</code> a hand-written record uses), so a complete record
+  is never refused for the key it chose.</p>
+
+  <h3 id="rorp-s3-arms">Measured</h3>
+
+  <table id="rorp-s3-arm-rows">
+    <caption>Every arm is a log whose first line names its revision, tree and
+    command and whose last line reads <code>EXIT=&lt;code&gt;</code>.</caption>
+    <thead><tr><th>arm</th><th>revision</th><th>result</th></tr></thead>
+    <tbody>
+      <tr><td>new test file, head</td>
+        <td><code>bb45282b</code> + this node's change, worktree</td>
+        <td><strong>13 passed</strong>, <code>EXIT=0</code></td></tr>
+      <tr><td>negative control: same file at the base revision</td>
+        <td><code>bb45282b</code>, scratch extraction</td>
+        <td>9 failed, 3 passed, <code>EXIT=1</code> &mdash; the first is
+        <code>test_a_complete_claims_record_passes_the_review_check</code>'s case,
+        refused with <code>{"findings": ["missing scores"]}</code>; the two
+        scored-rubric cases pass at base unchanged, and
+        <code>test_each_verdict_per_item_rubric_owes_no_text_scores[figure]</code>
+        passes there because the figure rubric was already exempt</td></tr>
+      <tr><td>baseline suite (node's files, new test absent)</td>
+        <td><code>bb45282b</code>, scratch extraction</td>
+        <td>55 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>after suite (node's files)</td>
+        <td><code>251ead7d</code>, worktree</td>
+        <td><strong>68 passed</strong>, <code>EXIT=0</code></td></tr>
+    </tbody>
+  </table>
+
+  <p><strong>The stored corpus decides whether the new refusal costs an
+  answer.</strong> Every claims record in <code>docs/state/reckon/reviews</code> (23 of them) was
+  run through <code>review_record_refusals</code> at the base revision and at
+  <code>this</code> head: none is newly refused, one (the census record) newly
+  passes, and the 17 refused in both were refused before for reasons this change
+  does not touch. The one record that the first attempt <em>did</em> newly refuse
+  &mdash; <code>r-20261020T125655924881</code>, a complete review stating its
+  verdicts under <code>claim_verdicts</code> &mdash; is why
+  <code>CLAIM_VERDICT_FIELDS</code> exists: a refusal there would have reported a
+  review that answered all three claims as one that answered none.</p>
+
+  <p><strong>Not done here.</strong> The stored census and prototype records are
+  copied into the test as fixtures rather than re-derived from the run
+  directories, the claims-rank rule assumes the report's ranks start at 1 as the
+  claims prompt asks. A record whose reviewer ranked its claims from zero would be
+  refused naming claim 1; no such record exists in the store.</p>
+</section>

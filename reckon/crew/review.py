@@ -397,6 +397,12 @@ CLAIM_VERDICTS: tuple[str, ...] = ("reproduced", "differs", "not-runnable")
 # table states that as ``not-runnable`` on the summary as well.
 CLAIM_SUMMARY_VERDICTS: tuple[str, ...] = ("agrees", "differs", "not-runnable")
 CLAIMS_REQUIRED = 3
+# The fields a stored claims record may state its per-claim verdicts under. The
+# parser writes ``claims``; a reviewer writing its record by hand states the same
+# verdicts under ``claim_verdicts``. Both are read, so a complete record is never
+# refused for stating its answers in the other spelling — such a refusal would
+# report a review that answered every claim as one that answered none.
+CLAIM_VERDICT_FIELDS: tuple[str, ...] = ("claims", "claim_verdicts")
 
 # A figure review judges the rendered artifact as well as its source paths. Its
 # findings are qualitative, so it records rubric verdicts rather than the
@@ -409,6 +415,25 @@ FIGURE_REVIEW_ITEMS: tuple[str, ...] = (
     "contrast",
     "table_form",
     "label_collision",
+)
+
+# ── The rubrics that measure verdicts rather than the six dimensions ────────
+# Every rubric above records one verdict per item it asks about: the plan
+# rubric and the plan-design rubric state whether a finding would change the
+# plan, the health rubric one verdict per read target, the claims rubric one
+# verdict per re-run claim, and the figure rubric one verdict per rendering
+# check. None of them scores the landed-node dimensions, because none of them
+# reads a landed diff. The delivery contract asks a reviewed record for its six
+# text scores; the rubric the record names decides whether that is a
+# measurement it owes, so a rubric listed here is exempt and one added later is
+# exempted by being listed here rather than by a second rule beside the first.
+ITEM_VERDICT_RUBRICS: frozenset[str] = frozenset(
+    {
+        CLAIMS_RUBRIC,
+        FIGURE_REVIEW_RUBRIC,
+        HEALTH_REVIEW_RUBRIC,
+        *PLAN_REVIEW_RUBRICS,
+    }
 )
 
 # ── The revision pair a review read ─────────────────────────────────────────
@@ -957,6 +982,60 @@ def store_review_refusals(record: Mapping[str, Any]) -> list[str]:
     return refusals
 
 
+def claims_verdict_refusals(record: Mapping[str, Any]) -> list[str]:
+    """The refusals a claims record earns for a claim it left unanswered.
+
+    A claims review re-runs the claims the report ranks highest and records one
+    verdict for each, so the claims the record was asked to check are the ranks
+    ``1`` to :data:`CLAIMS_REQUIRED` and the summary line beneath them. A record
+    carrying two of three verdicts has not finished the review it was composed
+    for, and a reader comparing it with a complete one sees the same rubric and
+    the same status — so the omission is named by the rank it is owed at, which is
+    the claim the reviewer must re-run rather than a count that fell short.
+
+    A claim answers a rank only when it carries that rank and one of
+    :data:`CLAIM_VERDICTS`; a verdict outside the vocabulary is no answer, the same
+    rule the parser applies. The verdicts are read from either spelling a record
+    may state them under (:data:`CLAIM_VERDICT_FIELDS`), so a reviewer writing by
+    hand is judged on the answers it gave rather than on the key it chose. The
+    summary is refused on its own vocabulary, and a record whose ``claim_summary``
+    names no recognised verdict leaves the report's own summary unchecked. An
+    answer given for a claims rank nobody asked about does not stand in for a
+    missing one.
+    """
+    answered = {
+        str(claim.get("rank") or "").strip()
+        for field in CLAIM_VERDICT_FIELDS
+        for claim in (record.get(field) if isinstance(record.get(field), list) else ())
+        if isinstance(claim, Mapping)
+        and str(claim.get("verdict") or "").strip().lower() in CLAIM_VERDICTS
+    }
+    refusals = [
+        (
+            f"review record carries no verdict for claim {rank}: a claims review "
+            f"records a `CLAIM {rank}: <verdict>: <what the re-run showed>` line for "
+            f"each claim it re-ran, ranked from 1, so a record owes verdicts for "
+            f"claims 1..{CLAIMS_REQUIRED} — re-run that claim and store the record "
+            "again"
+        )
+        for rank in (str(number) for number in range(1, CLAIMS_REQUIRED + 1))
+        if rank not in answered
+    ]
+    summary = record.get("claim_summary")
+    if not (
+        isinstance(summary, Mapping)
+        and str(summary.get("verdict") or "").strip().lower() in CLAIM_SUMMARY_VERDICTS
+    ):
+        refusals.append(
+            "review record carries no verdict for the report's summary: a claims "
+            "review records one `CLAIM_SUMMARY: <agrees|differs|not-runnable>: "
+            "<the report's summary line and how it compares to its table>` line, "
+            "so the report's head-line figures go unchecked — compare them with "
+            "the table beneath and store the record again"
+        )
+    return refusals
+
+
 def review_record_refusals(record: Mapping[str, Any]) -> list[str]:
     """Check the current review delivery contract and the store's refusals."""
     required = (
@@ -969,11 +1048,12 @@ def review_record_refusals(record: Mapping[str, Any]) -> list[str]:
     refusals = [
         f"missing {key}" for key in required if not str(record.get(key) or "").strip()
     ]
-    # A figure-rubric record is not scored on the six text dimensions, so it
-    # needs neither a ``scores`` mapping nor the dimensions inside one. Its
-    # reviewer records a verdict per rubric item instead, so the absence of the
-    # text scores is the rubric, not an omission.
-    if _review_record_rubric(record) != FIGURE_REVIEW_RUBRIC:
+    # A record under a verdict-per-item rubric is not scored on the six text
+    # dimensions, so it needs neither a ``scores`` mapping nor the dimensions
+    # inside one. Its reviewer records a verdict per rubric item instead, so the
+    # absence of the text scores is the rubric, not an omission.
+    rubric = _review_record_rubric(record)
+    if rubric not in ITEM_VERDICT_RUBRICS:
         scores = record.get("scores")
         if not isinstance(scores, Mapping):
             refusals.append("missing scores")
@@ -983,6 +1063,8 @@ def review_record_refusals(record: Mapping[str, Any]) -> list[str]:
                 for key in REVIEW_DIMENSIONS
                 if key not in scores
             )
+    elif rubric == CLAIMS_RUBRIC:
+        refusals.extend(claims_verdict_refusals(record))
     count = record.get("added_failure_count")
     if not isinstance(count, int) or isinstance(count, bool) or count < 0:
         refusals.append("missing or invalid added_failure_count")
