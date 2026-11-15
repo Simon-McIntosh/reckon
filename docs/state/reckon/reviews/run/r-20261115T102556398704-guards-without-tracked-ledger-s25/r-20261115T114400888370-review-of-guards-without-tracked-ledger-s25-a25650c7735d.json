@@ -1,0 +1,63 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own arm logs: after-arm.log at a25650c773 records 63 passed EXIT=0 with no FAILED line and base-arm.log at 2bf8e6947d records 58 passed EXIT=0 with no FAILED line, so the after-minus-base set difference is empty (0). base-node-test.log records 4 failed / 1 passed EXIT=1, but those are the reviewed tree's own new tests failing at base, the intended demonstration rather than a regression.",
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/cli_entry.py:349-366 (_configure_crew_guards installs both hook scripts)",
+    "reckon/project_maintenance_commands.py:501 (sync decides whether to install the guards)",
+    "reckon/crew/dispatching/comparisons.py:48-57 (shadow_source project fallback)",
+    "reckon/crew_dispatch_commands.py:2622 (crew shadow calls shadow_source)",
+    "reckon/hooks/install.py:186 (writes the hook command that runs native_agent_guard.main / worker_message_guard.main from a harness PreToolUse event)"
+  ],
+  "completed_at": "2026-11-15T12:04:12.446Z",
+  "dispatched_at": "2026-11-15T11:45:59Z",
+  "findings": [
+    {
+      "file": "reckon/cli_entry.py",
+      "line": "377",
+      "severity": "non-blocking",
+      "text": "non-blocking: index.json joins the marker set at every recognition site, but reckon/project_maintenance_commands.py:681 writes docs/state/<project>/index.json for any project reckon build renders as a static site, crew or not, so a docs-only repository published that way and never crew-run would now have both pre-tool-use guards installed by reckon/project_maintenance_commands.py:501 and native spawns and peer sends refused there; the worker checked that hazard for project.json and excluded it, but not for index.json, and tests/test_sync_hook_wiring.py:172 passes only because its fixture supplies neither index.json nor a synced typed state."
+    },
+    {
+      "file": "reckon/hooks/native_agent_guard.py",
+      "line": "110",
+      "severity": "non-blocking",
+      "text": "non-blocking: repository_root's docstring still says it walks up to the nearest directory carrying \"crew or flight state\", the two-file test the change replaced, so a later reader keying on that sentence gets the marker set wrong."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "read the single commit a25650c773 against base 2bf8e6947d; six files, 290 insertions and 29 deletions, the guard hunks replace the two-file presence test with a three-element marker tuple in both standalone hook scripts, cli_entry gains a named constant for the same set, comparisons.py inlines it, and the new test is 157 lines.",
+    "done_when": "the done_when requires a project with neither tracked ledger file still refused by both guards and still recognised by the CLI, asserted by removing both files, and the test that stages it, tests/test_guards_hold_without_a_tracked_ledger.py:74-99, reddens at base with 4 failed and 1 passed (base-node-test.log) and passes at head, so the gate measures the stated condition.",
+    "goal": "the node goal is to recognise a crew-managed repository without a tracked crew.json and its flight file: reckon/hooks/native_agent_guard.py:84-103, reckon/hooks/worker_message_guard.py:86-105, reckon/cli_entry.py:380-388 and reckon/crew/dispatching/comparisons.py:49 now all key on the project's own state-directory configuration, so the goal is met on every path the plan's done-when names.",
+    "manifest": "read at the run directory; status complete, head arm 63 passed EXIT=0, base arm 58 passed EXIT=0, the node test 4 failed at base, the negative control 2 failed / 3 passed EXIT=1, and every log it names exists on disk and carries the revision and command it quotes.",
+    "write_paths": "the fence declares the two guards, reckon/cli_entry.py, reckon/crew/dispatching/comparisons.py, the new test, the evidence fragment and an unused figures directory; the diff touches six files."
+  },
+  "justifications": {
+    "durability": "base-node-test.log shows tests/test_guards_hold_without_a_tracked_ledger.py:83,98,128,154 reddening with the ledger-keyed check reinstated, and negative-control.log shows the two refusal cases red at EXIT=1 when only the crew.json test is restored, so each added assertion names the marker reversion that reddens it.",
+    "evidence": "after-arm.log records 63 passed EXIT=0 at a25650c773 and base-node-test.log records 4 failed / 1 passed EXIT=1 at 2bf8e6947d, both on disk, but the after arm omits tests/test_sync_hook_wiring.py, the suite that guards the non-crew install decision this same function makes.",
+    "fit": "the marker constants and the test are named by what they measure, but reckon/hooks/native_agent_guard.py:110 and reckon/hooks/worker_message_guard.py:87 still describe recognition as \"crew or flight state\", the two-file wording the change replaced, and the same three-file tuple is spelled out in four places under two different constant names.",
+    "goal_fidelity": "reckon/hooks/native_agent_guard.py:99-104 and reckon/hooks/worker_message_guard.py:101-105 recognise a project by index.json, flight.yaml or crew.json and reckon/cli_entry.py:388 mirrors it, so no tracked ledger is needed and the plan's docs/plans/history-persists-as-detail-washes-out.html:386 done-when is satisfied.",
+    "reuse": "no helper owns local crew-project recognition \u2014 a search of reckon/hooks/, reckon/cli_entry.py, reckon/crew/routing.py:3311 (repository_projects resolves mounted projects by repository identity, a different capability) and reckon/project_state.py found none \u2014 so the change re-keys four pre-existing copies in step rather than consolidating them, and each copy does carry its own case in tests/test_guards_hold_without_a_tracked_ledger.py.",
+    "scope_discipline": "all six paths in the diff (both hooks, reckon/cli_entry.py, reckon/crew/dispatching/comparisons.py, tests/test_guards_hold_without_a_tracked_ledger.py, the fragment under docs/evidence/fragments/) are inside the fence."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to recognise a crew-managed repository without a tracked crew.json and its flight file: reckon/hooks/native_agent_guard.py:84-103, reckon/hooks/worker_message_guard.py:86-105, reckon/cli_entry.py:380-388 and reckon/crew/dispatching/comparisons.py:49 now all key on the project's own state-directory configuration, so the goal is met on every path the plan's done-when names.\nVERDICT done_when: the done_when requires a project with neither tracked ledger file still refused by both guards and still recognised by the CLI, asserted by removing both files, and the test that stages it, tests/test_guards_hold_without_a_tracked_ledger.py:74-99, reddens at base with 4 failed and 1 passed (base-node-test.log) and passes at head, so the gate measures the stated condition.\nVERDICT write_paths: the fence declares the two guards, reckon/cli_entry.py, reckon/crew/dispatching/comparisons.py, the new test, the evidence fragment and an unused figures directory; the diff touches six files.\nVERDICT manifest: read at the run directory; status complete, head arm 63 passed EXIT=0, base arm 58 passed EXIT=0, the node test 4 failed at base, the negative control 2 failed / 3 passed EXIT=1, and every log it names exists on disk and carries the revision and command it quotes.\nVERDICT diff: read the single commit a25650c773 against base 2bf8e6947d; six files, 290 insertions and 29 deletions, the guard hunks replace the two-file presence test with a three-element marker tuple in both standalone hook scripts, cli_entry gains a named constant for the same set, comparisons.py inlines it, and the new test is 157 lines.\nCALL_SITES: reckon/cli_entry.py:349-366 (_configure_crew_guards installs both hook scripts), reckon/project_maintenance_commands.py:501 (sync decides whether to install the guards), reckon/crew/dispatching/comparisons.py:48-57 (shadow_source project fallback), reckon/crew_dispatch_commands.py:2622 (crew shadow calls shadow_source), reckon/hooks/install.py:186 (writes the hook command that runs native_agent_guard.main / worker_message_guard.main from a harness PreToolUse event)\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/hooks/native_agent_guard.py:99-104 and reckon/hooks/worker_message_guard.py:101-105 recognise a project by index.json, flight.yaml or crew.json and reckon/cli_entry.py:388 mirrors it, so no tracked ledger is needed and the plan's docs/plans/history-persists-as-detail-washes-out.html:386 done-when is satisfied.\nSCORE evidence: 17\nJUSTIFICATION evidence: after-arm.log records 63 passed EXIT=0 at a25650c773 and base-node-test.log records 4 failed / 1 passed EXIT=1 at 2bf8e6947d, both on disk, but the after arm omits tests/test_sync_hook_wiring.py, the suite that guards the non-crew install decision this same function makes.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: all six paths in the diff (both hooks, reckon/cli_entry.py, reckon/crew/dispatching/comparisons.py, tests/test_guards_hold_without_a_tracked_ledger.py, the fragment under docs/evidence/fragments/) are inside the fence.\nSCORE durability: 18\nJUSTIFICATION durability: base-node-test.log shows tests/test_guards_hold_without_a_tracked_ledger.py:83,98,128,154 reddening with the ledger-keyed check reinstated, and negative-control.log shows the two refusal cases red at EXIT=1 when only the crew.json test is restored, so each added assertion names the marker reversion that reddens it.\nSCORE fit: 15\nJUSTIFICATION fit: the marker constants and the test are named by what they measure, but reckon/hooks/native_agent_guard.py:110 and reckon/hooks/worker_message_guard.py:87 still describe recognition as \"crew or flight state\", the two-file wording the change replaced, and the same three-file tuple is spelled out in four places under two different constant names.\nSCORE reuse: 15\nJUSTIFICATION reuse: no helper owns local crew-project recognition \u2014 a search of reckon/hooks/, reckon/cli_entry.py, reckon/crew/routing.py:3311 (repository_projects resolves mounted projects by repository identity, a different capability) and reckon/project_state.py found none \u2014 so the change re-keys four pre-existing copies in step rather than consolidating them, and each copy does carry its own case in tests/test_guards_hold_without_a_tracked_ledger.py.\nFINDING reckon/cli_entry.py:377 non-blocking: index.json joins the marker set at every recognition site, but reckon/project_maintenance_commands.py:681 writes docs/state/<project>/index.json for any project reckon build renders as a static site, crew or not, so a docs-only repository published that way and never crew-run would now have both pre-tool-use guards installed by reckon/project_maintenance_commands.py:501 and native spawns and peer sends refused there; the worker checked that hazard for project.json and excluded it, but not for index.json, and tests/test_sync_hook_wiring.py:172 passes only because its fixture supplies neither index.json nor a synced typed state.\nFINDING reckon/hooks/native_agent_guard.py:110 non-blocking: repository_root's docstring still says it walks up to the nearest directory carrying \"crew or flight state\", the two-file test the change replaced, so a later reader keying on that sentence gets the marker set wrong.\n",
+  "review_node": "review-of-guards-without-tracked-ledger-s25-a25650c7735d",
+  "review_run_id": "r-20261115T114400888370-review-of-guards-without-tracked-ledger-s25-a25650c7735d",
+  "reviewed_base_sha": "2bf8e6947d761394f75022925c4aa498a7db2b99",
+  "reviewed_head_sha": "a25650c7735db7aeb7fe3cf398f80feb0eda05a1",
+  "reviewed_run_id": "r-20261115T102556398704-guards-without-tracked-ledger-s25",
+  "scores": {
+    "durability": 18,
+    "evidence": 17,
+    "fit": 15,
+    "goal_fidelity": 20,
+    "reuse": 15,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-15T12:05:44.996183+00:00",
+  "total": 105
+}
