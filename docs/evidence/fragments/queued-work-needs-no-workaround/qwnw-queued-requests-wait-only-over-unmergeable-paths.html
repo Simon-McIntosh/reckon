@@ -47,11 +47,30 @@
   although the two share only <code>reckon</code> and <code>tests</code>. The run is recorded at
   <code>docs/evidence/fragments/queued-work-needs-no-workaround/s23.html</code>.</p>
 
+<h3 id="qwnw-queued-requests-wait-only-over-unmergeable-paths-failures">The five head-gate failures</h3>
+  <p id="qwnw-queued-requests-wait-only-over-unmergeable-paths-failures-body">All five reproduce at the base revision in the same all_debug job, so none is caused by this
+  change; each encodes an endpoint the code no longer has, and each was updated:</p>
+  <ul>
+    <li id="qwnw-queued-requests-wait-only-over-unmergeable-paths-f1">a working or starting claim over
+      a live path now refuses a second writer only over a path a merge cannot reconcile, so the case
+      names a plan document and still reads exit 7 with <code>scope-conflict</code>;</li>
+    <li id="qwnw-queued-requests-wait-only-over-unmergeable-paths-f2">a dispatch at the session cap
+      queues rather than refusing with <code>queue-full</code>, so the case reads the queued request
+      and its phase;</li>
+    <li id="qwnw-queued-requests-wait-only-over-unmergeable-paths-f3">the two queued-claim dispatch
+      cases name the exclusive class, and the payload helper reads the JSON document a dispatch prints
+      after its progress lines;</li>
+    <li id="qwnw-queued-requests-wait-only-over-unmergeable-paths-f4">the claim-hold case gives the
+      stopped holder a claim on generated state, which is the class the claim still fences.</li>
+  </ul>
+
   <h3 id="qwnw-queued-requests-wait-only-over-unmergeable-paths-arms">Suite arms</h3>
-  <p id="qwnw-queued-requests-wait-only-over-unmergeable-paths-arms-body">Base 281c0359 over the two touched test files: 6 failed, 12 passed (the five dispatch-environment
-  failures and one claim-binding case, all red before this change). Head b4bcb3db over the same two
-  files plus the new one: 5 failed, 16 passed. The head's failures are a subset of the base's, so the
-  change adds none, and one base failure — the promoted-earlier case — now passes.</p>
+  <p id="qwnw-queued-requests-wait-only-over-unmergeable-paths-arms-body">Both arms ran as a job on <code>all_debug</code> with <code>SLURM_JOB_ID</code> unset. Base 281c0359 over the
+  two touched test files: <code>6 failed, 12 passed</code>, <code>EXIT=1</code>. Head 072aa36b over
+  those two files plus the new one: <code>21 passed</code>, <code>EXIT=0</code>. The head adds no
+  failing id, and the six base failures — the five listed above and the promoted-earlier case — pass
+  at the head. The negative control, the node's own test over the base tree, reads
+  <code>1 failed, 2 passed</code>, <code>EXIT=1</code>.</p>
 </article>
 </body>
 </html>
