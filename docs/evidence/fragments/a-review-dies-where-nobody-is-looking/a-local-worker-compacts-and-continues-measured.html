@@ -132,10 +132,12 @@
           compaction reached within less than 24 632 tokens.</figcaption>
       </figure>
       <p>The figure is drawn by <code>plot_compaction_drops.py</code> from the run's own stream, not
-        by hand from the table, so it cannot drift from the data. Its labels are written as vector
-        paths rather than as text elements: the picture therefore carries its own axis titles, tick
-        values and annotations wherever it is rendered, including a rasteriser that has none of the
-        fonts the plotting library names.</p>
+        by hand from the table, so it cannot drift from the data. The x axis spans only the records
+        the compactions occupy, stream records 5 950 to 7 900, so the six boundaries fill the plot
+        rather than being squeezed into its right-hand quarter. Its labels are ordinary SVG text
+        carrying a generic <code>sans-serif</code> family, so any renderer draws the axis titles,
+        tick values and annotations without depending on a font the plotting library happens to
+        name.</p>
     </section>
 
     <section id="a-local-worker-compacts-and-continues-measured-scope">
@@ -185,9 +187,9 @@
           — re-derives every number in this fragment from the run directory and exits non-zero when
           one disagrees; run it as <code>python3 check_compaction_evidence.py &lt;run-dir&gt;</code></li>
         <li><code>docs/figures/a-review-dies-where-nobody-is-looking/a-local-worker-compacts-and-continues-measured/plot_compaction_drops.py</code>
-          — draws the figure below from the same stream, writing every label as a path so the
-          delivered SVG carries its text under a renderer without the fonts matplotlib names, and
-          refusing to save if a label is clipped or two labels overlap</li>
+          — draws the figure above from the same stream, over the compacting span only, writing
+          the labels as SVG text in a generic sans-serif family, and refusing to save if a label is
+          clipped or two labels overlap</li>
       </ul>
     </section>
   </main>

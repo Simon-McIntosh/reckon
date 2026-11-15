@@ -10,6 +10,7 @@ usage: plot_compaction_drops.py <run-dir>
 
 import json
 import os
+import re
 import sys
 
 import matplotlib
@@ -47,7 +48,8 @@ def draw(points):
         'axes.labelsize': 16,
         'xtick.labelsize': 14,
         'ytick.labelsize': 14,
-        'svg.fonttype': 'path',
+        'font.family': 'sans-serif',
+        'svg.fonttype': 'none',
         'axes.spines.top': False,
         'axes.spines.right': False,
         'axes.grid': False,
@@ -63,7 +65,7 @@ def draw(points):
                 zorder=4)
 
     ax.axhline(WINDOW / 1000.0, color=GREY, lw=1.2, ls=(0, (2, 5)), zorder=1)
-    ax.text(8100, WINDOW / 1000.0 + 4, 'declared usable window 230 144',
+    ax.text(7880, WINDOW / 1000.0 + 4, 'declared usable window 230 144',
             ha='right', va='bottom', color=MUTED, fontsize=14)
     ax.annotate('before', (points[0][0], points[0][1]),
                 textcoords='offset points', xytext=(0, 14),
@@ -72,10 +74,10 @@ def draw(points):
                 textcoords='offset points', xytext=(0, -22),
                 ha='center', color=FEATURE, fontsize=14)
 
-    ax.set_xlim(0, 8200)
+    ax.set_xlim(5950, 7900)
     ax.set_ylim(0, 250)
-    ax.set_xticks([0, 2000, 4000, 6000, 8000])
-    ax.set_xticklabels(['0', '2 000', '4 000', '6 000', '8 000'])
+    ax.set_xticks([6000, 6500, 7000, 7500])
+    ax.set_xticklabels(['6 000', '6 500', '7 000', '7 500'])
     ax.set_yticks([0, 50, 100, 150, 200])
     ax.set_xlabel('stream record index')
     ax.set_ylabel('context [k tokens]')
@@ -111,6 +113,9 @@ def main(argv):
                 print('OVERLAP %r %r' % (l1, l2))
                 return 2
     fig.savefig(SVG, format='svg')
+    svg = open(SVG).read()
+    svg = re.sub(r"font-family:[^;]*", 'font-family:sans-serif', svg)
+    open(SVG, 'w').write(svg)
     print('OK %d boundaries, %d text artists, %s' % (len(points), len(boxes), SVG))
     return 0
 
