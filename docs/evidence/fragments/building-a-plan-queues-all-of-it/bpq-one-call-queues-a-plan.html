@@ -1,0 +1,17 @@
+<section id="bpq-one-call-queues-a-plan-landing">
+  <h2>One dispatch queues the declared work</h2>
+  <p>The CLI delegates a plan without a section to <code>queue_plan</code>, which enumerates the canonical section declarations, checks the coordinator through <code>resolve_plan_coordinators</code>, and hands eligible entries to <code>queue_batch</code>. Section contracts and dependency waits remain owned by the batch queue. Existing live and committed runs are reported without replacing their stored requests.</p>
+  <table>
+    <thead><tr><th>Temporary-repository check</th><th>Observed result</th></tr></thead>
+    <tbody>
+      <tr><td>Five implementable sections; two depend on a third</td><td>3 queued rows; 2 awaiting-upstream rows</td></tr>
+      <tr><td>Identical second call</td><td>0 queued; all 5 existing requests skipped with their run IDs</td></tr>
+      <tr><td>Done and deferred sections</td><td>1 skipped for each declaration</td></tr>
+      <tr><td>Missing done-when or malformed write path</td><td>1 row refused; the other 4 requests queued</td></tr>
+      <tr><td>Another session owns an existing section or the whole plan</td><td>Skip rows name the session; a foreign whole-plan call queues 0 requests</td></tr>
+      <tr><td>Delivered, complete, promoted or landed run without a pointer</td><td>Existing committed run retained; no duplicate request</td></tr>
+    </tbody>
+  </table>
+  <p>The focused gate ran on <code>all_debug</code> at <code>882a77645635685979cca53db20a95ed3c520ac9</code>: <strong>15 passed in 3.33s</strong>. Its <a href="/reckon/evidence/fragments/building-a-plan-queues-all-of-it/s2.html">gate receipt</a> names the revision, scratch tree, imported module and relative command, and ends with <code>EXIT=0</code>. Inventory and shared-lock checks passed 55 tests at both the base and implementation head, with no added failures.</p>
+  <p>The negative control ran the five-section regression against base <code>c8848a4efe8725c8ec4f3cc2789efc95d2980bed</code> and failed as intended. The actual first refusal for the call omitting both section and node was <code>--node is required unless --batch names the work</code> (CLI exit 2), rather than a later missing-section refusal. Its durable run-directory receipt ends with <code>EXIT=1</code>. No shared plan state was changed; independent review, integration and merged-head verification remain coordinator work.</p>
+</section>

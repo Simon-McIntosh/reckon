@@ -1106,18 +1106,29 @@ def _queue_dispatch_batch(
     overrides,
     launch_kind: str,
     pretty: bool,
+    project: str = "",
+    plan: str = "",
 ) -> None:
-    """Queue a batch file's entries as one call, naming a row for each."""
+    """Queue a batch file or a plan's declared sections, naming each row."""
     from reckon import ledger
-    from reckon.crew.dispatch_batch import queue_batch, read_batch_entries
+    from reckon.crew.dispatch_batch import queue_batch, queue_plan, read_batch_entries
     from reckon.crew.node import CrewError
 
     try:
-        entries = read_batch_entries(batch_path)
+        entries = read_batch_entries(batch_path) if batch_path else []
     except (CrewError, OSError) as exc:
         raise click.ClickException(str(exc)) from exc
     _crew_module, flight_module = _crew_modules()
-    root = Path(repo).expanduser().resolve() if repo else Path.cwd().resolve()
+    from reckon.crew.dispatch_sections import project_mount_repository
+
+    root = (
+        Path(repo).expanduser().resolve()
+        if repo
+        else project_mount_repository(project)
+        if project
+        else Path.cwd().resolve()
+    )
+    root = root or Path.cwd().resolve()
     configs: dict[str, dict] = {}
 
     def config_for(project_name: str) -> dict:
@@ -1135,8 +1146,10 @@ def _queue_dispatch_batch(
     # the region the index is rebuilt and decoded once per entry, which is the
     # dominant cost of a batch on a large history.
     with ledger.index_reuse():
-        result = queue_batch(
-            entries,
+        queue = queue_plan if plan else queue_batch
+        arguments = (project, plan) if plan else (entries,)
+        result = queue(
+            *arguments,
             session=str(session or ""),
             config_for=config_for,
             repo_root=root,
@@ -1600,6 +1613,23 @@ def crew_dispatch(
         raise click.UsageError(
             "--project is required unless --batch names the work to queue"
         )
+    if plan_slug and not section and not brief_path:
+        if dry_run:
+            raise click.UsageError(
+                "--dry-run cannot queue a whole plan; name --section to preview one node"
+            )
+        _queue_dispatch_batch(
+            None,
+            project=project,
+            plan=plan_slug,
+            session=session,
+            repo=repo,
+            checkout_path=checkout_path,
+            overrides=overrides,
+            launch_kind="cli",
+            pretty=pretty,
+        )
+        return
     if not node_id:
         raise click.UsageError("--node is required unless --batch names the work")
     from reckon.crew.dispatch import (
