@@ -35,6 +35,7 @@ from reckon import _backends
 from reckon.crew import dispatch_launch as launch
 from reckon.crew import process_liveness, runs
 from reckon.crew.dispatch_watch import session_host_runtime_root
+from reckon.crew.host_lease import LEASE_STALE_SECONDS
 from reckon.crew.node import CrewError
 
 RUN_ID = "r-station-pid"
@@ -112,7 +113,7 @@ def _start_ticks(pid: int) -> str:
     return fields[19]
 
 
-def _write_station_lease(pid: int, *, pid_namespace: str | None = None) -> None:
+def _write_station_lease(pid: int, *, pid_namespace: str | None = None) -> Path:
     """Write this node's station lease naming ``pid``, as the station does.
 
     The path is resolved the way the station resolves it — the node-local
@@ -140,6 +141,7 @@ def _write_station_lease(pid: int, *, pid_namespace: str | None = None) -> None:
         ),
         encoding="utf-8",
     )
+    return path
 
 
 def _reservation(
@@ -345,6 +347,29 @@ def test_a_lease_from_another_process_table_does_not_name_the_station(
     _write_station_lease(os.getpid())
     assert runs.read_pointer(RUN_ID).get("pid") is None, (
         "a pointer naming this host's station kept the station's pid"
+    )
+
+
+# ── the reader: a station whose renewal stalled is still the station ─────────
+
+
+def test_a_station_whose_renewal_stalled_still_names_the_station(node: Path) -> None:
+    """A busy holder's renewal waits on its interpreter, and the lease ages.
+
+    The lease mechanism ages a lease out so a successor may claim it, which says
+    nothing about whether the recorded process has gone: host_lease says as much
+    where it keeps a lapsed-but-running holder's lease. A lease older than the
+    staleness window must therefore still name this process's station, or the
+    pointer naming it is read as a run's own process and a notice to stop it
+    ends the station.
+    """
+    path = _write_station_lease(os.getpid())
+    aged = time.time() - (LEASE_STALE_SECONDS + 60.0)
+    os.utime(path, (aged, aged))
+
+    _write_pointer(RUN_ID, pid=os.getpid())
+    assert runs.read_pointer(RUN_ID).get("pid") is None, (
+        "a station whose renewal lapsed was read as naming no station"
     )
 
 

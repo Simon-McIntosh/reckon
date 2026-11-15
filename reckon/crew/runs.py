@@ -46,6 +46,7 @@ from reckon.node_exclusive_lock import LockHeld, exclusive_lock
 from reckon.crew.host_lease import (
     LEASE_RENEW_SECONDS as LEASE_RENEW_SECONDS,
     HostLease as HostLease,
+    LeaseHolder as LeaseHolder,
     local_host as local_host,
     process_runs_here as process_runs_here,
 )
@@ -1103,6 +1104,37 @@ def _station_lease() -> HostLease | None:
     return station_lease_of_this_root(Path(root))
 
 
+def _no_renewal_age() -> float:
+    """A clock that reads before every recorded lease, so none is aged out.
+
+    ``HostLease.holder`` applies the claim rule, and the rule ages a lease out
+    after ``LEASE_STALE_SECONDS`` so a successor may take it. That is the right
+    question for claiming one and the wrong one for naming a process that is
+    still running, so the record is read through this clock instead.
+    """
+    return 0.0
+
+
+def _station_holder(lease: HostLease) -> LeaseHolder | None:
+    """The station's recorded holder, read whatever its renewal age.
+
+    The holder a lease names is a fact about the file; whether that process is
+    still the one it wrote is a separate question, settled by
+    ``process_runs_here`` beside the caller. Reading the record through a clock
+    that ages nothing keeps the two apart, so a station whose renewal stalled
+    while its interpreter was busy is still named.
+    """
+    reader = HostLease(
+        lease.path.parent.parent,
+        lease.path.stem,
+        local_host(),
+        os.getpid(),
+        "",
+        clock=_no_renewal_age,
+    )
+    return reader.holder()
+
+
 def station_pid_on_this_host() -> int | None:
     """The pid this host's station recorded for itself, or None.
 
@@ -1112,10 +1144,13 @@ def station_pid_on_this_host() -> int | None:
     own: whether this host holds the lease at all — a lease another node wrote
     says nothing about this node's process table — and whether the pid it names
     is still the process that wrote it, which ``process_runs_here`` settles from
-    the start tick and the process table recorded beside the pid. A lease whose
-    renewal has lapsed is not read as a station, because the lease mechanism
-    itself stops counting a lapsed lease as held; a recycled number is not read
-    as one either, because its start tick has moved.
+    the start tick and the process table recorded beside the pid. Renewal age is
+    deliberately not one of them: the lease mechanism ages a lease out after
+    ``LEASE_STALE_SECONDS`` so a successor may claim it, but a busy holder's
+    renewing thread waits on its interpreter — the state the mechanism names
+    beside its own running-holder test — so a station whose renewal stalled is
+    still the station. Reading it as no station would hand its pid to ``crew
+    stop``, which would end every session's fleet.
     """
     lease = _station_lease()
     if lease is None:
@@ -1131,7 +1166,7 @@ def station_pid_on_this_host() -> int | None:
         kept = _STATION_PID.get(key)
     if kept is not None and kept[0] == identity:
         return kept[1]
-    holder = lease.holder()
+    holder = _station_holder(lease)
     resolved: int | None = None
     if (
         holder is not None
