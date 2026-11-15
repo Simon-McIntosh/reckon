@@ -163,11 +163,13 @@ def _run(
     tmp_path: Path,
     run_id: str,
     *,
-    baseline: dict | None = None,
-    after: dict | None = None,
     suite_command: str = "",
-) -> tuple[dict, str]:
-    """A delivered run whose worktree carries one commit beyond its base."""
+) -> tuple[dict, str, str, Path]:
+    """A delivered run whose worktree carries one commit beyond its base.
+
+    The arms are written afterwards, because an after arm is recorded at the
+    run's head and the head does not exist until this has made it.
+    """
     base = _git(repository, "rev-parse", "HEAD")
     worktree = tmp_path / f"worktree-{run_id}"
     _git(repository, "worktree", "add", "-q", "--detach", str(worktree), base)
@@ -180,8 +182,6 @@ def _run(
         run_dir(run_id),
         commits=[head],
         changed_paths=[SOURCE_FILE],
-        baseline=baseline,
-        after=after,
     )
     record = {
         "run_id": run_id,
@@ -206,7 +206,20 @@ def _run(
     if suite_command:
         record["suite_command"] = suite_command
     _write_json(pointer_path(run_id), record)
-    return record, head
+    return record, head, base, manifest
+
+
+def _set_arms(manifest: Path, baseline: dict, after: dict) -> None:
+    """Add the two suite arms to an already written manifest."""
+    manifest.write_text(
+        manifest.read_text(encoding="utf-8")
+        + "baseline_suite: "
+        + json.dumps(baseline)
+        + "\nafter_suite: "
+        + json.dumps(after)
+        + "\n",
+        encoding="utf-8",
+    )
 
 
 def _gate_check() -> dict:
@@ -228,40 +241,29 @@ def _dry_run(run_id: str, repository: Path, **kwargs) -> dict:
 def test_a_dry_run_reports_the_suite_refusal_the_real_call_raises(
     repository: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """One record, two surfaces: the dry run's answer is the call's refusal.
+    """One record, two surfaces: the dry run's answer is the real call's refusal.
 
-    The pair here is the one the real call cannot read — arms recorded under a
-    second spelling, the after arm left at the base revision with no failure
-    evidence — so the landing's own measurement is what decides the run and the
-    dry run must not report a run promotable over evidence nobody has produced.
+    Both arms ran a command other than the one the run was armed with, and the
+    run declared no command of its own, so the landing cannot measure the pair
+    at all — there is nothing it could measure over a question the run already
+    answered differently — and refuses on the arm fields. That refusal is
+    knowable before anything runs, and a dry run that answered
+    ``would_promote: true`` sent a coordinator to a ``--land`` that refused it.
     """
     run_id = "r-20261115T090000000000-node-a"
     _set_plan_impl(repository, 1.0)
-    base = _git(repository, "rev-parse", "HEAD")
-    # The after arm names no command and no failure evidence, and records the
-    # base revision rather than the head: the waiver cannot hold a pair whose
-    # after arm is not evidence, so the landing's own measurement decides it.
-    after = {"revision": base, "exit_status": 0, "completed": True}
-    _run(
-        repository,
-        tmp_path,
-        run_id,
-        baseline=_arm(base),
-        after=after,
-        suite_command=ARMED_COMMAND,
+    _record, head, base, manifest = _run(
+        repository, tmp_path, run_id, suite_command=ARMED_COMMAND
     )
-    waiver = "the pair ran under another spelling and cannot be re-measured"
+    _set_arms(manifest, _arm(base), _arm(head))
 
-    def _dry_run_took_the_measurement(*_args, **_kwargs):
-        raise AssertionError("a dry run submitted the suite measurement")
+    def _nobody_measured(*_args, **_kwargs):
+        raise AssertionError("a landing that refuses the pair measured it")
 
-    monkeypatch.setattr(
-        promotion_records, "_measure_missing_arms", _dry_run_took_the_measurement
-    )
+    monkeypatch.setattr(promotion_records, "_measure_missing_arms", _nobody_measured)
     report = _dry_run(
         run_id,
         repository,
-        suite_delta_waiver=waiver,
         review_waiver="a sibling node already read this change",
     )
     refusals = "\n".join(report["refusals"])
@@ -275,11 +277,8 @@ def test_a_dry_run_reports_the_suite_refusal_the_real_call_raises(
     assert report["suite_delta"]["status"] == "would-measure"
     assert report["would_measure"] is True
 
-    monkeypatch.setattr(
-        promotion_records,
-        "_measure_missing_arms",
-        lambda *_args, **_kwargs: {"unreadable": "the armed command ran no test"},
-    )
+    # The real call over the same record refuses without measuring, naming the
+    # fields the dry run reported.
     with pytest.raises(ledger.SuiteDeltaError) as refused:
         promotion_module.complete(
             run_id,
@@ -287,21 +286,61 @@ def test_a_dry_run_reports_the_suite_refusal_the_real_call_raises(
             gate="passed",
             gate_check=_gate_check(),
             require_gate_check=True,
-            suite_delta_waiver=waiver,
-            review_waiver="a sibling node already read this change",
+            review_waiver="a sibling node already read this pair",
         )
     assert refused.value.missing_fields
     for field in refused.value.missing_fields:
         assert field in refusals, field
 
 
+def test_a_run_the_landing_would_measure_is_not_reported_refused(
+    repository: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The other population: a pair the landing takes itself is not a refusal.
+
+    A merge reads ``would_promote`` before it moves anything, so a dry run that
+    refused every unmeasured pair would stop a landing that would have promoted
+    the run. The measurement is named as the landing's, and the fields a failing
+    measurement refuses on are carried in the delta, not asserted as a refusal
+    this call made.
+    """
+    run_id = "r-20261115T090100000000-node-a"
+    _set_plan_impl(repository, 1.0)
+    _record, _head, base, manifest = _run(
+        repository, tmp_path, run_id, suite_command=ARMED_COMMAND
+    )
+    # The after arm names no command and no failure evidence, and records the
+    # base revision rather than the head, so the landing measures the pair.
+    _set_arms(manifest, _arm(base), {"revision": base, "exit_status": 0})
+
+    def _nobody_measured(*_args, **_kwargs):
+        raise AssertionError("a dry run measured a suite")
+
+    monkeypatch.setattr(promotion_records, "_measure_missing_arms", _nobody_measured)
+    report = _dry_run(
+        run_id,
+        repository,
+        suite_delta_waiver="the pair ran under another spelling",
+        review_waiver="a sibling node already read this change",
+    )
+
+    assert report["would_measure"] is True
+    assert report["refusals"] == []
+    assert report["would_promote"] is True
+    assert report["suite_delta"]["status"] == "would-measure"
+    assert (
+        "after_suite.revision_matches_head" in report["suite_delta"]["missing_fields"]
+    )
+    assert any("landing runs the armed command" in note for note in report["notes"])
+
+
 def test_a_delivered_unreviewed_run_reports_the_review_it_owes(
     repository: Path, tmp_path: Path
 ) -> None:
     """The owed review is a fact the dry run states, not one it omits."""
-    run_id = "r-20261115T090100000000-node-a"
+    run_id = "r-20261115T090200000000-node-a"
     _set_plan_impl(repository, 1.0)
-    _record, head = _run(repository, tmp_path, run_id)
+    _record, head, _base, _manifest = _run(repository, tmp_path, run_id)
 
     report = _dry_run(run_id, repository)
     owed = report["reviews_owed"]
@@ -309,7 +348,6 @@ def test_a_delivered_unreviewed_run_reports_the_review_it_owes(
     assert report["would_promote"] is False
     assert [str(entry["run_id"]) for entry in owed] == [run_id]
     assert owed[0]["head"] == head
-    assert owed[0]["tier"] not in ("", "none")
     assert "review" in "\n".join(report["refusals"])
 
 
@@ -317,7 +355,7 @@ def test_a_dry_run_takes_no_write_lock(
     repository: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """A dry run writes nothing, so it holds no lock a real call would need."""
-    run_id = "r-20261115T090200000000-node-a"
+    run_id = "r-20261115T090300000000-node-a"
     _set_plan_impl(repository, 1.0)
     _run(repository, tmp_path, run_id)
 

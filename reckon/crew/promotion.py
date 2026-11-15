@@ -1143,7 +1143,7 @@ def complete(
                     record,
                     verdict=verdict,
                     gate_check=gate_check,
-                    refusals=_dry_run_suite_refusals(suite_delta),
+                    refusals=_dry_run_suite_refusals(run_id, record, suite_delta),
                     no_commit=no_commit,
                     no_impl_change=no_impl_change,
                     would_file_reviews=delivered_reviews,
@@ -1309,42 +1309,51 @@ def _dry_run_invocation(
 
 
 def _dry_run_suite_refusals(
+    run_id: str,
+    record: Mapping[str, Any],
     suite_delta: Mapping[str, Any] | None,
 ) -> tuple[str, ...]:
-    """The refusal a dry run reports for suite evidence it did not measure.
+    """The suite refusal a dry run reports because the real call would raise it.
 
-    The landing takes a missing or mismatched arm pair itself by running the
-    armed command over the base and head trees, so a run in that state is not
-    yet promotable: whether it promotes depends on a measurement nobody has
-    taken, and one the landing cannot read is refused on exactly the fields the
-    run's arms are missing. A dry run that reported such a run promotable
-    because the landing *might* measure the pair answered a question the
-    coordinator had not asked, and the refusal it then met cost the round trip
-    the dry run existed to save. The measurement is named as the landing's and
-    not this call's, so the report never reads as evidence that was produced.
+    The landing answers a missing or mismatched arm pair in two ways, and only
+    one of them is knowable without measuring. When the only thing wrong with
+    the pair is that an arm ran a command other than the one the run was armed
+    with, and the run declared no command of its own, the landing refuses
+    without measuring at all: there is nothing it could measure over a question
+    the run has already answered differently. That refusal is reported here —
+    the same fields, in the same words — so a coordinator fixing a run is told
+    what the landing says rather than being sent to a ``--land`` that refuses
+    evidence the dry run could have named.
 
-    Every other state the evaluation returns — a measured pair, a waived pair,
-    a run that changed nothing — needs no refusal and adds none.
+    Every other unmeasured pair is the landing's own measurement to take, which
+    this call does not take and cannot speak for. Those are reported as
+    one the landing would measure and refused only by the landing, because a run the landing
+    would promote must not read as refused: a merge reads ``would_promote``
+    before it moves anything.
+
+    The condition below is the landing's own branch, spoken with the landing's
+    own predicates rather than a second reading of the record that could drift
+    from it.
     """
     if not isinstance(suite_delta, Mapping):
         return ()
     if str(suite_delta.get("status") or "") != "would-measure":
         return ()
     missing = [str(name) for name in suite_delta.get("missing_fields") or ()]
+    if not _only_command_mismatch(missing):
+        return ()
+    if gate_declaration(record).get("command"):
+        return ()
     detail = (
         "armed promotion requires complete baseline and after suite evidence; "
         "missing " + ", ".join(missing)
     )
-    if "after_suite.revision_matches_head" in missing:
-        detail += (
-            ". The after arm is not recorded at the run's head: re-run the "
-            "armed command at that head and record the after arm at its revision"
-        )
     detail += (
-        ". The landing would run the armed command over the base and head trees "
-        "itself, and this dry run measured nothing and starts nothing; a pair "
-        "that cannot be re-measured is waived with --waive-suite-delta '<why>', "
-        "which never waives an added failure"
+        ". An arm that ran a different command states that command and the "
+        f"partition it ran on with `reckon crew declare-gate --run {run_id} "
+        "--command '<the command the arms ran>' --partition <the partition>`, "
+        "and re-promote; a pair that cannot be re-measured is waived with "
+        "--waive-suite-delta '<why>', which never waives an added failure"
     )
     return (detail,)
 
@@ -1427,6 +1436,18 @@ def _dry_run_report(
                 "listed in would_file_reviews would be filed into it"
             )
         ]
+    if report["would_measure"] and not messages:
+        # The promotion is not refused, but it is not yet evidenced either: the
+        # promotion is contingent on a measurement the landing takes and this
+        # call did not, and a reader who took would_promote as the whole answer
+        # would be surprised by the field list a failing measurement names.
+        report.setdefault("notes", []).append(
+            "the run recorded no complete baseline and after suite pair, so the "
+            "landing runs the armed command over the base and head trees "
+            "itself; this dry run measured nothing and starts nothing, and the "
+            "fields listed in suite_delta.missing_fields are the ones a "
+            "measurement that cannot read the pair refuses on"
+        )
     return report
 
 
@@ -3220,6 +3241,7 @@ from reckon.crew.promotion_records import (
     _manifest_reads_blocked,
     _manifest_relative_path,
     _normalized_command,
+    _only_command_mismatch,
     _project_for_repository,
     _read_json_object,
     _read_pointer_or_rebuild,
@@ -3229,6 +3251,7 @@ from reckon.crew.promotion_records import (
     _resume_worktree_retention,
     _retire_disposable_identity,
     _worktree_audit,
+    gate_declaration,
 )
 from reckon.crew.promotion_records import (
     _default_gate_evidence_from_manifest as _manifest_gate_evidence,
