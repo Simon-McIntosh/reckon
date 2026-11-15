@@ -1146,7 +1146,7 @@ def dispatch(
             )
         except RosterFull as roster:
             reason = (
-                "the placement reservation is full "
+                "the placement reservation's roster is full "
                 f"({roster.occupancy}/{roster.limit}); the request waits for room"
                 + dispatch_options.get("context_fit_shortfall", "")
             )
@@ -1340,7 +1340,7 @@ def dispatch(
         )
     except RosterFull as roster:
         reason = (
-            "the placement reservation is full "
+            "the placement reservation's roster is full "
             f"({roster.occupancy}/{roster.limit}); the request waits for room"
             + dispatch_options.get("context_fit_shortfall", "")
         )
