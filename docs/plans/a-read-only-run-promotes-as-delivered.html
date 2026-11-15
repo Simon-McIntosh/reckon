@@ -19,11 +19,11 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="reckon-tooling,crew">
   <meta name="plan-informs" content="a-landing-is-recorded-once">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;implementable&quot;}">
   <title>A Read-Only Run Promotes As Delivered | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="8">
+<meta name="plan-version" content="9">
 <meta name="plan-modified" content="2026-11-15">
 </head>
 <body>
@@ -43,7 +43,7 @@
     <p>Each section below first confirms its defect still reproduces at the base revision. A node whose defect no longer reproduces reports the evidence and changes nothing.</p>
 
     <h2 id="s2">§2 — A read-only run that commits nothing says so and promotes</h2>
-<section data-reckon="section" data-id="s2" data-effort-hours="1.25" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+<section data-reckon="section" data-id="s2" data-effort-hours="1.25" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="done" data-links=""></section>
     <p><strong>Deliverable.</strong> A run whose recorded role is investigate or review has no commit to name. Its manifest may state <code>commits: none</code>, with or without a reason in parentheses after it, and the run promotes with the no-commit form of <code>crew complete</code>, its run record carrying the base revision and no commit as it does for any commitless run. Four such runs were refused on 2026-11-14 and 15 with the manifest line <code>commits: none (read-only sandbox; nothing committed)</code>: two investigations and two plan reviews. The node names the condition that refused them and removes it. The prompt composed for those roles states this form of the line. A run of any role that states <code>none</code> while its worktree head is ahead of its base is still refused, naming the commits.</p>
     <p><strong>Done when</strong> a new test file shows, using the repository's shared test isolation: an investigate run carrying a brief and no plan, and a plan-review run, each with the manifest line above, pass the manifest check and promote with the no-commit form, and each run record names the base revision and no commit; the same with bare <code>none</code>; a run stating <code>none</code> with a commit beyond its base is refused, naming that commit; and the composed prompt for each role states the line. Negative control: the manifest names which case fails at the base revision and quotes its refusal. If every case passes at the base revision, the node reports the commit that changed the behaviour since 2026-11-14 and changes no product source. The test files that import the manifest check or the promotion evidence check add no failure against the base revision, and <code>ruff check</code> and <code>ruff format --check</code> add no finding on the staged paths.</p>
 
@@ -81,6 +81,9 @@
 </div>
 <div class="r-comment" data-section="s2" data-id="c-run-r-20261115T085736602818-rorp-s2" data-who="reckon-build" data-when="2026-11-15T12:06:56Z">
     <div class="r-comment-body"><p>The commitless-promotion guard now runs on both the stated-reason and unreasoned paths, so a read-only investigate or plan-review manifest promotes on a stated `commits: none` while a stated none over a commit past the base is still refused naming it, and the composed prompt states the declaration form for those roles. Correcting the earlier landing line: the four commitless promote shapes already passed at the base revision e0626c295a, so the live defect this node removed is the stated-reason early return in _require_gate_evidence, which skipped the worktree-at-its-base guard and let a run that had committed promote with its work named nowhere. Measure: node test file 8 passed at head against 3 failed, 5 passed at base; the refusal over a commit past the base is the case that fails at base.</p></div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-close-s2" data-who="reckon-build" data-when="2026-11-15T12:50:00Z">
+    <div class="r-comment-body"><p>§2 landed (run <code>r-20261115T085736602818-rorp-s2</code>, commits <code>e7e46bfc5f</code>, <code>d753104cff</code>, <code>c2318894ef</code>). The four refusals of 14 and 15 November were already repaired by commit <code>6657268850</code>, which is in this node's base. This node closed the remaining gap: the commitless guard now also runs when a reason is stated, so a stated <code>none</code> over a commit past the base is refused, naming it, and the composed prompt for those roles states the line. Eight cases pass at head against three failed and five passed at the base. <a href="/reckon/evidence/fragments/a-read-only-run-promotes-as-delivered/rorp-s2.html">fragment</a></p></div>
 </div>
 <div class="r-comment" data-section="s3" data-id="c-run-r-20261115T110336917642-review-of-rorp-s3-8d44c377ff4b" data-who="reckon-build" data-when="2026-11-15T11:34:22.244Z">
     <div class="r-comment-body"><p>Independent review of r-20261115T085738178021-rorp-s3 at head 8d44c377ff4b93f510ff9fa98d4a29a588a1ccee (base bb45282b57f827630da06fea40073de11631f69f): six dimensions scored (goal_fidelity 16, evidence 12, scope_discipline 18, durability 14, fit 18, reuse 5; total 83), four findings (one blocking, three non-blocking), added_failure_count 0 derived from the reviewed run's own baseline_suite and after_suite arms (55 passed EXIT=0 and 68 passed EXIT=0, both zero failure ids); the blocking finding is that a claims record written under the newly admitted claim_verdicts spelling passes crew check --review but is refused as incomplete by the promotion rule at reckon/crew/recovery_review_subject.py:1681.</p></div>
