@@ -1,5 +1,5 @@
 <section id="ledger-reads-the-store-s22-precedence">
-  <h2>Every ledger reader answers from the run store once a project holds no run documents</h2>
+  <h2>Every ledger reader answers from the run store, and the documents it holds cover it run id by run id</h2>
 
   <p><strong>What this is.</strong> The per-run directory
   <code>docs/state/&lt;project&gt;/runs/*.json</code> is the ledger's last
@@ -9,58 +9,63 @@
   answer an empty ledger — reporting a project with no history rather than one
   whose history moved. This landing makes the store answer every
   <code>reckon/ledger.py</code> read path and the operational projection in
-  <code>reckon/crew/open_run_index.py</code>, and the rule that decides which
-  source answers is one function: <code>run_directory_holds_records</code>.</p>
+  <code>reckon/crew/open_run_index.py</code>.</p>
 
-  <p><strong>The precedence rule.</strong> The <em>documents answer while the
-  project holds any</em> and the store is not read at all; the <em>store answers
-  once it holds none</em>. Store rows are joined by <code>run_id</code> against
-  what the aggregate and the documents already named, so a surviving document's
-  row stays as the fuller record: a stored row carries the durable half only —
-  <code>_split_durable</code> drops the promotion record — and is never allowed
-  to shadow a file.</p>
+  <p><strong>The precedence rule.</strong> The documents <em>cover</em> the
+  store rather than replacing it, so the merge is by run id and never by
+  project. A project with its documents intact answers from its files; one
+  whose directory is gone answers from the store; and a half-migrated project —
+  one surviving document beside many stored runs — answers both. Choosing one
+  source for the whole project would have shortened that project's history to
+  whichever file survived, silently. Where both hold the same run id the
+  document wins, because a stored row carries the durable half (a rotation may
+  have washed its wide detail out) while a document still carries the
+  promotion record.</p>
 
   <figure id="ledger-reads-the-store-s22-source-precedence">
     <img src="/reckon/figures/history-persists-as-detail-washes-out/ledger-reads-the-store-s22/source-precedence.svg"
-         alt="Ledger readers pass a single gate, whether any run document exists in runs/: while one does, the documents and the aggregate answer and the store is unread, and once none does, the run store answers the population.">
-    <figcaption>One gate decides the source for every reader. The three arms
-    beneath it are the measured runs in the second table.</figcaption>
+         alt="Ledger readers consult both sources by run id: a surviving document answers its own run id and stays the fuller record, the run store answers every run id no document names including its retired rows, and one surviving document no longer hides the store's rows."/>
+    <figcaption>Both sources answer one population, run id by run id. The three
+    arms beneath the drawing are the measured runs in the second table.</figcaption>
   </figure>
 
   <table id="ledger-reads-the-store-s22-readers">
     <caption>The nine readers the test measures, and what each answers once the
     run documents are gone.</caption>
-    <thead><tr><th>reader</th><th>while any document exists</th><th>once none exists</th><th>the change</th></tr></thead>
+    <thead><tr><th>reader</th><th>while documents exist</th><th>once none exists</th><th>the change</th></tr></thead>
     <tbody>
       <tr><td><code>load(project)[0]["runs"]</code></td>
-        <td>aggregate + run documents</td>
+        <td>aggregate + run documents, plus any store row no document names</td>
         <td>the same population, from the store</td>
         <td><code>_merge_stored_rows</code> runs at every return of
-        <code>load</code>: the indexed path, the last-good-index path, and the
+        <code>load</code> — the indexed path, the last-good-index path, and the
         plain aggregate path</td></tr>
       <tr><td><code>load(project)[1]</code></td>
         <td>the aggregate's <code>_version</code></td>
         <td>unchanged: the store does not move a version</td>
         <td>none — <code>7</code> is the empty-ledger default in both arms</td></tr>
       <tr><td><code>runs(project)</code></td>
-        <td>aggregate + documents</td><td>the store's rows</td>
+        <td>the same rows</td><td>the store's rows</td>
         <td>inherits <code>load</code></td></tr>
       <tr><td><code>read_records(project)</code></td>
         <td>the same rows, projected to records</td><td>the same projection over the store's rows</td>
         <td>inherits <code>load</code></td></tr>
       <tr><td><code>run_ids(project)</code></td>
-        <td>the published run index, else the aggregate</td>
-        <td>the store's membership, checked ahead of the index</td>
-        <td><code>store_answers</code> is consulted before the published index: an index
-        built while the project held no documents is <em>current and empty</em>,
-        so consulting it first answered an empty set</td></tr>
+        <td>the published run index, plus the store's id columns</td>
+        <td>the store's membership, read the same way</td>
+        <td><code>run_store.indexed_run_ids</code> reads the id columns on a
+        read-only connection, hot and retired rows together, without decoding a
+        payload. Membership is asked once per delivered run per station tick, so
+        it must not cost a decode; it joins the index answer rather than being
+        gated behind it, because an index built while the project held no
+        documents is current and empty</td></tr>
       <tr><td><code>open_run_index.read_rows</code>, <code>row_for_run</code>, <code>has_row</code>, <code>ledger_version</code></td>
-        <td>the index, rebuilt from the documents</td>
-        <td>the same rebuild, whose source is now the store</td>
+        <td>the index, rebuilt from the documents and whatever the store adds</td>
+        <td>the same rebuild, whose source is the store; a project with an
+        aggregate, a run document or stored ids is never cached as empty</td>
         <td><code>_ensure</code> asks
         <code>aggregate or run_directory_holds_records or store_answers</code>
-        before deciding a project has no rows, so it takes the full read
-        instead of storing an empty answer</td></tr>
+        before deciding a project has no rows, so it takes the full read</td></tr>
       <tr><td><code>load_aggregate(project)</code></td>
         <td>the aggregate's own collections</td>
         <td><strong>deliberately unchanged</strong></td>
@@ -69,6 +74,16 @@
         written back into a file they must never enter</td></tr>
     </tbody>
   </table>
+
+  <p><strong>The store read is the store's own.</strong> A record is split
+  across two tables and its retired rows live in an attached database whose
+  name the store chooses. <code>_stored_run_rows</code> therefore reads through
+  <code>RunStore._indexed_records(include_archive=True)</code> and names the
+  archive through <code>RunStore.archive_path</code>, rather than reproducing
+  that layout against the tables itself: a second copy is one the store's own
+  change would break silently. That read is not project-scoped — one config
+  home serves every project — so the filter is this caller's, which is a cost
+  recorded below.</p>
 
   <p><strong>How the population is measured.</strong> One fixture — three
   promoted runs, each still owing its retained worktree — is written as run
@@ -82,56 +97,75 @@
   the whole population, so an empty read cannot agree with an empty directory
   and be counted as a pass.</p>
 
+  <p><strong>What the equality fixture cannot show, and the four tests that
+  can.</strong> An answer taken from documents and one taken from a lossless
+  store are equal by construction, so equality alone cannot tell a store that
+  keeps everything from one that keeps the durable record — which is exactly
+  the difference a rotation makes. Four further tests measure the distinctions
+  directly: a reader answered by the store decodes no payload (the store's JSON
+  parser raises and the <code>run_ids</code> answer must still name every held
+  run); one surviving document beside stored rows answers both, with the
+  document winning its own run id; a retired row still answers, reached through
+  the store's archive, with its wide detail intact (a retirement moves a row,
+  it does not rotate it); and a rotated row answers its durable half with the
+  detail absent, which is the asymmetry the equality fixture cannot express.</p>
+
   <table id="ledger-reads-the-store-s22-arms">
     <caption>Three arms, one population. Each log's first line names its
-    revision, tree and command; its last line is a bare <code>EXIT=</code>.</caption>
+    revision, tree and command, its second block proves which tree the module
+    resolved from, and its last line is a bare <code>EXIT=</code>.</caption>
     <thead><tr><th>arm</th><th>revision and tree</th><th>test files</th><th>result</th><th>log</th></tr></thead>
     <tbody>
       <tr><td>base</td>
         <td><code>2bf8e6947d</code>, a <code>git archive</code> extraction
-        re-committed as <code>125b1fe3</code> so a test that reads git metadata
+        re-committed as <code>f2dcae5</code> so a test that reads git metadata
         runs</td>
         <td><code>test_staged_write_inventory.py</code>,
         <code>test_every_shared_home_lock_holds_across_nodes.py</code></td>
         <td>58 passed, <code>EXIT=0</code></td>
         <td><code>logs/base-arm.log</code></td></tr>
       <tr><td>head</td>
-        <td><code>27af871ae2</code>, the node's worktree</td>
+        <td><code>07d166b0f6</code>, the node's worktree</td>
         <td>the same two plus
         <code>test_every_ledger_question_reads_the_store.py</code></td>
-        <td>72 passed, <code>EXIT=0</code></td>
+        <td>76 passed, <code>EXIT=0</code></td>
         <td><code>logs/after-suite.log</code></td></tr>
-      <tr><td>negative control</td>
-        <td><code>27af871ae2</code> with <code>_merge_stored_rows</code>
-        returning <code>False</code> before it reads the store: <code>load</code>
-        pointed back at the per-run directory</td>
+      <tr><td>negative control, the store read</td>
+        <td><code>1f3094e35a</code> with <code>reckon/ledger.py</code> and
+        <code>reckon/crew/open_run_index.py</code> taken back to
+        <code>4bc9d8bf1d</code>: the store-answering change reverted</td>
         <td><code>test_every_ledger_question_reads_the_store.py</code></td>
-        <td>12 failed, 2 passed, <code>EXIT=1</code></td>
-        <td><code>logs/negative-control.log</code></td></tr>
+        <td>2 failed, 16 passed, <code>EXIT=1</code></td>
+        <td><code>logs/negative-control-store.log</code></td></tr>
+      <tr><td>negative control, the figure</td>
+        <td><code>1f3094e35a</code> with <code>source-precedence.svg</code> taken
+        back to <code>4bc9d8bf1d</code></td>
+        <td><code>check-figure-text.py</code></td>
+        <td>21 text elements, the two renders differ, <code>EXIT=1</code></td>
+        <td><code>logs/negative-control-figure.log</code></td></tr>
     </tbody>
   </table>
 
-  <p><strong>The negative control, and what it proves.</strong> With the store
-  disabled, the absent-runs-directory case fails for
-  <code>test_a_reader_answers_the_store_when_the_documents_are_gone[load]</code>,
-  and so do <code>[runs]</code>, <code>[records]</code>,
-  <code>[run_ids]</code>, <code>[open_rows]</code>, <code>[open_row]</code> and
-  <code>[open_has_row]</code>; every reader of
-  <code>test_the_store_answers_with_no_aggregate</code>; and
-  <code>test_a_store_deleted_and_rebuilt_returns_an_equal_answer_set</code>. The
-  two that pass are <code>load_version</code> and <code>open_version</code>,
-  which is the control working as designed rather than a gap: a version is the
-  aggregate's, the store moves none, and those readers answer a version rather
-  than a run population. So the twelve failing names are exactly the readers
-  this landing moves, and the failure is the absent-runs-directory case the
-  measure names.</p>
+  <p><strong>The negative controls, and what they prove.</strong> Reverting the
+  store read fails exactly the two checks that distinguish it:
+  <code>test_run_ids_decodes_no_stored_payload</code>, because the reverted
+  <code>run_ids</code> reaches its answer through a full read and so decodes
+  the payload the instrument forbids, and
+  <code>test_one_document_beside_many_store_rows_answers_both</code>, because
+  the reverted rule chose one source for the whole project and the surviving
+  document hid the store's rows. The remaining sixteen pass in both arms: they
+  are the population the earlier landing already answered, and a control that
+  failed them would be measuring something other than this repair. Reverting
+  the figure fails its own check with 21 SVG text elements and two renders that
+  differ, which is the blank-label failure the repair removed.</p>
 
-  <p><strong>What this node did not decide.</strong> Two limits belong to the
-  plan rather than here: <code>load_aggregate</code> keeps its writer semantics
-  by design (see the table), and the merged result's suite is a separate
-  verification node's measure — this gate measures this node's own change over
-  its own write paths. <code>detail-horizon</code> and the store's location are
-  untouched.</p>
+  <p><strong>What this node did not do.</strong> Three things belong elsewhere.
+  <code>load_aggregate</code> keeps its writer semantics by design (see the
+  table). The store's record read is answered for every project and filtered
+  here, so this caller pays a decode of other projects' rows — a project-scoped
+  read on <code>RunStore</code> is the cleaner shape and lives in
+  <code>reckon/run_store.py</code>, which this repair did not open.
+  <code>detail-horizon</code> and the store's location are untouched.</p>
 
-  <p id="ledger-reads-the-store-s22-landing">landing: reckon/ledger.py <code>e0eb51f8a8</code> and <code>27af871ae2</code>; reckon/crew/open_run_index.py <code>e0eb51f8a8</code>; tests/test_every_ledger_question_reads_the_store.py <code>e0eb51f8a8</code>; docs/figures/history-persists-as-detail-washes-out/ledger-reads-the-store-s22/source-precedence.svg <code>492da074a8</code>.</p>
+  <p id="ledger-reads-the-store-s22-landing">landing: reckon/ledger.py <code>8e8f22b6f5</code>; reckon/crew/open_run_index.py <code>8e8f22b6f5</code>; tests/test_every_ledger_question_reads_the_store.py <code>8e8f22b6f5</code>; docs/figures/history-persists-as-detail-washes-out/ledger-reads-the-store-s22/source-precedence.svg <code>07d166b0f6</code>.</p>
 </section>
