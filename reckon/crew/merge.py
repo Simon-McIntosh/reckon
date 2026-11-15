@@ -42,6 +42,7 @@ import contextlib
 import os
 import re
 import subprocess
+import sys
 import tempfile
 import time
 from collections.abc import Callable, Iterable, Iterator, Mapping
@@ -974,6 +975,17 @@ def stale_index_lock_removal_line(lock: Path, age: float) -> str:
         f"removed {lock} after {age:.0f}s unchanged with no process on this "
         "host holding it"
     )
+
+
+def note_stale_index_lock_removal(lock: Path, age: float) -> None:
+    """Name a cleared lock, and the age it stood for, on stderr.
+
+    For a caller with no durable record to append to: a state write's commit is
+    its only record, and a rollback keeps none. Silence is not the alternative —
+    the lock belongs to a checkout other sessions commit to, and a clearing
+    nobody states is one nobody can account for.
+    """
+    print(f"index lock: {stale_index_lock_removal_line(lock, age)}", file=sys.stderr)
 
 
 def _result_text(result: subprocess.CompletedProcess) -> str:

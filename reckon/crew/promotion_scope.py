@@ -1912,7 +1912,7 @@ def _restore_landing_writes(
     checkout: Path,
     paths: Sequence[Path],
     *,
-    on_stale_removed: Callable[[Path, float], None],
+    on_stale_removed: Callable[[Path, float], None] | None = None,
 ) -> dict[str, bool]:
     """Best-effort reversal of a refused landing's uncommitted store writes.
 
@@ -1950,6 +1950,8 @@ def _restore_landing_writes(
     A rollback that cleared a lock proven stale names it, and the age it stood
     for, through ``on_stale_removed``: the index is shared, so a caller is left
     no trace of why a lock disappeared unless the clearing is recorded here.
+    The default states it on stderr, which is where a caller with no run record
+    of its own can still read it.
     """
     tracked: list[Path] = []
     created: list[Path] = []
@@ -2013,7 +2015,7 @@ def _restore_landing_writes(
         revert_every_write,
         attempts=_INDEX_LOCK_RETRY_ATTEMPTS,
         retry_seconds=_INDEX_LOCK_RETRY_INTERVAL_SECONDS,
-        on_stale_removed=on_stale_removed,
+        on_stale_removed=on_stale_removed or note_stale_index_lock_removal,
     )
     report = dict(unsettled)
     if reverted.returncode == 0:
@@ -3112,6 +3114,7 @@ from reckon.crew.merge import (
     _run_waiting_out_a_held_index_lock,
     clear_stale_landed_copies,
     landed_paths,
+    note_stale_index_lock_removal,
     stale_index_lock_removal_line,
 )
 from reckon.crew.promotion_evidence import (
