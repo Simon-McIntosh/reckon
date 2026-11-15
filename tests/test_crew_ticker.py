@@ -228,9 +228,7 @@ def test_counter_cells_stay_apart_at_every_digit_width() -> None:
     width inside its cells shortens the block and has to fail here.
     """
     escapes = re.compile(r"\x1b\[[0-9;]*m")
-    counters = re.compile(
-        r"(\d+)w\s+(\d+)r\s+(\d+)n\s+(\d+)d\s+(\d+)q\s+(\d+)s"
-    )
+    counters = re.compile(r"(\d+)w\s+(\d+)r\s+(\d+)n\s+(\d+)d\s+(\d+)q\s+(\d+)s")
 
     block_ends: set[int] = set()
     row_ends: set[int] = set()
@@ -241,8 +239,8 @@ def test_counter_cells_stay_apart_at_every_digit_width() -> None:
         (1, 0, 0, 0, 0, 0),
         (3, 4, 1, 0, 2, 99),
     )
-    for index, (working, reviewing, blocked, unpromoted, queued, stuck) in (
-        enumerate(cases)
+    for index, (working, reviewing, blocked, unpromoted, queued, stuck) in enumerate(
+        cases
     ):
         # A grid per case: the renderer remembers the last destination state of
         # a run, so reusing one run id would suppress the rows after the first.
@@ -313,9 +311,7 @@ def test_a_count_above_the_fixed_width_widens_its_own_row() -> None:
     column lengthens the row by one, and the counts stay six tokens.
     """
     escapes = re.compile(r"\x1b\[[0-9;]*m")
-    counters = re.compile(
-        r"(\d+)w\s+(\d+)r\s+(\d+)n\s+(\d+)d\s+(\d+)q\s+(\d+)s"
-    )
+    counters = re.compile(r"(\d+)w\s+(\d+)r\s+(\d+)n\s+(\d+)d\s+(\d+)q\s+(\d+)s")
 
     def render(index: int, **counts: int) -> str:
         grid = ticker_module.Ticker(width=180, color=False, model_aliases=())
