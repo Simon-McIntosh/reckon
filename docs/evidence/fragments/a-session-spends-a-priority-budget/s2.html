@@ -1,85 +1,100 @@
-# revision: 522df5161d; base revision: 95e530385ef505438d4a89a7f978a941e6a68663
+# revision: 0e35e05838 (repair head); base revision: 95e530385ef505438d4a89a7f978a941e6a68663
 # worktree: /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/8e41a6d3-d0e0-4927-afd1-771942ebfe6a/sspb-each-session-holds-a-priority-budget-and-spends
-# partition: rigel, one arm per node; each arm extracts its own revision into node-local /tmp
+# partition: rigel, one arm per job; each arm checks its own revision out with
+# `git worktree add --detach` into node-local /tmp, so the tree carries the git
+# history the suite reads its source paths from, and removes it on exit.
 #
 # FOCUSED ARM
-# command: PYTHONPATH=$PWD /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_priority_is_budgeted_and_orders_the_queue.py
+# command: PYTHONPATH=. /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_priority_is_budgeted_and_orders_the_queue.py
 MEASURE: budget=10 first=6 second=5 refused=yes
 MEASURE: refusal: session coordinator-a has 6 of 10 priority points in use on its unlaunched requests (r-holds-six at 6); a priority of 5 would exceed the budget declared by queue.priority_budget
 MEASURE: order(priority-3 with three live runs vs priority-0 with none, different projects)=[busy, idle]
 MEASURE: order(priority-0 past the ageing bound vs fresh priority-3)=[aged, fresh]
 MEASURE: order(delivered review vs priority-9)=[review, raised]
 MEASURE: points return on drop: 10 -> 4, and a 6-point submission is then accepted
-..........
-10 passed in 2.58s
+MEASURE: same session, 6 points in one project then 6 in another, budget 10: second refused (6 of 10)
+MEASURE: reprioritise a second request to 5 with 6 held: refused (6 of 10), and the request keeps its previous points
+MEASURE: request reprioritised to 7 then re-dispatched naming no points: stored=7 ranked=7 charged=7, and a 4-point submission is refused naming 7 of 10
+MEASURE: composed review with priority 4 stores 4 on its record and is charged 4 of 10
+..............
+14 passed in 3.48s
 EXIT=0
 #
-# NEGATIVE CONTROL
-# One script reads the same cross-session scenario against two trees: "busy" on session
-# coordinator-a carrying priority 3 and three live runs, and "idle" on session
-# coordinator-b carrying priority 0 and no live runs in another project, queued one minute
-# later. The raised pointer carries both "priority" and "priority_override" so either tree
-# reads its own field, and the call is queue_order.admission_order_details(queued, live, now=NOW).
-# The base tree is `git archive 95e530385e` extracted into node-local /tmp; its
-# reckon/crew/queue_order.py and reckon/flight.py are byte-identical to `git show 95e530385e:<path>`.
+# NEGATIVE CONTROL — the repair, reverted
+# One scratch tree is the repair head with the repair commit's change to
+# reckon/crew/runs.py reversed (`git apply -R` of that commit's diff), and the
+# focused file is run there unchanged. Two checks fail without the repair:
+#   FAILED test_the_budget_counts_points_the_session_placed_in_another_project
+#          (expected refusal, second project's submission was accepted)
+#   FAILED test_a_reprioritised_request_is_charged_what_the_lane_ranks
+#          (the assertion reported runs._stored_priority returning 0 for a
+#           request the lane ranks at 7, which is the divergence itself:
+#           budget charged 0 for the points the queue honoured)
+# 2 failed, 12 passed.
+#
+# NEGATIVE CONTROL — a charge that is not made
+# Two further scratch trees break one charge each and keep the tests.
+#   queue_edit.reprioritise's call to runs.require_priority_budget neutralised:
+#     FAILED test_a_reprioritise_past_the_budget_is_refused (DID NOT RAISE)
+#     1 failed, 13 passed.
+#   recovery_review_dispatch._composed_review_options no longer writes the
+#   priority it was given:
+#     FAILED test_a_composed_review_carries_its_priority_onto_the_queued_record
+#     FAILED test_a_review_spends_its_points_on_the_record_it_stores
+#     2 failed, 12 passed.
+#
+# NEGATIVE CONTROL — the ordering
+# One script reads the same cross-session scenario against two trees: "busy" on
+# session coordinator-a carrying priority 3 and three live runs, and "idle" on
+# session coordinator-b carrying priority 0 and no live runs in another project,
+# queued one minute later. The raised pointer carries both "priority" and
+# "priority_override" so either tree reads its own field, and the call is
+# queue_order.admission_order_details(queued, live, now=NOW). The base tree is
+# `git archive 95e530385e` extracted into node-local /tmp; its
+# reckon/crew/queue_order.py and reckon/flight.py are byte-identical to
+# `git show 95e530385e:<path>`.
 # base:  order: ['idle', 'busy']  first: idle
 # after: order: ['busy', 'idle']  first: busy
 #
-# SUITE ARMS
-# Every arm extracts its own revision inside its job. An earlier pair built their trees on the
-# submitting node's /tmp, which a compute node cannot see: the base arm's first line read
-# "cd: /tmp/.../base-control: No such file or directory" and it went on to run the tree under
-# test, so both arms measured the same source. Those two jobs were cancelled by id and their
-# logs discarded; every figure below comes from an arm that extracted its own revision.
-# The arm logs are not committed: this repository ignores *.log, and no evidence log is
-# tracked. Every figure quoted here was read from the complete logs before they were lost to
-# an in-place write that truncated each file before it was read, so the figures below are the
-# record and any arm is reproducible from the command it states.
+# SUITE ARMS — the two files the manifest's arms name
+# Every arm is one job on rigel and is reproducible from the commands below. It
+# checks its revision out itself, so no arm can run another revision's tree:
+#   REPO=<the worktree above>
+#   D=$(mktemp -d /tmp/arm-XXXX)
+#   git -C "$REPO" worktree add --detach "$D" <revision>
+#   ln -s /home/ITER/mcintos/Code/reckon/.venv "$D/.venv"
+#   cd "$D" && PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q \
+#       tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py
+#   git -C "$REPO" worktree remove --force "$D"
 #
-# arm: full, base (suite-base.log)
-# command: PYTHONPATH=$PWD /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -q -n 8 -p no:cacheprovider
-# marks: priority_budget=0 priority_in_queue_order=21 priority_budget_in_runs=0
-921 failed, 20592 passed, 19 skipped, 75 warnings, 38 errors in 5286.55s (1:28:06)
-EXIT=1
+# arm: base, revision 95e530385ef505438d4a89a7f978a941e6a68663
+55 passed in 25.28s
+EXIT=0
+# arm: repair head, revision 0e35e05838
+55 passed in 24.62s
+EXIT=0
+# delta: identical, 0 added failures, no id failing at either revision.
 #
-# arm: population, base (pop-base.log)
-# The population is derived inside each arm from its own tree by one command, so both arms run
-# the same files where they exist: tests/*.py matching
-#   queue_order|queue_edit|dispatch_batch|queue_admission|plan_review|recovery_review_dispatch|crew_dispatch_commands
-# less the node's own new test file. Both arms derived 365 files, list sha256
+# SUITE ARMS — the population the queue's own tests cover
+# The population is derived inside each arm from its own tree by one command,
+# so both arms run the same files where they exist, and a reader can reproduce
+# either arm by running it:
+#   FILES=$(grep -rlE 'queue_order|queue_edit|dispatch_batch|queue_admission|plan_review|recovery_review_dispatch|crew_dispatch_commands' tests/*.py | grep -v 'test_a_priority_is_budgeted' | sort)
+#   PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q -n 8 $FILES
+# Both revisions derive 365 files, list sha256
 # 12bb05114c4ed94b8d38750f0e332ebda7fa6c4a31652340367bc14772ee2b19.
-# marks: priority_budget=0 priority_in_queue_order=21 priority_budget_in_runs=0
-323 failed, 2576 passed, 1 skipped, 13 warnings, 3 errors in 723.34s (0:12:03)
-EXIT=1
 #
-# arm: population, f8aa2b2d13, before the ordering repair (overwritten by the rerun below; its
-# failure list is preserved in this record because it is what found the defect)
-331 failed, 2568 passed, 1 skipped, 13 warnings, 3 errors in 711.54s (0:11:51)
+# arm: base
+316 failed, 2583 passed, 1 skipped, 13 warnings, 3 errors in 750.18s (0:12:30)
 EXIT=1
-# added failure ids against the base population arm, 8:
-#   tests/test_a_held_request_holds_nothing_behind_it.py::test_the_hoist_reads_the_override_the_queue_ordering_reads
-#   tests/test_queue_order.py::test_lighter_session_catches_up_then_admissions_alternate
-#   tests/test_queue_order.py::test_queued_run_holds_no_lane_slot
-#   tests/test_queue_ranking_builds_no_coordinators.py::test_order_and_signals_match_the_recorded_base
-#   tests/test_an_answer_reaches_the_newest_review.py::test_the_mcp_answer_action_writes_to_the_named_review
-#   tests/test_an_answer_says_what_was_done.py::test_the_mcp_answer_action_stores_the_same_note
-#   tests/test_an_answer_says_what_was_done.py::test_the_mcp_answer_action_refuses_an_acted_answer_without_a_note
-#   tests/test_crew_tool_carries_the_write_verbs.py::test_each_action_matches_its_cli_verb[answer]
-# Two real regressions, both repaired at 522df5161d. The four ordering ids: a queued timestamp
-# sat ahead of live-run occupancy in the cross-session rank, so the session that queued first
-# led the lane however many workers it already had running. The four answer ids: the review
-# verb's new points parameter had no default, so the tool surface answering the verb failed
-# with "TypeError: crew_review() missing 1 required positional argument: 'priority'".
-#
-# arm: population, tree under test (pop-after.log, revision 522df5161d)
-# marks: priority_budget=2 priority_in_queue_order=38 priority_budget_in_runs=8
-322 failed, 2577 passed, 1 skipped, 13 warnings, 3 errors in 972.37s (0:16:12)
+# arm: repair head
+316 failed, 2583 passed, 1 skipped, 13 warnings, 3 errors in 772.01s (0:12:52)
 EXIT=1
+# delta: 0 added failures. The two arms fail the identical 316 ids — no id fails
+# at the repair head that passes at base, and none the other way — so every
+# failure is this checkout's own red state at its base revision.
 #
-# DELTA, both population arms on the same 365-file list
-# added failures: 0
-# one id fails at base and passes at the head:
-#   tests/test_bookkeeping_earns_no_review.py::test_metadata_sweep_over_every_live_plan_moves_only_excluded_keys
-# The 322 failures both arms carry are the base revision's own red state on this checkout (peer
-# work in flight plus environment-dependent tests); the full base arm reads 921 there. The
-# focused arm and this pair are the gate.
+# A full-suite arm is not run: this checkout is red at its base revision with
+# peer work in flight and environment-dependent tests, which the focused arms
+# above measure by delta instead. The focused file and the population pair are
+# the gate.
