@@ -160,7 +160,7 @@ def test_a_queued_request_stores_its_manifest_path(
     projects: tuple[Path, Path], explicit_manifest: bool
 ) -> None:
     first, _ = projects
-    node = _node("waiting", "s2")
+    node = _node("waiting", "s1")
     default = runs.run_dir("r-waiting") / "manifest.md"
     expected = default.with_name("delivery.md") if explicit_manifest else default
     if explicit_manifest:
@@ -185,7 +185,7 @@ def test_a_relative_manifest_still_refuses_before_queueing(
     with pytest.raises(CrewError, match=r"manifest path.*relative"):
         _queue(first, node, run_ids={node.id: "r-waiting"})
 
-    assert runs.read_pointer("r-waiting") is None
+    assert not runs.pointer_path("r-waiting").exists()
 
 
 def test_foreign_section_waits_for_its_declaration(projects: tuple[Path, Path]) -> None:
