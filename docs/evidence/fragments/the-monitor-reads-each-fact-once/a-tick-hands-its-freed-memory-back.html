@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="the-monitor-reads-each-fact-once">
+  <meta name="plan-evidence-for" content="reckon:the-monitor-reads-each-fact-once">
+  <meta name="plan-verifies" content="reckon:the-monitor-reads-each-fact-once#s64">
+  <meta name="plan-recorded-at" content="2026-11-15">
+  <meta name="plan-verdict" content="partial">
+  <title>A tick hands its freed memory back</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+
+<article class="r-note" id="a-tick-hands-its-freed-memory-back-landing" data-node="a-tick-hands-its-freed-memory-back" data-reckon="landed" data-when="2026-11-15">
+  <h2>A tick hands its freed memory back</h2>
+
+  <p id="a-tick-hands-its-freed-memory-back-what"><strong>What landed.</strong> <code>Station.tick</code> now runs the pass and then calls <code>release_freed_memory()</code>, which asks the C library for <code>malloc_trim(0)</code> where that symbol exists. The release is in a <code>finally</code> around the pass, so a tick that raises hands its freed arenas back as a tick that returns does, and it runs after the pass's own work rather than inside it. The entry point is resolved once and cached, because the tick asks for the release every pass and the absence of the symbol never changes. A platform whose C library does not offer it skips the call and the tick runs unchanged.</p>
+
+  <p id="a-tick-hands-its-freed-memory-back-why"><strong>Why.</strong> The census of §62 found the station does not leak: across six traced ticks its RSS rose 856 MB to 4,623 MB while the memory tracemalloc still held after each tick rose only 112 MB to 240 MB. The pass frees 0.2 to 3.3 GB and the allocator keeps the emptied arenas, so between ticks RSS tracked the largest decode any tick had made — 6.7 to 10.5 GB on the fleet node, against a 96 GB cgroup shared by every session, which the kernel OOM-killed ten times in an hour.</p>
+
+  <p id="a-tick-hands-its-freed-memory-back-gate"><strong>Gate.</strong> <code>tests/test_a_tick_hands_its_freed_memory_back.py</code> builds a station over a temporary crew home and a temporary store, replaces its tick body with a stand-in, and runs three ticks. The release is a recorder, and the case asserts the event order is tick then release for each of the three, so the release is observed after the stand-in's own work rather than instead of it. A second case raises from the stand-in and asserts the release still follows and the exception still reaches the caller. A third case resolves no entry point, as a C library without the symbol does, and asserts the tick returns its own result and no release is recorded.</p>
+
+  <p id="a-tick-hands-its-freed-memory-back-negative"><strong>Negative control.</strong> The same case runs against a tree at the base revision (<code>2780ddad20</code>): <strong>3 failed</strong>, and the first failing id is <code>tests/test_a_tick_hands_its_freed_memory_back.py::test_each_tick_releases_after_its_own_work</code>, which the after arm passes. At base the station carries neither the release entry point nor the tick body the case replaces, so no release call is made after a tick; the run ends <code>EXIT=1</code>. Log: <code>runs/r-20261115T141917805306-a-tick-hands-its-freed-memory-back/logs/negative-control.log</code>.</p>
+
+  <p id="a-tick-hands-its-freed-memory-back-arms"><strong>Matched arms.</strong> Both arms ran the suite template resolved over their own tree, in one <code>all_debug</code> job whose two arms each measured a scratch tree at their own revision. The base arm (<code>2780ddad20</code>) runs <code>tests/test_staged_write_inventory.py</code> and <code>tests/test_every_shared_home_lock_holds_across_nodes.py</code>: <strong>58 passed</strong>. The after arm (<code>3598481d8d</code>) runs those two plus this node's case: <strong>61 passed</strong>. The delta is this node's three cases and neither arm fails.</p>
+
+  <p id="a-tick-hands-its-freed-memory-back-census"><strong>Census arms.</strong> Both arms ran six ticks each as separate <code>all_debug</code> jobs, over the live crew home read through an overlay and a temporary store, with tracemalloc's ten-frame peak and RSS read after every tick. The base arm (<code>2780ddad20</code>) logs RSS after ticks 1 to 6 as <strong>580, 636, 705, 739, 747, 752 MB</strong> against tracemalloc peaks of <strong>267, 298, 332, 345, 340, 323 MB</strong>, so it retained 313 to 429 MB beyond each tick's peak and its RSS rose with every tick. The head arm (<code>3598481d8d</code>) logs RSS as <strong>440, 502, 475, 480, 491, 497 MB</strong> against peaks of <strong>255, 293, 302, 292, 257, 258 MB</strong>: its RSS stays between 173 and 240 MB above that tick's own peak — inside the 1.5 GB bound at every tick — and, unlike base's, it stops rising.</p>
+
+  <p id="a-tick-hands-its-freed-memory-back-census-bound"><strong>The halving bound is not met on this population.</strong> The done-when asks that head's RSS after the sixth tick be at most half of base's RSS after its sixth tick. Head reads 497 MB against base's 752 MB, a ratio of <strong>0.66</strong>, so the bound fails as written. The release does bound the ratchet — head's sixth-tick RSS is 252 MB below base's and head's own ticks plateau where base's climb — but it does not halve a tick whose alive set is 170 MB of traced memory in a 440 MB process, and this fleet's six ticks peaked at 255 to 302 MB rather than the 1.6 to 3.3 GB peaks the section was written against. Both figures are the logs' own <code>rss_bytes</code> and <code>tracemalloc_peak_bytes</code> lines.</p>
+</article>
+
+</body>
+</html>
