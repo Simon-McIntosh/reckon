@@ -216,6 +216,11 @@ def enable_incremental_vacuum(path: str | Path | None = None) -> dict[str, Any]:
         connection.close()
 
 
+def _archive_path(path: Path) -> Path:
+    """The separate SQLite file holding one store's retired history."""
+    return path.with_name(f"{path.stem}.archive{path.suffix}")
+
+
 def _decoded_record(stored: str) -> dict[str, Any]:
     """Decode a stored payload, mapping a retired outside-scope key on the way in.
 
@@ -496,7 +501,7 @@ class RunStore:
     @property
     def archive_path(self) -> Path:
         """The separate SQLite file holding retired history."""
-        return self._path.with_name(f"{self._path.stem}.archive{self._path.suffix}")
+        return _archive_path(self._path)
 
     def _attach_archive(self, *, create: bool = False) -> bool:
         if not self._archive_attached and (create or self.archive_path.is_file()):
@@ -1036,6 +1041,71 @@ def runs_for_node(node: str, *, project: str | None = None) -> list[dict[str, An
         record = json.loads(payload)
         if isinstance(record, dict):
             records.append(record)
+    return records
+
+
+def stored_run_rows(project: str) -> list[dict[str, Any]] | None:
+    """One project's stored runs, retired rows included, read without writing.
+
+    ``None`` distinguishes an absent store from one holding no row of this
+    project's. The connection is opened read-only, so a history read never
+    creates the store, its directory or its schema: a read that creates is a
+    write, and the ledger's readers are called on every station tick.
+
+    The query is scoped by the project column, so only this project's payloads
+    are decoded. One config home serves every project on this machine, and a
+    read for one project must not pay for the others. A record's wide detail is
+    joined back from its own table, and retired rows are read from the attached
+    archive, so a caller sees each record whole and a retirement does not
+    shorten the history it answers.
+    """
+    path = store_path()
+    if not path.is_file():
+        return None
+    try:
+        connection = sqlite3.connect(f"{path.resolve().as_uri()}?mode=ro", uri=True)
+    except (OSError, sqlite3.Error):
+        return None
+    try:
+        tables = ["main"]
+        archive = _archive_path(path)
+        if archive.is_file():
+            try:
+                connection.execute(
+                    "ATTACH DATABASE ? AS archive",
+                    (f"{archive.resolve().as_uri()}?mode=ro",),
+                )
+            except (OSError, sqlite3.Error):
+                pass
+            else:
+                tables.append("archive")
+        rows: list[tuple[Any, ...]] = []
+        for table in tables:
+            try:
+                rows.extend(
+                    connection.execute(
+                        f"SELECT r.run_id, r.payload, d.detail FROM {table}.runs r "  # noqa: S608 - fixed table names
+                        f"LEFT JOIN {table}.run_details d ON r.run_id = d.run_id "
+                        "WHERE r.project = ?",
+                        (project,),
+                    )
+                )
+            except sqlite3.Error:
+                # A store that never carried the run tables holds no row.
+                continue
+    finally:
+        connection.close()
+    records: list[dict[str, Any]] = []
+    for _run_id, payload, detail in rows:
+        if payload is None:
+            continue
+        try:
+            record = json.loads(payload)
+            if detail:
+                record.update(json.loads(detail))
+        except (TypeError, ValueError):
+            continue
+        records.append(run_record.normalize_outside_scope_paths(record))
     return records
 
 

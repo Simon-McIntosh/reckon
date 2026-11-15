@@ -2238,29 +2238,19 @@ def run_directory_holds_records(project: str, root: str | Path | None) -> bool:
 
 
 def _stored_run_rows(project: str) -> list[dict[str, Any]]:
-    """Every run the run store holds for one project, its detail re-joined.
+    """Every run the run store holds for one project, read the store's own way.
 
-    The store splits a record into the durable payload and the wide detail it
-    keeps in a second table, and moves retired runs into a database of their
-    own. A history reader needs the record back as one mapping, retired runs
-    included: retirement bounds what the store keeps hot, and shortening the
-    history the ledger answers is not a thing it may do.
+    The store owns its layout — a record split across two tables, retired rows
+    in a database of its own — so this asks the store rather than reaching for
+    the tables, and the store scopes the query to this project and queries it
+    on a read-only connection. Both halves of that matter here: the store is
+    answered for on every load, so a read must decode only the project it was
+    asked about, and a read must create nothing. A store that is not there is
+    an empty answer, not an empty store to write.
     """
     from reckon import run_store
 
-    path = run_store.store_path()
-    if not path.is_file():
-        return []
-    # The store owns its layout: a record is split across two tables and the
-    # retired rows live in an attached database whose name it chooses. Its own
-    # record read joins those back and normalises an out-of-scope path exactly
-    # as a write stored it, so reaching for the tables from here would be a
-    # second copy of that layout — one a store change breaks silently. That
-    # read is not project-scoped (one config home serves every project), so
-    # the filter is this caller's.
-    with run_store.RunStore(path) as store:
-        records = store._indexed_records(include_archive=True)
-    return [row for row in records.values() if row.get("project") == project]
+    return run_store.stored_run_rows(project) or []
 
 
 def _stored_run_ids(project: str) -> set[str]:

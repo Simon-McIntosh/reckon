@@ -299,6 +299,67 @@ def test_a_rotated_detail_still_answers_the_durable_half(aggregate):
     assert ledger.run_ids(PROJECT) == set(_ids())
 
 
+def test_a_load_decodes_no_other_project_payload(aggregate, monkeypatch):
+    """One project's load pays for one project's rows, not the whole store.
+
+    One config home serves every project on the machine, so a read that decodes
+    the whole store makes every load pay for every project's history, on a path
+    a station tick takes. The instrument is the store's JSON parser: a payload
+    belonging to another project fails the read the moment it is decoded.
+    """
+    write_aggregate()
+    write_documents(_rows())
+    fill_store(_rows())
+    with run_store.RunStore() as store:
+        store.append(
+            "another",
+            {
+                "run_id": "r-2026-01-06T000000Z-node-6",
+                "project": "another",
+                "member": "another-projects-member",
+                "node": "node-6",
+                "completed_at": "2026-01-06T01:00:00Z",
+            },
+        )
+
+    class NoForeignPayload:
+        def __init__(self, module):
+            self._module = module
+
+        def __getattr__(self, name):
+            return getattr(self._module, name)
+
+        def loads(self, text, *args, **kwargs):
+            if "another-projects-member" in str(text):
+                raise AssertionError("the load decoded another project's payload")
+            return self._module.loads(text, *args, **kwargs)
+
+    monkeypatch.setattr(run_store, "json", NoForeignPayload(json))
+    data, _version = ledger.load(PROJECT)
+    assert sorted(row["run_id"] for row in data["runs"]) == _ids()
+    assert all(row.get("project") == PROJECT for row in data["runs"])
+
+
+def test_a_load_against_an_absent_store_creates_nothing(aggregate):
+    """A read may not create the store it reads.
+
+    The store's constructor creates the file, its directory and its schema, so a
+    reader that went through it turned a station tick into a write. Absent means
+    empty here, and the path must still be absent afterwards.
+    """
+    write_aggregate()
+    write_documents(_rows())
+    store = run_store.store_path()
+    assert not store.exists()
+    home = store.parent
+    assert not home.exists()
+
+    data, _version = ledger.load(PROJECT)
+    assert [row["run_id"] for row in data["runs"]] == _ids()
+    assert not store.exists(), "the read created the store"
+    assert not store.parent.exists(), "the read created the store's directory"
+
+
 def test_a_store_deleted_and_rebuilt_returns_an_equal_answer_set(aggregate):
     fill_store(_rows())
 
