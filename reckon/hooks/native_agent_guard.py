@@ -12,8 +12,8 @@ Behavior, in order:
 
 1. Scope test — the repository is found by walking up from the session's
    working directory, so a session in any subdirectory is governed by it. A
-   repository with no crew or flight state under ``docs/state/`` is untouched;
-   the spawn is allowed silently.
+   repository whose ``docs/state`` carries no project configuration is
+   untouched; the spawn is allowed silently.
 2. Waiver — a live run pointer for this repository with an in-harness launch
    still awaiting attachment allows the spawn and names the bind command.
 3. Waiver — an explicit environment override allows the spawn.
@@ -49,6 +49,13 @@ OVERRIDE_ENV = "RECKON_ALLOW_NATIVE_AGENT"
 # coordinator, which changes the re-route the refusal teaches.
 RUN_ID_ENV = "RECKON_RUN_ID"
 
+# Files a project's state directory carries that identify it as crew-managed.
+# The run ledger (``crew.json``) and the flight configuration are honoured for
+# a tree that has not migrated yet, but recognition must not depend on either:
+# the ledger leaves git, so a checkout carries only the project's own
+# configuration.
+PROJECT_STATE_MARKERS = ("index.json", "flight.yaml", "crew.json")
+
 # The shape of the re-route a refusal teaches. Angle-bracket placeholders mark
 # what only the plan and the caller's own work list can fill in; the guard
 # has no plan context to resolve them from, only the repository's crew state.
@@ -77,21 +84,24 @@ def _config_home() -> Path:
 def crew_managed_projects(repo_root: Path) -> list[str]:
     """Repository-local project names carrying crew or flight state.
 
-    Reads only ``repo_root/docs/state/<project>/{crew.json,flight.yaml}`` —
-    never the host's mounts file — so detection is correct for a repository
-    nobody has registered on this host yet, and unaffected by what else is
-    mounted here.
+    A project is recognised by the configuration its state directory carries,
+    never by the run ledger: the ledger leaves git, so a checkout of a
+    migrated repository holds no ``crew.json`` for this to key on. The
+    remaining markers are the project's own configuration, which stays.
+
+    Reads only repository-local state — never the host's mounts file — so
+    detection is correct for a repository nobody has registered on this host
+    yet, and unaffected by what else is mounted here.
     """
     state_root = repo_root / "docs" / "state"
     if not state_root.is_dir():
         return []
-    projects = []
-    for entry in sorted(state_root.iterdir()):
-        if not entry.is_dir():
-            continue
-        if (entry / "crew.json").is_file() or (entry / "flight.yaml").is_file():
-            projects.append(entry.name)
-    return projects
+    return sorted(
+        entry.name
+        for entry in state_root.iterdir()
+        if entry.is_dir()
+        and any((entry / marker).is_file() for marker in PROJECT_STATE_MARKERS)
+    )
 
 
 def repository_root(cwd: Path) -> Path:
