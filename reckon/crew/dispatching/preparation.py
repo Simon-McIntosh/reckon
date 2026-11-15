@@ -250,7 +250,7 @@ def _section_declaration(
     plan rather than the section.
 
     The two spellings are compared through the ledger's own normal form: a
-    dispatch addresses the section it names ("s13", "§13", "section 13"), and
+    dispatch addresses the section it names ("sN", "§N", "section N"), and
     the declaration map is keyed however the plan's author wrote it.
     """
     from reckon import _store as store_module
