@@ -9,10 +9,10 @@ that was still running. Reproduced at the base revision with a live probe three 
 <code>wait_expected</code> field — the row read
 <code>wait_overdue=True</code> and <code>recovery_classification='wait-aged'</code>, which
 is the reading that sent a multi-hour compute wait to "investigate" at
-<code>r-20261114T211231918544</code>. The wait now carries
-<code>expected_horizon_source</code>, and while its own probe reports a live state a
-default horizon is not held against it: <code>overdue</code> is false and the row stays
-waiting. A declaration that names its own horizon is still judged by that horizon, and a
+<code>r-20261114T211231918544</code>. The classifier already holds, from the manifest it
+parsed, whether the horizon was declared; while the probe reports a live state it no longer
+holds a default one against the wait: <code>overdue</code> is false, the reading records
+<code>overdue_basis: "probe"</code>, and the row stays waiting. A declaration that names its own horizon is still judged by that horizon, and a
 <code>wait_file</code> condition — whose reader derives <code>pending</code> from absent
 paths rather than taking an answer from the awaited work — still ages into the alarm.</p>
 <p id="wait-judged-against-itself-s7-answering">The producer-gone verdict rested on three
