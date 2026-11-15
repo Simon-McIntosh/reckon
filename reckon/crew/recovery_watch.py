@@ -299,6 +299,13 @@ def _remember_commit_answer(tree: Path, candidate: str, sha: str) -> None:
         return
     if _stored_commit_answer(tree, candidate) == sha:
         return
+    held = _read_git_answer_store()["commits"].get(str(tree), {})
+    if len(held) >= _GIT_ANSWER_STORE_CANDIDATES and candidate not in held:
+        # A worktree whose answers already fill its share of the store takes no
+        # new one. Storing it would evict another of the same run's answers, and
+        # a run citing more commits than the share holds would then rewrite the
+        # whole file once per citation on every read without ever settling.
+        return
 
     def mutate(store: dict[str, Any]) -> None:
         store["commits"].setdefault(str(tree), {})[candidate] = sha
