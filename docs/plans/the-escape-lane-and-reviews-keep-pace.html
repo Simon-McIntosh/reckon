@@ -26,7 +26,7 @@
   <title>The Escape Lane And Reviews Keep Pace | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="43">
+<meta name="plan-version" content="44">
 <meta name="plan-modified" content="2026-11-15">
 </head>
 <body>
@@ -122,6 +122,9 @@
 </div>
 <div class="r-comment" data-section="s10" data-id="c-run-r-20261115T212440705976-review-of-fence-names-the-attempt-s10-90622f7f40e3" data-who="reckon-build" data-when="2026-11-15T21:27:28.416Z">
     <div class="r-comment-body"><p>Independent review of the commits run r-20261115T125732090447-fence-names-the-attempt-s10 gained since it was last reviewed (base cebed77898, head 90622f7f40, one merge whose only conflict was reckon/crew/admission/launching.py): the merge keeps both sides, so the attempt-keyed fence the node was dispatched for is intact at launching.py:581-591 while main's released-review write-back lands at :603/:644; scores goal_fidelity 19, evidence 13, scope_discipline 19, durability 16, fit 17, reuse 14; three non-blocking findings (the released-stranded-launch write-back now has two hand-mirrored callers, the promoted-run and another-review guards at :681/:686 carry no case, and the manifest's declared after_suite arm omits the one test that reaches the gained helper); added_failure_count 0 derived from the run's own baseline_suite and after_suite logs, both EXIT=0 with 65 and 69 passed.</p></div>
+</div>
+<div class="r-comment" data-section="s10" data-id="c-run-r-20261115T125732090447-fence-names-the-attempt-s10" data-who="reckon-build" data-when="2026-11-15T14:03:12Z">
+    <div class="r-comment-body"><p>Fence a released launch by the attempt it abandoned, not by its run: the record names the taken claim&#x27;s registration and holder and marks the requeue, so the re-queued request&#x27;s next attempt is admitted at its reservation while the slow original is still refused. Figures: the new cases read 3 failed, 4 passed at base 2424ab7511; the node gate reads 69 passed at head 54d6347f6c against 65 passed at base c3f7a61e05; the 40 importing test files report the same 19 failures at base and head.</p></div>
 </div>
 <div class="r-comment" data-section="s11" data-id="c-run-r-20261115T153228263431-review-of-released-review-recomposed-s11-ae472547806a" data-who="reckon-build" data-when="2026-11-15T15:34:54.383Z">
     <div class="r-comment-body"><p>reviewed r-20261115T130007037608-released-review-recomposed-s11 at base 622ef4617d73a4af8ecf7dc5926996910a4ca29f and head ae472547806aeb85d4dd96740a539a936b24e6cf: scores goal_fidelity 19, evidence 17, scope_discipline 19, durability 17, fit 18, reuse 18; both records read ok=true from crew check --review --record, with added_failure_count 0 derived from logs/baseline-suite.txt and logs/.../logs/after-suite.txt</p></div>
