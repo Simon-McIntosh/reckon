@@ -8,7 +8,7 @@
   <meta name="plan-slug" content="lead-decisions-reach-one-place">
   <meta name="plan-title" content="Lead Decisions Reach One Place">
   <meta name="plan-summary" content="Every decision waiting on the lead is recorded where it is held, read in one call, presented as choices in one session, and returned to its owner.">
-  <meta name="plan-status" content="draft">
+  <meta name="plan-status" content="in-progress">
   <meta name="plan-roi" content="high">
   <meta name="plan-effort-hours" content="10.0">
   <meta name="plan-capability-version" content="1.0">
@@ -24,7 +24,7 @@
   <title>Lead Decisions Reach One Place | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="2">
+<meta name="plan-version" content="3">
 <meta name="plan-modified" content="2026-11-15">
 </head>
 <body>
@@ -67,25 +67,14 @@
 
     <section data-reckon="decisions" id="decisions" class="r-decisions">
 <h2><span class="sec">§</span> Decisions</h2>
-<div class="r-dec" data-key="which-holds-carry-a-record" data-choice="lead-holds-only" data-by="Simon McIntosh" data-when="2026-11-15">
-    <p class="r-dec-q">Which holds must carry a decision record?</p>
-    <p class="r-dec-ctx">A record is the question, its context, the options, the owner&#x27;s recommendation and the held work.</p>
+<div class="r-dec" data-key="first-surface" data-choice="terminal-first" data-by="Simon McIntosh" data-when="2026-11-15">
+    <p class="r-dec-q">Which surface is built first?</p>
+    <p class="r-dec-ctx">The records are held outside any one surface, so a terminal skill and a browser page can both read them.</p>
     <p class="r-dec-opts">
-      <button class="r-opt chosen" data-value="lead-holds-only">Holds that wait on the lead</button>
-      <button class="r-opt" data-value="lead-and-stale">Lead holds and stale holds</button>
-      <button class="r-opt" data-value="every-hold">Every hold</button>
+      <button class="r-opt chosen" data-value="terminal-first">The terminal skill</button>
+      <button class="r-opt" data-value="browser-first">A browser page</button>
       </p>
-    <p class="r-dec-rat">Only a hold that waits on the lead&#x27;s word is refused without a record. Other coordinator holds are unchanged.</p>
-    </div>
-<div class="r-dec" data-key="who-may-answer" data-choice="lead-only-via-select" data-by="Simon McIntosh" data-when="2026-11-15">
-    <p class="r-dec-q">Who may answer a recorded decision?</p>
-    <p class="r-dec-ctx">An answer releases the work held behind the decision.</p>
-    <p class="r-dec-opts">
-      <button class="r-opt chosen" data-value="lead-only-via-select">The lead, through the presenting session</button>
-      <button class="r-opt" data-value="lead-or-owner">The lead, or the owner with a reason</button>
-      <button class="r-opt" data-value="any-session">Any session</button>
-      </p>
-    <p class="r-dec-rat">A session cannot answer its own question or another session&#x27;s, so no session can release work the lead meant to hold.</p>
+    <p class="r-dec-rat">The lead works in the terminal, and the choice dialog already exists there.</p>
     </div>
 <div class="r-dec" data-key="presentation-order" data-choice="most-held-work-first" data-by="Simon McIntosh" data-when="2026-11-15">
     <p class="r-dec-q">In what order are decisions presented?</p>
@@ -107,14 +96,25 @@
       </p>
     <p class="r-dec-rat">The record stays the source; the message only asks a session to write it, and a session that does not reply is named.</p>
     </div>
-<div class="r-dec" data-key="first-surface" data-choice="terminal-first" data-by="Simon McIntosh" data-when="2026-11-15">
-    <p class="r-dec-q">Which surface is built first?</p>
-    <p class="r-dec-ctx">The records are held outside any one surface, so a terminal skill and a browser page can both read them.</p>
+<div class="r-dec" data-key="which-holds-carry-a-record" data-choice="lead-holds-only" data-by="Simon McIntosh" data-when="2026-11-15">
+    <p class="r-dec-q">Which holds must carry a decision record?</p>
+    <p class="r-dec-ctx">A record is the question, its context, the options, the owner&#x27;s recommendation and the held work.</p>
     <p class="r-dec-opts">
-      <button class="r-opt chosen" data-value="terminal-first">The terminal skill</button>
-      <button class="r-opt" data-value="browser-first">A browser page</button>
+      <button class="r-opt chosen" data-value="lead-holds-only">Holds that wait on the lead</button>
+      <button class="r-opt" data-value="lead-and-stale">Lead holds and stale holds</button>
+      <button class="r-opt" data-value="every-hold">Every hold</button>
       </p>
-    <p class="r-dec-rat">The lead works in the terminal, and the choice dialog already exists there.</p>
+    <p class="r-dec-rat">Only a hold that waits on the lead&#x27;s word is refused without a record. Other coordinator holds are unchanged.</p>
+    </div>
+<div class="r-dec" data-key="who-may-answer" data-choice="lead-only-via-select" data-by="Simon McIntosh" data-when="2026-11-15">
+    <p class="r-dec-q">Who may answer a recorded decision?</p>
+    <p class="r-dec-ctx">An answer releases the work held behind the decision.</p>
+    <p class="r-dec-opts">
+      <button class="r-opt chosen" data-value="lead-only-via-select">The lead, through the presenting session</button>
+      <button class="r-opt" data-value="lead-or-owner">The lead, or the owner with a reason</button>
+      <button class="r-opt" data-value="any-session">Any session</button>
+      </p>
+    <p class="r-dec-rat">A session cannot answer its own question or another session&#x27;s, so no session can release work the lead meant to hold.</p>
     </div>
 </section>
 
@@ -126,6 +126,11 @@
     <pre class="r-fu-prompt">/reckon-build lead-decisions-reach-one-place</pre>
     </article>
 </section>
-  </main>
+  <section data-reckon="comments" id="comments" class="r-comments">
+<div class="r-comment" data-section="s1" data-id="c-run-r-20261115T173820143552-review-of-ldop-every-decision-waiting-on-the-lead-is-one-read-codex-30c7d3912905" data-who="reckon-build" data-when="2026-11-15T17:52:58Z">
+    <div class="r-comment-body"><p>Reviewed b46256908fc3eac1a5b4f4dc5f21ec0740feee34 to 30c7d39129054c63f91e1c6645799c505be9636c; four blocking findings require repair before source promotion.</p></div>
+</div>
+</section>
+</main>
 </body>
 </html>

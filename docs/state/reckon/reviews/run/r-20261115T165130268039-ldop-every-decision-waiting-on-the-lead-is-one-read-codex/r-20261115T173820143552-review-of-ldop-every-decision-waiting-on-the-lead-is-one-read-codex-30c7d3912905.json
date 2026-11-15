@@ -1,0 +1,498 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_review": [
+    {
+      "assertion": "assert first.get(\"ok\") is True, first",
+      "failure_condition": "Removing aggregate dispatch makes the first ok assertion fail; returning no rows, reversing the rank, omitting a held request, dropping a required field, failing to reorder recommended options, failing to persist, or filtering a mount makes the corresponding independent literal/cardinality assertion fail. ID order compares independently read state to created identities, so ignoring sorting fails it.",
+      "file": "tests/test_lead_decision_read.py",
+      "independent_of_writer": true,
+      "line": 89
+    },
+    {
+      "assertion": "assert first[\"decisions\"] == []",
+      "failure_condition": "Removing aggregate dispatch makes the first ok assertion fail; returning no rows, reversing the rank, omitting a held request, dropping a required field, failing to reorder recommended options, failing to persist, or filtering a mount makes the corresponding independent literal/cardinality assertion fail. ID order compares independently read state to created identities, so ignoring sorting fails it.",
+      "file": "tests/test_lead_decision_read.py",
+      "independent_of_writer": true,
+      "line": 90
+    },
+    {
+      "assertion": "assert [row[\"id\"] for row in rows] == [row[\"id\"] for row in reversed(records)]",
+      "failure_condition": "Removing aggregate dispatch makes the first ok assertion fail; returning no rows, reversing the rank, omitting a held request, dropping a required field, failing to reorder recommended options, failing to persist, or filtering a mount makes the corresponding independent literal/cardinality assertion fail. ID order compares independently read state to created identities, so ignoring sorting fails it.",
+      "file": "tests/test_lead_decision_read.py",
+      "independent_of_writer": true,
+      "line": 106
+    },
+    {
+      "assertion": "assert [row[\"held_request_count\"] for row in rows] == [4, 1, 0]",
+      "failure_condition": "Removing aggregate dispatch makes the first ok assertion fail; returning no rows, reversing the rank, omitting a held request, dropping a required field, failing to reorder recommended options, failing to persist, or filtering a mount makes the corresponding independent literal/cardinality assertion fail. ID order compares independently read state to created identities, so ignoring sorting fails it.",
+      "file": "tests/test_lead_decision_read.py",
+      "independent_of_writer": true,
+      "line": 107
+    },
+    {
+      "assertion": "assert [row[\"held_requests\"] for row in rows] == [\n        [f\"busy-request-{index}\" for index in range(4)],\n        [\"single-request\"],\n        [],\n    ]",
+      "failure_condition": "Removing aggregate dispatch makes the first ok assertion fail; returning no rows, reversing the rank, omitting a held request, dropping a required field, failing to reorder recommended options, failing to persist, or filtering a mount makes the corresponding independent literal/cardinality assertion fail. ID order compares independently read state to created identities, so ignoring sorting fails it.",
+      "file": "tests/test_lead_decision_read.py",
+      "independent_of_writer": true,
+      "line": 108
+    },
+    {
+      "assertion": "assert result[\"count\"] == 3",
+      "failure_condition": "Removing aggregate dispatch makes the first ok assertion fail; returning no rows, reversing the rank, omitting a held request, dropping a required field, failing to reorder recommended options, failing to persist, or filtering a mount makes the corresponding independent literal/cardinality assertion fail. ID order compares independently read state to created identities, so ignoring sorting fails it.",
+      "file": "tests/test_lead_decision_read.py",
+      "independent_of_writer": true,
+      "line": 125
+    },
+    {
+      "assertion": "assert set(result[\"projects\"]) == set(mounts)",
+      "failure_condition": "Removing aggregate dispatch makes the first ok assertion fail; returning no rows, reversing the rank, omitting a held request, dropping a required field, failing to reorder recommended options, failing to persist, or filtering a mount makes the corresponding independent literal/cardinality assertion fail. ID order compares independently read state to created identities, so ignoring sorting fails it.",
+      "file": "tests/test_lead_decision_read.py",
+      "independent_of_writer": true,
+      "line": 126
+    },
+    {
+      "assertion": "assert len(list((home / \"crew\" / \"decisions\").glob(\"*.json\"))) == 3",
+      "failure_condition": "Removing aggregate dispatch makes the first ok assertion fail; returning no rows, reversing the rank, omitting a held request, dropping a required field, failing to reorder recommended options, failing to persist, or filtering a mount makes the corresponding independent literal/cardinality assertion fail. ID order compares independently read state to created identities, so ignoring sorting fails it.",
+      "file": "tests/test_lead_decision_read.py",
+      "independent_of_writer": true,
+      "line": 127
+    },
+    {
+      "assertion": "assert row[\"question\"] == records[0][\"question\"]",
+      "failure_condition": "Can fail if the read differs from the writer return, but cannot fail when validate_decision corrupts the field consistently in its return and persisted record.",
+      "file": "tests/test_lead_decision_read.py",
+      "independent_of_writer": false,
+      "line": 114
+    },
+    {
+      "assertion": "assert row[\"context\"] == records[0][\"context\"]",
+      "failure_condition": "Can fail if the read differs from the writer return, but cannot fail when validate_decision corrupts the field consistently in its return and persisted record.",
+      "file": "tests/test_lead_decision_read.py",
+      "independent_of_writer": false,
+      "line": 115
+    },
+    {
+      "assertion": "assert row[\"options\"][0] == {\"value\": \"route\", \"label\": \"Use the second route\"}",
+      "failure_condition": "Removing aggregate dispatch makes the first ok assertion fail; returning no rows, reversing the rank, omitting a held request, dropping a required field, failing to reorder recommended options, failing to persist, or filtering a mount makes the corresponding independent literal/cardinality assertion fail. ID order compares independently read state to created identities, so ignoring sorting fails it.",
+      "file": "tests/test_lead_decision_read.py",
+      "independent_of_writer": true,
+      "line": 116
+    },
+    {
+      "assertion": "assert row[\"recommended\"] == \"route\"",
+      "failure_condition": "Removing aggregate dispatch makes the first ok assertion fail; returning no rows, reversing the rank, omitting a held request, dropping a required field, failing to reorder recommended options, failing to persist, or filtering a mount makes the corresponding independent literal/cardinality assertion fail. ID order compares independently read state to created identities, so ignoring sorting fails it.",
+      "file": "tests/test_lead_decision_read.py",
+      "independent_of_writer": true,
+      "line": 117
+    },
+    {
+      "assertion": "assert row[\"session\"] == \"owner-session\"",
+      "failure_condition": "Removing aggregate dispatch makes the first ok assertion fail; returning no rows, reversing the rank, omitting a held request, dropping a required field, failing to reorder recommended options, failing to persist, or filtering a mount makes the corresponding independent literal/cardinality assertion fail. ID order compares independently read state to created identities, so ignoring sorting fails it.",
+      "file": "tests/test_lead_decision_read.py",
+      "independent_of_writer": true,
+      "line": 118
+    },
+    {
+      "assertion": "assert row[\"plan\"] == \"transport\"",
+      "failure_condition": "Removing aggregate dispatch makes the first ok assertion fail; returning no rows, reversing the rank, omitting a held request, dropping a required field, failing to reorder recommended options, failing to persist, or filtering a mount makes the corresponding independent literal/cardinality assertion fail. ID order compares independently read state to created identities, so ignoring sorting fails it.",
+      "file": "tests/test_lead_decision_read.py",
+      "independent_of_writer": true,
+      "line": 119
+    },
+    {
+      "assertion": "assert row[\"section\"] == \"payload\"",
+      "failure_condition": "Removing aggregate dispatch makes the first ok assertion fail; returning no rows, reversing the rank, omitting a held request, dropping a required field, failing to reorder recommended options, failing to persist, or filtering a mount makes the corresponding independent literal/cardinality assertion fail. ID order compares independently read state to created identities, so ignoring sorting fails it.",
+      "file": "tests/test_lead_decision_read.py",
+      "independent_of_writer": true,
+      "line": 120
+    },
+    {
+      "assertion": "assert row[\"recorded_at\"]",
+      "failure_condition": "Removing aggregate dispatch makes the first ok assertion fail; returning no rows, reversing the rank, omitting a held request, dropping a required field, failing to reorder recommended options, failing to persist, or filtering a mount makes the corresponding independent literal/cardinality assertion fail. ID order compares independently read state to created identities, so ignoring sorting fails it.",
+      "file": "tests/test_lead_decision_read.py",
+      "independent_of_writer": true,
+      "line": 121
+    },
+    {
+      "assertion": "assert row[\"choice\"] == \"\"",
+      "failure_condition": "Removing aggregate dispatch makes the first ok assertion fail; returning no rows, reversing the rank, omitting a held request, dropping a required field, failing to reorder recommended options, failing to persist, or filtering a mount makes the corresponding independent literal/cardinality assertion fail. ID order compares independently read state to created identities, so ignoring sorting fails it.",
+      "file": "tests/test_lead_decision_read.py",
+      "independent_of_writer": true,
+      "line": 122
+    },
+    {
+      "assertion": "assert row[\"held_sections\"] == []",
+      "failure_condition": "Removing aggregate dispatch makes the first ok assertion fail; returning no rows, reversing the rank, omitting a held request, dropping a required field, failing to reorder recommended options, failing to persist, or filtering a mount makes the corresponding independent literal/cardinality assertion fail. ID order compares independently read state to created identities, so ignoring sorting fails it.",
+      "file": "tests/test_lead_decision_read.py",
+      "independent_of_writer": true,
+      "line": 123
+    },
+    {
+      "assertion": "assert row[\"source\"] == \"crew\"",
+      "failure_condition": "Removing aggregate dispatch makes the first ok assertion fail; returning no rows, reversing the rank, omitting a held request, dropping a required field, failing to reorder recommended options, failing to persist, or filtering a mount makes the corresponding independent literal/cardinality assertion fail. ID order compares independently read state to created identities, so ignoring sorting fails it.",
+      "file": "tests/test_lead_decision_read.py",
+      "independent_of_writer": true,
+      "line": 124
+    },
+    {
+      "assertion": "assert result[\"ok\"] is True, result",
+      "failure_condition": "Skipping plan discovery, including answered/deferred decisions, dropping section/ownership/held-request metadata, inventing a timestamp, or ignoring the recommendation makes the corresponding asserted literal/cardinality false.",
+      "file": "tests/test_lead_decision_read.py",
+      "independent_of_writer": true,
+      "line": 149
+    },
+    {
+      "assertion": "assert result[\"count\"] == 1",
+      "failure_condition": "Skipping plan discovery, including answered/deferred decisions, dropping section/ownership/held-request metadata, inventing a timestamp, or ignoring the recommendation makes the corresponding asserted literal/cardinality false.",
+      "file": "tests/test_lead_decision_read.py",
+      "independent_of_writer": true,
+      "line": 150
+    },
+    {
+      "assertion": "assert row[\"key\"] == \"format\"",
+      "failure_condition": "Skipping plan discovery, including answered/deferred decisions, dropping section/ownership/held-request metadata, inventing a timestamp, or ignoring the recommendation makes the corresponding asserted literal/cardinality false.",
+      "file": "tests/test_lead_decision_read.py",
+      "independent_of_writer": true,
+      "line": 152
+    },
+    {
+      "assertion": "assert row[\"source\"] == \"plan\"",
+      "failure_condition": "Skipping plan discovery, including answered/deferred decisions, dropping section/ownership/held-request metadata, inventing a timestamp, or ignoring the recommendation makes the corresponding asserted literal/cardinality false.",
+      "file": "tests/test_lead_decision_read.py",
+      "independent_of_writer": true,
+      "line": 153
+    },
+    {
+      "assertion": "assert row[\"project\"] == \"companion\"",
+      "failure_condition": "Skipping plan discovery, including answered/deferred decisions, dropping section/ownership/held-request metadata, inventing a timestamp, or ignoring the recommendation makes the corresponding asserted literal/cardinality false.",
+      "file": "tests/test_lead_decision_read.py",
+      "independent_of_writer": true,
+      "line": 154
+    },
+    {
+      "assertion": "assert row[\"plan\"] == \"transport\"",
+      "failure_condition": "Skipping plan discovery, including answered/deferred decisions, dropping section/ownership/held-request metadata, inventing a timestamp, or ignoring the recommendation makes the corresponding asserted literal/cardinality false.",
+      "file": "tests/test_lead_decision_read.py",
+      "independent_of_writer": true,
+      "line": 155
+    },
+    {
+      "assertion": "assert row[\"section\"] == \"payload\"",
+      "failure_condition": "Skipping plan discovery, including answered/deferred decisions, dropping section/ownership/held-request metadata, inventing a timestamp, or ignoring the recommendation makes the corresponding asserted literal/cardinality false.",
+      "file": "tests/test_lead_decision_read.py",
+      "independent_of_writer": true,
+      "line": 156
+    },
+    {
+      "assertion": "assert row[\"held_sections\"] == [\"payload\"]",
+      "failure_condition": "Skipping plan discovery, including answered/deferred decisions, dropping section/ownership/held-request metadata, inventing a timestamp, or ignoring the recommendation makes the corresponding asserted literal/cardinality false.",
+      "file": "tests/test_lead_decision_read.py",
+      "independent_of_writer": true,
+      "line": 157
+    },
+    {
+      "assertion": "assert row[\"held_requests\"] == [\"plan-request\"]",
+      "failure_condition": "Skipping plan discovery, including answered/deferred decisions, dropping section/ownership/held-request metadata, inventing a timestamp, or ignoring the recommendation makes the corresponding asserted literal/cardinality false.",
+      "file": "tests/test_lead_decision_read.py",
+      "independent_of_writer": true,
+      "line": 158
+    },
+    {
+      "assertion": "assert row[\"session\"] == \"owner-session\"",
+      "failure_condition": "Skipping plan discovery, including answered/deferred decisions, dropping section/ownership/held-request metadata, inventing a timestamp, or ignoring the recommendation makes the corresponding asserted literal/cardinality false.",
+      "file": "tests/test_lead_decision_read.py",
+      "independent_of_writer": true,
+      "line": 159
+    },
+    {
+      "assertion": "assert row[\"recorded_at\"] is None",
+      "failure_condition": "Skipping plan discovery, including answered/deferred decisions, dropping section/ownership/held-request metadata, inventing a timestamp, or ignoring the recommendation makes the corresponding asserted literal/cardinality false.",
+      "file": "tests/test_lead_decision_read.py",
+      "independent_of_writer": true,
+      "line": 160
+    },
+    {
+      "assertion": "assert row[\"options\"][0][\"value\"] == \"expanded\"",
+      "failure_condition": "Skipping plan discovery, including answered/deferred decisions, dropping section/ownership/held-request metadata, inventing a timestamp, or ignoring the recommendation makes the corresponding asserted literal/cardinality false.",
+      "file": "tests/test_lead_decision_read.py",
+      "independent_of_writer": true,
+      "line": 161
+    },
+    {
+      "assertion": "assert cli.exit_code == 0, cli.output",
+      "failure_condition": "A CLI refusal or divergence between the CLI payload and MCP payload makes the exit/parity assertion fail; shared wrong behavior is not detected by this parity assertion alone.",
+      "file": "tests/test_lead_decision_read.py",
+      "independent_of_writer": true,
+      "line": 170
+    },
+    {
+      "assertion": "assert json.loads(cli.output) == _crew(view=\"decisions\")",
+      "failure_condition": "A CLI refusal or divergence between the CLI payload and MCP payload makes the exit/parity assertion fail; shared wrong behavior is not detected by this parity assertion alone.",
+      "file": "tests/test_lead_decision_read.py",
+      "independent_of_writer": true,
+      "line": 171
+    },
+    {
+      "assertion": "assert result.exit_code == 0, result.output",
+      "failure_condition": "Removing CLI registration or failing to persist the created identity makes the exit/readback assertion fail; equality of IDs is an intentional persistence check, not independent validation of ID generation.",
+      "file": "tests/test_lead_decision_read.py",
+      "independent_of_writer": true,
+      "line": 180
+    },
+    {
+      "assertion": "assert saved[\"id\"] == serve_crew_view(\"decisions\")[\"decisions\"][0][\"id\"]",
+      "failure_condition": "Removing CLI registration or failing to persist the created identity makes the exit/readback assertion fail; equality of IDs is an intentional persistence check, not independent validation of ID generation.",
+      "file": "tests/test_lead_decision_read.py",
+      "independent_of_writer": true,
+      "line": 182
+    },
+    {
+      "assertion": "assert row[\"held_requests\"] == []",
+      "failure_condition": "Counting missing/running requests makes the empty-list/count assertions fail; ignoring the on-disk choice makes the final exclusion assertion fail.",
+      "file": "tests/test_lead_decision_read.py",
+      "independent_of_writer": true,
+      "line": 195
+    },
+    {
+      "assertion": "assert row[\"held_request_count\"] == 0",
+      "failure_condition": "Counting missing/running requests makes the empty-list/count assertions fail; ignoring the on-disk choice makes the final exclusion assertion fail.",
+      "file": "tests/test_lead_decision_read.py",
+      "independent_of_writer": true,
+      "line": 196
+    },
+    {
+      "assertion": "assert serve_crew_view(\"decisions\")[\"decisions\"] == []",
+      "failure_condition": "Counting missing/running requests makes the empty-list/count assertions fail; ignoring the on-disk choice makes the final exclusion assertion fail.",
+      "file": "tests/test_lead_decision_read.py",
+      "independent_of_writer": true,
+      "line": 198
+    },
+    {
+      "assertion": "assert not list((home / \"crew\" / \"decisions\").glob(\"*.json\"))",
+      "failure_condition": "Removing each required validation makes pytest.raises fail; writing before refusal makes the no-file assertion fail.",
+      "file": "tests/test_lead_decision_read.py",
+      "independent_of_writer": true,
+      "line": 218
+    },
+    {
+      "assertion": "assert serve_crew_view(\"decisions\")[\"decisions\"] == []",
+      "failure_condition": "Ignoring the changed mounts registry returns the formerly mounted record and makes the empty-list assertion fail.",
+      "file": "tests/test_lead_decision_read.py",
+      "independent_of_writer": true,
+      "line": 227
+    },
+    {
+      "assertion": "assert [row[\"id\"] for row in rows] == [held[\"id\"], empty[\"id\"]]",
+      "failure_condition": "Ignoring section deduplication or bound-request associations, counting the foreign project, or failing held-work ranking makes the corresponding identity/list/count assertion fail.",
+      "file": "tests/test_lead_decision_read.py",
+      "independent_of_writer": true,
+      "line": 239
+    },
+    {
+      "assertion": "assert rows[0][\"held_sections\"] == [\"reader\", \"writer\"]",
+      "failure_condition": "Ignoring section deduplication or bound-request associations, counting the foreign project, or failing held-work ranking makes the corresponding identity/list/count assertion fail.",
+      "file": "tests/test_lead_decision_read.py",
+      "independent_of_writer": true,
+      "line": 240
+    },
+    {
+      "assertion": "assert rows[0][\"held_requests\"] == [\"bound-request\"]",
+      "failure_condition": "Ignoring section deduplication or bound-request associations, counting the foreign project, or failing held-work ranking makes the corresponding identity/list/count assertion fail.",
+      "file": "tests/test_lead_decision_read.py",
+      "independent_of_writer": true,
+      "line": 241
+    },
+    {
+      "assertion": "assert rows[0][\"held_work_count\"] == 3",
+      "failure_condition": "Ignoring section deduplication or bound-request associations, counting the foreign project, or failing held-work ranking makes the corresponding identity/list/count assertion fail.",
+      "file": "tests/test_lead_decision_read.py",
+      "independent_of_writer": true,
+      "line": 242
+    },
+    {
+      "assertion": "assert [row[\"id\"] for row in rows] == [other[\"id\"]]",
+      "failure_condition": "Ignoring project narrowing, treating wildcard as one mount, or accepting an absent mount makes the corresponding identity/count/refusal assertion fail.",
+      "file": "tests/test_lead_decision_read.py",
+      "independent_of_writer": true,
+      "line": 251
+    },
+    {
+      "assertion": "assert serve_crew_view(\"decisions\", project=\"*\")[\"count\"] == 2",
+      "failure_condition": "Ignoring project narrowing, treating wildcard as one mount, or accepting an absent mount makes the corresponding identity/count/refusal assertion fail.",
+      "file": "tests/test_lead_decision_read.py",
+      "independent_of_writer": true,
+      "line": 252
+    },
+    {
+      "assertion": "assert refused[\"ok\"] is False",
+      "failure_condition": "Ignoring project narrowing, treating wildcard as one mount, or accepting an absent mount makes the corresponding identity/count/refusal assertion fail.",
+      "file": "tests/test_lead_decision_read.py",
+      "independent_of_writer": true,
+      "line": 254
+    },
+    {
+      "assertion": "assert \"not mounted\" in refused[\"detail\"]",
+      "failure_condition": "Ignoring project narrowing, treating wildcard as one mount, or accepting an absent mount makes the corresponding identity/count/refusal assertion fail.",
+      "file": "tests/test_lead_decision_read.py",
+      "independent_of_writer": true,
+      "line": 255
+    },
+    {
+      "assertion": "assert serve_crew_view(\"decisions\")[\"count\"] == 1",
+      "failure_condition": "Ignoring the original record fails the positive-control count; swallowing corrupt JSON makes ok/error/detail assertions fail.",
+      "file": "tests/test_lead_decision_read.py",
+      "independent_of_writer": true,
+      "line": 264
+    },
+    {
+      "assertion": "assert result[\"ok\"] is False",
+      "failure_condition": "Ignoring the original record fails the positive-control count; swallowing corrupt JSON makes ok/error/detail assertions fail.",
+      "file": "tests/test_lead_decision_read.py",
+      "independent_of_writer": true,
+      "line": 267
+    },
+    {
+      "assertion": "assert result[\"error\"] == \"decision_error\"",
+      "failure_condition": "Ignoring the original record fails the positive-control count; swallowing corrupt JSON makes ok/error/detail assertions fail.",
+      "file": "tests/test_lead_decision_read.py",
+      "independent_of_writer": true,
+      "line": 268
+    },
+    {
+      "assertion": "assert saved[\"id\"] in result[\"detail\"]",
+      "failure_condition": "Ignoring the original record fails the positive-control count; swallowing corrupt JSON makes ok/error/detail assertions fail.",
+      "file": "tests/test_lead_decision_read.py",
+      "independent_of_writer": true,
+      "line": 269
+    },
+    {
+      "assertion": "assert result.exit_code == 1",
+      "failure_condition": "Accepting a list or writing before type validation makes the exit/detail/no-files assertions fail.",
+      "file": "tests/test_lead_decision_read.py",
+      "independent_of_writer": true,
+      "line": 277
+    },
+    {
+      "assertion": "assert \"JSON object\" in json.loads(result.output)[\"detail\"]",
+      "failure_condition": "Accepting a list or writing before type validation makes the exit/detail/no-files assertions fail.",
+      "file": "tests/test_lead_decision_read.py",
+      "independent_of_writer": true,
+      "line": 278
+    },
+    {
+      "assertion": "assert not list((home / \"crew\" / \"decisions\").glob(\"*.json\"))",
+      "failure_condition": "Accepting a list or writing before type validation makes the exit/detail/no-files assertions fail.",
+      "file": "tests/test_lead_decision_read.py",
+      "independent_of_writer": true,
+      "line": 279
+    }
+  ],
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew_run_commands.py:crew_view:708",
+    "reckon/crew_run_commands.py:crew_decision_record:582",
+    "reckon/mcp.py:_crew:2978",
+    "reckon/mcp_views.py:serve_crew_view:4467"
+  ],
+  "completed_at": "2026-11-15T17:52:58Z",
+  "dispatched_at": "2026-11-15T17:47:16Z",
+  "exception_assertion_review": "tests/test_lead_decision_read.py:221 pytest.raises fails if any of the six invalid records is accepted or the wrong field is reported; line 223 separately detects a write before refusal.",
+  "failure_delta_evidence": {
+    "after": {
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T165130268039-ldop-every-decision-waiting-on-the-lead-is-one-read-codex/after.log",
+      "revision": "30c7d39129054c63f91e1c6645799c505be9636c",
+      "summary": "74 passed in 36.24s"
+    },
+    "baseline": {
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T165130268039-ldop-every-decision-waiting-on-the-lead-is-one-read-codex/baseline.log",
+      "revision": "b46256908fc3eac1a5b4f4dc5f21ec0740feee34",
+      "summary": "58 passed in 34.55s"
+    },
+    "method": "Compared FAILED ids in completed baseline_suite and after_suite log receipts; both have EXIT=0 and complete passing summaries."
+  },
+  "findings": [
+    {
+      "file": "reckon/crew/lead_decisions.py",
+      "line": "261",
+      "severity": "blocking",
+      "text": "blocking: The read returns only decisions, with no pending or taken-and-reversible lists; validate_decision also drops any pending-run or reversible-state input and rejects a taken choice, so a question that must wait for a run is immediately mixed with ready questions and can never transition as required by live plan s1."
+    },
+    {
+      "file": "reckon/crew/lead_decisions.py",
+      "line": "74",
+      "severity": "blocking",
+      "text": "blocking: The whitelist drops a no-queue risk, lead-required action and recommendation provenance, and the read never establishes whether a live session owns the plan; _plan_decisions also discards the existing recommended_by field, so the lead cannot distinguish an owner recommendation from a reviewer recommendation or see what an otherwise empty hold releases."
+    },
+    {
+      "file": "tests/test_lead_decision_read.py",
+      "line": "114",
+      "severity": "blocking",
+      "text": "blocking: The question and context expectations at lines 114-115 come from record_decision's returned record rather than the input fixture; replacing either field with a constant in validate_decision changes both persisted content and expected content together and both assertions stay green, leaving the promised content-preservation regression unguarded."
+    },
+    {
+      "file": "reckon/crew/lead_decisions.py",
+      "line": "43",
+      "severity": "blocking",
+      "text": "blocking: _options duplicates the value/label normalization owned by reckon/_store.py:_decision_options_as_choices:4122 instead of wrapping or extending it; two normalization mechanisms can drift, so the strict count/recommendation/label checks should be layered on the existing owner."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "Read commits 3b61cc99db3ebc2ca3b720098c9adb46576c55c8 and 30c7d39129054c63f91e1c6645799c505be9636c separately; they add the collector, CLI/MCP wiring, 16 collected test cases and two evidence fragments, with the omissions and duplicated normalization described below.",
+    "done_when": "Source prompt.txt:164 and tests/test_lead_decision_read.py:86 cover the three records ordered 4/1/0, plan-only decisions and answered exclusion, but the live plan's pending-until-run-reports case has no assertion.",
+    "goal": "The source prompt.txt:38 requires one mounted-project read ordered by held work; reckon/crew/lead_decisions.py:215 provides it, but omits the pending/reversible classifications and contextual fields required by live plan section s1.",
+    "manifest": "Source manifest.md names two commits and readable baseline.log/after.log receipts at their stated revisions, with 58 and 74 passed respectively and no added failures.",
+    "write_paths": "Source manifest.md:3 declares reckon, tests and the evidence-fragment subtree; all seven paths in the base-to-head diff are inside those grants."
+  },
+  "justifications": {
+    "durability": "tests/test_lead_decision_read.py:104-112 independently guards ordering and named requests, but :114-115 compares content against the writer's returned record and no test would fail for the missing pending/reversible and provenance fields.",
+    "evidence": "Source baseline.log records 58 passed and after.log records 74 passed at the reviewed revisions, while tests/test_lead_decision_read.py omits the pending-run measure and negative.log proves only the absent aggregate read at base.",
+    "fit": "reckon/mcp_views.py:4463 extends the existing crew-view registry and shared transport, and reckon/crew/lead_decisions.py uses the established crew_home, atomic writer and naming idioms without forbidden source labels.",
+    "goal_fidelity": "reckon/crew/lead_decisions.py:74-91 discards required decision context and :261-267 returns one undifferentiated list, so the central aggregate works but the full live-plan deliverable does not.",
+    "reuse": "reckon/crew/lead_decisions.py:43 reimplements option-object normalization already owned by reckon/_store.py:_decision_options_as_choices:4122 rather than extending or wrapping it, although persistence, mounts, live pointers and plan-decision discovery correctly reuse their owners.",
+    "scope_discipline": "All seven changed paths, including reckon/crew/lead_decisions.py and tests/test_lead_decision_read.py, fit the source manifest.md:3 declared grants and serve the aggregate-read goal."
+  },
+  "negative_control_evidence": {
+    "exit_status": 1,
+    "failure_id": "tests/test_lead_decision_read.py::test_every_open_decision_is_one_read_in_held_work_order",
+    "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T165130268039-ldop-every-decision-waiting-on-the-lead-is-one-read-codex/negative.log",
+    "quote": "AssertionError: {'ok': False, 'error': 'missing_project', 'detail': 'crew read views need project'}",
+    "revision": "b46256908fc3eac1a5b4f4dc5f21ec0740feee34"
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The source prompt.txt:38 requires one mounted-project read ordered by held work; reckon/crew/lead_decisions.py:215 provides it, but omits the pending/reversible classifications and contextual fields required by live plan section s1.\nVERDICT done_when: Source prompt.txt:164 and tests/test_lead_decision_read.py:86 cover the three records ordered 4/1/0, plan-only decisions and answered exclusion, but the live plan's pending-until-run-reports case has no assertion.\nVERDICT write_paths: Source manifest.md:3 declares reckon, tests and the evidence-fragment subtree; all seven paths in the base-to-head diff are inside those grants.\nVERDICT manifest: Source manifest.md names two commits and readable baseline.log/after.log receipts at their stated revisions, with 58 and 74 passed respectively and no added failures.\nVERDICT diff: Read commits 3b61cc99db3ebc2ca3b720098c9adb46576c55c8 and 30c7d39129054c63f91e1c6645799c505be9636c separately; they add the collector, CLI/MCP wiring, 16 collected test cases and two evidence fragments, with the omissions and duplicated normalization described below.\nCALL_SITES: reckon/crew_run_commands.py:crew_view:708, reckon/crew_run_commands.py:crew_decision_record:582, reckon/mcp.py:_crew:2978, reckon/mcp_views.py:serve_crew_view:4467\nSCORE goal_fidelity: 12\nJUSTIFICATION goal_fidelity: reckon/crew/lead_decisions.py:74-91 discards required decision context and :261-267 returns one undifferentiated list, so the central aggregate works but the full live-plan deliverable does not.\nSCORE evidence: 14\nJUSTIFICATION evidence: Source baseline.log records 58 passed and after.log records 74 passed at the reviewed revisions, while tests/test_lead_decision_read.py omits the pending-run measure and negative.log proves only the absent aggregate read at base.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: All seven changed paths, including reckon/crew/lead_decisions.py and tests/test_lead_decision_read.py, fit the source manifest.md:3 declared grants and serve the aggregate-read goal.\nSCORE durability: 13\nJUSTIFICATION durability: tests/test_lead_decision_read.py:104-112 independently guards ordering and named requests, but :114-115 compares content against the writer's returned record and no test would fail for the missing pending/reversible and provenance fields.\nSCORE fit: 20\nJUSTIFICATION fit: reckon/mcp_views.py:4463 extends the existing crew-view registry and shared transport, and reckon/crew/lead_decisions.py uses the established crew_home, atomic writer and naming idioms without forbidden source labels.\nSCORE reuse: 5\nJUSTIFICATION reuse: reckon/crew/lead_decisions.py:43 reimplements option-object normalization already owned by reckon/_store.py:_decision_options_as_choices:4122 rather than extending or wrapping it, although persistence, mounts, live pointers and plan-decision discovery correctly reuse their owners.\nFINDING reckon/crew/lead_decisions.py:261 blocking: The read returns only decisions, with no pending or taken-and-reversible lists; validate_decision also drops any pending-run or reversible-state input and rejects a taken choice, so a question that must wait for a run is immediately mixed with ready questions and can never transition as required by live plan s1.\nFINDING reckon/crew/lead_decisions.py:74 blocking: The whitelist drops a no-queue risk, lead-required action and recommendation provenance, and the read never establishes whether a live session owns the plan; _plan_decisions also discards the existing recommended_by field, so the lead cannot distinguish an owner recommendation from a reviewer recommendation or see what an otherwise empty hold releases.\nFINDING tests/test_lead_decision_read.py:114 blocking: The question and context expectations at lines 114-115 come from record_decision's returned record rather than the input fixture; replacing either field with a constant in validate_decision changes both persisted content and expected content together and both assertions stay green, leaving the promised content-preservation regression unguarded.\nFINDING reckon/crew/lead_decisions.py:43 blocking: _options duplicates the value/label normalization owned by reckon/_store.py:_decision_options_as_choices:4122 instead of wrapping or extending it; two normalization mechanisms can drift, so the strict count/recommendation/label checks should be layered on the existing owner.\n",
+  "reuse_search": {
+    "new_module_and_definitions": "Searched decision recording, option normalization, mounted plan decisions, live requests and crew storage capabilities in reckon/crew, reckon/roadmap.py, reckon/_store.py and reckon/_plan_html.py. New decision_path/_names/validate_decision/record_decision/_request_identity/_held_requests/_plan_decisions/_read_record/read_decisions and CLI wrappers add crew-specific behavior or compose existing owners; no prior crew decision store or cross-mount decision collector found. _options duplicates the existing option normalizer.",
+    "owners_opened": [
+      "reckon/_store.py:write_json_atomically:616",
+      "reckon/_store.py:_decision_options_as_choices:4122",
+      "reckon/crew/run_paths.py:crew_home:19",
+      "reckon/crew/runs.py:list_live:1196",
+      "reckon/roadmap.py:unsettled_decisions:1257",
+      "reckon/_plan_html.py:_render_decisions:1946"
+    ]
+  },
+  "review_basis": "Exact git show at reviewed_head_sha, commit-by-commit diff against reviewed_base_sha; review worktree HEAD is a separate revision and was not substituted for the reviewed implementation. Live plan read from canonical checkout.",
+  "review_run_id": "r-20261115T173820143552-review-of-ldop-every-decision-waiting-on-the-lead-is-one-read-codex-30c7d3912905",
+  "reviewed_base_sha": "b46256908fc3eac1a5b4f4dc5f21ec0740feee34",
+  "reviewed_head_sha": "30c7d39129054c63f91e1c6645799c505be9636c",
+  "reviewed_run_id": "r-20261115T165130268039-ldop-every-decision-waiting-on-the-lead-is-one-read-codex",
+  "scores": {
+    "durability": 13,
+    "evidence": 14,
+    "fit": 20,
+    "goal_fidelity": 12,
+    "reuse": 5,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-15T18:00:33.945439+00:00",
+  "total": 84
+}
