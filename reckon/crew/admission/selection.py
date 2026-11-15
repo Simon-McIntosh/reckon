@@ -6,6 +6,7 @@ from collections import deque
 
 from reckon.crew.open_run_index import operational_read
 
+from . import attempts as _attempts
 from . import holds as _holds
 from . import launching as _launching
 from . import ordering as _ordering
@@ -14,7 +15,6 @@ from . import release as _release
 from . import reviews as _reviews
 from . import service as _service
 from . import verdicts as _verdicts
-from .attempts import LaunchBatch
 from .shared import (
     _LANE_GATE_WAITING_STATES,
     HOLD_VERDICTS,
@@ -320,7 +320,7 @@ def admit_once(
         deadline = tick() + budget
         budget_spent = False
 
-        with LaunchBatch(result, remaining) as launches:
+        with _attempts.LaunchBatch(result, remaining) as launches:
             candidates = deque(enumerate(order))
             deferred = []
             filling = True
