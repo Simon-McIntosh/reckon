@@ -1655,7 +1655,9 @@ def _compute_watch_snapshot(
     # chain, and only the call needs the answer.
     from reckon.crew import obligations
 
-    repair_round = obligations._repair_round_in_flight(pointer)
+    repair_round = obligations._repair_round_in_flight(
+        pointer, process_alive=row.get("process_alive")
+    )
     verdict = row["fleet_verdict"]
 
     # The absolute instants the silence is measured between, resolved once
