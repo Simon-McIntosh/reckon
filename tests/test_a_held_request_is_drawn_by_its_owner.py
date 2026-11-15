@@ -222,25 +222,17 @@ def _row(**fields: Any) -> dict[str, Any]:
     return row
 
 
-@pytest.mark.parametrize(
-    ("classification", "word", "held_classification"),
-    [
-        # A run the lane's window parks: the row says waiting throughout.
-        ("paused", "waiting", "waiting"),
-        # A run stopped on a refusal: the row says needs you, and the
-        # classification keeps naming the hold that stopped it.
-        ("blocked", "needs you", "held"),
-    ],
-)
-def test_a_launched_run_held_by_the_lane_agrees_with_its_bucket(
-    classification: str, word: str, held_classification: str
+@pytest.mark.parametrize("classification", ["paused", "blocked"])
+def test_a_launched_run_held_by_the_lane_is_drawn_waiting(
+    classification: str,
 ) -> None:
-    """A launched run parked by a window, and one stopped on a refusal.
+    """A launched run parked by the lane, whether it waits or stops.
 
-    Neither word is new: the pane already drew a paused run as waiting and a
-    refused one as needs you. What it did not do was count them there — the
-    counter filed every row whose classification said ``held`` under waiting,
-    so a refused run the pane drew "needs you" was added to the ``q`` cell.
+    Neither word is new — a paused run already read waiting — but the counter
+    filed every row whose classification said ``held`` under waiting while the
+    pane drew a stopped one "needs you", so the two disagreed about the same
+    row. A hold the lane or the clock lifts belongs in one place on both
+    surfaces: the waiting pane, and the ``q`` cell.
     """
     pointer = {
         "run_id": "r-live",
@@ -255,11 +247,14 @@ def test_a_launched_run_held_by_the_lane_agrees_with_its_bucket(
         moment=datetime.now(tz=UTC).timestamp(),
         stall_seconds=300,
     )
-    assert verdict["recovery_classification"] == held_classification, verdict
-    assert _pane_word(_display_state(verdict["state"])) == word, verdict
-    assert _bucket_of(verdict["state"], verdict["recovery_classification"]) == word, (
-        verdict
-    )
+
+    # Each surface keeps its own claim: the classification still names the
+    # hold, and the word — which the bucket follows — says whose move it is.
+    assert verdict["recovery_classification"] == "held", verdict
+    assert _pane_word(_display_state(verdict["state"])) == "waiting", verdict
+    assert _bucket_of(verdict["state"], verdict["recovery_classification"]) == (
+        "waiting"
+    ), verdict
     assert verdict["detail"], verdict
 
 

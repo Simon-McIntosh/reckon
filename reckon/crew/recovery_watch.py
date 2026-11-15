@@ -1234,11 +1234,16 @@ def _watch_verdict(
     # hold is drawn "needs you", and its row carries the act that lifts it.
     held_next_action = None
     held_clause = ""
-    if state == "held":
+    if str(row.get("recovery_classification") or "") == "held":
         if hold_owner(pointer) == HOLD_LIFTED_BY_COORDINATOR:
             held_next_action = _coordinator_hold_next_action(pointer)
             held_clause = _coordinator_hold_clause(pointer, held_next_action)
+            state = "held"
         else:
+            # The queue or the clock lifts it, so nothing in the row is the
+            # coordinator's to do: a request parked for a lane slot, and a run
+            # stopped on a spent window, both sit in the waiting pane and are
+            # counted there.
             state = WAITING_STATUS
 
     # A dead worker is a row on the snapshot that observes the death, never one
@@ -1399,12 +1404,6 @@ def _watch_verdict(
         # acts from rather than in a separate command surface.
         detail = held_clause
         lifting_condition = held_clause
-    elif state == WAITING_STATUS and recovery_classification == "held":
-        # A request the queue parked is waiting, whatever the classification
-        # calls the hold. The verb says so too, or the row offers a resume for
-        # work that resumes itself when its condition clears.
-        recovery_classification = WAITING_STATUS
-        recovery_verb = RECOVERY_VERBS[WAITING_STATUS]
 
     return {
         "state": state,

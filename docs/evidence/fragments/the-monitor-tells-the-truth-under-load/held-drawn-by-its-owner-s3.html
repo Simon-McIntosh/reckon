@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="the-monitor-tells-the-truth-under-load">
+  <meta name="plan-evidence-for" content="reckon:the-monitor-tells-the-truth-under-load">
+  <meta name="plan-verifies" content="reckon:the-monitor-tells-the-truth-under-load#s3">
+  <title>A held request is drawn by whose move lifts its hold</title>
+</head>
+<body>
+<article id="held-drawn-by-its-owner-s3-landing" data-node="held-drawn-by-its-owner-s3" data-reckon="landed"></article>
+
+<section id="held-drawn-by-its-owner-s3-record">
+  <h3 id="held-drawn-by-its-owner-s3-record-title">What changed</h3>
+  <p>The pane's word set files <code>held</code> under "needs you" while the
+  counter counted every held classification as waiting, so a request the queue
+  itself had parked — on a live run's claim, on the session's lane allowance, on
+  a failed attempt's retry back-off — was drawn "needs you" with nothing to do,
+  and was counted somewhere the word did not say. One derived fact now answers
+  who lifts a hold, and the word, the counter bucket and the recovery verb all
+  read it.</p>
+  <p><code>reckon/crew/recovery_watch.py</code> gains
+  <code>hold_owner</code>, which reads the hold's own record:
+  <code>queue_hold.automatic</code> marks a hold the admission pass releases when
+  its condition clears, a hold written by <code>crew hold</code> carries no such
+  mark and only a coordinator releases it, and the one automatic hold whose
+  lifting condition is a coordinator act is the owed plan review
+  (<code>plan-review-owed</code>), whose release is composing and storing that
+  review. <code>_watch_verdict</code> draws the row from that answer: a
+  queue-parked request's state is <code>waiting</code>, so it sits in the
+  waiting pane and its classification and verb agree with the word; a
+  coordinator's hold stays <code>held</code>, drawn "needs you", and its row
+  carries the act that lifts it — <code>reckon crew queue release --run
+  &lt;id&gt;</code>, or the <code>reckon crew review</code> invocation for an
+  owed plan review, never the release that would launch work over unreviewed
+  plan text.</p>
+  <p><code>reckon/crew/ticker.py</code> drops the classification test from
+  <code>_bucket_of</code>, so a row is counted in the bucket whose word it is
+  drawn with, and <code>held</code> joins <code>NEEDS_ACTION</code> so a
+  coordinator's hold is counted under "needs you" and keeps its reason clause.
+  <code>_fleet_counts</code> loses its own held special case for the same
+  reason: the partition is taken from the state word alone.</p>
+  <h3 id="held-drawn-by-its-owner-s3-measure">Measure</h3>
+  <p>New test <code>tests/test_a_held_request_is_drawn_by_its_owner.py</code>
+  passes at head (<code>11 passed</code>) and every case is red at the base
+  revision <code>98b7fdd4</code> (<code>11 failed</code>), each on an assertion
+  about the word or the figure rather than on an import. It covers each hold the
+  code defines: the six queue-recorded hold verdicts drawn waiting and counted
+  waiting, <code>crew hold</code> and <code>plan-review-owed</code> drawn "needs
+  you" with the act named, a launched run parked on a lane window drawn waiting,
+  and a launched run stopped on a refusal drawn "needs you" and counted there —
+  the case the old counter put in the waiting cell. Every case asserts the row
+  word, the counter bucket and the pane vocabulary agree.</p>
+  <p>Declared mutation <em>mapping every held state to needs-you again fails the
+  held-on-claim case</em>: with <code>hold_owner</code> returning the
+  coordinator's reading for every hold, <code>7 failed, 4 passed</code>
+  (<code>EXIT=1</code>), the six parked cases and the owner table among them.</p>
+</section>
+</body>
+</html>
