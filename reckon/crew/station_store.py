@@ -835,6 +835,16 @@ class StationStore:
         classification raises is recorded unreadable, carrying the exception's
         type and message on its row, and the pass continues to the rest: one
         unreadable pointer costs its own row and never the station's tick.
+
+        The pass walks the process table at most once. A pointer whose recorded
+        pids have gone falls through the liveness read to the environment scan,
+        which is answered from a walk of the whole process table, and the
+        one-second beat that makes that walk cheap for a poller does not bound
+        a pass that classifies a fleet: on a loaded node a pass outlasts many
+        beats, so nearly every pointer's liveness read fell in a beat of its
+        own and listed ``/proc`` again. One region holds one table for the
+        whole pass, so its cost is proportional to the fleet rather than to the
+        fleet multiplied by the time the pass takes.
         """
         self.guard.check()
         moment = recovery._utc_seconds() if now_seconds is None else float(now_seconds)
@@ -855,9 +865,15 @@ class StationStore:
         # Every run classified here reads the review store, so the pass shares
         # one enumeration of each store directory across all of them, as the
         # producer's pass does; per run, the tick grew with runs times store.
+        # The process-table region is what keeps a pass that outlasts a beat to
+        # one listing of ``/proc`` rather than one per pointer.
+        from reckon.crew import process_signal
         from reckon.crew.recovery_memo import _classification_input_tick
 
-        with _classification_input_tick():
+        with (
+            process_signal.process_table_walk_once(),
+            _classification_input_tick(),
+        ):
             for path, record in parsed_rows:
                 run_id = str(record["run_id"])
                 present.add(run_id)
