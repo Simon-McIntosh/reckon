@@ -1,0 +1,109 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_audit": {
+    "coverage gap": "No case publishes two unlaunched claims, so the holder rebinding at dispatch_claims.py:1224 passes every assertion; a probe over the head revision released one of two published claims.",
+    "tests/test_a_stopping_station_hands_back_its_claims.py:107-121": "Publishing one unlaunched claim, one at LAUNCH_WORKER_STEP and one held by another pid, the run-id tuple at :113 is a literal, not a value handed to the code under test. Dropping the holder check at dispatch_claims.py:1219 reddens it on the foreign claim, dropping the step check at :1222 reddens it on the running claim, and skipping record_launch_refusal makes :115-117 fail.",
+    "tests/test_a_stopping_station_hands_back_its_claims.py:126-155": "The queued case asserts the literal run id, the pointer's restored phase and node, that brief.md survives and that claim.json and the handover entry are gone; removing the requeue branch at dispatch_claims.py:1238 reddens :151 on the missing brief.",
+    "tests/test_a_stopping_station_hands_back_its_claims.py:251-305": "The subprocess case asserts returncode 0, elapsed under the module's own bound plus slack, the 'station-stop:' line, the released pointer and run directory gone and the running claim kept. Removing arm() from the SIGTERM handler reproduces the recorded negative control, TimeoutExpired, red at negative-control.log."
+  },
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/station.py:1317",
+    "reckon/crew/station.py:1434",
+    "reckon/crew/station.py:1262"
+  ],
+  "completed_at": "2026-11-15T21:54:42.146Z",
+  "dispatched_at": "2026-11-15T21:53:56Z",
+  "failure_delta_evidence": {
+    "after": {
+      "exit_status": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T182453131268-stopping-station-hands-back-claims-s14/after-arm.log",
+      "summary": "61 passed in 93.83s"
+    },
+    "baseline": {
+      "exit_status": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T182453131268-stopping-station-hands-back-claims-s14/base-arm.log",
+      "summary": "58 passed in 56.57s"
+    },
+    "derivation": "base-arm.log and after-arm.log carry no FAILED line and EXIT=0 in both arms, so after minus baseline is empty. The population arms both carry 14 FAILED lines; diffing the id sets of importers-base.log and importers-head-armscope.log returns no difference, and the instrument was checked by counting the 14 ids in each log rather than trusting an empty diff over empty input.",
+    "population": {
+      "after": {
+        "exit_status": 1,
+        "failure_count": 14,
+        "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T182453131268-stopping-station-hands-back-claims-s14/importers-head-armscope.log",
+        "summary": "14 failed, 104 passed in 54.80s"
+      },
+      "baseline": {
+        "exit_status": 1,
+        "failure_count": 14,
+        "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T182453131268-stopping-station-hands-back-claims-s14/importers-base.log",
+        "summary": "14 failed, 104 passed in 67.82s"
+      }
+    }
+  },
+  "findings": [
+    {
+      "file": "reckon/crew/dispatch_claims.py",
+      "line": "1224",
+      "severity": "blocking",
+      "text": "blocking: holder is rebound from the holder pid to a claim dict inside the loop, so every claim after the first fails the comparison at dispatch_claims.py:1219 and is left standing, which is the goal's \"every claim\" clause defeated: a probe over the head revision publishing two unlaunched claims released ('r-probe-first',) and left r-probe-second live, and the 15 November incident this node exists for orphaned seven claims at once."
+    },
+    {
+      "file": "tests/test_a_stopping_station_hands_back_its_claims.py",
+      "line": "107",
+      "severity": "non-blocking",
+      "text": "non-blocking: the handback case publishes exactly one unlaunched claim, and the child station at tests/test_a_stopping_station_hands_back_its_claims.py:235 does the same, so no assertion fails when a second claim is left standing; the repair should publish two."
+    },
+    {
+      "file": "reckon/crew/dispatch_claims.py",
+      "line": "1188",
+      "severity": "non-blocking",
+      "text": "non-blocking: the per-claim handback sequence of refusal-then-requeue-then-release and the five-key holder mapping duplicate reckon/crew/admission/launching.py:539 rather than extending an owner, so the two copies can diverge as this one already has."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read ccafc7623c, 3049518784 and ed6a641411 individually against 18d133b40e54, and the production change is the stop bound plus release_unlaunched_claims, whose loop at reckon/crew/dispatch_claims.py:1224 rebinds holder from the pid to a dict so later claims are skipped.",
+    "done_when": "the measure at prompt.txt:170 requires a SIGTERM'd station to exit inside a stated bound, every unlaunched claim released and every running claim left, and the worker's gate tests/test_a_stopping_station_hands_back_its_claims.py:251 measures the exit and both claim halves.",
+    "goal": "the node goal at prompt.txt:38 is to make a stopping station exit within a bound and hand its claims back, and reckon/crew/station.py:464 with StopBound at station.py:1237 delivers the bounded exit while the handback in reckon/crew/dispatch_claims.py:1188 gives back only the first of two unlaunched claims.",
+    "manifest": "manifest.md records base arm 58 passed EXIT=0 and after arm 61 passed EXIT=0 with both logs on disk, the negative control red at EXIT=1, and the importing population measured as 14 failed and 104 passed at both arms with the id sets I compared as identical.",
+    "write_paths": "the fence at prompt.txt:148 grants reckon/crew/station.py, reckon/crew/dispatch_claims.py, the new test and the landing fragment plus an unused figure directory, and all four paths in the diff 18d133b40e54057955fee45c889cde9371c8e068..ed6a6414112e2518d8ef2586fabd14645ba92d91 sit inside them."
+  },
+  "justifications": {
+    "durability": "tests/test_a_stopping_station_hands_back_its_claims.py:113 fails if the holder or step check is removed and the negative control reddens the bound, yet every case publishes one unlaunched claim so the shadowing at dispatch_claims.py:1224 passes green.",
+    "evidence": "base-arm.log and after-arm.log record 58 and 61 passed with EXIT=0 and importers-base.log and importers-head-armscope.log hold 14 failed and 104 passed at each arm with identical ids, but the population was measured locally with -n 8 rather than on all_debug as the done_when names and no arm shows the new tests failing at base.",
+    "fit": "the constant and class follow the stated-bound comment idiom of reckon/crew/station.py:451 and the drain docstring matches reckon/crew/station.py:598, with only the exit parameter name at station.py:1259 shadowing a builtin.",
+    "goal_fidelity": "the bound is real and measured at reckon/crew/station.py:464, but the handback at reckon/crew/dispatch_claims.py:1224 contradicts its own docstring at dispatch_claims.py:1199 and releases one claim per call.",
+    "reuse": "the handback calls the existing record_launch_refusal, _requeue_stranded_request and _release_launch_claim rather than reimplementing them, but the five-key holder mapping at dispatch_claims.py:1224 the search found already built at reckon/crew/admission/launching.py:567 and the release ordering at launching.py:539 is duplicated rather than factored.",
+    "scope_discipline": "the four files in the 18d133b40e54..ed6a6414112e diff are exactly the production modules, the new test and the fragment granted by prompt.txt:148, with no plan, index or sprint write."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal at prompt.txt:38 is to make a stopping station exit within a bound and hand its claims back, and reckon/crew/station.py:464 with StopBound at station.py:1237 delivers the bounded exit while the handback in reckon/crew/dispatch_claims.py:1188 gives back only the first of two unlaunched claims.\nVERDICT done_when: the measure at prompt.txt:170 requires a SIGTERM'd station to exit inside a stated bound, every unlaunched claim released and every running claim left, and the worker's gate tests/test_a_stopping_station_hands_back_its_claims.py:251 measures the exit and both claim halves.\nVERDICT write_paths: the fence at prompt.txt:148 grants reckon/crew/station.py, reckon/crew/dispatch_claims.py, the new test and the landing fragment plus an unused figure directory, and all four paths in the diff 18d133b40e54057955fee45c889cde9371c8e068..ed6a6414112e2518d8ef2586fabd14645ba92d91 sit inside them.\nVERDICT manifest: manifest.md records base arm 58 passed EXIT=0 and after arm 61 passed EXIT=0 with both logs on disk, the negative control red at EXIT=1, and the importing population measured as 14 failed and 104 passed at both arms with the id sets I compared as identical.\nVERDICT diff: read ccafc7623c, 3049518784 and ed6a641411 individually against 18d133b40e54, and the production change is the stop bound plus release_unlaunched_claims, whose loop at reckon/crew/dispatch_claims.py:1224 rebinds holder from the pid to a dict so later claims are skipped.\nCALL_SITES: reckon/crew/station.py:1317, reckon/crew/station.py:1434, reckon/crew/station.py:1262\nSCORE goal_fidelity: 12\nJUSTIFICATION goal_fidelity: the bound is real and measured at reckon/crew/station.py:464, but the handback at reckon/crew/dispatch_claims.py:1224 contradicts its own docstring at dispatch_claims.py:1199 and releases one claim per call.\nSCORE evidence: 13\nJUSTIFICATION evidence: base-arm.log and after-arm.log record 58 and 61 passed with EXIT=0 and importers-base.log and importers-head-armscope.log hold 14 failed and 104 passed at each arm with identical ids, but the population was measured locally with -n 8 rather than on all_debug as the done_when names and no arm shows the new tests failing at base.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the four files in the 18d133b40e54..ed6a6414112e diff are exactly the production modules, the new test and the fragment granted by prompt.txt:148, with no plan, index or sprint write.\nSCORE durability: 10\nJUSTIFICATION durability: tests/test_a_stopping_station_hands_back_its_claims.py:113 fails if the holder or step check is removed and the negative control reddens the bound, yet every case publishes one unlaunched claim so the shadowing at dispatch_claims.py:1224 passes green.\nSCORE fit: 17\nJUSTIFICATION fit: the constant and class follow the stated-bound comment idiom of reckon/crew/station.py:451 and the drain docstring matches reckon/crew/station.py:598, with only the exit parameter name at station.py:1259 shadowing a builtin.\nSCORE reuse: 13\nJUSTIFICATION reuse: the handback calls the existing record_launch_refusal, _requeue_stranded_request and _release_launch_claim rather than reimplementing them, but the five-key holder mapping at dispatch_claims.py:1224 the search found already built at reckon/crew/admission/launching.py:567 and the release ordering at launching.py:539 is duplicated rather than factored.\nFINDING reckon/crew/dispatch_claims.py:1224 blocking: holder is rebound from the holder pid to a claim dict inside the loop, so every claim after the first fails the comparison at dispatch_claims.py:1219 and is left standing, which is the goal's \"every claim\" clause defeated: a probe over the head revision publishing two unlaunched claims released ('r-probe-first',) and left r-probe-second live, and the 15 November incident this node exists for orphaned seven claims at once.\nFINDING tests/test_a_stopping_station_hands_back_its_claims.py:107 non-blocking: the handback case publishes exactly one unlaunched claim, and the child station at tests/test_a_stopping_station_hands_back_its_claims.py:235 does the same, so no assertion fails when a second claim is left standing; the repair should publish two.\nFINDING reckon/crew/dispatch_claims.py:1188 non-blocking: the per-claim handback sequence of refusal-then-requeue-then-release and the five-key holder mapping duplicate reckon/crew/admission/launching.py:539 rather than extending an owner, so the two copies can diverge as this one already has.",
+  "reuse_audit": {
+    "StopBound": "No owner for a hard stop bound in a station; the search over os._exit and threading.Timer found none, so the class is the first.",
+    "release_unlaunched_claims": "Reuses record_launch_refusal, _requeue_stranded_request and _release_launch_claim; duplicates the five-key holder mapping and the refusal-then-requeue-then-release order owned by reckon/crew/admission/launching.py:539 _release_stranded_launches. Its selection (this process's own live claims) is not the owner's (stranded past a bound with a dead holder), so no owner is extended.",
+    "search": "Searched claim release, launch refusal recording and requeue in reckon/crew/dispatch_claims.py, reckon/crew/admission/launching.py, reckon/crew/dispatch_refusals.py, reckon/crew/recovery_liveness.py and reckon/crew/station.py at the reviewed revision, and searched hard-exit watchdogs (os._exit, threading.Timer) across reckon/, which finds only reckon/crew/session_host.py and the added StopBound."
+  },
+  "review_run_id": "r-20261115T212935585553-review-of-stopping-station-hands-back-claims-s14-ed6a6414112e",
+  "reviewed_base_sha": "18d133b40e54057955fee45c889cde9371c8e068",
+  "reviewed_head_sha": "ed6a6414112e2518d8ef2586fabd14645ba92d91",
+  "reviewed_run_id": "r-20261115T182453131268-stopping-station-hands-back-claims-s14",
+  "scores": {
+    "durability": 10,
+    "evidence": 13,
+    "fit": 17,
+    "goal_fidelity": 12,
+    "reuse": 13,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-15T22:16:11.655451+00:00",
+  "total": 85
+}
