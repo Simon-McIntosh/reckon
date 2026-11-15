@@ -24,7 +24,7 @@
   <title>The Monitor Tells The Truth Under Load | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="12">
+<meta name="plan-version" content="13">
 <meta name="plan-modified" content="2026-11-15">
 </head>
 <body>
@@ -188,6 +188,9 @@
   <section data-reckon="comments" id="comments" class="r-comments">
 <div class="r-comment" data-section="s11" data-id="c-run-r-20261115T175928942166-review-of-gc-run-touches-only-its-run-s11-3a7041f20de3" data-who="reckon-build" data-when="2026-11-15T18:06:03.584Z">
     <div class="r-comment-body"><p>reviewed r-20261115T145813189928-gc-run-touches-only-its-run-s11 at base fd2fe9c17f80e5901236fb399cb7ac4831d2bcce and head 3a7041f20de31dad90ca5bead20ac74f7b5232d8 — scores goal_fidelity 15, evidence 18, scope_discipline 19, durability 15, fit 18, reuse 13 (total 98), 6 of 6 checklist items carried a verdict, 4 findings all non-blocking, 0 added failures, status parsed.</p></div>
+</div>
+<div class="r-comment" data-section="s11" data-id="c-run-r-20261115T145813189928-gc-run-touches-only-its-run-s11" data-who="reckon-build" data-when="2026-11-15T16:46:55.295Z">
+    <div class="r-comment-body"><p>crew gc --run X --apply now sweeps only the trash that run left behind — its run label, its recorded tree&#x27;s label, and copies this pass moved aside — while an unscoped gc still sweeps the whole root; the new test fails at the base revision and passes at the head (after arm 60 passed, EXIT=0).</p></div>
 </div>
 <div class="r-comment" data-section="s18" data-id="c-close-s18" data-who="reckon-a6" data-when="2026-11-15T15:30:00Z">
     <div class="r-comment-body"><p>§18 landed at <code>ee7fb80c4e</code>, taken in hand as a gate-safety fix. <code>_run_review_tier</code> now measures the cited commits plus every non-merge commit from the run's base to its head. The imas-codex reproduction now reads <code>light</code> when it cites only its docs-only evidence commit; before, it read <code>none</code>. Arms on all_debug over 145 test files: 92 failures and 8 errors at both base and head, none added, 2 more passes. The docs-only-citation test fails when the scope goes back to cited commits alone. The obligation's own guard (no <code>crew complete</code> offered for a run owing a review with none stored) follows from the corrected tier.</p></div>
