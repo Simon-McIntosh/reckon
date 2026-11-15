@@ -22,7 +22,7 @@
   <meta name="plan-north-star" content="unattended-execution">
   <meta name="plan-standalone" content="It collects the crew-command defects the power_convertor fleet reported on 2026-10-22; the monitor&#x27;s own items are filed in the-monitor-shows-the-work-it-watches §81–§88, related duty fixes live in a-coordinator-can-clear-its-own-duties, and no section waits on another plan.">
   <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;implementable&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;done&quot;,&quot;s14&quot;:&quot;done&quot;,&quot;s15&quot;:&quot;done&quot;,&quot;s16&quot;:&quot;implementable&quot;,&quot;s17&quot;:&quot;implementable&quot;,&quot;s18&quot;:&quot;done&quot;,&quot;s19&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s20&quot;:&quot;done&quot;,&quot;s21&quot;:&quot;done&quot;,&quot;s22&quot;:&quot;done&quot;,&quot;s23&quot;:&quot;done&quot;,&quot;s24&quot;:&quot;done&quot;,&quot;s25&quot;:&quot;done&quot;,&quot;s26&quot;:&quot;done&quot;,&quot;s27&quot;:&quot;done&quot;,&quot;s28&quot;:&quot;done&quot;,&quot;s29&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s30&quot;:&quot;done&quot;,&quot;s31&quot;:&quot;done&quot;,&quot;s32&quot;:&quot;done&quot;,&quot;s33&quot;:&quot;done&quot;,&quot;s34&quot;:&quot;done&quot;,&quot;s35&quot;:&quot;done&quot;,&quot;s36&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;done&quot;}">
-  <meta name="plan-version" content="205">
+  <meta name="plan-version" content="206">
   <meta name="plan-modified" content="2026-11-15">
   <title>The Crew Does Its Own Bookkeeping | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
@@ -461,6 +461,12 @@
 <div class="r-comment" data-section="s15" data-id="c-run-r-20261114T150345963828-wave4-omp-local-the-crew-does-its-own-bo-s15" data-who="reckon-build" data-when="2026-11-15T07:53:43.563Z">
     <div class="r-comment-body"><p>s15 landed - a held review-missing row is now settled by a review the reflex queued as well as one it dispatched (REVIEW_DISPATCH_STARTED_STATUSES in reckon/crew/obligation_snapshot.py); gate passes 3 cases at head, base 36 passed EXIT=0 head 39 passed EXIT=0, negative control 2 failed 1 passed EXIT=1</p></div>
 </div>
+<div class="r-comment" data-section="s16" data-id="c-run-r-20261115T135127907272-review-of-wave4-omp-local-the-crew-does-its-own-bo-s16-deb520d91bd1" data-who="reckon-build" data-when="2026-11-15T13:58:57.489Z">
+    <div class="r-comment-body"><p>independent review of run r-20261114T150924692962-wave4-omp-local-the-crew-does-its-own-bo-s16 at reviewed base 39c52edbf709fb345de519ffbdd6d477aa2a88ef and head deb520d91bd14ef5e014a3b67b151942bce3c80f: status parsed, six scores in 0..20 scoring 110 (goal_fidelity 20, evidence 14, scope_discipline 20, durability 19, fit 17, reuse 20), added_failure_count 0 with added_failure_ids [] derived from logs/base-arm.log and logs/after-arm.log, three non-blocking findings and no blocking finding.</p></div>
+</div>
+<div class="r-comment" data-section="s16" data-id="c-run-r-20261114T150924692962-wave4-omp-local-the-crew-does-its-own-bo-s16" data-who="reckon-build" data-when="2026-11-15T13:15:01Z">
+    <div class="r-comment-body"><p>`_review_run_in_flight` no longer counts a review whose own pointer is a stranded launch, so the reviewed run&#x27;s row carries the review dispatch and `dispatch_review_for_run` discards the pointer and recomposes; node-test arms base 2 failed/60 passed and head 2 failed/64 passed with the same two ids; importer population base 21 failed/325 passed over 47 files and head 21 failed/329 passed over 48 files with identical failing ids; negative control 1 failed/3 passed.</p></div>
+</div>
 <div class="r-comment" data-section="s18" data-id="c-s18-promotion-sweeps-an-authored-edit" data-who="reckon-build" data-when="2026-10-24T21:30:00Z">
     <div class="r-comment-body"><p>Measured 2026-10-24 on the-suite-is-green-at-head: the two promotion paths disagree on an uncommitted text-mode edit. <code>crew complete --land</code> refused while the plan carried one (the refusal from <code>reckon/crew/promotion_scope.py</code>). A review run's <code>crew complete --gate not-run</code>, a few minutes later, committed the whole plan file, so another writer's uncommitted section addition went out as <code>c3473734a</code> under a <code>promote(...)</code> subject. A git note now records what that commit carries. Whichever way this section resolves the refusal, a promotion should not commit authored content it did not write under its own subject. It should commit only the regions it wrote, or proceed and leave the authored edit uncommitted for its writer.</p></div>
 </div>
@@ -661,9 +667,6 @@
 </div>
 <div class="r-comment" data-section="s9" data-id="c-run-r-20261114T095038268141-wave3-codex-the-crew-does-its-own-bookke-s9" data-who="reckon-build" data-when="2026-11-14T11:39:33Z">
     <div class="r-comment-body"><p>Promotion recovers both commits after an empty repair manifest and completed recovery counts 2. Armed gate: base 51 tests, head 57 tests. Direct importer added failures: not measured; facade added failures: 0; negative control: 3 failed, 3 passed in 29.72s.</p></div>
-</div>
-<div class="r-comment" data-section="s16" data-id="c-run-r-20261115T135127907272-review-of-wave4-omp-local-the-crew-does-its-own-bo-s16-deb520d91bd1" data-who="reckon-build" data-when="2026-11-15T13:58:57.489Z">
-    <div class="r-comment-body"><p>independent review of run r-20261114T150924692962-wave4-omp-local-the-crew-does-its-own-bo-s16 at reviewed base 39c52edbf709fb345de519ffbdd6d477aa2a88ef and head deb520d91bd14ef5e014a3b67b151942bce3c80f: status parsed, six scores in 0..20 scoring 110 (goal_fidelity 20, evidence 14, scope_discipline 20, durability 19, fit 17, reuse 20), added_failure_count 0 with added_failure_ids [] derived from logs/base-arm.log and logs/after-arm.log, three non-blocking findings and no blocking finding.</p></div>
 </div>
 </section>
 </main>
