@@ -21,9 +21,14 @@ def crew_home(tmp_path, monkeypatch):
     home = tmp_path / "crew-home"
     monkeypatch.setenv("RECKON_HOME", str(home))
     monkeypatch.delenv(watch_unit.WATCH_LOG_ENV, raising=False)
-    monkeypatch.setattr(runs, "_publish_watch_stream", lambda *_: None)
     monkeypatch.setattr(recovery_watch, "release_seat_when_misplaced", lambda *_: None)
     return home
+
+
+@pytest.fixture()
+def quiet_home(crew_home, monkeypatch):
+    monkeypatch.setattr(runs, "_publish_watch_stream", lambda *_: None)
+    return crew_home
 
 
 @pytest.mark.parametrize(
@@ -40,7 +45,7 @@ def crew_home(tmp_path, monkeypatch):
     ],
 )
 def test_exit_is_recorded_before_seat_is_released(
-    crew_home, monkeypatch, error, status, reason
+    quiet_home, monkeypatch, error, status, reason
 ):
     released = []
     original = runs.drop_watch_seat
@@ -105,7 +110,7 @@ with recovery_watch._watch_registration('sample', '1m') as (acquired, watcher):
 
 
 def test_lapsed_producer_is_restarted_and_recorded_within_its_lease(
-    crew_home, monkeypatch, tmp_path
+    quiet_home, monkeypatch, tmp_path
 ):
     attempts = tmp_path / "attempts"
     monkeypatch.setenv("PRODUCER_TEST_ATTEMPTS", str(attempts))
@@ -155,7 +160,7 @@ def test_lapsed_producer_is_restarted_and_recorded_within_its_lease(
 
 
 def test_registration_is_not_overwritten_after_a_successor_takes_the_seat(
-    crew_home,
+    quiet_home,
 ):
     with recovery_watch._watch_registration("sample", "1m") as (acquired, watcher):
         assert acquired
@@ -165,7 +170,7 @@ def test_registration_is_not_overwritten_after_a_successor_takes_the_seat(
 
 @pytest.mark.parametrize("expose_record", [True, False])
 def test_ticker_exit_records_the_actual_wait_stage(
-    crew_home, monkeypatch, expose_record
+    quiet_home, monkeypatch, expose_record
 ):
     if not expose_record:
         original = recovery_watch._watch_registration
@@ -189,7 +194,7 @@ def test_ticker_exit_records_the_actual_wait_stage(
 
 
 def test_placement_release_records_exit_before_dropping_the_seat(
-    crew_home, monkeypatch
+    quiet_home, monkeypatch
 ):
     receipts = []
     original = runs.drop_watch_seat
@@ -207,10 +212,61 @@ def test_placement_release_records_exit_before_dropping_the_seat(
     assert runs.read_watch_registration("sample")["exit_record"] == receipts[0]
 
 
-def test_reentry_by_the_same_process_is_not_a_restart(crew_home):
+def test_reentry_by_the_same_process_is_not_a_restart(quiet_home):
     for _ in range(2):
         with recovery_watch._watch_registration("sample", "1m") as (acquired, _watcher):
             assert acquired
             record = runs.read_watch_registration("sample")
             assert record.get("exit_record") is None
             assert "restart_record" not in record
+
+
+@pytest.mark.parametrize(
+    ("error", "status"),
+    [(RuntimeError("initial publication failed"), 1), (SystemExit(75), 75)],
+)
+def test_first_publication_failure_is_recorded_before_release(
+    crew_home, monkeypatch, error, status
+):
+    published = []
+    released = []
+    entered = []
+    drop = runs.drop_watch_seat
+
+    def fail_snapshot_read(_records, **_kwargs):
+        assert runs._SWEEP_LOCAL.in_transition
+        assert runs._probe_seat_read_only("sample")[0] is True
+        published.append("sample")
+        raise error
+
+    def release(project, handle):
+        released.append(
+            (
+                runs._probe_seat_read_only(project)[0],
+                runs.read_watch_registration(project).get("exit_record"),
+            )
+        )
+        drop(project, handle)
+
+    monkeypatch.setattr(runs, "_watch_stream_snapshots", fail_snapshot_read)
+    monkeypatch.setattr(runs, "drop_watch_seat", release)
+    with (
+        pytest.raises(type(error)) as caught,
+        recovery_watch._watch_registration("sample", "1m"),
+    ):
+        entered.append(True)
+
+    assert caught.value is error
+    assert published == ["sample"]
+    assert entered == []
+    assert len(released) == 1 and released[0][0] is True
+    receipt = released[0][1]
+    assert receipt is not None, (
+        "initial publication released the seat without an exit record"
+    )
+    assert receipt["exit_status"] == status
+    assert receipt["last_stage"] == "initial-publication"
+    assert receipt["pid"] == os.getpid()
+    assert receipt["reason"] == type(error).__name__ + f": {error}"
+    assert runs.read_watch_registration("sample")["exit_record"] == receipt
+    assert runs._probe_seat_read_only("sample")[0] is False

@@ -15,7 +15,8 @@
   <h2>A producer leaves its outcome before giving up its seat</h2>
   <p>Commit <code>70574ff9a4be6e37678391cfa6444da67b4d1cb8</code> records the
   producer's exit status, reason, last stage, process identity and lease-lapse
-  time in its registration before the seat is released. A replacement records
+  time in its registration before the seat is released once the claim's
+  initial publication has completed. A replacement records
   its acquisition time and supervisor pid beside the preceding exit. Both
   writes compare the owner identity under the registration's shared lock, so
   a superseded producer cannot overwrite its replacement.</p>
@@ -55,6 +56,22 @@
   after the lapse. Seven other added failing ids remain unadjudicated outside
   this node's write scope and are named in the manifest. The wider
   zero-added-failure condition is not claimed.</p>
+  <section id="producer-exit-recorded-and-restarted-s25-initial-publication">
+    <h3>Initial publication still needs the claim owner's exit guard</h3>
+    <p>Independent finding <code>f8009a7865f</code> identifies an earlier
+    failure boundary: <code>runs._project_watch_claim</code> publishes before
+    yielding, and drops its seat if that publication raises. The outer
+    registration guard is never entered. Two regression cases now exercise
+    the real publication path and fail at the reviewed head, one with
+    <code>RuntimeError</code> and one with <code>SystemExit(75)</code>.
+    Both observe the absent exit record before the lock is released.</p>
+    <p>The run directory holds <code>startup-reproduction.log</code> and a
+    proposed <code>startup-owner-proposal.patch</code> that moves the lifecycle
+    guard inside the claim owner and removes the outer duplicate. Applying
+    that patch requires adding <code>reckon/crew/runs.py</code> to the write
+    grant. The finding remains blocking until that scope extension and the
+    repair are completed.</p>
+  </section>
   <p>Run <code>r-20261115T204841537282-producer-exit-recorded-and-restarted-s25</code>
   retains <code>focused-lapse.log</code>, <code>head-negative.log</code> and
   the baseline and head suite receipts. Its manifest carries the completed
