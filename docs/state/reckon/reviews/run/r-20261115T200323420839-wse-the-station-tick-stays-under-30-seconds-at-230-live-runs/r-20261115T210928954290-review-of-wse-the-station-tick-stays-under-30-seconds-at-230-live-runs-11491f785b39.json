@@ -1,0 +1,87 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "0f519315992f429fae018708f84eba960b99fb15",
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/crew/recovery_wait.py:163 _last_tool_call in the wait-marker scan",
+    "reckon/crew/recovery_wait.py:1501 _stream_holds_assistant_record in the repair-presence scan",
+    "reckon/crew/recovery_cut_off.py:34 _last_tool_call",
+    "reckon/crew/recovery_repair_dispatch.py:362 _stream_holds_assistant_record",
+    "reckon/crew/recovery.py:356 re-export of _stream_holds_assistant_record"
+  ],
+  "completed_at": "2026-11-15T21:18:58.824Z",
+  "dispatched_at": "2026-11-15T21:17:39Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "folded",
+      "node": "repair-of-wse-the-station-tick-stays-under-30-seconds-at-230-live-runs-11491f785b39",
+      "recorded_at": "2026-11-15T21:46:48.177649+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/work-scales-to-eighty-across-nodes/s5.html",
+      "line": "36",
+      "severity": "blocking",
+      "text": "blocking: the done_when's negative control is 'the same measure at the base revision records ticks over 30 seconds', and logs/tick-base-all_debug.log records a base maximum of 8.997 s with over_bound=0, so the measure never demonstrates the defect the node was dispatched to remove; the fragment discloses this but still marks the record plan-verdict passed at line 12, leaving a section claiming a verdict its own control does not support."
+    },
+    {
+      "file": "docs/evidence/fragments/work-scales-to-eighty-across-nodes/s5.html",
+      "line": "22",
+      "severity": "non-blocking",
+      "text": "non-blocking: the instrument paragraph says each of the 20 ticks appends 32 KiB to every run's stream, while the two arms in the fragment's own table record arrival_bytes 8192 in logs/tick-base-all_debug.json and logs/tick-head-all_debug.json; 32 KiB is the 1mb arms' figure, so the paragraph describes the secondary arm and not the table it introduces."
+    },
+    {
+      "file": "logs/tick-base-all_debug.log",
+      "line": "1",
+      "severity": "non-blocking",
+      "text": "non-blocking: the measure arms' logs open straight into the JSON result with no '# revision:' or '# command:' header line, so neither arm names the command that produced it and a later reader cannot re-run the arm from its own log the way the suite arms' logs allow."
+    }
+  ],
+  "head_log_revision": "325e19aa9644320fae50fb747b55b9bfd82ef6ba",
+  "item_aggregate": 6,
+  "item_verdict_count": 6,
+  "item_verdicts": {
+    "call_sites": "verified five production call sites reaching the changed scans: reckon/crew/recovery_wait.py:163 (_last_tool_call in the wait-marker scan), reckon/crew/recovery_wait.py:1501 (_stream_holds_assistant_record in the repair-presence scan), reckon/crew/recovery_cut_off.py:34, reckon/crew/recovery_repair_dispatch.py:362 and the re-export at reckon/crew/recovery.py:356.",
+    "diff": "read commit by commit against 0f519315992f42: 4d188b03e2 adds the 237-line measure harness, 325e19aa96 adds 27 lines to reckon/crew/recovery_wait.py splitting each memoised scan into a memo wrapper plus a renamed _read_last_tool_call/_scan_stream_assistant_record and adds the 119-line guard test, 11491f785b adds the two evidence fragments; no other file changes and no behaviour outside the two scans is touched.",
+    "done_when": "the done_when is a 20-tick, 230-run measure on all_debug recording duration and resident memory per tick with a base-revision negative control recording ticks over 30 seconds; logs/tick-base-all_debug.log and logs/tick-head-all_debug.log each carry 20 readings with over_bound=0 and EXIT=0, and the control did not fire (base max 8.997 s, 1mb arm 18.319 s), so the gate asserts the first clause and not the second.",
+    "goal": "the node's goal is to keep the station tick under 30 seconds and under 2 GB at 230 live runs (the reviewed run's prompt.txt:38); the landed change memoises the two per-run stream scans at reckon/crew/recovery_wait.py:125 and :1459, which takes a quiet tick from 874 stream opens to 0, but the base arm already read 8.997 s against the 30 s bound so the goal line itself was not crossed by the node.",
+    "manifest": "read; status complete, three commits 4d188b03e2/325e19aa96/11491f785b, changed_paths the five landed files, both suite arms at EXIT=0 (58 passed base, 61 passed head), negative_control_log at 2 failed/EXIT=1, four measure logs, and evidence_inputs stating the negative control does not reproduce at 230 live runs with its figures.",
+    "write_paths": "the node's fence is reckon, tests, docs/evidence/fragments/work-scales-to-eighty-across-nodes, that directory's node fragment and docs/figures/... (prompt.txt:84-89); git diff --stat 0f519315992f42..11491f785b39 lists exactly five files and every one of them falls inside that fence."
+  },
+  "justifications": {
+    "durability": "tests/test_a_quiet_tick_at_fleet_scale_reads_no_stream.py:63 asserts opened == [] after a second quiet tick and :100 asserts set(opened) == {str(streams[0])}, both against the fixture's own stream paths; the recorded mutation that removes the memo reddens both at logs/negative-control.log (2 failed, EXIT=1).",
+    "evidence": "logs/tick-base-all_debug.log and logs/tick-head-all_debug.log each carry 20 tick durations and RSS readings with 0 over the 30 s and 2 GiB bound, but the done_when's second clause is the base revision recording ticks over 30 s and logs/tick-base-all_debug.log shows the control at 8.997 s, which the fragment at docs/evidence/fragments/work-scales-to-eighty-across-nodes/s5.html:36 discloses.",
+    "fit": "the two added helpers read as the module's other scan helpers in reckon/crew/recovery_wait.py and reuse an existing repo module rather than introducing a naming style; the added text carries no plan, sprint or ticket identifier and the test file follows the repo's test_a_<behaviour> convention.",
+    "goal_fidelity": "reckon/crew/recovery_wait.py:125 and :1459 memoise the two per-run stream scans, which drops a quiet tick's stream opens from 874 to 0, but the base arm in logs/tick-base-all_debug.log records 0 readings over bound at 8.997 s so the landed change lowers cost rather than crossing the 30 s line the goal names.",
+    "reuse": "the added memo calls reckon/file_memo.py:362 memoized, the owner of per-file parses keyed on stat identity, with the same use at reckon/crew/review.py:547; the search over reckon/crew for memoised or hand-rolled caches found only per-run caches of git answers (reckon/crew/recovery_watch.py:86), a different capability, so nothing is duplicated.",
+    "scope_discipline": "git diff --stat 0f519315992f429fae018708f84eba960b99fb15..11491f785b39595be3387a45451f840a2860ef91 lists five files - recovery_wait.py, measure_station_tick_at_230_runs.py, test_a_quiet_tick_at_fleet_scale_reads_no_stream.py, s5.html and the node fragment - every one inside the fence printed in the reviewed run's prompt.txt:84-89."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to keep the station tick under 30 seconds and under 2 GB at 230 live runs (the reviewed run's prompt.txt:38); the landed change memoises the two per-run stream scans at reckon/crew/recovery_wait.py:125 and :1459, which takes a quiet tick from 874 stream opens to 0, but the base arm already read 8.997 s against the 30 s bound so the goal line itself was not crossed by the node.\nVERDICT done_when: the done_when is a 20-tick, 230-run measure on all_debug recording duration and resident memory per tick with a base-revision negative control recording ticks over 30 seconds; logs/tick-base-all_debug.log and logs/tick-head-all_debug.log each carry 20 readings with over_bound=0 and EXIT=0, and the control did not fire (base max 8.997 s, 1mb arm 18.319 s), so the gate asserts the first clause and not the second.\nVERDICT write_paths: the node's fence is reckon, tests, docs/evidence/fragments/work-scales-to-eighty-across-nodes, that directory's node fragment and docs/figures/... (prompt.txt:84-89); git diff --stat 0f519315992f42..11491f785b39 lists exactly five files and every one of them falls inside that fence.\nVERDICT manifest: read; status complete, three commits 4d188b03e2/325e19aa96/11491f785b, changed_paths the five landed files, both suite arms at EXIT=0 (58 passed base, 61 passed head), negative_control_log at 2 failed/EXIT=1, four measure logs, and evidence_inputs stating the negative control does not reproduce at 230 live runs with its figures.\nVERDICT diff: read commit by commit against 0f519315992f42: 4d188b03e2 adds the 237-line measure harness, 325e19aa96 adds 27 lines to reckon/crew/recovery_wait.py splitting each memoised scan into a memo wrapper plus a renamed _read_last_tool_call/_scan_stream_assistant_record and adds the 119-line guard test, 11491f785b adds the two evidence fragments; no other file changes and no behaviour outside the two scans is touched.\nCALL_SITES: reckon/crew/recovery_wait.py:163 _last_tool_call in the wait-marker scan, reckon/crew/recovery_wait.py:1501 _stream_holds_assistant_record in the repair-presence scan, reckon/crew/recovery_cut_off.py:34 _last_tool_call, reckon/crew/recovery_repair_dispatch.py:362 _stream_holds_assistant_record, reckon/crew/recovery.py:356 re-export of _stream_holds_assistant_record\nSCORE goal_fidelity: 13\nJUSTIFICATION goal_fidelity: reckon/crew/recovery_wait.py:125 and :1459 memoise the two per-run stream scans, which drops a quiet tick's stream opens from 874 to 0, but the base arm in logs/tick-base-all_debug.log records 0 readings over bound at 8.997 s so the landed change lowers cost rather than crossing the 30 s line the goal names.\nSCORE evidence: 10\nJUSTIFICATION evidence: logs/tick-base-all_debug.log and logs/tick-head-all_debug.log each carry 20 tick durations and RSS readings with 0 over the 30 s and 2 GiB bound, but the done_when's second clause is the base revision recording ticks over 30 s and logs/tick-base-all_debug.log shows the control at 8.997 s, which the fragment at docs/evidence/fragments/work-scales-to-eighty-across-nodes/s5.html:36 discloses.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: git diff --stat 0f519315992f429fae018708f84eba960b99fb15..11491f785b39595be3387a45451f840a2860ef91 lists five files - recovery_wait.py, measure_station_tick_at_230_runs.py, test_a_quiet_tick_at_fleet_scale_reads_no_stream.py, s5.html and the node fragment - every one inside the fence printed in the reviewed run's prompt.txt:84-89.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_a_quiet_tick_at_fleet_scale_reads_no_stream.py:63 asserts opened == [] after a second quiet tick and :100 asserts set(opened) == {str(streams[0])}, both against the fixture's own stream paths; the recorded mutation that removes the memo reddens both at logs/negative-control.log (2 failed, EXIT=1).\nSCORE fit: 18\nJUSTIFICATION fit: the two added helpers read as the module's other scan helpers in reckon/crew/recovery_wait.py and reuse an existing repo module rather than introducing a naming style; the added text carries no plan, sprint or ticket identifier and the test file follows the repo's test_a_<behaviour> convention.\nSCORE reuse: 20\nJUSTIFICATION reuse: the added memo calls reckon/file_memo.py:362 memoized, the owner of per-file parses keyed on stat identity, with the same use at reckon/crew/review.py:547; the search over reckon/crew for memoised or hand-rolled caches found only per-run caches of git answers (reckon/crew/recovery_watch.py:86), a different capability, so nothing is duplicated.\nFINDING docs/evidence/fragments/work-scales-to-eighty-across-nodes/s5.html:36 blocking: the done_when's negative control is 'the same measure at the base revision records ticks over 30 seconds', and logs/tick-base-all_debug.log records a base maximum of 8.997 s with over_bound=0, so the measure never demonstrates the defect the node was dispatched to remove; the fragment discloses this but still marks the record plan-verdict passed at line 12, leaving a section claiming a verdict its own control does not support.\nFINDING docs/evidence/fragments/work-scales-to-eighty-across-nodes/s5.html:22 non-blocking: the instrument paragraph says each of the 20 ticks appends 32 KiB to every run's stream, while the two arms in the fragment's own table record arrival_bytes 8192 in logs/tick-base-all_debug.json and logs/tick-head-all_debug.json; 32 KiB is the 1mb arms' figure, so the paragraph describes the secondary arm and not the table it introduces.\nFINDING logs/tick-base-all_debug.log:1 non-blocking: the measure arms' logs open straight into the JSON result with no '# revision:' or '# command:' header line, so neither arm names the command that produced it and a later reader cannot re-run the arm from its own log the way the suite arms' logs allow.\n",
+  "review_run_id": "r-20261115T210928954290-review-of-wse-the-station-tick-stays-under-30-seconds-at-230-live-runs-11491f785b39",
+  "reviewed_base_sha": "0f519315992f429fae018708f84eba960b99fb15",
+  "reviewed_head_sha": "11491f785b39595be3387a45451f840a2860ef91",
+  "reviewed_run_id": "r-20261115T200323420839-wse-the-station-tick-stays-under-30-seconds-at-230-live-runs",
+  "reviewer": {
+    "backend": "omp",
+    "model": "deepseek-v4.1-flash",
+    "reviewer_run_id": "r-20261115T210928954290-review-of-wse-the-station-tick-stays-under-30-seconds-at-230-live-runs-11491f785b39"
+  },
+  "reviewer_run_id": "r-20261115T210928954290-review-of-wse-the-station-tick-stays-under-30-seconds-at-230-live-runs-11491f785b39",
+  "scores": {
+    "durability": 18,
+    "evidence": 10,
+    "fit": 18,
+    "goal_fidelity": 13,
+    "reuse": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-15T21:29:36.078993+00:00",
+  "total": 98
+}

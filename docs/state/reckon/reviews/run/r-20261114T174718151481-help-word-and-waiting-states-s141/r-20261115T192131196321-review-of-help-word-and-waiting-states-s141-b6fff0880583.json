@@ -1,0 +1,56 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "Derived from the reviewed run's own suite arms: its manifest's baseline_suite names revision 889f7e7842a0fadde86e3cdd3c1ed4610b227ea8 and log logs/baseline-arm-amended.log (completed true, exit 0, failure_count 0, failure_ids []), and its after_suite names revision b6fff088058373673d01a24b5b061f904bafd527 and log logs/after-arm4.log (completed true, exit 0, failure_count 0, failure_ids []). Read at the logs themselves: baseline-arm-amended.log ends `90 passed in 36.55s` / `EXIT=0`, after-arm4.log ends `94 passed in 39.70s` / `EXIT=0`, so the arm pair adds no failing id. The population arms behind the corrected fragment line were re-read and agree: logs/importers-base.log ends `39 failed, 1212 passed, 31 warnings, 6 errors` / `EXIT=1`, logs/importers-head-repair.log ends `39 failed, 1219 passed, 31 warnings, 6 errors` / `EXIT=1`, and `comm -3` over the sorted FAILED/ERROR id sets of the two logs (45 lines each, 44 unique ids) is empty in both directions.",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/evidence.py:1372",
+    "reckon/crew/reports.py:2694",
+    "reckon/crew/dispatch_claims.py:1312"
+  ],
+  "completed_at": "2026-11-15T19:35:47.021Z",
+  "dispatched_at": "2026-11-15T19:34:33Z",
+  "finding_dispositions": {},
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/the-monitor-shows-the-work-it-watches/help-word-and-waiting-states-s141.html",
+      "id": "f38886784f6",
+      "line": 26,
+      "severity": "non-blocking",
+      "text": "the parenthetical says the two excluded gate modules `cannot be collected against that tree`, but the only recorded collection failure is against head 3efa649f (logs/importers-head.log:12-25, `KeyError: 'needs you'`), and logs/base-two-collection-files.log:1,8 records those same two modules collecting and passing `7 passed` at base 889f7e78; the 137-module base arm is a frozen module list, not a collection limit of the base tree, so the stated reason for the split is unsupported even though the arithmetic 1212 + 7 = 1219 reconciles."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "read commit b6fff08805 against fcd0e59cf3; one line changed at fragment line 26, and every figure it now states resolves to a log (1212 base, 7 separate at the same revision, 1219 head, the same 45 FAILED/ERROR ids).",
+    "done_when": "the done_when requires a four-case gate whose first three fail at base, a negative control that fails the restore case, and an importer population adding no failure; the manifest records those arms as baseline_suite 889f7e78/logs/baseline-arm-amended.log and after_suite b6fff08805/logs/after-arm4.log, both completed with failure_count 0.",
+    "goal": "the source node's goal is to rename the needs-you bucket help and move blocked-upstream, held, interrupted and ready to waiting; the gained commit changes only docs/evidence/fragments/the-monitor-shows-the-work-it-watches/help-word-and-waiting-states-s141.html:26, the evidence figure for that rename.",
+    "manifest": "read at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261114T174718151481-help-word-and-waiting-states-s141/manifest.md; status complete, five commits, both suite arms filled with revision, command, log path, completed true and failure_count 0.",
+    "write_paths": "the source node was fenced to six paths including the fragment; the single file in fcd0e59cf3..b6fff08805 is that fragment, inside the fence."
+  },
+  "justifications": {
+    "durability": "no assertion is added or touched by the commit, and reverting fragment line 26 to the old `1219 passed` base figure reddens no test, since nothing in the tree compares a fragment's figures against the logs they cite.",
+    "evidence": "the corrected line's 1212 comes from logs/importers-base.log's summary line and its 7 from logs/base-two-collection-files.log, with the arm pair recorded in manifest.md's baseline_suite and after_suite.",
+    "fit": "the bullet keeps the surrounding idiom of docs/evidence/fragments/the-monitor-shows-the-work-it-watches/help-word-and-waiting-states-s141.html:20-30; revisions, counts and `EXIT=` results sit in code tags as on the neighbouring bullets.",
+    "goal_fidelity": "docs/evidence/fragments/the-monitor-shows-the-work-it-watches/help-word-and-waiting-states-s141.html:26 now states each arm's own figure for the rename the node shipped.",
+    "reuse": "the commit adds no definition; a capability search over reckon/ for an existing evidence-figure owner found reckon/evidence.py:1372 and reckon/crew/reports.py:2694, which compose and resolve fragments, and the change extends neither by duplicating anything.",
+    "scope_discipline": "the whole diff fcd0e59cf3..b6fff08805 is one line of docs/evidence/fragments/the-monitor-shows-the-work-it-watches/help-word-and-waiting-states-s141.html:26, inside the node's declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the source node's goal is to rename the needs-you bucket help and move blocked-upstream, held, interrupted and ready to waiting; the gained commit changes only docs/evidence/fragments/the-monitor-shows-the-work-it-watches/help-word-and-waiting-states-s141.html:26, the evidence figure for that rename.\nVERDICT done_when: the done_when requires a four-case gate whose first three fail at base, a negative control that fails the restore case, and an importer population adding no failure; the manifest records those arms as baseline_suite 889f7e78/logs/baseline-arm-amended.log and after_suite b6fff08805/logs/after-arm4.log, both completed with failure_count 0.\nVERDICT write_paths: the source node was fenced to six paths including the fragment; the single file in fcd0e59cf3..b6fff08805 is that fragment, inside the fence.\nVERDICT manifest: read at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261114T174718151481-help-word-and-waiting-states-s141/manifest.md; status complete, five commits, both suite arms filled with revision, command, log path, completed true and failure_count 0.\nVERDICT diff: read commit b6fff08805 against fcd0e59cf3; one line changed at fragment line 26, and every figure it now states resolves to a log (1212 base, 7 separate at the same revision, 1219 head, the same 45 FAILED/ERROR ids).\nCALL_SITES: reckon/evidence.py:1372, reckon/crew/reports.py:2694, reckon/crew/dispatch_claims.py:1312\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: docs/evidence/fragments/the-monitor-shows-the-work-it-watches/help-word-and-waiting-states-s141.html:26 now states each arm's own figure for the rename the node shipped.\nSCORE evidence: 18\nJUSTIFICATION evidence: the corrected line's 1212 comes from logs/importers-base.log's summary line and its 7 from logs/base-two-collection-files.log, with the arm pair recorded in manifest.md's baseline_suite and after_suite.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the whole diff fcd0e59cf3..b6fff08805 is one line of docs/evidence/fragments/the-monitor-shows-the-work-it-watches/help-word-and-waiting-states-s141.html:26, inside the node's declared write paths.\nSCORE durability: 12\nJUSTIFICATION durability: no assertion is added or touched by the commit, and reverting fragment line 26 to the old `1219 passed` base figure reddens no test, since nothing in the tree compares a fragment's figures against the logs they cite.\nSCORE fit: 19\nJUSTIFICATION fit: the bullet keeps the surrounding idiom of docs/evidence/fragments/the-monitor-shows-the-work-it-watches/help-word-and-waiting-states-s141.html:20-30; revisions, counts and `EXIT=` results sit in code tags as on the neighbouring bullets.\nSCORE reuse: 20\nJUSTIFICATION reuse: the commit adds no definition; a capability search over reckon/ for an existing evidence-figure owner found reckon/evidence.py:1372 and reckon/crew/reports.py:2694, which compose and resolve fragments, and the change extends neither by duplicating anything.\nFINDING docs/evidence/fragments/the-monitor-shows-the-work-it-watches/help-word-and-waiting-states-s141.html:26 non-blocking: the parenthetical says the two excluded gate modules `cannot be collected against that tree`, but the only recorded collection failure is against head 3efa649f (logs/importers-head.log:12-25, `KeyError: 'needs you'`), and logs/base-two-collection-files.log:1,8 records those same two modules collecting and passing `7 passed` at base 889f7e78; the 137-module base arm is a frozen module list, not a collection limit of the base tree, so the stated reason for the split is unsupported even though the arithmetic 1212 + 7 = 1219 reconciles.\n",
+  "review_run_id": "r-20261115T192131196321-review-of-help-word-and-waiting-states-s141-b6fff0880583",
+  "reviewed_base_sha": "fcd0e59cf3d7b1fafd7c04f486b311ecf1ea46f5",
+  "reviewed_head_sha": "b6fff088058373673d01a24b5b061f904bafd527",
+  "reviewed_run_id": "r-20261114T174718151481-help-word-and-waiting-states-s141",
+  "scores": {
+    "durability": 12,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-15T19:46:33.114233+00:00",
+  "total": 107
+}

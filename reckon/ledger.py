@@ -1164,7 +1164,12 @@ def run_ids(project: str, root: str | Path | None = None) -> set[str]:
 
 # The index stores file-derived values only. Every access checks file metadata,
 # including ctime, so edits with a preserved mtime still invalidate the row.
-_RUN_INDEX_VERSION = 6
+# The version moves when what the index extracts from a row moves, because a
+# warm index is never re-read from its sources: a row already indexed keeps the
+# column it was built with. Version 7 extracts a row's plan through the
+# dispatch fallback :func:`_row_plan` reads, so every row written before it is
+# re-extracted from the payload it already holds.
+_RUN_INDEX_VERSION = 7
 
 # The metadata key an index uses to carry the resolved ledger path it indexes.
 # It is written when the index is built, so a sweep can identify an index whose
@@ -1672,8 +1677,31 @@ def _row_plan(record: Any) -> str:
 
     An absent plan is the empty string rather than NULL, so one equality
     answers the question a plan-filtered read asks and a row without a plan can
-    never be returned for a named plan."""
-    return str(record.get("plan") or "") if isinstance(record, Mapping) else ""
+    never be returned for a named plan.
+
+    A run dispatched with a brief records no top-level ``plan`` at all, and a
+    dispatch that carries a brief is not a run without a plan: the run still
+    names the plan and section it was dispatched for. So the row's own field is
+    read first, and two places a dispatch records the same fact answer for a row
+    that has none — the impl move the run reported, then the node definition it
+    ran. The impl move is read before the definition because the definition is
+    wide detail a later rotation may wash out, while the impl move is durable;
+    reading the durable copy first keeps one row's plan the same before and
+    after that rotation. A row naming no plan in any of the three is still the
+    empty string, so it is returned for no plan.
+    """
+    if not isinstance(record, Mapping):
+        return ""
+    own = str(record.get("plan") or "").strip()
+    if own:
+        return own
+    for key in ("impl_move", "node_definition"):
+        block = record.get(key)
+        if isinstance(block, Mapping):
+            plan = str(block.get("plan") or "").strip()
+            if plan:
+                return plan
+    return ""
 
 
 def _active_records(records: Iterable[Any], boundary: float) -> list[dict[str, Any]]:
@@ -2309,7 +2337,7 @@ def load(
     completion stamp inclusively in epoch seconds. A warm index fetches only
     matching payloads; a cold index still reads every source to build it.
 
-    ``plan`` selects the rows whose own ``plan`` field is that value, so a read
+    ``plan`` selects the rows :func:`_row_plan` places in that plan, so a read
     of one plan's history decodes no other plan's payload: the filter is a
     predicate on an indexed column rather than a pass over decoded rows, and
     the cost of the read stops growing with the number of runs other plans
@@ -3897,11 +3925,7 @@ def read_records(
     if activity_since is not None and with_figures:
         records = _active_records(records, activity_since)
     if selected_plan:
-        records = [
-            record
-            for record in records
-            if str(record.get("plan") or "") == selected_plan
-        ]
+        records = [record for record in records if _row_plan(record) == selected_plan]
     if since is not None:
         boundary = _parse_timestamp(since, "since")
         filtered: list[dict[str, Any]] = []

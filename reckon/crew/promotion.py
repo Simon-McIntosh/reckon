@@ -607,40 +607,79 @@ def _landing_checkout(
 #: learn that nothing has changed.
 
 
+def _shared_branch_revision(record: Mapping[str, Any]) -> str:
+    """The revision the shared checkout's primary branch carries, or "".
+
+    A run's citations are what it made beyond its base, and a repair tells a
+    worker to merge the shared branch into its worktree. The commits that merge
+    brought in were made by peers and by already-landed runs, so the inference
+    subtracts this revision's history and cites only what the run itself made.
+
+    Read from the checkout the run was dispatched from, through the reader the
+    classification sweep already uses, because that reader answers for a whole
+    pass from one git process rather than one per live run. A record naming no
+    readable checkout answers empty, and the caller then cites the plain range:
+    an unknown shared branch is not evidence that its commits are the run's.
+    """
+    repository_raw = str(record.get("repo") or "").strip()
+    if not repository_raw:
+        return ""
+    repository = Path(repository_raw).expanduser()
+    if not repository.is_dir():
+        return ""
+    from .recovery_classification import _primary_branch_revision
+
+    return _primary_branch_revision(repository, time.monotonic())
+
+
 def _promotion_commits(
     record: Mapping[str, Any], manifest_commits: Sequence[Any]
 ) -> list[str]:
     """Read the run's committed range even when a repair cleared its citations.
 
-    The range is the first-parent line in ``base..HEAD`` in the run's own
-    tree: imports through a merge belong to primary, while the merge belongs
-    to the run. A tree whose head has
-    not moved answers from the previous read. The head is resolved as files
-    rather than by spawning git, so the check itself costs no process; when the
-    head cannot be read the answer is not stored, because an unreadable head is
-    not a stable one.
+    The range is the run's own line in ``base..HEAD`` in the run's own tree,
+    less the history the shared branch reaches, so imports through a merge
+    belong to primary while the merge itself stays the run's. A run that merged
+    the shared branch into its worktree therefore cites its own commit and that
+    merge and not the commits the merge brought in, and no commit it imported
+    from another branch is credited to it either.
+
+    The exclusion is not made redundant by the traversal: a run whose branch was
+    rebased onto the shared one has primary's own commits on its first-parent
+    line, and those are still not the run's work.
+
+    The range is answered from the previous read until the tree's own head or
+    the shared branch moves, and both are resolved as files or by one cached
+    read rather than by a git process per live run. When the head cannot be
+    read the answer is not stored.
     """
+    from .merge import commits_between
     from .recovery_memo import _worktree_head_identity
-    from .recovery_review_subject import _review_tree, reviewed_commits
+    from .recovery_review_subject import _review_tree
 
     tree = _review_tree(record)
     base = str(record.get("base_sha") or record.get("base") or "").strip()
     citations = tuple(str(sha) for sha in manifest_commits)
+    shared = _shared_branch_revision(record)
 
     def read() -> list[str]:
-        history = reviewed_commits(tree, base, "HEAD", first_parent=True)
+        if tree is None:
+            return [str(sha) for sha in manifest_commits]
+        history = commits_between(
+            tree, base, "HEAD", excluding=shared, first_parent=True
+        )
         return (
             [sha for sha, _subject in history]
             if history
             else [str(sha) for sha in manifest_commits]
         )
 
-    key = (str(tree) if tree is not None else "", base, citations)
+    key = (str(tree) if tree is not None else "", base, citations, shared)
     head_identity = _worktree_head_identity(tree)
     if head_identity in {"no-tree", "no-git", "no-head"}:
         return read()
     return file_memo.memoized_key(
-        "promotion_first_parent_commits", (*key, head_identity), read
+        "promotion_commits_beyond_primary", (*key, head_identity), read
     )
 
 
