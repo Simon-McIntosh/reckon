@@ -15,7 +15,6 @@ ready for that node's work.
 
 from __future__ import annotations
 
-import threading
 from collections import defaultdict
 from collections.abc import Iterable, Mapping
 from pathlib import Path
@@ -51,10 +50,6 @@ _DEAD_PHASES = frozenset({"failed", "stopped", "interrupted"})
 #: Every phase in which a live pointer holds nothing.
 RELEASED_PHASES = _PRE_LAUNCH_PHASES | _DEAD_PHASES
 
-#: The gate a promoted ledger row carries. Only a promoted row is a delivered
-#: run; a failed or superseded row recorded an outcome rather than a delivery.
-_PROMOTED_GATE = "passed"
-
 
 def _pointer_parts(pointer: Mapping[str, Any]) -> tuple[str, str, str, str, str]:
     """The node identity, plan, section, role and phase of one live pointer."""
@@ -68,59 +63,34 @@ def _pointer_parts(pointer: Mapping[str, Any]) -> tuple[str, str, str, str, str]
     return node_id, plan, section, role, str(pointer.get("phase") or "")
 
 
-def _row_parts(row: Mapping[str, Any]) -> tuple[str, str, str, str, str]:
-    """The same five parts for one ledger row, which stores them flat."""
+def _row_parts(row: Mapping[str, Any]) -> tuple[str, str, str, str]:
+    """The node identity, plan, section and role of one ledger row, stored flat."""
 
     return (
         str(row.get("node") or ""),
         str(row.get("plan") or ""),
         section_record_id(row.get("section") or ""),
         str(row.get("role") or "implement"),
-        _PROMOTED_GATE,
     )
 
 
-#: The ledger file a project's rows were last read from, its stat identity, and
-#: the rows themselves. A roadmap build reads the same history once per process
-#: until promotion writes another ledger row, so the read is bounded by the file
-#: rather than charged to every build.
-_HISTORY: dict[
-    tuple[str, str], tuple[tuple[int, int] | None, list[dict[str, Any]]]
-] = {}
+def _history_rows(project: str, root: str | Path | None) -> list[dict[str, Any]]:
+    """The project's completed promotions, through the ledger's indexed read.
 
-_HISTORY_LOCK = threading.Lock()
+    Every row the picker projection returns is a completed promotion. A row's
+    gate records what that run's own check found — ``passed``, ``not-run`` or
+    ``failed`` — and not whether the node was delivered, so a delivery promoted
+    under any of them holds its node. Filtering on ``passed`` would read a
+    section whose run skipped or lost its check as never delivered, which is the
+    delivered state this module exists to stop offering again.
+    """
 
-
-def _history_identity(project: str, root: str | Path | None) -> tuple[int, int] | None:
     from reckon import ledger
 
     try:
-        stat = ledger.ledger_path(project, root).stat()
-    except OSError:
-        return None
-    return (stat.st_mtime_ns, stat.st_size)
-
-
-def _promoted_rows(project: str, root: str | Path | None) -> list[dict[str, Any]]:
-    """The project's promoted ledger rows, read once per ledger state."""
-
-    key = (project, str(root))
-    identity = _history_identity(project, root)
-    if identity is None:
-        return []
-    with _HISTORY_LOCK:
-        cached = _HISTORY.get(key)
-        if cached is not None and cached[0] == identity:
-            return cached[1]
-    from reckon import ledger
-
-    try:
-        rows = ledger.picker_runs(project, root)
+        return ledger.picker_runs(project, root)
     except Exception:  # noqa: BLE001 - an unreadable ledger holds nothing
         return []
-    with _HISTORY_LOCK:
-        _HISTORY[key] = (identity, rows)
-    return rows
 
 
 def _collect(
@@ -137,10 +107,12 @@ def _collect(
 
     A node is identified by the dispatch node id its run record names. The two
     records can name the same node, and they agree in that case — the pointer is
-    the request that has not been promoted yet — so the held row is keyed by node
-    and a later promoted row replaces an earlier live one rather than counting
-    twice. The section id stands in when a record names no node, so a row written
-    before node ids were recorded still holds its own section.
+    the request that was promoted — so the held row is keyed by node and a later
+    promoted row replaces an earlier live one rather than counting twice. A
+    promoted row also takes its node out of the free set: a pointer released since
+    the delivery still names that node, and the row says the node was built. The
+    section id stands in when a record names no node, so a row written before node
+    ids were recorded still holds its own section.
     """
 
     wanted = None if plans is None else {str(plan) for plan in plans}
@@ -179,18 +151,21 @@ def _collect(
             "phase": phase,
         }
 
-    for row in _promoted_rows(project, root):
+    for row in _history_rows(project, root):
         if not isinstance(row, Mapping):
             continue
-        if str(row.get("gate") or "") != _PROMOTED_GATE:
-            continue
-        node_id, plan, section, role, _gate = _row_parts(row)
+        node_id, plan, section, role = _row_parts(row)
         if role not in EXECUTABLE_SECTION_ROLES:
             continue
         key = target(plan, section)
         if key is None:
             continue
         node_key = node_id or section
+        # A promoted row is the node's last record. A pointer released since then
+        # (a stored request that was dropped, a run that stopped without
+        # delivering) still names the node and must not keep it free, because the
+        # row says the node was delivered.
+        free[key].discard(node_key)
         held[key][node_key] = {
             "kind": RUN_HOLD,
             "run_id": str(row.get("run_id") or ""),
@@ -249,21 +224,3 @@ def held_node_rows(
     nodes = held.get(key, {})
     wanted = str(node or "") or key[1]
     return [row for node_key, row in sorted(nodes.items()) if node_key == wanted]
-
-
-def section_nodes(
-    project: str,
-    root: str | Path | None,
-    pointers: Iterable[Mapping[str, Any]] = (),
-    *,
-    plans: Iterable[str] | None = None,
-) -> dict[tuple[str, str], set[str]]:
-    """Every node id the run records know of, held or free, per section."""
-
-    held, free = _collect(project, root, pointers, plans=plans)
-    nodes: dict[tuple[str, str], set[str]] = {}
-    for key, entries in held.items():
-        nodes.setdefault(key, set()).update(entries)
-    for key, entries in free.items():
-        nodes.setdefault(key, set()).update(entries)
-    return nodes

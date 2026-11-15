@@ -112,7 +112,15 @@ def _seed(repository: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     return docs
 
 
-def _promoted_row(repository: Path, *, plan: str, section: str, node: str, head: str):
+def _promoted_row(
+    repository: Path,
+    *,
+    plan: str,
+    section: str,
+    node: str,
+    head: str,
+    gate: str = "passed",
+):
     """One promoted ledger row, which is what a delivered run leaves behind."""
 
     path = ledger.ledger_path(PROJECT, repository)
@@ -126,7 +134,7 @@ def _promoted_row(repository: Path, *, plan: str, section: str, node: str, head:
         section=section,
         node=node,
         role="implement",
-        gate="passed",
+        gate=gate,
         commits=[head],
         completed_at="2026-11-10T10:00:00Z",
     )
@@ -231,6 +239,83 @@ def test_a_live_delivered_run_holds_its_node(
     assert [hold["state"] for hold in row["section_verdicts"]["s1"]["blockers"]] == [
         "live"
     ]
+
+
+@pytest.mark.parametrize("gate", ledger.GATE_VERDICTS)
+def test_a_delivery_promoted_under_any_gate_holds_its_node(
+    checkout: Path, monkeypatch: pytest.MonkeyPatch, gate: str
+) -> None:
+    """A row's gate records the run's own check, not whether it delivered.
+
+    Every row the picker projection returns is a completed promotion. The run's
+    gate may be ``passed``, ``not-run`` (the check's evidence could not be
+    produced) or ``failed`` (the check lost, and the promotion was still taken),
+    and all three delivered the node they name.
+    """
+
+    head = _git(checkout, "rev-parse", "HEAD")
+    _promoted_row(checkout, plan=PLAN, section="s1", node="n-one", head=head, gate=gate)
+    monkeypatch.setattr("reckon.crew.list_live", list)
+
+    report = roadmap.build_roadmap(
+        PROJECT, _inventory({"s1": "implementable"}), [], docs_dir=checkout / "docs"
+    )
+    row = next(item for item in report["pending_work"] if item["slug"] == PLAN)
+
+    assert "s1" not in row["ready_sections"]
+    holds = row["section_verdicts"]["s1"]["blockers"]
+    assert [(hold["state"], hold["run_id"]) for hold in holds] == [
+        ("promoted", "run-n-one")
+    ]
+
+
+def test_a_released_pointer_never_frees_a_node_a_row_delivered(
+    checkout: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A dead pointer for a delivered node must not put the section back in play.
+
+    The section's node was delivered, and a later attempt on it stopped without
+    delivering. The pointer names the node as free; the promoted row says that
+    node was built, and the row is the newer record of the two. A section whose
+    only pointer is dead, with no row behind it, stays ready — the fix must not
+    read every stopped run as delivered.
+    """
+
+    head = _git(checkout, "rev-parse", "HEAD")
+    _promoted_row(checkout, plan=PLAN, section="s1", node="n-one", head=head)
+    monkeypatch.setattr(
+        "reckon.crew.list_live",
+        lambda: [
+            {
+                "run_id": "run-n-retry",
+                "project": PROJECT,
+                "member": "worker-four",
+                "phase": "stopped",
+                "node": {"id": "n-one", "plan": PLAN, "section": "s1"},
+            },
+            {
+                "run_id": "run-n-abandoned",
+                "project": PROJECT,
+                "member": "worker-five",
+                "phase": "stopped",
+                "node": {"id": "n-two", "plan": PLAN, "section": "s2"},
+            },
+        ],
+    )
+
+    report = roadmap.build_roadmap(
+        PROJECT,
+        _inventory({"s1": "implementable", "s2": "implementable"}),
+        [],
+        docs_dir=checkout / "docs",
+    )
+    row = next(item for item in report["pending_work"] if item["slug"] == PLAN)
+
+    assert "s1" not in row["ready_sections"]
+    assert [hold["run_id"] for hold in row["section_verdicts"]["s1"]["blockers"]] == [
+        "run-n-one"
+    ]
+    assert "s2" in row["ready_sections"]
 
 
 def _batch() -> list[dict]:

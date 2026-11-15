@@ -38,20 +38,26 @@
   leaves: the live pointers, where a phase of <code>complete</code> or a running phase holds and a stored
   request (<code>queued</code>, <code>held</code>, <code>awaiting-upstream</code>,
   <code>blocked-upstream</code>, <code>launch-failed</code>) or a dead run (<code>failed</code>,
-  <code>stopped</code>, <code>interrupted</code>) does not; and the promoted ledger rows, which are the
-  only record left once the pointer is gone. Only the roles that implement a section
+  <code>stopped</code>, <code>interrupted</code>) does not; and the ledger rows, which are the only
+  record left once the pointer is gone. Only the roles that implement a section
   (<code>implement</code>, <code>test</code>) are counted, so a review never holds its own section.
-  <b>The hold is per node:</b> a section is held only when every node the records know of is held, so a
-  section split into several dispatch nodes keeps the work of a node that has not been delivered
-  dispatchable. Nodes are the dispatch node ids the records carry; a record with no node id is its
-  section's own node.</p>
+  <b>A row's gate says what the run's check found, not whether it delivered.</b> Every row the ledger's
+  picker projection returns is a completed promotion: <code>passed</code>, <code>not-run</code> (the
+  check's evidence could not be produced) and <code>failed</code> (the check lost and the promotion was
+  taken anyway) all promoted a node, so none of the three is filtered out. <b>The hold is per node:</b> a
+  section is held only when every node the records know of is held, so a section split into several
+  dispatch nodes keeps the work of a node that has not been delivered dispatchable. Nodes are the
+  dispatch node ids the records carry; a record with no node id is its section's own node. A row is the
+  later record of the two, so it also takes its node out of the free set: a pointer released after the
+  delivery — an attempt dropped, or one that stopped without delivering — no longer puts the section
+  back in play.</p>
 
   <p id="qwnw-a-section-a-run-has-delivered-is-not-ready-sites">What changed, by site:</p>
   <ul id="qwnw-a-section-a-run-has-delivered-is-not-ready-sites-list">
     <li><code>reckon/crew/section_holds.py</code> — the hold itself: <code>held_section_blockers</code>
-    (:206) for a readiness answer, <code>held_node_rows</code> (:232) for one node about to be queued,
-    and <code>section_nodes</code> (:254) for the node set. The promoted history is one indexed
-    <code>ledger.picker_runs</code> projection per ledger state, cached across builds;</li>
+    (:179) for a readiness answer and <code>held_node_rows</code> (:205) for one node about to be
+    queued. The promoted history is the ledger's own indexed read
+    (<code>ledger.picker_runs</code>), so the probe keeps no cache of its own;</li>
     <li><code>reckon/roadmap.py:3781</code> — the hold is computed once per build and folded into
     <code>named_holds</code> (:4591), which is what makes it a section blocker of kind
     <code>run</code>; <code>:4617</code> adds it to the condition that populates
@@ -76,7 +82,10 @@
   <code>s2</code>, whose second node exists as an <code>awaiting-upstream</code> request, stays listed;
   a batch entry for <code>n-one</code> answers <code>held</code> while <code>n-other</code> queues; and a
   done section whose run's head is on a side branch yields the finding, with the landed-head twin of that
-  fixture emitting nothing.</p>
+  fixture emitting nothing. Two further cases hold the edges: a delivery promoted under each of
+  <code>passed</code>, <code>not-run</code> and <code>failed</code> holds its node identically, and a
+  stopped pointer naming an already-delivered node is not taken as freeing it, while a stopped pointer
+  with no row behind it stays ready — the fix must not read every stopped run as delivered.</p>
 
   <p id="qwnw-a-section-a-run-has-delivered-is-not-ready-evidence">Evidence, all resolved over its own
   revision. Against the base revision <code>34e8cf65b53bd57225fc6acbf74230a493a3527e</code> the same test
