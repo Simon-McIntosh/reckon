@@ -255,12 +255,16 @@ def admit_once(
         )
         remaining: dict[tuple[str, str], float | None] = {}
         allowance_sources: dict[tuple[str, str], str] = {}
-        # The router's own verdict for each session read this pass, and the
-        # sessions whose exhausted grant has already been waited on. Both are
-        # per pass: a verdict describes the reading it came with, and a session
-        # is waited on once per pass however many requests it is holding.
+        # The router's own verdict for each session read this pass, the sessions
+        # whose full reading has already been waited on, and how many launches
+        # each session has already been given from this pass's grant. All three
+        # are per pass: a verdict describes the reading it came with, a session
+        # is waited on once per pass however many requests it is holding, and a
+        # session that has spent part of its grant is not read as full -- the
+        # zero is this pass's own arithmetic, not the lane's reading.
         router_verdicts: dict[tuple[str, str], str] = {}
         room_waits: set[tuple[str, str]] = set()
+        launches_by_key: dict[tuple[str, str], int] = {}
         verdicts: list[dict[str, Any]] = result["verdicts"]
         for pointer in unplaceable:
             allowance, source = _holds._session_allowance_read(
@@ -370,15 +374,22 @@ def admit_once(
                     launches.wait_for_allowance(allowance_key)
                     allowance = remaining[allowance_key]
                     if allowance is not None and allowance <= 0:
-                        room = _wait_for_lane_room(
-                            pointer,
-                            config_for=config_for,
-                            tick=tick,
-                            deadline=deadline,
-                            waited=room_waits,
-                            key=allowance_key,
-                            router_verdict=router_verdicts.get(allowance_key, ""),
-                        )
+                        # Only a grant this pass has not spent is read as the
+                        # lane's reading of full. A zero this pass's own launches
+                        # produced is our arithmetic on a figure the lane already
+                        # published, and re-reading it would grant the session a
+                        # second helping of the same slots.
+                        room = None
+                        if not launches_by_key.get(allowance_key):
+                            room = _wait_for_lane_room(
+                                pointer,
+                                config_for=config_for,
+                                tick=tick,
+                                deadline=deadline,
+                                waited=room_waits,
+                                key=allowance_key,
+                                router_verdict=router_verdicts.get(allowance_key, ""),
+                            )
                         if room is not None:
                             allowance, room_source = room
                             remaining[allowance_key] = allowance
@@ -607,6 +618,9 @@ def admit_once(
                         )
                     )
                     continue
+                launches_by_key[allowance_key] = (
+                    launches_by_key.get(allowance_key, 0) + 1
+                )
                 launches.submit(
                     allowance_key,
                     pointer,
