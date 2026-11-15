@@ -1,0 +1,49 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "caption_note": "The figcaption explains rather than repeats the figure's title: it names what the closed and open marks mean and identifies the dotted line as the declared usable window of 230 144 tokens, which no compaction reached within less than 24 632 tokens. It is not recorded as a caption finding.",
+  "completed_at": "2026-11-15T07:08:56.271Z",
+  "dispatched_at": "2026-11-15T06:55:10Z",
+  "findings": [
+    {
+      "file": "docs/figures/a-review-dies-where-nobody-is-looking/a-local-worker-compacts-and-continues-measured/plot_compaction_drops.py",
+      "id": "fb88d447ea2",
+      "line": 67,
+      "severity": "non-blocking",
+      "summary": "The window annotation states its number in base tokens ('230 144') directly above an axis ticks in thousands ('context [k tokens] ... 200'), so the one comparison the figure exists to make - the dotted rule against the marks below it - needs a mental division by 1 000. As rendered the rule sits at 230.144 on the plotted scale while its own label reads 230 144, and the space thousands separator lets the number be read as two numbers, 230 and 144. Nothing is hidden or clipped and the fragment's prose gives the figure's exact reference points, so this does not stop a reader; stating the unit in the label, or writing the threshold in the axis's own units, would let the comparison be read without conversion."
+    }
+  ],
+  "item_verdicts": {
+    "contrast": "pass - every text run clears its background. Axis titles and tick values are near-black on white; the window annotation is rgb(90,90,90), about 7:1 on white; the direct labels and data marks are rgb(47,111,191), about 5:1 on white. The dotted rule is rgb(146,146,146) at about 3.5:1, which is not a text contrast floor and is still visible in the render.",
+    "data_ink": "pass - the data carry almost all of the ink. Of 1 007 280 pixels, 28 677 are non-white and 10 396 of those are the data blue rgb(47,111,191): six 2.6 pt stems with a filled head at the 'before' end and an open head at the 'after' end. The rest is two spines, nine tick marks, the tick and axis text, and one fine dotted rule. No gradient and no shading.",
+    "decoration": "pass - plain white background, no grid, no fill, no band and no shading; the top and right spines are absent, so only the two axes that carry a scale are drawn. The single dotted grey rule is a labelled threshold, not decoration.",
+    "label_collision": "pass - no label is clipped, overlaps another label, or sits on the data. Ink runs to x 1376 of a 1399 px canvas and to y 689 of 720, leaving 23 px and 31 px of margin, so nothing is cut off at the edge. The window annotation occupies y 40-56 and the dotted rule it describes runs at about y 68, a clear 12 px gap rather than a strike-through; its x span 997-1360 sits far above every mark (the highest mark is at y about 140). 'before' sits 14 points above the first closed head and 'after' 22 points below the last open head, neither touching a stem. The closest two stems are 47 px apart at x 1255 and 1302 with 16 px markers, so no two marks overlap.",
+    "legibility": "pass - the render is readable at a glance and every quantity is named. Measured on the attached 1399x720 PNG: the y-axis-title strip (x 0-59) holds 1 680 non-white pixels spelling 'context [k tokens]', the x-axis-title strip (y 660-719) holds 1 820 spelling 'stream record index', the y-tick strip (x 60-109) holds 1 287 pixels carrying five tick values 0/50/100/150/200, and the x-tick strip (y 600-659) holds 4 606 pixels carrying '6 000', '6 500', '7 000', '7 500'. Direct labels 'before' and 'after' sit at the two ends of the plotted records and the dotted rule carries its own label. A reader reads six compaction drops from about 200k to about 25k against a 230k threshold without consulting anything else.",
+    "table_form": "pass - the image does not depict information that would be better as a table. The six boundaries are a sequence along the stream, and the figure's message is their repetition at one operating point (every drop from about 200k to between 21k and 31k, every firing at 86-89 percent of the declared window), which a table shows less directly. The exact per-boundary numbers are already carried in the fragment's own table, so nothing is lost by the figure not restating them."
+  },
+  "notes": "Read-only figure review of the single PNG named in this review. Only that PNG was opened, together with crops and pixel measurements derived from it; no SVG was opened, read, listed or rendered, and no other image was read. No file was edited, created, moved, deleted, redrawn, relabelled or reformatted; this record is the only artifact.",
+  "project": "reckon",
+  "review_run_id": "r-20261115T065434062350-review-of-a-local-worker-compacts-and-continues-measured-5485d5d6359b-figure",
+  "reviewed_base_sha": "c1268f5d6ca969807f57b5f1b75fd29cbb4fab2d",
+  "reviewed_commits": [
+    "5485d5d6359b00d23f41f7cf3e441ef6df09aae0"
+  ],
+  "reviewed_figures": [
+    {
+      "drawing_script": "docs/figures/a-review-dies-where-nobody-is-looking/a-local-worker-compacts-and-continues-measured/plot_compaction_drops.py",
+      "drawing_script_note": "the reviewed head 5485d5d635 modifies plot_compaction_drops.py (svg.fonttype back to 'path'), so script findings anchor to its line numbers",
+      "image": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T065434062350-review-of-a-local-worker-compacts-and-continues-measured-5485d5d6359b-figure/image-0.png",
+      "image_opened": true,
+      "pixels": "1399x720",
+      "rendered_from": "docs/figures/a-review-dies-where-nobody-is-looking/a-local-worker-compacts-and-continues-measured/compaction-drops.svg"
+    }
+  ],
+  "reviewed_head_sha": "5485d5d6359b00d23f41f7cf3e441ef6df09aae0",
+  "reviewed_run_id": "r-20261114T205719669237-a-local-worker-compacts-and-continues-measured",
+  "rubric": "figure",
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-15T07:05:00Z",
+  "total": null,
+  "verification": "The plotted positions reconcile with the fragment's own boundary table. X tick marks measured at x 145.5, 469.5, 792.5 and 1116.5 for records 6 000, 6 500, 7 000 and 7 500 give 0.6473 px per record; the six stem centres measured at x 184.5, 449, 913.5, 1134, 1255 and 1302.5 invert to stream records 6 060, 6 469, 7 186, 7 527, 7 714 and 7 788, matching the table's 6 060 / 6 469 / 7 187 / 7 528 / 7 715 / 7 788 to within one record of antialiasing. The alt text's '6 060 to 7 788' therefore agrees with the picture."
+}
