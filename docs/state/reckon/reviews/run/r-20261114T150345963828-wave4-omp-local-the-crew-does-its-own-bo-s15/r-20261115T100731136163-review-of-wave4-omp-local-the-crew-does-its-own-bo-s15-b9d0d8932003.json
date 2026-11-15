@@ -1,0 +1,72 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "7ccec2dd4e2986e92c5ca480118d8aad26bb7397",
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/hooks/coordinator_obligations.py:1638",
+    "reckon/mcp_views.py:4618",
+    "reckon/crew/obligation_snapshot.py:1427 (_review_duty_survives_read)",
+    "reckon/crew/obligation_snapshot.py:1309 (_review_dispatch_for_head)"
+  ],
+  "completed_at": "2026-11-15T12:05:58.896Z",
+  "dispatched_at": "2026-11-15T12:05:28Z",
+  "findings": [
+    {
+      "file": "reckon/crew/obligation_snapshot.py",
+      "line": "1159",
+      "severity": "non-blocking",
+      "text": "non-blocking: the fix lands in a module outside the node's five granted paths, so a peer fenced elsewhere could have collided with it; the read-time settlement exists in no granted file, so the coordinator should widen the grant rather than revert the change."
+    },
+    {
+      "file": "tests/test_a_review_missing_duty_clears_when_its_review_is_dispatched_or_queued.py",
+      "line": "255",
+      "severity": "non-blocking",
+      "text": "non-blocking: `recorded[\"run_id\"] == QUEUED_REVIEW` compares the pointer against the very value the test handed _record_dispatch at :250, so both sides move together and it survives any regression of the settlement \u2014 it proves the fixture round-tripped, not that the code under test settles the row."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261114T150345963828-wave4-omp-local-the-crew-does-its-own-bo-s15/manifest.md",
+      "line": "17",
+      "severity": "non-blocking",
+      "text": "non-blocking: the head arm and the negative control ran at 397a511f72, one commit behind the delivered head b9d0d893, so the gate measures a tree the review is not about; the intervening commit reformats the test file and reorders an import."
+    }
+  ],
+  "head_log_revision": "397a511f72c9077452d50a38beb6c5c5d15a4f4c",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "Two commits read against base 7ccec2dd \u2014 397a511f72 changes obligation_snapshot.py (a frozenset REVIEW_DISPATCH_STARTED_STATUSES replacing the literal \"dispatched\" test) and adds the 255-line test, and b9d0d8932003 adds the 28-line evidence fragment and reformats the test file.",
+    "done_when": "The done_when asks one test per window (dispatched, queued, admitted under a new id) plus a negative control that removes the check; tests/test_a_review_missing_duty_clears_when_its_review_is_dispatched_or_queued.py:192,214,237 are those three cases and arms/negative_control.log is the control, so the gate does assert the measure, though its head arm ran at 397a511f72 rather than the delivered head b9d0d893.",
+    "goal": "The node's goal is section s15's deliverable \u2014 a held review-missing row must clear on a review the reflex queued as well as one it dispatched; reckon/crew/obligation_snapshot.py:1259-1310 is the read-time settlement that now accepts a `queued` dispatch entry.",
+    "manifest": "Read; it records base 36 passed EXIT=0 and head 39 passed EXIT=0 with paths to all three logs, a negative control of 2 failed 1 passed EXIT=1, and it names the out-of-scope module under outside_scope rather than hiding it.",
+    "write_paths": "prompt.txt:80-85 grants five paths (reckon/crew/obligations.py, reckon/crew/recovery_classification.py, the new test file, a docs/evidence fragment and a docs/figures directory); `git diff --stat 7ccec2dd b9d0d893` changes three paths, of which the test and the fragment are inside the grant and reckon/crew/obligation_snapshot.py is not."
+  },
+  "justifications": {
+    "durability": "arms/negative_control.log shows the control narrowing REVIEW_DISPATCH_STARTED_STATUSES back to frozenset({\"dispatched\"}) turning both queued cases red at tests/test_a_review_missing_duty_clears_when_its_review_is_dispatched_or_queued.py:234 and :258 while the dispatched case stays green, which is the regression the guard exists for.",
+    "evidence": "arms/base.log and arms/head.log carry revision, tree, literal command, module and cwd headers and close with 36 passed EXIT=0 and 39 passed EXIT=0, but the done_when's \"four follower variables unset\" clause has no receipt anywhere in manifest.md and the head arm ran at 397a511f72, one commit behind the delivered head.",
+    "fit": "the constant at reckon/crew/obligation_snapshot.py:1170 sits beside REVIEW_DISPATCH_FIELDS at :1161 in the module's own `#:` doc-comment idiom and follows the held-status set pattern at reckon/crew/recovery_review_dispatch.py:2288.",
+    "goal_fidelity": "reckon/crew/obligation_snapshot.py:1280 now settles a duty on any dispatch status in REVIEW_DISPATCH_STARTED_STATUSES at :1170, which is exactly the held-answer window the goal names.",
+    "reuse": "a search of reckon/crew for a set of statuses under which a review exists found only HELD_REVIEW_DISPATCH_STATUSES (a re-routable-hold question) and REVIEW_LANE_PAUSED_STATUS (a refusal question), so no owner of this capability exists and the constant is the first.",
+    "scope_discipline": "`git diff --stat 7ccec2dd b9d0d893` changes reckon/crew/obligation_snapshot.py:1156-1310, a path prompt.txt:80-85 does not grant, so the landed fix sits outside the fence."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The node's goal is section s15's deliverable \u2014 a held review-missing row must clear on a review the reflex queued as well as one it dispatched; reckon/crew/obligation_snapshot.py:1259-1310 is the read-time settlement that now accepts a `queued` dispatch entry.\nVERDICT done_when: The done_when asks one test per window (dispatched, queued, admitted under a new id) plus a negative control that removes the check; tests/test_a_review_missing_duty_clears_when_its_review_is_dispatched_or_queued.py:192,214,237 are those three cases and arms/negative_control.log is the control, so the gate does assert the measure, though its head arm ran at 397a511f72 rather than the delivered head b9d0d893.\nVERDICT write_paths: prompt.txt:80-85 grants five paths (reckon/crew/obligations.py, reckon/crew/recovery_classification.py, the new test file, a docs/evidence fragment and a docs/figures directory); `git diff --stat 7ccec2dd b9d0d893` changes three paths, of which the test and the fragment are inside the grant and reckon/crew/obligation_snapshot.py is not.\nVERDICT manifest: Read; it records base 36 passed EXIT=0 and head 39 passed EXIT=0 with paths to all three logs, a negative control of 2 failed 1 passed EXIT=1, and it names the out-of-scope module under outside_scope rather than hiding it.\nVERDICT diff: Two commits read against base 7ccec2dd \u2014 397a511f72 changes obligation_snapshot.py (a frozenset REVIEW_DISPATCH_STARTED_STATUSES replacing the literal \"dispatched\" test) and adds the 255-line test, and b9d0d8932003 adds the 28-line evidence fragment and reformats the test file.\nCALL_SITES: reckon/hooks/coordinator_obligations.py:1638, reckon/mcp_views.py:4618, reckon/crew/obligation_snapshot.py:1427 (_review_duty_survives_read), reckon/crew/obligation_snapshot.py:1309 (_review_dispatch_for_head)\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/obligation_snapshot.py:1280 now settles a duty on any dispatch status in REVIEW_DISPATCH_STARTED_STATUSES at :1170, which is exactly the held-answer window the goal names.\nSCORE evidence: 16\nJUSTIFICATION evidence: arms/base.log and arms/head.log carry revision, tree, literal command, module and cwd headers and close with 36 passed EXIT=0 and 39 passed EXIT=0, but the done_when's \"four follower variables unset\" clause has no receipt anywhere in manifest.md and the head arm ran at 397a511f72, one commit behind the delivered head.\nSCORE scope_discipline: 11\nJUSTIFICATION scope_discipline: `git diff --stat 7ccec2dd b9d0d893` changes reckon/crew/obligation_snapshot.py:1156-1310, a path prompt.txt:80-85 does not grant, so the landed fix sits outside the fence.\nSCORE durability: 19\nJUSTIFICATION durability: arms/negative_control.log shows the control narrowing REVIEW_DISPATCH_STARTED_STATUSES back to frozenset({\"dispatched\"}) turning both queued cases red at tests/test_a_review_missing_duty_clears_when_its_review_is_dispatched_or_queued.py:234 and :258 while the dispatched case stays green, which is the regression the guard exists for.\nSCORE fit: 18\nJUSTIFICATION fit: the constant at reckon/crew/obligation_snapshot.py:1170 sits beside REVIEW_DISPATCH_FIELDS at :1161 in the module's own `#:` doc-comment idiom and follows the held-status set pattern at reckon/crew/recovery_review_dispatch.py:2288.\nSCORE reuse: 20\nJUSTIFICATION reuse: a search of reckon/crew for a set of statuses under which a review exists found only HELD_REVIEW_DISPATCH_STATUSES (a re-routable-hold question) and REVIEW_LANE_PAUSED_STATUS (a refusal question), so no owner of this capability exists and the constant is the first.\nFINDING reckon/crew/obligation_snapshot.py:1159 non-blocking: the fix lands in a module outside the node's five granted paths, so a peer fenced elsewhere could have collided with it; the read-time settlement exists in no granted file, so the coordinator should widen the grant rather than revert the change.\nFINDING tests/test_a_review_missing_duty_clears_when_its_review_is_dispatched_or_queued.py:255 non-blocking: `recorded[\"run_id\"] == QUEUED_REVIEW` compares the pointer against the very value the test handed _record_dispatch at :250, so both sides move together and it survives any regression of the settlement \u2014 it proves the fixture round-tripped, not that the code under test settles the row.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261114T150345963828-wave4-omp-local-the-crew-does-its-own-bo-s15/manifest.md:17 non-blocking: the head arm and the negative control ran at 397a511f72, one commit behind the delivered head b9d0d893, so the gate measures a tree the review is not about; the intervening commit reformats the test file and reorders an import.",
+  "review_run_id": "r-20261115T100731136163-review-of-wave4-omp-local-the-crew-does-its-own-bo-s15-b9d0d8932003",
+  "reviewed_base_sha": "7ccec2dd4e2986e92c5ca480118d8aad26bb7397",
+  "reviewed_head_sha": "b9d0d8932003ac0cb62565c33def0089d5165fc6",
+  "reviewed_run_id": "r-20261114T150345963828-wave4-omp-local-the-crew-does-its-own-bo-s15",
+  "scores": {
+    "durability": 19,
+    "evidence": 16,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 11
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-15T12:17:32.972215+00:00",
+  "total": 103
+}
