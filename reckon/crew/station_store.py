@@ -40,6 +40,7 @@ import json
 import sqlite3
 import sys
 import threading
+import uuid
 from collections.abc import Iterable, Mapping
 from contextlib import closing
 from datetime import UTC, date, datetime, timedelta
@@ -69,6 +70,11 @@ RETENTION_DAYS = 7
 HEARTBEAT_KEY = "heartbeat"
 CODE_IDENTITY_KEY = "code_identity"
 STARTED_AT_KEY = "started_at"
+# The name this store gave itself when it was opened, so a reader can tell a
+# store it has been reading from a different one opened at the same path. A
+# copy of a store carries it; a store created after the last one was lost does
+# not, and only the second case means the rows a reader already read are gone.
+STORE_IDENTITY_KEY = "store_identity"
 EVENT_COUNTER_KEY = "events_counter"
 EVENT_GENERATION_KEY = "events_generation"
 # The crew home this station reads from. A follower whose own home is not this
@@ -381,6 +387,9 @@ class StationStore:
         self.database = self.root / DATABASE_NAME
         self.day_directory = self.root / DAY_DIRECTORY
         self._connection: sqlite3.Connection | None = None
+        # The device and inode of the database file this handle opened, so a
+        # reader can tell that the store at this path was replaced under it.
+        self._database_identity: tuple[int, int] | None = None
 
     @classmethod
     def at_runtime_root(
@@ -431,8 +440,43 @@ class StationStore:
         self._ensure_cursor_columns(connection)
         connection.commit()
         self._connection = connection
+        self._database_identity = self.database_identity()
         self._ensure_station_identity()
         return connection
+
+    def database_identity(self) -> tuple[int, int] | None:
+        """The device and inode of the database file at this store's path now.
+
+        ``None`` when the path holds no file, which names no store rather than a
+        replaced one: the station may not have created its new one yet.
+        """
+        try:
+            status = self.database.stat()
+        except OSError:
+            return None
+        return (status.st_dev, status.st_ino)
+
+    def reconnect_if_replaced(self) -> bool:
+        """Reopen the store when the file at its path is no longer the one opened.
+
+        The store is node-local, so a runtime directory that was re-created
+        leaves a long-lived reader holding a connection to an unlinked
+        database. The station's new file is a different inode at the same path,
+        and ``PRAGMA data_version`` -- which moves only when another connection
+        commits to the database *this* connection has open -- never moves again,
+        so a generation gate reading it answers "nothing moved" for the reader's
+        whole life. Reopening is what lets it see the store that is there.
+
+        The probe is one ``stat`` beside the pragma the gate already pays for. A
+        file that is absent names no replacement, so nothing is reopened and the
+        next poll asks again.
+        """
+        current = self.database_identity()
+        if current is None or current == self._database_identity:
+            return False
+        self.close()
+        self.connect()
+        return True
 
     @staticmethod
     def _ensure_stream_columns(connection: sqlite3.Connection) -> None:
@@ -518,15 +562,46 @@ class StationStore:
             connection.execute(
                 "INSERT OR IGNORE INTO station (key, value) VALUES (?, ?)", (key, value)
             )
+        seed = self._opening_sequence(connection)
+        for key in (EVENT_COUNTER_KEY, EVENT_GENERATION_KEY):
+            connection.execute(
+                "INSERT OR IGNORE INTO station (key, value) VALUES (?, ?)",
+                (key, "0" if seed is None else str(seed)),
+            )
         connection.execute(
-            "INSERT OR IGNORE INTO station (key, value) VALUES (?, '0')",
-            (EVENT_COUNTER_KEY,),
-        )
-        connection.execute(
-            "INSERT OR IGNORE INTO station (key, value) VALUES (?, '0')",
-            (EVENT_GENERATION_KEY,),
+            "INSERT OR IGNORE INTO station (key, value) VALUES (?, ?)",
+            (STORE_IDENTITY_KEY, uuid.uuid4().hex),
         )
         connection.commit()
+
+    def _opening_sequence(self, connection: sqlite3.Connection) -> int | None:
+        """The id a store with no counter yet opens at, or None when it has one.
+
+        A new store's first event is numbered after the highest id its day files
+        hold. The counter lives in the main database and the events live in one
+        day file per day, so a store whose database was lost while its day files
+        survived would otherwise number its first event below the ids already
+        written, collide with one of them on the day file's primary key, and
+        leave every reader's cursor -- an id in that space -- naming a row it
+        had already read.
+        """
+        held = connection.execute(
+            "SELECT 1 FROM station WHERE key = ?", (EVENT_COUNTER_KEY,)
+        ).fetchone()
+        if held is not None:
+            return None
+        highest = 0
+        for path in self.day_files():
+            try:
+                with closing(sqlite3.connect(str(path), timeout=1.0)) as day:
+                    found = day.execute(
+                        "SELECT COALESCE(MAX(id), 0) FROM events"
+                    ).fetchone()
+            except sqlite3.Error:
+                continue
+            if found is not None:
+                highest = max(highest, int(found[0] or 0))
+        return highest
 
     def station_value(self, key: str) -> str | None:
         row = (

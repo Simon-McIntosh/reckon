@@ -1,0 +1,60 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-15T16:49:23.241Z",
+  "dispatched_at": "2026-11-15T16:49:02Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/lead-decisions-reach-one-place/r-20261115T164644604848-plan-review-of-lead-decisions-reach-one-place/plan.html:35",
+      "id": "reasoning-1",
+      "reason": "",
+      "text": "\u2014 \u00a71 defines its population twice with two different criteria: \"every open decision that waits on the lead\" and \"an open decision already written in a plan's decisions block appears in the same read\". An unset `data-choice` carries no evidence that any work waits on it, so the second arm admits decisions with no held work and no requester; measured in the mounted projects today, unset decisions are 62 across five projects (reckon 25, imas-codex 15, imas-ambix 11, nova 10, imas-efit 1), against the single decision the Why paragraph names as actually waiting (\"the basis choice for iron-core-magnetisation \u00a75\", `formulation`, the only unset entry of its three examples). \u00a74 then presents \"every open decision to the lead\", so the surface opens on roughly 62 mostly-draft entries and the lead has no way to read which of them holds work \u2014 and the plan names no criterion that could decide it. The system already holds such a criterion: a plan decision is what a node's `requires_decisions` names, and a node whose required decision is unlocked is refused (reckon/crew/node.py:808, :1487) \u2014 work is then genuinely held behind that decision. WOULD_CHANGE_THE_PLAN: yes \u2014 REASON: without a stated criterion the \u00a71 worker picks one (all unset decisions, or only held records), and \u00a71's measure and \u00a74's presentation measure different populations depending on which reading the worker took.",
+      "type": "reasoning",
+      "would_change": null
+    },
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/lead-decisions-reach-one-place/r-20261115T164644604848-plan-review-of-lead-decisions-reach-one-place/plan.html:35",
+      "id": "single_goal-1",
+      "reason": "",
+      "text": "\u2014 \u00a71's deliverable is \"One read\", yet its done-when requires three recorded decisions holding four, one and zero queued requests read back \"with every field present and the held requests named\", which cannot be asserted without a record store and a writer; \u00a72 then requires a hold to carry a record and \u00a73 requires an answer to close one, so all three sections depend on a write path no section declares as its deliverable. The followup queues \u00a71\u2013\u00a74 in one batch, so a \u00a71 worker building the store by inference, a \u00a72 worker building the record writer it needs for its hold, and a \u00a73 worker building the close path can each implement a different one and merge cleanly. WOULD_CHANGE_THE_PLAN: yes \u2014 REASON: naming the store and its write path as a \u00a71 deliverable (or as its own node ahead of \u00a72) is what stops three concurrent workers from owning one mechanism.",
+      "type": "single_goal",
+      "would_change": null
+    },
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/lead-decisions-reach-one-place/r-20261115T164644604848-plan-review-of-lead-decisions-reach-one-place/plan.html:45",
+      "id": "reasoning-2",
+      "reason": "",
+      "text": "\u2014 \u00a73 states \"Only an answer given through the presenting session is accepted; a session cannot answer a decision for itself or for another session\", unqualified, while \u00a71 puts plan-block decisions into the same read and those decisions are answered today by setting `data-choice` through the MCP `lock` op or POST /plan/<project>/<slug> \u2014 the path AGENTS.md mandates for decisions and the one a node's `requires_decisions` gate reads to release held work (reckon/crew/node.py:1487). Implemented literally, \u00a73 either refuses that existing channel for every decision \u00a71 surfaces, or has no subject for plan-block decisions and its stated guard never fires; the plan does not say which. WOULD_CHANGE_THE_PLAN: yes \u2014 REASON: an ambiguity between two of this plan's own sections decides whether \u00a73 removes the repository's decision-locking path or governs only session-held records, and the two answers need different implementations and different controls.",
+      "type": "reasoning",
+      "would_change": null
+    }
+  ],
+  "plan_commit": "d65b54623bf805176b48fc8eb244b787d392511b",
+  "plan_fingerprint": "b85adcc52348d1d852edb1ddab67c55e05a67417e8c5af613521bfa43e85e9bd",
+  "plan_slug": "lead-decisions-reach-one-place",
+  "plan_version": 0,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261115T164644604848-plan-review-of-lead-decisions-reach-one-place",
+  "reviewed_blob_sha": "2148ed924e06ee48fbd04ba0467559abf9828a46",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every named target resolves: nova/docs/plans/iron-core-magnetisation.html (\u00a75 exists), kernel-compile-barrier.html, sub-millisecond-forward-path.html, docs/plans/work-flows-to-the-lane.html, skills/.",
+    "done_when": "pass \u2014 each of \u00a71\u2013\u00a74 states a negative control that is executable at the base revision (read absent, a lead hold accepted with no record, `data-choice` written at base leaves the held request held, skill absent), and each names durable evidence and the all_debug tier.",
+    "evidence_paths": "pass \u2014 all four failing runs are logged to docs/evidence/fragments/lead-decisions-reach-one-place/sN.html, the one-HTML-document-under-the-plan-directory shape reckon/crew/reports.py accepts, not a node-local scratch path.",
+    "naming": "pass \u2014 `reckon-select` and the record field names carry no plan labels, stage names or ticket numbers; the slug appears only in the evidence path, which is the fragment convention rather than a symbol.",
+    "reasoning": "a finding \u2014 \u00a71 never defines which plan-block decision \"waits on the lead\", and the plan-block population it sweeps in is 62 unset decisions across five mounted projects, so the read's own quantity \u2014 the amount of held work \u2014 is unobtainable for that arm.",
+    "single_goal": "a finding \u2014 \u00a71's done-when requires a decision store and a write path that \u00a71's deliverable text never names.",
+    "wiring": "pass \u2014 plan-section-depends-on declares s2\u2192s1, s3\u2192s1, s4\u2192{s1,s3}, which matches followup f-ldop-001 and the deliverable dependencies; plan-after work-flows-to-the-lane.html resolves."
+  },
+  "section_digests": {
+    "_document": "fb8c9f52032f7868acee831917bba49be6f052357f7cbcd05cb8ebe3521a3124",
+    "s1": "d47dc2ef7ec01cdbea5646cace2c9670f8860533d05d55f8c2cf0b6fd6f2e5fc",
+    "s2": "3990e36d5d1e1fce72789dd300c8052dce0aad29048cc58f7f33b570edfae4c6",
+    "s3": "523de628c2d878374dd177819b12ea5129bf326cc71f71a04fa9bab90ef314ce",
+    "s4": "fba2a7e3e344a6f4a920e90a77eff2100605e201c0b0639cd737ea96c3b6bc3f"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-15T16:59:44.611153+00:00",
+  "total": null
+}

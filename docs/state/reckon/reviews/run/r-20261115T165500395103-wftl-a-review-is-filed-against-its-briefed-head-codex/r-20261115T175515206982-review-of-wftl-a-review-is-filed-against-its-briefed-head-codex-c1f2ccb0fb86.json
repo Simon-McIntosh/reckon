@@ -1,0 +1,120 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_analysis": [
+    {
+      "fails_if": "A matching record is refused, no file is reported, or stored head/reviewer identity changes; the head equality itself echoes the supplied head and is only a persistence control.",
+      "lines": "92-95"
+    },
+    {
+      "fails_if": "Stale filing is accepted, produces no single refusal, or omits either independently planted earlier/current revision; removing the delivery guard and store guard restores these failures.",
+      "lines": "102-105"
+    },
+    {
+      "fails_if": "Refused stale filing overwrites the independently captured earlier record bytes or creates a current-head store record.",
+      "lines": "106-109"
+    },
+    {
+      "fails_if": "Either store accepts the earlier head, omits either revision in its exception, overwrites the earlier record or creates the committed-root directory on refusal; removing the matching store insertion restores acceptance.",
+      "lines": "125-129"
+    },
+    {
+      "fails_if": "Choosing the moving source brief rather than the dispatch snapshot raises on the matching snapshot record; the explicit stored-head equality only tests round-trip identity.",
+      "lines": "143"
+    },
+    {
+      "fails_if": "Replacing same_revision with strict equality refuses a full head matching an abbreviated brief; the stored-head equality itself echoes input.",
+      "lines": "149"
+    },
+    {
+      "fails_if": "The committed store refuses a matching record or persists a different head; equality alone does not test stale-head refusal.",
+      "lines": "156"
+    },
+    {
+      "fails_if": "Removing the run-directory fallback lets stale records be stored after pointer retirement.",
+      "lines": "161-162"
+    },
+    {
+      "fails_if": "Removing the explicit reviewer-context check lets an identity-omitting stale delivery file, loses the expected head in the refusal, or overwrites the earlier record.",
+      "lines": "168-170"
+    }
+  ],
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/crew/recovery_review_delivery.py:226 file_review_records_into_store",
+    "reckon/crew/review.py:3562 file_delivered_run_reviews",
+    "reckon/crew/review.py:3586 file_delivered_run_review_report",
+    "reckon/crew/promotion.py:2340 store_committed_review",
+    "reckon/crew/recovery_review_dispatch.py:1661 store_review"
+  ],
+  "completed_at": "2026-11-15T18:04:18Z",
+  "dispatched_at": "2026-11-15T17:58:56Z",
+  "findings": [
+    {
+      "file": "tests/test_a_review_is_filed_against_its_briefed_head.py",
+      "line": "94",
+      "severity": "non-blocking",
+      "text": "non-blocking: The stored-head equality assertions here and at lines 143, 149 and 156 compare with the same world[\"head\"] supplied to the writer; these assertions alone survive removing the filing guard and should be counted as round-trip controls, with the mismatch/refusal assertions carrying the regression proof."
+    }
+  ],
+  "gate_evidence": {
+    "after_suite": {
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_digest": "fb439253403b3e6770debe8d2a5305489c5468d39ee344d185d7526bc18efcaf",
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T165500395103-wftl-a-review-is-filed-against-its-briefed-head-codex/head-final.log",
+      "revision": "c1f2ccb0fb8605f503d8e3ada416773cf57cfe5f",
+      "summary": "67 passed in 40.35s"
+    },
+    "baseline_suite": {
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_digest": "1430d8663eb5d195032046151e7a1f87f211e94c631180db4ca089bf1d2c4993",
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T165500395103-wftl-a-review-is-filed-against-its-briefed-head-codex/baseline.log",
+      "revision": "b46256908fc3eac1a5b4f4dc5f21ec0740feee34",
+      "summary": "58 passed in 35.30s"
+    }
+  },
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 5 production call site(s)",
+    "diff": "Read both source commits against b46256908fc3eac1a5b4f4dc5f21ec0740feee34; the implementation adds one shared refusal helper and three insertion points, nine test cases and a 12-line evidence fragment without unrelated changes.",
+    "done_when": "Source prompt.txt:165 requires matching-head storage, stale-head refusal naming both heads and preservation; negative-clean.log records the base accepting stale filing while promotion refuses, and head-final.log records all 9 new cases passing on all_debug.",
+    "goal": "The goal at source prompt.txt:38 is refusal at filing for a head differing from the brief; reckon/crew/review.py:3377 and :3581 and reckon/crew/review_records.py:416 enforce that before store writes.",
+    "manifest": "Source manifest.md names both commits, completed baseline/after arms and the corrected negative control; baseline.log records 58 passed EXIT=0 and head-final.log records 67 passed EXIT=0, yielding zero added failures.",
+    "write_paths": "Source prompt.txt:84 declares reckon, tests and the scoped evidence fragment; the four changed paths in a7026ef6930fa84f419c2b6678fc19abd6584c1a and c1f2ccb0fb8605f503d8e3ada416773cf57cfe5f all fall within those grants."
+  },
+  "justifications": {
+    "durability": "tests/test_a_review_is_filed_against_its_briefed_head.py:102, :125, :154 and :168 fail if stale filing or either store stops refusing, while the input-echo assertions at :94, :143, :149 and :156 establish persistence rather than independently establishing head authority.",
+    "evidence": "tests/test_a_review_is_filed_against_its_briefed_head.py:98 exercises the actual stale filing, negative-clean.log:25 records acceptance followed by promotion refusal at base, and head-final.log records 67 passed with EXIT=0 at the exact reviewed head.",
+    "fit": "reckon/crew/review.py:3283 follows the existing refusal-return idiom, uses local imports for the established dependency cycle and adds no forbidden source naming; ruff.log records clean lint and formatting for all three Python paths.",
+    "goal_fidelity": "reckon/crew/review.py:3311 reads the dispatch snapshot and :3317 names both differing heads before :3406 can create a store directory.",
+    "reuse": "The capability search found brief parsing and revision comparison owned by reckon/crew/recovery_review_subject.py:946 and :105 and promotion-time head checking at reckon/crew/recovery_review_delivery.py:459; review.py:3309 reuses the former and extends filing rather than duplicating the latter's delivery contract, while the test fixture and _file helper own only new isolated test setup.",
+    "scope_discipline": "The four paths in the two source commits are covered by source prompt.txt:84 and implement the filing guard, its regression tests and its required evidence fragment."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The goal at source prompt.txt:38 is refusal at filing for a head differing from the brief; reckon/crew/review.py:3377 and :3581 and reckon/crew/review_records.py:416 enforce that before store writes.\nVERDICT done_when: Source prompt.txt:165 requires matching-head storage, stale-head refusal naming both heads and preservation; negative-clean.log records the base accepting stale filing while promotion refuses, and head-final.log records all 9 new cases passing on all_debug.\nVERDICT write_paths: Source prompt.txt:84 declares reckon, tests and the scoped evidence fragment; the four changed paths in a7026ef6930fa84f419c2b6678fc19abd6584c1a and c1f2ccb0fb8605f503d8e3ada416773cf57cfe5f all fall within those grants.\nVERDICT manifest: Source manifest.md names both commits, completed baseline/after arms and the corrected negative control; baseline.log records 58 passed EXIT=0 and head-final.log records 67 passed EXIT=0, yielding zero added failures.\nVERDICT diff: Read both source commits against b46256908fc3eac1a5b4f4dc5f21ec0740feee34; the implementation adds one shared refusal helper and three insertion points, nine test cases and a 12-line evidence fragment without unrelated changes.\nCALL_SITES: reckon/crew/recovery_review_delivery.py:226 file_review_records_into_store, reckon/crew/review.py:3562 file_delivered_run_reviews, reckon/crew/review.py:3586 file_delivered_run_review_report, reckon/crew/promotion.py:2340 store_committed_review, reckon/crew/recovery_review_dispatch.py:1661 store_review\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/review.py:3311 reads the dispatch snapshot and :3317 names both differing heads before :3406 can create a store directory.\nSCORE evidence: 20\nJUSTIFICATION evidence: tests/test_a_review_is_filed_against_its_briefed_head.py:98 exercises the actual stale filing, negative-clean.log:25 records acceptance followed by promotion refusal at base, and head-final.log records 67 passed with EXIT=0 at the exact reviewed head.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: The four paths in the two source commits are covered by source prompt.txt:84 and implement the filing guard, its regression tests and its required evidence fragment.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_a_review_is_filed_against_its_briefed_head.py:102, :125, :154 and :168 fail if stale filing or either store stops refusing, while the input-echo assertions at :94, :143, :149 and :156 establish persistence rather than independently establishing head authority.\nSCORE fit: 20\nJUSTIFICATION fit: reckon/crew/review.py:3283 follows the existing refusal-return idiom, uses local imports for the established dependency cycle and adds no forbidden source naming; ruff.log records clean lint and formatting for all three Python paths.\nSCORE reuse: 20\nJUSTIFICATION reuse: The capability search found brief parsing and revision comparison owned by reckon/crew/recovery_review_subject.py:946 and :105 and promotion-time head checking at reckon/crew/recovery_review_delivery.py:459; review.py:3309 reuses the former and extends filing rather than duplicating the latter's delivery contract, while the test fixture and _file helper own only new isolated test setup.\nFINDING tests/test_a_review_is_filed_against_its_briefed_head.py:94 non-blocking: The stored-head equality assertions here and at lines 143, 149 and 156 compare with the same world[\"head\"] supplied to the writer; these assertions alone survive removing the filing guard and should be counted as round-trip controls, with the mismatch/refusal assertions carrying the regression proof.\n",
+  "review_run_id": "r-20261115T175515206982-review-of-wftl-a-review-is-filed-against-its-briefed-head-codex-c1f2ccb0fb86",
+  "review_text": "VERDICT goal: The goal at source prompt.txt:38 is refusal at filing for a head differing from the brief; reckon/crew/review.py:3377 and :3581 and reckon/crew/review_records.py:416 enforce that before store writes.\nVERDICT done_when: Source prompt.txt:165 requires matching-head storage, stale-head refusal naming both heads and preservation; negative-clean.log records the base accepting stale filing while promotion refuses, and head-final.log records all 9 new cases passing on all_debug.\nVERDICT write_paths: Source prompt.txt:84 declares reckon, tests and the scoped evidence fragment; the four changed paths in a7026ef6930fa84f419c2b6678fc19abd6584c1a and c1f2ccb0fb8605f503d8e3ada416773cf57cfe5f all fall within those grants.\nVERDICT manifest: Source manifest.md names both commits, completed baseline/after arms and the corrected negative control; baseline.log records 58 passed EXIT=0 and head-final.log records 67 passed EXIT=0, yielding zero added failures.\nVERDICT diff: Read both source commits against b46256908fc3eac1a5b4f4dc5f21ec0740feee34; the implementation adds one shared refusal helper and three insertion points, nine test cases and a 12-line evidence fragment without unrelated changes.\nCALL_SITES: reckon/crew/recovery_review_delivery.py:226 file_review_records_into_store, reckon/crew/review.py:3562 file_delivered_run_reviews, reckon/crew/review.py:3586 file_delivered_run_review_report, reckon/crew/promotion.py:2340 store_committed_review, reckon/crew/recovery_review_dispatch.py:1661 store_review\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/review.py:3311 reads the dispatch snapshot and :3317 names both differing heads before :3406 can create a store directory.\nSCORE evidence: 20\nJUSTIFICATION evidence: tests/test_a_review_is_filed_against_its_briefed_head.py:98 exercises the actual stale filing, negative-clean.log:25 records acceptance followed by promotion refusal at base, and head-final.log records 67 passed with EXIT=0 at the exact reviewed head.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: The four paths in the two source commits are covered by source prompt.txt:84 and implement the filing guard, its regression tests and its required evidence fragment.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_a_review_is_filed_against_its_briefed_head.py:102, :125, :154 and :168 fail if stale filing or either store stops refusing, while the input-echo assertions at :94, :143, :149 and :156 establish persistence rather than independently establishing head authority.\nSCORE fit: 20\nJUSTIFICATION fit: reckon/crew/review.py:3283 follows the existing refusal-return idiom, uses local imports for the established dependency cycle and adds no forbidden source naming; ruff.log records clean lint and formatting for all three Python paths.\nSCORE reuse: 20\nJUSTIFICATION reuse: The capability search found brief parsing and revision comparison owned by reckon/crew/recovery_review_subject.py:946 and :105 and promotion-time head checking at reckon/crew/recovery_review_delivery.py:459; review.py:3309 reuses the former and extends filing rather than duplicating the latter's delivery contract, while the test fixture and _file helper own only new isolated test setup.\nFINDING tests/test_a_review_is_filed_against_its_briefed_head.py:94 non-blocking: The stored-head equality assertions here and at lines 143, 149 and 156 compare with the same world[\"head\"] supplied to the writer; these assertions alone survive removing the filing guard and should be counted as round-trip controls, with the mismatch/refusal assertions carrying the regression proof.\n",
+  "reviewed_base_sha": "b46256908fc3eac1a5b4f4dc5f21ec0740feee34",
+  "reviewed_head_sha": "c1f2ccb0fb8605f503d8e3ada416773cf57cfe5f",
+  "reviewed_run_id": "r-20261115T165500395103-wftl-a-review-is-filed-against-its-briefed-head-codex",
+  "scores": {
+    "durability": 18,
+    "evidence": 20,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-15T18:05:59.656962+00:00",
+  "total": 118
+}

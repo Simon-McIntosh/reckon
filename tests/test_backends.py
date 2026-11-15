@@ -16,9 +16,20 @@ import pytest
 from reckon import _backends
 
 FIXTURES = Path(__file__).parent / "fixtures" / "backends"
+RESEARCH_FIXTURES = (
+    Path(__file__).resolve().parents[1] / "docs" / "research" / "fixtures"
+)
 
 CODEX = {"launch": "cli", "command": "codex", "sandbox": "worktree-full"}
 CLAUDE = {"launch": "cli", "command": "claude", "sandbox": "worktree-full"}
+
+
+@pytest.fixture(autouse=True)
+def isolated_operator_home(tmp_path, monkeypatch):
+    """Launch composition reads configuration only from a synthetic home."""
+    operator = tmp_path / "operator"
+    operator.mkdir()
+    monkeypatch.setattr(Path, "home", classmethod(lambda cls: operator))
 
 
 def _lines(name: str) -> list[str]:
@@ -115,6 +126,8 @@ def test_read_only_codex_uses_the_delivery_directory_for_a_fresh_launch() -> Non
         "--json",
         "-C",
         "/delivery",
+        "-c",
+        "mcp_servers={}",
         "--sandbox",
         "workspace-write",
         "-c",
@@ -141,6 +154,8 @@ def test_read_only_codex_uses_the_delivery_directory_when_resumed() -> None:
         "--json",
         "-C",
         "/redelivery",
+        "-c",
+        "mcp_servers={}",
         "--sandbox",
         "workspace-write",
         "-c",
@@ -164,6 +179,8 @@ def test_read_only_codex_uses_the_delivery_directory_when_resumed() -> None:
                 "--json",
                 "-C",
                 "/wt",
+                "-c",
+                "mcp_servers={}",
                 "--dangerously-bypass-approvals-and-sandbox",
                 "-",
             ],
@@ -176,6 +193,8 @@ def test_read_only_codex_uses_the_delivery_directory_when_resumed() -> None:
                 "--json",
                 "-C",
                 "/wt",
+                "-c",
+                "mcp_servers={}",
                 "--sandbox",
                 "workspace-write",
                 "-c",
@@ -541,7 +560,11 @@ def test_observation_serialises_with_sorted_keys() -> None:
 
 def test_recorded_fixtures_cover_every_dialect() -> None:
     """Every distinct launch translation has a recorded event stream."""
-    recorded = {path.name.split("-")[0] for path in FIXTURES.glob("*.jsonl")}
+    recorded = {
+        path.name.split("-")[0]
+        for directory in (FIXTURES, RESEARCH_FIXTURES)
+        for path in directory.glob("*.jsonl")
+    }
     translations = {
         _backends.dialect_for({"launch": "cli", "command": command}).name
         for command in _backends.known_dialects()

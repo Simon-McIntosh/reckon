@@ -1,0 +1,135 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "Derived with reckon.crew.review.added_failures_from_gate_logs over the reviewed run's own gate logs logs/baseline-suite.txt and logs/after-suite.txt, each read against its own recorded '# cwd resolved:' directory. Both logs are pytest format; the baseline arm reports no FAILED id with '58 passed' and EXIT=0, the after arm reports no FAILED id with '60 passed' and EXIT=0, so the added-failure set is empty and the count is a measured zero. Instrument check before reporting the absence: the same readers return FAILED tests/test_a_released_review_is_composed_again.py::test_a_released_composed_review_is_composed_again from logs/negative-control-mutated.txt and logs/base-revision-new-test.txt, so an empty column here is the logs' measured result rather than a blind reader.",
+  "assertion_analysis": [
+    {
+      "failure_condition": "Reinstating the base behaviour (releasing without writing back to the reviewed run) leaves the dispatch record at status 'dispatched' at that head, _failed_review_backend withholds the lane at reckon/crew/recovery_review_dispatch.py:1843, and the recompose refuses with 'no eligible lane'; logs/base-revision-new-test.txt records exactly that red at 2424ab7511.",
+      "lines": "tests/test_a_released_review_is_composed_again.py:210"
+    },
+    {
+      "failure_condition": "Dropping the _record_review_dispatch call at reckon/crew/admission/launching.py:658 leaves the record's status at 'dispatched' and the assertion reddens; logs/negative-control-mutated.txt shows the reddening with that write mutated out.",
+      "lines": "tests/test_a_released_review_is_composed_again.py:211"
+    },
+    {
+      "failure_condition": "Stamping the record for a different run id, or dropping review_run_id from the reason, reddens; the expected value is the minted review run id, not a value the helper passed in.",
+      "lines": "tests/test_a_released_review_is_composed_again.py:212"
+    },
+    {
+      "failure_condition": "Recording a different head on the recomposed attempt, or recomposing for a run resumed past the released head, reddens; head is captured at :190 from the delivered run before the release.",
+      "lines": "tests/test_a_released_review_is_composed_again.py:218"
+    },
+    {
+      "failure_condition": "Returning the released id, or composing nothing at all, reddens; the composed id must be a new id whose pointer exists.",
+      "lines": "tests/test_a_released_review_is_composed_again.py:214-215"
+    },
+    {
+      "failure_condition": "No condition in this file makes it fail: the reviewed run's pointer is removed by promotion.discard before the release, so the helper returns on the missing pointer whether or not the promotion.discard_recorded guard at launching.py:642 exists.",
+      "lines": "tests/test_a_released_review_is_composed_again.py:242"
+    }
+  ],
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/admission/selection.py:116",
+    "reckon/crew/recovery_review_dispatch.py:1843",
+    "reckon/crew/recovery_review_dispatch.py:2809"
+  ],
+  "completed_at": "2026-11-15T15:34:54.383Z",
+  "dispatched_at": "2026-11-15T15:34:21Z",
+  "findings": [
+    {
+      "file": "tests/test_a_released_review_is_composed_again.py",
+      "line": "242",
+      "severity": "non-blocking",
+      "text": "The discarded-run case's no-write assertion does not pin the guard it was added beside: after promotion.discard the reviewed run's pointer is already gone (asserted at :234), so deleting the promotion.discard_recorded guard at reckon/crew/admission/launching.py:642 leaves the helper returning at :646 on the CrewError that runs.read_pointer raises for the missing pointer, no record reappears, and :242 stays green. The branch that must not stamp a discarded run is unexercised."
+    },
+    {
+      "file": "reckon/crew/admission/launching.py",
+      "line": "651",
+      "severity": "non-blocking",
+      "text": "The promoted-run guard has no test at all: deleting the runs._promoted_record_project check here leaves both cases in tests/test_a_released_review_is_composed_again.py green, so nothing fails if a released composed review stamps the dispatch record of a run the fleet has already promoted, which a later reader would read as the promoted run owing a review."
+    }
+  ],
+  "gate_evidence": {
+    "after_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_released_review_is_composed_again.py tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T130007037608-released-review-recomposed-s11/logs/after-suite.txt",
+      "revision": "6a0d4701a552273098ad0b9c92e8b3a4eadc190c"
+    },
+    "base_revision_new_test": {
+      "command": "PYTHONPATH=. /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/a337e0e6-c34c-4497-878a-bc42ce1b7cf6/released-review-recomposed-s11/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_released_review_is_composed_again.py",
+      "completed": true,
+      "exit_status": 1,
+      "failure_count": 1,
+      "failure_ids": [
+        "tests/test_a_released_review_is_composed_again.py::test_a_released_composed_review_is_composed_again"
+      ],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T130007037608-released-review-recomposed-s11/logs/base-revision-new-test.txt",
+      "revision": "2424ab7511"
+    },
+    "baseline_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T130007037608-released-review-recomposed-s11/logs/baseline-suite.txt",
+      "revision": "622ef4617d73a4af8ecf7dc5926996910a4ca29f"
+    },
+    "negative_control": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_released_review_is_composed_again.py",
+      "completed": true,
+      "exit_status": 1,
+      "failure_count": 1,
+      "failure_ids": [
+        "tests/test_a_released_review_is_composed_again.py::test_a_released_composed_review_is_composed_again"
+      ],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T130007037608-released-review-recomposed-s11/logs/negative-control-mutated.txt",
+      "revision": "cef3d654a05ef0fb160dee3edc62424211355895"
+    }
+  },
+  "item_verdicts": {
+    "diff": "Read the three commits against 622ef4617d73 commit by commit: cef3d654a0 adds _owe_the_review_again, its single call at reckon/crew/admission/launching.py:595 and the new test file; 6a0d4701a5 only reorders two assertions in that test file so the composition is read before the release record; ae47254780 only adds the evidence fragment.",
+    "done_when": "Read the measure (a new test failing at base revision 2424ab7511 that the next reflex pass composes a review again for the same reviewed run and head, plus the negative case for a run since promoted or discarded) against tests/test_a_released_review_is_composed_again.py:210 and :218 and logs/base-revision-new-test.txt, which records EXIT=1 with FAILED tests/test_a_released_review_is_composed_again.py::test_a_released_composed_review_is_composed_again; the promoted/discarded clause at :233-242 is asserted but does not redden when its guard is removed, as recorded in the findings.",
+    "goal": "Read the goal in dispatch-detail.json ('Make a reviewed run whose composed review the admission pass released read as owing its review again'); reckon/crew/admission/launching.py:595 calls the new _owe_the_review_again on the plain release path and :658-666 writes status released-stranded-launch with the released run id onto the reviewed run's own dispatch record, so the next reflex pass reads the run as owing its review, and logs/base-revision-new-test.txt shows that same test red at 2424ab7511 with the 'no eligible lane' refusal.",
+    "manifest": "Read manifest.md: commits cef3d654a0, 6a0d4701a5 and ae47254780, the three-file gate command, test_logs naming the baseline, after, base-revision, importer and negative-control arms, and results that reconcile with those logs (after arm 60 passed EXIT=0, baseline arm 58 passed EXIT=0, base-revision arm 1 failed 1 passed EXIT=1).",
+    "write_paths": "Read the six declared paths in dispatch-detail.json node.write_paths; git diff --name-only 622ef4617d73..ae47254780 names only reckon/crew/admission/launching.py, tests/test_a_released_review_is_composed_again.py and docs/evidence/fragments/the-escape-lane-and-reviews-keep-pace/released-review-recomposed.html, every one inside the declaration."
+  },
+  "justifications": {
+    "durability": "logs/negative-control-mutated.txt shows the mutation that drops the release write reddening tests/test_a_released_review_is_composed_again.py::test_a_released_composed_review_is_composed_again with EXIT=1, but the promoted guard at reckon/crew/admission/launching.py:651 and the discard guard at :642 have no assertion that fails when they are removed, as named in the findings.",
+    "evidence": "manifest.md records the three-file gate and logs/after-suite.txt records 60 passed with EXIT=0, but that arm ran at 6a0d4701a5 rather than at the head ae47254780 (a docs-only commit), and logs/baseline-suite.txt ran the two gate files that existed at the base revision.",
+    "fit": "The addition is a private, docstringed helper at reckon/crew/admission/launching.py:614 using the module's local-import idiom, and its name and prose match the surrounding private helpers.",
+    "goal_fidelity": "reckon/crew/admission/launching.py:658-666 writes the release onto the reviewed run's record through the reflex's own _record_review_dispatch, and logs/base-revision-new-test.txt shows the recompose case failing at 2424ab7511 for want of an eligible lane, so the goal's behaviour is the landed behaviour.",
+    "reuse": "reckon/crew/admission/launching.py:658-666 writes through recovery_review_dispatch._record_review_dispatch and reuses promotion.discard_recorded and runs._promoted_record_project instead of owning a second record writer, extending the reflex's own write at reckon/crew/recovery_review_dispatch.py:2809.",
+    "scope_discipline": "git diff --name-only 622ef4617d73..ae47254780 lists exactly the three files inside the declared write paths, and the unused declared paths (the s11 fragment, the figure directory) were left untouched."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: Read the goal in dispatch-detail.json ('Make a reviewed run whose composed review the admission pass released read as owing its review again'); reckon/crew/admission/launching.py:595 calls the new _owe_the_review_again on the plain release path and :658-666 writes status released-stranded-launch with the released run id onto the reviewed run's own dispatch record, and logs/base-revision-new-test.txt shows that same test red at 2424ab7511 with the 'no eligible lane' refusal.\nVERDICT done_when: Read the measure against tests/test_a_released_review_is_composed_again.py:210 and :218 and logs/base-revision-new-test.txt, which records EXIT=1 with FAILED tests/test_a_released_review_is_composed_again.py::test_a_released_composed_review_is_composed_again; the promoted/discarded clause at :233-242 is asserted but does not redden when its guard is removed, as recorded in the findings.\nVERDICT write_paths: Read the six declared paths in dispatch-detail.json node.write_paths; git diff --name-only 622ef4617d73..ae47254780 names only reckon/crew/admission/launching.py, tests/test_a_released_review_is_composed_again.py and docs/evidence/fragments/the-escape-lane-and-reviews-keep-pace/released-review-recomposed.html, every one inside the declaration.\nVERDICT manifest: Read manifest.md: commits cef3d654a0, 6a0d4701a5 and ae47254780, the three-file gate command, test_logs naming the baseline, after, base-revision, importer and negative-control arms, and results that reconcile with those logs (after arm 60 passed EXIT=0, baseline arm 58 passed EXIT=0, base-revision arm 1 failed 1 passed EXIT=1).\nVERDICT diff: Read the three commits against 622ef4617d73 commit by commit: cef3d654a0 adds _owe_the_review_again, its single call at reckon/crew/admission/launching.py:595 and the new test file; 6a0d4701a5 only re-orders two assertions so the composition is read before the release record; ae47254780 only adds the evidence fragment.\nCALL_SITES: reckon/crew/admission/selection.py:116, reckon/crew/recovery_review_dispatch.py:1843, reckon/crew/recovery_review_dispatch.py:2809\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/admission/launching.py:658-666 writes the release onto the reviewed run's record through the reflex's own _record_review_dispatch, and logs/base-revision-new-test.txt shows the recompose case failing at 2424ab7511 for want of an eligible lane.\nSCORE evidence: 17\nJUSTIFICATION evidence: manifest.md records the three-file gate and logs/after-suite.txt records 60 passed with EXIT=0, but that arm ran at 6a0d4701a5 rather than the head ae47254780, a docs-only commit.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: git diff --name-only 622ef4617d73..ae47254780 lists exactly the three files inside the declared write paths, and the unused declared paths were left untouched.\nSCORE durability: 17\nJUSTIFICATION durability: logs/negative-control-mutated.txt shows the mutated release write reddening tests/test_a_released_review_is_composed_again.py::test_a_released_composed_review_is_composed_again with EXIT=1, but the promoted guard at reckon/crew/admission/launching.py:651 and the discard guard at :642 have no assertion that fails when they are removed.\nSCORE fit: 18\nJUSTIFICATION fit: the addition is a private, docstringed helper at reckon/crew/admission/launching.py:614 using the module's local-import idiom, and its name and prose match the surrounding private helpers.\nSCORE reuse: 18\nJUSTIFICATION reuse: reckon/crew/admission/launching.py:658-666 writes through recovery_review_dispatch._record_review_dispatch and reuses promotion.discard_recorded and runs._promoted_record_project rather than owning a second record writer.\nFINDING tests/test_a_released_review_is_composed_again.py:242 non-blocking: the discarded-run case asserts only that no record reappears, which also holds with the promotion.discard_recorded guard at reckon/crew/admission/launching.py:642 deleted, because the reviewed run's pointer is already gone and runs.read_pointer raises the CrewError the helper returns on at :646; the branch that must not stamp a discarded run is unexercised.\nFINDING reckon/crew/admission/launching.py:651 non-blocking: the promoted-run guard has no test; deleting this line leaves both cases in tests/test_a_released_review_is_composed_again.py green, so nothing fails if a released composed review stamps the dispatch record of a run the fleet has already promoted.\n",
+  "review_run_id": "r-20261115T153228263431-review-of-released-review-recomposed-s11-ae472547806a",
+  "reviewed_base_sha": "622ef4617d73a4af8ecf7dc5926996910a4ca29f",
+  "reviewed_head_sha": "ae472547806aeb85d4dd96740a539a936b24e6cf",
+  "reviewed_run_id": "r-20261115T130007037608-released-review-recomposed-s11",
+  "reviewer_rerun": {
+    "note": "No gate test re-run: the worker's recorded arms are readable and reconcile with the logs; the added-failure derivation and the failure-id instrument were exercised read-only against the run's own logs.",
+    "ran": false
+  },
+  "rubric": "",
+  "scores": {
+    "durability": 17,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 18,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-15T15:54:52.785544+00:00",
+  "total": 108
+}

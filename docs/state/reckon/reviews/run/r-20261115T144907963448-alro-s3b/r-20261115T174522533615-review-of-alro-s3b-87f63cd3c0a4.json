@@ -1,0 +1,54 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/evidence.py:1362 compose_landed_record reads docs/evidence/fragments/<plan>/*.html and appends each fragment body",
+    "reckon/serve.py:2751 body = compose_landed_record(target, plan_slug, project=project)",
+    "reckon/mcp.py:1344 composed = compose_landed_record(...)",
+    "reckon/doccheck.py:1970 compose_landed_record(path, plan_slug, project=project), feeding reckon audit-doc"
+  ],
+  "completed_at": "2026-11-15T17:49:42.763Z",
+  "dimension_dispositions": {
+    "durability": {
+      "kind": "folded",
+      "node": "repair-of-alro-s3b-e6a006723fdb",
+      "note": "carried forward from the review at e6a0067: the arm-symmetry gap this commit discloses is still guarded by no check, and the repair was already assigned to that node."
+    }
+  },
+  "dispatched_at": "2026-11-15T17:48:10Z",
+  "finding_dispositions": {},
+  "findings": [],
+  "item_verdicts": {
+    "diff": "read commit by commit against e6a006723f: exactly one gained commit, 87f63cd, 1 file with 1 insertion and 1 deletion, replacing the arm paragraph at docs/evidence/fragments/a-landing-is-recorded-once/alro-s3b.html:17 with one stating the arm symmetry is a fact about this record and not a property any check enforces; no source, test or figure changed.",
+    "done_when": "the done_when asks the done-when's own gate file to show the overview's clauses over a temporary repository; the manifest's tests line names tests/test_a_closing_plan_gets_one_sourced_overview.py beside two importer files, and after_suite records completed true, exit 0, 0 failures at 87f63cd3c0, its log head-final-1318233.log reading '77 passed in 79.63s' with a bare EXIT=0 under a header naming that revision.",
+    "goal": "the source node's goal is 'Complete the closure overview to the full deliverable of its section'; the one commit gained since the review at e6a0067 rewrites one paragraph at docs/evidence/fragments/a-landing-is-recorded-once/alro-s3b.html:17 and leaves reckon/evidence.py untouched.",
+    "manifest": "read; it records status complete, commits 492a890/5d300cc/2baf8e9/e6a0067/87f63cd, baseline_suite completed true exit 1 at de9cb49 with the two test_staged_write_inventory ids attributed to a git-less scratch extraction, after_suite completed true exit 0 with no failing ids, and three negative-control logs by path.",
+    "write_paths": "the manifest declares reckon/evidence.py, tests/test_a_closing_plan_gets_one_sourced_overview.py, docs/evidence/fragments/a-landing-is-recorded-once/alro-s3b.html and docs/figures/a-landing-is-recorded-once/alro-s3b; the gained commit touches only the fragment path."
+  },
+  "justifications": {
+    "durability": "no test reddens if docs/evidence/fragments/a-landing-is-recorded-once/alro-s3b.html:17 is reverted to the swept claim, which is the guard gap the prior review folded to node repair-of-alro-s3b-e6a006723fdb.",
+    "evidence": "head-final-1318233.log reads '77 passed in 79.63s' with EXIT=0 at 87f63cd3c0 while base-full-1318175.log reads '69 passed, 2 errors' with EXIT=1 at de9cb49, so the arm pair is read from the logs and the head arm adds no failure the base arm lacks.",
+    "fit": "the paragraph keeps the prose-and-code-span idiom of docs/evidence/fragments/a-landing-is-recorded-once/alro-s3b.html:13-16 and 87f63cd is a conventional docs subject with a body and no plan identifier.",
+    "goal_fidelity": "docs/evidence/fragments/a-landing-is-recorded-once/alro-s3b.html:17 is the only change and it adds no clause of the overview deliverable, which the earlier reviewed commits carry.",
+    "reuse": "the commit adds no definition, and the capability it describes is owned at reckon/crew/promotion_checks.py:2484, whose two arm readers feed only the negative-control comparison, so no owner is duplicated.",
+    "scope_discipline": "git diff e6a006723f 87f63cd3c0 names one path, docs/evidence/fragments/a-landing-is-recorded-once/alro-s3b.html, inside the declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "Reviewed run: r-20261115T144907963448-alro-s3b\nReviewed base: e6a006723fdb33400fc4f90956c6d2510e293c0c\nReviewed head: 87f63cd3c0a4c6f8a4e999de2187d4bdf6c38f30\nRange: one commit gained since the review at e6a0067 (87f63cd), 1 file, 1 insertion and 1 deletion.\n\nVERDICT goal: the source node's goal is \"Complete the closure overview to the full deliverable of its section\"; the gained commit 87f63cd rewrites one paragraph at docs/evidence/fragments/a-landing-is-recorded-once/alro-s3b.html:17 and leaves reckon/evidence.py untouched.\nVERDICT done_when: the done_when asks the gate file to show the overview's clauses over a temporary repository; the manifest's tests line names tests/test_a_closing_plan_gets_one_sourced_overview.py beside two importer files, and after_suite records completed true, exit 0 and 0 failures at 87f63cd3c0 with the log head-final-1318233.log reading \"77 passed in 79.63s\" under a bare EXIT=0 header-named at that revision.\nVERDICT write_paths: the manifest declares reckon/evidence.py, tests/test_a_closing_plan_gets_one_sourced_overview.py, docs/evidence/fragments/a-landing-is-recorded-once/alro-s3b.html and docs/figures/a-landing-is-recorded-once/alro-s3b; the gained diff stays inside that set.\nVERDICT manifest: read; it records status complete, the five commits, baseline_suite completed true exit 1 at de9cb49 with two test_staged_write_inventory ids attributed to a git-less scratch extraction, after_suite completed true exit 0 with failure_ids [], and paths for three negative-control logs.\nVERDICT diff: read against e6a006723f; the only gained commit replaces the paragraph at docs/evidence/fragments/a-landing-is-recorded-once/alro-s3b.html:17 so that it states the arm symmetry is a fact about this record rather than a property any check enforces, and its claims hold against the logs and reckon/crew/promotion_checks.py:2484.\nCALL_SITES: reckon/evidence.py:1362 compose_landed_record, reckon/serve.py:2751, reckon/mcp.py:1344, reckon/doccheck.py:1970\nSCORE goal_fidelity: 16\nJUSTIFICATION goal_fidelity: docs/evidence/fragments/a-landing-is-recorded-once/alro-s3b.html:17 is the only change and it adds no clause of the overview deliverable, which the earlier reviewed commits carry.\nSCORE evidence: 18\nJUSTIFICATION evidence: head-final-1318233.log reads \"77 passed in 79.63s\" with EXIT=0 at 87f63cd3c0 and base-full-1318175.log reads \"69 passed, 2 errors\" with EXIT=1 at de9cb49, so the head arm adds no failure the base arm lacks.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the gained diff is one path, docs/evidence/fragments/a-landing-is-recorded-once/alro-s3b.html, inside the declared write paths.\nSCORE durability: 8\nJUSTIFICATION durability: no test reddens if docs/evidence/fragments/a-landing-is-recorded-once/alro-s3b.html:17 is reverted, which is the guard gap the prior review folded to node repair-of-alro-s3b-e6a006723fdb.\nSCORE fit: 19\nJUSTIFICATION fit: the paragraph keeps the prose-and-code-span idiom of docs/evidence/fragments/a-landing-is-recorded-once/alro-s3b.html:13-16 and the commit is a conventional docs subject with a body and no plan identifier.\nSCORE reuse: 20\nJUSTIFICATION reuse: the commit adds no definition, and the capability it describes is owned at reckon/crew/promotion_checks.py:2484, which reads the two arms only for the negative-control comparison.",
+  "review_run_id": "r-20261115T174522533615-review-of-alro-s3b-87f63cd3c0a4",
+  "reviewed_base_sha": "e6a006723fdb33400fc4f90956c6d2510e293c0c",
+  "reviewed_head_sha": "87f63cd3c0a4c6f8a4e999de2187d4bdf6c38f30",
+  "reviewed_run_id": "r-20261115T144907963448-alro-s3b",
+  "scores": {
+    "durability": 8,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 16,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-15T17:58:00+00:00",
+  "total": 101
+}

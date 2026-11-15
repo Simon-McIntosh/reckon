@@ -502,9 +502,12 @@ RE_REVIEW_HEADING = "Earlier review this re-review follows"
 
 
 def reviewed_commits(
-    tree: Path | None, older: str, newer: str
+    tree: Path | None, older: str, newer: str, *, first_parent: bool = False
 ) -> list[tuple[str, str]] | None:
     """The commits between two revisions, oldest first, as ``(sha, subject)``.
+
+    ``first_parent`` follows the run's own line, retaining its merge commits
+    while excluding commits introduced through their other parents.
 
     ``None`` when either revision is unnamed or git cannot list the range: a
     re-review names its committed range as the work its reviewer must judge, so
@@ -514,9 +517,17 @@ def reviewed_commits(
     """
     if tree is None or not older or not newer:
         return None
+    traversal = ["--first-parent"] if first_parent else []
     try:
         completed = subprocess.run(
-            ["git", "log", "--reverse", "--format=%H %s", f"{older}..{newer}"],
+            [
+                "git",
+                "log",
+                *traversal,
+                "--reverse",
+                "--format=%H %s",
+                f"{older}..{newer}",
+            ],
             cwd=tree,
             capture_output=True,
             text=True,

@@ -1,0 +1,120 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "Derived from the completed baseline_suite and after_suite receipt logs, reconciled with the manifest; both report zero failures. A positive control for the failure reader is the two FAILED ids in negative-control.log.",
+  "after_suite": {
+    "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_live_worker_in_a_quiet_stretch_is_not_drawn_halted.py tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py",
+    "completed": true,
+    "exit_status": 0,
+    "failure_count": 0,
+    "failure_ids": [],
+    "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261114T150215534634-wave4-codex-anchored-the-crew-does-its-own-bo-s17/after-suite.log",
+    "revision": "ce0615b17d73d4c43aad3bc5bbec5316daac2b8a"
+  },
+  "assertion_independence": "No assertion compares an output with the same state variable passed into classify_pointer; the live case deliberately supplies process_alive=False and requires an independently probed True. The final membership assertion uses the existing public display family, so it guards attention-versus-working semantics rather than a particular halted subtype.",
+  "assertion_review": [
+    {
+      "fails_if": "runs.crew_home escapes the fixture RECKON_HOME; the expected root is the independently created temporary path.",
+      "file": "tests/test_a_live_worker_in_a_quiet_stretch_is_not_drawn_halted.py",
+      "line": 30
+    },
+    {
+      "fails_if": "local_liveness trusts the pointer process_alive=False rather than probing the known live test PID.",
+      "file": "tests/test_a_live_worker_in_a_quiet_stretch_is_not_drawn_halted.py",
+      "line": 82
+    },
+    {
+      "fails_if": "same-host PID probing ceases to produce a proven liveness result.",
+      "file": "tests/test_a_live_worker_in_a_quiet_stretch_is_not_drawn_halted.py",
+      "line": 83
+    },
+    {
+      "fails_if": "the newest-stream reader is changed to read the stale first stream; negative-control.log demonstrates stalled != working.",
+      "file": "tests/test_a_live_worker_in_a_quiet_stretch_is_not_drawn_halted.py",
+      "line": 84
+    },
+    {
+      "fails_if": "a foreign-host process is reported alive or dead instead of unknown.",
+      "file": "tests/test_a_live_worker_in_a_quiet_stretch_is_not_drawn_halted.py",
+      "line": 95
+    },
+    {
+      "fails_if": "the stale first stream supersedes fresh resume evidence for unknown liveness; the mutation log demonstrates the failure.",
+      "file": "tests/test_a_live_worker_in_a_quiet_stretch_is_not_drawn_halted.py",
+      "line": 96
+    },
+    {
+      "fails_if": "an impossible PID above kernel pid_max is reported alive or unknown.",
+      "file": "tests/test_a_live_worker_in_a_quiet_stretch_is_not_drawn_halted.py",
+      "line": 114
+    },
+    {
+      "fails_if": "a same-host negative PID probe is not recorded as proven.",
+      "file": "tests/test_a_live_worker_in_a_quiet_stretch_is_not_drawn_halted.py",
+      "line": 115
+    },
+    {
+      "fails_if": "the dead/stale run is classified working or waiting rather than in the ticker needs-you family; this deliberately checks the halted display family, not one internal subtype.",
+      "file": "tests/test_a_live_worker_in_a_quiet_stretch_is_not_drawn_halted.py",
+      "line": 116
+    }
+  ],
+  "baseline_suite": {
+    "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py",
+    "completed": true,
+    "exit_status": 0,
+    "failure_count": 0,
+    "failure_ids": [],
+    "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261114T150215534634-wave4-codex-anchored-the-crew-does-its-own-bo-s17/baseline-suite.log",
+    "revision": "94b59ea85ec9e32b9b4537aaeae2701460385e71"
+  },
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew/query.py:448",
+    "reckon/crew/recovery_watch.py:603"
+  ],
+  "completed_at": "2026-11-15T15:23:23Z",
+  "dispatched_at": "2026-11-15T15:16:39Z",
+  "findings": [],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "Examined classifier consumers reckon/crew/query.py:448, reckon/crew/recovery_watch.py:603; the commit adds no production definitions.",
+    "diff": "Read the sole commit ce0615b17d73d4c43aad3bc5bbec5316daac2b8a against parent 94b59ea85ec9e32b9b4537aaeae2701460385e71; it adds 118 test lines and an 18-line evidence fragment with no production changes.",
+    "done_when": "Read dispatch-detail.json:admit_request.node.done_when; reproduction.log records 3 passing cases, negative-control.log records 2 failed and 1 passed, and baseline-parallel.log/after-parallel.log record 58/61 passes with zero failures.",
+    "goal": "Read the dispatched goal in dispatch-detail.json:admit_request.node.goal and live plan \u00a717; tests/test_a_live_worker_in_a_quiet_stretch_is_not_drawn_halted.py:71-118 adds coverage for the already-correct liveness guard, as the plan requires when the defect no longer reproduces.",
+    "manifest": "Read manifest.md and opened its reproduction, mutation, serial, parallel, lint and format logs; the recorded revisions, 58/61 passes and zero added failures agree with those receipts.",
+    "write_paths": "Read prompt.txt:84-89 and manifest.md:3; both committed paths, the new regression test and the evidence fragment, are inside the launched write grant (the older queue request lists only the original three paths)."
+  },
+  "justifications": {
+    "durability": "tests/test_a_live_worker_in_a_quiet_stretch_is_not_drawn_halted.py:84,96 fail when recovery_liveness.newest_stream is replaced by the first-stream-only reader, and lines 114-118 reject falsely live or working readings for the dead/stale fixture.",
+    "evidence": "baseline-suite.log and after-suite.log end in EXIT=0 with 58/61 passes, and negative-control.log identifies failures at test lines 84 and 96 with EXIT=1 while the stale dead-process case remains green.",
+    "fit": "tests/test_a_live_worker_in_a_quiet_stretch_is_not_drawn_halted.py:1-118 follows pytest fixture, temporary RECKON_HOME and real-process conventions without forbidden source names; the evidence path is the dispatch-mandated artifact identity.",
+    "goal_fidelity": "tests/test_a_live_worker_in_a_quiet_stretch_is_not_drawn_halted.py:71-118 verifies live/fresh-resume, foreign-host/fresh-resume and dead/stale behavior without reimplementing the working production guard.",
+    "reuse": "tests/test_a_live_worker_in_a_quiet_stretch_is_not_drawn_halted.py:24,67 wraps existing runs/classify_pointer owners and adds test setup only; capability searches found recovery_liveness._record_newest_stream and tests/test_newest_stream_is_read_everywhere.py:29-160, with no new production capability fork.",
+    "scope_discipline": "prompt.txt:84-89 authorizes both additions shown by the single-commit diff; neither recovery_classification.py nor recovery_liveness.py changes."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: Read the dispatched goal in dispatch-detail.json:admit_request.node.goal and live plan \u00a717; tests/test_a_live_worker_in_a_quiet_stretch_is_not_drawn_halted.py:71-118 adds coverage for the already-correct liveness guard, as the plan requires when the defect no longer reproduces.\nVERDICT done_when: Read dispatch-detail.json:admit_request.node.done_when; reproduction.log records 3 passing cases, negative-control.log records 2 failed and 1 passed, and baseline-parallel.log/after-parallel.log record 58/61 passes with zero failures.\nVERDICT write_paths: Read prompt.txt:84-89 and manifest.md:3; both committed paths, the new regression test and the evidence fragment, are inside the launched write grant (the older queue request lists only the original three paths).\nVERDICT manifest: Read manifest.md and opened its reproduction, mutation, serial, parallel, lint and format logs; the recorded revisions, 58/61 passes and zero added failures agree with those receipts.\nVERDICT diff: Read the sole commit ce0615b17d73d4c43aad3bc5bbec5316daac2b8a against parent 94b59ea85ec9e32b9b4537aaeae2701460385e71; it adds 118 test lines and an 18-line evidence fragment with no production changes.\nCALL_SITES: reckon/crew/query.py:448, reckon/crew/recovery_watch.py:603\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: tests/test_a_live_worker_in_a_quiet_stretch_is_not_drawn_halted.py:71-118 verifies live/fresh-resume, foreign-host/fresh-resume and dead/stale behavior without reimplementing the working production guard.\nSCORE evidence: 20\nJUSTIFICATION evidence: baseline-suite.log and after-suite.log end in EXIT=0 with 58/61 passes, and negative-control.log identifies failures at test lines 84 and 96 with EXIT=1 while the stale dead-process case remains green.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: prompt.txt:84-89 authorizes both additions shown by the single-commit diff; neither recovery_classification.py nor recovery_liveness.py changes.\nSCORE durability: 20\nJUSTIFICATION durability: tests/test_a_live_worker_in_a_quiet_stretch_is_not_drawn_halted.py:84,96 fail when recovery_liveness.newest_stream is replaced by the first-stream-only reader, and lines 114-118 reject falsely live or working readings for the dead/stale fixture.\nSCORE fit: 20\nJUSTIFICATION fit: tests/test_a_live_worker_in_a_quiet_stretch_is_not_drawn_halted.py:1-118 follows pytest fixture, temporary RECKON_HOME and real-process conventions without forbidden source names; the evidence path is the dispatch-mandated artifact identity.\nSCORE reuse: 20\nJUSTIFICATION reuse: tests/test_a_live_worker_in_a_quiet_stretch_is_not_drawn_halted.py:24,67 wraps existing runs/classify_pointer owners and adds test setup only; capability searches found recovery_liveness._record_newest_stream and tests/test_newest_stream_is_read_everywhere.py:29-160, with no new production capability fork.\n",
+  "reuse_search": "Searched tests/ for resume-1.jsonl, first_stream_only, resumed_pointer and classifier wrappers; opened tests/test_newest_stream_is_read_everywhere.py and tests/test_stalled_row_names_liveness.py. Opened existing runtime liveness/stream owners at the reviewed head. New fixture creates real temp files and process evidence; nested first_stream_only is a deliberately regressed mutation of the existing owner; _reading delegates to classify_pointer; all three tests extend behavioral coverage.",
+  "review_run_id": "r-20261115T151151673678-review-of-wave4-codex-anchored-the-crew-does-its-own-bo-s17-ce0615b17d73",
+  "reviewed_base_sha": "94b59ea85ec9e32b9b4537aaeae2701460385e71",
+  "reviewed_commits": [
+    "ce0615b17d73d4c43aad3bc5bbec5316daac2b8a"
+  ],
+  "reviewed_head_sha": "ce0615b17d73d4c43aad3bc5bbec5316daac2b8a",
+  "reviewed_run_id": "r-20261114T150215534634-wave4-codex-anchored-the-crew-does-its-own-bo-s17",
+  "scores": {
+    "durability": 20,
+    "evidence": 20,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-15T15:26:03.790673+00:00",
+  "total": 120
+}

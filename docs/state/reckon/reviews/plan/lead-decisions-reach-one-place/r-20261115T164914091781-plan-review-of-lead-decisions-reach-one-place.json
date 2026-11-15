@@ -1,0 +1,82 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-15T16:51:19.611Z",
+  "dispatched_at": "2026-11-15T16:50:57Z",
+  "findings": [
+    {
+      "anchor": "reckon/roadmap.py:1282",
+      "id": "reuse_search-1",
+      "reason": "\u00a71's done-when should measure the existing derivation gaining the held-work figure and a command-line caller, not a second read beside it.",
+      "text": "\u00a71 asks for \"one read \u2026 every open decision that waits on the lead across the mounted projects\" when `waiting_decision_rows` already returns exactly the open/gated decision rows one roadmap report waits on, derived by `unsettled_decisions` (reckon/roadmap.py:1257) and assembled into the report key `waiting_decisions` (reckon/roadmap.py:5129); the derivation is already consumed by every surface that lists a wait \u2014 reckon/serve.py:1925 (roadmap endpoint), reckon/serve.py:3281 and reckon/serve.py:826 (`_waiting_decision_rows`, \"The open decisions every mounted project is waiting on\", crew page), and reckon/mcp_views.py:3827 (`_roadmap_project_summary`) \u2014 so a new cross-project reader is a second derivation of a fact that module's own docstring (reckon/roadmap.py:1327) records as having drifted once already",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/roadmap.py:1282",
+      "id": "deep_module-1",
+      "reason": "the plan's done-when clauses would become one contract on one module rather than four per-section checks that can each pass while the join is broken.",
+      "text": "the endpoint needs one record (question, context, options, recommendation, owner, held work, answer, released holds) but the plan's four sections each add a surface over it: a cross-project read (\u00a71), a hold validator (\u00a72, at reckon/crew/queue_edit.py:668 and reckon/crew_run_commands.py:3079 crew_queue_hold), an answer path writing the answer back through reckon/mcp_edit_plan.py:191 _lock_decision, and a presenting skill (\u00a74), with no module holding the record shape, the store and the release together, so the joint invariant (an answered decision leaves the candidate list and its holds leave at the next admission pass) has no single owner",
+      "type": "deep_module",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/serve.py:826",
+      "id": "thin_wrapper-1",
+      "reason": "the section should extend the roadmap.py:1282 derivation and name the command as its caller, or say why extension is impossible.",
+      "text": "\u00a71's command-line read would forward to _waiting_decision_rows / roadmap.waiting_decision_rows, the mechanism that already answers \"the open decisions every mounted project is waiting on\", and the section states no reason that derivation cannot be extended with the held-work figure and an ordered CLI caller; the wrapper would also be the reader \u00a74 presents from",
+      "type": "thin_wrapper",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/_store.py:3994",
+      "id": "duplicate_owner-1",
+      "reason": "\u00a71 already requires plan decisions to appear in the read and \u00a73's answer is a lock of that decision, so the record must be the plan block extended with owner and held work rather than a parallel store.",
+      "text": "a second decision store would duplicate the plan decisions block, which is already the sole record and the only writer path: dotted patch at reckon/_store.py:3994, append at reckon/_store.py:4355, lock merge at reckon/_store.py:4410 with transition validation at reckon/_store.py:5218, reached through reckon/mcp_edit_plan.py:191 _lock_decision and the plan POST path; reckon/_store.py:4177 records the last time a second spelling of this block cost a plan its question and its options",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/dispatch_watch.py:338",
+      "id": "duplicate_owner-2",
+      "reason": "a forked claim lets a decision be presented twice and a forked obligation row lets an answer reach its owner twice or not at all when the two derivations disagree.",
+      "text": "\u00a74's \"two sessions running the skill at once do not present the same decision twice\" re-implements a claim the fleet already owns \u2014 the per-project single-producer seat (seat_held_elsewhere): reckon/crew/dispatch_watch.py:284 and :338, backed by reckon/node_exclusive_lock.py \u2014 and \u00a73's \"obligation for the owning session and a monitor row for its project\" duplicates the obligations projection (reckon/crew/obligations.py:3874, :3903 _obligations_view) and the pane rows that already read it (reckon/crew/station_subscriber.py:240, reckon/crew/ticker.py)",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "<plan>#s1",
+      "id": "interface_budget-1",
+      "reason": "each added family must be accounted for in the section's own text, or the plan grows the CLI and refusal inventories with nothing retired.",
+      "text": "with public_definitions 2793, cli_options 504, mcp_views 15 and refusal_families 25 this week, \u00a71 adds a command-line read (\"available from the command line and to any agent\") and \u00a72 adds a refusal (\"a hold that names the lead \u2026 carries no record is refused\"), and neither section names an option or refusal it retires or merges, nor states why nothing can be; \u00a74 additionally adds a skill (skills/ holds ten, none named reckon-select) without naming one it replaces",
+      "type": "interface_budget",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "d65b54623bf805176b48fc8eb244b787d392511b",
+  "plan_fingerprint": "b85adcc52348d1d852edb1ddab67c55e05a67417e8c5af613521bfa43e85e9bd",
+  "plan_slug": "lead-decisions-reach-one-place",
+  "plan_version": 0,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261115T164914091781-plan-review-of-lead-decisions-reach-one-place",
+  "reviewed_blob_sha": "2148ed924e06ee48fbd04ba0467559abf9828a46",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "a finding \u2014 the four sections hand a node four separate surfaces (a cross-project read, a hold-with-record refusal, an answer/release path and a presenting skill) over one record, with no single module owning a record's shape, its store and its release.",
+    "duplicate_owner": "a finding \u2014 \u00a71/\u00a73 describe a decision record with its own store and answer path while the plan-decisions owner is reckon/_store.py (via reckon/mcp_edit_plan.py `_lock_decision`), \u00a74's \"two sessions do not present the same decision twice\" duplicates the fleet's seat claim in reckon/crew/dispatch_watch.py, and \u00a73's \"obligation + monitor row\" duplicates the obligations projection in reckon/crew/obligations.py / ticker.py.",
+    "interface_budget": "a finding \u2014 public_definitions 2793, cli_options 504, mcp_views 15, refusal_families 25; \u00a71 adds a new command-line read and \u00a72 a new refusal and neither section names what it retires or merges, or why nothing can be.",
+    "reuse_search": "a finding \u2014 the cross-project waiting-decision read \u00a71 asks for already exists as `unsettled_decisions` / `waiting_decision_rows` in reckon/roadmap.py and is already served to a surface, so the plan must extend that derivation rather than add a second one.",
+    "thin_wrapper": "a finding \u2014 \u00a71's command-line read is a thin wrapper over the roadmap derivation plus the crew page's reader (reckon/serve.py), and the plan states no reason that derivation cannot be extended."
+  },
+  "section_digests": {
+    "_document": "fb8c9f52032f7868acee831917bba49be6f052357f7cbcd05cb8ebe3521a3124",
+    "s1": "d47dc2ef7ec01cdbea5646cace2c9670f8860533d05d55f8c2cf0b6fd6f2e5fc",
+    "s2": "3990e36d5d1e1fce72789dd300c8052dce0aad29048cc58f7f33b570edfae4c6",
+    "s3": "523de628c2d878374dd177819b12ea5129bf326cc71f71a04fa9bab90ef314ce",
+    "s4": "fba2a7e3e344a6f4a920e90a77eff2100605e201c0b0639cd737ea96c3b6bc3f"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-15T16:57:42.494007+00:00",
+  "total": null
+}

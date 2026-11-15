@@ -545,7 +545,9 @@ def _release_stranded_launches(
     the step the span reached before it gives the claim back: the launch that
     resumes reads the record rather than the claim, and removing the run
     directory first would destroy the only local account of where the span
-    stopped. So the order is record, pointer, directory.
+    stopped. So the order is record, pointer, directory. A released launch of
+    a composed review also writes the release onto the run it reviewed, so that
+    run owes its review again rather than reading as already reviewed.
     """
     from reckon.crew import dispatch_claims, dispatch_refusals, recovery_liveness
     from reckon.crew.recovery_review_delivery import _resolved_reviewed_run_id
@@ -590,6 +592,7 @@ def _release_stranded_launches(
                 )
             continue
         dispatch_claims._release_launch_claim(run_id)
+        _owe_the_review_again(reviewed_run, review_run_id=run_id, step=step)
         released.append(run_id)
         if verdicts is not None:
             verdicts.append(
@@ -606,6 +609,66 @@ def _release_stranded_launches(
                 )
             )
     return released
+
+
+def _owe_the_review_again(
+    reviewed_run_id: str, *, review_run_id: str, step: str
+) -> None:
+    """Record on the reviewed run that its composed review was released.
+
+    Releasing a stranded launch removes the review's pointer and its whole run
+    directory, and nothing wrote back to the run the review stood for. That run
+    kept a dispatch record naming the released review as ``dispatched`` on its
+    lane at its head, which is the record the reflex reads to decide the lane
+    already dropped this revision: the next pass composed nothing and refused
+    for want of an eligible lane, so a review the admissible pass had accepted
+    was lost until a coordinator dispatched it again by hand. Writing the
+    release onto the reviewed run's own record — the same status the reflex
+    writes when it releases a stranded standing review itself — leaves the run
+    owing the review, which the next pass composes for the same run and head.
+
+    A reviewed run the fleet has since promoted or discarded owes no review, so
+    it is left alone rather than stamped. A record naming another review now
+    speaks for a later attempt, and is left standing. The write goes through
+    the pointer lock and the run may depart inside it, so a refusal or a failed
+    write is left to the pass rather than raised out of a release: the pointer
+    and run directory are already gone, and the review run reads as released
+    whatever this write managed.
+    """
+    if not reviewed_run_id:
+        return
+    from reckon.crew import promotion, recovery_review_dispatch
+
+    if promotion.discard_recorded(reviewed_run_id):
+        return
+    try:
+        pointer = runs.read_pointer(reviewed_run_id)
+    except (CrewError, OSError):
+        return
+    project = str(pointer.get("project") or "")
+    repo = str(pointer.get("repo") or "")
+    roots = {project: Path(repo)} if project and repo else None
+    if runs._promoted_record_project(reviewed_run_id, project or None, roots=roots):
+        return
+    recorded = pointer.get(recovery_review_dispatch.REVIEW_DISPATCH_FIELD)
+    if not isinstance(recorded, Mapping):
+        return
+    if str(recorded.get("run_id") or "") != review_run_id:
+        return
+    try:
+        recovery_review_dispatch._record_review_dispatch(
+            reviewed_run_id,
+            status="released-stranded-launch",
+            reason=(
+                f"the composed review {review_run_id} was released as a stranded "
+                f"launch at step {step or 'an unrecorded step'}; the run reads as "
+                "owing its review again"
+            ),
+            review_run_id=review_run_id,
+            reviewed_head=str(recorded.get("head") or ""),
+        )
+    except (CrewError, OSError):
+        return
 
 
 def _requeue_stranded_request(run_id: str, *, step: str) -> bool:

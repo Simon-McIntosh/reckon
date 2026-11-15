@@ -1,0 +1,120 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_review": [
+    {
+      "condition_for_failure": "Returned or persisted promotion commits differ from canonical ids independently obtained from git; removing prefix normalization instead makes crew.complete raise before these assertions in keyed/mixed cases.",
+      "location": "tests/test_manifest_commit_forms.py:65-66"
+    },
+    {
+      "condition_for_failure": "Successful promotion leaves its live pointer.",
+      "location": "tests/test_manifest_commit_forms.py:67"
+    },
+    {
+      "condition_for_failure": "Promotion rewrites the input manifest; comparison to original input is an intentional immutability check, not a claim about parsing correctness.",
+      "location": "tests/test_manifest_commit_forms.py:68"
+    },
+    {
+      "condition_for_failure": "Parsing changes list length; this count does not by itself protect prefix normalization and is not relied on as such.",
+      "location": "tests/test_manifest_commit_forms.py:69"
+    },
+    {
+      "condition_for_failure": "Fixture commit cannot resolve or supposedly absent id exists; these are positive and negative instrument controls.",
+      "location": "tests/test_manifest_commit_forms.py:78-79"
+    },
+    {
+      "condition_for_failure": "Promotion accepts the absent id or refuses without naming it; removing the missing-id guard fails pytest.raises.",
+      "location": "tests/test_manifest_commit_forms.py:90-91"
+    },
+    {
+      "condition_for_failure": "Refusal no longer identifies an unresolved commit object.",
+      "location": "tests/test_manifest_commit_forms.py:93"
+    },
+    {
+      "condition_for_failure": "Restoring old diagnostic removes bare commit ids guidance; recorded base control fails here.",
+      "location": "tests/test_manifest_commit_forms.py:94"
+    },
+    {
+      "condition_for_failure": "Removing keyed-form guidance removes commit: <id> from exception text.",
+      "location": "tests/test_manifest_commit_forms.py:95"
+    },
+    {
+      "condition_for_failure": "Refusal writes a ledger row or removes the recoverable pointer.",
+      "location": "tests/test_manifest_commit_forms.py:96-97"
+    }
+  ],
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/reports.py:_normalise_manifest_fields",
+    "reckon/crew/promotion_scope.py:_declared_manifest_commits",
+    "reckon/crew/promotion_checks.py:_png_twin_findings_in_run_commits"
+  ],
+  "completed_at": "2026-11-15T16:33:29Z",
+  "dispatched_at": "2026-11-15T16:27:22Z",
+  "failure_comparison": {
+    "added_failure_ids": [],
+    "arms": {
+      "after-suite.log": {
+        "completed": true,
+        "exit_status": 0,
+        "failure_ids": [],
+        "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T161159004383-qwnw-a-commit-keyed-list-item-is-read-codex/after-suite.log",
+        "revision": "f73cad14c34e1cd4c0f4ed3fedb479d3c1d7879a",
+        "summary": "58 passed in 36.64s"
+      },
+      "baseline-suite.log": {
+        "completed": true,
+        "exit_status": 0,
+        "failure_ids": [],
+        "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T161159004383-qwnw-a-commit-keyed-list-item-is-read-codex/baseline-suite.log",
+        "revision": "05e74e2056c9e88b6c6ee5d6ed6216f196f48d86",
+        "summary": "58 passed in 40.59s"
+      }
+    },
+    "source": "Source manifest baseline_suite and after_suite entries, cross-checked against each entire log"
+  },
+  "findings": [],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "Read 9fd3a702586142a8b0f6be83d9aeabc4ef2b35ed and f73cad14c34e1cd4c0f4ed3fedb479d3c1d7879a separately against their parents; the former extends the shared parser and resolver diagnostics with promotion cases, and the latter preserves the reproduced refusal and landing evidence.",
+    "done_when": "Source prompt.txt:163 requires keyed and mixed promotion with exact commits, invalid-id guidance, a base refusal and all_debug plus lint checks, all recorded by head-gate.log, negative-control.log and ruff.log.",
+    "goal": "Source prompt.txt:38 requires reading keyed commit-list entries, and reckon/crew/reports.py:1103 strips the optional commit label before resolution.",
+    "manifest": "Source manifest.md names both delivered commits, all five changed paths, the focused eight-pass receipt and two completed 58-pass suite arms with matching revision headers.",
+    "write_paths": "Source prompt.txt:84 declares reckon, tests and the evidence fragment directory, containing every one of the five paths changed across the two reviewed commits."
+  },
+  "justifications": {
+    "durability": "tests/test_manifest_commit_forms.py:63 exercises real promotion and exact persisted ledger ids for keyed and mixed inputs, while :90 refuses missing ids and checks guidance, and restoring the base parser or old diagnostic makes these cases fail as negative-control.log records.",
+    "evidence": "tests/test_manifest_commit_forms.py:41 supplies both required forms and head-gate.log records 8 passed versus negative-control.log's 4 failed and 4 passed, while ruff.log and both armed suite logs record successful completion.",
+    "fit": "reckon/crew/reports.py:1087 extends its existing coercion hook with anchored normalization and tests/test_manifest_commit_forms.py:22 extends existing parameterized promotion coverage without adding forbidden names.",
+    "goal_fidelity": "reckon/crew/reports.py:1101 normalizes keyed entries in the existing commit-field reader so keyed and mixed manifests reach the same promotion resolver as bare ids.",
+    "reuse": "Searches for commit-label and citation normalization in reports.py, promotion_scope.py and queue_landing.py identify reports.py:_coerce_commit_identifiers as the field-format owner and queue_landing.py:_delivered_revision as its downstream revision reader, and the change extends the existing owners without adding a competing definition.",
+    "scope_discipline": "The diff changes only reckon/crew/reports.py, reckon/crew/promotion_scope.py, tests/test_manifest_commit_forms.py and two files under the declared evidence directory, each directly supporting keyed commit promotion or its evidence."
+  },
+  "negative_control_quote": "commit 'commit: be5c044b386a1ccaa34d78a1edb2da3fa533c98d' does not resolve to a commit object",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: Source prompt.txt:38 requires reading keyed commit-list entries, and reckon/crew/reports.py:1103 strips the optional commit label before resolution.\nVERDICT done_when: Source prompt.txt:163 requires keyed and mixed promotion with exact commits, invalid-id guidance, a base refusal and all_debug plus lint checks, all recorded by head-gate.log, negative-control.log and ruff.log.\nVERDICT write_paths: Source prompt.txt:84 declares reckon, tests and the evidence fragment directory, containing every one of the five paths changed across the two reviewed commits.\nVERDICT manifest: Source manifest.md names both delivered commits, all five changed paths, the focused eight-pass receipt and two completed 58-pass suite arms with matching revision headers.\nVERDICT diff: Read 9fd3a702586142a8b0f6be83d9aeabc4ef2b35ed and f73cad14c34e1cd4c0f4ed3fedb479d3c1d7879a separately against their parents; the former extends the shared parser and resolver diagnostics with promotion cases, and the latter preserves the reproduced refusal and landing evidence.\nCALL_SITES: reckon/crew/reports.py:_normalise_manifest_fields, reckon/crew/promotion_scope.py:_declared_manifest_commits, reckon/crew/promotion_checks.py:_png_twin_findings_in_run_commits\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/reports.py:1101 normalizes keyed entries in the existing commit-field reader so keyed and mixed manifests reach the same promotion resolver as bare ids.\nSCORE evidence: 20\nJUSTIFICATION evidence: tests/test_manifest_commit_forms.py:41 supplies both required forms and head-gate.log records 8 passed versus negative-control.log's 4 failed and 4 passed, while ruff.log and both armed suite logs record successful completion.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: The diff changes only reckon/crew/reports.py, reckon/crew/promotion_scope.py, tests/test_manifest_commit_forms.py and two files under the declared evidence directory, each directly supporting keyed commit promotion or its evidence.\nSCORE durability: 20\nJUSTIFICATION durability: tests/test_manifest_commit_forms.py:63 exercises real promotion and exact persisted ledger ids for keyed and mixed inputs, while :90 refuses missing ids and checks guidance, and restoring the base parser or old diagnostic makes these cases fail as negative-control.log records.\nSCORE fit: 20\nJUSTIFICATION fit: reckon/crew/reports.py:1087 extends its existing coercion hook with anchored normalization and tests/test_manifest_commit_forms.py:22 extends existing parameterized promotion coverage without adding forbidden names.\nSCORE reuse: 20\nJUSTIFICATION reuse: Searches for commit-label and citation normalization in reports.py, promotion_scope.py and queue_landing.py identify reports.py:_coerce_commit_identifiers as the field-format owner and queue_landing.py:_delivered_revision as its downstream revision reader, and the change extends the existing owners without adding a competing definition.\n",
+  "review_run_id": "r-20261115T162419493714-review-of-qwnw-a-commit-keyed-list-item-is-read-codex-f73cad14c34e",
+  "reviewed_base_sha": "05e74e2056c9e88b6c6ee5d6ed6216f196f48d86",
+  "reviewed_commits": [
+    "9fd3a702586142a8b0f6be83d9aeabc4ef2b35ed",
+    "f73cad14c34e1cd4c0f4ed3fedb479d3c1d7879a"
+  ],
+  "reviewed_head_sha": "f73cad14c34e1cd4c0f4ed3fedb479d3c1d7879a",
+  "reviewed_run_id": "r-20261115T161159004383-qwnw-a-commit-keyed-list-item-is-read-codex",
+  "scores": {
+    "durability": 20,
+    "evidence": 20,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "test_rerun": "none; inspected original focused, negative-control, armed suite and lint receipts",
+  "times_source": "run-record",
+  "timestamp": "2026-11-15T16:35:40.878446+00:00",
+  "total": 120
+}

@@ -23,10 +23,10 @@
   <title>History Persists As Detail Washes Out | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="38">
+<meta name="plan-version" content="55">
 <meta name="plan-modified" content="2026-11-15">
-<meta name="plan-section-declarations" content="{&quot;s20&quot;:&quot;done&quot;,&quot;s21&quot;:&quot;done&quot;,&quot;s22&quot;:&quot;implementable&quot;,&quot;s23&quot;:&quot;implementable&quot;,&quot;s24&quot;:&quot;implementable&quot;,&quot;s25&quot;:&quot;done&quot;,&quot;s26&quot;:&quot;implementable&quot;,&quot;s27&quot;:&quot;implementable&quot;,&quot;s28&quot;:&quot;implementable&quot;}">
-<meta name="plan-section-depends-on" content="{&quot;s26&quot;:[&quot;history-persists-as-detail-washes-out#s21&quot;,&quot;history-persists-as-detail-washes-out#s22&quot;,&quot;history-persists-as-detail-washes-out#s23&quot;,&quot;history-persists-as-detail-washes-out#s24&quot;,&quot;history-persists-as-detail-washes-out#s25&quot;,&quot;history-persists-as-detail-washes-out#s28&quot;],&quot;s27&quot;:[&quot;history-persists-as-detail-washes-out#s26&quot;]}">
+<meta name="plan-section-declarations" content="{&quot;s20&quot;:&quot;done&quot;,&quot;s21&quot;:&quot;done&quot;,&quot;s22&quot;:&quot;done&quot;,&quot;s23&quot;:&quot;implementable&quot;,&quot;s24&quot;:&quot;implementable&quot;,&quot;s25&quot;:&quot;done&quot;,&quot;s26&quot;:&quot;implementable&quot;,&quot;s27&quot;:&quot;implementable&quot;,&quot;s28&quot;:&quot;implementable&quot;,&quot;s29&quot;:&quot;implementable&quot;}">
+<meta name="plan-section-depends-on" content="{&quot;s26&quot;:[&quot;history-persists-as-detail-washes-out#s21&quot;,&quot;history-persists-as-detail-washes-out#s22&quot;,&quot;history-persists-as-detail-washes-out#s23&quot;,&quot;history-persists-as-detail-washes-out#s24&quot;,&quot;history-persists-as-detail-washes-out#s25&quot;,&quot;history-persists-as-detail-washes-out#s28&quot;,&quot;history-persists-as-detail-washes-out#s29&quot;],&quot;s27&quot;:[&quot;history-persists-as-detail-washes-out#s26&quot;]}">
 </head>
 <body>
   <main class="plan-doc">
@@ -366,7 +366,7 @@
 <p><strong>Done when.</strong> A promotion whose store write raises refuses, names the store and the repair verb, and leaves no row in either store, asserted by injection; a healthy promotion writes both and <code>run_store.compare</code> returns 0/0/0. The test fails at base. Write paths: <code>reckon/ledger.py</code>, <code>reckon/run_store.py</code> and the new test.</p>
 
     <h2 id="s22">Every ledger question is answered by the store</h2>
-<section data-reckon="section" data-id="s22" data-effort-hours="4.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="implementable" data-links=""></section>
+<section data-reckon="section" data-id="s22" data-effort-hours="4.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="done" data-links=""></section>
 <p><strong>Why.</strong> The map lists every reader of the per-run files and the aggregate; untracking before they read the store leaves each with nothing to read.</p>
 <p><strong>Done when.</strong> Every existing reader test passes against a project whose <code>runs/</code> directory is absent and whose store holds the rows, and a store deleted and rebuilt returns an equal answer set. Write paths: <code>reckon/ledger.py</code> (<code>load</code>, <code>load_aggregate</code>, <code>runs</code>, <code>read_records</code>), <code>reckon/crew/open_run_index.py</code> and the new test.</p>
 
@@ -377,9 +377,9 @@
 
     <h2 id="s24">Revision-scoped history reads restate against the store</h2>
 <section data-reckon="section" data-id="s24" data-effort-hours="3.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
-<p><strong>Why.</strong> Velocity reads the ledger at a revision and would report zero rather than refuse once the files leave git; the review-cycle figure script reads <code>crew.json</code> the same way.</p>
+<p><strong>Why.</strong> Velocity reads the ledger at a revision and would report zero rather than refuse once the files leave git. The review-cycle figure script reads the working-tree <code>crew.json</code> and skips a project silently when the file is absent (<code>docs/figures/plan-review-cycles/measure_review_cycles.py:333-336</code>), so once the file leaves git every dispatch time drops out of the cadence figures with nothing failing.</p>
 <p><strong>Deliverable.</strong> Velocity places a run at the commit that added its record file and reads that file at the revision (<code>reckon/velocity.py</code>), so once the files leave git the store must carry the revision each run landed at. Each store row carries it, backfilled for existing rows from the commit that added the run's file, and velocity reads a revision from the store.</p>
-<p><strong>Done when.</strong> In a temporary repository whose <code>runs/</code> directory is absent at the revision asked about, velocity answers from the store or refuses naming the store, and never reports zero. Its figures there equal those the same revision gives with the files present, over a population whose run count is nonzero and equals the ledger's at that revision; an empty store fails the comparison rather than matching an empty answer. The arm over a store rebuilt from the export belongs to §27, which delivers the export. Write paths: <code>reckon/velocity.py</code>, <code>docs/figures/plan-review-cycles/measure_review_cycles.py</code>, the <code>scripts/</code> readers the map names, and the new test.</p>
+<p><strong>Done when.</strong> In a temporary repository whose <code>runs/</code> directory is absent at the revision asked about, velocity answers from the store and never reports zero. Its figures there equal those the same runs gave at the last revision that still held their files, over a population whose run count is nonzero and equals the ledger's at that earlier revision; an empty store fails the comparison rather than matching an empty answer. In the same repository with no working-tree <code>crew.json</code>, the review-cycle figure script reports the same dispatch times it reported with the file present, over the same nonzero population; an empty store fails that comparison too. The arm over a store rebuilt from the export belongs to §27, which delivers the export. Write paths: <code>reckon/velocity.py</code>, <code>reckon/run_store.py</code> and <code>reckon/ledger.py</code> (which own the runs columns and the row writer), <code>docs/figures/plan-review-cycles/measure_review_cycles.py</code>, the <code>scripts/</code> readers the map names, and the new test.</p>
 
     <h2 id="s25">Presence checks stop keying on a tracked file</h2>
 <section data-reckon="section" data-id="s25" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="critical" data-status="done" data-links=""></section>
@@ -398,8 +398,13 @@
 
     <h2 id="s28">A docs-only repository is not read as crew-managed</h2>
 <section data-reckon="section" data-id="s28" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="elevated" data-status="implementable" data-links=""></section>
-<p><strong>Why.</strong> §25 landed at <code>0d421c7f75</code>. The two guards and the CLI entry now recognise a crew-managed repository without a tracked <code>crew.json</code>, partly by <code>docs/state/&lt;project&gt;/index.json</code>. Its review found that <code>reckon build</code> writes that same file for any project it renders as a static site, crew or not (<code>reckon/project_maintenance_commands.py</code>). So a docs-only repository is now read as crew-managed, and the native-agent guard refuses a native agent there. It fails closed, not open, but it refuses work in repositories that have no crew. The review also noted that <code>repository_root</code>'s docstring still describes the two-file test the change replaced.</p>
-<p><strong>Done when.</strong> A new test, failing at the base revision: a repository holding only the static-site <code>index.json</code> that <code>reckon build</code> writes, with no run store, crew state or flight configuration, is not recognised as crew-managed by either guard or the CLI entry. A repository with a run store and no tracked <code>crew.json</code> is still recognised. §25's test still passes. The tests importing either guard or <code>reckon.cli_entry</code> add no failure against the base on all_debug. Write paths: <code>reckon/hooks/native_agent_guard.py</code>, <code>reckon/hooks/worker_message_guard.py</code>, <code>reckon/cli_entry.py</code> and a new test.</p>
+<p><strong>Why.</strong> §25 landed at <code>0d421c7f75</code>. The two guards and the CLI entry now recognise a crew-managed repository without a tracked <code>crew.json</code>, partly by <code>docs/state/&lt;project&gt;/index.json</code>. Its review found that <code>reckon build</code> writes that same file for any project it renders as a static site, crew or not (<code>reckon/project_maintenance_commands.py</code>). So a docs-only repository is now read as crew-managed, and the native-agent guard refuses a native agent there. It fails closed, not open, but it refuses work in repositories that have no crew.</p>
+<p><strong>Done when.</strong> A new test, failing at the base revision, over two fixtures modelled on measured repositories. The static-site fixture holds only what <code>reckon build</code> writes under <code>docs/state/&lt;project&gt;/</code> (<code>index.json</code>, <code>project.json</code>, <code>timeline.html</code>), as <code>tessera</code>, <code>norma</code>, <code>helix</code> and <code>vv</code> do: neither guard, the CLI entry, nor the project-discovery fallback in <code>reckon/crew/dispatching/comparisons.py</code> (which carries the same marker tuple) recognises it as crew-managed. The crew fixture holds those same files plus the tracked review history <code>hanney</code> carries (<code>docs/state/&lt;project&gt;/reviews/</code>), and no <code>runs/</code>, because §26 removes <code>runs/</code> from the tree and a marker that does not survive it would turn recognition off, with no <code>crew.json</code> and no <code>flight.yaml</code>: both guards and the CLI entry still recognise it. §25's test is updated so its recognised fixture carries a crew marker rather than an <code>index.json</code> alone, and passes. The tests importing either guard or <code>reckon.cli_entry</code> add no failure against the base on all_debug. Write paths: <code>reckon/hooks/native_agent_guard.py</code>, <code>reckon/hooks/worker_message_guard.py</code>, <code>reckon/cli_entry.py</code>, <code>reckon/crew/dispatching/comparisons.py</code>, <code>tests/test_guards_hold_without_a_tracked_ledger.py</code> and a new test.</p>
+
+    <h2 id="s29">A store the ledger cannot read is a failure, not an empty project</h2>
+<section data-reckon="section" data-id="s29" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="elevated" data-status="implementable" data-links=""></section>
+<p><strong>Why.</strong> §22's third code review (<code>r-20261115T152005968473</code>, at <code>34158070bdc4</code>) found three defects in the new store reader <code>stored_run_rows</code> in <code>reckon/run_store.py</code>. They are carried here so §22 could land without a fourth repair round. Its query guard (<code>except sqlite3.Error</code>, breaking out of the batch loop) turns a damaged file or a mismatched schema into an empty population, and a failed attach is swallowed separately, so the read continues against the main database and silently loses every retired row. A store whose <code>runs</code> table predates the <code>payload</code> column therefore reports no runs, while <code>indexed_run_ids</code> still lists their ids. And the reader restates the record join <code>_indexed_records</code> already owns in the same module, so the store holds two copies of its own record read.</p>
+<p><strong>Done when.</strong> New tests for the three error arms, each failing at the base revision. A ledger read over a store whose file is damaged, whose archive cannot be attached, or whose <code>runs</code> table lacks the <code>payload</code> column raises an error naming the store and the cause; none answers an empty population. A store that owes its migration is migrated, or refused naming the migration, before it is read. One function in <code>reckon/run_store.py</code> owns the record join; the ledger reader and the indexed reader already return the same rows, and a test holding that equality over a store with retired rows stays green. The tests importing <code>reckon.run_store</code> or <code>reckon.ledger</code> add no failure against the base on all_debug. Write paths: <code>reckon/run_store.py</code>, <code>reckon/ledger.py</code> and a new test.</p>
 
     <section data-reckon="decisions" id="decisions" class="r-decisions">
 <h2><span class="sec">§</span> Decisions</h2>
@@ -454,10 +459,22 @@
     <pre class="r-fu-prompt">/reckon-build history-persists-as-detail-washes-out §20</pre>
     <p class="r-fu-outcome">§20 landed as 1ebacb850e: the fragment maps 64 ledger readers and writers and proposes seven sections, now §21 to §27 with their order declared as section waits. It found two native-agent guards and the crew-project check key on a tracked crew.json and would silently turn off if it were untracked (§25).</p>
     </article>
-<article class="r-fu" data-id="f-hpdw-010" data-status="open" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-written-by="reckon-a6" data-written-at="2026-11-15T09:05:00Z" data-recommends-skill="" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-hpdw-010" data-status="resolved" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-written-by="reckon-a6" data-written-at="2026-11-15T09:05:00Z" data-recommends-skill="" data-resolved-at="2026-11-15T16:44:55+00:00" data-resolved-by="">
     <h4 class="r-fu-title">Build the ledger-leaves-git sections</h4>
     <div class="r-fu-body"><p>Review and build §21 to §27; §26 waits on §21 to §25 and §27 on §26.</p></div>
     <pre class="r-fu-prompt">/reckon-build history-persists-as-detail-washes-out §21</pre>
+    <p class="r-fu-outcome"><p>§21 and §25 landed; §22 and §23 delivered and in review. The remaining build is §24 and §28, then §26 and §27, carried by f-hpdw-011.</p></p>
+    </article>
+<article class="r-fu" data-id="f-hpdw-011" data-status="resolved" data-written-by="reckon-edit" data-written-at="2026-11-15" data-recommends-skill="" data-resolved-at="2026-11-15T18:26:55+00:00" data-resolved-by="">
+    <h4 class="r-fu-title">Build §24 and §28, then §26 and §27</h4>
+    <div class="r-fu-body"><p>§24 restates the revision-scoped readers (velocity and the review-cycle figure script) on the store; §28 stops a static-site repository reading as crew-managed. §26 waits on §21 to §25 and §28, §27 on §26.</p></div>
+    <pre class="r-fu-prompt">/reckon-build history-persists-as-detail-washes-out §24</pre>
+    <p class="r-fu-outcome"><p>Replaced by f-hpdw-012, which adds §29 to the build.</p></p>
+    </article>
+<article class="r-fu" data-id="f-hpdw-012" data-status="open" data-written-by="reckon-edit" data-written-at="2026-11-15" data-recommends-skill="" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Build §24, §28 and §29, then §26 and §27</h4>
+    <div class="r-fu-body"><p>§24 restates the revision-scoped readers on the store; §28 stops a static-site repository reading as crew-managed; §29 makes an unreadable store an error rather than an empty project. §26 waits on §21 to §25, §28 and §29; §27 on §26.</p></div>
+    <pre class="r-fu-prompt">/reckon-build history-persists-as-detail-washes-out §29</pre>
     </article>
 </section>
 
@@ -510,6 +527,27 @@
 <div class="r-comment" data-section="s22" data-id="c-run-r-20261115T122301850022-review-of-ledger-reads-the-store-s22-4bc9d8bf1d74-figure" data-who="reckon-build" data-when="2026-11-15T12:38:46.777Z">
     <div class="r-comment-body"><p>read-only figure review; no plan section is edited and the record lands at the two declared review-record paths beside the reviewed run</p></div>
 </div>
+<div class="r-comment" data-section="s22" data-id="c-run-r-20261115T135109480663-review-of-ledger-reads-the-store-s22-3eee72acf081" data-who="reckon-build" data-when="2026-11-15T14:09:34.434Z">
+    <div class="r-comment-body"><p>the review record for r-20261115T102552534698-ledger-reads-the-store-s22 at head 3eee72acf081 is stored under review-records/ and carries status parsed, six dimension scores, the reviewed base/head shas and four non-blocking findings.</p></div>
+</div>
+<div class="r-comment" data-section="s22" data-id="c-run-r-20261115T135607434311-review-of-ledger-reads-the-store-s22-3eee72acf081-figure" data-who="reckon-build" data-when="2026-11-15T14:15:56.775Z">
+    <div class="r-comment-body"><p>read-only figure review; the only writes are the two declared review records under the reviewed run's review-records directory</p></div>
+</div>
+<div class="r-comment" data-section="s22" data-id="c-run-r-20261115T152005968473-review-of-ledger-reads-the-store-s22-34158070bdc4" data-who="reckon-build" data-when="2026-11-15T15:30:39.963Z">
+    <div class="r-comment-body"><p>review of r-20261115T102552534698-ledger-reads-the-store-s22 over 3eee72acf0..34158070bd recorded at review-records/&lt;run&gt;.json and &lt;run&gt;.at-34158070bd.json, status parsed, scores 19/19/14/17/17/14, added_failure_count 0, four non-blocking findings</p></div>
+</div>
+<div class="r-comment" data-section="s22" data-id="c-run-r-20261115T152949095586-review-of-ledger-reads-the-store-s22-34158070bdc4-figure" data-who="reckon-build" data-when="2026-11-15T15:46:25.482Z">
+    <div class="r-comment-body"><p>figure review of r-20261115T102552534698-ledger-reads-the-store-s22 at head 34158070bd stored as a parsed figure record (6/6 rubric items pass, 1 non-blocking finding exempted); review run r-20261115T152949095586-review-of-ledger-reads-the-store-s22-34158070bdc4-figure</p></div>
+</div>
+<div class="r-comment" data-section="s22" data-id="c-run-r-20261115T102552534698-ledger-reads-the-store-s22" data-who="reckon-build" data-when="2026-11-15T15:18:46Z">
+    <div class="r-comment-body"><p>this round lands in b1f4c666e8 (run store reader, ledger, tests), 9572b14547 (the read-only test), d98c5e7dab (figure) and 34158070bd (fragment).</p></div>
+</div>
+<div class="r-comment" data-section="s23" data-id="c-run-r-20261115T145940333281-review-of-members-and-holds-in-store-s23-2527b74492c2" data-who="reckon-build" data-when="2026-11-15T15:07:50Z">
+    <div class="r-comment-body"><p>Independent review scores 16/20/20/18/18/20; one blocking version-domain finding; recorded suite delta is 0 added failures.</p></div>
+</div>
+<div class="r-comment" data-section="s23" data-id="c-run-r-20261115T153536870379-review-of-members-and-holds-in-store-s23-764f1ce8e066" data-who="reckon-build" data-when="2026-11-15T15:43:35Z">
+    <div class="r-comment-body"><p>Independent incremental review of 2527b74492c2c5f1fdac51f46f7f04b9336cdd79 to 764f1ce8e066cf291b448af42f0b8e5e508db0e9: parsed, six dimensions 20/20 each, no findings, zero added failures; prior blocking version-domain finding answered.</p></div>
+</div>
 <div class="r-comment" data-section="s25" data-id="c-run-r-20261115T114400888370-review-of-guards-without-tracked-ledger-s25-a25650c7735d" data-who="reckon-build" data-when="2026-11-15T12:04:12.446Z">
     <div class="r-comment-body"><p>independent review of a25650c7735db7aeb7fe3cf398f80feb0eda05a1 scoring goal_fidelity 20, evidence 17, scope_discipline 20, durability 18, fit 15, reuse 15 (total 105); added_failure_count 0 derived from the reviewed run's own base-arm.log and after-arm.log (58 passed EXIT=0 against 63 passed EXIT=0); two non-blocking findings, the index.json marker also matching a docs-only repository that reckon build published, and repository_root's docstring keeping the two-file wording; the node's goal, done_when, declared scope and its 'test fails at base' claim are met</p></div>
 </div>
@@ -542,6 +580,9 @@
 </div>
 <div class="r-comment" data-section="s7" data-id="c-run-r-20260923T141652653142-review-of-history-persists-as-detail-washes-out" data-who="reckon-ship" data-when="2026-09-23T15:39:47.829Z">
     <div class="r-comment-body"><p>read-back found 50 sentences with two readings, 43 load-bearing, and node 4 without a measure; the per-run ledger moved to its own plan</p></div>
+</div>
+<div class="r-comment" data-section="s24" data-id="c-run-r-20261115T183015279464-review-of-revision-reads-on-the-store-s24-84165b187d1c" data-who="reckon-build" data-when="2026-11-15T18:33:49.419Z">
+    <div class="r-comment-body"><p>reviewed r-20261115T102555144818-revision-reads-on-the-store-s24 at 27958ce9c4fa..84165b187d1c across two commits; 5 of 6 declared write paths touched, all inside scope; blocking finding that reckon/run_store.py:280 stamps `promoted_revision` as the commit a row&#x27;s record file entered the tree at, which promotion_scope.py:305 defines differently, and that no backfill repairs; reuse 5 because run_store.py:1142 duplicates velocity.py:1294.</p></div>
 </div>
 </section>
 </main>
