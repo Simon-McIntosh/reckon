@@ -451,6 +451,18 @@ REFLEX_BEAT_SECONDS = 30.0
 # and the duties it had not yet published are the next station's to derive.
 DUTY_DRAIN_SECONDS = 10.0
 
+# How long a stopping station has to unwind before it exits where it stands.
+# Nothing a stop signal interrupts is under this process's control: a tick can
+# sit in a derivation doing storage IO, a dispatcher can sit between its claim
+# and its worker, and the drain joins workers one after another — none of which
+# reads the stop flag, so none of which the ordered shutdown can rely on
+# reaching. Measured on 15 November, two of three station restarts were still
+# running 120 s after SIGTERM and needed SIGKILL, and a killed station gives
+# back nothing: it orphaned seven launch claims at 13:00Z, six of them other
+# sessions'. So the bound is a promise the process keeps from a thread of its
+# own rather than a check the stuck path may never reach.
+STATION_STOP_BOUND_SECONDS = 15.0
+
 # How long a due reload is held for the derivations in flight to land. A reload
 # replaces the image and ends every thread, so a derivation slower than the gap
 # between two landings on the primary branch was ended on every reload and its
@@ -586,11 +598,22 @@ class DutyBeat:
             self._quiescing = False
 
     def drain(self, timeout: float | None = None) -> None:
-        """Wait for the derivations this station started to finish."""
+        """Wait, bounded in total, for the derivations this station started.
+
+        The bound covers the whole drain rather than each worker: a stopping
+        station joins every derivation it started, and one bound per worker
+        multiplies whatever is stuck in storage by the number of projects. A
+        derivation the bound leaves running is ended by the process exiting,
+        and the duties it had not published are the next station's to derive.
+        """
         with self._lock:
             workers = list(self._workers.values())
+        deadline = None if timeout is None else time.monotonic() + timeout
         for worker in workers:
-            worker.join(timeout)
+            remaining = (
+                None if deadline is None else max(0.0, deadline - time.monotonic())
+            )
+            worker.join(remaining)
         with self._lock:
             self._workers.clear()
 
@@ -1211,6 +1234,62 @@ class Station:
         return published
 
 
+class StopBound:
+    """Hold a stopping station to the bound its shutdown is promised.
+
+    The ordered shutdown waits on work this process did not start and cannot
+    interrupt — a derivation reading storage, a dispatcher between its claim
+    and its worker — so the flag a signal sets is only read by paths that are
+    running. When they are not, the shutdown never begins, which is how a
+    SIGTERM came to be ignored for 120 s and answered with SIGKILL.
+
+    The bound is therefore enforced from a thread no blocked path holds, and it
+    does the two things a killed station cannot: it hands back the claims this
+    process published and never reached a worker, and it exits. The ordered
+    shutdown keeps whatever time it has left up to the bound; one that finishes
+    first cancels the thread, so a clean stop is never cut short by it.
+    """
+
+    def __init__(
+        self,
+        bound: float = STATION_STOP_BOUND_SECONDS,
+        *,
+        exit: Callable[[int], None] = os._exit,
+        release: Callable[[], tuple[str, ...]] | None = None,
+    ) -> None:
+        self.bound = bound
+        self._exit = exit
+        self._release = release or dispatch_claims.release_unlaunched_claims
+        self._unwound = threading.Event()
+        self._timer: threading.Timer | None = None
+
+    def arm(self) -> None:
+        """Start the bound."""
+        if self._timer is not None:
+            return
+        self._timer = threading.Timer(self.bound, self._enforce)
+        self._timer.daemon = True
+        self._timer.start()
+
+    def unwound(self) -> None:
+        """Record that the ordered shutdown finished inside the bound."""
+        self._unwound.set()
+        if self._timer is not None:
+            self._timer.cancel()
+
+    def _enforce(self) -> None:
+        if self._unwound.is_set():
+            return
+        released = self._release()
+        print(
+            f"station-stop: the shutdown did not finish in {self.bound:g}s; "
+            f"exiting with {len(released)} unlaunched claim(s) handed back",
+            file=sys.stderr,
+            flush=True,
+        )
+        self._exit(0)
+
+
 def run_station(
     *,
     interval: float = 1.0,
@@ -1235,10 +1314,14 @@ def run_station(
     if store is None:
         store = station_store.StationStore.at_runtime_root()
     stopping = False
+    stop_bound = StopBound()
 
     def stop(_signum: int, _frame: Any) -> None:
         nonlocal stopping
         stopping = True
+        # The shutdown this flag asks for is only reached by a loop that is
+        # between ticks, so the bound starts here rather than in that loop.
+        stop_bound.arm()
 
     if lease is None:
         lease = station_lease(store.root)
@@ -1343,4 +1426,11 @@ def run_station(
                 beat.stop()
             for signum, handler in previous.items():
                 signal.signal(signum, handler)
+            # A dispatcher thread caught between its claim and its worker dies
+            # with this process whatever the shutdown did, so the claims it
+            # published are handed back here as well as at the bound: a claim
+            # with no worker is a run nothing can relaunch until its holder is
+            # read as dead, and nothing else in this process is left to do it.
+            dispatch_claims.release_unlaunched_claims()
             lease.release()
+            stop_bound.unwound()

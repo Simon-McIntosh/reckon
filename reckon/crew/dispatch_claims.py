@@ -1178,6 +1178,75 @@ def _release_launch_claim(run_id: str) -> None:
     shutil.rmtree(run_dir(run_id), ignore_errors=True)
 
 
+#: The steps that mean a launch has reached its worker. A claim stands at one of
+#: them only after the worker exists, so a claim at either is never handed back
+#: by a stopping process: what stands behind it is a running worker, and giving
+#: the claim up would let the queue launch a second one over the first.
+LAUNCHED_STEPS = frozenset({LAUNCH_WORKER_STEP, LAUNCH_IDENTITY_STEP})
+
+
+def release_unlaunched_claims(pid: int | None = None) -> tuple[str, ...]:
+    """Hand back every launch this process published and never reached a worker.
+
+    A stopping station ends its dispatcher threads where they stand, and a
+    thread caught between publishing its claim and starting its worker leaves
+    that claim standing with no worker to justify it. Nothing inside the span
+    is left to give the claim back — the process that would has gone — and a
+    claim with no live holder is released only once the stranded-launch bound
+    has passed, so until then the run reads as in flight, nothing redispatches
+    it, and the paths it fences stay fenced. Every claim whose holder is this
+    process is therefore given back before it exits.
+
+    Order is the reader's: the refusal naming the step the span reached is
+    recorded first, because releasing the claim removes the run directory that
+    would otherwise hold it. A claim taken from the queue goes back to the
+    queue, since removing its run directory would take the only copy of a
+    request nothing else would dispatch; every other claim is released outright.
+    A claim whose step has reached the worker, and a claim another process
+    published, are left exactly as they stand — the first because its worker is
+    running, the second because it is not this process's to give back.
+    """
+    from reckon.crew.admission.launching import _requeue_stranded_request
+    from reckon.crew.dispatch_refusals import record_launch_refusal
+
+    holder = os.getpid() if pid is None else pid
+    released: list[str] = []
+    for pointer in list_live():
+        run_id = str(pointer.get("run_id") or "")
+        if not run_id:
+            continue
+        claim = read_launch_claim(run_id)
+        if claim.get("holder_pid") != holder:
+            continue
+        step = str(claim.get("step") or "")
+        if step in LAUNCHED_STEPS or pointer.get("pid"):
+            continue
+        holder = {
+            key: claim.get(key)
+            for key in (
+                "holder_pid",
+                "holder_host",
+                "launched_at",
+                "step",
+                "step_at",
+            )
+        }
+        record_launch_refusal(run_id=run_id, step=step, holder=holder)
+        if _requeue_stranded_request(run_id, step=step):
+            released.append(run_id)
+            continue
+        _release_launch_claim(run_id)
+        released.append(run_id)
+    if released:
+        print(
+            "reckon: handing back the claims of "
+            f"{len(released)} unlaunched dispatch(es): {', '.join(sorted(released))}",
+            file=sys.stderr,
+            flush=True,
+        )
+    return tuple(released)
+
+
 def _refuse_a_discarded_launch(run_id: str, *, started: bool = False) -> None:
     """Refuse a launch whose request was discarded before its worker started.
 
