@@ -1,0 +1,83 @@
+<section id="qwnw-landing-judges-added-failures-and-reads-a-finish-landing">
+  <h2>A landing reads a suite by its delta and a repeat by its own request</h2>
+
+  <p><strong>What changed.</strong> Three landing readers decide on evidence the
+  run itself carries, and two of them were reading a narrower fact than the one
+  they needed.</p>
+
+  <p>An after-suite arm measured before a later commit was refused whenever the
+  head had moved, so a documentation or evidence commit after the measurement
+  invalidated an arm that still described the suite the head runs.
+  <code>reckon/crew/promotion_records.py</code> now asks what the commits
+  between the arm and the head <em>touch</em>: a Python file, anything under the
+  tests tree, or the pytest configuration files count as reaching the suite, and
+  a head that moved through none of them keeps its arm. The question is
+  deliberately conservative, because deciding it properly needs an import graph
+  this check does not carry, and an arm wrongly kept is a regression that lands,
+  so a diff that cannot be read keeps the refusal.</p>
+
+  <p>A dry run measured what a real landing would measure, submitting a
+  scheduler job and waiting on it. The suite-delta reader now reports
+  <code>would-measure</code> with the arms it is missing instead of running
+  them, and the declared negative control takes the same path: a run that kept
+  no log admitting its control is reported as one the landing would measure
+  rather than as one that failed.</p>
+
+  <p>A coordinator repeating a promotion request that was still queued received
+  the duplicate receipt and nothing else, so the repeat reported the same state
+  as the first call and left the promotion waiting on a drain that might never
+  come. <code>reckon/crew_run_commands.py</code> now carries that request out in
+  the call that found it, and the emitted outcome records
+  <code>"driven": true</code>. A repeat that finds its request terminal keeps the
+  receipt path, so nothing is promoted twice.</p>
+
+  <h3 id="qwnw-landing-judges-added-failures-and-reads-a-finish-measured">Measured</h3>
+
+  <table id="qwnw-landing-judges-added-failures-and-reads-a-finish-arms">
+    <caption>Every arm is a log whose head names its revision, tree and command
+    and whose last line reads <code>EXIT=&lt;code&gt;</code>.</caption>
+    <thead><tr><th>arm</th><th>revision</th><th>result</th></tr></thead>
+    <tbody>
+      <tr><td>gate (this change)</td>
+        <td><code>3d55349501</code></td>
+        <td>17 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>negative control (the pair at the plan's base)</td>
+        <td><code>a346fba4aa</code></td>
+        <td>6 failed, 1 passed, <code>EXIT=1</code></td></tr>
+    </tbody>
+  </table>
+
+  <p>The gate runs the new file beside the two refusal files it must not
+  disturb: <code>tests/test_a_landing_judges_the_head_by_its_suite.py</code>,
+  <code>tests/test_a_landing_measures_a_mismatched_arm.py</code> and
+  <code>tests/test_a_trailing_after_suite_arm_is_refused_by_name.py</code>, 17
+  cases in all. The negative control extracts the base revision to a scratch
+  tree, copies the same file in, and runs it against the base code: six of its
+  seven cases fail there, including both halves of the paired base-and-head
+  failure — the arm is refused at the base whichever direction the delta
+  points, and the log is kept.</p>
+
+  <h3 id="qwnw-landing-judges-added-failures-and-reads-a-finish-cases">Cases and what is covered</h3>
+
+  <ul>
+    <li>A head whose only failure is the id the base also fails measures zero
+    added, against a red base.</li>
+    <li>The same base with an id the head alone fails is refused, naming that
+    id.</li>
+    <li>A documentation commit after the arm leaves the arm standing; the same
+    shape with a code commit still refuses it.</li>
+    <li>A dry run names the arms it would measure and measures none; a control
+    the run kept no log for is named the same way.</li>
+    <li>A repeated <code>crew complete</code> carries the request its first call
+    queued.</li>
+  </ul>
+
+  <p><strong>Not delivered here.</strong> Two cases of this section are not
+  covered by this node. A node whose done-when names no test landing on its
+  declared evidence check has no path in the tree this node read, and no case
+  for it was written. A delivered review of the asserted head counting before
+  its own run is promoted is true of the selection this node read — the store
+  reader keys on the reviewed revision and reads no phase of the review run —
+  but this node wrote no test for it, so it is recorded as unmeasured rather
+  than as shown.</p>
+</section>
