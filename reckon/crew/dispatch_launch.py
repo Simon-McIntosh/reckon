@@ -1054,6 +1054,63 @@ def remove_worker_scratch(
     return result
 
 
+#: The variable an omp worker reads its agent store from, and the file in that
+#: store naming the providers it sends requests to.
+_OMP_AGENT_STORE_VARIABLE = "PI_CODING_AGENT_DIR"
+_OMP_MODELS_FILE = "models.yml"
+
+
+def _attribute_omp_requests(
+    agent_store: str | None, *, run_id: str, coordinator_session: str
+) -> bool:
+    """Name the run and its coordinator on every request an omp worker sends.
+
+    The lane's router divides its slots between sessions and sizes them from
+    the requests each live run makes, and it can only count a request that
+    says which run and session it belongs to. An omp worker reads its providers
+    from the model file in its own agent store, which accepts request headers
+    per provider, so the two names are written there. The store is the run's
+    own copy; a store that is absent or unreadable is left as it is, because a
+    worker that cannot be attributed must still be able to start.
+
+    Returns whether the file was rewritten.
+    """
+    if not agent_store or not run_id:
+        return False
+    path = Path(agent_store) / _OMP_MODELS_FILE
+    if path.is_symlink():
+        return False
+    try:
+        import yaml
+
+        document = yaml.safe_load(path.read_text(encoding="utf-8"))
+    except Exception:  # noqa: BLE001 - an unreadable store starts unattributed
+        return False
+    providers = document.get("providers") if isinstance(document, dict) else None
+    if not isinstance(providers, dict):
+        return False
+    attribution = {
+        "X-Reckon-Run-Id": run_id,
+        "X-Reckon-Session": coordinator_session,
+    }
+    changed = False
+    for provider in providers.values():
+        if not isinstance(provider, dict):
+            continue
+        held = provider.get("headers")
+        headers = dict(held) if isinstance(held, dict) else {}
+        headers.update(attribution)
+        provider["headers"] = headers
+        changed = True
+    if not changed:
+        return False
+    try:
+        path.write_text(yaml.safe_dump(document, sort_keys=False), encoding="utf-8")
+    except OSError:
+        return False
+    return True
+
+
 def _worker_runtime_environment(
     environment: Mapping[str, str] | None,
     *,
@@ -1062,6 +1119,7 @@ def _worker_runtime_environment(
     attempt_started_at: str,
     coordinator_session: str,
     claude_headers: bool,
+    omp_headers: bool = False,
 ) -> dict[str, str]:
     """Add one attempt's identity to the environment inherited by its worker."""
     runtime = dict(environment or {})
@@ -1086,6 +1144,12 @@ def _worker_runtime_environment(
         runtime["ANTHROPIC_CUSTOM_HEADERS"] = (
             f"{inherited}\n{attribution}" if inherited else attribution
         )
+    if omp_headers:
+        _attribute_omp_requests(
+            runtime.get(_OMP_AGENT_STORE_VARIABLE),
+            run_id=run_id,
+            coordinator_session=coordinator_session,
+        )
     return runtime
 
 
@@ -1107,6 +1171,7 @@ def _worker_runtime_plan(
             attempt_started_at=attempt_started_at,
             coordinator_session=coordinator_session,
             claude_headers=plan.dialect == "claude",
+            omp_headers=plan.dialect == "omp",
         ),
     )
 
@@ -4038,6 +4103,7 @@ def _supervisor_spawn_worker(spec: Mapping[str, Any]) -> int:
         attempt_started_at=_utc_now(),
         coordinator_session=str(record.get("session") or ""),
         claude_headers=str(plan.get("dialect") or "") == "claude",
+        omp_headers=str(plan.get("dialect") or "") == "omp",
     )
     argv = [str(word) for word in plan["argv"]]
     step_placed = Path(argv[0]).name == "srun" and any(
