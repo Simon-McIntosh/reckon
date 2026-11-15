@@ -215,6 +215,12 @@ def _stop_at_stage_boundary(stage: str) -> None:
     )
 
 
+#: The pointer field a promotion sets when it recorded a run but could not
+#: retire the live pointer. A promoted pointer is retired by the acceptance
+#: sweep once nothing owns it, and is never promoted again.
+PROMOTED_POINTER_MARK = "promoted"
+
+
 @contextmanager
 def _promotion_lock(run_id: str) -> Iterator[None]:
     with _pointer_lock(f"promotion-{run_id}"):
@@ -304,22 +310,57 @@ def _retire_review_pointer(run_id: str, record: Mapping[str, Any]) -> bool:
         return True
 
 
+def _mark_promoted_pointer(run_id: str) -> bool:
+    """Mark the live pointer a promotion recorded the run for but could not retire.
+
+    The mark says the ledger row is written, so a reader that finds the pointer
+    still there knows the promotion happened and the pointer is what is left of
+    it. It carries no attempt: the pointer it is written onto is whichever one
+    is live, and the sweep that retires it reads that pointer's own recorded
+    process to decide whether anything still owns it.
+    """
+    with _pointer_lock(run_id):
+        try:
+            current = read_pointer(run_id)
+        except CrewError:
+            return False
+        if current.get(PROMOTED_POINTER_MARK):
+            return True
+        try:
+            _write_json(pointer_path(run_id), {**current, PROMOTED_POINTER_MARK: True})
+        except OSError:
+            return False
+        return True
+
+
 def _remove_promoted_pointer_or_defer(run_id: str, record: Mapping[str, Any]) -> bool:
-    """Remove the promoted pointer, or keep it marked for the landing pass.
+    """Remove the promoted pointer, or keep it marked for the pass that can.
 
     The ledger row and plan comment are committed before this runs, so a
     pointer that moved under the promotion leaves a promoted run whose head was
     never merged: a second recovery would duplicate what the pending-landing
     pass already does, so the pointer is kept and marked instead. A review run
-    has no head to merge, so its moved pointer is retired rather than kept.
+    has no head to merge, and its worker writes the pointer itself while it
+    runs: retiring it under a live worker deletes a file the process still owns,
+    and retiring it after the pointer moved leaves nothing that says the run was
+    promoted, so the acceptance sweep files a promotion the ledger already
+    records. Both are kept and marked, and the sweep retires the mark once
+    nothing owns the pointer.
     """
+    from reckon.crew.recovery_review_delivery import _is_review_run
+
+    review = _is_review_run(record)
+    if review and record_process_alive(record) is True:
+        _mark_promoted_pointer(run_id)
+        return False
     try:
         return _remove_promoted_pointer(run_id, record)
     except CrewError as exc:
-        from reckon.crew.recovery_review_delivery import _is_review_run
-
-        if _is_review_run(record):
-            return _retire_review_pointer(run_id, record)
+        if review:
+            if _retire_review_pointer(run_id, record):
+                return True
+            _mark_promoted_pointer(run_id)
+            return False
         if not _keep_pointer_for_pending_landing(run_id):
             raise
         raise CrewError(
