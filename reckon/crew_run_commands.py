@@ -3989,9 +3989,12 @@ def _land_a_promoted_run(
         )
         return report, 1
 
-    def verify_gate(checkout, _base, _head, revision):
+    def verify_gate(checkout, _base, _head, revision, objects=None):
         from reckon.crew.review_landing import replay_candidate
 
+        merge_module.import_built_merge(
+            checkout, revision, objects, parents=[_base, _head]
+        )
         checked = replay_candidate(
             {
                 **record,

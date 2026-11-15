@@ -383,6 +383,26 @@ def _copy_objects(
     return names
 
 
+def import_built_merge(
+    repo: Path,
+    revision: str,
+    objects: Mapping[str, str] | None,
+    *,
+    parents: Iterable[str] = (),
+) -> None:
+    """Bring a merge built in a scratch store into the repository's own store.
+
+    A verification seam that reads the built merge with another process — a
+    gate replayed in a partition checkout, a promotion check run through git —
+    reads the repository, not the object environment of the process that built
+    it. Such a seam calls this before it measures, so the revision it is handed
+    resolves where that reader looks. Idempotent: a second call copies nothing
+    new when the objects are already there.
+    """
+    if objects:
+        _copy_objects(repo, revision, objects, parents=parents)
+
+
 def _merge_tree(
     repo: Path,
     base: str,
