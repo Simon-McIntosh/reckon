@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 import re
 import subprocess
 from collections.abc import Iterable, Mapping, MutableMapping
@@ -1591,13 +1592,21 @@ def validate_node(
 _WORKTREE_REPOSITORY_FIELDS = ("worktree", "repo")
 
 
-def _git_answer(cwd: Path, *args: str) -> str | None:
+def _git_answer(
+    cwd: Path, *args: str, env: Mapping[str, str] | None = None
+) -> str | None:
     """Return stripped git stdout, or None when the command could not answer.
 
     An empty answer and an unanswerable one are kept apart, because they mean
     opposite things about a claim: no output from ``rev-list`` says the work is
     integrated, while a failure says the comparison never happened.
+
+    ``env`` is merged over the process environment for a caller that needs git
+    to leave the repository alone — a reading taken while a peer may hold the
+    index lock passes ``GIT_OPTIONAL_LOCKS=0`` rather than duplicating this
+    answer.
     """
+    environment = {**os.environ, **env} if env else None
     try:
         result = subprocess.run(
             ["git", *args],
@@ -1605,6 +1614,7 @@ def _git_answer(cwd: Path, *args: str) -> str | None:
             capture_output=True,
             text=True,
             check=False,
+            env=environment,
         )
     except OSError:
         return None
@@ -1702,7 +1712,7 @@ _PLAIN_REF = re.compile(r"[A-Za-z0-9._/-]+")
 
 
 def _claim_commit_answer(
-    worktree: Path, integration_ref: str, base_sha: str
+    worktree: Path, integration_ref: str, base_sha: str, *, store: bool = True
 ) -> str | None:
     """Which commits in ``worktree`` neither ``integration_ref`` nor ``base`` reach.
 
@@ -1717,6 +1727,13 @@ def _claim_commit_answer(
     either cannot be read that way — a packed ref, a detached oddity — git is
     asked and nothing is stored, because an answer whose key was not observed
     would be served for a state nobody measured.
+
+    ``store=False`` keeps the answer in this process only. A read that judges a
+    hundred trees at once passes it: the store is one shared file rewritten
+    under a lock, so a per-tree write costs a whole-file rewrite for every tree
+    of a hundred-tree pass, and the derivation is a read path rather than a
+    claim's fate. The memo in this process still answers a tree that has not
+    moved.
     """
     from reckon.crew.recovery_memo import _worktree_head_identity
     from reckon.crew.recovery_watch import (
@@ -1732,16 +1749,18 @@ def _claim_commit_answer(
         cached = _CLAIM_COMMIT_ANSWERS.get(key)
         if cached is not None:
             return cached
-        stored = _stored_unreachable_answer(worktree, head, merged, base_sha)
-        if stored is not None:
-            _remember_claim_commit_answer(key, stored)
-            return stored
+        if store:
+            stored = _stored_unreachable_answer(worktree, head, merged, base_sha)
+            if stored is not None:
+                _remember_claim_commit_answer(key, stored)
+                return stored
     answer = _git_answer(
         worktree, "rev-list", "HEAD", f"^{integration_ref}", f"^{base_sha}"
     )
     if cacheable and answer is not None:
         _remember_claim_commit_answer(key, answer)
-        _remember_unreachable_answer(worktree, head, merged, base_sha, answer)
+        if store:
+            _remember_unreachable_answer(worktree, head, merged, base_sha, answer)
     return answer
 
 
