@@ -89,10 +89,10 @@
 
   <p id="qwnw-a-section-a-run-has-delivered-is-not-ready-evidence">Evidence, all resolved over its own
   revision. Against the base revision <code>34e8cf65b53bd57225fc6acbf74230a493a3527e</code> the same test
-  module fails four of five: <code>KeyError: 'ready_sections'</code> where the promoted section is ready
-  with no hold at all, <code>assert 'queued' == 'held'</code> where the duplicate was queued, and no
-  finding at all for the unlanded head; the landed-head control passes on both arms, which is the
-  direction that must not move. The two gate files the node was dispatched with
+  module fails eight of its nine: <code>KeyError: 'ready_sections'</code> six times, which is the promoted
+  section reading ready with no hold at all under every gate verdict and under the released pointer,
+  <code>assert 'queued' == 'held'</code> where the duplicate was queued, and no finding at all for the
+  unlanded head. The landed-head control passes on both arms, which is the direction that must not move. The two gate files the node was dispatched with
   (<code>tests/test_staged_write_inventory.py</code>,
   <code>tests/test_every_shared_home_lock_holds_across_nodes.py</code>) run 55 passed at the head. Command
   and full output for each arm are the logs named in the manifest.</p>
