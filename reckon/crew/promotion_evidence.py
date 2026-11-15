@@ -1163,9 +1163,7 @@ def _require_gate_evidence(
     return None
 
 
-def _require_worktree_at_its_base(
-    run_id: str, record: Mapping[str, Any]
-) -> None:
+def _require_worktree_at_its_base(run_id: str, record: Mapping[str, Any]) -> None:
     """Refuse a promotion that cites no commit while the run's tree has one.
 
     A commitless promotion records the run as having produced no commit, and
