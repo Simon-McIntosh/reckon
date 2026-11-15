@@ -340,7 +340,7 @@ def maintenance_job_script(
             "#!/bin/bash",
             f"#SBATCH --partition={partition}",
             "#SBATCH --job-name=reckon-maintenance",
-            f"#SBATCH --time={MAINTENANCE_JOB_MINUTES:02d}:00:00",
+            f"#SBATCH --time=00:{MAINTENANCE_JOB_MINUTES:02d}:00",
             "#SBATCH --nodes=1",
             "#SBATCH --ntasks=1",
             f"#SBATCH --cpus-per-task={MAINTENANCE_JOB_CPUS}",

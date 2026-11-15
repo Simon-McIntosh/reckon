@@ -146,6 +146,15 @@ def test_only_the_repository_whose_pass_is_old_is_submitted(tmp_path: Path, home
     ]
     assert partitions == [maintenance.MAINTENANCE_PARTITION], script
     assert partitions[0].endswith("_debug"), partitions
+    # The grant is minutes, not hours: a bare ``30:00:00`` asks the scheduler
+    # for thirty hours, which on a debug partition pends rather than runs.
+    times = [
+        line.split("--time=", 1)[1]
+        for line in script.splitlines()
+        if line.startswith("#SBATCH --time=")
+    ]
+    assert times == ["00:30:00"], script
+    assert "#SBATCH --mem=8G" in script
 
 
 def test_a_repository_with_no_record_is_submitted_once(tmp_path: Path, home: Path):
