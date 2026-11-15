@@ -1,0 +1,58 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "read from the reviewed run's own gate logs on disk: gate/baseline-suite.log runs revision e0626c295a92a0229118d29d1a268e7dca040b82 and ends '55 passed in 34.71s' with EXIT=0 and no FAILED line; gate/after-suite.log runs revision c2318894ef651c9c4acc4df9f154c824f2d9ccc1 and ends '63 passed in 143.46s (0:02:23)' with EXIT=0 and no FAILED line. Neither arm carries a FAILED id, so the set difference is empty and no failure id was added. The 55-to-63 rise is the eight tests in the node's own test file, which the baseline arm does not include.",
+  "assertion_review": [
+    {
+      "assertion": "assert _git(repository, \"rev-parse\", promoted[\"record\"][\"base_sha\"]) == base_sha",
+      "fails_if_or_mutation": "Put back the regression the comment names - a promotion that records a base other than the run's own - and the assertion reddens: recording the worktree head gives rev-parse(recorded) equal to the head rather than the fixture's base commit, and recording anything that does not resolve makes _git's check=True raise CalledProcessError, which errors the test. The expected side is derived by git from the fixture's seed commit rather than supplied by the promotion, so the two sides do not move together. Its narrow gap is that a symbolic value such as HEAD resolves to the base and would pass, so the guard's own claim (a revision a later reader can check) is a little wider than the assertion; the values promotion writes today are 40-character shas from the run record.",
+      "file": "tests/test_a_commitless_manifest_promotes.py",
+      "line": 252
+    }
+  ],
+  "call_sites": [
+    "reckon/crew/promotion.py:complete (:685), whose record write at :1892 supplies the base_sha the changed assertion resolves through git rev-parse in the run's repository."
+  ],
+  "completed_at": "2026-11-15T12:35:43.217Z",
+  "dispatched_at": "2026-11-15T12:16:46Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/a-read-only-run-promotes-as-delivered/rorp-s2.html",
+      "line": "13",
+      "severity": "non-blocking",
+      "text": "non-blocking: the landed paragraph says \"This node's base arm shows all four passing at the base revision\" immediately above the table at :17-:28 whose third and fourth rows are marked fail at the base, and the recorded arm is '3 failed, 5 passed' (gate/base-arm.log:8); the sentence is true only of the four promote cases (two roles times two forms) and reads against the table as a contradiction, so a reader checking the base arm against this paragraph has to supply the disambiguation the evidence doc exists to remove."
+    }
+  ],
+  "project": "reckon",
+  "reuse": "no definition is added by this commit; the single helper the changed line calls is tests/helpers/git.py:git, the repository's shared git helper imported as _git at tests/test_a_commitless_manifest_promotes.py:33, which is reused rather than duplicated. A search over tests/ and reckon/ for another subprocess git wrapper found only that owner.",
+  "review_run_id": "r-20261115T121422108188-review-of-rorp-s2-c2318894ef65",
+  "reviewed_base_sha": "d753104cff34c593cfaca4f25b61165925d88966",
+  "reviewed_head_sha": "c2318894ef651c9c4acc4df9f154c824f2d9ccc1",
+  "reviewed_run_id": "r-20261115T085736602818-rorp-s2",
+  "scope_reviewed": "only the commits the run gained since it was reviewed at d753104cff; one commit, c2318894ef, touching docs/evidence/fragments/a-read-only-run-promotes-as-delivered/rorp-s2.html and tests/test_a_commitless_manifest_promotes.py",
+  "scores": {
+    "durability": 18,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-15T12:45:08.242587+00:00",
+  "total": 110,
+  "verdicts": {
+    "diff": "read commit by commit against d753104cff; the range is the single commit c2318894ef (+26/-8) and it changes exactly two files - the assertion at tests/test_a_commitless_manifest_promotes.py:252 with a three-line comment, and the fragment's defect paragraph (:9-:20) and gate paragraph (:32-:39).",
+    "done_when": "the done_when names a new test file, no added failure against the base revision, and no added ruff finding; the manifest records gate/baseline-suite.log at e0626c295a (55 passed, EXIT=0) and gate/after-suite.log at c2318894ef (63 passed, EXIT=0), both with no FAILED line, plus the ruff arms at gate/ruff-base.log (1 finding, S608 at prompts.py:960) and gate/ruff-head.log (1 finding, the same S608 at prompts.py:988), so each named measure has a receipt.",
+    "goal": "the source node's goal is 'Promote a commitless investigate or review manifest as delivered'; this commit does not change that behaviour but repairs the review's finding in tests/test_a_commitless_manifest_promotes.py:252, where the promoted record's base is now resolved to a commit in the run's repository instead of compared back to the fixture string.",
+    "manifest": "read; it reports the repair round, answers both prior findings, and rebuts the prior blocking I001 in its 'declined f8d9f4da1a4' line; I re-ran ruff 0.16.4 --select I on tests/test_a_commitless_manifest_promotes.py exactly as committed at c2318894ef and it printed 'All checks passed!' with EXIT=0 under both --isolated and the project's pyproject config, while an inverted-import mutant of the same file reproduced I001 at 22:1 with EXIT=1, so the rebuttal is sound and the check is live.",
+    "write_paths": "the run declares reckon/crew/promotion_evidence.py, reckon/crew/prompts.py, tests/test_a_commitless_manifest_promotes.py and the fragment and figure paths in its orientation_write_paths; the gained commit touches only tests/test_a_commitless_manifest_promotes.py and docs/evidence/fragments/a-read-only-run-promotes-as-delivered/rorp-s2.html, both inside that scope."
+  },
+  "verification": {
+    "ancestry_claim": "git merge-base --is-ancestor 6657268850 e0626c295a92a0229118d29d1a268e7dca040b82 returned 0 and 6657268850 is 'fix(crew): read a read-only run's commits line as the declaration it is', so the fragment's corrected diagnosis and \u00a72's all-cases-pass-at-base branch both hold",
+    "i001_committed_file": "ruff 0.16.4 check --no-cache --isolated --select I on tests/test_a_commitless_manifest_promotes.py as committed at c2318894ef: 'All checks passed!' EXIT=0; same file under --config pyproject.toml: EXIT=0",
+    "i001_mutant": "same file with the reckon / reckon.crew.node imports inverted: I001 at 22:1, EXIT=1, so the rule is live in this ruff",
+    "prompts_unchanged": "git diff d753104cff..c2318894ef -- reckon/crew/prompts.py is empty, so the S608 finding the head ruff receipt records at prompts.py:988 applies to the reviewed head as well as the receipt's own revision"
+  }
+}
