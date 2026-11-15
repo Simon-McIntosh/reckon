@@ -57,6 +57,32 @@ def _scoped_python_files(paths: Iterable[str], repo: Path) -> tuple[Path, ...]:
     return tuple(sorted(files))
 
 
+def _scopes_overlap(
+    left_paths: Iterable[str], right_paths: Iterable[str], repo: Path
+) -> bool:
+    """Whether one scope names a path equal to, inside or containing the other's.
+
+    Two scopes that share a path share its files, so each references the
+    other's modules by holding them. That answer needs no file to be read.
+    """
+
+    def resolved(paths: Iterable[str]) -> list[Path]:
+        found = []
+        for raw in paths:
+            candidate = Path(str(raw)).expanduser()
+            found.append(
+                (candidate if candidate.is_absolute() else repo / candidate).resolve()
+            )
+        return found
+
+    right = resolved(right_paths)
+    return any(
+        one == other or one in other.parents or other in one.parents
+        for one in resolved(left_paths)
+        for other in right
+    )
+
+
 def _module_aliases(path: Path, repo: Path) -> set[str]:
     """Return import spellings that can identify one Python source file."""
     relative = path.relative_to(repo).with_suffix("")
@@ -158,11 +184,24 @@ def _references_any_module(references: set[str], aliases: set[str]) -> bool:
 
 
 def _nodes_are_adjacent(
-    left_paths: Iterable[str], right_paths: Iterable[str], repo: Path
+    left_paths: Iterable[str],
+    right_paths: Iterable[str],
+    repo: Path,
+    files: dict[tuple[str, ...], tuple[Path, ...]] | None = None,
 ) -> bool:
-    """Return whether Python imports or calls connect two disjoint scopes."""
-    left_files = _scoped_python_files(left_paths, repo)
-    right_files = _scoped_python_files(right_paths, repo)
+    """Return whether Python imports or calls connect two disjoint scopes.
+
+    ``files`` holds the file list of each scope already listed in this pass, so
+    a launch compared with every live peer lists its own scope once.
+    """
+    left_key, right_key = tuple(left_paths), tuple(right_paths)
+    if _scopes_overlap(left_key, right_key, repo):
+        return True
+    known = files if files is not None else {}
+    for key in (left_key, right_key):
+        if key not in known:
+            known[key] = _scoped_python_files(key, repo)
+    left_files, right_files = known[left_key], known[right_key]
     left_aliases = {
         alias for path in left_files for alias in _module_aliases(path, repo)
     }
@@ -195,6 +234,7 @@ def _adjacent_live_peers(
     """
     excluded = set(exclude_run_ids)
     adjacent: list[dict[str, Any]] = []
+    listed: dict[tuple[str, ...], tuple[Path, ...]] = {}
     for pointer in list_live(project=project):
         if str(pointer.get("run_id") or "") in excluded:
             continue
@@ -213,7 +253,7 @@ def _adjacent_live_peers(
             peer_id in explicitly_named
             or peer_named_new
             or _nodes_are_adjacent(
-                node.write_paths, peer_node.get("write_paths") or (), repo
+                node.write_paths, peer_node.get("write_paths") or (), repo, listed
             )
         ):
             continue
