@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="the-monitor-reads-each-fact-once">
+  <meta name="plan-evidence-for" content="reckon:the-monitor-reads-each-fact-once">
+  <meta name="plan-verifies" content="reckon:the-monitor-reads-each-fact-once#s50">
+  <meta name="plan-recorded-at" content="2026-11-15">
+  <meta name="plan-verdict" content="passed">
+  <title>A pointer reads only its run's records</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+
+<article class="r-note" id="pointer-reads-own-records-s50-landing" data-node="pointer-reads-own-records-s50" data-reckon="landed" data-when="2026-11-15">
+  <h2>Classification reads one run's names, not the store's</h2>
+
+  <p id="pointer-reads-own-records-s50-what"><strong>What landed.</strong> The staging store's index document now carries a per-run name map, <code>run_names</code>, beside its <code>entries</code>: for each reviewed run, the sorted record names that run holds, including its revision copies. The three paths that already rewrite the document maintain it -- the writer's <code>_index_stored_record</code>, which moves a name from one run's list to another when a record is rewritten under a different run, and <code>reconcile_foreign_write</code>, which also drops a removed record's name from the run that held it. The per-run map is rebuilt from the entries whenever the document is rebuilt, so a store that predates it gains it at the first rebuild that the code stamp already invalidates.
+
+A new accessor, <code>review_run_record_names(directory, run_id)</code>, answers a classification from that map. A store that keeps no index -- the committed reviews tree, or any directory the writer does not own -- answers <code>None</code>, which keeps the previous listing path. <code>recovery_memo._review_input_identities</code> asks the accessor first: when it answers, the run's own record's existence and its revision copies come from the answer, and no listing of the store happens at all; when it answers <code>None</code>, the previous listing path runs unchanged.
+
+The directory key that classifies a single staging store's pricing no longer varies with the document: on the indexed path it is a constant, so another run's write to the same store does not force this run's classification to re-read. That matters more than it sounds: the stored document version changes on every write, and keying the directory on it allocated a fresh classification for every live run, which the sibling case <code>tests/test_a_tick_reads_the_review_store_once.py</code> observes and rejects.</p>
+
+  <p id="pointer-reads-own-records-s50-cost"><strong>What a pass cost.</strong> The producer ran at about 98% CPU in <code>fnmatchcase</code> under <code>_store_paths</code>, called from <code>_own_review_record_exists</code> for each pointer, and separately read the store's whole stat view through <code>_tick_store</code> to price the tick. Both were costs of the store's size, paid once per pointer. After the change a pointer's classification examines the record names that pointer's run holds: ten, for a run with a primary record and nine revision copies, whatever the store holds.</p>
+
+  <p id="pointer-reads-own-records-s50-counts"><strong>The two counts.</strong> The same 200 pointers were classified against two indexed stores, one of 2,000 records and one of 20,000. At the head revision each store's pass examined <strong>2,000</strong> names -- 2,000 from the per-run map, 0 from a whole-store stat view, 0 from a listing -- so the larger store costs exactly what the smaller one does, and 2,000 is exactly the number of records belonging to the 200 classified runs. The negative control is the declared string <em>matching the whole store's names per pointer fails the equal-cost case</em>: at the base revision the same case's larger store examined <strong>12,000,000</strong> names against the smaller store's <strong>1,200,000</strong>, whole-store names every one of them, which is the declared factor of ten and satisfies the "at least ten times" the section requires.</p>
+
+  <p id="pointer-reads-own-records-s50-gate"><strong>Gate.</strong> <code>tests/test_a_pointer_reads_only_its_runs_records.py</code> fails the equal-cost case if the two counts differ or if either exceeds the 2,000 names the classified runs hold. Before believing that absence, the case proves its instrument can see a whole-store read: a control pass over the smaller store's own stat view must report exactly the store's 2,000 names, so a counting stand-in that silently stops counting fails here rather than passing the equal-cost assertion by measuring nothing. Both arms run against stores the fixture indexed first, which is the state a running store is in.</p>
+
+  <p id="pointer-reads-own-records-s50-arms"><strong>Matched arms.</strong> Two arms ran on the <code>all_debug</code> partition, submitted from the fleet job with <code>env -u SLURM_JOB_ID -u SLURM_JOBID sbatch</code>, each in a scratch extraction of its own revision, and each log opens with its revision and its literal command and ends in its own <code>EXIT=</code>. The base arm (<code>e02fcb57c8</code>) runs <code>tests/test_staged_write_inventory.py</code> and <code>tests/test_every_shared_home_lock_holds_across_nodes.py</code>: <strong>53 passed, 2 errors</strong>. The after arm (<code>31bcea85e5</code>) runs those two plus this node's case: <strong>54 passed, 2 errors</strong>. The extra pass is this node's case, and the two errors are the same pair with the same ids in both arms -- those two <code>staged_write_inventory</code> fixtures read the extraction's own <code>HEAD</code> with <code>git ls-tree</code>, and a scratch extraction carries no git metadata -- so the change adds no failure. Neither arm reports a <code>FAILED</code> id.</p>
+</article>
+
+</body>
+</html>
