@@ -1,0 +1,62 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-11-15T19:30:26.041Z",
+  "dispatched_at": "2026-11-15T19:27:56Z",
+  "findings": [
+    {
+      "file": "reckon/crew/station.py",
+      "line": 909,
+      "severity": "non-blocking",
+      "text": "_deferred_proof_at/_deferred_gap/RELOAD_DEFERRED_RETRY_SECONDS re-implement, without extending, the probe-retry schedule owned by reckon/crew/follower_reload.py:175-199 (probe_retry_at/probe_retry_gap, FOLLOWER_RELOAD_PROBE_RETRY_INITIAL_SECONDS=60.0 at reckon/crew_follow_commands.py:378 and its 900.0 cap at :379), doubling and cap included; two copies of one schedule drift and only the follower's is exercised against the peer-held-lock case."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T182449429955-due-reload-fires-in-bound-s13/manifest.md:16",
+      "line": 16,
+      "severity": "non-blocking",
+      "text": "The baseline_suite value is not valid JSON, because \"completed: true, leaves that key unterminated and swallows the record's exit_status/actual mapping; a reader cannot parse the baseline arm out of the record at all."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T182449429955-due-reload-fires-in-bound-s13/manifest.md",
+      "line": 17,
+      "severity": "non-blocking",
+      "text": "baseline_suite (line 16) and after_suite (line 17) cite logs/baseline-suite.log and logs/after-suite.log, neither of which exists; the arms on disk are logs/base-arm.log (56 passed, 2 errors, EXIT=1) and logs/after-arm.log (60 passed, 2 errors, EXIT=1), so the added-failure figure has to be re-derived from the arm logs rather than from the paths the record names."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T182449429955-due-reload-fires-in-bound-s13/manifest.md",
+      "line": 19,
+      "severity": "non-blocking",
+      "text": "rubric.regressions claims every test file importing reckon.crew.station ran at the head, 70 passed, which is the done_when's no-failure-against-base measure, but no log for that set is among test_logs and no base arm was run for it, so the measure exists only as a claim in the agent's stream."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The node's goal is to fire a due station reload within its bound however slow the ticks are; reckon/crew/station.py:882 _reload_owed and :897 _quiet date the hold from _clear_since and re-arm a deferred proof, which is the deliverable the goal names.\nVERDICT done_when: Read at the source run's dispatch-detail.json node.done_when: its three new cases and the kept tests/test_a_reload_lets_derivations_land.py cases are run by the manifest's tests line, logged at logs/gate-head.log (62 passed, EXIT=0) and logs/reload-suite.log (13 passed, EXIT=0), with the failing-at-base measure at logs/base-red.log (3 failed, 1 passed, EXIT=1).\nVERDICT write_paths: The declared write paths are reckon/crew/station.py, tests/test_a_due_reload_fires_within_its_bound.py and docs/evidence/fragments/the-monitor-tells-the-truth-under-load/due-reload-fires-in-bound-s13.html; git diff --stat af516b3ac95301b84b0958cad3c7d93db776c98b 28193fb91d6e lists exactly those three files, +278/-7.\nVERDICT manifest: Read at the run directory: it records status complete, the gate at 62 passed EXIT=0, base-red at 3 failed/1 passed, and a negative control at 1 failed/3 passed EXIT=1, but its baseline_suite value is not parseable JSON and both suite log paths it cites are absent from logs/.\nVERDICT diff: Read commit by commit against af516b3ac9: fa156c22cb adds RELOAD_DEFERRED_RETRY_SECONDS, _clear_since, _reload_owed, _arm_deferred_proof and the hold re-dating in _quiet/_replace, plus the new test file; 28193fb91d adds only the evidence fragment; three files, +278/-7, all inside the declared write paths.\nCALL_SITES: reckon/crew/station.py:1378 (reloader.poll in the station loop), reckon/crew/station.py:1339 (StationReloader construction)\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/station.py:902 dates the hold from _clear_since, and tests/test_a_due_reload_fires_within_its_bound.py:111 fires the reload at the end of a 30 s tick against a 20 s bound.\nSCORE evidence: 13\nJUSTIFICATION evidence: logs/gate-head.log shows 62 passed EXIT=0 over the manifest's tests command, but manifest.md:16 carries an unparseable baseline_suite and manifest.md:16-17 cite two suite logs that do not exist on disk.\nSCORE scope_discipline: 18\nJUSTIFICATION scope_discipline: git diff --stat af516b3ac95301b84b0958cad3c7d93db776c98b 28193fb91d6e lists exactly the three declared paths, the station.py hunk at reckon/crew/station.py:861-935 included.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_a_due_reload_fires_within_its_bound.py:130 reddens on the reinstated defect, as logs/negative-control.log records with DID NOT RAISE and EXIT=1, and logs/base-red.log shows 3 failed at base.\nSCORE fit: 17\nJUSTIFICATION fit: the helpers at reckon/crew/station.py:882-923 follow the private-helper and documented-constant idiom of _quiet, _replace and RELOAD_HOLD_SECONDS at reckon/crew/station.py:458.\nSCORE reuse: 4\nJUSTIFICATION reuse: _arm_deferred_proof at reckon/crew/station.py:909 duplicates the probe-retry backoff owned by reckon/crew/follower_reload.py:175-199 and :421-441, with its own constants and no shared owner.\nFINDING reckon/crew/station.py:909 non-blocking: _deferred_proof_at/_deferred_gap/RELOAD_DEFERRED_RETRY_SECONDS re-implement, without extending, the probe-retry schedule owned by reckon/crew/follower_reload.py:175-199 (probe_retry_at/probe_retry_gap, FOLLOWER_RELOAD_PROBE_RETRY_INITIAL_SECONDS=60.0 at reckon/crew_follow_commands.py:378, cap 900.0 at :379), doubling and cap included; two copies of one schedule drift and only the follower's is exercised against the peer-held-lock case.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T182449429955-due-reload-fires-in-bound-s13/manifest.md:16 non-blocking: the baseline_suite value is not valid JSON, because \"completed: true, leaves that key unterminated and swallows the rest of the mapping.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T182449429955-due-reload-fires-in-bound-s13/manifest.md:17 non-blocking: baseline_suite and after_suite cite logs/baseline-suite.log and logs/after-suite.log, neither of which exists; the arms on disk are logs/base-arm.log (56 passed, 2 errors, EXIT=1) and logs/after-arm.log (60 passed, 2 errors, EXIT=1).\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T182449429955-due-reload-fires-in-bound-s13/manifest.md:19 non-blocking: the rubric.regressions line claims every test file importing reckon.crew.station ran at the head, 70 passed, but no log for that set is among test_logs and no base arm was run for it, so the done_when's no-failure-against-base measure exists only as a claim.",
+  "review": {
+    "basis": "added_failure_count and added_failure_ids derived from the reviewed run's own arm logs, logs/base-arm.log (56 passed, 2 errors, EXIT=1) and logs/after-arm.log (60 passed, 2 errors, EXIT=1): both name the same two test_staged_write_inventory ids, so the after arm adds none. The manifest's own baseline_suite/after_suite fields are unusable for this (malformed JSON; both cited log paths absent).",
+    "call_sites": [
+      "reckon/crew/station.py:1378 (reloader.poll(station.duties) in the station loop)",
+      "reckon/crew/station.py:1339 (StationReloader construction in the station loop)"
+    ],
+    "verdict_diff": "Read commit by commit against af516b3ac9: fa156c22cb adds RELOAD_DEFERRED_RETRY_SECONDS, _clear_since, _reload_owed, _arm_deferred_proof and the hold re-dating in _quiet/_replace, plus the new test file; 28193fb91d adds only the evidence fragment.",
+    "verdict_done_when": "Read at the source run's dispatch-detail.json node.done_when: its three new cases and the kept tests/test_a_reload_lets_derivations_land.py cases are run by the manifest's tests line, logged at logs/gate-head.log (62 passed, EXIT=0) and logs/reload-suite.log (13 passed, EXIT=0), with the failing-at-base measure at logs/base-red.log (3 failed, 1 passed, EXIT=1).",
+    "verdict_goal": "The node's goal is to fire a due station reload within its bound however slow the ticks are; reckon/crew/station.py:882 _reload_owed and :897 _quiet date the hold from _clear_since and re-arm a deferred proof, which is the deliverable the goal names.",
+    "verdict_manifest": "Read at the run directory: it records status complete, the gate at 62 passed EXIT=0, base-red at 3 failed/1 passed, and a negative control at 1 failed/3 passed EXIT=1, but its baseline_suite value is not parseable JSON and both suite log paths it cites are absent from logs/.",
+    "verdict_write_paths": "The declared write paths are reckon/crew/station.py, tests/test_a_due_reload_fires_within_its_bound.py and docs/evidence/fragments/the-monitor-tells-the-truth-under-load/due-reload-fires-in-bound-s13.html; git diff --stat af516b3ac95301b84b0958cad3c7d93db776c98b 28193fb91d6e lists exactly those three files, +278/-7."
+  },
+  "review_run_id": "r-20261115T191508573218-review-of-due-reload-fires-in-bound-s13-28193fb91d6e",
+  "reviewed_base_sha": "af516b3ac95301b84b0958cad3c7d93db776c98b",
+  "reviewed_head_sha": "28193fb91d6e591f980f614d1e8bbabc3fa4bf24",
+  "reviewed_run_id": "r-20261115T182449429955-due-reload-fires-in-bound-s13",
+  "scores": {
+    "durability": 18,
+    "evidence": 13,
+    "fit": 17,
+    "goal_fidelity": 18,
+    "reuse": 4,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-15T21:18:19.398552+00:00",
+  "total": 88
+}
