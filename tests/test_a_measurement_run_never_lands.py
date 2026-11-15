@@ -78,9 +78,9 @@ PLAN_HTML = (
 )
 
 
-def _node(section: str, *, manifest: Path, node_id: str = NODE_ID) -> crew.TaskNode:
+def _node(section: str, *, manifest: Path) -> crew.TaskNode:
     return crew.TaskNode(
-        id=node_id,
+        id=NODE_ID,
         plan=PLAN,
         section=section,
         goal="build the section every arm replays",
@@ -133,14 +133,13 @@ def _dispatch(
     section: str = LANDED_SECTION,
     measure_only: str = REASON,
     base: str = "HEAD",
-    node_id: str = NODE_ID,
 ) -> dict:
     """Dispatch one node the way ``crew dispatch --measure-only`` asks for it."""
     options: dict = {}
     if measure_only:
         options["measure_only"] = measure_only
     return crew.dispatch(
-        node=_node(section, manifest=manifest, node_id=node_id),
+        node=_node(section, manifest=manifest),
         project=PROJECT,
         repo=repository,
         config=CONFIG,
@@ -153,7 +152,7 @@ def _dispatch(
     )
 
 
-def _deliver(record: dict, manifest: Path, *, node_id: str = NODE_ID) -> str:
+def _deliver(record: dict, manifest: Path) -> str:
     """Write the manifest and the commit the run's worker would have delivered."""
     worktree = Path(str(record["worktree"]))
     (worktree / "delivered.txt").write_text("the replayed change\n", encoding="utf-8")
@@ -164,7 +163,7 @@ def _deliver(record: dict, manifest: Path, *, node_id: str = NODE_ID) -> str:
     manifest.write_text(
         "\n".join(
             [
-                f"node: {node_id}",
+                f"node: {NODE_ID}",
                 "status: complete",
                 "changed_paths:",
                 "  - delivered.txt",
@@ -357,6 +356,7 @@ def test_the_lander_makes_no_landing_attempt_on_a_measurement_run(
 ) -> None:
     """The landing pass skips the run and records no judgement against it."""
     run = _delivered_measurement_run(measurement_repo, tmp_path)
+    _end_worker(run["run_id"])
 
     result = queue_landing.land_once()
 
@@ -430,6 +430,31 @@ def test_an_open_section_dispatches_without_the_flag(
     assert "measure_only" not in runs.read_pointer(record["run_id"])
 
 
+def test_the_dry_run_accepts_the_flag_on_the_same_section(
+    measurement_repo: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The flag the refusal names is the one the command accepts.
+
+    The refusal above is only actionable if passing it changes the answer, so
+    the same landed section is dispatched again in preview with
+    ``--measure-only``: the command carries the reason into the dispatch and the
+    preview goes through instead of refusing.
+    """
+    accepted = _invoke(
+        _cli_arguments(
+            measurement_repo,
+            section=LANDED_SECTION,
+            dry_run=True,
+            measure_only=REASON,
+        ),
+        monkeypatch,
+    )
+
+    assert accepted.exit_code == 0, accepted.output
+    payload = json.loads(accepted.output.splitlines()[0])
+    assert payload.get("ok") is True, payload
+
+
 def test_the_dry_run_reaches_the_same_refusal(
     measurement_repo: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -448,44 +473,28 @@ def test_the_dry_run_reaches_the_same_refusal(
 # ── the negative controls: the skips are what withhold the run ──────────────
 
 
-def test_the_lander_takes_an_unmarked_delivery_where_it_skips_the_marked_one(
-    measurement_repo: Path, tmp_path: Path
+def test_the_lander_attempts_a_landing_once_its_skip_is_removed(
+    measurement_repo: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """The skip is specific to the marker: the same delivery unmarked goes on.
+    """Removing the lander's skip makes the pass judge the measurement run.
 
-    Two runs of the same shape — one dispatched with the flag, one without —
-    are delivered and offered to one landing pass. The marked run leaves the
-    pass with the measurement status and no judgement recorded against it; the
-    unmarked run is taken past the skip, so the withholding the main case
-    asserts is the marker's doing rather than the fixture being unlandable.
+    The delivery is the one the main case withholds: same run, same manifest,
+    same ended worker. With ``_measurement_run_skip`` out of the way the pass
+    reaches the run and records a landing judgement against it — the attempt
+    the skip exists to prevent — so the main case's silence is a difference the
+    skip produced rather than a fixture that is simply unlandable.
     """
-    marked = _delivered_measurement_run(measurement_repo, tmp_path)
-    unmarked_manifest = tmp_path / "manifests" / "unmarked.md"
-    unmarked = _dispatch(
-        measurement_repo,
-        unmarked_manifest,
-        section=OPEN_SECTION,
-        measure_only="",
-        node_id="measurement-twin",
-    )
-    _deliver(unmarked, unmarked_manifest, node_id="measurement-twin")
-    _end_worker(unmarked["run_id"])
-    _end_worker(marked["run_id"])
+    run = _delivered_measurement_run(measurement_repo, tmp_path)
+    _end_worker(run["run_id"])
+    monkeypatch.setattr(queue_landing, "_measurement_run_skip", lambda _pointer: "")
 
-    result = queue_landing.land_once()
+    queue_landing.land_once()
 
-    skipped = {row["run_id"]: row for row in result["skipped"]}
-    assert skipped[marked["run_id"]]["status"] == "measurement-run", result
-    assert unmarked["run_id"] not in skipped or (
-        skipped[unmarked["run_id"]]["status"] != "measurement-run"
-    ), result
-    taken = (
-        unmarked["run_id"] in result["landed"]
-        or unmarked["run_id"] in result["obligations"]
-        or str(runs.read_pointer(unmarked["run_id"]).get("admission_landing") or "")
-        != ""
+    judged = runs.read_pointer(run["run_id"]).get("admission_landing")
+    assert judged and judged.get("head"), (
+        "with the lander's measurement skip removed the pass made no landing "
+        f"attempt: {judged}"
     )
-    assert taken, f"the landing pass did not reach the unmarked delivery: {result}"
 
 
 def test_the_reflex_composes_a_review_once_its_skip_is_removed(
