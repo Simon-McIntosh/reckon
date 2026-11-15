@@ -24,8 +24,8 @@
   <title>Crew State Stays Bounded | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="81">
-<meta name="plan-modified" content="2026-11-11">
+<meta name="plan-version" content="82">
+<meta name="plan-modified" content="2026-11-15">
 </head>
 <body>
   <main class="plan-doc">
@@ -252,6 +252,9 @@
     </article>
 </section>
   <section data-reckon="comments" id="comments" class="r-comments">
+<div class="r-comment" data-section="_top" data-id="c-cssb-s12-landed" data-who="" data-when="">
+    <div class="r-comment-body"><p>§12 landed. Its implementation and repair head <code>e1edc4b5a0</code> is on main, and the landing completed at <code>480fc490b2</code>. Between 09:40Z and 14:18Z on 11 November the live store went from 21,609 hot runs to 11,273 hot and 10,424 archived. The archive file is 271 MB. The store file stayed at 797 MB, with 65,740 free pages that later writes reuse, because <code>auto_vacuum</code> is still 0. The before and after table is in <code>docs/evidence/fragments/crew-state-stays-bounded/run-store-retires-old-runs-after-cache.html</code>. Shrinking the file needs the one-time <code>enable_incremental_vacuum</code> conversion, which rewrites it. The coordinator runs that as an <code>all_debug</code> job.</p></div>
+</div>
 <div class="r-comment" data-section="s10" data-id="c-run-r-20261107T164302244043-review-of-a-retention-pass-finishes-inside-its-slot-6cc3130cd220" data-who="reckon-build" data-when="2026-11-07T17:00:24.773Z">
     <div class="r-comment-body"><p>Independent review of a-retention-pass-finishes-inside-its-slot at reviewed_base_sha 976bf02dccae14be7d82bd52c13c0f787a49ed85 and reviewed_head_sha 6cc3130cd220a69f804bc0ef4f8900f006043f21: scores goal_fidelity 19, evidence 15, scope_discipline 18, durability 19, fit 19, reuse 16 (106/120), added_failure_count 0 from the base and head arms' EXIT=0 logs, three non-blocking findings, nothing blocking.</p></div>
 </div>
@@ -302,6 +305,9 @@
 </div>
 <div class="r-comment" data-section="s2" data-id="c-run-r-20261111T074825860750-the-queued-launch-record-is-read-through-the-accessor" data-who="reckon-build" data-when="2026-11-11T08:59:40Z">
     <div class="r-comment-body"><p>test(crew): the queued-launch record cases now re-read what each dispatch door stored — pointer from the run store merged with runs.read_dispatch_detail, argv through runs.dispatch_field. Armed command (test file plus the staged-write census) 58 passed at the head and 58 passed at the dispatch base with the final test file copied in, no failures either arm; the two cases the section names were red at the base revision under that revision's own assertions (2 failed, 5 passed).</p></div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-partial-r-20261107T162323087195-the-first-six-fields-leave-the-live-pointer" data-who="1fb615a0-2801-4418-bbb4-c2914719e520" data-when="2026-11-15T19:50:00+00:00">
+    <div class="r-comment-body">Run r-20261107T162323087195-the-first-six-fields-leave-the-live-pointer delivered the first of this section's three nodes (the six-field move and its accessor). The second (small dispatch-time fields and peer_channel) and third (dispatch_options at launch, suite_evidence) remain, so the section stays implementable.</div>
 </div>
 <div class="r-comment" data-section="s3" data-id="c-run-r-20261023T102142975294-review-of-only-a-run-something-can-still-need-keeps-its-directory-cee4634d6dfb" data-who="reckon-build" data-when="2026-10-23T11:00:38.141Z">
     <div class="r-comment-body"><p>Reviewed run r-20261023T090019521065-only-a-run-something-can-still-need-keeps-its-directory at base ad415ded61249c82a3302f00f9a579685b9274bd / head cee4634d6dfb5b8e7bbd32136e91c66894d311fe: scores goal 18, evidence 14, scope 19, durability 14, fit 16, reuse 4; added failures 0; five non-blocking findings (a duplicated duration parser, a duplicated committed-review walk, an untested grace parser, a fragment that misstates the negative control, and a checkout_path omission).</p></div>
@@ -389,9 +395,6 @@
 </div>
 <div class="r-comment" data-section="s9" data-id="c-close-s9" data-who="reckon-build" data-when="2026-10-23T11:30:00Z">
     <div class="r-comment-body"><p>Section 9 landed at merge <code>d549d0066</code>: the retention-sweep verb is exempt as operator maintenance, and the skill-contract verb case passes. <a href="/reckon/evidence/archive/crew-state-stays-bounded-landed.html#s9">evidence</a></p></div>
-</div>
-<div class="r-comment" data-section="_top" data-id="c-cssb-s12-landed" data-who="" data-when="">
-    <div class="r-comment-body"><p>§12 landed. Its implementation and repair head <code>e1edc4b5a0</code> is on main, and the landing completed at <code>480fc490b2</code>. Between 09:40Z and 14:18Z on 11 November the live store went from 21,609 hot runs to 11,273 hot and 10,424 archived. The archive file is 271 MB. The store file stayed at 797 MB, with 65,740 free pages that later writes reuse, because <code>auto_vacuum</code> is still 0. The before and after table is in <code>docs/evidence/fragments/crew-state-stays-bounded/run-store-retires-old-runs-after-cache.html</code>. Shrinking the file needs the one-time <code>enable_incremental_vacuum</code> conversion, which rewrites it. The coordinator runs that as an <code>all_debug</code> job.</p></div>
 </div>
 </section>
 </main>
