@@ -2279,6 +2279,16 @@ def crew_retention_sweep(project, limit, apply, install_timer, pretty):
         "under refs/reckon/archive/; needs --apply to act."
     ),
 )
+@click.option(
+    "--maintain",
+    is_flag=True,
+    help=(
+        "Pack the repository's object store instead of surveying worktrees: "
+        "loose and small packs are repacked, unreachable objects are kept in a "
+        "cruft pack, a stale gc.log is cleared, and the counts before and after "
+        "are recorded. This is the pass the schedule runs."
+    ),
+)
 @click.option("--pretty", is_flag=True, help="Indent the JSON for reading.")
 def crew_gc(
     repo,
@@ -2290,6 +2300,7 @@ def crew_gc(
     scratch,
     run_id,
     pin_unique_commits,
+    maintain,
     pretty,
 ):
     """Report workspaces whose integrated state makes them disposable; remove on request."""
@@ -2300,11 +2311,20 @@ def crew_gc(
             "--run names one run's worktree, which the scratch survey does "
             "not cover; drop either --run or --scratch"
         )
+    if maintain and (scratch or run_id):
+        raise click.ClickException(
+            "--maintain packs the repository's object store; it takes neither "
+            "--scratch nor --run, which survey and clear worktrees"
+        )
     try:
         repo_root = _resolved_gc_repo(
             crew_module, flight_module, repo, project, confirm_cross_repo
         )
-        if scratch:
+        if maintain:
+            from reckon.crew import repository_maintenance
+
+            report = repository_maintenance.maintenance_pass(repo_root)
+        elif scratch:
             from reckon.crew.routing import garbage_collect_scratch
 
             report = garbage_collect_scratch(

@@ -286,10 +286,28 @@ def generate_hold_script(
     return "\n".join([*headers, "", body, ""])
 
 
-def submit(script: str) -> str:
-    """Submit a generated allocation and return its job id."""
-    result = subprocess.run(
-        ["sbatch", "--parsable"],
+def submit(
+    script: str,
+    *,
+    partition: str | None = None,
+    runner: Callable[..., subprocess.CompletedProcess[str]] | None = None,
+) -> str:
+    """Submit a generated allocation and return its job id.
+
+    ``partition`` names the partition on the argv as well as in the script.
+    A submission made from inside an existing allocation is refused as an
+    implicit nested job unless its argv names a partition of its own, so a
+    caller that submits from one states it here rather than relying on the
+    script's own directive. ``runner`` overrides the process call, which is
+    how a caller that already holds a scheduler seam asks this question
+    through it rather than reaching a real client.
+    """
+    argv = ["sbatch", "--parsable"]
+    if partition is not None:
+        argv.append(f"--partition={partition}")
+    run = subprocess.run if runner is None else runner
+    result = run(
+        argv,
         input=script,
         capture_output=True,
         text=True,
