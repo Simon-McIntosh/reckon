@@ -18,14 +18,16 @@ What belongs here is a fault judged from the manifest alone, with no repository
 measurement: whether the two readers agree is the whole point, and a rule that
 had to run git would refuse differently depending on where it was called from.
 
-Three rules live here, and each reason names the repair:
+Two rules live here, and each reason names the repair:
 
-* a commit entry that carries more than the object id, such as a citation
-  written as ``<sha> <subject>``, or several revisions in one entry;
 * a suite arm whose revision is prose or an abbreviation, which cannot be
   compared with the base;
 * a gate command naming an absolute path under the temporary directory, which
   is cleared before the run's record is ever read.
+
+A commit entry is not judged here. Both readers resolve an entry to the ids it
+carries, so a citation written as ``<sha> <subject>`` reads as the revision it
+names on either side and needs no rule to keep the two agreeing.
 
 An unrecognised status is the fourth fault and is not restated here: both
 readers refuse it through the manifest reader, which already raises with one
@@ -45,6 +47,10 @@ SUITE_ARMS = ("baseline_suite", "after_suite")
 
 # A recorded revision is a git object id, in either of the two hashes git writes.
 FULL_REVISION = re.compile(r"[0-9a-f]{40}|[0-9a-f]{64}")
+
+# A revision that is the beginning of an object id: hexadecimal, and shorter than
+# either hash. It is the id's shape, so it is an abbreviation rather than a name.
+_OBJECT_ID_PREFIX = re.compile(r"(?:[0-9a-f]{4,39}|[0-9a-f]{41,63})")
 
 _NONE_VALUES = {"", "none", "n/a", "-", "nil"}
 
@@ -69,9 +75,6 @@ def is_full_revision(revision: str) -> bool:
 def manifest_faults(manifest: Mapping[str, Any]) -> list[Any]:
     """Every fault this module can judge from the manifest alone, in field order."""
     faults = []
-    commit = _commit_fault(manifest)
-    if commit is not None:
-        faults.append(commit)
     faults.extend(
         fault
         for name in SUITE_ARMS
@@ -81,16 +84,6 @@ def manifest_faults(manifest: Mapping[str, Any]) -> list[Any]:
     if gate is not None:
         faults.append(gate)
     return faults
-
-
-def commit_entry_reason(entry: str) -> str:
-    """The refusal for a commit entry that is not a revision on its own."""
-    return (
-        f"commit entry {entry.strip()!r} is not a revision: an entry is the "
-        "object id alone, so a citation written as '<sha> <subject>', or "
-        "several revisions in one entry, cannot be resolved to a commit. "
-        "Record one full object id per entry"
-    )
 
 
 def arm_revision_reason(name: str, revision: str) -> str:
@@ -127,19 +120,6 @@ def resolves_under(path: str, root: str) -> bool:
     return candidate == resolved_root or candidate.startswith(resolved_root + os.sep)
 
 
-def _commit_fault(manifest: Mapping[str, Any]) -> Fault | None:
-    entries = manifest.get("commits")
-    if isinstance(entries, str):
-        entries = [entries]
-    if not isinstance(entries, (list, tuple)):
-        return None
-    for entry in entries:
-        text = str(entry).strip()
-        if text and len(text.split()) > 1:
-            return Fault(field="commits", reason=commit_entry_reason(text))
-    return None
-
-
 def _arm_revision_fault(name: str, observation: Any) -> Fault | None:
     """The refusal for an arm revision that is a spelling rather than an id.
 
@@ -148,14 +128,25 @@ def _arm_revision_fault(name: str, observation: Any) -> Fault | None:
     value that cannot be compared. An arm whose revision is a full id is left to
     the comparison that measures whether it matches: a full revision that names
     a different commit is a claim the gate can test against the tree, and it
-    heals rather than refuses.
+    heals rather than refuses. A value that is neither is refused only when its
+    form is one no comparison can use — prose, or the beginning of an object id.
+    Any other token is left to the comparison, which may well match it: a
+    record may name the base by object id, and the manifest alone cannot tell
+    which spellings the run's own record carries.
     """
     if not isinstance(observation, Mapping):
         return None
     revision = str(observation.get("revision") or "").strip()
     if revision.lower() in _NONE_VALUES or is_full_revision(revision):
         return None
-    return Fault(field=name, reason=arm_revision_reason(name, revision))
+    if _is_prose(revision) or _OBJECT_ID_PREFIX.fullmatch(revision.lower()):
+        return Fault(field=name, reason=arm_revision_reason(name, revision))
+    return None
+
+
+def _is_prose(revision: str) -> bool:
+    """Whether a revision is written as more than one word, or as an aside."""
+    return len(revision.split()) > 1 or any(char in revision for char in "()[]")
 
 
 def _gate_command_fault(manifest: Mapping[str, Any]) -> Fault | None:

@@ -32,6 +32,7 @@ from reckon.crew.node import (
 from reckon.crew.plan_review import RUN_COMMENT_PREFIX
 from reckon.crew.recovery import _resolve_commit
 from reckon.crew.reports import (
+    _citation_tokens,
     parse_manifest,
     path_within_declared_scope,
 )
@@ -269,11 +270,18 @@ def _require_commit_for_changed_manifest(
 
 
 def _resolve_commits(*, cwd: Path, revisions: Iterable[str], run_id: str) -> list[str]:
-    """Resolve every recorded revision to its canonical commit object id."""
-    commits = []
+    """Resolve every recorded revision to its canonical commit object id.
+
+    An entry is the worker's own citation line, so the ids it carries are read
+    as tokens: a revision followed by the subject it was committed under, and
+    several revisions in one entry, both resolve to the commits they name. The
+    delivery check reads its citations the same way, so a manifest the check
+    accepted is not refused here for spelling its citation as a log line.
+    """
+    commits: list[str] = []
     for revision in revisions:
-        commit = _resolve_commit(cwd, revision)
-        if not commit:
+        resolved = _entry_commits(cwd, revision)
+        if not resolved:
             # A commit that resolves somewhere else is not a bad sha, it is a
             # node whose write target was not its run repository — dispatched
             # without --repo and pointed at a foreign checkout by prose. Naming
@@ -292,8 +300,20 @@ def _resolve_commits(*, cwd: Path, revisions: Iterable[str], run_id: str) -> lis
                 f"run {run_id!r} commit {revision!r} does not resolve to a "
                 f"commit object in the run repository ({cwd}); {remedy}"
             )
-        commits.append(commit)
+        for commit in resolved:
+            if commit not in commits:
+                commits.append(commit)
     return commits
+
+
+def _entry_commits(cwd: Path, entry: str) -> list[str]:
+    """The commits one citation entry names, in the order it writes them."""
+    found: list[str] = []
+    for candidate in [entry, *_citation_tokens(str(entry))]:
+        resolved = _resolve_commit(cwd, candidate)
+        if resolved and resolved not in found:
+            found.append(resolved)
+    return found
 
 
 def _promoted_revision(run_tree: Path, commit_list: Sequence[str]) -> str:

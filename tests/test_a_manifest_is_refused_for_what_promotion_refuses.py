@@ -28,6 +28,7 @@ from reckon.crew import (
     manifest_faults,
     promotion_checks,
     promotion_records,
+    promotion_scope,
     reports,
     runs,
 )
@@ -156,9 +157,6 @@ ROWS: dict[str, Callable[[Mapping[str, Any]], str]] = {
     "status-word-outside-the-vocabulary": lambda scratch: _manifest_text(
         scratch, status="ready-for-review"
     ),
-    "commit-entry-carrying-a-subject": lambda scratch: _manifest_text(
-        scratch, commits=f"{scratch['head']} test: add the node's test"
-    ),
     "prose-arm-revision": lambda scratch: _manifest_text(
         scratch,
         baseline_suite=_arm(scratch, f"{scratch['base']} (the base)"),
@@ -228,6 +226,31 @@ def test_the_check_and_the_promotion_refuse_with_one_reason(
     for reason in reasons:
         assert reason in " ".join(findings), row
         assert reason in refusal, row
+
+
+def test_a_citation_beside_its_subject_reads_as_its_revision_on_both_sides(
+    scratch: dict[str, Any],
+) -> None:
+    """The check and promotion read one entry as the ids an entry carries.
+
+    A worker pastes the line its own ``git log`` printed, so an entry written as
+    the revision and the subject it was committed under is an honest citation.
+    The two readers must agree about it in the accepting direction as well:
+    promotion resolved the entry whole and refused it, while the check resolved
+    every id-shaped token and passed it, so a delivery the worker was told was
+    clean was refused at the gate.
+    """
+    cited = f"{scratch['head']} test: add the node's test"
+    text = _manifest_text(scratch, commits=cited)
+    path = _write(scratch, "citation-beside-subject", text)
+
+    assert _check_findings(scratch, text, path) == []
+    assert _promotion_refusals(scratch, path) == ""
+    assert promotion_scope._resolve_commits(
+        cwd=Path(str(scratch["repository"])),
+        revisions=[cited],
+        run_id=RUN_ID,
+    ) == [str(scratch["head"])]
 
 
 def test_a_delivery_with_no_other_fault_is_clean_once_the_rule_is_withdrawn(
