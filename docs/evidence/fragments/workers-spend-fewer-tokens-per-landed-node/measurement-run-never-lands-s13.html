@@ -110,15 +110,19 @@
         guard.</p>
 
       <h2 id="measurement-run-never-lands-s13-suite">Suite</h2>
-      <p id="measurement-run-never-lands-s13-suite-arms">Base arm: the revision
-        <code>fe5d1eab6c</code> extracted with <code>git archive</code> and re-committed in place as <code>d4901315e8</code> so the
-        staged-write inventory case has a repository to read —
+      <p id="measurement-run-never-lands-s13-suite-arms">Base arm: a
+        <code>git clone --shared</code> of the repository checked out at
+        <code>fe5d1eab6c</code>, so the staged-write inventory case has a
+        repository and the tree under test is that revision's own —
         <code>tests/test_staged_write_inventory.py</code> and
         <code>tests/test_every_shared_home_lock_holds_across_nodes.py</code>,
         <strong>58 passed</strong>, <code>EXIT=0</code>. After arm at code head
-        <code>9d4d5e9586</code>, the same two files beside this node's own test
+        <code>4d306ec465</code>, the same two files beside this node's own test
         file: <strong>68 passed</strong>, <code>EXIT=0</code>. The delta is the
-        ten new cases; neither sibling changed.</p>
+        ten new cases; neither sibling changed. The node's own file alone at
+        that head reads <strong>10 passed</strong>, <code>EXIT=0</code>. Both
+        arms ran on <code>all_debug</code>, one at a time, at
+        <code>-n 4</code>.</p>
       <p id="measurement-run-never-lands-s13-suite-lint">Ruff on the six staged
         paths reports one finding, the unused <code>noqa</code> directive at
         <code>preparation.py:141</code> that the base revision carries as well,

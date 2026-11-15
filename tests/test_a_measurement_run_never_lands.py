@@ -361,9 +361,7 @@ def test_the_lander_makes_no_landing_attempt_on_a_measurement_run(
     result = queue_landing.land_once()
 
     skipped = [
-        row
-        for row in (result.get("skipped") or [])
-        if row["run_id"] == run["run_id"]
+        row for row in (result.get("skipped") or []) if row["run_id"] == run["run_id"]
     ]
     assert skipped and skipped[0]["status"] == "measurement-run", result
     pointer = runs.read_pointer(run["run_id"])
