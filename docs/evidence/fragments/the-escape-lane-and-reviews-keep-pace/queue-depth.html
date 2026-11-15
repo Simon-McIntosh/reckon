@@ -1,0 +1,351 @@
+<section id="queue-depth-census-s8-landing">
+  <h2 id="queue-depth-census-s8-title">The queue is shallow and the ready
+    plans are not loaded</h2>
+
+  <p id="queue-depth-census-s8-what">
+    Measured at <strong>2026-11-15T02:03:33Z</strong> over the live pointer set
+    (<code>runs.list_live()</code>, 140 pointers), the mounted plan documents
+    (18 projects, <code>mounts.json</code>), and the admission verdict log
+    (<code>admission-verdicts.jsonl</code>, 55 passes spanning
+    2026-11-14T18:27Z to 2026-11-15T02:03Z). A section counts as
+    <em>in flight</em> when a pointer for that project, plan and section reads
+    <code>working</code> or <code>starting</code>; as <em>loaded</em> when any
+    pointer for it reads any live phase (<code>working</code>,
+    <code>starting</code>, <code>queued</code>, <code>awaiting-upstream</code>,
+    <code>held</code>, <code>blocked</code>, <code>promotion-requested</code>,
+    <code>complete</code>); and <em>unloaded</em> otherwise. Plan and section
+    come from the pointer's own fields with the node block as fallback — see
+    the instrument note below for why the fallback is load-bearing.
+  </p>
+
+  <h3 id="queue-depth-census-s8-per-project">Per-project census</h3>
+  <table id="queue-depth-census-s8-table">
+    <thead>
+      <tr>
+        <th>project</th>
+        <th>implementable sections</th>
+        <th>plans</th>
+        <th>in flight</th>
+        <th>any live run</th>
+        <th>unloaded</th>
+        <th>queued requests</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td>reckon</td><td>151</td><td>57</td><td>23</td><td>53</td><td>98</td><td>3</td></tr>
+      <tr><td>imas-codex</td><td>75</td><td>18</td><td>1</td><td>12</td><td>63</td><td>0</td></tr>
+      <tr><td>nova</td><td>59</td><td>19</td><td>6</td><td>24</td><td>35</td><td>2</td></tr>
+      <tr><td>imas-ambix</td><td>36</td><td>11</td><td>0</td><td>1</td><td>35</td><td>0</td></tr>
+      <tr><td>imas-efit</td><td>11</td><td>4</td><td>4</td><td>6</td><td>5</td><td>0</td></tr>
+      <tr><td>power_convertor</td><td>5</td><td>4</td><td>3</td><td>4</td><td>1</td><td>0</td></tr>
+      <tr><td>RabbitPy</td><td>3</td><td>1</td><td>0</td><td>0</td><td>3</td><td>0</td></tr>
+      <tr><td>imas-standard-names</td><td>2</td><td>2</td><td>0</td><td>0</td><td>2</td><td>0</td></tr>
+      <tr><td>L2G, hanney, helix, imas-ink, imas-standard-names-catalog, iter_uda, mctb, norma, tessera, vv</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td></tr>
+      <tr><td><strong>fleet</strong></td><td><strong>342</strong></td><td><strong>116</strong></td><td><strong>37</strong></td><td><strong>100</strong></td><td><strong>242</strong></td><td><strong>5</strong></td></tr>
+    </tbody>
+  </table>
+  <p id="queue-depth-census-s8-depth">
+    Queue depth at the same instant: <strong>5 queued, 33
+    awaiting-upstream, 18 held</strong>, 2 blocked — 58 requests waiting and
+    42+3 working. The plan's own why recorded 31 queued, 34 awaiting-upstream
+    and 20 held at 21:30Z on 14 November. The queue itself did drain; the
+    shortfall the lead expects fifty requests of is not the waiting count but
+    the <strong>242</strong> implementable sections nothing has been dispatched
+    for.
+  </p>
+
+  <h3 id="queue-depth-census-s8-refusals">Each refusal class, with a count and
+    an example run id</h3>
+  <p id="queue-depth-census-s8-refusals-note">
+    Counts are pointer-rows across the 55 recorded passes (a request refused on
+    every pass it waits adds one row per pass) and the number of distinct run
+    ids behind them. The log is trimmed to 1 MB, so the window is the log's,
+    not the fleet's whole history.
+  </p>
+  <table id="queue-depth-census-s8-refusal-table">
+    <thead>
+      <tr><th>refusal class</th><th>pointer-rows</th><th>distinct requests</th><th>example run id</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>placement roster full (cap sized on resident memory)</td><td>128</td><td>54</td>
+        <td><code>r-20261114T201210409568-qwnw-a-reservation-or-lock-holds-only-while-its-holde</code></td>
+      </tr>
+      <tr>
+        <td>plan review missing, or its findings unanswered</td><td>116</td><td>27</td>
+        <td><code>r-20261114T174544423075-a-tick-walks-the-process-table-once</code></td>
+      </tr>
+      <tr>
+        <td>brief missing on disk (the request's own brief path is gone)</td><td>42</td><td>7</td>
+        <td><code>r-20261114T154757442377-review-of-ilf-six-limb-reference-7349cca74573</code></td>
+      </tr>
+      <tr>
+        <td>worktree held by an earlier run of the same node</td><td>11</td><td>2</td>
+        <td><code>r-20261114T175056240430-plan-review-of-sn-catalog-consistency</code></td>
+      </tr>
+      <tr>
+        <td>backend cores bound (<code>codex</code> at 28 of 28 cores)</td><td>9</td><td>9</td>
+        <td><code>r-20261114T143435350373-overshoot-band-figures</code></td>
+      </tr>
+      <tr>
+        <td>plan file differs from its base (<code>PlanVisibilityError</code>)</td><td>7</td><td>7</td>
+        <td><code>r-20261114T215435518194-review-of-a-refused-review-is-retried-only-when-it-moves-eec6e60d5637</code></td>
+      </tr>
+      <tr>
+        <td>other: a lead hold, and a duplicate run id already live</td><td>4</td><td>4</td>
+        <td><code>r-20261114T174142980166-smfp-stationary-read</code></td>
+      </tr>
+      <tr>
+        <td>duplicate run id already live</td><td>1</td><td>1</td>
+        <td><code>r-20261115T001214844614-unlaunched-request-not-drawn-working-s138</code></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p id="queue-depth-census-s8-held-note">
+    Waits that are not refusals, counted the same way, name where the rest of
+    the depth sits: <code>held-on-retry-backoff</code> over a plan review
+    (125), <code>held-for-allowance</code> on the lane's own worker slots (76),
+    <code>held-on-retry-backoff</code> over a missing brief (43),
+    <code>held-on-claim</code> (29), <code>held-on-plan-review</code> (14,
+    example <code>r-20261114T174432779393-pane-counts-reviews-under-r-s136</code>),
+    <code>held-behind-earlier-request</code> (14, example
+    <code>r-20261114T202416024266-wftl-a-run-held-only-for-its-stream-figures-has-them</code>),
+    <code>held-on-retry-backoff</code> over a held worktree (11), over the
+    roster (3) and over the cores bound (2).
+  </p>
+
+  <h3 id="queue-depth-census-s8-sessions">Sessions whose ready plans are not
+    loaded, and why</h3>
+  <p id="queue-depth-census-s8-sessions-note">
+    93 plans carry at least one unloaded implementable section. <strong>82 of
+    them (224 sections) have no coordinator session visible in the live index
+    at all</strong> — they were never dispatched, and no run of the plan names
+    a session that could be told to load it. The remaining 11 plans (18
+    sections) do name a session:
+  </p>
+  <table id="queue-depth-census-s8-session-table">
+    <thead>
+      <tr><th>session</th><th>unloaded plans</th><th>unloaded sections</th><th>plans</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><code>829e5a4a-6870-4aec-876d-ba2efb1b5ecf</code></td><td>5</td><td>10</td>
+        <td>a-landing-never-waits-on-a-shared-index (1), a-seat-held-elsewhere-is-not-restarted (1), lane-and-model-routing (3), the-crew-does-its-own-bookkeeping (1), the-monitor-shows-the-work-it-watches (4)</td>
+      </tr>
+      <tr>
+        <td><code>a337e0e6-c34c-4497-878a-bc42ce1b7cf6</code></td><td>3</td><td>6</td>
+        <td>a-landing-never-waits-on-a-shared-index (1), the-escape-lane-and-reviews-keep-pace (1), the-monitor-shows-the-work-it-watches (4)</td>
+      </tr>
+      <tr>
+        <td><code>8e41a6d3-d0e0-4927-afd1-771942ebfe6a</code></td><td>2</td><td>4</td>
+        <td>building-a-plan-queues-all-of-it (1), queued-work-needs-no-workaround (3)</td>
+      </tr>
+      <tr>
+        <td><code>efd0ee8c-9d4e-4fa3-a440-ac05791d4758</code></td><td>2</td><td>2</td>
+        <td>a-landing-never-waits-on-a-shared-index (1), crew-state-stays-bounded (1)</td>
+      </tr>
+      <tr>
+        <td><code>67139f13-acc5-4116-8e4d-ecb63acaac2c</code></td><td>1</td><td>1</td>
+        <td>imas-ambix: a-tool-call-carries-no-model-markup (1)</td>
+      </tr>
+      <tr>
+        <td><code>0f4fa699-2444-4d93-b978-9931302ff6f8</code></td><td>1</td><td>1</td>
+        <td>nova: kernel-compile-barrier (1)</td>
+      </tr>
+    </tbody>
+  </table>
+  <p id="queue-depth-census-s8-causes">
+    Cause over all 93 plans by plan-level attribution: <strong>never
+    dispatched 82</strong>, <strong>partially loaded — some sections live,
+    these never dispatched 9</strong>, <strong>refused or held at admission
+    with a queued request waiting 1</strong>, and <strong>refused at admission
+    because its plan review has unanswered findings 1</strong>
+    (<code>the-monitor-shows-the-work-it-watches</code>, 4 sections,
+    review-refused 6 times in the log). A plan-level cause is the dominant one
+    per plan; a plan with a live review of one section still leaves its other
+    sections in the partially-loaded class.
+  </p>
+
+  <h3 id="queue-depth-census-s8-instrument">The instrument: a launched pointer
+    drops its plan and section</h3>
+  <p id="queue-depth-census-s8-instrument-note">
+    The first census taken here joined on <code>pointer["plan"]</code> and
+    reported <strong>1 section in flight in the whole fleet</strong> while 47
+    pointers read <code>working</code>. That reading was a claim about the
+    instrument. The pointer keeps its plan and section at the top level while it
+    waits and loses them when it launches; the node block keeps both. Counted
+    over one snapshot:
+  </p>
+  <table id="queue-depth-census-s8-instrument-table">
+    <thead><tr><th>phase</th><th>pointers</th><th>top-level plan</th><th>node plan</th></tr></thead>
+    <tbody>
+      <tr><td>working</td><td>45</td><td>1</td><td>37</td></tr>
+      <tr><td>starting</td><td>1</td><td>0</td><td>1</td></tr>
+      <tr><td>queued</td><td>4</td><td>4</td><td>4</td></tr>
+      <tr><td>held</td><td>19</td><td>19</td><td>19</td></tr>
+      <tr><td>awaiting-upstream</td><td>32</td><td>32</td><td>32</td></tr>
+      <tr><td>complete</td><td>40</td><td>1</td><td>33</td></tr>
+    </tbody>
+  </table>
+  <p id="queue-depth-census-s8-instrument-proof">
+    Reproduced on one request end to end: <code>r-20261115T002740230181-named-lane-requests-queue-s5</code>
+    read <code>plan</code> = <code>the-escape-lane-and-reviews-keep-pace</code>,
+    <code>section</code> = <code>s5</code> at 01:26Z while queued; at 01:51Z,
+    after it launched at 01:36:15Z, its live pointer file carried
+    <code>"plan": null, "section": null</code> with
+    <code>node.plan</code> = <code>the-escape-lane-and-reviews-keep-pace</code>
+    and <code>node.section</code> = <code>§5</code>. Every figure in this
+    fragment reads the node block as fallback, so the census sees 37 sections in
+    flight where a top-level join sees 1.
+  </p>
+
+  <h3 id="queue-depth-census-s8-proposals">Proposed sections</h3>
+  <p id="queue-depth-census-s8-proposals-note">
+    Each carries its own done-when. They are ordered so the two that change what
+    a coordinator can see land first.
+  </p>
+
+  <article id="queue-depth-census-s8-proposal-pane">
+    <h4 id="queue-depth-census-s8-proposal-pane-title">The pane shows the fleet's
+      depth beside the session's own</h4>
+    <p id="queue-depth-census-s8-proposal-pane-body">
+      The stat block currently counts the follower's own rows, so a coordinator
+      reading <code>2q</code> cannot tell a fleet with four queued requests from
+      one with forty. Add a fleet cell to the same block: the pane draws the
+      session's own five counters unchanged and a sixth group for the fleet's
+      queued, awaiting-upstream and held counts plus the unloaded implementable
+      section count, computed in Python from <code>queued_placements</code> and
+      <code>open_run_index.read_rows</code> — the two owners the depth already
+      reads through, with no third reader added. The cell is drawn only when the
+      fleet figure differs from the session's own figures, so an idle fleet
+      leaves the block as it is.
+    </p>
+    <p id="queue-depth-census-s8-proposal-pane-done">
+      <strong>Done when.</strong> A test drives the pane from a temporary crew
+      home holding 6 queued, 4 awaiting-upstream and 3 held requests across two
+      sessions and asserts the block carries the session's own counts in their
+      existing cells and the fleet's <code>6/4/3</code> in the new group, and
+      that both are computed from one snapshot; the same test shows the group
+      absent when the fleet holds no request outside the session. It fails at
+      the base revision, where the block prints no fleet figure.
+    </p>
+  </article>
+
+  <article id="queue-depth-census-s8-proposal-view">
+    <h4 id="queue-depth-census-s8-proposal-view-title">A queue-depth view serves
+      the census to every reader</h4>
+    <p id="queue-depth-census-s8-proposal-view-body">
+      The census in this fragment was assembled by a one-off script. A view
+      makes it durable: <code>reckon crew view queue-depth</code> returns, per
+      mounted project, the implementable, in-flight, loaded and unloaded section
+      counts and the queued requests with their refusal class, read through the
+      same owners and derived in Python so an agent read and the pane answer
+      from one function, as the SPA-renders-does-not-derive rule requires.
+    </p>
+    <p id="queue-depth-census-s8-proposal-view-done">
+      <strong>Done when.</strong> A test builds a temporary crew home and two
+      mounted projects, one with an unloaded implementable plan and one queued
+      request refused on its plan review, and asserts the view reports
+      <code>unloaded: 1</code> with the refusal class on the request and
+      <code>unloaded: 0</code> for the project with a live run on its only
+      section; and the pane's fleet cell of the previous section equals the
+      view's totals on the same fixture. It fails at the base revision, where
+      the view does not exist.
+    </p>
+  </article>
+
+  <article id="queue-depth-census-s8-proposal-pointer">
+    <h4 id="queue-depth-census-s8-proposal-pointer-title">A launched request's
+      pointer keeps its plan and section</h4>
+    <p id="queue-depth-census-s8-proposal-pointer-body">
+      Any reader that joins on <code>pointer["plan"]</code> sees one in-flight
+      section where the fleet runs 37. Either the launch carries the two fields
+      forward or every reader must remember the node block; the first is cheaper
+      and stops the next census repeating this mistake. The plan and section are
+      already in <code>node.plan</code> and <code>node.section</code> at launch,
+      so the fix is to write them onto the pointer the launch publishes.
+    </p>
+    <p id="queue-depth-census-s8-proposal-pointer-done">
+      <strong>Done when.</strong> A test queues a request, launches it through an
+      admission pass against a temporary crew home, and asserts the pointer it
+      publishes carries <code>plan</code> and <code>section</code> equal to its
+      node's; a second case asserts a census over the same snapshot reports the
+      same loaded-section count before and after the launch. It fails at the
+      base revision, where the launched pointer reads <code>plan: null</code>
+      for 44 of 45 working pointers and for all 4 observed queued-to-launched
+      transitions.
+    </p>
+  </article>
+
+  <article id="queue-depth-census-s8-proposal-ready">
+    <h4 id="queue-depth-census-s8-proposal-ready-title">Every session is told
+      which of its ready plans it has not loaded</h4>
+    <p id="queue-depth-census-s8-proposal-ready-body">
+      82 plans carrying 224 implementable sections name no coordinator session
+      at all, so no reader can tell an abandoned plan from one whose session
+      simply has not dispatched it. The duty belongs on the session that owns
+      the plan: the obligations view names, per session, each implementable plan
+      it owns with no queued and no live run, and the reason none is queued
+      (never dispatched, refused at dispatch, refused at admission with its
+      class). Ownership comes from the plan's coordinator registration, already
+      written for a dispatched plan, so no new store is added.
+    </p>
+    <p id="queue-depth-census-s8-proposal-ready-done">
+      <strong>Done when.</strong> A test builds a temporary crew home with two
+      sessions and three plans — one with a queued request, one owned but never
+      dispatched, one owned by the other session — and asserts the view names
+      the never-dispatched plan for its own session, does not name it for the
+      other, and does not name the queued plan as unloaded; and that a plan with
+      no recorded owner is reported in a fleet-level list rather than silently
+      dropped. It fails at the base revision, where no view names an
+      undispatched plan.
+    </p>
+  </article>
+
+  <article id="queue-depth-census-s8-proposal-brief">
+    <h4 id="queue-depth-census-s8-proposal-brief-title">A request whose brief is
+      gone is re-queued or dropped with a record</h4>
+    <p id="queue-depth-census-s8-proposal-brief-body">
+      Seven requests are refused on every pass because the brief file the
+      request names no longer exists (42 pointer-rows, 43 more under
+      retry-backoff). Each waits forever and consumes a queue place, and the
+      refusal is recorded again on every pass. The pass that reads a missing
+      brief rebuilds it from the node block the request still carries — the
+      same block this census reads — or, where the block cannot rebuild it,
+      drops the request with a recorded reason naming the lost brief path.
+      Either way the request stops being refused on every pass, and the class is
+      reported once rather than accumulating.
+    </p>
+    <p id="queue-depth-census-s8-proposal-brief-done">
+      <strong>Done when.</strong> A test places two queued requests in a
+      temporary crew home, one whose brief path is absent and one whose node
+      block can rebuild its brief, and asserts one admission pass re-queues the
+      rebuildable request with a present brief and drops the other with a
+      record naming the missing path; a second pass records neither as refused
+      again. It fails at the base revision, where
+      <code>brief missing on disk</code> is recorded for the same request on
+      every pass (measured: 7 distinct requests, 42 pointer-rows).
+    </p>
+  </article>
+
+  <h3 id="queue-depth-census-s8-artifacts">Evidence kept</h3>
+  <ul id="queue-depth-census-s8-artifacts-list">
+    <li id="queue-depth-census-s8-artifacts-census">
+      Per-project, refusal and phase census of the 02:03:33Z snapshot, with the
+      cause attribution for every unloaded plan:
+      <code>runs/r-20261115T004151068590-queue-depth-census-s8/queue-depth-census.json</code>.
+    </li>
+    <li id="queue-depth-census-s8-artifacts-unloaded">
+      The 93 plans carrying unloaded implementable sections, each with its
+      project, session attribution, live phases and cause:
+      <code>runs/r-20261115T004151068590-queue-depth-census-s8/queue-depth-unloaded-plans.json</code>.
+    </li>
+    <li id="queue-depth-census-s8-artifacts-log">
+      Refusal and hold counts are derived from
+      <code>~/.config/reckon/crew/admission-verdicts.jsonl</code> (55 passes,
+      2026-11-14T18:27Z to 2026-11-15T02:03Z), which is trimmed to 1 MB, so the
+      window is that of the retained log.
+    </li>
+  </ul>
+</section>
