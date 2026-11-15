@@ -1,0 +1,96 @@
+<section id="released-review-recomposed-s11-landing">
+  <p id="released-review-recomposed-s11-landing-line" data-landing="a composed review the admission pass releases as a stranded launch now writes its release onto the reviewed run's own dispatch record, so the next reflex pass composes the review again for the same run and head instead of reading the lane as having already refused that revision; two files change (reckon/crew/admission/launching.py and the new tests/test_a_released_review_is_composed_again.py), whose recompose case fails at the base revision 2424ab7511 with &quot;the review ... has no eligible lane (backend 'clive' already dropped it)&quot; and passes at head (2 passed), and the after arm over the three-file gate runs 60 passed with EXIT=0 against a baseline arm of 58 passed with EXIT=0">
+
+  <h2 id="released-review-recomposed-s11-landing-title">A released composed
+    review leaves the run owing one</h2>
+
+  <p id="released-review-recomposed-s11-landing-defect">
+    <code>_release_stranded_launches</code> removed a stranded launch's claim,
+    pointer and run directory — including a composed review's last mention on
+    the run it reviewed. That run's dispatch record still named the released
+    review as <code>dispatched</code> on the lane at that head, which is the
+    released attempt's lane and not a lane that refused the revision.
+    <code>_failed_review_backend</code> reads exactly that record to withhold a
+    lane, so the next reflex pass found no candidate lane at all:
+    <code>the review for r-delivered-awaiting-review has no eligible lane
+    (backend 'clive' already dropped it)</code>, reported with
+    <code>awaiting_lane</code> and nothing launched. Two reviews were lost this
+    way on 15 November and a coordinator dispatched each again by hand.
+  </p>
+
+  <p id="released-review-recomposed-s11-landing-fix">
+    The release now writes its outcome onto the reviewed run's record through
+    the reflex's own dispatch record builder, with the status the reflex already
+    uses when it releases a stranded standing review itself
+    (<code>released-stranded-launch</code>). The run reads as owing its review
+    again and the next pass composes one for the same run and head. The write is
+    skipped when the reviewed run has since been promoted or discarded, and when
+    its record now names a different review; a requeued stranded request takes
+    the same early exit it already did, so the write happens only on the plain
+    release.
+  </p>
+
+  <table id="released-review-recomposed-s11-landing-change">
+    <thead>
+      <tr><th>path</th><th>what it does now</th></tr>
+    </thead>
+    <tbody>
+      <tr><td><code>reckon/crew/admission/launching.py</code></td>
+        <td><code>_release_stranded_launches</code> calls the new
+        <code>_owe_the_review_again</code> on the plain release path: it resolves
+        the reviewed run, refuses to stamp a promoted or discarded one, requires
+        the run's record to name this review, and writes
+        <code>released-stranded-launch</code> with the released run id, the
+        attempt's head and the step the span reached.</td></tr>
+      <tr><td><code>tests/test_a_released_review_is_composed_again.py</code></td>
+        <td>Two cases. The first dispatches a composed review for a delivered
+        run, strands the launch by removing the evidence a spawned worker would
+        have written, releases it through the admission pass, and requires the
+        next reflex pass to dispatch a new review for the same head. The second
+        discards the reviewed run before the release and requires that no
+        record and no obligation appear.</td></tr>
+    </tbody>
+  </table>
+
+  <h3 id="released-review-recomposed-s11-landing-evidence">Evidence</h3>
+  <table id="released-review-recomposed-s11-landing-evidence-table">
+    <thead>
+      <tr><th>step</th><th>command</th><th>result</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>base 2424ab7511, new test</td>
+        <td><code>pytest -q tests/test_a_released_review_is_composed_again.py</code>
+        in an extracted tree of that revision</td>
+        <td><code>1 failed, 1 passed</code>, <code>EXIT=1</code> — the recompose
+        case fails with <code>the review for r-delivered-awaiting-review has no
+        eligible lane (backend 'clive' already dropped it)</code></td></tr>
+      <tr><td>head, new test</td><td>the same command in the worktree</td>
+        <td><code>2 passed</code></td></tr>
+      <tr><td>negative control</td>
+        <td>the same command with the <code>_owe_the_review_again</code>
+        call commented out, leaving the released review named in flight</td>
+        <td><code>1 failed, 1 passed</code>, <code>EXIT=1</code> — the same
+        refusal, so the guard fires on exactly the mutation it declares</td></tr>
+    </tbody>
+  </table>
+
+  <h3 id="released-review-recomposed-s11-landing-arms">Arms</h3>
+  <table id="released-review-recomposed-s11-landing-arms-table">
+    <thead>
+      <tr><th>arm</th><th>revision</th><th>command</th><th>result</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>baseline</td><td><code>622ef4617d</code></td>
+        <td><code>pytest -q tests/test_staged_write_inventory.py
+        tests/test_every_shared_home_lock_holds_across_nodes.py</code></td>
+        <td><code>58 passed</code>, <code>EXIT=0</code> — the new test is absent
+        from that revision's tree, so the arm resolves without it</td></tr>
+      <tr><td>after</td><td><code>6a0d4701a5</code></td>
+        <td><code>pytest -q tests/test_a_released_review_is_composed_again.py
+        tests/test_staged_write_inventory.py
+        tests/test_every_shared_home_lock_holds_across_nodes.py</code></td>
+        <td><code>60 passed</code>, <code>EXIT=0</code> — zero failures, so
+        nothing can have been added against the after arm</td></tr>
+    </tbody>
+  </table>
+</section>
