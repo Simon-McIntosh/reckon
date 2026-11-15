@@ -141,6 +141,147 @@ _STORE_SCHEMA_VERSION = hashlib.sha256(
 ).hexdigest()
 
 
+class UnreadableRunStoreError(RuntimeError):
+    """A store that exists but cannot answer for itself.
+
+    Raised by the read-only readers — the ones that cannot migrate, rebuild or
+    repair — so a damaged file, an unattachable archive or a store that still
+    owes its migration reaches the caller as the failure it is rather than as a
+    project that happens to hold no runs.
+    """
+
+
+def _unreadable(path: Path, cause: str) -> UnreadableRunStoreError:
+    """The one refusal message: which store, and why it could not be read."""
+    return UnreadableRunStoreError(f"cannot read the run store at {path}: {cause}")
+
+
+# The schema names a record read may join, fixed at import so no caller input
+# can reach the query text.
+_RECORD_SCHEMAS = ("main", "archive")
+
+# How many run ids one membership-narrowed read puts in an IN list. Bounded so
+# a caller asking for thousands of runs never builds a parameter list the
+# driver refuses.
+_RUN_ID_BATCH = 500
+
+
+def _runs_columns(
+    connection: sqlite3.Connection, schema: str = "main"
+) -> frozenset[str]:
+    """The columns the runs table actually carries, empty when it has none."""
+    return frozenset(
+        str(row[1])
+        for row in connection.execute(f'PRAGMA "{schema}".table_info("runs")')
+    )
+
+
+def _recorded_version(connection: sqlite3.Connection) -> str | None:
+    """The schema declaration version the store records, or ``None``.
+
+    A store written before the record existed carries no version, which is one
+    of the shapes that owes a migration rather than a reason to fail here.
+    """
+    try:
+        row = connection.execute(
+            'SELECT "value" FROM "store_meta" WHERE "key" = ?', (_SCHEMA_RECORD_KEY,)
+        ).fetchone()
+    except sqlite3.Error:
+        return None
+    return None if row is None else str(row[0])
+
+
+def _refuse_owed_migration(connection: sqlite3.Connection, path: Path) -> None:
+    """Refuse a store that owes its migration rather than answer it partially.
+
+    The read-only readers cannot run the backfill themselves: opening the store
+    through :class:`RunStore` is a write, and that is what migrates it. A store
+    whose ``runs`` table predates the current declaration would otherwise
+    answer as though it held fewer runs than it does — a runs table without the
+    ``payload`` column reports no record at all while the id columns still list
+    every id — and a retired row whose archive silently failed to attach is the
+    same loss by another route.
+    """
+    try:
+        columns = _runs_columns(connection)
+    except sqlite3.Error as exc:
+        raise _unreadable(path, f"{type(exc).__name__}: {exc}") from exc
+    missing = sorted(_RUNS_COLUMNS - columns)
+    recorded = _recorded_version(connection)
+    if not missing and recorded == _STORE_SCHEMA_VERSION:
+        return
+    cause = (
+        f"the runs table has no {', '.join(missing)} column"
+        if missing
+        else f"the store records schema {recorded or 'none'}"
+    )
+    raise _unreadable(
+        path,
+        "it owes the schema migration "
+        f"({cause}, current {_STORE_SCHEMA_VERSION[:12]}); open it through "
+        "RunStore, which migrates it before answering",
+    )
+
+
+def _open_readonly(path: Path) -> sqlite3.Connection:
+    """Open an existing store read-only, refusing one that will not open."""
+    try:
+        return sqlite3.connect(f"{path.resolve().as_uri()}?mode=ro", uri=True)
+    except (OSError, sqlite3.Error) as exc:
+        raise _unreadable(path, f"{type(exc).__name__}: {exc}") from exc
+
+
+def _record_rows(
+    connection: sqlite3.Connection,
+    *,
+    schemas: Iterable[str] = ("main",),
+    project: str | None = None,
+    run_ids: Iterable[str] | None = None,
+) -> list[tuple[Any, ...]]:
+    """The one record join: each run's row with its own detail row.
+
+    A record is split across ``runs`` and ``run_details``, and retired rows
+    live in an attached second database carrying both tables. Every reader of a
+    whole record takes it from here, so the join is declared once rather than
+    restated per reader and the two cannot drift into disagreeing about what a
+    record is.
+
+    A named run set is read in bounded batches, so a caller that needs a few
+    narrows the read to those runs instead of decoding the project's whole
+    history.
+    """
+    for schema in schemas:
+        if schema not in _RECORD_SCHEMAS:
+            raise ValueError(f"unknown store schema {schema!r}")
+    selected = None if run_ids is None else sorted({str(run_id) for run_id in run_ids})
+    if selected is not None and not selected:
+        return []
+    batches: list[list[str] | None] = (
+        [None]
+        if selected is None
+        else [
+            selected[index : index + _RUN_ID_BATCH]
+            for index in range(0, len(selected), _RUN_ID_BATCH)
+        ]
+    )
+    rows: list[tuple[Any, ...]] = []
+    for schema in schemas:
+        for batch in batches:
+            query = (
+                f'SELECT r.run_id, r.payload, d.detail FROM "{schema}".runs r '  # noqa: S608 - schema names from _RECORD_SCHEMAS
+                f'LEFT JOIN "{schema}".run_details d ON r.run_id = d.run_id'
+            )
+            params: list[Any] = []
+            if project is not None:
+                query += " WHERE r.project = ?"
+                params.append(project)
+            if batch is not None:
+                query += f" AND r.run_id IN ({','.join('?' * len(batch))})"
+                params.extend(batch)
+            rows.extend(connection.execute(query, params))
+    return rows
+
+
 # The single place the store's location is resolved. The default keeps the
 # database beside the committed ledger under the crew config home; the
 # override moves it wholesale, so a deployment can hold the single-writer
@@ -340,10 +481,7 @@ class RunStore:
 
     def _recorded_schema_version(self) -> str | None:
         """Return the declaration version this store was last migrated to."""
-        row = self._conn.execute(
-            'SELECT "value" FROM "store_meta" WHERE "key" = ?', (_SCHEMA_RECORD_KEY,)
-        ).fetchone()
-        return None if row is None else str(row[0])
+        return _recorded_version(self._conn)
 
     def _record_schema_version(self) -> None:
         """Record that the store now carries the shape this code expects.
@@ -359,9 +497,7 @@ class RunStore:
             )
 
     def _runs_columns(self) -> frozenset[str]:
-        return frozenset(
-            str(row[1]) for row in self._conn.execute('PRAGMA table_info("runs")')
-        )
+        return _runs_columns(self._conn)
 
     def _migrate_runs(self) -> None:
         """Ensure the runs table has the current columns and indexes.
@@ -654,17 +790,10 @@ class RunStore:
     def _indexed_records(
         self, *, include_archive: bool = False
     ) -> dict[str, dict[str, Any]]:
-        rows = self._conn.execute(
-            "SELECT r.run_id, r.payload, d.detail FROM runs r "
-            "LEFT JOIN run_details d ON r.run_id = d.run_id"
-        ).fetchall()
+        schemas = ["main"]
         if include_archive and self._attach_archive():
-            rows.extend(
-                self._conn.execute(
-                    "SELECT r.run_id, r.payload, d.detail FROM archive.runs r "
-                    "LEFT JOIN archive.run_details d ON r.run_id = d.run_id"
-                ).fetchall()
-            )
+            schemas.append("archive")
+        rows = _record_rows(self._conn, schemas=schemas)
         return {
             str(run_id): run_record.normalize_outside_scope_paths(
                 {**json.loads(payload), **(json.loads(detail) if detail else {})}
@@ -1054,21 +1183,28 @@ def stored_run_rows(
     creates the store, its directory or its schema: a read that creates is a
     write, and the ledger's readers are called on every station tick.
 
+    A store that is present but cannot answer raises
+    :class:`UnreadableRunStoreError` naming the store and the cause, and never
+    answers an empty population: a damaged file, an archive that will not
+    attach and a table that predates the current declaration are each a failure
+    to read the store, not a project that holds no runs. Those three were
+    swallowed here before — the query guard broke out of the batch loop and a
+    failed attach was passed over — and each turned a whole history into an
+    empty answer while ``indexed_run_ids`` still listed the ids.
+
     The query is scoped by the project column, so only this project's payloads
     are decoded. One config home serves every project on this machine, and a
     read for one project must not pay for the others. A record's wide detail is
     joined back from its own table, and retired rows are read from the attached
-    archive, so a caller sees each record whole and a retirement does not
-    shorten the history it answers.
+    archive, so a record read here is the one :meth:`RunStore._indexed_records`
+    reads.
     """
     path = store_path()
     if not path.is_file():
         return None
+    connection = _open_readonly(path)
     try:
-        connection = sqlite3.connect(f"{path.resolve().as_uri()}?mode=ro", uri=True)
-    except (OSError, sqlite3.Error):
-        return None
-    try:
+        _refuse_owed_migration(connection, path)
         tables = ["main"]
         archive = _archive_path(path)
         if archive.is_file():
@@ -1077,37 +1213,22 @@ def stored_run_rows(
                     "ATTACH DATABASE ? AS archive",
                     (f"{archive.resolve().as_uri()}?mode=ro",),
                 )
-            except (OSError, sqlite3.Error):
-                pass
-            else:
-                tables.append("archive")
-        rows: list[tuple[Any, ...]] = []
-        # ``run_ids`` narrows the read to the named runs, so a caller that
-        # needs a few records decodes only those payloads.
-        selected = None if run_ids is None else sorted({str(r) for r in run_ids})
-        if selected is not None and not selected:
-            return []
-        batches: list[list[str] | None] = (
-            [None]
-            if selected is None
-            else [selected[i : i + 500] for i in range(0, len(selected), 500)]
-        )
-        for table in tables:
-            for batch in batches:
-                query = (
-                    f"SELECT r.run_id, r.payload, d.detail FROM {table}.runs r "  # noqa: S608 - fixed table names
-                    f"LEFT JOIN {table}.run_details d ON r.run_id = d.run_id "
-                    "WHERE r.project = ?"
-                )
-                params: list[Any] = [project]
-                if batch is not None:
-                    query += f" AND r.run_id IN ({','.join('?' * len(batch))})"
-                    params.extend(batch)
-                try:
-                    rows.extend(connection.execute(query, params))
-                except sqlite3.Error:
-                    # A store that never carried the run tables holds no row.
-                    break
+                # Force the attach to be judged now: an archive that is not a
+                # database, or holds no runs table, attaches lazily and would
+                # otherwise fail inside the record read, losing retired rows
+                # with the failure charged to the main store.
+                connection.execute("SELECT 1 FROM archive.runs LIMIT 0").fetchall()
+            except (OSError, sqlite3.Error) as exc:
+                raise _unreadable(
+                    path, f"its archive {archive} cannot be attached: {exc}"
+                ) from exc
+            tables.append("archive")
+        try:
+            rows = _record_rows(
+                connection, schemas=tables, project=project, run_ids=run_ids
+            )
+        except sqlite3.Error as exc:
+            raise _unreadable(path, f"{type(exc).__name__}: {exc}") from exc
     finally:
         connection.close()
     records: list[dict[str, Any]] = []
@@ -1130,27 +1251,37 @@ def indexed_run_ids(project: str) -> set[str] | None:
     None distinguishes a missing index from an existing empty one. A read-only
     connection avoids RunStore's schema setup and reader-triggered refresh, so
     observing lag cannot repair or conceal it.
+
+    A store that is present but cannot be read raises
+    :class:`UnreadableRunStoreError` naming the store and the cause, including a
+    store that owes its migration: its id columns still list every id, so
+    answering here would let a caller believe a store holding no readable
+    record is an index of an empty project.
     """
     path = store_path()
     if not path.exists():
         return None
-    connection = sqlite3.connect(f"{path.resolve().as_uri()}?mode=ro", uri=True)
+    connection = _open_readonly(path)
     try:
-        ids = {
-            str(row[0])
-            for row in connection.execute(
-                "SELECT run_id FROM runs WHERE project = ?", (project,)
-            )
-        }
-        if connection.execute(
-            "SELECT 1 FROM sqlite_master WHERE name = 'retired_runs'"
-        ).fetchone():
-            ids.update(
+        _refuse_owed_migration(connection, path)
+        try:
+            ids = {
                 str(row[0])
                 for row in connection.execute(
-                    "SELECT run_id FROM retired_runs WHERE project = ?", (project,)
+                    "SELECT run_id FROM runs WHERE project = ?", (project,)
                 )
-            )
+            }
+            if connection.execute(
+                "SELECT 1 FROM sqlite_master WHERE name = 'retired_runs'"
+            ).fetchone():
+                ids.update(
+                    str(row[0])
+                    for row in connection.execute(
+                        "SELECT run_id FROM retired_runs WHERE project = ?", (project,)
+                    )
+                )
+        except sqlite3.Error as exc:
+            raise _unreadable(path, f"{type(exc).__name__}: {exc}") from exc
         return ids
     finally:
         connection.close()

@@ -2296,7 +2296,10 @@ def _stored_run_rows(
     on a read-only connection. Both halves of that matter here: the store is
     answered for on every load, so a read must decode only the project it was
     asked about, and a read must create nothing. A store that is not there is
-    an empty answer, not an empty store to write.
+    an empty answer, not an empty store to write; a store that is there but
+    cannot be read raises the store's own ``UnreadableRunStoreError`` naming the
+    file and the cause rather than answering an empty population, so a damaged
+    store is never read as a project with no history.
     """
     from reckon import run_store
 
