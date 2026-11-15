@@ -22,7 +22,7 @@
   <meta name="plan-north-star" content="unattended-execution">
   <meta name="plan-standalone" content="It collects the crew-command defects the power_convertor fleet reported on 2026-10-22; the monitor&#x27;s own items are filed in the-monitor-shows-the-work-it-watches §81–§88, related duty fixes live in a-coordinator-can-clear-its-own-duties, and no section waits on another plan.">
   <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;implementable&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;done&quot;,&quot;s14&quot;:&quot;done&quot;,&quot;s15&quot;:&quot;done&quot;,&quot;s16&quot;:&quot;done&quot;,&quot;s17&quot;:&quot;implementable&quot;,&quot;s18&quot;:&quot;done&quot;,&quot;s19&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s20&quot;:&quot;done&quot;,&quot;s21&quot;:&quot;done&quot;,&quot;s22&quot;:&quot;done&quot;,&quot;s23&quot;:&quot;done&quot;,&quot;s24&quot;:&quot;done&quot;,&quot;s25&quot;:&quot;done&quot;,&quot;s26&quot;:&quot;done&quot;,&quot;s27&quot;:&quot;done&quot;,&quot;s28&quot;:&quot;done&quot;,&quot;s29&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s30&quot;:&quot;done&quot;,&quot;s31&quot;:&quot;done&quot;,&quot;s32&quot;:&quot;done&quot;,&quot;s33&quot;:&quot;done&quot;,&quot;s34&quot;:&quot;done&quot;,&quot;s35&quot;:&quot;done&quot;,&quot;s36&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;done&quot;}">
-  <meta name="plan-version" content="209">
+  <meta name="plan-version" content="210">
   <meta name="plan-modified" content="2026-11-15">
   <title>The Crew Does Its Own Bookkeeping | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
@@ -470,6 +470,12 @@
 <div class="r-comment" data-section="s16" data-id="c-run-r-20261115T143544837059-review-of-wave4-omp-local-the-crew-does-its-own-bo-s16-8bf7b39c8e72" data-who="reckon-build" data-when="2026-11-15T14:46:10.201Z">
     <div class="r-comment-body"><p>the review of r-20261114T150924692962-wave4-omp-local-the-crew-does-its-own-bo-s16 over deb520d91b..8bf7b39c8e is stored as a parsed record scoring 6 dimensions (20/19/20/17/20/20) with added_failure_count 0 and no findings, at both declared review-record paths.</p></div>
 </div>
+<div class="r-comment" data-section="s17" data-id="c-run-r-20261115T151151673678-review-of-wave4-codex-anchored-the-crew-does-its-own-bo-s17-ce0615b17d73" data-who="reckon-build" data-when="2026-11-15T15:23:23Z">
+    <div class="r-comment-body"><p>Independent review of ce0615b17d73d4c43aad3bc5bbec5316daac2b8a against 94b59ea85ec9e32b9b4537aaeae2701460385e71 stored at both declared paths; six scores of 20, no findings, added_failure_count 0.</p></div>
+</div>
+<div class="r-comment" data-section="s17" data-id="c-run-r-20261114T150215534634-wave4-codex-anchored-the-crew-does-its-own-bo-s17" data-who="reckon-build" data-when="2026-11-15T15:11:29Z">
+    <div class="r-comment-body"><p>Existing newest-stream and supervisor liveness guards verified; three regression cases pass and first-stream-only mutation fails 2 cases while the stale dead-process control passes.</p></div>
+</div>
 <div class="r-comment" data-section="s18" data-id="c-s18-promotion-sweeps-an-authored-edit" data-who="reckon-build" data-when="2026-10-24T21:30:00Z">
     <div class="r-comment-body"><p>Measured 2026-10-24 on the-suite-is-green-at-head: the two promotion paths disagree on an uncommitted text-mode edit. <code>crew complete --land</code> refused while the plan carried one (the refusal from <code>reckon/crew/promotion_scope.py</code>). A review run's <code>crew complete --gate not-run</code>, a few minutes later, committed the whole plan file, so another writer's uncommitted section addition went out as <code>c3473734a</code> under a <code>promote(...)</code> subject. A git note now records what that commit carries. Whichever way this section resolves the refusal, a promotion should not commit authored content it did not write under its own subject. It should commit only the regions it wrote, or proceed and leave the authored edit uncommitted for its writer.</p></div>
 </div>
@@ -670,9 +676,6 @@
 </div>
 <div class="r-comment" data-section="s9" data-id="c-run-r-20261114T095038268141-wave3-codex-the-crew-does-its-own-bookke-s9" data-who="reckon-build" data-when="2026-11-14T11:39:33Z">
     <div class="r-comment-body"><p>Promotion recovers both commits after an empty repair manifest and completed recovery counts 2. Armed gate: base 51 tests, head 57 tests. Direct importer added failures: not measured; facade added failures: 0; negative control: 3 failed, 3 passed in 29.72s.</p></div>
-</div>
-<div class="r-comment" data-section="s17" data-id="c-run-r-20261115T151151673678-review-of-wave4-codex-anchored-the-crew-does-its-own-bo-s17-ce0615b17d73" data-who="reckon-build" data-when="2026-11-15T15:23:23Z">
-    <div class="r-comment-body"><p>Independent review of ce0615b17d73d4c43aad3bc5bbec5316daac2b8a against 94b59ea85ec9e32b9b4537aaeae2701460385e71 stored at both declared paths; six scores of 20, no findings, added_failure_count 0.</p></div>
 </div>
 </section>
 </main>
