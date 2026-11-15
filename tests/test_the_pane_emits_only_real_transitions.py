@@ -104,22 +104,44 @@ def test_a_row_older_than_one_already_emitted_is_dropped():
 
 
 def test_an_obligations_age_is_measured_at_every_read():
-    """A duty's age grows with the reader's clock, not with the row's stamp."""
-    observed = datetime(2026, 9, 24, 12, 0, tzinfo=UTC)
-    row = {"run_id": "r-aged", "node": "n-aged", "terminal_age_seconds": 720}
-    item = obligations._live_item(row, kind="run-stalled", now=observed)
-    assert item["age_seconds"] == 720
-    assert item["observed_at"]
+    """A duty's age is measured from its own observation at each read."""
+    ended = datetime(2026, 9, 24, 9, 12, 4, tzinfo=UTC)
+    settled = "2026-09-24T12:00:00Z"
+    aged = obligations._live_item(
+        {"run_id": "r-aged", "node": "n-aged", "terminal_at": settled},
+        kind="run-stalled",
+        now=ended,
+    )
+    assert aged["observed_at"] == settled
 
+    # A reader holding the row measures the age from the row's own instant, so
+    # the figure grows with the reader's clock instead of staying frozen.
+    observed = datetime(2026, 9, 24, 12, 0, tzinfo=UTC)
     half_hour_later = observed + timedelta(seconds=1800)
-    # A reader holding the row measures from the row's own observation.
-    assert obligations._row_age(item, now=half_hour_later) == 720 + 1800
-    measured = obligations._measured_at_read([item], now=half_hour_later)
-    assert measured[0]["age_seconds"] == 720 + 1800
+    assert obligations.refresh_age(aged, now=half_hour_later) == 1800
+
+    # Two rows observed at different instants read differently at one clock,
+    # which is what a batch stamp on the pass would hide.
+    later_evidence = obligations._live_item(
+        {"run_id": "r-other", "terminal_at": "2026-09-24T12:20:00Z"},
+        kind="run-stalled",
+        now=ended,
+    )
+    read_at = observed + timedelta(seconds=3600)
+    assert obligations.refresh_age(aged, now=read_at) == 3600
+    assert obligations.refresh_age(later_evidence, now=read_at) == 2400
+
+    # A row whose evidence records no instant states no anchor, so a row cannot
+    # pass the pass's own clock off as the duty's observation time.
+    undated = obligations._live_item(
+        {"run_id": "r-undated"}, kind="run-stalled", now=ended
+    )
+    assert "observed_at" not in undated
+    assert obligations.refresh_age(undated, now=half_hour_later) is None
 
 
 def test_a_counted_obligation_names_a_run():
-    """The count counts runs a coordinator owns, and names every one."""
+    """Every duty row names the runs a reader can trace it to."""
     named = obligations._with_action_form(
         {
             "kind": "held-by-finished-run",
@@ -131,16 +153,26 @@ def test_a_counted_obligation_names_a_run():
     )
     assert named["run_ids"] == ["r-waiting", "r-holder"]
 
-    notice = obligations._with_action_form(
+    # A delivered run awaiting its review names the review beside the run, so a
+    # duty about a review can be followed to the review's own run.
+    reviewed = obligations._with_action_form(
         {
-            "kind": "index-lags-head",
-            "run_id": "",
-            "age_seconds": 5,
+            "kind": "review-missing",
+            "run_id": "r-delivered",
+            "review_run_id": "r-review",
+            "age_seconds": 30,
             "next_command": "",
         }
     )
-    summary = obligations._counted_summary([named, notice], unreconciled=0)
-    assert summary["count"] == 1
-    assert summary["run_ids"] == ["r-holder", "r-waiting"]
-    assert summary["notice_count"] == 1
-    assert summary["oldest_age_seconds"] == 120
+    assert reviewed["run_ids"] == ["r-delivered", "r-review"]
+
+    # A row whose builder already knows the runs it concerns keeps them, which
+    # is how a project-scoped notice names the landings it unblocks.
+    declared = obligations._with_action_form(
+        {"kind": "index-lags-head", "run_id": "", "run_ids": ["r-a", "r-b"]}
+    )
+    assert declared["run_ids"] == ["r-a", "r-b"]
+
+    # A duty naming no run at all is the shape this contract forbids.
+    departed = obligations._with_action_form({"kind": "run-stalled", "run_id": ""})
+    assert "run_ids" not in departed
