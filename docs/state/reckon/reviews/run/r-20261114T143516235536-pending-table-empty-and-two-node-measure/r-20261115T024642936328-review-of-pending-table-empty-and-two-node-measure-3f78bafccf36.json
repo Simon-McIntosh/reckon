@@ -1,0 +1,60 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/crew/runs.py:_pointer_lock",
+    "reckon/crew/queue_landing.py:land_once",
+    "reckon/ledger.py:_ledger_write_lock",
+    "reckon/crew/admission/service.py:_admit_lock",
+    "reckon/_store.py:_serialized_path_lock"
+  ],
+  "completed_at": "2026-11-15T03:43:25.110Z",
+  "dispatched_at": "2026-11-15T02:50:16Z",
+  "findings": [
+    {
+      "file": "tests/test_every_shared_home_lock_holds_across_nodes.py",
+      "line": 293,
+      "severity": "non-blocking",
+      "text": "the assertion meant to show that a second flock inside an already judged function is counted reads `assert found != recorded` against the literal `recorded = 1`, so it passes for any count other than 1 and is silent on an over-count exactly as on an under-count; `assert found == 2` would redden if flock_sites stopped accumulating per-site call counts in either direction."
+    },
+    {
+      "file": "tests/test_node_exclusive_lock_registry_is_bounded.py",
+      "line": 56,
+      "severity": "non-blocking",
+      "text": "the exclusion proof assumes the first-started thread wins the uncontended acquisition; `_wait_for(_PROCESS_LOCKS_USERS >= 2)` only proves both threads are registered, so if the second thread takes the lock first this assertion fails on scheduler order while exclusion itself is intact."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "read cb22c0b601 (judged call counts, MIGRATED table, bounded registry, shared record-lock holder, resumption whitespace), c959799bc8 (landed-record section spliced with 0 deleted lines plus a fragment) and 3f78bafccf (lint only in the shared record-lock holder); all three stay inside the declared write paths and carry bodies.",
+    "done_when": "the done_when asks for four facts: the guard passes with no pending rows, the two-node run records both hostnames and a held answer, the same job's flock-only take reports free, and the log is on GPFS and cited from the landed record; the after arm runs the guard green (64 passed, EXIT=0) and two-node-run.log carries holder_host=98dci4-clu-2001, contender_host=98dci4-clu-2019, pointer_take=held, flock_only_take=free and EXIT=0, with the landed-record section citing ~/.cache/reckon-lock-proto/two-node/two-node-run.log.",
+    "goal": "the node goal is to empty the guard's pending table and measure the migrated run pointer lock excluding a contender on a second node; the head sets PENDING to frozenset() (tests/test_every_shared_home_lock_holds_across_nodes.py:120) and the two-node logs record pointer_take=held from reckon.crew.runs._pointer_lock on 98dci4-clu-2019 while a holder ran on 98dci4-clu-2001.",
+    "manifest": "read at the reviewed run's manifest.md; it records status complete, three commits, both suite arms at 0 failures with their log paths, a probe-style negative control with its note, and rubric lines for six dimensions, and its counts reconcile with the logs I opened.",
+    "write_paths": "the dispatch declares ten paths under tests/, reckon/ and docs/; every path in fd241e76aa..3f78bafccf is inside them, and the two-node scripts and scratch crew home live under ~/.cache/reckon-lock-proto as the coordinator brief directs rather than in the tree."
+  },
+  "justifications": {
+    "durability": "tests/test_node_exclusive_lock_registry_is_bounded.py fails at base with 2000 of 2000 registry entries retained (logs/registry-negative-control-base.log, EXIT=1) and each new guard assertion reddens on its declared mutation (guard-negative-control-second-flock.log and guard-negative-control-migrated-siteless.log, EXIT=1); the two findings are assertion-strength defects rather than missing coverage.",
+    "evidence": "the pending-empty clause is asserted at tests/test_every_shared_home_lock_holds_across_nodes.py:233 in the after arm (logs/after-arm-final.log, 64 passed, EXIT=0), and the two-node clauses are recorded in ~/.cache/reckon-lock-proto/two-node/two-node-run.log.",
+    "fit": "reckon/node_exclusive_lock.py:48-100 keeps the module's existing guard-and-dictionary idiom, and the new tests follow the pytest/tmp_path style of tests/test_lane_and_picker_locks_hold_across_nodes.py:53.",
+    "goal_fidelity": "tests/test_every_shared_home_lock_holds_across_nodes.py:120 sets PENDING to frozenset() and the contender log records pointer_take=held from reckon.crew.runs._pointer_lock on a node other than the holder's.",
+    "reuse": "the definition walker is reused from interface_counts.definitions (tests/test_every_shared_home_lock_holds_across_nodes.py:167) rather than forked, and tests/cross_node_lock_holder.py becomes the single owner of the record-lock holder the run and landing test had carried inline.",
+    "scope_discipline": "git diff --stat fd241e76aa 3f78bafccf touches nine files, every one a declared write path, and the off-tree two-node scripts sit in the log directory the brief names."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to empty the guard's pending table and measure the migrated run pointer lock excluding a contender on a second node; the head sets PENDING to frozenset() (tests/test_every_shared_home_lock_holds_across_nodes.py:120) and the two-node logs record pointer_take=held from reckon.crew.runs._pointer_lock on 98dci4-clu-2019 while a holder ran on 98dci4-clu-2001.\nVERDICT done_when: the done_when asks for four facts: the guard passes with no pending rows, the two-node run records both hostnames and a held answer, the same job's flock-only take reports free, and the log is on GPFS and cited from the landed record; the after arm runs the guard green (64 passed, EXIT=0) and two-node-run.log carries holder_host=98dci4-clu-2001, contender_host=98dci4-clu-2019, pointer_take=held, flock_only_take=free and EXIT=0, with the landed-record section citing ~/.cache/reckon-lock-proto/two-node/two-node-run.log.\nVERDICT write_paths: the dispatch declares ten paths under tests/, reckon/ and docs/; every path in fd241e76aa..3f78bafccf is inside them, and the two-node scripts and scratch crew home live under ~/.cache/reckon-lock-proto as the coordinator brief directs rather than in the tree.\nVERDICT manifest: read at the reviewed run's manifest.md; it records status complete, three commits, both suite arms at 0 failures with their log paths, a probe-style negative control with its note, and rubric lines for six dimensions, and its counts reconcile with the logs I opened.\nVERDICT diff: read cb22c0b601 (judged call counts, MIGRATED table, bounded registry, shared record-lock holder, resumption whitespace), c959799bc8 (landed-record section spliced with 0 deleted lines plus a fragment) and 3f78bafccf (lint only in the shared record-lock holder); all three stay inside the declared write paths and carry bodies.\nCALL_SITES: reckon/crew/runs.py:_pointer_lock, reckon/crew/queue_landing.py:land_once, reckon/ledger.py:_ledger_write_lock, reckon/crew/admission/service.py:_admit_lock, reckon/_store.py:_serialized_path_lock\nSCORE goal_fidelity: 19\nSCORE evidence: 19\nSCORE scope_discipline: 20\nSCORE durability: 17\nSCORE fit: 18\nSCORE reuse: 18\nJUSTIFICATION goal_fidelity: tests/test_every_shared_home_lock_holds_across_nodes.py:120 sets PENDING to frozenset() and the contender log records pointer_take=held from reckon.crew.runs._pointer_lock on a node other than the holder's.\nJUSTIFICATION evidence: the pending-empty clause is asserted at tests/test_every_shared_home_lock_holds_across_nodes.py:233 in the after arm (logs/after-arm-final.log, 64 passed, EXIT=0), and the two-node clauses are recorded in ~/.cache/reckon-lock-proto/two-node/two-node-run.log.\nJUSTIFICATION scope_discipline: git diff --stat fd241e76aa 3f78bafccf touches nine files, every one a declared write path, and the off-tree two-node scripts sit in the log directory the brief names.\nJUSTIFICATION durability: tests/test_node_exclusive_lock_registry_is_bounded.py fails at base with 2000 of 2000 registry entries retained (logs/registry-negative-control-base.log, EXIT=1) and each new guard assertion reddens on its declared mutation (guard-negative-control-second-flock.log and guard-negative-control-migrated-siteless.log, EXIT=1); the two findings are assertion-strength defects rather than missing coverage.\nJUSTIFICATION fit: reckon/node_exclusive_lock.py:48-100 keeps the module's existing guard-and-dictionary idiom, and the new tests follow the pytest/tmp_path style of tests/test_lane_and_picker_locks_hold_across_nodes.py:53.\nJUSTIFICATION reuse: the definition walker is reused from interface_counts.definitions (tests/test_every_shared_home_lock_holds_across_nodes.py:167) rather than forked, and tests/cross_node_lock_holder.py becomes the single owner of the record-lock holder the run and landing test had carried inline.\nFINDING tests/test_every_shared_home_lock_holds_across_nodes.py:293 non-blocking: the assertion meant to show that a second flock inside an already judged function is counted reads `assert found != recorded` against the literal `recorded = 1`, so it passes for any count other than 1 and is silent on an over-count exactly as on an under-count; `assert found == 2` would redden if flock_sites stopped accumulating per-site call counts in either direction.\nFINDING tests/test_node_exclusive_lock_registry_is_bounded.py:56 non-blocking: the exclusion proof assumes the first-started thread wins the uncontended acquisition; `_wait_for(_PROCESS_LOCKS_USERS >= 2)` only proves both threads are registered, so if the second thread takes the lock first this assertion fails on scheduler order while exclusion itself is intact.\n",
+  "review_run_id": "r-20261115T024642936328-review-of-pending-table-empty-and-two-node-measure-3f78bafccf36",
+  "reviewed_base_sha": "fd241e76aa31cb94279d0bfd6d20861df6f353c1",
+  "reviewed_head_sha": "3f78bafccf36041a94747a651f359d830cd4de01",
+  "reviewed_run_id": "r-20261114T143516235536-pending-table-empty-and-two-node-measure",
+  "scores": {
+    "durability": 17,
+    "evidence": 19,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 18,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-15T03:45:33.700269+00:00",
+  "total": 111
+}
