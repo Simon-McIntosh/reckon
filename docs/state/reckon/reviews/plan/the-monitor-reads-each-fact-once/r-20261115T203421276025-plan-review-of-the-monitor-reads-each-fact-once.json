@@ -71,6 +71,16 @@
       "note": "s68 now anchors the pass by function, Station._tick in reckon/crew/station.py, rather than a line number.",
       "reason": "",
       "when": "2026-11-15T22:21:16.383456+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "07c36e592e9da6b1806a09addbc002ea892f84ab",
+      "commit_basis": "edit",
+      "finding": "done_when-2",
+      "note": "s68's first case adds a stream whose last line is unterminated when the pass scans it: the offset stops at the last newline, and completing the line makes the next pass decode exactly that record.",
+      "reason": "",
+      "when": "2026-11-15T22:22:02.069129+00:00"
     }
   ],
   "responses": {
@@ -91,6 +101,15 @@
       "note": "s68's second case now counts json.loads calls made from reckon.crew.station and reckon.crew.station_store, the modules the pointer-field passes live in, and asserts 0 on the second tick.",
       "reason": "",
       "when": "2026-11-15T22:20:51.158715+00:00"
+    },
+    "done_when-2": {
+      "action": "acted",
+      "by": "",
+      "commit": "07c36e592e9da6b1806a09addbc002ea892f84ab",
+      "commit_basis": "edit",
+      "note": "s68's first case adds a stream whose last line is unterminated when the pass scans it: the offset stops at the last newline, and completing the line makes the next pass decode exactly that record.",
+      "reason": "",
+      "when": "2026-11-15T22:22:02.069129+00:00"
     },
     "evidence_paths-1": {
       "action": "acted",
