@@ -539,13 +539,16 @@ a timer is the pattern this replaces.
   only where the pane has room.
 
 **The pane words**: `queued` (waiting for a lane slot), `waiting` (held on an
-upstream section, a pause or a declared condition), `working` (dispatched,
-starting or running, and a coordinator's own gate or a lift or reset row),
-`in review` (delivered, and its review is running), `delivered` (finished and
-waiting to be promoted and landed), `needs you` (stopped until you act:
-blocked, failed, stalled, held, stopped, unreadable, or refused at admission),
-`landed` (promoted, recorded, or a lift ended), `dropped` (withdrawn, discarded
-or departed), and `seat moved` (the producer moved to another node).
+upstream section, a pause, a declared condition, a held refusal, an
+interruption or a readiness: work that lifts on other work rather than on
+you), `working` (dispatched, starting or running, and a coordinator's own gate
+or a lift or reset row), `in review` (delivered, and its review is running),
+`delivered` (finished and waiting to be promoted and landed), `help` (stopped
+until you act: blocked, failed, stalled, stopped, unreadable, or refused at
+admission), `landed` (promoted, recorded, or a lift ended), `dropped`
+(withdrawn, discarded or departed), and `seat moved` (the producer moved to
+another node). `waiting` therefore holds four states besides the declared
+waits: `blocked-upstream`, `held`, `interrupted` and `ready`.
 
 **The counters**:
 
@@ -556,15 +559,16 @@ or departed), and `seat moved` (the producer moved to another node).
 - `r`: live review work: review runs dispatched, starting or running. Read it
   beside `w`, so a session whose only live run is a review reads as reviewing
   rather than as idle.
-- `n`: needs you: runs stopped on your move. Read `crew view obligations` for
-  the command each one needs.
+- `h`: help: runs stopped on your move, and nothing else. Read `crew view
+  obligations` for the command each one needs.
 - `d`: delivered and not yet landed. A delivered run must not sit: promote and
   land it, or answer the review that holds it. A `d` that stays above zero with
   `0w` is a stalled session, whatever else is quiet.
-- `q`: queued or waiting, including held requests: work that will start
-  without you once its slot or upstream frees.
+- `q`: queued or waiting, including held requests, an interruption and a
+  readiness: work that will start without you once its slot, its upstream or
+  whatever interrupted it frees.
 
-What the counts mean together: `0w 0q` with `n` or `d` above zero means
+What the counts mean together: `0w 0q` with `h` or `d` above zero means
 nothing moves until you act. A count that stays put while `w` is above zero is
 a worker to observe with `crew observe`, not a pane to restart. The rows do not name the runs behind
 a count. Take names from `reckon crew view obligations --project P --session S`,

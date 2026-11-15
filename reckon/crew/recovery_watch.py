@@ -57,7 +57,25 @@ from reckon.node_exclusive_lock import exclusive_lock
 # fleet counts it here, never in the blocked tally. Its age is the news, and
 # the news is carried by the action marker on its row, so the wait-aged state
 # also sits in the action set while remaining a member of this family.
-WAITING_STATES = frozenset({"waiting", "wait-aged", "paused", "queued"})
+#
+# The family also holds the four states that lift on other work rather than on
+# the coordinator: a request held on an upstream section, one held on a refusal
+# already accepted, one interrupted mid-work and one ready to start. Each moves
+# itself once what it waits for arrives, so the fleet counts it here and the
+# pane draws it ``waiting``; reading either differently would make a counter and
+# a row's word disagree about the same run.
+WAITING_STATES = frozenset(
+    {
+        "waiting",
+        "wait-aged",
+        "paused",
+        "queued",
+        "blocked-upstream",
+        "held",
+        "interrupted",
+        "ready",
+    }
+)
 
 
 # Commits-beyond-base per (worktree, base), keyed against the worktree head it
