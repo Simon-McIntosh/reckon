@@ -1313,28 +1313,30 @@ def _awaiting_pick_hold(
     repo: str | Path | None,
     session: str,
     comment: str = "",
+    dispatch_options: Mapping[str, Any] | None = None,
 ) -> Exception:
     """Store an unanswered pick's request and report where it waits.
 
-    The request is written as the queue stores any request, so the admission
-    pass launches it by the same path, with the unanswered pick on its record:
-    the launch reads that marker and asks the router again. The reported hold
-    carries the stored request, so a dispatch answers with a queued id rather
-    than an error for a pick that simply took longer than its bound.
+    The request is written through the shape's one owner,
+    ``dispatching.requests._queued_request_record``, so a request held for an
+    unanswered pick is stored exactly as every other held request is: the same
+    keys, the due and urgency carried off the request options, and the picker
+    selection passed through by the owner rather than copied here. The launch
+    reads the marker this hold stored and asks the router again.
     """
     from datetime import UTC, datetime
 
     from reckon.crew.dispatch_admission import LaneHeld
+    from reckon.crew.dispatching.requests import _queued_request_record
     from reckon.crew.runs import queue_dispatch as store_request
+    from reckon.flight import queue_max_requests
 
     marker = dict(picker_selection.get("awaiting_pick") or {})
     step = str(marker.get("step") or "pick")
     detail = str(marker.get("detail") or "the pick did not answer at its bound")
-    from reckon.flight import queue_max_requests
-
     node = resolution.node
-    now = datetime.now(UTC).isoformat()
     options = {
+        **dict(dispatch_options or {}),
         "project": resolution.project,
         "plan_slug": node.plan,
         "section": node.section,
@@ -1343,26 +1345,24 @@ def _awaiting_pick_hold(
         "route": "picker",
         "picker_selection": dict(picker_selection),
     }
-    record = {
-        "run_id": resolution.run_id,
-        "project": resolution.project,
-        "plan": node.plan,
-        "section": node.section,
-        "repo": str(repo or ""),
-        "session": session,
-        "node": node.as_dict(),
-        "backend": resolution.backend,
-        "launch": resolution.launch,
-        "local": bool(resolution.local),
-        "launcher_host": None,
-        "phase": "queued",
-        "queued_at": now,
-        "created_at": now,
-        "hold": {},
-        "reason": f"awaiting-pick: {detail}",
-        "dispatch_options": options,
-        "picker_selection": dict(picker_selection),
-    }
+    record = _queued_request_record(
+        run_id=resolution.run_id,
+        project=resolution.project,
+        node=node,
+        repo_root=Path(str(repo or "")),
+        session=session,
+        backend_name=resolution.backend,
+        launch_kind=resolution.launch,
+        lane_allowance={
+            "reason": "awaiting-pick",
+            "detail": detail,
+            "step": step,
+            "bound_seconds": marker.get("bound_seconds"),
+        },
+        dispatch_options=options,
+        queued_at=datetime.now(UTC).isoformat(),
+        local=bool(resolution.local),
+    )
     queued, position = store_request(record, max_requests=queue_max_requests(config))
     held = LaneHeld(
         {

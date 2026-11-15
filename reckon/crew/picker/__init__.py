@@ -60,17 +60,19 @@ def _template_digest() -> str:
     return hasher.hexdigest()
 
 
-def _dispatch_bound_seconds() -> float:
+def _dispatch_bound_seconds(config: Mapping[str, Any] | None) -> float:
     """The dispatch timeout a pick's within-bound flag is measured against.
 
-    Read from the dispatcher rather than mirrored, so the flag cannot drift from
-    the timeout dispatch actually applies to a pick. The dispatcher is already
-    imported on every pick path.
+    Read through the dispatcher's own resolver rather than mirrored, so the flag
+    cannot drift from the timeout dispatch applies to this host. The resolver is
+    what a dispatch calls, so a host that sets the flight key moves the flag and
+    the dispatch that judges the pick by one figure, not two. A read that fails
+    leaves a flag falling back to the shipped figure rather than failing a pick
+    on its own telemetry.
     """
-    from importlib import import_module
+    from reckon.crew.dispatch_picker import picker_dispatch_timeout
 
-    dispatch = import_module("reckon.crew.dispatch")
-    return float(dispatch.PICKER_DISPATCH_TIMEOUT_SECONDS)
+    return float(picker_dispatch_timeout(config))
 
 
 def _append_crew_log_line(name: str, row: Mapping[str, Any]) -> None:
@@ -116,6 +118,7 @@ def _record_pick_timings(
     line: dict[str, Any],
     *,
     latency_ms: float,
+    config: Mapping[str, Any] | None = None,
     excluded: list[dict[str, Any]] | None = None,
     estimated_context: int | None = None,
 ) -> None:
@@ -128,7 +131,7 @@ def _record_pick_timings(
     log on every successful pick without answering anything.
     """
     try:
-        line["within_bound"] = latency_ms <= _dispatch_bound_seconds() * 1000
+        line["within_bound"] = latency_ms <= _dispatch_bound_seconds(config) * 1000
     except Exception:  # noqa: BLE001 - a pick never fails on its own record
         return
     if line.get("outcome") in _EXCLUSION_OUTCOMES:
@@ -414,6 +417,11 @@ def pick(
     def mark(stage: str) -> None:
         if running is not None:
             running["step"] = _step_label(stage)
+            # The last step that started, kept even after the step clears its
+            # own mark: a step that raises does so with its mark already
+            # cleared by its finally, so without this a pick that failed would
+            # name no step to the caller that bounded it.
+            running["last_step"] = running["step"]
 
     def unmark() -> None:
         if running is not None:
@@ -609,6 +617,7 @@ def pick(
             **stages,
         },
         latency_ms=latency_ms,
+        config=config,
         excluded=excluded,
         estimated_context=request.estimated_context,
     )

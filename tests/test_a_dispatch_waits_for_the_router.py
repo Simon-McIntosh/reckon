@@ -11,6 +11,7 @@ up on, so a default route is never a silent one.
 from __future__ import annotations
 
 import importlib
+import subprocess
 import threading
 import time
 from datetime import UTC, datetime
@@ -20,6 +21,7 @@ from types import SimpleNamespace
 import pytest
 
 from reckon.crew import dispatch_picker, dispatch_plan, runs
+from reckon.crew.dispatch_admission import LaneHeld
 from reckon.crew.node import TaskNode
 
 picker = importlib.import_module("reckon.crew.picker")
@@ -51,11 +53,22 @@ PLAN_HTML = (
 )
 
 
+def _git(repository: Path, *arguments: str) -> None:
+    subprocess.run(["git", *arguments], cwd=repository, check=True, capture_output=True)
+
+
 def _repo(tmp_path: Path) -> Path:
-    plans = tmp_path / "repo" / "docs" / "plans"
+    """A committed checkout holding the plan, so a dispatch can resolve it."""
+    repository = tmp_path / "repo"
+    plans = repository / "docs" / "plans"
     plans.mkdir(parents=True)
     (plans / "probe.html").write_text(PLAN_HTML)
-    return tmp_path / "repo"
+    _git(repository, "init", "-q", "-b", "main")
+    _git(repository, "config", "user.email", "worker@example.invalid")
+    _git(repository, "config", "user.name", "Worker")
+    _git(repository, "add", "--", "docs")
+    _git(repository, "commit", "-q", "-m", "chore: seed the plan fixture")
+    return repository
 
 
 def _config(bound: float) -> dict:
@@ -171,6 +184,38 @@ def test_the_declared_capability_reaches_the_pick_without_a_plan_read(
     assert effort == SECTION_HOURS
 
 
+def test_a_nodes_own_estimate_outranks_the_sections(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A node that states its own hours keeps them past the section's figure.
+
+    The plan's section carries six hours; the node declares two. The dispatch
+    resolves the node's own estimate because that is the one its author wrote,
+    so a surface that overrides it with the section's figures the node's own
+    statement as a stale copy.
+    """
+    repo = _repo(tmp_path)
+    config = _config(bound=30.0)
+    node = _node()
+
+    stated = TaskNode(
+        id=node.id,
+        goal=node.goal,
+        plan=node.plan,
+        section=node.section,
+        role=node.role,
+        spec_level=node.spec_level,
+        done_when=node.done_when,
+        write_paths=list(node.write_paths),
+        estimated_hours=2.0,
+    )
+    capability, hours = dispatch_picker.dispatcher_declared_difficulty(
+        node=stated, config=config, project="proj", repo=repo, authority=None
+    )
+    assert capability == DEEP_CAPABILITY
+    assert hours == 2.0
+
+
 def test_a_pick_that_answers_inside_the_bound_routes_where_it_answered(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -256,21 +301,170 @@ def test_a_pick_that_never_answers_is_queued_awaiting_pick(
     assert decision["decision"] == "repick"
 
 
-def test_a_failure_fallback_names_the_step_the_default_route_ran_out_of(
+def test_a_failure_fallback_names_the_step_the_pick_ran_out_in(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """A picker failure falls back, and the fallback says which step failed."""
+    """A pick that raises reports the step it died in, not a bare word.
+
+    The real pick runs, so the step named here is the one its own sink recorded
+    when the candidate scan raised; a fallback that reported a fixed word would
+    fail this assertion whatever the pick did.
+    """
     repo = _repo(tmp_path)
 
-    def broken(_request, _config):
-        raise RuntimeError("the router is unreachable")
+    def broken_scan(*_args, **_kwargs):
+        raise RuntimeError("the lane census is unreachable")
 
-    _install_pick(monkeypatch, broken)
+    monkeypatch.setattr(picker.snapshot, "candidates", broken_scan)
+    monkeypatch.setattr(
+        picker.client,
+        "ask",
+        lambda *_a, **_k: (_ for _ in ()).throw(RuntimeError("jev did not answer")),
+    )
     selection = _select(repo, _config(bound=30.0))
 
     assert selection["action"] == "fallback"
     defaulted = selection["route_defaulted"]
     assert defaulted["reason"] == "route-defaulted"
-    assert defaulted["step"]
-    assert "the router is unreachable" in defaulted["detail"]
+    assert defaulted["step"] == "pick:snapshot"
+    assert "the lane census is unreachable" in defaulted["detail"]
     assert "awaiting_pick" not in selection
+
+
+def test_the_within_bound_flag_is_measured_against_the_flight_bound() -> None:
+    """The telemetry flag reads the bound dispatch applies, not a constant."""
+    from reckon.crew.dispatch_picker import PICKER_DISPATCH_TIMEOUT_SECONDS
+
+    assert (
+        picker._dispatch_bound_seconds({"routing": {"picker_timeout_seconds": 7}})
+        == 7.0
+    )
+    assert picker._dispatch_bound_seconds({}) == PICKER_DISPATCH_TIMEOUT_SECONDS
+    assert (
+        picker._dispatch_bound_seconds({"routing": {"picker_timeout_seconds": "soon"}})
+        == PICKER_DISPATCH_TIMEOUT_SECONDS
+    )
+
+
+def test_an_unanswered_pick_is_stored_by_the_queue_not_launched_on_the_default(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, crew_home: Path
+) -> None:
+    """The production branch that holds an unanswered pick is covered.
+
+    The pick never answers, the plan is dispatched through the same call the
+    live path uses, and the hold it raises is the assertion: the request is
+    stored through the queue's own record shape with the marker on it, and no
+    dispatch of the node happened. Deleting the branch that raises this hold
+    leaves the request on the default lane and fails here.
+    """
+    repo = _repo(tmp_path)
+    config = _config(bound=1.0)
+    release = threading.Event()
+
+    def never_answers(_request, _config):
+        release.wait(30)
+        return _answer("metered")
+
+    _install_pick(monkeypatch, never_answers)
+    try:
+        selection = _select(repo, config)
+    finally:
+        release.set()
+    assert selection.get("awaiting_pick")
+    node = _node()
+    node.time_budget = "25m"
+    with pytest.raises(LaneHeld) as held:
+        dispatch_plan.plan_dispatch(
+            node=node,
+            config=config,
+            project="proj",
+            repo=repo,
+            base="HEAD",
+            session="coordinator-a",
+            route="picker",
+            picker_selection=selection,
+        )
+
+    queued = held.value.queued
+    assert queued["phase"] == "queued"
+    assert queued["reason"] == "awaiting-pick"
+    pointer = runs.read_pointer(queued["run_id"])
+    assert pointer["phase"] == "queued"
+    assert str(pointer["reason"]) == "awaiting-pick"
+    record = runs.dispatch_field(pointer, "picker_selection")
+    assert record["awaiting_pick"]["bound_seconds"] == pytest.approx(1.0)
+    # The record is the queue's own shape, so it carries the keys every other
+    # held request carries rather than a hand-built subset.
+    assert set(pointer) >= {
+        "due",
+        "urgency",
+        "dispatch_options",
+        "queued_at",
+        "hold",
+    }
+
+
+def test_a_default_route_is_listed_as_a_notice_naming_its_step() -> None:
+    """The obligations view lists a run placed on a default route."""
+    from reckon.crew import obligations as obligations_module
+
+    assert obligations_module.ROUTE_DEFAULTED_DUTY_KIND in (
+        obligations_module.NON_BLOCKING_DUTY_KINDS
+    )
+    assert "route_step" in obligations_module.DUTY_ROW_FIELDS
+    row = {"run_id": "r-defaulted", "node": "n1", "plan": "probe", "session": "s"}
+    pointer = {
+        "run_id": "r-defaulted",
+        "phase": "running",
+        "picker_selection": {
+            "action": "fallback",
+            "route_defaulted": {
+                "reason": "route-defaulted",
+                "step": "pick:snapshot",
+                "detail": "RuntimeError: the lane census is unreachable",
+            },
+        },
+    }
+    items = obligations_module._route_defaulted_items(
+        [row], {"r-defaulted": pointer}, session="s", now=datetime.now(UTC)
+    )
+    assert len(items) == 1
+    assert items[0]["kind"] == obligations_module.ROUTE_DEFAULTED_DUTY_KIND
+    assert items[0]["route_step"] == "pick:snapshot"
+    assert "the lane census is unreachable" in items[0]["reason"]
+
+
+def test_the_obligations_view_lists_a_run_whose_route_defaulted(
+    crew_home: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The view's own assembly carries the defaulted-route notice.
+
+    The duty is derived rather than projected from a recovery row, so it is
+    listed by a step the view has to run. Replacing that step with a spy leaves
+    the notice missing unless the assembly calls it, which is what makes this
+    fail when the listing is dropped.
+    """
+    from reckon.crew import obligations as obligations_module
+
+    marker = {
+        "kind": obligations_module.ROUTE_DEFAULTED_DUTY_KIND,
+        "run_id": "r-defaulted",
+        "node": "n1",
+        "plan": "probe",
+        "age_seconds": 0,
+        "next_command": "",
+        "route_step": "pick:snapshot",
+    }
+    asked: list = []
+
+    def spy(classified, pointers, *, session, now):
+        asked.append(session)
+        return [dict(marker)]
+
+    monkeypatch.setattr(obligations_module, "_route_defaulted_items", spy)
+    view = obligations_module.obligations("proj", "coordinator-a")
+    assert asked == ["coordinator-a"]
+    assert [row["run_id"] for row in view["obligations"]] == ["r-defaulted"]
+    assert (
+        view["obligations"][0]["kind"] == obligations_module.ROUTE_DEFAULTED_DUTY_KIND
+    )

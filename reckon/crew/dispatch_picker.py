@@ -77,58 +77,37 @@ def dispatcher_declared_difficulty(
     config: Mapping[str, Any],
     project: str,
     repo: Path,
-    authority: Mapping[str, Any] | None,
+    authority: Mapping[str, Any] | None = None,
 ) -> tuple[dict[str, Any], float | None]:
     """The section capability and effort a dispatch resolves before it asks.
 
     The pick reads both from the plan itself when it is handed neither, and
     that read is what a loaded host spends the pick's whole bound on. Resolving
     them here and handing them in leaves the pick's difficulty step nothing to
-    read. A node naming no plan section, or a read that fails, leaves the pair
-    empty so the pick resolves them its own way rather than carrying a wrong
-    figure.
+    read. The resolution is the picker's own ``_declared_difficulty`` rather
+    than a second copy of it, so the dispatcher and the pick cannot disagree
+    about which plan a node names, which figure outranks which, or what a failed
+    read leaves behind: an estimate the node itself carries is kept, and a
+    section's declared effort outranks the plan total exactly as it does inside
+    the pick.
     """
     if not (node.plan.strip() and node.section.strip()):
         return {}, None
-    plan_repo = repo
-    plan = authority.get("plan") if isinstance(authority, Mapping) else None
-    repository = plan.get("repository") if isinstance(plan, Mapping) else None
-    if repository:
-        plan_repo = Path(str(repository))
-    capability: dict[str, Any] = {}
-    hours: float | None = None
+    from reckon.crew.picker import PickRequest, _declared_difficulty
+
     try:
-        from reckon.crew.picker import _resolved_plan_path
-
-        plan_path = _resolved_plan_path(plan_repo / "docs", project, node.plan)
-        if plan_path is None:
-            from reckon import resources
-
-            resource = resources.resolve_resource(
-                plan_repo / "docs", project, node.plan, "plan", include_archived=False
-            )
-            plan_path = resource.path if resource is not None else None
-    except Exception:  # noqa: BLE001 - an unresolved plan leaves the pair empty
-        plan_path = None
-    try:
-        from reckon.crew.routing import _estimated_hours
-
-        hours, _provenance = _estimated_hours(plan_repo, project, node)
-    except Exception:  # noqa: BLE001 - the declaration is advisory to a pick
-        hours = None
-    if plan_path is not None:
-        try:
-            from reckon.crew.picker import _section_effort_hours
-            from reckon.crew.routing import resolve_section_routing
-
-            section_hours = _section_effort_hours(plan_path, node.section)
-            if section_hours is not None:
-                hours = section_hours
-            resolved = resolve_section_routing(config, node=node, plan_path=plan_path)
-            capability = dict(resolved.get("capability") or {})
-        except Exception:  # noqa: BLE001 - an unresolved capability stays empty
-            capability = {}
-    return capability, hours
+        capability, hours, _source = _declared_difficulty(
+            PickRequest(project, node), dict(config), repo=repo, authority=authority
+        )
+    except Exception:  # noqa: BLE001 - the pick resolves its own rather than fail
+        return {}, None
+    resolved = dict(capability) if isinstance(capability, Mapping) else {}
+    measured = (
+        hours
+        if isinstance(hours, (int, float)) and not isinstance(hours, bool)
+        else None
+    )
+    return resolved, (float(measured) if measured is not None else None)
 
 
 #: When a routed answer was chosen, recorded on the answer itself. A queued
@@ -536,11 +515,19 @@ def dispatch_picker_selection(
     pick_running: dict[str, str | None] = {"step": None}
 
     def marked(stage: str, build: Callable[[], Any]) -> Any:
-        """Run one timed stage, recording the stage the ask is inside."""
+        """Run one timed stage, recording the stage the ask is inside.
+
+        A stage that raises is recorded as the one the ask failed in before the
+        exception leaves: its mark is cleared on the way out, so a caller would
+        otherwise see only that something failed.
+        """
         running["stage"] = stage
         moment = time.perf_counter()
         try:
             return build()
+        except Exception:
+            result["failed_step"] = str(stage)
+            raise
         finally:
             stages[stage] = round((time.perf_counter() - moment) * 1000, 3)
             running["stage"] = None
@@ -678,6 +665,14 @@ def dispatch_picker_selection(
             result["selection"] = selection.as_dict()
         except Exception as exc:  # noqa: BLE001 - shadow routing cannot block dispatch
             result["error"] = f"{type(exc).__name__}: {exc}"
+            # The step the ask had reached, kept by pick's own sink past the
+            # step's own clear, so a failed pick names the work it gave up in
+            # exactly as an expired one does.
+            failed = pick_running.get("last_step") or pick_running.get("step")
+            if failed:
+                result["failed_step"] = f"pick:{failed}"
+            elif running.get("stage"):
+                result["failed_step"] = str(running["stage"])
         finally:
             finished.set()
 
@@ -755,19 +750,25 @@ def dispatch_picker_selection(
         return _stamp_route_pick(_record_lifted_choice(selection))
     error = result.get("error") or "picker returned no selection"
     reason = error
+    # The work the ask ran out in, named in pick()'s vocabulary for a step
+    # inside the call and in the dispatcher's for one of its own stages. Both
+    # boundaries record it before they let the failure go: a marked step keeps
+    # its last start, and a marked stage records itself when its build raises,
+    # so a pick that failed names the step it failed in rather than reporting
+    # the same bare word an unanswered one does.
     step = ""
     if error == "timeout":
-        # A step pick() marked while it ran is named in pick()'s vocabulary; a
-        # pick that marked none keeps the bare reading, as does one that spent
-        # the budget in a dispatcher stage instead.
         pick_step = pick_running["step"]
         if pick_step:
             step = f"pick:{pick_step}"
         elif running["stage"]:
-            reason = f"timeout in {running['stage']}"
             step = str(running["stage"])
         if step:
             reason = f"timeout in {step}"
+    else:
+        step = str(result.get("failed_step") or "")
+        if step:
+            reason = f"{error} in {step}"
     selection = _picker_fallback(
         reason,
         comment,
