@@ -145,7 +145,14 @@ def test_only_the_repository_whose_pass_is_old_is_submitted(tmp_path: Path, home
         if line.startswith("#SBATCH --partition=")
     ]
     assert partitions == [maintenance.MAINTENANCE_PARTITION], script
+    assert partitions == [maintenance.MAINTENANCE_PARTITION], script
     assert partitions[0].endswith("_debug"), partitions
+    # The partition is named on the submitting argv too. The station submits
+    # from inside the fleet's own allocation, where a launch that names no
+    # partition is refused as an implicit nested job.
+    assert scheduler.argv == [
+        ["sbatch", "--parsable", f"--partition={maintenance.MAINTENANCE_PARTITION}"]
+    ], scheduler.argv
     # The grant is minutes, not hours: a bare ``30:00:00`` asks the scheduler
     # for thirty hours, which on a debug partition pends rather than runs.
     times = [

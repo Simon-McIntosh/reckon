@@ -378,7 +378,11 @@ def submit_pass(
     )
     run = subprocess.run if runner is None else runner
     result = run(
-        ["sbatch", "--parsable"],
+        # The partition is named on the argv as well as in the script: the
+        # station submits from inside the fleet's allocation, and a launch that
+        # names no partition there is refused as an implicit nested job whose
+        # width would be inherited from the allocation.
+        ["sbatch", "--parsable", f"--partition={partition}"],
         input=script,
         capture_output=True,
         text=True,
