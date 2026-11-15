@@ -31,7 +31,7 @@
   <code>admission_pass_budget_seconds</code>, which falls back to the default for
   anything that is not a finite positive number.</p>
 
-  <p id="admission-pass-is-bounded-s7-line" data-landing="admit_once now ends a pass when its launch budget is spent — a deadline read once at the loop head, from budget_seconds or flight's admission.pass_budget_seconds defaulting to 60 s — leaving the rest of the queue untouched for the next pass, and each launched verdict row carries launch_seconds, slowest_step and slowest_step_seconds accumulated over handover, dispatch and stamp on a monotonic clock seam; four files change (reckon/flight.py, selection.py, verdicts.py and the new tests/test_an_admission_pass_is_bounded.py), the three new tests fail at the base revision 1d16388a31 and pass 3 of 3 at the delivered head with the focused set at 58 passed EXIT=0, the admission-importing population, 124 files at the base and 125 with the new test file, shows zero added failures against the base, and the declared negative control that removes the deadline read at the loop head fails both the three-launches-per-pass case and the duration case at 2 failed, EXIT=1. The 120 s py-spy idle record of the live service after landing is not obtainable from this node: the change is not landed, and no admit process runs on this allocation's host."></p>
+  <p id="admission-pass-is-bounded-s7-line" data-landing="admit_once now ends a pass when its launch budget is spent — a deadline read once at the loop head, from budget_seconds or flight's admission.pass_budget_seconds defaulting to 60 s — leaving the rest of the queue untouched for the next pass, and each launched verdict row carries launch_seconds, slowest_step and slowest_step_seconds accumulated over handover, dispatch and stamp on a monotonic clock seam; four files change (reckon/flight.py, selection.py, verdicts.py and the new tests/test_an_admission_pass_is_bounded.py), the five new tests fail at the base revision 1d16388a31 and pass 5 of 5 at the delivered head with the armed set at 60 passed EXIT=0, the admission-importing population, 124 files at the base and 125 with the new test file, shows zero added failures against the base, the declared negative control that removes the deadline read at the loop head fails both budget cases at 2 failed, EXIT=1, and two further controls redden the same cases from the other side: a pass that ignores its budget argument, and a resolver that writes the fixture's shared config. The budget the cases hand in is 30 s rather than the flight default of 60 s, so a fall-through to the default launches one more than they expect. The 120 s py-spy idle record of the live service after landing is not obtainable from this node: the change is not landed, and no admit process runs on this allocation's host."></p>
 
   <h3 id="admission-pass-is-bounded-s7-measured">Measured</h3>
 
@@ -40,21 +40,30 @@
     command and whose last line is a bare <code>EXIT=&lt;code&gt;</code>.</caption>
     <thead><tr><th>arm</th><th>revision</th><th>result</th></tr></thead>
     <tbody>
-      <tr><td>this node's new tests over the base tree</td>
+      <tr><td>this node's tests over the base tree, which does not carry the
+        file</td>
         <td><code>1d16388a31</code></td>
-        <td>3 failed, <code>EXIT=1</code></td></tr>
-      <tr><td>focused set, base</td><td><code>1d16388a31</code></td>
+        <td>5 failed, <code>EXIT=1</code></td></tr>
+      <tr><td>the armed set at the base, as the suite fence spells it</td>
+        <td><code>1d16388a31</code></td>
         <td>55 passed, <code>EXIT=0</code></td></tr>
-      <tr><td>focused set plus the new file</td><td>the head this node delivers</td>
-        <td>58 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>the armed set at the delivered head, with the new file</td>
+        <td>the head this node delivers</td>
+        <td>60 passed, <code>EXIT=0</code></td></tr>
       <tr><td>admission-importing population, <code>-n 4</code></td>
-        <td>base <code>1d16388a31</code>, head = the delivered commit</td>
+        <td>base <code>1d16388a31</code>, the first delivered head, 125 files</td>
         <td>165 failed / 694 passed at the base, 164 failed / 698 passed at the
-        head: no failure id added, one removed for want of a git object the base
-        arm's extracted tree does not carry</td></tr>
-      <tr><td>negative control: deadline read removed from the loop head</td>
+        first delivered head: no failure id added, one removed for want of a git
+        object the base arm's extracted tree does not carry</td></tr>
+      <tr><td>control: deadline read removed from the loop head</td>
         <td><code>239f5365ab</code> + mutation</td>
         <td>2 failed, 1 passed, <code>EXIT=1</code></td></tr>
+      <tr><td>control: the pass ignores its budget argument</td>
+        <td>the delivered head + mutation</td>
+        <td>2 failed, 3 passed, <code>EXIT=1</code></td></tr>
+      <tr><td>control: the cases resolve through a shared-config writer</td>
+        <td>the delivered head + mutation</td>
+        <td>1 failed, 4 deselected, <code>EXIT=1</code></td></tr>
     </tbody>
   </table>
 
