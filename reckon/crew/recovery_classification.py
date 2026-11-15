@@ -538,6 +538,28 @@ def _the_probe_did_not_answer(observation: Mapping[str, Any] | None) -> bool:
     return observation.get("answered") is False
 
 
+def _wait_declaration_missing_keys(wait: Mapping[str, Any]) -> list[str]:
+    """The required keys a refused wait declaration lacks, in the reader's order.
+
+    Derived from the parsed declaration rather than re-read from the refusal
+    text, so the row names the field a repair must add whatever wording the
+    refusal happens to carry. A declaration that names no probe may still be a
+    declaration that should have used ``wait_file`` instead, so the two shapes
+    are named together: the repair adds one or the other, and naming both tells
+    the reader a file condition is also accepted.
+    """
+    missing: list[str] = []
+    if not str(wait.get("condition") or "").strip():
+        missing.append("wait_condition")
+    if not wait.get("probe") and not wait.get("files"):
+        missing.append("wait_probe or wait_file")
+    if not wait.get("terminal"):
+        missing.append("wait_terminal")
+    if not str(wait.get("resume_brief") or "").strip():
+        missing.append("resume_brief")
+    return missing
+
+
 #: How long a declared wait's probe value must have stood still, over a run
 #: with no live process, before nobody is left to change it. A file wait's
 #: probe answers the same value for as long as the wait is healthy, so the
@@ -2223,11 +2245,21 @@ def classify_pointer(
             )
     elif wait is not None and process_gone:
         classification = "unreadable"
+        absent_keys = _wait_declaration_missing_keys(wait)
+        names_absent = (
+            "lacks " + ", ".join(absent_keys)
+            if absent_keys
+            else "carries a field the reader refused"
+        )
         detail = (
             f"the manifest at {manifest} declares an external wait but is "
-            f"incomplete: {manifest_error}"
+            f"incomplete: it {names_absent} ({manifest_error})"
         )
-        action = f"repair the waiting declaration in {manifest} before resuming"
+        action = (
+            f"repair the waiting declaration in {manifest} — it {names_absent} "
+            f"— then reckon crew resume --run {run_id} --advice "
+            "'<what to tell the worker>'"
+        )
     elif phase == "stopped":
         classification = "stopped"
         detail = "the run was intentionally stopped"
