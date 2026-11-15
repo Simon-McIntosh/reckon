@@ -26,7 +26,7 @@
   <title>The Monitor Shows The Work It Watches | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="900">
+<meta name="plan-version" content="901">
 <meta name="plan-modified" content="2026-11-15">
 <meta name="plan-supersedes" content="a-follower-keeps-your-work-in-view,monitor-renders-what-it-is-given,a-follower-lives-as-long-as-its-session">
 </head>
@@ -1689,11 +1689,20 @@ Both cases run under the file's existing temporary crew home.</li>
 <div class="r-comment" data-section="s134" data-id="c-run-r-20261114T193915970267-review-of-follower-outlives-arming-shell-s134-b1438940532c" data-who="reckon-build" data-when="2026-11-14T20:01:30.734Z">
     <div class="r-comment-body"><p>review record stored for r-20261114T101135327049-follower-outlives-arming-shell-s134 at base 47d4d536120a2e6d4356124856be6285061e6806 .. head b1438940532c79927aa207afd76ea583a2b5fbaa</p></div>
 </div>
+<div class="r-comment" data-section="s134" data-id="c-run-r-20261114T220839868264-review-of-follower-outlives-arming-shell-s134-a9dba71c3724" data-who="reckon-build" data-when="2026-11-15T01:04:00.303Z">
+    <div class="r-comment-body"><p>review verdict for r-20261114T101135327049-follower-outlives-arming-shell-s134 at base 47d4d536120a2e6d4356124856be6285061e6806 .. head a9dba71c37241e601ffced2e4ad4ec68fcec2173 stored as a review record and nothing else changed (no worktree edits, no plan writes, no suite runs).</p></div>
+</div>
 <div class="r-comment" data-section="s136" data-id="c-run-r-20261114T215518084949-review-of-pane-counts-reviews-under-r-s136-d10e7170eb4a" data-who="reckon-build" data-when="2026-11-15T00:31:09.997Z">
     <div class="r-comment-body"><p>Reviewed r-20261114T174432779393-pane-counts-reviews-under-r-s136 at d10e7170eb against 95e3268370: 6 dimensions scored (goal_fidelity 19, evidence 16, scope_discipline 17, durability 15, fit 18, reuse 5; total 90) with 3 non-blocking findings and 0 added failure ids across the 169-module population.</p></div>
 </div>
 <div class="r-comment" data-section="s136" data-id="c-run-r-20261114T174432779393-pane-counts-reviews-under-r-s136" data-who="reckon-build" data-when="2026-11-15T00:49:31Z">
     <div class="r-comment-body"><p>docs/evidence/fragments/the-monitor-shows-the-work-it-watches/pane-counts-reviews-under-r-s136.html</p></div>
+</div>
+<div class="r-comment" data-section="s137" data-id="c-run-r-20261114T174601341774-station-prunes-dead-registrations-s137" data-who="reckon-build" data-when="2026-11-14T22:53:40.217Z">
+    <div class="r-comment-body"><p>The station prunes released follower registrations older than a day from its tick maintenance stage at most once an hour, printing one line per removal; tests/test_the_station_prunes_dead_registrations.py passes 3/3, head arm 58 passed EXIT=0, base arm 53 passed with 2 scaffolding errors, and the station/follower_registration import population adds no failure (17 failed on both arms).</p></div>
+</div>
+<div class="r-comment" data-section="s137" data-id="c-run-r-20261114T233128471265-review-of-station-prunes-dead-registrations-s137-c6bf07a5ba10" data-who="reckon-build" data-when="2026-11-15T00:57:22.910Z">
+    <div class="r-comment-body"><p>Review of r-20261114T174601341774-station-prunes-dead-registrations-s137 at c6bf07a5ba: all six dimensions scored (total 113 of 120), zero added failures against the base gate logs, two non-blocking findings (registry of an unmounted project never swept; the gate logs record no partition).</p></div>
 </div>
 <div class="r-comment" data-section="s139" data-id="c-run-r-20261114T165711969303-station-tick-survives-one-unreadable-pointer-s139" data-who="reckon-build" data-when="2026-11-14T20:02:41.768Z">
     <div class="r-comment-body"><p>§139 — the station's classify_tick now classifies each pointer under its own guard, recording a raising row as unreadable with the exception's type and message and carrying on, and _stream_session answers an empty session for a backend with no launch translation; gate tests/test_one_unreadable_pointer_never_stops_the_tick.py 4 passed (all 4 failed with BackendError escaping at base 53c4c5238e), after suite arm 59 passed vs base arm 55 passed, 0 added failures.</p></div>
@@ -2756,12 +2765,6 @@ Both cases run under the file's existing temporary crew home.</li>
 </div>
 <div class="r-comment" data-section="s99" data-id="c-run-r-20261105T131501961323-reland-the-reviewed-change-that-keeps-a-neverlaunched" data-who="reckon-build" data-when="2026-11-05T14:36:18.629Z">
     <div class="r-comment-body"><p>Re-landed the reviewed parked-request budget fix unchanged on base cd5edbd573 (patch byte-identical to git diff 98d07499d1 918894481d); elapsed now charges from launch, a never-launched pointer reports no elapsed/overrun and carries waiting_seconds (declared in LIVE_CLASSIFICATION_FIELDS); gate 23 passed at head effb92dc47 against 16 passed at base, importers 86 passed both sides, declared negative control EXIT=1 with the awaiting-upstream case failing on the overrun assertion.</p></div>
-</div>
-<div class="r-comment" data-section="s137" data-id="c-run-r-20261114T174601341774-station-prunes-dead-registrations-s137" data-who="reckon-build" data-when="2026-11-14T22:53:40.217Z">
-    <div class="r-comment-body"><p>The station prunes released follower registrations older than a day from its tick maintenance stage at most once an hour, printing one line per removal; tests/test_the_station_prunes_dead_registrations.py passes 3/3, head arm 58 passed EXIT=0, base arm 53 passed with 2 scaffolding errors, and the station/follower_registration import population adds no failure (17 failed on both arms).</p></div>
-</div>
-<div class="r-comment" data-section="s137" data-id="c-run-r-20261114T233128471265-review-of-station-prunes-dead-registrations-s137-c6bf07a5ba10" data-who="reckon-build" data-when="2026-11-15T00:57:22.910Z">
-    <div class="r-comment-body"><p>Review of r-20261114T174601341774-station-prunes-dead-registrations-s137 at c6bf07a5ba: all six dimensions scored (total 113 of 120), zero added failures against the base gate logs, two non-blocking findings (registry of an unmounted project never swept; the gate logs record no partition).</p></div>
 </div>
 </section>
 <section data-reckon="gates" id="gates" class="r-gates">
