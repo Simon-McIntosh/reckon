@@ -391,8 +391,17 @@ def _require_commits_beyond_base(
     canonical_base = _commit_canonical_id(tree, base)
     if canonical_base is None:
         return
-    for revision in commits:
-        cited = str(revision).strip()
+    from reckon.crew.promotion_scope import _declared_manifest_commits
+    from reckon.crew.queue_landing import _delivered_revision
+
+    canonical_head = _commit_canonical_id(tree, "HEAD")
+    # A history-derived presentation must not hide a foreign manifest citation.
+    # Reachable merge imports are valid citations but not owned commit records.
+    citations = dict.fromkeys(
+        [*commits, *_declared_manifest_commits(record)] if commits else ()
+    )
+    for revision in citations:
+        cited = _delivered_revision([str(revision)]) or str(revision).strip()
         if not cited:
             continue
         canonical = _commit_canonical_id(tree, cited)
@@ -407,12 +416,23 @@ def _require_commits_beyond_base(
                 "run. Cite the commit the run committed on top of the base, or "
                 "pass --no-commit '<why>' when it produced none"
             )
-        if not _revision_is_ancestor(tree, canonical_base, canonical):
+        predates_base = _revision_is_ancestor(tree, canonical, canonical_base)
+        outside_history = canonical_head is not None and not _revision_is_ancestor(
+            tree, canonical, canonical_head
+        )
+        if (
+            predates_base
+            or outside_history
+            or (
+                canonical_head is None
+                and not _revision_is_ancestor(tree, canonical_base, canonical)
+            )
+        ):
             raise CrewError(
                 f"run {run_id!r} cites {canonical}, which is not a commit this "
                 f"run made beyond its base {base}: the run's work is what it "
-                "committed on top of the base, so this citation belongs to "
-                "another branch or predates the run. Cite the run's own commit, "
+                "committed on its own history, so this citation belongs to "
+                "an unmerged branch or predates the run. Cite the run's own commit, "
                 "or pass --no-commit '<why>' when it produced none"
             )
     if commits:
