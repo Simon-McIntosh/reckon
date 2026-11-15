@@ -641,13 +641,14 @@ class StationStore:
         self.heartbeat()
 
     def _pointer_streams(self, home: Path) -> dict[Path, dict[str, Any]]:
-        """Every stream named by a pointer already ingested, with its pointer.
+        """Every stream named by a pointer already ingested, with the fold's scalars.
 
-        The stored fields are decoded once here, in the same pass that names the
-        streams, and the record is handed to :meth:`ingest_stream` beside its
-        stream. A fold that scanned the stored pointers again for each stream it
-        read decoded the whole fleet's fields once per stream -- the pass that set
-        a tick's peak -- for a lookup this pass already answers.
+        One query answers both the stream paths and the backend and dialect each
+        pointer was ingested under, so this pass decodes no stored document at
+        all; the scalars ride beside the stream into :meth:`ingest_stream`. A
+        fold that scanned the stored pointers again for each stream it read
+        decoded the whole fleet's fields once per stream -- the pass that set a
+        tick's peak -- for a lookup this pass already answers.
         """
         streams: dict[Path, dict[str, Any]] = {}
         rows = self.connect().execute(
