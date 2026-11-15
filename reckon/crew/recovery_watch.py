@@ -287,8 +287,17 @@ def _remember_commit_answer(tree: Path, candidate: str, sha: str) -> None:
 
     An unresolved candidate is never stored: an object the repository does not
     hold yet it may hold later, so "names no commit" is not an immutable fact.
+
+    An answer the store already holds is not written again. The store is one
+    file shared by every process reading this home, and its write is a lock
+    plus a whole-file rewrite, so rewriting it to store the value it already
+    carries costs the lock every tick and hands the file a new identity — which
+    is what stops a reader's held copy from matching. Only a new or different
+    answer changes the file.
     """
     if not sha:
+        return
+    if _stored_commit_answer(tree, candidate) == sha:
         return
 
     def mutate(store: dict[str, Any]) -> None:
@@ -305,7 +314,15 @@ def _stored_count_answer(tree: Path, head: str, base: str) -> int | None:
 
 
 def _remember_count_answer(tree: Path, head: str, base: str, count: int) -> None:
-    """Record the commit count for this worktree head and base."""
+    """Record the commit count for this worktree head and base.
+
+    A count already stored for these two object ids is not written again, for
+    the reason ``_remember_commit_answer`` gives: the answer cannot move, so the
+    rewrite would cost the store's lock and a new file identity to change
+    nothing.
+    """
+    if _stored_count_answer(tree, head, base) == count:
+        return
     key = _count_answer_key(head, base)
 
     def mutate(store: dict[str, Any]) -> None:
