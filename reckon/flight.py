@@ -578,6 +578,15 @@ def mounted_project_docs(mounts_file: Path | None = None) -> dict[str, Path]:
     is resolved through the configuration home in force now; a caller that must
     read a registry regardless of a later home override passes the path it
     captured earlier, which is the path it read then, not the one now in force.
+
+    The registry is fixed for as long as its bytes are: it is parsed and each
+    entry's path resolved once per stat identity through the shared file memo,
+    so a caller that asks for one project's docs root per unit of work — a
+    producer tick asking once per reviewed plan — pays a stat per ask rather
+    than a parse of the whole registry and a ``realpath`` per mount on each. A
+    rewritten registry moves its identity and is read again on the next call,
+    so the memo cannot hand back a project the registry no longer names or a
+    path it now points elsewhere.
     """
     import json
 
@@ -585,35 +594,39 @@ def mounted_project_docs(mounts_file: Path | None = None) -> dict[str, Path]:
 
     if mounts_file is None:
         mounts_file = _mounts_path()
-    if not mounts_file.is_file():
-        return {}
-    try:
-        payload = json.loads(mounts_file.read_text())
-    except (OSError, ValueError) as exc:
-        raise FlightConfigError(
-            mounts_file, "", "must contain a readable JSON object"
-        ) from exc
-    if not isinstance(payload, Mapping):
-        raise FlightConfigError(mounts_file, "", "must contain a JSON object")
-    entries = payload.get("mounts") if "mounts" in payload else payload
-    if not isinstance(entries, Mapping):
-        raise FlightConfigError(
-            mounts_file, "mounts", "must be an object keyed by project"
-        )
 
-    resolved: dict[str, Path] = {}
-    for project, entry in sorted(entries.items(), key=lambda item: str(item[0])):
-        docs_path = entry
-        if isinstance(entry, Mapping):
-            docs_path = entry.get("docs") or entry.get("path")
-        if not isinstance(docs_path, str) or not docs_path.strip():
+    def read() -> dict[str, Path]:
+        if not mounts_file.is_file():
+            return {}
+        try:
+            payload = json.loads(mounts_file.read_text())
+        except (OSError, ValueError) as exc:
             raise FlightConfigError(
-                mounts_file,
-                str(project),
-                "must name a docs directory with a string path",
+                mounts_file, "", "must contain a readable JSON object"
+            ) from exc
+        if not isinstance(payload, Mapping):
+            raise FlightConfigError(mounts_file, "", "must contain a JSON object")
+        entries = payload.get("mounts") if "mounts" in payload else payload
+        if not isinstance(entries, Mapping):
+            raise FlightConfigError(
+                mounts_file, "mounts", "must be an object keyed by project"
             )
-        resolved[str(project)] = Path(docs_path).expanduser().resolve()
-    return resolved
+
+        resolved: dict[str, Path] = {}
+        for project, entry in sorted(entries.items(), key=lambda item: str(item[0])):
+            docs_path = entry
+            if isinstance(entry, Mapping):
+                docs_path = entry.get("docs") or entry.get("path")
+            if not isinstance(docs_path, str) or not docs_path.strip():
+                raise FlightConfigError(
+                    mounts_file,
+                    str(project),
+                    "must name a docs directory with a string path",
+                )
+            resolved[str(project)] = Path(docs_path).expanduser().resolve()
+        return resolved
+
+    return file_memo.memoized("mounts_registry", mounts_file, read)
 
 
 def _project_docs_root(project: str) -> Path:
