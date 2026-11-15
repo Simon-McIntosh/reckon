@@ -1091,13 +1091,17 @@ def _coerce_commit_identifiers(value: Any) -> Any:
     list as its elements. A parenthesised path list beside the id is dropped
     first, because the comma reader would otherwise split inside it. Splitting
     several identifiers written on one line is left to the guarded-list rule
-    that every such field shares, so the commits field is split once.
+    that every such field shares, so the commits field is split once. An entry's
+    optional ``commit:`` key labels the identifier rather than being part of it.
     """
     if isinstance(value, str):
         text = value.strip()
         if text.startswith("[") and text.endswith("]"):
-            return _split_bracketed_list(text)
-    return _coerce_list_field(_without_parenthesised_path_list(value))
+            value = _split_bracketed_list(text)
+    entries = _coerce_list_field(_without_parenthesised_path_list(value))
+    if isinstance(entries, list):
+        return [re.sub(r"^commit:\s*", "", entry) for entry in entries]
+    return entries
 
 
 def _typed_suite_observation(value: Any) -> SuiteObservation | str | None:
