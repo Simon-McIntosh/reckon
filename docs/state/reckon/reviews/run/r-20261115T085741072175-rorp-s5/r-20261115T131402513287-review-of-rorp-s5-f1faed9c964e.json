@@ -1,0 +1,62 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own arms by reckon.crew.review.added_failures_from_gate_logs over suite-pair.log: the base arm (revision 19b28c494ed1) reports 2 error ids, tests/test_staged_write_inventory.py::test_every_staged_write_reaches_the_owner and ::test_claim_move_aside_is_not_a_staged_write, at '53 passed, 2 errors in 14.72s' and EXIT=1; the head arm (revision 0a2d1f8e672b) reports no ids at '58 passed in 191.38s (0:03:11)' and EXIT=0. The set difference is empty, so nothing is added. The instrument was control-checked: the same call with one FAILED line injected into the head text returned (1, ['tests/test_a_one_plan_ledger_read.py::test_the_filtered_read_is_the_unfiltered_read_filtered']), so a zero is a measured zero rather than a parser that sees nothing.",
+  "assertion_review": [
+    {
+      "assertion": "none added in this range",
+      "fails_if_or_mutation": "The gained commit adds no test and no assertion; it is prose. The assertions the prior review judged (tests/test_a_one_plan_ledger_read.py, scored durability 14 at 0a2d1f8e) are untouched by this range, so their verdict is unchanged rather than re-scored here. The one claim this paragraph adds that a reader can mechanically check is the pair of counts, and those are read from suite-pair.log:80 and :89.",
+      "file": "docs/evidence/fragments/a-read-only-run-promotes-as-delivered/rorp-s5.html",
+      "line": 64
+    }
+  ],
+  "call_sites": [
+    "reckon/evidence.py:689-700 composes a plan's evidence record from docs/evidence/fragments/<plan>/*.html",
+    "reckon/crew/reports.py:2685-2700 _fragment_plan_of resolves a changed path under docs/evidence/fragments to the plan whose fragment it is"
+  ],
+  "completed_at": "2026-11-15T13:35:10.784Z",
+  "dispatched_at": "2026-11-15T13:18:37Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/a-read-only-run-promotes-as-delivered/rorp-s5.html",
+      "line": "64",
+      "severity": "non-blocking",
+      "text": "non-blocking: the paragraph calls 0a2d1f8e672b 'the reviewed head', but the run's head is f1faed9c964e and 0a2d1f8e is the head the previous review read; a later reader has no way to tell that the arm was taken one commit below the shipped head, and the fact that makes the arm still valid for f1faed9c964e (the intervening commit changes no Python, test or pytest-configuration path) is recorded nowhere in the page. Naming the revision as the previous review's head, with that reason, would let a reader check the tolerance instead of inferring it."
+    }
+  ],
+  "justifications": {
+    "durability": "The gained commit is documentation at docs/evidence/fragments/a-read-only-run-promotes-as-delivered/rorp-s5.html:64-65 and no test fails if its numbers go stale; the code guard that carries this node's durability is tests/test_a_one_plan_ledger_read.py, which this range does not touch and which the prior review scored 14.",
+    "evidence": "Every figure the changed paragraph states reconciles with its log: suite-pair.log:80 gives '53 passed, 2 errors in 14.72s' at base and :89 '58 passed in 191.38s' at head, and 58 = 53 + 2 + 3 is the head arm's own collection, so the two base errors did pass at the head.",
+    "fit": "The paragraph follows the surrounding fragment idiom at docs/evidence/fragments/a-read-only-run-promotes-as-delivered/rorp-s5.html:50-56 and its em dashes render, though it writes &#8212; where the rest of the page writes a literal \u2014.",
+    "goal_fidelity": "The gained commit at docs/evidence/fragments/a-read-only-run-promotes-as-delivered/rorp-s5.html:64-65 changes no behaviour and makes the page's suite-arm account match suite-pair.log, which is what the node's evidence owes.",
+    "reuse": "No definition is added, and the only mechanism the page depends on is the fragment composer at reckon/evidence.py:689, which it reuses.",
+    "scope_discipline": "git diff --stat 0a2d1f8e672b f1faed9c964e names the single declared fragment path and no other file."
+  },
+  "project": "reckon",
+  "reuse": "The gained commit adds no definition, so nothing can be forked or duplicated; the fragment reuses the structure of its sibling docs/evidence/fragments/a-read-only-run-promotes-as-delivered/rorp-s2.html and the entity spelling the page already renders, and a search of reckon/ and tests/ for a second composer of evidence fragments found only reckon/evidence.py:689.",
+  "review_run_id": "r-20261115T131402513287-review-of-rorp-s5-f1faed9c964e",
+  "reviewed_base_sha": "0a2d1f8e672b95e4b0d558ea2225662c89153309",
+  "reviewed_head_sha": "f1faed9c964e7dfb497879e9f85c73902e277e6a",
+  "reviewed_run_id": "r-20261115T085741072175-rorp-s5",
+  "reviewer_role": "review",
+  "scope_reviewed": "only the commits the run gained since it was reviewed at 0a2d1f8e672b; one commit, f1faed9c964e, touching only docs/evidence/fragments/a-read-only-run-promotes-as-delivered/rorp-s5.html (+2/-11)",
+  "scores": {
+    "durability": 14,
+    "evidence": 19,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-15T13:40:00Z",
+  "total": 110,
+  "verdicts": {
+    "diff": "Read commit by commit over 0a2d1f8e672b..f1faed9c964e: one commit, docs/evidence/fragments/a-read-only-run-promotes-as-delivered/rorp-s5.html, +2/-11, replacing the suite-arm paragraph's literal \\u2014 escape text and its pre-repair after_suite account with the two measured arms and the repair commit 8b98c517dc.",
+    "done_when": "The done_when names a rigel timing log with five fresh-process reads under five seconds, a new test file proving no other plan is decoded, and no added failure in the importing test files; the gained commit touches the fragment's suite-arm paragraph only, and its numbers reconcile with suite-pair.log:80 ('53 passed, 2 errors in 14.72s', arm base EXIT=1) and suite-pair.log:89 ('58 passed in 191.38s', arm head EXIT=0).",
+    "goal": "The node goal is that one plan's run records read in under five seconds and stop costing the whole store; the gained commit changes no product source and corrects the evidence fragment at docs/evidence/fragments/a-read-only-run-promotes-as-delivered/rorp-s5.html:64-65 so the suite arms it reports are the ones the logs hold.",
+    "manifest": "Read at .../r-20261115T085741072175-rorp-s5/manifest.md; its after_suite now records revision 0a2d1f8e672b with exit_status 0, completed true, failure_count 0 and no ids, and its baseline_suite records revision 19b28c494ed1 with the two error ids, so the pair derives zero added failures and the prior blocking finding (after_suite at d74954f7, exit 1, three ids) is answered; the arm sits one commit behind the reviewed head f1faed9c964e, which reckon/crew/promotion_records.py:_suite_reaching_paths tolerates because f1faed9c964e changes only a documentation path.",
+    "write_paths": "The run's declared paths are reckon/ledger.py, reckon/run_store.py, tests/test_a_one_plan_ledger_read.py, docs/evidence/fragments/a-read-only-run-promotes-as-delivered/rorp-s5.html and docs/figures/a-read-only-run-promotes-as-delivered/rorp-s5; the gained commit's single file is the declared fragment, nothing else."
+  }
+}
