@@ -32,7 +32,11 @@ from reckon.crew.recovery_watch import (
     _watch_verdict,
     classify_pointer,
 )
-from reckon.crew.ticker import PANE_STATES, _bucket_of, _display_state
+from reckon.crew.ticker import (
+    PANE_STATES,
+    _bucket_of,
+    _display_state,
+)
 
 PROJECT = "proj"
 SESSION = "coordinator-a"
@@ -155,8 +159,8 @@ def test_a_request_the_queue_parks_is_drawn_waiting(
 
     # The word a reader sees, the bucket the counters add, and the pane
     # vocabulary that decides which pane the word sits in all agree.
-    assert row["state"] == "waiting", row
-    assert _pane_word(_display_state(row["state"])) == "waiting", row
+    assert row["state"] == "queued", row
+    assert _pane_word(_display_state(row["state"])) == "queued", row
     assert _bucket_of(row["state"]) == "waiting", row
     # Nothing a coordinator does lifts this hold, so the row hands no command:
     # the release the classifier names for a held pointer would launch over the
@@ -176,9 +180,9 @@ def test_a_coordinator_hold_is_drawn_needs_you_and_names_the_release(
 
     row = _snapshots()["r-hold"]
 
-    assert row["state"] == "held", row
-    assert _pane_word(_display_state(row["state"])) == "needs you", row
-    assert _bucket_of(row["state"]) == "needs you", row
+    assert row["state"] == "blocked", row
+    assert _pane_word(_display_state(row["state"])) == "help", row
+    assert _bucket_of(row["state"]) == "help", row
     # The command is the classifier's own for this pointer, not a second
     # composition of it in the pane: one surface names it, so the two cannot
     # drift apart.
@@ -210,9 +214,9 @@ def test_an_owed_plan_review_is_drawn_needs_you_and_names_the_composition(
 
     row = _snapshots()["r-review"]
 
-    assert row["state"] == "held", row
-    assert _pane_word(_display_state(row["state"])) == "needs you", row
-    assert _bucket_of(row["state"]) == "needs you", row
+    assert row["state"] == "blocked", row
+    assert _pane_word(_display_state(row["state"])) == "help", row
+    assert _bucket_of(row["state"]) == "help", row
     # The act that lifts the hold is a composition, not a release: releasing it
     # would launch work over unreviewed plan text.
     assert "reckon crew review" in row["next_action"], row

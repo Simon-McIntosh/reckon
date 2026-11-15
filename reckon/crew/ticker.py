@@ -241,6 +241,7 @@ STATE = STATE_WORD + ARROW_GAP + len(ARROW) + ARROW_GAP + STATE_WORD
 NEW_STATE_OFFSET = STATE_WORD + ARROW_GAP + len(ARROW) + ARROW_GAP
 
 # States a reader must act on: the ones that have stopped progressing and want
+
 # the coordinator. An overdue wait is in the set: its external condition has not
 # lifted when expected, so a reader should look at it. That reading is
 # deliberately not the fleet's `blocked` number — an overdue wait is actionable
@@ -262,12 +263,6 @@ NEEDS_ACTION = frozenset(
         "unreadable",
         "exited-unfinished",
         "wait-aged",
-        # A run held by a coordinator's own act: released by `crew queue
-        # release`, or by composing the plan review the hold waits for. The word
-        # set already draws it under "needs you", so the counter counts it there
-        # rather than in the waiting figure beside the request the queue parked
-        # and will launch itself.
-        "held",
     }
 )
 
@@ -722,6 +717,7 @@ HIDDEN_AT_ATTACH = SETTLED_STATES - frozenset(
 
 _CELLS = ("working", "in review", "help", "delivered")
 _WAIT_CELL = "waiting"
+_HELP_CELL = "help"
 # The stuck count is a figure beside the buckets rather than one of them: a
 # stuck request keeps the cell its phase belongs to, so this cell recounts
 # rows the others already hold. It renders on every row so the block keeps
@@ -989,7 +985,7 @@ def _bucket_of(state: Any, *older: Any) -> str | None:
     if word in FLEET_UNPROMOTED_STATES:
         return "delivered"
     if word in FLEET_BLOCKED_STATES:
-        return "help"
+        return _HELP_CELL
     if word in FLEET_WAITING_STATES:
         return _WAIT_CELL
     if word in FLEET_WORKING_STATES:

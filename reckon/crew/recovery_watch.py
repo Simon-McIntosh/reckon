@@ -45,6 +45,7 @@ from reckon.crew.runs import (
     watch_stream_path,
 )
 from reckon.crew.ticker import (
+    _HELP_CELL,
     _WAIT_CELL,
     NEEDS_ACTION,
     Ticker,
@@ -1404,16 +1405,19 @@ def _watch_verdict(
         if hold_owner(pointer) == HOLD_LIFTED_BY_COORDINATOR:
             next_action = _coordinator_hold_next_action(pointer, row)
             held_clause = _coordinator_hold_clause(pointer, next_action)
-            state = "held"
+            state = "blocked"
         else:
             # The queue or the clock lifts it, so nothing in the row is the
-            # coordinator's to do: a request parked for a lane slot, and a run
-            # stopped on a spent window, both sit in the waiting pane and are
-            # counted there. The row hands no command either — the release the
+            # coordinator's to do and the row hands no command: the release the
             # classifier names for a held pointer would launch over the
             # admission pass's own release path, and the wait ends without it.
+            #
+            # A request parked before launch is back in the lane's queue, which
+            # is the word and the cell a reader already reads a queued request
+            # in; a run the lane's window stopped once it had launched reads as
+            # the wait it is rather than claiming a slot it already held.
             next_action = None
-            state = WAITING_STATUS
+            state = "queued" if stored_phase == "held" else WAITING_STATUS
 
     # A dead worker is a row on the snapshot that observes the death, never one
     # held behind the stall window. The deferrals above read a non-terminal
@@ -2289,7 +2293,7 @@ def _fleet_counts(
         # read from the renderer's own partition rather than restated here: the
         # word and the figure cannot disagree if there is one statement of
         # which bucket a state belongs to.
-        "blocked": sum(bucket == "needs you" for bucket in buckets),
+        "blocked": sum(bucket == _HELP_CELL for bucket in buckets),
         "unpromoted": sum(state in FLEET_UNPROMOTED_STATES for state in states)
         - repairing,
     }
