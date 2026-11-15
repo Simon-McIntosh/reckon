@@ -25,7 +25,7 @@
   <title>A Landing Never Waits On A Shared Index | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="61">
+<meta name="plan-version" content="62">
 <meta name="plan-modified" content="2026-11-15">
 </head>
 <body>
@@ -197,6 +197,9 @@
 </div>
 <div class="r-comment" data-section="s13" data-id="c-run-r-20261115T055315545788-review-of-a-landing-commit-retries-a-released-lock-8d32dce58773" data-who="reckon-build" data-when="2026-11-15T06:10:49.772Z">
     <div class="r-comment-body"><p>Review of run r-20261115T031844233655-a-landing-commit-retries-a-released-lock at head 8d32dce587 whose reviewed_base_sha is efeb0d0d, i.e. only the commits it gained since efeb0d0d were read: the blocking finding from the efeb0d0d review is answered (returncode guard restored at merge.py:871-874 and pinned by a case that reddens at efeb0d0d in logs/negative-control-repair.log), and one non-blocking finding records that the evidence fragment attributes its 60-passed gate to c9d5bfef74 while the log it cites records 8d32dce587.</p></div>
+</div>
+<div class="r-comment" data-section="s13" data-id="c-run-r-20261115T031844233655-a-landing-commit-retries-a-released-lock" data-who="reckon-build" data-when="2026-11-15T05:49:29Z">
+    <div class="r-comment-body"><p>The landing wait helper decides whether to retry from the failure&#x27;s own naming of this checkout&#x27;s index.lock as well as from the file&#x27;s presence, so a call refused by a lock a peer released within 50 ms is retried to the same bound instead of returning after one attempt — and the wait is asked only about a failed call, so a step that succeeded while a peer held the lock is run once and never over its own success. The gate reports 60 passed at head 8d32dce587 against a base arm reporting 55 passed at 251cb1cd, the base helper fails the released-lock case, and the revision the review raised fails only the successful-call case.</p></div>
 </div>
 <div class="r-comment" data-section="s3" data-id="c-run-r-20261114T203051455649-review-of-promotion-checks-read-only-what-moved-52e6182f1f8a" data-who="reckon-build" data-when="2026-11-15T00:53:08.156Z">
     <div class="r-comment-body"><p>independent review of r-20261114T143749419652-promotion-checks-read-only-what-moved at head 52e6182f1f: goal_fidelity 17, evidence 14, scope_discipline 19, durability 17, fit 18, reuse 17, added_failure_count 0, three non-blocking findings.</p></div>
