@@ -91,13 +91,13 @@
         <td><code>1d16388a31</code></td>
         <td>55 passed, <code>EXIT=0</code></td></tr>
       <tr><td>the focused set plus the new file</td>
-        <td><code>239f5365ab</code></td>
+        <td>the head this node delivers</td>
         <td>58 passed, <code>EXIT=0</code></td></tr>
       <tr><td>admission-importing population, 124 files, <code>-n 4</code></td>
         <td><code>1d16388a31</code></td>
         <td>165 failed, 694 passed, <code>EXIT=1</code></td></tr>
       <tr><td>the same population plus the new file, 125 files</td>
-        <td><code>239f5365ab</code></td>
+        <td>the head this node delivers</td>
         <td>164 failed, 698 passed, <code>EXIT=1</code> — no failure id added
         against the base</td></tr>
       <tr><td>declared negative control: the deadline read removed from the
@@ -107,6 +107,10 @@
         three-launches-per-pass case and the duration case both red</td></tr>
     </tbody>
   </table>
+
+  <p>The negative control was taken at the code commit
+  <code>239f5365ab</code>; <code>selection.py</code> is byte-identical at the
+  shipped head, whose commit adds only the two evidence fragments.</p>
 
   <p>The population's 164 remaining failures are the checkout's own
   dispatch-and-contention population under four workers, and they are identical
