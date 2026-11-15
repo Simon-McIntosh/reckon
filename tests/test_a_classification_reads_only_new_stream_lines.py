@@ -157,10 +157,10 @@ def test_a_second_pass_over_unchanged_streams_decodes_nothing(
     """Two passes over the same fleet: the first reads the streams, the second none."""
     first = _classify(fleet)
     # The instrument is shown to see something known present before an absence
-    # is reported: the first pass decoded the streams
-    # (the second pass's own count at the revision before this change is
-    # 60,030 decodes, which is what the negative control reproduces).
-    assert len(decodes.calls) >= RUNS * LINES // 2
+    # is reported: the first pass decoded the streams, and the second pass's
+    # count before this change was the whole-stream scan's, which the negative
+    # control reproduces.
+    assert len(decodes.calls) >= RUNS * LINES
     decodes.reset()
 
     second = _classify(fleet)
