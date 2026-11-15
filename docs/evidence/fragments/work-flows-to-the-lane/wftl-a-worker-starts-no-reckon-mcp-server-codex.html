@@ -1,0 +1,19 @@
+<section id="wftl-a-worker-starts-no-reckon-mcp-server-codex-landed">
+  <h3>Workers omit the coordination MCP server</h3>
+  <p>Claude and Clive workers use a private, explicit MCP configuration that excludes Reckon and preserves other user servers and allowed project servers. Codex workers disable Reckon with an override that keeps existing HTTP or stdio transports valid and supplies a complete disabled transport when absent. Omp workers exclude Reckon in their run-owned agent store. Fresh launches, resumes and unfenced launches retain these exclusions; operator configuration is unchanged.</p>
+  <table>
+    <thead><tr><th>Measurement</th><th>Observed result</th></tr></thead>
+    <tbody>
+      <tr><td>Launch regression cases</td><td>15 passed: eight fresh launches over four dialects and two fence settings, four resumes, three Codex transport shapes</td></tr>
+      <tr><td>Armed inventory gate</td><td>58 passed at base; 58 passed after the implementation</td></tr>
+      <tr><td>Compatibility checks</td><td>Base: 146 passed, 2 failed; candidate: 161 passed, the same 2 failed; 0 added failures</td></tr>
+      <tr><td>Installed Codex parser</td><td>Empty, stdio and HTTP homes all accepted; 0 enabled Reckon servers</td></tr>
+      <tr><td>Local worker process census</td><td>412 samples, largest tree 6 processes, 0 Reckon MCP server observations</td></tr>
+      <tr><td>Worker delivery</td><td>Clive on all_debug, job 1317296, delivered its manifest and crew CLI help receipt</td></tr>
+      <tr><td>Negative control</td><td>At base revision 361b7cfb44151bf12134b3298c97aa09a5d56953, the Claude exclusion assertion failed on the carried Reckon declaration</td></tr>
+      <tr><td>Lint and format</td><td>6 pre-existing lint findings at base and candidate; 0 added findings; all 7 staged Python paths formatted</td></tr>
+    </tbody>
+  </table>
+  <p>The runtime probe used the production launch composition and dispatch spawn helper in an independent all_debug job. The worker read its brief and ran the crew CLI. Its initialization listed imas-dd and lucy2, with no reckon entry. The census predicate was checked against the operator’s known uv-wrapped Reckon launch before the saved census was classified. The completed worker’s remaining process tree was stopped by enumerated pid, and its scratch directory was removed. Queue admission and the supervisor were outside this launch probe.</p>
+  <p>The two existing compatibility failures concern an assertion that seeded settings never gain an inbox hook, and a missing recorded omp event-stream fixture. Both reproduced at base and remain unchanged. The committed negative-control transcript is in <code>docs/evidence/fragments/work-flows-to-the-lane/s71.html</code>. Raw gates, launch configuration, worker manifest, census, parser checks and setup-failure records remain in <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T100437343850-wftl-a-worker-starts-no-reckon-mcp-server-codex</code>.</p>
+</section>
