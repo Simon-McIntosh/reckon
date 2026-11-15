@@ -27,10 +27,15 @@
   liveness reading take their pid from, so a pointer naming the station reads as
   naming none.</p>
 
-  <p>The station pid is the lease the station keeps under the node-local runtime
-  root, matched with the start tick recorded beside it, so a number the kernel
-  has since recycled is not mistaken for the station and no other host's station
-  is read.</p>
+  <p>The station pid is read from the lease the station keeps, through the
+  lease mechanism that writes it — <code>station.station_lease</code> for the
+  name of the one writer on a node, <code>HostLease.holder</code> for the record
+  — rather than through a second reader of that format.
+  <code>host_lease.process_runs_here</code> then decides whether the pid the
+  record names is still the process that wrote it, from the start tick and the
+  process table recorded beside the pid, so a number the kernel has since
+  recycled is not mistaken for the station and a pid from another process table
+  is not matched by number alone.</p>
 
   <h3 id="resume-records-its-own-worker-s17-repro">Measured</h3>
 

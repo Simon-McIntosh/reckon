@@ -100,7 +100,19 @@ def _write_pointer(run_id: str, **extra: object) -> None:
     runs._write_json(runs.pointer_path(run_id), _pointer(run_id, **extra))
 
 
-def _write_station_lease(pid: int) -> None:
+def _start_ticks(pid: int) -> str:
+    """A process's start tick, read from the kernel rather than from the code.
+
+    The lease records this field, and the guard matches it, so the case reads it
+    from ``/proc`` directly: a case that asked the guard's own reader for the
+    value would agree with a broken guard.
+    """
+    text = Path(f"/proc/{pid}/stat").read_text(encoding="utf-8")
+    fields = text.rpartition(")")[2].split()
+    return fields[19]
+
+
+def _write_station_lease(pid: int, *, pid_namespace: str | None = None) -> None:
     """Write this node's station lease naming ``pid``, as the station does.
 
     The path is resolved the way the station resolves it — the node-local
@@ -118,8 +130,12 @@ def _write_station_lease(pid: int) -> None:
                 "pid": pid,
                 "job": "",
                 "token": "station-pid-case",
-                "pid_namespace": os.readlink("/proc/self/ns/pid"),
-                "pid_start": runs._process_start_time(pid),
+                "pid_namespace": (
+                    os.readlink("/proc/self/ns/pid")
+                    if pid_namespace is None
+                    else pid_namespace
+                ),
+                "pid_start": _start_ticks(pid),
             }
         ),
         encoding="utf-8",
@@ -292,7 +308,8 @@ def test_a_reservation_naming_the_station_is_not_read_as_the_runs_process(
         )
         taken = launch.reserve_launch_attempt(node, RUN_ID, kind="resume")
         try:
-            assert taken.attempt >= 1
+            assert taken.path.exists(), "the relaunch took no reservation to hold"
+            assert json.loads(taken.path.read_text(encoding="utf-8"))["pid"] is None
         finally:
             launch.release_launch_reservation(taken)
         assert station.poll() is None
@@ -300,7 +317,35 @@ def test_a_reservation_naming_the_station_is_not_read_as_the_runs_process(
         _stop(station)
 
 
-# ── the stop and the discard: neither signals the station ────────────────────
+# ── the reader: a lease from another process table names another process ─────
+
+
+def test_a_lease_from_another_process_table_does_not_name_the_station(
+    node: Path,
+) -> None:
+    """A pid addresses a process only inside the table that issued it.
+
+    The lease records the namespace its holder ran in, so a record whose
+    namespace is not this reader's names a number the kernel may have given to
+    an unrelated process here. The case writes this process's pid under a
+    foreign namespace and requires the guard to stay out of it, then writes the
+    same lease in this table and requires the guard to name this process — one
+    read, two names — so the guard is bound to the table rather than merely
+    absent.
+    """
+    real = os.readlink("/proc/self/ns/pid")
+    foreign = "pid:[4026534001]" if real == "pid:[4026534000]" else "pid:[4026534000]"
+
+    _write_station_lease(os.getpid(), pid_namespace=foreign)
+    _write_pointer(RUN_ID, pid=os.getpid())
+    assert runs.read_pointer(RUN_ID).get("pid") == os.getpid(), (
+        "a pid from another process table was read as the station's and dropped"
+    )
+
+    _write_station_lease(os.getpid())
+    assert runs.read_pointer(RUN_ID).get("pid") is None, (
+        "a pointer naming this host's station kept the station's pid"
+    )
 
 
 def test_a_stop_and_a_discard_never_signal_the_pid_that_belongs_to_the_station(
