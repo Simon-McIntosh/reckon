@@ -20,11 +20,11 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-informs" content="the-monitor-shows-the-work-it-watches,the-monitor-reads-each-fact-once,a-landing-never-waits-on-a-shared-index,the-escape-lane-and-reviews-keep-pace">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;implementable&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;done&quot;,&quot;s14&quot;:&quot;implementable&quot;,&quot;s15&quot;:&quot;implementable&quot;,&quot;s16&quot;:&quot;implementable&quot;,&quot;s17&quot;:&quot;implementable&quot;,&quot;s18&quot;:&quot;done&quot;,&quot;s19&quot;:&quot;implementable&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s20&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;implementable&quot;,&quot;s21&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;implementable&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;done&quot;,&quot;s14&quot;:&quot;implementable&quot;,&quot;s15&quot;:&quot;implementable&quot;,&quot;s16&quot;:&quot;implementable&quot;,&quot;s17&quot;:&quot;implementable&quot;,&quot;s18&quot;:&quot;done&quot;,&quot;s19&quot;:&quot;implementable&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s20&quot;:&quot;done&quot;,&quot;s21&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;implementable&quot;}">
   <title>The Monitor Tells The Truth Under Load | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="33">
+<meta name="plan-version" content="35">
 <meta name="plan-modified" content="2026-11-15">
 </head>
 <body>
@@ -226,6 +226,9 @@
 <div class="r-comment" data-section="s16" data-id="c-run-r-20261115T213231553068-review-of-moved-inputs-promotion-retried-s16-da06624803aa" data-who="reckon-build" data-when="2026-11-15T21:54:40.966Z">
     <div class="r-comment-body"><p>Independent review of run r-20261115T182502558389-moved-inputs-promotion-retried-s16 at base 18d133b40e54057955fee45c889cde9371c8e068 / head da06624803aa6339eeb32c97713ce92baf49c213. Scores goal_fidelity 19, evidence 11, scope_discipline 20, durability 17, fit 14, reuse 13 (total 94); added_failure_count 0 with no added ids, derived from baseline_suite (0 failures, 58 passed EXIT=0) and after_suite (0 failures, 62 passed EXIT=0). Six non-blocking findings: the done_when's importing-test population is measured by neither arm; _record_inputs_moved suppresses its write failure so the budget can never advance; two helper names differ by word order only; the attempt counter and the open-repair predicate each duplicate an owner in queue_landing.py and obligations.py; and one assertion reads the test's own harness counter.</p></div>
 </div>
+<div class="r-comment" data-section="s17" data-id="c-run-r-20261115T213326188019-review-of-resume-records-its-own-worker-s17-f23de4ddc109" data-who="reckon-build" data-when="2026-11-15T21:54:37.877Z">
+    <div class="r-comment-body"><p>Review of r-20261115T182507008232-resume-records-its-own-worker-s17 at base af516b3ac9 / head f23de4ddc1 is parsed with all six dimensions scored (18/13/19/15/16/5, total 86), six non-blocking findings and added_failure_count 0 from a base arm of 58 passed and an after arm of 61 passed, both EXIT=0.</p></div>
+</div>
 <div class="r-comment" data-section="s18" data-id="c-close-s18" data-who="reckon-a6" data-when="2026-11-15T15:30:00Z">
     <div class="r-comment-body"><p>§18 landed at <code>ee7fb80c4e</code>, taken in hand as a gate-safety fix. <code>_run_review_tier</code> now measures the cited commits plus every non-merge commit from the run's base to its head. The imas-codex reproduction now reads <code>light</code> when it cites only its docs-only evidence commit; before, it read <code>none</code>. Arms on all_debug over 145 test files: 92 failures and 8 errors at both base and head, none added, 2 more passes. The docs-only-citation test fails when the scope goes back to cited commits alone. The obligation's own guard (no <code>crew complete</code> offered for a run owing a review with none stored) follows from the corrected tier.</p></div>
 </div>
@@ -258,6 +261,9 @@
 </div>
 <div class="r-comment" data-section="s9" data-id="c-run-r-20261115T173941433645-review-of-hook-counts-what-is-owed-s9-215392550c93" data-who="reckon-build" data-when="2026-11-15T17:47:32.856Z">
     <div class="r-comment-body"><p>Independent review of r-20261115T145806650328-hook-counts-what-is-owed-s9 at head 215392550c against base fd2fe9c1 is stored as a parsed record scoring goal_fidelity 17, evidence 13, scope_discipline 20, durability 17, fit 16, reuse 4, with three non-blocking findings (the duplicated has-live-work rule at reckon/hooks/coordinator_obligations.py:1079, the trailer label at :954, and the done_when clause the gate never measured), added_failure_count 0.</p></div>
+</div>
+<div class="r-comment" data-section="s9" data-id="c-run-r-20261115T213343333921-review-of-hook-counts-what-is-owed-s9-77db7a432db4" data-who="reckon-build" data-when="2026-11-15T21:54:19.774Z">
+    <div class="r-comment-body"><p>Reviewed r-20261115T145806650328-hook-counts-what-is-owed-s9 at 215392550c..77db7a432d: the two commits land the plan&#x27;s §9 count and absent-producer readings with 10 new cases (9 red at the base source) and both heads green, and the review scores goal 18, evidence 8, scope 20, durability 18, fit 18, reuse 5, with one blocking finding (the run&#x27;s two gate log paths now hold aborted srun wrappers) and four non-blocking ones (a duplicated terminal-phase set, a duplicated pending-work predicate, a stale arms table in the evidence fragment, and five hook-importing tests red only at head leaving the done_when&#x27;s fourth clause unmet).</p></div>
 </div>
 </section>
 </main>
