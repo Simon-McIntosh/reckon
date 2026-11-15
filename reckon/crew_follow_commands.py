@@ -1253,7 +1253,7 @@ def _stream_events_upto(stream_path: Path, *, offset: int, boundary: int) -> lis
     if boundary <= offset:
         return events
     try:
-        stream = Path(stream_path).open(encoding="utf-8")
+        stream = Path(stream_path).open(encoding="utf-8", errors="replace")
     except OSError:
         return events
     with stream:
@@ -2690,7 +2690,7 @@ def _follow_watch_lines(
         if not stream_path.exists():
             continue
 
-        with stream_path.open(encoding="utf-8") as stream:
+        with stream_path.open(encoding="utf-8", errors="replace") as stream:
             stream.seek(cursor["offset"])
             # The open file's identity, taken once here and carried with every
             # offset read from it: a replacement that lands while this handle is

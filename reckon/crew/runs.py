@@ -3520,7 +3520,7 @@ def read_stream_events(path: Path, *, offset: int = 0) -> Iterable[dict[str, Any
     """Yield every event a stream holds from one byte offset onward."""
     if not Path(path).is_file():
         return
-    with Path(path).open(encoding="utf-8") as stream:
+    with Path(path).open(encoding="utf-8", errors="replace") as stream:
         stream.seek(offset)
         for line in stream:
             event = parse_stream_line(line)
